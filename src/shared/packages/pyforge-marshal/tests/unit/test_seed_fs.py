@@ -804,13 +804,17 @@ def test_a_path_that_only_resolves_into_the_protected_set_still_refuses(tmp_path
 
 
 def test_a_lexical_dotdot_in_the_written_path_is_folded_before_matching(tmp_path):
-    (tmp_path / "docs" / "dreams").mkdir(parents=True)
+    """With ``docs -> real/`` the resolved form of
+    ``docs/other/../dreams/x.md`` is ``real/dreams/x.md``, which the pattern
+    misses -- so the hit can only come from the WRITTEN form, and only if its
+    ``..`` was folded lexically into ``docs/dreams/x.md``."""
+    _docs_symlinked_to_real(tmp_path)
 
     hit = fs.never_write_match(
         tmp_path / "docs" / "other" / ".." / "dreams" / "x.md", repo_root=tmp_path, never_write=_DREAMS
     )
 
-    assert hit is not None
+    assert hit == ("docs/dreams/*.md", "docs/dreams/x.md")
 
 
 def test_exempt_is_judged_per_form_so_a_declared_writable_path_stays_writable_under_a_symlinked_ancestor(tmp_path):
@@ -887,6 +891,46 @@ def test_the_shipped_patterns_refuse_to_repoint_the_planning_artifacts_node(tmp_
     dangling.symlink_to(projects / "nowhere")
     with pytest.raises(NeverWriteViolation):
         fs.symlink(dangling, projects / "demo", repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
+
+
+def _dangling_tier_node(tmp_path: Path) -> Path:
+    """A dangling symlink standing at ``.../planning-artifacts`` -- the tier-tree
+    directory node, its target absent."""
+    node = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts"
+    node.parent.mkdir(parents=True)
+    node.symlink_to(tmp_path / "_bmad-output" / "projects" / "nowhere")
+    assert node.is_symlink() and not node.exists()
+    return node
+
+
+def test_write_refuses_a_dangling_symlink_standing_at_the_tier_tree_node(tmp_path):
+    """Whatever ``resolve_leaf`` is, a symlink leaf is the directory node: the
+    resolved form of a dangling link is its absent target (not a directory),
+    so only the written form can see the node -- ``fs.write`` used to return
+    without a violation while ``fs.symlink`` refused the same path."""
+    node = _dangling_tier_node(tmp_path)
+
+    with pytest.raises(NeverWriteViolation, match=r"\*\*/planning-artifacts/\*\*"):
+        fs.write(node, b"x", repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
+
+    assert node.is_symlink()
+
+
+def test_remove_refuses_a_dangling_symlink_standing_at_the_tier_tree_node(tmp_path):
+    node = _dangling_tier_node(tmp_path)
+
+    with pytest.raises(NeverWriteViolation, match=r"\*\*/planning-artifacts/\*\*"):
+        fs.remove(node, repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
+
+    assert node.is_symlink()
+
+
+def test_never_write_match_reports_the_slash_form_for_a_dangling_tier_tree_link(tmp_path):
+    node = _dangling_tier_node(tmp_path)
+
+    hit = fs.never_write_match(node, repo_root=tmp_path, never_write=_REAL_NEVER_WRITE)
+
+    assert hit == ("**/planning-artifacts/**", "_bmad-output/projects/demo/planning-artifacts/")
 
 
 def test_a_regular_file_at_the_same_depth_is_not_swept_up_by_the_directory_probe(tmp_path):

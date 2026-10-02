@@ -263,12 +263,15 @@ def _written_form(path: Path, repo_root: Path, resolved_root: Path) -> str:
     return lexical.as_posix()
 
 
-def _names_a_directory(path: Path, *, resolve_leaf: bool) -> bool:
+def _names_a_directory(path: Path) -> bool:
     """Whether ``path`` is a directory NODE for the never-write match (Story
-    82.11, DW-FU-7-5-5): an existing directory, or -- when the leaf is left
-    unresolved (``symlink()``) -- a symlink standing in for one, dangling or
-    not, since re-pointing the link is exactly the operation on the tree."""
-    return path.is_dir() or (not resolve_leaf and path.is_symlink())
+    82.11, DW-FU-7-5-5): an existing directory, or a symlink standing in for
+    one, dangling or not -- whatever ``resolve_leaf`` is, since replacing,
+    removing or re-pointing the link is exactly the operation on the tree. Only
+    a symlink LEAF of the path as written can be one: the resolved form has no
+    symlink left in it, so for ``write``/``remove`` the dangling link is seen
+    through the written form."""
+    return path.is_dir() or path.is_symlink()
 
 
 def _match_form(never_write: NeverWrite, form: str, *, is_directory: bool) -> tuple[str, str] | None:
@@ -309,8 +312,9 @@ def never_write_match(
     (``docs -> real/``) hides ``docs/dreams/x.md`` from the resolved form
     (``real/dreams/x.md``), and an alias into the protected set
     (``alias -> docs/dreams``) hides it from the written one. Each form is
-    also matched with a trailing ``/`` when it names a directory
-    (``_match_form``). ``NeverWrite.exempt`` is judged per form, never across
+    also matched with a trailing ``/`` when it names a directory node -- an
+    existing directory, or a symlink leaf standing in for one, dangling or not
+    (``_names_a_directory``, ``_match_form``). ``NeverWrite.exempt`` is judged per form, never across
     them: an exempt written form stays writable under a symlinked ancestor,
     while a path that only RESOLVES into the protected set still refuses. One
     carve-out: with ``resolve_leaf=False`` (``symlink()``) the resolved form is
@@ -340,7 +344,7 @@ def never_write_match(
     written_hit = _match_form(
         never_write,
         written_form,
-        is_directory=_names_a_directory(Path(os.path.abspath(path)), resolve_leaf=resolve_leaf),
+        is_directory=_names_a_directory(Path(os.path.abspath(path))),
     )
     if written_hit is not None:
         return written_hit
@@ -350,7 +354,7 @@ def never_write_match(
     return _match_form(
         never_write,
         resolved_form,
-        is_directory=not same_node_exempt and _names_a_directory(resolved_path, resolve_leaf=resolve_leaf),
+        is_directory=not same_node_exempt and _names_a_directory(resolved_path),
     )
 
 

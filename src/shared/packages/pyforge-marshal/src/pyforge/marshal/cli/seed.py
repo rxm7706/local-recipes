@@ -80,7 +80,7 @@ from ..adapters.fs_local import LocalFs
 from ..core import policy
 from ..core.verdict import EXIT_OK
 from ..ports.fs import FsPort
-from ..seed.detect.findings import Severity
+from ..seed.detect.findings import Finding, Severity
 from ..seed.detect.kit import KitCheck
 from ..seed.errors import ConformanceFailure, InternalError, SeedError, UsageError
 from ..seed.migrate import registry as migrate_registry
@@ -772,7 +772,7 @@ def _render_update_plan_text(plan: Plan) -> str:
     return "\n".join(lines)
 
 
-def _render_escape_findings_text(findings: tuple) -> str:
+def _render_escape_findings_text(findings: tuple[Finding, ...]) -> str:
     """HARD ``target-escapes-repo`` findings for ``adopt``/``update`` (Story
     82.11): the manifest entries left out of the plan because their path
     resolves outside the repository, one line each, with the remedy once."""

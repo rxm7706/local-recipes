@@ -211,9 +211,11 @@ from .findings import Finding, FindingType, Severity
 
 
 class ArtifactState(StrEnum):
-    """The four-state classification vocabulary the epics AC names
-    verbatim (plus Story 82.11's ``escaping``), kebab-case wire values matching ``ArtifactClass``/
-    ``FindingType``'s established convention. ``PRESENT_LEGACY``'s first
+    """The five-state classification vocabulary: the epics AC's four
+    (``absent``, ``present-conformant``, ``present-divergent``,
+    ``present-legacy``) plus Story 82.11's ``escaping``, with kebab-case wire
+    values matching ``ArtifactClass``/``FindingType``'s established
+    convention. ``PRESENT_LEGACY``'s first
     producing code path is `_classify_entry`'s legacy short-circuit (S-9.4)
     -- see the module docstring."""
 

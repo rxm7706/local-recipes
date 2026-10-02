@@ -429,7 +429,12 @@ def test_rung_4_refuses_a_never_write_path_hidden_behind_a_symlinked_ancestor(cl
             never_write=NeverWrite(patterns=("docs/dreams/*.md",)),
         )
 
-    assert "docs/dreams/*.md" in excinfo.value.message
+    # The message names the pattern, the resolved location AND the form that
+    # actually matched -- the written one, which is not the resolved one.
+    assert (
+        "(resolved: 'real/dreams/x.md'), which matches never-write pattern 'docs/dreams/*.md' (as 'docs/dreams/x.md')"
+        in excinfo.value.message
+    )
     assert excinfo.value.exit_code == 3
 
 
