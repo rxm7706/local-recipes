@@ -2,7 +2,8 @@
 title: '82.13: A marker opt-out is representable for every artifact, accepted by preconditions, and recorded per region'
 type: 'fix'
 created: '2026-10-02'
-status: 'draft'
+status: 'in-progress'
+baseline_revision: 'dfd5482b46238c5745573fbfccd19e439f99e8df'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
