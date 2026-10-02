@@ -178,28 +178,42 @@ be read):
   ``max_tokens_per_run``/``max_tokens_per_story``, gated by a STALENESS
   check: ``SessionObserverPort.mtime`` against bmad-loop's own
   ``state.json`` (``<home>/.bmad-loop/runs/<harness_run_id>/state.json``),
-  compared to the SAME ``threshold_s`` the idle ladder already computes
-  (reused, never a second threshold). A sample older than that window is
-  classified ``stale-evidence`` (``MRS-SUPV-006``, journaled ONCE per
+  judged by ``core.supervise.judge_usage_freshness`` over a window of its OWN
+  (Story 82.5: ``staleness_window_s``, never shorter than the rendered
+  ``session_timeout_min`` -- bmad-loop rewrites ``state.json`` only at session
+  boundaries, so the 25-minute idle threshold this gate used to reuse left
+  both token ceilings dark from minute 25 of every healthy session). Freshness
+  is MONOTONIC: the supervisor records the monotonic reading at which it first
+  saw each distinct mtime (``state_sighting``) and ages the sample from there,
+  so a wall-clock step or a suspend cannot flip it, and an mtime AHEAD of the
+  wall clock is ``unevaluable``, never fresh. A sample older than the window
+  is classified ``stale-evidence`` (``MRS-SUPV-006``, journaled ONCE per
   transition into staleness, kind ``"budget-usage-stale"``) -- never
-  ``unevaluable`` (AD-32's own amendment, F-24: that label is AD-8-blocking
-  and fires on the ordinary idle case the ladder above already handles
-  gracefully) -- and BOTH token ceilings are skipped for that tick; the two
-  wall-clock ceilings remain the binding constraint.
+  ``unevaluable`` as a ceiling verdict (AD-32's own amendment, F-24: that
+  label is AD-8-blocking and fires on the ordinary idle case the ladder above
+  already handles gracefully) -- and BOTH token ceilings are skipped for that
+  tick; the two wall-clock ceilings remain the binding constraint.
 
 Each ceiling's own last-observed ``CeilingStatus`` is tracked separately (4
 variables, one per scope+metric pair); a rising edge from ``NONE`` to
 ``APPROACHING`` journals one ``"budget-warn"`` observation
-(``MRS-SUPV-004``), and any transition INTO ``BREACHED`` fires the terminal
-action -- mirroring the idle ladder's own terminal ``defer``, never
-``stop-and-retry`` (retrying the same story/run would immediately re-hit the
+(``MRS-SUPV-004``). A transition INTO ``BREACHED`` of a per-RUN ceiling fires
+the terminal action -- mirroring the idle ladder's own terminal ``defer``,
+never ``stop-and-retry`` (retrying the same run would immediately re-hit the
 same ceiling): one ``intent``/``outcome`` pair (kind ``"budget-stop"``), a
 best-effort ``HarnessPort.stop`` (tolerant of ``HarnessError``, registering
 ``MRS-SUPV-005`` on failure -- the same tier and reasoning as the idle
 ladder's own ``MRS-SUPV-002``), and the tick loop ends via the SAME
 ``supervisor-detach`` mechanism the idle ladder uses, with
 ``reason=f"budget-{scope}-{metric}-exceeded"`` (e.g.
-``"budget-run-wall_clock-exceeded"``). On a story-key transition, one
+``"budget-run-wall_clock-exceeded"``). A BREACH of a per-STORY ceiling does
+not (Story 82.5, DW-FU-3-6-8): ``HarnessPort.stop`` ends the whole bmad-loop
+run, so stopping on one outlier story abandoned every remaining story of an
+overnight wave under a story-scoped reason. It journals one
+``"budget-story-breach"`` observation (``MRS-SUPV-011``: the story, the
+metric, the observed and the limit values), once per (story, metric), and the
+run continues -- bmad-loop exposes run-level stop only, so the per-run
+ceilings stay the binding constraint. On a story-key transition, one
 ``"budget-usage"`` observation attributes the OUTGOING story's last known
 weighted tokens as its own ``cost_estimate`` (no dollar-denominated pricing
 table exists or is introduced, so the weighted-token total itself IS the
@@ -351,7 +365,7 @@ from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.clock_system import SystemClock
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
+from ..adapters.harness_bmadloop import RENDERED_SESSION_TIMEOUT_MIN, HarnessError, resolve_loop_runner
 from ..adapters.notify_file_desktop import FileDesktopNotifier
 from ..adapters.observer_mux import MultiplexerObserver
 from ..adapters.publisher_host import HostPublisher
@@ -378,14 +392,18 @@ from ..core.supervise import (
     CeilingStatus,
     EscalationStatus,
     LadderRung,
+    MtimeSighting,
     Sample,
+    UsageFreshness,
     evaluate_ceiling,
     evaluate_compression_ladder,
     evaluate_escalation,
     evaluate_idle,
     idle_anchor,
+    judge_usage_freshness,
     rung_at,
     rung_index,
+    shows_fresh_output,
 )
 from ..core.worktree_checkpoint import commit_worktree_checkpoint
 from ..ports.clock import ClockPort
@@ -430,6 +448,9 @@ _NUDGE_KIND = "idle-nudge"
 _STOP_AND_RETRY_KIND = "idle-stop-and-retry"
 _DEFER_KIND = "idle-defer"
 _HARNESS_RUN_ID_UNAVAILABLE_KIND = "idle-harness-run-id-unavailable"
+# Story 82.5: neither the pane nor the harness log could be observed on a tick
+# (MRS-SUPV-012) -- one Phase.OBSERVATION per unobservable episode.
+_IDLE_UNOBSERVABLE_KIND = "idle-unobservable"
 
 # Story 3.6's own budget-ceiling journal kinds. "budget-stop" fires as one
 # Phase.INTENT then one Phase.OUTCOME entry (mirroring the idle ladder's own
@@ -439,6 +460,9 @@ _BUDGET_WARN_KIND = "budget-warn"
 _BUDGET_STOP_KIND = "budget-stop"
 _BUDGET_USAGE_KIND = "budget-usage"
 _BUDGET_USAGE_STALE_KIND = "budget-usage-stale"
+# Story 82.5: a per-STORY ceiling breach (MRS-SUPV-011) -- a single
+# Phase.OBSERVATION per (story, metric); the run continues.
+_BUDGET_STORY_BREACH_KIND = "budget-story-breach"
 
 
 def _layer_savings_payload(layer_savings: object) -> dict[str, object]:
@@ -783,6 +807,13 @@ def run_supervisor(
     max_tokens_per_run: float,
     max_wall_clock_minutes_per_story: float,
     max_wall_clock_minutes_per_run: float,
+    # Story 82.5 (DW-FU-3-6-6): the usage-staleness window, in minutes -- its
+    # OWN value, no shorter than the rendered session timeout (see the
+    # module docstring's "Budget ceilings" section). Optional so a direct
+    # caller never regains the 25-minute trap: omitted, it is derived here
+    # as `max(idle_threshold_minutes, RENDERED_SESSION_TIMEOUT_MIN)`, the
+    # same floor `cli/spin.py` passes as the optional eleventh argv value.
+    staleness_window_minutes: float | None = None,
     *,
     fs: FsPort | None = None,
     process: ProcessPort | None = None,
@@ -886,6 +917,28 @@ def run_supervisor(
         if policy._valid_positive_number(_budget_value) is None:
             print(
                 f"supervisor: {_budget_label} must be a positive finite number, got {_budget_value!r}",
+                file=sys.stderr,
+            )
+            return 1
+
+    # The usage-staleness window (Story 82.5), validated at this same entry
+    # point and for the same reason as the threshold above: a bad value would
+    # otherwise surface a tick later as `judge_usage_freshness`'s own
+    # `ValueError`, misreported by the journal-write handler as "cannot append
+    # to journal". Omitted, it is the larger of the idle threshold and the
+    # rendered session timeout -- never shorter than one session.
+    if staleness_window_minutes is None:
+        staleness_window_s = max(threshold_s, RENDERED_SESSION_TIMEOUT_MIN * 60.0)
+    else:
+        try:
+            staleness_window_s = float(staleness_window_minutes) * 60.0
+        except TypeError, ValueError:
+            staleness_window_s = float("nan")
+        if not (staleness_window_s > 0) or not math.isfinite(staleness_window_s):
+            print(
+                f"supervisor: usage staleness window minutes must resolve to a "
+                f"positive finite number of seconds, got {staleness_window_minutes} "
+                f"({staleness_window_s}s)",
                 file=sys.stderr,
             )
             return 1
@@ -1128,6 +1181,16 @@ def run_supervisor(
         # the run" posture would be defeated by a flood of identical
         # findings otherwise).
         usage_stale = False
+        # Story 82.5 (DW-FU-3-6-5): the sighting of the CURRENT `state.json`
+        # mtime -- when this supervisor first saw that distinct value, on the
+        # MONOTONIC clock. `judge_usage_freshness` ages the sample from it, so
+        # a wall-clock step or a suspend cannot flip a sample's freshness.
+        state_sighting: MtimeSighting | None = None
+        # Story 82.5 (DW-FU-3-6-8): the (story, metric) pairs whose per-story
+        # breach was already journaled -- a story that stays over its ceiling
+        # is reported ONCE, not every tick, and not again if its status
+        # bookkeeping is reset by a later story transition.
+        reported_story_breaches: set[tuple[str, str]] = set()
 
         # Story 3.7's own deferral-capture bookkeeping (FR-16): every story
         # key this run has already journaled a `"story-deferred"`
@@ -1381,6 +1444,10 @@ def run_supervisor(
 
         samples: list[Sample] = []
         last_acted_rung = LadderRung.NONE
+        # Story 82.5 (DW-FU-3-5-6): whether the PREVIOUS tick was unobservable
+        # (neither the pane nor the harness log could be read) -- gates the
+        # `idle-unobservable` WARN to once per dark EPISODE, never every tick.
+        idle_unobservable = False
         deferred = False
         # The `supervisor-detach` reason this loop will carry when it ends,
         # or `None` for the ordinary "the watched process exited" case
@@ -1500,13 +1567,16 @@ def run_supervisor(
             is a RISING edge over ``status_before`` (``_CEILING_RANK``,
             since ``CeilingStatus`` carries no intrinsic ordering).
             ``NONE``->``APPROACHING`` journals one ``"budget-warn"``
-            observation (``MRS-SUPV-004``); any transition INTO
-            ``BREACHED`` fires the terminal action -- mirroring the idle
-            ladder's own terminal ``defer`` above: one ``intent``/
+            observation (``MRS-SUPV-004``); a transition INTO ``BREACHED``
+            of a per-RUN ceiling fires the terminal action -- mirroring the
+            idle ladder's own terminal ``defer`` above: one ``intent``/
             ``outcome`` pair (kind ``"budget-stop"``), a best-effort
             ``HarnessPort.stop`` (tolerant of failure, registering
             ``MRS-SUPV-005``), and ending the tick loop via the SAME
             ``detach_reason``/``deferred`` mechanism the idle ladder uses.
+            A per-STORY breach (Story 82.5) journals one
+            ``"budget-story-breach"`` observation (``MRS-SUPV-011``) and
+            leaves the run going.
             A second ceiling breaching -- or merely approaching -- in the
             SAME tick after a DIFFERENT ceiling already breached is a no-op
             here (``deferred`` is already ``True``, checked BEFORE either
@@ -1567,6 +1637,43 @@ def run_supervisor(
             # now sits at the TOP of this function (see the docstring's own
             # review-finding note) -- this branch is only ever reached with
             # `deferred` still `False`.
+            if scope == "story":
+                # A per-STORY breach is an OBSERVATION, never a stop (Story
+                # 82.5, DW-FU-3-6-8). `HarnessPort.stop` ends the whole
+                # bmad-loop run -- bmad-loop exposes run-level stop, not a
+                # story-level skip, and this package may not invent one -- so
+                # answering one outlier story with it abandoned every
+                # remaining story of an overnight wave under a story-scoped
+                # detach reason. The per-RUN ceilings stay the binding
+                # constraint (a story that never ends still ends the run
+                # through them). One journal entry per (story, metric): the
+                # status trackers above already make this a rising edge, and
+                # the set additionally survives a story-transition reset.
+                breach_key = (current_story_key or "", metric)
+                if breach_key in reported_story_breaches:
+                    return
+                reported_story_breaches.add(breach_key)
+                breach_finding = Finding(
+                    code="MRS-SUPV-011",
+                    severity=Severity.WARN,
+                    message=(
+                        f"story budget ceiling breached: {scope}/{metric} at "
+                        f"{observed!r} (limit {limit!r}) -- the run continues; "
+                        "only a per-run ceiling stops it"
+                    ),
+                )
+                _append(
+                    _BUDGET_STORY_BREACH_KIND,
+                    {
+                        "scope": scope,
+                        "metric": metric,
+                        **story_context,
+                        "observed": observed,
+                        "limit": limit,
+                        "finding": breach_finding.to_json_dict(),
+                    },
+                )
+                return
             intent_id = _append_intent(
                 _BUDGET_STOP_KIND,
                 {
@@ -1840,17 +1947,39 @@ def run_supervisor(
                         story_wall_clock_status = new_story_wall_clock_status
 
                     # --- staleness gate for the TWO TOKEN ceilings only -----
-                    # A usage sample older than `threshold_s` (the SAME
-                    # threshold the idle ladder already computes, reused
-                    # rather than a second knob) is `stale-evidence`
-                    # (`MRS-SUPV-006`), never `unevaluable` (AD-32's own
-                    # amendment, F-24) -- journaled once per transition into
-                    # staleness, and both token ceilings are skipped for
-                    # this tick; the two wall-clock ceilings above remain
-                    # the binding constraint.
+                    # A usage sample older than `staleness_window_s` is
+                    # `stale-evidence` (`MRS-SUPV-006`), never `unevaluable`
+                    # (AD-32's own amendment, F-24) -- journaled once per
+                    # transition into staleness, and both token ceilings are
+                    # skipped for this tick; the two wall-clock ceilings
+                    # above remain the binding constraint.
+                    #
+                    # Story 82.5 changes BOTH halves of how that is judged
+                    # (DW-FU-3-6-5, DW-FU-3-6-6). The window is its own value,
+                    # no shorter than the rendered session timeout: bmad-loop
+                    # writes `state.json` only at session boundaries, and
+                    # reusing the idle threshold (25 minutes) here classified
+                    # every healthy sample `stale-evidence` from minute 25 of
+                    # a session that may legitimately run 180. And the age is
+                    # MONOTONIC: `moment.timestamp() - state_mtime` was a
+                    # wall-clock delta, so a forward NTP step or a suspend
+                    # marked a fresh sample stale and a backward step marked a
+                    # stale one fresh -- on exactly the evidence a hard
+                    # `harness.stop` rests on. `judge_usage_freshness` takes
+                    # the wall delta ONCE, at the mtime's first sighting, and
+                    # ages the sample on the monotonic clock thereafter; an
+                    # mtime ahead of the wall clock is `unevaluable`, never
+                    # the freshest value possible.
                     state_json_path = _bmad_loop_state_json_path(home, harness_run_id)
                     state_mtime = observer.mtime(state_json_path)
-                    is_stale = state_mtime is None or (moment.timestamp() - state_mtime) > threshold_s
+                    state_freshness, state_sighting = judge_usage_freshness(
+                        mtime=state_mtime,
+                        wall_now_s=moment.timestamp(),
+                        monotonic_now_s=monotonic_now,
+                        window_s=staleness_window_s,
+                        sighting=state_sighting,
+                    )
+                    is_stale = state_freshness is not UsageFreshness.FRESH
                     # Widened to ALSO cover `usage is None` with a fresh
                     # mtime (review finding): a torn concurrent write, a
                     # transient `bmad_loop` import failure, or any other
@@ -1873,7 +2002,11 @@ def run_supervisor(
                         pass
                     elif unevaluable_this_tick:
                         if not usage_stale:
-                            if is_stale:
+                            if state_freshness is UsageFreshness.UNEVALUABLE:
+                                reason = (
+                                    f"unevaluable (state.json mtime {state_mtime!r} cannot be judged against the wall clock)"
+                                )
+                            elif is_stale:
                                 reason = f"stale (state.json mtime {state_mtime!r})"
                             else:
                                 reason = (
