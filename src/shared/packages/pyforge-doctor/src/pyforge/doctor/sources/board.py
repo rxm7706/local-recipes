@@ -1512,8 +1512,9 @@ def _load_foreign_module(path: Path, mod_name: str):
 # script's ``REPO_ROOT`` / ``DREAMS_DIR`` / ``ARCHIVE_DREAMS_DIR`` /
 # ``_PIXI_TASKS`` at it (the script fixes the first three at import from the
 # checkout's own root, so a name missing from that list would silently read the
-# checkout's files) -- and with no checkout above Doctor the load raises ``FileNotFoundError``, which
-# ``_gather_chain_layers_audit`` reports as ``chain-layers-audit-unevaluable``.
+# checkout's files) -- and with no checkout above Doctor the load raises
+# ``FileNotFoundError``, which ``_gather_chain_layers_audit`` reports as
+# ``chain-layers-audit-unevaluable``.
 
 
 def _load_dashboard_generate(target: Path):
