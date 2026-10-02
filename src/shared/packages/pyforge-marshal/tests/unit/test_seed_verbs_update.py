@@ -245,6 +245,7 @@ def test_an_escaping_entry_is_reported_and_left_out_while_every_other_action_app
     calls: list[str] = []
 
     dry = run_update(clean_repo, manifest, confirm=_unreachable_confirm)
+    _commit_all(clean_repo)  # the dry run left `.marshal/plan.json`; a run wants a clean worktree
     applied = run_update(
         clean_repo,
         manifest,

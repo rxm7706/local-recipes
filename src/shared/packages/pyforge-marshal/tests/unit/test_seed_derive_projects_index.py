@@ -22,13 +22,16 @@ convention (see this story's own CRITICAL SAFETY CONSTRAINT)."""
 from __future__ import annotations
 
 import json
+from importlib import resources
 from pathlib import Path
 
 import pytest
 
 from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.derive import projects_index
+from pyforge.marshal.seed.detect.inventory import classify, effective_never_write, writable_exemptions
 from pyforge.marshal.seed.errors import NeverWriteViolation, PreconditionFailure
+from pyforge.marshal.seed.model.manifest import load_manifest
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.regions.apply import InsertionOutcome, insert_region
 from pyforge.marshal.seed.regions.markers import RegionFormat
@@ -305,6 +308,68 @@ def test_ensure_symlinks_creates_both_when_absent(tmp_path):
     impl_link = tmp_path / "_bmad-output" / "implementation-artifacts"
     assert planning_link.readlink() == Path("projects/acme/planning-artifacts")
     assert impl_link.readlink() == Path("projects/acme/implementation-artifacts")
+
+
+# --- ensure_symlinks under the SHIPPED never-write set (Story 82.11) --------
+#
+# The never-write set now matches a directory NODE (`**/planning-artifacts/**`
+# covers `_bmad-output/planning-artifacts`), so the two BMAD artifact symlinks
+# the manifest itself declares stay creatable only through
+# `NeverWrite.exempt` by declaration -- the very set a verb builds from the
+# packaged manifest. Proven here at the one seam that creates them
+# (`fs.symlink`); no verb calls `ensure_symlinks` yet.
+
+
+def _shipped_never_write(repo_root: Path) -> fs.NeverWrite:
+    manifest_ref = resources.files("pyforge.marshal.seed.templates") / "manifest.yaml"
+    with resources.as_file(manifest_ref) as manifest_path:
+        manifest = load_manifest(manifest_path)
+    inventory = classify(manifest, repo_root)
+    return fs.NeverWrite(
+        patterns=tuple(sorted(effective_never_write(manifest, inventory))),
+        exempt=writable_exemptions(manifest, inventory),
+    )
+
+
+def test_ensure_symlinks_still_creates_both_under_the_shipped_never_write_patterns(tmp_path):
+    _make_project_dirs(tmp_path, "acme")
+
+    projects_index.ensure_symlinks(tmp_path, "acme", never_write=_shipped_never_write(tmp_path))
+
+    assert (tmp_path / "_bmad-output" / "planning-artifacts").readlink() == Path("projects/acme/planning-artifacts")
+    assert (tmp_path / "_bmad-output" / "implementation-artifacts").readlink() == Path(
+        "projects/acme/implementation-artifacts"
+    )
+
+
+def test_ensure_symlinks_stays_re_runnable_and_re_pointable_under_the_shipped_never_write_patterns(tmp_path):
+    """The second run meets a link that is now a directory node (a symlink to
+    an existing directory) -- the case the directory probe would refuse
+    without the manifest-declared exemption."""
+    _make_project_dirs(tmp_path, "acme")
+    _make_project_dirs(tmp_path, "beta")
+    never_write = _shipped_never_write(tmp_path)
+
+    projects_index.ensure_symlinks(tmp_path, "acme", never_write=never_write)
+    projects_index.ensure_symlinks(tmp_path, "acme", never_write=never_write)
+    projects_index.ensure_symlinks(tmp_path, "beta", never_write=never_write)
+
+    assert (tmp_path / "_bmad-output" / "planning-artifacts").readlink() == Path("projects/beta/planning-artifacts")
+
+
+def test_the_shipped_never_write_set_refuses_to_re_point_the_tier_tree_itself(tmp_path):
+    """Without the exemption's reach beyond the link itself: the real
+    ``_bmad-output/projects/<slug>/planning-artifacts`` node is not exempt."""
+    _make_project_dirs(tmp_path, "acme")
+    never_write = _shipped_never_write(tmp_path)
+    node = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+
+    with pytest.raises(NeverWriteViolation):
+        fs.symlink(node, Path("elsewhere"), repo_root=tmp_path, never_write=never_write)
+    with pytest.raises(NeverWriteViolation):
+        fs.remove(node, repo_root=tmp_path, never_write=never_write)
+    with pytest.raises(NeverWriteViolation):
+        fs.write(node, b"x", repo_root=tmp_path, never_write=never_write)
 
 
 # --- ensure_symlinks: idempotent re-run, I/O matrix row 4 -----------------

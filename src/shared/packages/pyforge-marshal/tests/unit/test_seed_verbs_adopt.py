@@ -331,6 +331,7 @@ def test_an_escaping_entry_is_reported_on_a_dry_run_and_a_declined_apply_too(cle
     manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
 
     dry = run_adopt(clean_repo, manifest, confirm=_unreachable_confirm)
+    _commit_all(clean_repo)  # the dry run left `.marshal/plan.json`; an apply wants a clean worktree
     declined = run_adopt(clean_repo, manifest, apply=True, confirm=lambda: False)
 
     for result in (dry, declined):
