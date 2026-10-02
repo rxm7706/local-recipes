@@ -2359,7 +2359,6 @@ def test_compose_postgres_service_runs_the_pgvector_image():
     assert f"{chart_image['repository']}:{chart_image['tag']}" == _PGVECTOR_IMAGE
 
 
-
 @requires_helm
 def test_redis_broker_maxmemory_must_be_below_memory_limit():
     """AC (Story 40.2): maxmemory >= limit fails helm template naming the path."""
@@ -4036,7 +4035,9 @@ def _postgres_statefulset_doc(image: str) -> dict[str, Any]:
             "labels": {"app.kubernetes.io/component": "postgres"},
         },
         "spec": {
-            "template": {"spec": {"containers": [{"name": "postgres", "image": image}]}},
+            "template": {
+                "spec": {"containers": [{"name": "postgres", "image": image}]}
+            },
         },
     }
 
