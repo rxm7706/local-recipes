@@ -2,7 +2,7 @@
 title: '82.9: VCS commit text is declared egress and gate evaluate writes a redacted gate record'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'd016f196bf14e259ff8bd819eb3d504998f94dee'
 review_loop_iteration: 0
 followup_review_recommended: false
