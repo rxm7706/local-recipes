@@ -18,6 +18,7 @@ needs a synthetic migration."""
 from __future__ import annotations
 
 import argparse
+import json
 import subprocess
 from pathlib import Path
 
@@ -131,6 +132,7 @@ def _args(
     run: bool = False,
     force: bool = False,
     include_seeded: bool = False,
+    skip: list[str] | None = None,
     yes: bool = False,
 ) -> argparse.Namespace:
     return argparse.Namespace(
@@ -138,6 +140,7 @@ def _args(
         run=run,
         force=force,
         include_seeded=include_seeded,
+        skip=skip,
         yes=yes,
     )
 
@@ -161,6 +164,7 @@ def test_update_parser_defaults(tmp_path):
     assert args.run is False
     assert args.force is False
     assert args.include_seeded is False
+    assert args.skip is None
     assert args.yes is False
     assert args.dry_run is False
     assert args.json is False
@@ -180,6 +184,10 @@ def test_update_parser_wires_the_expected_flags(tmp_path):
             "--run",
             "--force",
             "--include-seeded",
+            "--skip",
+            "docs/*.md",
+            "--skip",
+            "WHOLE.md",
             "--yes",
             "--json",
             "--quiet",
@@ -190,6 +198,7 @@ def test_update_parser_wires_the_expected_flags(tmp_path):
     assert args.run is True
     assert args.force is True
     assert args.include_seeded is True
+    assert args.skip == ["docs/*.md", "WHOLE.md"]
     assert args.yes is True
     assert args.json is True
     assert args.quiet is True
@@ -207,6 +216,33 @@ def test_exit_code_0_on_a_dry_run_with_no_managed_content(clean_repo, capsys):
     out = capsys.readouterr().out
     assert code == 0
     assert "empty" in out
+
+
+def test_an_escaping_entry_is_named_in_the_printed_plan_and_the_json_envelope(clean_repo, capsys):
+    """Story 82.11 (DW-10-3-9): ``update`` names the entry left out of the
+    plan because its path resolves outside the repo, in text and ``--json``
+    alike, and the run still exits 0 with the ordinary entry planned."""
+    outside = clean_repo.parent / f"{clean_repo.name}-outside"
+    outside.mkdir()
+    (outside / "target.md").write_text("elsewhere\n", encoding="utf-8")
+    (clean_repo / "ESCAPER.md").symlink_to(outside / "target.md")
+    write_state(_seed_state(), repo_root=clean_repo, never_write=NeverWrite(patterns=()))
+    _commit_all(clean_repo)
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+
+    code = seed_cli.run_update(_args(repo_root=str(clean_repo)), manifest=manifest)
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "good (GOOD.md)" in out
+    assert "entries left out of the plan (1 target-escapes-repo finding(s))" in out
+    assert "ESCAPER.md: bad:" in out
+
+    args = _args(repo_root=str(clean_repo))
+    args.json = True
+    assert seed_cli.run_update(args, manifest=manifest) == 0
+    result = json.loads(capsys.readouterr().out)["result"]
+    assert [finding["type"] for finding in result["escape_findings"]] == ["target-escapes-repo"]
+    assert [action["artifact_id"] for action in result["plan"]["actions"]] == ["good"]
 
 
 def test_exit_code_0_on_an_applied_run(clean_repo, capsys):
@@ -362,6 +398,98 @@ def test_real_confirm_declines_on_a_non_yes_answer(clean_repo, monkeypatch, caps
 # --- DW-FU-11-3: a migration offer never renders "matched --skip" ----------
 
 
+# --- update --skip (Story 82.12, DW-10-4-4) --------------------------------
+
+
+def test_skip_option_reaches_the_verb_as_a_tuple(clean_repo, monkeypatch):
+    seen: dict = {}
+
+    def _spy(repo_root, manifest, **kwargs):
+        seen.update(kwargs)
+        raise RuntimeError("stop here; only the arguments matter")
+
+    monkeypatch.setattr(seed_cli, "_run_update_verb", _spy)
+    args = _build_parser().parse_args(
+        ["seed", "update", "--repo-root", str(clean_repo), "--skip", "docs/*.md", "--skip", "WHOLE.md"]
+    )
+
+    args.handler(args, manifest=_manifest())
+
+    assert seen["skip"] == ("docs/*.md", "WHOLE.md")
+
+
+def test_no_skip_option_reaches_the_verb_as_an_empty_tuple(clean_repo, monkeypatch):
+    seen: dict = {}
+
+    def _spy(repo_root, manifest, **kwargs):
+        seen.update(kwargs)
+        raise RuntimeError("stop here; only the arguments matter")
+
+    monkeypatch.setattr(seed_cli, "_run_update_verb", _spy)
+    args = _build_parser().parse_args(["seed", "update", "--repo-root", str(clean_repo)])
+
+    args.handler(args, manifest=_manifest())
+
+    assert seen["skip"] == ()
+
+
+def _hand_edited_managed_repo(repo: Path) -> Manifest:
+    """`WHOLE.md` is a managed `copied-managed` file that was hand-edited since
+    state recorded it, with the worktree clean."""
+    (repo / "WHOLE.md").write_text("hand-edited\n", encoding="utf-8")
+    write_state(
+        _seed_state(
+            managed=(
+                ManagedArtifact(
+                    id="whole",
+                    path="WHOLE.md",
+                    artifact_class="copied-managed",
+                    body_sha="abc12345",
+                    inserted_region_spans=(),
+                ),
+            )
+        ),
+        repo_root=repo,
+        never_write=NeverWrite(patterns=()),
+    )
+    _commit_all(repo)
+    return _manifest(_copied_managed("whole", "WHOLE.md"))
+
+
+def test_update_skip_through_argv_keeps_a_hand_edit_and_lists_the_skipped_artifact(clean_repo, capsys):
+    manifest = _hand_edited_managed_repo(clean_repo)
+
+    refused = _build_parser().parse_args(["seed", "update", "--repo-root", str(clean_repo)])
+    assert refused.handler(refused, manifest=manifest) == PreconditionFailure.exit_code == 3
+    capsys.readouterr()
+
+    args = _build_parser().parse_args(["seed", "update", "--repo-root", str(clean_repo), "--skip", "WHOLE.md"])
+    code = args.handler(args, manifest=manifest)
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "skipped (1):" in out
+    assert "whole (WHOLE.md): matched --skip 'WHOLE.md'" in out
+    assert (clean_repo / "WHOLE.md").read_text(encoding="utf-8") == "hand-edited\n"
+
+
+def test_update_run_skip_through_argv_applies_nothing_and_keeps_the_edit(clean_repo, capsys):
+    """`--run --yes` with the skip: no `--force`, nothing written over the edit.
+    The real (non-injected) commit would materialize `WHOLE.md` if its action
+    survived; it is skipped, so the file is byte-for-byte what the operator left."""
+    manifest = _hand_edited_managed_repo(clean_repo)
+    args = _build_parser().parse_args(
+        ["seed", "update", "--repo-root", str(clean_repo), "--run", "--yes", "--skip", "WHOLE.md"]
+    )
+
+    code = args.handler(args, manifest=manifest)
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "update: plan was empty; nothing to apply." in out
+    assert (clean_repo / "WHOLE.md").read_text(encoding="utf-8") == "hand-edited\n"
+
+
 def test_migration_offered_copied_seeded_renders_as_an_explicit_offer_never_matched_skip(
     clean_repo, monkeypatch, capsys
 ):
@@ -381,7 +509,9 @@ def test_migration_offered_copied_seeded_renders_as_an_explicit_offer_never_matc
         )
         return Plan(
             actions=(offer,),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -403,7 +533,9 @@ def test_render_update_plan_text_directly_proves_the_dw_fu_11_3_fix():
 
     plan = Plan(
         actions=(),
-        repo_fingerprint=RepoFingerprint(git_head=None, dirty=False, artifact_hashes=()),
+        repo_fingerprint=RepoFingerprint(
+            git_head=None, dirty=False, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+        ),
         skipped=(
             SkippedArtifact(
                 artifact_id="offer",
@@ -424,7 +556,9 @@ def test_render_update_plan_text_still_renders_an_ordinary_skip_pattern():
 
     plan = Plan(
         actions=(),
-        repo_fingerprint=RepoFingerprint(git_head=None, dirty=False, artifact_hashes=()),
+        repo_fingerprint=RepoFingerprint(
+            git_head=None, dirty=False, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+        ),
         skipped=(SkippedArtifact(artifact_id="x", target_path="X.md", pattern="X.md"),),
     )
 
@@ -453,7 +587,9 @@ def test_include_seeded_flag_reaches_the_verb(clean_repo, monkeypatch, capsys):
         )
         return Plan(
             actions=(offer,),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)

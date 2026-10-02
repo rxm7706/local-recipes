@@ -24,7 +24,13 @@ needed, and they belong to different lifetimes:
   contract ("rung 6 checks every `ManagedRecord` the caller supplies"), so
   the filtering has to happen on the caller's side of that call or not at
   all. It is not done inside `check_preconditions` deliberately -- see that
-  function's own docstring.
+  function's own docstring. It drops a record two ways: its artifact is in
+  `plan.skipped`, OR its path matches a skip PATTERN the caller passes. The
+  second is the one that matters for a hand-edited `copied-managed` file,
+  which `classify` marks `PRESENT_CONFORMANT` and therefore never gives an
+  action -- so it can never enter `plan.skipped`, and a skip that named only
+  `plan.skipped` was a silent no-op for exactly the file it was meant to
+  protect (Story 82.12).
 
 **Why `fnmatch.fnmatchcase`, deliberately identical to `fs._matches`.**
 A skip glob and a never-write glob are the same KIND of rule -- both say
@@ -55,9 +61,10 @@ uses for its own duplicated helpers.
 **Lexical here, resolution-based there -- a stated, guarded difference.**
 `apply_skips` matches an `Action.target_path` after a purely LEXICAL POSIX
 normalization (a leading `./` stripped, duplicate `/` collapsed); the
-never-write rung in `preconditions.py` matches the same action's path after
-`Path.resolve()` has made it repo-relative. The two therefore see the same
-string for every ordinary manifest path, and the normalization exists
+never-write rung in `preconditions.py` (via `fs.never_write_match`) matches the
+same action's path both as written (lexically normalized the same way) and
+after `Path.resolve()` has made it repo-relative. The two therefore see the
+same string for every ordinary manifest path, and the normalization exists
 precisely so the ONE cheap way they used to disagree is closed: without it,
 `target_path="./AGENTS.md"` was not skipped by `--skip AGENTS.md` while the
 never-write rung refused it naming `resolved: 'AGENTS.md'` -- so an operator
@@ -340,24 +347,28 @@ def apply_skips(plan: Plan, patterns: Sequence[str]) -> Plan:
     return dataclasses.replace(plan, actions=tuple(kept), repo_fingerprint=fingerprint, skipped=skipped)
 
 
-class _HasArtifactId(Protocol):
-    """The one attribute `managed_after_skips` needs.
+class _ManagedLike(Protocol):
+    """A managed record as `managed_after_skips` sees it: the two attributes it needs.
 
     A structural type rather than a `preconditions.ManagedRecord` import:
-    `preconditions` imports `first_match` from THIS module, so naming its
-    record type here would close an import cycle for the sake of a single
-    string field. Declared as a read-only property so a frozen dataclass
+    `preconditions` is the verbs-layer module that owns the record, so naming
+    its type here would couple this pure module to it for the sake of two
+    string fields. Declared as read-only properties so a frozen dataclass
     (which `ManagedRecord` is) satisfies it."""
 
     @property
     def artifact_id(self) -> str: ...
 
+    @property
+    def path(self) -> str: ...
 
-_RecordT = TypeVar("_RecordT", bound=_HasArtifactId)
+
+_RecordT = TypeVar("_RecordT", bound=_ManagedLike)
 
 
-def managed_after_skips(managed: Sequence[_RecordT], plan: Plan) -> tuple[_RecordT, ...]:
-    """`managed` without the records for artifacts `plan` has SKIPPED.
+def managed_after_skips(managed: Sequence[_RecordT], plan: Plan, patterns: Sequence[str] = ()) -> tuple[_RecordT, ...]:
+    """`managed` without the records for artifacts `plan` has SKIPPED, and
+    without those whose path matches one of `patterns`.
 
     The affordance that makes `--skip` able to protect a hand-edit. Rungs
     3-5 of `preconditions.check_preconditions` walk `plan.actions`, from
@@ -369,17 +380,42 @@ def managed_after_skips(managed: Sequence[_RecordT], plan: Plan) -> tuple[_Recor
     `--force` -- which discards EVERY hand-edit in the repo, including the
     one they were trying to protect.
 
-    Pure and total: preserves `managed`'s order, never mutates it, and
-    matches on `artifact_id` only (a `SkippedArtifact` and a `ManagedRecord`
-    for the same artifact may legitimately name different paths -- state
-    records where the artifact IS, the plan's action names where it WOULD
-    go). A record naming an artifact this plan never mentions is kept, as is
-    every record when `plan.skipped` is empty.
+    **Why it takes patterns.** `plan.skipped` only ever holds an artifact that
+    carried an `Action` (`apply_skips` MOVES an action there), and a
+    hand-edited `copied-managed` file never has one: `classify` marks it
+    `PRESENT_CONFORMANT` whatever its bytes say (P-07) and `build_plan` emits
+    actions only for `ABSENT`/`PRESENT_DIVERGENT`. A filter by `plan.skipped`
+    alone therefore left `--skip <that file's path>` a silent no-op, with
+    `--force` -- which discards every hand-edit -- as rung 6's only remaining
+    override. So a record is ALSO dropped when its `path` matches a pattern
+    the operator passed, by the identical lexical rule `apply_skips` applies
+    to an action's `target_path` (`_normalize_relative_posix`, then
+    `first_match`), so one `--skip` glob means the same thing to both.
+    `adopt` and `update` both pass their `--skip` patterns; a caller with no
+    patterns passes none and gets the `plan.skipped` filter alone.
+
+    Pure: reads no disk, preserves `managed`'s order, never mutates it, and
+    raises `UsageError` for a bad `patterns` (see below) even when `managed`
+    is empty. It matches a plan-skipped artifact on `artifact_id` only (a `SkippedArtifact`
+    and a `ManagedRecord` for the same artifact may legitimately name
+    different paths -- state records where the artifact IS, the plan's action
+    names where it WOULD go). A record naming an artifact this plan never
+    mentions and matching no pattern is kept, as is every record when
+    `plan.skipped` and `patterns` are both empty. `patterns` is validated by
+    the same `_require_patterns` as every other entry point here, so a bare
+    `str` or a blank entry raises `UsageError` rather than silently skipping
+    everything or nothing.
 
     Deliberately a caller-side filter rather than something
     `check_preconditions` does internally: rung 6's contract is that it
     checks every record it is handed, which is what lets a caller decide the
     question ("did the operator ask to leave this alone?") in the one place
     that actually knows the answer."""
+    normalized = _require_patterns(patterns)
     skipped_ids = {entry.artifact_id for entry in plan.skipped}
-    return tuple(record for record in managed if record.artifact_id not in skipped_ids)
+    return tuple(
+        record
+        for record in managed
+        if record.artifact_id not in skipped_ids
+        and first_match(normalized, _normalize_relative_posix(record.path)) is None
+    )

@@ -35,6 +35,7 @@ import pytest
 
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState, classify
+from pyforge.marshal.seed.errors import PreconditionFailure
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
     ArtifactClass,
@@ -209,6 +210,33 @@ def test_present_legacy_entry_produces_no_action_regardless_of_manifest_state(tm
     inventory = classify(manifest, tmp_path)
     plan = build_plan(manifest, inventory)
     assert plan.actions == ()
+
+
+def test_escaping_entry_gets_no_action_while_an_ordinary_absent_entry_still_does(tmp_path):
+    """Story 82.11 (DW-10-3-9): an entry whose path resolves outside the repo
+    (an in-repo symlink pointing out) used to classify ``absent`` and become an
+    ordinary action carrying the escaping path -- which made ``run_apply``
+    refuse the WHOLE plan. It is its own state now, so the plan holds no
+    action for it and every other entry is planned as before."""
+    outside = tmp_path.parent / f"{tmp_path.name}-outside"
+    outside.mkdir()
+    (outside / "target.txt").write_text("elsewhere\n")
+    (tmp_path / "escaper.txt").symlink_to(outside / "target.txt")
+    manifest = _manifest(
+        _whole_file("bad", "escaper.txt", ArtifactClass.COPIED_MANAGED),
+        _whole_file("good", "good.txt", ArtifactClass.COPIED_SEEDED),
+    )
+    inventory = classify(manifest, tmp_path)
+
+    plan = build_plan(manifest, inventory)
+
+    assert [classification.state for classification in inventory.classifications] == [
+        ArtifactState.ESCAPING,
+        ArtifactState.ABSENT,
+    ]
+    assert [action.artifact_id for action in plan.actions] == ["good"]
+    assert all("escaper.txt" not in action.target_path for action in plan.actions)
+    assert [artifact_id for artifact_id, _sha in plan.repo_fingerprint.artifact_hashes] == ["good"]
 
 
 def test_referenced_entry_never_gets_an_action_even_when_its_path_is_absent(tmp_path):
@@ -426,6 +454,23 @@ def test_load_plan_raises_value_error_naming_a_missing_key(tmp_path):
         load_plan(path)
 
 
+def test_load_plan_refuses_a_plan_json_written_before_the_repository_was_recorded(tmp_path):
+    """Story 82.12: such a file says nothing about which repository it was
+    built for, so it is a stale plan with a re-plan remedy -- not a
+    `ValueError`, and never silently loaded."""
+    path = tmp_path / "plan.json"
+    data = _sample_plan(tmp_path).to_json_dict()
+    del data["repo_fingerprint"]["repo_root"]
+    del data["repo_fingerprint"]["git_common_dir"]
+    path.write_text(json.dumps(data))
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        load_plan(path)
+
+    assert "stale-plan" in str(excinfo.value)
+    assert "re-run the plan" in excinfo.value.remedy
+
+
 def test_load_plan_raises_value_error_for_syntactically_invalid_json(tmp_path):
     path = tmp_path / "plan.json"
     path.write_text("{not valid json")
@@ -569,6 +614,146 @@ def test_fingerprint_drift_names_dirty_once_the_worktree_is_dirtied(tmp_path):
     drift = fingerprint_drift(plan, tmp_path)
     assert len(drift) == 1
     assert "dirty" in drift[0]
+
+
+# --- the repository identity (Story 82.12, DW-10-3-7) -----------------------
+
+
+def test_build_plan_records_the_resolved_root_and_no_git_directory_for_a_non_git_target(tmp_path):
+    fingerprint = _sample_plan(tmp_path).repo_fingerprint
+
+    assert fingerprint.repo_root == str(tmp_path.resolve())
+    assert fingerprint.git_common_dir is None
+
+
+def test_build_plan_records_the_git_common_directory_for_a_git_target(tmp_path):
+    _init_git_repo(tmp_path)
+
+    fingerprint = _sample_plan(tmp_path).repo_fingerprint
+
+    assert fingerprint.repo_root == str(tmp_path.resolve())
+    assert fingerprint.git_common_dir == str((tmp_path / ".git").resolve())
+
+
+def test_a_plan_for_one_empty_non_git_directory_is_stale_against_another(tmp_path):
+    """DW-10-3-7: both directories degrade to `git_head=None, dirty=True` and
+    hold nothing at the actioned path, so before the repository was recorded
+    nothing separated them and apply seeded the wrong directory."""
+    directory_a = tmp_path / "a"
+    directory_b = tmp_path / "b"
+    directory_a.mkdir()
+    directory_b.mkdir()
+    plan = _sample_plan(directory_a)
+    assert fingerprint_drift(plan, directory_a) == ()
+
+    drift = fingerprint_drift(plan, directory_b)
+
+    assert len(drift) == 1
+    assert drift[0].startswith("repo_root:")
+    assert str(directory_a.resolve()) in drift[0]
+    assert str(directory_b.resolve()) in drift[0]
+
+
+def test_a_plan_is_not_stale_against_its_own_repository_reached_through_a_symlink(tmp_path):
+    """The identity is the RESOLVED root, so a different spelling of the same
+    directory is not drift."""
+    real = tmp_path / "real"
+    real.mkdir()
+    alias = tmp_path / "alias"
+    alias.symlink_to(real, target_is_directory=True)
+    plan = _sample_plan(real)
+
+    assert fingerprint_drift(plan, alias) == ()
+
+
+def test_a_plan_built_in_one_worktree_is_stale_in_another_though_they_share_a_git_directory(tmp_path):
+    """Two worktrees of one clone share a git common directory, so only the
+    root separates them -- and `git` answers that directory as a relative path
+    in one and an absolute one in the other, so the comparison is only
+    meaningful if each is resolved against its own root first."""
+    main = tmp_path / "main"
+    main.mkdir()
+    _init_git_repo(main)
+    linked = tmp_path / "linked"
+    _git(main, "worktree", "add", "-b", "other", str(linked))
+    plan = _sample_plan(main)
+    assert fingerprint_drift(plan, main) == ()
+
+    drift = fingerprint_drift(plan, linked)
+
+    assert [line.split(":", 1)[0] for line in drift] == ["repo_root"]
+    assert plan.repo_fingerprint.git_common_dir == _sample_plan(linked).repo_fingerprint.git_common_dir
+
+
+def test_a_plan_is_stale_against_a_different_clone_even_when_every_other_field_agrees(tmp_path):
+    """The common-directory leg on its own: give the plan clone B's root and
+    HEAD, and the one thing left to separate it from B is clone A's git
+    directory."""
+    clone_a = tmp_path / "a"
+    clone_b = tmp_path / "b"
+    clone_a.mkdir()
+    clone_b.mkdir()
+    _init_git_repo(clone_a)
+    _init_git_repo(clone_b)
+    plan = _sample_plan(clone_a)
+    head_b = _git(clone_b, "rev-parse", "HEAD").stdout.strip()
+    plan = dataclasses.replace(
+        plan,
+        repo_fingerprint=dataclasses.replace(plan.repo_fingerprint, repo_root=str(clone_b.resolve()), git_head=head_b),
+    )
+
+    drift = fingerprint_drift(plan, clone_b)
+
+    assert len(drift) == 1
+    assert drift[0].startswith("git_common_dir:")
+    assert str((clone_a / ".git").resolve()) in drift[0]
+
+
+def test_the_repository_identity_is_reported_before_every_other_drift(tmp_path):
+    directory_a = tmp_path / "a"
+    directory_b = tmp_path / "b"
+    directory_a.mkdir()
+    directory_b.mkdir()
+    _init_git_repo(directory_b)
+    plan = _sample_plan(directory_a)
+
+    drift = fingerprint_drift(plan, directory_b)
+
+    assert drift[0].startswith("repo_root:")
+    assert any(line.startswith("git_head:") for line in drift)
+
+
+def test_a_subdirectory_of_a_working_tree_records_the_trees_git_directory(tmp_path):
+    """`git rev-parse --git-common-dir` answers relative to where it runs
+    (`../.git` from `sub/`), so the identity resolves it against `repo_root`
+    rather than the process's cwd -- and the parent working tree, another root
+    of the same clone, is told apart by the root alone."""
+    _init_git_repo(tmp_path)
+    sub = tmp_path / "sub"
+    sub.mkdir()
+
+    plan = _sample_plan(sub)
+
+    assert plan.repo_fingerprint.repo_root == str(sub.resolve())
+    assert plan.repo_fingerprint.git_common_dir == str((tmp_path / ".git").resolve())
+    assert fingerprint_drift(plan, sub) == ()
+    assert [line.split(":", 1)[0] for line in fingerprint_drift(plan, tmp_path)] == ["repo_root"]
+
+
+def test_a_plan_built_before_git_init_is_stale_against_the_same_directory_after_it(tmp_path):
+    """Same root, so the git directory is the only identity that moved: a plan
+    describing a directory that was not a repository is not a plan for it once
+    it is one."""
+    plan = _sample_plan(tmp_path)
+    assert plan.repo_fingerprint.git_common_dir is None
+    assert fingerprint_drift(plan, tmp_path) == ()
+
+    _init_git_repo(tmp_path)
+    drift = fingerprint_drift(plan, tmp_path)
+
+    assert drift[0].startswith("git_common_dir:")
+    assert str((tmp_path / ".git").resolve()) in drift[0]
+    assert not any(line.startswith("repo_root:") for line in drift)
 
 
 def test_fingerprint_drift_names_the_artifact_id_when_an_actioned_file_is_hand_edited(tmp_path):
@@ -880,11 +1065,14 @@ def test_a_whole_file_entry_is_never_suppressed_by_an_empty_pending_set(tmp_path
 
 
 def test_a_manifest_id_the_opt_out_grammar_cannot_spell_still_plans(tmp_path):
-    """`ManifestEntry` requires only a non-blank `id`, so an id carrying an
-    interior space is legal while `state.opted_out`'s grammar cannot spell
-    it. Such an entry must plan exactly as it did before this story -- never
-    raise the `ValueError` `opt_out_key` reserves for a caller minting a
-    key.
+    """`ManifestEntry` used to require only a non-blank `id`, so an id
+    carrying an interior space was legal while `state.opted_out`'s grammar
+    cannot spell it (Story 82.13 closed that at the manifest and the schema:
+    such an id no longer loads). `build_plan` keeps its own answer for a
+    value built around the manifest -- the entry here has its `id` overwritten
+    after construction -- and such an entry must plan exactly as it did
+    before: never raise the `ValueError` `opt_out_key` reserves for a caller
+    minting a key.
 
     The key set here holds an admissible key for an unrelated artifact. It
     used to hold `"has a space#tiers"` -- the very key the grammar refuses
@@ -894,7 +1082,9 @@ def test_a_manifest_id_the_opt_out_grammar_cannot_spell_still_plans(tmp_path):
     is about the ENTRY's id, not the set's contents: `_is_opted_out` must
     answer "not opted out" for a pair it cannot spell rather than raise,
     and it still does."""
-    manifest = _manifest(_hybrid("has a space", "CLAUDE.md", "tiers"))
+    entry = _hybrid("placeholder", "CLAUDE.md", "tiers")
+    object.__setattr__(entry, "id", "has a space")
+    manifest = _manifest(entry)
     inventory = classify(manifest, tmp_path)
 
     plan = build_plan(manifest, inventory, opted_out=frozenset({"unrelated#tiers"}))

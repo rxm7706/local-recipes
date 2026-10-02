@@ -138,9 +138,37 @@ special for it (the check is entirely on the CLI side, against
 ``Plan.skipped`` this module already produces via ``migrate.compose``
 unchanged).
 
+**Rung 6, ``Plan.skipped`` and ``--skip`` (Story 82.12).** Those same
+migration-offered ``copied-seeded`` entries sit in ``Plan.skipped`` with no
+action, but their ``state.managed[]`` records were still handed to
+``check_preconditions``'s rung 6, which would refuse a hand-edit of a file this
+run was never going to write. ``update`` also takes ``--skip GLOB`` (the same
+repeatable option ``adopt`` has): ``skips.apply_skips`` moves a matching action
+-- a hand-edited managed file's wholesale-regenerate action -- into
+``Plan.skipped`` so it is never applied, and the records go through
+``skips.managed_after_skips`` with the plan AND the patterns, so rung 6 is not
+asked about an artifact the plan skipped or whose path the operator named. Both
+halves ship together: dropping the record without moving the action would let
+``update`` overwrite the edit with no ``--force``. A managed record neither the
+plan nor a pattern names is still checked -- where the wholesale-regenerate
+pass emits an action for it, a refusal there guards a real overwrite.
+
+**Opt-outs (Story 82.13).** FR-112 makes deleting a region's markers a
+permanent opt-out, and ``update`` is the verb that would otherwise undo it:
+``_wholesale_regenerate_actions`` names every declared region of a managed
+hybrid record. A region whose markers were deleted is only a DERIVED opt-out
+until something records it, so the run records every derived pair in memory
+(``_state_with_opt_outs``) before it plans and gives ONE answer to the plan
+(``frozenset(state.opted_out)`` to ``build_plan``), to the wholesale pass (an
+opted-out region is never named, and a hybrid record with every region opted
+out gets no action) and to rung 6 (a recorded region absent from its file is no
+divergence). The recorded state is written only where state is written today.
+
 **Ordering** (the Always bullets' own sequencing, restated as code):
-resolve (``_manifest_for_update``) -> detect (``classify``) -> plan (build +
-migrate + wholesale, merged via ``_merge_plan_sources``) -> preconditions
+resolve (``_manifest_for_update``) -> detect (``classify``) -> record derived
+opt-outs in memory (``_state_with_opt_outs``) -> plan (build +
+migrate + wholesale, merged via ``_merge_plan_sources``, then ``--skip``
+applied by ``skips.apply_skips``) -> preconditions
 (``verbs.preconditions.check_preconditions``, BEFORE any write, ``dry_run=
 not run``) -> write ``.marshal/plan.json`` (ALWAYS) -> return early for a
 dry-run -> confirm (only when ``run and not yes``; a decline returns without
@@ -180,8 +208,10 @@ from ..detect.inventory import (
     Inventory,
     classify,
     effective_never_write,
+    escape_findings,
     writable_exemptions,
 )
+from ..detect.optout import classify_regions, opt_outs_to_record, opted_out_regions
 from ..detect.referenced_deps import referenced_dep_findings
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
@@ -192,18 +222,20 @@ from ..plan.build import build_plan, default_plan_path, write_plan
 from ..plan.types import Action, Plan, RepoFingerprint
 from ..regions.apply import insert_region, substitute_region
 from ..regions.markers import MarkerError
-from ..regions.parse import RegionParseError, parse_regions
+from ..regions.parse import RegionParseError, RegionSpan, parse_regions
 from ..state import (
     LegacyArtifact,
     ManagedArtifact,
     RegionSpanRecord,
     SeedState,
     read_state,
+    record_opt_out,
     seed_model_version,
     utc_timestamp,
     write_state,
 )
 from .preconditions import ManagedRecord, check_preconditions
+from .skips import apply_skips, managed_after_skips
 
 # The classes `_wholesale_regenerate_actions` ever fires for -- FR-98/FR-99's
 # own named classes. `copied-seeded` and `referenced` are deliberately
@@ -237,6 +269,9 @@ class UpdateResult:
     applied: tuple[str, ...] | None
     declined: bool
     referenced_dep_findings: tuple[Finding, ...] = ()
+    #: Story 82.11: every manifest entry whose path resolves outside the repo --
+    #: no action is planned for it, every other action applies.
+    escape_findings: tuple[Finding, ...] = ()
 
 
 def _git_status_porcelain(repo_root: Path, *extra_pathspec: str) -> str | None:
@@ -315,30 +350,37 @@ def _read_text_or_blank(target: Path) -> str:
 def _region_shas_for_record(
     artifact: ManagedArtifact, entry: ManifestEntry, repo_root: Path
 ) -> tuple[tuple[str, str | None], ...]:
-    """``ManagedRecord.region_shas`` for one region-bearing ``artifact`` --
-    review finding, HIGH/blocking: ``state/store.py``'s own pre-existing
-    schema limit means ``artifact.inserted_region_span`` names AT MOST ONE
-    of ``entry.regions`` (the packaged manifest's own ``AGENTS.md``/
-    ``CLAUDE.md`` entries declare 3/2), even though a real ``adopt`` inserts
+    """``ManagedRecord.region_shas`` for one region-bearing ``artifact``.
+
+    Every recorded span contributes its REAL ``(name, body_sha)`` -- real
+    hand-edit protection for each region state attests to (Story 82.13: a
+    hybrid artifact records one span per installed region, each with its own
+    hash).
+
+    The rest of this function is for a state file written BEFORE 82.13
+    (review finding, HIGH/blocking at the time): that shape recorded AT MOST
+    ONE of ``entry.regions`` (the packaged manifest's own ``AGENTS.md``/
+    ``CLAUDE.md`` entries declare 3/2) even though a real ``adopt`` inserts
     every declared region into the file. Returning only that ONE recorded
-    pair here made rung 6 (``verbs/preconditions.py::_region_divergences``)
-    see every OTHER declared-but-present region as "present in the file but
+    pair made rung 6 (``verbs/preconditions.py::_region_divergences``) see
+    every OTHER declared-but-present region as "present in the file but
     never recorded in state" -- a HARD divergence -- refusing every
     ``update`` invocation (not gated by ``dry_run``, only ``force`` skips
-    rung 6) against ANY multi-region hybrid entry, unconditionally.
+    rung 6) against ANY multi-region hybrid entry, unconditionally. A state
+    written since records every installed region, so for it this loop adds
+    nothing; it stays for the old shape, which every existing repo carries
+    until its next write, and for a region the file holds that the tool never
+    recorded.
 
     The fix stays entirely inside this module (never ``preconditions.py``/
-    ``adopt.py``): the genuinely-recorded region keeps its REAL recorded
-    sha unchanged -- real hand-edit protection, not weakened. For every
-    OTHER region ``entry`` declares, this reads the target's CURRENT
-    on-disk text, parses it, and uses the CURRENT body hash of that region
-    (if actually present) as its "recorded" value -- rung 6 then sees it as
-    accounted-for and non-divergent. This is a real, stated bound, not a
-    silent weakening: state genuinely has no recorded truth for a region it
-    never tracked (the same pre-existing ``state/store.py`` limitation
-    ``verbs/adopt.py`` already lives with), so a hand-edit to one of THOSE
-    regions is not caught by rung 6 -- only the one region state actually
-    tracks gets real protection, exactly as before this fix.
+    ``adopt.py``). For every declared region with NO recorded span, this reads
+    the target's CURRENT on-disk text, parses it, and uses the CURRENT body
+    hash of that region (if actually present) as its "recorded" value -- rung 6
+    then sees it as accounted-for and non-divergent. This is a real, stated
+    bound, not a silent weakening: state genuinely has no recorded truth for a
+    region it never tracked, so a hand-edit to one of THOSE regions is not
+    caught by rung 6 -- only a region state actually tracks gets real
+    protection.
 
     A region ``entry`` declares but that is not actually present in the
     current file is left out entirely (no synthetic pair) -- rung 6 raises
@@ -352,10 +394,9 @@ def _region_shas_for_record(
     own divergence through its own path -- this helper's job is only to
     stop a MULTI-region entry from refusing on regions it cannot itself
     attest to, never to duplicate rung 6's own parse-failure handling."""
-    recorded_name = artifact.inserted_region_span.name
-    recorded_sha = artifact.body_sha
-    region_shas: list[tuple[str, str | None]] = [(recorded_name, recorded_sha)]
-    other_names = [region.name for region in entry.regions if region.name != recorded_name]
+    region_shas: list[tuple[str, str | None]] = [(span.name, span.body_sha) for span in artifact.inserted_region_spans]
+    recorded_names = {name for name, _sha in region_shas}
+    other_names = [region.name for region in entry.regions if region.name not in recorded_names]
     if not other_names:
         return tuple(region_shas)
     current_text = _read_text_or_blank(repo_root / artifact.path)
@@ -372,7 +413,12 @@ def _region_shas_for_record(
     return tuple(region_shas)
 
 
-def _managed_records(state: SeedState | None, manifest: Manifest, repo_root: Path) -> tuple[ManagedRecord, ...]:
+def _managed_records(
+    state: SeedState | None,
+    manifest: Manifest,
+    repo_root: Path,
+    escaping_ids: frozenset[str] | set[str] = frozenset(),
+) -> tuple[ManagedRecord, ...]:
     """Mirrors ``verbs/adopt.py``'s identical helper, EXTENDED (review
     finding): translates ``state.managed`` into rung 6's own input shape,
     excluding a record whose manifest entry has since been retired or
@@ -380,14 +426,23 @@ def _managed_records(state: SeedState | None, manifest: Manifest, repo_root: Pat
     docstring) -- and, for a region-bearing record, representing every
     OTHER region the CURRENT manifest entry declares via
     ``_region_shas_for_record`` (see that function's own docstring for why
-    ``adopt.py``'s single-recorded-region shape is not enough here)."""
+    ``adopt.py``'s recorded-spans-only shape is not enough for a state file
+    written before Story 82.13).
+
+    A record in ``escaping_ids`` (its path resolves outside the repo, Story
+    82.11) is dropped BEFORE anything is read for it: ``_region_shas_for_record``
+    reads the file of any region state does not record, and an escaped target
+    is never read -- for a state in the pre-82.13 one-span shape too, where
+    every sibling of the one recorded region is such a region."""
     if state is None:
         return ()
     entries_by_id = {entry.id: entry for entry in manifest.entries}
     records: list[ManagedRecord] = []
     for artifact in state.managed:
+        if artifact.id in escaping_ids:
+            continue
         entry = entries_by_id.get(artifact.id)
-        if artifact.inserted_region_span is not None:
+        if artifact.inserted_region_spans:
             if entry is None or entry.format is None:
                 continue
             records.append(
@@ -403,8 +458,34 @@ def _managed_records(state: SeedState | None, manifest: Manifest, repo_root: Pat
     return tuple(records)
 
 
+def _state_with_opt_outs(
+    manifest: Manifest, state: SeedState | None, repo_root: Path, escaping_ids: set[str]
+) -> tuple[SeedState | None, frozenset[tuple[str, str]]]:
+    """Mirrors ``verbs/adopt.py``'s identical helper verbatim: ``state`` with
+    every DERIVED opt-out recorded in memory, and every ``(artifact_id,
+    region)`` the repository has opted out of -- recorded or derived -- as
+    pairs (Story 82.13, ``DW-FU-8-5-5``/``DW-FU-8-5-6``). See that helper for
+    the sequencing contract it applies and why nothing is written here. Only
+    hybrid entries, and never one in ``escaping_ids``; each file is read with
+    this module's own ``_read_text_or_blank``."""
+    if state is None:
+        return None, frozenset()
+    hybrids = tuple(
+        (entry, _read_text_or_blank(repo_root / entry.path))
+        for entry in manifest.entries
+        if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION and entry.id not in escaping_ids
+    )
+    for entry, text in hybrids:
+        for artifact_id, region in opt_outs_to_record(classify_regions(entry, text, state), state):
+            state = record_opt_out(state, artifact_id, region)
+    return state, opted_out_regions(hybrids, state)
+
+
 def _wholesale_regenerate_actions(
-    state: SeedState | None, manifest: Manifest, inventory: Inventory
+    state: SeedState | None,
+    manifest: Manifest,
+    inventory: Inventory,
+    opted_out: frozenset[tuple[str, str]] = frozenset(),
 ) -> tuple[tuple[Action, ...], tuple[tuple[str, str], ...]]:
     """FR-98/FR-99's own new pass (see the module docstring's opening
     section): one ``Action`` per ``state.managed[]`` record whose CURRENT
@@ -425,12 +506,29 @@ def _wholesale_regenerate_actions(
     (retired) is skipped -- there is nothing left to regenerate it as,
     mirroring ``_managed_records``'s own identical "stale record" tolerance.
 
-    A hybrid entry's ``chosen_anchor`` names EVERY declared region, paired
-    with its manifest ``anchor``'s own first matcher (unused positionally by
-    this module's own commit dispatcher -- see the module docstring) --
-    unlike ``build_plan``'s own ``_chosen_anchor``, which only ever names the
-    NOT-YET-present ones: FR-99 requires every declared region to be
-    refreshed, present or not.
+    A hybrid entry's ``chosen_anchor`` names every declared region that is NOT
+    opted out, paired with its manifest ``anchor``'s own first matcher (unused
+    positionally by this module's own commit dispatcher -- see the module
+    docstring) -- unlike ``build_plan``'s own ``_chosen_anchor``, which only
+    ever names the NOT-YET-present ones: FR-99 requires every declared region
+    to be refreshed, present or not.
+
+    **A region in ``opted_out`` (``(artifact_id, region)`` pairs; Story 82.13,
+    ``DW-FU-11-4``'s opted-out half) is never named**, and a hybrid record whose
+    every declared region is in it gets no action and no hash at all. That last
+    case is reached only for a state holding BOTH the opt-out key and the
+    record's spans (a hand-written or pre-recording one): in a real run
+    ``_state_with_opt_outs`` has already recorded the derived pairs, and
+    recording drops the record with its last span, so this pass never sees it and
+    the written state omits the artifact. Where it is reached the record is
+    carried over untouched, so rung 6 and ``check`` still see it.
+    FR-112 makes deleting a region's markers a PERMANENT opt-out until an
+    explicit reinstate, and the wholesale pass is the one path that would
+    otherwise insert the deleted region again, silently and with no ``--force``
+    prompt: before per-region state a recorded opt-out dropped the whole record
+    and this pass skipped the artifact, and with a sibling span keeping the
+    record alive it would have named the region. Only OPTED-OUT regions change;
+    ``state.skips`` and the ``skips`` half of ``DW-FU-11-4`` are untouched.
 
     Returns ``((), ())`` when ``state is None`` (nothing has been adopted,
     so ``state.managed`` is empty) or when no record qualifies -- the
@@ -438,18 +536,32 @@ def _wholesale_regenerate_actions(
     if state is None:
         return (), ()
     entries_by_id = {entry.id: entry for entry in manifest.entries}
+    escaping_ids = {escape.entry_id for escape in inventory.escaping}
     actions: list[Action] = []
     hashes: list[tuple[str, str]] = []
     for record in state.managed:
         entry = entries_by_id.get(record.id)
         if entry is None or entry.artifact_class not in _WHOLESALE_CLASSES:
             continue
+        if entry.id in escaping_ids:
+            # Story 82.11: a previously managed entry whose path has since
+            # become a symlink pointing outside the repo. No action, and its
+            # escaped target is never read or hashed below -- the entry is
+            # reported through `escape_findings` instead of refusing the whole
+            # plan at rung 3.
+            continue
         chosen_anchor: tuple[tuple[str, str | None], ...] = ()
         is_hybrid = entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION
         if is_hybrid:
-            chosen_anchor = tuple(
-                (region.name, region.anchor[0] if region.anchor else None) for region in entry.regions
-            )
+            wanted = tuple(region for region in entry.regions if (entry.id, region.name) not in opted_out)
+            if not wanted:
+                # Every declared region is opted out: nothing to regenerate, and
+                # the record stays exactly as it is. Reached only for a state
+                # holding both the opt-out key and the record's spans; in a real
+                # run recording a derived opt-out has already dropped the record
+                # (see this function's docstring).
+                continue
+            chosen_anchor = tuple((region.name, region.anchor[0] if region.anchor else None) for region in wanted)
         # FR-99 (only the marked span is replaced, never the whole file) is
         # a claim about a REGION -- it does not apply to a whole-file class
         # (review finding), so the rationale cites it only for the hybrid
@@ -815,57 +927,140 @@ def _read_materialized_text(target: Path, artifact_id: str) -> str:
         ) from exc
 
 
-def _managed_artifact_after_apply(action: Action, entry: ManifestEntry, repo_root: Path) -> ManagedArtifact:
+def _hybrid_record(
+    entry: ManifestEntry, text: str, spans: Mapping[str, RegionSpan], *, named: set[str], claim_every_present: bool
+) -> ManagedArtifact | None:
+    """The ``ManagedArtifact`` for a hybrid ``entry`` whose file now reads
+    ``text`` (``spans``, parsed from it): one ``RegionSpanRecord`` per declared
+    region present in the file, in declared order, each with its own offsets and
+    the ``hash_content`` of its body. A region is claimed when ``named`` holds
+    it or ``claim_every_present`` says the tool installed this file; ``None``
+    when that leaves nothing, because a hybrid claim with no span is invalid and
+    an artifact with no region of its own is not claimed (Story 82.13)."""
+    recorded_spans = tuple(
+        RegionSpanRecord(
+            name=region.name,
+            start=spans[region.name].body_span[0],
+            end=spans[region.name].body_span[1],
+            body_sha=hash_content(region_body_text(text, spans[region.name])),
+        )
+        for region in entry.regions
+        if region.name in spans and (claim_every_present or region.name in named)
+    )
+    if not recorded_spans:
+        return None
+    return ManagedArtifact(
+        id=entry.id,
+        path=entry.path,
+        artifact_class=entry.artifact_class.value,
+        body_sha=recorded_spans[0].body_sha,
+        inserted_region_spans=recorded_spans,
+    )
+
+
+def _carried_hybrid_record(
+    prior: ManagedArtifact, entry: ManifestEntry | None, repo_root: Path
+) -> ManagedArtifact | None:
+    """The record for a hybrid artifact the plan did NOT touch but whose record
+    the run's in-memory opt-out recording dropped (Story 82.13): a state in the
+    pre-82.13 one-span shape whose only recorded region's markers were deleted,
+    while its siblings are still in the file and a ``--skip`` (or a plan with
+    nothing to write there) left the artifact alone. Without it the siblings
+    would silently lose their claim, where the baseline carried the record over.
+
+    ``prior`` is the record as read. Same rule as ``_managed_artifact_after_apply``
+    for a replaced record: every declared region present in the file is claimed
+    at its CURRENT hash (nothing was rewritten), and ``None`` when none is -- the
+    caller omits the artifact. ``None`` too for an entry that is gone from the
+    manifest, is not hybrid, or whose recorded ``path`` moved (that record
+    describes another file). The caller never offers an escaping entry: its path
+    is not read."""
+    if (
+        entry is None
+        or entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION
+        or not prior.inserted_region_spans
+    ):
+        return None
+    assert entry.format is not None
+    text = _read_text_or_blank(repo_root / entry.path)
+    spans = {span.name: span for span in parse_regions(text, entry.format)}
+    return _hybrid_record(entry, text, spans, named=set(), claim_every_present=prior.path == entry.path)
+
+
+def _carried_back_records(
+    state_as_read: SeedState | None,
+    state: SeedState | None,
+    touched_ids: frozenset[str],
+    escaping_ids: set[str],
+    entries_by_id: Mapping[str, ManifestEntry],
+    repo_root: Path,
+) -> tuple[ManagedArtifact, ...]:
+    """Every record of ``state_as_read`` that the in-memory ``state`` no longer
+    holds (recording a derived opt-out dropped it), the plan did not touch and
+    that is not an escaping entry -- rebuilt by ``_carried_hybrid_record``, so a
+    hybrid artifact's present siblings keep their claim. An escaping entry is
+    never read (Story 82.11); in practice the opt-out recording skips it too, so
+    its record is never dropped, and the check here keeps that true on its own."""
+    if state_as_read is None:
+        return ()
+    held = {record.id for record in state.managed} if state is not None else set()
+    rebuilt = (
+        _carried_hybrid_record(prior, entries_by_id.get(prior.id), repo_root)
+        for prior in state_as_read.managed
+        if prior.id not in held and prior.id not in touched_ids and prior.id not in escaping_ids
+    )
+    return tuple(record for record in rebuilt if record is not None)
+
+
+def _managed_artifact_after_apply(
+    action: Action, entry: ManifestEntry, repo_root: Path, prior: ManagedArtifact | None = None
+) -> ManagedArtifact | None:
     """Mirrors ``verbs/adopt.py``'s identical helper -- re-reads the
     JUST-MATERIALIZED target from disk rather than trusting anything the
     ``commit`` callback might have returned (it returns nothing), via
     ``_read_materialized_text`` (review finding: a guarded read, not a bare
-    ``target.read_text()``)."""
+    ``target.read_text()``).
+
+    A hybrid entry records every declared region that is present in the file
+    after the write when ``prior`` -- the record this one replaces, from the
+    state AS READ, while it describes the same ``path`` -- exists, and
+    otherwise only the regions ``action.chosen_anchor`` named; each with its
+    own offsets and body hash (Story 82.13; see ``verbs/adopt.py``'s helper for
+    the full reasoning, including the pass-2 wedge an old-shape record caused).
+    ``update``'s own wholesale-regenerate ``chosen_anchor`` names every
+    declared region that is not opted out, so a record in the pre-82.13
+    one-span shape is rewritten to the full set of those here, and an
+    opted-out region (its markers are gone) is never recorded.
+
+    ``InternalError`` when a region the action NAMED is absent after the write;
+    ``None`` when nothing is named and no declared region is present -- the
+    artifact is no longer claimed and the caller omits it from state."""
     target = repo_root / action.target_path
     if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
         assert entry.format is not None
         text = _read_materialized_text(target, entry.id)
         spans = {span.name: span for span in parse_regions(text, entry.format)}
-        if not action.chosen_anchor:
-            return ManagedArtifact(
-                id=entry.id,
-                path=entry.path,
-                artifact_class=entry.artifact_class.value,
-                body_sha=hash_content(text),
-                inserted_region_span=None,
-            )
-        # `state/store.py`'s own pre-existing schema limit: `ManagedArtifact`
-        # carries at most ONE `inserted_region_span`, so this module records
-        # the first declared region, matching `verbs/adopt.py`'s identical
-        # limitation -- `update`'s own wholesale-regenerate `chosen_anchor`
-        # names EVERY declared region (unlike adopt's), but the recorded
-        # state can still only ever hold one.
-        region_name = action.chosen_anchor[0][0]
-        span = spans.get(region_name)
-        if span is None:
+        named = {name for name, _anchor in action.chosen_anchor}
+        missing = named - spans.keys()
+        if missing:
             raise InternalError(
-                f"region {region_name!r} was not found in {entry.path!r} immediately after update",
+                f"managed region(s) {sorted(missing)!r} of {entry.path!r} were not found immediately after"
+                f" update (action named {sorted(named)!r})",
                 remedy=(
                     "this indicates the region write silently failed to insert/substitute"
                     " the region it was asked to -- a broken installation, not a problem"
                     " with the repository being updated"
                 ),
             )
-        body = region_body_text(text, span)
-        return ManagedArtifact(
-            id=entry.id,
-            path=entry.path,
-            artifact_class=entry.artifact_class.value,
-            body_sha=hash_content(body),
-            inserted_region_span=RegionSpanRecord(name=span.name, start=span.body_span[0], end=span.body_span[1]),
-        )
+        installed_by_the_tool = prior is not None and prior.path == entry.path
+        return _hybrid_record(entry, text, spans, named=named, claim_every_present=installed_by_the_tool)
     content = _read_materialized_text(target, entry.id)
     return ManagedArtifact(
         id=entry.id,
         path=entry.path,
         artifact_class=entry.artifact_class.value,
         body_sha=hash_content(content),
-        inserted_region_span=None,
+        inserted_region_spans=(),
     )
 
 
@@ -893,6 +1088,7 @@ def _build_state_after_apply(
     *,
     plan: Plan,
     state: SeedState,
+    state_as_read: SeedState | None,
     inventory: Inventory,
     entries_by_id: dict[str, ManifestEntry],
     repo_root: Path,
@@ -912,14 +1108,39 @@ def _build_state_after_apply(
     registry.chain`` either found the repo already there or successfully
     walked every step to it. ``migrations_applied`` gains every migration
     JUST applied this run (``migrations``'s own ``to_version``s), unioned
-    with what was already recorded, sorted by parsed version."""
+    with what was already recorded, sorted by parsed version.
+
+    Two states are in play (Story 82.13, review pass 2; see ``verbs/adopt.py``'s
+    builder). ``state`` is the run's in-memory state, WITH every derived opt-out
+    recorded: it supplies the records carried over untouched and ``opted_out``.
+    ``state_as_read`` is the state exactly as ``read_state`` returned it and
+    supplies the REPLACED records, because recording an opt-out drops a hybrid
+    record's span -- the whole record, for a state in the pre-82.13 one-span
+    shape -- and the siblings of a deleted region would have nothing left to be
+    claimed by. A record ``_managed_artifact_after_apply`` returns ``None`` for
+    (every region deleted, nothing named) is omitted: the artifact is no longer
+    claimed.
+
+    A hybrid record the in-memory recording dropped that the plan did not touch
+    (a ``--skip``, an empty action) is rebuilt by ``_carried_back_records`` from the
+    siblings still in the file, so it does not silently leave state."""
     touched_ids = frozenset(action.artifact_id for action in plan.actions)
     carried_over = tuple(record for record in state.managed if record.id not in touched_ids)
-    new_records = tuple(
-        _managed_artifact_after_apply(action, _entry_or_raise(entries_by_id, action.artifact_id), repo_root)
+    carried_back = _carried_back_records(
+        state_as_read, state, touched_ids, {escape.entry_id for escape in inventory.escaping}, entries_by_id, repo_root
+    )
+    prior_by_id = {record.id: record for record in state_as_read.managed} if state_as_read is not None else {}
+    built = (
+        _managed_artifact_after_apply(
+            action,
+            _entry_or_raise(entries_by_id, action.artifact_id),
+            repo_root,
+            prior_by_id.get(action.artifact_id),
+        )
         for action in plan.actions
     )
-    managed = tuple(sorted((*carried_over, *new_records), key=lambda record: record.id))
+    new_records = tuple(record for record in built if record is not None)
+    managed = tuple(sorted((*carried_over, *carried_back, *new_records), key=lambda record: record.id))
     legacy = tuple(
         LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of) for record in inventory.legacy
     )
@@ -948,6 +1169,7 @@ def run_update(
     run: bool = False,
     force: bool = False,
     include_seeded: bool = False,
+    skip: Sequence[str] = (),
     yes: bool = False,
     confirm: Callable[[], bool],
     template_path: Path | str | None = None,
@@ -966,6 +1188,17 @@ def run_update(
     ``--force --run`` relies on for FR-101's explicit recopy confirmation
     (module docstring's own paragraph): there is no second, force-specific
     prompt.
+
+    ``skip`` is ``run_adopt``'s own glob list (``--skip``, Story 82.12): each
+    pattern is matched against the merged plan's action targets by
+    ``skips.apply_skips`` (a matching action moves into ``plan.skipped`` and is
+    never applied) and against every managed record's path by
+    ``skips.managed_after_skips`` (so rung 6 is not asked about it). Both
+    halves matter: a hand-edited managed file has a wholesale-regenerate
+    action, and dropping only its record from rung 6 would let ``update``
+    overwrite the edit without ``--force``. ``update`` does not write the
+    pattern into ``state.skips`` -- state carries it unchanged, as it always
+    has.
 
     ``template_path``/``commit`` are the identical test-injection seams
     ``run_adopt`` establishes, for the identical reason (exercising the REAL
@@ -986,7 +1219,23 @@ def run_update(
     filtered_manifest = _manifest_for_update(manifest)
     ref_findings = referenced_dep_findings(filtered_manifest, repo_root)
     state = read_state(repo_root)
+    # The state exactly as read: the post-apply state takes the records it
+    # REPLACES from here, after `state` below has had derived opt-outs recorded
+    # (and, for an old-shape record, been stripped of it).
+    state_as_read = state
     inventory = classify(filtered_manifest, repo_root)
+    escapes = escape_findings(inventory)
+    # Rung 6 refuses a record whose path does not resolve inside the repo, so a
+    # previously managed entry that is now an escaping symlink would still
+    # refuse the whole run there (Story 82.11) -- it is already reported in
+    # `escape_findings` and planned for nothing, so it is neither handed to
+    # rung 6 nor read for opt-outs or for the hashes of its unrecorded regions.
+    escaping_ids = {escape.entry_id for escape in inventory.escaping}
+    # From here `state` is the run's state WITH the derived opt-outs recorded
+    # (in memory; see `_state_with_opt_outs`), so the plan, the wholesale pass,
+    # rung 6 and the state this run writes all read the one opt-out set
+    # (Story 82.13).
+    state, opted_out_pairs = _state_with_opt_outs(filtered_manifest, state, repo_root, escaping_ids)
 
     never_write = fs.NeverWrite(
         patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))),
@@ -1032,7 +1281,9 @@ def run_update(
     )
     migration_hashes = _migration_action_hashes(repo_root, migration_plan.actions)
 
-    wholesale_actions_raw, wholesale_hashes_raw = _wholesale_regenerate_actions(state, filtered_manifest, inventory)
+    wholesale_actions_raw, wholesale_hashes_raw = _wholesale_regenerate_actions(
+        state, filtered_manifest, inventory, opted_out_pairs
+    )
     # Symmetric exclusion: a migration this run ALREADY claims an id (in its
     # own actions or its own `copied-seeded` offers) supersedes the generic
     # "refresh to latest template" wholesale-regenerate treatment for that
@@ -1056,13 +1307,31 @@ def run_update(
         wholesale_hashes=wholesale_hashes,
         repo_fingerprint=base_plan.repo_fingerprint,
     )
+    # The operator's `--skip` moves a matching action (the wholesale-regenerate
+    # action of a hand-edited managed file, most often) out of `actions` and
+    # into `plan.skipped`, before anything is checked or written.
+    plan = apply_skips(plan, skip)
 
-    managed_records = _managed_records(state, filtered_manifest, repo_root)
+    # An artifact the plan skipped is not going to be written, so its record is
+    # not handed to rung 6 either (Story 82.12, DW-10-4-4): a migration-offered
+    # `copied-seeded` entry sits in `plan.skipped` with no action, and
+    # `apply_skips` above moved the wholesale-regenerate action of an artifact
+    # the operator's `--skip` named. `skip` is passed as patterns too, for a
+    # record no action exists for -- one whose entry was retired or
+    # reclassified has no wholesale action, so only its path matching the
+    # pattern reaches it. A record neither names is still checked: where it has
+    # a wholesale action, rung 6 refusing its hand-edit guards a real overwrite.
+    managed_records = managed_after_skips(
+        _managed_records(state, filtered_manifest, repo_root, escaping_ids),
+        plan,
+        skip,
+    )
     check_preconditions(
         plan,
         repo_root=repo_root,
         never_write=never_write,
         managed=managed_records,
+        opted_out=opted_out_pairs,
         force=force,
         dry_run=not run,
     )
@@ -1070,10 +1339,14 @@ def run_update(
     write_plan(plan, default_plan_path(repo_root))
 
     if not run:
-        return UpdateResult(plan=plan, applied=None, declined=False, referenced_dep_findings=ref_findings)
+        return UpdateResult(
+            plan=plan, applied=None, declined=False, referenced_dep_findings=ref_findings, escape_findings=escapes
+        )
 
     if not yes and not confirm():
-        return UpdateResult(plan=plan, applied=None, declined=True, referenced_dep_findings=ref_findings)
+        return UpdateResult(
+            plan=plan, applied=None, declined=True, referenced_dep_findings=ref_findings, escape_findings=escapes
+        )
 
     entries_by_id = {entry.id: entry for entry in filtered_manifest.entries}
 
@@ -1111,6 +1384,7 @@ def run_update(
         new_state = _build_state_after_apply(
             plan=plan,
             state=state,
+            state_as_read=state_as_read,
             inventory=inventory,
             entries_by_id=entries_by_id,
             repo_root=repo_root,
@@ -1119,4 +1393,10 @@ def run_update(
         )
         write_state(new_state, repo_root=repo_root, never_write=never_write)
 
-    return UpdateResult(plan=plan, applied=result.applied, declined=False, referenced_dep_findings=ref_findings)
+    return UpdateResult(
+        plan=plan,
+        applied=result.applied,
+        declined=False,
+        referenced_dep_findings=ref_findings,
+        escape_findings=escapes,
+    )

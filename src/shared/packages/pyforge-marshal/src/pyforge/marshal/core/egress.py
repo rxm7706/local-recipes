@@ -11,11 +11,11 @@ report, an already-selected scope-check verdict, an already-known tree
 revision, an already-obtained UTC timestamp) into the one dict shape
 ``schemas/gate-record.json`` describes, mirroring ``core.gate.
 classify_outcome``'s own "caller already gathered the fact" convention:
-this module does no I/O, no VCS call, no clock read (AD-4) -- ``cli/gate.py``
-wiring a real caller is explicitly deferred (see ``deferred-work.md``; the
-epics.md Surface line for this story omits ``cli/gate.py``/``core/gate.py``,
-mirroring Story 2.4's identical "shipped a fully-tested pure function with
-zero CLI wiring" precedent).
+this module does no I/O, no VCS call, no clock read (AD-4). Story 2.6 shipped
+the function without a caller; Story 82.9 (DW-FU-2-6-2) wired it:
+``cli/gate.py::evaluate_gate`` builds the record from facts it already holds
+and writes it through ``RecordPort.write_redacted_atomic`` under
+``GATE_RECORD_FILENAME`` -- the one place the file name is spelled.
 
 **Why two redaction mechanisms coexist.** ``core.policy.redact()`` (Story
 1.3) redacts by field NAME for policy-VALUE DISPLAY (``cli/config.py``) --
@@ -173,9 +173,9 @@ _TOKEN_SHAPE_PATTERNS: tuple[re.Pattern[str], ...] = (
 
 # The one registry (AD-34), keyed by Protocol class NAME (a string, not an
 # imported class) -- see the module docstring for why. `RecordPort` is the
-# first and only port classified `egress: true`; the rest are already
-# documented (or self-evidently, for VcsPort/HarnessPort) as non-egress --
-# every path they touch stays inside the local filesystem/git repo/host.
+# first egress port; the rest are already documented as non-egress -- every
+# path they touch stays inside the local filesystem/host, or (`HarnessPort`)
+# is the AD-34 process-spawn carve-out.
 # Story 3.4 adds `ClockPort` (a system-clock read -- nothing leaves this
 # host at all) and `SessionObserverPort` (its own `pane_content` ALREADY
 # redacts via `to_redacted` at the adapter's own capture site -- the port
@@ -190,12 +190,25 @@ _TOKEN_SHAPE_PATTERNS: tuple[re.Pattern[str], ...] = (
 # applying labels via the `gh` CLI): classified `True`, the third real
 # egress port, mirroring `NotifyPort`'s own shape exactly (every text field
 # accepts only `Redacted`, never a bare `str`).
+# Story 82.9 (DW-FU-2-6-4): AD-34 names "VCS commit and PR text" as egress, and
+# `VcsPort` once carried commit text as a bare `str`. The three commit-writing
+# methods now live on `CommitPort` (`ports/commit.py`), classified `True` --
+# the message is `Redacted` and every other text parameter a typed `VcsRef`, so
+# the completeness meta-test covers commit text with no change of its own.
+# `VcsPort` stays non-egress because its reads and ref operations carry no
+# session text (and `push`/`fetch` move git objects the callers already hold);
+# the commit text is the reason a second port exists, not an exemption `VcsPort`
+# keeps. One commit-text parameter is still a bare `str` on `VcsPort`:
+# `merge_branch`'s `subject`, rendered from the policy template by
+# `core.identity.render_merge_subject`, never from session text -- a recorded
+# deferral (it belongs on `CommitPort` with a `Redacted` subject).
 EGRESS_PORTS: Mapping[str, bool] = {
     "ProcessPort": False,
     "FsPort": False,
     "HarnessPort": False,
     "VcsPort": False,
     "RecordPort": True,
+    "CommitPort": True,
     "ClockPort": False,
     "SessionObserverPort": False,
     "NotifyPort": True,
@@ -213,8 +226,10 @@ EGRESS_PORTS: Mapping[str, bool] = {
 @dataclass(frozen=True)
 class Redacted:
     """An already-redacted, already-serialized payload (AD-34) -- the ONLY
-    value type an egress-classified port (``RecordPort``) may accept, never
-    a bare ``str``. The sole legitimate constructor is ``to_redacted()``;
+    value type an egress-classified port (``RecordPort``, ``CommitPort``, ...)
+    may accept for its payload, never a bare ``str``. The legitimate
+    constructors are ``to_redacted()`` (a ``Mapping`` payload, serialized as
+    JSON) and ``to_redacted_text()`` (plain text, a commit message);
     ``Redacted`` itself performs no redaction -- it is a type boundary, not
     a mechanism, so nothing stops a caller from wrapping already-secret text
     directly. What DOES stop that is structural: every real write path goes
@@ -340,6 +355,20 @@ def to_redacted(payload: Mapping[str, object]) -> Redacted:
     except (TypeError, ValueError) as exc:
         raise TypeError(f"payload contains a non-JSON-serializable value: {exc}") from exc
     return Redacted(text=text)
+
+
+def to_redacted_text(text: str) -> Redacted:
+    """The plain-text sibling of ``to_redacted`` (Story 82.9, DW-FU-2-6-4): the
+    one way a free-text payload that is NOT a ``Mapping`` -- a commit message
+    -- becomes a ``Redacted`` for an egress port (``CommitPort``). ``to_redacted``
+    is Mapping-only and emits JSON, so a message cannot go through it
+    unchanged; this calls the same ``_redact_string`` (the shape half of the one
+    redactor), so there is still ONE redactor and ``_TOKEN_SHAPE_PATTERNS`` stays
+    private to this module. Raises ``TypeError`` -- the type only, never the
+    value, as ``Redacted.__post_init__`` -- for a ``text`` that is not a ``str``."""
+    if not isinstance(text, str):
+        raise TypeError(f"text must be a str, got {type(text).__name__}")
+    return Redacted(text=_redact_string(text))
 
 
 def redact_raw_text(text: str) -> str | None:
@@ -501,6 +530,15 @@ def _validate_command_report(entry: Mapping[str, object], index: int) -> dict[st
     return dict(entry)
 
 
+# The gate record's one file name (Story 82.9). It is spelled here and nowhere
+# else in the package: `tests/meta/test_gate_record_write_path.py` fails any
+# other module that spells the literal, and any call that hands this constant
+# to a writer other than `RecordPort.write_redacted_atomic` -- so a gate record
+# can only ever reach disk through the redacting serializer (DW-FU-2-6-4: the
+# same sink also serves `FsPort.write_text_atomic`, which takes a bare `str`).
+GATE_RECORD_FILENAME = "gate-record.json"
+
+
 def build_gate_record(
     *,
     story_key: str,
@@ -508,6 +546,7 @@ def build_gate_record(
     scope_check_verdict: str | None,
     tree_revision: str,
     timestamp: str,
+    run_id: str | None = None,
 ) -> dict[str, object]:
     """Shape an already-completed gate evaluation's facts into the dict
     ``schemas/gate-record.json`` describes (Story 2.6). Every argument is a
@@ -534,6 +573,12 @@ def build_gate_record(
     legitimate forms `schemas/gate-record.json` does not (review finding;
     see that constant). PARSING only, this function never calls
     ``datetime.now()`` (AD-4 stays clock-free).
+
+    ``run_id`` (Story 82.9, AD-25's F-25 session-namespace record): the run an
+    evaluation is bound to, when it has one. Omitted from the emitted dict
+    when ``None`` -- a record with no run stays exactly the shape it always
+    was -- and otherwise a non-blank ``str`` (``schemas/gate-record.json``'s
+    own optional ``run_id``).
 
     Raises ``ValueError`` (or ``MalformedStoryKeyError``, a ``ValueError``
     subclass) for any malformed input -- a caller bug, not a real-world
@@ -597,10 +642,16 @@ def build_gate_record(
             f"{timestamp!r}"
         )
 
-    return {
+    if run_id is not None and (not isinstance(run_id, str) or not run_id.strip()):
+        raise ValueError(f"run_id must be None or a non-blank str, got {_safe_repr(run_id)}")
+
+    record: dict[str, object] = {
         "story": str(key),
         "commands": command_reports,
         "scope_check_verdict": scope_check_verdict,
         "tree_revision": tree_revision,
         "timestamp": timestamp,
     }
+    if run_id is not None:
+        record["run_id"] = run_id
+    return record

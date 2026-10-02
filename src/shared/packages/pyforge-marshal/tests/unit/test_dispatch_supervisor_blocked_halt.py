@@ -21,6 +21,7 @@ from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import (
     DispatchGitFacts,
 )
+from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.dispatch_supervisor.__main__ import (
@@ -87,15 +88,17 @@ class FakeVcs:
             raise VcsCommandError("git diff failed (test double)")
         return self.changed
 
-    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
         if self.commit_paths_raises:
             raise VcsCommandError("git commit failed (test double)")
-        self.commit_paths_calls.append((repo_root, paths, message))
+        self.commit_paths_calls.append((repo_root, paths, message.text))
         return "committed-sha"
 
     def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
-        self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
-        self.isolated_promote_reasons.append(preflight_skip_reason)
+        self.isolated_promote_calls.append((repo_root, remote.value, ref.value, tuple(writes), message.text))
+        self.isolated_promote_reasons.append(
+            (preflight_skip_reason.text if preflight_skip_reason is not None else None)
+        )
         if self.commit_paths_onto_remote_tip_raises:
             raise VcsCommandError("git push failed: non-fast-forward (test double)")
         return "isolated-promote-sha"

@@ -212,7 +212,7 @@ F-17 unclosed-``intent`` precedent): named so it is never passed over
 silently, but never itself failing the whole run when other candidates
 promote cleanly. ``MRS-DEPLOY-003`` (``VcsPort.commit_subjects`` could not
 read local ``main``'s commit history, or the promotion write path --
-copying a spec's bytes or ``VcsPort.commit_paths``'s stage-and-commit --
+copying a spec's bytes or ``CommitPort.commit_paths``'s stage-and-commit --
 failed) classifies ``Verdict.UNEVALUABLE``: Marshal could not positively
 confirm this run's promotion, the same "could not determine" tier as
 ``MRS-GATE-002``/``003``/``005``/``009`` -- AD-31 forbids classifying the
@@ -748,7 +748,7 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # Story 4.13 (the loop's deferred work reaches the tracked ledger, FR-175)
 # adds a TENTH MRS-LAND-* code, MRS-LAND-010 (`_promote_deferred_work`'s own
 # advisory-lock contention on the tracked deferred-work ledger, or a
-# `VcsPort.commit_paths` failure committing a promoted entry). Classifies
+# `CommitPort.commit_paths` failure committing a promoted entry). Classifies
 # WARN, the same tier as MRS-LAND-003/008/009: reported, never blocking --
 # a landing story's Tier-3 followup deferral simply stays unpromoted for
 # this run, re-attempted on the next.
@@ -1268,6 +1268,19 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # tree to gate, so there is no gate answer to report either way, and it
     # is never the bare-defaults MRS-GATE-004 warn (exit 0) false green.
     "MRS-GATE-016": Verdict.UNEVALUABLE,
+    # Story 82.9 (FR-25, DW-FU-2-6-2): the redacted gate record could not be written. WARN,
+    # never UNEVALUABLE or an error: the record is evidence about a verdict the gate already
+    # reached, so a missing loop home or a failed write must not turn a green gate red -- and
+    # `evaluate_gate` appends the finding AFTER the verdict is computed, never recomputing it.
+    "MRS-GATE-017": Verdict.WARN,
+    # Story 82.9 (found registering the touched-module coverage of `cli/checkpoint.py`):
+    # `marshal factory checkpoint`'s three precondition failures -- no dispatch worktree in
+    # the journal (001), not inside a git repository (002), no loop home (003). ERROR, the
+    # tier of MRS-SPIN-002/003 and MRS-DISP-001..008: the command was asked to commit a
+    # worktree that does not exist, which is neither a could-not-evaluate nor a warning.
+    "MRS-CHK-001": Verdict.ERROR,
+    "MRS-CHK-002": Verdict.ERROR,
+    "MRS-CHK-003": Verdict.ERROR,
     # Story 82.4 (spec-pyforge-marshal CAP-2): 011 an attach whose ownership the
     # journal could not prove (a quarantined line, no launch/resume entry), 012
     # a tampered journal that made the supervisor stop the watched run, 013 the

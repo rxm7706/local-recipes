@@ -35,9 +35,10 @@ module docstring). ``run_init`` resolves ``<path>``/``--slug``/``--agents``/
 ``--force`` and delegates to ``seed.verbs.init.run_init`` -- unlike
 ``run_adopt``, it supplies no confirmation seam at all (``init`` never
 confirms; see that module's own docstring). ``run_update`` resolves
-``--repo-root``/``--run``/``--force``/``--include-seeded``/``--yes`` and
-delegates to ``seed.verbs.update.run_update``, the SAME confirmation seam
-``run_adopt`` supplies -- and gains its own plan renderer
+``--repo-root``/``--run``/``--force``/``--include-seeded``/``--skip``/``--yes``
+(Story 82.12 added ``--skip``) and delegates to
+``seed.verbs.update.run_update``, the SAME confirmation seam ``run_adopt``
+supplies -- and gains its own plan renderer
 (``_render_update_plan_text``), fixing ``DW-FU-11-3`` (a migration-offered
 ``copied-seeded`` skip renders as an explicit offer, never a false
 ``matched --skip`` claim) rather than reusing ``_render_plan_text``
@@ -80,7 +81,7 @@ from ..adapters.fs_local import LocalFs
 from ..core import policy
 from ..core.verdict import EXIT_OK
 from ..ports.fs import FsPort
-from ..seed.detect.findings import Severity
+from ..seed.detect.findings import Finding, Severity
 from ..seed.detect.kit import KitCheck
 from ..seed.errors import ConformanceFailure, InternalError, SeedError, UsageError
 from ..seed.migrate import registry as migrate_registry
@@ -628,7 +629,11 @@ def run_adopt(
         status = "dry-run"
         footer = "adopt: dry-run; re-run with --apply to execute this plan."
 
-    text = f"{_render_plan_text(result.plan)}\n{footer}"
+    text_lines = [_render_plan_text(result.plan)]
+    if result.escape_findings:
+        text_lines.append(_render_escape_findings_text(result.escape_findings))
+    text_lines.append(footer)
+    text = "\n".join(text_lines)
     _emit_success(
         verb="adopt",
         as_json=_flag(args, "json"),
@@ -638,6 +643,7 @@ def run_adopt(
             "plan": _plan_result_dict(result.plan),
             "applied": list(result.applied) if result.applied is not None else None,
             "declined": result.declined,
+            "escape_findings": [finding.to_json_dict() for finding in result.escape_findings],
         },
         text=text,
     )
@@ -767,6 +773,17 @@ def _render_update_plan_text(plan: Plan) -> str:
     return "\n".join(lines)
 
 
+def _render_escape_findings_text(findings: tuple[Finding, ...]) -> str:
+    """HARD ``target-escapes-repo`` findings for ``adopt``/``update`` (Story
+    82.11): the manifest entries left out of the plan because their path
+    resolves outside the repository, one line each, with the remedy once."""
+    lines = [f"entries left out of the plan ({len(findings)} target-escapes-repo finding(s)):"]
+    for finding in findings:
+        lines.append(f"  {finding.path}: {finding.message}")
+    lines.append(f"  remedy: {findings[0].remedy}")
+    return "\n".join(lines)
+
+
 def _render_referenced_dep_findings_text(findings: tuple) -> str:
     """DRIFT-only referenced-dependency findings for ``marshal seed update``."""
     lines = [f"referenced dependencies ({len(findings)} DRIFT finding(s)):"]
@@ -809,6 +826,7 @@ def run_update(
             run=args.run,
             force=args.force,
             include_seeded=args.include_seeded,
+            skip=tuple(args.skip) if args.skip else (),
             yes=args.yes,
             confirm=confirm if confirm is not None else _real_confirm,
         )
@@ -839,6 +857,8 @@ def run_update(
 
     status: str
     lines = [_render_update_plan_text(result.plan)]
+    if result.escape_findings:
+        lines.append(_render_escape_findings_text(result.escape_findings))
     if result.referenced_dep_findings:
         lines.append(_render_referenced_dep_findings_text(result.referenced_dep_findings))
     if result.declined:
@@ -864,6 +884,7 @@ def run_update(
             "applied": list(result.applied) if result.applied is not None else None,
             "declined": result.declined,
             "referenced_dep_findings": [finding.to_json_dict() for finding in result.referenced_dep_findings],
+            "escape_findings": [finding.to_json_dict() for finding in result.escape_findings],
         },
         text="\n".join(lines),
     )
@@ -1267,6 +1288,14 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         default=False,
         help="Also apply a migration-offered copied-seeded action (skipped by default).",
+    )
+    update_parser.add_argument(
+        "--skip",
+        dest="skip",
+        action="append",
+        default=None,
+        metavar="GLOB",
+        help="Glob naming an artifact path to leave untouched (repeatable).",
     )
     update_parser.add_argument(
         "--yes",

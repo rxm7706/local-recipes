@@ -63,6 +63,7 @@ from ..core import (
 )
 from ..core import dispatch as dispatch_core
 from ..core import promotion as promotion_core
+from ..core.commit_vcs import CommittingVcs
 from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
@@ -972,7 +973,7 @@ def _attempt_harness_done_cap4(
     effective_policy: policy.EffectivePolicy,
     spec_text: str,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
     followup_review: FollowupReview | None = None,
 ) -> tuple[DispatchLandingVerdict, str, object]:
@@ -2126,7 +2127,7 @@ def run_dispatch(
     args: argparse.Namespace,
     *,
     fs: FsPort | None = None,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     build_harness: BuildHarnessPort | None = None,
     process: ProcessPort | None = None,
     harness: HarnessPort | None = None,
@@ -2200,7 +2201,7 @@ def dispatch_once(
     slug: str,
     story: str,
     fs: FsPort | None = None,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     build_harness: BuildHarnessPort | None = None,
     process: ProcessPort | None = None,
     policy_flags: dict[str, object] | None = None,
@@ -4582,7 +4583,7 @@ def execute_fleet_cycle(
     leave_remaining: int,
     campaign_blocked: dict[str, dict[str, str]],
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     build_harness: BuildHarnessPort,
     process: ProcessPort,
     harness: HarnessPort,
@@ -5249,7 +5250,7 @@ def run_fleet_drain(
     args: argparse.Namespace,
     *,
     fs: FsPort | None = None,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     build_harness: BuildHarnessPort | None = None,
     process: ProcessPort | None = None,
     harness: HarnessPort | None = None,

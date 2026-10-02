@@ -27,11 +27,11 @@ nothing not-present in the first place is deliberately not on it (see
 **Why this module resolves paths directly rather than re-deriving
 `detect.inventory._resolve_within_repo`'s containment check.** `classify()`
 has ALREADY run that check once, for every entry, to produce the very
-`ArtifactState` this module switches on: an entry classified `ABSENT`
-because its path escapes `repo_root` is indistinguishable here from one
-genuinely missing (both are `ABSENT`, and this module's own
-`_current_text_verbose` never touches the filesystem for that state at all
--- see below). An entry
+`ArtifactState` this module switches on: an entry whose path escapes
+`repo_root` is classified `ESCAPING` (Story 82.11), which is no actionable
+state, so it yields no `Action` at all -- it is no longer mistaken for one
+genuinely missing (`ABSENT`, for which `_current_text_verbose` never touches
+the filesystem -- see below). An entry
 classified `PRESENT_DIVERGENT` can ONLY be `hybrid-managed-region`, and
 `_classify_entry` can only reach that state once the SAME containment
 check has already confirmed the path resolves within `repo_root` -- so a
@@ -135,9 +135,8 @@ def _current_text_verbose(state: ArtifactState, repo_root: Path, entry_path: str
 
     `ABSENT` never touches the filesystem and answers `("", True)`: the
     blank is `classify()`'s own reported truth about this artifact
-    (genuinely missing, or resolving outside `repo_root` -- either way,
-    nothing safe to read), so it is a fact about the file and a consumer
-    may reason from it. A present-but-non-regular-file, unreadable, or
+    (genuinely missing -- nothing to read), so it is a fact about the file
+    and a consumer may reason from it. A present-but-non-regular-file, unreadable, or
     non-UTF-8 target degrades to `''` too, but answers `False` -- the
     identical fallback `detect.inventory._classify_hybrid` already applies
     when its own read hits the same failure (this story's Always bullet:
@@ -506,6 +505,28 @@ def _repo_is_dirty(process: PosixProcess, repo_root: Path) -> bool:
     return bool(result.stdout)
 
 
+def _repo_identity(process: PosixProcess, repo_root: Path) -> tuple[str, str | None]:
+    """`(repo_root, git_common_dir)` as strings: which repository this is.
+
+    `repo_root` is the resolved root. `git_common_dir` is `git rev-parse
+    --git-common-dir` resolved against that root -- the directory every
+    worktree of one clone shares, so two worktrees of a clone agree on it and
+    a different clone does not -- or `None` on a non-zero exit (not a git repo,
+    the same degradation `_git_head` makes). Both are resolved before they
+    are compared, because `git` answers `.git`, `../.git` or an absolute path
+    depending on where it is run from.
+
+    Without this a non-git target is indistinguishable from any other: both
+    git fields degrade to the same `None`/`True` in every directory, so a plan
+    built for one directory looked fresh against another (DW-10-3-7)."""
+    resolved_root = repo_root.resolve()
+    result = process.run(["git", "rev-parse", "--git-common-dir"], cwd=repo_root, timeout_s=_GIT_TIMEOUT_S)
+    common_dir = result.stdout.strip() if result.returncode == 0 else ""
+    if not common_dir:
+        return str(resolved_root), None
+    return str(resolved_root), str((resolved_root / common_dir).resolve())
+
+
 def build_plan(manifest: Manifest, inventory: Inventory, *, opted_out: frozenset[str] = frozenset()) -> Plan:
     """Map each qualifying `Classification` in `inventory` to one `Action`,
     plus a `RepoFingerprint` of `inventory.repo_root` (`inventory.
@@ -670,10 +691,13 @@ def build_plan(manifest: Manifest, inventory: Inventory, *, opted_out: frozenset
         )
     )
     process = PosixProcess()
+    identity_root, identity_common_dir = _repo_identity(process, inventory.repo_root)
     repo_fingerprint = RepoFingerprint(
         git_head=_git_head(process, inventory.repo_root),
         dirty=_repo_is_dirty(process, inventory.repo_root),
         artifact_hashes=artifact_hashes,
+        repo_root=identity_root,
+        git_common_dir=identity_common_dir,
     )
     return Plan(actions=actions, repo_fingerprint=repo_fingerprint)
 
@@ -683,10 +707,17 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
     was built against -- one human-readable line per divergence, `()` when
     the plan is still a true description of the repo (AD-57).
 
-    Covers all three `RepoFingerprint` fields, in that order: `git_head`
-    (against a fresh `_git_head`), `dirty` (against a fresh
-    `_repo_is_dirty`), and every `artifact_hashes` pair (against a fresh
-    `hash_content` of that artifact's target). The correspondence between
+    Covers every `RepoFingerprint` field, in this order: the repository's
+    identity first -- `repo_root` and `git_common_dir` (against a fresh
+    `_repo_identity`; Story 82.12) -- then `git_head` (against a fresh
+    `_git_head`), `dirty` (against a fresh `_repo_is_dirty`), and every
+    `artifact_hashes` pair (against a fresh `hash_content` of that
+    artifact's target). Identity is LISTED first so a plan built for one
+    repository reads as naming another before anything about its contents;
+    it does not short-circuit, so every divergence is still reported. The
+    identity check is what separates two empty non-git directories, which
+    agree on every other field (both degrade to `git_head=None, dirty=True`
+    and an artifact set that hashes alike). The correspondence between
     `actions` and `artifact_hashes` is checked in BOTH directions, and a
     mismatch either way is itself reported as a divergence: `build_plan`
     emits exactly one hash per action, so an orphan pair -- or an action
@@ -740,6 +771,15 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
     fingerprint = plan.repo_fingerprint
     process = PosixProcess()
     drift: list[str] = []
+
+    current_root, current_common_dir = _repo_identity(process, repo_root)
+    if current_root != fingerprint.repo_root:
+        drift.append(f"repo_root: the plan was built for {fingerprint.repo_root!r}, the target is {current_root!r}")
+    if current_common_dir != fingerprint.git_common_dir:
+        drift.append(
+            f"git_common_dir: the plan was built against git directory {fingerprint.git_common_dir!r},"
+            f" the target's is {current_common_dir!r}"
+        )
 
     current_head = _git_head(process, repo_root)
     if current_head != fingerprint.git_head:
@@ -884,6 +924,12 @@ def load_plan(path: Path) -> Plan:
     no translation here -- and `Plan.from_json_dict` (and the `Action`/
     `RepoFingerprint` calls it makes) raise a plain `ValueError` for a
     missing key, a wrong-shaped value, or an unrecognized enum value.
+
+    The one exception is a plan written before its `repo_fingerprint` named
+    the repository it was built for (Story 82.12): that is a stale plan, not
+    a malformed one, so `RepoFingerprint.from_json_dict` raises
+    `PreconditionFailure` (`stale-plan`, exit 3) with a remedy to re-run the
+    plan -- nothing in such a file says which repository it describes.
 
     A missing, unreadable, or directory `path` raises `read_text`'s own
     `OSError` (e.g. `FileNotFoundError`, `IsADirectoryError`) UNCHANGED --

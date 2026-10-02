@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 529
+# stories: 538
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -366,9 +366,9 @@ development_status:
   81-3-the-campaign-supervisor-keeps-retry-environment-blocks-across-its-cycles: done
   82-1-gate-evaluate-finds-the-real-repository-under-an-installed-package-and-never-passes-having-run-nothing: done
   82-10-a-parallel-wave-journals-each-member-s-own-outcome-and-refuse-predicate: done
-  82-11-seed-apply-refuses-an-escaping-manifest-path-per-entry-and-guards-never-write-paths-through-symlinks-and-directories: backlog
-  82-12-seed-apply-binds-a-plan-to-its-repository-refuses-a-directory-target-with-a-remedy-and-honours-a-skip-on-a-hand-edit: backlog
-  82-13-a-marker-opt-out-is-representable-for-every-artifact-accepted-by-preconditions-and-recorded-per-region: backlog
+  82-11-seed-apply-refuses-an-escaping-manifest-path-per-entry-and-guards-never-write-paths-through-symlinks-and-directories: done
+  82-12-seed-apply-binds-a-plan-to-its-repository-refuses-a-directory-target-with-a-remedy-and-honours-a-skip-on-a-hand-edit: done
+  82-13-a-marker-opt-out-is-representable-for-every-artifact-accepted-by-preconditions-and-recorded-per-region: done
   82-2-marshal-land-keeps-a-live-run-s-branch-and-home-while-its-engine-is-alive-even-when-its-supervisor-is-dead: done
   82-3-a-landing-claims-only-committed-promotions-rejects-a-malformed-merge-template-and-stamps-only-reconciled-drift: done
   82-4-the-supervisor-attaches-despite-a-quarantined-launch-journals-its-spawn-and-every-stop-and-fails-closed-on-tampering: done
@@ -376,7 +376,14 @@ development_status:
   82-6-a-resumed-run-escalates-against-the-ceilings-it-launched-under-and-journals-before-it-rewrites-policy: done
   82-7-factory-spin-refuses-a-second-live-run-and-reports-a-child-that-dies-before-it-starts: backlog
   82-8-status-reads-landings-the-way-deploy-does-and-filters-findings-with-rows-and-teardown-keeps-nested-worktrees: done
-  82-9-vcs-commit-text-is-declared-egress-and-gate-evaluate-writes-a-redacted-gate-record: backlog
+  82-9-vcs-commit-text-is-declared-egress-and-gate-evaluate-writes-a-redacted-gate-record: done
+  83-1-dispatch-liveness-proves-a-pid-is-the-session-it-launched: backlog
+  83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree: backlog
+  83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries: backlog
+  83-4-a-serial-campaign-holds-the-next-overlapping-story-while-a-refused-story-is-unlanded: backlog
+  83-5-a-campaign-supervisor-keeps-ticking-through-fleet-lock-contention: backlog
+  83-6-dispatch-resyncs-a-stale-codegraph-index-before-it-launches-a-session: backlog
+  83-7-a-re-dispatch-after-a-refused-landing-lands-the-existing-branch-without-a-new-session: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
@@ -541,5 +548,7 @@ development_status:
   epic-81-retrospective: optional
   epic-82: backlog
   epic-82-retrospective: optional
+  epic-83: backlog
+  epic-83-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional

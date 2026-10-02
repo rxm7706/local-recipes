@@ -135,7 +135,7 @@ def test_the_opted_out_remedy_hedges_exactly_as_its_finding_message_does():
 def test_finding_type_is_exactly_the_declared_member_set():
     # A count-only check would still pass a typo'd/renamed member -- pin the
     # exact kebab-case value set: the 12 the epics AC names, plus Story
-    # 28.3's three token-economy-kit members.
+    # 28.3's three token-economy-kit members and Story 82.11's one.
     assert {member.value for member in FindingType} == {
         "artifact-missing",
         "managed-file-modified",
@@ -157,6 +157,10 @@ def test_finding_type_is_exactly_the_declared_member_set():
         "kit-item-missing",
         "kit-item-stale",
         "kit-instrument-unavailable",
+        # Story 82.11 (DW-10-3-9): a manifest entry whose path resolves
+        # outside the repo -- its own type, so one escaping entry is reported
+        # per entry instead of refusing the whole plan.
+        "target-escapes-repo",
     }
 
 

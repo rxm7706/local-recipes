@@ -53,6 +53,13 @@ one finding a legacy artifact ever produces is `legacy_findings`'s own INFO
 ``legacy-present``, unconditionally, via `detect.inventory.legacy_findings`
 composed with everything else below.
 
+**Why `ESCAPING` short-circuits too (Story 82.11).** An entry whose path
+resolves outside the repo (an in-repo symlink pointing out) is never opened
+-- reading `repo_root / entry.path` would read the escaped location -- and
+reports one HARD ``target-escapes-repo`` finding from
+`detect.inventory.escape_findings`, so the same entry that `adopt`/`update`
+leave out of their plan is named by `check` instead of vanishing.
+
 **Why `ArtifactClass.REFERENCED` short-circuits too.** `classify()` itself
 never inspects a referenced entry's filesystem state -- `model/artifact.py`'s
 ``CLASS_BEHAVIOR`` calls the class "not materialized" -- so it always
@@ -64,15 +71,16 @@ class's own definition, may not name a real file at all.
 `state.managed[]`, never off `ArtifactClass` alone.** The schema
 (`state/schema.json::managedArtifact`) lets a claim exist for ANY class, not
 only `copied-managed`/`copied-seeded`/`hybrid-managed-region` -- and
-`ManagedArtifact.inserted_region_span` is the IFF signal for which
-`detect.hashes` function applies (non-`None` -> `check_managed_region`
-against the freshly re-parsed span of that name; `None` -> `check_managed_file`
-against the whole file), not the manifest entry's own declared class. This
+`ManagedArtifact.inserted_region_spans` is the IFF signal for which
+`detect.hashes` function applies (non-empty -> `check_managed_region` for
+EACH recorded span, against the freshly re-parsed span of that name and that
+span's own `body_sha`; empty -> `check_managed_file` against the whole file),
+not the manifest entry's own declared class. This
 matters concretely, not just by convention: a manifest entry's declared
 class can be reclassified across model versions (Epic 11's own migration
 machinery exists for exactly that), while `state.managed[]`'s record still
 describes what was actually recorded at adopt/last-update time -- so the
-primitive selection below reads `record.inserted_region_span`, never
+primitive selection below reads `record.inserted_region_spans`, never
 `entry.artifact_class`, even though the surrounding region-status loop
 (`classify_regions`/`region_findings`) legitimately does key off
 `entry.artifact_class` (it reports on the CURRENT manifest's declared
@@ -189,7 +197,7 @@ from pyforge.core.process import PosixProcess
 
 from ..detect.findings import Finding, FindingType, Severity
 from ..detect.hashes import check_managed_file, check_managed_region
-from ..detect.inventory import ArtifactState, classify, legacy_findings
+from ..detect.inventory import ArtifactState, classify, escape_findings, legacy_findings
 from ..detect.kit import KitCheck, kit_checks, kit_findings
 from ..detect.optout import classify_regions, region_findings
 from ..detect.referenced_deps import referenced_dep_findings
@@ -408,6 +416,14 @@ def run_check(
                 )
             continue
 
+        if classification.state is ArtifactState.ESCAPING:
+            # Story 82.11: the entry's path resolves OUTSIDE the repo, so
+            # nothing below may read it -- `repo_root / entry.path` would
+            # open a file this run has no business touching. Its one
+            # finding (HARD target-escapes-repo) comes from
+            # `escape_findings` below, built from `inventory.escaping`.
+            continue
+
         if classification.state is ArtifactState.PRESENT_LEGACY:
             # AD-59: never written to, never inspected again -- its one
             # finding (INFO legacy-present) comes from `legacy_findings`
@@ -441,10 +457,10 @@ def run_check(
             findings.extend(region_findings(statuses))
 
         # The whole-file vs. region-body hash-check primitive is selected by
-        # `record.inserted_region_span`, never by `entry.artifact_class`
+        # `record.inserted_region_spans`, never by `entry.artifact_class`
         # alone (module docstring) -- the manifest's CURRENT class can have
         # drifted from what `state.managed[]` actually recorded.
-        if record is not None and record.inserted_region_span is not None:
+        if record is not None and record.inserted_region_spans:
             if entry.format is None:
                 # The record was written while this entry was still
                 # hybrid-managed-region; the manifest has since reclassified
@@ -459,27 +475,31 @@ def run_check(
                     spans = parse_regions(text, entry.format)
                 except RegionParseError, MarkerError, NotImplementedError:
                     spans = ()
-                span = next(
-                    (candidate for candidate in spans if candidate.name == record.inserted_region_span.name),
-                    None,
-                )
-                # `span is None` means the recorded region is not (or no
-                # longer) parseable from the file -- `region_findings`
-                # above has already reported that as `managed-region-missing`
-                # (or, if unparseable, produced no per-region finding at all,
-                # matching `classify_regions`'s own degrade-rather-than-guess
-                # rule); there is nothing left here to hash a mismatch
-                # against.
-                if span is not None:
-                    finding = check_managed_region(entry.path, text, span, record.body_sha)
-                    if finding is not None:
-                        findings.append(finding)
+                spans_by_name = {candidate.name: candidate for candidate in spans}
+                # Every recorded span is checked against its OWN recorded
+                # hash (Story 82.13) -- a hybrid artifact records one span per
+                # installed region, so a hand-edit to any of them is reported,
+                # not only to the first.
+                for recorded in record.inserted_region_spans:
+                    span = spans_by_name.get(recorded.name)
+                    # `span is None` means the recorded region is not (or no
+                    # longer) parseable from the file -- `region_findings`
+                    # above has already reported that as `managed-region-missing`
+                    # or `opted-out` (or, if unparseable, produced no
+                    # per-region finding at all, matching `classify_regions`'s
+                    # own degrade-rather-than-guess rule); there is nothing
+                    # left here to hash a mismatch against.
+                    if span is not None:
+                        finding = check_managed_region(entry.path, text, span, recorded.body_sha)
+                        if finding is not None:
+                            findings.append(finding)
         elif record is not None:
             finding = check_managed_file(entry.path, text, record.body_sha)
             if finding is not None:
                 findings.append(finding)
 
     findings.extend(legacy_findings(inventory))
+    findings.extend(escape_findings(inventory))
     findings.extend(referenced_dep_findings(manifest, repo_root))
 
     # Story 28.3's three token-economy-kit checks. Computed even when every

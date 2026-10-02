@@ -7,6 +7,7 @@ offending id/field), and the ``since``/``until`` version-range filter.
 from __future__ import annotations
 
 import dataclasses
+import json
 from pathlib import Path
 from textwrap import dedent
 
@@ -280,6 +281,75 @@ def test_wrong_type_required_field_raises_manifest_error(tmp_path, bad_type_fiel
     path.write_text(yaml.safe_dump(document), encoding="utf-8")
     with pytest.raises(ManifestError, match=expected_message):
         load_manifest(path)
+
+
+@pytest.mark.parametrize(
+    ("bad_path", "expected"),
+    [
+        # Absolute: POSIX-rooted, a Windows drive (either separator), a
+        # backslash-rooted path and a UNC share -- `Path.__truediv__` would
+        # discard the repo root for every one of them.
+        ("/etc/passwd", r"not absolute"),
+        ("C:\\Windows\\x", r"not absolute"),
+        ("C:/Windows/x", r"not absolute"),
+        ("\\\\server\\share\\x", r"not absolute"),
+        # A `..` segment in either separator dialect, anywhere in the path.
+        ("../outside.txt", r"'\.\.' segment"),
+        ("../../../etc/cron.d/pwn", r"'\.\.' segment"),
+        ("docs/../../outside.txt", r"'\.\.' segment"),
+        ("docs\\..\\outside.txt", r"'\.\.' segment"),
+    ],
+)
+def test_an_absolute_or_dotdot_path_raises_manifest_error_naming_the_entry_id(tmp_path, bad_path, expected):
+    """Story 82.11 (DW-FU-7-4): the manifest is the one input that can name a
+    location outside the repo being seeded, so `path` is refused at LOAD --
+    a load-time error naming the entry's id, not an apply-time refusal of
+    the whole plan."""
+    text = f"""\
+        model_version: "1.0.0"
+        artifacts:
+          - id: escaper
+            class: copied-seeded
+            path: {json.dumps(bad_path)}
+            applies_to: init
+            rationale: r
+    """
+    with pytest.raises(ManifestError, match=rf"^escaper: path must .*{expected}"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_a_dotdot_inside_a_name_is_not_a_dotdot_segment(tmp_path):
+    """Only a whole `..` segment walks out of the repo: `a..b` and `..hidden`
+    are ordinary names and keep loading."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: a
+            class: copied-seeded
+            path: "dir/a..b"
+            applies_to: init
+            rationale: r
+          - id: b
+            class: copied-seeded
+            path: "dir/..hidden"
+            applies_to: init
+            rationale: r
+    """
+    manifest = load_manifest(_write(tmp_path, text))
+    assert [entry.path for entry in manifest.entries] == ["dir/a..b", "dir/..hidden"]
+
+
+def test_manifest_entry_constructed_directly_also_rejects_an_escaping_path():
+    """The load-time check lives in `ManifestEntry.__post_init__`, so a
+    hand-built entry cannot smuggle one in either."""
+    with pytest.raises(ValueError, match="not absolute"):
+        ManifestEntry(
+            id="x",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            path="/etc/passwd",
+            applies_to=AppliesTo.BOTH,
+            rationale="r",
+        )
 
 
 def test_invalid_applies_to_raises_manifest_error(tmp_path):
@@ -1425,3 +1495,81 @@ def test_marker_unsafe_region_name_raises_manifest_error_naming_id_and_name(tmp_
     """
     with pytest.raises(ManifestError, match=r"^foo: regions\[0\] \(my region\): region name must match .*my region"):
         load_manifest(_write(tmp_path, text))
+
+
+# --- Story 82.13: the artifact-id grammar (DW-FU-8-5-2) ----------------------
+
+
+@pytest.mark.parametrize(
+    "bad_id",
+    [
+        pytest.param('"has a space"', id="interior-space"),
+        pytest.param('"a#b"', id="hash"),
+        pytest.param('"#lead"', id="leading-hash"),
+        pytest.param('"tab\\tid"', id="tab"),
+        pytest.param('"line\\nbreak"', id="newline"),
+    ],
+)
+def test_an_id_the_opt_out_key_cannot_spell_raises_manifest_error_naming_the_entry(tmp_path, bad_id):
+    """An id with whitespace or a `#` makes every region of that artifact
+    impossible to opt out of -- `<artifact-id>#<region>` has `#` as its
+    separator and no whitespace. Refused at load, with the entry's own id
+    leading the message (`load_manifest` prefixes it) and the rule stated."""
+    text = f"""\
+        model_version: "1.0.0"
+        artifacts:
+          - id: {bad_id}
+            class: copied-seeded
+            path: "x"
+            applies_to: init
+            rationale: r
+    """
+    raw_id = yaml.safe_load(f"id: {bad_id}")["id"]
+    with pytest.raises(ManifestError) as excinfo:
+        load_manifest(_write(tmp_path, text))
+    message = str(excinfo.value)
+    assert message.startswith(f"{raw_id}: ")
+    assert "no whitespace and no '#'" in message
+
+
+def test_a_padded_id_is_still_the_legal_bare_id(tmp_path):
+    """The check runs AFTER `_require_text` strips, so `" foo "` is `foo`
+    (as `test_padded_id_is_stripped_and_collides_with_its_bare_twin` already
+    pins) and stays legal."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: " foo "
+            class: copied-seeded
+            path: "x"
+            applies_to: init
+            rationale: r
+    """
+    (entry,) = load_manifest(_write(tmp_path, text)).entries
+    assert entry.id == "foo"
+
+
+@pytest.mark.parametrize("bad_id", ["has a space", "a#b", "tab\tid"])
+def test_manifest_entry_refuses_such_an_id_when_built_directly(bad_id):
+    with pytest.raises(ValueError, match="no whitespace and no '#'"):
+        ManifestEntry(
+            id=bad_id,
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            path="x",
+            applies_to=AppliesTo.INIT,
+            rationale="r",
+        )
+
+
+def test_legacy_of_and_a_legacy_entrys_own_id_keep_their_looser_grammar():
+    """Only `ManifestEntry.id` carries the opt-out grammar; `legacy_of` names
+    another entry and is stored as plain text, untouched by this rule."""
+    entry = ManifestEntry(
+        id="successor",
+        artifact_class=ArtifactClass.COPIED_SEEDED,
+        path="x",
+        applies_to=AppliesTo.INIT,
+        rationale="r",
+        legacy_of="an old id with spaces",
+    )
+    assert entry.legacy_of == "an old id with spaces"

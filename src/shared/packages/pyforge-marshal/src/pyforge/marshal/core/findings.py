@@ -362,7 +362,7 @@ overwriting a good existing tracked copy, per AD-13), and
 ``main``'s own commit history at all -- the run cannot determine ANY
 story's durability, so nothing is promoted -- OR the promotion write path
 itself -- copying a spec's bytes into the tracked archive, or
-``VcsPort.commit_paths``'s stage-and-commit -- failed, leaving that run
+``CommitPort.commit_paths``'s stage-and-commit -- failed, leaving that run
 unable to positively confirm its own promotion completed). ``MRS-DEPLOY-001``/
 ``002`` classify ``Verdict.WARN``, the same tier as this codebase's every
 other "reported, never blocks progression" paper-trail-gap code
@@ -811,7 +811,7 @@ current state) or only the ledger-advance half does (lock contention, a
 dirty worktree -- spec promotion for other keys still proceeds
 independently), but this is always a paper-trail gap, never a blocking
 error. ``MRS-DEPLOY-025`` (the ledger's own durable WRITE failed --
-``FsPort.write_text_atomic`` or ``VcsPort.commit_paths`` raised, AFTER
+``FsPort.write_text_atomic`` or ``CommitPort.commit_paths`` raised, AFTER
 this run already determined which keys to advance) classifies
 ``Verdict.ERROR``, the same tier as ``MRS-DEPLOY-008``/``011``: a real
 write was attempted against an already-computed decision and did not
@@ -1303,7 +1303,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # `planning-artifacts/deferred-work-ledger.md`, mirroring `cli/deploy.py`'s
 # own spec-promotion lock/write/commit shape (AD-42). `MRS-LAND-010` names
 # EITHER failure this best-effort step can have -- the ledger's own
-# advisory lock could not be acquired, or `VcsPort.commit_paths` raised
+# advisory lock could not be acquired, or `CommitPort.commit_paths` raised
 # after the ledger was rewritten locally -- never fired for the ordinary
 # "nothing to promote" case (silent, no finding, per the story's own Never
 # bullet). Classifies WARN, the same tier as `MRS-LAND-003`/`008`/`009`:
@@ -1380,7 +1380,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # deploy reconcile-completions`: MRS-DEPLOY-024 (the tracked ledger could
 # not be safely read/locked, at any of its read/lock sites) at WARN,
 # mirroring MRS-STATUS-005; MRS-DEPLOY-025 (the ledger's own durable
-# write -- FsPort.write_text_atomic or VcsPort.commit_paths -- failed
+# write -- FsPort.write_text_atomic or CommitPort.commit_paths -- failed
 # after this run already decided what to advance) at ERROR, mirroring
 # MRS-DEPLOY-008/011; MRS-DEPLOY-026 (a corroborated not-loop-native-
 # landed key has no row at all in the tracked ledger, or no matching
@@ -1990,6 +1990,21 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # checkout), so no gate was evaluated; UNEVALUABLE, never the bare
         # defaults + MRS-GATE-004 false green.
         "MRS-GATE-016",
+        # Story 82.9 (FR-25, DW-FU-2-6-2): MRS-GATE-017 -- `marshal gate evaluate --story`
+        # could not write its redacted gate record (no loop home provisioned, an
+        # unreadable tree revision, a failed write); WARN, because the record is evidence
+        # about the verdict and never an input to it -- the verdict and exit code stand.
+        "MRS-GATE-017",
+        # Story 34.2 shipped `marshal factory checkpoint` building these three findings
+        # without registering them, so every failure path of that command raised
+        # `UnregisteredFindingCodeError` out of `Finding(...)` instead of exiting non-zero
+        # (found by Story 82.9's touched-module coverage gate on `cli/checkpoint.py`).
+        # 001 -- the dispatch journal names no worktree or story to checkpoint; 002 -- the
+        # invocation directory is not inside a git repository; 003 -- the station's loop
+        # home does not exist, so no in-flight dispatch or spin worktree. All ERROR.
+        "MRS-CHK-001",
+        "MRS-CHK-002",
+        "MRS-CHK-003",
         # Story 82.4 (spec-pyforge-marshal CAP-2, DW-FU-3-4-3/6/7/8): the
         # supervisor stops being silenceable through its own journal, and the
         # run journal finally records the supervisor spawn. MRS-SUPV-011 --

@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..ports.vcs import VcsPort
+from .commit_vcs import CommittingVcs
+from .egress import to_redacted_text
 
 _AUTO_CHECKPOINT_MARKER = "(auto-checkpoint)"
 
@@ -41,7 +42,7 @@ def should_checkpoint_on_idle(
 
 
 def commit_worktree_checkpoint(
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     *,
     repo_root: Path,
     worktree: Path,
@@ -58,7 +59,7 @@ def commit_worktree_checkpoint(
         head_sha = vcs.commit_paths(
             worktree,
             tuple(Path(path) for path in changed),
-            auto_checkpoint_message(story_key),
+            to_redacted_text(auto_checkpoint_message(story_key)),
         )
     except Exception as exc:
         return WorktreeCheckpointResult(committed=False, skipped_reason=str(exc))

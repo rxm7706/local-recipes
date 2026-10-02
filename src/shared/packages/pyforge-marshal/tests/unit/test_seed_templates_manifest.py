@@ -25,7 +25,22 @@ import pytest
 
 from pyforge.marshal.seed.derive.adapters import ADAPTER_COMPOSITION
 from pyforge.marshal.seed.detect.inventory import coverage_counts, coverage_findings
-from pyforge.marshal.seed.model.manifest import AppliesTo, ArtifactClass, load_manifest
+from pyforge.marshal.seed.fs import NeverWrite
+from pyforge.marshal.seed.model.manifest import (
+    ARTIFACT_ID_PATTERN,
+    AppliesTo,
+    ArtifactClass,
+    load_manifest,
+)
+from pyforge.marshal.seed.model.version import ModelVersion
+from pyforge.marshal.seed.state import (
+    ManagedArtifact,
+    RegionSpanRecord,
+    SeedState,
+    read_state,
+    record_opt_out,
+    write_state,
+)
 
 # The spec's Boundaries section, as corrected by review: 16 referenced,
 # 5 copied-managed, 5 copied-seeded, 9 generated-derived (review moved
@@ -381,3 +396,82 @@ def test_referenced_pins_match_the_live_environment_exactly(manifest):
     }
     actual = {entry.id: entry.pin for entry in manifest.entries if entry.artifact_class is ArtifactClass.REFERENCED}
     assert actual == expected
+
+
+# --- Story 82.13: every shipped id is a representable opt-out (DW-FU-8-5-2) ---
+
+
+def _state_claiming(*, entries) -> SeedState:
+    """A schema-valid state claiming each of ``entries``: a hybrid one with a
+    span per declared region, any other class as a whole file."""
+    claims = []
+    for entry in entries:
+        if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
+            spans = tuple(
+                RegionSpanRecord(name=region.name, start=index, end=index + 1, body_sha="0123abcd")
+                for index, region in enumerate(entry.regions)
+            )
+        else:
+            spans = ()
+        claims.append(
+            ManagedArtifact(
+                id=entry.id,
+                path=entry.path,
+                artifact_class=entry.artifact_class.value,
+                body_sha="0123abcd",
+                inserted_region_spans=spans,
+            )
+        )
+    return SeedState(
+        model_version=ModelVersion.parse("1.0.0"),
+        seed_model_version="0.1.0",
+        adopted_at="2026-10-02T00:00:00Z",
+        last_update="2026-10-02T00:00:00Z",
+        mode="adopt",
+        agents=(),
+        managed=tuple(claims),
+        skips=(),
+        legacy=(),
+        migrations_applied=(),
+        opted_out=(),
+    )
+
+
+def test_every_shipped_artifact_id_carries_the_opt_out_grammar(manifest):
+    """The shipped manifest declares no id the opt-out key cannot spell -- the
+    precondition for `ManifestEntry` now refusing one."""
+    assert [entry.id for entry in manifest.entries if ARTIFACT_ID_PATTERN.fullmatch(entry.id) is None] == []
+
+
+def test_a_state_claiming_every_shipped_artifact_validates(manifest, tmp_path):
+    # `referenced` entries are never materialized, so never claimed (and share
+    # the sentinel path "n/a", which `managed[].path` uniqueness would refuse).
+    materialized = [entry for entry in manifest.entries if entry.artifact_class is not ArtifactClass.REFERENCED]
+    state = _state_claiming(entries=materialized)
+    write_state(state, repo_root=tmp_path, never_write=NeverWrite(patterns=()))
+    assert read_state(tmp_path) == state
+
+
+def test_an_opt_out_for_every_region_of_every_shipped_hybrid_entry_validates(manifest, tmp_path):
+    """The AC: for each id the shipped manifest declares, recording an opt-out
+    for any of its regions leaves a state that writes and reads back. Each
+    region is recorded one at a time AND all together, so the per-region span
+    drop is exercised on the shipped multi-region entries -- the loop is vacuous
+    unless at least one declares more than one region, which the assertion below
+    pins without naming an id or a count a legitimate manifest change would move."""
+    hybrids = [entry for entry in manifest.entries if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION]
+    assert any(len(entry.regions) > 1 for entry in hybrids)
+    never_write = NeverWrite(patterns=())
+    for entry in hybrids:
+        for region in entry.regions:
+            state = record_opt_out(_state_claiming(entries=hybrids), entry.id, region.name)
+            write_state(state, repo_root=tmp_path, never_write=never_write)
+            assert read_state(tmp_path) == state
+            assert f"{entry.id}#{region.name}" in state.opted_out
+        everything = _state_claiming(entries=[entry])
+        for region in entry.regions:
+            everything = record_opt_out(everything, entry.id, region.name)
+        write_state(everything, repo_root=tmp_path, never_write=never_write)
+        assert read_state(tmp_path) == everything
+        assert everything.managed == ()
+        assert len(everything.opted_out) == len(entry.regions)

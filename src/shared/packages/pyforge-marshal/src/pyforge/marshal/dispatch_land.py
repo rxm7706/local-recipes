@@ -31,6 +31,7 @@ from .adapters.fs_local import LocalFs
 from .adapters.vcs_git import GitVcs, VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import identity, promotion
+from .core.commit_vcs import CommittingVcs
 from .core.dispatch_harness_done import FollowupReview
 from .core.dispatch_landing import (
     DispatchLandingVerdict,
@@ -39,7 +40,7 @@ from .core.dispatch_landing import (
     refuse_unverified_landing,
 )
 from .core.dispatch_verification import DispatchVerificationVerdict
-from .core.egress import Redacted
+from .core.egress import Redacted, to_redacted_text
 from .core.identity import StoryKey, normalize, render_feed_key
 from .core.journal import LANDING_CHECKS_FIELD
 from .core.landing_checks import CheckRun, CheckState, classify_check_runs
@@ -290,7 +291,7 @@ def _reconcile_spec_surface_drift(
     head_branch: str,
     key: StoryKey,
     run_id: str | None,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
 ) -> _SpecSurfaceReconcileOutcome:
     """Story 53.2 (spec-pyforge-marshal CAP-261b): before ``forge.merge_pr``,
@@ -573,7 +574,7 @@ def _reconcile_spec_surface_drift(
                 vcs.commit_paths(
                     worktree,
                     (memlog_path.relative_to(worktree),),
-                    f"marshal: reconcile spec-surface drift for {key} ({name})",
+                    to_redacted_text(f"marshal: reconcile spec-surface drift for {key} ({name})"),
                 )
             except VcsCommandError as exc:
                 return _SpecSurfaceReconcileOutcome(
@@ -636,7 +637,7 @@ def _reconcile_spec_surface_drift(
             vcs.commit_paths(
                 worktree,
                 (Path(baseline_rel),),
-                f"marshal: reconcile spec-surface drift for {key}",
+                to_redacted_text(f"marshal: reconcile spec-surface drift for {key}"),
             )
         except VcsCommandError as exc:
             return _SpecSurfaceReconcileOutcome(
@@ -877,7 +878,7 @@ def execute_dispatch_land(
     run_id: str | None = None,
     effective: EffectivePolicy | None = None,
     fs: FsPort | None = None,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     forge: ForgePort | None = None,
     process: ProcessPort | None = None,
     sleep: Callable[[float], None] | None = None,

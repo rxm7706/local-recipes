@@ -280,6 +280,118 @@ def test_apply_yes_materializes_every_planned_artifact_and_writes_state_last(cle
     assert {record.id for record in state.managed} == {"whole", "hybrid"}
 
 
+def _escaping_symlink(repo: Path, name: str) -> Path:
+    """An in-repo symlink ``repo/<name>`` pointing at a real file OUTSIDE the
+    repo, committed so the worktree stays clean. Returns the outside file."""
+    outside = repo.parent / f"{repo.name}-outside"
+    outside.mkdir()
+    target = outside / "target.md"
+    target.write_text("elsewhere\n", encoding="utf-8")
+    (repo / name).symlink_to(target)
+    _commit_all(repo)
+    return target
+
+
+def test_an_escaping_entry_is_reported_per_entry_while_every_other_action_applies(clean_repo):
+    """Story 82.11 (DW-10-3-9): one manifest entry whose path resolves
+    outside the repo (an in-repo symlink pointing out) used to become an
+    ordinary action carrying the escaping path, so ``run_apply`` refused the
+    WHOLE plan -- and re-planning reproduced it. It is now left out of the
+    plan with a finding naming it, and the ordinary entry is written."""
+    outside_file = _escaping_symlink(clean_repo, "ESCAPER.md")
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+    calls: list[str] = []
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert [action.artifact_id for action in result.plan.actions] == ["good"]
+    assert calls == ["good"]
+    assert set(result.applied) == {"good"}
+    assert (clean_repo / "GOOD.md").read_text() == "materialized good\n"
+    assert outside_file.read_text() == "elsewhere\n"
+    (finding,) = result.escape_findings
+    assert finding.type.value == "target-escapes-repo"
+    assert finding.path == "ESCAPER.md"
+    assert "bad:" in finding.message
+    assert str(outside_file.resolve()) in finding.message
+    state = read_state(clean_repo)
+    assert state is not None
+    assert {record.id for record in state.managed} == {"good"}
+
+
+def test_an_escaping_entry_is_reported_on_a_dry_run_and_a_declined_apply_too(clean_repo):
+    _escaping_symlink(clean_repo, "ESCAPER.md")
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+
+    dry = run_adopt(clean_repo, manifest, confirm=_unreachable_confirm)
+    _commit_all(clean_repo)  # the dry run left `.marshal/plan.json`; an apply wants a clean worktree
+    declined = run_adopt(clean_repo, manifest, apply=True, confirm=lambda: False)
+
+    for result in (dry, declined):
+        assert [action.artifact_id for action in result.plan.actions] == ["good"]
+        assert [finding.path for finding in result.escape_findings] == ["ESCAPER.md"]
+    assert dry.applied is None
+    assert declined.declined is True
+
+
+def test_a_previously_adopted_entry_that_became_an_escaping_symlink_is_left_out_not_refused(clean_repo):
+    """Rung 6 refuses a ``state.managed`` record whose path does not resolve
+    inside the repo, so an entry adopted earlier whose path LATER became an
+    in-repo symlink pointing outside refused the WHOLE run
+    (``managed-content-modified``) and its ``escape_findings`` entry was never
+    reached. Its record is no longer handed to rung 6: only the ordinary entry
+    is applied, the escaping one is named, and the outside file is untouched."""
+    outside_file = _escaping_symlink(clean_repo, "ESCAPER.md")
+    write_state(
+        _state(
+            managed=(
+                ManagedArtifact(
+                    id="bad",
+                    path="ESCAPER.md",
+                    artifact_class="copied-managed",
+                    body_sha="deadbeef",
+                    inserted_region_spans=(),
+                ),
+            )
+        ),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    manifest = _manifest(_copied_managed("bad", "ESCAPER.md"), _copied_managed("good", "GOOD.md"))
+    calls: list[str] = []
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert [action.artifact_id for action in result.plan.actions] == ["good"]
+    assert calls == ["good"]
+    assert set(result.applied) == {"good"}
+    assert (clean_repo / "GOOD.md").read_text() == "materialized good\n"
+    assert [finding.path for finding in result.escape_findings] == ["ESCAPER.md"]
+    assert "bad:" in result.escape_findings[0].message
+    assert outside_file.read_text() == "elsewhere\n"
+    assert (clean_repo / "ESCAPER.md").is_symlink()
+
+
+def test_a_manifest_with_no_escaping_entry_carries_no_escape_finding(clean_repo):
+    manifest = _manifest(_copied_managed("good", "GOOD.md"))
+    assert run_adopt(clean_repo, manifest, confirm=_unreachable_confirm).escape_findings == ()
+
+
 def test_state_is_not_written_when_apply_fails_mid_run(clean_repo):
     """State is written LAST, only after ``run_apply`` returns
     successfully -- a mid-run failure must leave no ``seed-state.yml`` at
@@ -414,7 +526,7 @@ def test_first_claim_reclaims_when_a_stale_record_names_a_different_path(clean_r
                     path="OLD.md",  # stale -- the manifest entry's path has since moved
                     artifact_class="generated-derived",
                     body_sha="deadbeef",
-                    inserted_region_span=None,
+                    inserted_region_spans=(),
                 ),
             )
         ),
@@ -614,24 +726,43 @@ def _adopt_hybrid_once(repo: Path, manifest: Manifest) -> None:
     _commit_all(repo)
 
 
+def _hand_edit_region_body(repo: Path, region: str = "tiers") -> None:
+    """Edit a managed region's BODY, markers intact -- a hand-edit, which rung
+    6 refuses. (Deleting the markers is FR-112's sanctioned opt-out and is not
+    a hand-edit; see the opt-out tests below.)"""
+    target = repo / "HYBRID.md"
+    text = target.read_text(encoding="utf-8")
+    assert f"body for {region}\n" in text
+    target.write_text(text.replace(f"body for {region}\n", "hand edited, markers intact\n"), encoding="utf-8")
+    _commit_all(repo)
+
+
 def test_hand_edited_managed_content_on_reapply_is_refused_without_force(clean_repo):
     manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
     _adopt_hybrid_once(clean_repo, manifest)
 
-    # Mangle the managed region beyond recognition -- markers gone entirely.
-    (clean_repo / "HYBRID.md").write_text("no markers here at all\n", encoding="utf-8")
-    _commit_all(clean_repo)
+    # A hand-edit to the managed region's body. (This used to mangle the file
+    # until the markers were gone entirely; that is a deleted region, which
+    # FR-112 makes a permanent opt-out rather than a hand-edit -- Story 82.13.)
+    _hand_edit_region_body(clean_repo)
 
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):
         run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
 
-def test_force_on_hand_edited_content_reinserts_the_managed_region(clean_repo):
-    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
-    _adopt_hybrid_once(clean_repo, manifest)
+def test_force_on_hand_edited_content_inserts_the_pending_region_beside_it(clean_repo):
+    """``--force`` discards the hand-edit refusal and the run still inserts what
+    it owes. (This used to delete the region's markers and expect ``--force`` to
+    put the region back; a deleted region is FR-112's permanent opt-out, which
+    ``--force`` is not the reinstate for -- Story 82.13, and
+    ``test_seed_verbs_region_opt_out.py`` pins that. A hand-edited body beside a
+    newly declared region is the hand-edit ``--force`` is for.)"""
+    _adopt_hybrid_once(clean_repo, _manifest(_hybrid("hybrid", "HYBRID.md", "tiers")))
+    _hand_edit_region_body(clean_repo)
+    manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers", "model-badge"))
 
-    (clean_repo / "HYBRID.md").write_text("no markers here at all\n", encoding="utf-8")
-    _commit_all(clean_repo)
+    with pytest.raises(PreconditionFailure, match="managed-content-modified"):
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
 
     result = run_adopt(
         clean_repo,
@@ -644,7 +775,7 @@ def test_force_on_hand_edited_content_reinserts_the_managed_region(clean_repo):
     )
 
     assert result.applied == ("hybrid",)
-    assert "marshal-seed:begin region=tiers" in (clean_repo / "HYBRID.md").read_text()
+    assert "marshal-seed:begin region=model-badge" in (clean_repo / "HYBRID.md").read_text()
 
 
 # --- present-legacy artifacts ------------------------------------------
@@ -736,8 +867,7 @@ def test_skip_glob_is_recorded_into_state_skips_and_the_artifact_is_left_alone(c
 def test_skip_protects_a_hand_edited_artifact_from_rung_6_refusal(clean_repo):
     manifest = _manifest(_hybrid("hybrid", "HYBRID.md", "tiers"))
     _adopt_hybrid_once(clean_repo, manifest)
-    (clean_repo / "HYBRID.md").write_text("mangled beyond recognition\n", encoding="utf-8")
-    _commit_all(clean_repo)
+    _hand_edit_region_body(clean_repo)
 
     # Without --skip, this run refuses at rung 6.
     with pytest.raises(PreconditionFailure, match="managed-content-modified"):
@@ -756,6 +886,111 @@ def test_skip_protects_a_hand_edited_artifact_from_rung_6_refusal(clean_repo):
         commit=_unreachable_commit,
     )
     assert result.declined is False
+
+
+def _adopt_two_managed_files_once(repo: Path, manifest: Manifest) -> None:
+    run_adopt(repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(manifest, repo))
+    _commit_all(repo)
+    (repo / "A.md").write_text("hand-edited A\n", encoding="utf-8")
+    (repo / "B.md").write_text("hand-edited B\n", encoding="utf-8")
+    _commit_all(repo)
+
+
+def test_skip_names_a_hand_edited_copied_managed_file_that_has_no_action(clean_repo):
+    """DW-10-4-4. A hand-edited `copied-managed` file classifies
+    `PRESENT_CONFORMANT` whatever its bytes say, so the plan gives it no
+    action and `plan.skipped` never holds it -- `--skip A.md` used to be a
+    silent no-op, leaving `--force` (which discards every hand-edit) as
+    rung 6's only override."""
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("b", "B.md"))
+    _adopt_two_managed_files_once(clean_repo, manifest)
+
+    # Both edits are refused with no skip at all, naming both artifacts.
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as unskipped:
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+    assert "a:" in unskipped.value.message
+    assert "b:" in unskipped.value.message
+
+    # Skipping both: no refusal and no --force, and both edits are kept.
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        skip=("A.md", "B.md"),
+        confirm=_unreachable_confirm,
+        commit=_unreachable_commit,
+    )
+    assert result.declined is False
+    assert result.plan.actions == ()
+    assert (clean_repo / "A.md").read_text(encoding="utf-8") == "hand-edited A\n"
+    assert (clean_repo / "B.md").read_text(encoding="utf-8") == "hand-edited B\n"
+
+
+def test_skip_does_not_excuse_a_hand_edited_managed_file_it_does_not_name(clean_repo):
+    """Rung 6 still checks every managed record the pattern leaves in."""
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("b", "B.md"))
+    _adopt_two_managed_files_once(clean_repo, manifest)
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as excinfo:
+        run_adopt(
+            clean_repo,
+            manifest,
+            apply=True,
+            yes=True,
+            skip=("A.md",),
+            confirm=_unreachable_confirm,
+            commit=_unreachable_commit,
+        )
+
+    assert "b:" in excinfo.value.message
+    assert "a:" not in excinfo.value.message
+    assert (clean_repo / "A.md").read_text(encoding="utf-8") == "hand-edited A\n"
+    assert (clean_repo / "B.md").read_text(encoding="utf-8") == "hand-edited B\n"
+
+
+def test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_state_record(clean_repo):
+    """The skip protects the edit on every later run, not just this one: a
+    run that skips hand-edited A AND applies a new artifact C writes state, and
+    A's record must come through it with its ORIGINAL `body_sha` -- recording
+    the edited bytes would turn `--skip` into "protect it once"."""
+    adopted = _manifest(_copied_managed("a", "A.md"))
+    run_adopt(
+        clean_repo,
+        adopted,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(adopted, clean_repo),
+    )
+    _commit_all(clean_repo)
+    original_sha = next(record.body_sha for record in read_state(clean_repo).managed if record.id == "a")
+    (clean_repo / "A.md").write_text("hand-edited A\n", encoding="utf-8")
+    _commit_all(clean_repo)
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("c", "C.md"))
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        skip=("A.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
+    )
+
+    assert result.applied == ("c",)
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+    state_after = read_state(clean_repo)
+    assert state_after is not None
+    assert {record.id: record.body_sha for record in state_after.managed}["a"] == original_sha
+
+    # Without `--skip` and without `--force` the edit is still refused.
+    _commit_all(clean_repo)
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as refused:
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+    assert "a:" in refused.value.message
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
 
 
 # --- applies_to manifest filter ------------------------------------------

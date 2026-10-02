@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 72  # 2026-09-28 (night): Epic 74 appended (spec-feature-flag-governance CAP-3, CAP-4, CAP-6); 72 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 5): Epic 73 appended (spec-pyforge-marshal CAP-281); 71 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 4): Epic 72 appended (spec-pyforge-marshal CAP-280); 70 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 2): Epic 71 appended (spec-pyforge-core:CAP-11); 69 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont.): Epic 70 appended (spec-pyforge-marshal CAP-279); 68 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening): Epic 69 appended (spec-pyforge-marshal CAP-278); 67 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (later): Epic 68 appended (spec-pyforge-marshal CAP-277); 66 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier 2026-09-28: Epics 66 and 67 appended (spec-pyforge-marshal CAP-275, CAP-276); 65 epic keys once epic-66/epic-67 reach the ledger (63 measured today with fleet_scan.parse_sprint_status -- the rows wait behind the live Story 64.1 dispatch, which owns the feed and the tracked ledger until it lands). Earlier: 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core:CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
 storyCount: 346  # 2026-09-28 (night): +3 for Epic 74 / Stories 74.1, 74.2, 74.3 (346 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 5): +2 for Epic 73 / Stories 73.1, 73.2 (343 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 4): +1 for Epic 72 / Story 72.1 (341 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 2): +1 for Epic 71 / Story 71.1 (340 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont.): +1 for Epic 70 / Story 70.1 (339 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening): +1 for Epic 69 / Story 69.1 (338 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (later): +1 for Epic 68 / Story 68.1 (337 story keys in the ledger after this commit's sync, measured). Earlier 2026-09-28: +3 for Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 (336 story keys once the three rows reach the ledger; 333 measured today). Earlier: 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-09-30"   # RE-STAMPED 2026-09-30: Epic 78 / Story 78.1 minted (spec-pyforge-marshal CAP-283, FR-230). Prior 2026-09-29 (night)   # RE-STAMPED 2026-09-29 (night): Epic 77 / Story 77.1 minted (spec-pyforge-marshal CAP-282, FR-229). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 76 / Story 76.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 75 / Story 75.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-28 (night): Epic 74 / Stories 74.1-74.3 minted (spec-feature-flag-governance CAP-4, CAP-3, CAP-6 -- the Guild's CAPs, no marshal CAP; no FR registered, PRD section 31.11); 74.2 minted blocked behind doctor Story 34.2. Earlier: AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
+updated: "2026-10-02"   # RE-STAMPED 2026-10-02: Epics 81-83 minted since the last stamp; Epic 83 / Stories 83.1-83.6 (fix stories, no CAP) chain the defects found landing Phase 2. Prior 2026-09-30   # RE-STAMPED 2026-09-30: Epic 78 / Story 78.1 minted (spec-pyforge-marshal CAP-283, FR-230). Prior 2026-09-29 (night)   # RE-STAMPED 2026-09-29 (night): Epic 77 / Story 77.1 minted (spec-pyforge-marshal CAP-282, FR-229). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 76 / Story 76.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 75 / Story 75.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-28 (night): Epic 74 / Stories 74.1-74.3 minted (spec-feature-flag-governance CAP-4, CAP-3, CAP-6 -- the Guild's CAPs, no marshal CAP; no FR registered, PRD section 31.11); 74.2 minted blocked behind doctor Story 34.2. Earlier: AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274; Epic 65 / Stories 65.1, 65.2 minted. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273; Epic 64 / Story 64.1 minted. Earlier: RE-STAMPED (night): Epic 63 / Story 63.1 minted (spec-pyforge-core:CAP-10). Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272; Epic 62 / Story 62.1 minted. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271; Epic 61 / Story 61.1 minted. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
@@ -8490,6 +8490,138 @@ missing from the file" by rung 6 (`seed/verbs/preconditions.py:445`; `opted_out`
 one-span shape as a one-region list, so deleting two regions' markers opts both out and neither is offered again;
 reverting each fix fails its new test (mutation); the story closes DW-FU-8-5-2, DW-FU-8-5-5 and DW-FU-8-5-6 in
 `deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this story);
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+## Epic 83: Phase 2 landing defects: dispatch liveness, whole-tree checks, the landing heal and campaign holds
+
+Minted 2026-10-02 (night) from the station Dream's entry of the same date, at the operator's request to chain the
+defects found while landing Phase 2. Each story fixes one defect of shipped behaviour under the capability that shipped
+it, so no CAP is minted and no flag is added; a new epic because those epics are `done`. Stories run most severe first.
+**HARD boundaries:** a fix never widens what its parent capability promises, except Story 83.3, which widens CAP-283's
+mechanical set to pure appends of whole rows in the station's own deferred-work ledger and nothing more; the heal is
+never lossy; a liveness check never treats a stranger's process as the session; prelaunch work never blocks a launch.
+
+### Story 83.1: Dispatch liveness proves a pid is the session it launched
+
+As the operator running a campaign,
+I want a past dispatch run judged live only while its recorded pid is still the session it launched,
+So that a reused pid or thread id never holds a wave on a story that finished weeks ago.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 28.16 (the live dispatch story keys a wave reads);
+`spec-pyforge-core`'s ProcessPort (`pyforge.core.process`) • **Surface:**
+`src/shared/packages/pyforge-core/src/pyforge/core/process.py` (`PosixProcess.is_alive`, a process start-time read),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (`resolve_dispatch_session_verdict`, `_live_dispatch_story_keys`), the core and marshal unit
+tests
+**Given** a dispatch run with no completion entry whose recorded session pid now names a thread of another process,
+or a process that started well after the run's launch was journaled
+**When** a campaign cycle or `marshal status` judges whether the run is live
+**Then** the run is not live, and the campaign plans its next wave
+**And** `PosixProcess.is_alive` answers `False` for a thread id that is not a thread-group leader; a session whose
+process started more than a bounded tolerance after its journaled launch reads as not the session; the session a
+dispatch launched still reads as live; removing either check fails its new test (mutation); `pixi run --frozen -e
+pyforge-marshal pyforge-marshal-test` and `pixi run --frozen -e pyforge-core pyforge-core-test` green
+
+### Story 83.2: Every station's dispatch verification runs the checks that read the whole tree
+
+As the operator landing any station's story through dispatch,
+I want its verification to run pyforge-core's suite and the deferred-work check beside the station's own tests,
+So that a landing cannot turn `main` red for a check that reads every station's tree.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 53.1 (CAP-261a, the derived verification guard) •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` (`_verify_commands_with_surface_guard`), its unit tests
+**Given** a story whose change breaks a check that reads every station's tree (pyforge-core's exception-root
+meta-test, doctor's deferred-work citation check)
+**When** its dispatch verifies the merge-tree preview
+**Then** verification fails and the landing is refused before it merges
+**And** the two commands join verification in the one place the derived guard folds commands in, as `lint-types` did,
+never by editing eight `verify_commands` lists; a story that breaks neither still lands; removing either command fails
+its new test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 83.3: The landing heal unions appended deferred-work rows the way it unions memlog entries
+
+As the operator running stories as a parallel wave,
+I want the landing heal to resolve a conflict in which both sides only appended rows to the station's own
+deferred-work ledger,
+So that two wave members that each defer work do not refuse each other's landing.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** CAP-283 / Story 78.1 (FR-230), the landing heal's mechanical
+union • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` (beside `is_memlog_path` and `union_memlog_texts`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` (the heal's resolution map), their unit tests
+**Given** `main` and the branch each appended whole `### DW-` rows after the same point of the station's own
+`deferred-work-ledger.md`, and git folded their identical trailing lines out of the conflict hunk
+**When** the landing heals the merge
+**Then** the resolved ledger holds the base, then `main`'s rows, then the branch's rows, each row whole, and the
+landing merges
+**And** a conflict in which either side edited an existing row, or in another project's ledger, still refuses
+(MRS-DISP-038); no row is dropped or duplicated; removing the ledger rule fails its new test (mutation); `pixi run
+--frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 83.4: A serial campaign holds the next overlapping story while a refused story is unlanded
+
+As the operator running a strictly serial campaign,
+I want the campaign to hold a story whose surfaces overlap a station story that finished but was refused at landing,
+So that two stories never edit the same files from different bases.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 28.16 (wave planning and its surface-overlap refusal);
+Story 22.11 (the campaign supervisor) • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py` (wave planning),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (the campaign cycle), their unit tests
+**Given** a campaign whose last story's session finished but whose landing was refused (MRS-DISP-038 or MRS-DISP-056)
+with its PR still open
+**When** the next cycle plans a wave
+**Then** every story whose surfaces overlap the refused story's is held, with a finding that names the refused story,
+and dispatches only after that story lands
+**And** a story with disjoint surfaces still dispatches; the refused story landing, or its PR closing, releases the
+hold; removing the hold fails its new test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 83.5: A campaign supervisor keeps ticking through fleet-lock contention
+
+As the operator running two campaigns at once,
+I want a cycle refused for fleet-lock contention read as an ordinary not-complete cycle,
+So that a campaign does not stop after five contended ticks.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 22.7 (fleet drain); Story 22.11 (the campaign
+supervisor) • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (`run_fleet_drain`'s MRS-DRAIN-010 refusal),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_fleet_supervisor/__main__.py` (`cycle_completion`), their unit tests
+**Given** a campaign supervisor whose cycles keep meeting MRS-DRAIN-010 because another campaign holds the fleet cycle
+lock
+**When** it reads each cycle's envelope
+**Then** each reads as not complete (`data.complete` false), not unreadable, and the supervisor ticks again until the
+lock frees
+**And** a cycle that truly cannot run still counts toward the unreadable ceiling; dropping `complete` from the refusal
+fails its new test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 83.6: Dispatch resyncs a stale codegraph index before it launches a session
+
+As the operator dispatching after pulling `main`,
+I want dispatch to refresh a stale codegraph index itself instead of only warning,
+So that a session never starts against an index older than the tree it edits.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 63.4 (`spec-pyforge-steward` CAP-5, the session check
+folded into dispatch); the token-economy kit (Story 28.3, `SPEC-marshal-token-economy` CAP-3/CAP-4) • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (`_surface_session_precondition_findings`), the seed kit's codegraph verb, their unit tests
+**Given** the session check reports `codegraph-index: stale` and no other non-ok row
+**When** dispatch's prelaunch runs
+**Then** it runs the kit's incremental codegraph resync, bounded by the kit's own ceiling, re-checks, and launches with
+no MRS-DISP-049
+**And** a resync that fails or times out still warns MRS-DISP-049 and never blocks the launch; any other non-ok row
+warns as today; removing the resync fails its new test (mutation); `pixi run --frozen -e pyforge-marshal
+pyforge-marshal-test` green
+
+### Story 83.7: A re-dispatch after a refused landing lands the existing branch without a new session
+
+As the operator who fixed a branch whose landing was refused,
+I want a single-story dispatch to land that branch without starting a new session,
+So that finished work is never spent again on a full dev and review session.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 29.2 (a harness-done story lands through CAP-4 and
+never relaunches); CAP-4 (Story 28.20) • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (the single-story dispatch's land-only
+decision), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py` (`blocks_harness_relaunch`), their unit tests
+**Given** a story whose latest dispatch run journaled a `dispatch-land` outcome with verdict `refused` (MRS-DISP-038 or
+MRS-DISP-056), and whose worktree spec still reads where the session stopped (for example `in-progress`)
+**When** `marshal factory dispatch <slug> <key>` runs
+**Then** it takes the land-only path (re-verify, wait for the PR's checks, merge, finalize) and launches no session
+**And** a story whose latest run journaled no landing attempt still launches a session as today; a refusal the land-only
+path cannot clear refuses again and leaves the PR open; removing the journal rule fails its new test (mutation);
 `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)

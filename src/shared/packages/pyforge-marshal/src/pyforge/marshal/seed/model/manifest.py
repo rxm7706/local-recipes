@@ -65,9 +65,10 @@ wire contracts, not internal loading) -- this story's own Never bullet.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 import yaml
@@ -200,6 +201,15 @@ _ENTRY_KEYS = frozenset(
 )
 _REGION_KEYS = frozenset({"name", "anchor"})
 
+#: The grammar of a manifest entry's ``id``: one token carrying no whitespace
+#: and no ``#`` (Story 82.13, DW-FU-8-5-2). It is the ARTIFACT half of
+#: ``state/schema.json``'s ``opted_out`` item pattern -- the ``#`` is that
+#: key's separator -- and so what makes every id the manifest accepts a
+#: representable opt-out. Spelled once here and once in the schema
+#: (``$defs/artifactId``) because ``model`` may not import ``state``, and
+#: ``tests/unit/test_seed_state_store.py`` pins the two to one probe set.
+ARTIFACT_ID_PATTERN = re.compile(r"[^\s#]+")
+
 
 def _reject_unknown_keys(raw_mapping: dict, allowed: frozenset[str], what: str) -> None:
     unknown = sorted(str(key) for key in raw_mapping if key not in allowed)
@@ -229,6 +239,27 @@ def _require_text(name: str, value: Any, *, suffix: str = "") -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{name} must be a non-empty, non-blank str{suffix}, got {value!r}")
     return value.strip()
+
+
+def _require_repo_relative_path(value: str) -> str:
+    """``value`` (already stripped, non-blank) if it names a location that can
+    only be INSIDE the repository, else ``ValueError`` (Story 82.11, DW-FU-7-4).
+
+    The manifest is the one input that can name a place outside the repo being
+    seeded: ``Path.__truediv__`` DISCARDS the repo root when the right operand
+    is absolute, and a ``..`` segment walks out of it. Both are refused here,
+    at load, so ``detect`` never sees one -- a load-time error naming the
+    entry's id (``load_manifest`` prefixes it), not an apply-time refusal of
+    the whole plan. Judged on BOTH separator dialects: a POSIX-rooted path, a
+    Windows drive (``C:\\x``, ``C:x``), a backslash-rooted or UNC path, and a
+    ``..`` segment split on ``/`` or ``\\``. An in-repo symlink that points
+    out cannot be seen from the string alone; ``detect.inventory`` refuses
+    that one per entry (``ArtifactState.ESCAPING``)."""
+    if PurePosixPath(value).is_absolute() or PureWindowsPath(value).drive or PureWindowsPath(value).root:
+        raise ValueError(f"path must be repo-relative, not absolute, got {value!r}")
+    if ".." in value.replace("\\", "/").split("/"):
+        raise ValueError(f"path must not contain a '..' segment, got {value!r}")
+    return value
 
 
 @dataclass(frozen=True)
@@ -290,8 +321,15 @@ class ManifestEntry:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", _require_text("id", self.id))
+        # After `_require_text` has stripped it, so a padded `" foo "` is
+        # still the legal id `foo`. An id the `opted_out` grammar cannot
+        # spell would make a region of that artifact impossible to opt out
+        # of (Story 82.13): refused here, at load, naming the entry
+        # (`load_manifest` prefixes the id), rather than at the state write.
+        if ARTIFACT_ID_PATTERN.fullmatch(self.id) is None:
+            raise ValueError(f"id must carry no whitespace and no '#' (the opt-out key's separator), got {self.id!r}")
         object.__setattr__(self, "artifact_class", ArtifactClass(self.artifact_class))
-        object.__setattr__(self, "path", _require_text("path", self.path))
+        object.__setattr__(self, "path", _require_repo_relative_path(_require_text("path", self.path)))
         object.__setattr__(self, "applies_to", AppliesTo(self.applies_to))
         object.__setattr__(self, "rationale", _require_text("rationale", self.rationale))
 

@@ -100,9 +100,15 @@ epics AC's "unless an artifact explicitly targets them" carve-out) --
 exclusions only shrink ``Inventory.tree``, the cached walk result; they
 never hide a manifest-named path from classification. That direct check
 first resolves the path safely WITHIN ``repo_root`` (`_resolve_within_repo`)
--- an absolute or ``../``-traversing ``entry.path`` (a shape
-``ManifestEntry`` itself does not reject) is classified ``absent`` rather
-than ever dereferenced outside the target repo.
+-- an entry whose path resolves outside the target repo (``ManifestEntry``
+itself now rejects an absolute or ``..``-bearing ``path`` at load, so what
+remains is an in-repo SYMLINK pointing out, or a hand-built entry) is never
+dereferenced there, and is classified ``escaping`` (Story 82.11, DW-10-3-9),
+not ``absent``: ``absent`` made ``build_plan`` emit an ordinary action
+carrying the escaping path, which ``run_apply`` then refused for the WHOLE
+plan. ``escaping`` is no actionable state, so ``build_plan`` plans nothing for
+that one entry and every other action applies; ``Inventory.escaping`` and
+``escape_findings`` name it.
 
 The walk itself prunes two independent things while descending, never
 after the fact: a directory named ``.git``, ``node_modules``, or ``.pixi``
@@ -205,9 +211,11 @@ from .findings import Finding, FindingType, Severity
 
 
 class ArtifactState(StrEnum):
-    """The four-state classification vocabulary the epics AC names
-    verbatim, kebab-case wire values matching ``ArtifactClass``/
-    ``FindingType``'s established convention. ``PRESENT_LEGACY``'s first
+    """The five-state classification vocabulary: the epics AC's four
+    (``absent``, ``present-conformant``, ``present-divergent``,
+    ``present-legacy``) plus Story 82.11's ``escaping``, with kebab-case wire
+    values matching ``ArtifactClass``/``FindingType``'s established
+    convention. ``PRESENT_LEGACY``'s first
     producing code path is `_classify_entry`'s legacy short-circuit (S-9.4)
     -- see the module docstring."""
 
@@ -215,6 +223,11 @@ class ArtifactState(StrEnum):
     PRESENT_CONFORMANT = "present-conformant"
     PRESENT_DIVERGENT = "present-divergent"
     PRESENT_LEGACY = "present-legacy"
+    #: Story 82.11 (DW-10-3-9): the entry's path resolves OUTSIDE the repo
+    #: (an in-repo symlink pointing out). Not ``ABSENT`` -- it is not missing,
+    #: it is not ours to read or write -- and no actionable state, so
+    #: ``build_plan`` emits no action for it.
+    ESCAPING = "escaping"
 
 
 @dataclass(frozen=True)
@@ -255,6 +268,17 @@ class LegacyRecord:
 
 
 @dataclass(frozen=True)
+class EscapeRecord:
+    """One entry classified `escaping` (Story 82.11): its own id and declared
+    path, plus the absolute location that path actually resolves to. Computed
+    output like `LegacyRecord`, so no ``__post_init__`` validation."""
+
+    entry_id: str
+    path: str
+    resolves_to: str
+
+
+@dataclass(frozen=True)
 class Inventory:
     """One `classify()` call's full result: the repo root it walked, the
     cached tree (every walked, non-excluded regular file's path,
@@ -271,6 +295,9 @@ class Inventory:
     tree: frozenset[str]
     classifications: tuple[Classification, ...]
     legacy: tuple[LegacyRecord, ...]
+    #: Story 82.11: every `EscapeRecord`, same single pass and entry order.
+    #: Defaulted so every `Inventory(...)` built before this field keeps working.
+    escaping: tuple[EscapeRecord, ...] = ()
 
 
 # Pruned by directory NAME, at any depth -- never descended into, regardless
@@ -552,7 +579,10 @@ def _resolve_within_repo(repo_root: Path, resolved_root: Path, entry_path: str) 
     classifying artifacts WITHIN the target repo, so an entry whose declared
     path resolves outside it is never "present" from this module's own
     vantage point, regardless of what exists elsewhere on the host --
-    `_classify_entry` treats a ``None`` result the same as ``ABSENT``."""
+    `_classify_entry` reports a ``None`` result as ``ESCAPING`` (Story 82.11;
+    it used to read ``ABSENT``, which let one bad entry block the whole plan).
+    ``ManifestEntry`` now rejects an absolute or ``..`` path at load, so the
+    live shape is an in-repo symlink pointing out."""
     candidate = (repo_root / entry_path).resolve()
     if candidate != resolved_root and resolved_root not in candidate.parents:
         return None
@@ -571,7 +601,9 @@ def _classify_entry(entry: ManifestEntry, repo_root: Path, resolved_root: Path) 
         # referenced entry never reaches one.
         return ArtifactState.PRESENT_CONFORMANT
     target = _resolve_within_repo(repo_root, resolved_root, entry.path)
-    if target is None or not target.exists():
+    if target is None:
+        return ArtifactState.ESCAPING
+    if not target.exists():
         return ArtifactState.ABSENT
     # S-9.4: a present entry naming a successor is `present-legacy`
     # UNCONDITIONALLY -- ahead of the `hybrid-managed-region` structural
@@ -604,9 +636,14 @@ def classify(manifest: Manifest, repo_root: Path) -> Inventory:
     resolved_root = repo_root.resolve()
     classifications: list[Classification] = []
     legacy: list[LegacyRecord] = []
+    escaping: list[EscapeRecord] = []
     for entry in manifest.entries:
         state = _classify_entry(entry, repo_root, resolved_root)
         classifications.append(Classification(entry_id=entry.id, state=state))
+        if state is ArtifactState.ESCAPING:
+            escaping.append(
+                EscapeRecord(entry_id=entry.id, path=entry.path, resolves_to=str((repo_root / entry.path).resolve()))
+            )
         if state is ArtifactState.PRESENT_LEGACY:
             # `entry.legacy_of` is guaranteed non-None here -- it is the
             # only way `_classify_entry` produces `PRESENT_LEGACY`.
@@ -617,6 +654,7 @@ def classify(manifest: Manifest, repo_root: Path) -> Inventory:
         tree=tree,
         classifications=tuple(classifications),
         legacy=tuple(legacy),
+        escaping=tuple(escaping),
     )
 
 
@@ -635,6 +673,15 @@ def effective_never_write(manifest: Manifest, inventory: Inventory) -> frozenset
 # own two named classes (see that function's own docstring, and the module
 # docstring's S-10.8 paragraph, for why the other four never qualify).
 _WRITABLE_EXEMPTION_CLASSES = frozenset({ArtifactClass.COPIED_MANAGED, ArtifactClass.COPIED_SEEDED})
+
+# The two BMAD artifact symlinks (``generated-derived``, so no class above
+# covers them) the manifest itself declares as write targets (Story 82.11,
+# DW-FU-7-5-5). The never-write set now matches a directory NODE, so
+# ``**/planning-artifacts/**`` covers ``_bmad-output/planning-artifacts`` --
+# and these are exempted BY DECLARATION, by id, rather than writable only
+# because a pattern happened to miss. ``fs.never_write_match`` judges the
+# exemption per form, so it covers the link itself and nothing it points at.
+_WRITABLE_EXEMPTION_IDS = frozenset({"planning-artifacts-symlink", "implementation-artifacts-symlink"})
 
 
 def writable_exemptions(manifest: Manifest, inventory: Inventory) -> frozenset[str]:
@@ -657,10 +704,17 @@ def writable_exemptions(manifest: Manifest, inventory: Inventory) -> frozenset[s
     `copied-seeded` entry that is currently `ABSENT` (the ordinary "create
     it for the first time" case, and the shape this story's own confirmed
     defect reproduces) still needs its path exempted, precisely because the
-    write that would MAKE it present is the one rung 4 was refusing."""
+    write that would MAKE it present is the one rung 4 was refusing.
+
+    Also exempts the two manifest-declared BMAD artifact symlink entries, by
+    id (`_WRITABLE_EXEMPTION_IDS`, Story 82.11)."""
     legacy_paths = {record.path for record in inventory.legacy}
     return (
-        frozenset(entry.path for entry in manifest.entries if entry.artifact_class in _WRITABLE_EXEMPTION_CLASSES)
+        frozenset(
+            entry.path
+            for entry in manifest.entries
+            if entry.artifact_class in _WRITABLE_EXEMPTION_CLASSES or entry.id in _WRITABLE_EXEMPTION_IDS
+        )
         - legacy_paths
     )
 
@@ -685,6 +739,26 @@ def legacy_findings(inventory: Inventory) -> tuple[Finding, ...]:
             f"{record.path}: superseded by '{record.legacy_of}'; preserved, never modified",
         )
         for record in inventory.legacy
+    )
+
+
+def escape_findings(inventory: Inventory) -> tuple[Finding, ...]:
+    """One HARD ``target-escapes-repo`` `Finding` per `EscapeRecord` in
+    ``inventory.escaping``, in manifest entry order (Story 82.11, DW-10-3-9,
+    the `legacy_findings` shape). Each message names the entry id, its
+    declared path and the location it resolves to, so a reader can see which
+    symlink to fix. ``build_plan`` emits no action for such an entry, so the
+    run goes on for every other one -- the finding is how the skipped entry
+    is still reported rather than silently dropped."""
+    return tuple(
+        Finding.new(
+            Severity.HARD,
+            FindingType.TARGET_ESCAPES_REPO,
+            record.path,
+            f"{record.entry_id}: {record.path!r} resolves to {record.resolves_to!r}, outside the repository;"
+            " no action is planned for it",
+        )
+        for record in inventory.escaping
     )
 
 

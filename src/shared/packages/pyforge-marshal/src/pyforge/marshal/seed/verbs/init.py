@@ -383,11 +383,21 @@ def _manifest_for_init(manifest: Manifest, slug: str) -> Manifest:
     every filtered entry rather than a hardcoded list of the five entries
     that carry one in the packaged manifest today -- a future manifest
     addition needs no code change here."""
-    entries = tuple(
-        dataclasses.replace(entry, path=entry.path.replace("{{ slug }}", slug))
-        for entry in manifest.entries
-        if entry.applies_to in (AppliesTo.INIT, AppliesTo.BOTH)
-    )
+    try:
+        entries = tuple(
+            dataclasses.replace(entry, path=entry.path.replace("{{ slug }}", slug))
+            for entry in manifest.entries
+            if entry.applies_to in (AppliesTo.INIT, AppliesTo.BOTH)
+        )
+    except ValueError as exc:
+        # `dataclasses.replace` re-runs `ManifestEntry.__post_init__`, which
+        # (Story 82.11, DW-FU-7-4) refuses an absolute path or a `..` segment.
+        # The slug is the one caller-supplied string spliced into a path, so
+        # that refusal is the operator's flag, not an internal failure.
+        raise UsageError(
+            f"--slug {slug!r} renders a manifest path that is not repo-relative: {exc}",
+            remedy="pass a --slug that is a plain name -- it must not contain a '..' segment",
+        ) from exc
     return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=entries)
 
 
@@ -411,15 +421,12 @@ def _build_state_after_init(
     state to carry anything over FROM. ``legacy[]`` mirrors ``inventory.
     legacy`` for shape parity with ``adopt``'s own state (see the module
     docstring)."""
-    managed = tuple(
-        sorted(
-            (
-                _managed_artifact_after_apply(action, entries_by_id[action.artifact_id], repo_root)
-                for action in plan.actions
-            ),
-            key=lambda record: record.id,
-        )
+    built = (
+        _managed_artifact_after_apply(action, entries_by_id[action.artifact_id], repo_root) for action in plan.actions
     )
+    # A hybrid action that names no region records nothing (`None`): an artifact
+    # with no region of its own is not claimed.
+    managed = tuple(sorted((record for record in built if record is not None), key=lambda record: record.id))
     legacy = tuple(
         LegacyArtifact(id=record.entry_id, path=record.path, legacy_of=record.legacy_of) for record in inventory.legacy
     )
@@ -466,10 +473,33 @@ def run_init(
     ``run_adopt``'s identical stance)."""
     _refuse_if_unsuitable(path, force=force)
     resolved_slug = slug if slug is not None else path.resolve().name
+    # Before the bootstrap, not after (Story 82.11): `_manifest_for_init` reads
+    # only `manifest` and the slug -- never the repo -- and a `--slug` that
+    # renders a non-repo-relative path is a `UsageError` that must leave the
+    # target exactly as it was, not created and `git init`-ed.
+    filtered_manifest = _manifest_for_init(manifest, resolved_slug)
     _bootstrap_git_repo(path)
 
-    filtered_manifest = _manifest_for_init(manifest, resolved_slug)
     inventory = classify(filtered_manifest, path)
+    if inventory.escaping:
+        # `--force` into a non-empty target can hold an in-repo symlink that
+        # points outside the repo at a manifest path. `build_plan` plans
+        # nothing for such an entry, so without this the run would exit 0
+        # having silently dropped it, where rung 3 used to refuse it. `init`
+        # carries no finding field, so it refuses (exit 3) -- same wording as
+        # `detect.inventory.escape_findings`, minus its "no action is planned"
+        # tail, which is not true of a refusal.
+        detail = "; ".join(
+            f"{record.entry_id}: {record.path!r} resolves to {record.resolves_to!r}, outside the repository"
+            for record in inventory.escaping
+        )
+        raise PreconditionFailure(
+            f"target-escapes-repo: {detail}",
+            remedy=(
+                "fix the manifest entry's path, or the in-repo symlink it resolves through,"
+                " so it stays inside the repository, then re-run `marshal seed init`"
+            ),
+        )
     plan = build_plan(filtered_manifest, inventory, opted_out=frozenset())
 
     never_write = fs.NeverWrite(

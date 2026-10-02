@@ -31,7 +31,7 @@ archive's own existing bytes (to decide "already promoted"), and
 ``VcsPort.commit_subjects`` -- then hands it to ``core.promotion``'s pure
 ``merged_story_keys``/``classify_promotion_candidates`` for classification.
 The only further impure step is executing the plan: ``FsPort.copy_file``
-per promoted spec, then one ``VcsPort.commit_paths`` call for the whole
+per promoted spec, then one ``CommitPort.commit_paths`` call for the whole
 batch (AD-29: "a single 'promote N specs' run is one paper-trail event",
 never one commit per file).
 
@@ -99,7 +99,11 @@ envelope-building core) and a thin ``run_evaluate`` wrapper (see that
 module's own docstring for the split's full rationale). ``land-story``
 calls ``evaluate_gate`` directly with ``--scope-check`` forced on, so both
 halves of the full gate (verify commands AND the scope check) must be
-green before anything else runs.
+green before anything else runs. Since Story 82.9 that re-run also writes
+the story's redacted gate record into the loop home's AD-25 ``sessions/``
+namespace (F-25: the sole gate evidence for a hand landing); the landing
+reports it as ``data["gate_record"]`` and never lets a record that could not
+be written (``MRS-GATE-017``) touch its own verdict or exit code.
 
 **The subject is always rendered, never hand-typed (AD-24).** ``land-story``
 resolves the project's ``merge_subject_template`` policy field and calls
@@ -237,12 +241,14 @@ from pathlib import Path
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
+from ..adapters.clock_system import SystemClock
 from ..adapters.forge_gh import GhForge
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion, status
-from ..core.egress import Redacted, to_redacted
+from ..core.commit_vcs import CommittingVcs
+from ..core.egress import Redacted, to_redacted, to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, render_filename_slug
 from ..core.journal import (
     FoldResult,
@@ -837,7 +843,7 @@ def _execute_promotion_plan(
     *,
     project_slug: str,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     root: Path,
     specs_dir: Path,
     deploy_run: "_DeployRun",
@@ -990,7 +996,7 @@ def _execute_promotion_plan(
                 payload={"action": "commit_paths", "story_keys": sorted(copied)},
             )
             try:
-                vcs.commit_paths(root, tuple(commit_targets), message)
+                vcs.commit_paths(root, tuple(commit_targets), to_redacted_text(message))
             except VcsCommandError as exc:
                 findings.append(
                     Finding(
@@ -1032,7 +1038,7 @@ def _execute_promotion_plan(
 def run_promote(
     args: argparse.Namespace,
     *,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     fs: FsPort | None = None,
 ) -> int:
     vcs = vcs if vcs is not None else GitVcs()
@@ -1947,7 +1953,7 @@ def run_land_story(
     # `main.py` already imports every CLI submodule before any handler
     # runs, so by the time this function is ever CALLED both modules are
     # fully loaded and this import is a cheap `sys.modules` lookup.
-    from .gate import evaluate_gate
+    from .gate import GATE_RECORD_FINDING_CODE, _default_record_port, evaluate_gate
     from .init import _home_path
 
     vcs = vcs if vcs is not None else GitVcs()
@@ -2111,10 +2117,21 @@ def run_land_story(
     # logic as a function call (Story 4.3's own Always bullet), never a
     # shelled-out re-invocation of the `marshal` CLI and never a second,
     # independently-drifting gate implementation.
+    #
+    # Story 82.9 (F-25): this re-run is the sole gate evidence for a hand landing, so it writes the
+    # redacted gate record -- a run-less one, in the loop home's `sessions/` namespace (`run_id`
+    # stays None: a `--run` would route `evaluate_gate`'s fold branch). The landing never reads
+    # the record: `data["gate_record"]` carries the outcome, and `MRS-GATE-017` is kept out of
+    # this landing's own `findings`, so a record that cannot be written moves neither its
+    # verdict nor its exit code.
     gate_args = argparse.Namespace(project=slug, run_id=None, scope_check=True, story=str(story_key))
-    gate_envelope = evaluate_gate(gate_args, process=process, vcs=vcs, fs=fs)
+    gate_envelope = evaluate_gate(
+        gate_args, process=process, vcs=vcs, fs=fs, record=_default_record_port(fs), clock=SystemClock()
+    )
     data["gate_verdict"] = gate_envelope.verdict.value
-    findings.extend(gate_envelope.findings)
+    if "gate_record" in gate_envelope.data:
+        data["gate_record"] = gate_envelope.data["gate_record"]
+    findings.extend(finding for finding in gate_envelope.findings if finding.code != GATE_RECORD_FINDING_CODE)
     if gate_envelope.verdict is not Verdict.CLEAN:
         # Code review (2026-08-06, P2, Blind Hunter): `status_for` treats
         # `warn` as "ok", but a warn-tier gate result (real findings exist,
@@ -2312,6 +2329,10 @@ def _render_text_land_story(data: Mapping[str, object], findings: tuple[Finding,
         lines.append("already merged -- no-op (no gate run, no merge attempted)")
     if "gate_verdict" in data:
         lines.append(f"gate verdict: {data['gate_verdict']}")
+    if "gate_record" in data:
+        from .gate import describe_gate_record  # local, like `run_land_story`'s: gate -> init -> deploy cycle
+
+        lines.append(describe_gate_record(data["gate_record"]))
     if "merge_sha" in data:
         lines.append(f"merge sha: {data['merge_sha']}")
         lines.append(f"subject: {data['subject']!r}")
@@ -3580,7 +3601,7 @@ def _repair_tier3_feed(
 def run_reconcile_completions(
     args: argparse.Namespace,
     *,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     fs: FsPort | None = None,
     harness: HarnessPort | None = None,
 ) -> int:
@@ -3973,7 +3994,7 @@ def run_reconcile_completions(
                                     },
                                 )
                                 try:
-                                    vcs.commit_paths(root, (ledger_path,), message)
+                                    vcs.commit_paths(root, (ledger_path,), to_redacted_text(message))
                                 except VcsCommandError as exc:
                                     # Review fix, 2026-08-12, high-severity:
                                     # a failed commit after a successful

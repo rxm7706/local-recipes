@@ -26,7 +26,7 @@ content structurally cannot live there.
 2. The worktree is dirty.
 3. An action's target escapes `repo_root`.
 4. An action's target matches a `never_write` pattern.
-5. An action's target exists and is a symlink.
+5. An action's target exists and is a symlink or a directory.
 6. Managed content on disk diverges from what state recorded.
 
 The order is not cosmetic -- the AC pins it, so a repo failing two rungs
@@ -41,31 +41,33 @@ cheaper has passed.
 `dry_run=True` bypasses rung 2 ONLY: "reading is always safe" is a claim
 about the worktree's cleanliness, not about whether git exists at all or
 whether the plan is even coherent, so a dry run still refuses a non-repo,
-an escaping path, a never-write target, and a symlink. `force=True`
-bypasses rung 6 ONLY -- it is the operator's explicit "yes, discard my
-hand-edit". Its real bound, stated rather than implied (found in review):
-because `force` returns before rung 6 runs AT ALL, and because
-`_read_managed_text` is the only code path in this module that ever looks
-at a `ManagedRecord`'s own path, under `--force` NO rung validates a
-managed record's path -- not its containment, not whether it is a symlink.
-Every path the PLAN names is still fully checked, by rungs 3-5, which
-`force` does not touch; the unchecked surface is exactly the caller-
-supplied record set, whose paths this run is not going to write through
-anyway. Rung 4, `never_write`, is bypassable by NEITHER FLAG: it is
-the frozen guard (AD-61), and a guard with an override is a suggestion.
+an escaping path, a never-write target, a symlink, and a directory target.
+`force=True` bypasses rung 6 ONLY -- it is the operator's explicit "yes,
+discard my hand-edit". Its real bound, stated rather than implied (found in
+review): because `force` returns before rung 6 runs AT ALL, and because
+`_read_managed_text` is the only code path in this module that ever looks at
+a `ManagedRecord`'s own path, under `--force` NO rung validates a managed
+record's path -- not its containment, not whether it is a symlink. Every
+path the PLAN names is still fully checked, by rungs 3-5, which `force` does
+not touch; the unchecked surface is exactly the caller- supplied record set,
+whose paths this run is not going to write through anyway. Rung 4,
+`never_write`, is bypassable by NEITHER FLAG: it is the frozen guard
+(AD-61), and a guard with an override is a suggestion.
 
-**Stated bounds, not aspirations.** Rungs 3-5 evaluate a target the same
-way `fs._guard` does -- `Path.resolve()` on both sides, match the resolved
-repo-relative string -- so this gate and the write primitive behind it
-can never disagree about the same path. That deliberately inherits
-`fs.py`'s own documented bound: resolution follows PARENT symlinks, so a
-symlinked ancestor (`docs/dreams -> real/`) is evaluated at its
-destination, and rung 5's `lstat()` inspects the LEAF only. Matching
-the unresolved path instead would close that shape here while opening a
-disagreement with `fs.py`, which is the worse trade -- a guard that
-answers differently from the primitive it guards is a guard nobody can
-reason about. Narrowing it for real means narrowing `fs._guard`, which is
-that module's story, not this one's.
+**Stated bounds, not aspirations.** Rungs 3 and 5 evaluate a target the same
+way `fs._guard` does -- `Path.resolve()` on both sides -- and rung 4 does not
+evaluate it at all: it calls `fs.never_write_match`, the one helper `fs._guard`
+itself calls, so this gate and the write primitive behind it can never
+disagree about the same path (Story 82.11). That helper matches the target as
+the operator WROTE it and in its resolved form, and a refusal on either wins,
+so a symlinked ancestor (`docs -> real/`) no longer hides `docs/dreams/x.md`
+from `docs/dreams/*.md`; a directory target is also matched as `dir/`. Rung
+5's `lstat()` still inspects the LEAF only, and refuses two kinds of node
+there: a symlink (the write would go through it) and an existing directory
+(the runner's final `os.replace(tmp, target)` would fail with an untyped
+`IsADirectoryError` outside the `SeedError` taxonomy -- Story 82.12), the
+second as a `PreconditionFailure` (`directory-target`) like every other
+refusal in this ladder, inside the same rung rather than a seventh.
 
 **Why rung 6 iterates the caller's state records, not the plan's actions.**
 `detect.inventory.classify` marks a present `copied-managed` artifact
@@ -79,23 +81,39 @@ is it still what Genesis left there? It also reports ALL divergences in one
 message rather than the first -- a caller fixing them one refusal at a time
 would need six runs to learn about six hand-edits.
 
+**What rung 6 does not report: a region the operator opted out of (Story
+82.13).** Deleting a managed region's markers is a permanent, recorded opt-out
+(FR-112), so a recorded region that is absent from its file is not a hand-edit
+when its `(artifact_id, region)` is an opt-out. The caller passes that set as
+`opted_out`, beside `managed`, and this module only consults it -- it holds no
+opt-out model of its own and imports nothing from `seed.state`, for the same
+reason `ManagedRecord` is a local carrier. The set is pairs, not
+`<id>#<region>` keys, so the key's spelling stays in one place. Only an ABSENT
+region is excused: one the file still contains is hash-checked as before, an
+unparseable file is still a divergence, and a region present but never recorded
+is still reported. Before this, rung 6 refused the exact repo state FR-112
+declares lawful, with a remedy that told the operator to undo the deletion.
+
 **The consequence for `--skip`, which the caller owns.** Because rung 6
 walks the caller's `managed` sequence rather than the plan, it is the one
 rung a skip does not reach on its own: rungs 3-5 walk `plan.actions`, which
 `skips.apply_skips` has already emptied of every skipped artifact, but
 nothing this module does can tell that a record was skipped. A skipped
 artifact should therefore NOT be supplied to `managed` -- filter it out
-with `skips.managed_after_skips(managed, plan)` first. Otherwise `--skip`
-cannot protect a hand-edit at all: the artifact stays refused by rung 6,
-and the refusal's only offered remedy is `--force`, which discards every
-hand-edit in the repo including the one the operator was protecting. The
-filtering lives on the caller's side deliberately -- rung 6's contract is
-that it checks every record it is handed.
+with `skips.managed_after_skips(managed, plan, patterns)` first, passing the
+operator's skip patterns as well as the plan (Story 82.12): the plan holds
+only artifacts that had an action, and a hand-edited `copied-managed` file
+never has one, so only the patterns reach it. Otherwise `--skip` cannot
+protect a hand-edit at all: the artifact stays refused by rung 6, and the
+refusal's only offered remedy is `--force`, which discards every hand-edit
+in the repo including the one the operator was protecting. The filtering
+lives on the caller's side deliberately -- rung 6's contract is that it
+checks every record it is handed.
 
 **Import surface.** This module reads `plan.types`, `fs.NeverWrite`,
-`detect.hashes`, `regions.parse`/`regions.markers`, `errors`, and the
-`skips.first_match` glob semantic, plus `pyforge.core.process` for the git
-seam. It imports NOTHING from `seed.state` (`ManagedRecord` and the
+`detect.hashes`, `regions.parse`/`regions.markers`, `errors`, and
+`fs.never_write_match`, plus `pyforge.core.process` for the git seam. It
+imports NOTHING from `seed.state` (`ManagedRecord` and the
 `never_write` set are INPUTS, supplied by whoever loaded state -- this
 module holds no competing state model), nothing from `seed.apply`,
 `seed.engine`, or `copier`, and it performs no write of any kind: its
@@ -112,17 +130,16 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from stat import S_ISLNK
+from stat import S_ISDIR, S_ISLNK
 
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..detect.hashes import check_managed_file, check_managed_region
 from ..errors import PreconditionFailure
-from ..fs import NeverWrite
+from ..fs import NeverWrite, never_write_match
 from ..plan.types import Action, Plan
 from ..regions.markers import MarkerError, RegionFormat
 from ..regions.parse import RegionParseError, parse_regions
-from .skips import first_match
 
 # Query-style git calls (never a checkout/push) -- the identical value
 # `plan/build.py::_GIT_TIMEOUT_S` uses for the identical class of call, so a
@@ -290,10 +307,10 @@ def _relative_within(repo_root: Path, target_path: str) -> str | None:
     escapes `repo_root`.
 
     Resolves both sides with `Path.resolve()` -- non-strict, symlink-
-    following -- exactly as `fs._guard` does, so the relative string this
-    returns is the SAME string `fs.write` would later evaluate its
-    never-write patterns against. Any other derivation here would let rung 4
-    clear a path `fs.py` would then refuse (or, worse, the reverse).
+    following -- exactly as `fs._guard` does: it answers containment (rung 3)
+    and names the resolved location in refusal messages. It no longer feeds
+    rung 4's pattern match, which `fs.never_write_match` owns (it matches the
+    path as written as well as this resolved string).
 
     An absolute `target_path` is handled by `Path.__truediv__`'s own
     semantics: `repo_root / "/etc/passwd"` is `/etc/passwd`, which does not
@@ -398,11 +415,13 @@ def _read_managed_text(repo_root: Path, record: ManagedRecord) -> str | _Diverge
         )
 
 
-def _region_divergences(record: ManagedRecord, text: str) -> list[_Divergence]:
+def _region_divergences(
+    record: ManagedRecord, text: str, opted_out: frozenset[tuple[str, str]] = frozenset()
+) -> list[_Divergence]:
     """Rung 6 for one region-bearing record: every recorded region whose
     body no longer hashes to its recorded sha, every recorded region the
-    file no longer contains at all, and every managed region the file
-    contains that state never recorded.
+    file no longer contains at all (unless `opted_out` names it), and every
+    managed region the file contains that state never recorded.
 
     A parse failure (`RegionParseError`/`MarkerError`/`NotImplementedError`
     -- mangled, nested, or unclosed markers, or a format with no
@@ -410,7 +429,13 @@ def _region_divergences(record: ManagedRecord, text: str) -> list[_Divergence]:
     themselves an edit to tool-owned structure, and a file whose regions
     cannot be located is a file whose regions cannot be confirmed intact.
     A recorded region that is simply gone is divergence for the same
-    reason -- somebody deleted a managed block.
+    reason -- somebody deleted a managed block -- EXCEPT when
+    `(record.artifact_id, name)` is in `opted_out`: deleting the markers is
+    FR-112's sanctioned, permanent opt-out, and reporting it as a hand-edit
+    would refuse the very state the operator was told is lawful (Story 82.13).
+    Only absence is excused. A region the file still contains is compared to
+    its recorded sha whether or not it is in `opted_out`, so a modified live
+    region is still reported.
 
     The three-way split matters (found in review): iterating
     `record.region_shas` alone answers only two of the three questions, so a
@@ -439,6 +464,8 @@ def _region_divergences(record: ManagedRecord, text: str) -> list[_Divergence]:
     for name, recorded_sha in record.region_shas:
         span = spans_by_name.get(name)
         if span is None:
+            if (record.artifact_id, name) in opted_out:
+                continue
             divergences.append(
                 _Divergence(
                     record.artifact_id,
@@ -462,11 +489,14 @@ def _region_divergences(record: ManagedRecord, text: str) -> list[_Divergence]:
     return divergences
 
 
-def _managed_divergences(repo_root: Path, managed: Sequence[ManagedRecord]) -> list[_Divergence]:
+def _managed_divergences(
+    repo_root: Path, managed: Sequence[ManagedRecord], opted_out: frozenset[tuple[str, str]] = frozenset()
+) -> list[_Divergence]:
     """Every divergence across every supplied record, in the caller's own
     record order -- `check_managed_file`/`check_managed_region` are the sole
     deciders for a content comparison; this function only routes each record
-    to the right one and collects what comes back."""
+    to the right one (handing a region-bearing record the `opted_out` set) and
+    collects what comes back."""
     divergences: list[_Divergence] = []
     for record in managed:
         text = _read_managed_text(repo_root, record)
@@ -476,7 +506,7 @@ def _managed_divergences(repo_root: Path, managed: Sequence[ManagedRecord]) -> l
             divergences.append(text)
             continue
         if record.region_shas:
-            divergences.extend(_region_divergences(record, text))
+            divergences.extend(_region_divergences(record, text, opted_out))
             continue
         finding = check_managed_file(record.path, text, record.body_sha)
         if finding is not None:
@@ -490,6 +520,7 @@ def check_preconditions(
     repo_root: Path,
     never_write: NeverWrite,
     managed: Sequence[ManagedRecord] = (),
+    opted_out: frozenset[tuple[str, str]] = frozenset(),
     force: bool = False,
     dry_run: bool = False,
     process: ProcessPort | None = None,
@@ -498,24 +529,38 @@ def check_preconditions(
 
     Consumes only what it is handed: it never loads a `Manifest`, never
     reads `.marshal/seed-state.yml`, never calls `classify`/`build_plan`,
-    and never writes. `never_write` and `managed` are INPUTS -- whoever
-    loaded state supplies them.
+    and never writes. `never_write`, `managed` and `opted_out` are INPUTS --
+    whoever loaded state supplies them.
 
     Evaluates the six rungs documented at module level in that fixed order
     and raises `PreconditionFailure` (exit 3, always with a non-blank
     `remedy`) at the FIRST one that fails, naming the offending artifact id
     and -- where a region is at fault -- `path#region`.
 
-    **Pass `managed` through `skips.managed_after_skips(managed, plan)` if
-    this run has skips.** Rung 6 checks EVERY record in `managed`, by
-    contract, and cannot tell that one of them was skipped -- so a record
+    **Pass the opt-out set beside `managed`** (Story 82.13): `opted_out` is
+    every `(artifact_id, region)` pair the run's repository has opted out of,
+    recorded or derived -- `detect.optout.opted_out_regions` computes it from
+    the hybrid manifest entries and their file text. Rung 6 then does not report
+    such a region as missing from its file, so FR-112's sanctioned deletion
+    needs no `--force`. It excuses ABSENCE only (module docstring); the default
+    `frozenset()` keeps every caller that passes none behaving as before, and
+    `init`, which reads no state and passes `managed=()`, has no record to
+    excuse.
+
+    **Pass `managed` through `skips.managed_after_skips(managed, plan,
+    patterns)` if this run has skips, handing it the operator's skip
+    patterns as well as the plan.** Rung 6 checks EVERY record in `managed`,
+    by contract, and cannot tell that one of them was skipped -- so a record
     for a skipped artifact refuses the run, and the refusal offers only
     `--force`, which discards every hand-edit in the repo including the one
-    the operator skipped to protect. Rungs 3-5 need no such care: they walk
-    `plan.actions`, from which `apply_skips` already removed the skipped
-    artifacts. Filtering is the caller's job precisely because rung 6's
-    "check everything you are handed" contract is what makes it trustworthy
-    -- this function does not second-guess its own input.
+    the operator skipped to protect. The plan alone is not enough: it holds
+    only artifacts that had an action, and a hand-edited `copied-managed`
+    file has none (Story 82.12), so only the patterns reach it. Rungs 3-5
+    need no such care: they walk `plan.actions`, from which `apply_skips`
+    already removed the skipped artifacts. Filtering is the caller's job
+    precisely because rung 6's "check everything you are handed" contract is
+    what makes it trustworthy -- this function does not second-guess its own
+    input.
 
     `process` defaults to a real `PosixProcess`; it is a parameter so a test
     can inject a fake that raises `ProcessError` for the git-absent row
@@ -576,7 +621,10 @@ def check_preconditions(
         # The repo root itself is not a write target (found in review).
         # `_relative_within` maps both `""` and `"."` to `"."`, which is not
         # `None` (rung 3 clears), matches no realistic never-write glob
-        # (rung 4 clears) and is not a symlink (rung 5 clears) -- so an
+        # (rung 4 clears) and is not a symlink (rung 5 once cleared it on
+        # that ground alone; it now also refuses any directory, the root
+        # included, but this loop finishes first, so the root is named here
+        # as its own refusal) -- so an
         # action naming the whole repo reached the apply runner having
         # passed every structural rung. `Action.target_path` is only
         # `_require_str`-checked at the `plan.json` boundary, so `""` is
@@ -597,34 +645,19 @@ def check_preconditions(
         contained.append((action, relative))
 
     for action, relative in contained:
-        # `relative in never_write.exempt` is rung 4's OWN short-circuit
-        # (Story 10.8), evaluated before `first_match` ever runs for this
-        # action -- a manifest-declared writable artifact (`copied-managed`/
-        # `copied-seeded`) can match a broader deny glob that must otherwise
-        # keep refusing every other path under it (`fs.NeverWrite`'s own
-        # docstring: `docs/dreams/README.md` under `docs/dreams/*.md`).
-        # `fs._matches` carries the identical short-circuit, ahead of its own
-        # pattern loop, for the same reason: rung 4 must re-derive the same
-        # never-write decision `fs._guard` will make on the eventual write,
-        # exactly as it already does for the pattern loop below (see the
-        # module docstring's "Stated bounds, not aspirations" paragraph).
-        if relative in never_write.exempt:
-            continue
-        matched = first_match(never_write.patterns, relative)
-        if matched is not None:
+        # One helper, one decision (Story 82.11): `fs.never_write_match` is
+        # what `fs._guard` calls on the eventual write, so rung 4 holds no
+        # match logic of its own and cannot disagree with it. It judges the
+        # target as written AND resolved (a symlinked ancestor no longer
+        # hides a pattern), a directory also as `dir/`, and
+        # `NeverWrite.exempt` per form (Story 10.8).
+        hit = never_write_match(repo_root / action.target_path, repo_root=repo_root, never_write=never_write)
+        if hit is not None:
+            matched, form = hit
             raise PreconditionFailure(
                 f"never-write-target: action {action.artifact_id!r} targets"
                 f" {action.target_path!r} (resolved: {relative!r}), which matches"
-                f" never-write pattern {matched!r}",
-                # States the guarantee this rung actually provides -- no flag
-                # overrides it -- rather than the stronger "not overridable,
-                # by --force or otherwise" it used to claim (found in
-                # review). A symlinked ancestor directory still routes a
-                # write past the pattern, because rungs 3-5 resolve parent
-                # links exactly as `fs._guard` does (see the module
-                # docstring's stated bounds); promising more protection than
-                # `fs.py` delivers would be the wrong kind of reassurance in
-                # the one message an operator reads about it.
+                f" never-write pattern {matched!r}" + (f" (as {form!r})" if form != relative else ""),
                 remedy=(
                     "no flag overrides the never-write set -- not --force, not"
                     " --dry-run; remove this artifact from the manifest, or"
@@ -669,6 +702,16 @@ def check_preconditions(
                     f" or leave it alone with --skip {action.target_path!r}"
                 ),
             )
+        if S_ISDIR(mode):
+            raise PreconditionFailure(
+                f"directory-target: action {action.artifact_id!r} targets"
+                f" {action.target_path!r} (resolved: {relative!r}), which is an existing"
+                " directory -- seed writes a file there, and cannot replace a directory",
+                remedy=(
+                    "remove or rename the directory if seed should own a file at this"
+                    f" path, or leave it alone with --skip {action.target_path!r}"
+                ),
+            )
 
     # --- rung 6: has managed content been hand-edited --------------------
     # The only rung that opens a file, so it runs last -- and the only one
@@ -676,7 +719,7 @@ def check_preconditions(
     # operator is entitled to make explicitly, unlike containment.
     if force:
         return
-    divergences = _managed_divergences(repo_root, managed)
+    divergences = _managed_divergences(repo_root, managed, opted_out)
     if divergences:
         detail = "; ".join(f"{divergence.artifact_id}: {divergence.detail}" for divergence in divergences)
         # Counts BOTH numbers rather than conflating them: one region-bearing

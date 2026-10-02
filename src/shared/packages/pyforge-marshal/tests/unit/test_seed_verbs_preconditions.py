@@ -30,6 +30,7 @@ from pathlib import Path
 import pytest
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
+from pyforge.marshal.seed import fs
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.errors import PreconditionFailure
@@ -75,7 +76,13 @@ def _action(**overrides) -> Action:
 
 
 def _fingerprint(**overrides) -> RepoFingerprint:
-    fields = {"git_head": None, "dirty": False, "artifact_hashes": ()}
+    fields = {
+        "git_head": None,
+        "dirty": False,
+        "artifact_hashes": (),
+        "repo_root": "/work/repo",
+        "git_common_dir": None,
+    }
     fields.update(overrides)
     return RepoFingerprint(**fields)
 
@@ -396,10 +403,10 @@ def test_the_never_write_rung_is_not_bypassable_by_dry_run(clean_repo):
 
 def test_the_never_write_remedy_claims_only_the_guarantee_the_code_provides(clean_repo):
     """The remedy used to read "not overridable, by --force or otherwise",
-    which overclaims: a symlinked ANCESTOR directory does route a write past
-    the pattern, because rungs 3-5 resolve parent links exactly as
-    ``fs._guard`` does. The real guarantee -- no FLAG overrides it -- is
-    what the message must say."""
+    which overclaims: it states a guarantee beyond the one the code provides.
+    The real guarantee -- no FLAG overrides it -- is what the message must
+    say (a symlinked ancestor no longer routes a write past the pattern since
+    Story 82.11, but the claim stays exactly as narrow)."""
     with pytest.raises(PreconditionFailure) as excinfo:
         _check(
             _plan(_action(artifact_id="dream", target_path="docs/dreams/x.md")),
@@ -410,6 +417,69 @@ def test_the_never_write_remedy_claims_only_the_guarantee_the_code_provides(clea
     assert "no flag overrides" in excinfo.value.remedy
     assert "--force" in excinfo.value.remedy
     assert "or otherwise" not in excinfo.value.remedy
+
+
+def test_rung_4_refuses_a_never_write_path_hidden_behind_a_symlinked_ancestor(clean_repo):
+    """Story 82.11 (DW-10-4-1): with ``docs -> real/`` the resolved path is
+    ``real/dreams/x.md``, which ``docs/dreams/*.md`` never matched, so the
+    action cleared every rung. Rung 4 now matches the path as written too."""
+    (clean_repo / "real" / "dreams").mkdir(parents=True)
+    (clean_repo / "real" / "dreams" / ".keep").write_text("", encoding="utf-8")
+    (clean_repo / "docs").symlink_to("real")
+    _commit_all(clean_repo)
+
+    with pytest.raises(PreconditionFailure, match="never-write-target") as excinfo:
+        _check(
+            _plan(_action(artifact_id="dream", target_path="docs/dreams/x.md")),
+            clean_repo,
+            never_write=NeverWrite(patterns=("docs/dreams/*.md",)),
+        )
+
+    # The message names the pattern, the resolved location AND the form that
+    # actually matched -- the written one, which is not the resolved one.
+    assert (
+        "(resolved: 'real/dreams/x.md'), which matches never-write pattern 'docs/dreams/*.md' (as 'docs/dreams/x.md')"
+        in excinfo.value.message
+    )
+    assert excinfo.value.exit_code == 3
+
+
+def test_rung_4_and_the_write_primitive_agree_under_a_symlinked_ancestor(clean_repo):
+    """One helper, one decision: whatever rung 4 refuses, ``fs.write`` refuses,
+    and whatever it clears, ``fs.write`` writes -- for the exempt, the
+    protected and the unprotected target alike."""
+    (clean_repo / "real" / "dreams").mkdir(parents=True)
+    (clean_repo / "real" / "dreams" / ".keep").write_text("", encoding="utf-8")
+    (clean_repo / "docs").symlink_to("real")
+    _commit_all(clean_repo)
+    never_write = NeverWrite(patterns=("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
+
+    for target_path in ("docs/dreams/x.md", "docs/dreams/README.md", "docs/other/y.md", "real/dreams/z.md"):
+        rung_4_refuses = False
+        try:
+            _check(_plan(_action(artifact_id="a", target_path=target_path)), clean_repo, never_write=never_write)
+        except PreconditionFailure as exc:
+            rung_4_refuses = "never-write-target" in exc.message
+        assert (
+            fs.never_write_match(clean_repo / target_path, repo_root=clean_repo, never_write=never_write) is not None
+        ) == rung_4_refuses, target_path
+
+
+def test_rung_4_refuses_the_planning_artifacts_directory_node(clean_repo):
+    """Story 82.11 (DW-FU-7-5-5): ``**/planning-artifacts/**`` matched only
+    what sat UNDER the directory."""
+    (clean_repo / "_bmad-output" / "projects" / "demo" / "planning-artifacts").mkdir(parents=True)
+    (clean_repo / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "PRD.md").write_text(
+        "x", encoding="utf-8"
+    )
+    _commit_all(clean_repo)
+
+    with pytest.raises(PreconditionFailure, match="never-write-target"):
+        _check(
+            _plan(_action(artifact_id="p", target_path="_bmad-output/projects/demo/planning-artifacts")),
+            clean_repo,
+            never_write=NeverWrite(patterns=("**/planning-artifacts/**",)),
+        )
 
 
 def test_an_exempt_action_target_bypasses_a_matching_never_write_pattern(clean_repo):
@@ -522,6 +592,107 @@ def test_an_action_targeting_an_existing_symlink_is_refused(clean_repo):
     assert "AGENTS.md" in excinfo.value.message
     assert "real.md" in excinfo.value.message
     assert excinfo.value.remedy.strip()
+
+
+def test_an_action_targeting_an_existing_directory_is_refused_with_a_remedy(clean_repo):
+    """DW-10-4-5: a directory at an action's target cleared every rung, and
+    the runner's final `os.replace(tmp, target)` then failed with an untyped
+    `IsADirectoryError` outside the `SeedError` taxonomy. Rung 5 refuses it
+    as a `PreconditionFailure` like every other node it cannot write over."""
+    (clean_repo / "AGENTS.md").mkdir()
+    (clean_repo / "AGENTS.md" / "inner.md").write_text("inside\n", encoding="utf-8")
+    _commit_all(clean_repo)
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        _check(_plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo)
+
+    assert excinfo.value.exit_code == 3
+    assert "directory-target" in excinfo.value.message
+    assert "agents-md" in excinfo.value.message
+    assert "AGENTS.md" in excinfo.value.message
+    assert excinfo.value.remedy.strip()
+    assert "remove or rename the directory" in excinfo.value.remedy
+    assert "--skip 'AGENTS.md'" in excinfo.value.remedy
+    # The check is read-only: nothing under the directory was touched.
+    assert (clean_repo / "AGENTS.md" / "inner.md").read_text(encoding="utf-8") == "inside\n"
+
+
+def test_an_empty_directory_at_an_actions_target_is_refused_too(clean_repo):
+    """Git does not track an empty directory, so the worktree stays clean and
+    the refusal is attributable to rung 5 alone."""
+    (clean_repo / "AGENTS.md").mkdir()
+
+    with pytest.raises(PreconditionFailure, match="directory-target"):
+        _check(_plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo)
+
+
+@pytest.mark.parametrize("bypass", [{"dry_run": True}, {"force": True}, {"dry_run": True, "force": True}])
+def test_neither_dry_run_nor_force_bypasses_the_directory_target_refusal(clean_repo, bypass):
+    """`dry_run` bypasses rung 2 only and `force` rung 6 only: a directory at an
+    action's target is rung 5, so a dry run still refuses it (it would fail the
+    real run) and `--force` -- which means 'discard my hand-edit' -- never
+    reaches a directory."""
+    (clean_repo / "AGENTS.md").mkdir()
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        _check(_plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo, **bypass)
+
+    assert "directory-target" in excinfo.value.message
+    assert excinfo.value.exit_code == 3
+    assert excinfo.value.remedy.strip()
+
+
+def test_a_symlink_to_a_directory_still_reports_symlink_target(clean_repo):
+    """`lstat()` does not follow the link, so a symlink to a directory is a
+    symlink first -- its refusal and remedy keep their own name."""
+    (clean_repo / "real").mkdir()
+    (clean_repo / "real" / "inner.md").write_text("inside\n", encoding="utf-8")
+    (clean_repo / "AGENTS.md").symlink_to("real", target_is_directory=True)
+    _commit_all(clean_repo)
+
+    with pytest.raises(PreconditionFailure, match="symlink-target"):
+        _check(_plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo)
+
+
+def test_a_skip_clears_the_directory_target_refusal_it_offers(clean_repo):
+    """The remedy names `--skip`; it must work. A skipped action is not in
+    `plan.actions`, so rung 5 never sees its directory."""
+    (clean_repo / "AGENTS.md").mkdir()
+    plan = _plan(_action(artifact_id="agents-md", target_path="AGENTS.md"))
+    with pytest.raises(PreconditionFailure, match="directory-target"):
+        _check(plan, clean_repo)
+
+    assert _check(apply_skips(plan, ("AGENTS.md",)), clean_repo) is None
+
+
+def test_a_directory_target_is_reported_before_a_hand_edited_managed_file(clean_repo):
+    (clean_repo / "AGENTS.md").mkdir()
+    _managed_file(clean_repo, "MANAGED.md", "hand edited\n")
+    _commit_all(clean_repo)
+
+    with pytest.raises(PreconditionFailure, match="directory-target"):
+        _check(
+            _plan(_action(artifact_id="agents-md", target_path="AGENTS.md")),
+            clean_repo,
+            managed=(ManagedRecord(artifact_id="m", path="MANAGED.md", body_sha="deadbeef"),),
+        )
+
+
+def test_a_directory_target_does_not_pre_empt_a_later_actions_escaping_path(clean_repo):
+    """Rungs 3-5 are three passes: a directory target (rung 5) on the
+    first-sorted action does not pre-empt a later action's escaping path
+    (rung 3), which is reported instead."""
+    (clean_repo / "AGENTS.md").mkdir()
+    plan = _plan(
+        _action(artifact_id="aaa-directory", target_path="AGENTS.md"),
+        _action(artifact_id="zzz-escaper", target_path="../outside.md"),
+    )
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        _check(plan, clean_repo)
+
+    assert "target-escapes-repo" in excinfo.value.message
+    assert "zzz-escaper" in excinfo.value.message
 
 
 def test_an_action_targeting_an_ordinary_file_is_not_refused_as_a_symlink(clean_repo):
@@ -1074,6 +1245,128 @@ def test_a_whole_file_managed_record_needs_no_region_format():
     assert record.region_format is None
 
 
+# --- rung 6: an opted-out region is not a hand-edit (Story 82.13) ------------
+
+
+def test_a_recorded_region_that_is_opted_out_is_not_reported_missing(clean_repo):
+    """DW-FU-8-5-5. Deleting a managed region's markers is FR-112's permanent
+    opt-out, yet rung 6 reported the deleted region as "recorded managed region
+    is missing from the file" and offered `--force` or undoing the deletion.
+    A caller that passes the opt-out set beside `managed` is no longer
+    refused."""
+    _managed_file(clean_repo, "HYBRID.md", _hybrid_text("tiers", "first body\n"))
+    _commit_all(clean_repo)
+    record = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("tiers", hash_content("first body\n")), ("model-badge", "12345678")),
+        region_format=RegionFormat.HTML,
+    )
+
+    with pytest.raises(PreconditionFailure, match="HYBRID.md#model-badge"):
+        _check(_plan(), clean_repo, managed=(record,))
+
+    assert _check(_plan(), clean_repo, managed=(record,), opted_out=frozenset({("hybrid", "model-badge")})) is None
+
+
+def test_the_opt_out_set_is_keyed_by_artifact_id_and_region_name_both(clean_repo):
+    """A pair for another artifact, or for another region of this one, excuses
+    nothing."""
+    _managed_file(clean_repo, "HYBRID.md", _hybrid_text("tiers", "body\n"))
+    _commit_all(clean_repo)
+    record = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("model-badge", "12345678"),),
+        region_format=RegionFormat.HTML,
+    )
+
+    for other in ({("another", "model-badge")}, {("hybrid", "tiers")}):
+        with pytest.raises(PreconditionFailure, match="HYBRID.md#model-badge"):
+            _check(_plan(), clean_repo, managed=(record,), opted_out=frozenset(other))
+
+
+def test_an_opted_out_region_that_is_present_and_modified_is_still_refused(clean_repo):
+    """Only ABSENCE is excused. A region the file still contains is
+    hash-checked whether or not its pair is in the set, so the set never
+    weakens detection of a hand-edit."""
+    _managed_file(clean_repo, "HYBRID.md", _hybrid_text("tiers", "hand edited\n"))
+    _commit_all(clean_repo)
+    record = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("tiers", hash_content("original\n")),),
+        region_format=RegionFormat.HTML,
+    )
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        _check(_plan(), clean_repo, managed=(record,), opted_out=frozenset({("hybrid", "tiers")}))
+
+    assert "HYBRID.md#tiers" in excinfo.value.message
+
+
+def test_an_opt_out_does_not_excuse_an_unparseable_file_or_an_unrecorded_region(clean_repo):
+    fmt = RegionFormat.HTML
+    unclosed = f"intro\n{render_begin(fmt, 'tiers', _VERSION, '12345678')}\nbody\n"
+    _managed_file(clean_repo, "UNPARSEABLE.md", unclosed)
+    _managed_file(clean_repo, "HYBRID.md", _two_region_text())
+    _commit_all(clean_repo)
+    opted_out = frozenset({("unparseable", "tiers"), ("hybrid", "tiers")})
+
+    unparseable = ManagedRecord(
+        artifact_id="unparseable",
+        path="UNPARSEABLE.md",
+        region_shas=(("tiers", "12345678"),),
+        region_format=fmt,
+    )
+    with pytest.raises(PreconditionFailure, match="cannot be parsed"):
+        _check(_plan(), clean_repo, managed=(unparseable,), opted_out=opted_out)
+
+    # `model-badge` is present in the file but was never recorded: still refused.
+    unrecorded = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("tiers", hash_content("first body\n")),),
+        region_format=fmt,
+    )
+    with pytest.raises(PreconditionFailure, match="never recorded in state"):
+        _check(_plan(), clean_repo, managed=(unrecorded,), opted_out=opted_out)
+
+
+def test_force_still_bypasses_rung_6_with_or_without_an_opt_out_set(clean_repo):
+    _managed_file(clean_repo, "HYBRID.md", _hybrid_text("tiers", "hand edited\n"))
+    _commit_all(clean_repo)
+    record = ManagedRecord(
+        artifact_id="hybrid",
+        path="HYBRID.md",
+        region_shas=(("tiers", hash_content("original\n")),),
+        region_format=RegionFormat.HTML,
+    )
+
+    assert _check(_plan(), clean_repo, managed=(record,), force=True) is None
+    assert _check(_plan(), clean_repo, managed=(record,), opted_out=frozenset({("x", "y")}), force=True) is None
+
+
+def test_the_module_still_imports_nothing_from_seed_state():
+    """The opt-out set arrives as plain `(artifact_id, region)` pairs, so this
+    module holds no competing opt-out model and no `<id>#<region>` spelling."""
+    import ast
+
+    tree = ast.parse(Path(preconditions.__file__).read_text(encoding="utf-8"))
+    imported: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.level >= 1:
+            if node.module:
+                imported.append(node.module)  # `from ..state import x`
+            else:
+                imported.extend(alias.name for alias in node.names)  # `from .. import state`
+        elif isinstance(node, ast.ImportFrom):
+            imported.append((node.module or "").removeprefix("pyforge.marshal.seed."))  # absolute spelling
+        elif isinstance(node, ast.Import):
+            imported.extend(alias.name.removeprefix("pyforge.marshal.seed.") for alias in node.names)
+    assert not [module for module in imported if module == "state" or module.startswith("state.")]
+
+
 # --- ladder order ----------------------------------------------------------
 
 
@@ -1262,6 +1555,44 @@ def test_rung_six_refuses_a_skipped_artifacts_hand_edit_unless_the_caller_filter
     assert _check(plan, clean_repo, managed=managed_after_skips((record,), plan)) is None
 
 
+def test_a_skip_names_a_hand_edited_managed_file_that_has_no_action(clean_repo):
+    """DW-10-4-4: a hand-edited `copied-managed` file classifies
+    `PRESENT_CONFORMANT` and never gets an action, so it can never enter
+    `plan.skipped`. The pattern is the only thing that can reach it; without
+    it the sole override left is `--force`, which discards every hand-edit."""
+    _managed_file(clean_repo, "MANAGED.md", "hand edited\n")
+    _commit_all(clean_repo)
+    record = ManagedRecord(artifact_id="managed", path="MANAGED.md", body_sha="deadbeef")
+    plan = _plan()
+    assert plan.skipped == ()
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified"):
+        _check(plan, clean_repo, managed=managed_after_skips((record,), plan))
+
+    assert _check(plan, clean_repo, managed=managed_after_skips((record,), plan, ("MANAGED.md",))) is None
+    # The edit is kept: the rung only reads, and the skip means nothing writes.
+    assert (clean_repo / "MANAGED.md").read_text(encoding="utf-8") == "hand edited\n"
+
+
+def test_a_skip_does_not_excuse_a_hand_edit_it_does_not_name(clean_repo):
+    """Rung 6 still checks every record the pattern leaves in."""
+    _managed_file(clean_repo, "SKIPPED.md", "hand edited\n")
+    _managed_file(clean_repo, "OTHER.md", "also hand edited\n")
+    _commit_all(clean_repo)
+    records = (
+        ManagedRecord(artifact_id="skipped", path="SKIPPED.md", body_sha="deadbeef"),
+        ManagedRecord(artifact_id="other", path="OTHER.md", body_sha="deadbeef"),
+    )
+    plan = _plan()
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        _check(plan, clean_repo, managed=managed_after_skips(records, plan, ("SKIPPED.md",)))
+
+    assert "managed-content-modified" in excinfo.value.message
+    assert "other" in excinfo.value.message
+    assert "skipped" not in excinfo.value.message
+
+
 def test_a_skip_pattern_copied_out_of_a_never_write_refusal_actually_skips(clean_repo):
     """Rung 4 reports the RESOLVED repo-relative path, so an operator reads
     ``resolved: 'AGENTS.md'`` out of the refusal and passes it to
@@ -1320,6 +1651,12 @@ def test_the_module_docstring_points_a_caller_at_the_skip_seam():
     doc = preconditions.__doc__ or ""
     assert "managed_after_skips" in doc
     assert "managed_after_skips" in (check_preconditions.__doc__ or "")
+
+
+def test_the_module_docstring_names_the_directory_refusal_in_rung_5():
+    doc = " ".join((preconditions.__doc__ or "").split())
+    assert "5. An action's target exists and is a symlink or a directory." in doc
+    assert "directory-target" in doc
 
 
 # --- _is_dirty / plan.build._repo_is_dirty agreement ------------------------
