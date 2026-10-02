@@ -11,7 +11,14 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md
-deferred: []
+deferred:
+  - summary: >-
+      No CI lane runs the pyforge-marshal tests marked slow, so every real-git end-to-end test in tests/integration/test_init_worktree.py, including this story's two nested-worktree teardown tests, runs only when someone invokes pyforge-marshal-test-slow by hand.
+    evidence: |-
+      pytest's marker setup in src/shared/packages/pyforge-marshal/pyproject.toml excludes slow from the default pyforge-marshal-test task (pixi.toml passes -m "not slow"). pyforge-marshal-test-slow is defined at pixi.toml:738 and a grep over .github, pixi.toml and scripts finds no other reference to it; scripts/coverage_gates_ci.py and scripts/run_station_coverage_gate.py also pass "not slow". Story 82.8's acceptance criterion that git worktree list --porcelain shows no prunable entry after a clean teardown is therefore pinned in the default suite only through FakeVcs, whose remove_worktree and prune_worktrees model the behaviour themselves; the real-git assertion lives only in the slow tests. This predates the story (every end-to-end test in that file shares it, e.g. the Story 1.8 teardown ones), so it is deferred, not patched here. What would settle it: a CI or pr-preflight lane that runs pyforge-marshal-test-slow, or a decision that the slow lane is intentionally manual.
+    location: >-
+      pixi.toml:738
+    severity: medium
 declared_low_risk: false
 ---
 
