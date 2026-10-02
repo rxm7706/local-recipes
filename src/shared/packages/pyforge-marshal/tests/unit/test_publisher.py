@@ -307,6 +307,7 @@ class RecordingPublisher:
 
 def test_run_supervisor_invokes_recording_publisher_lifecycle() -> None:
     from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+    from pyforge.marshal.ports.fs import AppendHandle, HeldFileState
     from pyforge.marshal.supervisor.__main__ import run_supervisor
 
     launch_line = prepare_for_write(
@@ -331,6 +332,20 @@ def test_run_supervisor_invokes_recording_publisher_lifecycle() -> None:
 
         def write_text_atomic(self, path: Path, content: str) -> None:
             del path, content
+
+        # Story 82.4: the supervisor writes its journal through a held handle.
+        def open_append(self, path: Path) -> AppendHandle:
+            return AppendHandle(path=path, handle=object())
+
+        def append_held(self, handle: AppendHandle, line: str, *, fsync: bool = False) -> None:
+            del handle, line, fsync
+
+        def held_file_state(self, handle: AppendHandle) -> HeldFileState:
+            del handle
+            return HeldFileState(present=True, same_file=True, size=10**9, writable=True)
+
+        def close_append(self, handle: AppendHandle) -> None:
+            del handle
 
     class DeadProcess:
         def is_alive(self, pid: int) -> bool:

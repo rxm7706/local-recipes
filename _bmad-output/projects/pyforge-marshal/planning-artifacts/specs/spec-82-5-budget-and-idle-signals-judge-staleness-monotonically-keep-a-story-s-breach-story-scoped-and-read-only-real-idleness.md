@@ -181,3 +181,8 @@ Closes: DW-FU-3-6-5, DW-FU-3-6-6, DW-FU-3-6-8, DW-FU-3-5-6, DW-FU-3-5-9.
 ## Review Triage Log
 
 - No review has run yet.
+
+### 2026-10-02 — Landing refused on a merge conflict with Story 82.4 (operator fix)
+- PR #1740 conflicted with `main` after Story 82.4 landed (MRS-DISP-038): both stories minted `MRS-SUPV-011`/`012` with different meanings, and both appended tests at the end of `tests/unit/test_supervisor.py`.
+  - `[high]` `[patch]` 82.5's two codes renumbered to the next free ones: `MRS-SUPV-014` (per-story budget breach) and `MRS-SUPV-015` (idle channels unobservable), in this spec, `core/findings.py`, `core/verdict.py`, `supervisor/__main__.py` and both tests. 82.4 keeps `011`-`013` and `MRS-SPIN-018`.
+  - `[high]` `[patch]` `test_supervisor.py` resolved as the 3-way merge of both bodies plus both appended blocks; 82.4's `test_a_signal_never_overrides_a_budget_stop_reason` now drives a per-RUN breach (`budget-run-tokens-exceeded`), because under this story a per-story breach no longer stops the run. `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exit 0 (10005 passed); pyforge-core's suite exit 0 (2156 passed); `pixi run --frozen -e pyforge-guild lint-types` exit 0.

@@ -20,21 +20,26 @@ convention.
 from __future__ import annotations
 
 import json
+import os
+import signal
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import jsonschema
 import pytest
 
-from pyforge.marshal.adapters.fs_local import FsError
+from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core.journal import (
     JournalEntryId,
     Phase,
     build_entry,
+    fold,
     prepare_for_write,
 )
+from pyforge.marshal.ports.fs import AppendHandle, HeldFileState
 from pyforge.marshal.ports.harness import (
     DeferredStory,
     RunStatusSnapshot,
@@ -91,7 +96,19 @@ class FakeFs:
         # 1-indexed across every append_line call this fake sees (mirrors
         # test_spin.py's own FakeFs.fail_append_line_on_call convention).
         self.fail_append_line_on_call: int | None = None
+        # Story 82.4: every append from call N on fails -- an unwritable
+        # journal, where `fail_append_line_on_call` models one transient error.
+        self.fail_append_line_from_call: int | None = None
         self._append_line_call_count = 0
+        self.direct_append_line_calls = 0
+        # Story 82.4: the held-descriptor family's own recorders/hooks.
+        self.open_append_calls: list[Path] = []
+        self.fail_open_append: Exception | None = None
+        self.held_file_state_calls = 0
+        self.held_state_override: HeldFileState | None = None
+        self.held_state_error: Exception | None = None
+        self.external_growth = 0
+        self.close_append_calls = 0
 
     def read_text(self, path: Path) -> str | None:
         self.read_text_calls.append(path)
@@ -104,8 +121,23 @@ class FakeFs:
         return self.journal_text
 
     def append_line(self, path: Path, line: str, *, fsync: bool) -> None:
+        # The path-based append the supervisor must NOT use any more (Story
+        # 82.4): counted, so a test can prove nothing reaches it directly.
+        self.direct_append_line_calls += 1
+        self._append(path, line, fsync=fsync)
+
+    def _append(self, path: Path, line: str, *, fsync: bool) -> None:
+        """The one recording path both ``append_line`` and ``append_held``
+        share, so ``appended_lines`` and the two failure hooks behave
+        identically for either -- only ``direct_append_line_calls`` tells them
+        apart."""
         self._append_line_call_count += 1
         if self.fail_append_line_on_call == self._append_line_call_count:
+            raise FsError(f"simulated failure on append_line call #{self._append_line_call_count}")
+        if (
+            self.fail_append_line_from_call is not None
+            and self._append_line_call_count >= self.fail_append_line_from_call
+        ):
             raise FsError(f"simulated failure on append_line call #{self._append_line_call_count}")
         self.appended_lines.append((path, line, fsync))
 
@@ -114,6 +146,45 @@ class FakeFs:
 
     def ensure_dir(self, path: Path) -> None:
         pass
+
+    # --- Story 82.4: the held-descriptor append family ----------------------
+    # `append_held` shares `append_line`'s recording helper (without bumping
+    # `direct_append_line_calls`) so `appended_lines` and
+    # `fail_append_line_on_call` keep working unchanged; `held_file_state`
+    # derives the healthy state from the journal text plus every appended
+    # byte, and `held_state_override` is the tamper hook a test flips from
+    # inside its injected `sleep` to model a replaced/truncated/removed/
+    # read-only journal between ticks.
+
+    def open_append(self, path: Path) -> AppendHandle:
+        self.open_append_calls.append(path)
+        if self.fail_open_append is not None:
+            raise self.fail_open_append
+        return AppendHandle(path=path, handle=object())
+
+    def append_held(self, handle: AppendHandle, line: str, *, fsync: bool) -> None:
+        self._append(handle.path, line, fsync=fsync)
+
+    def held_file_state(self, handle: AppendHandle) -> HeldFileState:
+        self.held_file_state_calls += 1
+        if self.held_state_error is not None:
+            raise self.held_state_error
+        if self.held_state_override is not None:
+            return self.held_state_override
+        return HeldFileState(present=True, same_file=True, size=self.healthy_size(), writable=True)
+
+    def healthy_size(self) -> int:
+        """What a healthy journal weighs right now: the text read at attach,
+        every line this process appended, and whatever ``external_growth``
+        another writer (a ``supervisor-spawn`` entry, a landing) added."""
+        return (
+            len((self.journal_text or "").encode("utf-8"))
+            + sum(len(line.encode("utf-8")) + 1 for _, line, _ in self.appended_lines)
+            + self.external_growth
+        )
+
+    def close_append(self, handle: AppendHandle) -> None:
+        self.close_append_calls += 1
 
 
 class FakeProcess:
@@ -943,10 +1014,13 @@ def test_sidecar_refs_skips_unparseable_and_non_placeholder_lines():
     assert supervisor_main._sidecar_refs(lines) == ()
 
 
-def test_a_missing_sidecar_blob_still_leaves_the_supervisor_inert():
+def test_a_missing_sidecar_blob_attaches_with_unproven_ownership():
     """An unreadable/absent blob maps to ``None``, which ``fold`` treats
-    exactly as it already treats an absent one -- the line quarantines and
-    the sidecar stays inert (and now SAYS so), rather than crashing."""
+    exactly as it already treats an absent one -- the line quarantines. Story
+    82.4 (DW-FU-3-4-3): that is a run-launch line the supervisor could not
+    evaluate, which proves nothing about who owns the run, so it ATTACHES (and
+    carries the quarantine count and ``MRS-SUPV-011`` on its attach entry)
+    instead of staying inert on a run Marshal genuinely started."""
     prepared = _big_intent_prepared("acme-run-1")
     fs = FakeFs(journal_text=prepared.line + "\n", blobs={})
     fs.blobs = {Path("/nowhere.json"): "{}"}  # non-empty, but not the real ref
@@ -963,14 +1037,18 @@ def test_a_missing_sidecar_blob_still_leaves_the_supervisor_inert():
         _MAX_WALL_CLOCK_MINUTES_PER_STORY,
         _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs,
-        process=FakeProcess(alive_for=5),
+        process=FakeProcess(alive_for=1),
         clock=FakeClock(),
         observer=FakeObserver(),
+        harness=FakeHarness(),
         sleep=_no_sleep,
     )
 
     assert rc == 0
-    assert fs.appended_lines == []
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert entries[0]["kind"] == "supervisor-attach"
+    assert entries[0]["payload"]["quarantined"] == 1
+    assert entries[0]["payload"]["finding"]["code"] == "MRS-SUPV-011"
 
 
 def test_inert_when_the_journal_read_raises_a_plain_value_error():
@@ -1141,10 +1219,17 @@ def test_watched_process_already_dead_journals_attach_then_immediately_detach():
 
 
 def test_journal_append_failure_mid_loop_exits_nonzero_and_stops_looping():
+    """Story 82.4 (DW-FU-3-4-8) extends the original pin: a failed append
+    still ends the loop at the FIRST failure with a non-zero exit, and now
+    ALSO stops the watched run through ``HarnessPort.stop`` -- exiting with the
+    run alive left it unsupervised behind a journal that read like a healthy
+    one mid-tick."""
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
-    # append #1 (attach) succeeds; append #2 (the first heartbeat) fails.
-    fs.fail_append_line_on_call = 2
+    # append #1 (attach) succeeds; append #2 (the first heartbeat) and every
+    # one after it fails -- an unwritable journal.
+    fs.fail_append_line_from_call = 2
     process = FakeProcess(alive_for=10)
+    harness = FakeHarness()
 
     rc = run_supervisor(
         _HOME,
@@ -1161,6 +1246,7 @@ def test_journal_append_failure_mid_loop_exits_nonzero_and_stops_looping():
         process=process,
         clock=FakeClock(),
         observer=FakeObserver(),
+        harness=harness,
         sleep=_no_sleep,
     )
 
@@ -1173,13 +1259,60 @@ def test_journal_append_failure_mid_loop_exits_nonzero_and_stops_looping():
     # check that admits the first tick, then the one fresh reading taken
     # inside that tick (now doubling as both the heartbeat's own
     # `watched_alive` value and the loop's continuation decision) whose
-    # resulting heartbeat append is the one that fails.
+    # resulting heartbeat append is the one that fails. The fail-closed path
+    # takes no third reading.
     assert process.calls == 2
+    # ...and the watched run was stopped, exactly once.
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    # The held descriptor was released.
+    assert fs.close_append_calls == 1
+
+
+def test_a_single_failed_append_stops_the_run_and_a_still_working_descriptor_takes_the_detach():
+    """The failed append and the final ``supervisor-detach`` are different
+    writes: when the held descriptor recovers (here: only call #2 fails), the
+    fail-closed path records WHY in a final ``supervisor-detach`` carrying the
+    ``MRS-SUPV-012`` finding -- the best-effort half of Story 82.4's D5."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    fs.fail_append_line_on_call = 2
+    harness = FakeHarness()
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=10),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=harness,
+        sleep=_no_sleep,
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    assert [entry["kind"] for entry in entries] == ["supervisor-attach", "supervisor-detach"]
+    detach = entries[-1]["payload"]
+    assert detach["reason"] == "journal-tampered"
+    assert detach["journal_fault"] == "append"
+    assert detach["stopped"] is True
+    assert detach["finding"]["code"] == "MRS-SUPV-012"
+    for entry in entries:
+        jsonschema.validate(instance=entry, schema=_journal_schema())
 
 
 def test_journal_append_failure_prints_a_diagnostic_to_stderr(capsys):
     fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
     fs.fail_append_line_on_call = 1  # even the attach entry itself fails
+    harness = FakeHarness()
 
     rc = run_supervisor(
         _HOME,
@@ -1196,12 +1329,19 @@ def test_journal_append_failure_prints_a_diagnostic_to_stderr(capsys):
         process=FakeProcess(alive_for=5),
         clock=FakeClock(),
         observer=FakeObserver(),
+        harness=harness,
         sleep=_no_sleep,
     )
 
     assert rc != 0
     err = capsys.readouterr().err
     assert "cannot append" in err.lower()
+    # Story 82.4: the historical line is unchanged, the stop outcome follows
+    # it, and the run was stopped even though the failure was the attach entry.
+    journal_path = _run_dir() / supervisor_main._JOURNAL_FILENAME
+    assert f"supervisor: cannot append to journal {journal_path}: " in err
+    assert "MRS-SUPV-012" in err
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
 
 
 # --- multiplexer pane unavailable ----------------------------------------------
@@ -5276,14 +5416,15 @@ def test_inert_exit_prints_a_diagnostic_naming_the_run(capsys):
     assert "not a run marshal started" in err.lower()
 
 
-def test_inert_exit_on_a_quarantined_journal_says_so_distinctly(capsys):
-    """The half of the already-deferred quarantine finding that IS this
-    story's to fix: when ``fold`` cannot evaluate the run-launch line (a
-    torn append, a stray non-JSON byte), ``by_kind`` comes back empty and
-    this sidecar stays inert on a run Marshal genuinely DID start. Making
-    such a line recoverable is the separately-logged deferred item; making
-    the two causes distinguishable in the log is not, and used to be
-    impossible -- both exits printed nothing at all."""
+def test_a_quarantined_launch_line_attaches_with_unproven_ownership(capsys):
+    """Story 82.4 (DW-FU-3-4-3), the acceptance criterion verbatim: a run
+    directory whose only ``run-launch`` line is unparseable and whose watched
+    pid is alive. ``fold`` quarantines the line, ``by_kind`` comes back empty,
+    and the supervisor used to stay inert on a run Marshal genuinely DID
+    start -- a live run, unsupervised, behind one stderr line. It now journals
+    a ``supervisor-attach`` carrying the quarantine count and an ``MRS-SUPV-011``
+    WARN, and keeps heartbeating. With no recoverable harness run id the
+    ``MRS-SUPV-003`` branch applies unchanged (heartbeat-only supervision)."""
     fs = FakeFs(journal_text="{not valid json at all\n")
 
     rc = run_supervisor(
@@ -5298,17 +5439,139 @@ def test_inert_exit_on_a_quarantined_journal_says_so_distinctly(capsys):
         _MAX_WALL_CLOCK_MINUTES_PER_STORY,
         _MAX_WALL_CLOCK_MINUTES_PER_RUN,
         fs=fs,
-        process=FakeProcess(alive_for=1),
+        process=FakeProcess(alive_for=2),
         clock=FakeClock(),
         observer=FakeObserver(),
+        harness=FakeHarness(),
+        sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
+    # attach (with the WARN), the MRS-SUPV-003 record (no harness run id is
+    # recoverable), one live heartbeat, the exit heartbeat, detach.
+    assert [entry["kind"] for entry in entries] == [
+        "supervisor-attach",
+        "idle-harness-run-id-unavailable",
+        "supervisor-heartbeat",
+        "supervisor-heartbeat",
+        "supervisor-detach",
+    ]
+    attach_payload = entries[0]["payload"]
+    supervisor_pid = attach_payload["pid"]
+    assert attach_payload["watched_pid"] == 4242
+    assert attach_payload["quarantined"] == 1
+    assert attach_payload["finding"]["code"] == "MRS-SUPV-011"
+    assert attach_payload["finding"]["severity"] == "warn"
+    assert "could not be proven" in attach_payload["finding"]["message"]
+    assert entries[1]["payload"]["finding"]["code"] == "MRS-SUPV-003"
+    assert [entry["payload"]["watched_alive"] for entry in entries[2:4]] == [True, False]
+    assert entries[-1]["payload"] == {"pid": supervisor_pid, "reason": "watched-process-exited"}
+    err = capsys.readouterr().err
+    assert "MRS-SUPV-011" in err
+    assert "1 journal line" in err.lower()
+
+
+def test_a_proven_attach_keeps_the_two_field_payload():
+    """The quarantine fields belong to the UNPROVEN attach only: a journal
+    whose launch outcome evaluates cleanly attaches with exactly the
+    historical ``{pid, watched_pid}`` payload, byte for byte."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=0),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=FakeHarness(),
+        sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    attach = json.loads(fs.appended_lines[0][1])
+    assert attach["kind"] == "supervisor-attach"
+    assert sorted(attach["payload"]) == ["pid", "watched_pid"]
+
+
+def test_a_journal_with_neither_a_launch_entry_nor_a_quarantined_line_stays_inert(capsys):
+    """The other half of the Story 82.4 decision: a journal that holds
+    well-formed entries but no run-launch/run-resume line for ANY run id, and
+    no quarantined line, proves nothing and invites nothing -- inert with no
+    journal write, exactly as before."""
+    stray = build_entry(
+        id=JournalEntryId("spin-1", 0),
+        ts="2026-08-03T05:45:00.000Z",
+        run_id="acme-run-1",
+        kind="gate-record",
+        phase=Phase.OBSERVATION,
+        payload={},
+    )
+    fs = FakeFs(journal_text=prepare_for_write(stray).line + "\n")
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=FakeHarness(),
         sleep=_no_sleep,
     )
 
     assert rc == 0
     assert fs.appended_lines == []
-    err = capsys.readouterr().err
-    assert "unevaluable" in err.lower()
-    assert "1 journal line" in err.lower()
+    assert fs.open_append_calls == []
+    assert "not a run marshal started" in capsys.readouterr().err.lower()
+
+
+def test_a_launch_entry_for_another_run_plus_a_quarantined_line_stays_inert(capsys):
+    """A valid ``run-launch`` for a DIFFERENT run id is proof the run is
+    someone else's: one quarantined line beside it must not rescue ownership
+    (Boundaries: never attach to a journal that proves the run is someone
+    else's)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("some-other-run") + "\n{not valid json at all\n")
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=FakeHarness(),
+        sleep=_no_sleep,
+    )
+
+    assert rc == 0
+    assert fs.appended_lines == []
+    assert "not a run marshal started" in capsys.readouterr().err.lower()
 
 
 # --- Story 3.8: stage-bound durability, and fleet-launch wiring (AD-46/FR-61) ----
@@ -6579,3 +6842,707 @@ def test_run_supervisor_rejects_a_bad_staleness_window_before_journaling(bad_win
     assert rc == 1
     assert fs.appended_lines == [], "nothing journaled -- no dangling attach"
     assert "staleness window" in capsys.readouterr().err
+
+
+# --- Story 82.4: signals, the tamper-evident journal, and fail-closed ----------
+#
+# One test per acceptance criterion, each named for its criterion (see the
+# story spec's Verification section for the mutation proof: every test below
+# fails with its own fix reverted).
+
+
+def _supervise(
+    fs: FakeFs,
+    *,
+    process: FakeProcess,
+    harness: FakeHarness | None = None,
+    sleep=_no_sleep,
+    run_id: str = "acme-run-1",
+) -> int:
+    """``run_supervisor`` with this file's usual inert defaults -- the tests
+    below vary only the journal, the process, the harness and ``sleep``. Always
+    passes an explicit ``FakeHarness``: a fail-closed stop calls it, and the
+    default would reach the real ``bmad-loop``."""
+    return run_supervisor(
+        _HOME,
+        "acme",
+        run_id,
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=process,
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=harness if harness is not None else FakeHarness(),
+        sleep=sleep,
+    )
+
+
+def _entries(fs: FakeFs) -> list[dict]:
+    return [json.loads(line) for _, line, _ in fs.appended_lines]
+
+
+_HANDLED_SIGNALS = (signal.SIGTERM, signal.SIGHUP, signal.SIGINT)
+
+
+@pytest.fixture
+def _sentinel_signal_handlers():
+    """Replace SIGTERM/SIGHUP/SIGINT with a recording sentinel for the test and
+    restore the originals afterwards. The sentinel is what makes the signal
+    tests safe to RUN against a reverted fix: with no handler installed by the
+    supervisor, ``signal.raise_signal`` lands here and the test FAILS, instead
+    of killing the pytest process (default SIGTERM/SIGHUP) or raising
+    ``KeyboardInterrupt`` (default SIGINT)."""
+    received: list[int] = []
+
+    def _sentinel(signum, frame):
+        received.append(signum)
+
+    originals = {signum: signal.signal(signum, _sentinel) for signum in _HANDLED_SIGNALS}
+    try:
+        yield _sentinel, received
+    finally:
+        for signum, original in originals.items():
+            signal.signal(signum, original)
+
+
+@pytest.mark.parametrize("signum", _HANDLED_SIGNALS, ids=lambda signum: signum.name)
+def test_a_handled_signal_makes_the_last_journal_entry_a_detach_naming_it(signum, _sentinel_signal_handlers):
+    """Given a running supervisor When it receives SIGTERM, SIGHUP or SIGINT
+    Then its last journal entry is a ``supervisor-detach`` whose reason names
+    the signal (DW-FU-3-4-6). The signal is raised from inside the injected
+    ``sleep`` -- the loop's own sleep -- through the REAL handlers."""
+    sentinel, received = _sentinel_signal_handlers
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    ticks: list[float] = []
+
+    def _sleep(seconds: float) -> None:
+        ticks.append(seconds)
+        if len(ticks) == 2:
+            signal.raise_signal(signum)
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=10), sleep=_sleep)
+
+    assert rc == 0
+    assert received == [], "the supervisor's own handler must take the signal, never the previous one"
+    entries = _entries(fs)
+    assert entries[-1]["kind"] == "supervisor-detach"
+    assert entries[-1]["payload"]["reason"] == "signal-" + signum.name
+    # One full tick (a heartbeat) ran, the signalled sleep produced no second one.
+    assert [entry["kind"] for entry in entries].count("supervisor-heartbeat") == 1
+    # The previous handlers are back.
+    for handled in _HANDLED_SIGNALS:
+        assert signal.getsignal(handled) is sentinel
+    # No dangling attach, and the entry honours the frozen journal contract.
+    for entry in entries:
+        jsonschema.validate(instance=entry, schema=_journal_schema())
+
+
+def test_a_signal_during_a_tick_ends_the_loop_when_that_tick_finishes(_sentinel_signal_handlers):
+    """Given SIGTERM arrives while a tick's work is running (not while
+    sleeping) Then the handler must not act mid-tick -- the tick completes,
+    including its heartbeat -- and the loop then ends with the signal's detach
+    reason. The signal is raised from the tick's own liveness reading."""
+    _, received = _sentinel_signal_handlers
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    class _SignallingProcess(FakeProcess):
+        def is_alive(self, pid: int) -> bool:
+            alive = super().is_alive(pid)
+            if self.calls == 2:  # the first tick's own fresh reading
+                signal.raise_signal(signal.SIGTERM)
+            return alive
+
+    process = _SignallingProcess(alive_for=10)
+
+    rc = _supervise(fs, process=process)
+
+    assert rc == 0
+    assert received == []
+    entries = _entries(fs)
+    kinds = [entry["kind"] for entry in entries]
+    # The interrupted tick finished (its heartbeat landed) and no second tick began.
+    assert kinds.count("supervisor-heartbeat") == 1
+    assert kinds.index("supervisor-heartbeat") < kinds.index("supervisor-detach")
+    assert entries[-1]["payload"]["reason"] == "signal-SIGTERM"
+    assert process.calls == 2
+
+
+def test_a_signal_never_overrides_a_natural_exit(_sentinel_signal_handlers):
+    """The detach reason names a signal only when the watched process was
+    still alive: a tick whose own reading finds it already exited keeps
+    ``watched-process-exited`` even though SIGTERM arrived in the same tick."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    class _SignallingProcess(FakeProcess):
+        def is_alive(self, pid: int) -> bool:
+            alive = super().is_alive(pid)
+            if self.calls == 2:
+                signal.raise_signal(signal.SIGTERM)
+            return alive
+
+    rc = _supervise(fs, process=_SignallingProcess(alive_for=1))
+
+    assert rc == 0
+    assert _entries(fs)[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+def test_a_signal_never_overrides_a_budget_stop_reason(_sentinel_signal_handlers):
+    """SIGTERM arrives while the tick's budget stop is running (the handler
+    only records it mid-tick) and the watched process is still alive after
+    the stop. The detach reason stays the more specific
+    ``budget-run-tokens-exceeded``; only a detach with no reason of its own
+    takes ``signal-SIGTERM``. (A per-RUN breach: since Story 82.5 a per-story
+    breach is an observation that never stops the run.)"""
+    _, received = _sentinel_signal_handlers
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+
+    class _SignallingHarness(FakeHarness):
+        def stop(self, project: Path, run_id: str) -> bool:
+            signal.raise_signal(signal.SIGTERM)
+            return super().stop(project, run_id)
+
+    harness = _SignallingHarness()
+    harness.usage_snapshot_result = UsageSnapshot(
+        story_key="3.6",
+        story_weighted_tokens=150,
+        run_weighted_tokens=150,
+        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    )
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        100.0,
+        100.0,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=FakeObserver(pane="idle"),
+        harness=harness,
+        sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    assert received == []
+    assert harness.stop_calls
+    assert _entries(fs)[-1]["payload"]["reason"] == "budget-run-tokens-exceeded"
+
+
+def test_a_signal_during_the_sleep_after_the_watched_process_exited_keeps_the_natural_exit_reason(
+    _sentinel_signal_handlers,
+):
+    """The watched process exits DURING the sleep the signal cuts short. The
+    loop must take one fresh liveness reading before it leaves, or
+    ``watched_alive`` is last tick's ``True`` and the exit is mislabelled
+    ``signal-SIGTERM`` (and the post-loop retry-verify/escalation paths a
+    natural exit runs are skipped)."""
+    _, received = _sentinel_signal_handlers
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    def _sleep(seconds: float) -> None:
+        signal.raise_signal(signal.SIGTERM)
+
+    # alive_for=1: the pre-loop reading is True, the fresh one after the
+    # interrupted sleep is False.
+    process = FakeProcess(alive_for=1)
+
+    rc = _supervise(fs, process=process, sleep=_sleep)
+
+    assert rc == 0
+    assert received == []
+    entries = _entries(fs)
+    assert entries[-1]["kind"] == "supervisor-detach"
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+    assert process.calls == 2
+
+
+def test_the_signal_handlers_are_restored_on_the_fail_closed_exit_too(_sentinel_signal_handlers):
+    """``finally`` restores them on EVERY exit, not just the happy path."""
+    sentinel, _ = _sentinel_signal_handlers
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    fs.fail_append_line_from_call = 2
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=10))
+
+    assert rc == 1
+    for handled in _HANDLED_SIGNALS:
+        assert signal.getsignal(handled) is sentinel
+
+
+def test_off_the_main_thread_no_handler_is_installed_and_the_run_still_completes():
+    """``signal.signal`` raises ``ValueError`` off the main thread; the
+    supervisor must carry on without signal journaling rather than refuse."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    results: list[object] = []
+
+    def _worker() -> None:
+        try:
+            results.append(_supervise(fs, process=FakeProcess(alive_for=2)))
+        except BaseException as exc:  # noqa: BLE001 -- surfaced by the assert below
+            results.append(exc)
+
+    thread = threading.Thread(target=_worker)
+    thread.start()
+    thread.join(timeout=30)
+
+    assert results == [0]
+    assert _entries(fs)[-1]["payload"]["reason"] == "watched-process-exited"
+
+
+# -- the held descriptor and the per-tick tamper check --------------------------
+
+
+def _tampering_sleep(fs: FakeFs, state: HeldFileState, *, on_call: int = 2):
+    """A ``sleep`` that, on its ``on_call``-th call, flips the fake journal's
+    held-file state to ``state`` -- a tamper that happens BETWEEN ticks, while
+    the supervisor sleeps."""
+    calls = 0
+
+    def _sleep(seconds: float) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == on_call:
+            fs.held_state_override = state
+
+    return _sleep
+
+
+_TAMPER_STATES = {
+    "removed": HeldFileState(present=False, same_file=False, size=0, writable=False),
+    "replaced": HeldFileState(present=True, same_file=False, size=10_000, writable=True),
+    "truncated": HeldFileState(present=True, same_file=True, size=1, writable=True),
+    "read-only": HeldFileState(present=True, same_file=True, size=10_000, writable=False),
+}
+
+
+@pytest.mark.parametrize("fault", sorted(_TAMPER_STATES))
+def test_a_tampered_journal_between_ticks_stops_the_watched_run_and_records_why(fault, capsys):
+    """Given a supervised run When the journal is replaced, truncated, removed
+    or made read-only between ticks Then the supervisor stops the watched run
+    through ``HarnessPort.stop`` and records why -- and never exits leaving the
+    run alive and unwatched (DW-FU-3-4-8)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    harness = FakeHarness()
+    process = FakeProcess(alive_for=10)
+
+    rc = _supervise(fs, process=process, harness=harness, sleep=_tampering_sleep(fs, _TAMPER_STATES[fault]))
+
+    assert rc == 1
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    # Detected on the tick right after the tamper: pre-loop reading, tick 1,
+    # tick 2 -- and the fail-closed path takes no further liveness reading.
+    assert process.calls == 3
+    err = capsys.readouterr().err
+    assert f"journal {fault}" in err
+    assert "MRS-SUPV-012" in err
+    assert "stopped harness run" in err
+    # The descriptor still accepted the final detach, naming the fault.
+    entries = _entries(fs)
+    assert entries[-1]["kind"] == "supervisor-detach"
+    assert entries[-1]["payload"]["reason"] == "journal-tampered"
+    assert entries[-1]["payload"]["journal_fault"] == fault
+    assert entries[-1]["payload"]["stopped"] is True
+    assert entries[-1]["payload"]["finding"]["code"] == "MRS-SUPV-012"
+    # The one live tick before the tamper heartbeated; the tampered tick did not.
+    assert [entry["kind"] for entry in entries].count("supervisor-heartbeat") == 1
+    assert fs.close_append_calls == 1
+    jsonschema.validate(instance=entries[-1], schema=_journal_schema())
+
+
+def test_a_fail_closed_stop_that_raises_or_declines_is_recorded_never_raised(capsys):
+    """``HarnessPort.stop``'s failure shapes (a ``HarnessError``, a ``False``
+    result) are recorded on the stderr line and the detach entry -- the
+    ``_act_on_budget_transition`` idiom -- and never escape ``run_supervisor``."""
+    for configure, expected in (
+        (lambda h: setattr(h, "fail_stop", HarnessError("bmad-loop stop timed out")), "could not stop harness run"),
+        (lambda h: setattr(h, "stop_result", False), "was not stopped"),
+    ):
+        fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+        harness = FakeHarness()
+        configure(harness)
+
+        rc = _supervise(
+            fs,
+            process=FakeProcess(alive_for=10),
+            harness=harness,
+            sleep=_tampering_sleep(fs, _TAMPER_STATES["replaced"]),
+        )
+
+        assert rc == 1
+        assert len(harness.stop_calls) == 1
+        assert expected in capsys.readouterr().err
+        assert _entries(fs)[-1]["payload"]["stopped"] is False
+
+
+def test_a_journal_that_cannot_be_inspected_is_treated_as_tampered(capsys):
+    """If the per-tick state read itself fails the supervisor can no longer
+    vouch for its journal -- the same fail-closed answer, kind ``unverifiable``."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    harness = FakeHarness()
+
+    def _sleep(seconds: float) -> None:
+        fs.held_state_error = FsError("cannot stat journal: I/O error")
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=10), harness=harness, sleep=_sleep)
+
+    assert rc == 1
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    assert "journal unverifiable" in capsys.readouterr().err
+
+
+def test_another_writer_growing_the_journal_is_not_tampering_and_raises_the_floor():
+    """The size check is a FLOOR: a ``supervisor-spawn`` entry or a landing
+    appended by another writer only grows the file, and must neither trip the
+    check nor lower the floor a later truncation is measured against -- so the
+    floor is raised to what the last passing tick observed, and a journal that
+    then falls back to the size it had before the other writer's lines is
+    caught as truncated even though it still weighs more than this process
+    alone ever wrote."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    harness = FakeHarness()
+    calls = 0
+
+    def _sleep(seconds: float) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            fs.external_growth = 50_000  # another writer appended a large entry
+        elif calls == 3:
+            fs.external_growth = 0  # ...and now those bytes are gone again
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=10), harness=harness, sleep=_sleep)
+
+    assert rc == 1
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    assert _entries(fs)[-1]["payload"]["journal_fault"] == "truncated"
+    # Ticks 1 and 2 passed (the growth was absorbed); tick 3 was the tampered one.
+    assert [entry["kind"] for entry in _entries(fs)].count("supervisor-heartbeat") == 2
+
+
+@pytest.mark.parametrize(("delta", "tampered"), [(0, False), (-1, True)])
+def test_the_expected_size_floor_is_exact_to_the_byte(delta, tampered):
+    """A journal of exactly the size the supervisor accounts for (the text it
+    read at attach plus every line it appended since) is healthy; one byte
+    short of it is truncated."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    harness = FakeHarness()
+    calls = 0
+
+    def _sleep(seconds: float) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            # Nothing is appended between this sleep and the tick's check, so
+            # the healthy size right now IS the supervisor's floor.
+            fs.held_state_override = HeldFileState(
+                present=True, same_file=True, size=fs.healthy_size() + delta, writable=True
+            )
+        elif calls == 3:
+            fs.held_state_override = None  # the journal is derived again afterwards
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=4), harness=harness, sleep=_sleep)
+
+    assert (rc == 1) is tampered
+    assert (harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]) is tampered
+
+
+def test_classify_journal_state_orders_removed_replaced_truncated_read_only():
+    classify = supervisor_main._classify_journal_state
+    healthy = HeldFileState(present=True, same_file=True, size=100, writable=True)
+    assert classify(healthy, 100) is None
+    assert classify(HeldFileState(present=False, same_file=False, size=0, writable=False), 100) == "removed"
+    # A replaced journal that is also small and read-only is reported as replaced.
+    assert classify(HeldFileState(present=True, same_file=False, size=1, writable=False), 100) == "replaced"
+    assert classify(HeldFileState(present=True, same_file=True, size=99, writable=False), 100) == "truncated"
+    assert classify(HeldFileState(present=True, same_file=True, size=100, writable=False), 100) == "read-only"
+
+
+@pytest.mark.parametrize("fault", sorted(_TAMPER_STATES))
+def test_a_tampered_journal_with_no_harness_run_id_reports_once_and_keeps_watching(fault, capsys):
+    """With no harness run id there is nothing to stop against: the supervisor
+    reports ``MRS-SUPV-013`` ONCE on stderr, keeps heartbeating through the held
+    descriptor, and returns 0 when the watched process exits -- the
+    ``MRS-SUPV-003``/``005`` precedent, never an exit with the run alive."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    harness = FakeHarness()
+    process = FakeProcess(alive_for=5)
+
+    rc = _supervise(fs, process=process, harness=harness, sleep=_tampering_sleep(fs, _TAMPER_STATES[fault]))
+
+    assert rc == 0
+    assert harness.stop_calls == []
+    err = capsys.readouterr().err
+    assert err.count("MRS-SUPV-013") == 1
+    assert f"journal {fault}" in err
+    entries = _entries(fs)
+    kinds = [entry["kind"] for entry in entries]
+    # Heartbeats kept flowing past the tamper (5 ticks: 4 alive + the exit one).
+    assert kinds.count("supervisor-heartbeat") == 5
+    assert kinds.count("supervisor-journal-fault") == 1
+    assert entries[-1]["payload"]["reason"] == "watched-process-exited"
+    fault_entry = next(entry for entry in entries if entry["kind"] == "supervisor-journal-fault")
+    assert fault_entry["payload"]["fault"] == fault
+    assert fault_entry["payload"]["finding"]["code"] == "MRS-SUPV-013"
+    jsonschema.validate(instance=fault_entry, schema=_journal_schema())
+
+
+def test_a_failing_append_with_no_harness_run_id_is_reported_once_and_swallowed(capsys):
+    """The no-run-id half of the append-failure path: the journal is
+    unwritable, no stop is possible, so the fault is reported once and the
+    loop keeps running to the watched process's own exit (return 0)."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    fs.fail_append_line_from_call = 2
+    harness = FakeHarness()
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=4), harness=harness)
+
+    assert rc == 0
+    assert harness.stop_calls == []
+    err = capsys.readouterr().err
+    assert err.count("MRS-SUPV-013") == 1
+    assert "cannot append to journal" in err
+
+
+def test_an_unopenable_journal_at_attach_stops_the_run_when_a_harness_run_id_is_known(capsys):
+    """``open_append`` is the first journal touch after the ownership decision;
+    its failure is a journal fault like any other append failure."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    fs.fail_open_append = FsError("cannot open journal: Permission denied")
+    harness = FakeHarness()
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=5), harness=harness)
+
+    assert rc == 1
+    assert harness.stop_calls == [(_HOME, _HARNESS_RUN_ID)]
+    assert fs.appended_lines == []
+    assert "cannot append to journal" in capsys.readouterr().err
+
+
+def test_an_unopenable_journal_at_attach_without_a_run_id_keeps_the_print_and_exit(capsys):
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1", harness_run_id=None) + "\n")
+    fs.fail_open_append = FsError("cannot open journal: Permission denied")
+    harness = FakeHarness()
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=5), harness=harness)
+
+    assert rc == 1
+    assert harness.stop_calls == []
+    assert "cannot append to journal" in capsys.readouterr().err
+
+
+def test_every_entry_goes_through_the_one_held_descriptor():
+    """The journal is opened ONCE at attach, written only through that handle,
+    and the handle is released exactly once -- ``append_line`` (which
+    re-resolves the path on every call) is never used by the supervisor."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=3))
+
+    assert rc == 0
+    # Entries landed, and none of them through the path-based `append_line`.
+    assert fs.appended_lines
+    assert fs.direct_append_line_calls == 0
+    assert fs.open_append_calls == [_run_dir() / supervisor_main._JOURNAL_FILENAME]
+    assert fs.close_append_calls == 1
+    assert fs.held_file_state_calls == 2  # one per live tick; the exit tick is not checked
+
+
+# -- the same fail-closed path against a REAL filesystem -------------------------
+#
+# The fakes above model the held-descriptor port; these drive ``LocalFs`` on a
+# real ``tmp_path`` journal and tamper with it the way the agent session could
+# (it reaches the file through the Tier-3 backlink): replace it, truncate it,
+# chmod it, delete it.
+
+
+def _real_journal(tmp_path: Path, *, harness_run_id: str | None = _HARNESS_RUN_ID) -> tuple[Path, Path]:
+    home = tmp_path / "loop-home"
+    journal = supervisor_main._run_dir(home, "acme", "acme-run-1") / supervisor_main._JOURNAL_FILENAME
+    journal.parent.mkdir(parents=True)
+    journal.write_text(_launch_outcome_line("acme-run-1", harness_run_id=harness_run_id) + "\n", encoding="utf-8")
+    return home, journal
+
+
+def _supervise_real(home: Path, *, process: FakeProcess, harness: FakeHarness, sleep) -> int:
+    return run_supervisor(
+        home,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=LocalFs(),
+        process=process,
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=harness,
+        sleep=sleep,
+    )
+
+
+def _tamper_on_second_sleep(tamper):
+    calls = 0
+
+    def _sleep(seconds: float) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            tamper()
+
+    return _sleep
+
+
+def test_real_fs_a_journal_replaced_between_ticks_stops_the_run(tmp_path, capsys):
+    home, journal = _real_journal(tmp_path)
+    impostor = journal.with_name("impostor.jsonl")
+    impostor.write_text("not the journal\n" * 200, encoding="utf-8")
+    harness = FakeHarness()
+
+    rc = _supervise_real(
+        home,
+        process=FakeProcess(alive_for=10),
+        harness=harness,
+        sleep=_tamper_on_second_sleep(lambda: os.replace(impostor, journal)),
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(home, _HARNESS_RUN_ID)]
+    assert "journal replaced" in capsys.readouterr().err
+    # The path now names the impostor, untouched by the supervisor...
+    assert journal.read_text(encoding="utf-8") == "not the journal\n" * 200
+
+
+def test_real_fs_a_truncated_journal_stops_the_run(tmp_path, capsys):
+    home, journal = _real_journal(tmp_path)
+    harness = FakeHarness()
+
+    rc = _supervise_real(
+        home,
+        process=FakeProcess(alive_for=10),
+        harness=harness,
+        sleep=_tamper_on_second_sleep(lambda: os.truncate(journal, 0)),
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(home, _HARNESS_RUN_ID)]
+    assert "journal truncated" in capsys.readouterr().err
+    # ...and the held descriptor still took the final detach, on the truncated file.
+    detach = json.loads(journal.read_text(encoding="utf-8").splitlines()[-1])
+    assert detach["kind"] == "supervisor-detach"
+    assert detach["payload"]["reason"] == "journal-tampered"
+    assert detach["payload"]["journal_fault"] == "truncated"
+
+
+def test_real_fs_a_removed_journal_is_never_recreated_and_stops_the_run(tmp_path, capsys):
+    home, journal = _real_journal(tmp_path)
+    harness = FakeHarness()
+
+    rc = _supervise_real(
+        home,
+        process=FakeProcess(alive_for=10),
+        harness=harness,
+        sleep=_tamper_on_second_sleep(journal.unlink),
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(home, _HARNESS_RUN_ID)]
+    assert "journal removed" in capsys.readouterr().err
+    assert not journal.exists(), "the held append handle must never recreate a removed journal"
+
+
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root bypasses file permissions")
+def test_real_fs_a_read_only_journal_stops_the_run_even_though_the_descriptor_still_writes(tmp_path, capsys):
+    home, journal = _real_journal(tmp_path)
+    harness = FakeHarness()
+
+    rc = _supervise_real(
+        home,
+        process=FakeProcess(alive_for=10),
+        harness=harness,
+        sleep=_tamper_on_second_sleep(lambda: journal.chmod(0o444)),
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(home, _HARNESS_RUN_ID)]
+    assert "journal read-only" in capsys.readouterr().err
+    detach = json.loads(journal.read_text(encoding="utf-8").splitlines()[-1])
+    assert detach["payload"]["journal_fault"] == "read-only"
+
+
+def test_real_fs_an_untouched_journal_runs_to_completion_through_the_held_descriptor(tmp_path):
+    """The healthy control for the four tamper tests above: every entry lands
+    through the one held descriptor, nothing trips the per-tick check (other
+    writers' lines -- here one appended mid-run -- only grow the file), and the
+    run ends with an ordinary detach."""
+    home, journal = _real_journal(tmp_path)
+    harness = FakeHarness()
+
+    def _other_writer_appends(seconds: float) -> None:
+        LocalFs().append_line(journal, '{"other": "writer"}', fsync=False)
+
+    rc = _supervise_real(home, process=FakeProcess(alive_for=4), harness=harness, sleep=_other_writer_appends)
+
+    assert rc == 0
+    assert harness.stop_calls == []
+    lines = journal.read_text(encoding="utf-8").splitlines()
+    kinds = [json.loads(line).get("kind") for line in lines]
+    assert kinds[-1] == "supervisor-detach"
+    assert json.loads(lines[-1])["payload"]["reason"] == "watched-process-exited"
+    assert kinds.count("supervisor-heartbeat") == 4
+
+
+def test_real_fs_a_torn_last_line_is_terminated_so_the_attach_entry_is_not_swallowed(tmp_path):
+    """A torn append -- the very case the unproven-ownership attach exists for
+    -- leaves the journal's last line without its newline. The attach line must
+    not be written onto the end of that fragment (it would be quarantined
+    itself, taking ``quarantined`` and ``MRS-SUPV-011`` with it): the supervisor
+    first writes a lone terminator through the held handle."""
+    home = tmp_path / "loop-home"
+    journal = supervisor_main._run_dir(home, "acme", "acme-run-1") / supervisor_main._JOURNAL_FILENAME
+    journal.parent.mkdir(parents=True)
+    fragment = '{"id": {"writer_id": "spin-1", "counter": 0}, "kind": "run-launch", "ph'
+    journal.write_text(fragment, encoding="utf-8")  # NO trailing newline
+    harness = FakeHarness()
+
+    rc = _supervise_real(home, process=FakeProcess(alive_for=1), harness=harness, sleep=_no_sleep)
+
+    assert rc == 0
+    text = journal.read_text(encoding="utf-8")
+    assert text.startswith(fragment + "\n")  # the fragment is closed off, not extended
+    result = fold(text.split("\n"))
+    # The fragment is the ONLY quarantined line...
+    assert [record.raw for record in result.quarantined] == [fragment]
+    # ...and the attach entry parses, carrying the unproven-ownership fields.
+    [attach] = result.by_kind("supervisor-attach")
+    assert attach.payload["quarantined"] == 1
+    assert attach.payload["finding"]["code"] == "MRS-SUPV-011"
+    assert result.by_kind("supervisor-detach")
+
+
+def test_a_journal_that_already_ends_in_a_newline_gets_no_extra_terminator():
+    """The terminator is written ONLY for a torn last line: a healthy journal
+    (and an empty one) must not gain a stray blank line."""
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+
+    rc = _supervise(fs, process=FakeProcess(alive_for=0))
+
+    assert rc == 0
+    assert [json.loads(line)["kind"] for _, line, _ in fs.appended_lines][0] == "supervisor-attach"
+    assert all(line != "" for _, line, _ in fs.appended_lines)

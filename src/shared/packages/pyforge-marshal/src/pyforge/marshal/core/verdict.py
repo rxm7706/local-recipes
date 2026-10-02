@@ -520,10 +520,12 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # so folding the genuinely-lost case back into 008 would rebuild the very
 # ambiguity that cost an operator an hour on 2026-08-09. WARN, not ERROR,
 # because AD-46 forbids durability becoming a new refusal gate.
+# Story 82.4 adds MRS-SUPV-011/012/013 and MRS-SPIN-018 to the same two
+# areas, all WARN (see their rows below).
 # Story 82.5's supervisor/__main__.py adds MRS-SUPV-014 (a per-story budget
 # ceiling was breached; the run continues) and MRS-SUPV-015 (neither idle
 # channel could be observed, so the ladder holds its rung), both WARN: each is
-# a reported condition the run survives, like this area's own 001-010.
+# a reported condition the run survives, like this area's own 001-013.
 # Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008 at
 # SCOPE_VIOLATION (this table's first use of that rung) and MRS-GATE-009
 # at UNEVALUABLE, alongside MRS-GATE-002/003/005.
@@ -1260,6 +1262,19 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # tree to gate, so there is no gate answer to report either way, and it
     # is never the bare-defaults MRS-GATE-004 warn (exit 0) false green.
     "MRS-GATE-016": Verdict.UNEVALUABLE,
+    # Story 82.4 (spec-pyforge-marshal CAP-2): 011 an attach whose ownership the
+    # journal could not prove (a quarantined line, no launch/resume entry), 012
+    # a tampered journal that made the supervisor stop the watched run, 013 the
+    # same tamper with no harness run id to stop against, and MRS-SPIN-018 a
+    # `supervisor-spawn` observation that could not be journaled. All WARN, the
+    # tier of MRS-SUPV-003/005 and MRS-SPIN-006/007: each names a degraded
+    # supervision condition over a run that is otherwise live -- a classification
+    # that exited non-zero over a launch that succeeded would invite the
+    # double-dispatch MRS-SPIN-006's own note warns about.
+    "MRS-SUPV-011": Verdict.WARN,
+    "MRS-SUPV-012": Verdict.WARN,
+    "MRS-SUPV-013": Verdict.WARN,
+    "MRS-SPIN-018": Verdict.WARN,
     # Story 28.8 (derived context recomputes only on source change,
     # SPEC-marshal-token-economy CAP-5). 001 is UNEVALUABLE for the same
     # reason MRS-POLICY-001 is: marshal could not determine WHAT the

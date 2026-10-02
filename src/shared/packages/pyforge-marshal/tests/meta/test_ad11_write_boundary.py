@@ -548,9 +548,10 @@ def test_spin_writes_resolve_under_the_home_and_reach_it_through_the_tier3_backl
 
     assert exit_code == EXIT_OK
     # Non-vacuous: the run directory's parent (ensure_dir), the run directory
-    # itself (create_dir_exclusive), and the two journal appends (intent +
-    # outcome, both to the same journal.jsonl) -- four recorded writes.
-    assert len(fs.write_paths) == 4, f"unexpected write set: {fs.write_paths}"
+    # itself (create_dir_exclusive), and the three journal appends (intent,
+    # outcome, and Story 82.4's `supervisor-spawn` observation, all to the same
+    # journal.jsonl) -- five recorded writes.
+    assert len(fs.write_paths) == 5, f"unexpected write set: {fs.write_paths}"
     assert harness.spin_log_paths, "no spin log path was observed -- the guard would be vacuous"
     # Story 3.4: the supervisor's own log is the SECOND non-FsPort write
     # target this command hands out, and it must be guarded exactly like the

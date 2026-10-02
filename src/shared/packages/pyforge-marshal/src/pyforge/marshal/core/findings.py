@@ -977,6 +977,10 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # boundary is acted on. Measured 2026-08-09: 6 of 22 pushes in one live run.
 # 009 is reserved for the genuinely alarming shape (branch gone, work not
 # landed), so that a durability finding means something again.
+# Story 82.4 adds MRS-SUPV-011/012/013 (an unproven-ownership attach; the
+# journal was tampered with and the run was stopped; the same tamper with no
+# harness run id to stop against) and MRS-SPIN-018 (the `supervisor-spawn`
+# observation could not be journaled) -- all WARN; see the tuple below.
 # Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008/009 -- the
 # table's first SCOPE_VIOLATION classifications (007/008) plus a new
 # UNEVALUABLE code for a --scope-check that could not be evaluated at all
@@ -1969,6 +1973,28 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # checkout), so no gate was evaluated; UNEVALUABLE, never the bare
         # defaults + MRS-GATE-004 false green.
         "MRS-GATE-016",
+        # Story 82.4 (spec-pyforge-marshal CAP-2, DW-FU-3-4-3/6/7/8): the
+        # supervisor stops being silenceable through its own journal, and the
+        # run journal finally records the supervisor spawn. MRS-SUPV-011 --
+        # the journal proves nothing about who owns the run (no run-launch or
+        # run-resume line for ANY run id, but at least one quarantined line),
+        # so the supervisor attaches anyway and says so on its
+        # `supervisor-attach`. MRS-SUPV-012 -- the journal was replaced,
+        # truncated, removed or made read-only (or an append to it failed), so
+        # the supervisor stopped the watched run through `HarnessPort.stop`
+        # rather than leave it alive and unwatched; carried on the final
+        # `supervisor-detach` when the held descriptor still takes it.
+        # MRS-SUPV-013 -- the same tamper with NO harness run id to stop
+        # against: the supervisor cannot act, reports it once and keeps
+        # watching (the MRS-SUPV-003/005 precedent). MRS-SPIN-018 -- the
+        # `supervisor-spawn` observation (`marshal factory spin`/`resume`)
+        # could not be journaled; the launch outcome is unchanged. All WARN:
+        # each reports a degraded supervision condition over a run that is
+        # otherwise live, never a refusal.
+        "MRS-SUPV-011",
+        "MRS-SUPV-012",
+        "MRS-SUPV-013",
+        "MRS-SPIN-018",
         # Story 28.8 (derived context recomputes only on source change,
         # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
         # own two codes -- 001 UNEVALUABLE (the declaration itself could

@@ -420,6 +420,10 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-GATE-015",
             # Story 82.1 (DW-FU-2-1-7): the repository root could not be resolved.
             "MRS-GATE-016",
+            "MRS-SUPV-011",
+            "MRS-SUPV-012",
+            "MRS-SUPV-013",
+            "MRS-SPIN-018",
             # Story 28.8 (derived context recomputes only on source change,
             # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
             # own area. 001 UNEVALUABLE (the derived-context declaration
