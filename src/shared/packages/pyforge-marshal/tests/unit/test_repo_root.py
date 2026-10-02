@@ -75,7 +75,9 @@ def installed(tmp_path: Path, monkeypatch) -> Path:
     """Point ``config.__file__`` into an environment prefix: no
     ``src/shared/packages/pyforge-marshal/`` anywhere above it. The prefix sits at
     ``tmp_path/env``, so the bare ``parents[8]`` lands on ``tmp_path.parent``."""
-    module_file = tmp_path / "env" / "lib" / "python3.14" / "site-packages" / "pyforge" / "marshal" / "cli" / "config.py"
+    module_file = (
+        tmp_path / "env" / "lib" / "python3.14" / "site-packages" / "pyforge" / "marshal" / "cli" / "config.py"
+    )
     monkeypatch.setattr(config_module, "__file__", str(module_file))
     return module_file
 
@@ -242,9 +244,7 @@ def test_main_survives_a_closed_stderr_when_relaying_an_unresolved_root(installe
 # --- AC4: a prefix with fewer than nine ancestors never raises IndexError -------------------
 
 
-def test_a_prefix_with_fewer_than_nine_ancestors_resolves_via_git_without_an_index_error(
-    monkeypatch, checkout
-):
+def test_a_prefix_with_fewer_than_nine_ancestors_resolves_via_git_without_an_index_error(monkeypatch, checkout):
     monkeypatch.setattr(config_module, "__file__", _SHALLOW_PREFIX_FILE)
     assert len(Path(_SHALLOW_PREFIX_FILE).parents) == 8  # the bare index 8 is one past the end
     monkeypatch.chdir(checkout)
