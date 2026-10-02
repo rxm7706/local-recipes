@@ -2081,6 +2081,17 @@ def run_supervisor(
                 # function itself.
                 pane_content = observer.pane_content(session_name)
                 log_mtime = observer.mtime(harness_log_path)
+                # One `Sample` per tick, built before any decision is made
+                # (Story 82.5): it knows which channels were OBSERVED, so
+                # "neither" is a first-class state (`tick_sample.observable`)
+                # rather than a pair of `None`s the pure core would compare
+                # equal and read as maximal idleness.
+                tick_sample = Sample(
+                    moment=moment,
+                    pane_content=pane_content,
+                    log_mtime=log_mtime,
+                    monotonic_s=monotonic_now,
+                )
                 if pane_content is not None:
                     # UNOBSERVABLE is not IDLE, keyed on the PANE (review
                     # finding -- and the defect three prior passes each
@@ -2124,14 +2135,7 @@ def run_supervisor(
                     # still producing nothing), and real output on the far
                     # side still re-arms by differing from the last sample
                     # actually observed.
-                    samples.append(
-                        Sample(
-                            moment=moment,
-                            pane_content=pane_content,
-                            log_mtime=log_mtime,
-                            monotonic_s=monotonic_now,
-                        )
-                    )
+                    samples.append(tick_sample)
                 # Bound the history (review finding): `evaluate_idle` needs
                 # only the most recent CHANGE point and the latest sample, so
                 # once this tick observed a change, everything before the
@@ -2142,10 +2146,14 @@ def run_supervisor(
                 # CHANGE keeps the semantics identical: the retained pair
                 # still pins the same reference moment `idle_since` would
                 # have found in the full history.
-                if len(samples) > 2 and (
-                    samples[-1].pane_content != samples[-2].pane_content
-                    or samples[-1].log_mtime != samples[-2].log_mtime
-                ):
+                #
+                # The change test is `shows_fresh_output` -- the SAME predicate
+                # `evaluate_idle`'s scan applies (Story 82.5, DW-FU-3-5-9) --
+                # never a raw comparison of its own: a trim that treated a
+                # redrawing counter as a change while the scan did not (or the
+                # reverse) would pin a different anchor than the full history
+                # does, which is the one thing the trim promises not to do.
+                if len(samples) > 2 and shows_fresh_output(samples[-2], samples[-1]):
                     del samples[:-2]
                 elif len(samples) > 3:
                     # The NO-change half of the same bound (review finding):
@@ -2165,7 +2173,47 @@ def run_supervisor(
                     # sample still supplies the elapsed-time endpoint.
                     del samples[2:-1]
 
-                if pane_content is None or not samples:
+                if not tick_sample.observable:
+                    # NEITHER channel was observed (Story 82.5, DW-FU-3-5-6):
+                    # the observer is broken, not the session idle -- a
+                    # missing `tmux`, a permissions error, a log that is
+                    # transiently absent. The tick is unobservable, which is
+                    # not idleness: nothing is appended (the append guard above
+                    # already drops it), the rung is HELD rather than reset,
+                    # and the condition is journaled once per dark episode.
+                    #
+                    # HELD, not `NONE` (the pane-dark branch below resets,
+                    # exactly as it always did): resetting
+                    # `last_acted_rung` to `NONE` made the first observable
+                    # tick after a dark gap re-fire a nudge the ladder had
+                    # already sent. `evaluate_idle` is asked rather than the
+                    # hold being spelled out here, so the pure core remains
+                    # the one place that decides what an unobservable sample
+                    # means.
+                    if not idle_unobservable:
+                        idle_unobservable = True
+                        unobservable_finding = Finding(
+                            code="MRS-SUPV-012",
+                            severity=Severity.WARN,
+                            message=(
+                                f"neither the pane of session {session_name!r} nor "
+                                f"the harness log {str(harness_log_path)!r} could be "
+                                "observed -- the idle ladder holds its current rung "
+                                f"({last_acted_rung.value}) and takes no action until "
+                                "an observation succeeds"
+                            ),
+                        )
+                        _append(
+                            _IDLE_UNOBSERVABLE_KIND,
+                            {
+                                "session": session_name,
+                                "held_rung": last_acted_rung.value,
+                                "finding": unobservable_finding.to_json_dict(),
+                            },
+                        )
+                    rung = evaluate_idle([tick_sample], threshold_s=threshold_s, held=last_acted_rung)
+                elif pane_content is None or not samples:
+                    idle_unobservable = False
                     # This tick could not observe the run, so it has no
                     # evidence to act on -- see the append guard above for
                     # why the PANE alone answers that question and why the
@@ -2180,7 +2228,8 @@ def run_supervisor(
                     # going silent in the journal.
                     rung = LadderRung.NONE
                 else:
-                    rung = evaluate_idle(samples, threshold_s=threshold_s)
+                    idle_unobservable = False
+                    rung = evaluate_idle(samples, threshold_s=threshold_s, held=last_acted_rung)
 
                 # One rung per tick, never a jump (review finding): the
                 # ladder is a FIXED 3-rung sequence (this story's own Never
@@ -2196,7 +2245,13 @@ def run_supervisor(
                 if rung_index(rung) > rung_index(last_acted_rung) + 1:
                     rung = rung_at(rung_index(last_acted_rung) + 1)
 
-                if watched_alive and not deferred and samples and rung_index(rung) >= rung_index(LadderRung.NUDGE):
+                if (
+                    watched_alive
+                    and not deferred
+                    and samples
+                    and tick_sample.observable
+                    and rung_index(rung) >= rung_index(LadderRung.NUDGE)
+                ):
                     story_label = _feed_key_form(current_story_key) if current_story_key is not None else slug
                     commit_worktree_checkpoint(
                         vcs,
@@ -2825,7 +2880,9 @@ def run_supervisor(
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Parse ``sys.argv`` (or an injected ``argv`` for testing) into
-    ``run_supervisor``'s ten positional arguments and relay its exit code.
+    ``run_supervisor``'s ten positional arguments -- plus the optional
+    eleventh, the usage-staleness window (Story 82.5) -- and relay its exit
+    code.
     This is the ONLY place this module reads its own command line -- AD-9's
     "reads argv once at start and touches no other externally-writable
     input for its own control flow" is literal here: no further read of
@@ -2851,13 +2908,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 1
     args = list(sys.argv[1:]) if argv is None else list(argv)
-    if len(args) != 10 or not all(isinstance(arg, str) for arg in args):
+    if len(args) not in (10, 11) or not all(isinstance(arg, str) for arg in args):
         print(
             "usage: python -m pyforge.marshal.supervisor <home> <slug> "
             "<run_id> <watched_pid> <log_path> <idle_threshold_minutes> "
             "<max_tokens_per_story> <max_tokens_per_run> "
             "<max_wall_clock_minutes_per_story> "
-            "<max_wall_clock_minutes_per_run>",
+            "<max_wall_clock_minutes_per_run> "
+            "[<usage_staleness_window_minutes>]",
             file=sys.stderr,
         )
         return 1
@@ -2872,7 +2930,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         max_tokens_per_run_text,
         max_wall_clock_minutes_per_story_text,
         max_wall_clock_minutes_per_run_text,
+        *optional_args,
     ) = args
+    staleness_window_text = optional_args[0] if optional_args else None
     # `home` is the ROOT of the very path `slug` and `run_id` are guarded as
     # segments of, and was the one argv element validated nowhere (review
     # finding). A relative value resolves the journal against this process's
@@ -3003,6 +3063,39 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             return 1
         budget_values[_name] = _value
+    # Story 82.5's optional eleventh value, guarded exactly like the others.
+    # Absent, `run_supervisor` is called with its ten positionals alone and
+    # derives the window itself -- a caller that predates the eleventh value
+    # (and a launcher older than this supervisor) keeps working.
+    if staleness_window_text is not None:
+        try:
+            staleness_window_minutes = float(staleness_window_text)
+        except ValueError:
+            print(
+                f"supervisor: invalid usage staleness window minutes {staleness_window_text!r}",
+                file=sys.stderr,
+            )
+            return 1
+        if not (staleness_window_minutes > 0) or not math.isfinite(staleness_window_minutes):
+            print(
+                f"supervisor: usage staleness window minutes must be a positive finite number, "
+                f"got {staleness_window_minutes}",
+                file=sys.stderr,
+            )
+            return 1
+        return run_supervisor(
+            Path(home),
+            slug,
+            run_id,
+            watched_pid,
+            Path(log_path_text),
+            idle_threshold_minutes,
+            budget_values["max_tokens_per_story"],
+            budget_values["max_tokens_per_run"],
+            budget_values["max_wall_clock_minutes_per_story"],
+            budget_values["max_wall_clock_minutes_per_run"],
+            staleness_window_minutes,
+        )
     return run_supervisor(
         Path(home),
         slug,
