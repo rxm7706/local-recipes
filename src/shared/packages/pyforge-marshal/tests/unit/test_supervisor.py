@@ -6318,7 +6318,9 @@ class _DarkWindowObserver(FakeObserver):
         return super().mtime(path)
 
 
-def _supervise_idle(fs: FakeFs, *, clock: AdvancingClock, observer: FakeObserver, harness: FakeHarness, alive_for: int, sleep=None) -> int:
+def _supervise_idle(
+    fs: FakeFs, *, clock: AdvancingClock, observer: FakeObserver, harness: FakeHarness, alive_for: int, sleep=None
+) -> int:
     """``run_supervisor`` at a one-minute idle threshold -- one tick per rung."""
     return run_supervisor(
         _HOME,
@@ -6522,14 +6524,18 @@ def test_main_without_the_eleventh_value_calls_run_supervisor_with_ten_positiona
 
 @pytest.mark.parametrize("bad_window", ["0", "-5", "nan", "inf", "-inf", "soon", ""])
 def test_main_rejects_a_bad_staleness_window(bad_window, capsys):
-    rc = main(["/home/acme-loop", "acme", "acme-run-1", "4242", "/home/l.log", "25", "4", "40", "240", "600", bad_window])
+    rc = main(
+        ["/home/acme-loop", "acme", "acme-run-1", "4242", "/home/l.log", "25", "4", "40", "240", "600", bad_window]
+    )
 
     assert rc == 1
     assert "staleness window" in capsys.readouterr().err
 
 
 def test_main_rejects_a_twelfth_argument(capsys):
-    rc = main(["/home/acme-loop", "acme", "acme-run-1", "4242", "/home/l.log", "25", "4", "40", "240", "600", "180", "x"])
+    rc = main(
+        ["/home/acme-loop", "acme", "acme-run-1", "4242", "/home/l.log", "25", "4", "40", "240", "600", "180", "x"]
+    )
 
     assert rc != 0
     assert "usage" in capsys.readouterr().err.lower()

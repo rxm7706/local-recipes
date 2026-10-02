@@ -1480,6 +1480,48 @@ def test_spin_introduces_no_new_argv_surface_for_durability(home):
     assert len(call["argv"]) == 14
 
 
+def test_spin_passes_the_idle_threshold_as_the_staleness_window_when_it_exceeds_the_session_timeout(
+    home, tmp_path, monkeypatch
+):
+    """Story 82.5 (DW-FU-3-6-6): the window is ``max(idle_threshold_minutes,
+    RENDERED_SESSION_TIMEOUT_MIN)`` -- an operator who tunes the idle ladder
+    PAST the session timeout does not get a shorter staleness window than the
+    ladder window."""
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text("idle_threshold_minutes = 240\n", encoding="utf-8")
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
+    fs = FakeFs(dirs={home})
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=FakeHarness(), process=process)
+
+    assert exit_code == EXIT_OK
+    [call] = process.spawn_calls
+    assert call["argv"][8] == "240"  # the idle ladder's own window
+    assert call["argv"][13] == "240"  # the staleness window follows it
+
+
+def test_spin_floors_the_staleness_window_at_the_session_timeout_for_a_short_idle_threshold(
+    home, tmp_path, monkeypatch
+):
+    """The 25-minute default (and anything shorter) used to double as the
+    window, leaving both token ceilings dark from minute 25 of a session that
+    may run 180: the window the supervisor is spawned with is floored at the
+    rendered session timeout while the idle ladder keeps its own threshold."""
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text("idle_threshold_minutes = 0.5\n", encoding="utf-8")
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
+    fs = FakeFs(dirs={home})
+    process = FakeProcess()
+
+    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=FakeHarness(), process=process)
+
+    assert exit_code == EXIT_OK
+    [call] = process.spawn_calls
+    assert call["argv"][8] == "0.5"
+    assert call["argv"][13] == str(spin_module.RENDERED_SESSION_TIMEOUT_MIN)
+
+
 def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding(home, tmp_path, monkeypatch, capsys):
     """Review finding: ``policy.compose()``'s own ``Finding`` list for the
     ``idle_threshold_minutes`` lookup used to be captured into a variable

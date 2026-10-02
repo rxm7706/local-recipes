@@ -647,7 +647,16 @@ def test_explicit_observed_flags_override_the_derived_defaults():
 @pytest.mark.parametrize(
     "glyph",
     ["⠋", "⠿", "◐", "◓", "◴", "◷", "✢", "❋"],
-    ids=["braille-first", "braille-last", "quarter-first", "quarter-last", "corner-first", "corner-last", "star-first", "star-last"],
+    ids=[
+        "braille-first",
+        "braille-last",
+        "quarter-first",
+        "quarter-last",
+        "corner-first",
+        "corner-last",
+        "star-first",
+        "star-last",
+    ],
 )
 def test_normalise_pane_removes_every_spinner_glyph_class(glyph):
     assert normalise_pane(f"Thinking {glyph}") == "Thinking "

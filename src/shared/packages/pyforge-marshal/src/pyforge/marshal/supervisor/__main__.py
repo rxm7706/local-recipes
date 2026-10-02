@@ -2003,9 +2003,7 @@ def run_supervisor(
                     elif unevaluable_this_tick:
                         if not usage_stale:
                             if state_freshness is UsageFreshness.UNEVALUABLE:
-                                reason = (
-                                    f"unevaluable (state.json mtime {state_mtime!r} cannot be judged against the wall clock)"
-                                )
+                                reason = f"unevaluable (state.json mtime {state_mtime!r} cannot be judged against the wall clock)"
                             elif is_stale:
                                 reason = f"stale (state.json mtime {state_mtime!r})"
                             else:
