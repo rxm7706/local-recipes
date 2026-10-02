@@ -2600,9 +2600,9 @@ def test_to_redacted_text_redacts_shape_and_rejects_a_non_str():
     wrapped = to_redacted_text(f"a {_SECRET} b")
     assert wrapped.text == f"a {_REDACTED} b"
     assert to_redacted_text("nothing secret here").text == "nothing secret here"
-    with pytest.raises(TypeError, match="text must be a str") as excinfo:
-        to_redacted_text(b"bytes")  # type: ignore[arg-type]
-    assert "bytes" not in str(excinfo.value).replace("text must be a str, got bytes", "")
+    with pytest.raises(TypeError, match="text must be a str, got bytes") as excinfo:
+        to_redacted_text(b"secret-bytes")  # type: ignore[arg-type]
+    assert "secret-bytes" not in str(excinfo.value)  # the type only, never the value
 
 
 def test_the_worktree_checkpoint_call_site_commits_the_redacted_form_of_its_story_key(vcs, repo):
