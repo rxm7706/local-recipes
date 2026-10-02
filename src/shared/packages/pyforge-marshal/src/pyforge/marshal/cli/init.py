@@ -177,6 +177,18 @@ refused at least as strictly as a confirmed non-empty one) all classify
 ``Verdict.ERROR`` -- see ``core/findings.py``'s own docstring for the exact
 per-code mapping.
 
+Story 82.8 (DW-1-8-5) makes teardown look BELOW the home as well: bmad-loop
+registers each run's story worktrees as git worktrees nested inside the home
+(``<home>/.bmad-loop/runs/<run>/worktrees/<story>``), under gitignored paths
+neither ``git status`` nor ``git worktree remove`` of the home sees, so removing
+the home recursively deleted them -- uncommitted story work included -- and left
+prunable registrations behind. ``run_teardown`` now lists the registered
+worktrees whose path sits under the home (``VcsPort.list_worktrees``) and adds
+one ``MRS-TEARDOWN-003`` reason per nested worktree with uncommitted changes
+(naming it), carried past by ``--force`` exactly like the home's own dirt; a CLEAN
+nested worktree blocks nothing (every fleet home has them), and once the home is
+removed the orphaned registrations are pruned (``VcsPort.prune_worktrees``).
+
 Story 6.9 (tool-surface rendering and preflight probe, AD-43/the Q-11
 resolution) adds a new project-scoped write target to ``run_init`` -- NOT a
 sixth member of ``_STEP_NAMES``/``data.steps`` (that tuple stays the four
@@ -2268,6 +2280,13 @@ def _journal_abandonments(fs: FsPort, repo_root: Path, slug: str, story_keys: tu
     return None
 
 
+def _worktrees_nested_under(entries: tuple[WorktreeEntry, ...], home: Path) -> tuple[WorktreeEntry, ...]:
+    """The registered worktrees whose path sits strictly below ``home``
+    (Story 82.8, DW-1-8-5): compared by path COMPONENT, so a sibling such as
+    ``<root>/acme-2`` is never mistaken for one nested under ``<root>/acme``."""
+    return tuple(entry for entry in entries if entry.path != home and home in entry.path.parents)
+
+
 def run_teardown(
     args: argparse.Namespace,
     *,
@@ -2391,6 +2410,8 @@ def run_teardown(
     # --- refusal decision: dirty working tree, unmerged content, or an ------
     # unreachable promotion -- the finding names EVERY condition that fires.
     reasons: list[str] = []
+    nested_worktrees: tuple[WorktreeEntry, ...] = ()
+    nested_enumeration_failed = False
 
     if worktree_path is not None:
         # git still registers the worktree, but its directory may have been
@@ -2431,6 +2452,43 @@ def run_teardown(
             else:
                 if dirty:
                     reasons.append(f"{worktree_path} has uncommitted changes")
+
+        # Story 82.8 (DW-1-8-5): worktrees registered INSIDE the home. They
+        # live under gitignored paths, so the home's own dirty probe above
+        # cannot see their uncommitted work, yet removing the home deletes
+        # them recursively. A dirty one joins `reasons` (named), appended
+        # AFTER the home's own dirt so the existing refusals keep their
+        # relative order; a clean one blocks nothing. Probe failures follow
+        # the home probe's rule: they block only an UNFORCED teardown, and
+        # under --force become one more named forced-past reason.
+        try:
+            nested_worktrees = _worktrees_nested_under(vcs.list_worktrees(repo_root), worktree_path)
+        except VcsCommandError as exc:
+            if not force:
+                findings.append(_teardown_op_failed_finding(f"listing the worktrees nested under {worktree_path}: {exc}"))
+                return _emit_teardown(args, data, findings)
+            reasons.append(f"the worktrees nested under {worktree_path} could not be enumerated: {exc}")
+            # Unknown, so prune afterwards anyway: pruning stale registrations is harmless.
+            nested_worktrees = ()
+            nested_enumeration_failed = True
+        for nested in nested_worktrees:
+            try:
+                if not fs.is_dir(nested.path):
+                    # Registered but gone from disk: nothing in it to lose.
+                    continue
+                nested_dirty = vcs.has_uncommitted_changes(nested.path)
+            except (FsError, VcsCommandError) as exc:
+                if not force:
+                    findings.append(
+                        _teardown_op_failed_finding(
+                            f"checking for uncommitted changes in nested worktree {nested.path}: {exc}"
+                        )
+                    )
+                    return _emit_teardown(args, data, findings)
+                reasons.append(f"the dirty-state of nested worktree {nested.path} could not be determined: {exc}")
+            else:
+                if nested_dirty:
+                    reasons.append(f"nested worktree {nested.path} has uncommitted changes")
 
     if branch_present:
         # Same forced-past treatment as the dirty probe above.
@@ -2601,6 +2659,19 @@ def run_teardown(
         except VcsCommandError as exc:
             findings.append(_teardown_op_failed_finding(str(exc)))
             return _emit_teardown(args, data, findings)
+        if nested_worktrees or nested_enumeration_failed:
+            # Story 82.8 (DW-1-8-5): removing the home deleted the directories
+            # of the worktrees nested in it but left their registrations in the
+            # common git dir as prunable orphans -- clear them now.
+            try:
+                vcs.prune_worktrees(repo_root)
+            except VcsCommandError as exc:
+                findings.append(
+                    _teardown_op_failed_finding(
+                        f"the worktree was already removed; pruning its nested worktrees' registrations failed: {exc}"
+                    )
+                )
+                return _emit_teardown(args, data, findings)
 
     if branch_present:
         try:

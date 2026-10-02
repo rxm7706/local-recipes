@@ -104,7 +104,8 @@ failed -- resolving the current working directory or the loop-home root,
 resolving worktree/branch state, or the removal itself -- or an on-disk
 state git can no longer account for: a deregistered home path that still
 exists and was never checked for uncommitted work), and
-``MRS-TEARDOWN-003`` (refused: the home has uncommitted changes, the
+``MRS-TEARDOWN-003`` (refused: the home -- or a worktree registered inside
+it, Story 82.8 -- has uncommitted changes, the
 branch's content is not yet safely captured on ``main``, or the AD-29
 promotion-reachability stub names something unreachable -- and ``--force``
 was not supplied; the one finding names every triggering condition).

@@ -95,13 +95,20 @@ by nothing in this repo. Each found patch is classified by whether its
 story has since landed, via the SAME ``core.promotion.merged_story_keys``
 sequence ``_reconcile_ledger`` already establishes (AD-33: git's durable
 merge history is the sole authority, never the harness's own
-journal/``state.json``) -- ``main``'s own commit-subject read is cached
-ONCE for the whole sweep (mirrors ``_gather_unpushed_work_findings``'s own
-"one shared detector run" precedent). Because that classifier's NEGATIVE
+journal/``state.json``) -- the landing history's own commit-subject read
+(``origin/main`` plus ``main``, as ``cli/deploy.py`` reads them, Story 82.8)
+is cached ONCE for the whole sweep (mirrors
+``_gather_unpushed_work_findings``'s own "one shared detector run"
+precedent). Because that classifier's NEGATIVE
 direction is a known-unreliable signal (``core/status.py``'s own
 ``CONFIDENCE_UNCONFIRMED`` block), a patch reported as not-landed is
 reported as UNCONFIRMED, never as an established fact -- see
 ``_gather_failed_patches``'s and ``_MRS_STATUS_010``'s own docstrings below.
+A history that is non-empty yet shows no conforming merge subject at all
+cannot say what landed, so it reports ``MRS-STATUS-014`` (with the examined
+and matched counts) in place of one ``MRS-STATUS-010`` per patch. ``--escalations``
+filters the findings with the rows: sweep-wide ones stay, a per-home one stays
+only while its home is listed.
 """
 
 from __future__ import annotations
@@ -2056,8 +2063,9 @@ def run_status(
                                 f"{slug}: the commit history read from {ORIGIN_MAIN!r} and "
                                 f"{_MERGE_BASE_BRANCH!r} cannot show what landed -- examined "
                                 f"{len(main_subjects or ())}, matched {conforming_subjects} against any "
-                                "merge-subject pattern (a shallow or grafted clone, or a history "
-                                "that predates the merge-subject convention), so this project's "
+                                "merge-subject pattern (a shallow or grafted clone, a history "
+                                "that predates the merge-subject convention, or a project with no "
+                                "merge on it yet), so this project's "
                                 "failed-story patches cannot be classified: "
                                 f"{_name_patches([(slug, e) for e in failed_patches])} "
                                 "report done: null (landed-status unknown)"
@@ -2163,7 +2171,9 @@ def run_status(
     unavailable = [(slug, entry) for slug, entry in main_unavailable if not escalations_only or slug in kept_slugs]
 
     # Story 4.14: `_MRS_STATUS_011`'s cause 1 (an unreadable `main`), the
-    # ONE WARN for the WHOLE sweep its own I/O matrix row specifies --
+    # ONE WARN for the WHOLE sweep its own I/O matrix row specifies (Story
+    # 82.8: it names the patches of the homes this view lists, and is omitted
+    # when `--escalations` left none) --
     # emitted here, after every home has been scanned, so it can NAME every
     # patch it degraded to `done: null` rather than leaving an operator with
     # a bare count (the intent contract's Always bullet: a patch whose
@@ -2430,6 +2440,9 @@ def _reconcile_ledger(
     # `_MRS_DEPLOY_003`) -- a read failure here is a hard, run-wide finding,
     # never a silently-empty `merged_keys` (which would read as "nothing
     # merged yet" and report every ledger `done` key as a false positive).
+    # Story 82.8: the read is `_read_landing_subjects` -- the SAME
+    # `origin/main` + `main` history the fleet sweep and `deploy` read, so
+    # this view never disagrees with them; only local `main` is required.
     main_subjects: tuple[str, ...] = ()
     git_error: VcsCommandError | None = None
     try:
