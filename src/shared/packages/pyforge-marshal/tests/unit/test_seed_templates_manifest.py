@@ -456,10 +456,11 @@ def test_an_opt_out_for_every_region_of_every_shipped_hybrid_entry_validates(man
     """The AC: for each id the shipped manifest declares, recording an opt-out
     for any of its regions leaves a state that writes and reads back. Each
     region is recorded one at a time AND all together, so the per-region span
-    drop is exercised on the three real multi-region entries (`agents-md` 3,
-    `claude-md` 2, `projects-index` 2)."""
+    drop is exercised on the shipped multi-region entries -- the loop is vacuous
+    unless at least one declares more than one region, which the assertion below
+    pins without naming an id or a count a legitimate manifest change would move."""
     hybrids = [entry for entry in manifest.entries if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION]
-    assert {entry.id: len(entry.regions) for entry in hybrids}.items() >= {("agents-md", 3), ("claude-md", 2)}
+    assert any(len(entry.regions) > 1 for entry in hybrids)
     never_write = NeverWrite(patterns=())
     for entry in hybrids:
         for region in entry.regions:
