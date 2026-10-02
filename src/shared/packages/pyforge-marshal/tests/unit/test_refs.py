@@ -136,7 +136,7 @@ def test_publishing_onto_the_remote_tip_never_carries_a_shadow(repo, kind: str) 
     shadow = _shadow(clone, "main", kind=kind)
 
     GitVcs().commit_paths_onto_remote_tip(
-        clone, remote="origin", ref="main", writes=(("ledger.yaml", "development_status: {}\n"),), message="promote"
+        clone, remote=VcsRef("origin"), ref=VcsRef("main"), writes=(("ledger.yaml", "development_status: {}\n"),), message=to_redacted_text("promote")
     )
 
     remote_log = _git(remote, "log", "--format=%H", "main").split()

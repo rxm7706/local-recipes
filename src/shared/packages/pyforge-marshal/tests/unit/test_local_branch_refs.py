@@ -162,7 +162,7 @@ def test_the_ledger_publish_lands_beside_a_tag_on_the_remote_named_main(repo, tm
     tip = _remote_moves_on_beside_a_remote_tag_main(remote, clone, base, tmp_path)
 
     GitVcs().commit_paths_onto_remote_tip(
-        clone, remote="origin", ref="main", writes=(("ledger.yaml", "development_status: {}\n"),), message="promote"
+        clone, remote=VcsRef("origin"), ref=VcsRef("main"), writes=(("ledger.yaml", "development_status: {}\n"),), message=to_redacted_text("promote")
     )
 
     assert _git(remote, "rev-parse", "refs/heads/main^").stdout.strip() == tip

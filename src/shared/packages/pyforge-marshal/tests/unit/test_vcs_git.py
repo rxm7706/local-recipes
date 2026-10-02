@@ -1243,7 +1243,7 @@ def test_commit_paths_stages_and_commits_only_the_named_paths(vcs, repo):
     (repo / "tracked.txt").write_text("modified but NOT committed\n", encoding="utf-8")
     (repo / "promoted.txt").write_text("promoted content\n", encoding="utf-8")
 
-    sha = vcs.commit_paths(repo, (repo / "promoted.txt",), "marshal: promote 1 story spec(s)")
+    sha = vcs.commit_paths(repo, (repo / "promoted.txt",), to_redacted_text("marshal: promote 1 story spec(s)"))
 
     assert sha == _git(repo, "rev-parse", "HEAD").stdout.strip()
     show = _git(repo, "show", "--name-only", "--format=", "HEAD")
@@ -1258,7 +1258,7 @@ def test_commit_paths_commits_multiple_paths_in_one_commit(vcs, repo):
     (repo / "a.txt").write_text("a\n", encoding="utf-8")
     (repo / "b.txt").write_text("b\n", encoding="utf-8")
 
-    vcs.commit_paths(repo, (repo / "a.txt", repo / "b.txt"), "marshal: promote 2 story spec(s)")
+    vcs.commit_paths(repo, (repo / "a.txt", repo / "b.txt"), to_redacted_text("marshal: promote 2 story spec(s)"))
 
     show = _git(repo, "show", "--name-only", "--format=", "HEAD")
     committed_files = sorted(line for line in show.stdout.splitlines() if line.strip())
@@ -1269,13 +1269,13 @@ def test_commit_paths_commits_multiple_paths_in_one_commit(vcs, repo):
 
 def test_commit_paths_raises_on_empty_paths(vcs, repo):
     with pytest.raises(VcsCommandError):
-        vcs.commit_paths(repo, (), "marshal: promote 0 story spec(s)")
+        vcs.commit_paths(repo, (), to_redacted_text("marshal: promote 0 story spec(s)"))
 
 
 def test_commit_paths_returns_the_new_commit_sha(vcs, repo):
     (repo / "c.txt").write_text("c\n", encoding="utf-8")
 
-    sha = vcs.commit_paths(repo, (repo / "c.txt",), "marshal: promote 1 story spec(s)")
+    sha = vcs.commit_paths(repo, (repo / "c.txt",), to_redacted_text("marshal: promote 1 story spec(s)"))
 
     assert sha == _git(repo, "rev-parse", "HEAD").stdout.strip()
     assert sha != _git(repo, "rev-parse", "HEAD~1").stdout.strip()
@@ -1896,7 +1896,7 @@ def test_merge_ref_resolving_commits_a_two_parent_merge_with_the_given_resolutio
     _git(repo, "commit", "-am", "only README differs")
     main_sha = _git(repo, "rev-parse", "main").stdout.strip()
     # main also touched b c.txt / d.txt / e.txt, which this branch never did -> they merge cleanly
-    sha = vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "resolved\n"}, message="union heal")
+    sha = vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={"README.md": "resolved\n"}, message=to_redacted_text("union heal"))
 
     parents = _git(repo, "rev-list", "--parents", "-n", "1", sha).stdout.split()[1:]
     assert parents[1] == main_sha
@@ -1912,7 +1912,7 @@ def test_merge_ref_resolving_aborts_on_a_conflict_it_cannot_resolve(vcs, repo):
     before = _git(repo, "rev-parse", "HEAD").stdout.strip()
 
     with pytest.raises(VcsCommandError, match="conflicts outside the resolvable paths: .*README.md"):
-        vcs.merge_ref_resolving(repo, "main", resolutions={"b c.txt": "x\n"}, message="union heal")
+        vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={"b c.txt": "x\n"}, message=to_redacted_text("union heal"))
 
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
     assert _git(repo, "status", "--porcelain").stdout == ""
@@ -1934,7 +1934,7 @@ def test_merge_ref_resolving_reports_an_unwritable_resolution_as_a_vcs_error_and
 
     monkeypatch.setattr(Path, "write_text", _refuse)
     with pytest.raises(VcsCommandError, match="cannot write the resolution of README.md"):
-        vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "resolved\n"}, message="union heal")
+        vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={"README.md": "resolved\n"}, message=to_redacted_text("union heal"))
     monkeypatch.undo()
 
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before
@@ -1950,7 +1950,7 @@ def test_merge_ref_resolving_refuses_and_leaves_a_merge_already_in_progress(vcs,
     theirs = _git(repo, "rev-parse", "MERGE_HEAD").stdout.strip()
 
     with pytest.raises(VcsCommandError, match="already in progress"):
-        vcs.merge_ref_resolving(repo, "main", resolutions={"README.md": "x\n"}, message="union heal")
+        vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={"README.md": "x\n"}, message=to_redacted_text("union heal"))
 
     assert _git(repo, "rev-parse", "MERGE_HEAD").stdout.strip() == theirs
 
@@ -1962,12 +1962,12 @@ def test_merge_ref_resolving_is_a_no_op_for_a_ref_already_merged(vcs, repo):
     _git(repo, "commit", "-m", "ahead of main")
     head = _git(repo, "rev-parse", "HEAD").stdout.strip()
 
-    assert vcs.merge_ref_resolving(repo, "main", resolutions={}, message="union heal") == head
+    assert vcs.merge_ref_resolving(repo, VcsRef("main"), resolutions={}, message=to_redacted_text("union heal")) == head
 
 
 def test_merge_ref_resolving_raises_on_an_unknown_ref(vcs, repo):
     with pytest.raises(VcsCommandError, match="git merge --no-commit no-such-ref failed"):
-        vcs.merge_ref_resolving(repo, "no-such-ref", resolutions={}, message="union heal")
+        vcs.merge_ref_resolving(repo, VcsRef("no-such-ref"), resolutions={}, message=to_redacted_text("union heal"))
 
 
 def test_merge_tree_conflict_paths_is_empty_for_a_clean_merge(vcs, repo):
@@ -2003,10 +2003,10 @@ def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(vcs, repo
     rel = "_bmad-output/projects/acme/planning-artifacts/sprint-status-ledger.yaml"
     sha = vcs.commit_paths_onto_remote_tip(
         repo,
-        remote="origin",
-        ref="main",
+        remote=VcsRef("origin"),
+        ref=VcsRef("main"),
         writes=((rel, "development_status:\n  4-4-batch: done\n"),),
-        message="marshal: promote sprint-status ledger for 'acme' (1 key(s) -> done)",
+        message=to_redacted_text("marshal: promote sprint-status ledger for 'acme' (1 key(s) -> done)"),
     )
     assert _git(repo, "rev-parse", "HEAD").stdout.strip() == before_head
     assert _git(repo, "rev-parse", "--abbrev-ref", "HEAD").stdout.strip() == before_branch
@@ -2021,7 +2021,7 @@ def test_commit_paths_onto_remote_tip_does_not_touch_operator_checkout(vcs, repo
 
 def test_commit_paths_onto_remote_tip_refuses_empty_writes(vcs, repo):
     with pytest.raises(VcsCommandError, match="at least one write"):
-        vcs.commit_paths_onto_remote_tip(repo, remote="origin", ref="main", writes=(), message="nope")
+        vcs.commit_paths_onto_remote_tip(repo, remote=VcsRef("origin"), ref=VcsRef("main"), writes=(), message=to_redacted_text("nope"))
 
 
 # --- commit_paths_onto_remote_tip: the proof-carrying pre-push opt-out (Story 68.1, CAP-277) ----
@@ -2088,10 +2088,10 @@ def _remote_main(remote: Path) -> str:
 def _publish(vcs: GitVcs, repo: Path, *, writes=((_LEDGER_REL, _LEDGER_TEXT),), **kwargs) -> str:
     return vcs.commit_paths_onto_remote_tip(
         repo,
-        remote="origin",
-        ref="main",
+        remote=VcsRef("origin"),
+        ref=VcsRef("main"),
         writes=writes,
-        message="marshal: promote sprint-status ledger for 'acme' (1 key(s) -> done)",
+        message=to_redacted_text("marshal: promote sprint-status ledger for 'acme' (1 key(s) -> done)"),
         **kwargs,
     )
 

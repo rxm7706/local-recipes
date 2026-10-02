@@ -324,7 +324,9 @@ def _unwrap_vcs_ref(expr: ast.expr) -> ast.expr:
     arrives in changes its type, never what the name inside it means."""
     if isinstance(expr, ast.Call) and len(expr.args) == 1 and not expr.keywords:
         func = expr.func
-        if (func.id if isinstance(func, ast.Name) else func.attr if isinstance(func, ast.Attribute) else "") == "VcsRef":
+        if (
+            func.id if isinstance(func, ast.Name) else func.attr if isinstance(func, ast.Attribute) else ""
+        ) == "VcsRef":
             return expr.args[0]
     return expr
 
@@ -385,7 +387,12 @@ def _str_params(method: str) -> list[str]:
 def test_every_str_parameter_of_every_port_method_is_classified() -> None:
     """A new or renamed `VcsPort` parameter must not silently drop out of the scan."""
     port_methods = sorted(
-        {name for port in _PORTS for name, _member in inspect.getmembers(port, inspect.isfunction) if not name.startswith("_")}
+        {
+            name
+            for port in _PORTS
+            for name, _member in inspect.getmembers(port, inspect.isfunction)
+            if not name.startswith("_")
+        }
     )
     classified = {(m, n) for table in (_REVISION_ARGS, _NAME_ARGS) for m, spec in table.items() for _i, n in spec}
     classified |= _NOT_A_REF

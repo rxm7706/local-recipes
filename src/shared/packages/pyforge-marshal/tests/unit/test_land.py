@@ -136,7 +136,7 @@ class _FakeVcs:
         return self.fast_forward_sha
 
     def commit_paths(self, repo_root, paths, message):
-        self.commit_paths_calls.append((repo_root, tuple(paths), message))
+        self.commit_paths_calls.append((repo_root, tuple(paths), message.text))
         if self.commit_paths_raises:
             raise VcsCommandError("git commit failed: nothing to commit (test double)")
         return "deferred-work-commit-sha"
@@ -148,15 +148,17 @@ class _FakeVcs:
         return None
 
     def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
-        self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
-        self.isolated_promote_reasons.append(preflight_skip_reason)
+        self.isolated_promote_calls.append((repo_root, remote.value, ref.value, tuple(writes), message.text))
+        self.isolated_promote_reasons.append(
+            (preflight_skip_reason.text if preflight_skip_reason is not None else None)
+        )
         if self.commit_paths_raises:
             raise VcsCommandError("git push failed: non-fast-forward (test double)")
         for rel, content in writes:
             dest = Path(repo_root) / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             dest.write_text(content, encoding="utf-8")
-        self.commit_paths_calls.append((repo_root, tuple(Path(rel) for rel, _ in writes), message))
+        self.commit_paths_calls.append((repo_root, tuple(Path(rel) for rel, _ in writes), message.text))
         return "isolated-promote-sha"
 
 
@@ -2699,8 +2701,10 @@ class _TimingOutPublishVcs(_FakeVcs):
     """64.1's failure shape: the promotion publish is killed at the git timeout."""
 
     def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
-        self.isolated_promote_calls.append((repo_root, remote, ref, tuple(writes), message))
-        self.isolated_promote_reasons.append(preflight_skip_reason)
+        self.isolated_promote_calls.append((repo_root, remote.value, ref.value, tuple(writes), message.text))
+        self.isolated_promote_reasons.append(
+            (preflight_skip_reason.text if preflight_skip_reason is not None else None)
+        )
         raise VcsCommandError(
             f"git command timed out after 120.0s: git -C {repo_root} push origin abc123:refs/heads/main"
         )

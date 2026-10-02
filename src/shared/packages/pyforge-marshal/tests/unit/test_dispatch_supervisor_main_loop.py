@@ -33,6 +33,7 @@ from pyforge.marshal.core.dispatch_completion import (
 from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
+from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.journal import (
     SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF,
     JournalEntryId,
@@ -44,6 +45,7 @@ from pyforge.marshal.core.model import Finding, Severity, build_envelope
 from pyforge.marshal.core.refs import ORIGIN_MAIN, local_branch_ref
 from pyforge.marshal.dispatch_land import DispatchLandingResult
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
+from pyforge.marshal.ports.commit import VcsRef
 
 _SLUG = "pyforge-marshal"
 _STORY_KEY = "51.11"
@@ -278,10 +280,10 @@ class FakeVcs:
             raise VcsCommandError("git fetch failed (test double)")
         self.fetches.append((repo_root, remote, ref))
 
-    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
         if self._commit_paths_raises:
             raise VcsCommandError("git commit failed (test double)")
-        self.commits.append((repo_root, tuple(paths), message))
+        self.commits.append((repo_root, tuple(paths), message.text))
         return _MOVED
 
     def push(self, repo_root: Path, branch: str) -> None:
@@ -293,13 +295,13 @@ class FakeVcs:
         self,
         repo_root: Path,
         *,
-        remote: str,
-        ref: str,
+        remote: VcsRef,
+        ref: VcsRef,
         writes: tuple[tuple[str, str], ...],
-        message: str,
+        message: Redacted,
         preflight_skip_reason: str | None = None,
     ) -> str:
-        self.remote_tip_reasons.append(preflight_skip_reason)
+        self.remote_tip_reasons.append((preflight_skip_reason.text if preflight_skip_reason is not None else None))
         if self._remote_tip_raises:
             raise VcsCommandError("git commit-tree failed (test double)")
         self.remote_tip_writes.append(tuple(path for path, _ in writes))
