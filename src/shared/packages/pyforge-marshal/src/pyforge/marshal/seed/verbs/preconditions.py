@@ -41,7 +41,7 @@ cheaper has passed.
 `dry_run=True` bypasses rung 2 ONLY: "reading is always safe" is a claim
 about the worktree's cleanliness, not about whether git exists at all or
 whether the plan is even coherent, so a dry run still refuses a non-repo,
-an escaping path, a never-write target, and a symlink. `force=True`
+an escaping path, a never-write target, a symlink, and a directory target. `force=True`
 bypasses rung 6 ONLY -- it is the operator's explicit "yes, discard my
 hand-edit". Its real bound, stated rather than implied (found in review):
 because `force` returns before rung 6 runs AT ALL, and because
