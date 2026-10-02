@@ -2097,14 +2097,16 @@ def _remote_main(remote: Path) -> str:
     return _git(remote, "rev-parse", "refs/heads/main").stdout.strip()
 
 
-def _publish(vcs: GitVcs, repo: Path, *, writes=((_LEDGER_REL, _LEDGER_TEXT),), **kwargs) -> str:
+def _publish(
+    vcs: GitVcs, repo: Path, *, writes=((_LEDGER_REL, _LEDGER_TEXT),), preflight_skip_reason: str | None = None
+) -> str:
     return vcs.commit_paths_onto_remote_tip(
         repo,
         remote=VcsRef("origin"),
         ref=VcsRef("main"),
         writes=writes,
         message=to_redacted_text("marshal: promote sprint-status ledger for 'acme' (1 key(s) -> done)"),
-        **kwargs,
+        preflight_skip_reason=None if preflight_skip_reason is None else to_redacted_text(preflight_skip_reason),
     )
 
 
