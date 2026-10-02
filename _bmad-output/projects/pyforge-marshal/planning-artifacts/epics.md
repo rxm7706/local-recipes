@@ -8607,6 +8607,23 @@ no MRS-DISP-049
 warns as today; removing the resync fails its new test (mutation); `pixi run --frozen -e pyforge-marshal
 pyforge-marshal-test` green
 
+### Story 83.7: A re-dispatch after a refused landing lands the existing branch without a new session
+
+As the operator who fixed a branch whose landing was refused,
+I want a single-story dispatch to land that branch without starting a new session,
+So that finished work is never spent again on a full dev and review session.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 29.2 (a harness-done story lands through CAP-4 and
+never relaunches); CAP-4 (Story 28.20) • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (the single-story dispatch's land-only
+decision), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py` (`blocks_harness_relaunch`), their unit tests
+**Given** a story whose latest dispatch run journaled a `dispatch-land` outcome with verdict `refused` (MRS-DISP-038 or
+MRS-DISP-056), and whose worktree spec still reads where the session stopped (for example `in-progress`)
+**When** `marshal factory dispatch <slug> <key>` runs
+**Then** it takes the land-only path (re-verify, wait for the PR's checks, merge, finalize) and launches no session
+**And** a story whose latest run journaled no landing attempt still launches a session as today; a refusal the land-only
+path cannot clear refuses again and leaves the PR open; removing the journal rule fails its new test (mutation);
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

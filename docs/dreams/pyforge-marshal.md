@@ -910,8 +910,8 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   guard, add no second gate and no second liveness model, and narrow 82.7 to the launch poll that never asks whether
   its child is alive (DW-FU-3-3-4). DW-FU-3-3-2 closes as resolved by Stories 28.24 and 34.1.
   Owner `spec-pyforge-marshal`. → Story 82.7 re-specced 2026-10-02.
-- **2026-10-02 (night)** — **Found: six dispatch and campaign defects while landing Phase 2.** Landing Epic 82
-  and the steward and doctor lanes surfaced six defects in marshal's own landing and campaign path, each worked around
+- **2026-10-02 (night)** — **Found: seven dispatch and campaign defects while landing Phase 2.** Landing Epic 82
+  and the steward and doctor lanes surfaced seven defects in marshal's own landing and campaign path, each worked around
   by hand the same day:
   - **A dead dispatch run reads as live when its pid is reused.** `PosixProcess.is_alive` is `kill(pid, 0)`, which
     succeeds for any process or thread that now holds the number. Two 2026-08-31 runs of done Story 28.4 had no
@@ -933,14 +933,19 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   - **Every dispatch warns about a stale codegraph index after the primary checkout pulls `main`.** The session check
     (Story 63.4) reports `codegraph-index: stale` and dispatch only warns (MRS-DISP-049); `marshal seed kit --apply`
     was run by hand after each landing.
+  - **A re-dispatch after a refused landing starts a whole new session.** Land-only is chosen only when
+    the worktree spec reads `done`; a landing refused on a conflict or a red check leaves the spec where
+    the session stopped. After 82.5's branch was fixed by hand, its re-dispatch launched a full dev and
+    review session on finished work, stopped within seconds, and the PR was merged by hand.
   **What it looks like when fixed:** a run is live only while its pid is still the session it launched; every
   station's landing runs the checks that read the whole tree; the heal resolves appended deferred-work rows the way it
   resolves memlog entries; a serial campaign holds a story whose overlapping predecessor is unlanded; lock contention
-  is an ordinary not-complete cycle; and dispatch refreshes a stale codegraph index before it launches.
+  is an ordinary not-complete cycle; dispatch refreshes a stale codegraph index before it launches; and a
+  re-dispatch after a refused landing lands the fixed branch without a new session.
   **Constraints:** each is a `fix` story under the capability that shipped the behaviour, so no CAP and no flag; a new
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
-  Stories 83.1–83.6, specced 2026-10-02.
+  Stories 83.1–83.7, specced 2026-10-02.
 - **2026-10-01 (night)** — **Found: a campaign forgets `--retry-environment-blocks` after its first cycle.**
   `_spawn_campaign_supervisor` hands the detached supervisor the station, the story list, the harness and the in-flight
   cap, but not `retry_environment_blocks`. A campaign launched with the flag skipped 81.1 (an OAuth-refresh race at

@@ -1,5 +1,5 @@
 ---
-title: '83.2: Every station's dispatch verification runs the checks that read the whole tree'
+title: "83.2: Every station's dispatch verification runs the checks that read the whole tree"
 type: 'fix'
 created: '2026-10-02'
 status: 'backlog'
