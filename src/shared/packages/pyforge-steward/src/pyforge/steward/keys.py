@@ -1312,6 +1312,8 @@ def _run_exec(ns: argparse.Namespace) -> DutyResult:
 # ── KeysDuty (Duty-protocol adapter) ────────────────────────────────────────
 
 _KEYS_VERBS: tuple[str, ...] = ("encrypt", "decrypt", "rotate", "list", "audit", "revoke", "exec")
+# The two binaries `KeysDuty.run` reports as a duty failure when absent from PATH (Story 83.1).
+_AGE_BINARIES: tuple[str, ...] = ("age", "age-keygen")
 
 
 def _run_audit(ns: argparse.Namespace) -> DutyResult:

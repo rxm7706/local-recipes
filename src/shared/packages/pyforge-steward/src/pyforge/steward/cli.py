@@ -283,8 +283,8 @@ def build_parser() -> argparse.ArgumentParser:
 # Story 75.1: the flag and the two scopes `keys exec` knows. keys.py owns the
 # canonical constants (GHE_FLAG_KEY / GHE_SCOPES); they are repeated here as
 # literals because this module must build the parser without importing keys.py
-# (its import-time `_http.py` bridge refuses outside a checkout), and a unit
-# test pins the two copies equal.
+# (the lazy import keeps `steward --help` free of the keys module and its
+# dependency chain), and a unit test pins the two copies equal.
 _KEYS_EXEC_FLAG = "pyforge.steward.ghe_fleet_credentials"
 _KEYS_EXEC_SCOPES = ("ghe-fleet-read", "ghe-fleet-pr-draft")
 _KEYS_EXEC_HELP = "run a command with a scoped GitHub Enterprise token in its environment (the only delivery path)"
@@ -1332,10 +1332,10 @@ def resolve_duty(name: str) -> Duty:
     No duty is `NullDuty` any more — the seam remains for a future ninth duty.
     """
     if name == "keys":
-        # Imported here, not at module top: keys.py resolves its `_http.py`
-        # bridge at import time and refuses to load outside a local-recipes
-        # checkout, so a top-level import would take `steward --help`/
-        # `--version` and every other duty down with it.
+        # Imported here, not at module top: only `keys` needs keys.py (yaml, the
+        # age subprocess wraps and, at first use, the `_http.py` bridge --
+        # `http_bridge()`, which refuses outside a local-recipes checkout), so
+        # `steward --help`/`--version` and every other duty never load it.
         from .keys import KeysDuty
 
         return KeysDuty()

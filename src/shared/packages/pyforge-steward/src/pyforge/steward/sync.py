@@ -55,13 +55,8 @@ from urllib.parse import quote, urlparse
 
 import yaml
 
-# `keys.py`'s own import (above) already resolved and inserted `_http.py`'s
-# directory onto `sys.path` (its `locate_http_module`/bridge walk-up) --
-# reused here rather than repeating that walk-up search a second time.
-from _http import open_url  # noqa: E402  — see the comment immediately above
-
 from .interfaces import DutyResult
-from .keys import HostScopedCredential, repo_root, resolve_headers
+from .keys import HostScopedCredential, http_bridge, repo_root, resolve_headers
 
 _GITHUB_API_HOST = "api.github.com"
 _GITHUB_GRAPHQL_URL = f"https://{_GITHUB_API_HOST}/graphql"
@@ -340,7 +335,7 @@ def _default_transport(request: urllib.request.Request) -> TransportResponse:
     exception type for "the network call itself could not be completed".
     """
     try:
-        with open_url(request, timeout=30) as resp:
+        with http_bridge().open_url(request, timeout=30) as resp:
             status = getattr(resp, "status", None) or resp.getcode()
             return TransportResponse(status=status, body=resp.read())
     except urllib.error.HTTPError as exc:
