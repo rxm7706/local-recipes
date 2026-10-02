@@ -2,9 +2,10 @@
 title: '83.1: Dispatch liveness proves a pid is the session it launched'
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: 7c08e887cd1398ab54f885164297971ebf6497e3
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md

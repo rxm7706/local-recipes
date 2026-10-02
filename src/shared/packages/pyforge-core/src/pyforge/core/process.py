@@ -100,6 +100,14 @@ class ProcessPort(Protocol):
         reported as ``False``, never as an exception."""
         ...
 
+    def process_start_time(self, pid: int) -> float | None:
+        """Return the start time of the process with the given ``pid`` as
+        seconds since epoch, or ``None`` if the process does not exist or
+        cannot be read. This is used to verify process identity across PID
+        reuse. NEVER raises -- degraded hosts that cannot answer return
+        ``None`` rather than crashing the caller's liveness check."""
+        ...
+
     def spawn_detached(self, argv: Sequence[str], *, cwd: Path, log_path: Path) -> int:
         """Launch ``argv`` as a detached child -- a new session (POSIX
         ``setsid``, never inheriting this process's own controlling
