@@ -123,7 +123,7 @@ class _FakeVcs:
     def commit_paths(self, repo_root, paths, message):
         if self.commit_raises:
             raise VcsCommandError("git commit failed")
-        self.commit_calls.append((paths, message))
+        self.commit_calls.append((paths, message.text))
         return "deadbeef"
 
     def path_has_uncommitted_changes(self, repo_root, path):
@@ -1241,7 +1241,7 @@ def _land_args(
 
 
 def _fake_evaluate_gate(*, verdict: Verdict, findings: tuple = ()):
-    def _evaluate(args, *, process, vcs, fs):
+    def _evaluate(args, *, process, vcs, fs, record=None, clock=None):
         return build_envelope(
             command="gate evaluate",
             verdict=verdict,
@@ -1391,6 +1391,134 @@ def test_land_story_merges_with_a_rendered_subject_and_journals_on_green(tmp_pat
     assert len(merge_outcomes) == 1
     assert merge_outcomes[0]["intent_id"] == merge_intents[0]["id"]
     assert merge_outcomes[0]["payload"]["merge_sha"] == "merge-sha-456"
+
+
+# --- Story 82.9 (F-25): the in-process gate re-run writes the redacted gate record ------------------------
+
+
+def _land_world(tmp_path, monkeypatch, *, provision_home: bool) -> Path:
+    """A repo root with a policy declaring one verify command and a tracked spec that declares exactly it
+    (so the real `evaluate_gate` is `clean`), and a loop-home root under `tmp_path` -- provisioned or not.
+    Returns the loop home's Tier-3 path."""
+    from pyforge.marshal.cli import config as config_module
+
+    for module in (deploy_module, gate_module, config_module):
+        monkeypatch.setattr(module, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loop-homes"))
+    project_dir = tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+    (project_dir / "specs").mkdir(parents=True)
+    (project_dir / "marshal-policy.toml").write_text('verify_commands = ["true"]\n', encoding="utf-8")
+    (project_dir / "specs" / "spec-4-3.md").write_text(
+        "---\ntitle: 'x'\n---\n\n<intent-contract>\n\n## Verification\n\n**Commands:**\n- `true` -- expected: ok.\n",
+        encoding="utf-8",
+    )
+    tier3 = tmp_path / "loop-homes" / "acme" / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    if provision_home:
+        tier3.mkdir(parents=True)
+    return tier3
+
+
+class _GreenProcess:
+    def run(self, argv, *, cwd, timeout_s=None):
+        from pyforge.core.process import ProcessResult
+
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def _land_clean(tmp_path, capsys, *, vcs=None, format: str = "json"):
+    vcs = vcs if vcs is not None else _FakeVcs(existing_branches=frozenset({"loop/acme"}))
+    exit_code = deploy_module.run_land_story(_land_args(format=format), vcs=vcs, fs=LocalFs(), process=_GreenProcess())
+    return exit_code, capsys.readouterr().out
+
+
+def test_land_story_rerun_writes_a_session_record_into_a_provisioned_loop_home(tmp_path, capsys, monkeypatch):
+    import jsonschema
+
+    tier3 = _land_world(tmp_path, monkeypatch, provision_home=True)
+
+    exit_code, out = _land_clean(tmp_path, capsys)
+
+    payload = json.loads(out)
+    assert exit_code == 0
+    assert payload["verdict"] == "clean"
+    assert payload["data"]["gate_verdict"] == "clean"
+    info = payload["data"]["gate_record"]
+    assert info["written"] is True and info["namespace"] == "session" and info["run_id"] is None
+    path = Path(info["path"])
+    assert path.is_file() and path.is_relative_to(tier3 / "sessions")
+    assert path.parent.name == "4-3" and path.parent.parent.name == "gate-records"
+    record = json.loads(path.read_text(encoding="utf-8"))
+    schema_path = Path(deploy_module.__file__).resolve().parents[1] / "schemas" / "gate-record.json"
+    jsonschema.validate(instance=record, schema=json.loads(schema_path.read_text(encoding="utf-8")))
+    assert record["story"] == "4.3"
+    assert record["scope_check_verdict"] == "clean"
+    assert "run_id" not in record
+    assert [command["command"] for command in record["commands"]] == ["true"]
+    assert "MRS-GATE-017" not in [finding["code"] for finding in payload["findings"]]
+
+
+def test_land_story_without_a_loop_home_leaves_its_verdict_and_exit_code_unchanged(tmp_path, capsys, monkeypatch):
+    _land_world(tmp_path, monkeypatch, provision_home=False)  # no loop home: the record cannot be written
+
+    with_record_port = _land_clean(tmp_path, capsys)
+    monkeypatch.setattr(gate_module, "_default_record_port", lambda fs: None)  # the same run, record port absent
+    without_record_port = _land_clean(tmp_path, capsys)
+
+    exit_with, out_with = with_record_port
+    exit_without, out_without = without_record_port
+    payload_with, payload_without = json.loads(out_with), json.loads(out_without)
+    assert (exit_with, payload_with["verdict"]) == (exit_without, payload_without["verdict"]) == (0, "clean")
+    assert "merge_sha" in payload_with["data"]  # the landing went through
+    assert payload_with["data"]["gate_record"]["written"] is False
+    assert "no loop home" in payload_with["data"]["gate_record"]["reason"]
+    assert "gate_record" not in payload_without["data"]
+    # MRS-GATE-017 is the gate's finding about its own record: it never enters the landing's own findings.
+    codes_with = [finding["code"] for finding in payload_with["findings"]]
+    assert "MRS-GATE-017" not in codes_with
+    assert codes_with == [finding["code"] for finding in payload_without["findings"]]
+
+
+def test_land_story_text_projection_names_the_gate_record(tmp_path, capsys, monkeypatch):
+    _land_world(tmp_path, monkeypatch, provision_home=True)
+
+    exit_code, out = _land_clean(tmp_path, capsys, format="text")
+
+    assert exit_code == 0
+    assert "gate record: " in out and "(session namespace)" in out
+
+
+def test_land_story_resolves_the_record_port_through_the_one_helper_and_a_run_less_gate(tmp_path, capsys, monkeypatch):
+    """`land-story` hands `evaluate_gate` the helper's record port and a clock, and `run_id=None` (a `--run` would
+    route the fold branch). A fake gate that appends `MRS-GATE-017`, as the real one does for a failed record
+    write, leaves the landing clean."""
+    from pyforge.marshal.core.model import Finding, Severity
+
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    sentinel = object()
+    monkeypatch.setattr(gate_module, "_default_record_port", lambda fs: sentinel)
+    seen: dict = {}
+
+    def _gate(args, *, process, vcs, fs, record=None, clock=None):
+        seen.update(args=args, record=record, clock=clock)
+        return build_envelope(
+            command="gate evaluate",
+            verdict=Verdict.CLEAN,
+            data={"scope": "policy-seed-only", "gate_record": {"written": False, "reason": "x", "run_id": None}},
+            findings=(Finding(code="MRS-GATE-017", severity=Severity.WARN, message="no gate record"),),
+        )
+
+    monkeypatch.setattr(gate_module, "evaluate_gate", _gate)
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}), window_subjects=("Merge acme/4.3 into main",))
+
+    exit_code = deploy_module.run_land_story(_land_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert seen["record"] is sentinel
+    assert callable(getattr(seen["clock"], "now", None))
+    assert seen["args"].run_id is None and seen["args"].story == "4.3"
+    assert exit_code == 0 and payload["verdict"] == "clean"
+    assert payload["data"]["gate_record"]["written"] is False
+    assert "MRS-GATE-017" not in [finding["code"] for finding in payload["findings"]]
 
 
 def test_land_story_with_a_malformed_merge_subject_template_merges_with_the_default_subject(
@@ -3569,7 +3697,7 @@ class _PartialCommitFailureVcs(_FakeVcs):
         self.attempted_paths.append(paths)
         if self.fail_path in paths:
             raise VcsCommandError("git commit failed for the ledger")
-        self.commit_calls.append((paths, message))
+        self.commit_calls.append((paths, message.text))
         return "deadbeef"
 
 

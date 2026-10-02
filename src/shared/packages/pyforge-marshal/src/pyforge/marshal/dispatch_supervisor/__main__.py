@@ -20,6 +20,7 @@ from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
 from ..core import gate as gate_core
 from ..core import promotion as promotion_core
+from ..core.commit_vcs import CommittingVcs
 from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
@@ -62,6 +63,7 @@ from ..core.dispatch_verification import (
     judge_dispatch_verification,
     primary_gate_failure,
 )
+from ..core.egress import to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
     LAND_FINDINGS_FIELD,
@@ -89,6 +91,7 @@ from ..dispatch_verify import (
     evaluate_dispatch_verification,
     resolve_spec_text_for_story,
 )
+from ..ports.commit import VcsRef
 from ..ports.fs import FsPort
 from ..ports.publisher import RunPublisherPort
 from ..ports.vcs import VcsPort
@@ -159,7 +162,7 @@ def _maybe_fetch_origin_main(vcs: VcsPort, repo_root: Path, *, tick: int) -> Non
 
 
 def _commit_pre_verify_wip(
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     *,
     repo_root: Path,
     worktree: Path,
@@ -173,7 +176,7 @@ def _commit_pre_verify_wip(
         vcs.commit_paths(
             worktree,
             tuple(Path(path) for path in changed),
-            "marshal: pre-verify WIP checkpoint",
+            to_redacted_text("marshal: pre-verify WIP checkpoint"),
         )
     except VcsCommandError as exc:
         print(
@@ -734,7 +737,7 @@ def _attempted_change_patch_paths(worktree: Path) -> tuple[Path, ...]:
 def _commit_and_journal_blocked_halt(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     run_dir: Path,
     run_id: str,
     writer_id: str,
@@ -766,7 +769,7 @@ def _commit_and_journal_blocked_halt(
         vcs.commit_paths(
             worktree,
             paths_to_commit,
-            "marshal: supervisor blocked halt (Story 51.11)",
+            to_redacted_text("marshal: supervisor blocked halt (Story 51.11)"),
         )
     except VcsCommandError:
         return counter, False
@@ -786,7 +789,7 @@ def _commit_and_journal_blocked_halt(
 def _promote_blocked_twin(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     run_dir: Path,
     run_id: str,
     writer_id: str,
@@ -838,11 +841,11 @@ def _promote_blocked_twin(
     try:
         vcs.commit_paths_onto_remote_tip(
             canonical_root,
-            remote="origin",
-            ref="main",
+            remote=VcsRef("origin"),
+            ref=VcsRef("main"),
             writes=((relative.as_posix(), promoted),),
-            message="marshal: promote blocked spec twin (Story 51.11)",
-            preflight_skip_reason=f"marshal blocked-twin promotion for story {story_key}",
+            message=to_redacted_text("marshal: promote blocked spec twin (Story 51.11)"),
+            preflight_skip_reason=to_redacted_text(f"marshal blocked-twin promotion for story {story_key}"),
         )
     except VcsCommandError as exc:
         finding = Finding(
@@ -875,7 +878,7 @@ def _promote_blocked_twin(
 def _run_supervisor_finalize_sequence(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
     run_dir: Path,
     run_id: str,
@@ -908,7 +911,7 @@ def _run_supervisor_finalize_sequence(
                 vcs.commit_paths(
                     worktree,
                     tuple(Path(path) for path in changed),
-                    "marshal: supervisor finalize (Story 28.24)",
+                    to_redacted_text("marshal: supervisor finalize (Story 28.24)"),
                 )
                 committed = True
     except VcsCommandError as exc:
@@ -1123,7 +1126,7 @@ class _WaitHeartbeat:
 def _run_and_journal_landing(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
     run_dir: Path,
     run_id: str,
@@ -1244,7 +1247,7 @@ def _run_and_journal_landing(
 def _land_or_journal_block(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
     run_dir: Path,
     run_id: str,
@@ -1514,7 +1517,7 @@ def run_dispatch_supervisor(
     baseline_head_sha: str,
     merge_subject_template: str,
     fs: FsPort | None = None,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     process: ProcessPort | None = None,
     publisher: RunPublisherPort | None = None,
 ) -> int:

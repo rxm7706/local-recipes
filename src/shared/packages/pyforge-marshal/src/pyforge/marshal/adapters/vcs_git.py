@@ -80,7 +80,9 @@ from pathlib import Path
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
+from ..core.egress import Redacted
 from ..core.refs import ORIGIN_MAIN, local_branch_ref, remote_tracking_ref
+from ..ports.commit import VcsRef
 from ..ports.vcs import WorktreeEntry
 
 
@@ -208,8 +210,31 @@ def _iter_worktree_blocks(stdout: str) -> Iterator[dict[str, str]]:
             yield lines
 
 
+def _require_redacted(value: object, name: str) -> Redacted:
+    """``value`` as a ``Redacted``, or ``TypeError`` (Story 82.9, AD-34): the
+    runtime half of ``CommitPort``'s "no bare ``str`` message" guarantee --
+    ``ports/commit.py``'s annotations are the structural half, and
+    ``LocalFs.write_redacted_atomic`` the precedent. The TYPE only, never the
+    value: a wrongly-typed message is exactly the unredacted text this port
+    refuses, and an exception message escapes as a raw traceback."""
+    if not isinstance(value, Redacted):
+        raise TypeError(f"{name} must be a Redacted instance, got {type(value).__name__}")
+    return value
+
+
+def _require_vcs_ref(value: object, name: str) -> str:
+    """``value.value`` for a ``VcsRef``, or ``TypeError`` (type only, never the
+    value -- see ``_require_redacted``)."""
+    if not isinstance(value, VcsRef):
+        raise TypeError(f"{name} must be a VcsRef instance, got {type(value).__name__}")
+    return value.value
+
+
 class GitVcs:
-    """``ports.VcsPort``'s sole implementation."""
+    """``ports.VcsPort``'s and ``ports.commit.CommitPort``'s sole implementation
+    (Story 82.9: the commit-writing methods are ``CommitPort``'s, an egress
+    port, so commit text arrives as ``Redacted``; one class serves both, as
+    ``LocalFs`` serves ``FsPort`` and ``RecordPort``)."""
 
     def repo_common_root(self, start: Path) -> Path:
         """Mirrors ``scripts/bmad-loop-worktree``'s ``repo_root()``: the
@@ -837,7 +862,7 @@ class GitVcs:
             raise VcsCommandError(f"git log {ref} --format=%s failed: {result.stderr.strip()}")
         return tuple(result.stdout.splitlines())
 
-    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
         """Story 4.1 (AD-29): stages exactly ``paths`` (one ``git add --
         <path>`` per entry, never ``git add -A``) then commits ONLY those
         paths (``git commit -m <message> -- <path> ...``, never a bare
@@ -848,7 +873,9 @@ class GitVcs:
         ``git commit -m <message> --`` with no pathspec after ``--`` would
         either fail ambiguously or, worse, fall back to committing whatever
         happened to already be staged, exactly the "commits a pre-existing
-        index" failure AD-29 forbids."""
+        index" failure AD-29 forbids. ``message`` is ``Redacted`` (Story 82.9,
+        AD-34); a bare ``str`` raises ``TypeError`` before any git invocation."""
+        commit_text = _require_redacted(message, "message").text
         if not paths:
             raise VcsCommandError("commit_paths requires at least one path, got none")
         for path in paths:
@@ -861,7 +888,7 @@ class GitVcs:
             str(repo_root),
             "commit",
             "-m",
-            message,
+            commit_text,
             "--",
             *(str(path) for path in paths),
         ]
@@ -1185,10 +1212,10 @@ class GitVcs:
     def merge_ref_resolving(
         self,
         worktree_path: Path,
-        ref: str,
+        ref: VcsRef,
         *,
         resolutions: Mapping[str, str],
-        message: str,
+        message: Redacted,
     ) -> str:
         """Story 59.1 (CAP-269): ``git merge --no-ff --no-commit <ref>`` in ``worktree_path``, so
         git stops before committing whether or not it conflicts; the conflicted set is read from
@@ -1197,7 +1224,11 @@ class GitVcs:
         started -- aborts the merge, leaving the worktree at its previous HEAD. An already-merged
         ``ref`` is a no-op that returns HEAD. Commits with ``-m <message>`` (hooks run, as in
         ``commit_paths``). A merge already in progress is someone else's: refused, never adopted
-        or aborted; and the merge started must be exactly ``ref``'s commit (Story 59.1 review)."""
+        or aborted; and the merge started must be exactly ``ref``'s commit (Story 59.1 review).
+        ``ref`` is a ``VcsRef`` and ``message`` is ``Redacted`` (Story 82.9, AD-34); a bare
+        ``str`` for either raises ``TypeError`` before any git invocation."""
+        ref_name = _require_vcs_ref(ref, "ref")
+        commit_text = _require_redacted(message, "message").text
         wt = str(worktree_path)
 
         def merge_head() -> str | None:
@@ -1205,10 +1236,14 @@ class GitVcs:
             return probe.stdout.strip() if probe.returncode == 0 else None
 
         if merge_head() is not None:
-            raise VcsCommandError(f"a merge is already in progress in {worktree_path}; refusing to merge {ref} over it")
-        target = _run(["git", "-C", wt, "rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}"])
+            raise VcsCommandError(
+                f"a merge is already in progress in {worktree_path}; refusing to merge {ref_name} over it"
+            )
+        target = _run(["git", "-C", wt, "rev-parse", "--verify", "--end-of-options", f"{ref_name}^{{commit}}"])
         if target.returncode != 0:
-            raise VcsCommandError(f"git merge --no-commit {ref} failed in {worktree_path}: {target.stderr.strip()}")
+            raise VcsCommandError(
+                f"git merge --no-commit {ref_name} failed in {worktree_path}: {target.stderr.strip()}"
+            )
         target_sha = target.stdout.strip()
         try:
             # --no-rerere-autoupdate: a recorded rerere resolution must not stage itself and slip
@@ -1222,11 +1257,11 @@ class GitVcs:
                 if merge.returncode == 0:  # "Already up to date." -- nothing to merge
                     return self.worktree_head_sha(worktree_path)
                 raise VcsCommandError(
-                    f"git merge --no-commit {ref} failed in {worktree_path}: "
+                    f"git merge --no-commit {ref_name} failed in {worktree_path}: "
                     f"{merge.stderr.strip() or merge.stdout.strip()}"
                 )
             if started != target_sha:
-                raise VcsCommandError(f"the merge in progress in {worktree_path} is {started[:12]}, not {ref}")
+                raise VcsCommandError(f"the merge in progress in {worktree_path} is {started[:12]}, not {ref_name}")
             listed = _run(
                 ["git", "-C", wt, "-c", "core.quotePath=false", "diff", "--name-only", "--diff-filter=U", "-z"]
             )
@@ -1236,7 +1271,7 @@ class GitVcs:
             unresolved = [p for p in conflicted if p not in resolutions]
             if unresolved:
                 raise VcsCommandError(
-                    f"merge of {ref} into {worktree_path} conflicts outside the resolvable paths: {', '.join(unresolved)}"
+                    f"merge of {ref_name} into {worktree_path} conflicts outside the resolvable paths: {', '.join(unresolved)}"
                 )
             for rel in conflicted:
                 try:
@@ -1247,10 +1282,10 @@ class GitVcs:
                 added = _run(["git", "-C", wt, "add", "--", rel])
                 if added.returncode != 0:
                     raise VcsCommandError(f"git add -- {rel} failed in {worktree_path}: {added.stderr.strip()}")
-            committed = _run(["git", "-C", wt, "commit", "-m", message])
+            committed = _run(["git", "-C", wt, "commit", "-m", commit_text])
             if committed.returncode != 0:
                 raise VcsCommandError(
-                    f"git commit of the merge of {ref} failed in {worktree_path}: {committed.stderr.strip()}"
+                    f"git commit of the merge of {ref_name} failed in {worktree_path}: {committed.stderr.strip()}"
                 )
         except BaseException:
             # Abort only our own merge: one of another commit (someone else's, started in the
@@ -1355,11 +1390,11 @@ class GitVcs:
         self,
         repo_root: Path,
         *,
-        remote: str,
-        ref: str,
+        remote: VcsRef,
+        ref: VcsRef,
         writes: tuple[tuple[str, str], ...],
-        message: str,
-        preflight_skip_reason: str | None = None,
+        message: Redacted,
+        preflight_skip_reason: Redacted | None = None,
     ) -> str:
         """CAP-5: publish path writes onto ``refs/remotes/<remote>/<ref>`` from a throwaway
         detached worktree. Never checks out or commits in ``repo_root``. The tip is read by
@@ -1374,11 +1409,23 @@ class GitVcs:
         ``git diff --name-only <tip> <new>`` names nothing outside the written set (refused
         before any push otherwise). The opt-out is set for that one ``git push`` through the
         POSIX ``env`` utility, never process-wide; where ``env`` is absent the push runs the
-        preflight. Without a reason the push is byte-identical to what it always was."""
+        preflight. Without a reason the push is byte-identical to what it always was.
+
+        Story 82.9 (AD-34): ``message`` and ``preflight_skip_reason`` are ``Redacted`` and
+        ``remote``/``ref`` are ``VcsRef``; a bare ``str`` for any of them raises ``TypeError``
+        before any git invocation."""
+        remote_name = _require_vcs_ref(remote, "remote")
+        ref_name = _require_vcs_ref(ref, "ref")
+        checked_message = _require_redacted(message, "message")
+        skip_reason = (
+            _require_redacted(preflight_skip_reason, "preflight_skip_reason").text
+            if preflight_skip_reason is not None
+            else None
+        )
         if not writes:
             raise VcsCommandError("commit_paths_onto_remote_tip requires at least one write, got none")
-        if preflight_skip_reason is not None:
-            if not preflight_skip_reason.strip():
+        if skip_reason is not None:
+            if not skip_reason.strip():
                 raise VcsCommandError(
                     "refusing the preflight opt-out: the reason is empty, and every opt-out names its story"
                 )
@@ -1388,11 +1435,11 @@ class GitVcs:
                     "refusing the preflight opt-out: written path(s) "
                     f"{outside!r} are not normalized _bmad-output/projects/<slug>/planning-artifacts/ paths"
                 )
-        self.fetch(repo_root, remote, ref)
-        tip_ref = f"{remote_tracking_ref(ref, remote)}^{{commit}}"
+        self.fetch(repo_root, remote_name, ref_name)
+        tip_ref = f"{remote_tracking_ref(ref_name, remote_name)}^{{commit}}"
         tip_result = _run(["git", "-C", str(repo_root), "rev-parse", "--verify", "--end-of-options", tip_ref])
         if tip_result.returncode != 0:
-            raise VcsCommandError(f"cannot resolve {remote}/{ref} after fetch: {tip_result.stderr.strip()}")
+            raise VcsCommandError(f"cannot resolve {remote_name}/{ref_name} after fetch: {tip_result.stderr.strip()}")
         old_sha = tip_result.stdout.strip()
 
         try:
@@ -1429,7 +1476,7 @@ class GitVcs:
                 except OSError as exc:
                     raise VcsCommandError(f"cannot write {dest} in the publish worktree: {exc}") from exc
                 paths.append(dest)
-            new_sha = self.commit_paths(tmp_path, tuple(paths), message)
+            new_sha = self.commit_paths(tmp_path, tuple(paths), checked_message)
             ancestor = _run(
                 [
                     "git",
@@ -1443,17 +1490,17 @@ class GitVcs:
             )
             if ancestor.returncode != 0:
                 raise VcsCommandError(
-                    f"{new_sha} is not a descendant of {remote}/{ref} ({old_sha}); refusing to push a non-fast-forward"
+                    f"{new_sha} is not a descendant of {remote_name}/{ref_name} ({old_sha}); refusing to push a non-fast-forward"
                 )
             push_args = [
                 "git",
                 "-C",
                 str(repo_root),
                 "push",
-                remote,
-                f"{new_sha}:refs/heads/{ref}",
+                remote_name,
+                f"{new_sha}:refs/heads/{ref_name}",
             ]
-            if preflight_skip_reason is not None:
+            if skip_reason is not None:
                 written = frozenset(rel for rel, _text in writes)
                 stray = sorted(self._paths_changed_between(repo_root, old_sha, new_sha) - written)
                 if stray:
@@ -1466,7 +1513,7 @@ class GitVcs:
                 # it -- see `push`, Story 57.1). Where `env` does not exist (win-64), the push
                 # goes through the preflight instead -- slower, never unchecked.
                 if shutil.which("env") is not None:
-                    reason = _preflight_skip_reason_text(new_sha, written, preflight_skip_reason)
+                    reason = _preflight_skip_reason_text(new_sha, written, skip_reason)
                     push_args = [
                         "env",
                         "PYFORGE_PREFLIGHT_SKIP=1",
@@ -1476,7 +1523,7 @@ class GitVcs:
             push_result = _run(push_args, timeout_s=_GIT_FETCH_TIMEOUT_S)
             if push_result.returncode != 0:
                 raise VcsCommandError(
-                    f"git push {remote} {new_sha}:refs/heads/{ref} failed: {push_result.stderr.strip()}"
+                    f"git push {remote_name} {new_sha}:refs/heads/{ref_name} failed: {push_result.stderr.strip()}"
                 )
             return new_sha
         finally:

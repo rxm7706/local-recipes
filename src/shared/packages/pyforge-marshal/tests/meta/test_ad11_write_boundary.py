@@ -61,6 +61,7 @@ from pathlib import Path
 import pyforge.marshal.cli.spin as spin_module
 from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
 from pyforge.marshal.cli.spin import run_spin
+from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
 
@@ -147,7 +148,7 @@ class _RecordingVcs:
     def commit_subjects(self, repo_root: Path, ref: str) -> tuple[str, ...]:
         return ()
 
-    def commit_paths(self, repo_root: Path, paths: tuple, message: str) -> str:  # pragma: no cover
+    def commit_paths(self, repo_root: Path, paths: tuple, message: Redacted) -> str:  # pragma: no cover
         return "deadbeef"
 
     def path_has_uncommitted_changes(self, repo_root: Path, path: Path) -> bool:
