@@ -65,6 +65,7 @@ wire contracts, not internal loading) -- this story's own Never bullet.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -200,6 +201,15 @@ _ENTRY_KEYS = frozenset(
 )
 _REGION_KEYS = frozenset({"name", "anchor"})
 
+#: The grammar of a manifest entry's ``id``: one token carrying no whitespace
+#: and no ``#`` (Story 82.13, DW-FU-8-5-2). It is the ARTIFACT half of
+#: ``state/schema.json``'s ``opted_out`` item pattern -- the ``#`` is that
+#: key's separator -- and so what makes every id the manifest accepts a
+#: representable opt-out. Spelled once here and once in the schema
+#: (``$defs/artifactId``) because ``model`` may not import ``state``, and
+#: ``tests/unit/test_seed_state_store.py`` pins the two to one probe set.
+ARTIFACT_ID_PATTERN = re.compile(r"[^\s#]+")
+
 
 def _reject_unknown_keys(raw_mapping: dict, allowed: frozenset[str], what: str) -> None:
     unknown = sorted(str(key) for key in raw_mapping if key not in allowed)
@@ -311,6 +321,13 @@ class ManifestEntry:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", _require_text("id", self.id))
+        # After `_require_text` has stripped it, so a padded `" foo "` is
+        # still the legal id `foo`. An id the `opted_out` grammar cannot
+        # spell would make a region of that artifact impossible to opt out
+        # of (Story 82.13): refused here, at load, naming the entry
+        # (`load_manifest` prefixes the id), rather than at the state write.
+        if ARTIFACT_ID_PATTERN.fullmatch(self.id) is None:
+            raise ValueError(f"id must carry no whitespace and no '#' (the opt-out key's separator), got {self.id!r}")
         object.__setattr__(self, "artifact_class", ArtifactClass(self.artifact_class))
         object.__setattr__(self, "path", _require_repo_relative_path(_require_text("path", self.path)))
         object.__setattr__(self, "applies_to", AppliesTo(self.applies_to))
