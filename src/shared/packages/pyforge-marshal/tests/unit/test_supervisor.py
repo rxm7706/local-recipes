@@ -20,6 +20,7 @@ convention.
 from __future__ import annotations
 
 import json
+import os
 import signal
 import threading
 from datetime import datetime, timedelta, timezone
@@ -28,7 +29,7 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-from pyforge.marshal.adapters.fs_local import FsError
+from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core.journal import (
@@ -6627,3 +6628,151 @@ def test_every_entry_goes_through_the_one_held_descriptor():
     assert fs.open_append_calls == [_run_dir() / supervisor_main._JOURNAL_FILENAME]
     assert fs.close_append_calls == 1
     assert fs.held_file_state_calls == 2  # one per live tick; the exit tick is not checked
+
+
+# -- the same fail-closed path against a REAL filesystem -------------------------
+#
+# The fakes above model the held-descriptor port; these drive ``LocalFs`` on a
+# real ``tmp_path`` journal and tamper with it the way the agent session could
+# (it reaches the file through the Tier-3 backlink): replace it, truncate it,
+# chmod it, delete it.
+
+
+def _real_journal(tmp_path: Path, *, harness_run_id: str | None = _HARNESS_RUN_ID) -> tuple[Path, Path]:
+    home = tmp_path / "loop-home"
+    journal = supervisor_main._run_dir(home, "acme", "acme-run-1") / supervisor_main._JOURNAL_FILENAME
+    journal.parent.mkdir(parents=True)
+    journal.write_text(_launch_outcome_line("acme-run-1", harness_run_id=harness_run_id) + "\n", encoding="utf-8")
+    return home, journal
+
+
+def _supervise_real(home: Path, *, process: FakeProcess, harness: FakeHarness, sleep) -> int:
+    return run_supervisor(
+        home,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        _MAX_TOKENS_PER_STORY,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=LocalFs(),
+        process=process,
+        clock=FakeClock(),
+        observer=FakeObserver(),
+        harness=harness,
+        sleep=sleep,
+    )
+
+
+def _tamper_on_second_sleep(tamper):
+    calls = 0
+
+    def _sleep(seconds: float) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            tamper()
+
+    return _sleep
+
+
+def test_real_fs_a_journal_replaced_between_ticks_stops_the_run(tmp_path, capsys):
+    home, journal = _real_journal(tmp_path)
+    impostor = journal.with_name("impostor.jsonl")
+    impostor.write_text("not the journal\n" * 200, encoding="utf-8")
+    harness = FakeHarness()
+
+    rc = _supervise_real(
+        home,
+        process=FakeProcess(alive_for=10),
+        harness=harness,
+        sleep=_tamper_on_second_sleep(lambda: os.replace(impostor, journal)),
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(home, _HARNESS_RUN_ID)]
+    assert "journal replaced" in capsys.readouterr().err
+    # The path now names the impostor, untouched by the supervisor...
+    assert journal.read_text(encoding="utf-8") == "not the journal\n" * 200
+
+
+def test_real_fs_a_truncated_journal_stops_the_run(tmp_path, capsys):
+    home, journal = _real_journal(tmp_path)
+    harness = FakeHarness()
+
+    rc = _supervise_real(
+        home,
+        process=FakeProcess(alive_for=10),
+        harness=harness,
+        sleep=_tamper_on_second_sleep(lambda: os.truncate(journal, 0)),
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(home, _HARNESS_RUN_ID)]
+    assert "journal truncated" in capsys.readouterr().err
+    # ...and the held descriptor still took the final detach, on the truncated file.
+    detach = json.loads(journal.read_text(encoding="utf-8").splitlines()[-1])
+    assert detach["kind"] == "supervisor-detach"
+    assert detach["payload"]["reason"] == "journal-tampered"
+    assert detach["payload"]["journal_fault"] == "truncated"
+
+
+def test_real_fs_a_removed_journal_is_never_recreated_and_stops_the_run(tmp_path, capsys):
+    home, journal = _real_journal(tmp_path)
+    harness = FakeHarness()
+
+    rc = _supervise_real(
+        home,
+        process=FakeProcess(alive_for=10),
+        harness=harness,
+        sleep=_tamper_on_second_sleep(journal.unlink),
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(home, _HARNESS_RUN_ID)]
+    assert "journal removed" in capsys.readouterr().err
+    assert not journal.exists(), "the held append handle must never recreate a removed journal"
+
+
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root bypasses file permissions")
+def test_real_fs_a_read_only_journal_stops_the_run_even_though_the_descriptor_still_writes(tmp_path, capsys):
+    home, journal = _real_journal(tmp_path)
+    harness = FakeHarness()
+
+    rc = _supervise_real(
+        home,
+        process=FakeProcess(alive_for=10),
+        harness=harness,
+        sleep=_tamper_on_second_sleep(lambda: journal.chmod(0o444)),
+    )
+
+    assert rc == 1
+    assert harness.stop_calls == [(home, _HARNESS_RUN_ID)]
+    assert "journal read-only" in capsys.readouterr().err
+    detach = json.loads(journal.read_text(encoding="utf-8").splitlines()[-1])
+    assert detach["payload"]["journal_fault"] == "read-only"
+
+
+def test_real_fs_an_untouched_journal_runs_to_completion_through_the_held_descriptor(tmp_path):
+    """The healthy control for the four tamper tests above: every entry lands
+    through the one held descriptor, nothing trips the per-tick check (other
+    writers' lines -- here one appended mid-run -- only grow the file), and the
+    run ends with an ordinary detach."""
+    home, journal = _real_journal(tmp_path)
+    harness = FakeHarness()
+
+    def _other_writer_appends(seconds: float) -> None:
+        LocalFs().append_line(journal, '{"other": "writer"}', fsync=False)
+
+    rc = _supervise_real(home, process=FakeProcess(alive_for=4), harness=harness, sleep=_other_writer_appends)
+
+    assert rc == 0
+    assert harness.stop_calls == []
+    lines = journal.read_text(encoding="utf-8").splitlines()
+    kinds = [json.loads(line).get("kind") for line in lines]
+    assert kinds[-1] == "supervisor-detach"
+    assert json.loads(lines[-1])["payload"]["reason"] == "watched-process-exited"
+    assert kinds.count("supervisor-heartbeat") == 4
