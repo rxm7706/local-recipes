@@ -19,9 +19,11 @@ mutation under ``implementation-artifacts/`` does not also trip
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -1637,3 +1639,117 @@ def test_one_unreadable_doc_keeps_its_readable_siblings_findings(
     lost = [f for f in after if f.check == "bmad-drift-unevaluable" and f.evidence["check"] == "check_stale_rules"]
     assert len(lost) == 1, after
     assert "b-note.md" in lost[0].message, f"the WARN does not name the file it lost: {lost[0].message}"
+
+
+# --- check_pixi_env_matrix executes Doctor's own checkout's script, never the judged tree's
+#
+# `target` is the tree being JUDGED, so its `scripts/pixi_env_matrix.py` is data. Resolving the
+# loader's file from `target` ran any caller-supplied tree's Python with Doctor's privileges
+# (DW-FU-6-5-9, Story 40.1). The check returns early without a Dream and a lock, so the fixture
+# plants both -- a probe test over a target missing them would pass without ever reaching the loader.
+
+_ENV_MATRIX_DREAM = "pyforge-unifying-strategy.md"
+_ENV_MATRIX_LOCK = b"version: 6\nenvironments: {}\n"
+
+
+def _env_matrix_target(tmp_path: Path, *, embedded_digest: str | None) -> Path:
+    target = tmp_path / "target"
+    (target / "docs" / "dreams").mkdir(parents=True)
+    (target / "scripts").mkdir()
+    (target / "pixi.lock").write_bytes(_ENV_MATRIX_LOCK)
+    block = f"<!-- pixi-env-matrix:begin lock-sha256={embedded_digest} -->\n" if embedded_digest else ""
+    (target / "docs" / "dreams" / _ENV_MATRIX_DREAM).write_text(f"# Dream\n\n{block}", encoding="utf-8")
+    return target
+
+
+def _plant_env_matrix_probe(target: Path, probe: Path, *, then_raise: bool = False) -> None:
+    body = f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\n"
+    if then_raise:
+        body += "raise RuntimeError('probe ran')\n"
+    (target / "scripts" / "pixi_env_matrix.py").write_text(body, encoding="utf-8")
+
+
+def test_the_judged_trees_pixi_env_matrix_script_is_data_never_executed(tmp_path: Path) -> None:
+    target = _env_matrix_target(tmp_path, embedded_digest=None)
+    probe = tmp_path / "probe.txt"
+    _plant_env_matrix_probe(target, probe)
+
+    findings = factory.check_pixi_env_matrix(target)
+
+    assert not probe.exists(), "the judged tree's scripts/pixi_env_matrix.py was executed"
+    # The checkout's code still judges `target`'s data: a Dream with no embedded matrix is stale.
+    assert [f.check for f in findings] == ["pixi-env-matrix-stale"]
+
+
+def test_the_checkouts_pixi_env_matrix_script_reads_the_targets_dream_and_lock(tmp_path: Path) -> None:
+    digest = hashlib.sha256(_ENV_MATRIX_LOCK).hexdigest()[:16]
+    target = _env_matrix_target(tmp_path, embedded_digest=digest)
+    _plant_env_matrix_probe(target, tmp_path / "probe.txt")
+
+    assert factory.check_pixi_env_matrix(target) == []
+
+
+def test_the_env_matrix_probe_runs_when_the_loader_resolves_from_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sensitivity twin (mutation): re-point the locator at `target` -- the pre-fix
+    behaviour -- and the same planted script runs, so the test above can fail."""
+    target = _env_matrix_target(tmp_path, embedded_digest=None)
+    probe = tmp_path / "probe.txt"
+    _plant_env_matrix_probe(target, probe, then_raise=True)
+    monkeypatch.setattr(factory, "locate_checkout_script", lambda name: target / "scripts" / name)
+
+    with pytest.raises(RuntimeError, match="probe ran"):
+        factory.check_pixi_env_matrix(target)
+
+    assert probe.read_text(encoding="utf-8") == "executed"
+
+
+def test_a_failed_env_matrix_load_leaves_no_module_and_no_path_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The loader's `sys.path` / `sys.modules` hygiene: a script that mutates the import
+    path and then raises must leave neither the half-built module nor the entry behind."""
+    script = tmp_path / "pixi_env_matrix.py"
+    script.write_text("import sys\nsys.path.insert(0, '/tmp/EVIL-ENV-MATRIX-PROBE')\nraise RuntimeError('boom')\n")
+    monkeypatch.setattr(factory, "locate_checkout_script", lambda name: script)
+    path_before = list(sys.path)
+
+    with pytest.raises(RuntimeError, match="boom"):
+        factory._load_pixi_env_matrix_module()
+
+    assert "pixi_env_matrix_doctor" not in sys.modules
+    assert sys.path == path_before
+
+
+def test_a_successful_env_matrix_load_restores_sys_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    script = tmp_path / "pixi_env_matrix.py"
+    script.write_text("import sys\nsys.path.insert(0, '/tmp/EVIL-ENV-MATRIX-PROBE')\n")
+    monkeypatch.setattr(factory, "locate_checkout_script", lambda name: script)
+    path_before = list(sys.path)
+    try:
+        factory._load_pixi_env_matrix_module()
+        assert sys.path == path_before
+    finally:
+        sys.modules.pop("pixi_env_matrix_doctor", None)
+
+
+def test_no_checkout_script_is_unevaluable_and_never_falls_back_to_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = _env_matrix_target(tmp_path, embedded_digest=None)
+    probe = tmp_path / "probe.txt"
+    _plant_env_matrix_probe(target, probe)
+
+    def _no_checkout(name: str) -> Path:
+        raise FileNotFoundError(f"scripts/{name} not found above /nowhere")
+
+    monkeypatch.setattr(factory, "locate_checkout_script", _no_checkout)
+
+    findings = factory.check_pixi_env_matrix(target)
+
+    assert not probe.exists()
+    assert [f.check for f in findings] == ["bmad-drift-unevaluable"]
+    assert findings[0].status is DoctorStatus.WARN
+    assert findings[0].evidence["check"] == "check_pixi_env_matrix"
+    assert "scripts/pixi_env_matrix.py not found" in findings[0].message

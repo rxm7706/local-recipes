@@ -24,13 +24,14 @@ randomness, anywhere in this module -- the same ``list[Finding]`` passed
 twice always produces a byte-identical :class:`GradeResult`.
 
 Incomplete-gather handling (FR-10's other testable consequence): an axis
-whose OWN gather degraded to a sentinel Finding (``sources/atlas.py``'s
-``_one_fail_finding`` default shape -- ``check == "doctor.sources.atlas"``,
-``evidence == {}``) never gets graded as if it were real data. That axis
-grades ``incomplete``, and an incomplete axis poisons the WHOLE composite to
-``incomplete`` too -- a computed letter grade must never stand in for
-missing data (this module never silently drops the incomplete axis from the
-composite the way it might be tempting to "just grade what we have").
+whose OWN gather degraded to a sentinel Finding -- ``sources/atlas.py``'s
+``_one_fail_finding`` default shape (``check == "doctor.sources.atlas"``,
+``evidence == {}``) or ``sources.degrade_on_exception``'s WARN (the source's
+own ``check`` with ``evidence["exception"]``) -- never gets graded as if it
+were real data. That axis grades ``incomplete``, and an incomplete axis poisons
+the WHOLE composite to ``incomplete`` too -- a computed letter grade must never
+stand in for missing data (this module never silently drops the incomplete axis
+from the composite the way it might be tempting to "just grade what we have").
 """
 
 from __future__ import annotations
@@ -45,9 +46,10 @@ from .models import DoctorStatus, Finding, Source
 # default ``check`` parameter -- AD-7 forbids ``doctor.score`` from importing
 # ``sources.atlas`` (that would pull a subprocess/MCP-capable module into a
 # pure-function guard's own import surface), so this is a deliberate
-# duplicated literal, not a shared import. It is the one marker that
-# distinguishes "this axis's OWN gather failed" from an ordinary FAIL
-# Finding about a real package problem.
+# duplicated literal, not a shared import. With an empty ``evidence`` it marks
+# "this axis's OWN gather failed" (the atlas shape) as distinct from an ordinary
+# FAIL Finding about a real package problem; ``_is_gather_failure`` also matches
+# the second shape, ``degrade_on_exception``'s ``evidence["exception"]`` WARN.
 _GATHER_FAILURE_CHECK = "doctor.sources.atlas"
 
 
@@ -121,7 +123,24 @@ class GradeResult:
 
 
 def _is_gather_failure(finding: Finding) -> bool:
-    return finding.check == _GATHER_FAILURE_CHECK and not finding.evidence
+    """True when ``finding`` says its axis's OWN gather did not complete.
+
+    Two producers, two shapes, both matched here:
+
+    * the ``sources/atlas.py`` sentinel -- ``check == "doctor.sources.atlas"``
+      with no evidence (see ``_GATHER_FAILURE_CHECK``);
+    * ``sources.degrade_on_exception``'s WARN -- the source's own ``check`` plus
+      ``evidence={"exception": <class name>}``, the shape a gather that raised
+      outright leaves behind. ``"exception"`` is that function's own key, so the
+      WARN is matched by the evidence it alone produces, not by a ``check`` name
+      every source spells differently.
+
+    An ordinary WARN about a real problem carries neither shape and is still
+    graded (DW-FU-6-6-11).
+    """
+    if finding.check == _GATHER_FAILURE_CHECK and not finding.evidence:
+        return True
+    return finding.status is DoctorStatus.WARN and "exception" in finding.evidence
 
 
 def _axis_grade(ok: int, warn: int, fail: int) -> Grade:
