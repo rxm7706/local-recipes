@@ -261,6 +261,25 @@ def test_a_prefix_with_fewer_than_nine_ancestors_outside_a_repo_is_the_typed_err
     assert excinfo.value.finding.code == "MRS-GATE-016"
 
 
+def test_an_unreadable_editable_probe_falls_through_to_the_git_root(tmp_path, checkout, monkeypatch):
+    """The `__file__` candidate cannot be probed (an unsearchable ancestor raises `PermissionError`
+    from `Path.is_dir()` on older pathlib): it is not the repository, so the git root answers."""
+    prefix = tmp_path / "prefix"
+    module_file = prefix / "a" / "b" / "c" / "d" / "e" / "f" / "g" / "h" / "config.py"
+    monkeypatch.setattr(config_module, "__file__", str(module_file))
+    monkeypatch.chdir(checkout)
+    real_is_dir = Path.is_dir
+
+    def is_dir(self):
+        if self.name == "pyforge-marshal":
+            raise PermissionError(13, "Permission denied", str(self))
+        return real_is_dir(self)
+
+    monkeypatch.setattr(Path, "is_dir", is_dir)
+
+    assert repo_root().resolve() == checkout.resolve()
+
+
 def test_a_missing_git_executable_is_the_typed_error_not_a_raw_one(installed, checkout, monkeypatch):
     monkeypatch.chdir(checkout)
     monkeypatch.setenv("PATH", "")

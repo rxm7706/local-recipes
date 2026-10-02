@@ -54,6 +54,15 @@ by this fold either way (see ``run_evaluate``'s own ``--run`` branch): a
 matching Story 2.1's original shape -- re-running commands live under
 ``--run`` is a separate concern this story does not open.
 
+**An unresolvable root (Story 82.1, DW-FU-2-1-7).** The repo root is resolved
+before anything else (``cli/config.py::repo_root()``: the ``__file__``-derived
+checkout, else the git common root of the invocation directory under an
+installed package). When neither yields a repository the evaluation stops
+there with ONE ``MRS-GATE-016`` finding (``unevaluable``, non-zero exit):
+``data["scope"] == "root-unresolved"``, ``data["root"]`` and
+``data["policy_source"]`` are ``None``, ``data["commands"]`` is ``[]``, and
+no verify command runs -- never bare defaults plus ``MRS-GATE-004``.
+
 **The pure/impure split.** All ``shlex.split`` + ``ProcessPort.run`` I/O
 happens HERE, at the CLI boundary; the per-command classification (pass,
 fail, unresolvable, malformed) is delegated to ``core.gate.classify_outcome``
@@ -727,10 +736,12 @@ def evaluate_gate(
     # silently fall through to the env var).
     project_slug = args.project if args.project is not None else os.environ.get(ENV_ACTIVE_PROJECT, "")
 
-    # Story 82.1 (DW-FU-2-1-7): resolve the repo root FIRST and ONCE. It is
-    # the policy lookup's anchor, the spawned commands' `cwd` and the
-    # containment fence below, so a root that cannot be resolved must stop
-    # the evaluation here -- never fall through to bare defaults, which
+    # Story 82.1 (DW-FU-2-1-7): resolve the repo root FIRST. It is the policy
+    # lookup's anchor, the spawned commands' `cwd` and the containment fence
+    # below (`conventional_project_policy_path` and `_resolve_policy_source`
+    # call `repo_root()` again; the invocation directory is constant, so the
+    # answer is the same), so a root that cannot be resolved must stop the
+    # evaluation here -- never fall through to bare defaults, which
     # compose no `verify_commands` and report MRS-GATE-004 (warn, exit 0)
     # having run no gate: a false green. One could-not-evaluate finding
     # (UNEVALUABLE, non-zero exit), nothing run.
