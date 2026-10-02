@@ -299,7 +299,7 @@ class FakeVcs:
         ref: VcsRef,
         writes: tuple[tuple[str, str], ...],
         message: Redacted,
-        preflight_skip_reason: str | None = None,
+        preflight_skip_reason: Redacted | None = None,
     ) -> str:
         self.remote_tip_reasons.append((preflight_skip_reason.text if preflight_skip_reason is not None else None))
         if self._remote_tip_raises:
