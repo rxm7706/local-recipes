@@ -2,9 +2,11 @@
 title: "83.1: `steward keys` resolves its `_http` bridge on first use and reports a missing `age` as a duty failure"
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'e537a533144fd0b5f65586ddb5a42b74eb65b62c'
 review_loop_iteration: 0
 followup_review_recommended: false
+warnings: [multiple-goals, oversized]
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - docs/dreams/pyforge-steward.md
@@ -82,6 +84,38 @@ Type / Effort / Deps: fix / S / —.
 
 </intent-contract>
 
+## Code Map
+
+All under `src/shared/packages/pyforge-steward/` (line numbers at HEAD e537a53314).
+
+- `src/pyforge/steward/keys.py:94-120` -- `locate_http_module()` stays as is (also feeds `repo_root()` `:628`); the import-time block `:113-120` (`_HTTP_SCRIPTS_DIR`, `sys.path` insert, `from _http import ...`) is what goes.
+- `src/pyforge/steward/keys.py:276` (`resolve_headers`), `:1090` (`enterprise_host`) -- the only two uses of `auth_headers_for` / `resolve_github_api_urls`.
+- `src/pyforge/steward/keys.py:474`, `:494`, `:785` -- the three `subprocess.run` calls (`age`, `age`, `age-keygen`); `rotate_identity` `:862` calls `generate_identity` first, so a missing `age-keygen` fails before any file moves. A subprocess `FileNotFoundError` carries `.filename == "age"` / `"age-keygen"` (verified).
+- `src/pyforge/steward/keys.py:1274` -- `_run_exec` already catches `OSError` around `_read_payload_token`, so `keys exec` without `age` is already a duty failure; leave it.
+- `src/pyforge/steward/keys.py:1396-1445` -- `KeysDuty.run`, the one `try` that gains the clause.
+- `src/pyforge/steward/sync.py:58-64` (stale comment, `from _http import open_url`), `:343` (`open_url` use in `_default_transport`) -- no test patches `open_url`.
+- `src/pyforge/steward/cli.py:1335-1339` -- lazy `from .keys import KeysDuty`, whose comment says keys resolves `_http` "at import time" (stale after this story); the lazy import stays, `tests/unit/test_keys_encrypt_decrypt.py:165` pins it.
+- Other importers of `pyforge.steward.keys` (`dashboard/export.py:58`, `src/platform/ingest/github_projects/*`) are unchanged.
+- Test patterns: `tests/unit/test_keys_encrypt_decrypt.py` (`identity` fixture, `main(["keys", ...])`), `tests/unit/test_keys_rotate.py` (`_make_scope`), `tests/unit/test_keys_host_scoping.py` (credential env isolation).
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/pyforge/steward/keys.py` -- replace the import-time block with `http_bridge()`, a `functools.cache`d function that calls `locate_http_module()`, inserts its directory on `sys.path` if absent and returns `importlib.import_module("_http")`; route `resolve_headers` and `enterprise_host` through it -- bridge resolves on first use, once
+- `src/pyforge/steward/keys.py` -- add `except FileNotFoundError` to `KeysDuty.run`: re-raise unless `exc.filename` is `age` or `age-keygen`, else `DutyResult(ok=False, summary="keys <verb>: <binary> not found on PATH ...")`; extend the class docstring -- AD-8 duty failure, exit 1
+- `src/pyforge/steward/sync.py` -- drop `from _http import open_url` and its comment; import `http_bridge` from `.keys` and call `http_bridge().open_url(...)` in `_default_transport` -- import order stops mattering
+- `src/pyforge/steward/cli.py` -- reword the `:1335-1338` comment (the lazy import stays) -- keep it true
+- `tests/unit/test_keys_http_bridge.py` (new) -- fresh-interpreter imports with `_http.py` hidden, sync-before-keys import plus `main(["sync", "reconcile", ...])` not 70, `RuntimeError` naming the marker outside a checkout, locate-once / `sys.path`-once; autouse fixture calls `http_bridge.cache_clear()` -- covers contract ACs 1-4
+- `tests/unit/test_keys_encrypt_decrypt.py`, `tests/unit/test_keys_rotate.py` -- missing-`age` (encrypt, decrypt) and missing-`age-keygen` (rotate) via `main()` with `PATH` pointed at an empty directory: rc 1, stderr names the binary, no `Traceback`; a `FileNotFoundError` with another filename still propagates; refresh the `:165` docstring -- covers ACs 5-7
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` -- close `DW-1-3-14` and `DW-1-3-5` (`status: closed`, a `resolution:` line naming Story 83.1), mirroring the ledger's closed rows -- the Binding's Closes
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` and each co-governor `python scripts/spec_surface_reconcile.py` names -- append a `Surface reconcile` entry naming every governed path changed, with `_bmad/scripts/memlog.py`; never `--write-baseline` -- the run's own guard
+
+**Acceptance Criteria:**
+- Given the seven criteria in the intent contract, when the new tests run, then each is asserted by a named test and the missing-`age` test fails with the `FileNotFoundError` clause removed
+- Given a `FileNotFoundError` whose filename is neither `age` nor `age-keygen`, when `KeysDuty.run` raises it, then it propagates unchanged
+
+## Spec Change Log
+
 ## Binding
 
 Parent capabilities: CAP-1 (Epic 1, Stories 1.2–1.3), AD-8 (defect of shipped behaviour; no new CAP).
@@ -92,10 +126,19 @@ Ledger status at mint: `backlog`.
 Deps: —.
 Minted 2026-10-02 by operator ruling: start Phase 2 of the deferral burn-down after the inflow wave.
 
+## Design Notes
+
+- `functools.cache` does not cache a raised exception, so outside a checkout every call re-raises the named `RuntimeError`; a test clears the cache (`http_bridge.cache_clear()`) before and after.
+- The clause discriminates on `exc.filename` rather than wrapping the three `subprocess.run` calls: the spec fixes the clause in `KeysDuty.run`, and the filename check keeps the Never (no `FileNotFoundError` catch around anything but `age` / `age-keygen`) true for every other path in that `try`.
+- Out of scope: `repo_root()` and `default_inventory_path()` still raise the `RuntimeError` at first use outside a checkout (verbs given an explicit path no longer need them), and `generate_identity`'s own `RuntimeError` (exit 0, no public key) stays an internal error.
+- Test shape for "no `_http.py` reachable": a subprocess that patches `pathlib.Path.is_file` to return False for `_http.py` before importing both modules, then asserts both import and `"_http"` is absent from `sys.modules`.
+
 ## Verification
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`).
+- `pixi run -e pyforge-guild lint-types` — expected: exit 0.
+- `python scripts/spec_surface_reconcile.py` — expected: exit 0 once every governed path is named on the owning Spec's `.memlog.md`.
 
 **Manual checks:**
 - `pixi run --frozen -e pyforge-steward python -c "import pyforge.steward.sync"` — expected: exit 0.
