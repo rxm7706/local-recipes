@@ -90,7 +90,10 @@ handing it to the mutator again would drop a claim that is still standing
 (see that function). A READ-ONLY ``check`` does the opposite and
 records nothing at all -- FR-88 forbids ``check`` writing anything, state
 included -- so it reports the derivation and leaves the recording to the
-next mutating run.
+next mutating run. ``verbs/adopt.py`` and ``verbs/update.py`` apply the
+contract (Story 82.13): each records the derived pairs in memory before it
+plans and hands the one resulting set to ``build_plan`` and to rung 6, and the
+state it writes after a non-empty apply carries them.
 
 **Rung 3 covers every region state recorded, one by one (Story 82.13).**
 A ``managed[]`` entry holds one ``RegionSpanRecord`` per installed region, so
@@ -107,7 +110,8 @@ re-records every region.
 
 ``opted_out_regions`` is the same answer for a caller that needs it as a set:
 rung 6 of ``verbs/preconditions.py`` skips a recorded region that is opted out
-rather than reporting it missing.
+rather than reporting it missing, and ``verbs/update.py``'s wholesale pass does
+not name it.
 
 **Why ``MISSING`` is ``DRIFT`` and ``OPTED_OUT`` is ``INFO``.** ``HARD`` is
 reserved for corruption and refusals (``managed-*-modified``,
@@ -669,8 +673,10 @@ def opted_out_regions(
     key. Going through ``classify_regions`` means the recorded case (no file
     needed) and the derived case (claim survives, markers gone) are ONE
     answer, and a caller needs no second spelling of either. The derived case
-    is the real scenario: no mutating verb records a derived opt-out yet, so
-    a set read from ``state.opted_out`` alone would still refuse it.
+    is the real FR-112 scenario -- the markers are deleted and nothing has
+    recorded it yet -- which a set read from ``state.opted_out`` alone would
+    miss; the mutating verbs record those pairs (``opt_outs_to_record``)
+    before they ask, so for them the two sources agree.
 
     Pure, like the rest of this module: each entry arrives with its file's
     text already read (``""`` for an absent or unreadable one, which switches
