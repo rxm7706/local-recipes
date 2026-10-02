@@ -94,6 +94,16 @@ class FakeVcs:
         self.fail_is_branch_merged: Exception | None = None
         self.fail_remove_worktree: Exception | None = None
         self.fail_delete_branch: Exception | None = None
+        # Story 82.8 (DW-1-8-5): worktrees registered INSIDE a home are
+        # modelled as `extra_worktree_entries` under the home's path. Removing
+        # the home leaves their registrations behind as stale "prunable"
+        # entries (real git's behaviour) until `prune_worktrees` clears them;
+        # `fail_has_uncommitted_changes_paths` fails the dirty probe for those
+        # paths alone.
+        self.orphaned_worktree_entries: list[WorktreeEntry] = []
+        self.fail_has_uncommitted_changes_paths: set[Path] = set()
+        self.fail_prune_worktrees: Exception | None = None
+        self.prune_worktrees_calls: list[Path] = []
         self.remove_worktree_calls: list[tuple[Path, Path, bool]] = []
         self.delete_branch_calls: list[tuple[Path, str, bool]] = []
         # Story 1.6: list_worktrees derives its entries from the SAME
@@ -170,12 +180,15 @@ class FakeVcs:
         for branch, path in self.worktrees.items():
             entries.append(WorktreeEntry(path=path, branch=branch))
         entries.extend(self.extra_worktree_entries)
+        entries.extend(self.orphaned_worktree_entries)
         return tuple(entries)
 
     def has_uncommitted_changes(self, worktree_path: Path) -> bool:
         self.calls.append("has_uncommitted_changes")
         if self.fail_has_uncommitted_changes:
             raise self.fail_has_uncommitted_changes
+        if worktree_path in self.fail_has_uncommitted_changes_paths:
+            raise VcsCommandError(f"git status failed in {worktree_path}")
         return worktree_path in self.dirty_worktrees
 
     def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
@@ -193,6 +206,16 @@ class FakeVcs:
             if path == home:
                 del self.worktrees[branch]
         self.worktree_dirs.discard(home)
+        nested = [entry for entry in self.extra_worktree_entries if home in entry.path.parents]
+        self.extra_worktree_entries = [entry for entry in self.extra_worktree_entries if entry not in nested]
+        self.orphaned_worktree_entries.extend(nested)
+
+    def prune_worktrees(self, repo_root: Path) -> None:
+        self.calls.append("prune_worktrees")
+        self.prune_worktrees_calls.append(repo_root)
+        if self.fail_prune_worktrees:
+            raise self.fail_prune_worktrees
+        self.orphaned_worktree_entries.clear()
 
     def delete_branch(self, repo_root: Path, branch: str, *, force: bool = False) -> None:
         self.calls.append("delete_branch")

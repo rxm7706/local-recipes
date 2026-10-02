@@ -6461,3 +6461,333 @@ class TestLandingRefusalSupersededInTheSweep:
         assert [f["code"] for f in payload["findings"]].count("MRS-STATUS-011") == 1
         assert home["failed_patches"][0]["done"] is None
         assert exit_code == 0
+
+
+# =============================================================================
+# Story 82.8 (DW-FU-4-14-9, DW-FU-4-14-10, DW-FU-4-14-12): status reads the
+# landing history the way `deploy promote` does, says when that history shows
+# nothing, and filters its findings with its rows under `--escalations`.
+# =============================================================================
+
+
+def _status_sweep(capsys, monkeypatch, tmp_path, *, slugs, vcs, args=None, harness=None, process=None):
+    """Run the fleet sweep over ``slugs`` (each a home at
+    ``tmp_path/loop-homes/<slug>``, none with a run) and return ``(exit_code,
+    payload)``. Mirrors ``TestFailedPatches``'s own invocation shape."""
+    _stub_latest_run_dir(monkeypatch, run_dir_map={slug: None for slug in slugs})
+    exit_code = status_cli.run_status(
+        args if args is not None else _args(),
+        vcs=vcs,
+        fs=LocalFs(),
+        harness=harness if harness is not None else _FakeHarness(),
+        process=process if process is not None else _FakeProcess(),
+        clock=_FakeClock(now=_FIXED_NOW),
+    )
+    return exit_code, _payload(capsys)
+
+
+def _worktrees(tmp_path, slugs):
+    return tuple(WorktreeEntry(path=tmp_path / "loop-homes" / slug, branch=f"loop/{slug}") for slug in slugs)
+
+
+class TestStatusReadsLandingsTheWayDeployDoes:
+    """DW-FU-4-14-9: one history -- ``origin/main`` then ``main`` -- for every
+    "did it land" answer in this module."""
+
+    def test_a_story_merged_only_on_origin_main_is_not_reported_pending(self, tmp_path, capsys, monkeypatch):
+        """The fetch-versus-fast-forward window: the merge subject is on
+        ``origin/main`` and local ``main`` has not caught up. `deploy promote`
+        reads that story durable; status must not report its patch pending."""
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        vcs = _FakeVcs(
+            worktrees=_worktrees(tmp_path, ["acme"]),
+            origin_subjects_value=(_merged_subject("4.11"),),
+            commit_subjects_value=(),
+        )
+
+        exit_code, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
+
+        entry = payload["data"]["homes"][0]["failed_patches"][0]
+        assert entry["done"] is True
+        assert entry["confidence"] == status.CONFIDENCE_CONFIRMED
+        assert payload["findings"] == []
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+        assert [ref for _, ref in vcs.commit_subjects_calls] == [ORIGIN_MAIN, "refs/heads/main"]
+
+    def test_a_missing_origin_main_is_the_ordinary_case_and_main_alone_answers(self, tmp_path, capsys, monkeypatch):
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        vcs = _FakeVcs(
+            worktrees=_worktrees(tmp_path, ["acme"]),
+            origin_subjects_raises=True,
+            commit_subjects_value=(_merged_subject("4.11"),),
+        )
+
+        exit_code, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
+
+        assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is True
+        assert payload["findings"] == []
+        assert exit_code == 0
+
+    def test_local_main_stays_required_even_when_origin_main_reads(self, tmp_path, capsys, monkeypatch):
+        """A readable ``origin/main`` must not hide an unreadable local
+        ``main``: the required half failing still degrades the patch to
+        ``null`` and warns once, never a quiet answer from half the history."""
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        vcs = _FakeVcs(
+            worktrees=_worktrees(tmp_path, ["acme"]),
+            origin_subjects_value=(_merged_subject("4.11"),),
+            commit_subjects_raises=True,
+        )
+
+        exit_code, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
+
+        assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is None
+        assert [f["code"] for f in payload["findings"]].count("MRS-STATUS-011") == 1
+        assert exit_code == 0
+
+    def test_reconcile_ledger_reads_the_same_history(self, tmp_path, capsys, monkeypatch):
+        """``--reconcile-ledger`` is the module's other reader: a story whose
+        merge is only on ``origin/main`` is merged for it too, so a ledger
+        ``done`` is not reported as ``done-in-ledger-not-merged``."""
+        monkeypatch.setattr(status_cli, "repo_root", lambda: tmp_path)
+        vcs = _FakeVcs(origin_subjects_value=(_merged_subject("1.1"),), commit_subjects_value=())
+        harness = _FakeHarness(ledger_statuses=(("1-1-title", "done"),))
+
+        exit_code = status_cli.run_status(
+            _args(project="acme", reconcile_ledger=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert payload["data"] == {"project": "acme", "discrepancies": []}
+        assert payload["findings"] == []
+        assert exit_code == 0
+
+
+class TestAHistoryThatShowsNothingIsSaidSo:
+    """DW-FU-4-14-10: ``MRS-STATUS-014`` in place of one ``MRS-STATUS-010``
+    per patch when a non-empty history has no conforming merge subject."""
+
+    _UNRELATED_50 = tuple(f"unrelated commit {n}" for n in range(50))
+
+    def test_fifty_non_conforming_subjects_yield_one_finding_with_the_counts(self, tmp_path, capsys, monkeypatch):
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        _seed_failed_patch(home, run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR)
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, ["acme"]), commit_subjects_value=self._UNRELATED_50)
+
+        exit_code, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
+
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes == ["MRS-STATUS-014"]
+        assert "MRS-STATUS-010" not in codes
+        message = payload["findings"][0]["message"]
+        assert "examined 50, matched 0" in message
+        # Names the patches it degraded, like `MRS-STATUS-011` does.
+        assert "acme/4.11@20260809-231524-abb9" in message
+        assert "acme/12.1@20260810-004512-c31f" in message
+        for entry in payload["data"]["homes"][0]["failed_patches"]:
+            assert entry["done"] is None
+            assert entry["confidence"] == status.CONFIDENCE_UNCONFIRMED
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_the_count_is_per_home_a_slug_with_a_conforming_subject_keeps_its_reading(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """``count_conforming_subjects`` takes the slug, so only the home whose
+        own slug matches nothing pays: ``acme``'s merge is on the history,
+        ``beta``'s story is not and nothing in it speaks for ``beta``."""
+        _seed_failed_patch(tmp_path / "loop-homes" / "acme", run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        _seed_failed_patch(
+            tmp_path / "loop-homes" / "beta", run_id="20260810-004512-c31f", story_dir=_TWO_DIGIT_EPIC_DIR
+        )
+        vcs = _FakeVcs(
+            worktrees=_worktrees(tmp_path, ["acme", "beta"]),
+            commit_subjects_value=(*self._UNRELATED_50, _merged_subject("4.11", project_slug="acme")),
+        )
+
+        _exit, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme", "beta"], vcs=vcs)
+
+        homes = {row["slug"]: row for row in payload["data"]["homes"]}
+        assert homes["acme"]["failed_patches"][0]["done"] is True
+        assert homes["beta"]["failed_patches"][0]["done"] is None
+        flagged = [f for f in payload["findings"] if f["code"] == "MRS-STATUS-014"]
+        assert len(flagged) == 1
+        assert flagged[0]["message"].startswith("beta:")
+        assert "MRS-STATUS-010" not in [f["code"] for f in payload["findings"]]
+
+    def test_a_history_that_conforms_but_lacks_the_story_still_reads_unlanded(self, tmp_path, capsys, monkeypatch):
+        """A conforming subject proves the history CAN show a merge, so a
+        story it does not name keeps its per-patch `MRS-STATUS-010`."""
+        _seed_failed_patch(tmp_path / "loop-homes" / "acme", run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        vcs = _FakeVcs(
+            worktrees=_worktrees(tmp_path, ["acme"]),
+            commit_subjects_value=(*self._UNRELATED_50, _merged_subject("1.1")),
+        )
+
+        _exit, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
+
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes == ["MRS-STATUS-010"]
+        assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is False
+
+    def test_an_empty_history_examined_nothing_and_keeps_the_unlanded_reading(self, tmp_path, capsys, monkeypatch):
+        _seed_failed_patch(tmp_path / "loop-homes" / "acme", run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, ["acme"]), commit_subjects_value=())
+
+        _exit, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
+
+        codes = [f["code"] for f in payload["findings"]]
+        assert codes == ["MRS-STATUS-010"]
+        assert "MRS-STATUS-014" not in codes
+        assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is False
+
+    def test_a_home_with_no_patch_never_pays_for_the_finding(self, tmp_path, capsys, monkeypatch):
+        (tmp_path / "loop-homes" / "acme").mkdir(parents=True)
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, ["acme"]), commit_subjects_value=self._UNRELATED_50)
+
+        _exit, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
+
+        assert payload["findings"] == []
+        assert payload["data"]["homes"][0]["failed_patches"] == []
+
+
+class TestEscalationsFiltersFindingsWithRows:
+    """DW-FU-4-14-12: under ``--escalations`` sweep-wide findings stay, and a
+    per-home finding stays only while its home is still listed."""
+
+    _SLUGS = ("acme", "beta", "gamma")
+
+    def _seed_patches(self, tmp_path, slugs=_SLUGS):
+        for slug in slugs:
+            _seed_failed_patch(tmp_path / "loop-homes" / slug, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+
+    def _escalated_beta(self, tmp_path):
+        """A harness/process pair under which ``beta`` -- and only ``beta`` -- is paused on escalation; returns
+        ``(run_dir_map, harness, process)``."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="beta-run1",
+            lines=[
+                _outcome_line("beta-run1", pid=4242, harness_run_id="hrid-beta"),
+                _supervisor_attach_line("beta-run1", pid=5252),
+            ],
+        )
+        harness = _FakeHarness(
+            snapshots={
+                (str(tmp_path / "loop-homes" / "beta"), "hrid-beta"): _snapshot(
+                    paused_stage="escalation", paused_reason="needs a human decision"
+                )
+            }
+        )
+        return {"acme": None, "beta": run_dir, "gamma": None}, harness, _FakeProcess(alive_pids=frozenset({5252}))
+
+    def test_no_escalated_home_means_no_homes_and_no_per_home_finding(self, tmp_path, capsys, monkeypatch):
+        """Three homes, none escalated, each carrying an unlanded patch: the
+        unfiltered sweep raises three `MRS-STATUS-010`s; `--escalations` shows
+        an empty table and none of them."""
+        self._seed_patches(tmp_path)
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, self._SLUGS))
+
+        _exit, unfiltered = _status_sweep(capsys, monkeypatch, tmp_path, slugs=self._SLUGS, vcs=vcs)
+        assert [f["code"] for f in unfiltered["findings"]].count("MRS-STATUS-010") == 3
+
+        exit_code, payload = _status_sweep(
+            capsys, monkeypatch, tmp_path, slugs=self._SLUGS, vcs=vcs, args=_args(escalations=True)
+        )
+
+        assert payload["data"]["homes"] == []
+        assert payload["findings"] == []
+        assert payload["verdict"] == "clean"
+        assert exit_code == 0
+
+    def test_only_the_escalated_homes_findings_remain(self, tmp_path, capsys, monkeypatch):
+        self._seed_patches(tmp_path)
+        run_dirs, harness, process = self._escalated_beta(tmp_path)
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, self._SLUGS))
+        _stub_latest_run_dir(monkeypatch, run_dir_map=run_dirs)
+
+        exit_code = status_cli.run_status(
+            _args(escalations=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert [row["slug"] for row in payload["data"]["homes"]] == ["beta"]
+        messages = [f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-010"]
+        assert len(messages) == 1
+        assert messages[0].startswith("beta:")
+        assert exit_code == 0
+
+    def test_a_sweep_wide_finding_survives_the_filter(self, tmp_path, capsys, monkeypatch):
+        """`MRS-STATUS-009` (the unpushed-work detector could not be consulted)
+        belongs to no home: it stays with an empty table."""
+        self._seed_patches(tmp_path)
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, self._SLUGS))
+
+        _exit, payload = _status_sweep(
+            capsys,
+            monkeypatch,
+            tmp_path,
+            slugs=self._SLUGS,
+            vcs=vcs,
+            args=_args(escalations=True),
+            process=_FakeProcess(run_raises=True),
+        )
+
+        assert payload["data"]["homes"] == []
+        assert [f["code"] for f in payload["findings"]] == ["MRS-STATUS-009"]
+
+    def test_the_unreadable_main_warning_names_only_listed_homes_and_vanishes_with_them(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        self._seed_patches(tmp_path)
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, self._SLUGS), commit_subjects_raises=True)
+
+        # No escalated home: the sweep-wide `MRS-STATUS-011` has nothing left to name, so it is omitted.
+        _exit, payload = _status_sweep(
+            capsys, monkeypatch, tmp_path, slugs=self._SLUGS, vcs=vcs, args=_args(escalations=True)
+        )
+        assert payload["data"]["homes"] == []
+        assert payload["findings"] == []
+
+        # One escalated home: it names that home's patch alone.
+        run_dirs, harness, process = self._escalated_beta(tmp_path)
+        _stub_latest_run_dir(monkeypatch, run_dir_map=run_dirs)
+        status_cli.run_status(
+            _args(escalations=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+        payload = _payload(capsys)
+        warnings = [f for f in payload["findings"] if f["code"] == "MRS-STATUS-011"]
+        assert len(warnings) == 1
+        assert "1 patch(es)" in warnings[0]["message"]
+        assert "beta/4.11@" in warnings[0]["message"]
+        assert "acme/" not in warnings[0]["message"]
+        assert "gamma/" not in warnings[0]["message"]
+
+    def test_without_the_flag_every_finding_is_kept(self, tmp_path, capsys, monkeypatch):
+        self._seed_patches(tmp_path)
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, self._SLUGS), commit_subjects_raises=True)
+
+        _exit, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=self._SLUGS, vcs=vcs)
+
+        warning = next(f for f in payload["findings"] if f["code"] == "MRS-STATUS-011")
+        assert "3 patch(es)" in warning["message"]
