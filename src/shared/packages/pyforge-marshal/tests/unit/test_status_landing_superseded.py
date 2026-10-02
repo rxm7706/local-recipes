@@ -134,6 +134,24 @@ def test_marshal_46_6_refusal_is_superseded_once_pr_1597_is_on_main(tmp_path: Pa
     assert _superseded(_facts("pyforge-marshal", "46.6", _MARSHAL_REFUSAL), vcs, tmp_path)
 
 
+def test_a_merge_only_on_origin_main_supersedes_before_local_main_catches_up(tmp_path: Path) -> None:
+    """Story 82.8 (DW-FU-4-14-9): the history is `origin/main` plus `main`, as `deploy` reads it, so a merge in the
+    fetch-versus-fast-forward window already counts; an unfetched `origin/main` is the ordinary case."""
+    vcs = _Vcs(_UNRELATED, origin_subjects=(_DOCTOR_MERGE,))
+    assert _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path)
+    assert vcs.commit_subjects_calls == [ORIGIN_MAIN, "refs/heads/main"]
+
+    unfetched = _Vcs((_DOCTOR_MERGE,), origin_raises=True)
+    assert _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), unfetched, tmp_path)
+
+
+def test_a_readable_origin_main_does_not_excuse_an_unreadable_local_main(tmp_path: Path) -> None:
+    vcs = _Vcs(raises=True, origin_subjects=(_DOCTOR_MERGE,))
+    main = status_cli._MainSubjects()
+    assert not _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path, main)
+    assert main.attempted and main.subjects is None
+
+
 def test_a_refusal_whose_story_is_not_on_main_stays_a_refusal(tmp_path: Path) -> None:
     vcs = _Vcs(_UNRELATED)
     assert not _superseded(_facts("pyforge-doctor", "30.3", _DOCTOR_REFUSAL), vcs, tmp_path)
