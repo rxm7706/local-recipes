@@ -2,10 +2,10 @@
 title: '82.4: The supervisor attaches despite a quarantined launch, journals its spawn and every stop, and fails closed on tampering'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: '7e2939beebd2a78fff6c0f962dc2aed85954bb64'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -235,40 +235,99 @@ Closes: DW-FU-3-4-3, DW-FU-3-4-6, DW-FU-3-4-7, DW-FU-3-4-8.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-02 — Review pass
+- verdicts: 39 findings — high 0, medium 4, low 25, false 10, maybe-false 0
+- findings:
+  - `[low]` `[reject]` (Intent Alignment 1) Fix 4 trigger is broader than "an append that fails": every `FsError`/`ValueError` reaching the final handler (sidecar-blob write, an aggressiveness-file write, a failed `open_append`) now calls `_fail_closed` — Shares a root cause with Blind Hunter 1, Verification Gap 2 and Edge Case Hunter 1. Real but a diagnostic label only (the stderr line carries the actual exception text) over a path that already ended the supervisor with exit 1; stopping the run satisfies the intent's "never exits leaving the run alive and unwatched"; D5 designed it and the implementer's risk note records it; reaching it needs a bug elsewhere, and narrowing adds a private exception class plus branches.
+  - `[low]` `[reject]` (Intent Alignment 2) "Never exits leaving the run alive" has exceptions (no run id; a failed `open_append` at attach; `stop` failing) — With a run id the stop is attempted and its outcome journaled as `stopped` plus `MRS-SUPV-012`; with no run id the intent itself says keep watching and report; a failing `stop` is the same recorded shape as `budget-stop` and the `defer` rung. The one residual (failed `open_append`, no run id) is Edge Case Hunter 5.
+  - `[false]` `[reject]` (Intent Alignment 3) An unproven attach has no harness run id, so a later tamper takes the `MRS-SUPV-013` report-and-keep-watching path and cannot stop the run — Refuted as a defect: the intent's AC for fix 1 says "keeps heartbeating", and the intent says that with no harness run id the supervisor keeps watching and reports it cannot act.
+  - `[low]` `[reject]` (Intent Alignment 4) After a replace or removal, heartbeats and the `supervisor-journal-fault` entry go to the orphaned inode — Inherent in holding a descriptor (the intent's design) and stated in the spec's risk notes; the stderr line in `supervisor.log` is the durable record. Nothing in the intent asks for a second write target (its Boundaries forbid one).
+  - `[low]` `[reject]` (Intent Alignment 5) A signal that lands mid-tick is acted on when that tick finishes — Shares a root cause with Blind Hunter 4 and Edge Case Hunter 3. Designed (D2: raising inside `subprocess.run` would kill a child half-way); every subprocess call in the tick is bounded by a timeout (`PosixProcess.run` takes `timeout_s`, `bmad-loop stop` has `_STOP_TIMEOUT_S`), so the deferral is bounded; the fix adds a branch.
+  - `[false]` `[reject]` (Intent Alignment 6) The new detach reasons and journal kinds are not registered in `core/findings.py` or `core/verdict.py` — Refuted: neither file registers detach reasons or journal kinds (`idle-deferred`, `budget-*` and `escalation-paused` appear in neither, verified by grep); "every new reason and code" is met by registering the four new finding codes, which `test_findings.py` pins.
+  - `[low]` `[reject]` (Intent Alignment 7) Read-only detection uses `os.access`, which is true for root, and the test skips under root — A root supervisor can write a mode-0444 file anyway, so there is no write to stop; the skip is documented in the test.
+  - `[false]` `[reject]` (Intent Alignment 8) The mutation criterion is proved as prose in the Auto Run Result, not by a repeatable artifact — Refuted: the criterion is a verification procedure ("each fix removed in turn, its new test fails"), each fix has its own named test, and Story 82.3 closed the same criterion the same way.
+  - `[low]` `[reject]` (Blind Hunter 1) A `ValueError` from `build_entry`/`prepare_for_write` (outside the try in `_write_entry`) reaches the handler and stops a healthy run, labelled `cannot append to journal` — Same root cause and verdict as Intent Alignment 1.
+  - `[false]` `[reject]` (Blind Hunter 2) One transient append failure (ENOSPC/EIO) stops the run — Refuted as a defect: the intent says an append that fails makes the supervisor stop the watched run; tolerating transient write faults is the opposite of that criterion.
+  - `[false]` `[reject]` (Blind Hunter 3) A signal detach is fail-open: a same-uid agent can silence the supervisor with `kill -TERM`, no finding code is emitted, and `_MARSHAL_INITIATED_DETACH_REASONS` omits it — Refuted: the intent requires a journaled detach naming the signal and keeps SIGKILL detectable by heartbeat absence, with a different uid out of scope; `is_marshal_initiated_stop` is fed only by the dispatch journal's `stop_reason` (`cli/dispatch.py:1283-1284`), never by this supervisor's detach reasons.
+  - `[low]` `[reject]` (Blind Hunter 4) No escalation on a second signal, and signals are deferred during long work — Same root cause and verdict as Intent Alignment 5.
+  - `[medium]` `[patch]` (Blind Hunter 5) A signalled sleep skips the fresh liveness reading, so a watched process that exited during the sleep is detached as `signal-<NAME>` — Verified at the `break` after the sleep: `watched_alive` was last tick's `True`, so the post-loop `signal-` reason won and escalation detection (skipped when `detach_reason` is set) never ran. Fixed: one fresh `process.is_alive` reading before the `break`; new test `test_a_signal_during_the_sleep_after_the_watched_process_exited_keeps_the_natural_exit_reason`.
+  - `[false]` `[reject]` (Blind Hunter 6) The unproven-ownership attach is heartbeat-only; pass the harness run id on argv to supervise it fully — Refuted: the intent's AC for fix 1 reads "keeps heartbeating"; a new argv positional changes the ten-positional contract the intent never asks to change.
+  - `[low]` `[reject]` (Blind Hunter 7) The residual risks (same-size in-place rewrite, same-uid SIGKILL, root `os.access`, one-tick latency) sit in prose while DW-FU-3-4-8 is closed; the closed rows' `verified:` text cites a renamed test — SIGKILL and the same-size rewrite are the intent's stated limits; the `verified:` lines are dated history of a closed row.
+  - `[low]` `[reject]` (Blind Hunter 8) `MRS-SPIN-018` collides with Story 47.1's spec — Shares a root cause with Verification Gap 4. No collision exists on `main`; 47.1 never landed and its only mention is a triage-log row of a reverted attempt, so whichever story lands second takes the next free code under the registry's normal rule.
+  - `[low]` `[patch]` (Blind Hunter 9) `test_every_entry_goes_through_the_one_held_descriptor` fills `used_append_line_directly` and never asserts it — Shares a root cause with Verification Gap 1 and Edge Case Hunter 10. Fixed: `FakeFs.direct_append_line_calls` counts only direct `append_line` calls (held appends use a private helper), and the test asserts it is 0 and that entries were appended.
+  - `[false]` `[reject]` (Blind Hunter 10) `_fail_closed` can leave the run alive when `stop` fails or raises something other than `HarnessError` — Refuted: a `False` or `HarnessError` result is recorded (`stopped: false`, `MRS-SUPV-012`) in the same shape as the existing `budget-stop` and `defer` stops; `LocalHarness.stop` converts every launch failure and timeout to `HarnessError` (`harness_bmadloop.py:1727-1733`), so nothing else escapes.
+  - `[low]` `[reject]` (Blind Hunter 11) Stringly-typed tamper kinds, a handle with no closed marker, a port docstring that says "at most once" beside a double-close test — No caller can reach the `KeyError` (the four kinds are closed in one function), `close_append` runs once in the outermost `finally`, and the double-close test pins the documented never-raises behaviour.
+  - `[low]` `[patch]` (Blind Hunter 12) The module docstring sentence ends "which exits 1) and exit 0" — Verified at the opening paragraph. Fixed: reworded to say every detach reason exits 0 except `journal-tampered`, which exits 1.
+  - `[low]` `[reject]` (Blind Hunter 13) Test gaps: second signal, partial handler installation, restoring a `None` previous handler, `NotADirectoryError`, a non-`HarnessError` from `stop` — Each would test behaviour rejected above or a one-line mapping; the touched modules pass the station coverage floor.
+  - `[low]` `[patch]` (Verification Gap, other 1) The held-descriptor test claims more than it asserts — Same root cause and fix as Blind Hunter 9 (shares its route).
+  - `[low]` `[reject]` (Verification Gap, other 2) A non-journal `ValueError` stops the watched run and no test drives it — Same root cause and verdict as Intent Alignment 1.
+  - `[medium]` `[patch]` (Verification Gap, other 3) A signal during the sleep while the watched process exits in the same sleep is labelled `signal-<NAME>` — Same defect as Blind Hunter 5; one fix.
+  - `[low]` `[reject]` (Verification Gap, other 4) `MRS-SPIN-018` is claimed by two specs with no guard — Same root cause and verdict as Blind Hunter 8.
+  - `[low]` `[reject]` (Edge Case Hunter 1) A non-journal `ValueError`/`FsError` stops a healthy run, labelled `journal-tampered` — Same root cause and verdict as Intent Alignment 1.
+  - `[medium]` `[patch]` (Edge Case Hunter 2) The signal `break` precedes the liveness re-read, so `watched_alive` is stale — Same defect as Blind Hunter 5; one fix.
+  - `[low]` `[reject]` (Edge Case Hunter 3) A second signal is ignored while a blocking call hangs — Same root cause and verdict as Intent Alignment 5.
+  - `[low]` `[reject]` (Edge Case Hunter 4) A `SIG_IGN` inherited for SIGHUP/SIGINT is overwritten — The sidecar runs under `start_new_session=True`, so it has no controlling terminal and no terminal-driven SIGHUP/SIGINT; only an explicit `kill` reaches it, and the fix adds a guard for a case no caller has shown.
+  - `[low]` `[reject]` (Edge Case Hunter 5) `open_append` failing at attach with no harness run id exits 1 while the same fault later keeps watching — That exit is the pre-existing print-and-exit behaviour; with no run id the supervisor has nothing to act on, and with no journal handle its "keep watching" would write nowhere.
+  - `[medium]` `[patch]` (Edge Case Hunter 6) A torn last line with no trailing newline swallows the attach entry, so the `quarantined` count and `MRS-SUPV-011` are lost in exactly the case fix 1 targets — Verified: `fold` quarantines `fragment + attach-json` as one line. Fixed: right after `open_append`, a lone terminator goes through the held handle only when the attach-time text is non-empty and lacks a trailing newline (`fold` skips blank lines); new tests `test_real_fs_a_torn_last_line_is_terminated_so_the_attach_entry_is_not_swallowed` and the no-extra-line control.
+  - `[false]` `[reject]` (Edge Case Hunter 7) Any single quarantined line makes ownership unproven, with no check that it is a launch line — Refuted: the intent states the rule literally ("no launch or resume entry but quarantined at least one line"); `fold` cannot say which kind a quarantined line was, and a launch/resume entry for another run id already keeps it inert.
+  - `[low]` `[reject]` (Edge Case Hunter 8) `journal_fault_reported` stops the per-tick check after one swallowed append with no run id — With no run id nothing is actionable, and the intent asks for one report that it cannot act; later reports would add no action.
+  - `[low]` `[reject]` (Edge Case Hunter 9) A transient `held_file_state` error is classified `unverifiable` and stops a healthy run — An un-statable path is also what a parent directory made inaccessible looks like, a real tamper, so continuing would open a hole; a transient stat failure on a local filesystem is rare.
+  - `[low]` `[patch]` (Edge Case Hunter 10) The held-descriptor test asserts nothing about `append_line` — Same root cause and fix as Blind Hunter 9.
+  - `[low]` `[patch]` (Edge Case Hunter 11) No test for a signal interrupting the sleep after the watched process exited — Shares Blind Hunter 5's route. Fixed with `test_a_signal_during_the_sleep_after_the_watched_process_exited_keeps_the_natural_exit_reason` (`FakeProcess(alive_for=1)`; the last detach reason is `watched-process-exited`).
+  - `[false]` `[reject]` (Edge Case Hunter 12, claim) The AC says the supervisor never exits leaving the run alive, but a failed `stop` exits 1 with the run alive — Refuted: the criterion is that the supervisor stops the run through `HarnessPort.stop` and records why; a stop that fails is recorded with `stopped: false` and `MRS-SUPV-012`, as the existing terminal stops do.
+  - `[low]` `[reject]` (Edge Case Hunter 13, claim) `open_append` follows a symlink swapped in before attach — The supervisor reads the same swapped path first and the per-tick check follows it too; before-attach tampering is outside the intent's "between ticks" model, `O_NOFOLLOW` would need care because the run directory is reached through the Tier-3 symlink, and the fix adds a branch.
+  - `[false]` `[reject]` (Edge Case Hunter 14, deletion) `_MARSHAL_INITIATED_DETACH_REASONS` lacks `journal-tampered` and `signal-*` — Refuted: its only consumer, `is_marshal_initiated_stop`, is fed by the dispatch journal's `stop_reason` (`cli/dispatch.py:1283-1284`), which this supervisor never writes.
 
 ## Auto Run Result
 
-Implementation complete; awaiting the separate adversarial review (nothing here has been reviewed).
+Status: done
 
-**What changed** (all under `src/shared/packages/pyforge-marshal/` unless rooted):
+**Summary.** The four defects of shipped behaviour in Story 3.4's supervisor are fixed, and DW-FU-3-4-3, -6, -7 and -8 are closed in the deferred-work ledger.
 
-- `ports/fs.py`, `adapters/fs_local.py` -- `AppendHandle`/`HeldFileState` and `open_append` / `append_held` / `held_file_state` / `close_append` on `FsPort`; `LocalFs` holds one `O_WRONLY | O_APPEND` descriptor (no `O_CREAT`), keeps `append_line`'s embedded-newline and short-write guards, and compares `fstat` with `stat` (dev+inode, path size, `os.access(W_OK)`).
-- `supervisor/__main__.py` -- D1 unproven attach (`MRS-SUPV-011`, `quarantined` count on `supervisor-attach`); D2 SIGTERM/SIGHUP/SIGINT handlers (raise only while sleeping, restored in `finally`, skipped off the main thread) giving `supervisor-detach` reason `signal-<NAME>`; D4/D5 held descriptor, per-tick `_classify_journal_state` check (`expected_size` floor), `_fail_closed` (`HarnessPort.stop`, stderr, best-effort final detach `journal-tampered` + `MRS-SUPV-012`, exit 1) and the no-run-id path (`MRS-SUPV-013` once, keeps watching, journaled best-effort as `supervisor-journal-fault`). Module docstring rewritten for all three.
-- `cli/spin.py` -- `_journal_supervisor_spawn`: one `supervisor-spawn` observation (counter 2) per spawn attempt for launch and resume; failure to journal it is `MRS-SPIN-018`; `_writer_id` docstring corrected.
-- `core/findings.py`, `core/verdict.py` -- `MRS-SUPV-011/012/013` and `MRS-SPIN-018`, all WARN.
-- Tests: `test_supervisor.py` (the `:922` and `:5200` pins rewritten, the append-failure pins extended, one test per criterion, plus real-`LocalFs` tamper tests), `test_publisher.py`, `test_spin.py` (the six launch/resume pins that counted two appends, plus the new spawn tests), `test_fs_local.py`, `test_findings.py`, and `tests/meta/test_ad11_write_boundary.py` (the spin write set is now five).
-- `deferred-work-ledger.md` -- `DW-FU-3-4-3`, `-6`, `-7`, `-8` closed with `resolved:` lines. Memlog `event` entries appended to `spec-pyforge-marshal` and `spec-pyforge-core` (the two Specs `spec-surface-check` named for `ports/fs.py` and `test_publisher.py`); no baseline stamp.
+1. A journal with no run-launch or run-resume entry for any run id but at least one quarantined line now attaches. `supervisor-attach` carries `quarantined: <n>` and `MRS-SUPV-011`, and supervision is heartbeat-only because no harness run id is recoverable. A launch or resume entry naming only another run id, or a journal with no quarantined line, stays inert.
+2. SIGTERM, SIGHUP and SIGINT journal a final `supervisor-detach` whose reason is `signal-<NAME>` and exit 0. The handlers raise only while the loop is sleeping, are restored on every exit, and are skipped off the main thread.
+3. `marshal factory spin` and `resume` journal one `supervisor-spawn` observation (counter 2) carrying the sidecar pid, or `supervisor_pid: None` plus the error. A failure to journal it is `MRS-SPIN-018` (WARN) and never changes the launch outcome.
+4. The supervisor opens its journal once through a new `FsPort` held-descriptor family and checks it every tick for a removed, replaced, truncated or read-only file. A tamper or a failed append stops the watched run through `HarnessPort.stop`, records why on stderr and in a best-effort final `supervisor-detach` (`journal-tampered`, `MRS-SUPV-012`), and exits 1. With no harness run id it reports `MRS-SUPV-013` once and keeps watching.
 
-**Verification** (exit codes read directly, no pipes):
+**Files changed** (under `src/shared/packages/pyforge-marshal/` unless rooted):
 
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- exit 0, 9927 passed.
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- exit 0, 130 passed.
-- `pixi run --frozen -e pyforge-guild lint-types` -- exit 0 (ruff, ruff format --check, mypy, target-version, precommit-config).
-- `python scripts/spec_surface_reconcile.py` -- exit 0 ("no drift"); `spec-surface-check` reports no `drift-presumed` after the two memlog entries.
-- `scripts/coverage_gates_ci.py` for marshal, unit suite -- OK, every touched module at or above 80% (`supervisor/__main__.py` 89%).
+- `src/pyforge/marshal/ports/fs.py` -- `AppendHandle`, `HeldFileState` and the four held-descriptor methods on `FsPort`.
+- `src/pyforge/marshal/adapters/fs_local.py` -- the `LocalFs` implementation: `O_WRONLY | O_APPEND`, no `O_CREAT`, `append_line`'s newline and short-write guards, `fstat` compared with `stat`.
+- `src/pyforge/marshal/supervisor/__main__.py` -- unproven attach, signal handling, held descriptor, per-tick integrity check, `_fail_closed`, torn-tail terminator, module docstring.
+- `src/pyforge/marshal/cli/spin.py` -- `_journal_supervisor_spawn` for launch and resume, and the corrected `_writer_id` docstring.
+- `src/pyforge/marshal/core/findings.py`, `src/pyforge/marshal/core/verdict.py` -- `MRS-SUPV-011`, `MRS-SUPV-012`, `MRS-SUPV-013` and `MRS-SPIN-018`, all WARN.
+- `tests/unit/test_supervisor.py`, `test_publisher.py`, `test_spin.py`, `test_fs_local.py`, `test_findings.py` and `tests/meta/test_ad11_write_boundary.py` -- one test per acceptance criterion, real-`LocalFs` tamper tests, and the pins that counted two spin appends (now three).
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` -- four rows closed with `resolved:` lines.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` and `.../spec-pyforge-core/.memlog.md` -- surface-reconcile `event` entries naming every governed path changed. No baseline was stamped.
 
-**Mutation proof** (each fix edited out in place, its tests run, then restored; no `git stash`):
+**Review findings.** Four layers reported 39 findings: high 0, medium 4, low 25, false 10. There was no intent gap and no bad spec. Nine rows were triaged `patch`, in four grouped entries, and applied. None were deferred. Thirty were rejected, each with its reason in the Review Triage Log.
 
-1. Fix 1, unproven attach -- `unproven_ownership = False`: `test_a_quarantined_launch_line_attaches_with_unproven_ownership` and `test_a_missing_sidecar_blob_attaches_with_unproven_ownership` FAIL; widening the rescue to ignore another run's launch entry makes `test_a_launch_entry_for_another_run_plus_a_quarantined_line_stays_inert` FAIL.
-2. Fix 2, signals -- handlers not installed: `test_a_handled_signal_makes_the_last_journal_entry_a_detach_naming_it` and `test_a_signal_during_a_tick_ends_the_loop_when_that_tick_finishes` FAIL (a sentinel handler takes the signal, so the pytest process survives); dropping the `signal-<NAME>` reason also FAILS the first.
-3. Fix 3, spawn journaling -- the success call and the error call each removed: the `test_spin_journals_one_supervisor_spawn_observation_*` and `test_resume_journals_one_supervisor_spawn_observation_*` tests FAIL.
-4. Fix 4, tamper-evident journal -- per-tick check removed (`test_a_tampered_journal_between_ticks_...`, `test_a_tampered_journal_with_no_harness_run_id_...` FAIL); `HarnessPort.stop` removed from `_fail_closed` (`test_journal_append_failure_mid_loop_...`, the tamper test FAIL); a failed append back to print-and-exit (`test_journal_append_failure_*` FAIL); the no-run-id swallow removed (`test_a_failing_append_with_no_harness_run_id_...` FAILS); the `max(expected_size, state.size)` floor raise removed (`test_another_writer_growing_the_journal_...` FAILS).
+- Patched, by entry verdict (2 medium, 2 low):
+  - medium: a signal that cut the sleep short skipped the liveness re-read, so a watched process that had already exited was detached as `signal-<NAME>` and escaped escalation detection. One fresh `is_alive` reading now precedes the `break`.
+  - medium: a torn last line with no trailing newline swallowed the `supervisor-attach` entry together with its `quarantined` count and `MRS-SUPV-011`. A lone terminator is now written first, only in that case.
+  - low: `test_every_entry_goes_through_the_one_held_descriptor` asserted nothing about `append_line`. `FakeFs.direct_append_line_calls` now backs a real assertion.
+  - low: one module docstring sentence contradicted itself about exit codes.
+- Rejected, grouped:
+  - A non-journal `ValueError` or `FsError` also fails closed. That changes a diagnostic label only, satisfies the intent's invariant, and D5 designed it.
+  - A mid-tick signal waits for the tick, which is bounded by subprocess timeouts.
+  - `MRS-SPIN-018` also appears in Story 47.1's never-landed review log. There is no collision on `main`.
+  - Findings that restate an intent requirement: a heartbeat-only unproven attach, any quarantined line counting, a signal detach, and a failed `stop` recorded rather than retried.
 
-**Risks and notes for the reviewer:**
+**Follow-up review recommendation:** `followup_review_recommended: true`. Two medium entries were patched. The unverified risk no layer could settle is that no test delivers a real signal to a separate supervisor process or races a live sidecar's `supervisor-spawn` append against the parent's: signals are raised in-process against sentinel handlers, and the held-descriptor tamper tests run `LocalFs` in-process with a fake process and harness.
 
-- `MRS-SPIN-018` is also named by the blocked Story 47.1's spec (a scribe-recall WARN, never landed on `main`); whichever lands second renumbers.
-- Fail-closed is deliberately aggressive: any `FsError`/`ValueError` reaching the supervisor's handler with a harness run id stops the run (including a failed `open_append` at attach and a failed sidecar-blob write), per D5. A per-tick `held_file_state` read that itself fails is treated as tampered (`unverifiable`) -- an addition beyond D4's four kinds.
-- A tamper that leaves size, inode and mode intact (an in-place rewrite of the same bytes) is not detectable by this check; privilege separation stays out of scope per Boundaries.
-- The final `supervisor-detach` on the tamper path and the `supervisor-journal-fault` observation are best-effort and may land on an unlinked or truncated file; the stderr line in `supervisor.log` is the durable record.
-- The `finally` that completes the run-state publisher can still raise if the publisher's `on_finding` hook writes through a descriptor that has already failed (unchanged exposure; the handle close and signal-handler restore now sit in a nested `finally` so they always run).
+**Verification** (exit codes read directly, never through a pipe), on the patched tree:
+
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- exit 0, 9930 passed, 1 skipped.
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- exit 0, 130 passed, 3 skipped.
+- `pixi run --frozen -e pyforge-guild lint-types` -- exit 0 (ruff, `ruff format --check`, mypy, target-version, precommit-config).
+- `python scripts/spec_surface_reconcile.py` -- exit 0, "no drift". `--write-baseline` was never run.
+- The marshal unit coverage gate passed with every touched module at or above 80% (`supervisor/__main__.py` 89%). That was measured before the review patches and not repeated after them.
+
+**Mutation proof** (each fix edited out in place, its tests run, then restored; `git stash` was never used). Fix 1: `unproven_ownership = False`, and widening the rescue over another run's launch entry. Fix 2: handlers not installed, the `signal-<NAME>` reason dropped, and the post-sleep liveness re-read removed. Fix 3: the success call and the error call each removed. Fix 4: per-tick check removed, `HarnessPort.stop` removed from `_fail_closed`, a failed append back to print-and-exit, the no-run-id swallow removed, the `max(expected_size, state.size)` floor raise removed, and the torn-tail terminator removed. Every removal failed its named test.
+
+**Residual risks:**
+
+- A same-size, same-inode in-place rewrite of the journal is not detectable by this check. Privilege separation stays out of scope per Boundaries.
+- The final `supervisor-detach` and the `supervisor-journal-fault` observation are best-effort and may land on an unlinked or truncated file. The stderr line in `supervisor.log` is the durable record, and detection lags up to one 60 s tick.
+- `MRS-SPIN-018` is also named in blocked Story 47.1's review log. Whichever story lands second takes the next free code.
+- A tamper that leaves the journal replaced while no harness run id is known is reported but cannot be acted on.
