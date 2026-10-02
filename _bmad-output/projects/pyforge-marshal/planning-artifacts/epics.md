@@ -8129,6 +8129,370 @@ next eligible story
 **And** a campaign launched without the flag is unchanged; dropping the flag from the spawn argv again fails the new test
 (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
+## Epic 82: Phase 2 of the deferral burn-down: marshal's critical and high deferrals
+
+Minted 2026-10-02 from the station Dream's entry of the same date and the operator's ruling to start Phase 2 of the
+deferral burn-down after the inflow wave. Each story fixes one bundle of re-verified deferred-work entries: defects of
+shipped behaviour under the CAPs that shipped them, so no CAP is minted and no flag is added; a new epic because the epics
+that shipped them are `done`. Stories run most severe first. **HARD boundaries:** a fix never widens what its parent
+capability promises and never invents a harness capability bmad-loop does not offer; the seed's never-write set only ever
+gains coverage; each story closes its own DW rows in `deferred-work-ledger.md` when it lands.
+
+### Story 82.1: Gate evaluate finds the real repository under an installed package and never passes having run nothing
+
+As the operator or CI running `marshal gate evaluate` from an installed `pyforge-marshal`,
+I want the gate to find the repository it is gating, or say that it cannot,
+So that an installed package never reports a green gate having run no verify command.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 2.1 (FR-19, FR-20, FR-21; AD-4, AD-17, AD-26),
+`spec-pyforge-marshal` CAP-3 (a gate verdict never false-greens) • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/config.py` (`repo_root`, `conventional_project_policy_path`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/gate.py` (`evaluate_gate`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/` (the policy-path and gate tests)
+**Given** a `pyforge-marshal` installed outside the source tree (a wheel or conda install), where `cli/config.py:493`'s
+`Path(__file__).resolve().parents[8]` lands in the environment prefix, or raises `IndexError` on a prefix with fewer than
+nine ancestors
+**When** `marshal gate evaluate --project <slug>` runs from inside a checkout of the repository
+**Then** the repository root resolves to that checkout's git common root (the `cli/init.py:640-649` `repo_common_root`
+precedent), the project's real `verify_commands` run with that root as `cwd` (`cli/gate.py:936`), and the verdict reflects
+them
+**And** run from outside any repository, the command reports a could-not-evaluate finding and a non-zero exit, never
+`MRS-GATE-004` → `warn` → exit 0 and never a traceback; the editable layout resolves exactly as today; restoring the bare
+`parents[8]` fails the new installed-layout test (mutation); the story closes DW-FU-2-1-7 in `deferred-work-ledger.md`
+(status `closed`, a `resolved:` line naming this story); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.2: Marshal land keeps a live run's branch and home while its engine is alive, even when its supervisor is dead
+
+As the operator whose `marshal land` may retire a station branch and resync its loop home,
+I want a run whose engine is still alive treated as live even when its supervisor sidecar is dead, and its home left alone,
+So that a landing never deletes a branch or rewrites a working tree under a running harness.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 4.11 (FR-172), Story 5.8 (FR-181; AD-5), Story 4.12
+(FR-173); `spec-pyforge-marshal` CAP-9 (the last mile lands itself) • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py` (`is_run_live`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py` (`run_land`, `_resync_home_branch`),
+`src/shared/packages/pyforge-marshal/tests/unit/` (the land and status tests)
+**Given** a home whose run is unfinished, whose supervisor sidecar is dead (`supervisor_alive is False`) and whose detached
+harness pid is alive (`engine_alive is True`, gathered at `core/status.py:849-852`)
+**When** `marshal land` runs with `landing_branch_retirement` true
+**Then** `is_run_live` (`core/status.py:1255-1296`, today `not facts.finished and facts.supervisor_alive is True`) reports
+the run live, branch deletion is downgraded with `MRS-LAND-008` as for a live supervisor, and `_resync_home_branch`
+(`cli/land.py:1570`, called at `:533`, `:616` and `:1060`, with no lock and no liveness check) neither fetches nor
+fast-forwards that home, reporting one `MRS-LAND-009` WARN that names the live run
+**And** a home whose run is finished, or whose supervisor and engine are both confirmed dead, retires and resyncs exactly
+as today; dropping the `engine_alive` term from `is_run_live`, or the liveness check from the resync, fails its new test
+(mutation); the story closes DW-5-8-1, DW-FU-4-11 and DW-FU-4-12 in `deferred-work-ledger.md` (status `closed`, a
+`resolved:` line naming this story); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.3: A landing claims only committed promotions, rejects a malformed merge template, and stamps only reconciled drift
+
+As the operator reading a landing's envelope and the spec-surface baseline after it,
+I want every reported promotion committed, a malformed merge template refused at composition, and every drifted
+co-governor reconciled before a stamp that accepts only the paths a memlog names,
+So that a landing never claims work it did not commit and never launders drift into the baseline.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** Story 5.9 (FR-186) and `spec-pyforge-marshal` CAP-4 (a spec counts
+as promoted only once its bytes are reachable from a ref), Story 5.10 (FR-187; AD-24) and CAP-9, Story 53.2 (CAP-261 (b)),
+CAP-235 (`--write-baseline --spec`) • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py` (`run_promote` and its copy/commit loop),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py` (`_valid_merge_subject_template`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` (`_reconcile_spec_surface_drift`),
+`scripts/spec_surface_check.py` (`_stamp_baseline`, `main`), `src/shared/packages/pyforge-marshal/tests/unit/` (the
+deploy, policy, landing and stamp tests)
+**Given** a `marshal deploy promote` batch whose `vcs.commit_paths` (`cli/deploy.py:980`) raises after the copies succeeded
+**When** the envelope is built
+**Then** `data["promoted"]` and `promoted_count` list only committed keys (today `promoted.append` at `:957` runs before the
+commit and the `except` at `:981` removes no key), and the `MRS-DEPLOY-003` finding names each key left uncommitted
+**And** a `merge_subject_template` without exactly one `{key}` is rejected at composition (today `core/policy.py:1317-1320`
+checks only a non-empty `str`), so neither `marshal land` (`cli/land.py:970`) nor `land-story` (`cli/deploy.py:2125`)
+raises `ValueError`; the landing's spec-surface reconcile (`dispatch_land.py:258`, one verdict read at `:329`) re-reads the
+verdict after its stamp and reconciles a second co-governor that doctor's one-row-per-path collapse hid, refusing with
+`MRS-DISP-048` if own-path drift remains; `spec_surface_check.py --write-baseline --spec NAME` refuses, writing nothing,
+when NAME has a drifted path its memlog does not name (today `:233` merges every file the surface matches) unless that
+path is accepted explicitly; reverting each of the four fixes fails its new test (mutation); the story closes DW-5-9-2,
+DW-FU-53-2-3, DW-5-10-1 and DW-9-1-1 in `deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this story);
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.4: The supervisor attaches despite a quarantined launch, journals its spawn and every stop, and fails closed on tampering
+
+As the operator relying on a run's journal as its record of supervision,
+I want the supervisor to watch a run whose launch line is unreadable, to journal its own spawn and every way it stops, and
+to refuse to be silenced through the journal,
+So that a live run is never left unsupervised while its journal reads as healthy.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** Story 3.4 (FR-11; NFR-4, NFR-5; AD-9, AD-20); `spec-pyforge-marshal`
+CAP-2 (a run is watched from outside by something the session cannot disable) • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py` (`run_supervisor`, `main`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` (`_spawn_supervisor_sidecar`, `_writer_id`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/fs.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/fs_local.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/` (the supervisor and spin tests)
+**Given** a Marshal-started run whose `run-launch` journal line `core.journal.fold` quarantines
+**When** the supervisor starts (`supervisor/__main__.py:928-967`, today an inert `return 0` with one stderr line)
+**Then** it attaches and supervises, journaling a `supervisor-attach` that carries the quarantine count and a new MRS-SUPV
+WARN; a journal with neither a launch entry nor a quarantined line stays inert as today
+**And** SIGTERM, SIGHUP and SIGINT journal a `supervisor-detach` whose reason names the signal before the process exits (no
+`signal` import exists in the package today); `_spawn_supervisor_sidecar` (`cli/spin.py:1102`, spawn at `:1280`, outcome
+today only in `data["supervisor_pid"]` or `MRS-SPIN-007`) journals the spawn's pid or failure for launch and resume alike;
+a journal replaced, truncated or made unwritable under the supervisor (today `:2649-2667` prints one stderr line and
+returns 1) makes it stop the watched run and record why, never exit leaving the run unsupervised; removing each fix fails
+its new test (mutation); the story closes DW-FU-3-4-3, DW-FU-3-4-6, DW-FU-3-4-7 and DW-FU-3-4-8 in
+`deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this story);
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.5: Budget and idle signals judge staleness monotonically, keep a story's breach story-scoped, and read only real idleness
+
+As the operator whose overnight wave runs under budget ceilings and the idle ladder,
+I want usage staleness judged on a clock that cannot jump over a window that fits a real session, a story's ceiling breach
+kept to that story, and an unobservable or redrawing pane never read as idleness,
+So that the ceilings bind during long sessions, one outlier story does not end the wave, and a healthy session is never
+nudged or stopped because its observer failed.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** Story 3.6 (FR-13, FR-14; AD-8, AD-32), Story 3.5 (FR-12; AD-9,
+AD-32); `spec-pyforge-marshal` CAP-2 • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py` (the usage-staleness gate,
+`_act_on_budget_transition`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py` (`Sample`,
+`_anchor_index`, `evaluate_idle`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` (the supervisor
+argv), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/` (the supervisor and supervise tests)
+**Given** a supervised session whose `state.json` was last written 40 minutes ago at a session boundary, under the stock
+25-minute `idle_threshold_minutes` and the rendered `session_timeout_min = 180` (`adapters/harness_bmadloop.py:292`)
+**When** the budget tick runs
+**Then** the sample is usable: staleness is measured on the monotonic clock from when the supervisor first saw that mtime
+(today `supervisor/__main__.py:1840` subtracts a wall-clock mtime from `moment.timestamp()`), over a window of its own no
+shorter than the session timeout (today `threshold_s` from `:842`, the idle threshold), so no `MRS-SUPV-006` fires on a
+healthy session and a wall-clock step never flips a sample's freshness
+**And** a per-story ceiling breach journals the story with its observed and limit values and leaves the run going, while a
+per-run breach still stops it (today `_act_on_budget_transition`, `:1477`, stops the whole run and detaches
+`budget-story-*-exceeded`); consecutive samples with neither pane nor log observable hold the ladder at its rung and
+journal one unobservable WARN instead of counting as idle (today `core/supervise.py:190` reads `None` against `None` as no
+fresh output); a pane whose only change is a redrawing counter or spinner does not re-arm the window (`:190` is a raw
+whole-string `!=`); reverting each fix fails its new test (mutation); the story closes DW-FU-3-6-5, DW-FU-3-6-6,
+DW-FU-3-6-8, DW-FU-3-5-6 and DW-FU-3-5-9 in `deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this
+story); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.6: A resumed run escalates against the ceilings it launched under and journals before it rewrites policy
+
+As the operator resuming a run whose story was deferred,
+I want retry escalation judged against the ceilings that run was launched under, and every policy rewrite journaled before
+it reaches disk,
+So that a re-rendered policy cannot cancel an escalation the story earned, and no model change lands without a record.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 3.12 (FR-183; AD-26, AD-28); `spec-pyforge-marshal` CAP-20
+(a struggling story's next attempt runs under a stronger model) and CAP-19 (the model-tiering policy write) • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` (`run_spin`, `run_resume`,
+`_apply_retry_escalation`, `_resolve_model_tiering`), `src/shared/packages/pyforge-marshal/tests/unit/` (the spin tests)
+**Given** a run launched under `max_dev_attempts = 2` whose story deferred after two attempts, and a loop-home
+`policy.toml` re-rendered since with `max_dev_attempts = 4`
+**When** `marshal factory resume` runs
+**Then** escalation fires, because `_apply_retry_escalation` (`cli/spin.py:1928`; today it reads the on-disk `policy.toml`
+at resume time, `:1975`) compares against the ceilings the launch recorded in its own journal entry; a run whose launch
+recorded none falls back to the on-disk file as today
+**And** neither `run_spin` (`_resolve_model_tiering` at `:1643` runs before `mint_run_id` at `:1673`) nor `run_resume`
+(`_apply_retry_escalation` at `:2283` runs before `mint_run_id` at `:2296`) writes `policy.toml` before its own intent
+entry is journaled, and that intent names the pending policy change; a run-directory or intent-append failure leaves
+`policy.toml` untouched; reverting either fix fails its new test (mutation); the story closes DW-3-12-1 and DW-3-12-3 in
+`deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this story);
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.7: Factory spin refuses a second live run and reports a child that dies before it starts
+
+As the operator launching `marshal factory spin`,
+I want a second launch refused while the project's run is live, and a launch whose child dies before starting reported as
+failed,
+So that two engines never drive one project and a CI wrapper never reads a dead launch as success.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 3.3 (FR-9, FR-10, FR-52; AD-3, AD-22); `spec-pyforge-marshal`
+CAP-2 • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py` (`run_spin`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` (`spin`,
+`_poll_for_harness_run_id`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/` (the spin and harness-adapter tests)
+**Given** a project whose loop home already holds a live, unfinished run (its supervisor or engine pid alive)
+**When** `marshal factory spin <slug>` runs
+**Then** it refuses before minting a run id or spawning, with a new MRS-SPIN ERROR naming the live run and the remedy
+(attach, stop, or wait); no `MRS-SPIN-*` code covers this today (`MRS-SPIN-001` through `MRS-SPIN-017`)
+**And** a `bmad-loop run` child that exits before printing its starting line ends the poll at once (today
+`_poll_for_harness_run_id(self, log_path)`, `adapters/harness_bmadloop.py:1514`, never asks whether the child is alive) and
+is reported as a failed launch quoting the log's tail, with a non-zero exit and an `outcome` entry that says the process
+exited; a slow but live child keeps today's `MRS-SPIN-004` WARN; removing either check fails its new test (mutation); the
+story closes DW-FU-3-3-2 and DW-FU-3-3-4 in `deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this
+story); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.8: Status reads landings the way deploy does and filters findings with rows, and teardown keeps nested worktrees
+
+As the operator asking `marshal status` what needs attention, and tearing a loop home down,
+I want status to judge landings from the refs `deploy promote` reads, to say when `main` shows no merge history, and to
+filter its findings with its rows, and teardown to keep nested work,
+So that status and deploy never disagree on what landed, an empty table never arrives with alarms, and teardown never
+destroys uncommitted story work.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 4.14 (FR-176), Story 5.3 (FR-38, `--escalations`), Story 1.8
+(FR-6; NFR-6; AD-29); `spec-pyforge-marshal` CAP-5 and CAP-1; kinship CAP-280 (merge facts from `origin/main`) •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py` (`_MainSubjects`, `run_status`,
+`_reconcile_ledger`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py` (`run_teardown`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/` (the status and teardown tests)
+**Given** a story merged on `origin/main` whose local `main` has not fast-forwarded yet
+**When** `marshal status` classifies failed-story durability
+**Then** it reads `origin/main` and `main` combined, as `cli/deploy.py:765` does (today `cli/status.py:1491` and
+`_reconcile_ledger`'s read at `:2322` use local `main` only), and the story is not reported pending
+**And** a history with zero conforming merge subjects yields one finding saying it cannot show what landed, carrying the
+examined and matched counts `deploy` reports through `core.promotion.count_conforming_subjects` (`core/promotion.py:437`),
+instead of one `MRS-STATUS-010` per patch; `--escalations` drops the per-home findings of homes it filtered out (today
+`cli/status.py:2084-2085` filters rows only); `marshal teardown` lists the registered worktrees nested under the home,
+refuses without `--force` when one has uncommitted changes, and prunes the registrations it orphans (today `run_teardown`,
+`cli/init.py:2271`, never calls `list_worktrees` and removes the home at `:2600`); reverting each fix fails its new test
+(mutation); the story closes DW-FU-4-14-9, DW-FU-4-14-10, DW-FU-4-14-12 and DW-1-8-5 in `deferred-work-ledger.md` (status
+`closed`, a `resolved:` line naming this story); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.9: VCS commit text is declared egress and gate evaluate writes a redacted gate record
+
+As the operator who must prove what a gate checked and that no secret left in a commit,
+I want commit text treated as egress and every story-scoped gate evaluation to leave a redacted record,
+So that an unredacted credential cannot reach a commit message and the gate evidence FR-25 promises exists.
+
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** Story 2.6 (FR-25; NFR-8, NFR-11; AD-34), AD-25 (F-25, session
+gate records); `spec-pyforge-marshal` CAP-3 • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/egress.py` (`EGRESS_PORTS`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py`, the commit-writing call sites under
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/gate.py`
+(`evaluate_gate`), `src/shared/packages/pyforge-marshal/tests/unit/` and `src/shared/packages/pyforge-marshal/tests/meta/`
+(`test_ad34_egress_registry_completeness.py`)
+**Given** the AD-34 registry (`core/egress.py:193-209`, `"VcsPort": False`) and the commit-message parameters of
+`VcsPort.commit_paths` (`ports/vcs.py:368`), `merge_ref_resolving` (`:490`) and `commit_paths_onto_remote_tip` (`:539`),
+each a bare `str`
+**When** the egress meta-test runs
+**Then** commit message text is accepted only as `Redacted` on an egress-classified port, and a bare-`str` commit message
+fails the meta-test
+**And** `marshal gate evaluate --story <key>` writes a schema-valid gate record built by `build_gate_record`
+(`core/egress.py:504`, no caller today) through `RecordPort.write_redacted_atomic`, with the tree revision from
+`VcsPort.worktree_head_sha`, into the `--run` directory when one is given, else the project loop home's `sessions/`
+namespace (ARCHITECTURE-SPINE.md AD-25 F-25; "gate records live under the loop home's run directory"), and names it in
+`data`; with no destination it says so in a WARN and the verdict stands; a gate record written through `FsPort` fails a
+meta-test; reverting either fix fails its new test (mutation); the story closes DW-FU-2-6-4 and DW-FU-2-6-2 in
+`deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this story);
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.10: A parallel wave journals each member's own outcome and refuse predicate
+
+As the operator whose drain launches parallel waves,
+I want each wave member's outcome journaled on its own, a refused member's with its own detail and refuse predicate,
+So that a refusal is never lost because a sibling dispatched, and re-preflight judges the story that was refused.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 28.18 (`spec-pyforge-marshal` CAP-135, from
+`spec-marshal-drain-self-resolution` CAP-1), Story 22.7 (the fleet cycle) • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (`execute_fleet_cycle`,
+`_campaign_blocked_from_journal`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py`
+(`StationCycleResult`), `src/shared/packages/pyforge-marshal/tests/unit/` (the fleet-cycle tests)
+**Given** a parallel wave whose primary story is refused at a re-preflightable gate while a later member dispatches
+**When** the cycle journals its outcome
+**Then** the journal carries the refused member's own row with its detail and refuse predicate (today
+`cli/dispatch.py:4938-4970` writes one row per station with `story=primary_story`, reads DISPATCHED when any member
+dispatched, and computes a predicate only for a REFUSED station), and the next cycle's `_campaign_blocked_from_journal`
+(`:4989`) rebuilds that block
+**And** a wave with two refused members journals each one's predicate from its own detail, never one predicate for
+`primary_story` beside another story's `last_detail`; a single-story wave journals as today; reverting to the one aggregate
+row fails the new test (mutation); the story closes DW-FU-28-18-7 and DW-FU-28-18-8 in `deferred-work-ledger.md` (status
+`closed`, a `resolved:` line naming this story); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.11: Seed apply refuses an escaping manifest path per entry and guards never-write paths through symlinks and directories
+
+As the maintainer seeding a repository from the manifest,
+I want a manifest path that escapes the repository refused for that entry alone, and the never-write set to hold through a
+symlinked ancestor and on a directory node,
+So that one bad entry never blocks every artifact, and Tier-0, Tier-2 and Tier-3 paths stay protected whatever the layout.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 7.4 (FR-66 to FR-71; AD-55), Story 7.3 (FR-71, FR-100;
+AD-61), Story 7.5 (FR-66, FR-71, FR-118), Story 10.3 (FR-83), Story 10.4 (FR-85, FR-86, FR-87); `spec-pyforge-marshal`
+CAP-12 and CAP-15 • **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/manifest.py`
+(`ManifestEntry`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/inventory.py`
+(`_resolve_within_repo`, `_classify_entry`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/plan/build.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/fs.py` (`_matches`, `_guard`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/preconditions.py` (`_relative_within`, rung 4),
+`src/shared/packages/pyforge-marshal/tests/unit/` (the seed tests)
+**Given** a manifest entry whose `path` is absolute or carries a `..` segment
+**When** the manifest loads
+**Then** it fails with a manifest error naming the entry (today `seed/model/manifest.py:294` checks only non-blank text)
+**And** an entry that resolves outside the repository through an in-repo symlink yields no plan action and a per-entry
+refusal naming it while every other action applies (today `seed/detect/inventory.py:574-575` classifies it `ABSENT` and
+`seed/apply/run.py:332`/`:358` refuses the whole plan); a never-write pattern matches the repo-relative path as written as
+well as the resolved one, so `docs -> real/` no longer exposes `docs/dreams/x.md` (`seed/fs.py:281-293` and
+`seed/verbs/preconditions.py:288-315` match only the resolved path); `**/planning-artifacts/**` and
+`**/implementation-artifacts/**` match the directory node itself (today `fnmatchcase` needs a following segment), and a
+manifest-declared writable entry on such a path stays writable only through `NeverWrite.exempt`; reverting each fix fails
+its new test (mutation); the story closes DW-10-3-9, DW-FU-7-4, DW-10-4-1 and DW-FU-7-5-5 in `deferred-work-ledger.md`
+(status `closed`, a `resolved:` line naming this story); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.12: Seed apply binds a plan to its repository, refuses a directory target with a remedy, and honours a skip on a hand-edit
+
+As the maintainer applying a seed plan,
+I want a plan bound to the repository it was built for, a directory target refused with a remedy, and `--skip` honoured for
+a hand-edited managed file,
+So that a plan never seeds the wrong directory, apply never crashes on `IsADirectoryError`, and skipping an artifact
+protects its edit without `--force`.
+
+**Type:** fix • **Effort:** M • **Deps:** 82.11 • **FR/AD:** Story 9.6 (the repo fingerprint and `plan.json`), Story 10.3
+(FR-83; P-04, P-07; AD-57), Story 10.4 (FR-85, FR-86, FR-87); `spec-pyforge-marshal` CAP-12 and CAP-15 • **Surface:**
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/plan/types.py` (`RepoFingerprint`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/plan/build.py` (`fingerprint_drift`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/preconditions.py` (rung 5),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/skips.py` (`managed_after_skips`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/adopt.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/` (the seed tests)
+**Given** a plan built against one non-git directory
+**When** it is applied to a different directory whose actioned artifacts hash the same
+**Then** `fingerprint_drift` reports the repository mismatch and apply refuses (today `RepoFingerprint`,
+`seed/plan/types.py:220`, carries only `git_head`, `dirty` and `artifact_hashes`); a `plan.json` without the new field is
+refused with a re-plan remedy
+**And** an action whose target is an existing directory raises a `PreconditionFailure` with a remedy and exit 3 inside the
+existing six-rung ladder (today rung 5, `seed/verbs/preconditions.py:651-671`, refuses only a symlink); `--skip <pattern>`
+matching a hand-edited managed file exempts it from rung 6 in `adopt` and `update` alike (today `managed_after_skips`,
+`seed/verbs/skips.py:359-385`, filters by `plan.skipped`, which such a file never enters, and `seed/verbs/update.py:1060`
+applies no filter); reverting each fix fails its new test (mutation); the story closes DW-10-3-7, DW-10-4-5 and DW-10-4-4
+in `deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this story);
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 82.13: A marker opt-out is representable for every artifact, accepted by preconditions, and recorded per region
+
+As the maintainer who deletes a managed region's markers to opt out of it,
+I want every legal artifact id representable as an opt-out, preconditions to accept the deletion, and each region of a
+hybrid file recorded on its own,
+So that FR-112's sanctioned opt-out is honoured end to end instead of reverted or refused.
+
+**Type:** fix • **Effort:** L • **Deps:** 82.12 • **FR/AD:** Story 8.5 (FR-112; AD-58), Story 10.2 (the state schema and
+store); `spec-pyforge-marshal` CAP-11 (deleting the markers is a permanent opt-out that later runs respect) and CAP-17 •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/state/schema.json`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/state/store.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/manifest.py` (`ManifestEntry.id`),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/optout.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/preconditions.py` (rung 6),
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/adopt.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/init.py`,
+`src/shared/packages/pyforge-marshal/tests/unit/` (the seed tests)
+**Given** the seed-state schema, where `managed[].id` is a `nonBlankString` (`seed/state/schema.json:59`) and the
+`opted_out` artifact half is `^[^\s#]+` (`:78`)
+**When** a manifest declares an artifact id and state records an opt-out for it
+**Then** one grammar governs both: an id with whitespace or `#` is refused where the manifest loads, and the schema no
+longer describes the two as equally permissive (`:75`)
+**And** a region whose `<id>#<region>` is opted out, recorded or derived, is not reported "recorded managed region is
+missing from the file" by rung 6 (`seed/verbs/preconditions.py:445`; `opted_out` appears nowhere in that module) in
+`adopt`, `update` and `init`; state records one span per installed region of a hybrid artifact (today one nullable
+`inserted_region_span` per `managed[]` entry, `:107`, and one entry per id, `seed/state/store.py:609`), reading the old
+one-span shape as a one-region list, so deleting two regions' markers opts both out and neither is offered again;
+reverting each fix fails its new test (mutation); the story closes DW-FU-8-5-2, DW-FU-8-5-5 and DW-FU-8-5-6 in
+`deferred-work-ledger.md` (status `closed`, a `resolved:` line naming this story);
+`pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
