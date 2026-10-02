@@ -2364,7 +2364,7 @@ def _plan_retry_escalation(
     if doc is None:
         return None
 
-    ceilings = _launch_limits_for_resume(fs, home, slug, harness_run_id)
+    ceilings = None
     if ceilings is None:
         ceilings = _ceilings_of(doc.get("limits"))
     if ceilings is None:
