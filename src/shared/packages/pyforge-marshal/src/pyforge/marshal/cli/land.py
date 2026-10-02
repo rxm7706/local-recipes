@@ -1661,10 +1661,15 @@ def _resync_home_branch(
     run's own turn may be reading or editing. It reports one ``MRS-LAND-009``
     WARN naming the live run (the code's existing "resync did not happen"
     signal, no new code) and returns ``False``, so ``home_current`` stays
-    honest. Keyword-only and defaulting to ``False`` so a caller with no loop
-    home (``dispatch_land_finalize`` resyncs the primary checkout) is
-    unchanged. Checked AFTER the ``resync_enabled``/``merge`` early return,
-    which keeps ``None`` (key absent) when no resync was ever in play.
+    honest. ``is_run_live``'s conservative arms count here exactly as they do
+    for retirement: a run whose journal is unreadable, or whose state was
+    retired (so a clean finish cannot be proven), also skips the resync --
+    which is why the WARN says "live, or ... could not be proven finished"
+    rather than claiming a live run. Keyword-only and defaulting to ``False``
+    so a caller with no loop home (``dispatch_land_finalize`` resyncs the
+    primary checkout) is unchanged. Checked AFTER the ``resync_enabled``/
+    ``merge`` early return, which keeps ``None`` (key absent) when no resync
+    was ever in play.
 
     Otherwise runs ``VcsPort.fetch`` (updates ONLY ``refs/remotes/origin/
     <base>``, a network read) then ``VcsPort.fast_forward`` (``git merge
@@ -1692,10 +1697,11 @@ def _resync_home_branch(
 
     if run_live:
         return _warn(
-            f"{head_branch!r}'s bmad-loop run in {home} is still live -- skipping "
-            f"the resync with 'origin/{base}' (no fetch, no fast-forward) so its "
-            "working tree is not rewritten from outside the run; re-run land "
-            "once the run has finished"
+            f"{head_branch!r}'s bmad-loop run in {home} is live, or its state could "
+            f"not be proven finished -- skipping the resync with 'origin/{base}' "
+            "(no fetch, no fast-forward) so a working tree a run may still be using "
+            "is not rewritten from outside it; re-run land once the run is confirmed "
+            "finished"
         )
 
     try:

@@ -1673,7 +1673,7 @@ def test_live_run_skips_the_home_resync_at_every_exit(tmp_path, capsys, monkeypa
     live_warns = [f for f in payload["findings"] if f["code"] == "MRS-LAND-009"]
     assert len(live_warns) == 1
     assert "loop/acme" in live_warns[0]["message"]
-    assert "still live" in live_warns[0]["message"]
+    assert "is live" in live_warns[0]["message"]
     assert payload["data"]["home_current"] is False
     assert vcs.fetch_calls == []
     assert vcs.fast_forward_calls == []
@@ -1709,6 +1709,56 @@ def test_dead_or_finished_run_resyncs_the_home_as_before(
     assert payload["data"]["home_current"] is True
     assert vcs.fetch_calls == [(Path("/fake-repo-root"), "origin", "main")]
     assert len(vcs.fast_forward_calls) == 1
+    assert exit_code == 0
+
+
+@pytest.mark.parametrize("vcs_kwargs", _RESYNC_EXITS)
+@pytest.mark.parametrize(
+    "journal_lines",
+    [
+        pytest.param(
+            [
+                _land_outcome_line("acme-run1", pid=_ENGINE_PID, harness_run_id="hrid-1"),
+                _land_supervisor_attach_line("acme-run1", pid=_SUPERVISOR_PID),
+            ],
+            id="retired-run-state-gone",
+        ),
+        pytest.param([], id="journal-unreadable"),
+    ],
+)
+def test_unprovable_run_state_skips_the_home_resync_with_an_honest_warn(
+    tmp_path, capsys, monkeypatch, vcs_kwargs, journal_lines
+):
+    """`is_run_live`'s conservative arms (a retired run whose clean finish cannot
+    be proven, an unreadable journal) feed the resync exactly as they feed
+    retirement: the home is left alone, and the WARN says the run is live OR
+    could not be proven finished -- never claims a live run it did not prove.
+    The snapshot is absent, so the retired shape is `run_state_retired=True`."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loops"))
+    run_dir = _seed_land_run_journal(tmp_path, run_id="acme-run1", lines=journal_lines)
+    _stub_land_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}), **vcs_kwargs)
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(),
+        vcs=vcs,
+        fs=LocalFs(),
+        forge=forge,
+        harness=_FakeHarness(),
+        process=_LiveHomeProcess(alive_pids=frozenset()),
+        clock=_FakeClock(now=datetime(2026, 8, 9, 0, 5, 0, tzinfo=timezone.utc)),
+    )
+
+    payload = _payload(capsys)
+    warns = [f for f in payload["findings"] if f["code"] == "MRS-LAND-009"]
+    assert len(warns) == 1
+    assert "could not be proven finished" in warns[0]["message"]
+    assert payload["data"]["home_current"] is False
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
     assert exit_code == 0
 
 
