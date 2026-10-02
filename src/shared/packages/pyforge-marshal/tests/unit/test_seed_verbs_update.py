@@ -36,7 +36,7 @@ import pytest
 
 from pyforge.marshal.seed.detect.hashes import hash_content
 from pyforge.marshal.seed.detect.inventory import ArtifactState
-from pyforge.marshal.seed.errors import InternalError, PreconditionFailure
+from pyforge.marshal.seed.errors import InternalError, PreconditionFailure, UsageError
 from pyforge.marshal.seed.fs import NeverWrite
 from pyforge.marshal.seed.migrate import registry as migrate_registry
 from pyforge.marshal.seed.migrate.registry import Migration
@@ -553,7 +553,9 @@ def test_three_source_merge_appears_correctly_merged_and_sorted(clean_repo, monk
     def migration_fn(view, state):
         return Plan(
             actions=(_absent_action("m-migrated", "M_MIGRATED.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -588,7 +590,9 @@ def test_collision_between_two_sources_raises_internal_error(clean_repo, monkeyp
     def migration_fn(view, state):
         return Plan(
             actions=(_absent_action("brand-new", "BRAND_NEW.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -876,7 +880,9 @@ def test_migration_offered_copied_seeded_is_skipped_by_default(clean_repo, monke
     def migration_fn(view, state):
         return Plan(
             actions=(_seeded_action("offer", "OFFER.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -891,6 +897,276 @@ def test_migration_offered_copied_seeded_is_skipped_by_default(clean_repo, monke
     assert skipped.pattern == migrate_registry._SEEDED_OFFER_PATTERN
 
 
+def _offer_migration(monkeypatch) -> None:
+    def migration_fn(view, state):
+        return Plan(
+            actions=(_seeded_action("offer", "OFFER.md"),),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
+        )
+
+    monkeypatch.setattr(migrate_registry, "MIGRATIONS", (Migration(from_version=_V1, to_version=_V2, fn=migration_fn),))
+
+
+def _unreachable_commit(action: Action) -> None:
+    raise AssertionError(f"commit() should not have been called for {action.artifact_id!r}")
+
+
+def _managed_record(artifact_id: str, path: str) -> ManagedArtifact:
+    return ManagedArtifact(
+        id=artifact_id,
+        path=path,
+        artifact_class="copied-managed",
+        body_sha="abc12345",
+        inserted_region_span=None,
+    )
+
+
+def test_rung_6_is_not_asked_about_an_artifact_the_plan_skipped(clean_repo, monkeypatch):
+    """DW-10-4-4. A migration-offered `copied-seeded` entry sits in
+    `plan.skipped` with no action, so it is not going to be written -- yet its
+    `state.managed[]` record used to be handed to rung 6, which refused a
+    hand-edit of a file this run would never touch."""
+    (clean_repo / "OFFER.md").write_text("hand-edited, not what state recorded\n", encoding="utf-8")
+    write_state(
+        _seed_state(managed=(_managed_record("offer", "OFFER.md"),)),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    _offer_migration(monkeypatch)
+
+    result = run_update(
+        clean_repo,
+        _manifest(model_version=_V2),
+        run=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_unreachable_commit,
+    )
+
+    assert [skipped.artifact_id for skipped in result.plan.skipped] == ["offer"]
+    assert result.plan.actions == ()
+    assert (clean_repo / "OFFER.md").read_text(encoding="utf-8") == "hand-edited, not what state recorded\n"
+
+
+def test_rung_6_still_refuses_a_hand_edit_of_a_managed_record_the_plan_did_not_skip(clean_repo, monkeypatch):
+    """The skip filter is narrow: a record whose artifact the plan did NOT skip
+    is still checked, because `update` regenerates every managed record and a
+    refusal there guards a real overwrite."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"), model_version=_V2)
+    (clean_repo / "OFFER.md").write_text("hand-edited offer\n", encoding="utf-8")
+    (clean_repo / "WHOLE.md").write_text("hand-edited whole\n", encoding="utf-8")
+    write_state(
+        _seed_state(managed=(_managed_record("offer", "OFFER.md"), _managed_record("whole", "WHOLE.md"))),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    _offer_migration(monkeypatch)
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as excinfo:
+        run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+
+    assert "whole:" in excinfo.value.message
+    assert "offer:" not in excinfo.value.message
+
+
+# --- update --skip (Story 82.12, DW-10-4-4) ---------------------------------
+
+
+def _write_hand_edited_managed_files(repo: Path, *paths: str) -> tuple[ManagedArtifact, ...]:
+    """Each of `paths` hand-edited since `state` recorded it (a body_sha that
+    matches nothing on disk), committed so the worktree is clean."""
+    records = []
+    for path in paths:
+        (repo / path).write_text(f"hand-edited {path}\n", encoding="utf-8")
+        records.append(_managed_record(path.removesuffix(".md").lower(), path))
+    write_state(_seed_state(managed=tuple(records)), repo_root=repo, never_write=_NO_NEVER_WRITE)
+    _commit_all(repo)
+    return tuple(records)
+
+
+def test_skip_keeps_a_hand_edited_managed_file_without_force(clean_repo):
+    """Update emits a wholesale-regenerate action for every managed
+    `copied-managed` record, so `--skip` has to do both halves: move that
+    action into `plan.skipped` (nothing is written) and drop the record from
+    rung 6 (no refusal). The commit double raises if anything is applied."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
+    before = (clean_repo / "WHOLE.md").read_bytes()
+
+    result = run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        skip=("WHOLE.md",),
+        confirm=_unreachable_confirm,
+        commit=_unreachable_commit,
+    )
+
+    assert result.plan.actions == ()
+    assert [(entry.artifact_id, entry.pattern) for entry in result.plan.skipped] == [("whole", "WHOLE.md")]
+    assert result.applied == ()
+    assert (clean_repo / "WHOLE.md").read_bytes() == before
+
+
+def test_without_skip_the_same_hand_edit_is_refused(clean_repo):
+    """The mutation partner: nothing but `--skip` separates the test above from
+    a refusal, and `--force` is not involved."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified"):
+        run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+
+
+def test_skip_does_not_excuse_a_hand_edit_it_does_not_name(clean_repo):
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"), _copied_managed("other", "OTHER.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md", "OTHER.md")
+    before = {name: (clean_repo / name).read_bytes() for name in ("WHOLE.md", "OTHER.md")}
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as excinfo:
+        run_update(
+            clean_repo,
+            manifest,
+            run=True,
+            yes=True,
+            skip=("WHOLE.md",),
+            confirm=_unreachable_confirm,
+            commit=_unreachable_commit,
+        )
+
+    assert "other:" in excinfo.value.message
+    assert "whole:" not in excinfo.value.message
+    assert {name: (clean_repo / name).read_bytes() for name in before} == before
+
+
+def test_skip_reaches_a_managed_record_that_has_no_wholesale_action(clean_repo):
+    """A record whose entry was retired from the manifest has no wholesale
+    action (so `apply_skips` has nothing to move), yet rung 6 still checks its
+    file: only the pattern matching the record's path can reach it."""
+    manifest = _manifest()
+    _write_hand_edited_managed_files(clean_repo, "RETIRED.md")
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified"):
+        run_update(clean_repo, manifest, confirm=_unreachable_confirm)
+
+    result = run_update(clean_repo, manifest, skip=("RETIRED.md",), confirm=_unreachable_confirm)
+
+    assert result.plan.actions == ()
+    assert result.plan.skipped == ()
+    assert (clean_repo / "RETIRED.md").read_text(encoding="utf-8") == "hand-edited RETIRED.md\n"
+
+
+def test_skip_leaves_the_state_it_carries_unchanged(clean_repo):
+    """`update` does not write the pattern into `state.skips`, and a skipped run
+    that applies nothing writes no state at all."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
+    before = read_state(clean_repo)
+
+    run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        skip=("WHOLE.md",),
+        confirm=_unreachable_confirm,
+        commit=_unreachable_commit,
+    )
+
+    assert read_state(clean_repo) == before
+
+
+@pytest.mark.parametrize("bad", ["WHOLE.md", ("   ",)])
+def test_skip_rejects_a_bare_string_or_blank_pattern_before_anything_is_written(clean_repo, bad):
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md")
+
+    with pytest.raises(UsageError):
+        run_update(
+            clean_repo, manifest, run=True, yes=True, skip=bad, confirm=_unreachable_confirm, commit=_unreachable_commit
+        )
+
+    assert not (clean_repo / ".marshal" / "plan.json").exists()
+
+
+def test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_state_record(clean_repo):
+    """The skip protects the edit on every later run, not just this one: a run
+    that skips hand-edited A AND regenerates B writes state, and A's record
+    must come through it with its ORIGINAL `body_sha` -- recording the edited
+    bytes would turn `--skip` into "protect it once"."""
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("b", "B.md"))
+    (clean_repo / "A.md").write_text("hand-edited A\n", encoding="utf-8")
+    (clean_repo / "B.md").write_text("current B\n", encoding="utf-8")
+    write_state(
+        _seed_state(
+            managed=(
+                _managed_record("a", "A.md"),
+                ManagedArtifact(
+                    id="b",
+                    path="B.md",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content("current B\n"),
+                    inserted_region_span=None,
+                ),
+            )
+        ),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    original_sha = _managed_record("a", "A.md").body_sha
+
+    result = run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        skip=("A.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
+    )
+
+    assert result.applied == ("b",)
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+    state_after = read_state(clean_repo)
+    assert state_after is not None
+    assert {record.id: record.body_sha for record in state_after.managed}["a"] == original_sha
+
+    # Without `--skip` and without `--force` the edit is still refused.
+    _commit_all(clean_repo)
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as refused:
+        run_update(clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+    assert "a:" in refused.value.message
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+
+
+def test_force_still_discards_a_hand_edit_a_skip_does_not_name(clean_repo):
+    """`--force` keeps its meaning: the unnamed hand-edit is regenerated."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"), _copied_managed("other", "OTHER.md"))
+    _write_hand_edited_managed_files(clean_repo, "WHOLE.md", "OTHER.md")
+    calls: list[str] = []
+
+    result = run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        force=True,
+        skip=("WHOLE.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert calls == ["other"]
+    assert result.applied == ("other",)
+    assert (clean_repo / "WHOLE.md").read_text(encoding="utf-8") == "hand-edited WHOLE.md\n"
+
+
 def test_include_seeded_applies_the_migration_offered_action(clean_repo, monkeypatch):
     write_state(_seed_state(), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
     _commit_all(clean_repo)
@@ -898,7 +1174,9 @@ def test_include_seeded_applies_the_migration_offered_action(clean_repo, monkeyp
     def migration_fn(view, state):
         return Plan(
             actions=(_seeded_action("offer", "OFFER.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -997,7 +1275,9 @@ def test_sc01_check_update_run_check_end_to_end(clean_repo, monkeypatch):
     def rename_migration(view, state):
         return Plan(
             actions=(_absent_action("renamed", "new-name.txt"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(
+                git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+            ),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=rename_migration)

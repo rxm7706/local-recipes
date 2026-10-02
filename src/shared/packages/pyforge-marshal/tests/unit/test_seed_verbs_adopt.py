@@ -870,6 +870,111 @@ def test_skip_protects_a_hand_edited_artifact_from_rung_6_refusal(clean_repo):
     assert result.declined is False
 
 
+def _adopt_two_managed_files_once(repo: Path, manifest: Manifest) -> None:
+    run_adopt(repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_fake_commit(manifest, repo))
+    _commit_all(repo)
+    (repo / "A.md").write_text("hand-edited A\n", encoding="utf-8")
+    (repo / "B.md").write_text("hand-edited B\n", encoding="utf-8")
+    _commit_all(repo)
+
+
+def test_skip_names_a_hand_edited_copied_managed_file_that_has_no_action(clean_repo):
+    """DW-10-4-4. A hand-edited `copied-managed` file classifies
+    `PRESENT_CONFORMANT` whatever its bytes say, so the plan gives it no
+    action and `plan.skipped` never holds it -- `--skip A.md` used to be a
+    silent no-op, leaving `--force` (which discards every hand-edit) as
+    rung 6's only override."""
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("b", "B.md"))
+    _adopt_two_managed_files_once(clean_repo, manifest)
+
+    # Both edits are refused with no skip at all, naming both artifacts.
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as unskipped:
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+    assert "a:" in unskipped.value.message
+    assert "b:" in unskipped.value.message
+
+    # Skipping both: no refusal and no --force, and both edits are kept.
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        skip=("A.md", "B.md"),
+        confirm=_unreachable_confirm,
+        commit=_unreachable_commit,
+    )
+    assert result.declined is False
+    assert result.plan.actions == ()
+    assert (clean_repo / "A.md").read_text(encoding="utf-8") == "hand-edited A\n"
+    assert (clean_repo / "B.md").read_text(encoding="utf-8") == "hand-edited B\n"
+
+
+def test_skip_does_not_excuse_a_hand_edited_managed_file_it_does_not_name(clean_repo):
+    """Rung 6 still checks every managed record the pattern leaves in."""
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("b", "B.md"))
+    _adopt_two_managed_files_once(clean_repo, manifest)
+
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as excinfo:
+        run_adopt(
+            clean_repo,
+            manifest,
+            apply=True,
+            yes=True,
+            skip=("A.md",),
+            confirm=_unreachable_confirm,
+            commit=_unreachable_commit,
+        )
+
+    assert "b:" in excinfo.value.message
+    assert "a:" not in excinfo.value.message
+    assert (clean_repo / "A.md").read_text(encoding="utf-8") == "hand-edited A\n"
+    assert (clean_repo / "B.md").read_text(encoding="utf-8") == "hand-edited B\n"
+
+
+def test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_state_record(clean_repo):
+    """The skip protects the edit on every later run, not just this one: a
+    run that skips hand-edited A AND applies a new artifact C writes state, and
+    A's record must come through it with its ORIGINAL `body_sha` -- recording
+    the edited bytes would turn `--skip` into "protect it once"."""
+    adopted = _manifest(_copied_managed("a", "A.md"))
+    run_adopt(
+        clean_repo,
+        adopted,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(adopted, clean_repo),
+    )
+    _commit_all(clean_repo)
+    original_sha = next(record.body_sha for record in read_state(clean_repo).managed if record.id == "a")
+    (clean_repo / "A.md").write_text("hand-edited A\n", encoding="utf-8")
+    _commit_all(clean_repo)
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("c", "C.md"))
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        skip=("A.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
+    )
+
+    assert result.applied == ("c",)
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+    state_after = read_state(clean_repo)
+    assert state_after is not None
+    assert {record.id: record.body_sha for record in state_after.managed}["a"] == original_sha
+
+    # Without `--skip` and without `--force` the edit is still refused.
+    _commit_all(clean_repo)
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as refused:
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+    assert "a:" in refused.value.message
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+
+
 # --- applies_to manifest filter ------------------------------------------
 
 

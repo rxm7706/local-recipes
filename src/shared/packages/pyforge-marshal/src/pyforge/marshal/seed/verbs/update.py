@@ -138,9 +138,25 @@ special for it (the check is entirely on the CLI side, against
 ``Plan.skipped`` this module already produces via ``migrate.compose``
 unchanged).
 
+**Rung 6, ``Plan.skipped`` and ``--skip`` (Story 82.12).** Those same
+migration-offered ``copied-seeded`` entries sit in ``Plan.skipped`` with no
+action, but their ``state.managed[]`` records were still handed to
+``check_preconditions``'s rung 6, which would refuse a hand-edit of a file this
+run was never going to write. ``update`` also takes ``--skip GLOB`` (the same
+repeatable option ``adopt`` has): ``skips.apply_skips`` moves a matching action
+-- a hand-edited managed file's wholesale-regenerate action -- into
+``Plan.skipped`` so it is never applied, and the records go through
+``skips.managed_after_skips`` with the plan AND the patterns, so rung 6 is not
+asked about an artifact the plan skipped or whose path the operator named. Both
+halves ship together: dropping the record without moving the action would let
+``update`` overwrite the edit with no ``--force``. A managed record neither the
+plan nor a pattern names is still checked -- where the wholesale-regenerate
+pass emits an action for it, a refusal there guards a real overwrite.
+
 **Ordering** (the Always bullets' own sequencing, restated as code):
 resolve (``_manifest_for_update``) -> detect (``classify``) -> plan (build +
-migrate + wholesale, merged via ``_merge_plan_sources``) -> preconditions
+migrate + wholesale, merged via ``_merge_plan_sources``, then ``--skip``
+applied by ``skips.apply_skips``) -> preconditions
 (``verbs.preconditions.check_preconditions``, BEFORE any write, ``dry_run=
 not run``) -> write ``.marshal/plan.json`` (ALWAYS) -> return early for a
 dry-run -> confirm (only when ``run and not yes``; a decline returns without
@@ -205,6 +221,7 @@ from ..state import (
     write_state,
 )
 from .preconditions import ManagedRecord, check_preconditions
+from .skips import apply_skips, managed_after_skips
 
 # The classes `_wholesale_regenerate_actions` ever fires for -- FR-98/FR-99's
 # own named classes. `copied-seeded` and `referenced` are deliberately
@@ -960,6 +977,7 @@ def run_update(
     run: bool = False,
     force: bool = False,
     include_seeded: bool = False,
+    skip: Sequence[str] = (),
     yes: bool = False,
     confirm: Callable[[], bool],
     template_path: Path | str | None = None,
@@ -978,6 +996,17 @@ def run_update(
     ``--force --run`` relies on for FR-101's explicit recopy confirmation
     (module docstring's own paragraph): there is no second, force-specific
     prompt.
+
+    ``skip`` is ``run_adopt``'s own glob list (``--skip``, Story 82.12): each
+    pattern is matched against the merged plan's action targets by
+    ``skips.apply_skips`` (a matching action moves into ``plan.skipped`` and is
+    never applied) and against every managed record's path by
+    ``skips.managed_after_skips`` (so rung 6 is not asked about it). Both
+    halves matter: a hand-edited managed file has a wholesale-regenerate
+    action, and dropping only its record from rung 6 would let ``update``
+    overwrite the edit without ``--force``. ``update`` does not write the
+    pattern into ``state.skips`` -- state carries it unchanged, as it always
+    has.
 
     ``template_path``/``commit`` are the identical test-injection seams
     ``run_adopt`` establishes, for the identical reason (exercising the REAL
@@ -1069,16 +1098,33 @@ def run_update(
         wholesale_hashes=wholesale_hashes,
         repo_fingerprint=base_plan.repo_fingerprint,
     )
+    # The operator's `--skip` moves a matching action (the wholesale-regenerate
+    # action of a hand-edited managed file, most often) out of `actions` and
+    # into `plan.skipped`, before anything is checked or written.
+    plan = apply_skips(plan, skip)
 
     # Rung 6 refuses a record whose path does not resolve inside the repo, so a
     # previously managed entry that is now an escaping symlink would still
     # refuse the whole run there (Story 82.11) -- it is already reported in
     # `escape_findings` and planned for nothing, so it is not handed to rung 6.
     escaping_ids = {escape.entry_id for escape in inventory.escaping}
-    managed_records = tuple(
-        record
-        for record in _managed_records(state, filtered_manifest, repo_root)
-        if record.artifact_id not in escaping_ids
+    # An artifact the plan skipped is not going to be written, so its record is
+    # not handed to rung 6 either (Story 82.12, DW-10-4-4): a migration-offered
+    # `copied-seeded` entry sits in `plan.skipped` with no action, and
+    # `apply_skips` above moved the wholesale-regenerate action of an artifact
+    # the operator's `--skip` named. `skip` is passed as patterns too, for a
+    # record no action exists for -- one whose entry was retired or
+    # reclassified has no wholesale action, so only its path matching the
+    # pattern reaches it. A record neither names is still checked: where it has
+    # a wholesale action, rung 6 refusing its hand-edit guards a real overwrite.
+    managed_records = managed_after_skips(
+        tuple(
+            record
+            for record in _managed_records(state, filtered_manifest, repo_root)
+            if record.artifact_id not in escaping_ids
+        ),
+        plan,
+        skip,
     )
     check_preconditions(
         plan,

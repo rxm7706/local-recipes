@@ -1022,11 +1022,16 @@ def run_adopt(
     # refuse the whole run there (Story 82.11) -- it is already reported in
     # `escape_findings` and planned for nothing, so it is not handed to rung 6.
     escaping_ids = {escape.entry_id for escape in inventory.escaping}
+    # `skip` is passed as patterns as well as `plan.skipped` carrying the
+    # actioned ones: a hand-edited `copied-managed` file has no action to move
+    # into `plan.skipped`, so only its path matching the pattern reaches it
+    # (Story 82.12, DW-10-4-4).
     managed_records = managed_after_skips(
         tuple(
             record for record in _managed_records(state, filtered_manifest) if record.artifact_id not in escaping_ids
         ),
         plan,
+        skip,
     )
 
     check_preconditions(

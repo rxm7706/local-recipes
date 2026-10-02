@@ -124,6 +124,10 @@ def _fresh_plan(repo_root: Path, *actions: Action, **fingerprint_overrides) -> P
         "artifact_hashes": tuple(
             sorted((action.artifact_id, hash_content(_text_of(repo_root / action.target_path))) for action in actions)
         ),
+        "repo_root": str(repo_root.resolve()),
+        # Computed independently of `plan.build._repo_identity`: a plain clone
+        # keeps its git directory at `<root>/.git`, and a bare `tmp_path` has none.
+        "git_common_dir": str((repo_root / ".git").resolve()) if (repo_root / ".git").exists() else None,
     }
     fields.update(fingerprint_overrides)
     return Plan(actions=actions, repo_fingerprint=RepoFingerprint(**fields))
@@ -281,6 +285,31 @@ def test_a_plan_built_against_a_clean_worktree_is_refused_once_the_worktree_is_d
     assert "dirty" in str(excinfo.value)
 
 
+def test_a_plan_built_for_one_empty_non_git_directory_is_refused_for_another_before_any_write(tmp_path):
+    """DW-10-3-7: both directories are empty and not git, so every other
+    fingerprint field agrees (`git_head=None`, `dirty=True`, the hash of an
+    absent file) -- the repository identity is the only thing that says this
+    plan was built for a different directory, and without it apply seeded the
+    wrong one."""
+    directory_a = tmp_path / "a"
+    directory_b = tmp_path / "b"
+    directory_a.mkdir()
+    directory_b.mkdir()
+    plan = _fresh_plan(directory_a, _action("a", "a.txt"))
+    before = _tree(tmp_path)
+    calls: list[str] = []
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        run_apply(plan, repo_root=directory_b, never_write=_OPEN, commit=_committer(directory_b, calls))
+
+    assert "stale-plan" in str(excinfo.value)
+    assert "repo_root" in str(excinfo.value)
+    assert excinfo.value.exit_code == 3
+    assert excinfo.value.remedy.strip()
+    assert calls == []
+    assert _tree(tmp_path) == before
+
+
 def test_a_plan_whose_actioned_file_was_hand_edited_is_refused_naming_the_artifact_id(tmp_path):
     (tmp_path / "CLAUDE.md").write_text("original\n", encoding="utf-8")
     plan = _fresh_plan(tmp_path, _action("claude-md", "CLAUDE.md", current_state=ArtifactState.PRESENT_DIVERGENT))
@@ -329,6 +358,8 @@ def test_a_plan_hashing_an_id_no_action_carries_is_refused_before_any_write(tmp_
             git_head=plan.repo_fingerprint.git_head,
             dirty=plan.repo_fingerprint.dirty,
             artifact_hashes=plan.repo_fingerprint.artifact_hashes + (("ghost", "deadbeef"),),
+            repo_root=plan.repo_fingerprint.repo_root,
+            git_common_dir=plan.repo_fingerprint.git_common_dir,
         ),
     )
     calls: list[str] = []

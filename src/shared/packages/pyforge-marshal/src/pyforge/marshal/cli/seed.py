@@ -35,9 +35,10 @@ module docstring). ``run_init`` resolves ``<path>``/``--slug``/``--agents``/
 ``--force`` and delegates to ``seed.verbs.init.run_init`` -- unlike
 ``run_adopt``, it supplies no confirmation seam at all (``init`` never
 confirms; see that module's own docstring). ``run_update`` resolves
-``--repo-root``/``--run``/``--force``/``--include-seeded``/``--yes`` and
-delegates to ``seed.verbs.update.run_update``, the SAME confirmation seam
-``run_adopt`` supplies -- and gains its own plan renderer
+``--repo-root``/``--run``/``--force``/``--include-seeded``/``--skip``/``--yes``
+(Story 82.12 added ``--skip``) and delegates to
+``seed.verbs.update.run_update``, the SAME confirmation seam ``run_adopt``
+supplies -- and gains its own plan renderer
 (``_render_update_plan_text``), fixing ``DW-FU-11-3`` (a migration-offered
 ``copied-seeded`` skip renders as an explicit offer, never a false
 ``matched --skip`` claim) rather than reusing ``_render_plan_text``
@@ -825,6 +826,7 @@ def run_update(
             run=args.run,
             force=args.force,
             include_seeded=args.include_seeded,
+            skip=tuple(args.skip) if args.skip else (),
             yes=args.yes,
             confirm=confirm if confirm is not None else _real_confirm,
         )
@@ -1286,6 +1288,14 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         default=False,
         help="Also apply a migration-offered copied-seeded action (skipped by default).",
+    )
+    update_parser.add_argument(
+        "--skip",
+        dest="skip",
+        action="append",
+        default=None,
+        metavar="GLOB",
+        help="Glob naming an artifact path to leave untouched (repeatable).",
     )
     update_parser.add_argument(
         "--yes",
