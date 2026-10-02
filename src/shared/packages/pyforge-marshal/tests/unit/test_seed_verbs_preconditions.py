@@ -76,7 +76,13 @@ def _action(**overrides) -> Action:
 
 
 def _fingerprint(**overrides) -> RepoFingerprint:
-    fields = {"git_head": None, "dirty": False, "artifact_hashes": ()}
+    fields = {
+        "git_head": None,
+        "dirty": False,
+        "artifact_hashes": (),
+        "repo_root": "/work/repo",
+        "git_common_dir": None,
+    }
     fields.update(overrides)
     return RepoFingerprint(**fields)
 

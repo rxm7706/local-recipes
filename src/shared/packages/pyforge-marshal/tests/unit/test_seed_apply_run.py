@@ -124,6 +124,8 @@ def _fresh_plan(repo_root: Path, *actions: Action, **fingerprint_overrides) -> P
         "artifact_hashes": tuple(
             sorted((action.artifact_id, hash_content(_text_of(repo_root / action.target_path))) for action in actions)
         ),
+        "repo_root": str(repo_root.resolve()),
+        "git_common_dir": None,
     }
     fields.update(fingerprint_overrides)
     return Plan(actions=actions, repo_fingerprint=RepoFingerprint(**fields))
@@ -329,6 +331,8 @@ def test_a_plan_hashing_an_id_no_action_carries_is_refused_before_any_write(tmp_
             git_head=plan.repo_fingerprint.git_head,
             dirty=plan.repo_fingerprint.dirty,
             artifact_hashes=plan.repo_fingerprint.artifact_hashes + (("ghost", "deadbeef"),),
+            repo_root=plan.repo_fingerprint.repo_root,
+            git_common_dir=plan.repo_fingerprint.git_common_dir,
         ),
     )
     calls: list[str] = []

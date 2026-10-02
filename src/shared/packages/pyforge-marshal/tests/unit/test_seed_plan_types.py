@@ -45,6 +45,8 @@ def _fingerprint(**overrides) -> RepoFingerprint:
         "git_head": "abc123",
         "dirty": False,
         "artifact_hashes": (("agents-md", "deadbeef"), ("gitignore", "cafef00d")),
+        "repo_root": "/work/repo",
+        "git_common_dir": "/work/repo/.git",
     }
     fields.update(overrides)
     return RepoFingerprint(**fields)

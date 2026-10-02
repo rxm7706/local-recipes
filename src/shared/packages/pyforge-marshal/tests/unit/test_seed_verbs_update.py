@@ -553,7 +553,7 @@ def test_three_source_merge_appears_correctly_merged_and_sorted(clean_repo, monk
     def migration_fn(view, state):
         return Plan(
             actions=(_absent_action("m-migrated", "M_MIGRATED.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -588,7 +588,7 @@ def test_collision_between_two_sources_raises_internal_error(clean_repo, monkeyp
     def migration_fn(view, state):
         return Plan(
             actions=(_absent_action("brand-new", "BRAND_NEW.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -876,7 +876,7 @@ def test_migration_offered_copied_seeded_is_skipped_by_default(clean_repo, monke
     def migration_fn(view, state):
         return Plan(
             actions=(_seeded_action("offer", "OFFER.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -898,7 +898,7 @@ def test_include_seeded_applies_the_migration_offered_action(clean_repo, monkeyp
     def migration_fn(view, state):
         return Plan(
             actions=(_seeded_action("offer", "OFFER.md"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=migration_fn)
@@ -997,7 +997,7 @@ def test_sc01_check_update_run_check_end_to_end(clean_repo, monkeypatch):
     def rename_migration(view, state):
         return Plan(
             actions=(_absent_action("renamed", "new-name.txt"),),
-            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
+            repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
         )
 
     migration = Migration(from_version=_V1, to_version=_V2, fn=rename_migration)
