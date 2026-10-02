@@ -364,7 +364,7 @@ development_status:
   81-1-a-drain-cycle-whose-wave-holds-every-story-reports-held-instead-of-crashing: done
   81-2-the-drain-plan-reads-a-prose-park-only-where-one-is-written-never-in-a-story-s-own-rules: done
   81-3-the-campaign-supervisor-keeps-retry-environment-blocks-across-its-cycles: done
-  82-1-gate-evaluate-finds-the-real-repository-under-an-installed-package-and-never-passes-having-run-nothing: backlog
+  82-1-gate-evaluate-finds-the-real-repository-under-an-installed-package-and-never-passes-having-run-nothing: done
   82-10-a-parallel-wave-journals-each-member-s-own-outcome-and-refuse-predicate: backlog
   82-11-seed-apply-refuses-an-escaping-manifest-path-per-entry-and-guards-never-write-paths-through-symlinks-and-directories: backlog
   82-12-seed-apply-binds-a-plan-to-its-repository-refuses-a-directory-target-with-a-remedy-and-honours-a-skip-on-a-hand-edit: backlog
@@ -503,7 +503,7 @@ development_status:
   epic-64-retrospective: optional
   epic-65: in-progress
   epic-65-retrospective: optional
-  epic-66: in-progress
+  epic-66: backlog
   epic-66-retrospective: optional
   epic-67: done
   epic-67-retrospective: optional
