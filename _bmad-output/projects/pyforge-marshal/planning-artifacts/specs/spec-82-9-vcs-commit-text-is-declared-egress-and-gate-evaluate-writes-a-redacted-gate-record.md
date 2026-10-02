@@ -265,6 +265,10 @@ Closes: DW-FU-2-6-4, DW-FU-2-6-2.
   - `[low]` `[reject]` Intent Alignment: the `FsPort`-bypass criterion is proven by synthetic source strings and a clean real tree, since no real violating call site exists — that is how the intent's "meta-test fails" criterion can be shown at all, and the second synthetic source covers `append_line`.
   - `[low]` `[reject]` `carried` Intent Alignment: changes beyond the intent's named surfaces (`land-story` wiring, `MRS-CHK-001/002/003`, the autouse conftest, `describe_gate_record`) — each is written into the amended Tasks as outside the intent-contract, and the `MRS-CHK` codes were a broken window in a file the diff touches.
 
+### 2026-10-02 — Landing refused on a merge conflict with Story 82.10 (operator fix)
+- PR #1744 conflicted with `main` after Story 82.10 landed in the same parallel wave (MRS-DISP-038): both stories appended `deferred-work-ledger.md` rows at the same spot, and both appended to the `spec-pyforge-core` and `spec-pyforge-marshal` memlogs. The landing heal unions only memlogs, so the ledger refused it.
+  - `[medium]` `[patch]` Ledger resolved keeping both blocks: DW-marshal-82-9, -82-9-2 and -82-9-3, then DW-marshal-82-10, each with its own `severity`/`promoted`/`status` tail (git had folded the identical tails out of the hunk). Memlogs unioned; every entry from both sides kept. `cli/dispatch.py` auto-merged with 82.10's change. `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exit 0 (10548 passed); pyforge-core's suite exit 0 (2164 passed); `pixi run --frozen -e pyforge-guild lint-types` exit 0.
+
 ## Auto Run Result
 
 Status: done

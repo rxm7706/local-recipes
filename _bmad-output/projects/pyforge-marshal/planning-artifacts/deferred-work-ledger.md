@@ -3383,8 +3383,11 @@ status: open
   summary: `marshal factory spin` has no guard against launching a SECOND detached `bmad-loop run` for a project that already has one live -- nothing in `run_spin`'s precondition gates (nor any `MRS-SPIN-*` code) checks for an already-active run before minting a new run id and spawning another.
   evidence: Flagged during Story 3.3's review pass (Blind Hunter and Edge Case Hunter, independently). The story's own detach-and-return-promptly design removes the one thing that previously made an accidental concurrent `bmad-loop run` invocation hard to trigger -- a blocking foreground command occupying the terminal. `bmad-loop run` itself (the installed 0.9.0 `cmd_run`) also carries no such check (only `worktree_clean`/base-skills gates), so two concurrent engines could drive the same project's story feed, journal, and working tree simultaneously. Not fixed in this story: whether concurrent runs should even be disallowed, and at what granularity (per loop home? per story? per epic?), is a genuine product decision no AC in this story's spec makes -- Story 3.4's supervisor (which tracks process liveness) is the more natural home for an answer than a mechanical precondition patch here.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
   severity: high
+  resolution: 2026-10-02 — resolved by Stories 28.24 and 34.1 (operator ruling, Story 82.7 re-spec): `marshal factory spin` already refuses a second launch against a live loop home before minting a run id.
+  verified: 2026-10-02 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py:1856 (the "Story 34.1" block) calls src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:1774 `spin_loop_home_in_flight_conflict` and refuses with MRS-DISP-021, naming the run and its pids; src/shared/packages/pyforge-marshal/tests/unit/test_spin.py:4416 `test_spin_refuses_a_second_launch_when_prior_run_is_still_live` and :4501 pin it. The 2026-10-01 STANDS line below grepped for 'already'/'live'/'concurrent' and missed the guard.
+
   verified: 2026-10-01 — STANDS — cli/spin.py -- no already-live/concurrent-run guard anywhere in run_spin (grep for 'already'/'live'/'concurrent' hits only unrelated docstring prose at :1439/1574/1439ish); MRS-SPIN codes run 001 through 012 with none covering this precondition. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/implementation-artifacts/spec-3-3-detached-launch-with-scoped-story-selection.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
@@ -6386,7 +6389,8 @@ status: open
   origin: spec-deferred 9408b40499a7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolved: 2026-10-02 (Story 82.10, spec-pyforge-marshal CAP-135) — a station row whose wave attempted more than one story now carries a `members` list beside its unchanged aggregate fields: each member's story, status and detail, and for a REFUSED member at a re-preflightable gate its refuse predicate, computed from that member's own detail for that member's own story (`cli/dispatch.py::_member_outcome`, `core/dispatch_fleet.MemberOutcome`). `_campaign_blocked_from_journal` folds a row that has members from them alone and rebuilds a block and predicate from every REFUSED one whatever the station's aggregate status, so a refused primary beside a dispatched sibling survives into the next cycle and re-preflight rate-limits it instead of being bypassed; a row without members (an older journal, a single-story wave) folds as before. Pinned by the mixed-wave tests in `tests/unit/test_dispatch_fleet.py`, including a two-cycle drain and a mutation that reduces the journal to the aggregate row.
   verified: 2026-10-01 — STANDS — cli/dispatch.py:4410-4417 sets cycle_status DISPATCHED if any wave member dispatched, and refuse_predicate is computed only when cycle_status is REFUSED (:4418-4427); one StationCycleResult per station (story=primary_story). A refused member's block lives only in the in-memory campaign_blocked (:4366), while the next cycle rebuilds blocks from the journal and reads only rows whose status is REFUSED (_campaign_blocked_from_journal, :4503-4525), so the refusal is lost and re-preflight rate-limiting is bypassed. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
@@ -6402,7 +6406,8 @@ status: open
   origin: spec-deferred fc48349c1968 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolved: 2026-10-02 (Story 82.10, spec-pyforge-marshal CAP-135) — with two refused members each one's predicate is now computed from its own detail for its own story and journaled on its member outcome, and both blocks are rebuilt next cycle; the aggregate row's predicate is the primary member's own, no longer the last member's gate read against the primary's story. The mixed-refuse wave the ledger said had no coverage is now `test_two_refused_members_each_journal_a_predicate_from_their_own_detail_and_story`.
   verified: 2026-10-01 — STANDS — cli/dispatch.py:4406-4427 parses the gate from last_detail (whichever member wrote a detail last) but computes the predicate for primary_story, and the single row records story=primary_story with that detail; with two refused members the predicate can describe another story's gate/spec, and the second story's block is not journaled at all. No test covers a mixed-refuse wave (refuse_predicate appears only in tests/unit/test_dispatch_fleet.py:957 and test_dispatch_hotfix.py, single-story). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
@@ -7989,6 +7994,17 @@ status: open
   evidence: SPEC.md, ARCHITECTURE-SPINE.md (AD-34 registry text) and the PRD name VcsPort.merge_ref_resolving and VcsPort.commit_paths_onto_remote_tip; a SPEC.md is re-derived with bmad-spec, never hand-edited, so the prose fix is a spine amendment plus a re-derive, not part of this code story.
   location: _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md
   origin: spec-deferred 97167a5e4575 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-82-10: A member refused in one cycle and cleared by re-preflight stays a block in every later fold, because `_campaign_blocked_from_journal` never retracts a block on a later DISPATCHED or IN_FLIGHT outcome for the same story.
+
+- source_spec: `planning-artifacts/specs/spec-82-10-a-parallel-wave-journals-each-member-s-own-outcome-and-refuse-predicate.md`
+  summary: A member refused in one cycle and cleared by re-preflight stays a block in every later fold, because `_campaign_blocked_from_journal` never retracts a block on a later DISPATCHED or IN_FLIGHT outcome for the same story.
+  evidence: Edge Case Hunter, review of Story 82.10 (2026-10-02). The fold only adds a block from each REFUSED outcome. The same holds for every aggregate REFUSED row journaled before this story, so it predates it; member outcomes inherit it. Retracting changes fold semantics for every row and is its own CAP-135 story. What would settle it: a two-cycle test where a refused story's spec lands, re-preflight clears it, it dispatches, and the third cycle's fold is asserted to carry no block for it.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py
+  origin: spec-deferred b1efb7ceaa19 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
