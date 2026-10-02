@@ -46,11 +46,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Mapping
 from urllib.parse import quote, urlparse
 
 import yaml
@@ -311,10 +313,15 @@ class SyncBaselineTooLargeError(SyncError):
 class TransportResponse:
     """What a `transport` callable returns -- the HTTP status and raw body,
     already fully read (never a context-managed stream a fake would also
-    have to imitate)."""
+    have to imitate).
+
+    `headers` carries the response headers `_send`'s retry reads (`Retry-After`,
+    `x-ratelimit-remaining`); it defaults to empty so every fake that builds a
+    `TransportResponse(status, body)` keeps working unchanged (Story 83.2)."""
 
     status: int
     body: bytes
+    headers: Mapping[str, str] = field(default_factory=dict, hash=False)
 
 
 TransportFn = Callable[[urllib.request.Request], TransportResponse]
@@ -337,11 +344,74 @@ def _default_transport(request: urllib.request.Request) -> TransportResponse:
     try:
         with http_bridge().open_url(request, timeout=30) as resp:
             status = getattr(resp, "status", None) or resp.getcode()
-            return TransportResponse(status=status, body=resp.read())
+            return TransportResponse(status=status, body=resp.read(), headers=_header_dict(resp.headers))
     except urllib.error.HTTPError as exc:
-        return TransportResponse(status=exc.code, body=exc.read())
+        return TransportResponse(status=exc.code, body=exc.read(), headers=_header_dict(exc.headers))
     except urllib.error.URLError as exc:
         raise SyncAPIError(f"{request.get_method()} {request.full_url}: {exc.reason}") from exc
+
+
+def _header_dict(raw: object) -> dict[str, str]:
+    """A response's headers as a plain dict (`http.client.HTTPMessage.items()`);
+    a response that carries none (`HTTPError.headers` can be `None`) is `{}`."""
+    items = getattr(raw, "items", None)
+    return {str(name): str(value) for name, value in items()} if callable(items) else {}
+
+
+# ── Bounded retry around the transport seam (Story 83.2 / DW-FU-8-1-3) ──────
+#
+# 4 attempts in total (1 call + 3 retries). A 429, a 403 that is a rate limit
+# (`Retry-After` present, or `x-ratelimit-remaining: 0`) and a 502/503/504 are
+# retried; every other status -- a 404, a 401, a plain permission 403 -- is
+# returned on the first answer. After the last attempt the last response goes to
+# the caller, which raises `SyncAPIError` exactly as before.
+
+_RETRY_MAX_ATTEMPTS = 4
+_RETRY_BACKOFF_BASE_SECONDS = 1.0  # 1s, 2s, 4s between the four attempts
+_RETRY_AFTER_CAP_SECONDS = 60.0
+_RETRYABLE_STATUSES = frozenset({429, 502, 503, 504})
+
+# Resolved at call time (never bound into a default), so a test replaces it with
+# `monkeypatch.setattr("pyforge.steward.sync._sleep", ...)` and never waits.
+_sleep: Callable[[float], None] = time.sleep
+
+
+def _lower_headers(response: TransportResponse) -> dict[str, str]:
+    """Header names are case-insensitive on the wire; fakes may spell them any way."""
+    return {name.lower(): value for name, value in response.headers.items()}
+
+
+def _is_retryable(response: TransportResponse) -> bool:
+    if response.status in _RETRYABLE_STATUSES:
+        return True
+    if response.status != 403:
+        return False
+    headers = _lower_headers(response)
+    return "retry-after" in headers or headers.get("x-ratelimit-remaining", "").strip() == "0"
+
+
+def _retry_delay(response: TransportResponse, attempt: int) -> float:
+    """Seconds to wait after the `attempt`-th (1-based) answer: `Retry-After` as
+    seconds, capped; an absent, unparsable, negative or non-finite value falls
+    back to the exponential backoff."""
+    try:
+        seconds = float(_lower_headers(response)["retry-after"])
+    except (KeyError, TypeError, ValueError):
+        seconds = math.nan
+    if math.isfinite(seconds) and seconds >= 0:
+        return min(seconds, _RETRY_AFTER_CAP_SECONDS)
+    return _RETRY_BACKOFF_BASE_SECONDS * 2 ** (attempt - 1)
+
+
+def _send(transport: TransportFn, request: urllib.request.Request) -> TransportResponse:
+    """`transport(request)` with the bounded retry above. Wraps the seam at each
+    call site, so an injected fake goes through it too."""
+    for attempt in range(1, _RETRY_MAX_ATTEMPTS):
+        response = transport(request)
+        if not _is_retryable(response):
+            return response
+        _sleep(_retry_delay(response, attempt))
+    return transport(request)
 
 
 # ── Baseline handling (AD-5 amended / AD-10's loop guard compares these) ───
@@ -492,7 +562,7 @@ def github_graphql_request(
     body = json.dumps({"query": query, "variables": variables}).encode("utf-8")
     request = urllib.request.Request(_GITHUB_GRAPHQL_URL, data=body, headers=headers, method="POST")
 
-    response = transport(request)
+    response = _send(transport, request)
     if response.status >= 400:
         raise SyncAPIError(f"GitHub GraphQL request failed: HTTP {response.status}: {response.body[:500]!r}")
     try:
@@ -842,7 +912,7 @@ def update_github_assignees(
         headers["Accept"] = "application/vnd.github+json"
         body = json.dumps({"assignees": [add]}).encode("utf-8")
         request = urllib.request.Request(url, data=body, headers=headers, method="POST")
-        response = transport(request)
+        response = _send(transport, request)
         if response.status >= 300:
             raise SyncAPIError(
                 f"GitHub add assignee {add!r} on {owner}/{repo}#{number}: "
@@ -854,7 +924,7 @@ def update_github_assignees(
         headers["Accept"] = "application/vnd.github+json"
         body = json.dumps({"assignees": [remove]}).encode("utf-8")
         request = urllib.request.Request(url, data=body, headers=headers, method="DELETE")
-        response = transport(request)
+        response = _send(transport, request)
         if response.status >= 300:
             raise SyncAPIError(
                 f"GitHub remove assignee {remove!r} on {owner}/{repo}#{number}: "
@@ -903,7 +973,7 @@ def get_jira_issue(
     headers["Accept"] = "application/json"
     request = urllib.request.Request(url, headers=headers, method="GET")
 
-    response = transport(request)
+    response = _send(transport, request)
     if response.status >= 400:
         raise SyncAPIError(f"Jira issue {issue_key}: HTTP {response.status}: {response.body[:500]!r}")
     try:
@@ -946,7 +1016,7 @@ def update_jira_issue_fields(
     body = json.dumps({"fields": fields_}).encode("utf-8")
     request = urllib.request.Request(url, data=body, headers=headers, method="PUT")
 
-    response = transport(request)
+    response = _send(transport, request)
     if response.status >= 300:
         raise SyncAPIError(f"Jira update fields on {issue_key}: HTTP {response.status}: {response.body[:500]!r}")
 
@@ -973,7 +1043,7 @@ def transition_jira_issue(
     get_headers["Accept"] = "application/json"
     get_request = urllib.request.Request(url, headers=get_headers, method="GET")
 
-    get_response = transport(get_request)
+    get_response = _send(transport, get_request)
     if get_response.status >= 400:
         raise SyncAPIError(
             f"Jira list transitions for {issue_key}: HTTP {get_response.status}: {get_response.body[:500]!r}"
@@ -1002,7 +1072,7 @@ def transition_jira_issue(
     post_body = json.dumps({"transition": {"id": matched_id}}).encode("utf-8")
     post_request = urllib.request.Request(url, data=post_body, headers=post_headers, method="POST")
 
-    post_response = transport(post_request)
+    post_response = _send(transport, post_request)
     if post_response.status >= 300:
         raise SyncAPIError(
             f"Jira transition {issue_key} to {target_status!r}: HTTP {post_response.status}: "
@@ -1750,9 +1820,14 @@ def reconcile_schedule_batch(
     failed = [entry for entry in entries if not entry["ok"]]
     ok_count = len(entries) - len(failed)
     candidate_word = "candidate" if len(entries) == 1 else "candidates"
+    summary = f"sync reconcile --schedule: {len(entries)} {candidate_word}, {ok_count} ok, {len(failed)} failed"
+    # DW-8-4-1: the CLI prints only the summary, so each failed candidate is
+    # named here (`<github_item_id>: <summary>`) -- `details["candidates"]` is unchanged.
+    for entry in failed:
+        summary += f"\n{entry['github_item_id']}: {entry['summary']}"
     return DutyResult(
         ok=not failed,
-        summary=(f"sync reconcile --schedule: {len(entries)} {candidate_word}, {ok_count} ok, {len(failed)} failed"),
+        summary=summary,
         details={"candidates": entries},
     )
 
