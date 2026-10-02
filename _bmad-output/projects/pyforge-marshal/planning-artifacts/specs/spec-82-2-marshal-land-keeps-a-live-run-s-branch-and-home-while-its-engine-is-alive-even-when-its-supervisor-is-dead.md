@@ -2,7 +2,7 @@
 title: '82.2: Marshal land keeps a live run''s branch and home while its engine is alive, even when its supervisor is dead'
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -64,6 +64,29 @@ that cannot be proven stays refused, never defaulted to "safe to delete". Close 
 operations. Do not write back the on-disk `landing_branch_retirement` or `landing_resync` policy values.
 
 </intent-contract>
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py` -- `is_run_live` (`:1255`): last line reads `supervisor_alive` only; `FleetHomeFacts.engine_alive` (`:849-852`, `:888`) is already gathered, never `None` once the journal is readable.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py` -- `run_land`: retirement gate (`:921-952`) gathers `_gather_home_facts` only when `delete_branch and not retire_live_branch`; three `_resync_home_branch` calls (`:533`, `:616`, `:1060`); the function (`:1570`) returns `None` early when resync is off or the strategy is not `merge`, then warns `MRS-LAND-009` through its local `_warn`.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- `:875` calls `_resync_home_branch` positionally on the primary checkout, not a loop home: the new parameter must default to "not live" so this caller is untouched.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_status.py` -- `TestIsRunLive` (`:843`): the pure matrix; `FleetHomeFacts.engine_alive` defaults `None`, so the existing rows keep their verdicts.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_land.py` -- liveness fakes (`_FakeHarness`, `_FakeProcess`, `_land_outcome_line`, `_land_supervisor_attach_line`, `_live_snapshot`, `:1086-1210`) and the resync tests (`:756-1050`) are the reuse points. Two tests pass explosive fakes to prove the retirement gate never gathers (`:1429`, `:1475`); resync now also gathers, so each sets `landing_resync = false` to keep proving the retirement gate alone.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` -- DW-5-8-1 (`:1552`), DW-FU-4-11 (`:4855`), DW-FU-4-12 (`:4869`): close each (`status: closed`, a `resolved:` line naming this story).
+
+## Tasks & Acceptance
+
+**Execution:**
+- `core/status.py` -- `is_run_live` returns live when the run is unfinished and `supervisor_alive is True` or `engine_alive is True`; docstring names the engine term -- closes DW-5-8-1 / DW-FU-4-11.
+- `cli/land.py` -- `run_land` gathers the home's facts once through one lazy, memoised `home_run_live()` shared by the retirement gate and the resync; `_resync_home_branch` gains keyword-only `run_live: bool = False` and, after its existing early return, warns one `MRS-LAND-009` naming the live run and returns `False` before any `resolve_ref`/`fetch`/`fast_forward`; all three call sites pass the same verdict -- closes DW-FU-4-12.
+- `tests/unit/test_status.py` -- `TestIsRunLive`: dead supervisor plus live engine is live; finished with live engine is not; both dead is not.
+- `tests/unit/test_land.py` -- live-engine/dead-supervisor retirement refusal (`MRS-LAND-008`, branch kept); live run skips resync at the no-op, already-landed and full-merge exits (no `fetch`/`fast_forward`, one `MRS-LAND-009` naming the run, `home_current` false); dead and finished runs resync as today; the two explosive-fake tests set `landing_resync = false`.
+- `deferred-work-ledger.md` -- close DW-5-8-1, DW-FU-4-11, DW-FU-4-12.
+
+**Acceptance Criteria:**
+- Given the spec's six Given/When/Then rows above, when the station suite runs, then each passes and each mutation row (drop the `engine_alive` term; drop the resync liveness check) fails its new test.
+
+## Spec Change Log
 
 ## Binding
 
