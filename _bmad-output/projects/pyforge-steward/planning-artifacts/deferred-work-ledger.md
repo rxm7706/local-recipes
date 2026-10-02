@@ -1857,7 +1857,9 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   origin: spec-deferred fcef5bd36cde — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: critical
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-02 — fixed: steward Story 78.1 (PR #1703, merge 5488d658ef). The userinfo client exists (src/platform/config/authorization/idp_userinfo.py:283 `fetch_current_userinfo`, wired as `IDP_USERINFO` at src/platform/config/settings/production.py:177), and src/platform/config/settings/base.py:614 now sets `SOCIALACCOUNT_STORE_TOKENS = True`, so `_access_token_for` (idp_userinfo.py:125-129) has a stored token to present. Real tests against a stub IdP over HTTP: src/platform/tests/test_idp_revoke_next_request.py:373 (an IdP login stores the access and refresh token) and :386 (the next request after an IdP revoke loses the role).
+  verified: 2026-10-02 — RESOLVED — src/platform/config/settings/base.py:614 sets SOCIALACCOUNT_STORE_TOKENS = True; src/platform/tests/test_idp_revoke_next_request.py:373 and :386 prove the stored token and the revoke. (2026-10-02 Phase 2 deferral burn-down closure)
   verified: 2026-10-01 — STANDS — The HTTP client the entry asked for now exists: Story 49.6 (49-6-cap-12-in-effect-revocation-on-the-next-request: done) added src/platform/config/authorization/idp_userinfo.py:101-123 fetch_current_userinfo, wired as IDP_USERINFO in config/settings/production.py:177. It can never get a token, though. _access_token_for (:55-69) reads allauth SocialToken rows, and SOCIALACCOUNT_STORE_TOKENS is set nowhere under src/platform (grep finds no hits). The installed allauth defaults it to False (.pixi/envs/platform-ci-test/.../allauth/socialaccount/app_settings.py:146-147), and SocialLogin.save persists the token only `if app_settings.STORE_TOKENS` (models.py:314). So in a deployed process _access_t… Severity medium -> critical by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
@@ -2880,8 +2882,10 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   summary: Nothing this story added sets `LANGFLOW_AUTO_LOGIN=False` (or any equivalent hardening) for the mounted app, so Langflow's own dev-mode default stays live: `GET /api/v1/auto_login` mints a real bearer token for the bootstrap superuser with no credential at all.
   evidence: station-unresolved: `resolve_config.py --key project` returned `pyforge-mason` while `readlink -f` of this file's own path agrees with the `.active-project` marker on `pyforge-steward` -- filed against `pyforge-steward`'s ledger per the same cross-check this workflow already applied to `DW-FU-10-4`, immediately above. Confirmed by reading the story's own new test file (`langflow_integration/tests.py`): its own docstring documents `AUTO_LOGIN` "defaults to `True` (dev-mode bootstrap)" and its AC3 test relies on `GET /api/v1/auto_login` for a no-password bearer token specifically because `AUTO_LOGIN=True` ignores any configured `LANGFLOW_SUPERUSER_PASSWORD` outright (Langflow's own `services/utils.py` logs "Ignoring legacy default LANGFLOW_SUPERUSER_PASSWORD in AUTO_LOGIN mode"). Raised independently by this story's own second (post-repair) adversarial review pass. Not fixed inline because the story's own frozen intent contract scopes proving the mount and its schema isolation, not a security-hardening posture for Langflow's own auth system -- matches this story's already-accepted pattern of naming out-of-scope production-readiness gaps as deferred work (see the Never section's own object-storage exclusion, "flag it as deferred work if a later story needs it"). Whoever next exposes this mount outside a local dev/CI context needs a decision here: set `LANGFLOW_AUTO_LOGIN=False` plus a real superuser credential path, or scope network access to `/api/v1/auto_login` some other way, before this mount is reachable from anywhere but a trusted local network.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
-  status: open
+  status: closed
   severity: critical
+  resolution: 2026-10-02 — fixed: steward Story 78.1 (PR #1703, merge 5488d658ef). src/platform/config/settings/base.py:716-717 assigns `LANGFLOW_AUTO_LOGIN = False` and `os.environ["LANGFLOW_AUTO_LOGIN"] = "False"` (assigned, not read from the environment, so no `.env` line, chart env or shell export revives it). Real tests: src/platform/tests/test_langflow_auth_posture.py:84-109 load settings in a fresh process with `LANGFLOW_AUTO_LOGIN` set to true/True/1/yes/on (test and deployed leaf) and assert `False False`; src/platform/tests/test_chart_invariants.py:1924 asserts the chart carries no `LANGFLOW_AUTO_LOGIN`.
+  verified: 2026-10-02 — RESOLVED — src/platform/config/settings/base.py:716-717 forces LANGFLOW_AUTO_LOGIN off; src/platform/tests/test_langflow_auth_posture.py:84-109 proves it in a fresh process. (2026-10-02 Phase 2 deferral burn-down closure)
   verified: 2026-10-01 — STANDS — grep -rn 'LANGFLOW_AUTO_LOGIN' src/platform/ finds only a docstring reference in the test file (src/platform/langflow_integration/tests.py:152, 'defaults to True (dev-mode bootstrap)'); grep of src/platform/config/settings/base.py's ~15 LANGFLOW_* derivations (lines 637-758) shows no AUTO_LOGIN entry. grep of every workflow/yaml/env file in the repo for LANGFLOW_AUTO_LOGIN|AUTO_LOGIN returns nothing — no external override exists either. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
@@ -3135,7 +3139,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: high
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   location: pixi.toml (platform-ci-test) / .github/workflows/platform-ci.yml
-  status: open
+  status: closed
+  resolution: 2026-10-02 — fixed: steward Story 80.1 (PR #1713, merge 8a0242c96d). pixi.toml:467 declares `kubernetes-helm = ">=4.3.0"` inside `[feature.platform-ci-test.dependencies]` (pixi.toml:408), the env the Platform CI `test` job installs; src/platform/tests/helm_gate.py:38-53 `requires_helm` returns the test unchanged when helm is on PATH and, when helm is absent with `CI` set, a stand-in that `pytest.fail`s naming helm (a skip only outside CI); test_chart_invariants.py:37 and test_openfeature_file_flags.py:46 import that one gate. Platform CI on PR #1713 ran the chart tests, none skipped: its `test` job (run 36851139248, job 110332808020) logged 117 `tests/test_chart_invariants.py` and 47 `tests/test_openfeature_file_flags.py` cases PASSED and 0 SKIPPED.
+  verified: 2026-10-02 — RESOLVED — pixi.toml:467 puts kubernetes-helm in platform-ci-test; src/platform/tests/helm_gate.py:38-53 fails a chart test under CI when helm is absent; PR #1713's Platform CI `test` job ran 117 chart-invariant cases, 0 skipped. (2026-10-02 Phase 2 deferral burn-down closure)
   verified: 2026-10-01 — STANDS — Wider than recorded. src/platform/tests/test_chart_invariants.py:167-173 requires_helm is skipif(shutil.which('helm') is None). 66 of its 112 tests carry @requires_helm, including the Story 41.2 query-plane checks (:924-958) and the assertion-keypair wiring (:1764). kubernetes-helm is declared only in the platform-dev feature (pixi.toml:332), not platform-ci-test. The Platform CI test job installs platform-ci-test (.github/actions/platform-test-setup/action.yml:14) and runs `python -m pytest -v` (.github/workflows/platform-ci.yml:253-254), and no workflow runs test_chart_invariants.py under helm. So every helm-rendered chart invariant skips in CI and the job reports green. Severity medium -> high by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED unchanged: the duckdb-boundary chart live-render proofs still run only under platform-dev, not in platform-ci-test. A `location:` was added — this entry had none, which is why the churn filter could never reach it. 41-2-3 in particular is pending-on-precondition in substance: its blocker is a PVC that has not shipped, not a decision anyone owes.
@@ -3423,7 +3429,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 20e3e0ad533b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-02 — fixed: steward Story 80.1 (PR #1713, merge 8a0242c96d). pixi.toml:467 declares `kubernetes-helm = ">=4.3.0"` inside `[feature.platform-ci-test.dependencies]` (pixi.toml:408), the env the Platform CI `test` job installs; src/platform/tests/helm_gate.py:38-53 `requires_helm` returns the test unchanged when helm is on PATH and, when helm is absent with `CI` set, a stand-in that `pytest.fail`s naming helm (a skip only outside CI); test_chart_invariants.py:37 and test_openfeature_file_flags.py:46 import that one gate. Platform CI on PR #1713 ran the chart tests, none skipped: its `test` job (run 36851139248, job 110332808020) logged 117 `tests/test_chart_invariants.py` and 47 `tests/test_openfeature_file_flags.py` cases PASSED and 0 SKIPPED.
+  verified: 2026-10-02 — RESOLVED — pixi.toml:467 puts kubernetes-helm in platform-ci-test; src/platform/tests/helm_gate.py:38-53 fails a chart test under CI when helm is absent; PR #1713's Platform CI `test` job ran 117 chart-invariant cases, 0 skipped. (2026-10-02 Phase 2 deferral burn-down closure)
   verified: 2026-10-01 — STANDS — src/platform/tests/test_chart_invariants.py carries 67 @requires_helm decorators (skipif, not a failure); pixi.toml's [feature.platform-ci-test.dependencies] (line 408) has no kubernetes-helm -- it is only under [feature.platform-dev] (line 332); .github/workflows/platform-ci.yml's 'test' job (lines 168-236) installs only the platform-test-setup action (platform-ci-test env) with no helm install step. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED against the live file — the code path this entry indicts is present and unchanged. `test_chart_invariants.py` still carries 40 `@requires_helm` gates, so AC 4's only chart-render proof still silently skips wherever helm is absent.
@@ -3993,7 +4001,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 395c8d2f9102 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-02 — fixed: steward Story 80.1 (PR #1713, merge 8a0242c96d). pixi.toml:467 declares `kubernetes-helm = ">=4.3.0"` inside `[feature.platform-ci-test.dependencies]` (pixi.toml:408), the env the Platform CI `test` job installs; src/platform/tests/helm_gate.py:38-53 `requires_helm` returns the test unchanged when helm is on PATH and, when helm is absent with `CI` set, a stand-in that `pytest.fail`s naming helm (a skip only outside CI); test_chart_invariants.py:37 and test_openfeature_file_flags.py:46 import that one gate. Platform CI on PR #1713 ran the chart tests, none skipped: its `test` job (run 36851139248, job 110332808020) logged 117 `tests/test_chart_invariants.py` and 47 `tests/test_openfeature_file_flags.py` cases PASSED and 0 SKIPPED.
+  verified: 2026-10-02 — RESOLVED — pixi.toml:467 puts kubernetes-helm in platform-ci-test; src/platform/tests/helm_gate.py:38-53 fails a chart test under CI when helm is absent; PR #1713's Platform CI `test` job ran 117 chart-invariant cases, 0 skipped. (2026-10-02 Phase 2 deferral burn-down closure)
   verified: 2026-10-01 — STANDS — src/platform/tests/test_chart_invariants.py's Story 42.4 render tests are still @requires_helm-gated; platform-ci-test still has no kubernetes-helm dependency (see DW-FU-42-1-5 evidence). (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED against the live file — the code path this entry indicts is present and unchanged. `test_chart_invariants.py`'s Story 42.4 render tests are still `@requires_helm`-gated and still skip where helm is absent.
@@ -5552,7 +5562,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 4242385d065e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-02 — fixed: steward Story 80.1 (PR #1713, merge 8a0242c96d). pixi.toml:467 declares `kubernetes-helm = ">=4.3.0"` inside `[feature.platform-ci-test.dependencies]` (pixi.toml:408), the env the Platform CI `test` job installs; src/platform/tests/helm_gate.py:38-53 `requires_helm` returns the test unchanged when helm is on PATH and, when helm is absent with `CI` set, a stand-in that `pytest.fail`s naming helm (a skip only outside CI); test_chart_invariants.py:37 and test_openfeature_file_flags.py:46 import that one gate. Platform CI on PR #1713 ran the chart tests, none skipped: its `test` job (run 36851139248, job 110332808020) logged 117 `tests/test_chart_invariants.py` and 47 `tests/test_openfeature_file_flags.py` cases PASSED and 0 SKIPPED.
+  verified: 2026-10-02 — RESOLVED — pixi.toml:467 puts kubernetes-helm in platform-ci-test; src/platform/tests/helm_gate.py:38-53 fails a chart test under CI when helm is absent; PR #1713's Platform CI `test` job ran 117 chart-invariant cases, 0 skipped. (2026-10-02 Phase 2 deferral burn-down closure)
   verified: 2026-10-01 — STANDS — Settles the entry's own open question: .github/workflows/platform-ci.yml's 'test' job (lines 168-236) installs test dependencies only via the platform-test-setup action (the platform-ci-test pixi env), which has no kubernetes-helm dependency (confirmed under DW-FU-42-1-5) and no separate helm-install step -- so the runner does NOT supply its own helm, and the new helm-gated chart tests do skip silently there. (2026-09-30 deferral burn-down triage)
 
 ### DW-steward-78-1: The platform edge still forwards every `/langflow/...` request into Langflow with no platform-side auth gate; after this story Langflow's own login (the env superuser) is the only gate.
@@ -5585,7 +5597,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 125b3e7f3b6e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-02 — fixed: steward Story 80.1 (PR #1713, merge 8a0242c96d) put `kubernetes-helm` in the Platform CI `test` job's env (pixi.toml:467, table at :408), so `@requires_helm` chart tests run there; src/platform/tests/test_chart_invariants.py:1904-1905 `test_platform_pods_require_the_langflow_superuser_password_from_the_secret` is one of them.
+  verified: 2026-10-02 — RESOLVED — src/platform/tests/test_chart_invariants.py:1904 carries `@requires_helm`; src/platform/tests/helm_gate.py:38-53 fails such a test under CI when helm is absent; PR #1713's Platform CI `test` job ran 117 chart-invariant cases, 0 skipped.
 
 ### DW-steward-78-1-4: An existing deployment's Langflow database and the tokens minted while `/auto_login` was open are not addressed: no rotation, audit or upgrade note ships with the fix.
 
@@ -5640,7 +5654,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 84438f226907 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-02 — closed: the Platform CI `test` log of PR #1713 (Story 80.1) was read on 2026-10-02 — 117 chart-invariant and 47 flag cases passed, 0 skipped — and the chart-test deferrals it gated (DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1, DW-steward-78-1-3) are closed on that evidence.
+  verified: 2026-10-02 — RESOLVED — pixi.toml:467 (kubernetes-helm in platform-ci-test) and src/platform/tests/helm_gate.py:38-53 (a skipped chart test fails under CI) are on main; the gated entries read status: closed in this ledger.
 
 ### DW-steward-80-1-2: A missing PyYAML would still skip the chart tests silently under CI.
 
