@@ -2465,7 +2465,9 @@ def run_teardown(
             nested_worktrees = _worktrees_nested_under(vcs.list_worktrees(repo_root), worktree_path)
         except VcsCommandError as exc:
             if not force:
-                findings.append(_teardown_op_failed_finding(f"listing the worktrees nested under {worktree_path}: {exc}"))
+                findings.append(
+                    _teardown_op_failed_finding(f"listing the worktrees nested under {worktree_path}: {exc}")
+                )
                 return _emit_teardown(args, data, findings)
             reasons.append(f"the worktrees nested under {worktree_path} could not be enumerated: {exc}")
             # Unknown, so prune afterwards anyway: pruning stale registrations is harmless.

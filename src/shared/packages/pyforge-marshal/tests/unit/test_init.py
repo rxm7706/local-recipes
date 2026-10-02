@@ -3616,6 +3616,210 @@ def test_teardown_unresolvable_home_reports_mrs_teardown_002(repo_root, capsys, 
 # --- verdict classification of the three new codes ---------------------------
 
 
+# --- Story 82.8 (DW-1-8-5): worktrees registered INSIDE the home ------------
+#
+# bmad-loop registers each run's story worktrees under the home
+# (`<home>/.bmad-loop/runs/<run>/worktrees/<story>`), in gitignored paths the
+# home's own dirty probe cannot see. Removing the home deletes them
+# recursively. Teardown lists them, refuses on a dirty one (naming it), lets a
+# clean one pass, and prunes the registrations removal orphans.
+
+
+def _nested_home(repo_root: Path, tmp_path: Path, *, dirty: tuple[str, ...] = (), clean: tuple[str, ...] = ()):
+    """A provisioned `loop/acme` home carrying one registered nested worktree
+    per name in ``dirty``/``clean``; returns ``(vcs, fs, home, nested_paths)``
+    with every nested directory present on disk."""
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+    nested: dict[str, Path] = {}
+    for name in (*dirty, *clean):
+        path = home / ".bmad-loop" / "runs" / "20260930-120000-abcd" / "worktrees" / name
+        nested[name] = path
+        vcs.extra_worktree_entries.append(WorktreeEntry(path=path, branch=f"bmad-loop/{name}"))
+    vcs.dirty_worktrees.update(nested[name] for name in dirty)
+    fs = FakeFs(project_dirs={home, *nested.values()})
+    return vcs, fs, home, nested
+
+
+def _run_teardown_json(vcs: FakeVcs, fs: FakeFs, **kwargs) -> tuple[int, dict]:
+    import io
+    import sys
+
+    captured = io.StringIO()
+    old_stdout = sys.stdout
+    sys.stdout = captured
+    try:
+        exit_code = run_teardown(_teardown_namespace("acme", fmt="json", **kwargs), vcs=vcs, fs=fs)
+    finally:
+        sys.stdout = old_stdout
+    return exit_code, json.loads(captured.getvalue())
+
+
+def test_teardown_dirty_nested_worktree_without_force_refuses_names_it_and_removes_nothing(repo_root, tmp_path):
+    vcs, fs, home, nested = _nested_home(repo_root, tmp_path, dirty=("2-1-story",), clean=("2-2-story",))
+
+    exit_code, payload = _run_teardown_json(vcs, fs)
+
+    assert exit_code != EXIT_OK
+    assert [f["code"] for f in payload["findings"]] == ["MRS-TEARDOWN-003"]
+    message = payload["findings"][0]["message"]
+    assert str(nested["2-1-story"]) in message
+    assert "uncommitted changes" in message
+    assert "--force" in message
+    # The clean sibling is not named: only work that would be lost is.
+    assert str(nested["2-2-story"]) not in message
+    assert vcs.remove_worktree_calls == []
+    assert vcs.delete_branch_calls == []
+    assert vcs.prune_worktrees_calls == []
+    assert "removed" not in payload["data"]
+
+
+def test_teardown_names_every_dirty_nested_worktree_after_the_homes_own_dirt(repo_root, tmp_path):
+    """One finding, every reason, existing reasons in their old relative order:
+    the home's own dirt, then each nested one, then the unmerged branch."""
+    vcs, fs, home, nested = _nested_home(repo_root, tmp_path, dirty=("2-1-story", "2-2-story"))
+    vcs.dirty_worktrees.add(home)
+    vcs.unmerged_branches.add("loop/acme")
+
+    _exit, payload = _run_teardown_json(vcs, fs)
+
+    message = payload["findings"][0]["message"]
+    positions = [
+        message.index(f"{home} has uncommitted changes"),
+        message.index(str(nested["2-1-story"])),
+        message.index(str(nested["2-2-story"])),
+        message.index("not yet safely captured on main"),
+    ]
+    assert positions == sorted(positions)
+    assert len(payload["findings"]) == 1
+
+
+def test_teardown_force_carries_past_a_dirty_nested_worktree_then_prunes(repo_root, tmp_path):
+    vcs, fs, home, nested = _nested_home(repo_root, tmp_path, dirty=("2-1-story",))
+
+    exit_code, payload = _run_teardown_json(vcs, fs, force=True)
+
+    assert exit_code == EXIT_OK
+    assert payload["data"]["removed"] is True
+    assert payload["data"]["forced"] is True
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.prune_worktrees_calls == [repo_root]
+    assert vcs.orphaned_worktree_entries == []
+
+
+def test_teardown_clean_nested_worktrees_block_nothing_and_are_pruned_after_removal(repo_root, tmp_path):
+    vcs, fs, home, nested = _nested_home(repo_root, tmp_path, clean=("2-1-story", "2-2-story"))
+
+    exit_code, payload = _run_teardown_json(vcs, fs)
+
+    assert exit_code == EXIT_OK
+    assert payload["findings"] == []
+    assert payload["data"]["removed"] is True
+    assert "forced" not in payload["data"]
+    # A clean nested worktree needs no --force and no refusal ...
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+    assert vcs.delete_branch_calls == [(repo_root, "loop/acme", True)]
+    # ... but its registration is orphaned by the removal, so it is pruned, after it.
+    assert vcs.prune_worktrees_calls == [repo_root]
+    assert vcs.calls.index("remove_worktree") < vcs.calls.index("prune_worktrees") < vcs.calls.index("delete_branch")
+    assert [entry for entry in vcs.list_worktrees(repo_root) if home in entry.path.parents] == []
+
+
+def test_teardown_without_nested_worktrees_never_prunes(repo_root, tmp_path):
+    home = tmp_path / "loop-homes" / "acme"
+    vcs = _provisioned_teardown_vcs(repo_root, home, "acme")
+
+    exit_code, _payload = _run_teardown_json(vcs, FakeFs())
+
+    assert exit_code == EXIT_OK
+    assert vcs.prune_worktrees_calls == []
+    assert "prune_worktrees" not in vcs.calls
+
+
+def test_teardown_nested_means_below_the_home_by_path_component(repo_root, tmp_path):
+    """`<root>/acme-extra` shares a string prefix with `<root>/acme` and is not
+    nested under it; neither is a dirty worktree registered elsewhere."""
+    vcs, fs, home, _nested = _nested_home(repo_root, tmp_path)
+    sibling = home.with_name("acme-extra")
+    elsewhere = tmp_path / "elsewhere" / "wt"
+    vcs.extra_worktree_entries.extend(
+        [WorktreeEntry(path=sibling, branch="loop/acme-extra"), WorktreeEntry(path=elsewhere, branch="x")]
+    )
+    vcs.dirty_worktrees.update({sibling, elsewhere})
+    fs.dirs.update({sibling, elsewhere})
+
+    exit_code, payload = _run_teardown_json(vcs, fs)
+
+    assert exit_code == EXIT_OK
+    assert payload["findings"] == []
+    assert vcs.prune_worktrees_calls == []
+
+
+def test_teardown_nested_worktree_gone_from_disk_has_nothing_to_lose(repo_root, tmp_path):
+    """A registration whose directory is already gone is not probed (git cannot
+    answer for a missing path) and blocks nothing; its stale entry is pruned."""
+    vcs, fs, home, nested = _nested_home(repo_root, tmp_path, dirty=("2-1-story",))
+    fs.dirs.discard(nested["2-1-story"])
+
+    exit_code, payload = _run_teardown_json(vcs, fs)
+
+    assert exit_code == EXIT_OK
+    assert payload["findings"] == []
+    assert vcs.prune_worktrees_calls == [repo_root]
+
+
+def test_teardown_nested_probe_failure_blocks_only_an_unforced_teardown(repo_root, tmp_path):
+    vcs, fs, home, nested = _nested_home(repo_root, tmp_path, clean=("2-1-story",))
+    vcs.fail_has_uncommitted_changes_paths.add(nested["2-1-story"])
+
+    exit_code, payload = _run_teardown_json(vcs, fs)
+
+    assert exit_code != EXIT_OK
+    assert [f["code"] for f in payload["findings"]] == ["MRS-TEARDOWN-002"]
+    assert str(nested["2-1-story"]) in payload["findings"][0]["message"]
+    assert vcs.remove_worktree_calls == []
+
+    exit_code, payload = _run_teardown_json(vcs, fs, force=True)
+
+    assert exit_code == EXIT_OK
+    assert payload["data"]["forced"] is True
+    assert vcs.remove_worktree_calls == [(repo_root, home, True)]
+    assert vcs.prune_worktrees_calls == [repo_root]
+
+
+def test_teardown_nested_listing_failure_blocks_only_an_unforced_teardown(repo_root, tmp_path):
+    vcs, fs, home, _nested = _nested_home(repo_root, tmp_path, clean=("2-1-story",))
+    vcs.fail_list_worktrees = VcsCommandError("git worktree list failed")
+
+    exit_code, payload = _run_teardown_json(vcs, fs)
+
+    assert exit_code != EXIT_OK
+    assert [f["code"] for f in payload["findings"]] == ["MRS-TEARDOWN-002"]
+    assert vcs.remove_worktree_calls == []
+
+    exit_code, payload = _run_teardown_json(vcs, fs, force=True)
+
+    assert exit_code == EXIT_OK
+    assert payload["data"]["forced"] is True
+    # Unknown nested state: pruning stale registrations afterwards is harmless and safe.
+    assert vcs.prune_worktrees_calls == [repo_root]
+
+
+def test_teardown_prune_failure_after_removal_reports_mrs_teardown_002(repo_root, tmp_path):
+    vcs, fs, home, _nested = _nested_home(repo_root, tmp_path, clean=("2-1-story",))
+    vcs.fail_prune_worktrees = VcsCommandError("git worktree prune failed")
+
+    exit_code, payload = _run_teardown_json(vcs, fs)
+
+    assert exit_code != EXIT_OK
+    assert [f["code"] for f in payload["findings"]] == ["MRS-TEARDOWN-002"]
+    assert "already removed" in payload["findings"][0]["message"]
+    assert "git worktree prune failed" in payload["findings"][0]["message"]
+    assert vcs.remove_worktree_calls == [(repo_root, home, False)]
+    # A bare re-run still reconciles the branch (the existing branch-only path).
+    assert vcs.delete_branch_calls == []
+
+
 def test_teardown_finding_codes_classify_as_documented():
     from pyforge.marshal.core.model import Verdict
     from pyforge.marshal.core.verdict import classify
