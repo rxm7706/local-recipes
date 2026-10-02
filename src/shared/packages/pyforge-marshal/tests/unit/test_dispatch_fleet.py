@@ -2985,14 +2985,19 @@ def test_supervisor_cycle_argv_carries_retry_environment_blocks_only_when_set(
         assert process.argvs == [expected]
 
 
+@pytest.mark.parametrize("retry", [True, False])
 def test_second_campaign_cycle_skips_an_environment_block_when_the_flag_rides_the_tick_argv(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    retry: bool,
 ) -> None:
-    """The defect end to end (AC2): the argv a supervised tick re-runs, parsed
-    by the REAL ``marshal`` parser into the Namespace a cycle sees, drives an
-    existing campaign over an environment-blocked story -- the story is skipped
-    (MRS-DRAIN-004) and the next eligible one dispatches. Without the flag on
-    the tick argv the same cycle stops on the block (MRS-DRAIN-005)."""
+    """The defect end to end (AC2, AC3): the argv a supervised tick re-runs,
+    parsed by the REAL ``marshal`` parser into the Namespace a cycle sees,
+    drives an existing campaign over an environment-blocked story. With the
+    flag on the tick argv the story is skipped (MRS-DRAIN-004) and the next
+    eligible one dispatches; without it the cycle stops on the block
+    (MRS-DRAIN-005) -- the pre-81.3 behaviour a flagless campaign keeps."""
     from pyforge.marshal.cli.main import _build_parser
     from pyforge.marshal.dispatch_fleet_supervisor.__main__ import build_cycle_argv
 
@@ -3006,53 +3011,44 @@ def test_second_campaign_cycle_skips_an_environment_block_when_the_flag_rides_th
         baseline_head_sha="baseline1234",
     )
     monkeypatch.chdir(tmp_path)
-    ledgers = {"pyforge-marshal": (("34-3-crashed", "backlog"), ("34-4-next", "backlog"))}
 
-    # Cycle 1: the operator's foreground invocation, flag set.
+    # Cycle 1: the operator's foreground invocation. Every story is `done`
+    # here so it dispatches nothing -- it only mints the campaign directory
+    # the supervised tick then re-enters with `--campaign`.
     _run_drain(
         tmp_path,
-        _drain_args(once=True, retry_environment_blocks=True),
-        ledgers=ledgers,
-        build_harness=FakeBuildHarness(),
+        _drain_args(once=True, retry_environment_blocks=retry),
+        ledgers={"pyforge-marshal": (("34-3-crashed", "done"), ("34-4-next", "done"))},
     )
     run_id = next(dispatch_fleet.fleet_runs_dir(tmp_path).iterdir()).name
 
-    def tick_namespace(*, retry: bool) -> argparse.Namespace:
-        argv = build_cycle_argv(
-            mode="drain_to_zero",
-            leave_remaining=0,
-            run_id=run_id,
-            retry_environment_blocks=retry,
-        )
-        # argv[0:3] is `python -m pyforge.marshal.cli.main`; the rest is the CLI.
-        return _build_parser().parse_args(argv[3:])
-
-    # Cycle 2 with the flag on the tick argv: skipped, next story dispatched.
-    kept = tick_namespace(retry=True)
-    assert kept.retry_environment_blocks is True
+    # Cycle 2: the supervised tick, exactly as the supervisor would run it.
+    # argv[0:3] is `python -m pyforge.marshal.cli.main`; the rest is the CLI.
+    tick_argv = build_cycle_argv(
+        mode="drain_to_zero",
+        leave_remaining=0,
+        run_id=run_id,
+        retry_environment_blocks=retry,
+    )
+    tick = _build_parser().parse_args(tick_argv[3:])
+    assert tick.retry_environment_blocks is retry
     harness = FakeBuildHarness()
-    code = _run_drain(
+    capsys.readouterr()
+    _run_drain(
         tmp_path,
-        kept,
-        ledgers=ledgers,
+        tick,
+        ledgers={"pyforge-marshal": (("34-3-crashed", "backlog"), ("34-4-next", "backlog"))},
         build_harness=harness,
         process=FakeProcess(alive=False),
     )
-    assert code == EXIT_OK
-    assert harness.dispatched == [("pyforge-marshal", "34.4")]
-
-    # Cycle 2 as it ran before 81.3 (flag absent): stops on the same block.
-    dropped = tick_namespace(retry=False)
-    assert dropped.retry_environment_blocks is False
-    stopped = FakeBuildHarness()
-    _run_drain(
-        tmp_path,
-        dropped,
-        ledgers=ledgers,
-        build_harness=stopped,
-        process=FakeProcess(alive=False),
-    )
-    assert stopped.dispatched == []
+    out = capsys.readouterr().out
+    if retry:
+        assert harness.dispatched == [("pyforge-marshal", "34.4")]
+        assert "MRS-DRAIN-004" in out
+        assert "MRS-DRAIN-005" not in out
+    else:
+        assert harness.dispatched == []
+        assert "MRS-DRAIN-005" in out
 
 
 def test_manual_resume_hint_repeats_retry_environment_blocks(
