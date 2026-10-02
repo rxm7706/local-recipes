@@ -277,13 +277,15 @@ every other write here uses ``fsync=False``, since an observation carries
 no invariant a crash between the write and an fsync would silently
 violate. A journal append failure (``FsError``) at ANY point -- the attach
 entry, a heartbeat, a ladder action, or the final detach -- is fatal to
-this process: it prints a diagnostic to its own stderr (already redirected
-to ``log_path`` by the parent's ``spawn_detached`` call -- this module
-never opens ``log_path`` itself) and exits non-zero rather than looping
-forever against a journal it cannot durably write to -- and, since Story
-82.4, stops the watched run first when a harness run id is known (see
+this process when a harness run id is known: it prints a diagnostic to its
+own stderr (already redirected to ``log_path`` by the parent's
+``spawn_detached`` call -- this module never opens ``log_path`` itself) and
+exits non-zero rather than looping forever against a journal it cannot
+durably write to -- and, since Story 82.4, stops the watched run first (see
 "Tamper-evident journal" below), because exiting with the run still alive
 left it unsupervised behind a journal that read like a healthy one mid-tick.
+With no harness run id there is nothing to stop against, so the failure is
+reported once (``MRS-SUPV-013``) and supervision goes on.
 A dead supervisor with no further heartbeats is itself a later-detectable
 condition (AD-9: "a dead supervisor is a reported condition ... never
 silence") -- surfacing it as a `status` finding is a later epic's own

@@ -6345,6 +6345,54 @@ def test_a_signal_never_overrides_a_natural_exit(_sentinel_signal_handlers):
     assert _entries(fs)[-1]["payload"]["reason"] == "watched-process-exited"
 
 
+def test_a_signal_never_overrides_a_budget_stop_reason(_sentinel_signal_handlers):
+    """SIGTERM arrives while the tick's budget stop is running (the handler
+    only records it mid-tick) and the watched process is still alive after
+    the stop. The detach reason stays the more specific
+    ``budget-story-tokens-exceeded``; only a detach with no reason of its own
+    takes ``signal-SIGTERM``."""
+    _, received = _sentinel_signal_handlers
+    fs = FakeFs(journal_text=_launch_outcome_line("acme-run-1") + "\n")
+    clock = AdvancingClock()
+
+    class _SignallingHarness(FakeHarness):
+        def stop(self, project: Path, run_id: str) -> bool:
+            signal.raise_signal(signal.SIGTERM)
+            return super().stop(project, run_id)
+
+    harness = _SignallingHarness()
+    harness.usage_snapshot_result = UsageSnapshot(
+        story_key="3.6",
+        story_weighted_tokens=150,
+        run_weighted_tokens=150,
+        sample_path=_HOME / ".bmad-loop" / "runs" / _HARNESS_RUN_ID / "state.json",
+    )
+
+    rc = run_supervisor(
+        _HOME,
+        "acme",
+        "acme-run-1",
+        4242,
+        _LOG_PATH,
+        _IDLE_THRESHOLD_MINUTES,
+        100.0,
+        _MAX_TOKENS_PER_RUN,
+        _MAX_WALL_CLOCK_MINUTES_PER_STORY,
+        _MAX_WALL_CLOCK_MINUTES_PER_RUN,
+        fs=fs,
+        process=FakeProcess(alive_for=5),
+        clock=clock,
+        observer=FakeObserver(pane="idle"),
+        harness=harness,
+        sleep=clock.sleep,
+    )
+
+    assert rc == 0
+    assert received == []
+    assert harness.stop_calls
+    assert _entries(fs)[-1]["payload"]["reason"] == "budget-story-tokens-exceeded"
+
+
 def test_a_signal_during_the_sleep_after_the_watched_process_exited_keeps_the_natural_exit_reason(
     _sentinel_signal_handlers,
 ):
