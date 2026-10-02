@@ -2,7 +2,7 @@
 title: '82.12: Seed apply binds a plan to its repository, refuses a directory target with a remedy, and honours a skip on a hand-edit'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'c34cbda1919e96c2a9691404e0e794672d8b90b9'
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -260,7 +260,7 @@ Status: done
 
 **Review findings.** Two passes.
 - Pass 1: 26 findings, three of one root cause routed `bad_spec` (`update` was given no `--skip`; "no flag" had been read as "no CLI option"). The spec was amended outside the intent contract, the code was reverted and re-derived. The other pass-1 patch rows were folded into the amended Tasks.
-- Pass 2: 30 findings after the re-derivation: no `bad_spec` or `intent_gap`. **Patches applied: 7 entries** covering 8 rows -- the mixed-run state-carry-over tests (one medium entry, found by two layers), the inverted test name, the `_HasArtifactId` rename, the "Pure and total" docstring, the overclaiming DW-10-4-5 line, the core memlog co-governor entry and stray token, and the docstring wrapping. **Deferred: 1 entry** (2 rows, `maybe-false`, medium if true, unverified): `update --skip` of a migration-claimed artifact still records the migration in `migrations_applied`; location `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py:955`; tracked as `DW-marshal-82-12`. **Rejected: 20 rows**, each with its reason in the Review Triage Log (`patterns` default kept, `state.skips` unread by `adopt` too, visibility of a pattern-only skip, host paths in `plan.json`, library-seam surface for the first two criteria, and the four `false` rows).
+- Pass 2: 30 findings after the re-derivation: no `bad_spec` or `intent_gap`. **Patches applied: 7 entries** covering 9 rows -- the mixed-run state-carry-over tests (one medium entry, found by two layers), the inverted test name, the `_HasArtifactId` rename, the "Pure and total" docstring, the overclaiming DW-10-4-5 line (found by two layers), the core memlog co-governor entry and stray token, and the docstring wrapping. **Deferred: 1 entry** (2 rows, `maybe-false`, medium if true, unverified): `update --skip` of a migration-claimed artifact still records the migration in `migrations_applied`; location `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/update.py:955`; tracked as `DW-marshal-82-12`. **Rejected: 19 rows**, each with its reason in the Review Triage Log (`patterns` default kept, `state.skips` unread by `adopt` too, visibility of a pattern-only skip, host paths in `plan.json`, library-seam surface for the first two criteria, and the four `false` rows).
 
 **Follow-up review recommendation.** `followup_review_recommended: false`. Pass 2 patched no `high` entry and one `medium` entry (fewer than two), and the patches were tests, names, wrapping and text, none changing behaviour.
 
@@ -278,4 +278,4 @@ Status: done
 - A pattern-only exemption (a skipped record with no action) leaves no line in the plan text or JSON, and a mistyped pattern still does nothing.
 - `plan.json` now carries absolute host paths; it lives under `.marshal/`, covered by the packaged `.gitignore` region.
 - The deferred `migrations_applied` question above.
-- Not run: the full `pr-preflight` and the per-station coverage gate in this pass (the implementation subagent ran the coverage gate on the first re-derivation: all seven touched modules at or above 80%); `dispatch/*` branches are supervisor-gated and skip the pre-push preflight.
+- Not run: the full `pr-preflight` and the per-station coverage gate in this pass (the implementation subagent reported running the coverage gate on the first re-derivation, all seven touched modules at or above 80%; the reviewer did not re-run it); `dispatch/*` branches are supervisor-gated and skip the pre-push preflight.
