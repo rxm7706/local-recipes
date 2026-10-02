@@ -7841,3 +7841,14 @@ status: open
   severity: low
   promoted: 2026-10-02 — dispatch-land finalize
   status: open
+
+### DW-marshal-82-1: Three sibling loaders still resolve `scripts/promote_sprint_status.py` through `Path(__file__).resolve().parents[8]`, so they break under an installed package the way `repo_root()` did.
+
+- source_spec: `planning-artifacts/specs/spec-82-1-gate-evaluate-finds-the-real-repository-under-an-installed-package-and-never-passes-having-run-nothing.md`
+  summary: Three sibling loaders still resolve `scripts/promote_sprint_status.py` through `Path(__file__).resolve().parents[8]`, so they break under an installed package the way `repo_root()` did.
+  evidence: `cli/chain.py:96` (`_load_promote`, raises RuntimeError when the file is missing), `cli/land.py:1278` (returns None, so land skips the feed sync) and `cli/deploy.py:3490` (asserts). None is a `repo_root()` consumer, the story's intent keeps every other consumer's call unchanged, and `cli/deploy.py` deliberately avoids `repo_root()` so `tests/unit/test_deploy.py` can redirect it. The script is a repo file the artifact does not ship, so the fix needs an anchor decision, not a one-line swap.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/chain.py:96
+  origin: spec-deferred 5266a1817824 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
