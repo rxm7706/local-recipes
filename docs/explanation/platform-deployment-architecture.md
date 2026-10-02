@@ -104,9 +104,11 @@ readiness), Celery worker Deployment (the general pool), a `worker-builds`
 Deployment (the builds pool) and a single-replica `beat` Deployment (Story
 42.4), one `consume-events-<station>`
 Deployment per station in `events.consumers` (Story 42.3), migrate hook Job
-(`post-install,pre-upgrade` — the image CMD never migrates), postgres:17
-StatefulSet + PVC, redis:7 Deployment, Services, ServiceAccounts, and an
-Ingress on `ingress.host` (default `platform.internal`).
+(`post-install,pre-upgrade` — the image CMD never migrates), a
+pgvector/pgvector:pg17 StatefulSet + PVC (PostgreSQL 17 plus the `vector`
+extension the Liquibase changelog creates), redis:7 Deployment, Services,
+ServiceAccounts, and an Ingress on `ingress.host` (default
+`platform.internal`).
 
 **TLS:** the default values assume a TLS-terminating ingress controller —
 `ingress.tls` supplies the cert blocks, and `django.secureSslRedirect:
@@ -275,8 +277,25 @@ capability-naming reason where helm/PyYAML are absent.
   uses `/bitnami/postgresql`, Red Hat `/var/lib/pgsql/data`) — the PVC
   mounts at `dataMountPath` and `PGDATA` derives from it, so a mismatch
   silently lands the database on the container's ephemeral filesystem
-  instead of the PVC. The official **redis:7** image stores AOF/RDB under
+  instead of the PVC. A replacement `postgres.image` must also carry the
+  pgvector `vector` extension (`vector.control`): the Liquibase hook creates
+  it (`pyforge-scribe:1`) and fails the release on an image without it. The
+  official **redis:7** image stores AOF/RDB under
   `/data` — the broker PVC mounts there (`redis.broker.persistence`).
+- **Upgrading a release that already runs stock `postgres:17` (Story 83.3).**
+  The chart default is `pgvector/pgvector:pg17`, so a fresh install needs
+  nothing. An existing release differs in two ways. First, the Liquibase
+  `pre-upgrade` hook (weight -1) runs before Helm updates any resource, so the
+  first upgrade still reaches the old stock pod and fails on `vector.control`:
+  roll the StatefulSet once with `helm upgrade --no-hooks`, then run a normal
+  `helm upgrade`. Second, both images are PostgreSQL 17 with the same uid and
+  `PGDATA`, but they can sit on different Debian releases (checked 2026-10-02:
+  stock `postgres:17` on Debian 13 / glibc 2.41, `pgvector/pgvector:pg17` on
+  Debian 12 / glibc 2.36). An existing data directory starts and reads fine,
+  and PostgreSQL then logs `database "<db>" has a collation version mismatch`:
+  follow its hint (rebuild the objects that use the default collation, then
+  `ALTER DATABASE <db> REFRESH COLLATION VERSION`), or restore a dump into a
+  fresh volume.
 - **DB-GPT sidecar (Story 12.5).** The chart renders a singleton sidecar
   Deployment (`replicas: 1`, `strategy: Recreate`), a dedicated SQLite PVC
   at `sidecar.metadataMountPath` (default

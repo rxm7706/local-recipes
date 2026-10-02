@@ -4082,7 +4082,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred f23d35461a00 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: 2026-10-02 — fixed: steward Story 83.3. src/platform/deploy/charts/platform/values.yaml `postgres.image` now defaults to `repository: pgvector/pgvector`, `tag: "pg17"` and src/platform/compose/compose.yml runs `pgvector/pgvector:pg17` (PostgreSQL stays 17; `postgres.image.registry`/`repository`/`tag` still override it, and `postgres.image.digest` still pins). Real tests: src/platform/tests/test_chart_invariants.py `test_postgres_statefulset_runs_the_pgvector_image` (default and mirror render) and `test_compose_postgres_service_runs_the_pgvector_image`. Run live 2026-10-02: src/platform/db/changelog/changes/pyforge-scribe-1-pgvector-extension.sql exits 0 on `pgvector/pgvector:pg17` (`vector 0.8.7` created) and exits 3 on stock `postgres:17` with `could not open extension control file ".../vector.control"`. A release already running stock `postgres:17` needs a one-time `helm upgrade --no-hooks` and sees a collation-version warning after the swap; both are written up in docs/explanation/platform-deployment-architecture.md.
+  verified: 2026-10-02 — RESOLVED — src/platform/deploy/charts/platform/values.yaml:240-241 has the pgvector image; src/platform/compose/compose.yml:47 runs it; src/platform/tests/test_chart_invariants.py `test_postgres_statefulset_runs_the_pgvector_image` fails with values.yaml set back to `postgres`/`"17"` (mutation run, 2 failed). (2026-10-02 Phase 2 deferral burn-down closure)
   verified: 2026-10-01 — STANDS — src/platform/deploy/charts/platform/values.yaml:223-228 still has postgres.image {repository: postgres, tag: "17"}; src/platform/compose/compose.yml:43 still has `image: postgres:17`; `grep -rni pgvector src/platform/deploy src/platform/compose` finds nothing. src/platform/db/changelog/changes/pyforge-scribe-1-pgvector-extension.sql runs an unguarded `CREATE EXTENSION IF NOT EXISTS vector;` with no precondition, and templates/liquibase-job.yaml:14 is an unconditional post-install,pre-upgrade hook, so the release fails on the stock image. (2026-09-30 deferral burn-down triage)
 
   verified: 2026-09-08 — still-open — CONFIRMED, and found by reading the values rather than grepping the literal. `src/platform/deploy/charts/platform/values.yaml:175-179` declares `postgres: image: {repository: postgres, tag: "17"}` — stock postgres:17, still no pgvector — so `pyforge-scribe:1`'s CREATE EXTENSION still fails in the pre-upgrade hook Job. (A literal `postgres:17` grep returns zero hits because repository and tag are separate keys; that is exactly the shape that makes this kind of claim look resolved when it is not.)
@@ -5688,4 +5690,15 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 6e8a9f736d4a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FRR-83-3: Follow-up review still recommended for story 83.3
+
+- source_spec: `planning-artifacts/specs/spec-83-3-the-platform-chart-and-the-compose-stack-run-a-postgres-image-that-carries-pgvector.md`
+  summary: Story 83.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 83.3 landed on origin/main with its tracked spec reading `status: done` and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-83-3-the-platform-chart-and-the-compose-stack-run-a-postgres-image-that-carries-pgvector.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-02 — dispatch-land finalize
   status: open

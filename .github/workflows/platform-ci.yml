@@ -1638,9 +1638,9 @@ jobs:
 
       # The chart's own postgres/redis StatefulSet/Deployment default to
       # plain upstream images (values.yaml: postgres.image
-      # registry=""/repository=postgres/tag="17", redis.image
-      # registry=""/repository=redis/tag="7" -- i.e. `postgres:17` and
-      # `redis:7`) that this job never builds itself, unlike the platform
+      # registry=""/repository=pgvector/pgvector/tag="pg17", redis.image
+      # registry=""/repository=redis/tag="7" -- i.e. `pgvector/pgvector:pg17`
+      # and `redis:7`) that this job never builds itself, unlike the platform
       # image above. The egress block below only touches the `OUTPUT` chain
       # (this RUNNER's own host-originated traffic) -- it does not touch
       # `FORWARD` (container-routed traffic), so a pod would otherwise
@@ -1650,11 +1650,11 @@ jobs:
       # same pattern as the platform image) puts both node-local BEFORE the
       # block goes up, so the postgres/redis pods pull nothing over the
       # network either.
-      - name: Pull + kind load postgres:17 and redis:7 (the chart's default infra images)
+      - name: Pull + kind load pgvector/pgvector:pg17 and redis:7 (the chart's default infra images)
         run: |
-          docker pull postgres:17
+          docker pull pgvector/pgvector:pg17
           docker pull redis:7
-          kind load docker-image postgres:17 redis:7 --name air-gap-smoke
+          kind load docker-image pgvector/pgvector:pg17 redis:7 --name air-gap-smoke
 
       # AD-12 pattern, identical to `gke-portability-smoke`'s own step
       # (chart never renders a Secret) -- separate namespace name so the

@@ -736,6 +736,9 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # the same tier as MRS-LAND-003/008: reported, never blocking -- the wave's
 # own landing already succeeded (or there was nothing new to land this run)
 # by the time this best-effort resync step runs.
+# Story 82.2: MRS-LAND-009 also reports a deliberate skip -- the home's run is
+# live or could not be proven finished, so no fetch or fast-forward was
+# attempted; same WARN tier, nothing failed.
 # Story 4.13 (the loop's deferred work reaches the tracked ledger, FR-175)
 # adds a TENTH MRS-LAND-* code, MRS-LAND-010 (`_promote_deferred_work`'s own
 # advisory-lock contention on the tracked deferred-work ledger, or a

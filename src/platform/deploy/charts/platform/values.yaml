@@ -225,12 +225,20 @@ liquibase:
       cpu: "1"
       memory: 1Gi
 
-# PostgreSQL (official image, StatefulSet, 1 replica -- AD-1).
+# PostgreSQL (pgvector image, StatefulSet, 1 replica -- AD-1). The bundled
+# database must carry `vector.control`: the Liquibase hook Job applies
+# `pyforge-scribe:1` (`CREATE EXTENSION vector`) on every install/upgrade, and
+# stock `postgres:17` fails it (DW-FU-41-3-9). `pgvector/pgvector:pg17` is the
+# official PostgreSQL 17 image plus the extension -- same layout, same `psql`,
+# same data dir -- and the image CI already runs as its service container. The
+# major stays 17 (fnd:CAP-12); `registry` still relocates it to a mirror. Its
+# base OS can differ from stock `postgres:17`'s: an existing release upgrades
+# per docs/explanation/platform-deployment-architecture.md (Story 83.3 bullet).
 postgres:
   image:
     registry: ""
-    repository: postgres
-    tag: "17"
+    repository: pgvector/pgvector
+    tag: "pg17"
     pullPolicy: IfNotPresent
   auth:
     # Non-secret identity; the password comes ONLY from existingSecret's

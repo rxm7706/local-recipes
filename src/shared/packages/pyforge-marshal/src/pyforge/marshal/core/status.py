@@ -1274,10 +1274,17 @@ def is_run_live(facts: FleetHomeFacts) -> bool:
     (liveness genuinely cannot be proven either way -- conservatively
     treated as live, mirroring ``core/retire.py``'s own "a fact that cannot
     be proven is refused, never defaulted to delete" precedent for its own
-    analogous "can't prove it" case) or (``not facts.finished and facts.
-    supervisor_alive is True``). Every other combination -- ``has_run`` is
-    ``False``; or the run is readable and either ``finished`` or its
-    supervisor is confirmed dead -- is ``False``: safe to retire."""
+    analogous "can't prove it" case) or (``not facts.finished`` and either
+    ``facts.supervisor_alive is True`` or ``facts.engine_alive is True``).
+    The engine term (Story 82.2, closing DW-5-8-1 / DW-FU-4-11) is the same
+    one-directional rule ``derive_home_state`` applies since Story 5.8: a
+    supervisor sidecar that crashed while the detached harness it launched
+    is still working reads dead on ``supervisor_alive`` alone, and a branch
+    must not be retired out from under that harness. ``engine_alive`` of
+    ``None`` (not probed) adds nothing -- only a CONFIRMED-alive engine
+    counts. Every other combination -- ``has_run`` is ``False``; or the run
+    is readable and either ``finished`` or its supervisor AND engine are
+    both confirmed dead -- is ``False``: safe to retire."""
     if not facts.has_run:
         return False
     if facts.journal_unreadable:
@@ -1293,7 +1300,7 @@ def is_run_live(facts: FleetHomeFacts) -> bool:
     # `journal_unreadable` above already does.
     if facts.run_state_retired:
         return True
-    return not facts.finished and facts.supervisor_alive is True
+    return not facts.finished and (facts.supervisor_alive is True or facts.engine_alive is True)
 
 
 def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding | None]:

@@ -1434,8 +1434,12 @@ def test_override_flag_short_circuits_the_liveness_gather_even_when_not_live(tmp
     live. Proven here with `_ExplosiveHarness`/`_ExplosiveProcess` (the SAME
     doubles `test_policy_already_off_skips_liveness_gather_entirely` uses
     below): if the gate were ever consulted despite the flag, this test
-    would fail on the explosion, not merely on a wrong assertion."""
-    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    would fail on the explosion, not merely on a wrong assertion.
+
+    `landing_resync = false` (Story 82.2): the post-merge home resync now
+    shares the same liveness verdict, so it would gather too -- switching it
+    off keeps this test proving the RETIREMENT gate alone."""
+    policy_path = _write_project_policy(tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None))
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
     home_root = tmp_path / "loops"
     monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
@@ -1475,9 +1479,14 @@ def test_override_flag_short_circuits_the_liveness_gather_even_when_not_live(tmp
 def test_policy_already_off_skips_liveness_gather_entirely(tmp_path, capsys, monkeypatch):
     """The Always bullet's short-circuit: `delete_branch` already `False`
     from policy means NO liveness gather at all -- proven here with fakes
-    that raise if ever consulted, not merely by asserting the outcome."""
+    that raise if ever consulted, not merely by asserting the outcome.
+
+    `landing_resync = false` (Story 82.2): the post-merge home resync now
+    shares the same liveness verdict, so it would gather too -- switching it
+    off keeps this test proving the RETIREMENT gate alone."""
     policy_path = _write_project_policy(
-        tmp_path, "landing_branch_retirement = false\n" + _rule_policy(required_check=None)
+        tmp_path,
+        "landing_branch_retirement = false\nlanding_resync = false\n" + _rule_policy(required_check=None),
     )
     _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
 
@@ -1510,6 +1519,345 @@ def test_policy_already_off_skips_liveness_gather_entirely(tmp_path, capsys, mon
     assert "MRS-LAND-008" not in codes
     assert payload["data"]["branch_retired"] is False
     assert exit_code == 0
+
+
+# =====================================================================
+# Story 82.2 (DW-5-8-1, DW-FU-4-11, DW-FU-4-12): a live run's branch and home
+# survive `marshal land` while its ENGINE is alive, even when its supervisor
+# sidecar is dead. `is_run_live` now counts a confirmed-alive engine
+# (`ProcessPort.is_alive(launch_pid)`), and `run_land` hands that same
+# memoised verdict to `_resync_home_branch` at all three of its exits.
+# `_land_outcome_line`'s pid (4242) is the detached HARNESS (the engine);
+# `_land_supervisor_attach_line`'s pid (5252) is the supervisor sidecar.
+# =====================================================================
+
+_ENGINE_PID = 4242
+_SUPERVISOR_PID = 5252
+
+
+class _LiveHomeProcess(_FakeProcess):
+    """``_FakeProcess`` whose ``run`` answers rather than raises: these tests
+    drive the full merge and already-landed exits, whose ``landing_resync``
+    feed reconcile may legitimately run a command -- liveness is the only
+    thing under test."""
+
+    def run(self, argv, *, cwd, timeout_s=None):
+        return ProcessResult(returncode=0, stdout="", stderr="")
+
+
+def _seed_liveness_home(
+    tmp_path: Path, monkeypatch, *, alive_pids: frozenset[int], finished: bool = False
+) -> tuple[_FakeHarness, _LiveHomeProcess, _FakeClock]:
+    """One acme run with a journaled engine pid and supervisor pid; which of
+    them ``is_alive`` reports is the caller's ``alive_pids``."""
+    home_root = tmp_path / "loops"
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(home_root))
+    run_dir = _seed_land_run_journal(
+        tmp_path,
+        run_id="acme-run1",
+        lines=[
+            _land_outcome_line("acme-run1", pid=_ENGINE_PID, harness_run_id="hrid-1"),
+            _land_supervisor_attach_line("acme-run1", pid=_SUPERVISOR_PID),
+        ],
+    )
+    _stub_land_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+    harness = _FakeHarness(
+        snapshots={
+            (str(home_root / "acme"), "hrid-1"): _live_snapshot(
+                finished=finished,
+                tasks=(TaskPhaseSnapshot(story_key="1.1", phase="dev-running", commit_sha=None),),
+            )
+        }
+    )
+    return (
+        harness,
+        _LiveHomeProcess(alive_pids=alive_pids),
+        _FakeClock(now=datetime(2026, 8, 9, 0, 5, 0, tzinfo=timezone.utc)),
+    )
+
+
+def test_dead_supervisor_with_live_engine_refuses_branch_retirement(tmp_path, capsys, monkeypatch):
+    """The 2026-08-11 incident's shape, at the call site `marshal land`
+    actually uses: the supervisor sidecar is dead, the harness it launched is
+    still working. Retirement is downgraded (`MRS-LAND-008`) and the merge
+    still proceeds. `landing_resync = false` isolates the retirement gate."""
+    policy_path = _write_project_policy(tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    harness, process, clock = _seed_liveness_home(tmp_path, monkeypatch, alive_pids=frozenset({_ENGINE_PID}))
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=LocalFs(), forge=forge, harness=harness, process=process, clock=clock
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-008" in codes
+    assert "loop/acme" in payload["findings"][codes.index("MRS-LAND-008")]["message"]
+    assert payload["data"]["merged"] is True
+    assert payload["data"]["branch_retired"] is False
+    assert exit_code == 0
+    assert len(forge.merge_calls) == 1
+    assert forge.merge_calls[0][4] is False  # delete_branch: the branch survives
+
+
+def test_dead_supervisor_with_dead_engine_still_retires_normally(tmp_path, capsys, monkeypatch):
+    """Both probes confirmed dead -- the engine term must not over-block."""
+    policy_path = _write_project_policy(tmp_path, "landing_resync = false\n" + _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    harness, process, clock = _seed_liveness_home(tmp_path, monkeypatch, alive_pids=frozenset())
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=LocalFs(), forge=forge, harness=harness, process=process, clock=clock
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-008" not in codes
+    assert payload["data"]["branch_retired"] is True
+    assert exit_code == 0
+    assert forge.merge_calls[0][4] is True
+
+
+# One scenario per `_resync_home_branch` exit of `run_land`: the `if not
+# wave_keys` no-op, the already-landed shortcut, and the full-merge path.
+_RESYNC_EXITS = [
+    pytest.param({"wave_subjects": ("an ordinary commit, not a story merge",)}, id="no-op"),
+    pytest.param(
+        {"wave_subjects": (_BMADLOOP_WAVE_SUBJECT,), "base_subjects": (_BMADLOOP_WAVE_SUBJECT,)},
+        id="already-landed",
+    ),
+    pytest.param(
+        {"wave_subjects": (_BMADLOOP_WAVE_SUBJECT,), "changed_paths": ("docs/notes.md",)},
+        id="full-merge",
+    ),
+]
+
+
+@pytest.mark.parametrize("vcs_kwargs", _RESYNC_EXITS)
+@pytest.mark.parametrize(
+    "alive_pids",
+    [
+        pytest.param(frozenset({_SUPERVISOR_PID}), id="supervisor-alive"),
+        pytest.param(frozenset({_ENGINE_PID}), id="engine-alive-supervisor-dead"),
+    ],
+)
+def test_live_run_skips_the_home_resync_at_every_exit(tmp_path, capsys, monkeypatch, vcs_kwargs, alive_pids):
+    """A live run's home is never fetched into or fast-forwarded: `fast_forward`
+    rewrites tracked files the run's own turn may be reading, and this runs
+    from outside the run with no lock (DW-FU-4-12). One `MRS-LAND-009` WARN
+    names the run, `home_current` is `False`, and the gather happened ONCE
+    even where the retirement gate consulted the same verdict."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    harness, process, clock = _seed_liveness_home(tmp_path, monkeypatch, alive_pids=alive_pids)
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}), **vcs_kwargs)
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=LocalFs(), forge=forge, harness=harness, process=process, clock=clock
+    )
+
+    payload = _payload(capsys)
+    live_warns = [f for f in payload["findings"] if f["code"] == "MRS-LAND-009"]
+    assert len(live_warns) == 1
+    assert "loop/acme" in live_warns[0]["message"]
+    assert "is live" in live_warns[0]["message"]
+    assert payload["data"]["home_current"] is False
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+    assert exit_code == 0
+    assert len(harness.calls) == 1  # one gather, shared by the retirement gate and the resync
+
+
+@pytest.mark.parametrize("vcs_kwargs", _RESYNC_EXITS)
+@pytest.mark.parametrize(
+    "alive_pids, finished",
+    [
+        pytest.param(frozenset(), False, id="supervisor-and-engine-dead"),
+        pytest.param(frozenset({_SUPERVISOR_PID, _ENGINE_PID}), True, id="finished"),
+    ],
+)
+def test_dead_or_finished_run_resyncs_the_home_as_before(
+    tmp_path, capsys, monkeypatch, vcs_kwargs, alive_pids, finished
+):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    harness, process, clock = _seed_liveness_home(tmp_path, monkeypatch, alive_pids=alive_pids, finished=finished)
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}), **vcs_kwargs)
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(), vcs=vcs, fs=LocalFs(), forge=forge, harness=harness, process=process, clock=clock
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-009" not in codes
+    assert "MRS-LAND-008" not in codes
+    assert payload["data"]["home_current"] is True
+    assert vcs.fetch_calls == [(Path("/fake-repo-root"), "origin", "main")]
+    assert len(vcs.fast_forward_calls) == 1
+    assert exit_code == 0
+
+
+@pytest.mark.parametrize("vcs_kwargs", _RESYNC_EXITS)
+@pytest.mark.parametrize(
+    "journal_lines",
+    [
+        pytest.param(
+            [
+                _land_outcome_line("acme-run1", pid=_ENGINE_PID, harness_run_id="hrid-1"),
+                _land_supervisor_attach_line("acme-run1", pid=_SUPERVISOR_PID),
+            ],
+            id="retired-run-state-gone",
+        ),
+        pytest.param([], id="journal-unreadable"),
+    ],
+)
+def test_unprovable_run_state_skips_the_home_resync_with_an_honest_warn(
+    tmp_path, capsys, monkeypatch, vcs_kwargs, journal_lines
+):
+    """`is_run_live`'s conservative arms (a retired run whose clean finish cannot
+    be proven, an unreadable journal) feed the resync exactly as they feed
+    retirement: the home is left alone, and the WARN says the run is live OR
+    could not be proven finished -- never claims a live run it did not prove.
+    The snapshot is absent, so the retired shape is `run_state_retired=True`."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    monkeypatch.setenv("BMAD_LOOP_HOME_ROOT", str(tmp_path / "loops"))
+    run_dir = _seed_land_run_journal(tmp_path, run_id="acme-run1", lines=journal_lines)
+    _stub_land_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+    vcs = _FakeVcs(existing_branches=frozenset({"loop/acme"}), **vcs_kwargs)
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(),
+        vcs=vcs,
+        fs=LocalFs(),
+        forge=forge,
+        harness=_FakeHarness(),
+        process=_LiveHomeProcess(alive_pids=frozenset()),
+        clock=_FakeClock(now=datetime(2026, 8, 9, 0, 5, 0, tzinfo=timezone.utc)),
+    )
+
+    payload = _payload(capsys)
+    warns = [f for f in payload["findings"] if f["code"] == "MRS-LAND-009"]
+    assert len(warns) == 1
+    assert "could not be proven finished" in warns[0]["message"]
+    assert payload["data"]["home_current"] is False
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+    assert exit_code == 0
+
+
+def test_retire_live_branch_override_does_not_override_the_resync_skip(tmp_path, capsys, monkeypatch):
+    """`--retire-live-branch` is an operator's call about RETIREMENT only. The
+    resync still declines to rewrite a live run's working tree."""
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    harness, process, clock = _seed_liveness_home(tmp_path, monkeypatch, alive_pids=frozenset({_ENGINE_PID}))
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    land_module.run_land(
+        _args(retire_live_branch=True),
+        vcs=vcs,
+        fs=LocalFs(),
+        forge=forge,
+        harness=harness,
+        process=process,
+        clock=clock,
+    )
+
+    payload = _payload(capsys)
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-008" not in codes
+    assert codes.count("MRS-LAND-009") == 1
+    assert forge.merge_calls[0][4] is True  # retirement honoured by the override
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+
+
+def test_resync_off_or_non_merge_strategy_never_gathers_liveness(tmp_path, capsys, monkeypatch):
+    """The resync computes its liveness verdict only when it would act at all:
+    under `squash` (no fast-forward possible by construction) with retirement
+    off, nothing consults the run -- explosive fakes prove it."""
+    policy_path = _write_project_policy(
+        tmp_path,
+        'landing_merge_strategy = "squash"\nlanding_branch_retirement = false\n' + _rule_policy(required_check=None),
+    )
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+
+    def _explosive_latest_run_dir(home, slug):
+        raise AssertionError("liveness must not be gathered when the resync would not act")
+
+    monkeypatch.setattr(spin_module, "_latest_run_dir", _explosive_latest_run_dir)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+    forge = _FakeForge(existing=None)
+
+    exit_code = land_module.run_land(
+        _args(),
+        vcs=vcs,
+        fs=LocalFs(),
+        forge=forge,
+        harness=_ExplosiveHarness(),
+        process=_ExplosiveProcess(),
+    )
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert "home_current" not in payload["data"]
+    assert vcs.fetch_calls == []
+
+
+def test_resync_home_branch_run_live_touches_nothing(tmp_path):
+    """The seam itself: `run_live=True` returns before `resolve_ref`, `fetch`
+    and `fast_forward`, with one WARN that names the branch and the home;
+    the default (`run_live` omitted, the `dispatch_land_finalize` call shape)
+    still resyncs."""
+    vcs = _FakeVcs()
+    findings: list = []
+
+    live = land_module._resync_home_branch(
+        vcs, True, "merge", Path("/fake-repo-root"), tmp_path, "main", "loop/acme", findings, run_live=True
+    )
+
+    assert live is False
+    assert vcs.resolve_ref_calls == []
+    assert vcs.fetch_calls == []
+    assert vcs.fast_forward_calls == []
+    assert [f.code for f in findings] == ["MRS-LAND-009"]
+    assert "loop/acme" in findings[0].message
+    assert str(tmp_path) in findings[0].message
+
+    findings.clear()
+    default = land_module._resync_home_branch(
+        vcs, True, "merge", Path("/fake-repo-root"), tmp_path, "main", "loop/acme", findings
+    )
+
+    assert default is True
+    assert findings == []
+    assert len(vcs.fast_forward_calls) == 1
 
 
 # --- re-entrancy: PR open, checks green, merge never issued --------------
