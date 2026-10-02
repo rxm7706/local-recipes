@@ -2,7 +2,7 @@
 title: "83.1: `steward keys` resolves its `_http` bridge on first use and reports a missing `age` as a duty failure"
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'e537a533144fd0b5f65586ddb5a42b74eb65b62c'
 review_loop_iteration: 0
 followup_review_recommended: false
