@@ -70,7 +70,7 @@ def try_heal_dispatch_land_merge(
     repo_ref: ForgeRef,
     pr: PrInfo,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     forge: ForgePort,
     probe_ref: str | None = None,
     await_checks: Callable[[str], Finding | None] | None = None,

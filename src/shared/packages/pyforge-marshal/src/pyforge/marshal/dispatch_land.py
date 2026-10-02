@@ -878,7 +878,7 @@ def execute_dispatch_land(
     run_id: str | None = None,
     effective: EffectivePolicy | None = None,
     fs: FsPort | None = None,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     forge: ForgePort | None = None,
     process: ProcessPort | None = None,
     sleep: Callable[[float], None] | None = None,

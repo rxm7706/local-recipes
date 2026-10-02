@@ -1033,7 +1033,7 @@ def _execute_promotion_plan(
 def run_promote(
     args: argparse.Namespace,
     *,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     fs: FsPort | None = None,
 ) -> int:
     vcs = vcs if vcs is not None else GitVcs()

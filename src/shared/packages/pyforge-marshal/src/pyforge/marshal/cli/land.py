@@ -369,7 +369,7 @@ def _evaluate_required_checks(
 def run_land(
     args: argparse.Namespace,
     *,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     fs: FsPort | None = None,
     forge: ForgePort | None = None,
     harness: HarnessPort | None = None,

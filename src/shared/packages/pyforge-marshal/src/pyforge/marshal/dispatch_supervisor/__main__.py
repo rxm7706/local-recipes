@@ -1126,7 +1126,7 @@ class _WaitHeartbeat:
 def _run_and_journal_landing(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
     run_dir: Path,
     run_id: str,
@@ -1247,7 +1247,7 @@ def _run_and_journal_landing(
 def _land_or_journal_block(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
     run_dir: Path,
     run_id: str,
@@ -1517,7 +1517,7 @@ def run_dispatch_supervisor(
     baseline_head_sha: str,
     merge_subject_template: str,
     fs: FsPort | None = None,
-    vcs: VcsPort | None = None,
+    vcs: CommittingVcs | None = None,
     process: ProcessPort | None = None,
     publisher: RunPublisherPort | None = None,
 ) -> int:
