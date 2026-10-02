@@ -1783,7 +1783,9 @@ def run_status(
         repo_root=git_repo_root,
     )
 
-    # Story 4.14 (FR-176): `main`'s own commit-subject history, read at most
+    # Story 4.14 (FR-176): the landing history -- `_read_landing_subjects`
+    # (Story 82.8: `origin/main` best-effort plus local `main` required, as
+    # `deploy` reads them) -- read at most
     # ONCE and reused for every home in the sweep -- a `git log`-scale walk
     # is the heavier read `--reconcile-ledger`'s own docs cite as its reason
     # for being opt-in, so reading it once keeps THAT cost paid a single
@@ -2377,7 +2379,8 @@ def _run_detail(
 #
 # Story 4.14 correction: the GIT half of that read IS now folded into the
 # default fleet sweep -- `run_status` performs the same
-# `vcs.commit_subjects(root, "main")` walk to classify failed-story
+# `_read_landing_subjects` walk (`origin/main` best-effort plus local
+# `main` required) to classify failed-story
 # patches. It is still read at most ONCE per invocation and reused for
 # every home, which is what keeps that cost bounded; the earlier "most
 # homes carry no failed patches" rationale for making it lazy is

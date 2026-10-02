@@ -6651,6 +6651,24 @@ class TestAHistoryThatShowsNothingIsSaidSo:
         assert "MRS-STATUS-014" not in codes
         assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is False
 
+    def test_a_withheld_policy_already_degraded_the_home_so_014_never_fires(self, tmp_path, capsys, monkeypatch):
+        """A blocking project policy (malformed TOML) withholds the home's
+        template through `MRS-STATUS-011`; the conforming count against a
+        template this sweep does not trust must not add `MRS-STATUS-014` (nor
+        let a per-patch `MRS-STATUS-010` through): the guard's
+        `keys_available` operand."""
+        _seed_failed_patch(tmp_path / "loop-homes" / "acme", run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        bad_policy = tmp_path / "bad-policy.toml"
+        bad_policy.write_text("not [ valid toml", encoding="utf-8")
+        monkeypatch.setattr(status_cli, "conventional_project_policy_path", lambda slug: bad_policy)
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, ["acme"]), commit_subjects_value=self._UNRELATED_50)
+
+        exit_code, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
+
+        assert [f["code"] for f in payload["findings"]] == ["MRS-STATUS-011"]
+        assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is None
+        assert exit_code == 0
+
     def test_a_home_with_no_patch_never_pays_for_the_finding(self, tmp_path, capsys, monkeypatch):
         (tmp_path / "loop-homes" / "acme").mkdir(parents=True)
         vcs = _FakeVcs(worktrees=_worktrees(tmp_path, ["acme"]), commit_subjects_value=self._UNRELATED_50)
@@ -6782,6 +6800,52 @@ class TestEscalationsFiltersFindingsWithRows:
         assert "beta/4.11@" in warnings[0]["message"]
         assert "acme/" not in warnings[0]["message"]
         assert "gamma/" not in warnings[0]["message"]
+
+    def test_unpushed_work_is_reported_only_for_the_escalated_home(self, tmp_path, capsys, monkeypatch):
+        """`MRS-STATUS-008` is a per-home finding too: both homes carry
+        unpushed work, only `beta` is paused on escalation, so under
+        `--escalations` only `beta`'s is kept."""
+        slugs = ("acme", "beta")
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="beta-run1",
+            lines=[
+                _outcome_line("beta-run1", pid=4242, harness_run_id="hrid-beta"),
+                _supervisor_attach_line("beta-run1", pid=5252),
+            ],
+        )
+        harness = _FakeHarness(
+            snapshots={
+                (str(tmp_path / "loop-homes" / "beta"), "hrid-beta"): _snapshot(
+                    paused_stage="escalation", paused_reason="needs a human decision"
+                )
+            }
+        )
+        process = _FakeProcess(
+            alive_pids=frozenset({5252}),
+            run_result=_unpushed_result(
+                _unpushed_finding("loop/acme", files=2, stat="2 files changed"),
+                _unpushed_finding("loop/beta", files=4, stat="4 files changed"),
+            ),
+        )
+        vcs = _FakeVcs(worktrees=_worktrees(tmp_path, slugs))
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": run_dir})
+
+        exit_code = status_cli.run_status(
+            _args(escalations=True),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        assert [row["slug"] for row in payload["data"]["homes"]] == ["beta"]
+        unpushed = [f for f in payload["findings"] if f["code"] == "MRS-STATUS-008"]
+        assert [f["path"] for f in unpushed] == ["loop/beta"]
+        assert unpushed[0]["message"].startswith("beta:")
+        assert exit_code == 0
 
     def test_without_the_flag_every_finding_is_kept(self, tmp_path, capsys, monkeypatch):
         self._seed_patches(tmp_path)

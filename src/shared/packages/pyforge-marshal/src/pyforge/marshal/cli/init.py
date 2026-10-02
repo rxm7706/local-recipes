@@ -2086,7 +2086,8 @@ def add_teardown_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Remove a loop home's worktree and branch, refusing when work would be lost.",
         description=(
             "Removes the loop/<slug> git worktree and branch run_init "
-            "provisions, refusing when the home has uncommitted changes or "
+            "provisions, refusing when the home (or a nested registered "
+            "worktree) has uncommitted changes or "
             "the branch's content is not yet safely captured on main, "
             "unless --force overrides the refusal. A slug with nothing "
             "provisioned is a clean no-op."
@@ -2098,7 +2099,8 @@ def add_teardown_subparser(subparsers: argparse._SubParsersAction) -> None:
         action="store_true",
         help=(
             "Override refusal: remove the worktree/branch even when the "
-            "home is dirty, the branch is genuinely unmerged, or the "
+            "home or a nested registered worktree is dirty, the branch is "
+            "genuinely unmerged, or the "
             "AD-29 promotion-reachability check names something "
             "unreachable (the latter ALSO requires --abandon naming "
             "exactly the unreachable story keys)."
