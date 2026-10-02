@@ -276,6 +276,7 @@ import secrets
 import sys
 import tomllib
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -312,11 +313,12 @@ from ..core.journal import (
     fold,
     mint_run_id,
     prepare_for_write,
+    sidecar_texts_for_lines,
 )
 from ..core.model import Finding, Severity, build_envelope
 from ..core.spec_difficulty import DifficultyParseError, parse_declared_difficulty
 from ..core.supervise import EscalationStatus, evaluate_escalation, evaluate_retry_escalation
-from ..core.tier_routing import resolve_tier_launch
+from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import DeferredStory, HarnessPort
@@ -644,14 +646,75 @@ def _compose_spin_policy(
     return effective, list(findings)
 
 
+@dataclass(frozen=True)
+class _TierPolicyWrite:
+    """Story 82.6 (DW-3-12-3): the model-tiering ``policy.toml`` write
+    ``_resolve_model_tiering`` DECIDED but did not perform -- everything
+    ``_write_tier_policy`` needs to apply it later (``write_policy_toml``'s
+    own inputs: the effective policy, the governing difficulty, the adapter
+    name and the tier resolution), plus what ``run_spin``'s launch intent
+    records ahead of it: ``limits`` (the rendered ``[limits]`` ceilings, the
+    ones this launch will run under) and ``change`` (the ``policy_change``
+    record -- ``from_model``/``to_model`` are the DEV stage's effective model
+    before and after the render, ``governing_difficulty``, and the selected
+    ``stories`` the render was resolved for). Frozen: it is evidence of a
+    decision, never state to patch."""
+
+    effective_policy: policy.EffectivePolicy
+    difficulty: str | None
+    adapter: str | None
+    tier_resolution: TierLaunchResolution
+    limits: Mapping[str, int] | None
+    change: Mapping[str, object]
+
+
+def _write_tier_policy(plan: _TierPolicyWrite, home: Path, findings: list[Finding]) -> None:
+    """Apply ``plan`` to the loop home's own ``.bmad-loop/policy.toml`` via
+    ``write_policy_toml`` -- the file ``bmad-loop run`` (spawned by this
+    function's caller, right after this call returns) actually reads.
+    Without this write the resolution would be journaled/reported only,
+    never applied to the launched process. A write failure degrades the SAME
+    way every other non-critical I/O step in a launch does (MRS-SPIN-007's
+    supervisor-spawn precedent): the harness launch is already viable, so
+    losing the persisted tier override registers ``MRS-SPIN-015`` (WARN) and
+    the launch proceeds on whatever baseline policy is already on disk, never
+    aborts an otherwise-viable launch.
+
+    Called by ``run_spin`` only AFTER the launch intent -- which names this
+    very change (``policy_change``) -- is durable, never from
+    ``_resolve_model_tiering`` (Story 82.6)."""
+    try:
+        write_policy_toml(
+            plan.effective_policy,
+            home,
+            difficulty=plan.difficulty,
+            adapter=plan.adapter,
+            tier_resolution=plan.tier_resolution,
+        )
+    except HarnessPolicyWriteError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-015",
+                severity=Severity.WARN,
+                message=(
+                    f"could not persist the resolved model-tier policy to "
+                    f"{home}: {exc} -- this run's model resolution is "
+                    "reported but was not applied; the harness will use "
+                    "whatever policy.toml was already on disk"
+                ),
+            )
+        )
+
+
 def _resolve_model_tiering(
+    fs: FsPort,
     harness: HarnessPort,
     home: Path,
     slug: str,
     preview: Sequence[StoryKey],
     findings: list[Finding],
     data: dict[str, object],
-) -> bool:
+) -> tuple[bool, _TierPolicyWrite | None]:
     """Story 6.1's own FR-48/FR-51/AD-19 model-tier resolution: the
     governing difficulty among ``preview``'s in-scope stories
     (``_resolve_governing_difficulty``), the resolved per-stage models for
@@ -664,14 +727,18 @@ def _resolve_model_tiering(
     resolution -- never a second mechanism). Echoes ``adapter_name``/
     ``resolved_models``/``model_tier_batching`` (when applicable) into
     ``data`` -- this function's caller copies the same fields into the
-    outcome journal entry. Once the adapter itself resolves, ALSO persists
-    the same rendered, difficulty-tiered policy to the loop home's own
-    ``.bmad-loop/policy.toml`` via ``write_policy_toml`` -- the file
-    ``bmad-loop run`` (spawned by this function's caller, right after this
-    call returns) actually reads. Without this write the resolution would be
-    journaled/reported only, never applied to the launched process -- a
-    write failure degrades to ``MRS-SPIN-015`` (WARN) rather than aborting
-    an already-viable launch.
+    outcome journal entry. Once the adapter itself resolves, ALSO decides to
+    persist the same rendered, difficulty-tiered policy to the loop home's
+    own ``.bmad-loop/policy.toml`` -- but never writes it (Story 82.6,
+    DW-3-12-3): it returns the decision as a ``_TierPolicyWrite`` plan, which
+    ``run_spin`` journals in its launch intent and only THEN applies via
+    ``_write_tier_policy`` (a write failure degrades to ``MRS-SPIN-015``
+    (WARN) rather than aborting an already-viable launch). This function
+    reads the on-disk file (through ``fs``) only to name the model the
+    change starts from.
+
+    Returns ``(refuse, plan)``: ``refuse`` is the ``MRS-SPIN-014`` verdict
+    below; ``plan`` is ``None`` for every case that would not write.
 
     An empty ``preview`` (nothing selected for this launch) is a no-op --
     there is nothing to resolve tiering for.
@@ -706,7 +773,7 @@ def _resolve_model_tiering(
     all) returns ``False`` -- resolution simply could not complete, and the
     launch proceeds without it."""
     if not preview:
-        return False
+        return False, None
     governing, batching_report = _resolve_governing_difficulty(preview, home, slug, findings)
     if batching_report is not None:
         data["model_tier_batching"] = batching_report
@@ -732,13 +799,13 @@ def _resolve_model_tiering(
         # unrelated to difficulty/adapter resolution, already surfaced (or
         # about to be) elsewhere; this function simply cannot resolve the
         # configured adapter from a render that failed.
-        return False
+        return False, None
     parsed_policy = tomllib.loads(rendered)
     adapter_name = tier_resolution.adapter_name
     if not isinstance(adapter_name, str) or not adapter_name:
         adapter_name = parsed_policy.get("adapter", {}).get("name")
     if not isinstance(adapter_name, str) or not adapter_name:
-        return False
+        return False, None
     data["adapter_name"] = adapter_name
 
     try:
@@ -751,43 +818,34 @@ def _resolve_model_tiering(
                 message=f"cannot resolve configured adapter {adapter_name!r}: {exc}",
             )
         )
-        return True
+        return True, None
 
     # The resolved, difficulty-tiered policy must reach the loop home's own
     # `.bmad-loop/policy.toml` -- the ONE file `bmad-loop run` (spawned
     # below by `harness.spin`) actually reads. Everything above this point
     # only rendered the policy in-memory to recover `adapter_name`; without
-    # this write, the outcome journal's own `resolved_models` field would
+    # a write the outcome journal's own `resolved_models` field would
     # describe a tiering the launched process never applies (the harness
     # would keep reading whatever `difficulty=None` baseline `marshal config
     # --write-harness-policy` last persisted, silently diverging from what
-    # this run reports). A write failure here degrades the SAME way every
-    # other non-critical I/O step in this launch already does (MRS-SPIN-007's
-    # supervisor-spawn precedent): the harness launch is already viable, so
-    # losing the persisted tier override registers MRS-SPIN-015 (WARN) and
-    # the launch proceeds on whatever baseline policy is already on disk,
-    # never aborts an otherwise-viable launch.
-    try:
-        write_policy_toml(
-            effective_policy,
-            home,
-            difficulty=governing,
-            adapter=tier_resolution.adapter_name,
-            tier_resolution=tier_resolution,
-        )
-    except HarnessPolicyWriteError as exc:
-        findings.append(
-            Finding(
-                code="MRS-SPIN-015",
-                severity=Severity.WARN,
-                message=(
-                    f"could not persist the resolved model-tier policy to "
-                    f"{home}: {exc} -- this run's model resolution is "
-                    "reported but was not applied; the harness will use "
-                    "whatever policy.toml was already on disk"
-                ),
-            )
-        )
+    # this run reports). The write itself is NOT made here (Story 82.6,
+    # DW-3-12-3): the plan below rides back to `run_spin`, whose launch
+    # intent names the change before `_write_tier_policy` applies it, so a
+    # failed run-directory creation or intent append leaves the file as it
+    # was.
+    plan = _TierPolicyWrite(
+        effective_policy=effective_policy,
+        difficulty=governing,
+        adapter=tier_resolution.adapter_name,
+        tier_resolution=tier_resolution,
+        limits=_ceilings_record(_rendered_ceilings(parsed_policy)),
+        change={
+            "from_model": _stage_model(_read_policy_document(fs, home), "dev"),
+            "to_model": _stage_model(parsed_policy, "dev"),
+            "governing_difficulty": governing,
+            "stories": [render_feed_key(key) for key in preview],
+        },
+    )
 
     adapter_for_wire = tier_resolution.adapter_name
     if not isinstance(adapter_for_wire, str) or not adapter_for_wire:
@@ -802,7 +860,7 @@ def _resolve_model_tiering(
         )
         data["wire"] = wire.journal_payload()
 
-    return False
+    return False, plan
 
 
 def _tiering_journal_fields(data: Mapping[str, object]) -> dict[str, object]:
