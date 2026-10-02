@@ -785,9 +785,7 @@ def test_a_symlinked_ancestor_does_not_hide_a_never_write_path_from_remove_or_re
 def test_never_write_match_reports_the_pattern_and_the_form_that_matched(tmp_path):
     _docs_symlinked_to_real(tmp_path)
 
-    hit = fs.never_write_match(
-        tmp_path / "docs" / "dreams" / "x.md", repo_root=tmp_path, never_write=_DREAMS
-    )
+    hit = fs.never_write_match(tmp_path / "docs" / "dreams" / "x.md", repo_root=tmp_path, never_write=_DREAMS)
 
     # The WRITTEN form matched; the resolved one (`real/dreams/x.md`) would not have.
     assert hit == ("docs/dreams/*.md", "docs/dreams/x.md")
@@ -829,8 +827,14 @@ def test_exempt_is_judged_per_form_so_a_declared_writable_path_stays_writable_un
 def test_never_write_match_agrees_with_the_guard_on_the_exempt_short_circuit(tmp_path):
     """The old `_matches` rule is unchanged: an exempt path matches nothing."""
     never_write = NeverWrite(("docs/dreams/*.md",), exempt=frozenset({"docs/dreams/README.md"}))
-    assert fs.never_write_match(tmp_path / "docs" / "dreams" / "README.md", repo_root=tmp_path, never_write=never_write) is None
-    assert fs.never_write_match(tmp_path / "docs" / "dreams" / "x.md", repo_root=tmp_path, never_write=never_write) is not None
+    assert (
+        fs.never_write_match(tmp_path / "docs" / "dreams" / "README.md", repo_root=tmp_path, never_write=never_write)
+        is None
+    )
+    assert (
+        fs.never_write_match(tmp_path / "docs" / "dreams" / "x.md", repo_root=tmp_path, never_write=never_write)
+        is not None
+    )
 
 
 def test_never_write_match_rejects_a_nonexistent_repo_root(tmp_path):
@@ -923,9 +927,16 @@ def test_the_exemption_covers_the_link_and_not_what_it_points_at(tmp_path):
     (tmp_path / "_bmad-output" / "planning-artifacts").symlink_to("projects/demo/planning-artifacts")
 
     with pytest.raises(NeverWriteViolation):
-        fs.write(tmp_path / "_bmad-output" / "planning-artifacts" / "PRD.md", b"x", repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT)
+        fs.write(
+            tmp_path / "_bmad-output" / "planning-artifacts" / "PRD.md",
+            b"x",
+            repo_root=tmp_path,
+            never_write=_BMAD_LINK_EXEMPT,
+        )
     with pytest.raises(NeverWriteViolation):
-        fs.write(tmp_path / "_bmad-output" / "planning-artifacts", b"x", repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT)
+        fs.write(
+            tmp_path / "_bmad-output" / "planning-artifacts", b"x", repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT
+        )
     with pytest.raises(NeverWriteViolation):
         fs.remove(tmp_path / "_bmad-output" / "planning-artifacts", repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT)
     assert (tmp_path / "_bmad-output" / "planning-artifacts").is_symlink()

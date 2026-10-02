@@ -277,6 +277,7 @@ from .. import fs
 from ..apply.run import ApplyResult, CommitAction, run_apply
 from ..derive import adapters as derive_adapters
 from ..derive import projects_index as derive_projects_index
+from ..detect.findings import Finding
 from ..detect.hashes import hash_content, region_body_text
 from ..detect.inventory import (
     ArtifactState,
@@ -286,7 +287,6 @@ from ..detect.inventory import (
     escape_findings,
     writable_exemptions,
 )
-from ..detect.findings import Finding
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
 from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry
