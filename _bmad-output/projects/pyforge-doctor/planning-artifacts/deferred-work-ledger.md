@@ -2373,3 +2373,25 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-10-01 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-doctor-40-1: A cannot-evaluate WARN that carries no `exception` evidence (the new unresolvable-head ledger WARN, `chain-layers-audit-unevaluable`, `bmad-drift-unevaluable`) still grades its axis as a letter (C), not `incomplete`.
+
+- source_spec: `planning-artifacts/specs/spec-40-1-doctor-executes-no-code-from-the-judged-tree-and-an-unresolved-head-or-a-failed-gather-reads-as-unevaluable.md`
+  summary: A cannot-evaluate WARN that carries no `exception` evidence (the new unresolvable-head ledger WARN, `chain-layers-audit-unevaluable`, `bmad-drift-unevaluable`) still grades its axis as a letter (C), not `incomplete`.
+  evidence: Verified live by the intent-alignment review layer: each of those three shapes grades C, while a real `degrade_on_exception` WARN grades `incomplete`. Not caused by this story (they graded C before) and this story's Approach and ACs pin the predicate to the `exception` evidence shape. The head WARN's evidence keys are pinned to `base`/`head`/`target`, and `ledger-regression` is also the check name of the ordinary verdicts, so a shared marker needs a contract decision across sources. Latent today: `score.grade` is fed only atlas and warden findings in production. Settle it with a decision on one evidence marker (or check-name convention) for "this axis could not be evaluated" that every cannot-evaluate WARN carries, then generalise `_is_gather_failure`.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/score.py:125
+  origin: spec-deferred b13d6cabebf7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-doctor-40-1-2: `docs_currency` runs the judged tree's own declared generator script (`target / <generator from the target's docs/map.yaml> --check`, `cwd=target`) at Doctor's privileges, by subprocess rather than `exec_module`.
+
+- source_spec: `planning-artifacts/specs/spec-40-1-doctor-executes-no-code-from-the-judged-tree-and-an-unresolved-head-or-a-failed-gather-reads-as-unevaluable.md`
+  summary: `docs_currency` runs the judged tree's own declared generator script (`target / <generator from the target's docs/map.yaml> --check`, `cwd=target`) at Doctor's privileges, by subprocess rather than `exec_module`.
+  evidence: `sources/docs_currency.py:452-468` builds `generator_path = target / generator` and runs it through `cli_bridge.run_check_script`. Pre-existing and outside the two loader sites this story's intent names. Unverified whether it is a defect: the module's own design note says it deliberately treats each generator as "an opaque, already-decided verdict" because a generator's source of truth lives in `scripts/`, and `tests/meta/test_source_independence.py` governs textual import/exec references, not this subprocess. What would settle it: an operator ruling on whether Doctor may run the judged tree's declared generators, or a conformance test that names the trust model either way.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py:452
+  origin: spec-deferred dcfc6784e513 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: high (unverified)
+  promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
