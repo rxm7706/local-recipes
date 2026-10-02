@@ -184,13 +184,11 @@ belongs to ``seed init``, Story 10.7) -- ``classify()`` treats the
 placeholder as a literal path segment, which is a PRE-EXISTING gap in
 ``detect.inventory``/``plan.build`` (both already shipped, neither touched
 by this story), not one this module introduces or is scoped to close. (4)
-``state.managed[]`` can record at most ONE inserted region per hybrid
-artifact (``state/store.py``'s own documented pre-existing schema
-limitation -- "State can record exactly ONE installed region per hybrid
-artifact, even though ``ManifestEntry`` lets one declare several"); when one
-action inserts more than one pending region in a single run, this module
-records the FIRST (declaration order, matching ``action.chosen_anchor``'s
-own order) and no more.
+[Story 82.13 CLOSED THIS: ``state.managed[]`` records ONE ``RegionSpanRecord``
+per installed region of a hybrid artifact, each with its own ``body_sha``, so
+an artifact declaring several regions is recorded in full -- see
+``_managed_artifact_after_apply``. A state file written before 82.13 holds at
+most one span per artifact and reads as a one-region list.]
 
 **Filtering the manifest by ``applies_to`` (AD-55).** ``AppliesTo`` has three
 members -- ``init``/``adopt``/``both`` -- and the packaged manifest already
@@ -287,6 +285,7 @@ from ..detect.inventory import (
     escape_findings,
     writable_exemptions,
 )
+from ..detect.optout import opted_out_regions
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
 from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry
@@ -576,20 +575,51 @@ def _managed_records(state: SeedState | None, manifest: Manifest) -> tuple[Manag
     records: list[ManagedRecord] = []
     for artifact in state.managed:
         entry = entries_by_id.get(artifact.id)
-        if artifact.inserted_region_span is not None:
+        if artifact.inserted_region_spans:
             if entry is None or entry.format is None:
                 continue
             records.append(
                 ManagedRecord(
                     artifact_id=artifact.id,
                     path=artifact.path,
-                    region_shas=((artifact.inserted_region_span.name, artifact.body_sha),),
+                    # One pair per recorded span, each against its OWN hash
+                    # (Story 82.13): rung 6 compares every region body to the
+                    # value state recorded for that region, so a multi-region
+                    # artifact no longer reports its siblings as "never
+                    # recorded".
+                    region_shas=tuple((span.name, span.body_sha) for span in artifact.inserted_region_spans),
                     region_format=entry.format,
                 )
             )
         else:
             records.append(ManagedRecord(artifact_id=artifact.id, path=artifact.path, body_sha=artifact.body_sha))
     return tuple(records)
+
+
+def _opted_out_pairs(
+    manifest: Manifest, state: SeedState | None, repo_root: Path, escaping_ids: set[str]
+) -> frozenset[tuple[str, str]]:
+    """Every ``(artifact_id, region)`` the repository has opted out of --
+    recorded in ``state.opted_out`` or derived from a surviving claim whose
+    markers are gone -- for ``check_preconditions``' rung 6 (Story 82.13,
+    ``DW-FU-8-5-5``).
+
+    Rung 6 would otherwise report a deleted region as a hand-edit and offer
+    ``--force``, contradicting FR-112 and ``build_plan``, which already honours
+    the recorded half. Only HYBRID entries have regions, and an entry in
+    ``escaping_ids`` is not read (its target resolves outside the repo and the
+    run refuses to touch it); each file is read with this module's own
+    ``_read_text_or_blank``, so an absent or unreadable one is ``""`` and
+    derives nothing. ``detect.optout.opted_out_regions`` does the
+    classification, so this carries no second spelling of either source."""
+    return opted_out_regions(
+        (
+            (entry, _read_text_or_blank(repo_root / entry.path))
+            for entry in manifest.entries
+            if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION and entry.id not in escaping_ids
+        ),
+        state,
+    )
 
 
 def _merge_agents(existing: tuple[str, ...], requested: Sequence[str]) -> tuple[str, ...]:
@@ -853,63 +883,82 @@ def _default_commit(
     return commit
 
 
-def _managed_artifact_after_apply(action: Action, entry: ManifestEntry, repo_root: Path) -> ManagedArtifact:
+def _managed_artifact_after_apply(
+    action: Action, entry: ManifestEntry, repo_root: Path, prior: ManagedArtifact | None = None
+) -> ManagedArtifact:
     """One post-apply ``ManagedArtifact`` for ``action`` -- re-reading the
     JUST-MATERIALIZED target from disk (the Always bullet's own "re-read
     each materialized whole-file entry's content and hash it, use regions.
     parse for each materialized hybrid entry's inserted span"), never
     trusting anything the ``commit`` callback might have returned (it
     returns nothing at all -- ``apply.run.CommitAction`` is a bare
-    ``Callable[[Action], None]``)."""
+    ``Callable[[Action], None]``).
+
+    **A hybrid entry records every region it holds, not the first one**
+    (Story 82.13, ``DW-FU-8-5-6``). ``_build_state_after_apply`` replaces a
+    touched id's old record outright, so the new one must carry everything
+    the old one attested to as well as what this action wrote: the declared
+    regions that are PRESENT in the file after the write and that either
+    ``action.chosen_anchor`` named or ``prior`` -- the record this one
+    replaces -- already recorded, in the manifest's declared order. Each
+    carries its own byte offsets and the ``hash_content`` of its body, read
+    back from the file. A region the file no longer contains (an opt-out, a
+    deleted block) is left out rather than invented, and one the action did
+    not name and no record carried is not claimed -- the tool does not take
+    ownership of a region a human put there. ``prior`` counts only while it
+    describes the same file: a record whose ``path`` has since moved
+    describes a different one.
+
+    A region carried over from ``prior`` is recorded at its CURRENT hash. Rung
+    6 has already refused a hand-edit to it (no ``--force``), so the hash is
+    the value the repo already held; under ``--force`` the operator chose to
+    discard hand-edits, and a sibling this run did not rewrite is adopted as
+    it stands -- before this it was not recorded at all."""
     target = repo_root / action.target_path
     if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
         assert entry.format is not None
         text = target.read_text(encoding="utf-8")
         spans = {span.name: span for span in parse_regions(text, entry.format)}
-        # `action.chosen_anchor` may be `()` for a hybrid PRESENT_DIVERGENT
-        # action whose file `build_plan` could not parse (see the module
-        # docstring's limitation (4) and `plan/build.py::_pendency`'s own
-        # "cannot safely re-parse, degrade rather than guess" precedent) --
-        # such an action's `commit` call above did nothing, so there is no
-        # NEW region to record here either.
-        if not action.chosen_anchor:
-            return ManagedArtifact(
-                id=entry.id,
-                path=entry.path,
-                artifact_class=entry.artifact_class.value,
-                body_sha=hash_content(text),
-                inserted_region_span=None,
+        named = {name for name, _anchor in action.chosen_anchor}
+        if prior is not None and prior.path == entry.path:
+            named |= {recorded.name for recorded in prior.inserted_region_spans}
+        recorded_spans = tuple(
+            RegionSpanRecord(
+                name=region.name,
+                start=spans[region.name].body_span[0],
+                end=spans[region.name].body_span[1],
+                body_sha=hash_content(region_body_text(text, spans[region.name])),
             )
-        # `state/store.py`'s own documented, pre-existing schema limit:
-        # `ManagedArtifact` carries at most ONE `inserted_region_span`. This
-        # module records the first pending region, in the same declaration
-        # order `action.chosen_anchor` itself preserves (module docstring's
-        # limitation (4)).
-        region_name = action.chosen_anchor[0][0]
-        span = spans.get(region_name)
-        if span is None:
-            # Unreachable in the ordinary case (`commit()` just inserted
-            # this exact region into `target` and this function re-reads
-            # the same file `insert_region` wrote to), but a defensive
-            # `InternalError` beats a bare `KeyError` (review finding): this
-            # runs AFTER `run_apply` has already written to disk, so a raw
-            # traceback here would leave a real file change with no
-            # `ManagedArtifact` recorded for it at all.
+            for region in entry.regions
+            if region.name in named and region.name in spans
+        )
+        if not recorded_spans:
+            # Unreachable in the ordinary case (`commit()` just inserted the
+            # regions `action.chosen_anchor` names into `target`, and this
+            # function re-reads the same file `insert_region` wrote to), but a
+            # defensive `InternalError` beats the bare `ValueError` the
+            # constructor would raise (review finding): this runs AFTER
+            # `run_apply` has already written to disk, so a raw traceback here
+            # would leave a real file change with no `ManagedArtifact`
+            # recorded for it at all. A hybrid action whose `chosen_anchor` is
+            # `()` (a file `build_plan` could not parse, so `commit` did
+            # nothing) with no prior record to carry lands here too -- there
+            # is no region to record.
             raise InternalError(
-                f"region {region_name!r} was not found in {entry.path!r} immediately after insertion",
+                f"no managed region of {entry.path!r} was found to record immediately after the write"
+                f" (action named {[name for name in sorted(named)]!r})",
                 remedy=(
                     "this indicates insert_region silently failed to insert the region it"
                     " was asked to -- a broken installation, not a problem with the"
                     " repository being adopted"
                 ),
             )
-        body = region_body_text(text, span)
         return ManagedArtifact(
             id=entry.id,
             path=entry.path,
             artifact_class=entry.artifact_class.value,
-            body_sha=hash_content(body),
-            inserted_region_span=RegionSpanRecord(name=span.name, start=span.body_span[0], end=span.body_span[1]),
+            body_sha=recorded_spans[0].body_sha,
+            inserted_region_spans=recorded_spans,
         )
     content = target.read_text(encoding="utf-8")
     return ManagedArtifact(
@@ -917,7 +966,7 @@ def _managed_artifact_after_apply(action: Action, entry: ManifestEntry, repo_roo
         path=entry.path,
         artifact_class=entry.artifact_class.value,
         body_sha=hash_content(content),
-        inserted_region_span=None,
+        inserted_region_spans=(),
     )
 
 
@@ -939,8 +988,12 @@ def _build_state_after_apply(
     carried_over = tuple(
         record for record in (state.managed if state is not None else ()) if record.id not in touched_ids
     )
+    prior_by_id = {record.id: record for record in state.managed} if state is not None else {}
     new_records = tuple(
-        _managed_artifact_after_apply(action, entries_by_id[action.artifact_id], repo_root) for action in plan.actions
+        _managed_artifact_after_apply(
+            action, entries_by_id[action.artifact_id], repo_root, prior_by_id.get(action.artifact_id)
+        )
+        for action in plan.actions
     )
     managed = tuple(sorted((*carried_over, *new_records), key=lambda record: record.id))
     legacy = tuple(
@@ -1039,6 +1092,7 @@ def run_adopt(
         repo_root=repo_root,
         never_write=never_write,
         managed=managed_records,
+        opted_out=_opted_out_pairs(filtered_manifest, state, repo_root, escaping_ids),
         force=force,
         dry_run=not apply,
     )

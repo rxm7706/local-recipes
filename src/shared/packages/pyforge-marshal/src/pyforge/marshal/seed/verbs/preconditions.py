@@ -81,6 +81,19 @@ is it still what Genesis left there? It also reports ALL divergences in one
 message rather than the first -- a caller fixing them one refusal at a time
 would need six runs to learn about six hand-edits.
 
+**What rung 6 does not report: a region the operator opted out of (Story
+82.13).** Deleting a managed region's markers is a permanent, recorded opt-out
+(FR-112), so a recorded region that is absent from its file is not a hand-edit
+when its `(artifact_id, region)` is an opt-out. The caller passes that set as
+`opted_out`, beside `managed`, and this module only consults it -- it holds no
+opt-out model of its own and imports nothing from `seed.state`, for the same
+reason `ManagedRecord` is a local carrier. The set is pairs, not
+`<id>#<region>` keys, so the key's spelling stays in one place. Only an ABSENT
+region is excused: one the file still contains is hash-checked as before, an
+unparseable file is still a divergence, and a region present but never recorded
+is still reported. Before this, rung 6 refused the exact repo state FR-112
+declares lawful, with a remedy that told the operator to undo the deletion.
+
 **The consequence for `--skip`, which the caller owns.** Because rung 6
 walks the caller's `managed` sequence rather than the plan, it is the one
 rung a skip does not reach on its own: rungs 3-5 walk `plan.actions`, which
@@ -402,11 +415,13 @@ def _read_managed_text(repo_root: Path, record: ManagedRecord) -> str | _Diverge
         )
 
 
-def _region_divergences(record: ManagedRecord, text: str) -> list[_Divergence]:
+def _region_divergences(
+    record: ManagedRecord, text: str, opted_out: frozenset[tuple[str, str]] = frozenset()
+) -> list[_Divergence]:
     """Rung 6 for one region-bearing record: every recorded region whose
     body no longer hashes to its recorded sha, every recorded region the
-    file no longer contains at all, and every managed region the file
-    contains that state never recorded.
+    file no longer contains at all (unless `opted_out` names it), and every
+    managed region the file contains that state never recorded.
 
     A parse failure (`RegionParseError`/`MarkerError`/`NotImplementedError`
     -- mangled, nested, or unclosed markers, or a format with no
@@ -414,7 +429,13 @@ def _region_divergences(record: ManagedRecord, text: str) -> list[_Divergence]:
     themselves an edit to tool-owned structure, and a file whose regions
     cannot be located is a file whose regions cannot be confirmed intact.
     A recorded region that is simply gone is divergence for the same
-    reason -- somebody deleted a managed block.
+    reason -- somebody deleted a managed block -- EXCEPT when
+    `(record.artifact_id, name)` is in `opted_out`: deleting the markers is
+    FR-112's sanctioned, permanent opt-out, and reporting it as a hand-edit
+    would refuse the very state the operator was told is lawful (Story 82.13).
+    Only absence is excused. A region the file still contains is compared to
+    its recorded sha whether or not it is in `opted_out`, so a modified live
+    region is still reported.
 
     The three-way split matters (found in review): iterating
     `record.region_shas` alone answers only two of the three questions, so a
@@ -443,6 +464,8 @@ def _region_divergences(record: ManagedRecord, text: str) -> list[_Divergence]:
     for name, recorded_sha in record.region_shas:
         span = spans_by_name.get(name)
         if span is None:
+            if (record.artifact_id, name) in opted_out:
+                continue
             divergences.append(
                 _Divergence(
                     record.artifact_id,
@@ -466,11 +489,14 @@ def _region_divergences(record: ManagedRecord, text: str) -> list[_Divergence]:
     return divergences
 
 
-def _managed_divergences(repo_root: Path, managed: Sequence[ManagedRecord]) -> list[_Divergence]:
+def _managed_divergences(
+    repo_root: Path, managed: Sequence[ManagedRecord], opted_out: frozenset[tuple[str, str]] = frozenset()
+) -> list[_Divergence]:
     """Every divergence across every supplied record, in the caller's own
     record order -- `check_managed_file`/`check_managed_region` are the sole
     deciders for a content comparison; this function only routes each record
-    to the right one and collects what comes back."""
+    to the right one (handing a region-bearing record the `opted_out` set) and
+    collects what comes back."""
     divergences: list[_Divergence] = []
     for record in managed:
         text = _read_managed_text(repo_root, record)
@@ -480,7 +506,7 @@ def _managed_divergences(repo_root: Path, managed: Sequence[ManagedRecord]) -> l
             divergences.append(text)
             continue
         if record.region_shas:
-            divergences.extend(_region_divergences(record, text))
+            divergences.extend(_region_divergences(record, text, opted_out))
             continue
         finding = check_managed_file(record.path, text, record.body_sha)
         if finding is not None:
@@ -494,6 +520,7 @@ def check_preconditions(
     repo_root: Path,
     never_write: NeverWrite,
     managed: Sequence[ManagedRecord] = (),
+    opted_out: frozenset[tuple[str, str]] = frozenset(),
     force: bool = False,
     dry_run: bool = False,
     process: ProcessPort | None = None,
@@ -502,13 +529,23 @@ def check_preconditions(
 
     Consumes only what it is handed: it never loads a `Manifest`, never
     reads `.marshal/seed-state.yml`, never calls `classify`/`build_plan`,
-    and never writes. `never_write` and `managed` are INPUTS -- whoever
-    loaded state supplies them.
+    and never writes. `never_write`, `managed` and `opted_out` are INPUTS --
+    whoever loaded state supplies them.
 
     Evaluates the six rungs documented at module level in that fixed order
     and raises `PreconditionFailure` (exit 3, always with a non-blank
     `remedy`) at the FIRST one that fails, naming the offending artifact id
     and -- where a region is at fault -- `path#region`.
+
+    **Pass the opt-out set beside `managed`** (Story 82.13): `opted_out` is
+    every `(artifact_id, region)` pair the run's repository has opted out of,
+    recorded or derived -- `detect.optout.opted_out_regions` computes it from
+    the hybrid manifest entries and their file text. Rung 6 then does not report
+    such a region as missing from its file, so FR-112's sanctioned deletion
+    needs no `--force`. It excuses ABSENCE only (module docstring); the default
+    `frozenset()` keeps every caller that passes none behaving as before, and
+    `init`, which reads no state and passes `managed=()`, has no record to
+    excuse.
 
     **Pass `managed` through `skips.managed_after_skips(managed, plan,
     patterns)` if this run has skips, handing it the operator's skip
@@ -682,7 +719,7 @@ def check_preconditions(
     # operator is entitled to make explicitly, unlike containment.
     if force:
         return
-    divergences = _managed_divergences(repo_root, managed)
+    divergences = _managed_divergences(repo_root, managed, opted_out)
     if divergences:
         detail = "; ".join(f"{divergence.artifact_id}: {divergence.detail}" for divergence in divergences)
         # Counts BOTH numbers rather than conflating them: one region-bearing
