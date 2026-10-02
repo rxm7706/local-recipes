@@ -473,7 +473,7 @@ def test_a_wrong_typed_sequence_item_is_rejected_at_construction(field_name, val
 def test_two_managed_entries_may_not_claim_the_same_id():
     """``model/manifest.py`` enforces id uniqueness for entries; state must
     too, or the recorded-hash lookup becomes order-dependent."""
-    duplicate = dataclasses.replace(_sample_state().managed[0], body_sha="ffffffff")
+    duplicate = dataclasses.replace(_sample_state().managed[0], path="AGENTS-2.md")
     with pytest.raises(ValueError, match=r"managed\[\].id"):
         _sample_state(managed=(_sample_state().managed[0], duplicate))
 
@@ -617,8 +617,11 @@ def test_written_yaml_is_block_style_and_key_ordered(tmp_path):
     assert tuple(document) == STATE_KEYS
     assert "{" not in text
     assert _NON_EMPTY_FLOW_SEQUENCE.search(text) is None
-    # This state populates every collection, so there is no `[]` either.
-    assert "[" not in text
+    # This state populates every collection but one: the whole-file claim
+    # writes `inserted_region_spans: []` (Story 82.13), the one empty flow
+    # sequence it carries. Nothing else is `[]`.
+    assert text.count("[") == 1
+    assert "inserted_region_spans: []" in text
 
 
 def test_a_state_with_every_collection_empty_round_trips(tmp_path):
@@ -2045,3 +2048,188 @@ def test_the_six_opt_out_helpers_are_re_exported_from_the_state_package():
     # that cannot reach the grammar re-implements it).
     functions = [name for name in state_package.__all__ if name[0].islower()]
     assert functions == sorted(functions)
+
+
+# --- Story 82.13: one span per installed region, and the old shape reads ----
+
+
+def _two_region_state() -> SeedState:
+    """``_clean_state`` with the hybrid claim recording TWO regions."""
+    return _clean_state(managed=(_two_region_claim(), _sample_state().managed[1]))
+
+
+def _as_old_shape(document: dict[str, Any]) -> dict[str, Any]:
+    """``document`` rewritten the way every state file written before Story
+    82.13 reads: ONE nullable ``inserted_region_span`` per artifact, an object
+    (``name``/``start``/``end``, no hash of its own) for a hybrid claim and
+    ``None`` for any other."""
+    for artifact in document["managed"]:
+        spans = artifact.pop("inserted_region_spans")
+        artifact["inserted_region_span"] = (
+            None if not spans else {key: spans[0][key] for key in ("name", "start", "end")}
+        )
+    return document
+
+
+def test_a_multi_region_state_round_trips_with_a_hash_per_span(tmp_path):
+    state = _two_region_state()
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+
+    loaded = read_state(tmp_path)
+
+    assert loaded == state
+    assert loaded is not None
+    assert [(span.name, span.body_sha) for span in loaded.managed[0].inserted_region_spans] == [
+        ("tiers", "0123abcd"),
+        ("model-badge", "feedbeef"),
+    ]
+
+
+def test_the_written_wire_shape_is_the_span_array_and_never_the_old_key(tmp_path):
+    """``write_state`` always emits ``inserted_region_spans`` (``[]`` for a
+    non-hybrid claim); the old key is read-only."""
+    write_state(_two_region_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+    document = yaml.safe_load(state_path(tmp_path).read_text(encoding="utf-8"))
+    hybrid, whole_file = document["managed"]
+    assert "inserted_region_span" not in hybrid and "inserted_region_span" not in whole_file
+    assert hybrid["inserted_region_spans"] == [
+        {"name": "tiers", "start": 7, "end": 20, "body_sha": "0123abcd"},
+        {"name": "model-badge", "start": 40, "end": 60, "body_sha": "feedbeef"},
+    ]
+    assert whole_file["inserted_region_spans"] == []
+
+
+def test_a_state_file_in_the_old_one_span_shape_loads_as_a_one_region_list(tmp_path):
+    """The compatibility contract (Story 82.13): reading NEVER rejects an old
+    file. Its one span becomes a one-element list whose ``body_sha`` is the
+    artifact's -- which, in that shape, was that region's -- and a null span
+    becomes ``()``."""
+    _write_raw(tmp_path, yaml.safe_dump(_as_old_shape(_valid_document()), sort_keys=False))
+
+    loaded = read_state(tmp_path)
+
+    assert loaded == _sample_state()
+    assert loaded is not None
+    hybrid, whole_file = loaded.managed
+    assert hybrid.inserted_region_spans == (RegionSpanRecord("tiers", 7, 20, hybrid.body_sha),)
+    assert whole_file.inserted_region_spans == ()
+
+
+def test_the_next_write_of_an_old_shape_state_uses_the_new_shape_and_re_reads_equal(tmp_path):
+    _write_raw(tmp_path, yaml.safe_dump(_as_old_shape(_valid_document()), sort_keys=False))
+    loaded = read_state(tmp_path)
+    assert loaded is not None
+
+    write_state(loaded, repo_root=tmp_path, never_write=_NO_PATTERNS)
+
+    text = state_path(tmp_path).read_text(encoding="utf-8")
+    assert "inserted_region_spans:" in text
+    assert "inserted_region_span:" not in text
+    assert read_state(tmp_path) == loaded
+
+
+def test_from_json_dict_reads_the_old_one_span_shape_directly():
+    old = _as_old_shape(_valid_document())
+    state = SeedState.from_json_dict(old)
+    assert state == _sample_state()
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        pytest.param(lambda artifact: artifact.update(inserted_region_span=None), id="both-keys"),
+        pytest.param(lambda artifact: artifact.pop("inserted_region_spans"), id="neither-key"),
+        pytest.param(
+            lambda artifact: (artifact.pop("inserted_region_spans"), artifact.update(inserted_region_span="tiers")),
+            id="old-key-neither-object-nor-null",
+        ),
+    ],
+)
+def test_from_json_dict_requires_exactly_one_span_key(mutate):
+    document = _valid_document()
+    mutate(document["managed"][0])
+    with pytest.raises(ValueError, match="inserted_region_span"):
+        SeedState.from_json_dict(document)
+
+
+def test_a_hybrid_whose_body_sha_is_not_its_first_spans_is_refused():
+    """The hybrid artifact's own ``body_sha`` is kept (the schema requires
+    it) as the first span's, enforced so the two cannot disagree about the
+    one region both name."""
+    with pytest.raises(ValueError, match="must equal its first inserted_region_spans entry's body_sha"):
+        ManagedArtifact(
+            id="agents-md",
+            path="AGENTS.md",
+            artifact_class="hybrid-managed-region",
+            body_sha="deadbeef",
+            inserted_region_spans=(RegionSpanRecord(name="tiers", start=0, end=1, body_sha="0123abcd"),),
+        )
+
+
+def test_a_hybrid_with_the_first_spans_body_sha_on_a_later_span_only_is_refused():
+    with pytest.raises(ValueError, match="first inserted_region_spans entry"):
+        ManagedArtifact(
+            id="agents-md",
+            path="AGENTS.md",
+            artifact_class="hybrid-managed-region",
+            body_sha="feedbeef",
+            inserted_region_spans=_two_region_claim().inserted_region_spans,
+        )
+
+
+def test_two_spans_of_one_region_name_in_one_artifact_are_refused():
+    span = RegionSpanRecord(name="tiers", start=0, end=1, body_sha="0123abcd")
+    with pytest.raises(ValueError, match=r"inserted_region_spans\[\]\.name: must be unique"):
+        ManagedArtifact(
+            id="agents-md",
+            path="AGENTS.md",
+            artifact_class="hybrid-managed-region",
+            body_sha="0123abcd",
+            inserted_region_spans=(span, dataclasses.replace(span, start=5, end=9)),
+        )
+
+
+def test_a_list_of_spans_is_frozen_to_a_tuple_and_a_non_span_is_refused():
+    span = RegionSpanRecord(name="tiers", start=0, end=1, body_sha="0123abcd")
+    claim = ManagedArtifact(
+        id="agents-md",
+        path="AGENTS.md",
+        artifact_class="hybrid-managed-region",
+        body_sha="0123abcd",
+        inserted_region_spans=[span],  # type: ignore[arg-type]
+    )
+    assert claim.inserted_region_spans == (span,)
+    with pytest.raises(ValueError, match="sequence of RegionSpanRecord"):
+        ManagedArtifact(
+            id="agents-md",
+            path="AGENTS.md",
+            artifact_class="hybrid-managed-region",
+            body_sha="0123abcd",
+            inserted_region_spans=({"name": "tiers"},),  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        pytest.param(
+            lambda artifact: artifact.update(body_sha="deadbeef"),
+            id="first-span-body-sha-mismatch",
+        ),
+        pytest.param(
+            lambda artifact: artifact["inserted_region_spans"].append(dict(artifact["inserted_region_spans"][0])),
+            id="duplicate-span-names",
+        ),
+    ],
+)
+def test_a_corrupted_new_shape_that_the_schema_cannot_see_is_still_state_invalid(tmp_path, mutate):
+    """Two rules a schema keyword cannot state (a uniqueness BY A FIELD, an
+    equality between two fields) reach ``from_json_dict`` and surface as
+    ``StateInvalid`` all the same -- never a traceback (FR-104)."""
+    document = _valid_document()
+    mutate(document["managed"][0])
+    _write_raw(tmp_path, yaml.safe_dump(document, sort_keys=False))
+    with pytest.raises(StateInvalid) as excinfo:
+        read_state(tmp_path)
+    assert excinfo.value.exit_code == 5
+    assert "could not be decoded" in str(excinfo.value)
