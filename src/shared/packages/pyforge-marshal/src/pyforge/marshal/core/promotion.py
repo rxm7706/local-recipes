@@ -8,7 +8,7 @@ candidates should be promoted, skipped, or reported as a paper-trail gap
 Pure data only (AD-4): no I/O, no subprocess, no ``pathlib`` I/O methods,
 no clock, no ``..adapters`` import. The impure edges -- reading Tier-3 spec
 files and the tracked archive off disk, and calling
-``VcsPort.commit_subjects``/``CommitPort.commit_paths`` -- live entirely in
+``VcsPort.commit_subjects``/``commit_paths`` -- live entirely in
 ``cli/deploy.py``.
 
 Placement (per the story's own Code Map, which offers this as the

@@ -437,7 +437,6 @@ from ..adapters.observer_mux import MultiplexerObserver
 from ..adapters.publisher_host import HostPublisher
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
-from ..core.commit_vcs import CommittingVcs
 from ..core.egress import to_redacted
 from ..core.identity import normalize, render_feed_key
 from ..core.journal import (
@@ -480,6 +479,7 @@ from ..ports.harness import HarnessPort, RunStatusSnapshot, TaskPhaseSnapshot, U
 from ..ports.notify import NotifyPort
 from ..ports.observer import SessionObserverPort
 from ..ports.publisher import RunPublisherPort
+from ..ports.vcs import VcsPort
 from .durability import PushTrigger, classify_push_triggers
 from .intent_gap_preserve import (
     AttemptSnapshot,
@@ -1000,7 +1000,7 @@ def run_supervisor(
     harness: HarnessPort | None = None,
     notify: NotifyPort | None = None,
     publisher: RunPublisherPort | None = None,
-    vcs: CommittingVcs | None = None,
+    vcs: VcsPort | None = None,
     sleep: Callable[[float], None] = time.sleep,
 ) -> int:
     """The sidecar's own testable core -- everything ``__main__``'s own

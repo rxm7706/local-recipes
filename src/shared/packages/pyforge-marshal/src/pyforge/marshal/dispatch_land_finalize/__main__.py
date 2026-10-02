@@ -35,15 +35,12 @@ from pyforge.marshal.cli.land import (
 )
 from pyforge.marshal.core import deferred_work, promotion
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.core.commit_vcs import CommittingVcs
-from pyforge.marshal.core.egress import to_redacted_text
 from pyforge.marshal.core.identity import MalformedStoryKeyError, StoryKey, normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT
 from pyforge.marshal.core.status import render_ledger_advancements
 from pyforge.marshal.ports.clock import ClockPort
-from pyforge.marshal.ports.commit import VcsRef
 from pyforge.marshal.ports.fs import FsPort
 from pyforge.marshal.ports.vcs import VcsPort
 
@@ -260,7 +257,7 @@ def _close_followup_row(
 def _run_deferred_work_intake(
     process: ProcessPort,
     fs: FsPort,
-    vcs: CommittingVcs,
+    vcs: VcsPort,
     root: Path,
     project_slug: str,
     story_key: str,
@@ -404,13 +401,13 @@ def _run_deferred_work_intake(
         try:
             vcs.commit_paths_onto_remote_tip(
                 root,
-                remote=VcsRef("origin"),
-                ref=VcsRef("main"),
+                remote="origin",
+                ref="main",
                 writes=((tracked_rel, publish_text or ""),),
-                message=to_redacted_text(commit_message),
+                message=commit_message,
                 # Story 68.1 (CAP-277): a planning-artifacts-only publish, named by its story;
                 # the adapter proves the commit's paths before it sets the journaled opt-out.
-                preflight_skip_reason=to_redacted_text(skip_reason),
+                preflight_skip_reason=skip_reason,
             )
         except VcsCommandError as exc:
             commit_finding = Finding(
@@ -679,7 +676,7 @@ def _followup_review_carry(
 
 
 def _promote_tracked_spec(
-    vcs: CommittingVcs, root: Path, project_slug: str, key: StoryKey, worktree: Path | None
+    vcs: VcsPort, root: Path, project_slug: str, key: StoryKey, worktree: Path | None
 ) -> tuple[bool, Finding | None]:
     """Story 79.1 (spec-pyforge-marshal CAP-229/CAP-261b, DW-FU-53-2-4): set the landed story's TRACKED spec
     ``status: done`` on ``origin/main``. The Tier-3 promotion (``_execute_promotion_plan``) only reaches a
@@ -728,12 +725,12 @@ def _promote_tracked_spec(
     try:
         vcs.commit_paths_onto_remote_tip(
             root,
-            remote=VcsRef("origin"),
-            ref=VcsRef("main"),
+            remote="origin",
+            ref="main",
             writes=((rel, promotion.set_spec_status(text, promotion.SPEC_STATUS_DONE)),),
-            message=to_redacted_text(f"marshal: promote story {key}'s tracked spec to done"),
+            message=f"marshal: promote story {key}'s tracked spec to done",
             # The adapter proves this is a planning-artifacts-only commit before it sets the opt-out.
-            preflight_skip_reason=to_redacted_text(f"marshal tracked-spec promotion for {project_slug!r}, story {key}"),
+            preflight_skip_reason=f"marshal tracked-spec promotion for {project_slug!r}, story {key}",
         )
     except VcsCommandError as exc:
         return _warn(f"story {key}'s tracked spec {rel!r} could not be promoted to done on {ORIGIN_MAIN_SHORT}: {exc}")

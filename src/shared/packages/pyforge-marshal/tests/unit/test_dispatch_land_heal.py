@@ -18,13 +18,11 @@ from pyforge.marshal.core.dispatch_landing import (
     union_sprint_ledger_maps,
     unknown_conflict_paths,
 )
-from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.dispatch_land_heal import (
     DispatchLandHealResult,
     try_heal_dispatch_land_merge,
 )
-from pyforge.marshal.ports.commit import VcsRef
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
 
 
@@ -94,14 +92,14 @@ class FakeVcsHeal:
             return self.branch_ledger
         return None
 
-    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted):
-        self.commits.append((repo_root, paths, message.text))
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str):
+        self.commits.append((repo_root, paths, message))
         self._head_sha = "healed222"
         return self._head_sha
 
-    def merge_ref_resolving(self, worktree_path: Path, ref: VcsRef, *, resolutions, message: Redacted) -> str:
+    def merge_ref_resolving(self, worktree_path: Path, ref: str, *, resolutions, message: str) -> str:
         """Story 59.1: records the merge and writes each resolution, as the real adapter does."""
-        self.merges.append((worktree_path, ref.value, dict(resolutions), message.text))
+        self.merges.append((worktree_path, ref, dict(resolutions), message))
         for rel, text in resolutions.items():
             (worktree_path / rel).parent.mkdir(parents=True, exist_ok=True)
             (worktree_path / rel).write_text(text, encoding="utf-8")

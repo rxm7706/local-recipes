@@ -14,7 +14,6 @@ from pathlib import Path
 
 from .adapters.vcs_git import VcsCommandError
 from .core.chain_regen import parse_ledger_statuses, render_ledger_statuses
-from .core.commit_vcs import CommittingVcs
 from .core.dispatch_landing import (
     is_mechanical_conflict_path,
     is_memlog_path,
@@ -23,10 +22,8 @@ from .core.dispatch_landing import (
     union_memlog_texts,
     unknown_conflict_paths,
 )
-from .core.egress import to_redacted_text
 from .core.model import Finding
 from .core.refs import local_branch_ref
-from .ports.commit import VcsRef
 from .ports.forge import ForgeCommandError, ForgePort, ForgeRef, PrInfo
 from .ports.fs import FsPort
 from .ports.vcs import VcsPort
@@ -70,7 +67,7 @@ def try_heal_dispatch_land_merge(
     repo_ref: ForgeRef,
     pr: PrInfo,
     fs: FsPort,
-    vcs: CommittingVcs,
+    vcs: VcsPort,
     forge: ForgePort,
     probe_ref: str | None = None,
     await_checks: Callable[[str], Finding | None] | None = None,
@@ -241,7 +238,7 @@ def _try_union_heal(
     resolutions: Mapping[str, str],
     has_ledger: bool,
     has_memlogs: bool,
-    vcs: CommittingVcs,
+    vcs: VcsPort,
     forge: ForgePort,
     await_checks: Callable[[str], Finding | None] | None = None,
 ) -> tuple[bool, Finding | None]:
@@ -258,7 +255,7 @@ def _try_union_heal(
     what = " and ".join(name for name, present in (("sprint ledger", has_ledger), ("memlogs", has_memlogs)) if present)
     message = f"marshal: union {what} for {project_slug!r} while merging the base (CAP-4 heal)"
     try:
-        vcs.merge_ref_resolving(worktree, VcsRef(probe), resolutions=resolutions, message=to_redacted_text(message))
+        vcs.merge_ref_resolving(worktree, probe, resolutions=resolutions, message=message)
         vcs.push(git_repo_root, head_branch)
         new_sha = vcs.resolve_ref(git_repo_root, head_branch)
     except VcsCommandError:

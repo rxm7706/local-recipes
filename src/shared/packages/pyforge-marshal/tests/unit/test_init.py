@@ -24,7 +24,6 @@ from pyforge.marshal.adapters.harness_bmadloop import HarnessError
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import init as init_module
 from pyforge.marshal.cli.init import run_homes, run_init, run_preflight, run_teardown
-from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.ports.vcs import WorktreeEntry
 from pyforge.marshal.seed.verbs.kit import INDEX_TIMEOUT_S
@@ -235,7 +234,7 @@ class FakeVcs:
         self.calls.append("commit_subjects")
         return ()
 
-    def commit_paths(self, repo_root: Path, paths: tuple, message: Redacted) -> str:
+    def commit_paths(self, repo_root: Path, paths: tuple, message: str) -> str:
         self.calls.append("commit_paths")
         return "deadbeef"
 

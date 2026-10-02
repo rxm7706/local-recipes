@@ -2061,7 +2061,7 @@ def render_ledger_advancements(ledger_text: str, raw_keys: frozenset[str]) -> tu
     Pure: no I/O, no ``HarnessPort``. ``ledger_text`` is the caller's own
     already-read file content; the caller is responsible for writing the
     result back (``FsPort.write_text_atomic``) and committing it
-    (``CommitPort.commit_paths``) -- this function only computes the new
+    (``VcsPort.commit_paths``) -- this function only computes the new
     text."""
     if not raw_keys:
         return ledger_text, frozenset()

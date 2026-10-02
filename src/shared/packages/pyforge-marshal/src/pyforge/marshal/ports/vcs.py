@@ -1,12 +1,8 @@
 """``VcsPort`` -- the git-worktree seam ``cli/init.py`` depends on (Story
 1.4, architecture spine AD-11). A Protocol definition only (Structural
 Seed: ``ports/`` declares shapes, never implementations); implemented
-solely by ``adapters/vcs_git.py`` (AD-4). Not an egress port, because it
-carries only reads and ref operations -- and ``push``/``fetch``, which move git
-objects its callers already hold, never free text this port itself forwards.
-Commit text is declared egress (AD-34: "VCS commit and PR text"), so the three
-commit-writing methods live on ``ports/commit.py``'s ``CommitPort`` (Story
-82.9), which takes the message as ``Redacted``; ``GitVcs`` implements both ports.
+solely by ``adapters/vcs_git.py`` (AD-4). Not an egress port: nothing here
+ever leaves the local git repository.
 
 Four methods are a direct port of one piece of ``scripts/bmad-loop-worktree``'s
 ``provision()`` logic (the design reference named by Story 1.4's spec) --
@@ -78,11 +74,15 @@ primitives:
   (``ref="refs/remotes/origin/main"``) and "merged to the integration branch" route
   (``ref="refs/heads/main"``, Story 61.1) -- the caller decides which ``ref`` each route needs;
   this method has no branch-name opinion of its own.
-- ``commit_paths`` -- the one write, now on ``CommitPort`` (Story 82.9): stages
-  EXACTLY ``paths`` (an individual ``git add -- <path>`` per entry, never ``git
-  add -A``) and commits ONLY those paths, the literal AD-29 requirement that a
-  promotion commit contain only promotion paths. ``cli/deploy.py`` calls it
-  through ``core.commit_vcs.CommittingVcs``, the one name that is both ports.
+- ``commit_paths`` -- the one write: stages EXACTLY ``paths`` (an
+  individual ``git add -- <path>`` per entry, never ``git add -A``) and
+  commits ONLY those paths (``git commit -m <message> -- <path> <path>
+  ...``, never a bare ``git commit`` that would sweep in a pre-existing
+  index) -- the literal AD-29 requirement that a promotion commit contain
+  only promotion paths. Returns the new commit's sha
+  (``git rev-parse HEAD`` immediately after). Raises ``VcsCommandError``
+  if ``paths`` is empty (a caller with nothing to promote must never call
+  this) or on any git failure.
 
 Story 4.1's own review-fix pass adds one more read-only method,
 ``path_has_uncommitted_changes``: ``has_uncommitted_changes`` above answers
@@ -167,6 +167,7 @@ succeeded by the time this resync step runs)."""
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -364,6 +365,19 @@ class VcsPort(Protocol):
         with no ``main``) or on any other git failure."""
         ...
 
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+        """Story 4.1 (AD-29): stages exactly ``paths`` -- one ``git add --
+        <path>`` per entry, never ``git add -A`` -- then commits ONLY those
+        paths (``git commit -m <message> -- <path> <path> ...``, never a
+        bare ``git commit`` that would sweep in a pre-existing index) and
+        returns the new commit's sha (``git rev-parse HEAD`` immediately
+        after). ``repo_root`` need not have any of ``paths`` staged already
+        -- this method does the staging itself. Raises ``VcsCommandError``
+        if ``paths`` is empty (a caller with nothing to promote must never
+        reach this method) or on any git failure (an unwritable index, a
+        path outside the working tree, nothing to commit)."""
+        ...
+
     def path_has_uncommitted_changes(self, repo_root: Path, path: Path) -> bool:
         """``True`` if ``path`` carries ANY uncommitted state -- staged,
         unstaged, or untracked (``git status --porcelain -- <path>``,
@@ -473,6 +487,23 @@ class VcsPort(Protocol):
         conflict that names no file, never an empty tuple for either."""
         ...
 
+    def merge_ref_resolving(
+        self,
+        worktree_path: Path,
+        ref: str,
+        *,
+        resolutions: Mapping[str, str],
+        message: str,
+    ) -> str:
+        """Story 59.1 (CAP-269): merge ``ref`` into ``worktree_path``'s checked-out branch as a
+        real two-parent merge commit. Every conflicted path must be a key of ``resolutions``
+        (repo-relative POSIX path -> the full resolved text), which is written and staged;
+        any other conflicted path aborts the merge -- the worktree back at its previous HEAD,
+        nothing committed -- and raises ``VcsCommandError``, as does any git failure. A merge
+        already in progress in the worktree is refused, never adopted or aborted. Returns the
+        merge commit's sha (HEAD itself when ``ref`` is already merged). Never pushes."""
+        ...
+
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
         """Story 28.20: ``git show ref:path``, read-only. Returns ``None``
         when the path is absent at ``ref``. Raises ``VcsCommandError`` on
@@ -502,5 +533,51 @@ class VcsPort(Protocol):
         tag; it exists solely so ``home`` has a commit-ish to check out, and
         is eligible for garbage collection once ``home`` is removed
         (``remove_worktree``). Raises ``VcsCommandError`` on any git
+        failure."""
+        ...
+
+    def commit_paths_onto_remote_tip(
+        self,
+        repo_root: Path,
+        *,
+        remote: str,
+        ref: str,
+        writes: tuple[tuple[str, str], ...],
+        message: str,
+        preflight_skip_reason: str | None = None,
+    ) -> str:
+        """CAP-5 / land-promote-isolation: fetch ``remote``/``ref``, commit
+        ``writes`` (repo-relative POSIX path, full file text) onto that
+        remote tip inside a throwaway detached worktree, and
+        fast-forward-push the new commit to ``refs/heads/<ref>``.
+
+        NEVER mutates ``repo_root``'s working tree, index, or local
+        ``refs/heads/<ref>`` -- git refuses two worktrees on one branch,
+        and the operator checkout is typically already on ``main``.
+        ``repo_root`` is used only as ``git -C`` for fetch / worktree add /
+        push (shared object store). Never ``--force``.
+
+        Story 68.1 (spec-pyforge-marshal CAP-277): ``preflight_skip_reason``
+        (keyword-only) is the proof-carrying opt-out from the repository's
+        ``pre-push`` preflight (``spec-pyforge-steward:CAP-154``), for a
+        landing's bookkeeping publish, which the preflight would otherwise
+        run in full and outlast the push's git timeout. A caller passing one
+        NAMES THE STORY in it. The adapter then (1) refuses, before any
+        write or fetch, a written path that is not a normalized
+        ``_bmad-output/projects/<slug>/planning-artifacts/...`` path, and
+        (2) refuses, after building the commit and before any push, a commit
+        that names any path outside the written set. Only a commit that
+        passes both is pushed with the hook's journaled opt-out
+        (``PYFORGE_PREFLIGHT_SKIP=1`` and a ``PYFORGE_PREFLIGHT_SKIP_REASON``
+        naming the new sha, the paths and the caller's reason), set for that
+        one ``git push`` only through the POSIX ``env`` utility, exactly as
+        ``push`` does for Story 57.1. Where ``env`` does not exist the push
+        runs the preflight. With ``None`` (the default) the push is
+        unchanged and the hook runs as it always did.
+
+        Returns the new commit sha. Raises ``VcsCommandError`` if
+        ``writes`` is empty, a reason is given for a write outside
+        ``planning-artifacts/`` or for a commit naming an unwritten path,
+        fetch fails, the push is not a fast-forward, or on any other git
         failure."""
         ...

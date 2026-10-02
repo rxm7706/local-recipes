@@ -854,7 +854,6 @@ def test_egress_ports_registry_has_exactly_the_known_ports():
         "HarnessPort",
         "VcsPort",
         "RecordPort",
-        "CommitPort",
         "ClockPort",
         "SessionObserverPort",
         "NotifyPort",
@@ -899,58 +898,3 @@ def test_guard_does_not_fire_on_the_real_forge_port():
     module_path = Path(forge_module.__file__)
     cls = _protocol_classes(_parse(module_path))[0]
     assert _bare_str_param_violations(cls) == []
-
-
-# --- Story 82.9 (DW-FU-2-6-4): commit text is declared egress -----------------
-
-
-def test_commit_port_is_classified_egress_true_and_vcs_port_is_not():
-    """AD-34 names "VCS commit and PR text" as egress. The three commit-writing
-    methods live on ``CommitPort``, classified egress; ``VcsPort`` keeps only
-    reads and ref operations and stays non-egress."""
-    assert EGRESS_PORTS["CommitPort"] is True
-    assert EGRESS_PORTS["VcsPort"] is False
-
-
-def test_the_real_commit_port_accepts_no_bare_str_param():
-    """Acceptance: the port carrying commit text is classified egress AND none
-    of its methods accepts a bare ``str`` -- the guard (2) path, run over the
-    real ``ports/commit.py`` rather than a synthetic."""
-    from pyforge.marshal.ports import commit as commit_module
-
-    module_path = Path(commit_module.__file__)
-    tree = _parse(module_path)
-    class_map = {node.name: node for node in ast.walk(tree) if isinstance(node, ast.ClassDef)}
-    classes = [cls for cls in _protocol_classes(tree) if cls.name == "CommitPort"]
-    assert len(classes) == 1
-    methods = {item.name for item in _method_defs(classes[0].body)}
-    assert methods == {"commit_paths", "merge_ref_resolving", "commit_paths_onto_remote_tip"}
-    assert _bare_str_param_violations(classes[0], class_map) == []
-
-
-def test_commit_text_methods_do_not_live_on_the_non_egress_vcs_port():
-    """Mutation guard: a commit-writing method taking a message back on
-    ``VcsPort`` (non-egress, so guard (2) never looks at it) is the exact defect
-    DW-FU-2-6-4 recorded. ``VcsPort`` must carry none of the three."""
-    from pyforge.marshal.ports import vcs as vcs_module
-
-    tree = _parse(Path(vcs_module.__file__))
-    vcs_port = next(cls for cls in _protocol_classes(tree) if cls.name == "VcsPort")
-    names = {item.name for item in _method_defs(vcs_port.body)}
-    assert names, "VcsPort has no methods -- the scan is vacuous"
-    assert not names & {"commit_paths", "merge_ref_resolving", "commit_paths_onto_remote_tip"}
-
-
-def test_guard_is_alive_a_str_message_on_a_commit_port_fires():
-    """Reverting the fix -- ``message: str`` on the egress ``CommitPort`` --
-    trips guard (2): the registry entry plus the bare-``str`` scan are what make
-    the commit text structurally covered."""
-    synthetic = (
-        "from typing import Protocol\n"
-        "from pathlib import Path\n\n"
-        "class CommitPort(Protocol):\n"
-        "    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str: ...\n"
-    )
-    cls = _protocol_classes(ast.parse(synthetic))[0]
-    assert EGRESS_PORTS[cls.name] is True
-    assert _bare_str_param_violations(cls) == ["CommitPort.commit_paths(message)"]

@@ -18,11 +18,9 @@ from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.core.egress import (
     _TIMESTAMP_PATTERN,
     EGRESS_PORTS,
-    GATE_RECORD_FILENAME,
     Redacted,
     build_gate_record,
     to_redacted,
-    to_redacted_text,
 )
 from pyforge.marshal.core.identity import MalformedStoryKeyError
 from pyforge.marshal.core.model import Verdict
@@ -590,7 +588,6 @@ def test_egress_ports_registry_contents():
         "HarnessPort": False,
         "VcsPort": False,
         "RecordPort": True,
-        "CommitPort": True,
         "ClockPort": False,
         "SessionObserverPort": False,
         "NotifyPort": True,
@@ -1027,67 +1024,3 @@ def test_a_redacted_gate_record_still_validates_against_the_schema(tmp_path):
     jsonschema.validate(instance=written, schema=_schema())
     assert written["commands"][0]["stdout"] == f"auth failed: {REDACTED_SENTINEL}"
     assert written["story"] == "2.6"
-
-
-# --- Story 82.9: run_id, the gate record's file name, plain-text redaction ---------
-
-
-def _record(**overrides):
-    kwargs = {
-        "story_key": "2.6",
-        "commands": [],
-        "scope_check_verdict": None,
-        "tree_revision": "abc123",
-        "timestamp": "2026-08-03T00:00:00+00:00",
-    }
-    kwargs.update(overrides)
-    return build_gate_record(**kwargs)
-
-
-def test_gate_record_filename_is_the_one_constant():
-    assert GATE_RECORD_FILENAME == "gate-record.json"
-
-
-def test_build_gate_record_omits_run_id_when_none_and_carries_it_when_given():
-    assert "run_id" not in _record()
-    assert "run_id" not in _record(run_id=None)
-    record = _record(run_id="acme-20261002T120000000Z-ab12cd34")
-    assert record["run_id"] == "acme-20261002T120000000Z-ab12cd34"
-    # both shapes validate against the packaged schema: `run_id` is additive and optional
-    jsonschema.validate(instance=_record(), schema=_schema())
-    jsonschema.validate(instance=record, schema=_schema())
-
-
-@pytest.mark.parametrize("bad", ["", "   ", 7])
-def test_build_gate_record_rejects_a_blank_or_non_str_run_id(bad):
-    with pytest.raises(ValueError, match="run_id"):
-        _record(run_id=bad)
-
-
-@pytest.mark.parametrize("bad", ["", "   ", 7, None])
-def test_schema_rejects_a_run_id_build_gate_record_would_reject(bad):
-    record = _record()
-    record["run_id"] = bad
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(instance=record, schema=_schema())
-
-
-def test_schema_run_id_is_optional_so_a_pre_82_9_record_still_validates():
-    assert "run_id" not in _schema()["required"]
-    assert "run_id" in _schema()["properties"]
-
-
-def test_to_redacted_text_is_the_plain_text_sibling_of_to_redacted():
-    token = "ghp_" + "a" * 36
-    assert to_redacted_text(f"promote {token} now") == Redacted(text=f"promote {REDACTED_SENTINEL} now")
-    # ordinary text -- including a newline-bearing message body -- passes through byte for byte
-    assert to_redacted_text("subject\n\nbody: 1 file").text == "subject\n\nbody: 1 file"
-    # the same shapes `to_redacted` scans, from the same private vocabulary
-    for leaked in ("github_pat_" + "A" * 30, "AKIA" + "B" * 16, "sk-" + "c" * 45):
-        assert leaked not in to_redacted_text(f"x {leaked} y").text
-
-
-def test_to_redacted_text_rejects_a_non_str_naming_the_type_only():
-    with pytest.raises(TypeError, match="text must be a str, got dict") as excinfo:
-        to_redacted_text({"token": "ghp_" + "a" * 36})  # type: ignore[arg-type]
-    assert "ghp_" not in str(excinfo.value)

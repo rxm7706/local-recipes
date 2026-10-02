@@ -123,7 +123,7 @@ class _FakeVcs:
     def commit_paths(self, repo_root, paths, message):
         if self.commit_raises:
             raise VcsCommandError("git commit failed")
-        self.commit_calls.append((paths, message.text))
+        self.commit_calls.append((paths, message))
         return "deadbeef"
 
     def path_has_uncommitted_changes(self, repo_root, path):
@@ -3569,7 +3569,7 @@ class _PartialCommitFailureVcs(_FakeVcs):
         self.attempted_paths.append(paths)
         if self.fail_path in paths:
             raise VcsCommandError("git commit failed for the ledger")
-        self.commit_calls.append((paths, message.text))
+        self.commit_calls.append((paths, message))
         return "deadbeef"
 
 

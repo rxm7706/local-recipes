@@ -10,11 +10,11 @@ from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.fs_local import LocalFs
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core.commit_vcs import CommittingVcs
 from ..core.model import Finding, Severity
 from ..core.verdict import compute_verdict, exit_code_for
 from ..core.worktree_checkpoint import WorktreeCheckpointResult, commit_worktree_checkpoint
 from ..ports.fs import FsPort
+from ..ports.vcs import VcsPort
 from .dispatch import _load_latest_dispatch_context
 from .init import _home_path
 
@@ -32,7 +32,7 @@ def _run_factory_checkpoint(
     slug: str,
     *,
     fs: FsPort | None = None,
-    vcs: CommittingVcs | None = None,
+    vcs: VcsPort | None = None,
     process: ProcessPort | None = None,
 ) -> int:
     """Checkpoint the in-flight dispatch or spin worktree for ``slug``."""

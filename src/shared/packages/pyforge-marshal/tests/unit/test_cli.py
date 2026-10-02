@@ -2170,10 +2170,7 @@ def test_gate_evaluate_scope_check_run_scope_unavailable_omits_scope_check_data(
     exit_code = gate_module.run_evaluate(args, vcs=_FakeVcs())
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
-    # Story 82.9: `--story` also asks for a gate record, and this scenario provisions no loop
-    # home -- so exactly one MRS-GATE-017 WARN rides along, below a verdict (and exit code 1)
-    # that MRS-GATE-005 alone decided.
-    assert codes == ["MRS-GATE-005", "MRS-GATE-017"]
+    assert codes == ["MRS-GATE-005"]
     assert "scope_check" not in payload["data"]
     assert exit_code == 1
 
@@ -2381,8 +2378,7 @@ def test_gate_evaluate_story_run_scope_unavailable_skips_binding_check_too(tmp_p
     exit_code = gate_module.run_evaluate(args)
     payload = json.loads(capsys.readouterr().out)
     codes = [finding["code"] for finding in payload["findings"]]
-    # Story 82.9: the one MRS-GATE-017 WARN is the no-loop-home gate record; the verdict is MRS-GATE-005's.
-    assert codes == ["MRS-GATE-005", "MRS-GATE-017"]
+    assert codes == ["MRS-GATE-005"]
     assert "spec_binding" not in payload["data"]
     assert exit_code == 1
 

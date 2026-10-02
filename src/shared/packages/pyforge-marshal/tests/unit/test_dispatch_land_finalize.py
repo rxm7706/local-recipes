@@ -13,7 +13,6 @@ from pyforge.core.process import ProcessError, ProcessResult
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.cli.deploy import _scan_promotions
-from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
@@ -394,11 +393,11 @@ class _FakeIntakeVcs:
         self.calls.append(
             {
                 "repo_root": repo_root,
-                "remote": remote.value,
-                "ref": ref.value,
+                "remote": remote,
+                "ref": ref,
                 "writes": writes,
-                "message": message.text,
-                "preflight_skip_reason": (preflight_skip_reason.text if preflight_skip_reason is not None else None),
+                "message": message,
+                "preflight_skip_reason": preflight_skip_reason,
             }
         )
         if self.raises:
@@ -1089,11 +1088,11 @@ class _PublishVcs(_StubVcs):
             raise VcsCommandError("git push origin main failed: not a fast-forward")
         self.publishes.append(
             {
-                "remote": remote.value,
-                "ref": ref.value,
+                "remote": remote,
+                "ref": ref,
                 "writes": writes,
-                "message": message.text,
-                "preflight_skip_reason": (preflight_skip_reason.text if preflight_skip_reason is not None else None),
+                "message": message,
+                "preflight_skip_reason": preflight_skip_reason,
             }
         )
         return "deadbeefdeadbeef"
@@ -1545,8 +1544,8 @@ class _Tier3Vcs(_PublishVcs):
     def commit_subjects(self, _repo_root: Path, ref: str) -> tuple[str, ...]:
         return (_DISPATCH_MERGE_79, "base")
 
-    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
-        self.local_commits.append((tuple(paths), message.text))
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str) -> str:
+        self.local_commits.append((tuple(paths), message))
         return "cafebabecafebabe"
 
 

@@ -25,7 +25,6 @@ from pyforge.marshal.core.dispatch_landing import (
     union_sprint_ledger_maps,
 )
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
-from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.identity import normalize, render_merge_subject
 from pyforge.marshal.core.journal import resolve_landing_checks_from_payload
 from pyforge.marshal.core.landing_checks import CheckRun
@@ -36,7 +35,6 @@ from pyforge.marshal.dispatch_land import (
     _reconcile_spec_surface_drift,
     execute_dispatch_land,
 )
-from pyforge.marshal.ports.commit import VcsRef
 from pyforge.marshal.ports.forge import ForgeCommandError, PrInfo
 
 
@@ -315,8 +313,8 @@ class _ReconcileVcs(FakeVcs):
     def changed_files(self, repo_root: Path, worktree: Path, *, base: str) -> tuple[str, ...]:
         return self.changed
 
-    def commit_paths(self, worktree: Path, paths: tuple[Path, ...], message: Redacted) -> str:
-        self.committed.append((worktree, paths, message.text))
+    def commit_paths(self, worktree: Path, paths: tuple[Path, ...], message: str) -> str:
+        self.committed.append((worktree, paths, message))
         return "reconcile-commit-sha"
 
     def resolve_ref(self, repo_root: Path, ref: str) -> str:
@@ -964,7 +962,7 @@ def test_reconcile_spec_surface_drift_refuses_when_per_spec_commit_fails(tmp_pat
     worktree.mkdir()
 
     class _CommitFailsVcs(_ReconcileVcs):
-        def commit_paths(self, worktree: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        def commit_paths(self, worktree: Path, paths: tuple[Path, ...], message: str) -> str:
             raise VcsCommandError("commit rejected")
 
     vcs = _CommitFailsVcs(changed=("src/a.py",))
@@ -1413,13 +1411,13 @@ class HealCapableVcs(FakeVcs):
             return self.branch_ledger
         return None
 
-    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted):
-        self.commits.append((repo_root, paths, message.text))
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: str):
+        self.commits.append((repo_root, paths, message))
         self._head_sha = "healed222"
         return self._head_sha
 
-    def merge_ref_resolving(self, worktree_path: Path, ref: VcsRef, *, resolutions, message: Redacted) -> str:
-        self.merges.append((worktree_path, ref.value, dict(resolutions)))
+    def merge_ref_resolving(self, worktree_path: Path, ref: str, *, resolutions, message: str) -> str:
+        self.merges.append((worktree_path, ref, dict(resolutions)))
         for rel, text in resolutions.items():
             (worktree_path / rel).parent.mkdir(parents=True, exist_ok=True)
             (worktree_path / rel).write_text(text, encoding="utf-8")
