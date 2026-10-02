@@ -75,13 +75,19 @@ def _state(model_version: ModelVersion, *, migrations_applied: tuple[str, ...] =
 def _no_op_fn(_view, _state) -> Plan:
     return Plan(
         actions=(),
-        repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+        repo_fingerprint=RepoFingerprint(
+            git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+        ),
     )
 
 
 def _fresh_fingerprint(repo_root: Path, *hashed: tuple[str, str]) -> RepoFingerprint:
     return RepoFingerprint(
-        git_head=None, dirty=True, artifact_hashes=tuple(sorted(hashed)), repo_root="/repo", git_common_dir=None
+        git_head=None,
+        dirty=True,
+        artifact_hashes=tuple(sorted(hashed)),
+        repo_root=str(repo_root.resolve()),
+        git_common_dir=None,
     )
 
 
@@ -542,7 +548,9 @@ def _v1_to_v2_test_migration(view, state: SeedState) -> Plan:
     )
     return Plan(
         actions=(rename_action, tier_action),
-        repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None),
+        repo_fingerprint=RepoFingerprint(
+            git_head=None, dirty=True, artifact_hashes=(), repo_root="/repo", git_common_dir=None
+        ),
     )
 
 

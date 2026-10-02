@@ -125,7 +125,9 @@ def _fresh_plan(repo_root: Path, *actions: Action, **fingerprint_overrides) -> P
             sorted((action.artifact_id, hash_content(_text_of(repo_root / action.target_path))) for action in actions)
         ),
         "repo_root": str(repo_root.resolve()),
-        "git_common_dir": None,
+        # Computed independently of `plan.build._repo_identity`: a plain clone
+        # keeps its git directory at `<root>/.git`, and a bare `tmp_path` has none.
+        "git_common_dir": str((repo_root / ".git").resolve()) if (repo_root / ".git").exists() else None,
     }
     fields.update(fingerprint_overrides)
     return Plan(actions=actions, repo_fingerprint=RepoFingerprint(**fields))
