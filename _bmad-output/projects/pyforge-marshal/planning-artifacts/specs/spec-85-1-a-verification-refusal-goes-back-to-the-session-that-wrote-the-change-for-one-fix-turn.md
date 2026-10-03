@@ -2,7 +2,7 @@
 title: "85.1: A verification refusal goes back to the session that wrote the change for one fix turn"
 type: 'feature'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '620de41c0733d09439db9e1c934f24bd24f51509'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -86,4 +86,33 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 1, false 1, maybe-false 1
+- findings:
+  - `[maybe-false]` `[defer]` No end-to-end supervisor test with flag on and a fake harness completing a fix turn — would need a full integration fixture; unit coverage in `test_dispatch_verify_fix.py` and supervisor autouse flag-off guard cover the seam.
+  - `[false]` `[reject]` Mutation test does not delete production code — it asserts flag on vs off; still satisfies the AC oracle that disabling the gate changes behavior.
+  - `[low]` `[reject]` Fix-turn wall-clock wait uses polling in `dispatch_verify_fix.wait_for_process` — acceptable for v1; unlikely to matter at dispatch scale.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Implemented CAP-286 / FR-233 — one verification-refusal fix turn when `pyforge.marshal.verify_fix_loop` is on (dev/staging on, production off). Pure decision/prompt in `core/dispatch_verify_fix.py`; supervisor hook re-verifies once; harness profiles gain resume/fix-only argv; journaled as `dispatch-verify-fix`.
+
+Files changed (21 paths vs baseline `620de41c0733`):
+- Core/adapter/supervisor: `dispatch_verify_fix.py` (core + impure), `dispatch_supervisor/__main__.py`, `harness_bmadbuild.py`, `harness_profile.py`, `policy.py`, `dispatch.py`, `findings.py`, `verdict.py`, `schemas/policy.json`, harness TOMLs, `pyproject.toml`
+- Platform flags: `src/platform/config/flags.json`, `flag-overlays.json`
+- Tests: `test_dispatch_verify_fix.py`, supervisor main-loop autouse, findings/policy/import-linter meta
+- Story spec frontmatter baseline/status
+
+Review: 0 patches applied; 1 low and 1 maybe-false deferred/rejected; 1 false on mutation-test style.
+
+Follow-up review recommended: false (no high/medium patches).
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 10971 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+
+Residual risks: Live harness resume forms (`cursor.toml` / `claude.toml`) should be smoke-tested on real CLI resume flags when first used in production traffic.
