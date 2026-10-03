@@ -2,8 +2,8 @@
 title: "27.1: Mason's package and the repo tooling it owns close their open deferrals"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: '10a40461ddefe7a7017a246c1fe189c2982bf202'
+status: 'done'
+baseline_revision: '0b28a5261b8c58995f1c73c2c7441c80cf5b9e949'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -159,14 +159,12 @@ Independent follow-up reviews (AGENTS.md guideline 8) read each cited story's la
 
 Status: done
 
-Summary: Closed 30 mason deferred-work rows across the pyforge-mason package, `scripts/cfe_rebuild_guard_check.py`, and installer-owned SKF audit scripts; eight follow-up reviews recorded with no additional defects.
+Summary: Closed 21 mason deferred-work rows (22 minted minus DW-CANOPY-2026-08-24 re-homed open to Story 19.1) after implementing the 2026-10-03 landing-review triage on top of the prior 27.1 branch work.
 
-Files changed (commit `dad089fe03`): mason `cli.py`, `errors.py`, `engines/condalock.py`, meta/unit tests, `cfe_rebuild_guard_check.py` and its test suite, `skf-structural-diff.py`, `skf-provenance-gap-dispatch.py`, `skill-brief.v1.json`, `deferred-work-ledger.md`, story spec and memlogs.
-
-Review findings: follow-up reviews triaged in Review Triage Log above; no patch/defer items from a formal multi-layer review pass in this Cursor session (implementation subagent carried the build).
+Review fixes: CfeUnresolvedError JSON envelope; guard clause (a) status casefold and hollow-brief required keys; skipped history walk reports `retros_scanned: null`; skf-structural-diff move pairing and file-less inventories; skf-provenance `retro-mirror` no longer overrides demoted-exclude; condalock temp-copy line via logging; FR-28 doc citations; meta yaml assign walk; ledger DW-CANOPY/DW-OM corrected.
 
 Follow-up review recommendation: false
 
-Verification: `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1594 passed, 3 deselected; `pixi run --frozen -e pyforge-guild lint-types` — exit 0; `python scripts/spec_surface_reconcile.py` — OK (no `--write-baseline`).
+Verification: `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1598 passed, 3 deselected; scripts suite — 52 passed; `python scripts/spec_surface_reconcile.py` — OK (no `--write-baseline`).
 
-Residual risks: SKF script edits are local patches until re-applied after `bmad-method install --action update` (documented in Spec Change Log).
+Residual risks: SKF script edits remain local patches until re-applied after `bmad-method install --action update` (Spec Change Log).

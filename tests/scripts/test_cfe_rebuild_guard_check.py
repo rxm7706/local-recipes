@@ -726,11 +726,7 @@ def test_brief_without_retro_mirror_amendment_is_a_finding(tmp_path: Path) -> No
     baseline = _commit_all(tmp_path, "feat: baseline")
 
     brief_rel = "briefs/slice-1.yaml"
-    _write(
-        tmp_path,
-        brief_rel,
-        "name: cfe-slice\nversion: 1.0.0\nscope:\n  amendments: []\n",
-    )
+    _write_brief(tmp_path, brief_rel, mirrored_sha=None)
     retro_sha = "a" * 40
     state = _state(
         [_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=retro_sha)],

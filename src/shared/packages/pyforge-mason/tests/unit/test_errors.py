@@ -1408,7 +1408,7 @@ def test_environment_check_timeout_error_survives_pickle_round_trip():
 
 def test_environment_check_temp_copy_unreadable_error_identifier():
     exc = EnvironmentCheckTempCopyUnreadableError("/tmp/t.yml", "truncated")
-    assert exc.identifier == "environment:check-temp-copy-unreadable"
+    assert exc.identifier == "environment:check-temp-unreadable"
 
 
 def test_environment_check_temp_copy_unreadable_error_rejects_empty_arguments():
