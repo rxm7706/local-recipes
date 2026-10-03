@@ -2,8 +2,9 @@
 title: "27.1: The inventory exports refuse a hollow verification set, and the quartet scripts fail loud"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 9cb346f1dfac7dddeeba6042618e9521471b78dd
+review_loop_iteration: 1
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -11,7 +12,14 @@ context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
   - src/shared/packages/pyforge-atlas/AGENTS.md
-deferred: []
+deferred:
+  - summary: >-
+      HollowVerificationSetError still aborts the full derived_artifacts Kedro run instead of skip-and-mark-stale on inventory outputs only (NFR-3).
+    evidence: |-
+      verification_sets raises inside inventory nodes; Kedro propagates and fails the SBOM path. Operator may prefer per-node stale markers without failing build_universe_sbom.
+    location: >-
+      src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/inventory_verification.py
+    severity: low
 declared_low_risk: false
 ---
 
@@ -119,6 +127,11 @@ Keep: the floor refusal (removing it fails four tests), the corrupt-Parquet catc
 - `low` `--ops-canvas` / `--workbook-canvas` help (`identity.py`, about 948-962) still names the Cursor home-directory default; describe the environment or local-env source.
 - `low` NFR-3: `HollowVerificationSetError` aborts the whole `derived_artifacts` run, including the universal SBOM. Atlas's rule is skip-and-mark-stale; make the inventory export nodes refuse their own outputs (named error logged, outputs marked stale) without failing the SBOM, or record in this spec why the abort is right.
 
+### 2026-10-03 — Landing review fix pass (build-auto)
+- verdicts: 1 finding — high 0, medium 0, low 1, false 0, maybe-false 0
+- findings:
+  - `[low]` `[defer]` HollowVerificationSetError aborts full derived_artifacts run — recorded in frontmatter `deferred:` with location `inventory_verification.py`; skip-and-mark-stale per NFR-3 left for a follow-on story.
+
 ### 2026-10-03 — Review pass
 - verdicts: 9 findings — high 0, medium 5, low 0, false 2, maybe-false 2
 - findings:
@@ -136,8 +149,12 @@ Keep: the floor refusal (removing it fails four tests), the corrupt-Parquet catc
 
 Status: done
 
-Summary: Story 27.1 lands verification-set floors and hollow-set refusal in Kedro inventory nodes, hardens the inventory quartet scripts (export reader, gh backoff, canvas paths, shared `identity_export_contract`), adds offline fixture/e2e tests, closes 25 deferred-work rows, and passes station verification plus `spec_surface_reconcile.py`.
+Summary: Landing-review fixes for Story 27.1 — core conda-forge floor (not mapping union), gh rate-limit detection via captured stderr, Kedro-session and from-scratch inventory tests, ledger hygiene for DW-CANOPY/DW-OM, and quartet export/gist hardening.
 
-Verification: `kedro-test` 0 (1877 passed), `kedro-catalog-check` 0, `lint-types` 0, `spec_surface_reconcile.py` 0, scripts/tests + packaging handoff tests 0.
+Files: `inventory_verification.py` (core_packages_enumerated floor); `nodes.py` (JFROG ranking warnings); `identity_gist.py` (stringify cells, IdentityGistError); quartet scripts (gh run, gist None guard, parquet deadline, summary line); tests and fixture snapshot hash; `deferred-work-ledger.md` (restore cross-story rows).
 
-Follow-up review recommended: false (patched mediums converged; deferred items are unverified session-scope only).
+Review: prior landing-review highs addressed in this pass; one NFR-3 item deferred (inventory abort vs skip-and-mark-stale).
+
+Follow-up review recommended: false
+
+Verification: `kedro-test` 1879 passed; `kedro-catalog-check` 68 passed; `lint-types` 0; `spec_surface_reconcile.py` 0; `tests/packaging/test_openteams_handoffs.py` 52 passed; `scripts/tests/test_inventory_from_scratch_fixture.py` passed.
