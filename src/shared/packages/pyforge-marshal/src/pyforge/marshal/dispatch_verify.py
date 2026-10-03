@@ -140,6 +140,21 @@ _DEFERRED_WORK_CHECK_COMMAND = "pixi run --frozen -e pyforge-guild deferred-work
 #: not touch.
 _STATION_PACKAGE_SRC_PARTS = ("src", "shared", "packages")
 _PYFORGE_CORE_SLUG = "pyforge-core"
+#: The eight Dream/TEA stations in ``scripts/coverage_gate.py`` ``STATIONS``
+#: (``pyforge-core`` / testing-kit are not coverage-gate stations).
+_COVERAGE_GATE_STATION_SLUGS: frozenset[str] = frozenset(
+    f"pyforge-{name}"
+    for name in (
+        "atlas",
+        "doctor",
+        "herald",
+        "marshal",
+        "mason",
+        "scribe",
+        "steward",
+        "warden",
+    )
+)
 
 
 def _coverage_gate_command_for_station(station_slug: str) -> str:
@@ -156,7 +171,7 @@ def coverage_gate_commands_for_changed_files(changed_files: tuple[str, ...]) -> 
         if parts[0:3] != _STATION_PACKAGE_SRC_PARTS:
             continue
         station_slug = parts[3]
-        if not station_slug.startswith("pyforge-") or station_slug == _PYFORGE_CORE_SLUG:
+        if station_slug not in _COVERAGE_GATE_STATION_SLUGS:
             continue
         if parts[4] != "src":
             continue
@@ -320,6 +335,7 @@ def run_verify_commands_only(
     worktree: Path,
     repo_root: Path | None = None,
     vcs: VcsPort | None = None,
+    story_changed_files: tuple[str, ...] | None = None,
 ) -> tuple[tuple[dict[str, object], ...], tuple[Finding, ...]]:
     """Story 51.1: loop ``effective.verify_commands.value`` through the same
     per-command classification (``_run_verify_command``/``gate.classify_outcome``)
@@ -347,15 +363,37 @@ def run_verify_commands_only(
     Story 83.12 (spec-83-12): when ``repo_root`` and ``vcs`` are supplied,
     changed files against ``origin/main`` in the preview worktree drive the
     same per-station coverage-gate derivation as
-    ``evaluate_dispatch_verification``."""
+    ``evaluate_dispatch_verification``. When resolution fails, fall back to
+    ``story_changed_files`` from the dispatch worktree (never silently skip
+    gates); if neither is available, refuse with ``MRS-GATE-009``."""
     changed_files: tuple[str, ...] = ()
+    preview_findings: list[Finding] = []
     if repo_root is not None and vcs is not None:
         try:
             changed_files = vcs.changed_files(repo_root, worktree, base=_SCOPE_BASE)
-        except Exception:
-            changed_files = ()
+        except Exception as exc:
+            if story_changed_files is not None:
+                changed_files = story_changed_files
+                preview_findings.append(
+                    Finding(
+                        code="MRS-GATE-009",
+                        severity=Severity.WARN,
+                        message=(
+                            "merge-tree preview could not resolve changed files; "
+                            f"using the story worktree diff instead: {exc}"
+                        ),
+                    )
+                )
+            else:
+                preview_findings.append(
+                    Finding(
+                        code="MRS-GATE-009",
+                        severity=Severity.ERROR,
+                        message=f"merge-tree preview could not resolve changed files: {exc}",
+                    )
+                )
     command_reports: list[dict[str, object]] = []
-    findings: list[Finding] = []
+    findings: list[Finding] = list(preview_findings)
     for command in _verify_commands_with_surface_guard(effective, changed_files=changed_files):
         report, finding = _run_verify_command(command, process=process, worktree=worktree)
         command_reports.append(report)
