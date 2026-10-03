@@ -1145,7 +1145,9 @@ def test_mechanical_conflict_path_recognizes_deferred_work_ledger() -> None:
     assert not is_mechanical_conflict_path("src/pyforge/marshal/foo.py", deferred_work_rel=dw_path)
 
 
-def _deferred_work_text(*entries: str, frontmatter: str = "---\ndoc_type: deferred-work-ledger\n---\n\n# Deferred Work\n\n") -> str:
+def _deferred_work_text(
+    *entries: str, frontmatter: str = "---\ndoc_type: deferred-work-ledger\n---\n\n# Deferred Work\n\n"
+) -> str:
     """Create a deferred work ledger text with the given DW entries."""
     if entries:
         return frontmatter + "\n\n".join(entries) + "\n"
@@ -1157,12 +1159,10 @@ def test_union_deferred_work_texts_both_sides_append_entries() -> None:
     """Both sides append new DW entries after the same base."""
     base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        "### DW-2: Main entry\norigin: main\nstatus: open"
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Main entry\norigin: main\nstatus: open"
     )
     branch = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        "### DW-3: Branch entry\norigin: branch\nstatus: open"
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-3: Branch entry\norigin: branch\nstatus: open"
     )
 
     result = union_deferred_work_texts(base, main, branch)
@@ -1183,8 +1183,7 @@ def test_union_deferred_work_texts_only_branch_appends() -> None:
     base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main = base  # No changes on main
     branch = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        "### DW-2: Branch entry\norigin: branch\nstatus: open"
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Branch entry\norigin: branch\nstatus: open"
     )
 
     result = union_deferred_work_texts(base, main, branch)
@@ -1198,8 +1197,7 @@ def test_union_deferred_work_texts_only_main_appends() -> None:
     """Only main side appends a new entry."""
     base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        "### DW-2: Main entry\norigin: main\nstatus: open"
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Main entry\norigin: main\nstatus: open"
     )
     branch = base  # No changes on branch
 
@@ -1215,14 +1213,8 @@ def test_union_deferred_work_texts_both_add_same_entry() -> None:
     """Both sides add the same entry - should appear only once."""
     base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     same_entry = "### DW-2: Same entry\norigin: both\nstatus: open"
-    main = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        same_entry
-    )
-    branch = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        same_entry
-    )
+    main = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open", same_entry)
+    branch = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open", same_entry)
 
     result = union_deferred_work_texts(base, main, branch)
 
@@ -1236,8 +1228,7 @@ def test_union_deferred_work_texts_refuses_edited_entry() -> None:
     base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: done")  # Status changed
     branch = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        "### DW-2: Branch entry\norigin: branch\nstatus: open"
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Branch entry\norigin: branch\nstatus: open"
     )
 
     result = union_deferred_work_texts(base, main, branch)
@@ -1248,14 +1239,13 @@ def test_union_deferred_work_texts_refuses_edited_entry() -> None:
 def test_union_deferred_work_texts_refuses_dropped_entry() -> None:
     """Should refuse when an entry is dropped."""
     base = _deferred_work_text(
-        "### DW-1: First entry\norigin: test\nstatus: open",
-        "### DW-2: Second entry\norigin: test\nstatus: open"
+        "### DW-1: First entry\norigin: test\nstatus: open", "### DW-2: Second entry\norigin: test\nstatus: open"
     )
     main = _deferred_work_text("### DW-1: First entry\norigin: test\nstatus: open")  # DW-2 dropped
     branch = _deferred_work_text(
         "### DW-1: First entry\norigin: test\nstatus: open",
         "### DW-2: Second entry\norigin: test\nstatus: open",
-        "### DW-3: Branch entry\norigin: branch\nstatus: open"
+        "### DW-3: Branch entry\norigin: branch\nstatus: open",
     )
 
     result = union_deferred_work_texts(base, main, branch)
@@ -1284,9 +1274,7 @@ def test_unknown_conflict_paths_filters_deferred_work() -> None:
     unknown_path = "src/pyforge/marshal/foo.py"
 
     unknown = unknown_conflict_paths(
-        (dw_path, ledger_path, unknown_path),
-        ledger_rel=ledger_path,
-        deferred_work_rel=dw_path
+        (dw_path, ledger_path, unknown_path), ledger_rel=ledger_path, deferred_work_rel=dw_path
     )
 
     assert unknown == (unknown_path,)
@@ -1295,7 +1283,9 @@ def test_unknown_conflict_paths_filters_deferred_work() -> None:
 class FakeVcsHealWithDeferredWork(FakeVcsHeal):
     """Extended fake VCS that can handle deferred work ledger conflicts."""
 
-    def __init__(self, *, deferred_work_base: str = "", deferred_work_main: str = "", deferred_work_branch: str = "", **kwargs):
+    def __init__(
+        self, *, deferred_work_base: str = "", deferred_work_main: str = "", deferred_work_branch: str = "", **kwargs
+    ):
         super().__init__(**kwargs)
         self.deferred_work_base = deferred_work_base
         self.deferred_work_main = deferred_work_main
@@ -1319,12 +1309,10 @@ def test_heal_unions_deferred_work_ledger_conflict_and_retries_merge(tmp_path: P
 
     base_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main_dw = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        "### DW-2: Main entry\norigin: main\nstatus: open"
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Main entry\norigin: main\nstatus: open"
     )
     branch_dw = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        "### DW-3: Branch entry\norigin: branch\nstatus: open"
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-3: Branch entry\norigin: branch\nstatus: open"
     )
 
     vcs = FakeVcsHealWithDeferredWork(
@@ -1376,8 +1364,7 @@ def test_heal_escalates_edited_deferred_work_entry(tmp_path: Path) -> None:
     base_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: done")  # Status changed
     branch_dw = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open",
-        "### DW-2: Branch entry\norigin: branch\nstatus: open"
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Branch entry\norigin: branch\nstatus: open"
     )
 
     vcs = FakeVcsHealWithDeferredWork(

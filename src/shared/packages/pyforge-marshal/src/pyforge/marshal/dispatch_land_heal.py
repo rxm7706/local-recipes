@@ -141,7 +141,10 @@ def try_heal_dispatch_land_merge(
     if unknown:
         return DispatchLandHealResult(healed=False, escalated_paths=unknown)
 
-    if conflict_paths and all(is_mechanical_conflict_path(p, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel) for p in conflict_paths):
+    if conflict_paths and all(
+        is_mechanical_conflict_path(p, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel)
+        for p in conflict_paths
+    ):
         # Story 59.1 review (high): the union heal is the whole answer for this attempt. Once
         # its merge is committed the branch probes clean while `merge_state` is the stale
         # pre-heal read, so falling through to the local-`main` advance would land the branch
@@ -202,7 +205,7 @@ def _resolve_mechanical_conflicts(
     deferred_work_paths: tuple[str, ...],
     vcs: VcsPort,
 ) -> tuple[dict[str, str], tuple[str, ...]] | None:
-    """Story 59.1 (CAP-269), Story 78.1 (CAP-283), and Story 83.3: the resolved text of every 
+    """Story 59.1 (CAP-269), Story 78.1 (CAP-283), and Story 83.3: the resolved text of every
     conflicted mechanical path, plus the memlogs with no resolution, or ``None`` on a git read failure.
 
     The ledger is resolved three-way against the merge base (``three_way_ledger_statuses``): a row
@@ -231,7 +234,7 @@ def _resolve_mechanical_conflicts(
                 parse_ledger_statuses(branch_text),
             )
             resolutions[ledger_rel] = render_ledger_statuses(main_text or branch_text, merged_map)
-        
+
         # Handle deferred work ledger conflicts (Story 83.3)
         unresolved_deferred_work: list[str] = []
         for rel in deferred_work_paths:
@@ -245,7 +248,7 @@ def _resolve_mechanical_conflicts(
             else:
                 # Other project's deferred work ledger - cannot resolve
                 unresolved_deferred_work.append(rel)
-        
+
         unresolved: list[str] = []
         for rel in memlog_paths:
             union = union_memlog_texts(*texts(rel))
@@ -253,7 +256,7 @@ def _resolve_mechanical_conflicts(
                 unresolved.append(rel)
             else:
                 resolutions[rel] = union
-        
+
         # Add unresolved deferred work to the unresolved list
         unresolved.extend(unresolved_deferred_work)
     except VcsCommandError:
@@ -291,7 +294,15 @@ def _try_union_heal(
     Returns ``(healed, checks_refusal)``. Story 80.1 (CAP-284): the pushed union head is a commit CI
     has not seen, so ``await_checks(new_sha)`` runs before the retried merge; a finding from it
     means the merge is NOT retried (``(False, finding)``) and the PR stays open on the pushed head."""
-    what = " and ".join(name for name, present in (("sprint ledger", has_ledger), ("memlogs", has_memlogs), ("deferred work", has_deferred_work)) if present)
+    what = " and ".join(
+        name
+        for name, present in (
+            ("sprint ledger", has_ledger),
+            ("memlogs", has_memlogs),
+            ("deferred work", has_deferred_work),
+        )
+        if present
+    )
     message = f"marshal: union {what} for {project_slug!r} while merging the base (CAP-4 heal)"
     try:
         vcs.merge_ref_resolving(worktree, VcsRef(probe), resolutions=resolutions, message=to_redacted_text(message))

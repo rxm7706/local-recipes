@@ -2,7 +2,7 @@
 title: '83.3: The landing heal unions appended deferred-work rows the way it unions memlog entries'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

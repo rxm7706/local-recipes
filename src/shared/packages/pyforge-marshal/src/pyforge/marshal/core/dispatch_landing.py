@@ -156,7 +156,9 @@ def is_deferred_work_path(path: str) -> bool:
     return path.replace("\\", "/").rsplit("/", 1)[-1] == DEFERRED_WORK_BASENAME
 
 
-def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None, deferred_work_rel: str | None = None) -> bool:
+def is_mechanical_conflict_path(
+    path: str, *, ledger_rel: str | None = None, deferred_work_rel: str | None = None
+) -> bool:
     """True when ``path`` is a known mechanical-only merge conflict: a Spec memlog (Story 78.1;
     the heal still escalates one that is not append-only), a sprint ledger, or a deferred-work
     ledger (Story 83.3). Given ``ledger_rel`` (the landing project's own ledger), only that exact
@@ -171,16 +173,26 @@ def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None, def
         return True
     # Legacy fallback for when no specific paths provided
     if ledger_rel is None and deferred_work_rel is None:
-        return (normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}") or
-                normalized.endswith(SPRINT_LEDGER_BASENAME) or
-                normalized.endswith(f"planning-artifacts/{DEFERRED_WORK_BASENAME}") or
-                normalized.endswith(DEFERRED_WORK_BASENAME))
+        return (
+            normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}")
+            or normalized.endswith(SPRINT_LEDGER_BASENAME)
+            or normalized.endswith(f"planning-artifacts/{DEFERRED_WORK_BASENAME}")
+            or normalized.endswith(DEFERRED_WORK_BASENAME)
+        )
     return False
 
 
-def unknown_conflict_paths(paths: tuple[str, ...], *, ledger_rel: str | None = None, deferred_work_rel: str | None = None) -> tuple[str, ...]:
+def unknown_conflict_paths(
+    paths: tuple[str, ...], *, ledger_rel: str | None = None, deferred_work_rel: str | None = None
+) -> tuple[str, ...]:
     """Conflict paths that are not mechanical — must escalate, never merge."""
-    return tuple(sorted(p for p in paths if not is_mechanical_conflict_path(p, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel)))
+    return tuple(
+        sorted(
+            p
+            for p in paths
+            if not is_mechanical_conflict_path(p, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel)
+        )
+    )
 
 
 # --- Story 78.1 (CAP-283): append-only memlog union ------------------------
@@ -324,7 +336,7 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
             # Save any previous DW entry
             if in_dw_section and current_entry_lines:
                 # Remove trailing empty lines from the entry
-                while current_entry_lines and current_entry_lines[-1] == '':
+                while current_entry_lines and current_entry_lines[-1] == "":
                     current_entry_lines.pop()
                 if current_entry_lines:
                     dw_entries.append("\n".join(current_entry_lines))
@@ -341,13 +353,13 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
     # Don't forget the last DW entry
     if in_dw_section and current_entry_lines:
         # Remove trailing empty lines from the entry
-        while current_entry_lines and current_entry_lines[-1] == '':
+        while current_entry_lines and current_entry_lines[-1] == "":
             current_entry_lines.pop()
         if current_entry_lines:
             dw_entries.append("\n".join(current_entry_lines))
 
     # Remove trailing empty lines from base text
-    while base_lines and base_lines[-1] == '':
+    while base_lines and base_lines[-1] == "":
         base_lines.pop()
     base_text = "\n".join(base_lines)
     return base_text, dw_entries
@@ -369,10 +381,12 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
 
     # Check if main and branch are append-only relative to base
     base_count = len(base_entries)
-    if (len(main_entries) < base_count or
-        len(branch_entries) < base_count or
-        main_entries[:base_count] != base_entries or
-        branch_entries[:base_count] != base_entries):
+    if (
+        len(main_entries) < base_count
+        or len(branch_entries) < base_count
+        or main_entries[:base_count] != base_entries
+        or branch_entries[:base_count] != base_entries
+    ):
         return None  # Not append-only
 
     # Get the new entries from main and branch
