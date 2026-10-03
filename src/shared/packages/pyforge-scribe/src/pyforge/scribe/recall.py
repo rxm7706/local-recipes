@@ -105,7 +105,9 @@ _COMMIT_SHA_RE = re.compile(r"[0-9a-f]{7,40}")
 #: was likewise waved through without existing (review finding: reproduced).
 #: Relative to ``transcript_root`` (Story 26.1 / DW-FU-3-2): flat files stay
 #: ``session.jsonl:L<n>``; nested dirs use ``subdir/session.jsonl:L<n>``.
-#: Rejects ``..`` segments and absolute-looking paths.
+#: Rejects ``..`` segments. Format-only resolvability applies only when
+#: ``kind == "transcript"`` — a ``code`` node must not skip ``is_file()``
+#: just because its path ends in ``.jsonl:L<n>`` (AD-8).
 _TRANSCRIPT_CITATION_RE = re.compile(r"(?:[^/\\:]+/)*[^/\\:]+\.jsonl:L[0-9]+$")
 #: A `code` node's citation (Story 6.1's graphify extra) is
 #: `<repo-relative path>:L<line>` -- e.g. `src/pyforge/scribe/compile.py:L120`,
@@ -263,7 +265,7 @@ def answer(
     for _score, node in scored:
         if _withheld_as_stale(node, store, repo_root):
             continue
-        if _citation_is_resolvable(node.citation, repo_root):
+        if _citation_is_resolvable(node.citation, repo_root, kind=node.kind):
             return RecallAnswer(grounded=True, text=node.text, citation=node.citation, node_id=node.id)
         # Unresolvable citation -- never surface an uncited/unverifiable answer; try the next candidate.
 
@@ -290,7 +292,7 @@ def _answer_semantic(
             continue
         if _withheld_as_stale(node, store, repo_root):
             continue
-        if _citation_is_resolvable(node.citation, repo_root):
+        if _citation_is_resolvable(node.citation, repo_root, kind=node.kind):
             return RecallAnswer(grounded=True, text=node.text, citation=node.citation, node_id=node.id)
     return _no_grounded_answer()
 
@@ -309,11 +311,11 @@ def _no_grounded_answer() -> RecallAnswer:
     return RecallAnswer(grounded=False, text="no grounded answer found", citation=None, node_id=None)
 
 
-def _citation_is_resolvable(citation: str, repo_root: Path) -> bool:
+def _citation_is_resolvable(citation: str, repo_root: Path, *, kind: str) -> bool:
     if citation.startswith("commit:"):
         sha = citation.removeprefix("commit:")
         return bool(_COMMIT_SHA_RE.fullmatch(sha))
-    if _TRANSCRIPT_CITATION_RE.fullmatch(citation):
+    if kind == "transcript" and _TRANSCRIPT_CITATION_RE.fullmatch(citation):
         # Format-checked only (Story 3.2); path is relative to transcript_root
         # (Story 26.1). Reject traversal segments.
         path_part = citation.rsplit(":L", 1)[0]

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import importlib.util
+import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -32,18 +34,57 @@ def test_main_exits_zero_on_live_tree(capsys):
     capsys.readouterr()
 
 
-def test_main_json_file_flags(tmp_path, capsys):
+def test_main_json_file_flags(tmp_path, monkeypatch, capsys):
     mod = _load_detector()
-    doc = REPO_ROOT / ".cursor" / "governance-currency-probe-test.md"
-    doc.write_text("# probe\nEmpty probe document for --file / --json wiring.\n", encoding="utf-8")
-    try:
-        rel = doc.relative_to(REPO_ROOT).as_posix()
-        assert mod.main(["--json", "--file", rel]) == 0
-        payload = __import__("json").loads(capsys.readouterr().out)
-        assert payload["documents"] == [rel]
-        assert payload["findings"] == []
-    finally:
-        doc.unlink(missing_ok=True)
+    empty_root = tmp_path / "repo"
+    empty_root.mkdir()
+    (empty_root / "AGENTS.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    (empty_root / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    (empty_root / "GEMINI.md").write_text("# gemini\n", encoding="utf-8")
+    (empty_root / ".github").mkdir()
+    (empty_root / ".github" / "copilot-instructions.md").write_text("# copilot\n", encoding="utf-8")
+    (empty_root / ".cursor" / "rules").mkdir(parents=True)
+    probe = empty_root / "probe.md"
+    probe.write_text("# probe\n", encoding="utf-8")
+    monkeypatch.setattr(mod, "ROOT", empty_root)
+    rel = probe.name
+    assert mod.main(["--json", "--file", rel]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["documents"] == [rel]
+    assert payload["findings"] == []
+
+
+def test_gemini_md_stale_skill_reference_is_a_finding(tmp_path, monkeypatch):
+    mod = _load_detector()
+    empty_root = tmp_path / "repo"
+    empty_root.mkdir()
+    (empty_root / "GEMINI.md").write_text("Use `bmad-no-such-skill-ever` here.\n", encoding="utf-8")
+    monkeypatch.setattr(mod, "ROOT", empty_root)
+    findings = mod._check_document("GEMINI.md")
+    assert any(f["kind"] == "skill-not-found" for f in findings)
+
+
+def test_missing_copilot_instructions_is_a_finding(tmp_path, monkeypatch):
+    mod = _load_detector()
+    empty_root = tmp_path / "repo"
+    empty_root.mkdir()
+    monkeypatch.setattr(mod, "ROOT", empty_root)
+    findings = mod._check_document(".github/copilot-instructions.md")
+    assert findings[0]["kind"] == "missing-document"
+    assert findings[0]["reference"] == ".github/copilot-instructions.md"
+
+
+def test_main_subprocess_json_file_flag():
+    proc = subprocess.run(
+        [sys.executable, str(DETECTOR_PATH), "--json", "--file", "GEMINI.md"],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=REPO_ROOT,
+    )
+    assert proc.returncode == 0
+    payload = json.loads(proc.stdout)
+    assert payload["documents"] == ["GEMINI.md"]
 
 
 def test_missing_cursor_rules_glob_is_a_finding(tmp_path, monkeypatch):

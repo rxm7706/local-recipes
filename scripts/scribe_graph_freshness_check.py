@@ -68,7 +68,7 @@ def scheduled_period_hours(timer_path: Path = NIGHTLY_TIMER_PATH) -> int:
     if len(parts) != 2 or parts[0] != "*-*-*":
         raise ValueError(f"unsupported OnCalendar={value!r} in {timer_path}")
     clock = parts[1]
-    if any(ch in clock for ch in ("*", "/", ",")):
+    if any(ch in clock for ch in ("*", "/", ",", "..", "~")):
         raise ValueError(f"unsupported OnCalendar clock={clock!r} in {timer_path}")
     return 24
 

@@ -442,6 +442,61 @@ def test_code_citation_pointing_at_a_missing_file_is_not_resolvable(
     assert result.grounded is False
 
 
+def test_code_node_citing_missing_jsonl_is_not_resolvable(repo_with_citation: Path) -> None:
+    """Story 26.1 landing review: format-only transcript branch is kind-gated."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="code:python:ghost-jsonl",
+            kind="code",
+            title="ghost jsonl path",
+            text="code node citing a missing jsonl-shaped path",
+            citation="data/missing.jsonl:L1",
+        )
+    )
+    store.commit()
+
+    result = answer(
+        "ghost jsonl path",
+        store,
+        repo_root=repo_with_citation,
+        kinds=frozenset({"code"}),
+    )
+
+    assert result.grounded is False
+
+
+@pytest.mark.parametrize(
+    "citation",
+    [
+        "session 1.jsonl:L1",
+        "sessión.jsonl:L1",
+        "a+b.jsonl:L1",
+    ],
+)
+def test_transcript_citation_filenames_with_spaces_or_symbols_are_recallable(
+    repo_with_citation: Path,
+    citation: str,
+) -> None:
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id=f"transcript:{citation}",
+            kind="transcript",
+            citation=citation,
+            text="Transcript fact with a permissive filename.",
+        )
+    )
+    store.commit()
+
+    result = answer("Transcript fact", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.citation == citation
+
+
 def test_determinism_two_independent_store_instances_same_file_same_answer(
     repo_with_citation: Path,
 ) -> None:
