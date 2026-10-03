@@ -384,7 +384,7 @@ development_status:
   83-5-a-campaign-supervisor-keeps-ticking-through-fleet-lock-contention: backlog
   83-6-dispatch-resyncs-a-stale-codegraph-index-before-it-launches-a-session: backlog
   83-7-a-re-dispatch-after-a-refused-landing-lands-the-existing-branch-without-a-new-session: backlog
-  83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes: backlog
+  83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes: done
   84-1-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
@@ -512,7 +512,7 @@ development_status:
   epic-64-retrospective: optional
   epic-65: in-progress
   epic-65-retrospective: optional
-  epic-66: in-progress
+  epic-66: backlog
   epic-66-retrospective: optional
   epic-67: done
   epic-67-retrospective: optional
@@ -550,7 +550,7 @@ development_status:
   epic-81-retrospective: optional
   epic-82: done
   epic-82-retrospective: optional
-  epic-83: in-progress
+  epic-83: backlog
   epic-83-retrospective: optional
   epic-84: backlog
   epic-84-retrospective: optional

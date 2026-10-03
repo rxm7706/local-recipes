@@ -2785,6 +2785,23 @@ def dispatch_once(
     # is session-terminal. CAP-4 only — never another bmad-build-auto
     # because main's ledger is still backlog.
     live_spec_text = _spec_text_prefer_worktree(spec_path, repo_root, worktree, spec_text)
+    spec_status_rewrite: dict[str, str] | None = None
+    rewritten_spec_text, spec_status_rewrite = dispatch_core.rewrite_worktree_spec_status_for_bmad_build_auto(
+        live_spec_text
+    )
+    if spec_status_rewrite is not None:
+        try:
+            fs.write_text_atomic(spec_path, rewritten_spec_text)
+        except FsError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-005",
+                    severity=Severity.ERROR,
+                    message=f"cannot rewrite worktree spec status for harness launch: {exc}",
+                )
+            )
+            return _done()
+        live_spec_text = rewritten_spec_text
     if blocks_harness_relaunch(
         parse_spec_status(live_spec_text),
         followup_review_recommended(live_spec_text),
@@ -2912,6 +2929,7 @@ def dispatch_once(
                 else {}
             ),
             **(followup_review.to_intent_payload() if followup_review is not None else {}),
+            **({"spec_status_rewrite": spec_status_rewrite} if spec_status_rewrite is not None else {}),
         },
     )
     try:

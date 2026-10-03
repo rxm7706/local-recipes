@@ -30,9 +30,10 @@ from typing import TYPE_CHECKING
 
 from pyforge.core.landing_evidence import DISPATCH_BRANCH_PREFIX
 
-from .dispatch_harness_done import FollowupReview
+from .dispatch_harness_done import FollowupReview, parse_spec_status
 from .identity import StoryKey, normalize, render_filename_slug
 from .policy import EffectivePolicy
+from .promotion import set_spec_status
 from .refs import ORIGIN_MAIN
 from .tier_routing import TierLaunchResolution, resolve_tier_launch
 
@@ -242,6 +243,28 @@ def relocated_spec_path(spec_path: Path, repo_root: Path, worktree: Path) -> Pat
             f"spec_path {str(spec)!r} is neither under worktree {str(wt)!r} nor repo root {str(root)!r}"
         ) from exc
     return wt / relative
+
+
+#: Story 83.8: ``bmad-build-auto`` step-01 routes on story-spec frontmatter and
+#: HALTs on ``backlog``; ledger mints at ``backlog`` anyway. Dispatch rewrites
+#: only the worktree copy before launch.
+_BMAD_BUILD_AUTO_LAUNCH_SPEC_STATUS = "ready-for-dev"
+
+
+def rewrite_worktree_spec_status_for_bmad_build_auto(text: str) -> tuple[str, dict[str, str] | None]:
+    """Return ``text`` with a lone ``status: backlog`` rewritten for harness launch.
+
+    Pure (AD-4). When the frontmatter reads ``backlog``, returns the same body
+    with ``status: ready-for-dev`` and a journal payload ``{"from", "to"}``.
+    Every other status (including a missing or unreadable ``status:``) is
+    returned unchanged with ``None`` -- nothing is journaled."""
+    status = parse_spec_status(text)
+    if status != "backlog":
+        return text, None
+    rewritten = set_spec_status(text, _BMAD_BUILD_AUTO_LAUNCH_SPEC_STATUS)
+    if rewritten == text:
+        return text, None
+    return rewritten, {"from": "backlog", "to": _BMAD_BUILD_AUTO_LAUNCH_SPEC_STATUS}
 
 
 def expected_story_spec_glob(repo_root: Path, slug: str, story: str) -> str | None:

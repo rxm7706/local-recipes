@@ -2,7 +2,8 @@
 title: "83.8: Dispatch hands a session a story status bmad-build-auto recognizes"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: abbb7ba05f5ce65e54b320b4d30e2c9e7d916c90
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -63,4 +64,30 @@ Minted 2026-10-03 at the operator's request (the ninth defect from landing Phase
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches acceptance criteria)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Before launching `bmad-build-auto`, dispatch rewrites a worktree story spec whose frontmatter reads `status: backlog` to `ready-for-dev`, persists the change only in the worktree copy, and records `spec_status_rewrite` on the `dispatch-launch` INTENT journal entry.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py` — pure `rewrite_worktree_spec_status_for_bmad_build_auto`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — apply rewrite and journal before harness launch
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py` — unit, integration, and mutation tests
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — surface reconcile entry
+
+Review: no patches, deferrals, or rejections.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 10834 passed, 5 skipped
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `pixi run -e pyforge-guild python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+
+Residual risk: none identified; primary-checkout spec and ledger remain untouched by design.
