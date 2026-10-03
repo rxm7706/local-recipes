@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import math
 import time
 import urllib.error
@@ -57,8 +58,14 @@ from urllib.parse import quote, urlparse
 
 import yaml
 
+from pyforge.core.flags import read_boolean
+
 from .interfaces import DutyResult
 from .keys import HostScopedCredential, http_bridge, repo_root, resolve_headers
+
+_logger = logging.getLogger(__name__)
+
+SYNC_GITHUB_ONLY_MARKER_FLAG = "pyforge.steward.sync_github_only_marker"
 
 _GITHUB_API_HOST = "api.github.com"
 _GITHUB_GRAPHQL_URL = f"https://{_GITHUB_API_HOST}/graphql"

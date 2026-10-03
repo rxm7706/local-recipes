@@ -2,7 +2,8 @@
 title: "84.4: Sync skips a board item marked GitHub-only"
 type: 'feature'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '2360e20e336e1e5edbd180ced25d4cede6832019'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
