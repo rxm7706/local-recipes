@@ -124,8 +124,8 @@ def test_render_verify_fix_resume_argv():
 def test_policy_verify_fix_defaults_compose():
     effective, _ = compose(project_slug="pyforge-marshal", project={}, flags={})
     block = effective.dispatch.value
-    assert isinstance(block, dict)
-    assert block.get("verify_fix_output_tail_bytes") == DEFAULT_POLICY["dispatch"]["verify_fix_output_tail_bytes"]
+    assert block["verify_fix_output_tail_bytes"] == DEFAULT_POLICY["dispatch"]["verify_fix_output_tail_bytes"]
+    assert block["verify_fix_wall_clock_minutes"] == DEFAULT_POLICY["dispatch"]["verify_fix_wall_clock_minutes"]
 
 
 def test_fix_turn_rule_mutation_flag_off_skips_turn():
