@@ -486,12 +486,13 @@ def query_audit_entries(
     optional and cannot be skipped by a caller: it is this function's whole
     point, not a side effect of it.
 
-    **Role isolation (Story 84.2).** Rows returned are limited to those whose
-    stored ``role`` equals ``reader_role``, or to ``role IS NULL`` when
-    ``reader_role`` is ``None`` — the same fail-closed shape as CAP-1's "no
-    role established" scope state. ``reader_role`` is both recorded on the
-    ``AUDIT_READ`` row and enforced on the result set. Caller-supplied
-    ``**filters`` are ANDed with that isolation predicate.
+    **Role isolation (Story 84.2).** When ``reader_role`` is ``None`` (no
+    established role), the result set is empty — the same fail-closed shape
+    as CAP-2's ``filter_by_role``. When ``reader_role`` is set, rows are
+    limited to those whose stored ``role`` equals it exactly. ``reader_role``
+    is both recorded on the ``AUDIT_READ`` row and enforced on the result
+    set. Caller-supplied ``**filters`` are ANDed with that isolation
+    predicate when a role is established.
 
     **Bounded reads (Story 84.2).** At most ``limit`` rows are returned; when
     omitted, ``DEFAULT_AUDIT_READ_LIMIT`` from ``declarations.py`` applies.
@@ -572,12 +573,11 @@ def query_audit_entries(
     # a compliance read must not come off a replica anyway.
     using = router.db_for_write(AuditEntry)
     with transaction.atomic(using=using):
-        queryset = AuditEntry.objects.using(using).filter(**filters)
         if reader_role is None:
-            queryset = queryset.filter(role__isnull=True)
+            rows: list[AuditEntry] = []
         else:
-            queryset = queryset.filter(role=reader_role)
-        rows = list(queryset[:effective_limit])
+            queryset = AuditEntry.objects.using(using).filter(**filters).filter(role=reader_role)
+            rows = list(queryset[:effective_limit])
 
         record_audit_entry(
             actor=reader_actor,

@@ -31,6 +31,8 @@ from __future__ import annotations
 
 from django.db import models
 
+from .declarations import AUDIT_IDENTITY_MAX_LENGTH
+
 
 class AuditAction(models.TextChoices):
     """CAP-4's four request-time actions, plus AD-7's audit-of-the-audit action and retention purge."""
@@ -74,8 +76,8 @@ class AuditEntry(models.Model):
     caller stamping a batch of rows with one timestamp creates them.
     """
 
-    actor = models.CharField(max_length=255, db_index=True)
-    role = models.CharField(max_length=255, null=True, blank=True)
+    actor = models.CharField(max_length=AUDIT_IDENTITY_MAX_LENGTH, db_index=True)
+    role = models.CharField(max_length=AUDIT_IDENTITY_MAX_LENGTH, null=True, blank=True)
     action = models.CharField(max_length=16, choices=AuditAction.choices)
     target = models.CharField(max_length=255, blank=True, default="")
     row_count = models.PositiveIntegerField()

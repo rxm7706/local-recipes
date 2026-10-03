@@ -2,8 +2,8 @@
 title: "84.2: An audit read records its scope, and the perimeter refuses an over-long identity"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: '7cc833467ba2dd5d342a9a1c98b170ab2342adeb'
+status: 'in-progress'
+baseline_revision: '24e64962a49af7adfd7f4e342d759886ac01fd18'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

@@ -153,6 +153,7 @@ from pyforge.steward.dashboard.audit import (  # noqa: E402
 )
 from pyforge.steward.dashboard.declarations import (  # noqa: E402
     _MAX_RETENTION_DAYS,
+    AUDIT_IDENTITY_MAX_LENGTH,
     AuditRetention,
 )
 from pyforge.steward.dashboard.models import AuditAction, AuditEntry  # noqa: E402
@@ -348,6 +349,24 @@ def test_query_audit_entries_isolates_rows_by_reader_role():
 
     assert len(east_view) == 1 and east_view[0].actor == "alice"
     assert len(west_view) == 1 and west_view[0].actor == "bob"
+
+
+def test_query_audit_entries_with_no_established_role_returns_no_rows_but_records_read():
+    """Story 84.2 landing review: fail-closed like ``filter_by_role`` when role is None."""
+    record_audit_entry("alice", None, AuditAction.LOAD, 1)
+    record_audit_entry("bob", "east", AuditAction.LOAD, 1)
+
+    rows = query_audit_entries(reader_actor="reader", reader_role=None)
+
+    assert rows == []
+    read_entry = AuditEntry.objects.filter(action=AuditAction.AUDIT_READ).get()
+    assert read_entry.row_count == 0
+    assert read_entry.role is None
+
+
+def test_audit_entry_actor_and_role_max_length_use_shared_declaration():
+    assert AuditEntry._meta.get_field("actor").max_length == AUDIT_IDENTITY_MAX_LENGTH
+    assert AuditEntry._meta.get_field("role").max_length == AUDIT_IDENTITY_MAX_LENGTH
 
 
 def test_query_audit_entries_honors_limit():
