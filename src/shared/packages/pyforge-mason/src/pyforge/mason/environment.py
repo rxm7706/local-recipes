@@ -16,8 +16,8 @@ built at that point, so `lock()` required its caller to supply manifest
 paths explicitly -- `cli.py`'s own `manifest_path` positional (`nargs="+"`)
 enforced "at least one" before this function was ever reached.
 
-Story 4.4 adds `check()`, the `mason environment check` use-case (FR-25,
-FR-27, FR-29): CI's own companion to `lock()` above -- a thin wrapper around
+Story 4.4 adds `check()`, the `mason environment check` use-case (FR-28):
+CI's own companion to `lock()` above -- a thin wrapper around
 `engines.condalock.check()`, mirroring `lock()`'s own platform-parsing/
 wrapping shape verbatim. Unlike `lock()`, `check()`'s own engine-layer
 counterpart validates `lockfile_path`'s existence itself
@@ -146,7 +146,7 @@ def lock(manifest_paths: Sequence[str], output_path: str, *, platforms: str | No
 
 def check(lockfile_path: str, manifest_paths: Sequence[str], *, platforms: str | None = None) -> CheckResult:
     """Report whether `lockfile_path` is stale relative to `manifest_paths`
-    via `engines.condalock.check()` (FR-25, FR-27, FR-29).
+    via `engines.condalock.check()` (FR-28).
 
     `platforms` parsing is IDENTICAL to `lock()`'s own, above (verbatim-
     mirrored, spec Always boundary): the caller's own raw `--platform`

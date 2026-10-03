@@ -67,7 +67,7 @@ dependency-resolution logic of its own (spec AC3): `conda-lock`'s own
 vendored solver is what resolves the dependency graph.
 
 Story 4.4 adds `check()`, `mason environment check`'s own engine operation
-(FR-25, FR-27, FR-29): re-runs `conda-lock lock --check-input-hash` against a
+(FR-28): re-runs `conda-lock lock --check-input-hash` against a
 **temporary copy** of the given lockfile, never the real `lockfile_path`.
 Why the copy (corrected against installed `conda-lock` 4.0.2's own source,
 review pass, 2026-08-15 second): `conda_lock.py::run_lock` writes its
@@ -104,6 +104,7 @@ precedent (`OSError` on removal swallowed).
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -114,6 +115,7 @@ from dataclasses import dataclass
 import yaml
 
 from ..errors import (
+    EnvironmentCheckTempCopyUnreadableError,
     EnvironmentCheckTimeoutError,
     EnvironmentLockfileMalformedError,
     EnvironmentLockfileMissingError,
@@ -198,10 +200,7 @@ def lock(
     resolved_timeout = timeout if timeout is not None else _CONDA_LOCK_TIMEOUT_SECONDS
 
     argv = [_BINARY_NAME, "lock"]
-    for manifest_path in manifest_paths:
-        argv.extend(("-f", manifest_path))
-    for platform in platforms:
-        argv.extend(("-p", platform))
+    _extend_manifest_and_platform_argv(argv, manifest_paths, platforms)
     argv.extend(("--lockfile", output_path))
 
     fd, metadata_path = tempfile.mkstemp(suffix=".json", prefix="mason-condalock-")
@@ -239,17 +238,19 @@ def lock(
 
 @dataclass(frozen=True)
 class CondaLockCheckResult:
-    """One `check()` call's outcome (Story 4.4, FR-25, FR-27, FR-29).
+    """One `check()` call's outcome (Story 4.4, FR-28).
     `stale` is the ONE piece of data this operation exists to produce:
     `True` when the lockfile's own `metadata.content_hash` differs before
     vs. after re-running `conda-lock lock --check-input-hash` against a
     temporary copy of it (module docstring: why a copy, never the real
     path), `False` when it does not -- never conda-lock's own returncode
     (module docstring: dead in installed 4.0.2). `returncode`/`engine_name`/
-    `engine_version`/`stdout` mirror `CondaLockResult`'s own identical
-    fields and rationale -- `returncode` is the delegated `conda-lock`
-    subprocess's raw exit code, DATA here too (AD-4), never used to derive
-    `stale`."""
+    `engine_version` mirror `CondaLockResult`'s own identical fields;
+    `returncode` is the delegated `conda-lock` subprocess's raw exit code,
+    DATA here too (AD-4), never used to derive `stale`. `stdout` is
+    structurally empty for `check()` -- conda-lock writes every diagnostic to
+    the inherited stderr, not stdout (unlike `lock()`, which captures stdout
+    for failure investigation)."""
 
     stale: bool
     returncode: int
@@ -364,13 +365,16 @@ def check(
         except OSError as exc:
             raise EnvironmentLockfileMalformedError(lockfile_path, str(exc)) from exc
 
-        before = _read_content_hash(temp_lockfile_path, lockfile_path)
+        before = _read_content_hash(temp_lockfile_path, user_lockfile_path=lockfile_path)
+
+        logging.getLogger(__name__).info(
+            "mason environment check: using temporary lockfile copy %r (from %r)",
+            temp_lockfile_path,
+            lockfile_path,
+        )
 
         argv = [_BINARY_NAME, "lock", "--check-input-hash"]
-        for manifest_path in manifest_paths:
-            argv.extend(("-f", manifest_path))
-        for platform in platforms:
-            argv.extend(("-p", platform))
+        _extend_manifest_and_platform_argv(argv, manifest_paths, platforms)
         argv.extend(("--lockfile", temp_lockfile_path))
 
         completed = subprocess.run(
@@ -384,7 +388,7 @@ def check(
             check=False,
         )
 
-        after = _read_content_hash(temp_lockfile_path, lockfile_path)
+        after = _read_content_hash(temp_lockfile_path)
     except subprocess.TimeoutExpired:
         raise EnvironmentCheckTimeoutError(timeout=resolved_timeout) from None
     finally:
@@ -402,19 +406,32 @@ def check(
     )
 
 
-def _read_content_hash(temp_path: str, lockfile_path: str) -> object:
+def _extend_manifest_and_platform_argv(
+    argv: list[str],
+    manifest_paths: Sequence[str],
+    platforms: Sequence[str],
+) -> None:
+    """Append repeated `-f`/`-p` pairs shared by `lock()` and `check()`."""
+    for manifest_path in manifest_paths:
+        argv.extend(("-f", manifest_path))
+    for platform in platforms:
+        argv.extend(("-p", platform))
+
+
+def _read_content_hash(temp_path: str, *, user_lockfile_path: str | None = None) -> object:
     """Read `metadata.content_hash` out of the temp lockfile copy at
-    `temp_path`, translating any malformed-content failure into
-    `EnvironmentLockfileMalformedError` naming the caller's own
-    `lockfile_path` (review pass, 2026-08-15) -- a lockfile that is not
-    valid YAML, is empty (`yaml.safe_load` returns `None`), is not valid
-    UTF-8, or lacks the expected `metadata`/`content_hash` keys is not an
-    anticipated `conda-lock`-produced shape, but must still surface as a
-    typed `MasonError` (NFR-14), never a raw `KeyError`/`TypeError`/
-    `yaml.YAMLError`/`UnicodeDecodeError`/`OSError` escaping to `main()`'s
-    generic exception handler."""
+    `temp_path`, translating any malformed-content failure into a typed
+    `MasonError` (NFR-14).
+
+    When `user_lockfile_path` is given (the before-read), failures name the
+    caller's own lockfile via `EnvironmentLockfileMalformedError`. When
+    omitted (the after-read, post conda-lock), failures name the temp copy
+    via `EnvironmentCheckTempCopyUnreadableError` -- the user's file was
+    already known good."""
     try:
         with open(temp_path, encoding="utf-8") as handle:
             return yaml.safe_load(handle)["metadata"]["content_hash"]
     except (OSError, UnicodeDecodeError, yaml.YAMLError, KeyError, TypeError) as exc:
-        raise EnvironmentLockfileMalformedError(lockfile_path, str(exc)) from exc
+        if user_lockfile_path is None:
+            raise EnvironmentCheckTempCopyUnreadableError(temp_path, str(exc)) from exc
+        raise EnvironmentLockfileMalformedError(user_lockfile_path, str(exc)) from exc

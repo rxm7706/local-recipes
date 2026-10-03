@@ -307,6 +307,8 @@ def _classify(prior_actions: list[str]) -> tuple[str, str | None]:
             return _PRE_DECIDED_SKIPPED, "skipped"
         if action in ("demoted-include", "demoted-exclude"):
             return _PRE_DECIDED_DEMOTED, action
+        if action == "retro-mirror":
+            continue
     return _UNRESOLVED, None
 
 

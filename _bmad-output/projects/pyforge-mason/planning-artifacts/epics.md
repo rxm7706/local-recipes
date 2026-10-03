@@ -2612,11 +2612,11 @@ I want every open medium and low row on Mason's package and the repo tooling it 
 So that each row closes on the line that fixed it and the ledger keeps only what is still open.
 
 **Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-4, CAP-5, CAP-7, CAP-16 (no new CAP; a fix carries no flag, `spec-feature-flag-governance` Q1); AD-1; AD-3; AD-15
-**Surface:** `src/shared/packages/pyforge-mason/` (`cli.py`, `errors.py`, `engines/condalock.py`, `tests/unit/`, `tests/meta/`), `src/shared/packages/django-mason/` (only if DW-16-3-1 is red on main), `scripts/cfe_rebuild_guard_check.py` and its test, the installer-owned `_bmad/skf/shared/scripts/` files DW-12-3-1 and DW-12-1-3 name with tests under `tests/scripts/`, `tests/packaging/` (DW-FRR-8-1's review), and the deferred-work rows it closes. No CFE-surface path.
+**Surface:** `src/shared/packages/pyforge-mason/` (`cli.py`, `errors.py`, `engines/condalock.py`, `tests/unit/`, `tests/meta/`), `src/shared/packages/django-mason/` (only if DW-16-3-1 is red on main), `scripts/cfe_rebuild_guard_check.py` and its test, the installer-owned `_bmad/skf/shared/scripts/` files DW-12-3-1 and DW-12-1-3 name with tests under `tests/scripts/`, and the deferred-work rows it closes. No CFE-surface path.
 **Spec:** `planning-artifacts/specs/spec-27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals.md` (the row-by-row fixes)
-**Closes (30; 11 medium, 19 low):** DW-4-4-11, DW-4-4-13, DW-4-4-6, DW-4-4-7, DW-4-4-8, DW-4-4-9, DW-4-4-12, DW-4-4-10, DW-4-4-5, DW-16-3-1, DW-12-7-3, DW-2, DW-1-10-2, DW-2-3-2, DW-FRR-10-1, DW-CANOPY-2026-08-24, DW-13-2-2, DW-12-1-1, DW-12-2-2, DW-12-4-3, DW-12-4-4, DW-12-4-2, DW-12-8-1, DW-7-2-3, DW-12-3-1, DW-12-1-3, DW-FRR-8-1, DW-FRR-12-3, DW-FRR-12-7, DW-FRR-12-8
+**Closes (22; 11 medium, 11 low):** DW-4-4-11, DW-4-4-13, DW-4-4-6, DW-4-4-7, DW-4-4-8, DW-4-4-9, DW-4-4-12, DW-4-4-10, DW-4-4-5, DW-16-3-1, DW-12-7-3, DW-CANOPY-2026-08-24, DW-13-2-2, DW-12-1-1, DW-12-2-2, DW-12-4-3, DW-12-4-4, DW-12-4-2, DW-12-8-1, DW-7-2-3, DW-12-3-1, DW-12-1-3
 **Given** the rows above, each read against the live code first
-**When** each is fixed where its code lives, and each follow-up review row gets an independent review whose findings are fixed here
+**When** each is fixed where its code lives
 **Then** `environment lock` exits 1 after a failed solve, `--format json` prints a JSON error envelope, the conda-lock check engine never blames the user's lockfile for a temp-copy failure, the config-file meta-guard catches `yaml.unsafe_load`, and the CFE-rebuild guard opens the brief it certifies and walks no history when no slice has one
 **And** each row closes with a `resolution:` naming this story and a `verified:` line citing the line that fixed it (or, for a row Story 15.1 superseded or steward delivered, the line that records it); no commit touches the CFE surface; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
 
