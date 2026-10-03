@@ -297,13 +297,30 @@ def _load_github_only_marker(document_path: Path, section: object) -> GitHubOnly
     label = section.get("label")
     field_id = section.get("field_id")
     field_value = section.get("field_value")
-    has_label = isinstance(label, str) and label.strip()
-    has_field = isinstance(field_id, str) and field_id.strip() and isinstance(field_value, str) and field_value.strip()
-    if has_label and has_field:
+    label_is_str = isinstance(label, str)
+    field_id_is_str = isinstance(field_id, str)
+    field_value_is_str = isinstance(field_value, str)
+    has_label = label_is_str and label.strip()
+    has_field_id_key = "field_id" in section
+    has_field_value_key = "field_value" in section
+    has_field_pair = (
+        field_id_is_str
+        and field_id.strip()
+        and field_value_is_str
+        and field_value.strip()
+    )
+    if has_label and (has_field_id_key or has_field_value_key):
         raise SyncConfigError(
-            f"{document_path}: 'github_only_marker' must declare either 'label' or 'field_id'+'field_value', not both"
+            f"{document_path}: 'github_only_marker' must declare either 'label' or "
+            "'field_id'+'field_value', not both"
         )
-    if not has_label and not has_field:
+    if has_field_id_key or has_field_value_key:
+        if not has_field_pair:
+            raise SyncConfigError(
+                f"{document_path}: 'github_only_marker' must declare 'field_id' and "
+                "'field_value' together when either is present"
+            )
+    if not has_label and not has_field_pair:
         if not section:
             raise SyncConfigError(f"{document_path}: 'github_only_marker' must not be an empty mapping")
         raise SyncConfigError(
@@ -311,8 +328,6 @@ def _load_github_only_marker(document_path: Path, section: object) -> GitHubOnly
             "non-empty label or field_id/field_value pair"
         )
     if has_label:
-        if not isinstance(label, str):
-            raise SyncConfigError(f"{document_path}: 'github_only_marker.label' must be a string")
         return GitHubOnlyMarker(label=label.strip())
     assert isinstance(field_id, str) and isinstance(field_value, str)
     return GitHubOnlyMarker(field_id=field_id.strip(), field_value=field_value.strip())

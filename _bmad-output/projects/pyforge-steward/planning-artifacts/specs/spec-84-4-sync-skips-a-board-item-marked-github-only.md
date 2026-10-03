@@ -84,6 +84,9 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
+### 2026-10-03 (Story 84.5 correction) — Stale review-pass lines superseded
+Story 84.5 corrected the record without editing prior entries. The 2026-10-03 review pass (post-fix) `[false]`/`[reject]` lines on H1–H3 remain historical context only: H3's "marker checked before flag read" and "FlagConfigError warns" are accurate in production code, but the evening pass's claim that `{}` loads as `None` was wrong (empty mapping is refused at load), and the build-auto pass's claim that unit tests monkeypatch the flag gate was wrong (tests use real `PYFORGE_FLAGS_PATH` trees). DW-8-5-2's `verified:` line now cites `sync.py:1299` and `sync.py:1371-1374`.
+
 ### 2026-10-03 (night) — Landed with follow-ups chained as Story 84.5 (operator ruling, as for marshal 84.1)
 The fourth review: all five formerly surviving mutants now fail a test; the try/except-removed mutant fails; config refuses `{}` and a lone field half; both fixtures clear `PYFORGE_ENVIRONMENT`; the example config states the production requirement and the unlinked-only rule; steward suite, coverage gate, flag gate and lint-types exit 0. Chained as Story 84.5: the production test is false-green (its flag tree has no metadata, so the read fails rather than the overlay saying off; add the five metadata fields and assert no WARNING) and the requested `PYFORGE_ENVIRONMENT=prod` marker case is missing; the no-marker unknown-environment test must prove the flag is never read (the reorder mutants survive); config still accepts a `label` with a lone `field_id` or `field_value`, and `sync.py`'s unreachable `isinstance(label, str)` branch remains; DW-8-5-2's `verified:` line cites `sync.py:1301` and `:1373-1376` (the skip `raise` is `:1299`, the skip path `:1371-1374`); the stale Review pass entries (H1-H3 `[false]`, `{}` loads as None, tests monkeypatch the gate).
 

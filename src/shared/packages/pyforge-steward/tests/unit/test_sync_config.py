@@ -197,6 +197,36 @@ github_only_marker:
         load_config(path)
 
 
+def test_github_only_marker_rejects_label_with_lone_field_id(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  label: github-only
+  field_id: PVTF_scope
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="not both"):
+        load_config(path)
+
+
+def test_github_only_marker_rejects_label_with_lone_field_value(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  label: github-only
+  field_value: GitHub only
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="not both"):
+        load_config(path)
+
+
 def test_happy_path_with_status_mapping(tmp_path):
     path = _write(
         tmp_path,
