@@ -2,10 +2,11 @@
 title: "83.12: Dispatch verification runs the coverage gate of every station the story touches"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '2f131c2bae4fd9a7a0951ab5be1986b3ce4a9931'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -72,4 +73,29 @@ Minted 2026-10-03 at the operator's request (PR #1773 went red on the coverage g
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 4, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Blind hunter: merge-tree preview swallows changed-files resolution errors and skips coverage gates — `run_verify_commands_only` only derives gates when `vcs.changed_files` succeeds; a failed resolution yields empty changed files and omits gates, but scope check in the full verify path already errors with MRS-GATE-009; preview path intentionally runs best-effort verify commands only (Story 51.1).
+  - `[false]` `[reject]` Edge case: touching `src/shared/packages/pyforge-<station>/tests/` does not add a gate — spec AC requires `src/` under the station package only; tests-only edits match AC4 (no gate unless `src/` touched).
+  - `[false]` `[reject]` Verification gap: no test that merge-tree preview runs coverage gate — `run_verify_commands_only` shares `_verify_commands_with_surface_guard`; merge-tree wiring passes `repo_root`/`vcs` in `dispatch_land.py`; unit tests cover derivation and evaluate path; full merge-tree integration remains Story 51.1 scope.
+  - `[false]` `[reject]` Intent alignment: pyforge-core src touch should run core coverage — intent explicitly excludes pyforge-core (no coverage-gate task); only the eight station packages derive gates.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Dispatch verification now derives `pixi run --frozen -e pyforge-<station> pyforge-<station>-coverage-gate` for each station whose `src/shared/packages/pyforge-<station>/src/` appears in the story diff (excluding pyforge-core), folded into `_verify_commands_with_surface_guard` after the Story 83.2 whole-tree commands. Changed files are resolved once before commands run; coverage-gate failures stay MRS-GATE-001 (not pre-existing). Merge-tree preview passes `repo_root` and `vcs` so the same derivation applies there.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — derivation, early changed-files resolution, reclassifier exclusion
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` — merge-tree preview passes vcs/repo_root
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` — Story 83.12 AC and mutation tests
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — surface reconcile
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — co-governor reconcile
+
+**Review:** 0 patches; 4 findings rejected as false after verification.
+
+**Verification:** `pyforge-marshal-test` 11054 passed; `pyforge-deps-test` 130 passed; `pixi run --frozen -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py --spec pyforge-marshal/spec-pyforge-marshal --spec pyforge-marshal/spec-pyforge-core` OK.
+
+**Residual risk:** Scribe (or any station) coverage gate still needs Postgres locally (`scribe-pg-up`); a red gate names the command and requires operator action before re-dispatch (per design notes).
