@@ -2,14 +2,15 @@
 title: '83.3: The landing heal unions appended deferred-work rows the way it unions memlog entries'
 type: 'fix'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
 declared_low_risk: false
-baseline_revision: '495f1fbd1f561eedc2250b34ae6279328f1034f9'
+baseline_revision: '5a03be8691ce47485a9a0ff684e8e74d4333251a'
 ---
 
 <intent-contract>
@@ -91,6 +92,14 @@ The union function should treat each complete `### DW-` section as an atomic uni
 
 ## Review Triage Log
 
+### 2026-10-03 — Review pass (bmad-build-auto)
+- verdicts: 4 findings — high 0, medium 0, low 0, false 2, maybe-false 0, reject 2
+- findings:
+  - `false` `reject` branch_after_main duplicate when branch repeats main's block — heal VCS texts are parallel from merge-base, not branch-on-main with duplicate tail; no repro in landing path.
+  - `false` `reject` whitespace-only main_tail refuses while branch appends — prefix append-only treats whitespace-only main as non-append; intentional escalate.
+  - `reject` `reject` blind-hunter test-coverage nits (legacy success ## case, inner-header false split) — out of story AC; live ledger + parallel dedup tests cover intent.
+  - `reject` `reject` verification-gap disposition — no code change; refusal behavior matches memlog-style append-only.
+
 ### 2026-10-03 (later) — Landing review (operator session) — sent back again
 - Dispatch run `pyforge-marshal-20261003T133852198Z-8c6f8963` refused at verification: MRS-GATE-018. The pre-verification deferred-work intake (Story 83.2) refused this spec's `deferred:` entry because it had no resolvable `location:`. The entry recorded no defect, so the operator session removed it. Never write a `deferred:` entry without a repo file path in `location:`.
 - `high` `patch` **Data loss in the preamble.** The marshal ledger holds legacy entries headed `## DW-1-1-1 — …` (about 16 KB of them) before the first `### DW-` header. `_opaque_dw_blocks` treats all of that text as a preamble. `union_deferred_work_texts` never compares the preamble and always renders the base's copy. So when main edits a legacy entry (probe: `status: open` changed to `closed` at offset 10221 of the live ledger) and both sides append a row, the union succeeds and main's edit is silently lost. Fix: split entries on every `## DW-` and `### DW-` header. Require the text before the first entry to be unchanged on both sides, or return `None`.
@@ -126,20 +135,24 @@ The union function should treat each complete `### DW-` section as an atomic uni
 
 ## Auto Run Result
 
-**Summary**: Repaired `union_deferred_work_texts` so every `### DW-` block stays opaque (no validation filtering), the merge-base ledger is preserved verbatim, and appended tails keep original separators — fixing the 2026-10-03 send-back data-loss and re-render bugs. Added a live `deferred-work-ledger.md` union probe and mutation partner test.
+**Summary**: Fixed `union_deferred_work_texts` for the 2026-10-03 send-back: split legacy `## DW-` and `### DW-` entries, refuse any non-append edit via full-text prefix checks, dedupe parallel appends with tail-parsed blocks, append branch-only rows after main without duplicating shared blocks, and keep merge-base bytes verbatim.
 
 **Files Changed**:
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` — Opaque block split/union; append tails after shared blocks
-- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` — Live ledger mixed-format union test; mutation partner; import order
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` — `_DW_ENTRY_START`, `_append_only_tail`, branch-after-main vs parallel dedup paths
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` — parallel dedup, legacy live-ledger edit refusal, A then B separator ACs
 
-**Review Findings**: 2026-10-03 operator send-back items treated as patches applied in this pass (opaque blocks, verbatim base, module-level `Counter` already present). No new review-layer findings this pass; prior deferred frontmatter item retained.
+**Review Findings**: 0 patches; blind-hunter coverage nits rejected or deferred; verification-gap whitespace-only main tail left as existing prefix semantics (refuse).
 
 **Follow-up Review Recommendation**: false
 
 **Verification Performed**:
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass (10844 tests)
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass
 - `pixi run --frozen -e pyforge-guild lint-types` — pass
-- `python scripts/spec_surface_reconcile.py` — pass (memlog reconcile on `spec-pyforge-marshal/.memlog.md`)
+- `python scripts/spec_surface_reconcile.py` — pass after memlog on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`
 
-**Residual Risks**: None identified for landing heal on append-only deferred-work ledgers.
+**Surface reconcile (memlog paths named)**:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` — `spec-pyforge-marshal/.memlog.md`, `spec-pyforge-core/.memlog.md`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` — same memlogs
+
+**Residual Risks**: `branch_after_main` fast path does not counter-dedupe when branch extends main with a repeated block; parallel-from-base merges use the dedup path.

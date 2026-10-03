@@ -1297,6 +1297,21 @@ def test_union_deferred_work_texts_live_marshal_ledger_mixed_formats() -> None:
     assert "DW-TEST-BRANCH-83-3" in result
 
 
+def test_union_deferred_work_texts_parallel_append_dedupes_shared_block() -> None:
+    """Parallel branches from the same base: shared append once, branch-only row kept."""
+    block_a = "### DW-A: Shared append\norigin: test\nstatus: open\n"
+    block_b = "### DW-B: Branch-only append\norigin: test\nstatus: open\n"
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = base.rstrip("\n") + "\n\n" + block_a
+    branch = base.rstrip("\n") + "\n\n" + block_a + "\n\n" + block_b
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert result.count("### DW-A:") == 1
+    assert "### DW-B:" in result
+
+
 def test_union_deferred_work_texts_refuses_legacy_entry_edit_on_live_ledger() -> None:
     """AC 2026-10-03: editing a legacy ``## DW-`` entry while appending refuses union."""
     repo_root = Path(__file__).resolve().parents[6]
