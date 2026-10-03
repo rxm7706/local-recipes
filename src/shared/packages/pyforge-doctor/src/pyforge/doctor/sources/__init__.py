@@ -389,9 +389,11 @@ REGISTRY: tuple[SourceRegistration, ...] = (
         owning_station="doctor",
     ),  # Story 17.2 (Epic 17 / FR-147) -- chain.gather_dreams_hygiene.
     # Dream-tier hygiene (frontmatter vocab/owner/title, README table sync,
-    # realization-log presence), distinct from DREAM_CHAIN INV-0..3. Not a
-    # DISPATCH name: invoked as `dream-chain --dreams` (CLI spelling chosen
-    # over folding into `--inv`).
+    # realization-log presence), distinct from DREAM_CHAIN INV-0..3. A
+    # DISPATCH name since Story 41.1 (DW-FU-21-6-2), which is what put it in
+    # `detectors-ci`; `dream-chain --dreams` remains as a second door onto
+    # the same gather (the original CLI spelling, chosen over folding into
+    # `--inv`).
     SourceRegistration(
         source=Source.CHAIN_LAYERS_AUDIT,
         scope="repo",
