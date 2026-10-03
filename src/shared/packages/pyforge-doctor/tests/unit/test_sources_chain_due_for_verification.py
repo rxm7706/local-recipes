@@ -2251,3 +2251,249 @@ def test_path_extensions_cover_every_cited_tracked_file() -> None:
         "cited real files whose extension _PATH_EXTENSIONS omits: "
         f"{missing} — add the extension (and say why in its comment)"
     )
+
+
+# === Story 41.1: the sweep measures what it claims ===========================
+
+
+def test_a_verified_date_in_the_future_is_due_and_names_the_defect(
+    tmp_path: Path,
+) -> None:
+    """DW-FU-11-1: a typo'd year (`2126-07-15` for `2026-07-15`, the live
+    shape) parses cleanly and yields a large NEGATIVE `days_stale`, so the
+    entry read as permanently fresh and was silently exempt from ever being
+    selected again -- exactly the class of gap this epic exists to catch. It
+    is due, like a never-verified entry, and its `reason` names the defect
+    rather than hiding it in the never-verified bucket."""
+    _write_tracked(tmp_path, "proj", "## DW-1\nverified: 2126-07-15 — checked\n")
+
+    findings = chain._due_for_verification_findings(tmp_path, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    assert item["reason"] == "verified-date-in-future"
+    assert item["verified_on"] == "2126-07-15"
+    assert item["today"] == "2026-08-15"
+    message = chain._due_for_verification_message(item)
+    assert "2126-07-15" in message and "2026-08-15" in message
+
+
+def test_a_future_verified_date_does_not_count_as_verified_coverage(
+    tmp_path: Path,
+) -> None:
+    """DW-FU-11-1 in the coverage percentage too: a future date counted as
+    "verified within the window", so a project could report 100% coverage on
+    entries nobody had ever actually re-read. One real recent entry, one
+    future-dated entry: 50%, not 100%."""
+    _write_tracked(
+        tmp_path,
+        "proj",
+        "## DW-1\nverified: 2026-08-10 — really checked\n\n"
+        "## DW-2\nverified: 2126-07-15 — typo'd year\n",
+    )
+
+    items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
+
+    assert len(items) == 1
+    assert items[0]["total"] == 2
+    assert items[0]["verified_within_window"] == 1
+    assert items[0]["pct"] == 50
+
+
+def test_one_path_cited_by_many_entries_is_read_from_git_once(tmp_path: Path) -> None:
+    """DW-FU-11-2: `_churn_since`/`_authored_date` ran a fresh `git log` per
+    CITING ENTRY, so one path many entries cite (`pixi.toml`, `chain.py`)
+    cost one subprocess pair per entry -- the sweep's whole cost, paid
+    repeatedly for an answer that cannot change within one run. Memoized on
+    `(path, since)` for the sweep's duration."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(target, "src/shared.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
+    _write_tracked(
+        target,
+        "proj",
+        "".join(
+            f"## DW-{n}\nverified: 2026-07-01 — checked\nCode: `src/shared.py:10`\n\n"
+            for n in range(1, 6)
+        ),
+    )
+
+    log_calls: list[list[str]] = []
+    real = chain.run_git
+
+    def _counting(t, args, **kwargs):
+        if args and args[0] == "log":
+            log_calls.append(list(args))
+        return real(t, args, **kwargs)
+
+    import pytest as _pytest
+
+    with _pytest.MonkeyPatch.context() as mp:
+        mp.setattr(chain, "run_git", _counting)
+        findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    # All five entries got the same verdict from the same one path...
+    assert len(findings) == 5
+    assert {item.get("skip_reason") for item in findings} == {"no-churn"}
+    # ...and the path's history was read ONCE for the whole sweep: the two
+    # calls are `_path_churn_free`'s own pair for ONE (path, since) key --
+    # does the path appear in history at all, and has it changed since -- not
+    # one pair per citing entry, which is what five entries used to cost.
+    assert len(log_calls) == 2, log_calls
+
+
+def test_churn_reads_history_from_origin_main_when_it_exists(tmp_path: Path) -> None:
+    """DW-FU-11-2-2: churn was measured against `HEAD`, which in a story
+    worktree is the story's OWN branch -- so a path the story itself just
+    touched read as churned, and an entry was kept fully due by the very
+    commit that was investigating it. `refs/remotes/origin/main` is the
+    shared history the question is actually about."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(target, "src/foo.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
+    _git(target, "update-ref", "refs/remotes/origin/main", "HEAD")
+    # A story-branch commit touching the cited path, present only on HEAD.
+    _git(target, "checkout", "-q", "-b", "dispatch/story")
+    _commit_file(target, "src/foo.py", "x = 2\n", "2026-07-10T00:00:00+00:00")
+    _write_tracked(
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked\nCode: `src/foo.py:10`\n",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    # Churn-free on origin/main, even though HEAD has a commit for it.
+    assert findings[0].get("skip_reason") == "no-churn"
+    assert chain._churn_ref(target) == "refs/remotes/origin/main"
+
+
+def test_churn_falls_back_to_head_without_an_origin_main(tmp_path: Path) -> None:
+    """The fallback half of DW-FU-11-2-2: a repo with no `origin/main` (a
+    fresh fixture, a clone of a differently-named trunk) still gets a
+    verdict, from `HEAD`. Degrading to "no history at all" would make every
+    entry churn-free, which is the unsafe direction."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(target, "src/foo.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
+    _commit_file(target, "src/foo.py", "x = 2\n", "2026-07-10T00:00:00+00:00")
+    _write_tracked(
+        target,
+        "proj",
+        "## DW-1\nverified: 2026-07-01 — checked\nCode: `src/foo.py:10`\n",
+    )
+
+    assert chain._churn_ref(target) == "HEAD"
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    assert "skip_reason" not in findings[0]
+
+
+def test_a_symbol_search_is_scoped_to_the_package_the_entry_cites(
+    tmp_path: Path,
+) -> None:
+    """DW-FU-11-3: the call-site recount was an UNSCOPED whole-repo `git
+    grep -w`, so a short, generic name (`_run`, `_helper`, `_probe`) counted
+    every unrelated namesake across the fleet -- two different functions
+    sharing one name each inflated the other's count, and a genuinely dead
+    symbol read `escalate`. The entry already names where its own code
+    lives; its package is the narrowest scope that cannot drop a real call
+    site."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target,
+        "src/shared/packages/pyforge-alpha/src/alpha.py",
+        "def _helper():\n    ...\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    # An unrelated namesake in ANOTHER package, calling its own `_helper`.
+    _commit_file(
+        target,
+        "src/shared/packages/pyforge-beta/src/beta.py",
+        "def _helper():\n    ...\n\n\n_helper()\n_helper()\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+
+    scoped = chain._call_site_count(
+        target, "_helper", ["src/shared/packages/pyforge-alpha/src/alpha.py"]
+    )
+    unscoped = chain._call_site_count(target, "_helper")
+
+    assert scoped == (0, True), scoped
+    assert unscoped is not None and unscoped[0] == 2, unscoped
+
+
+def test_a_comment_mentioning_a_symbol_is_not_a_call_site(tmp_path: Path) -> None:
+    """DW-FU-11-3: `-w` matches any whole-word textual occurrence, so a
+    comment or docstring MENTIONING the symbol inflated the live count and
+    pushed a genuinely dead symbol to `escalate` -- the one direction that
+    costs an agent a read for nothing."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target,
+        "src/shared/packages/pyforge-alpha/src/alpha.py",
+        "def _helper():\n"
+        '    """Not called anywhere; see _helper below."""\n'
+        "    ...\n"
+        "\n"
+        "\n"
+        "# _helper is dead -- remove it\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+
+    result = chain._call_site_count(
+        target, "_helper", ["src/shared/packages/pyforge-alpha/src/alpha.py"]
+    )
+
+    assert result == (0, True), result
+
+
+def test_a_matched_path_containing_a_colon_is_still_parsed(tmp_path: Path) -> None:
+    """DW-FU-11-3-3: the two chained `partition(":")` calls this used to do
+    mis-split any matched path that itself contains a colon -- one tracked
+    path in this repo does -- shifting the line's CONTENT into the
+    line-number field, so the declaration regex could not recognise a real
+    `def` line in such a file. `-z` plus a NUL split reads the fields
+    git actually emitted."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target,
+        "src/shared/packages/pyforge-alpha/SPEC: notes.py",
+        "def _helper():\n    ...\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+
+    result = chain._call_site_count(
+        target, "_helper", ["src/shared/packages/pyforge-alpha/SPEC: notes.py"]
+    )
+
+    # The declaration was RECOGNISED (second element), which is what the
+    # mis-split destroyed -- and no phantom call site was counted.
+    assert result == (0, True), result
+
+
+def test_an_entry_whose_unused_claims_disagree_gets_no_symbol(tmp_path: Path) -> None:
+    """DW-FU-11-3-2: `search()` returned the FIRST match in document order,
+    so an entry naming two identifiers -- "`_helper` unused? No, actually
+    `_foo` is unused." -- bound the phrase to `_helper`, the subject the
+    sentence explicitly REJECTS, and then recomputed the wrong symbol's call
+    sites. When an entry's matches disagree this mechanism does not know
+    which was meant, and says so: no symbol, so no `mechanical_verdict`, and
+    the entry stays fully due for a human read."""
+    tracked = _write_tracked(
+        tmp_path,
+        "proj",
+        "## DW-1\nreason: `_helper` unused? No, actually `_foo` is unused.\n\n"
+        "## DW-2\nreason: `_solo` is unused and `_solo` has no callers.\n",
+    )
+
+    claims = dict(chain._entry_unused_symbol_claims(tracked))
+
+    assert claims["DW-1"] is None
+    # Agreement across several matches still yields the symbol.
+    assert claims["DW-2"] == "_solo"
