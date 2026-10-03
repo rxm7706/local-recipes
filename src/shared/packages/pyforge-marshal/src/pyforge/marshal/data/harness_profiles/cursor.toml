@@ -42,6 +42,12 @@ authcheck_ok_pattern = "Logged in as"
 verified = true
 notes = "Verified 2026-08-27: authenticated, smoke-tested --trust -p shape; binary corrected cursor->cursor-agent."
 
+# Story 84.1 (CAP-285): live model-list source for operator-run refresh.
+[model_list]
+catalog_provider = "cursor"
+command = ["cursor-agent", "models"]
+aliases = ["grok-4.6", "sonnet"]
+
 # No [wrapper] section -- deliberate, not an omission (Story 28.29,
 # SPEC-marshal-token-economy CAP-2, live-verified 2026-09-10). `headroom
 # wrap cursor --help` is Cursor-IDE-only: it tells a human to open Cursor

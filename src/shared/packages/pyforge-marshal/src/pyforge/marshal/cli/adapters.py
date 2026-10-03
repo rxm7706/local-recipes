@@ -69,14 +69,16 @@ import json
 import os
 import platform
 import secrets
+import tomllib
 from collections.abc import Callable, Mapping
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pyforge.core.errors import PyforgeError
 
 from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.model_list_live import LiveModelListFetch, fetch_live_ids_for_profile
 from ..adapters.harness_bmadloop import (
     HarnessError,
     HarnessPolicyWriteError,
@@ -105,13 +107,28 @@ from ..core.conformance import (
 from ..core.egress import to_redacted
 from ..core.model import Finding, Severity, build_envelope
 from ..core.refs import local_branch_ref
+from ..core.harness_profile import load_profiles
+from ..core.model_list_refresh import (
+    build_snapshot_payload,
+    collect_catalog_refs,
+    collect_profile_map_refs,
+    collect_tier_map_refs,
+    diff_harness_ids,
+    ensure_no_secret_in_text,
+    find_not_listed,
+    parse_snapshot_payload,
+    providers_named_by_profiles,
+    render_report_text,
+    snapshot_filename_for_date,
+    unchecked_catalog_providers,
+)
 from ..core.skill_projection import CANONICAL_SKILL_TREE_REL, plan_projection
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.record import RecordPort
 from ..ports.vcs import VcsPort
-from .config import _suppress_downstream_pipe_close, repo_root
+from .config import PROJECT_POLICY_RELPATH, _suppress_downstream_pipe_close, repo_root
 from .init import _home_path, _loop_home_root, _machine_state_dir
 
 if TYPE_CHECKING:
@@ -347,6 +364,29 @@ def add_adapters_subparser(subparsers: argparse._SubParsersAction) -> None:
         help="Output format (default: text).",
     )
     matrix_parser.set_defaults(handler=run_adapters_matrix)
+
+    models_parser = adapters_subparsers.add_parser(
+        "models",
+        help="Refresh harness live model lists and report drift (FR-232 / CAP-285).",
+        description=(
+            "Operator-run only: reads each profile's declared model-list source, "
+            "reports declared ids absent from the live list, and optionally writes "
+            "a dated snapshot under planning-artifacts/model-lists/."
+        ),
+    )
+    models_parser.add_argument("slug", help="The BMAD project slug (for planning-artifacts paths).")
+    models_parser.add_argument(
+        "--write",
+        action="store_true",
+        help="Write today's model-list snapshot JSON under planning-artifacts/model-lists/.",
+    )
+    models_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    models_parser.set_defaults(handler=run_adapters_models)
 
     entry_files_parser = adapters_subparsers.add_parser(
         "entry-files",
@@ -1894,6 +1934,237 @@ def run_adapters_matrix(
         )
 
     return _emit(args, data, findings, command="adapters matrix", renderer=_render_text_matrix)
+
+
+# =====================================================================
+# ``marshal adapters models`` (Story 84.1, FR-232 / CAP-285).
+# =====================================================================
+
+
+def _render_text_models(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
+    report = data.get("report")
+    lines: list[str] = []
+    if isinstance(report, str):
+        lines.append(report)
+    if findings:
+        lines.append("")
+        lines.append("findings:")
+        for finding in findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines) if lines else ""
+
+
+def _gather_declared_model_refs(root: Path, profiles: Mapping[str, object]) -> list:
+    from ..core.model_list_refresh import DeclaredModelRef
+
+    refs: list[DeclaredModelRef] = []
+    projects_root = root / "_bmad-output" / "projects"
+    if projects_root.is_dir():
+        for project_dir in sorted(projects_root.iterdir()):
+            if not project_dir.is_dir():
+                continue
+            policy_path = project_dir / "planning-artifacts" / "marshal-policy.toml"
+            if not policy_path.is_file():
+                continue
+            try:
+                policy_data = tomllib.loads(policy_path.read_text(encoding="utf-8"))
+            except tomllib.TOMLDecodeError:
+                continue
+            tier_map = policy_data.get("model_tier_map")
+            if not isinstance(tier_map, Mapping):
+                continue
+            pref = policy_data.get("harness_preference")
+            default_harness: str | None = None
+            if isinstance(pref, list) and pref and isinstance(pref[0], str):
+                default_harness = pref[0]
+            rel_policy = str(policy_path.relative_to(root))
+            refs.extend(
+                collect_tier_map_refs(
+                    policy_path=rel_policy,
+                    tier_map=tier_map,
+                    default_harness=default_harness,
+                )
+            )
+    marshal_policy = root / PROJECT_POLICY_RELPATH.format(slug="pyforge-marshal")
+    if marshal_policy.is_file():
+        try:
+            effective, _findings = policy.compose(project_slug="pyforge-marshal", project=None, flags={})
+            catalog = effective.model_cost_catalog.value
+            catalog_path = str(marshal_policy.relative_to(root))
+            provider_by_harness = {
+                name: (getattr(p, "model_list", None) and p.model_list.catalog_provider or "")
+                for name, p in profiles.items()
+                if hasattr(p, "model_list")
+            }
+            for harness, provider in provider_by_harness.items():
+                if provider:
+                    refs.extend(
+                        collect_catalog_refs(
+                            catalog=catalog,
+                            catalog_path=catalog_path,
+                            provider=provider,
+                            harness=harness,
+                        )
+                    )
+        except (OSError, PyforgeError):
+            pass
+    for name, profile in profiles.items():
+        if not hasattr(profile, "model_map"):
+            continue
+        profile_path = f"src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/{name}.toml"
+        refs.extend(
+            collect_profile_map_refs(
+                harness=name,
+                profile_path=profile_path,
+                model_map=dict(profile.model_map),
+            )
+        )
+    return refs
+
+
+def _newest_prior_snapshot(snapshot_dir: Path, before: date) -> Path | None:
+    if not snapshot_dir.is_dir():
+        return None
+    candidates: list[tuple[date, Path]] = []
+    for path in snapshot_dir.glob("model-list-*.json"):
+        stem = path.stem
+        if not stem.startswith("model-list-"):
+            continue
+        day_str = stem.removeprefix("model-list-")
+        try:
+            day = date.fromisoformat(day_str)
+        except ValueError:
+            continue
+        if day < before:
+            candidates.append((day, path))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: item[0])
+    return candidates[-1][1]
+
+
+def run_adapters_models(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    context: MarshalContext | None = None,
+) -> int:
+    """``marshal adapters models`` (Story 84.1, CAP-285): operator-run refresh."""
+    del context
+    fs = fs if fs is not None else LocalFs()
+    slug = args.slug
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-ADP-001",
+                severity=Severity.ERROR,
+                message=f"malformed project slug {slug!r}",
+            )
+        )
+        return _emit(args, data, findings, command="adapters models", renderer=_render_text_models)
+
+    root = repo_root()
+    profiles, overlay_errors = load_profiles(root)
+    for err in overlay_errors:
+        findings.append(Finding(code="MRS-DISP-028", severity=Severity.WARN, message=err))
+
+    fetcher = LiveModelListFetch(repo_root=str(root))
+    harness_results: dict[str, object] = {}
+    harness_ids: dict[str, frozenset[str]] = {}
+    aliases_by_harness: dict[str, frozenset[str]] = {}
+    catalog_provider_by_harness: dict[str, str] = {}
+
+    for name, profile in sorted(profiles.items()):
+        result = fetch_live_ids_for_profile(profile, fetcher)
+        harness_results[name] = result
+        harness_ids[name] = result.live_ids
+        source = profile.model_list
+        if source is not None:
+            aliases_by_harness[name] = frozenset(source.aliases)
+            if source.catalog_provider:
+                catalog_provider_by_harness[name] = source.catalog_provider
+        else:
+            aliases_by_harness[name] = frozenset()
+            harness_results[name] = type(result)(
+                harness=name,
+                status="unavailable",
+                live_ids=frozenset(),
+                reason="no source declared",
+            )
+
+    declared = _gather_declared_model_refs(root, profiles)
+    not_listed = find_not_listed(declared, harness_results, aliases_by_harness)
+    for item in not_listed:
+        findings.append(
+            Finding(
+                code="MRS-MDL-001",
+                severity=Severity.WARN,
+                message=(
+                    f"model {item.model_id!r} for harness {item.harness!r} not in live list "
+                    f"(declared in {item.source_file} key {item.source_key})"
+                ),
+            )
+        )
+
+    marshal_policy = root / PROJECT_POLICY_RELPATH.format(slug="pyforge-marshal")
+    unchecked: frozenset[str] = frozenset()
+    if marshal_policy.is_file():
+        try:
+            effective, _ = policy.compose(project_slug="pyforge-marshal", project=None, flags={})
+            named = providers_named_by_profiles(catalog_provider_by_harness)
+            unchecked = unchecked_catalog_providers(effective.model_cost_catalog.value, named)
+        except (OSError, PyforgeError):
+            pass
+
+    today = date.today()
+    snapshot_dir = root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "model-lists"
+    snapshot_diff = None
+    prior_path = _newest_prior_snapshot(snapshot_dir, today)
+    if prior_path is not None:
+        try:
+            prior_raw = json.loads(prior_path.read_text(encoding="utf-8"))
+            if isinstance(prior_raw, dict):
+                _prior_date, prior_ids = parse_snapshot_payload(prior_raw)
+                snapshot_diff = diff_harness_ids(prior_ids, harness_ids)
+        except (OSError, json.JSONDecodeError, ValueError):
+            pass
+
+    report = render_report_text(
+        not_listed=not_listed,
+        harness_results=harness_results,
+        unchecked_providers=unchecked,
+        snapshot_diff=snapshot_diff,
+    )
+    data["report"] = report
+    data["harness_results"] = {
+        name: {"status": r.status, "count": len(r.live_ids), "reason": r.reason}
+        for name, r in harness_results.items()
+    }
+
+    if args.write:
+        payload = build_snapshot_payload(
+            snapshot_date=today.isoformat(),
+            harness_ids=harness_ids,
+            harness_status={name: r.status for name, r in harness_results.items()},
+        )
+        snapshot_text = json.dumps(payload, indent=2, sort_keys=True)
+        for profile in profiles.values():
+            source = profile.model_list
+            if source and source.credential_env:
+                secret = os.environ.get(source.credential_env, "")
+                if secret:
+                    ensure_no_secret_in_text(snapshot_text, secret)
+        ensure_no_secret_in_text(report, os.environ.get("ANTHROPIC_API_KEY", ""))
+        ensure_no_secret_in_text(report, os.environ.get("GEMINI_API_KEY", ""))
+        out_path = snapshot_dir / snapshot_filename_for_date(today)
+        fs.ensure_dir(snapshot_dir)
+        fs.write_text_atomic(out_path, snapshot_text + "\n")
+        data["snapshot_path"] = str(out_path.relative_to(root))
+
+    return _emit(args, data, findings, command="adapters models", renderer=_render_text_models)
 
 
 # =====================================================================
