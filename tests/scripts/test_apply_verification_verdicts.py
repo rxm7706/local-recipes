@@ -10,10 +10,15 @@ it via ``subprocess.run([sys.executable, ...], check=False)``, and for
 error/collision paths asserts non-zero exit AND that the target ledger
 either doesn't exist or is byte-identical to a pre-run snapshot.
 
-One simplification vs. the promoter's own test: this script duplicates
-(rather than imports) its one regex dependency and never touches
-``pyforge.doctor`` at all, so no ``sys.path``/package-import setup is
-needed here."""
+The script duplicates (rather than imports) its one REGEX dependency, but
+since DW-doctor-38-1 it IMPORTS Story 38.1's ``verified_line_cites``
+predicate from ``pyforge.doctor.sources.chain`` -- a rule, unlike a pattern
+shape, must have one definition. These tests run under
+``-e pyforge-doctor``, where that package is importable, so the patched
+copy's own ``sys.path`` shim (which points into ``tmp_path`` and finds
+nothing) is harmless. Consequence for every fixture below: a verdict's
+``evidence`` must CITE something -- a ``path:line``, a ``path::symbol``, or
+a backtick-quoted command with its exit code -- or the script refuses it."""
 from __future__ import annotations
 
 import json
@@ -321,7 +326,7 @@ def test_unknown_entry_id_aborts_that_project_only_sibling_still_writes(tmp_path
     vfile = _write_verdicts(repo, [
         _verdict(entry_id="DW-9-9-9"),
         _verdict(project="pyforge-doctor", entry_id="DW-1-1-3", verdict="resolved",
-                  evidence="Both constraints were consolidated in a single follow-up PR."),
+                  evidence="Both constraints were consolidated in one follow-up PR: `pyproject.toml:14`."),
     ])
 
     r = _run(script, repo, "--verdicts-file", str(vfile))
@@ -344,7 +349,7 @@ def test_duplicate_project_id_pair_aborts_and_names_both_occurrences(tmp_path: P
     before = _tracked_text(repo, "pyforge-mason")
     vfile = _write_verdicts(repo, [
         _verdict(verdict="still-open"),
-        _verdict(verdict="resolved", evidence="A different, later evidence string entirely."),
+        _verdict(verdict="resolved", evidence="A different, later evidence string entirely: `setup.cfg:3`."),
     ])
 
     r = _run(script, repo, "--verdicts-file", str(vfile))
@@ -368,7 +373,7 @@ def test_reverification_appends_after_the_last_verified_line_prior_lines_untouch
     assert before.count("verified:") == 1
     vfile = _write_verdicts(repo, [
         _verdict(project="pyforge-doctor", entry_id="DW-1-1-3", verdict="resolved",
-                  evidence="Confirmed fixed by the shared pyproject.toml constraint added today."),
+                  evidence="Confirmed fixed by the shared constraint at `pyproject.toml:14`."),
     ])
 
     r = _run(script, repo, "--verdicts-file", str(vfile))
@@ -381,7 +386,7 @@ def test_reverification_appends_after_the_last_verified_line_prior_lines_untouch
     assert prior_line in after
     # The new line comes AFTER the prior one.
     assert after.index(prior_line) < after.rindex("verified:")
-    assert " — resolved — Confirmed fixed by the shared pyproject.toml" in after
+    assert " — resolved — Confirmed fixed by the shared constraint" in after
 
 
 # --- I/O matrix row: concurrent ledger change mid-run -----------------------
@@ -485,7 +490,7 @@ def test_two_project_batch_one_invalid_one_clean_writes_only_the_clean_one(tmp_p
     vfile = _write_verdicts(repo, [
         _verdict(project="pyforge-mason", entry_id="DW-1-1-1", verdict="not-a-real-verdict"),
         _verdict(project="pyforge-doctor", entry_id="DW-1-1-3", verdict="moot-superseded",
-                  evidence="Superseded by the shared pyproject.toml fix landed in PR #999."),
+                  evidence="Superseded by the shared fix at `pyproject.toml:14` (PR #999)."),
     ])
 
     r = _run(script, repo, "--verdicts-file", str(vfile))
@@ -496,7 +501,7 @@ def test_two_project_batch_one_invalid_one_clean_writes_only_the_clean_one(tmp_p
     assert _tracked_text(repo, "pyforge-mason") == mason_before
     doctor_after = _tracked_text(repo, "pyforge-doctor")
     assert doctor_after is not None
-    assert " — moot-superseded — Superseded by the shared pyproject.toml" in doctor_after
+    assert " — moot-superseded — Superseded by the shared fix" in doctor_after
 
 
 # --- Additional coverage: malformed input, missing flags, unknown project ---
@@ -605,7 +610,7 @@ def test_multiple_verdicts_in_one_project_batch_each_land_at_their_own_entry(tmp
         _verdict(entry_id="DW-1-1-1", verdict="still-open",
                   evidence="Re-checked: the panic is still reproducible at `tools.rs:461`."),
         _verdict(entry_id="DW-1-1-2", verdict="resolved",
-                  evidence="The .gitignore lines were removed in a follow-up commit."),
+                  evidence="The lines were removed in a follow-up commit: `.gitignore:3`."),
     ])
 
     r = _run(script, repo, "--verdicts-file", str(vfile))
@@ -617,7 +622,7 @@ def test_multiple_verdicts_in_one_project_batch_each_land_at_their_own_entry(tmp
     alpha_span = after[after.index("DW-1-1-1"):after.index("DW-1-1-2")]
     beta_span = after[after.index("DW-1-1-2"):]
     assert " — still-open — Re-checked: the panic" in alpha_span
-    assert " — resolved — The .gitignore lines" in beta_span
+    assert " — resolved — The lines were removed" in beta_span
 
 
 # --- Review pass: unknown/malicious project value never escapes the tree ---
@@ -732,7 +737,7 @@ def test_pending_on_precondition_verdict_is_accepted(tmp_path: Path):
     script = _patched_script(repo)
     vfile = _write_verdicts(repo, [
         _verdict(verdict="pending-on-precondition",
-                  evidence="Genuinely undecidable until Story 12.3 lands."),
+                  evidence="Genuinely undecidable until Story 12.3 lands; read `Makefile:12`."),
     ])
 
     r = _run(script, repo, "--verdicts-file", str(vfile))
