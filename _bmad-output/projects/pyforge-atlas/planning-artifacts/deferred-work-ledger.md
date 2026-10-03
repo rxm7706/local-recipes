@@ -4035,3 +4035,178 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
     So imports are ~0.36s of a 2.29s run and pandas is ~0.28s — **about 12% of the cost, not the cause.** The remaining ~1.95s is **Kedro framework bootstrap**: `main()` calls `configure_project()` and hands off to Kedro's Click group, which loads `kedro.framework.project` (installing its rich-logging config — the INFO banner naming `rich_logging.yml` is visible on any `--help`) and `kedro.framework.cli`. The original `python -X importtime` reading was taken inside an already-running interpreter, so it measured only the import half and attributed the whole gap to it.
   raised-correction: the proposed remedies were therefore also aimed wrong — a console entry point that skips the package, PEP 562 `__getattr__`, or narrowing the pandas guarantee would each save ~0.28s of a 2.29s problem while risking AUD-ATLAS-011. **The pandas pin should be left alone.**
   accepted: 2026-09-14 — Re-classified as accepted risk rather than an open defect, because the cost is **inherent to the architecture, not a repair**: atlas deliberately delegates its CLI to Kedro's own Click group, and you cannot render Kedro's help without building Kedro's CLI. Story 7.1's `--version` intercept works precisely because that output is atlas's own; `--help`'s is not, so the same trick cannot apply without atlas hand-authoring a help surface that would then drift from the commands Kedro actually exposes. The CI symptom — `guild-container` flaking on a 10s `cli-smoke` budget — is fixed and stays fixed by the 10→30 raise, which is now justified by the *right* reason: this is a Kedro bootstrap inherent to the station, not a fixable import. Anyone who later wants a sub-second `pyforge-atlas --help` is proposing that atlas stop delegating its CLI to Kedro, which is an architecture decision needing its own Dream — not a startup micro-optimisation.
+
+### DW-FRR-11-2: Follow-up review still recommended for story 11.2
+
+- source_spec: `planning-artifacts/specs/spec-11-2-publish-the-real-dag-continuously-fr-62.md`
+  summary: Story 11.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-11-2-publish-the-real-dag-continuously-fr-62.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-18-2: Follow-up review still recommended for story 18.2
+
+- source_spec: `planning-artifacts/specs/spec-18-2-first-portal-slice-one-inventory-run-row.md`
+  summary: Story 18.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-18-2-first-portal-slice-one-inventory-run-row.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-15-2: Follow-up review still recommended for story 15.2
+
+- source_spec: `planning-artifacts/specs/spec-15-2-httpx-opener-and-rehearsal-cap-2-cap-3.md`
+  summary: Story 15.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-15-2-httpx-opener-and-rehearsal-cap-2-cap-3.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-16-1: Follow-up review still recommended for story 16.1
+
+- source_spec: `planning-artifacts/specs/spec-16-1-the-from-scratch-run-is-a-chartered-capability.md`
+  summary: Story 16.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 16.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-16-1-the-from-scratch-run-is-a-chartered-capability.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-16-2: Follow-up review still recommended for story 16.2
+
+- source_spec: `planning-artifacts/specs/spec-16-2-handoffs-are-execution-ready.md`
+  summary: Story 16.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-16-2-handoffs-are-execution-ready.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-17-1: Follow-up review still recommended for story 17.1
+
+- source_spec: `planning-artifacts/specs/spec-17-1-map-existing-kedro-hooks-to-cap-18.md`
+  summary: Story 17.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-17-1-map-existing-kedro-hooks-to-cap-18.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-19-1: Follow-up review still recommended for story 19.1
+
+- source_spec: `planning-artifacts/specs/spec-19-1-one-boot-script-raises-both-plane-faces-cap-5.md`
+  summary: Story 19.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 19.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-19-1-one-boot-script-raises-both-plane-faces-cap-5.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-19-4: Follow-up review still recommended for story 19.4
+
+- source_spec: `planning-artifacts/specs/spec-19-4-the-cis-two-spine-specs-exist-cap-7.md`
+  summary: Story 19.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-19-4-the-cis-two-spine-specs-exist-cap-7.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-19-5: Follow-up review still recommended for story 19.5
+
+- source_spec: `planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md`
+  summary: Story 19.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-19-5-port-the-remaining-nineteen-vizro-pages-cap-7.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-20-2: Follow-up review still recommended for story 20.2
+
+- source_spec: `planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md`
+  summary: Story 20.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 20.2 landed on origin/main (Merge pull request #929 from rxm7706/pyforge-atlas/sprint-ledger-sync-epic-20-21-23); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-20-2-remove-cf_atlas-db-seeds-from-production-datasets.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-20-3: Follow-up review still recommended for story 20.3
+
+- source_spec: `planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md`
+  summary: Story 20.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 20.3 landed on origin/main (Merge pull request #1300 from rxm7706/herald/20-3-pyforge-atlas-poster); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-20-3-tier-0-harden-and-live-catalog-contract.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-20-4: Follow-up review still recommended for story 20.4
+
+- source_spec: `planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md`
+  summary: Story 20.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 20.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-20-4-tier-1-catalog-sources-selfexplainml-anaconda-basilisk-aoss.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-20-7: Follow-up review still recommended for story 20.7
+
+- source_spec: `planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md`
+  summary: Story 20.7 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-20-7-quartet-thin-out-and-gist-wrapper.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-20-8: Follow-up review still recommended for story 20.8
+
+- source_spec: `planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md`
+  summary: Story 20.8 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-20-8-end-to-end-verification-gate.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-22-9: Follow-up review still recommended for story 22.9
+
+- source_spec: `planning-artifacts/specs/spec-22-9-quartet-workbook-retirement-thin-actuators-no-openpyxl-in-scripts.md`
+  summary: Story 22.9 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-22-9-quartet-workbook-retirement-thin-actuators-no-openpyxl-in-scripts.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed

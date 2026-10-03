@@ -25,7 +25,7 @@ from pyforge.marshal.cli.dispatch import (
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
-from pyforge.marshal.core.dispatch_harness_done import FollowupReview
+from pyforge.marshal.core.dispatch_harness_done import FollowupReview, parse_spec_status
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.model import Severity
 from pyforge.marshal.core.refs import ORIGIN_MAIN
@@ -284,6 +284,22 @@ def _steward_failing_report_on_stderr(*non_ok: str) -> ProcessResult:
     return ProcessResult(returncode=1, stdout="", stderr=report + "\n")
 
 
+def _steward_stale_codegraph_report_on_stderr() -> ProcessResult:
+    """Story 83.6: steward's shape when only the codegraph index is stale."""
+    findings = [
+        {"name": "token-kit", "ok": False, "detail": "codegraph-index: stale", "remedy": "marshal seed kit"},
+        {
+            "name": "codegraph-index",
+            "ok": False,
+            "detail": "codegraph-index: stale -- predates HEAD",
+            "remedy": "marshal seed kit",
+        },
+        {"name": "pixi-guild", "ok": True, "detail": "fine", "remedy": None},
+    ]
+    report = json.dumps({"ok": False, "findings": findings}, indent=2)
+    return ProcessResult(returncode=1, stdout="", stderr=report + "\n")
+
+
 def test_surface_session_precondition_findings_reads_the_report_from_stderr(tmp_path: Path) -> None:
     class Proc:
         def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
@@ -332,6 +348,91 @@ def test_surface_session_precondition_findings_prefers_a_stdout_report(tmp_path:
     assert finding is not None
     assert "gh-auth" in finding.message
     assert "tier3-feed" not in finding.message
+
+
+def test_surface_session_precondition_resyncs_stale_codegraph_then_clears_warn(tmp_path: Path) -> None:
+    """Story 83.6 AC1: stale-only session check triggers resync and a clean re-check."""
+    resync_calls: list[tuple[Path, bool]] = []
+
+    def index_builder(root: Path, *, stale: bool, process=None) -> str | None:
+        resync_calls.append((root, stale))
+        assert stale is True
+        return None
+
+    class Proc:
+        def __init__(self) -> None:
+            self.checks = 0
+
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            assert list(argv) == list(dispatch_module._SESSION_CHECK_ARGV)
+            self.checks += 1
+            if self.checks == 1:
+                return _steward_stale_codegraph_report_on_stderr()
+            return ProcessResult(returncode=0, stdout="", stderr="")
+
+    proc = Proc()
+    finding = _surface_session_precondition_findings(process=proc, repo_root=tmp_path, index_builder=index_builder)
+    assert finding is None
+    assert proc.checks == 2
+    assert resync_calls == [(tmp_path, True)]
+
+
+def test_surface_session_precondition_resync_failure_still_warns(tmp_path: Path) -> None:
+    """Story 83.6 AC2: a failed resync leaves MRS-DISP-049 and never blocks."""
+
+    def failing_builder(_root: Path, *, stale: bool, process=None) -> str:
+        return "codegraph sync exited 1"
+
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            return _steward_stale_codegraph_report_on_stderr()
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path, index_builder=failing_builder)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
+
+
+def test_surface_session_precondition_skips_resync_when_other_findings_non_ok(tmp_path: Path) -> None:
+    """Story 83.6 AC3: gh-auth (or any third non-ok row) skips resync."""
+    resync_calls: list[Path] = []
+
+    def index_builder(root: Path, *, stale: bool, process=None) -> str | None:
+        resync_calls.append(root)
+        return None
+
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            findings = [
+                {"name": "token-kit", "ok": False, "detail": "codegraph-index: stale"},
+                {"name": "codegraph-index", "ok": False, "detail": "codegraph-index: stale"},
+                {"name": "gh-auth", "ok": False, "detail": "not logged in"},
+            ]
+            report = json.dumps({"ok": False, "findings": findings}, indent=2)
+            return ProcessResult(returncode=1, stdout="", stderr=report + "\n")
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path, index_builder=index_builder)
+    assert finding is not None
+    assert "gh-auth" in finding.message
+    assert resync_calls == []
+
+
+def test_surface_session_precondition_resync_is_required_for_stale_clear(tmp_path: Path) -> None:
+    """Story 83.6 mutation: without the resync step the stale warning remains."""
+
+    class Proc:
+        def __init__(self) -> None:
+            self.checks = 0
+
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            self.checks += 1
+            return _steward_stale_codegraph_report_on_stderr()
+
+    def noop_builder(_root: Path, *, stale: bool, process=None) -> str | None:
+        return None
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path, index_builder=noop_builder)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
 
 
 def test_dispatch_once_surfaces_mrs_disp_049_when_session_check_non_ok(
@@ -1699,6 +1800,65 @@ _BLOCKED_SPEC = (
 )
 
 
+def test_a_backlog_worktree_spec_is_rewritten_before_launch_and_journaled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.8: worktree ``backlog`` -> ``ready-for-dev``; primary copy and ledger untouched."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    primary_spec = specs / f"spec-{story}.md"
+    worktree = _write_worktree_spec(tmp_path, slug, story, _BACKLOG_SPEC)
+    worktree_spec = worktree / primary_spec.relative_to(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    fs = FakeFs()
+    harness = FakeBuildHarness()
+    dispatch_once(
+        slug=slug,
+        story=story,
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert len(harness.calls) == 1
+    assert parse_spec_status(worktree_spec.read_text(encoding="utf-8")) == "ready-for-dev"
+    assert parse_spec_status(primary_spec.read_text(encoding="utf-8")) == "ready-for-dev"
+    intent = _launch_intent(fs)
+    assert intent["spec_status_rewrite"] == {"from": "backlog", "to": "ready-for-dev"}
+
+
+def test_launch_without_the_backlog_rewrite_leaves_the_worktree_spec_at_backlog(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.8 mutation: disabling the rewrite leaves ``backlog`` on disk and off the journal."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    primary_spec = specs / f"spec-{story}.md"
+    worktree = _write_worktree_spec(tmp_path, slug, story, _BACKLOG_SPEC)
+    worktree_spec = worktree / primary_spec.relative_to(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        dispatch_core,
+        "rewrite_worktree_spec_status_for_bmad_build_auto",
+        lambda text: (text, None),
+    )
+    fs = FakeFs()
+    dispatch_once(
+        slug=slug,
+        story=story,
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert parse_spec_status(worktree_spec.read_text(encoding="utf-8")) == "backlog"
+    assert "spec_status_rewrite" not in _launch_intent(fs)
+
+
 def test_blocked_spec_does_not_relaunch_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 51.4: worktree spec status: blocked -> MRS-DISP-045, 0 launches, no CAP-4 land attempt."""
     slug = "pyforge-marshal"
@@ -2847,6 +3007,33 @@ def test_relocated_spec_path_keeps_already_worktree_path(tmp_path: Path) -> None
     target = wt / rel
     target.write_text("ok\n", encoding="utf-8")
     assert dispatch_core.relocated_spec_path(target, repo, wt) == target.resolve()
+
+
+_BACKLOG_SPEC = "---\nstatus: 'backlog'\ndifficulty: medium\n---\n# spec\n"
+
+
+def test_rewrite_worktree_spec_status_for_bmad_build_auto_rewrites_backlog_only() -> None:
+    """Story 83.8: the pure rewrite is the mutation guard's seam."""
+    rewritten, payload = dispatch_core.rewrite_worktree_spec_status_for_bmad_build_auto(_BACKLOG_SPEC)
+    assert payload == {"from": "backlog", "to": "ready-for-dev"}
+    assert parse_spec_status(rewritten) == "ready-for-dev"
+    assert parse_spec_status(_BACKLOG_SPEC) == "backlog"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        _READY_SPEC,
+        "---\nstatus: in-progress\ndifficulty: medium\n---\n",
+        _DONE_SPEC,
+        _BLOCKED_SPEC,
+        "---\ndifficulty: medium\n---\n# no status key\n",
+    ],
+)
+def test_rewrite_worktree_spec_status_for_bmad_build_auto_leaves_every_other_shape_unchanged(text: str) -> None:
+    new, payload = dispatch_core.rewrite_worktree_spec_status_for_bmad_build_auto(text)
+    assert new == text
+    assert payload is None
 
 
 def test_relocated_spec_path_rejects_unrelated_path(tmp_path: Path) -> None:

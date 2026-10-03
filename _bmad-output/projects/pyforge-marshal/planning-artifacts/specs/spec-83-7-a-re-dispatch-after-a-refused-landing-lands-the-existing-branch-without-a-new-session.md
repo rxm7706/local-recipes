@@ -77,6 +77,11 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
+### 2026-10-03 — Landing (operator session)
+- The second session (run `pyforge-marshal-20261003T095540348Z-29d5d440`) passed dispatch verification; the landing refused MRS-DISP-038 on `cli/dispatch.py`, `.claude/memory/MEMORY.md` and the Spec memlog after Stories 83.8 and 83.6 landed. Merged `origin/main` by hand: `dispatch_once` keeps 83.8's `backlog` -> `ready-for-dev` worktree rewrite first, then this story's refused-landing land-only decision; `MEMORY.md` keeps both index lines; the memlog is the union of both sides.
+- Reviewed against the amended intent: `should_take_harness_done_land_only` applies the refused-landing rule only to `in-progress`/`in-review`, and `ready-for-dev`/`draft` always launch a session (pinned by `test_refused_landing_does_not_force_land_only_after_send_back_to_draft` and the `ready-for-dev` cases). Accepted.
+- Green on the merge: `lint-types`, `pyforge-marshal-test` (10856 passed), `pyforge-deps-test`, `pyforge-core-test`, `deferred-work-check`, `spec_surface_reconcile.py`.
+
 ### 2026-10-03 — Landing review (operator session) — sent back
 - Dispatch run `pyforge-marshal-20261003T033616311Z-73036a43` failed verification on the operator's launch environment (`python` not on PATH; not this story's code).
 - `high` `patch` `should_take_harness_done_land_only` returns True whenever the latest run journaled a refused `dispatch-land`, whatever the worktree spec says. A story the operator sends back after a refused landing (status reset to `ready-for-dev` because review found a defect) would then take land-only: re-verify, and merge the known-bad branch if verification passes. On 2026-10-03 landing review found a defect verification cannot see (83.3's deferred-work union deleting 275 of 484 live entries); had that branch been refused at landing instead of at verification, this rule would have merged it. Apply the refused-landing rule only while the spec reads `in-progress` or `in-review`; `ready-for-dev` and `draft` always launch a session. Keep the shared rule in `core/dispatch_harness_done.py` so `cli/dispatch.py` and `cli/drain_plan.py` agree.
