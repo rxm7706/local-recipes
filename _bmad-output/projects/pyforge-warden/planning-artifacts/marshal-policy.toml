@@ -233,6 +233,23 @@ verify_commands = [
   "src/shared/packages/pyforge-core/tests/**",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"17" = [  # Phase 4+5 of the deferral burn-down: warden's open medium and low deferrals (fix, no CAP), added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus what Story 17.1's rows
+  # reach outside the package: the portal slice and its host tests, the warden ledger, and every Spec
+  # memlog (co-governor reconciles).
+  "src/shared/packages/pyforge-warden/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-warden/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/django-warden/**",
+  "src/platform/tests/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
