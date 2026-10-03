@@ -4722,7 +4722,13 @@ def _verification(path: Path) -> list[tuple[str, str | None]]:
 def _parse_verified_date(raw: str) -> date | None:
     """The leading ``YYYY-MM-DD`` token of a raw ``verified:`` line's value,
     or ``None`` when it cannot be parsed as one -- a malformed date must fail
-    toward re-checking ("never-verified"), never raise (I/O matrix)."""
+    toward re-checking ("never-verified"), never raise (I/O matrix).
+
+    A date AFTER today is still returned here, not discarded: the caller
+    needs it to name the future date in its own finding
+    (``_future_verified_date``, DW-FU-11-1). What must never happen is
+    SILENTLY reading it as fresh, which is the caller's branch to get right,
+    not this one's."""
     token = raw.strip().split(maxsplit=1)[0] if raw.strip() else ""
     try:
         return date.fromisoformat(token)
@@ -5444,15 +5450,28 @@ def _check_project_due_for_verification(
         strict=True,
     ):
         parsed = _parse_verified_date(raw_verified) if raw_verified else None
-        if parsed is None:
+        if parsed is None or parsed > today:
+            # DW-FU-11-1: a `verified:` line dated after today -- a typo'd
+            # year (`2126-07-15` for `2026-07-15`) is the live shape --
+            # parses cleanly and yields a large NEGATIVE `days_stale`, so the
+            # entry read as permanently fresh and was silently exempt from
+            # ever being selected again: exactly the class of gap this epic
+            # exists to catch. It is due, like a never-verified entry, and
+            # its `reason` names the defect instead of hiding it inside the
+            # never-verified bucket.
             item = {
                 "kind": "due-for-verification",
-                "reason": "never-verified",
+                "reason": "verified-date-in-future" if parsed else "never-verified",
                 "project": proj.name,
                 "id": entry_id,
                 "tracked": str(tracked_path.relative_to(target)),
                 "other_project_roots": dict(other_roots),
             }
+            if parsed:
+                item["verified_on"] = parsed.isoformat()
+                item["today"] = today.isoformat()
+            # The churn window cannot open at a date that has not happened;
+            # fall back to the authoring proxy, as for a never-verified entry.
             since = _authored_date(target, tracked_path, entry_id) if paths else None
             _attach_churn_skip(target, item, paths, since)
             if item.get("skip_reason") != "no-churn":
@@ -5730,7 +5749,13 @@ def _verification_coverage(target: Path, *, today: date | None = None) -> list[d
     ``_check_project_due_for_verification``'s own ``days_stale >
     DUE_FOR_VERIFICATION_STALENESS_DAYS`` test uses, just read the other way
     round, so a project's coverage percentage and its own per-entry due
-    findings always agree about which entries are "due" versus "fresh"."""
+    findings always agree about which entries are "due" versus "fresh".
+
+    A date AFTER ``as_of`` does NOT count as verified (DW-FU-11-1): its
+    ``(as_of - parsed).days`` is negative, which the one-sided test above
+    read as "comfortably inside the window" and so as coverage this project
+    had not earned. The per-entry selector reports the same entry due, so
+    without this the two halves disagreed about the same entry."""
     as_of = today if today is not None else date.today()  # noqa: DTZ011 --
     # mirrors `_due_for_verification_findings`'s own identical, deliberately
     # unfixed `today is not None else date.today()` call boundary below.
@@ -5861,6 +5886,14 @@ def _due_for_verification_message(item: dict) -> str:
                 f"{item['project']}/{item['id']}: no `verified:` line "
                 f"in {item['tracked']} — never re-checked against live "
                 f"code."
+            )
+        elif item["reason"] == "verified-date-in-future":
+            message = (
+                f"{item['project']}/{item['id']}: its `verified:` line in "
+                f"{item['tracked']} is dated {item['verified_on']}, after "
+                f"today ({item['today']}) — a date that has not happened "
+                f"cannot be a re-check, and reads as permanently fresh. Fix "
+                f"the date, then re-check against live code."
             )
         else:
             message = (
