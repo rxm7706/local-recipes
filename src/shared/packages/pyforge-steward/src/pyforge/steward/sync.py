@@ -301,19 +301,21 @@ def _load_github_only_marker(document_path: Path, section: object) -> GitHubOnly
     field_id_str = field_id if isinstance(field_id, str) else ""
     field_value_str = field_value if isinstance(field_value, str) else ""
     has_label = bool(label_str.strip())
-    has_field_id_key = "field_id" in section
-    has_field_value_key = "field_value" in section
+    field_keys = [key for key in ("field_id", "field_value") if key in section]
     has_field_pair = bool(field_id_str.strip() and field_value_str.strip())
-    if has_label and (has_field_id_key or has_field_value_key):
+    if "label" in section and field_keys:
+        missing = [key for key in ("field_id", "field_value") if key not in section]
+        declared = " and ".join(repr(key) for key in field_keys)
+        lacking = f" but no {missing[0]!r}" if missing else ""
         raise SyncConfigError(
-            f"{document_path}: 'github_only_marker' must declare either 'label' or 'field_id'+'field_value', not both"
+            f"{document_path}: 'github_only_marker' declares 'label' with {declared}{lacking}; "
+            "declare either 'label' or the 'field_id'+'field_value' pair, not both"
         )
-    if has_field_id_key or has_field_value_key:
-        if not has_field_pair:
-            raise SyncConfigError(
-                f"{document_path}: 'github_only_marker' must declare 'field_id' and "
-                "'field_value' together when either is present"
-            )
+    if field_keys and not has_field_pair:
+        raise SyncConfigError(
+            f"{document_path}: 'github_only_marker' must declare 'field_id' and "
+            "'field_value' together when either is present"
+        )
     if not has_label and not has_field_pair:
         if not section:
             raise SyncConfigError(f"{document_path}: 'github_only_marker' must not be an empty mapping")

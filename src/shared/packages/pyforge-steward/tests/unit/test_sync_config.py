@@ -208,7 +208,7 @@ github_only_marker:
 """,
     )
 
-    with pytest.raises(SyncConfigError, match="not both"):
+    with pytest.raises(SyncConfigError, match="declares 'label' with 'field_id' but no 'field_value'"):
         load_config(path)
 
 
@@ -223,7 +223,23 @@ github_only_marker:
 """,
     )
 
-    with pytest.raises(SyncConfigError, match="not both"):
+    with pytest.raises(SyncConfigError, match="declares 'label' with 'field_value' but no 'field_id'"):
+        load_config(path)
+
+
+def test_github_only_marker_rejects_blank_label_with_field_pair(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  label: ""
+  field_id: PVTF_scope
+  field_value: GitHub only
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="declares 'label' with 'field_id' and 'field_value'"):
         load_config(path)
 
 

@@ -350,14 +350,33 @@ def test_schedule_batch_prod_alias_env_flag_off_marked_item_unlinked(monkeypatch
                     "labels": {"nodes": [{"name": "github-only"}]},
                 },
             },
+            "ITEM_2": {
+                "fields": {
+                    "gh_link": "PROJ-1",
+                    "gh_status": "In Progress",
+                    "gh_baseline": '{"status": "In Progress"}',
+                }
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {
+                    "jira_link": "ITEM_2",
+                    "jira_baseline": '{"status": "In Progress"}',
+                    "status": {"name": "In Progress"},
+                },
+                "transitions": [],
+            }
         },
     )
 
     result = reconcile_schedule_batch(config=config, transport=transport)
 
-    entry = result.details["candidates"][0]
-    assert entry["ok"] is False
-    assert "unlinked" in entry["summary"]
+    assert len(result.details["candidates"]) == 2
+    by_id = {entry["github_item_id"]: entry for entry in result.details["candidates"]}
+    assert by_id["ITEM_1"]["ok"] is False
+    assert "unlinked" in by_id["ITEM_1"]["summary"]
+    assert by_id["ITEM_2"]["ok"] is True
     assert any(
         SYNC_GITHUB_ONLY_MARKER_FLAG in record.message and record.levelno == logging.WARNING
         for record in caplog.records

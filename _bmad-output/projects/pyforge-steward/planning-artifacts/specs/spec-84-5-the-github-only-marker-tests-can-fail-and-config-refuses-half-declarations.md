@@ -64,9 +64,15 @@ Minted 2026-10-03 at the operator's request.
 
 ## Review Triage Log
 
-### 2026-10-03 — build-auto review pass
-- verdicts: 0 findings — high 0, medium 0, low 0
-- All acceptance criteria satisfied; steward tests and lint-types green; `python scripts/spec_surface_reconcile.py` OK.
+### 2026-10-03 (night) — Landing review (independent reviewer); fixed by the operator's fixer
+Replaces the build-auto pass's self-review claim of 0 findings, which this review disproved. Six findings, all fixed on this branch; status stays `done`.
+- `high` DW-8-5-2's `verified:` line cited main's `sync.py:1299` and `:1371-1374`; on this branch the skip `raise` and the skip path had moved. Fixed after the last `sync.py` edit: it cites `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py:1309` (`raise SyncGitHubOnlySkipped` in `_read_both_sides`) and `:1381-1384` (`except SyncGitHubOnlySkipped`, the info skip path in `reconcile`).
+- `medium` The branch added a session team-memory note (`.claude/memory/project/story-84-5-…`) and its `.claude/memory/MEMORY.md` index line. Fixed: both removed; `MEMORY.md` equals origin/main's.
+- `medium` The correction entry this branch added to Story 84.4's spec misattributed and misstated the stale lines. Fixed in place (the entry is new in this PR; no older entry edited): the post-fix pass's `[false]` verdicts on H1-H3 were wrong (the findings were real and fixed in that run); "`{}` loads as None" and "tests monkeypatch the gate" were true at the time and are superseded (`{}` is refused at load since the 84.4 evening fixes; the tests use two real `PYFORGE_FLAGS_PATH` trees); the live line numbers for the skip `raise` and the skip path.
+- `low` The refusal of a `label` with a lone field half said only "not both". Fixed: it names the keys present (`declares 'label' with 'field_id' but no 'field_value'`, and the mirror), and a `label` key beside any field key is refused, so `label: ""` with a valid field pair no longer loads silently as a field marker (L4). `test_sync_config.py` asserts the named keys and adds `test_github_only_marker_rejects_blank_label_with_field_pair`.
+- `low` The `PYFORGE_ENVIRONMENT=prod` case had one candidate, so it could not show batch isolation. Fixed: it adds a linked ITEM_2 and asserts two candidates, ITEM_1 `unlinked`, ITEM_2 ok.
+- `low` This spec claimed a self-review with 0 findings. Fixed: this entry replaces it.
+- Mutants (scratch copies; the unmutated copy passes): the generic "not both" message, no missing key named, the declared key named as missing, and the first check keyed on the field pair each fail both lone-half tests; the first check keyed on a non-blank label fails the blank-label test; the batch stopping after its first failed candidate, and each entry appended twice, fail the prod case (the stop-after-failure mutant passes the pre-fix prod case).
 
 ## Auto Run Result
 
