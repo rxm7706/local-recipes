@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ipaddress
+
 import pytest
 
 from pyforge.steward.dashboard.declarations import (
@@ -239,9 +241,7 @@ def test_trusted_ingress_rejects_a_whitespace_padded_address():
     padding. Same config-file provenance as the header-name case; rejected
     rather than trimmed so the declaration means what it says.
 
-    This constrains only surrounding whitespace — never the address FORM
-    (CIDR, hostname, IPv6 spellings), which stays with Story 9.5 on the
-    deferred-work ledger.
+    Story 84.3 constrains address FORM to parseable IP networks only.
     """
     with pytest.raises(ValueError, match="leading/trailing whitespace"):
         TrustedIngress(
@@ -250,13 +250,32 @@ def test_trusted_ingress_rejects_a_whitespace_padded_address():
             role_header="X-Forwarded-Role",
         )
 
-    # The forms that story may still choose to support are NOT forbidden here.
-    for tolerated in ("10.0.0.0/24", "proxy.internal", "::ffff:10.0.0.1"):
+    TrustedIngress(
+        addresses=("10.0.0.0/24",),
+        identity_header="X-Forwarded-User",
+        role_header="X-Forwarded-Role",
+    )
+
+
+def test_trusted_ingress_rejects_a_hostname_address():
+    """Story 84.3: hostnames cannot match an ASGI peer host and must fail at construction."""
+    with pytest.raises(ValueError, match=r"addresses\[0\].*proxy\.internal"):
         TrustedIngress(
-            addresses=(tolerated,),
+            addresses=("proxy.internal",),
             identity_header="X-Forwarded-User",
             role_header="X-Forwarded-Role",
         )
+
+
+def test_trusted_ingress_accepts_bare_ip_as_one_address_network():
+    """Story 84.3: a bare IP literal is a /32 (or /128) network."""
+    ingress = TrustedIngress(
+        addresses=("10.0.0.1",),
+        identity_header="X-Forwarded-User",
+        role_header="X-Forwarded-Role",
+    )
+    assert len(ingress._networks) == 1
+    assert ingress._networks[0].network_address == ipaddress.IPv4Address("10.0.0.1")
 
 
 def test_access_declaration_rejects_whitespace_padded_fields():

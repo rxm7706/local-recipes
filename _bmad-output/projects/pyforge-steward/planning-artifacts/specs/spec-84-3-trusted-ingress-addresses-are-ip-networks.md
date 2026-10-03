@@ -2,7 +2,8 @@
 title: "84.3: Trusted ingress addresses are IP networks"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '861bf2bcc15d71702693a58dabada103df411cb9'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

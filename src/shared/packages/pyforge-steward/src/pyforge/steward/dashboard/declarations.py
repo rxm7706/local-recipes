@@ -16,8 +16,9 @@ installed.
 
 from __future__ import annotations
 
+import ipaddress
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 # Story 9.3: the widest gap any two representable datetimes can have, so a
@@ -159,6 +160,9 @@ class TrustedIngress:
     addresses: tuple[str, ...]
     identity_header: str
     role_header: str
+    _networks: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = field(
+        init=False, repr=False, compare=False
+    )
 
     def __post_init__(self) -> None:
         if not isinstance(self.addresses, tuple):
@@ -211,6 +215,17 @@ class TrustedIngress:
                     f"leading/trailing whitespace — the ASGI peer host it is "
                     f"compared against never does, so it can never match"
                 )
+        networks: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+        for index, address in enumerate(self.addresses):
+            try:
+                networks.append(ipaddress.ip_network(address, strict=False))
+            except ValueError as exc:
+                raise ValueError(
+                    f"TrustedIngress.addresses[{index}] {address!r} is not a "
+                    f"valid IP network — a hostname or malformed address can "
+                    f"never match an ASGI peer host, so it must fail here"
+                ) from exc
+        object.__setattr__(self, "_networks", tuple(networks))
         for field_name, header in (
             ("identity_header", self.identity_header),
             ("role_header", self.role_header),
