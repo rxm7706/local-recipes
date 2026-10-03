@@ -75,7 +75,7 @@ from ..core.dispatch_verification import (
     primary_gate_failure,
 )
 from ..core.policy import resolve_verify_fix_settings
-from ..core.egress import to_redacted_text
+from ..core.egress import redact_raw_text, to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
     LAND_FINDINGS_FIELD,
@@ -1796,11 +1796,12 @@ def _run_and_journal_verification(
             combined = "\n".join(part for part in (item.stdout, item.stderr) if part.strip())
             encoded = combined.encode("utf-8", errors="replace")
             tail = encoded[-fix_settings.output_tail_bytes :].decode("utf-8", errors="replace")
+            redacted_tail = redact_raw_text(tail) or ""
             failed_commands_payload.append(
                 {
                     "command": item.command,
                     "exit_code": item.exit_code,
-                    "output_tail": to_redacted_text(tail),
+                    "output_tail": redacted_tail,
                 }
             )
     # Story 28.15 (CAP-17): a `warn`-mode scope-violation advisory never
