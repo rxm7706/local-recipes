@@ -4,19 +4,23 @@
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+from pyforge.scribe import compile as compile_module
 from pyforge.scribe.capture import capture
 from pyforge.scribe.compile import compile_graph
 from pyforge.scribe.graph_store import FlatFileGraphStore
 from pyforge.scribe.models import GraphNode
 from pyforge.scribe.recall import _answer_semantic, answer
+from pyforge.scribe.transcripts import TranscriptCandidate, TranscriptScanProposal
 
 
 def _node(**overrides) -> GraphNode:
@@ -37,6 +41,68 @@ def repo_with_citation(tmp_path: Path) -> Path:
     (tmp_path / "notes").mkdir()
     (tmp_path / "notes" / "kuzu-drop.md").write_text("content", encoding="utf-8")
     return tmp_path
+
+
+def test_lexical_tie_break_prefers_newer_valid_from(repo_with_citation: Path) -> None:
+    """Story 26.1 / DW-FU-3-2-4: equal overlap → newer ``valid_from`` wins."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    shared = "We decided to drop Kuzu because upstream archived the project."
+    store.upsert_node(
+        _node(
+            id="transcript:session-a.jsonl:L1",
+            kind="transcript",
+            citation="session-a.jsonl:L1",
+            text=shared,
+            valid_from=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        )
+    )
+    store.upsert_node(
+        _node(
+            id="transcript:session-b.jsonl:L1",
+            kind="transcript",
+            citation="session-b.jsonl:L1",
+            text=shared,
+            valid_from=datetime(2026, 9, 1, tzinfo=timezone.utc),
+        )
+    )
+    store.commit()
+
+    result = answer("why drop Kuzu archived upstream", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.node_id == "transcript:session-b.jsonl:L1"
+
+
+def test_lexical_tie_break_equal_valid_from_orders_by_id(repo_with_citation: Path) -> None:
+    when = datetime(2026, 8, 15, tzinfo=timezone.utc)
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    shared = "We decided to drop Kuzu because upstream archived the project."
+    store.upsert_node(
+        _node(
+            id="transcript:session-z.jsonl:L1",
+            kind="transcript",
+            citation="session-z.jsonl:L1",
+            text=shared,
+            valid_from=when,
+        )
+    )
+    store.upsert_node(
+        _node(
+            id="transcript:session-a.jsonl:L1",
+            kind="transcript",
+            citation="session-a.jsonl:L1",
+            text=shared,
+            valid_from=when,
+        )
+    )
+    store.commit()
+
+    result = answer("why drop Kuzu archived upstream", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.node_id == "transcript:session-a.jsonl:L1"
 
 
 def test_grounded_match_returns_citation(repo_with_citation: Path) -> None:
@@ -224,10 +290,76 @@ def test_transcript_citation_is_resolvable_if_well_formed(repo_with_citation: Pa
     assert result.citation == "session-a.jsonl:L1"
 
 
+def test_nested_transcript_citation_is_resolvable_and_recallable(repo_with_citation: Path) -> None:
+    """Story 26.1 landing review: nested ``dir-a/session-x.jsonl:L1`` must recall."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="transcript:dir-a/session-x.jsonl:L1",
+            kind="transcript",
+            citation="dir-a/session-x.jsonl:L1",
+            text="We decided to adopt SQLite for the edge cache layer.",
+        )
+    )
+    store.commit()
+
+    result = answer("edge cache SQLite", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.citation == "dir-a/session-x.jsonl:L1"
+
+
+def test_compile_then_recall_nested_transcript_citation(tmp_path: Path) -> None:
+    """Story 26.1 landing review: compile must emit nested citations recall accepts."""
+    memory_root = tmp_path / ".claude" / "memory"
+    memory_root.mkdir(parents=True)
+    (memory_root / "MEMORY.md").write_text(
+        "# Team Memory Index\n\n## Feedback\n\n## Project\n\n## Reference\n",
+        encoding="utf-8",
+    )
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    nested = transcript_root / "dir-a" / "session-x.jsonl"
+    nested.parent.mkdir()
+    line = json.dumps(
+        {
+            "type": "assistant",
+            "message": {"content": [{"type": "text", "text": "We decided to adopt SQLite for the edge cache layer."}]},
+            "timestamp": "2026-08-20T12:00:00.000Z",
+        }
+    )
+    nested.write_text(line + "\n", encoding="utf-8")
+    proposal = TranscriptScanProposal(
+        transcript_root=transcript_root,
+        candidates=(
+            TranscriptCandidate(
+                source_file=nested,
+                line_number=1,
+                timestamp="2026-08-20T12:00:00.000Z",
+                text="We decided to adopt SQLite for the edge cache layer.",
+                snippet="SQLite edge cache",
+                capture_type="project",
+            ),
+        ),
+    )
+    store_path = tmp_path / "graph.json"
+    with patch.object(compile_module, "scan_transcripts", return_value=proposal):
+        compile_graph(
+            memory_root=memory_root,
+            repo_root=tmp_path,
+            store=FlatFileGraphStore(store_path),
+            transcript_root=transcript_root,
+        )
+    store = FlatFileGraphStore(store_path)
+    result = answer("edge cache SQLite", store, repo_root=tmp_path)
+    assert result.grounded is True
+    assert result.citation == "dir-a/session-x.jsonl:L1"
+
+
 @pytest.mark.parametrize(
     "citation",
     [
-        "nested/dir/session-a.jsonl:L1",  # contract says "no directory path"
         "../../../etc/passwd.jsonl:L1",
         "session-a.jsonl:L",  # no line number
         "session-a.jsonl:L1x",
@@ -308,6 +440,61 @@ def test_code_citation_pointing_at_a_missing_file_is_not_resolvable(
     result = answer("ghost function", store, repo_root=repo_with_citation)
 
     assert result.grounded is False
+
+
+def test_code_node_citing_missing_jsonl_is_not_resolvable(repo_with_citation: Path) -> None:
+    """Story 26.1 landing review: format-only transcript branch is kind-gated."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="code:python:ghost-jsonl",
+            kind="code",
+            title="ghost jsonl path",
+            text="code node citing a missing jsonl-shaped path",
+            citation="data/missing.jsonl:L1",
+        )
+    )
+    store.commit()
+
+    result = answer(
+        "ghost jsonl path",
+        store,
+        repo_root=repo_with_citation,
+        kinds=frozenset({"code"}),
+    )
+
+    assert result.grounded is False
+
+
+@pytest.mark.parametrize(
+    "citation",
+    [
+        "session 1.jsonl:L1",
+        "sessión.jsonl:L1",
+        "a+b.jsonl:L1",
+    ],
+)
+def test_transcript_citation_filenames_with_spaces_or_symbols_are_recallable(
+    repo_with_citation: Path,
+    citation: str,
+) -> None:
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id=f"transcript:{citation}",
+            kind="transcript",
+            citation=citation,
+            text="Transcript fact with a permissive filename.",
+        )
+    )
+    store.commit()
+
+    result = answer("Transcript fact", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.citation == citation
 
 
 def test_determinism_two_independent_store_instances_same_file_same_answer(

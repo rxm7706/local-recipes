@@ -8787,3 +8787,25 @@ status: open
   promoted: 2026-10-03 — Story 66.2 backfill
   reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
   status: closed
+
+### DW-marshal-83-12: Optional parity test that dispatch coverage-gate station slugs match scripts/coverage_gate.py STATIONS.
+
+- source_spec: `planning-artifacts/specs/spec-83-12-dispatch-verification-runs-the-coverage-gate-of-every-station-the-story-touches.md`
+  summary: Optional parity test that dispatch coverage-gate station slugs match scripts/coverage_gate.py STATIONS.
+  evidence: Landing review listed this as optional; slugs are duplicated as a frozenset in dispatch_verify.py today.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py:145
+  origin: spec-deferred bdac97b66476 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-83-12-2: The merge-tree preview drops its fallback WARN, resolves origin/main by name three times, and two paths are thinly tested.
+
+- source_spec: `planning-artifacts/specs/spec-83-12-dispatch-verification-runs-the-coverage-gate-of-every-station-the-story-touches.md`
+  summary: Story 83.12's third landing review (all LOW). (a) `dispatch_land.py` `_refuse_via_merge_tree_preview` discards the WARN MRS-GATE-009 ("using the story worktree diff instead"), so a fallback landing leaves no trace; appending it to the landing findings flips the landing verdict to refused, so it needs its own home (envelope data or a journal event). (b) `refs/remotes/origin/main` is resolved by name at merge-tree, the story diff and commit-tree; a fetch in between makes the preview diff include main's newest commits (fails safe: more gates, never fewer); resolve once to a SHA via a new VcsPort rev-parse method. (c) `MergeTreePreviewVcs.preview_changed` is never set by a landing-level test. (d) `evaluate_dispatch_verification` now resolves changed files before the verify commands run, so a file a verify command writes is no longer scope-checked.
+  evidence: 2026-10-03 independent landing review of Story 83.12, third pass (verdict land; 15/15 mutants killed; real-git probes pass).
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py:246
+  origin: landing review 2026-10-03 (operator session)
+  severity: low
+  promoted: 2026-10-03 — landing review of Story 83.12
+  status: open

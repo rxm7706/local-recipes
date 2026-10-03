@@ -456,6 +456,22 @@ def test_list_files_refuses_a_non_object_entry(fake_caller):
         transport.list_files(project_id="p-1")
 
 
+def test_list_files_accepts_a_bare_json_array_with_type_file_filter(fake_caller):
+    payload = json.dumps(
+        [
+            {"path": "support.js", "etag": "E1", "type": "file", "size": 120},
+            {"path": "project/", "etag": "E0", "type": "directory"},
+            {"path": "PyForge Warden.dc.html", "etag": "E2", "type": "file"},
+        ]
+    )
+    transport, _ = _transport(fake_caller, {"list_files": payload})
+    files = transport.list_files(project_id="p-1")
+    assert files == [
+        ListedFile(path="support.js", etag="E1", size=120),
+        ListedFile(path="PyForge Warden.dc.html", etag="E2", size=None),
+    ]
+
+
 # --- list_projects (Story 23.1, CAP-1) --------------------------------------
 
 

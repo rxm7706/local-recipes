@@ -2,7 +2,8 @@
 title: "83.12: Dispatch verification runs the coverage gate of every station the story touches"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '2f131c2bae4fd9a7a0951ab5be1986b3ce4a9931'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -11,7 +12,14 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py
   - scripts/coverage_gates_ci.py
   - .github/workflows/coverage-gates.yml
-deferred: []
+deferred:
+  - summary: >-
+      Optional parity test that dispatch coverage-gate station slugs match scripts/coverage_gate.py STATIONS.
+    evidence: |-
+      Landing review listed this as optional; slugs are duplicated as a frozenset in dispatch_verify.py today.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py:145
+    severity: low
 declared_low_risk: false
 ---
 
@@ -69,6 +77,76 @@ Minted 2026-10-03 at the operator's request (PR #1773 went red on the coverage g
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back after an independent landing review (findings in the Review Triage Log). Status back to `ready-for-dev`.
+- 2026-10-03 (night) — sent back again after the second landing review (Review Triage Log). Status back to `ready-for-dev`.
+
 ## Review Triage Log
 
-- No review has run yet.
+
+### 2026-10-03 (night) — Third landing review (independent reviewer, operator session) — land
+Every second-review HIGH and MEDIUM item is done; every gate exits 0; 15 of 15 mutants killed (M1, M5, M7 included); the real-git probes pass (scope, fallback, no-fallback refusal, fallback with a red gate). The operator session removed the dead `_PYFORGE_CORE_SLUG` constant (`dispatch_verify.py`). Deferred as `DW-marshal-83-12-2` (all low): the dropped fallback WARN (journaling it in the landing findings flips the verdict, so it needs its own home), resolving origin/main once to a SHA (fails safe today), a landing-level test of the preview's own diff, and the scope check now reading changed files before the verify commands run.
+
+
+### 2026-10-03 (night) — Second landing review (independent reviewer, operator session) — sent back
+Keep: the eight-station derivation, the two-parent preview commit (a real-git probe of a scribe-only story behind a main that touched doctor and warden ran only scribe's gate, in the preview), the reclassifier exclusion test, the docstring. All four gates exit 0.
+- `high` **Every new fallback and refusal path in the preview crashes `dispatch land` with `ValueError`.** `run_verify_commands_only` puts its MRS-GATE-009 finding (WARN on the fallback, ERROR with no fallback) at the front of `findings` (`dispatch_verify.py`, about 374-396); `_refuse_via_merge_tree_preview` treats any finding as a failure (`dispatch_land.py`, about :246); `_describe_verify_failures` then zips failing reports with findings `strict=True` (about :129) and raises (`zip() argument 2 is longer than argument 1`), uncaught out of `execute_dispatch_land`. Keep diff-resolution findings out of the per-command list (a separate return value, or filtered by code before the zip); refuse only on ERROR, with an MRS-DISP-044 naming the unresolved diff; let the WARN through. Add tests through `execute_dispatch_land` with a `MergeTreePreviewVcs.changed_files` that raises for the preview home: with the fallback the landing proceeds and the story's station gate ran; with no fallback it refuses MRS-DISP-044.
+- `medium` **Send-back item (a) is still open: the preview wiring has no test that fails without it.** Dropping `repo_root=`, `vcs=` and `story_changed_files=` from the call in `dispatch_land.py` (about 224-231) passes every test and the preview silently runs zero coverage gates. Give `MergeTreePreviewVcs` a `changed_files` returning a station `src/` path for the preview home and assert that station's `pyforge-<station>-coverage-gate` ran with cwd = the preview home; consider making `repo_root` and `vcs` required (`dispatch_verify.py`, about 336-338; one caller).
+- `low` `test_vcs_git.py` (about :2470): the "two_parent" test never checks the second parent; assert `HEAD^2 == feature_sha`.
+- `low` `dispatch_land.py` (about :173 and :212) resolves `refs/remotes/origin/main` twice (merge-tree, then `commit-tree -p`); rev-parse once to a SHA and pass it to both.
+- `low` `dispatch_land.py` (about :203): drop `AttributeError` from the `except`; it hides port-conformance bugs.
+- `low` `test_dispatch_landing.py` (about :2256): the annotation says 3-tuples while :2282 appends 4-tuples.
+- `low` Optional: a parity test that `dispatch_verify.py`'s station slugs equal `scripts/coverage_gate.py` `STATIONS`.
+
+### 2026-10-03 — Landing review (independent reviewer, operator session) — sent back
+Keep: the derivation for the eight stations (each in its own environment, once per station; pyforge-core-only and planning-only stories add none), the MRS-GATE-001 refusal naming the command, and the full-refname diff base. All step-5 commands are green and AC5's mutation fails 12 tests.
+- `high` **A testing-kit path derives a task that does not exist, so verification always refuses it.** `dispatch_verify.py` (about lines 149-165) filters on `startswith("pyforge-") and != "pyforge-core"`, so `src/shared/packages/pyforge-testing-kit/src/` derives `pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-coverage-gate` (exit 127, MRS-GATE-001 forever; dispatch 74.1 touched that tree). Derive only for the eight station slugs, mirroring `scripts/coverage_gate.py`'s `STATIONS`, and add a test that a testing-kit path derives nothing.
+- `high` **The merge-tree preview derives gates from main's changes, not the story's.** `run_verify_commands_only` resolves changed files in the preview with `base=refs/remotes/origin/main`, but the preview commit's only parent is `head_sha` (`adapters/vcs_git.py`, `commit-tree -p`), so `origin/main...HEAD` includes everything main changed since the branch's base. A probe with a scribe-only story behind a main that touched doctor and warden ran three gates. That breaks "Never add the gate for a station the story did not touch", costs about 2.5 minutes per extra station, and can refuse a landing on scribe's Postgres for a station the story never touched; the gate task inside the preview also measures main's modules. Fix by one of: build the preview commit with two parents (`-p refs/remotes/origin/main -p <head_sha>`, as GitHub's PR merge commit does; preferred, since it also fixes the gate task's own diff), or pass the story's changed files from the dispatch worktree into `run_verify_commands_only`. Add a real-git test: a story behind a main that touched another station derives only its own station's gate in the preview. Correct the design note that calls the preview "the merge result CI will see" if the fix does not make it so.
+- `medium` **The preview drops the gate silently when changed files cannot be resolved** (`except Exception: changed_files = ()`). The preview runs at landing and its verdict is final, so a skipped evaluation must not read as clean: report a finding, or fall back to the story's own changed files, with a test.
+- `medium` **Two parts have no test that fails without them.** (a) The preview wiring: with `repo_root=`/`vcs=` dropped from the `run_verify_commands_only` call in `dispatch_land.py`, `test_dispatch_landing.py` and `test_dispatch_verify_merge_tree.py` still pass. (b) The new exclusion from the pre-existing reclassifier (`dispatch_verify.py`, about lines 546-552): with it removed, `test_dispatch_verification.py` still passes, because the test's stderr names no `.py` path and `core/dispatch_verification.py` already keeps such failures as MRS-GATE-001. Make the test's stderr name a touched module so it fails without the exclusion.
+- `low` `cli/drain_plan.py` (about lines 167-169): the docstring still says these are "the commands the post-session gate runs"; pre-launch binding derives no coverage gates, so say that.
+- `low` The operator removed the duplicate `review_loop_iteration` frontmatter key from this spec (strict YAML rejects it).
+
+### 2026-10-03 (fourth pass) — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 3, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Blind hunter: spec/ledger status drift — this pass sets story spec `status: done` and records verification; ledger sync is a separate land step.
+  - `[false]` `[reject]` Blind hunter: missing scoped baseline stamp — reconcile-only path per operator guard (`spec_surface_reconcile.py`); no `--write-baseline` on this run.
+  - `[false]` `[reject]` Blind hunter: diff mixes unrelated stations — review diff anchored at story `baseline_revision` spans prior branch commits; 83.12 code touch set is marshal dispatch verify/land/tests only.
+  - `[low]` `[defer]` Optional parity test that `_COVERAGE_GATE_STATION_SLUGS` equals `scripts/coverage_gate.py` `STATIONS` — named optional in landing review; slugs are pinned in unit tests today.
+
+### 2026-10-03 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 4, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Blind hunter: merge-tree preview swallows changed-files resolution errors and skips coverage gates — `run_verify_commands_only` only derives gates when `vcs.changed_files` succeeds; a failed resolution yields empty changed files and omits gates, but scope check in the full verify path already errors with MRS-GATE-009; preview path intentionally runs best-effort verify commands only (Story 51.1).
+  - `[false]` `[reject]` Edge case: touching `src/shared/packages/pyforge-<station>/tests/` does not add a gate — spec AC requires `src/` under the station package only; tests-only edits match AC4 (no gate unless `src/` touched).
+  - `[false]` `[reject]` Verification gap: no test that merge-tree preview runs coverage gate — `run_verify_commands_only` shares `_verify_commands_with_surface_guard`; merge-tree wiring passes `repo_root`/`vcs` in `dispatch_land.py`; unit tests cover derivation and evaluate path; full merge-tree integration remains Story 51.1 scope.
+  - `[false]` `[reject]` Intent alignment: pyforge-core src touch should run core coverage — intent explicitly excludes pyforge-core (no coverage-gate task); only the eight station packages derive gates.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Dispatch verification derives each touched station’s `pyforge-<station>-coverage-gate` in that station’s pixi env (eight slugs only). Merge-tree landing preview uses a two-parent synthetic commit and passes `repo_root`/`vcs`/`story_changed_files` into `run_verify_commands_only`. Preview scope findings (MRS-GATE-009) are returned separately from command findings so WARN fallbacks still land and `_describe_verify_failures` no longer zips against preview rows.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — coverage-gate derivation, triple return from preview runner
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` — preview refuse logic; drop AttributeError swallow on story diff
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` — two-parent merge-tree preview commit
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py` — `second_parent` on preview worktree API
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/drain_plan.py` — pre-launch verify docstring
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` — AC and mutation tests
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py` — preview runner tests
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py` — `execute_dispatch_land` preview wiring tests
+- `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py` — two-parent changed-files probe
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — surface reconcile
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — co-governor reconcile
+
+**Review:** Fourth pass — 3 rejected blind-hunter findings; 1 optional parity test deferred. Second landing-review high/medium items addressed in code.
+
+**Follow-up review recommended:** false
+
+**Verification:** `pyforge-marshal-test` 11062 passed; `pyforge-deps-test` 130 passed; `pixi run --frozen -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
+
+**Residual risk:** Scribe coverage gate needs Postgres locally (`scribe-pg-up`); operator starts cluster before re-dispatch when scribe `src/` is touched.

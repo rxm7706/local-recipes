@@ -946,6 +946,27 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (night, latest)** — **Found: two more dispatch gaps.** Herald 35.1's supervisor could not commit its
+  session's work because `git status --porcelain` quotes paths with spaces and the finalize passed the quoted text to
+  `git add`; a Cursor session's commit on mason 27.1 carried a `Co-authored-by: Cursor` trailer that dispatch never
+  checks. **What it looks like when fixed:** `changed_files` returns literal paths; dispatch verification runs the
+  commit-msg rule over the branch and refuses a trailer. **Constraints:** fix stories, no CAP, no flag. Owner
+  `spec-pyforge-marshal`. → Stories 83.16-83.17, specced 2026-10-03.
+- **2026-10-03 (night, later)** — **Found: four gaps from today's landings.** The 83.11 team-memory union reflows the
+  file's blank lines; a manual merge while a re-dispatch runs makes the supervisor declare completion and strand the
+  session's later commits (83.10, 83.4); `ruff check` findings that ruff fixes safely still refuse verification (83.9
+  formats only); Story 84.1 landed with tests that cannot catch a key leak and a partial listing read as complete.
+  **What it looks like when fixed:** the union inserts lines without reflowing; the supervisor keys completion on the
+  run's own head and lands later commits; dispatch applies ruff's safe fixes; 84.1's tests can fail. **Constraints:**
+  fix stories, no CAP, no flag (operator rulings 2026-10-03). Owner `spec-pyforge-marshal`. → Stories 83.13-83.15,
+  84.2, specced 2026-10-03.
+- **2026-10-03 (85.1 split)** — **Ruled: split the fix turn.** Two independent reviews of Story 85.1 found the
+  fix turn could not do its job (a green re-verify never landed; failed commands were read only inline; uncommitted edits
+  were verified but not landed; a restart could start a second turn) and was not yet safe (credentials past redaction,
+  an incomplete timeout kill, no publisher heartbeat). **What it looks like when fixed:** 85.1 lands the machinery
+  dormant with the flag OFF everywhere; 85.2 makes one turn work end to end, proved by a supervisor-level test; 85.3 makes
+  it safe and switches it on in dev and staging. **Constraints:** same CAP-286 and flag; keep Cursor (operator ruling
+  2026-10-03). Owner `spec-pyforge-marshal`. → Stories 85.2, 85.3, specced 2026-10-03.
 - **2026-10-03 (late night)** — **Found: dispatch verification passes a story that CI's coverage gate fails.** CI's
   named-module gate fails a PR when a touched module sits under the station's 80% unit floor, but dispatch verification
   never runs it and `dispatch/*` branches skip the pre-push preflight. PR #1773 went red this way (`dispatch_retry`

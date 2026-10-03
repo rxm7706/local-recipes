@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 489
+# stories: 490
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -328,6 +328,7 @@ development_status:
   84-2-an-audit-read-records-its-scope-and-the-perimeter-refuses-an-over-long-identity: done
   84-3-trusted-ingress-addresses-are-ip-networks: done
   84-4-sync-skips-a-board-item-marked-github-only: done
+  84-5-the-github-only-marker-tests-can-fail-and-config-refuses-half-declarations: backlog
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
@@ -499,7 +500,7 @@ development_status:
   epic-82-retrospective: optional
   epic-83: done
   epic-83-retrospective: optional
-  epic-84: backlog
+  epic-84: in-progress
   epic-84-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional

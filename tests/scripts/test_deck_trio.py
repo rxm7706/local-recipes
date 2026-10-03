@@ -697,6 +697,21 @@ def test_non_font_link_is_still_swept_into_helmet(root):
     )
 
 
+# Atlas-style act labels (``.n``/``.t``) — Story 35.1 / DW-FU-21-2 vocabulary.
+ATLAS_ACT_POSTER = """<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Atlas</title><style>.act{}</style></head>
+<body>
+<div class="act"><span class="n">01</span><span class="t">First act</span></div>
+<section class="sec"><div class="sechead"><span class="num">01</span><h2>Section</h2></div><p>x</p></section>
+</body></html>
+"""
+
+
+def test_deck_derives_poster_with_n_t_act_labels(root):
+    _write(root / "presentations/pyforge-atlas/project/Atlas Infographic standalone.html", ATLAS_ACT_POSTER)
+    assert deck_trio.main(["pyforge-atlas", "--deck"]) == 0
+
+
 # ------------------------------------------------------ --deck happy path
 
 def test_deck_happy_path_first_run_writes_derived_deck(root, capsys):
@@ -1510,10 +1525,9 @@ def test_head_and_deck_together_both_get_stamped(root):
     assert stamps.read_stamp(_deck_path_for(root, "pyforge-alpha", "Alpha")) is not None
 
 
-def test_second_unchanged_run_still_refreshes_the_stamp(root, monkeypatch):
-    """``_write_if_changed`` skips the rewrite on an unchanged poster, but
-    every call still reaches ``stamps.write_stamp`` -- the stamp records
-    "derived (or reverified) at this tree", not only "bytes changed"."""
+def test_second_unchanged_run_does_not_refresh_the_stamp(root, monkeypatch):
+    """When derived bytes match disk, ``_write_if_changed`` skips the write
+    and ``write_stamp`` is not called — verification runs leave the tree clean."""
     deck_trio.main(["pyforge-alpha", "--head"])
     first = stamps.read_stamp(_head_path(root))
 
@@ -1527,10 +1541,9 @@ def test_second_unchanged_run_still_refreshes_the_stamp(root, monkeypatch):
     monkeypatch.setattr(deck_trio.stamps, "write_stamp", _spy)
     deck_trio.main(["pyforge-alpha", "--head"])
 
-    assert calls == [_head_path(root)]
+    assert calls == []
     second = stamps.read_stamp(_head_path(root))
-    assert second.tree == first.tree
-    assert second.derived_at >= first.derived_at
+    assert second == first
 
 
 def test_a_refused_run_writes_no_stamp(root):

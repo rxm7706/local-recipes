@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 72  # 2026-09-28 (night): Epic 74 appended (spec-feature-flag-governance CAP-3, CAP-4, CAP-6); 72 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 5): Epic 73 appended (spec-pyforge-marshal CAP-281); 71 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 4): Epic 72 appended (spec-pyforge-marshal CAP-280); 70 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 2): Epic 71 appended (spec-pyforge-core:CAP-11); 69 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont.): Epic 70 appended (spec-pyforge-marshal CAP-279); 68 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening): Epic 69 appended (spec-pyforge-marshal CAP-278); 67 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (later): Epic 68 appended (spec-pyforge-marshal CAP-277); 66 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier 2026-09-28: Epics 66 and 67 appended (spec-pyforge-marshal CAP-275, CAP-276); 65 epic keys once epic-66/epic-67 reach the ledger (63 measured today with fleet_scan.parse_sprint_status -- the rows wait behind the live Story 64.1 dispatch, which owns the feed and the tracked ledger until it lands). Earlier: 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core:CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
 storyCount: 346  # 2026-09-28 (night): +3 for Epic 74 / Stories 74.1, 74.2, 74.3 (346 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 5): +2 for Epic 73 / Stories 73.1, 73.2 (343 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 4): +1 for Epic 72 / Story 72.1 (341 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 2): +1 for Epic 71 / Story 71.1 (340 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont.): +1 for Epic 70 / Story 70.1 (339 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening): +1 for Epic 69 / Story 69.1 (338 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (later): +1 for Epic 68 / Story 68.1 (337 story keys in the ledger after this commit's sync, measured). Earlier 2026-09-28: +3 for Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 (336 story keys once the three rows reach the ledger; 333 measured today). Earlier: 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (late night): Story 83.12 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (Phase 3): Epic 86 / Stories 86.1-86.7 minted from the operator's Phase 3 rulings (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night): Story 83.11 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (evening): Story 83.10 added to Epic 83 (fix, no CAP); Epic 85 / Story 85.1 minted (spec-pyforge-marshal CAP-286, FR-233). Prior: RE-STAMPED 2026-10-03 (later): Story 83.9 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03: Story 83.8 added to Epic 83 (fix, no CAP). Prior 2026-10-02 (night)   # RE-STAMPED 2026-10-02 (night): Epic 84 / Story 84.1 minted (spec-pyforge-marshal CAP-285, FR-232). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epics 81-83 minted since the last stamp; Epic 83 / Stories 83.1-83.6 (fix stories, no CAP) chain the defects found landing Phase 2. Prior 2026-09-30   # RE-STAMPED 2026-09-30: Epic 78 / Story 78.1 minted (spec-pyforge-marshal CAP-283, FR-230). Prior 2026-09-29 (night)   # RE-STAMPED 2026-09-29 (night): Epic 77 / Story 77.1 minted (spec-pyforge-marshal CAP-282, FR-229). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 76 / Story 76.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 75 / Story 75.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-28 (night): Epic 74 / Stories 74.1-74.3 minted (spec-feature-flag-governance CAP-4, CAP-3, CAP-6 -- the Guild's CAPs, no marshal CAP; no FR registered, PRD section 31.11); 74.2 minted blocked behind doctor Story 34.2. Earlier: AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (night, latest): Stories 83.16-83.17 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (85.1 split): Stories 85.2 and 85.3 added to Epic 85 (CAP-286, same flag). Prior: RE-STAMPED 2026-10-03 (night, later): Stories 83.13-83.15 added to Epic 83 and 84.2 to Epic 84 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (late night): Story 83.12 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (Phase 3): Epic 86 / Stories 86.1-86.7 minted from the operator's Phase 3 rulings (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night): Story 83.11 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (evening): Story 83.10 added to Epic 83 (fix, no CAP); Epic 85 / Story 85.1 minted (spec-pyforge-marshal CAP-286, FR-233). Prior: RE-STAMPED 2026-10-03 (later): Story 83.9 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03: Story 83.8 added to Epic 83 (fix, no CAP). Prior 2026-10-02 (night)   # RE-STAMPED 2026-10-02 (night): Epic 84 / Story 84.1 minted (spec-pyforge-marshal CAP-285, FR-232). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epics 81-83 minted since the last stamp; Epic 83 / Stories 83.1-83.6 (fix stories, no CAP) chain the defects found landing Phase 2. Prior 2026-09-30   # RE-STAMPED 2026-09-30: Epic 78 / Story 78.1 minted (spec-pyforge-marshal CAP-283, FR-230). Prior 2026-09-29 (night)   # RE-STAMPED 2026-09-29 (night): Epic 77 / Story 77.1 minted (spec-pyforge-marshal CAP-282, FR-229). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 76 / Story 76.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 75 / Story 75.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-28 (night): Epic 74 / Stories 74.1-74.3 minted (spec-feature-flag-governance CAP-4, CAP-3, CAP-6 -- the Guild's CAPs, no marshal CAP; no FR registered, PRD section 31.11); 74.2 minted blocked behind doctor Story 34.2. Earlier: AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274; Epic 65 / Stories 65.1, 65.2 minted. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273; Epic 64 / Story 64.1 minted. Earlier: RE-STAMPED (night): Epic 63 / Story 63.1 minted (spec-pyforge-core:CAP-10). Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272; Epic 62 / Story 62.1 minted. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271; Epic 61 / Story 61.1 minted. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
@@ -8702,6 +8702,71 @@ module under the floor refuses verification (MRS-GATE-001, never reclassified as
 **And** a story touching no station `src/` adds no gate; removing the derivation fails its new test (mutation);
 `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
+### Story 83.13: The landing heal keeps the team-memory index's blank lines
+
+As the operator reading a healed team-memory index,
+I want the union to insert appended lines without reflowing the file,
+So that a heal never churns sections it did not touch.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 83.11 (CAP-283) •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py`; its unit tests
+**Given** the live `MEMORY.md` with one line appended to a section on each side
+**When** the landing heals
+**Then** the result is the base with both lines inserted, byte for byte elsewhere
+**And** an unchanged input round-trips exactly; removing the reconstruction fails its new test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 83.14: A manual merge mid-dispatch never strands the session's fixes
+
+As the operator who merged a PR while its re-dispatch was running,
+I want the supervisor to keep supervising and land the session's later commits,
+So that no session runs unsupervised and no fix is left unpushed.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** Story 51.2, Story 22.10 •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_completion.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py`; their unit tests
+**Given** a dispatch whose branch's earlier head was merged by hand while the session is live
+**When** the supervisor ticks and the session finishes with later commits
+**Then** it keeps supervising, verifies the later commits, and opens a new PR for them
+**And** a run whose own head is on `main` completes as today; removing the rule fails its new test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 83.15: Dispatch applies ruff's safe fixes before it verifies
+
+As the operator whose Cursor stories were refused on auto-fixable lint,
+I want dispatch to run `ruff check --fix` (safe fixes) before it verifies,
+So that an unused import never costs a session.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 83.9 •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_ruff_format.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py`; their unit tests
+**Given** a story whose changed file has an unused import and an unsorted import block
+**When** dispatch verifies it
+**Then** `ruff check --fix` removes both before `lint-types`, committed and journaled
+**And** an unfixable finding still refuses; untouched files stay untouched; removing the step fails its new test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 83.16: Dispatch finalize commits paths with spaces
+
+As the operator whose herald session's work was left uncommitted,
+I want `changed_files` to return literal paths,
+So that a path with spaces never stops a run.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Story 28.24 •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py`; its unit tests
+**Given** a session that changed files whose paths contain spaces
+**When** the supervisor finalizes
+**Then** it commits them and the run continues
+**And** renames return the new path; removing the `-z` parsing fails its new test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
+### Story 83.17: Dispatch refuses a commit that carries an attribution trailer
+
+As the operator who found a Cursor co-author trailer on a story branch,
+I want dispatch verification to run the commit-msg rule over the branch's commits,
+So that no AI-attribution line ever lands on main.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** AGENTS.md § Policy •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verification.py`; their unit tests
+**Given** a story branch with a `Co-authored-by:` commit
+**When** dispatch verifies it
+**Then** verification refuses naming the commit
+**And** a clean branch passes; removing the check fails its new test (mutation); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
 ## Epic 84: Every harness's model list refreshes from its own live source (spec-pyforge-marshal CAP-285)
 
 Minted 2026-10-02 from the station Dream's entry of the same date (night, later), at the operator's request to refresh
@@ -8735,6 +8800,19 @@ paging schemes, Gemini's `generateContent` filter, alias handling, an unmapped p
 `unavailable` reason; removing the alias rule fails its new test (mutation); `pixi run --frozen -e pyforge-marshal
 pyforge-marshal-test` green
 
+### Story 84.2: The model-list refresh tests can fail, and a partial listing is never complete
+
+As the operator who landed 84.1 with its follow-ups chained,
+I want tests that catch a key leak or a partial listing, and the small gaps closed,
+So that 84.1's guarantees are held by tests, not only by probes.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-285 •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/model_list_live.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/model_list_http.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/adapters.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_list_refresh.py`; marshal tests
+**Given** a transport raising with a sentinel key, a redirect target, a missing-key later page, and a non-id cursor line
+**When** `marshal adapters models` runs in text and JSON
+**Then** the sentinel never appears, no redirect target is contacted, a partial listing is `unavailable`, and no non-id line is parsed
+**And** each test fails with its mutant; the meta-test catches every import form; the coverage gate exits 0; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
+
 ## Epic 85: A verification refusal goes back to the session that wrote the change (spec-pyforge-marshal CAP-286)
 
 Minted 2026-10-03 from the station Dream's entry of that date (evening), at the operator's request after the verification
@@ -8754,6 +8832,10 @@ So that a fixable refusal costs one short turn, not a new session or a hand fix.
 decision and prompt in `core/`, `core/harness_profile.py` and `data/harness_profiles/*.toml` (the resume form),
 `core/policy.py` (the output-tail and wall-clock keys), `core/findings.py`; `src/platform/config/flags.json` and
 `flag-overlays.json`; marshal tests.
+**Split 2026-10-03 (operator ruling, after two independent reviews):** 85.1 lands the fix-turn machinery dormant, with
+the flag OFF in every environment, behaviour with the flag off identical to `main`, and the coverage gate green; Story
+85.2 makes the turn work end to end and Story 85.3 makes it safe and switches it on in dev and staging. The criteria
+below describe CAP-286 as a whole.
 **Given** the flag on and a finished session refused at dispatch verification
 **When** dispatch handles the refusal
 **Then** it runs one bounded fix turn in the story worktree (resuming the same session when the profile declares how,
@@ -8762,6 +8844,42 @@ parks the story on red
 **And** a turn that cannot start or exceeds its budget parks the story, journaled; the flag off runs no turn; no second
 turn ever runs; removing the rule fails its new test (mutation); `pixi run --frozen -e pyforge-marshal
 pyforge-marshal-test` green
+
+### Story 85.2: A fix turn that turns verification green lands, and survives a supervisor restart
+
+As the operator who split Story 85.1 after two reviews,
+I want one fix turn to work end to end inside the supervisor, proved by a fake-harness test,
+So that a fixable refusal really costs one turn, and a restart never starts a second.
+
+**Type:** feature • **Effort:** M • **Deps:** S-85.1 • **FR/AD:** spec-pyforge-marshal CAP-286 (FR-233) •
+**Flag:** `pyforge.marshal.verify_fix_loop` (stays OFF in every environment)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify_fix.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py`,
+`src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (the in-flight read); marshal tests
+**Given** a fake harness whose fix turn makes verification pass, with a failed-command tail above the sidecar threshold
+**When** the supervisor handles the refusal
+**Then** it reads the failed commands through the sidecar resolver, commits the turn's edits, re-verifies once, reads the
+latest outcome, and lands; a still-red re-verify parks with MRS-DISP-060
+**And** a supervisor killed mid-turn neither loses the INTENT nor starts a second turn; a turn in flight reads LIVE;
+removing the call site, the one-turn bound or the sidecar read fails a test (mutation); the coverage gate passes
+
+### Story 85.3: The fix turn is safe to switch on in dev and staging
+
+As the operator who will turn the fix turn on for every dispatch host,
+I want redaction, the timeout kill, the heartbeat and resume made safe first,
+So that switching it on in dev and staging leaks nothing and orphans nothing.
+
+**Type:** feature • **Effort:** M • **Deps:** S-85.2 • **FR/AD:** spec-pyforge-marshal CAP-286 (FR-233) •
+**Flag:** `pyforge.marshal.verify_fix_loop` (ON in dev and staging, OFF in production, when this story lands)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify_fix.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/redaction.py` (or
+the redaction helper the fix turn uses), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/*.toml`,
+`src/platform/config/flag-overlays.json`, pyforge-core `tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`; marshal tests
+**Given** output tails carrying credentials, a fix session that ignores SIGTERM, a turn longer than 300 s, and a profile
+that declares resume
+**When** the fix turn runs
+**Then** no credential reaches the journal or the prompt (never on argv), the process group is killed and reaped on the
+budget, the portal sees heartbeats, and the turn resumes its own recorded session
+**And** an unreadable flag tree journals a warning and runs no turn; the flag reads on in dev and staging and off in
+production, pinned in pyforge-core and Platform CI; `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` green
 
 ## Epic 86: Phase 3 of the deferral burn-down: marshal's ruled fixes
 
