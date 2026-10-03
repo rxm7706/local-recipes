@@ -51,7 +51,7 @@ def _green_check_tree(tmp_path: Path) -> tuple[Path, dict]:
     (out_dir / "assets").mkdir()
     (out_dir / "assets/site.css").write_text("body{}", encoding="utf-8")
     (out_dir / "artifact").mkdir()
-    (out_dir / "artifact/dossier.html").write_text("fragment only", encoding="utf-8")
+    (out_dir / "artifact/dossier.html").write_text("fragment " + ("x" * 600), encoding="utf-8")
     result = {
         "infographics": [
             {
