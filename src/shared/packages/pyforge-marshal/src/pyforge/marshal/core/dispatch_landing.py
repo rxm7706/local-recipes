@@ -7,6 +7,7 @@ self-report without passing independent verification (Story 22.3).
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Mapping
 from enum import StrEnum
@@ -289,69 +290,73 @@ def union_memlog_texts(base: str, main: str, branch: str) -> str | None:
 
 # --- Story 83.3: deferred-work ledger union ----------------------------------
 
-_DW_HEADER = "### DW-"
+_DW_ENTRY_START = re.compile(r"^(?:## DW-|### DW-)", re.MULTILINE)
 
 
 def _opaque_dw_blocks(text: str) -> tuple[str, list[str]]:
-    """Split ledger text into preamble (before the first ``### DW-``) and opaque blocks.
+    """Split ledger text into preamble and opaque DW entry blocks.
 
-    Each block is the full text from one ``### DW-`` header through the line before the next
-    header. No validation or normalization — mixed entry formats stay byte-identical.
+    Entries begin at a line starting with ``## DW-`` (legacy) or ``### DW-``. Each block is
+    byte-identical text from one header through the character before the next header.
     """
-    first = text.find(_DW_HEADER)
-    if first == -1:
+    matches = list(_DW_ENTRY_START.finditer(text))
+    if not matches:
         return text, []
-    preamble = text[:first]
-    rest = text[first:]
+    preamble = text[: matches[0].start()]
     blocks: list[str] = []
-    start = 0
-    while start < len(rest):
-        boundary = rest.find("\n" + _DW_HEADER, start + len(_DW_HEADER))
-        if boundary == -1:
-            blocks.append(rest[start:])
-            break
-        blocks.append(rest[start:boundary])
-        start = boundary + 1
+    for index, match in enumerate(matches):
+        start = match.start()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        blocks.append(text[start:end])
     return preamble, blocks
 
 
-def _append_tail_after_shared_blocks(full: str, blocks: list[str], shared_count: int) -> str:
-    """Return ``full`` from just after the last shared block through EOF (separators included)."""
-    if shared_count >= len(blocks):
+def _dw_blocks_from_append_tail(tail: str) -> list[str]:
+    """Opaque ``## DW-`` / ``### DW-`` blocks parsed from an append-only suffix."""
+    text = tail.lstrip("\n")
+    if not text:
+        return []
+    _, blocks = _opaque_dw_blocks(text)
+    return blocks
+
+
+def _append_branch_only_blocks(result: str, branch_only: list[str]) -> str:
+    """Append blocks main did not already add, separated by one blank line each."""
+    for block in branch_only:
+        if not result.endswith("\n\n"):
+            result += "\n" if result.endswith("\n") else "\n\n"
+        result += block.lstrip("\n")
+    return result
+
+
+def _append_only_tail(base: str, side: str) -> str | None:
+    """Suffix ``side`` added after unchanged ``base``, or ``None`` if ``side`` edited ``base``."""
+    if side == base:
         return ""
-    if shared_count == 0:
-        return full
-    last_shared = blocks[shared_count - 1]
-    pos = full.find(last_shared)
-    if pos < 0:
-        return ""
-    return full[pos + len(last_shared) :]
+    if side.startswith(base):
+        return side[len(base) :]
+    core = base.rstrip("\n")
+    if side.startswith(core):
+        return side[len(core) :]
+    return None
 
 
 def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
     """Story 83.3: the union of two append-only edits of one deferred-work-ledger.md, or None
     when either side is not append-only.
 
-    Each ``### DW-`` section is an opaque block compared byte for byte. A side is append-only
-    when its block list starts with the merge-base blocks unchanged, then adds whole blocks at
-    the end. The result is the merge-base file verbatim, then main's appended tail, then branch
-    blocks main did not already append (counter dedup, same as ``union_memlog_texts``).
+    Each ``## DW-`` / ``### DW-`` section is an opaque block. A side is append-only when its
+    full text still starts with the merge-base text (trailing newlines on the base may be
+    stripped before the append). The result is the merge-base file verbatim, then main's tail,
+    then branch-only blocks (counter dedup).
     """
-    _, base_blocks = _opaque_dw_blocks(base)
-    _, main_blocks = _opaque_dw_blocks(main)
-    _, branch_blocks = _opaque_dw_blocks(branch)
-
-    base_count = len(base_blocks)
-    if (
-        len(main_blocks) < base_count
-        or len(branch_blocks) < base_count
-        or main_blocks[:base_count] != base_blocks
-        or branch_blocks[:base_count] != base_blocks
-    ):
+    main_tail = _append_only_tail(base, main)
+    branch_tail = _append_only_tail(base, branch)
+    if main_tail is None or branch_tail is None:
         return None
 
-    main_new = main_blocks[base_count:]
-    branch_new = branch_blocks[base_count:]
+    main_new = _dw_blocks_from_append_tail(main_tail)
+    branch_new = _dw_blocks_from_append_tail(branch_tail)
 
     main_new_count = Counter(main_new)
     branch_only: list[str] = []
@@ -361,22 +366,18 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
         else:
             branch_only.append(block)
 
-    result = base.rstrip("\n")
-    if main_new:
-        main_tail = _append_tail_after_shared_blocks(main, main_blocks, base_count)
+    result = base
+    if main_tail:
         if not main_tail.strip():
             return None
-        result += main_tail.rstrip("\n")
-    elif branch_new:
-        branch_tail = _append_tail_after_shared_blocks(branch, branch_blocks, base_count)
+        result += main_tail
+    elif branch_tail:
         if not branch_tail.strip():
             return None
-        result += branch_tail.rstrip("\n")
-    if branch_only and main_new:
-        branch_tail = _append_tail_after_shared_blocks(branch, branch_blocks, base_count)
-        if not branch_tail.strip():
-            return None
-        result += branch_tail.rstrip("\n")
+        result += branch_tail
+
+    if branch_only and main_tail:
+        result = _append_branch_only_blocks(result, branch_only)
 
     if not result.endswith("\n"):
         result += "\n"

@@ -1297,6 +1297,34 @@ def test_union_deferred_work_texts_live_marshal_ledger_mixed_formats() -> None:
     assert "DW-TEST-BRANCH-83-3" in result
 
 
+def test_union_deferred_work_texts_refuses_legacy_entry_edit_on_live_ledger() -> None:
+    """AC 2026-10-03: editing a legacy ``## DW-`` entry while appending refuses union."""
+    repo_root = Path(__file__).resolve().parents[6]
+    ledger_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    base = ledger_path.read_text(encoding="utf-8")
+    probe = "\n\n### DW-PROBE-83-3-LEGACY: union legacy-edit probe\norigin: test\nstatus: open\n"
+    branch = base.rstrip("\n") + probe
+    main = base.replace("status: open\n  severity: low", "status: closed\n  severity: low", 1)
+    main = main.rstrip("\n") + probe
+
+    assert union_deferred_work_texts(base, main, branch) is None
+
+
+def test_union_deferred_work_texts_main_a_branch_a_b_exact_bytes() -> None:
+    """AC 2026-10-03: shared append once, branch-only second row, one blank line between entries."""
+    block_a = "### DW-A: Shared append\norigin: test\nstatus: open\n"
+    block_b = "### DW-B: Branch-only append\norigin: test\nstatus: open\n"
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = base.rstrip("\n") + "\n\n" + block_a
+    branch = main.rstrip("\n") + "\n\n" + block_b
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    expected = base.rstrip("\n") + "\n\n" + block_a + "\n\n" + block_b
+    assert result == expected
+
+
 def test_mutation_union_deferred_work_texts_stub_none_refuses_append() -> None:
     """Mutation partner: a union that always returns None breaks the live-ledger append proof."""
     base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
