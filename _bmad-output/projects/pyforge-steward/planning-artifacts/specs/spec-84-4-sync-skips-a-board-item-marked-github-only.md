@@ -2,7 +2,7 @@
 title: "84.4: Sync skips a board item marked GitHub-only"
 type: 'feature'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: 'ed596f7ef2239c738708ec0f02b4b0fe5470547a'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -45,7 +45,7 @@ Type / Effort / Deps: feature / S / —.
 - Given this story lands When its deferred-work rows are read Then each of `DW-8-5-2` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 
 **Added 2026-10-03 (independent review):**
-- Given an unknown `PYFORGE_ENVIRONMENT` or an unusable overlay file, with or without a declared marker When `sync reconcile --schedule` runs Then it completes the batch exactly as today (per-item results), logs a warning, and never crashes
+- Given an unknown `PYFORGE_ENVIRONMENT` or an unusable overlay file, with or without a declared marker When `sync reconcile --schedule` runs Then it completes the batch exactly as today (per-item results) and never crashes; when a marker is declared it logs a warning (with no marker the flag is never read)
 - Given the change When Platform CI's `test_openfeature_file_flags.py` and the repo-scope `flag_gate_check` run Then both pass, the marker tests write two flag trees, and `## Verification` names the test file
 - Given a batch with a skipped GitHub-only item When it finishes Then its summary names the skip count and the skipped ids
 
@@ -83,6 +83,15 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 - 2026-10-03 — sent back after an independent review (findings below); dispatch verification had refused on pyforge-core's shipped-flag pin, fixed on this branch by the operator session (keep that commit). Three acceptance criteria added. Status back to `ready-for-dev`.
 
 ## Review Triage Log
+
+### 2026-10-03 (evening) — Independent re-review (operator session) — sent back (tests only)
+The production code now does what H1-H3 and M1-M2 asked (proved by probe: with `PYFORGE_ENVIRONMENT=prod` and with a broken `flag-overlays.json`, the batch completes with per-item results, with or without a marker). The operator session fixed the platform lane (a long line; the chart assertion now compares the dev render and the key set) and the flag gate (helper renamed `_write_flagd_tree`; a test pins the key literal); keep those commits. Change the TESTS only:
+- `high` **The H3 test is false-green.** `test_schedule_batch_completes_when_flag_unreadable` sets `PYFORGE_FLAG_OVERLAYS_PATH`, which nothing reads (overlays are found only as `flag-overlays.json` beside the tree, `pyforge-core flags.py`), and `PYFORGE_ENVIRONMENT=production` is valid, so the flag reads True; ITEM_1 has no label, so it fails either way. With the try/except removed, or the flag read moved before the marker check, the suite still passes. Fix: write a broken `flag-overlays.json` beside the tree, and a separate case with `PYFORGE_ENVIRONMENT=prod`; give ITEM_1 the marker label and add a linked ITEM_2; assert ITEM_1 `unlinked`, ITEM_2 ok, and a WARNING record (caplog); add a no-marker case with an unknown environment; delete the made-up variable.
+- `medium` **Six mutants still pass the full suite.** Add: a tree without the key (and no tree) plus a marked unlinked item still fails `unlinked` (kills `read_boolean(default=True)`); field-value near-miss negatives (`github only`, `GitHub only (temp)`, `not GitHub only`) for a TEXT field and a single-select field (kills case-insensitive and substring field matching); `github_only_marker: github-only` raises "must be a mapping"; the warning assertion above kills the removed-warning mutant.
+- `low` Clear the runner's environment in both flag fixtures: `monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)`.
+- `low` Config load: refuse an empty `github_only_marker: {}` and a `label` with a lone `field_id` or lone `field_value` (update `test_github_only_marker_empty_mapping_is_none`); remove the unreachable branch.
+- `low` State in `.steward/sync-config.example.yaml` that OFF in production needs `PYFORGE_ENVIRONMENT=production` (unset reads `dev`, ON), and that only an UNLINKED item carrying the marker is skipped (a linked one still syncs).
+- `low` Correct DW-8-5-2's `verified:` line to the skip `raise` line. Set the spec to `in-review`, not `done`, until a review passes; fix the stale Review pass entries.
 
 ### 2026-10-03 — Independent review (operator session) — sent back
 Passed: the flag pins agree (flags.json, overlays, the spec's `flag:` block, pyforge-core's `test_flags.py`); real flag reads give production False, staging and dev True; labels match by exact set membership and field values by `==`; the steward coverage gate exits 0.
