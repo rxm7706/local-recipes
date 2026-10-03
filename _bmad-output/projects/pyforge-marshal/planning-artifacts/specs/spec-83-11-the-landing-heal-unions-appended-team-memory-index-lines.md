@@ -2,7 +2,9 @@
 title: "83.11: The landing heal unions appended team-memory index lines"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+followup_review_recommended: false
+baseline_revision: '15ecacb04f7491e8bb88d50d1609ea14f0594604'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -68,4 +70,22 @@ Minted 2026-10-03 at the operator's request (the twelfth defect found landing Ep
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches acceptance criteria; verification green)
+
+## Auto Run Result
+
+- **Summary:** Added `.claude/memory/MEMORY.md` to the dispatch landing heal mechanical set with section-wise append-only union (same dedupe semantics as memlog bodies).
+- **Files changed:**
+  - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` — `union_team_memory_index_texts`, mechanical-path recognition
+  - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py` — resolve and merge MEMORY.md conflicts
+  - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` — AC tests including live-file probe and mutation guards
+  - `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — surface reconcile for governed paths
+- **Review:** No patch/defer/intent_gap items.
+- **Verification:** `pyforge-marshal-test` 10935 passed; `pyforge-deps-test` 130 passed; `pixi run -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
+- **Surface reconcile (named paths on `spec-pyforge-marshal/.memlog.md`):**
+  - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py`
+  - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py`
+  - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py`
+- **Residual risk:** Union normalizes trailing blank lines per section the way `scribe capture` rebuilds bodies; non-append edits still escalate.
