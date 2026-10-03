@@ -39,6 +39,68 @@ def repo_with_citation(tmp_path: Path) -> Path:
     return tmp_path
 
 
+def test_lexical_tie_break_prefers_newer_valid_from(repo_with_citation: Path) -> None:
+    """Story 26.1 / DW-FU-3-2-4: equal overlap → newer ``valid_from`` wins."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    shared = "We decided to drop Kuzu because upstream archived the project."
+    store.upsert_node(
+        _node(
+            id="transcript:session-a.jsonl:L1",
+            kind="transcript",
+            citation="session-a.jsonl:L1",
+            text=shared,
+            valid_from=datetime(2026, 8, 1, tzinfo=timezone.utc),
+        )
+    )
+    store.upsert_node(
+        _node(
+            id="transcript:session-b.jsonl:L1",
+            kind="transcript",
+            citation="session-b.jsonl:L1",
+            text=shared,
+            valid_from=datetime(2026, 9, 1, tzinfo=timezone.utc),
+        )
+    )
+    store.commit()
+
+    result = answer("why drop Kuzu archived upstream", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.node_id == "transcript:session-b.jsonl:L1"
+
+
+def test_lexical_tie_break_equal_valid_from_orders_by_id(repo_with_citation: Path) -> None:
+    when = datetime(2026, 8, 15, tzinfo=timezone.utc)
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    shared = "We decided to drop Kuzu because upstream archived the project."
+    store.upsert_node(
+        _node(
+            id="transcript:session-z.jsonl:L1",
+            kind="transcript",
+            citation="session-z.jsonl:L1",
+            text=shared,
+            valid_from=when,
+        )
+    )
+    store.upsert_node(
+        _node(
+            id="transcript:session-a.jsonl:L1",
+            kind="transcript",
+            citation="session-a.jsonl:L1",
+            text=shared,
+            valid_from=when,
+        )
+    )
+    store.commit()
+
+    result = answer("why drop Kuzu archived upstream", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.node_id == "transcript:session-a.jsonl:L1"
+
+
 def test_grounded_match_returns_citation(repo_with_citation: Path) -> None:
     store = FlatFileGraphStore(repo_with_citation / "graph.json")
     store.reset()
@@ -227,7 +289,6 @@ def test_transcript_citation_is_resolvable_if_well_formed(repo_with_citation: Pa
 @pytest.mark.parametrize(
     "citation",
     [
-        "nested/dir/session-a.jsonl:L1",  # contract says "no directory path"
         "../../../etc/passwd.jsonl:L1",
         "session-a.jsonl:L",  # no line number
         "session-a.jsonl:L1x",

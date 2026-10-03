@@ -197,7 +197,7 @@ def scan_transcripts(
     per_file_timeout_s: float | None = _DEFAULT_PER_FILE_TIMEOUT_S,
     cache_path: Path | None = None,
 ) -> TranscriptScanProposal:
-    """Scan `*.jsonl` under `transcript_root` for un-curated decision/fact
+    """Scan `*.jsonl` under `transcript_root` (recursively) for un-curated decision/fact
     sentences, within the Story 3.3 bounds.
 
     Read-only against both `transcript_root` and `memory_root` (the opt-in
@@ -233,7 +233,7 @@ def scan_transcripts(
     warnings: list[str] = []
 
     try:
-        jsonl_paths = sorted(transcript_root.glob("*.jsonl"))
+        jsonl_paths = sorted(transcript_root.rglob("*.jsonl"))
     except OSError:
         jsonl_paths = []
 

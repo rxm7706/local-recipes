@@ -103,7 +103,12 @@ _COMMIT_SHA_RE = re.compile(r"[0-9a-f]{7,40}")
 #: without existing (review finding). `[0-9]` rather than `\d` for the same
 #: reason: `\d` also matches non-ASCII decimal digits, so `x.jsonl:L١٢`
 #: was likewise waved through without existing (review finding: reproduced).
-_TRANSCRIPT_CITATION_RE = re.compile(r"[^/\\:]+\.jsonl:L[0-9]+")
+#: Relative to ``transcript_root`` (Story 26.1 / DW-FU-3-2): flat files stay
+#: ``session.jsonl:L<n>``; nested dirs use ``subdir/session.jsonl:L<n>``.
+#: Rejects ``..`` segments and absolute-looking paths.
+_TRANSCRIPT_CITATION_RE = re.compile(
+    r"(?:[a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+\.jsonl:L[0-9]+$"
+)
 #: A `code` node's citation (Story 6.1's graphify extra) is
 #: `<repo-relative path>:L<line>` -- e.g. `src/pyforge/scribe/compile.py:L120`,
 #: matching graphify's own `source_location` shape. Unlike the transcript
@@ -170,6 +175,12 @@ def resolve_recall_kinds(kinds: frozenset[str] | None) -> frozenset[str]:
     return kinds
 
 
+def _lexical_rank_key(overlap: int, node: GraphNode) -> tuple[int, float, str]:
+    """Overlap desc, ``valid_from`` desc (newest first), id asc."""
+    ts = node.valid_from.timestamp()
+    return (-overlap, -ts, node.id)
+
+
 def resolve_recall_selection(
     *,
     kinds: frozenset[str] | None = None,
@@ -205,7 +216,8 @@ def answer(
     Only `is_current` nodes are candidates -- a superseded fact (Story 2.3)
     stays queryable via `store.query_by_citation()`/`iter_nodes()`, but
     never surfaces here as if it were still current. Lexical candidates are
-    ranked by query/node token-overlap (desc), tie-broken by node id (asc).
+    ranked by query/node token-overlap (desc), then ``valid_from`` (desc,
+    newest first), then node id (asc) on a full tie.
     Semantic candidates come from `store.query_similar` (Story 28.2) — the
     caller does not select a driver. Then citation resolvability filters
     the ranked list -- an unresolvable top match is skipped, never returned.
@@ -248,7 +260,7 @@ def answer(
         if overlap > 0:
             scored.append((overlap, node))
 
-    scored.sort(key=lambda pair: (-pair[0], pair[1].id))
+    scored.sort(key=lambda pair: _lexical_rank_key(pair[0], pair[1]))
 
     for _score, node in scored:
         if _withheld_as_stale(node, store, repo_root):
@@ -304,10 +316,11 @@ def _citation_is_resolvable(citation: str, repo_root: Path) -> bool:
         sha = citation.removeprefix("commit:")
         return bool(_COMMIT_SHA_RE.fullmatch(sha))
     if _TRANSCRIPT_CITATION_RE.fullmatch(citation):
-        # A transcript citation (`<jsonl filename>:L<line>`) is format-checked
-        # only, never re-resolved against a live file: transcripts are
-        # per-user/local and can be pruned or rotated outside Scribe's
-        # control (Story 3.2), mirroring the `commit:<sha>` precedent above.
+        # Format-checked only (Story 3.2); path is relative to transcript_root
+        # (Story 26.1). Reject traversal segments.
+        path_part = citation.rsplit(":L", 1)[0]
+        if ".." in path_part.split("/"):
+            return False
         return True
     code_match = _CODE_LINE_CITATION_RE.match(citation)
     if code_match:

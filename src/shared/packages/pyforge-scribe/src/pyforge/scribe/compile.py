@@ -930,13 +930,15 @@ def _read_transcript_surface(
             warnings.append(_transcript_unavailable_warning(transcript_root, exc))
             return []
 
+    root = transcript_root.resolve()
     nodes: list[GraphNode] = []
     occurrence: dict[tuple[Path, int], int] = {}
     for candidate in proposal.candidates:
         key = (candidate.source_file, candidate.line_number)
         index = occurrence.get(key, 0)
         occurrence[key] = index + 1
-        citation = f"{candidate.source_file.name}:L{candidate.line_number}"
+        rel = candidate.source_file.resolve().relative_to(root).as_posix()
+        citation = f"{rel}:L{candidate.line_number}"
         node_id = f"transcript:{citation}" if index == 0 else f"transcript:{citation}:{index}"
         nodes.append(
             GraphNode(

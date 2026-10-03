@@ -40,11 +40,31 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAPH_STORE_PATH = ROOT / ".claude" / "data" / "pyforge-scribe" / "graph.json"
+NIGHTLY_TIMER_PATH = (
+    ROOT / "src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-compile.timer"
+)
 
-# The nightly trigger's own period -- keep in sync BY HAND with
-# pyforge-scribe-nightly-compile.timer's `OnCalendar=*-*-* 02:30:00` (once
-# every 24h); parsing systemd calendar syntax has no cheap runtime value for
-# one nightly cadence.
+
+def scheduled_period_hours(timer_path: Path = NIGHTLY_TIMER_PATH) -> int:
+    """Derive the freshness period from the checked-in timer unit (Story 26.1).
+
+    Only the shipped daily ``OnCalendar=*-*-* …`` cadence is supported; a
+    different calendar expression must update this parser and
+    ``SCHEDULE_PERIOD_HOURS`` together.
+    """
+    text = timer_path.read_text(encoding="utf-8")
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("OnCalendar="):
+            continue
+        value = stripped.split("=", 1)[1].strip()
+        if value.startswith("*-*-*"):
+            return 24
+        raise ValueError(f"unsupported OnCalendar={value!r} in {timer_path}")
+    raise ValueError(f"missing OnCalendar= in {timer_path}")
+
+
+# The nightly trigger's own period -- must match ``scheduled_period_hours()``.
 SCHEDULE_PERIOD_HOURS = 24
 
 

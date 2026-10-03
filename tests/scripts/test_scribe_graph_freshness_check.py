@@ -111,6 +111,11 @@ def test_check_freshness_pure_function_boundary():
     assert str(graph_path) in reason
 
 
+def test_schedule_period_matches_nightly_timer_unit():
+    mod = _load_detector()
+    assert mod.scheduled_period_hours() == mod.SCHEDULE_PERIOD_HOURS
+
+
 def test_placement_is_scripts_runtime_not_doctor():
     """Placement decision: scripts/*_check.py + scope=runtime (mirrors
     index_freshness_check.py's own precedent for a gitignored, host-local

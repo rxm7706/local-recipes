@@ -53,12 +53,26 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 # The governed documents. A document that does not exist is itself a finding —
 # never a silent skip, which is how a "clean" run could mean "read nothing".
-DOCUMENTS = (
+_DOCUMENTS_STATIC = (
     "_bmad-output/EXEMPLAR-STANDARD.md",
     "AGENTS.md",
     "CLAUDE.md",
+    "GEMINI.md",
+    ".github/copilot-instructions.md",
     "docs/reference/test-charter.md",
 )
+_CURSOR_RULES_GLOB = ".cursor/rules/*.mdc"
+
+
+def governed_documents(root: Path | None = None) -> tuple[str, ...]:
+    """Every document ``main()`` scans, including declared globs (Story 26.1)."""
+    base = root if root is not None else ROOT
+    rules = sorted(p.relative_to(base).as_posix() for p in (base / ".cursor" / "rules").glob("*.mdc"))
+    return _DOCUMENTS_STATIC + tuple(rules)
+
+
+# Back-compat name used by detectors and docs.
+DOCUMENTS = governed_documents()
 
 SKILLS_DIR = ROOT / ".claude" / "skills"
 
@@ -201,12 +215,12 @@ def _check_document(rel: str) -> list[dict]:
     return findings
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--json", action="store_true", help="machine-readable output")
     ap.add_argument("--file", metavar="PATH", action="append",
                     help="check this document instead of the governed set (repeatable)")
-    args = ap.parse_args()
+    args = ap.parse_args([] if argv is None else argv)
 
     documents = tuple(args.file) if args.file else DOCUMENTS
     findings: list[dict] = []

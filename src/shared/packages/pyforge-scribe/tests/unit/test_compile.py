@@ -672,6 +672,42 @@ def test_transcript_surface_ids_are_keyed_by_file_and_line_not_a_global_index(
     assert ids == {"transcript:session-a.jsonl:L1", "transcript:session-b.jsonl:L1"}
 
 
+def test_transcript_same_basename_in_subdirs_get_distinct_ids_and_citations(
+    tmp_path: Path, memory_root: Path
+) -> None:
+    """Story 26.1 / DW-FU-3-2: ids and citations are relative to ``transcript_root``."""
+    transcript_root = tmp_path / "transcripts"
+    _write_transcript_jsonl(
+        transcript_root / "dir-a",
+        "session-x.jsonl",
+        [_assistant_transcript_line("We decided to adopt SQLite for the edge cache layer.")],
+    )
+    _write_transcript_jsonl(
+        transcript_root / "dir-b",
+        "session-x.jsonl",
+        [_assistant_transcript_line("We decided to retire the legacy webhook retry queue.")],
+    )
+    _write_transcript_jsonl(
+        transcript_root,
+        "flat.jsonl",
+        [_assistant_transcript_line("We decided to keep flat-directory citations unchanged.")],
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    by_id = {n.id: n for n in transcript_nodes}
+    assert by_id["transcript:dir-a/session-x.jsonl:L1"].citation == "dir-a/session-x.jsonl:L1"
+    assert by_id["transcript:dir-b/session-x.jsonl:L1"].citation == "dir-b/session-x.jsonl:L1"
+    assert by_id["transcript:flat.jsonl:L1"].citation == "flat.jsonl:L1"
+
+
 def test_transcript_surface_citation_carries_the_real_line_number(tmp_path: Path, memory_root: Path) -> None:
     """Review finding: every transcript fixture in this package put its
     decision on line 1 of a one-line file, so the `:L<line>` component of
