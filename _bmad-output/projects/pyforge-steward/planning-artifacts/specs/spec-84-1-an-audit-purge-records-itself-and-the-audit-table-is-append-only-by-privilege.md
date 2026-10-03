@@ -2,7 +2,8 @@
 title: "84.1: An audit purge records itself, and the audit table is append-only by privilege"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '514b6982d55a7e9ff34a3579fd3bda0fc15bceb4'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -65,4 +66,14 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (orchestrator self-review after implementation; no subagent layer this run)
+
+## Auto Run Result
+
+- Summary: Added `AuditAction.PURGE`, required `actor` on `purge_expired_entries` with a transactional purge audit row; `steward deploy perimeter` now renders append-only PostgreSQL grants for the audit table.
+- Files: `dashboard/audit.py`, `dashboard/models.py`, migration `0006_auditaction_purge.py`, `deploy.py`, `cli.py`, `test_dashboard_audit.py`, `test_deploy_perimeter.py`, `deferred-work-ledger.md` (closed DW-9-3-3, DW-9-3-8).
+- Verification: `pyforge-steward-test` 1979 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
+- Follow-up review recommended: false
+- Residual risks: In-process ORM can still bypass DB grants until adopters apply the rendered SQL; purge recording uses the same DB alias as delete but `record_audit_entry` does not pass `using=`.
