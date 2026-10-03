@@ -14,8 +14,10 @@ spec's own Tasks & Acceptance for the requirement.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
@@ -1633,3 +1635,55 @@ def test_a_path_needing_quoting_is_read_literally(tmp_path: Path) -> None:
     # And the literal path really is governed by the literal glob.
     ungoverned = {f.evidence["path"] for f in chain.gather_spec_surface(repo) if f.check == "ungoverned"}
     assert "diátaxis.md" not in ungoverned
+
+
+REPO_ROOT = Path(__file__).resolve().parents[6]
+
+
+@lru_cache
+def _stamp_script_module():
+    """Mutation script twin — must stay aligned with chain (Story 41.1)."""
+    path = REPO_ROOT / "scripts" / "spec_surface_check.py"
+    spec = importlib.util.spec_from_file_location("_spec_surface_check_parity", path)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.mark.parametrize(
+    ("frontmatter", "expected"),
+    [
+        ("surface:\n  - a.py\n", ["a.py"]),
+        ("surface: [a.py, b.py]\n", ["a.py", "b.py"]),
+        ("surface: a.py\n", ["a.py"]),
+        ("surface:\n    - meta/\n", ["meta/"]),
+    ],
+)
+def test_stamp_script_parse_surface_matches_chain(
+    tmp_path: Path, frontmatter: str, expected: list[str]
+) -> None:
+    """Story 41.1: `parse_surface` and `_parse_surface` read the contract identically."""
+    spec_md = tmp_path / "SPEC.md"
+    spec_md.write_text(f"---\n{frontmatter}---\n\nbody\n", encoding="utf-8")
+    script = _stamp_script_module()
+    globs_script, _, _ = script.parse_surface(spec_md)
+    globs_chain, _, _ = chain._parse_surface(spec_md)
+    assert globs_script == globs_chain == expected
+
+
+@pytest.mark.parametrize(
+    ("pattern", "path"),
+    [
+        ("src/", "src/deep/mod.py"),
+        ("pkg/**", "pkg/a/b.py"),
+        ("exact.py", "exact.py"),
+    ],
+)
+def test_stamp_script_glob_to_re_matches_chain(pattern: str, path: str) -> None:
+    script = _stamp_script_module()
+    script_hit = script.glob_to_re(pattern).match(path)
+    chain_hit = chain._glob_to_re(pattern).match(path)
+    assert bool(script_hit) == bool(chain_hit)
+    if script_hit and chain_hit:
+        assert script_hit.group(0) == chain_hit.group(0)

@@ -890,3 +890,31 @@ def test_a_different_verdict_on_an_already_verified_entry_still_lands(tmp_path: 
     assert after.count("verified:") == 2
     assert " — still-open — Re-checked live" in after
     assert " — resolved — Now fixed" in after
+
+
+def test_refuses_when_citation_predicate_cannot_import(tmp_path: Path, monkeypatch):
+    """Story 41.1: without `chain.verified_line_cites`, the writer exits 2 and
+    writes nothing — never a local copy of the predicate."""
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    try:
+        import apply_verification_verdicts as av
+    finally:
+        sys.path.pop(0)
+
+    def _raise_import():
+        raise ImportError("no pyforge.doctor")
+
+    monkeypatch.setattr(av, "_citation_predicate", _raise_import)
+    repo = _fixture_repo(tmp_path)
+    vfile = _write_verdicts(repo, [_verdict()])
+    before = _tracked_text(repo, "pyforge-mason")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["apply_verification_verdicts.py", "--verdicts-file", str(vfile), "--fix"],
+    )
+
+    rc = av.main()
+
+    assert rc == 2
+    assert _tracked_text(repo, "pyforge-mason") == before
