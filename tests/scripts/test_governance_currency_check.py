@@ -28,5 +28,31 @@ def test_governed_documents_include_pointer_files():
 
 def test_main_exits_zero_on_live_tree(capsys):
     mod = _load_detector()
-    assert mod.main() == 0
+    assert mod.main([]) == 0
     capsys.readouterr()
+
+
+def test_main_json_file_flags(tmp_path, capsys):
+    mod = _load_detector()
+    doc = REPO_ROOT / ".cursor" / "governance-currency-probe-test.md"
+    doc.write_text("# probe\nEmpty probe document for --file / --json wiring.\n", encoding="utf-8")
+    try:
+        rel = doc.relative_to(REPO_ROOT).as_posix()
+        assert mod.main(["--json", "--file", rel]) == 0
+        payload = __import__("json").loads(capsys.readouterr().out)
+        assert payload["documents"] == [rel]
+        assert payload["findings"] == []
+    finally:
+        doc.unlink(missing_ok=True)
+
+
+def test_missing_cursor_rules_glob_is_a_finding(tmp_path, monkeypatch):
+    mod = _load_detector()
+    empty_root = tmp_path / "repo"
+    empty_root.mkdir()
+    (empty_root / ".cursor" / "rules").mkdir(parents=True)
+    monkeypatch.setattr(mod, "ROOT", empty_root)
+    findings = mod._missing_cursor_rules_findings()
+    assert len(findings) == 1
+    assert findings[0]["kind"] == "missing-document"
+    assert findings[0]["reference"] == mod._CURSOR_RULES_GLOB

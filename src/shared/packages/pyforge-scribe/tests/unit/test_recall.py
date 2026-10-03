@@ -286,6 +286,26 @@ def test_transcript_citation_is_resolvable_if_well_formed(repo_with_citation: Pa
     assert result.citation == "session-a.jsonl:L1"
 
 
+def test_nested_transcript_citation_is_resolvable_and_recallable(repo_with_citation: Path) -> None:
+    """Story 26.1 landing review: nested ``dir-a/session-x.jsonl:L1`` must recall."""
+    store = FlatFileGraphStore(repo_with_citation / "graph.json")
+    store.reset()
+    store.upsert_node(
+        _node(
+            id="transcript:dir-a/session-x.jsonl:L1",
+            kind="transcript",
+            citation="dir-a/session-x.jsonl:L1",
+            text="We decided to adopt SQLite for the edge cache layer.",
+        )
+    )
+    store.commit()
+
+    result = answer("edge cache SQLite", store, repo_root=repo_with_citation)
+
+    assert result.grounded is True
+    assert result.citation == "dir-a/session-x.jsonl:L1"
+
+
 @pytest.mark.parametrize(
     "citation",
     [

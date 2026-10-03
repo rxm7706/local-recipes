@@ -116,6 +116,32 @@ def test_schedule_period_matches_nightly_timer_unit():
     assert mod.scheduled_period_hours() == mod.SCHEDULE_PERIOD_HOURS
 
 
+def test_scheduled_period_rejects_twice_daily_calendar(tmp_path):
+    mod = _load_detector()
+    timer = tmp_path / "bad.timer"
+    timer.write_text(
+        "[Timer]\nOnCalendar=*-*-* 02,14:00:00\n",
+        encoding="utf-8",
+    )
+    import pytest
+
+    with pytest.raises(ValueError, match="clock"):
+        mod.scheduled_period_hours(timer)
+
+
+def test_scheduled_period_rejects_multiple_oncalendar_lines(tmp_path):
+    mod = _load_detector()
+    timer = tmp_path / "bad.timer"
+    timer.write_text(
+        "[Timer]\nOnCalendar=*-*-* 02:30:00\nOnCalendar=*-*-* 03:00:00\n",
+        encoding="utf-8",
+    )
+    import pytest
+
+    with pytest.raises(ValueError, match="exactly one"):
+        mod.scheduled_period_hours(timer)
+
+
 def test_placement_is_scripts_runtime_not_doctor():
     """Placement decision: scripts/*_check.py + scope=runtime (mirrors
     index_freshness_check.py's own precedent for a gitignored, host-local

@@ -115,7 +115,7 @@ sibling ledgers and the detector both use.
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: done
   resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
-  verified: src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py:933 — transcript citation/id from path relative to transcript_root; tests/unit/test_compile.py:test_transcript_same_basename_in_subdirs_get_distinct_ids_and_citations
+  verified: src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py:940-941 — transcript citation/id from path relative to transcript_root; tests/unit/test_compile.py:test_transcript_same_basename_in_subdirs_get_distinct_ids_and_citations
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -290,9 +290,7 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: done
-  resolution: Story 26.1 follow-up review pass (2026-10-03): no new defects; recall tie-break fix covers portal recall path
-  verified: tests/meta/test_first_portal_slice.py — portal slice tests still green with Story 26.1 recall ranking
+  status: open
 
 ### DW-FRR-1-1: Follow-up review still recommended for story 1.1
 
@@ -303,9 +301,7 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: done
-  resolution: Story 26.1 follow-up review pass (2026-10-03): capture matrix and concurrency tests still match spec 1.1; no new defects
-  verified: src/shared/packages/pyforge-scribe/tests/unit/test_capture.py — I/O matrix coverage unchanged and green
+  status: open
 
 ### DW-FRR-3-1: Follow-up review still recommended for story 3.1
 
@@ -316,9 +312,7 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: done
-  resolution: Story 26.1 follow-up review pass (2026-10-03): rglob scan + path-relative compile ids; no scanner regressions
-  verified: src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py:236 — rglob("*.jsonl")
+  status: open
 
 ### DW-FRR-3-2: Follow-up review still recommended for story 3.2
 
@@ -341,9 +335,7 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: done
-  resolution: Story 26.1 follow-up review pass (2026-10-03): GraphStore plugin registration unchanged; tests/unit/test_graph_store_plugins.py green
-  verified: src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plugins.py
+  status: open
 
 ### DW-FRR-6-2: Follow-up review still recommended for story 6.2
 
