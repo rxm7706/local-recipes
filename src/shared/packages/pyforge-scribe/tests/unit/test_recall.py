@@ -4,19 +4,23 @@
 
 from __future__ import annotations
 
+import json
 import os
 import socket
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
+from pyforge.scribe import compile as compile_module
 from pyforge.scribe.capture import capture
 from pyforge.scribe.compile import compile_graph
 from pyforge.scribe.graph_store import FlatFileGraphStore
 from pyforge.scribe.models import GraphNode
 from pyforge.scribe.recall import _answer_semantic, answer
+from pyforge.scribe.transcripts import TranscriptCandidate, TranscriptScanProposal
 
 
 def _node(**overrides) -> GraphNode:
@@ -302,6 +306,53 @@ def test_nested_transcript_citation_is_resolvable_and_recallable(repo_with_citat
 
     result = answer("edge cache SQLite", store, repo_root=repo_with_citation)
 
+    assert result.grounded is True
+    assert result.citation == "dir-a/session-x.jsonl:L1"
+
+
+def test_compile_then_recall_nested_transcript_citation(tmp_path: Path) -> None:
+    """Story 26.1 landing review: compile must emit nested citations recall accepts."""
+    memory_root = tmp_path / ".claude" / "memory"
+    memory_root.mkdir(parents=True)
+    (memory_root / "MEMORY.md").write_text(
+        "# Team Memory Index\n\n## Feedback\n\n## Project\n\n## Reference\n",
+        encoding="utf-8",
+    )
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    nested = transcript_root / "dir-a" / "session-x.jsonl"
+    nested.parent.mkdir()
+    line = json.dumps(
+        {
+            "type": "assistant",
+            "message": {"content": [{"type": "text", "text": "We decided to adopt SQLite for the edge cache layer."}]},
+            "timestamp": "2026-08-20T12:00:00.000Z",
+        }
+    )
+    nested.write_text(line + "\n", encoding="utf-8")
+    proposal = TranscriptScanProposal(
+        transcript_root=transcript_root,
+        candidates=(
+            TranscriptCandidate(
+                source_file=nested,
+                line_number=1,
+                timestamp="2026-08-20T12:00:00.000Z",
+                text="We decided to adopt SQLite for the edge cache layer.",
+                snippet="SQLite edge cache",
+                capture_type="project",
+            ),
+        ),
+    )
+    store_path = tmp_path / "graph.json"
+    with patch.object(compile_module, "scan_transcripts", return_value=proposal):
+        compile_graph(
+            memory_root=memory_root,
+            repo_root=tmp_path,
+            store=FlatFileGraphStore(store_path),
+            transcript_root=transcript_root,
+        )
+    store = FlatFileGraphStore(store_path)
+    result = answer("edge cache SQLite", store, repo_root=tmp_path)
     assert result.grounded is True
     assert result.citation == "dir-a/session-x.jsonl:L1"
 

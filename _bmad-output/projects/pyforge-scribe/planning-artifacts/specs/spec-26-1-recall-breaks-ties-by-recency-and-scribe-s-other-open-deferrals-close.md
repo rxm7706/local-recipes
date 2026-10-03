@@ -2,9 +2,9 @@
 title: "26.1: Recall breaks ties by recency, and scribe's other open deferrals close"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '96743a013a9ddaf4ffa67cc987ab86518d075387'
-final_revision: 'pending-commit'
+final_revision: '796d388ef6931a333b126ce2478ae28416283c64'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -111,20 +111,28 @@ Correct and tested: the recall recency tie-break (only equal overlap reorders; d
   - `[false]` `[reject]` Verification gap: no test for equal valid_from tie-break — disproved by `test_lexical_tie_break_equal_valid_from_orders_by_id`.
   - `[reject]` `[reject]` Low: governance DOCUMENTS tuple order unstable — ruff-format only; no runtime harm.
 
+### 2026-10-03 — Review pass (post send-back)
+- verdicts: 5 findings — high 0, medium 0, low 0, false 5, reject 0
+- findings:
+  - `[false]` `[reject]` Blind Hunter: CLI argv still broken — disproved; `__main__` passes `sys.argv[1:]` and tests use `main([])` / `main(["--json"])`.
+  - `[false]` `[reject]` Edge case: rglob still widens production scan — disproved; `transcripts.py` restored to flat `glob`; nested ids tested via mocked `scan_transcripts`.
+  - `[false]` `[reject]` Verification gap: no compile-then-recall for nested citations — disproved by `test_compile_then_recall_nested_transcript_citation`.
+  - `[false]` `[reject]` Intent: FRR rows closed without review — disproved; DW-FRR-1-1, -3-1, -4-1, -5-2 reopened to `open` in the ledger.
+  - `[false]` `[reject]` Edge case: symlink crash persists — disproved; `relative_to(transcript_root)` without `resolve()` plus `test_transcript_symlink_to_outside_root_does_not_crash_compile`.
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Closed nine deferred-work rows (Phase 4+5 burn-down): recall lexical tie-break uses `valid_from` then id; transcript ids/citations are path-relative with recursive scan; governance-currency scans pointer files; timer period sync test; spec-surface reconcile via memlog; follow-up reviews for Stories 1.1, 3.1, 4.1, 5.2 with no new defects.
+Summary: Landing-review fixes for Story 26.1: five non-FRR deferrals closed (recency tie-break, path-relative transcript ids without widening scan, spec-surface memlog, strict timer period parser, governance-currency pointer files and CLI flags). DW-FRR rows stay open for marshal 73.x drain.
 
 Files changed:
-- `recall.py` — recency-aware lexical tie-break; nested transcript citation regex
-- `compile.py` / `transcripts.py` — path-relative transcript surface; rglob scan
-- `governance_currency_check.py` — `governed_documents()` includes GEMINI, Copilot, Cursor rules
-- `scribe_graph_freshness_check.py` — `scheduled_period_hours()` parser
-- Tests in `test_recall.py`, `test_compile.py`, `tests/scripts/*`
-- `deferred-work-ledger.md` — nine rows closed
+- `recall.py` — `(?:[^/\\:]+/)*` nested transcript citation regex
+- `compile.py` — path-relative ids without `resolve()`; skip outside-root candidates
+- `transcripts.py` — flat `glob("*.jsonl")` preserved
+- `governance_currency_check.py` / `scribe_graph_freshness_check.py` — CLI argv; cursor-rules glob finding; stricter `OnCalendar=` parser
+- Tests and script tests; `pixi.toml` governance-currency description; memlogs; deferred-work ledger (FRR reopened)
 
-Verification: `pyforge-scribe-test` 415 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK; script tests for freshness and governance green.
+Verification: `pyforge-scribe-test` 418 passed; `lint-types` exit 0; `pytest tests/scripts/test_governance_currency_check.py tests/scripts/test_scribe_graph_freshness_check.py` 14 passed; `python scripts/spec_surface_reconcile.py` OK.
 
 Follow-up review recommendation: false
