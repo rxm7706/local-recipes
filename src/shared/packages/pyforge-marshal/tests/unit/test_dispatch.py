@@ -25,7 +25,7 @@ from pyforge.marshal.cli.dispatch import (
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
-from pyforge.marshal.core.dispatch_harness_done import FollowupReview
+from pyforge.marshal.core.dispatch_harness_done import FollowupReview, parse_spec_status
 from pyforge.marshal.core.dispatch_landing import DispatchLandingVerdict
 from pyforge.marshal.core.model import Severity
 from pyforge.marshal.core.refs import ORIGIN_MAIN
@@ -1699,6 +1699,66 @@ _BLOCKED_SPEC = (
 )
 
 
+def test_a_backlog_worktree_spec_is_rewritten_before_launch_and_journaled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.8: worktree ``backlog`` -> ``ready-for-dev``; primary copy and ledger untouched."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    primary_spec = specs / f"spec-{story}.md"
+    worktree = _write_worktree_spec(tmp_path, slug, story, _BACKLOG_SPEC)
+    worktree_spec = worktree / primary_spec.relative_to(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    fs = FakeFs()
+    harness = FakeBuildHarness()
+    dispatch_once(
+        slug=slug,
+        story=story,
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert len(harness.calls) == 1
+    assert parse_spec_status(worktree_spec.read_text(encoding="utf-8")) == "ready-for-dev"
+    assert parse_spec_status(primary_spec.read_text(encoding="utf-8")) == "ready-for-dev"
+    intent = _launch_intent(fs)
+    assert intent["spec_status_rewrite"] == {"from": "backlog", "to": "ready-for-dev"}
+
+
+def test_launch_without_the_backlog_rewrite_leaves_the_worktree_spec_at_backlog(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.8 mutation: disabling the rewrite leaves ``backlog`` on disk and off the journal."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    primary_spec = specs / f"spec-{story}.md"
+    worktree = _write_worktree_spec(tmp_path, slug, story, _BACKLOG_SPEC)
+    worktree_spec = worktree / primary_spec.relative_to(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        dispatch_core,
+        "rewrite_worktree_spec_status_for_bmad_build_auto",
+        lambda text: (text, None),
+    )
+    fs = FakeFs()
+    dispatch_once(
+        slug=slug,
+        story=story,
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    assert parse_spec_status(worktree_spec.read_text(encoding="utf-8")) == "backlog"
+    assert "spec_status_rewrite" not in _launch_intent(fs)
+
+
 def test_blocked_spec_does_not_relaunch_harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 51.4: worktree spec status: blocked -> MRS-DISP-045, 0 launches, no CAP-4 land attempt."""
     slug = "pyforge-marshal"
@@ -2660,6 +2720,33 @@ def test_relocated_spec_path_keeps_already_worktree_path(tmp_path: Path) -> None
     target = wt / rel
     target.write_text("ok\n", encoding="utf-8")
     assert dispatch_core.relocated_spec_path(target, repo, wt) == target.resolve()
+
+
+_BACKLOG_SPEC = "---\nstatus: 'backlog'\ndifficulty: medium\n---\n# spec\n"
+
+
+def test_rewrite_worktree_spec_status_for_bmad_build_auto_rewrites_backlog_only() -> None:
+    """Story 83.8: the pure rewrite is the mutation guard's seam."""
+    rewritten, payload = dispatch_core.rewrite_worktree_spec_status_for_bmad_build_auto(_BACKLOG_SPEC)
+    assert payload == {"from": "backlog", "to": "ready-for-dev"}
+    assert parse_spec_status(rewritten) == "ready-for-dev"
+    assert parse_spec_status(_BACKLOG_SPEC) == "backlog"
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        _READY_SPEC,
+        "---\nstatus: in-progress\ndifficulty: medium\n---\n",
+        _DONE_SPEC,
+        _BLOCKED_SPEC,
+        "---\ndifficulty: medium\n---\n# no status key\n",
+    ],
+)
+def test_rewrite_worktree_spec_status_for_bmad_build_auto_leaves_every_other_shape_unchanged(text: str) -> None:
+    new, payload = dispatch_core.rewrite_worktree_spec_status_for_bmad_build_auto(text)
+    assert new == text
+    assert payload is None
 
 
 def test_relocated_spec_path_rejects_unrelated_path(tmp_path: Path) -> None:
