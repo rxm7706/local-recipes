@@ -73,12 +73,12 @@ from ..core.dispatch_completion import (
 )
 from ..core.dispatch_harness_done import (
     FollowupReview,
-    blocks_harness_relaunch,
     followup_review_recommended,
     is_followup_review_spec,
     land_fail_operator_message,
     parse_blocking_condition,
     parse_spec_status,
+    should_take_harness_done_land_only,
 )
 from ..core.dispatch_landing import DispatchLandingVerdict
 from ..core.dispatch_retry import (
@@ -1371,9 +1371,11 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     landing_findings: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND):
         if entry.phase == Phase.OUTCOME:
-            if entry.payload.get("ok"):
-                verdict_val = entry.payload.get("verdict")
-                if isinstance(verdict_val, str):
+            verdict_val = entry.payload.get("verdict")
+            if isinstance(verdict_val, str):
+                # Story 83.7: refused outcomes carry ``ok: false`` but still
+                # record ``verdict: refused`` for the land-only re-dispatch gate.
+                if entry.payload.get("ok") or verdict_val == DispatchLandingVerdict.REFUSED.value:
                     landing_verdict = verdict_val
             # Story 53.2 review (I1): read regardless of `ok` -- a refused
             # landing (MRS-DISP-048) is exactly the case this must surface.
@@ -2809,9 +2811,14 @@ def dispatch_once(
             )
             return _done()
         live_spec_text = rewritten_spec_text
-    if blocks_harness_relaunch(
+    latest_landing_verdict: str | None = None
+    latest_run_dir = _latest_story_run_dir(fs, repo_root, slug, render_feed_key(story_key))
+    if latest_run_dir is not None:
+        latest_landing_verdict = gather_dispatch_journal_facts(fs, latest_run_dir, latest_run_dir.name).landing_verdict
+    if should_take_harness_done_land_only(
         parse_spec_status(live_spec_text),
         followup_review_recommended(live_spec_text),
+        latest_landing_verdict=latest_landing_verdict,
     ):
         data["harness_done_land_only"] = True
         land_verdict, named_target, land_envelope = _attempt_harness_done_cap4(

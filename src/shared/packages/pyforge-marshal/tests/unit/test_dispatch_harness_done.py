@@ -11,6 +11,7 @@ from pyforge.marshal.core.dispatch_harness_done import (
     land_fail_operator_message,
     parse_baseline_revision,
     parse_spec_status,
+    should_take_harness_done_land_only,
 )
 
 
@@ -37,6 +38,89 @@ def test_ready_for_dev_never_blocks() -> None:
     text = "---\nstatus: ready-for-dev\n---\n"
     assert parse_spec_status(text) == "ready-for-dev"
     assert blocks_harness_relaunch("ready-for-dev", False) is False
+
+
+# --- Story 83.7: refused landing journal extends the land-only gate -----------
+
+
+def test_should_take_land_only_when_latest_landing_was_refused_even_if_spec_in_progress() -> None:
+    assert (
+        should_take_harness_done_land_only(
+            "in-progress",
+            False,
+            latest_landing_verdict="refused",
+        )
+        is True
+    )
+
+
+def test_should_not_take_land_only_without_a_refused_landing_when_spec_not_done() -> None:
+    assert (
+        should_take_harness_done_land_only(
+            "in-progress",
+            False,
+            latest_landing_verdict=None,
+        )
+        is False
+    )
+    assert (
+        should_take_harness_done_land_only(
+            "ready-for-dev",
+            False,
+            latest_landing_verdict=None,
+        )
+        is False
+    )
+
+
+def test_should_take_land_only_when_refused_and_spec_in_review() -> None:
+    assert (
+        should_take_harness_done_land_only(
+            "in-review",
+            False,
+            latest_landing_verdict="refused",
+        )
+        is True
+    )
+
+
+def test_refused_landing_does_not_force_land_only_after_send_back_to_ready_for_dev() -> None:
+    assert (
+        should_take_harness_done_land_only(
+            "ready-for-dev",
+            False,
+            latest_landing_verdict="refused",
+        )
+        is False
+    )
+
+
+def test_refused_landing_does_not_force_land_only_after_send_back_to_draft() -> None:
+    assert (
+        should_take_harness_done_land_only(
+            "draft",
+            False,
+            latest_landing_verdict="refused",
+        )
+        is False
+    )
+
+
+def test_removing_the_send_back_guard_would_land_only_on_ready_for_dev_after_refusal() -> None:
+    """Mutation guard (Story 83.7 AC): send-back statuses must never take land-only."""
+    assert (
+        should_take_harness_done_land_only(
+            "ready-for-dev",
+            False,
+            latest_landing_verdict="refused",
+        )
+        is False
+    )
+
+
+def test_removing_the_refused_landing_journal_rule_leaves_in_progress_stories_launchable() -> None:
+    """Mutation guard (Story 83.7 AC): land-only must not fire without the journal fact."""
+    assert blocks_harness_relaunch("in-progress", False) is False
 
 
 # --- leading banner (mirrors test_spec_low_risk.py's identical suite) --------
