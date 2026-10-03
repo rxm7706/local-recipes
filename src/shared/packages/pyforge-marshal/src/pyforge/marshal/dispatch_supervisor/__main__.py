@@ -90,6 +90,7 @@ from ..dispatch_verify import (
     compose_dispatch_policy,
     evaluate_dispatch_verification,
     resolve_spec_text_for_story,
+    run_dispatch_ruff_format_before_verify,
 )
 from ..ports.commit import VcsRef
 from ..ports.fs import FsPort
@@ -1414,6 +1415,63 @@ def _run_and_journal_dispatch_push(
     return counter
 
 
+def _run_and_journal_ruff_format(
+    *,
+    fs: FsPort,
+    vcs: CommittingVcs,
+    process: ProcessPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    story_key: str,
+    worktree: Path,
+) -> int:
+    """Story 83.9: format story-scoped ``.py`` files and journal when anything changed."""
+    result = run_dispatch_ruff_format_before_verify(
+        worktree=worktree,
+        repo_root=repo_root,
+        vcs=vcs,
+        process=process,
+    )
+    if not result.reformatted_paths:
+        return counter
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_RUFF_FORMAT,
+        phase=Phase.INTENT,
+        payload={"story_key": story_key, "paths": list(result.reformatted_paths)},
+    )
+    counter += 1
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_RUFF_FORMAT,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={
+            "story_key": story_key,
+            "paths": list(result.reformatted_paths),
+            "committed": result.committed,
+            "ok": result.committed,
+        },
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal ruff format for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+    return counter
+
+
 def _run_and_journal_verification(
     *,
     fs: FsPort,
@@ -1429,6 +1487,19 @@ def _run_and_journal_verification(
     worktree: Path,
 ) -> int:
     """Run independent gate verification and journal the outcome (Story 22.3)."""
+    if callable(getattr(vcs, "commit_paths", None)):
+        counter = _run_and_journal_ruff_format(
+            fs=fs,
+            vcs=vcs,  # CommittingVcs duck type
+            process=process,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            repo_root=repo_root,
+            story_key=story_key,
+            worktree=worktree,
+        )
     effective = compose_dispatch_policy(slug, repo_root)
     resolution = resolve_feed([story_key])
     if not resolution.resolved:
@@ -1444,6 +1515,7 @@ def _run_and_journal_verification(
         spec_text=spec_text,
         process=process,
         vcs=vcs,
+        committing_vcs=vcs,
     )
     verification_verdict = judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
     failed = primary_gate_failure(envelope.findings)

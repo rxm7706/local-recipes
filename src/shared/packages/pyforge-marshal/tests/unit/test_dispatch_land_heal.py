@@ -1237,6 +1237,16 @@ def test_union_deferred_work_texts_refuses_edited_entry() -> None:
     assert result is None  # Should refuse
 
 
+def test_union_deferred_work_texts_refuses_a_line_appended_to_the_last_entry_beside_a_main_append() -> None:
+    """Both sides append, and the branch's suffix starts with a line added to the base's last entry:
+    the whole-block union would drop that line, so it refuses (landing review, 2026-10-03)."""
+    base = "### DW-1: Base entry\n\n- summary: s\n  status: open\n"
+    main = base + "\n### DW-2: Main entry\n\n- summary: m\n  status: open\n"
+    branch = base + "  verified: 2026-10-03 -- still open\n\n### DW-3: Branch entry\n\n- summary: b\n  status: open\n"
+
+    assert union_deferred_work_texts(base, main, branch) is None
+
+
 def test_union_deferred_work_texts_refuses_dropped_entry() -> None:
     """Should refuse when an entry is dropped."""
     base = _deferred_work_text(

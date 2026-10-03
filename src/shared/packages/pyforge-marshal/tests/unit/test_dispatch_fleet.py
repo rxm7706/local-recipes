@@ -2268,12 +2268,55 @@ def test_exactly_one_drain_cycle_runs_at_a_time_fleet_wide(
         process=process,
         build_harness=harness,
     )
-    out = capsys.readouterr().out
+    captured = capsys.readouterr().out
     assert code != EXIT_OK
-    assert "MRS-DRAIN-010" in out
+    assert "MRS-DRAIN-010" in captured
+    envelope = json.loads(captured)
+    assert envelope["data"]["complete"] is False
+    from pyforge.marshal.dispatch_fleet_supervisor.__main__ import cycle_completion
+
+    assert cycle_completion(captured) is False
     # Nothing dispatched, and no second campaign supervisor left behind.
     assert harness.dispatched == []
     assert process.spawned == []
+
+
+def test_campaign_supervisor_keeps_ticking_through_fleet_lock_contention(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """MRS-DRAIN-010 is a contended tick, not an unreadable cycle (Story 83.5)."""
+    from pyforge.marshal.dispatch_fleet_supervisor import __main__ as sup
+
+    monkeypatch.setattr(sup.time, "sleep", lambda _s: None)
+    contended = json.dumps(
+        {
+            "command": "factory drain",
+            "verdict": "error",
+            "data": {"complete": False, "mode": "drain_to_zero"},
+            "findings": [{"code": "MRS-DRAIN-010", "message": "lock held"}],
+        }
+    )
+
+    class LockContentionProcess:
+        def __init__(self) -> None:
+            self.calls = 0
+
+        def run(self, argv, *, cwd):
+            self.calls += 1
+            return type("R", (), {"stdout": contended, "stderr": ""})()
+
+    process = LockContentionProcess()
+    code = sup.run_fleet_campaign_supervisor(
+        repo_root=Path("/tmp"),
+        run_id="camp-1",
+        mode="drain_to_zero",
+        leave_remaining=1,
+        max_cycles=8,
+        tick_seconds=1,
+        process=process,
+    )
+    assert code == 0
+    assert process.calls == 8
 
 
 def test_the_cycle_lock_is_released_even_on_the_happy_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

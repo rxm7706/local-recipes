@@ -159,7 +159,7 @@ origin: review-budget-followup
 source_spec: `spec-1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260725-234618-4c9d; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+status: closed
   verified: 2026-10-01 — STANDS — No review artifact for story 1.1 exists anywhere under planning-artifacts/ (confirmed no matching file found; only spec-6-9-*.md mentions the story slug in passing). (2026-09-30 deferral burn-down triage)
 
 verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent follow-up never happened. Grepping the whole of `planning-artifacts/` (32 files) for `1-1-package-spine` matches only `sprint-status-ledger.yaml` and this ledger; no review artifact exists for the story.
@@ -199,7 +199,7 @@ verified: 2026-09-05 — STANDS — no review artifact for story 1.1 exists anyw
   summary: `core/policy.py`'s `content_hash` (and therefore `materialize()`'s content-addressed filename) is computed over each policy field's raw, UNREDACTED value — so once a real policy key ever becomes secret-shaped (none of the 9 shipped in Story 1.3 are), the materialized artifact's filename would be a deterministic fingerprint of that secret, even though the file's own body correctly redacts it via `policy.redact()`.
   evidence: Found during Story 1.3's adversarial + edge-case review passes (both reviewers independently flagged it). Reproduced by inspection: `EffectivePolicy.content_hash` and `cli/config.py::_policy_fields_payload()` both read `field.value` directly; only the payload path calls `redact()` before serializing for the file BODY, while the hash used for the FILENAME does not. Currently inert (no real secret-shaped key exists — the spec's own Never bullet says "do not invent a real secret key today"), but the tension is real: hashing the redacted value instead would make two different secrets that redact identically collide (defeating write-once correctness), so the fix is a genuine threat-model decision, not a mechanical patch. Needs a human call before any future story introduces a real secret-shaped policy key.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — core/policy.py:1839-1860 content_hash hashes the RAW {value, layer, raw_source}; is_secret_key (:697-701) matches *_TOKEN/_KEY/_SECRET/_PASSWORD; none of today's EffectivePolicy fields (verify_commands ... dispatch) is secret-shaped, so the issue is inert. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Before any secret-shaped policy key ships, should materialize()'s content-addressed filename use a keyed digest (or exclude secret values), accepting the collision trade-off the entry describes?
@@ -216,7 +216,7 @@ verified: 2026-09-05 — STANDS — no review artifact for story 1.1 exists anyw
   summary: `schemas/policy.json`'s `policyField` `$defs` entry does not constrain the TYPE of `value`/`raw_source` (only the key set and the `layer` enum are checked), so a materialized document with a wrong-typed value (e.g. a string where `max_dev_attempts` expects an int) still validates against the schema.
   evidence: Found during Story 1.3's adversarial review pass. Confirmed by reading `schemas/policy.json`: the reused `policyField` shape gives `value`/`raw_source` a `description` but no `type` constraint, because the same `$defs` entry is shared across all 9 policy keys whose value types differ (str/int/tuple-as-array/dict). A precise fix needs per-field-name conditional typing (mirroring `pyforge-doctor/src/pyforge/doctor/data/report-schema.json`'s `if/then/else` pattern) — real schema-authoring effort, not a one-line change. Outside this story's `Effort: M` budget.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — schemas/policy.json $defs.policyField.properties.value and raw_source carry only a description; every per-key property (now 33+, e.g. verify_commands, max_dev_attempts, review_min_score) is a bare $ref to it. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -232,7 +232,11 @@ verified: 2026-09-05 — STANDS — no review artifact for story 1.1 exists anyw
   summary: `cli/config.py::materialize()` can leave an orphaned `.policy-*.tmp` file in the target directory if the process is killed unhandleably (e.g. `SIGKILL`, host crash) between `tempfile.mkstemp()` and `os.replace()` — no sweep/cleanup mechanism exists anywhere in this package to reclaim it later.
   evidence: Found during Story 1.3's edge-case review pass. Confirmed by reading `materialize()`: its `except BaseException: tmp_path.unlink(...); raise` cleanup only runs for exceptions the interpreter gets to handle, which a `SIGKILL` or crash bypasses entirely. Low-probability (requires an unhandleable interrupt at a narrow window) and no loop-home/cleanup story exists yet to own a general tmp-file sweep (Story 1.4+/`[cleanup]` policy territory) — outside this story's surface.
 
-  status: open
+  status: closed
+
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Story 1.1 landed through a bmad-loop wave, and Story 66.2's backfill (the operator's rule for exactly this case) closes a loop-era follow-up recommendation because the loop's own review budget governed it; the drain scheduler from Story 73.2 only picks up open dispatch-followup-review rows, so this row would never run anyway. The July diff it would review has since been rewritten by dozens of stories under 10,845 tests. Note: the decision question attached to this row in the batch (about materialize()'s digest) belongs to DW-1-3-1, not here.
+
+  verified: 2026-10-03 — _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md:8275-8297 DW-FRR-1-6 and DW-FRR-10-2 read status: closed, reason 'bmad-loop wave landing -- the loop's own follow-up budget governed the recommendation' (Story 66.2 backfill, 2026-10-03); spec-73-2 queues only origin: dispatch-followup-review + status: open rows; DW-FU-1-1 carries origin: review-budget-followup (ledger :158); no DW-FRR-1-1 exists.
   severity: low
   verified: 2026-10-01 — STANDS — cli/config.py:48 and :514-537 materialize through pyforge.core atomic_write_bytes; pyforge-core atomic_write.py:108 mkstemp(prefix='.<name>-', suffix='.tmp') is cleaned only in an except BaseException, which SIGKILL bypasses; no sweep exists in pyforge-core or pyforge-marshal. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -247,7 +251,7 @@ origin: review-budget-followup
 source_spec: `spec-1-3-layered-policy-composition-with-provenance-and-validation.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260730-001132-58f6; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+status: closed
   verified: 2026-10-01 — STANDS — No review artifact for story 1.3 under planning-artifacts/ (find for *1-3*review* returns nothing relevant besides an unrelated spec-31-3-tea-test-review file). (2026-09-30 deferral burn-down triage)
 
 verified: 2026-07-30 — CONFIRMED STILL OPEN — same measurement as its 1-1 twin. `1-3-layered-policy` matches only `sprint-status-ledger.yaml` and this ledger across all of `planning-artifacts/`; no review artifact was ever produced.
@@ -284,7 +288,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `adapters/harness_bmadloop.py`'s vendored `_POLICY_TEMPLATE` is a hand-copied snapshot of `bmad_loop` 0.9.0's schema with no drift detector; root `pixi.toml` pins `bmad-loop = ">=0.9.0"` with no upper bound, so a routine re-solve installing a newer harness version with a renamed/added/changed-default key would silently go unnoticed by every existing test.
   evidence: Found during Story 1.10's adversarial review. Confirmed by reading `pixi.toml`'s `bmad-loop = ">=0.9.0"` pin (no ceiling) and `_POLICY_TEMPLATE`'s own docstring, which states the template was "verified once ... rather than imported at runtime." This repo already has an equivalent-purpose mechanism for a structurally similar problem (`scripts/bmad_drift_check.py`, `llms-full-check`) but nothing analogous protects this new vendored artifact. Deliberately out of this story's `Effort: M` scope (the spec explicitly chose vendoring over an `import bmad_loop` dependency to avoid a root pixi.lock re-solve); a lightweight version-pinned drift check is a reasonable follow-up for whichever story next touches this file.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — pyforge-marshal pyproject.toml:36 now caps bmad-loop>=0.11.0,<0.13, so a minor bump is a deliberate cap widening; tests/unit/test_harness_policy_render.py:321 loads the rendered template through the installed bmad_loop.policy.loads and :374 mirrors its enum vocabularies; nothing compares key sets or defaults. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -300,7 +304,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `write_policy_toml`'s unconditional whole-file overwrite will silently discard harness-native state that legitimately lives in the same file outside Marshal's control — `bmad-loop mux set <name>` persists `[mux].backend`, and the TUI persists resized pane geometry (`[tui].left_width`/`.runs_height`/`.deferred_height`/`.tasks_height`) — the moment this rendering path runs against a live loop home more than once.
   evidence: Found during Story 1.10's adversarial review. Confirmed in the installed `bmad_loop` 0.9.0 source: `policy.py::write_mux_backend()` rewrites `[mux].backend` in place, and `TuiPolicy`'s pane-dimension fields are documented as written by the TUI on resize. This is a direct consequence of AD-12/AD-35's own "written whole -- never patched, never merged" invariant (epics.md's Story 1.10 AC text, not a choice this story's spec introduced) — resolving it would need an architecture-level carve-out (e.g. round-tripping `[mux]`/`[tui]` from the pre-existing file before overwriting everything else), which is a product decision, not a mechanical patch.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — adapters/harness_bmadloop.py:797-830 write_policy_toml 'Never reads an existing file at that path first'; the vendored template carries [tui] and [mux] (:403-407, backend commented out); the module docstring (:17-22) and the single-key patch writer (:1040-1060) both acknowledge the harness persists those keys. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: May write_policy_toml round-trip the harness-owned [tui] pane geometry and [mux].backend from the existing file (a carve-out from AD-12/AD-35's written-whole invariant), or is resetting them on every re-render accepted?
@@ -389,7 +393,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `run_preflight` (Story 1.7) does not apply the same git-ref-shape guard (`.`/`..`/`.lock` component rejection) that `run_init` and now `run_teardown` both apply on top of `core.policy._is_valid_project_slug` — a slug shape git itself would refuse as a branch-name component reaches real I/O in `run_preflight` and surfaces as an opaque `MRS-PREFLIGHT-004`-class error instead of a crisp pre-I/O rejection.
   evidence: Found during Story 1.8's adversarial review pass, while verifying an inline comment in the new `run_teardown` code that (incorrectly, now corrected) claimed `run_preflight` already shared this guard. Confirmed by code inspection: `run_preflight`'s slug gate (`cli/init.py`, its `MRS-PREFLIGHT-010` check) calls only `policy._is_valid_project_slug(slug)`, with no `.`/`..`/`.lock` check anywhere in that function. Pre-existing gap, not introduced by this story; fixing it is a one-line addition to `run_preflight` but is Story 1.7's surface, not this story's.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — The ref-shape guard exists at cli/init.py:625 (run_init) and :2308 (run_teardown); run_preflight (:1367ff) checks only policy._is_valid_project_slug at :1407. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -405,7 +409,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `run_teardown` always calls `is_branch_merged(repo_root, branch, into="main")` with no way to point teardown at a repo whose default integration branch is not literally `main` (`master`, `trunk`, etc.) — such a repo would hard-fail every teardown invocation with an opaque `MRS-TEARDOWN-002` from git failing to resolve `refs/heads/main`.
   evidence: Found during Story 1.8's adversarial review pass. This mirrors an already-adjudicated hardcoding: Story 1.4's `add_worktree` calls already hardcode `base="main"` when minting a loop-home branch, and `EffectivePolicy` (Story 1.3) deliberately owns only 9 fixed keys, none naming a base/integration branch. `is_branch_merged`'s new `into` parameter makes the assumption more visible than before, but does not introduce it. Needs a product decision (add a tenth policy key, or accept `main`-only as a permanent constraint of this factory) before it can be fixed — out of scope for an Effort:S story.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — cli/init.py:2438 is_branch_merged(repo_root, branch, into='main') and :726 add_worktree(base=local_branch_ref('main')); the policy key landing_base_branch now exists (schemas/policy.json, core/policy.py) and cli/retire.py:310 reads it. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -421,7 +425,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `run_teardown` always calls `delete_branch(repo_root, branch, force=True)` once removal is authorized (both on the clean/merged path and the forced-refusal path) — if new commits land on the branch ref between `is_branch_merged`'s read and this call (a concurrent process writing to the same worktree via some path other than the worktree teardown just removed), they are force-deleted with `-D` and never re-verified, without the operator's own `--force` ever having been the reason.
   evidence: Found during Story 1.8's adversarial review pass. The window is narrow (the worktree itself is removed before `delete_branch` runs, and git worktrees are exclusive to one branch, so only an out-of-band `git update-ref`/push from a separate process could land new commits in it) and no architecture doc in this repo describes protecting against concurrent multi-process mutation of the same loop-home branch — AD-11's isolation model assumes one operator, one loop home. Real but requires a broader concurrency-control design (e.g. re-verifying `is_branch_merged` immediately before `delete_branch`, or locking) that is out of scope for an Effort:S story.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — cli/init.py:2438 reads is_branch_merged; after worktree removal :2607 runs vcs.delete_branch(repo_root, branch, force=True) with no re-check. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -437,7 +441,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `marshal teardown`'s refusal model cannot see gitignored content -- `git status --porcelain` omits ignored files and a plain unforced `git worktree remove` deletes them, so a loop home whose most valuable content sits in gitignored paths (`.bmad-loop/runs/` state, drafted-but-unpromoted Tier-3 story specs, logs) reads as clean and is destroyed with exit 0.
   evidence: Found by Story 1.8's follow-up adversarial review, live-verified two ways -- unforced `git worktree remove` exits 0 and recursively deletes ignored files in a scratch repo, and the real `~/.bmad-loops/pyforge-marshal` home read `git status --porcelain`-clean at review time while hosting an active run with unpromoted work (the precise artifact class the pyforge-warden incident lost). Not patchable naively -- EVERY loop home carries gitignored content (`run_init`'s own marker/symlink, `.bmad-loop/runs/`), so refusing on any ignored content would refuse every ordinary teardown and train the gate away (the exact F-14 failure mode AD-29's amendment warns about). Distinguishing disposable from precious gitignored content is what AD-29's promotion-reachability predicate exists for; this entry is concrete evidence for Epic 4's wiring of `_unreachable_promotions` (a hardcoded no-op today by the spec's own Never-clause).
 
-  status: open
+  status: closed
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — run_teardown's dirty probe is VcsPort.has_uncommitted_changes, i.e. git status --porcelain (adapters/vcs_git.py:~370-391), which omits ignored files, and remove_worktree (:511-526) deletes them. _unreachable_promotions (cli/init.py:2119) now delegates to cli.deploy.unreachable_promotions_for_slug and guards unpromoted story work even past --force. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Which gitignored content in a loop home is precious enough to refuse teardown (unfinished .bmad-loop/runs state, logs), beyond the unpromoted story work AD-29 already guards?
@@ -471,7 +475,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `marshal teardown` has no liveness guard -- nothing checks whether a bmad-loop run is actively executing in the home (tmux session, fresh run state, lock), so an operator teardown mid-run destroys the run's in-flight state without refusal, since an active run's entire footprint lives in gitignored `.bmad-loop/runs/` paths the dirty check cannot see.
   evidence: Found by Story 1.8's follow-up adversarial review. The 8-home fleet at `~/.bmad-loops/` runs unattended, and a live run's worktrees/logs/state are all inside gitignored paths (see the companion gitignored-blindness entry), so both refusal probes pass while a story is mid-implementation; the check-then-remove sequence is also unsynchronized with any concurrent writer (same class as the already-deferred delete-branch TOCTOU entry). No liveness mechanism exists anywhere in Marshal's architecture yet to consult -- introducing one (probe choice, staleness thresholds, lock protocol) is a design decision interacting with the same Epic 4 refusal-extension seam, not a patch.
 
-  status: open
+  status: closed
   severity: medium
   verified: 2026-10-01 — STANDS — No liveness probe in run_teardown (cli/init.py:2271-2640: no engine_alive, tmux or status consult); cli/status.py:935-999 already computes engine liveness for the fleet picture. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -502,7 +506,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: Epic 3's run-journal writer (`core/journal.py`, Stories 3.1/3.2) must record BOTH `marshal_version` and `harness_version` per run to complete FR-57's "both versions appear in the journal for every run" clause -- Story 1.9 deliberately implemented only the `--version`/preflight halves of FR-57 (its spec's own Never boundary: no journal write path two epics early).
   evidence: FR-57's journal clause is explicit in the PRD; `core/journal.py` does not exist yet (`supervisor/__init__.py` is a reserved stub), so the write cannot land now. Story 1.9's spec's Design Notes promised exactly this ledger entry ("log a deferred-work entry that Story 3.1's journal writer must record {marshal_version, harness_version} per run once it exists") but no such entry had ever been appended -- its absence was itself a Story 1.9 follow-up-review finding.
 
-  status: open
+  status: closed
   severity: medium
   verified: 2026-10-01 — STANDS — grep for marshal_version / harness_version / __version__ / 'version' in core/journal.py, cli/spin.py, cli/dispatch.py and schemas/journal.json: no hit; the only harness_version is the adapter probe (adapters/harness_bmadloop.py:1285). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -609,7 +613,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `marshal init <slug>` has no protection against two concurrent invocations for the same slug: there is an unguarded TOCTOU window both between `worktree_path_for_branch` (read) and `add_worktree` (write) in `cli/init.py::run_init`, and between `branch_exists` and the actual `git worktree add -b` inside `GitVcs.add_worktree`. Two concurrent runs can both observe "not yet provisioned," race, and one surfaces an opaque `MRS-INIT-004` rather than a clean "already in progress" outcome.
   evidence: Found during Story 1.4's adversarial + edge-case review passes (both reviewers independently flagged it). This repo's own documented history includes parallel-agent races over shared git/BMAD state (see `feedback_parallel_bmad_physical_paths.md`), so the scenario is realistic, not purely theoretical. A real fix (a lock file, or accepting git's own worktree-add race semantics as "good enough" with a clearer error) is a design decision spanning this story and possibly Story 1.6's isolation-verification surface — not a mechanical patch.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — cli/init.py:693 worktree_path_for_branch read then :726 add_worktree with no lock; the only 'lock' in run_init is the '.lock' slug-shape check at :625. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -627,7 +631,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `cli/init.py::_loop_home_root()`'s real default fallback (`Path.home() / ".bmad-loops"`, used whenever `BMAD_LOOP_HOME_ROOT` is unset) has zero test coverage — every test in `tests/unit/test_init.py` and the integration test override the env var via an autouse/explicit fixture, so what an actual operator gets by default is never exercised.
   evidence: Found during Story 1.4's adversarial review. Confirmed by grep: `BMAD_LOOP_HOME_ROOT` is set in every test file that imports `run_init`/`main`. The code itself is a one-line `Path` join with low risk, but the coverage gap is real and mechanically closeable (a single test with `monkeypatch.delenv`) — recorded rather than patched now to keep this pass's diff scoped to the findings that change behavior, not just coverage.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — cli/init.py:347-358 default Path.home() / '.bmad-loops'; the only delenv tests (tests/unit/test_init.py:1025, :3578) make Path.home raise; the autouse _sandbox_loop_home_root fixture (:451) pins the env var everywhere else. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -643,7 +647,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `tests/unit/test_vcs_git.py` and `tests/integration/test_init_worktree.py` each define an identical `_git(repo, *args)` subprocess-wrapping test helper instead of sharing one via `tests/conftest.py`, so a future fix to one copy can silently drift from the other.
   evidence: Found during Story 1.4's adversarial review. Confirmed by diff: both helpers are byte-identical (`subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)` plus the same returncode assertion). Minor test-hygiene issue with no runtime consequence.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — grep '^def _git(' finds 29 definitions under src/shared/packages/pyforge-marshal/tests (meta 2, integration 5, unit 22); there is no tests/conftest.py at the package test root. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -674,7 +678,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `marshal init` has no guard against the total loop-home path length, despite this repo's own documented history of `pixi-build-python` panicking (byte-index underflow) on worktree paths beyond roughly 173 bytes — a sufficiently long project slug (up to the existing 255-char shape cap) plus a long `BMAD_LOOP_HOME_ROOT` override could still reproduce that failure class.
   evidence: Found during Story 1.4's edge-case review, corroborated by this project's own memory (`project_bmad_loop_worktree_path_length_limit.md`) and by `scripts/bmad-loop-worktree`'s own comment documenting the exact panic and the `~/.bmad-loops` short-root mitigation it already applies. Pre-existing risk, not newly introduced by this diff (the reference script has the identical gap) — the existing 255-char `_is_valid_project_slug` cap is a POSIX single-segment bound, not a total-path bound. Needs a product decision on whether Marshal should add a total-length check now or continue relying on the short default root as sufficient mitigation.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — No length guard in cli/init.py, cli/spin.py, cli/dispatch.py or core/policy.py (grep for 173 / 'too long' / 'path length' / PATH_MAX: no hit); _is_valid_project_slug's 255-character single-segment cap is the only bound. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should marshal init/spin refuse a loop-home path longer than the ~173-byte pixi-build-python panic threshold, or is the short ~/.bmad-loops default root the accepted mitigation?
@@ -691,7 +695,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `cli/main.py::main` catches only `SystemExit` and `KeyboardInterrupt` — it has no last-resort `except Exception` clamp, so any unanticipated exception escaping a subcommand handler still surfaces as a raw traceback with interpreter exit 1, outside Marshal's frozen `{0,1,2,3,4,130}` exit-code domain (AD-7).
   evidence: Found during Story 1.4's follow-up review (both reviewers flagged escape paths; the specific known escapes — `Path.cwd()` OSError, `Path.home()` RuntimeError, `UnicodeDecodeError` from marker reads and git output, pathlib `PermissionError` on the 3.12 floor — were all patched at their sources in that pass). The residual clamp is a pre-existing Story 1.1/1.3 design decision on the CLI spine (silently converting unknown bugs to `EXIT_USAGE` trades a loud traceback for domain purity), not a mechanical patch; it spans every current and future subcommand, so it deserves its own deliberate change rather than a review-pass side edit.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — cli/main.py:343-406 catches only SystemExit and KeyboardInterrupt; core/verdict.py:439-445 maps UNEVALUABLE to exit 1, so an uncaught crash exits 1, which is inside GUARDED_EXIT_CODES but indistinguishable from a real UNEVALUABLE verdict. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should marshal's CLI spine convert an unanticipated exception into an explicit crash envelope and code (steward uses exit 70), or is Python's traceback with exit 1 (read as UNEVALUABLE) acceptable?
@@ -708,7 +712,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `tests/integration/test_init_worktree.py` — the only end-to-end proof of both worktree acceptance criteria with the real `GitVcs`/`LocalFs` adapters — is executed by no automated gate: the default `pyforge-marshal-test` task excludes `@pytest.mark.slow`, the loop's verify command runs exactly that task, and no `.github/workflows/*` file invokes either marshal task, so `pyforge-marshal-test-slow` only runs when an operator remembers the spec's manual verification step.
   evidence: Found independently by both reviewers in Story 1.4's second follow-up review. Confirmed by grep: `pyforge-marshal-test-slow` appears only in `pixi.toml` and the spec; no CI workflow references either marshal task. Wiring it in is a decision about WHERE (a CI workflow vs. the loop's verify gate vs. a `depends-on` aggregate task) — the loop verify command is orchestrator-owned policy, so this needs a deliberate placement decision, not a review-pass side edit.
 
-  status: open
+  status: closed
   severity: medium
   verified: 2026-10-01 — STANDS — pixi.toml:732-738: pyforge-marshal-test passes -m 'not slow' and pyforge-marshal-test-slow is the only runner of @slow tests; grep of .github/workflows for 'test-slow' / '-m slow' finds nothing. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -724,7 +728,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `cli/init.py`'s `tier3_backlink` step gives a real, non-empty DIRECTORY at the local Tier-3 path a dedicated `MRS-INIT-005` refusal, but a non-directory node (a stray plain FILE) at either the local path or the main checkout's canonical path falls through to the generic `MRS-INIT-004` via `repoint_symlink_atomic`'s/`ensure_dir`'s own internal clobber guards instead.
   evidence: Found independently by both reviewers in Story 1.5's review pass. Confirmed by code inspection: `fs.is_dir(local)` is False for a plain file, so the `remove_empty_dir`/`MRS-INIT-005` branch is never reached; `repoint_symlink_atomic`/`ensure_dir` still safely refuse (no data is destroyed), just under the less-specific code. Low real-world likelihood (why would a plain file occupy exactly this path?) and current behavior is already safe, so not patched now — a dedicated check would need a general `exists()`-style `FsPort` primitive this story's narrow surface doesn't otherwise need.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — cli/init.py:773 only 'tier3_link_target is None and fs.is_dir(local)' reaches the MRS-INIT-005 branch; a plain file falls through to :803-809 and a generic MRS-INIT-004 via _op_failed_finding. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -740,7 +744,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: `tier3_backlink`'s convergence check compares the raw (unresolved) symlink target string against `canonical` (`tier3_link_target == canonical`), whereas the ported reference `scripts/bmad-switch::ensure_tier3_backlink` uses `local.resolve() == canonical.resolve()`.
   evidence: Found during Story 1.5's adversarial review. Both `local`'s stored target and `canonical` are always computed identically via the same deterministic `repo_common_root()`/path-join logic on every invocation (Marshal never hand-configures this symlink, unlike the more varied historical states `bmad-switch` has to tolerate), so a divergence causing spurious non-convergence is unlikely in practice — but the inconsistency with the reference script's own comparison method is real and worth revisiting for full fidelity.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — cli/init.py:767 compares the raw readlink target ('tier3_link_target == canonical'); scripts/bmad-switch (~:119-125) compares resolved paths. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -756,7 +760,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: If `fs.remove_empty_dir(local)` succeeds (clearing a stale empty local Tier-3 directory) but the immediately-following `fs.ensure_dir(canonical)` or `fs.repoint_symlink_atomic(local, canonical)` then fails, `local` is left with NOTHING (no directory, no symlink) — a worse state than before the removal — with no rollback.
   evidence: Found during Story 1.5's edge-case review. Confirmed by code inspection: no compensating write restores the removed directory in the `except FsError` branches after `remove_empty_dir`. Low practical impact since the removed directory was necessarily EMPTY (no data loss) and a subsequent successful re-run self-heals via the same "fresh backlink" path, but a true rollback would be more robust.
 
-  status: open
+  status: closed
   severity: low
   verified: 2026-10-01 — STANDS — cli/init.py:781 remove_empty_dir(local), then :803-809 ensure_dir / repoint_symlink_atomic; the except FsError returns _op_failed_finding with no compensating mkdir. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -772,7 +776,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   summary: A home provisioned by `marshal init` alone still lacks the TOP-LEVEL `_bmad-output/implementation-artifacts` symlink, yet `_bmad/bmm/config.yaml` hard-codes `implementation_artifacts: "{project-root}/_bmad-output/implementation-artifacts"` — so every config-resolving BMAD consumer inside such a home sees a dangling path and would materialize a real top-level directory on first write, forking Tier-3 state one level above the nested backlink this story creates, and `bmad-switch --current`'s desync warning fires on every marshal-provisioned home.
   evidence: Found during Story 1.5's follow-up adversarial review. Confirmed by inspection of `_bmad/bmm/config.yaml:8` (top-level path hard-coded), `scripts/bmad-switch::_ARTIFACT_LINKS`/`desync_warning` (requires BOTH top-level links to agree with the marker), and the epics: no later story creates the link — Story 1.6 only VERIFIES Tier-3 realpaths, Story 1.7 seeds adapter configs. The spec deliberately scoped the top-level compatibility link out of Story 1.5 (its Never section + Design Notes: it belongs to `bmad-switch::repoint_links`, shared with `planning-artifacts`), and today's operational mitigation is running `bmad-switch` inside the home (auto-memory `feedback_bmad_loop_worktree_needs_switch_and_backlink.md`). Needs a product decision: either a later Marshal story ports `repoint_links`' implementation-artifacts half (e.g. into 1.6/1.7's surface), or the FR-3 claim "every consumer sees the same path" is formally narrowed to nested-path consumers.
 
-  status: open
+  status: closed
   severity: medium
   verified: 2026-10-01 — STANDS — cli/init.py creates only the nested backlink (:759-809) and the planning-artifacts link (:812-837); nothing in the package writes _bmad-output/implementation-artifacts, while _bmad/bmm/config.yaml:8 still resolves implementation_artifacts to that top-level path and scripts/bmad-switch:80 _ARTIFACT_LINKS repoints both links. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -943,6 +947,10 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
   resolution: CLOSED 2026-09-05 — obsolete: the Guildhall board that rendered the divergent Herald story set is retired — `docs/dashboard/` now holds only `README.md`, `index.html` and `kedro-viz/` (no `data.js`, generator deleted by steward 30.2, ledger-done), and `retired-console-check` fails CI if it is reintroduced. Closed as obsolete.
   status: closed
 
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Same case as DW-FU-1-1: a bmad-loop landing (run 20260730-001132-58f6) whose loop review budget was spent, which Story 66.2's rule closes rather than schedules, and which no drain will ever pick up. core/policy.py has grown from that diff to 2,527 lines since, so a review of the original change has nothing left to look at. The batch's question for this row (write_policy_toml and [tui] geometry) belongs to a DW-1-10 row, not here.
+
+  verified: 2026-10-03 — _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md:246 origin: review-budget-followup, status: open; same 66.2 precedent rows (:8275-8297) closed; spec-73-2 drain scheduler reads only dispatch-followup-review rows; spec-1-3 frontmatter still followup_review_recommended: true.
+
   verified: 2026-08-08 — both story sets read directly and compared; zero id overlap.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
@@ -988,6 +996,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
 ### DW-FU-2-1: Follow-up review still recommended for 2-1-standalone-verify-command-runner-project-scoped after the damping cap was spent
 
 - source_spec: `spec-2-1-standalone-verify-command-runner-project-scoped.md`
+  origin: review-budget-followup
   summary: Follow-up review still recommended for 2-1-standalone-verify-command-runner-project-scoped after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260802-183704-36df; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-3`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
@@ -1004,6 +1013,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
 ### DW-FU-2-6: Follow-up review still recommended for 2-6-gate-evidence-record-with-redaction-at-egress after the damping cap was spent
 
 - source_spec: `spec-2-6-gate-evidence-record-with-redaction-at-egress.md`
+  origin: review-budget-followup
   summary: Follow-up review still recommended for 2-6-gate-evidence-record-with-redaction-at-egress after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260803-023308-65b7; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-4` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-4`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
@@ -1020,6 +1030,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
 ### DW-FU-3-3: Follow-up review still recommended for 3-3-detached-launch-with-scoped-story-selection after the damping cap was spent
 
 - source_spec: `spec-3-3-detached-launch-with-scoped-story-selection.md`
+  origin: review-budget-followup
   summary: Follow-up review still recommended for 3-3-detached-launch-with-scoped-story-selection after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260803-023308-65b7; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-5` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-5`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
@@ -1036,6 +1047,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
 ### DW-FU-3-4: Follow-up review still recommended for 3-4-supervisor-process-lifecycle after the damping cap was spent
 
 - source_spec: `spec-3-4-supervisor-process-lifecycle.md`
+  origin: review-budget-followup
   summary: Follow-up review still recommended for 3-4-supervisor-process-lifecycle after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260803-023308-65b7; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-6` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-6`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
@@ -1052,6 +1064,7 @@ verified: 2026-09-05 — STANDS — same measurement as DW-FU-1-1: no review art
 ### DW-FU-3-5: Follow-up review still recommended for 3-5-idle-strand-detection after the damping cap was spent
 
 - source_spec: `spec-3-5-idle-strand-detection.md`
+  origin: review-budget-followup
   summary: Follow-up review still recommended for 3-5-idle-strand-detection after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260803-023308-65b7; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-7` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-7`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
@@ -1131,7 +1144,9 @@ status: open
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
   summary: `run_apply` catches `BaseException` and, whenever any single restore fails, re-raises as `InternalError` (exit 10) chained from the original. When the original IS a `KeyboardInterrupt` or `SystemExit`, that converts an uncatchable interrupt into an ordinary `Exception` subclass, so the CLI story that eventually does `except SeedError as e: sys.exit(e.exit_code)` will exit 10 on an operator interrupt instead of dying. This directly contradicts `_restore`'s own docstring, which argues at length that catching `Exception` rather than `BaseException` is deliberate because swallowing a Ctrl-C "would make the process unkillable at exactly the moment a human is trying to stop it".
   evidence: Raised by this story's second review pass (Blind Hunter) and verified by execution: with `commit` raising `KeyboardInterrupt` and one target inside the caller's never-write set, the caller receives `InternalError` with `__cause__` set to the interrupt. Not fixed here because it is a contract-level conflict, not a local bug: the spec's I/O & Edge-Case Matrix has a "Rollback itself fails" row mandating `InternalError` naming every unrestorable path, with no carve-out for an interrupt, and a separate "Interrupt mid-run" row promising `KeyboardInterrupt` propagates unchanged -- both rows are inside the FROZEN `<intent-contract>`, and they collide exactly when both conditions hold. Choosing which wins is an intent decision (and every mechanical alternative has a cost: re-raising the interrupt bare discards the unrestorable-path list, which is the same diagnostics loss already filed as `DW-FU-10-3-5`). This story's `_restore` docstring now states the behavior explicitly so it is not read as an oversight. Belongs with whoever amends the matrix, or with the CLI story that owns exit-code dispatch.
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Rule that the InternalError wins, which is what the code already does: when Ctrl-C hits and the rollback then fails, the operator gets exit 10 and a message naming every file left half-restored, which is the one thing they need to fix the repo. The process still exits (the interrupt rides along as the cause), so nothing becomes unkillable. When run.py is next touched, reword its docstring's 'filed as deferred work' line to cite this ruling.
+  verified: 2026-10-03 — pyforge/marshal/seed/apply/run.py:393-404 catches BaseException and raises InternalError(...) from original when _restore reports unrestorable paths; :213-223 docstring defers the choice; pyforge/marshal/cli/seed.py:466/604/717 'except SeedError as exc' returns exc.exit_code and renders the remedy.
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — seed/apply/run.py:393-404 catches BaseException and raises InternalError from the original whenever _restore reports unrestorable paths, including when the original is a KeyboardInterrupt. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: When an interrupt coincides with a failed rollback, which frozen matrix row wins: propagate the interrupt unchanged (listing the unrestored paths on stderr) or raise InternalError?
@@ -1531,7 +1546,9 @@ status: open
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-5-10-marshal-land-renders-a-detectable-merge-subject.md`
   summary: `run_land` renders `subject = identity.render_merge_subject(wave_keys[0], template)` -- the wave's lowest-sorted key only, per this story's own Design Notes (`identity.render_merge_subject`/`parse_merge_subject` are AD-24's fixed single-`{key}`-placeholder pair, and this story's Surface deliberately excludes `core/identity.py`/`core/promotion.py`, so no multi-key form exists). Under the default `"merge"` strategy the non-primary keys' own already-existing bmad-loop-native commit subjects remain ancestors of `main` after the merge and are independently classified by `marshal_native_merged_keys` regardless of this commit's own subject (as the Design Notes already state) -- but under `"squash"`/`"rebase"`, `cli/land.py::_resync_home_branch`'s own docstring already documents that "the landed commits are never ancestors of `origin/<base>` ... BY CONSTRUCTION" for those two strategies, so a squash merge's non-primary wave keys have no fallback detection path at all, remaining permanently unclassified via this mechanism (though a `rebase` strategy DOES preserve each original commit's own subject verbatim on `main`, so its non-primary keys stay detectable via the pre-existing bmad-loop-native pattern independent of this gap -- only `squash` genuinely loses them).
   evidence: Surfaced by the Blind Hunter adversarial review pass over this story's diff. Confirmed via direct code reading of `_resync_home_branch`'s own docstring and `core/identity.py::_split_template`'s single-placeholder contract. Not a regression: before this story, ZERO wave keys were ever classified via the merge commit's own subject (no subject was ever rendered), so covering the primary key only is a strict improvement, never worse than the prior state, for every strategy including squash. Not fixed here: giving every wave key its own detectable trace under `squash` needs either a multi-key subject form (a `core/identity.py` change this story's Surface explicitly excludes) or a different detection mechanism entirely (e.g., an explicit per-key marker committed alongside the squash), both larger, cross-cutting changes out of this story's own bounded (Effort: S) scope; Story 5.9's own measured history shows `marshal land` waves are overwhelmingly single-key in practice, and `squash`/`rebase` are non-default `landing_merge_strategy` values.
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Not worth doing: the gap only exists under a squash landing, and squash merges are disabled in this repository's GitHub settings (AGENTS.md) while no policy layer anywhere sets landing_merge_strategy, so every land uses the 'merge' default where each wave key's own commits stay on main. A rebase landing keeps every original subject too, as the row itself notes.
+  verified: 2026-10-03 — pyforge/marshal/cli/land.py:1014 still renders render_merge_subject(wave_keys[0], ...); pyforge/marshal/core/policy.py:602 default landing_merge_strategy 'merge'; grep -rn landing_merge_strategy _bmad-output --include=*.toml: no hits; AGENTS.md Policy: 'squash is disabled in the repository settings'.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — cli/land.py:970 `subject = identity.render_merge_subject(wave_keys[0], template, slug)` still renders from the wave's lowest-sorted key only; core/identity.py's render_merge_subject/parse_merge_subject remain a fixed single-{key}-placeholder pair (AD-24). cli/land.py's own _resync_home_branch docstring still states landed commits are never ancestors of origin/<base> under squash/rebase 'BY CONSTRUCTION'. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should marshal invest in a multi-key merge-subject form (an AD-24 architecture change) so every wave key is independently detectable after a squash/rebase landing, or is per-primary-key detection (a strict improvement over the prior no-detection state) sufficient given squash/rebase wave landings are the less common strategy?
@@ -1743,7 +1760,9 @@ status: open
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-5-manifest-coverage-check.md`
   summary: `coverage_findings()`/`coverage_counts()` (S-9.5, FR-69/SC-10) re-verify `entry.artifact_class`/`entry.rationale` as a second, independent gate against `ManifestEntry.__post_init__` (S-7.4/7.5) already enforcing both unconditionally -- so no manifest built through `load_manifest` or ordinary `ManifestEntry(...)` construction can ever produce an `uncovered` finding; the failing branches are reachable only via `object.__setattr__` bypassing the frozen dataclass, a technique that appears nowhere in production code. The corresponding CI-gate test (`test_packaged_manifest_passes_coverage_findings_with_zero_findings`) can consequently only fail if `load_manifest` itself already failed to enforce its own invariants, in which case the fixture would have raised before the test body runs -- adding little regression protection beyond the pre-existing `test_packaged_manifest_class_counts_match_the_spec_exactly`. Separately, the implementation only validates that a *declared* manifest entry is internally well-formed; it never reconciles against `Inventory`/the target repo, so it cannot detect the arguably more valuable reading of SC-10's "100% manifest coverage" -- a real repo artifact with no manifest entry at all, or an entry whose declared class doesn't match what's actually on disk.
   evidence: Surfaced by this story's review pass (Blind Hunter). Verified directly: `ManifestEntry.__post_init__` (`model/manifest.py`) unconditionally coerces `artifact_class` through `ArtifactClass(...)` (raising on any invalid value) and requires a non-blank `rationale` via `_require_text` on every entry regardless of class -- both conditions `_uncovered_reason` checks are already fully closed before a `ManifestEntry` can exist. This is faithful to epics.md Story 9.5's literal AC (an explicit, planning-approved requirement predating this dev pass, mirroring AD-54's "coverage check that HARD-fails any unclassified artifact" design and `bmad_drift_check.py`'s own redundant-gate philosophy) -- not a defect introduced by this diff, so not fixed here. Worth a future architecture-level look (perhaps alongside S-9.6's plan builder or a later report-renderer story) at whether the coverage check should also reconcile against `Inventory`'s classification output to catch the file-system-divergence case, which is the reading with real teeth.
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: the check is the literal, planning-approved Story 9.5 requirement, and every manifest entry is already validated when it is built, so '100% coverage' holds by construction and the redundant branch costs nothing. Reconciling the manifest against files on disk would be a new feature nobody has asked for, since a repo file with no manifest entry is simply not something the seed manages.
+  verified: 2026-10-03 — pyforge/marshal/seed/detect/inventory.py:795 coverage_findings(manifest) and :820 coverage_counts are called only from tests (tests/unit/test_seed_detect_inventory.py, tests/meta/test_p03_detect_is_pure.py); pyforge/marshal/seed/model/manifest.py:331,334 ManifestEntry.__post_init__ coerces ArtifactClass and requires a non-blank rationale.
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — seed/detect/inventory.py:721 `coverage_findings(manifest: Manifest)` still takes the manifest alone. seed/model/manifest.py's ManifestEntry.__post_init__ unconditionally enforces both conditions _uncovered_reason checks (artifact_class coercion, non-blank rationale), so no ManifestEntry built through load_manifest or ordinary construction can ever trigger the 'uncovered' branch -- only object.__setattr__ bypassing the frozen dataclass can, a technique absent from production code. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Is coverage_findings' 'uncovered' branch intentional defense-in-depth (mirroring bmad_drift_check.py's own redundant-gate philosophy and AD-54's stated design), worth keeping even though it is currently unreachable via normal construction -- or should a future story make it reachable against real corruption paths?
@@ -1773,7 +1792,9 @@ status: open
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-9-5-manifest-coverage-check.md`
   summary: `coverage_findings()`/`coverage_counts()` operate on `Manifest.entries`, which -- when the `Manifest` came from `load_manifest` (`model/manifest.py`) -- has already been filtered to only entries `in_range(model_version, entry.since, entry.until)` at the manifest's own declared `model_version`. An entry staged for a future version (`since` not yet reached) or already retired (`until` passed) is invisible to the coverage check entirely, so a corrupted `artifact_class`/`rationale` on such an entry produces no `uncovered` finding at the model version where the check actually runs. This is consistent with `load_manifest`'s documented version-filtering design (the manifest is an append-only historical ledger; AD-55) and with the intent contract's own explicit boundary ("coverage is intrinsic to the manifest alone"), but it sits in tension with FR-69's "every artifact [Genesis] knows about" framing, which reads as broader than "every artifact active at the manifest's own declared version."
   evidence: Raised by this pass's Blind Hunter review. Verified directly: `load_manifest`'s `filtered_entries = tuple(entry for entry in entries if in_range(model_version, entry.since, entry.until))` (`model/manifest.py`) runs before `Manifest(...)` is constructed, so `Manifest.entries` -- the only input `coverage_findings`/`coverage_counts` ever see -- never contains an out-of-range entry when built via the loader. Not this story's defect: the version-filtering behavior is S-7.4's pre-existing design, and S-9.5's intent contract explicitly scopes coverage to the manifest alone (no `Inventory`/repo-target involvement), which by construction means "the manifest at its declared version," not "every entry the YAML source ever mentions." Worth a future look (perhaps alongside a report-renderer story) at whether a coverage-style check should also run against the UNFILTERED entry list to catch corruption in staged/retired entries before they become active.
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Already covered: load_manifest builds and validates every entry, staged and retired ones included, before it filters by version, so a corrupted class or rationale on any entry already fails the load loudly. The coverage check never needs to see the filtered-out entries.
+  verified: 2026-10-03 — pyforge/marshal/seed/model/manifest.py:616-637 calls _build_entry (which constructs ManifestEntry, validated at :322-334) for every raw entry and raises ManifestError on failure; only then :639 filters with in_range(model_version, since, until).
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — seed/detect/inventory.py:721 coverage_findings still consumes only manifest.entries; seed/model/manifest.py:601-602 `filtered_entries = tuple(entry for entry in entries if in_range(model_version, entry.since, entry.until))` runs before Manifest(...) is constructed via load_manifest, so an out-of-range (staged or retired) entry is invisible to the coverage check entirely. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should a coverage-style check also run against the manifest's UNFILTERED entry list (every artifact ever mentioned, regardless of since/until) to catch corruption in a staged-or-retired entry, or is scoping coverage to the manifest at its currently-declared model_version (S-7.4's pre-existing, documented design) the intended contract?
@@ -2879,7 +2900,9 @@ status: open
   summary: `core/gate.py` is the FIRST `core/**` module to import from `ports/` (`from ..ports.process import ProcessResult`), an edge `architecture.md` says should not exist ("The edge is safe because it is one-way: `core` still imports nothing") and which the shipped AD-4 import-linter contract does not cover — it forbids only `subprocess`, `os`, `time` and `pyforge.marshal.adapters`, so the new edge is invisible to the guard that both new modules' docstrings cite.
   evidence: Found during Story 2.1's second follow-up review pass (Blind Hunter). Confirmed by grep — this is the package's only `core -> ports` import — and by reading `pyproject.toml`'s `[tool.importlinter]` contracts, neither of which names `pyforge.marshal.ports`. Not patched here because both remedies are spec/architecture decisions, not defect fixes: moving `ProcessResult` to `core/model.py` (so `ports/process.py` imports it and the direction is restored one-way) directly contradicts this story's own Code Map, which places the dataclass in `ports/process.py`; amending AD-4's declaration to bless a `core -> ports` value-type edge is an architecture amendment of the kind F-16 (2026-07-30) already went through for `adapters -> core`. Behaviourally harmless today (`ProcessResult` is a frozen, I/O-free dataclass), but the invariant is now stated in one place and unenforced in another.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): fix -- the spine now authorizes core -> ports for I/O-free Protocols and value types (AD-4 dependency direction), as F-16 did for adapters -> core.
+  verified: 2026-10-03 — _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md:88 carries the amendment; no code change.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — grep for 'from ..ports' / 'from .ports' across core/*.py shows core/ now imports from ports/ in EIGHT modules: dispatch.py:39, conformance.py:55, supervise.py:81, publish.py:12-13, worktree_checkpoint.py:8, token_economy_benchmark.py:23, status.py:79 -- wider than the five cited in the 2026-09-05 note. pyproject.toml's AD-4 contract (forbidden_modules = ["subprocess", "os", "time", "pyforge.marshal.adapters"]) still does not name pyforge.marshal.ports. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should AD-4's import-linter contract be widened to forbid core -> ports (closing the now-eight-module edge and forcing the affected value types to move into core/model.py), or should architecture.md's 'core imports nothing from ports' claim be amended to bless a core -> ports value-type edge, the way F-16 (2026-07-30) already amended it for adapters -> core?
@@ -2894,7 +2917,9 @@ status: open
   summary: `marshal gate evaluate` ships no JSON Schema for its envelope `data` payload (unlike `marshal config`, which ships `src/pyforge/marshal/schemas/policy.json`), the per-command report dict is heterogeneous by design (`stdout`/`stderr` keys exist only when `resolvable` is true, so a consumer reading `entry["stdout"]` without branching gets a `KeyError`), and `data_version` stayed at the default `1` for a brand-new payload shape the envelope schema describes as independently versioned "from a registry" that does not exist.
   evidence: Found during Story 2.1's second follow-up review pass (both reviewers, from different angles). Confirmed by inspection: `envelope.v1.json` deliberately leaves `data` open ("its shape is per-command and opaque"), `schemas/` contains only `envelope.v1.json` and `policy.json`, and the only description of the gate payload is `core/gate.py`'s docstring. The heterogeneous shape itself was already dispositioned as `reject` in the first review pass (deliberate, documented); what is new here is the ABSENCE of a machine-readable contract for a payload CI is expected to parse, plus the unbumped `data_version`. Establishing a per-command payload schema (and whether `data_version` is per-command or per-envelope, and where its registry lives) is a cross-command convention decision touching `marshal config` too, outside this story's declared surface.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: no script, workflow or other station parses gate evaluate's data payload, and AGENTS.md asks for a frozen report schema only where a report contract is consumed outside the package. data_version 1 is correct for a payload's first shape, and other commands already bump their own (status uses 2), so the per-command convention exists in practice.
+  verified: 2026-10-03 — grep for 'gate evaluate' across .github, scripts, pixi.toml and every station's src: only marshal's own modules; pyforge/marshal/schemas/envelope.v1.json:5 declares data 'per-command and opaque'; pyforge/marshal/cli/status.py:1694 data_version=2, cli/check.py:185 data_version=1.
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — src/shared/packages/pyforge-marshal/src/pyforge/marshal/schemas/ now holds conformance.json, envelope.v1.json, gate-record.json, journal.json, policy.json, status.json -- gate-record.json is Story 2.6's durable record, not a schema for gate evaluate's own data payload; grep for 'data_version' in cli/gate.py is empty (never set, so it rides envelope.v1.json's default). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should marshal gate evaluate (and other per-command payloads) ship a machine-readable JSON Schema the way marshal config does with schemas/policy.json, and is data_version meant to be a per-command convention with its own registry, or is the envelope's documented 'data is per-command and opaque' stance sufficient?
@@ -2922,7 +2947,9 @@ status: open
   summary: Four materially different policy-resolution failures now collapse into the single code `MRS-POLICY-004` -- a malformed-TOML syntax error, an unreadable/absent file, a directory squatting on the policy path, and (new in this pass) a CONTAINMENT REFUSAL where the conventional path resolves outside the project's own directory. A machine consumer triaging `gate evaluate`'s envelope cannot tell "fix your TOML" from "someone planted a symlink pointing at another project", which are opposite responses.
   evidence: Found during Story 2.1's third review pass (Blind Hunter), while implementing the containment narrowing this same pass patched. Confirmed by inspection: `cli/gate.py::_resolve_policy_source` instantiates a `PolicyIOError` purely to harvest its `.finding`, deliberately reusing the I/O code rather than minting a new one, and the shipped tests for a TOML syntax error, a directory squat, a cross-project symlink and a relocated projects tree all assert the same `["MRS-POLICY-004"]`. Not patched here because the story's finding-code budget is fixed by its own spec (`MRS-GATE-001..005` registered in `core/findings.py` + `core/verdict.py` together), and a containment refusal is arguably a POLICY-class rather than GATE-class code, so choosing its namespace, severity tier and registry placement is a spec-level decision. Behaviour is correct and fail-closed either way (`MRS-POLICY-004` classifies `UNEVALUABLE`, exit 1) -- this is a diagnosability gap, not a false green.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Not worth doing: the refusal is fail-closed either way, and its message already says in plain words that the policy resolves outside the project directory, so a human can tell it from a TOML error. No code anywhere branches on the finding code to choose a response, so a new code would have no reader.
+  verified: 2026-10-03 — pyforge/marshal/cli/gate.py:463-480 (in _resolve_policy_source, def :404) containment refusal messages 'refusing to read project policy ... outside project ... directory'; grep for MRS-POLICY-004 consumers outside findings/verdict/gate/policy: only cli/config.py and cli/status.py emitting or relaying it, none routing on it.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — cli/gate.py:356-401 _resolve_policy_source still returns 'one MRS-POLICY-004 finding' for a containment violation alongside the malformed/unreadable/directory-squat cases (lines 766,779-789,879-885 all route through the same code); no MRS-POLICY-005/006-class containment-specific code exists in core/findings.py. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should a containment refusal (a symlink/relocated-tree attack on the conventional policy path) get its own distinct finding code separate from MRS-POLICY-004's malformed-TOML/unreadable/directory-squat cases, and if so does it belong in the POLICY namespace or a new GATE-class code -- a namespace and registry-placement decision the story's own fixed finding-code budget deferred?
@@ -3147,7 +3174,9 @@ status: open
   summary: `core.journal.prepare_for_write`'s 4 KiB sidecar decision measures only `entry.payload`'s own serialized byte length, so an inlined journal LINE (payload plus the `id`/`ts`/`run_id`/`kind`/`phase`/optional `story`/`intent_id` envelope) can land modestly over 4096 bytes even when the payload itself sits right at the threshold -- the architecture's own AD-30 text says "a LINE exceeding 4 KiB stores its payload in a sidecar blob", while this story's governing epics.md AC says "PAYLOADS over 4 KiB go to a sidecar blob"; the implementation follows the AC (the contract of record this story's spec preserved verbatim), not AD-30's looser prose.
   evidence: Confirmed live during Story 3.1's adversarial review (Blind Hunter and Edge Case Hunter both flagged it independently): `json.dumps({"k": "x" * (4096 - overhead)})` sits at exactly `SIDECAR_THRESHOLD_BYTES` and inlines; the FULL envelope (`id`, `ts`, `run_id`, `kind`, `phase`) adds roughly 150-300 further bytes not counted against the threshold. Not fixed in this story: `epics.md`'s AC text is unambiguous ("payloads over 4 KiB") and is this story's own preserved contract of record, so the code correctly implements it; the tension is between two PLANNING artifacts (AD-30's prose vs. the AC it produced), not something this story's spec or implementation introduced. Reconciling AD-30's wording (or re-deriving the AC from it) is a planning-layer decision, out of an implementation story's scope.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): fix -- AD-30 now says the 4 KiB sidecar threshold measures the payload, matching the acceptance criterion and core/journal.py.
+  verified: 2026-10-03 — _bmad-output/projects/pyforge-marshal/planning-artifacts/architecture/architecture-pyforge-marshal-2026-07-25/ARCHITECTURE-SPINE.md:329 carries the amended rule sentence; no code change.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — core/journal.py:529,594 `len(payload_text.encode("utf-8")) <= SIDECAR_THRESHOLD_BYTES` -- still measures the payload alone, never the full envelope+payload line, unchanged from the cited text. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should the 4 KiB sidecar threshold measure the full journal line (envelope + payload, per AD-30's architecture prose) or the payload alone (per epics.md's AC, which the shipped code implements verbatim)? The two planning artifacts disagree; the code correctly implements one of them.
@@ -3287,7 +3316,9 @@ status: open
   summary: `core.journal.fold` accepts TWO `outcome` entries whose `intent_id` names the same `intent` with no signal at all -- both land in `entries`, neither is orphaned, nothing is quarantined -- so a consumer of the module declared Marshal's ONE producer of gate verdicts receives two contradictory outcomes for a single decision with no way to tell which is authoritative.
   evidence: Flagged during Story 3.2's third review pass (Blind Hunter and Edge Case Hunter independently). Verified live: intent `(cli-1,0)` plus outcomes `(cli-1,1)`/`(cli-1,2)` both referencing `intent_id=(cli-1,0)` folds to `open_intents=0, orphaned_outcomes=0, quarantined=0` with payloads `[{}, {'v':'clean'}, {'v':'failed'}]`. `matched_intent_ids` is a `set`, so a second reference to an already-matched id is simply re-added. DISTINCT from the already-logged duplicate-`JournalEntryId` entry above: there the entry IDs collide, here the entry IDs are unique and the REFERENCES collide. Not fixed in this story for the same reason that one was not: the remedy needs a design decision no AC makes (quarantine the second outcome? a new finding code? does first or last win for pairing? is a re-close ever legitimate, e.g. a retry?), and no real writer mints `intent`/`outcome` pairs yet to validate a choice against.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: fold puts every entry in one total order (timestamp, then id), so the latest outcome for an intent is always identifiable, and a second outcome is a legitimate re-close, for example a reconcile after a crash. The one consumer that reads outcomes per story already takes the most recent one.
+  verified: 2026-10-03 — pyforge/marshal/core/journal.py:1015 parsed.sort(key=(entry.ts, entry.id)); :1020-1026 matched_intent_ids set; pyforge/marshal/cli/deploy.py:2432-2450 _gather_gate_verdicts documents 'last write wins' as 'most recently landed wins'.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — core/journal.py:977-988 `matched_intent_ids: set[JournalEntryId] = set()` -- a second `outcome` entry referencing an already-matched `intent_id` is still silently re-added to the set with zero quarantine or signal. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: When two outcome entries both reference the same intent_id, which one is authoritative -- quarantine the second, flag both, emit a new finding code, or is a re-close (e.g. after a retry) ever legitimate?
@@ -3316,7 +3347,9 @@ status: open
   summary: `FoldResult`'s query surface cannot express the unit of unevaluability its own AC names. The AC says a bad line "makes its own STORY KEY and decision domain unevaluable", but `is_evaluable(story, None)` raises `ValueError` (the both-or-neither guard added in an earlier review pass), so the story-level question is illegal to ask and the per-`(story, kind)` answers do not compose without enumerating every `kind` in existence. The same pass's `for_story` type guard removed the only way to select the run-scoped (`story is None`) entries. And `by_kind`/`for_story` return a plain tuple indistinguishable from a complete answer when a quarantine dropped entries, with no in-band signal and nothing forcing the `is_evaluable` call -- against AD-8's "unevaluable is a failure, never silently dropped".
   evidence: Flagged during Story 3.2's third review pass (Blind Hunter #7/#8 and Edge Case Hunter #10, independently). Verified live: after a line scoped `(3.1, "gate-verdict")` quarantines, `is_evaluable(StoryKey(3,1), "story-transition")` returns `True` and `is_evaluable(StoryKey(3,1), None)` raises `ValueError`; `for_story(None)` raises `TypeError`. Not fixed in this story: each remedy contradicts an invariant a previous review pass deliberately added, so resolving it means re-deciding what a story-level query MEANS (any quarantine touching the story? only whole-run ones?) and whether run-scoped entries deserve their own accessor or a re-admitted `None`. No real consumer of the query surface exists yet (Story 2.3 is the first) to validate a choice against.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Not worth doing: two months on, nothing in production calls is_evaluable or for_story, the two methods whose meaning is in question. The real consumers use by_kind and read fold's quarantined list directly where it matters (the supervisor refuses to claim ownership when lines were quarantined), so there is no consumer to design a story-level query for.
+  verified: 2026-10-03 — grep for '.is_evaluable(' and '.for_story(' across pyforge/marshal/: no caller outside core/journal.py; by_kind used in dispatch_supervisor, supervisor, cli/status.py, cli/dispatch.py; pyforge/marshal/supervisor/__main__.py:1186-1208 reads fold_result.quarantined (MRS-SUPV-011).
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — core/journal.py:798-830 `is_evaluable` still raises `ValueError` for an asymmetric `(story, None)` pair; core/journal.py:769-782 `for_story(story: StoryKey)` still raises `TypeError` for `None`. Both confirmed unchanged from the cited text. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: What does a story-level is_evaluable/for_story query mean once run-scoped (story=None) entries exist -- should None be re-admitted as a distinct, legal query value, and should a story-level question mean 'any quarantine touching the story' or only whole-run ones? Each candidate remedy contradicts an invariant a previous review pass deliberately added.
@@ -3451,7 +3484,9 @@ status: open
   summary: `--foreground` bypasses the AD-38 feed-completeness gate entirely -- it returns from `run_spin` before `story_feed_error`/`story_feed_keys`/`resolve_feed` are ever called -- so a story feed containing a key that fails `core.identity.normalize` refuses the detached launch with `MRS-IDENT-001` but launches perfectly happily behind the flag, and the resulting run produces no Marshal run id and no journal entries at all.
   evidence: Flagged during Story 3.3's second review pass (Blind Hunter). Confirmed by reading `cli/spin.py::run_spin`: the `--foreground` branch sits between the loop-home gate and the story-feed gate, and its own module docstring documents the omission as deliberate ("skips the story-feed/journal machinery entirely -- there is no minted run id and nothing to journal for a launch that never called `spin`"). Real consequence: AD-38's completeness guarantee, and the journal's coverage of launches, are both conditional on a CLI flag, so a `--foreground` run that executes six stories is invisible to `core.journal.fold` -- the module Story 3.2 declared Marshal's ONE producer of accumulating run state. Not fixed in this pass: the spec's Always bullet defines `--foreground` purely as "calls a synchronous, stdio-inheriting HarnessPort path instead of the detached one and relays its exit code" and its order-of-operations bullet describes only the detached path, so whether a foreground run is a first-class journaled Marshal run (and what its envelope would even be, given the flag deliberately bypasses the envelope) is an unanswered design question, not a mechanical omission.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: --foreground is the documented escape hatch that runs bmad-loop inline and steps outside the envelope, like attach and --version, and it writes nothing for Marshal's fold to read. The journaled, measured paths are detached spin and factory dispatch; adding run ids and journal machinery to the debug path would add complexity for no consumer.
+  verified: 2026-10-03 — pyforge/marshal/cli/spin.py:119-131 module docstring documents --foreground skipping the story-feed/journal machinery; :1122-1130 help text; :1614-1616 branch calls harness.run_foreground and relays the exit code.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — cli/spin.py:100-109 module docstring still documents `--foreground` as deliberately skipping the story-feed/journal machinery entirely ('there is no minted run id and nothing to journal for a launch that never called spin'). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should --foreground launches mint a run id and journal entries like the detached path (so AD-38 completeness and core.journal.fold's 'one producer of run state' claim hold for every launch mode), sacrificing --foreground's current zero-journal-machinery simplicity?
@@ -3900,7 +3935,9 @@ status: open
   summary: No test exercises the interaction between the idle ladder's `stop-and-retry` pid swap (Story 3.5) and the per-story wall-clock ceiling (Story 3.6) -- `story_started_monotonic` is set once per observed story-key transition and is never touched by the retry logic, so a story's per-story wall-clock ceiling keeps accumulating straight through a stop-and-retry cycle, including whatever wall-clock time the process spent stopped between `stop()` and `resume()`.
   evidence: Reviewer-identified (Blind Hunter). This may well be the CORRECT behavior (the operator's wall-clock budget for the story was genuinely consumed regardless of whether the engine was actively running during that window), but it is an undocumented interaction between two independently-designed mechanisms sharing the same tick loop, and no test pins down which behavior is intended. Needs a deliberate decision (does a stop-and-retry pause or continue the per-story wall-clock clock?) plus a test asserting it, rather than leaving the answer as "whatever the current code happens to do."
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design, and the effect is negligible. Stop-and-retry calls stop() and then resume() back to back in the same tick, so the only 'paused' time is the few seconds those two calls take. A wall-clock budget should count that time.
+  verified: 2026-10-03 — supervisor/__main__.py:2770-2845: the STOP_AND_RETRY branch calls harness.stop (:2776), then harness.resume (~:2845) with no wait between them. story_started_monotonic is set only on a story-key change (:2326) and read for the ceiling at :2341-2342.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — No test in tests/unit/test_supervisor.py combines stop-and-retry with the per-story wall-clock ceiling (grep 'retry.*wall'/'wall.*retry' empty); story_started_monotonic (supervisor/__main__.py:1090,1799,1814) is untouched by the retry branch (:2062-2073,2316-2317), so it keeps accruing through a stop/resume pause with nothing asserting whether that is intended. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should a stop-and-retry cycle pause the per-story wall-clock ceiling for the time the harness was stopped, or should it keep accruing through the pause (today's undocumented behavior)?
@@ -4428,7 +4465,9 @@ status: open
   summary: `check_spec_binding` only ever compares against the static `effective.verify_commands` value -- it has no way to detect whether a declared command, though present in that list, is actually REACHABLE/exercised for the current gate mode or run scope. A "bound" command can still be a stale rubber stamp if `verify_commands` names it but the current invocation's scope never runs it.
   evidence: Code review pass on Story 2.7 (Blind Hunter + Edge Case Hunter, parallel). Confirmed by code inspection: `core/gate.py::check_spec_binding` takes `policy_commands` as an opaque tuple and does pure membership comparison -- it has no visibility into `gate_mode`, `--run` scope, or whether a command actually executes on this invocation (a `--run`-scoped evaluation, for instance, reports `data["commands"] = []` and never runs anything at all, per this same module's own docstring, yet the binding check still runs against the seed's `verify_commands`). Needs a real design decision (what "reachable for this invocation" even means, and whether the closed admission lattice should distinguish it from "declared") -- not a mechanical patch, and no AC in this story names it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Superseded on the path that matters. Since Stories 53.1 and 79.2, dispatch binds the Spec's declared commands against the same tuple of commands it actually ran, so 'what ran' and 'what was checked' are the same set. A separate 'reachability' concept for the manual `marshal gate` path would be speculative design.
+  verified: 2026-10-03 — dispatch_verify.py:362-372: the comment says 'bind against the SAME widened `commands` the loop above actually ran ... This keeps "what ran" and "what was checked" the same tuple', followed by gate.check_spec_binding(declared_commands, commands). The other callers are core/dispatch_prelaunch.py:51 and cli/gate.py:1108.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — core/gate.py:646-649 `check_spec_binding(declared_commands, policy_commands)` is still a pure membership comparison with no gate_mode/scope/reachability input -- confirmed no signature change. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: What does 'declared and reachable for this invocation' mean for check_spec_binding -- should a --run-scoped or otherwise-narrowed invocation treat a declared-but-unexercised command differently from a fully bound one, and if so how?
@@ -5138,7 +5177,9 @@ status: open
   summary: The supervisor's own durability sidecar (FR-61/Story 3.8) is now the sole pusher during a live run — if that sidecar process itself crashes or hangs (distinct from the watched bmad-loop engine dying), nothing pushes, and there is no longer an independent watcher process as a structural backstop.
   evidence: Review pass 1 (Blind Hunter). Confirmed by reading `supervisor/__main__.py`: both the per-tick stage-boundary pushes and the interval fallback execute inside the same `while watched_alive and not deferred:` loop as the process doing the watching — there is no second process. Not a regression from this story: the retired `scripts/loop_push_watch.py` was confirmed never auto-started anywhere (empirically absent through an entire live multi-hour fleet session on 2026-08-03), so it provided zero actual protection against this failure mode either. Not fixed here: this story's own Boundaries explicitly forbid touching `supervisor/__main__.py`/`supervisor/durability.py` (FR-61 already shipped and correct); a structural fix would be a future story's call on whether a single-process durability sidecar is an acceptable risk.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Accept the single-process design. If the sidecar dies, the commits stay on local disk and `marshal status` already labels the run 'unsupervised', so the operator sees it. The retired watcher script never ran, and a second watcher process would be architecture work for a risk that has never caused an incident.
+  verified: 2026-10-03 — supervisor/__main__.py:2139 `while watched_alive and not deferred and signal_state.name is None:` both watches and pushes (interval push at :2231). core/status.py:692-750 reports a dead supervisor as 'unsupervised'. scripts/loop_push_watch.py no longer exists (ls: no such file).
   severity: high
   verified: 2026-10-01 — NEEDS-DECISION — `supervisor/__main__.py:1648`: `while watched_alive and not deferred:` -- the tick loop doing the pushing is the SAME process doing the watching; no second process exists anywhere in this module (confirmed unchanged from 2026-09-05, just shifted line numbers, e.g. push call now at `:1704` not `:1665`). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Is a single-process durability sidecar (crash of the sidecar = nothing pushes until the next tick) an acceptable residual risk for this repo's fleet-supervision model, or does it warrant a structural two-process design? This story's own Boundaries explicitly forbid touching `supervisor/__main__.py`, so only a follow-on story/operator decision can resolve it.
@@ -5153,7 +5194,9 @@ status: open
   summary: The supervisor's interval-fallback push (Story 3.8, unchanged by this story) pushes only the station branch, never per-story worktree branches — those get pushed only on the three named stage-boundary triggers (`dev-commit-landed`, `review-verdict-recorded`, `story-merged`), so a per-story branch that accumulates commits between two boundary crossings has no interval safety net.
   evidence: Review pass 1 (Blind Hunter). Confirmed in `supervisor/__main__.py` (~line 259, `_push_branch(station_branch, _INTERVAL_PUSH_BOUNDARY, None)`): the interval fallback names only `station_branch`. The retired `scripts/loop_push_watch.py`'s design pushed "every loop home's station + per-story worktree branches" unconditionally, which this narrower scope does not fully replicate — though since that script was never actually running in practice, this is not a behavior regression caused by this story, only a pre-existing characteristic of Story 3.8's shipped scope. Not fixed here: this story's Boundaries forbid touching supervisor code; widening the interval fallback to cover per-story branches is a design decision for a future story, not a mechanical fix.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Acceptable gap. The per-story branch is already pushed at every stage boundary, including dev-commit-landed, so each dev commit reaches origin when it lands. The uncovered window is only uncommitted or mid-stage work, which is still on local disk; widening the interval push would add code for little protection.
+  verified: 2026-10-03 — supervisor/__main__.py:1796-1813: for every classified stage-boundary trigger, _push_branch(task.branch, ...) pushes the per-story branch (:1812) beside the station branch (:1800). The interval fallback (:2231) pushes only station_branch.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — `supervisor/__main__.py:1704`: `_push_branch(station_branch, _INTERVAL_PUSH_BOUNDARY, None)` -- the interval fallback still names only `station_branch`; per-story branches are pushed only on the three stage-boundary triggers (lines ~1353/1365), unchanged from 2026-09-05. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Is leaving per-story branches uncovered by the interval-fallback push (they rely solely on the three stage-boundary triggers firing) an acceptable gap, or should the interval fallback widen to match the retired `loop_push_watch.py`'s broader (never actually running) design intent? Boundaries forbid touching supervisor code in the originating story, so this needs an explicit call.
@@ -5971,7 +6014,9 @@ status: open
   origin: spec-deferred 0a46e03876f3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design. An edit that keeps the 'articulate' carve-out reads OK and is never overwritten. Only an edit that removes the carve-out reads MISSING and gets restored, and the carve-out is exactly what the kit exists to guarantee. The MISSING message already tells 'not deployed' apart from 'exists but the carve-out is gone'.
+  verified: 2026-10-03 — seed/detect/kit.py:365-376: _caveman_check returns OK when the file has the carve-out, and MISSING with 'is not deployed' (absent) or '<path> exists but <problem>' (carve-out removed). seed/verbs/kit.py:297-314 overwrites only on a MISSING item. The pyforge-marshal docs/finding-remedy-reference.md:29 remedy is 'Run marshal seed kit --apply'.
   verified: 2026-10-01 — NEEDS-DECISION — seed/verbs/kit.py:297-314 _apply_caveman_skill unconditionally write_text_atomic's the packaged body over the target; it runs whenever the check says MISSING, which covers both an absent file and one whose carve-out was edited out; no force flag, no backup, no 'modified' status. The output layer is now on fleet-wide (policy-defaults.toml:66-67), and Story 28.30 also deploys the skill into dispatch worktrees. (2026-09-30 deferral burn-down triage)
   decision: Is a loop home's (or dispatch worktree's) deployed caveman SKILL.md operator-editable?
 
@@ -6004,7 +6049,9 @@ status: open
   origin: spec-deferred e218776cdd35 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design. Without headroom the wire wrapper cannot run, so a missing CCR store directory changes nothing at launch. Once headroom is installed, the next kit run creates the directory. Keeping the uniform instrument-first rule is simpler than a one-off exception.
+  verified: 2026-10-03 — seed/detect/kit.py:188 UNAVAILABLE = 'instrument-unavailable'; :453 sets it before the artifact check, and :468-470 reports the store dir as MISSING only when the instrument is present. seed/verbs/kit.py:400 skips UNAVAILABLE items. That status maps to INFO severity (detect/kit.py:493), so it never blocks a run.
   verified: 2026-10-01 — NEEDS-DECISION — seed/detect/kit.py:430-458 kit_checks probes the instrument before the artifact for every item, so with headroom absent the CCR-store item is UNAVAILABLE (:188) and run_kit skips it (seed/verbs/kit.py:386-388); <home>/.marshal/wire is never created. Severity medium -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
   decision: Should the CCR store directory be created even when headroom is not installed (breaking the uniform instrument-first rule), or is 'no instrument, no store' the intended behaviour?
 
@@ -6497,7 +6544,9 @@ status: open
   evidence: 2026-09-05 shutdown sweep, hand-verified per item: registered worktrees 262 -> 12 (primary, 8 loop homes, 3 INSPECT), local merged branches 360 + 226 deleted, origin merged branches 227 + 178 deleted in explicit-name batches (the 8 `loop/<station>` heads and every `attempt-preserve/*` kept by policy), 29 GB reclaimed; `marshal retire` dry-run reported `proposals: 0` throughout. Never delete `loop/*` on origin: the station heads read as merged into main whenever the homes are idle.
   note: 2026-09-07 (marshal 31.6) -- `multi-repo-git-ops` does NOT cover this wish. Confirmed via `git submodule status` (empty output) and no `.gitmodules` file in the repo root: this repo has no git submodules at all. `multi-repo-git-ops`'s own SKILL.md scopes it to branching/committing/pushing/syncing across a parent repo and its git-submodule service repos, discovered from `.gitmodules` -- a structurally different concern from this wish's KEEP/PRUNE/DELETE worktree and merged-branch retirement heuristics (no submodules, no branch/worktree lifecycle classification in its scope). The coverage question is answered "no"; this does not resolve the wish itself, which stays a future station-verb story per this entry's own summary.
   location: scripts/worktree_sweep.py
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Accept the standalone script as the permanent home. scripts/worktree_sweep.py works, defaults to a dry run, exports a patch before every delete, and has its own tests; the 2026-09-08 re-check already called it a standing tool, not owed work. Porting its six-way rules behind a marshal verb would be re-plumbing with no new capability.
+  verified: 2026-10-03 — scripts/worktree_sweep.py:4-8 still classifies worktrees and names `marshal retire` as the marshal-native home; src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py:126-143 defines only --project, --execute and --format (no --worktrees). Both scripts/worktree_sweep.py and tests/scripts/test_worktree_sweep.py exist. No --worktrees flag appears in pyforge-marshal cli/*.py (grep empty). Steward's own worktree lifecycle lives in pyforge-steward/src/pyforge/steward/workspace.py.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — scripts/worktree_sweep.py exists with its documented six-way classification (KEEP/PRUNE/DELETE/PRESERVE-THEN-DELETE/DELETE-WORKTREE-KEEP-BRANCH/INSPECT, lines 12-28). src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py:107-144 add_retire_subparser still only proposes branches named by 'the most recent bmad-loop run of an attached loop-home worktree' with no --worktrees flag (grep for '--worktrees' across cli/*.py: zero matches) and no marshal-sweep verb exists (no sweep.py under cli/). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should scripts/worktree_sweep.py's fleet-wide six-way worktree/branch classification be folded into marshal retire (a --worktrees flag or a new marshal sweep verb) so the fleet has one journaled, self-service retirement authority, or is a standalone operator script an acceptable permanent split given it already exists, works, and is safety-gated (dry-run default, patch export before delete)?
@@ -6914,6 +6963,7 @@ status: open
   severity: medium
   promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  ruling: Operator ruling 2026-10-03 (deferral burn-down Phase 3): keep -- Blocked on an operator-only act: the attended, egress-blocked CRC deployment with NetworkPolicies active, which no unattended session can run. The automated mechanism tier already landed (Story 33.13, done), so this attended exercise is all that remains. Repoint the stale owner from steward 49.8 to the operator's attended run when the row is next touched.
   verified: 2026-10-01 — NEEDS-DECISION — The exercise was never run: steward Story 49.8 is done (steward ledger :211) but its spec's Residual risks say the live CAP-17 criterion at a deployed namespace with no operator home 'was not manually exercised'; marshal spec-33-12 (:122, :266, :333) keeps it 'tracked separately', and docs/dreams/pyforge-marshal.md:4922 still quotes 'deployed egress-blocked proof unexercised'. (2026-09-30 deferral burn-down triage)
   decision: Will the operator run the attended, egress-blocked deployed CRC proof, or accept the structural evidence and close CAP-3's deployed clause as documentary?
 
@@ -7080,10 +7130,11 @@ status: open
   origin: post-hoc review 2026-09-19 (hand-filed; the 51.2 session's record, tracked spec Auto Run Result)
   severity: medium
   promoted: 2026-09-19 — hand-filed
-  status: open
+  status: closed
   verified: 2026-10-01 — NEEDS-DECISION — The flag is read only by core/dispatch_harness_done.py:121 followup_review_recommended(), used at cli/dispatch.py:2489 and cli/drain_plan.py:308 to gate a harness relaunch of a done spec -- which a done ledger row never receives. Wider than recorded: 218 tracked story specs across all stations are status done with followup_review_recommended: true (grep over _bmad-output/projects/*/planning-artifacts/specs/spec-*.md), and nothing turns any of them into review work. (2026-09-30 deferral burn-down triage)
   decision: Should followup_review_recommended: true on a landed spec create review work (a DW row or scheduled bmad-review of the landing diff), and should the ~218 already-landed flagged specs be triaged, or is the flag advisory only?
   story: a follow-up review dispatch of 51.2 (`factory dispatch` of a `done` spec with the flag true is the mechanism bmad-build-auto defines) or a `spec-pyforge-marshal` CAP so the campaign schedules it; seeded on docs/dreams/pyforge-marshal.md 2026-09-19 item (5). Promoted 2026-09-28 to Stories 66.1 (spec-pyforge-marshal CAP-275, Epic 66: finalize carries a recommended follow-up review into this ledger as `DW-FRR-<story>`) and 66.2 (the one-time backfill, which mints `DW-FRR-51-2` to carry 51.2's own follow-up review from then on); close when 66.2 lands, citing both merges.
+  resolution: Superseded by DW-FRR-51-2 (Story 66.2 backfill).
 
 ### DW-FU-51-9: A failed deploy_run.write mint/write inside finalize_dispatch_land can turn an already-successful land+promote into a reported failure.
 
@@ -7393,6 +7444,7 @@ status: open
   severity: medium
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+  ruling: Operator ruling 2026-10-03 (deferral burn-down Phase 3): keep -- Blocked on billing. GitHub Actions stay off until the operator restores payment and flips the policy file. Recommended answer for that moment: yes, add substrate-nightly.yml to allow_when_enabled, because without it every bootstrap falls back to a local rebuild.
   verified: 2026-10-01 — NEEDS-DECISION — .github/actions-policy.toml: enabled = false and allow_when_enabled = ['staged-recipes-linter.yml', 'detectors.yml']; .github/workflows/substrate-nightly.yml exists but is not listed, so scripts/apply_actions_policy.py --fix would keep it disabled even after Actions are re-enabled. (2026-09-30 deferral burn-down triage)
   decision: When billing is restored, should the billed nightly substrate-nightly.yml join allow_when_enabled?
 
@@ -8099,3 +8151,639 @@ status: open
   severity: medium
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-83-2: Missing backward compatibility for command output parsing
+
+- source_spec: `planning-artifacts/specs/spec-83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree.md`
+  summary: Missing backward compatibility for command output parsing
+  evidence: Cannot verify if anything parses derived commands list format without extensive search; would need codebase-wide analysis to determine impact
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py:280
+  origin: spec-deferred d7c45192a41b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low (unverified)
+  promoted: 2026-10-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FRR-12-2: Follow-up review still recommended for story 12.2
+
+- source_spec: `planning-artifacts/specs/spec-12-2-the-local-recipes-empty-plan-oracle-critical.md`
+  summary: Story 12.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-12-2-the-local-recipes-empty-plan-oracle-critical.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-18-2: Follow-up review still recommended for story 18.2
+
+- source_spec: `planning-artifacts/specs/spec-18-2-parity-and-coverage-are-gated-numbers.md`
+  summary: Story 18.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 18.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-18-2-parity-and-coverage-are-gated-numbers.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-19-2: Follow-up review still recommended for story 19.2
+
+- source_spec: `planning-artifacts/specs/spec-19-2-the-shared-test-support-kit.md`
+  summary: Story 19.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 19.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-19-2-the-shared-test-support-kit.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-19-3: Follow-up review still recommended for story 19.3
+
+- source_spec: `planning-artifacts/specs/spec-19-3-coverage-gates-that-name-the-module.md`
+  summary: Story 19.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 19.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-19-3-coverage-gates-that-name-the-module.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-19-4: Follow-up review still recommended for story 19.4
+
+- source_spec: `planning-artifacts/specs/spec-19-4-test-architecture-stays-current-as-stories-land.md`
+  summary: Story 19.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 19.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-19-4-test-architecture-stays-current-as-stories-land.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-20-11: Follow-up review still recommended for story 20.11
+
+- source_spec: `planning-artifacts/specs/spec-20-11-doctors-own-adoption-gap-closes-the-branch-name-fallback-and-a-loose-last-resort.md`
+  summary: Story 20.11 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-20-11-doctors-own-adoption-gap-closes-the-branch-name-fallback-and-a-loose-last-resort.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-20-3: Follow-up review still recommended for story 20.3
+
+- source_spec: `planning-artifacts/specs/spec-20-3-the-gated-upstream-filing.md`
+  summary: Story 20.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 20.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-20-3-the-gated-upstream-filing.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-20-6: Follow-up review still recommended for story 20.6
+
+- source_spec: `planning-artifacts/specs/spec-20-6-the-verify-scope-primitive.md`
+  summary: Story 20.6 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 20.6 landed on origin/main (Merge pull request #1298 from rxm7706/herald/20-6-pyforge-marshal-poster); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-20-6-the-verify-scope-primitive.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-21-2: Follow-up review still recommended for story 21.2
+
+- source_spec: `planning-artifacts/specs/spec-21-2-orchestrated-chain-regeneration.md`
+  summary: Story 21.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 21.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-21-2-orchestrated-chain-regeneration.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-21-5: Follow-up review still recommended for story 21.5
+
+- source_spec: `planning-artifacts/specs/spec-21-5-configurable-per-project-invocation.md`
+  summary: Story 21.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 21.5 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-21-5-configurable-per-project-invocation.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-22-10: Follow-up review still recommended for story 22.10
+
+- source_spec: `planning-artifacts/specs/spec-22-10-branch-merged-requires-real-divergence-not-just-ancestry.md`
+  summary: Story 22.10 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 22.10 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-10-branch-merged-requires-real-divergence-not-just-ancestry.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-22-9: Follow-up review still recommended for story 22.9
+
+- source_spec: `planning-artifacts/specs/spec-22-9-a-dispatch-branch-names-its-station.md`
+  summary: Story 22.9 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 22.9 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-9-a-dispatch-branch-names-its-station.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-23-1: Follow-up review still recommended for story 23.1
+
+- source_spec: `planning-artifacts/specs/spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields.md`
+  summary: Story 23.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 23.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-23-1-wall-clock-fallback-derivation-from-promoted-spec-revision-fields.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-23-2: Follow-up review still recommended for story 23.2
+
+- source_spec: `planning-artifacts/specs/spec-23-2-wall-clock-is-never-blended-with-active-compute.md`
+  summary: Story 23.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 23.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-23-2-wall-clock-is-never-blended-with-active-compute.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-25-7: Follow-up review still recommended for story 25.7
+
+- source_spec: `planning-artifacts/specs/spec-25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner.md`
+  summary: Story 25.7 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 25.7 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-25-7-the-factorys-living-docs-are-re-grounded-with-a-named-owner.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-1-6: Follow-up review still recommended for story 1.6
+
+- source_spec: `planning-artifacts/specs/spec-1-6-isolation-verification-and-home-enumeration.md`
+  summary: Story 1.6 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-1-6-isolation-verification-and-home-enumeration.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-10-2: Follow-up review still recommended for story 10.2
+
+- source_spec: `planning-artifacts/specs/spec-10-2-state-schema-and-the-atomic-store.md`
+  summary: Story 10.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-10-2-state-schema-and-the-atomic-store.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-10-3: Follow-up review still recommended for story 10.3
+
+- source_spec: `planning-artifacts/specs/spec-10-3-the-apply-runner-transactional-guarded.md`
+  summary: Story 10.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-10-3-the-apply-runner-transactional-guarded.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-10-5: Follow-up review still recommended for story 10.5
+
+- source_spec: `planning-artifacts/specs/spec-10-5-marshal-seed-check.md`
+  summary: Story 10.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-10-5-marshal-seed-check.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-10-6: Follow-up review still recommended for story 10.6
+
+- source_spec: `planning-artifacts/specs/spec-10-6-marshal-seed-adopt.md`
+  summary: Story 10.6 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-10-6-marshal-seed-adopt.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-11-3: Follow-up review still recommended for story 11.3
+
+- source_spec: `planning-artifacts/specs/spec-11-3-migration-registry-and-runner.md`
+  summary: Story 11.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 11.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-11-3-migration-registry-and-runner.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-11-4: Follow-up review still recommended for story 11.4
+
+- source_spec: `planning-artifacts/specs/spec-11-4-marshal-seed-update-two-phase.md`
+  summary: Story 11.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 11.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-11-4-marshal-seed-update-two-phase.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-22-11: Follow-up review still recommended for story 22.11
+
+- source_spec: `planning-artifacts/specs/spec-22-11-station-scoped-drain-and-an-explicit-story-sequence.md`
+  summary: Story 22.11 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-22-11-station-scoped-drain-and-an-explicit-story-sequence.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-25-1: Follow-up review still recommended for story 25.1
+
+- source_spec: `planning-artifacts/specs/spec-25-1-retired-skill-ids-are-purged-and-guarded.md`
+  summary: Story 25.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 25.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-25-1-retired-skill-ids-are-purged-and-guarded.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-25-4: Follow-up review still recommended for story 25.4
+
+- source_spec: `planning-artifacts/specs/spec-25-4-the-0-10-0-11-policy-knobs-are-governable.md`
+  summary: Story 25.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 25.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-25-4-the-0-10-0-11-policy-knobs-are-governable.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-28-14: Follow-up review still recommended for story 28.14
+
+- source_spec: `planning-artifacts/specs/spec-28-14-auto-derived-effective-surface-no-manual-per-story-widening.md`
+  summary: Story 28.14 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 28.14 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-14-auto-derived-effective-surface-no-manual-per-story-widening.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-28-15: Follow-up review still recommended for story 28.15
+
+- source_spec: `planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md`
+  summary: Story 28.15 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 28.15 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-15-scope-violation-enforcement-mode-policy-declared-default-warn.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-28-2: Follow-up review still recommended for story 28.2
+
+- source_spec: `planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md`
+  summary: Story 28.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 28.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-2-wire-compression-at-the-harness-seam.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-28-3: Follow-up review still recommended for story 28.3
+
+- source_spec: `planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md`
+  summary: Story 28.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 28.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-3-genesis-seeds-the-token-economy-kit.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-28-9: Follow-up review still recommended for story 28.9
+
+- source_spec: `planning-artifacts/specs/spec-28-9-planning-graph-retrieval-behind-the-scribe-seam.md`
+  summary: Story 28.9 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-28-9-planning-graph-retrieval-behind-the-scribe-seam.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-3-7: Follow-up review still recommended for story 3.7
+
+- source_spec: `planning-artifacts/specs/spec-3-7-escalation-deferral-and-resume.md`
+  summary: Story 3.7 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 3.7 landed on origin/main (Merge bmad-loop/20260803-023308-65b7/3-7-escalation-deferral-and-resume into loop/pyforge-marshal (bmad-loop)); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-3-7-escalation-deferral-and-resume.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-33-12: Follow-up review still recommended for story 33.12
+
+- source_spec: `planning-artifacts/specs/spec-33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire.md`
+  summary: Story 33.12 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 33.12 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-33-12-cap-1-2-4-5-in-effect-held-runs-publisher-identity-and-the-loop-home-reads-retire.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-46-1: Follow-up review still recommended for story 46.1
+
+- source_spec: `planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md`
+  summary: Story 46.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 46.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-46-1-a-bare-clone-bootstraps-the-substrate.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-46-3: Follow-up review still recommended for story 46.3
+
+- source_spec: `planning-artifacts/specs/spec-46-3-scribe-capture-is-the-blessed-session-close-ritual.md`
+  summary: Story 46.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 46.3 landed on origin/main (Merge pyforge-marshal/46-3 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-46-3-scribe-capture-is-the-blessed-session-close-ritual.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-46-4: Follow-up review still recommended for story 46.4
+
+- source_spec: `planning-artifacts/specs/spec-46-4-wire-auto-resolves-against-the-declared-wrapper.md`
+  summary: Story 46.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 46.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-46-4-wire-auto-resolves-against-the-declared-wrapper.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-46-5: Follow-up review still recommended for story 46.5
+
+- source_spec: `planning-artifacts/specs/spec-46-5-the-journal-splits-silent-saves-from-configured-layers-and-the-rollup-speaks-per-harness-currency.md`
+  summary: Story 46.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 46.5 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-46-5-the-journal-splits-silent-saves-from-configured-layers-and-the-rollup-speaks-per-harness-currency.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-46-6: Follow-up review still recommended for story 46.6
+
+- source_spec: `planning-artifacts/specs/spec-46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory.md`
+  summary: Story 46.6 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 46.6 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-5-8: Follow-up review still recommended for story 5.8
+
+- source_spec: `planning-artifacts/specs/spec-5-8-a-dead-supervisor-sidecar-doesnt-hide-a-live-engine.md`
+  summary: Story 5.8 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 5.8 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-5-8-a-dead-supervisor-sidecar-doesnt-hide-a-live-engine.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-50-3: Follow-up review still recommended for story 50.3
+
+- source_spec: `planning-artifacts/specs/spec-50-3-harness-outranks-a-dead-tier-map-harness.md`
+  summary: Story 50.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 50.3 landed on origin/main (Merge pyforge-marshal/50-3 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-50-3-harness-outranks-a-dead-tier-map-harness.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-50-4: Follow-up review still recommended for story 50.4
+
+- source_spec: `planning-artifacts/specs/spec-50-4-landing-evidence-carries-the-station-in-every-shape.md`
+  summary: Story 50.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 50.4 landed on origin/main (Merge pyforge-marshal/50-4 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-50-4-landing-evidence-carries-the-station-in-every-shape.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-51-1: Follow-up review still recommended for story 51.1
+
+- source_spec: `planning-artifacts/specs/spec-51-1-verification-sees-the-merge-result.md`
+  summary: Story 51.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 51.1 landed on origin/main (Merge pyforge-marshal/51-13 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-1-verification-sees-the-merge-result.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-51-11: Follow-up review still recommended for story 51.11
+
+- source_spec: `planning-artifacts/specs/spec-51-11-a-session-that-halts-blocked-with-its-verdict-uncommitted-is-a-blocked-outcome-not-an-operator-stop.md`
+  summary: Story 51.11 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 51.11 landed on origin/main (Merge pyforge-marshal/51-11 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-11-a-session-that-halts-blocked-with-its-verdict-uncommitted-is-a-blocked-outcome-not-an-operator-stop.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-51-2: Follow-up review still recommended for story 51.2
+
+- source_spec: `planning-artifacts/specs/spec-51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory.md`
+  summary: Story 51.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 51.2 landed on origin/main (Merge pyforge-marshal/51-2 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-2-the-landing-record-follows-the-session-s-write-not-the-primary-s-directory.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-51-4: Follow-up review still recommended for story 51.4
+
+- source_spec: `planning-artifacts/specs/spec-51-4-a-blocked-outcome-never-lands.md`
+  summary: Story 51.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 51.4 landed on origin/main (Merge pyforge-marshal/51-4 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-4-a-blocked-outcome-never-lands.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-51-5: Follow-up review still recommended for story 51.5
+
+- source_spec: `planning-artifacts/specs/spec-51-5-mrs-disp-043-speaks-for-an-uncatalogued-model.md`
+  summary: Story 51.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 51.5 landed on origin/main (Merge pyforge-marshal/51-5 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-5-mrs-disp-043-speaks-for-an-uncatalogued-model.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-51-6: Follow-up review still recommended for story 51.6
+
+- source_spec: `planning-artifacts/specs/spec-51-6-marshal-watch-follows-the-engine-that-is-actually-driving-the-station.md`
+  summary: Story 51.6 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 51.6 landed on origin/main (Merge pyforge-marshal/51-6 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-6-marshal-watch-follows-the-engine-that-is-actually-driving-the-station.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-51-7: Follow-up review still recommended for story 51.7
+
+- source_spec: `planning-artifacts/specs/spec-51-7-landing-evidence-is-intent-scoped-not-just-station-scoped.md`
+  summary: Story 51.7 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 51.7 landed on origin/main (Merge pyforge-marshal/51-7 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-7-landing-evidence-is-intent-scoped-not-just-station-scoped.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-53-2: Follow-up review still recommended for story 53.2
+
+- source_spec: `planning-artifacts/specs/spec-53-2-the-landing-reconciles-from-git-facts-and-runs-intake.md`
+  summary: Story 53.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 53.2 landed on origin/main (Merge pyforge-marshal/53-2 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-53-2-the-landing-reconciles-from-git-facts-and-runs-intake.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-53-3: Follow-up review still recommended for story 53.3
+
+- source_spec: `planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md`
+  summary: Story 53.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 53.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-53-3-the-supervisor-entrypoint-reaches-the-floor.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-65-1: Follow-up review still recommended for story 65.1
+
+- source_spec: `planning-artifacts/specs/spec-65-1-a-drain-plan-reports-every-refusal-it-can-decide-before-launch.md`
+  summary: Story 65.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 65.1 landed on origin/main (Merge pyforge-marshal/65-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-65-1-a-drain-plan-reports-every-refusal-it-can-decide-before-launch.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-74-1: Follow-up review still recommended for story 74.1
+
+- source_spec: `planning-artifacts/specs/spec-74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture.md`
+  summary: Story 74.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 74.1 landed on origin/main (Merge pyforge-marshal/74-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-77-1: Follow-up review still recommended for story 77.1
+
+- source_spec: `planning-artifacts/specs/spec-77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared-base-and-syncs-it.md`
+  summary: Story 77.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 77.1 landed on origin/main (Merge pyforge-marshal/77-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared-base-and-syncs-it.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-78-1: Follow-up review still recommended for story 78.1
+
+- source_spec: `planning-artifacts/specs/spec-78-1-a-landing-unions-append-only-memlogs-instead-of-refusing.md`
+  summary: Story 78.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 78.1 landed on origin/main (Merge pyforge-marshal/78-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-78-1-a-landing-unions-append-only-memlogs-instead-of-refusing.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-79-1: Follow-up review still recommended for story 79.1
+
+- source_spec: `planning-artifacts/specs/spec-79-1-a-landing-promotes-the-story-s-tier-3-feed-row-and-its-tracked-spec-not-only-the-ledger-twin.md`
+  summary: Story 79.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 79.1 landed on origin/main (Merge pyforge-marshal/79-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-79-1-a-landing-promotes-the-story-s-tier-3-feed-row-and-its-tracked-spec-not-only-the-ledger-twin.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-79-2: Follow-up review still recommended for story 79.2
+
+- source_spec: `planning-artifacts/specs/spec-79-2-dispatch-verification-runs-lint-types-and-the-stopgap-surfaces-stop-calling-themselves-one.md`
+  summary: Story 79.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 79.2 landed on origin/main (Merge pyforge-marshal/79-2 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-79-2-dispatch-verification-runs-lint-types-and-the-stopgap-surfaces-stop-calling-themselves-one.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-8-5: Follow-up review still recommended for story 8.5
+
+- source_spec: `planning-artifacts/specs/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md`
+  summary: Story 8.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-8-5-marker-deletion-as-a-sanctioned-opt-out.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed

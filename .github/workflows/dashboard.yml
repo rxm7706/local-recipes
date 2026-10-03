@@ -48,7 +48,7 @@ jobs:
       # --- PyForge dossier + infographic site -> docs/dashboard/pyforge/ ---
       # Its own python/deps rather than the pyforge-ci pixi env, which carries
       # neither jinja2 nor pyyaml and has no reason to grow for a doc build.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Install site build dependencies

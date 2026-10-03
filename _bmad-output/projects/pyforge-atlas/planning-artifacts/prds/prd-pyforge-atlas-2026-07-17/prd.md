@@ -3,7 +3,7 @@ fr-derivation-from: "2026-09-17"
 title: cf_atlas Kedro/Dagster/DuckDB Migration
 status: final
 created: 2026-07-17
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for marshal Story 66.2's backfill of atlas's deferred-work ledger (co-governor surface reconcile); no FR registered. See § Currency reconciliation — 2026-10-03. Prior 2026-09-28   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-61 (Epic 25); FR-69 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-20 (fleet consistency pass).
 project: pyforge-atlas
 intent_source: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, ANALYSIS COMPLETE)
 currency_review: Reviewed 2026-08-01 — spec corrections applied to PRD. CAP-8 "28-CLI inventory is answerable" false claim corrected to "8 pages + factory-status; full 28-CLI deferred (DW-D2-1)". FR-4 run-admission retirement (silent-drop cap) already correctly stated (line 248-249). AD-23 lock-store placement details remain architectural (not PRD-level). Reviewed again 2026-08-26 — post-08-08 spec-estate and code motion reconciled in the appended section "Currency reconciliation — 2026-08-26" (Epics 12-19 delivery, four post-migration capability specs, CAP-19 query-plane ownership, spec archivals/parking).
@@ -3131,3 +3131,14 @@ can see when a vulnerable dependency arrived and which other repos carry it. Atl
 **ONE FR space now FR-1..FR-69** (FR-70 = next free id).
 
 **Content changed:** this section added (FR-69 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-03
+
+*Trigger: the chain-currency `spec→prd` edge. marshal Story 66.2 (`pyforge-marshal:CAP-275`) backfilled a `DW-FRR-<story>` row into every station's tracked deferred-work ledger for each landed story spec that still recommends a follow-up review, atlas's included, and recorded the co-governor surface reconcile on `spec-pyforge-atlas`'s memlog on 2026-10-03.*
+
+The rows record review work the loop's follow-up budget left behind for atlas stories; they live in the deferred-work
+ledger, not in this PRD's requirements. No atlas behaviour, CAP or FR changes.
+
+**ONE FR space still FR-1..FR-69** (FR-70 = next free id).
+
+**Content changed:** this section added. No FR added, renumbered or removed. `updated:` bumped.

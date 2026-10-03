@@ -42,10 +42,10 @@ from ..core import dispatch as dispatch_core
 from ..core import dispatch_fleet, dispatch_prelaunch, identity, policy
 from ..core import promotion as promotion_core
 from ..core.dispatch_harness_done import (
-    blocks_harness_relaunch,
     followup_review_recommended,
     parse_blocking_condition,
     parse_spec_status,
+    should_take_harness_done_land_only,
 )
 from ..core.dispatch_landing import merge_subject_is_marshal_native
 from ..core.dispatch_retry import exclude_harness_profiles_after_transient_failure
@@ -305,7 +305,17 @@ def evaluate_story(reads: _StationReads, story: str) -> StoryEvaluation:
             if spec_path is not None and spec_text is not None:
                 live = dispatch_cli._spec_text_prefer_worktree(spec_path, repo_root, worktree, spec_text)
                 status = parse_spec_status(live)
-                if blocks_harness_relaunch(status, followup_review_recommended(live)):
+                latest_landing_verdict: str | None = None
+                latest_run_dir = dispatch_cli._latest_story_run_dir(fs, repo_root, slug, feed)
+                if latest_run_dir is not None:
+                    latest_landing_verdict = dispatch_cli.gather_dispatch_journal_facts(
+                        fs, latest_run_dir, latest_run_dir.name
+                    ).landing_verdict
+                if should_take_harness_done_land_only(
+                    status,
+                    followup_review_recommended(live),
+                    latest_landing_verdict=latest_landing_verdict,
+                ):
                     # MRS-DISP-040's CAP-4 path: dispatch lands the finished
                     # work instead of launching a session -- reported as
                     # land-only, never as a refusal.

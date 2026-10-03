@@ -228,7 +228,7 @@ jobs:
       # test_skf_validators_pass invokes `uv run` directly (not a pixi
       # dependency -- this station's own skf-frontmatter validator script
       # is meant to be runnable standalone via uv).
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
       - run: pixi run --frozen -e pyforge-herald pyforge-herald-test
 
   marshal-test:

@@ -311,12 +311,16 @@ def _opaque_dw_blocks(text: str) -> tuple[str, list[str]]:
     return preamble, blocks
 
 
-def _dw_blocks_from_append_tail(tail: str) -> list[str]:
-    """Opaque ``## DW-`` / ``### DW-`` blocks parsed from an append-only suffix."""
+def _dw_blocks_from_append_tail(tail: str) -> list[str] | None:
+    """Opaque ``## DW-`` / ``### DW-`` blocks parsed from an append-only suffix, or ``None`` when
+    the suffix carries text before its first entry header (lines appended to the base's last entry),
+    which no whole-block union may drop."""
     text = tail.lstrip("\n")
     if not text:
         return []
-    _, blocks = _opaque_dw_blocks(text)
+    preamble, blocks = _opaque_dw_blocks(text)
+    if preamble.strip():
+        return None
     return blocks
 
 
@@ -372,6 +376,8 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
     elif main_tail and branch_tail:
         main_new = _dw_blocks_from_append_tail(main_tail)
         branch_new = _dw_blocks_from_append_tail(branch_tail)
+        if main_new is None or branch_new is None:
+            return None
         main_new_count = Counter(main_new)
         branch_only: list[str] = []
         for block in branch_new:
