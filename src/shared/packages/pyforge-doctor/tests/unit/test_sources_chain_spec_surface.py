@@ -1520,7 +1520,7 @@ def _write_raw_spec(repo: Path, project: str, spec: str, frontmatter: str) -> Pa
     [
         # Quoted globs, both quote styles -- the quotes are YAML syntax, not
         # part of the path, so an unstripped quote governed nothing.
-        ('surface:\n  - "a.py"\n  - \'b.py\'\n', ["a.py", "b.py"]),
+        ("surface:\n  - \"a.py\"\n  - 'b.py'\n", ["a.py", "b.py"]),
         # A flow sequence on one line, the shape a short surface is written in.
         ("surface: [a.py, b.py]\n", ["a.py", "b.py"]),
         ("surface: ['a.py', \"b.py\"]\n", ["a.py", "b.py"]),
@@ -1533,9 +1533,7 @@ def _write_raw_spec(repo: Path, project: str, spec: str, frontmatter: str) -> Pa
         ("surface:\n  - a.py  # the one module\n", ["a.py"]),
     ],
 )
-def test_parse_surface_reads_every_shape_a_human_writes(
-    tmp_path: Path, frontmatter: str, expected: list[str]
-) -> None:
+def test_parse_surface_reads_every_shape_a_human_writes(tmp_path: Path, frontmatter: str, expected: list[str]) -> None:
     """DW-FU-6-6-9: `_parse_surface` is a hand-rolled frontmatter reader, and
     every shape it silently mis-read was a surface that governed nothing --
     a FAIL-storm of `ungoverned` for files whose Spec plainly claims them,

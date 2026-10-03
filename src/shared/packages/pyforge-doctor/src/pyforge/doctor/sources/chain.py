@@ -482,10 +482,7 @@ def _covers_dreams_values(raw: object) -> list[str]:
         return [raw]
     if isinstance(raw, list):
         return [c or "" for c in raw]
-    raise ValueError(
-        f"covers-dreams: must be a list of Dream paths (or one bare path), "
-        f"got {type(raw).__name__}"
-    )
+    raise ValueError(f"covers-dreams: must be a list of Dream paths (or one bare path), got {type(raw).__name__}")
 
 
 def _spec_entry(sp: Path, project: str, target: Path) -> dict:
@@ -2889,9 +2886,7 @@ _CONT_KEY_RE = re.compile(r"^\s{2,}(" + "|".join(re.escape(k) for k in _KNOWN_FI
 #: when an ID'd header's field block has actually begun, so the blank line
 #: that ENDS that block can close the header's claim without the blank line
 #: before it (or around a provenance comment) closing it early.
-_FIELD_BLOCK_LINE_RE = re.compile(
-    r"^\s*(?:-\s+)?(?:" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):"
-)
+_FIELD_BLOCK_LINE_RE = re.compile(r"^\s*(?:-\s+)?(?:" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):")
 
 
 class Tier3Shape(StrEnum):

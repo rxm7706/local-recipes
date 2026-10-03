@@ -882,8 +882,7 @@ def test_a_bare_covers_dreams_scalar_covers_that_one_dream(tmp_path: Path) -> No
         tmp_path,
         "pyforge-doctor",
         "spec-host-scalar",
-        "owner-dream: docs/dreams/host-scalar.md\n"
-        "covers-dreams: docs/dreams/satellite-scalar.md\n",
+        "owner-dream: docs/dreams/host-scalar.md\ncovers-dreams: docs/dreams/satellite-scalar.md\n",
     )
 
     findings = chain.gather_dream_chain(tmp_path)

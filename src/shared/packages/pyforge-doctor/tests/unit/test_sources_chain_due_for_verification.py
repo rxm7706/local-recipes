@@ -2288,8 +2288,7 @@ def test_a_future_verified_date_does_not_count_as_verified_coverage(
     _write_tracked(
         tmp_path,
         "proj",
-        "## DW-1\nverified: 2026-08-10 — really checked\n\n"
-        "## DW-2\nverified: 2126-07-15 — typo'd year\n",
+        "## DW-1\nverified: 2026-08-10 — really checked\n\n## DW-2\nverified: 2126-07-15 — typo'd year\n",
     )
 
     items = chain._verification_coverage(tmp_path, today=date(2026, 8, 15))
@@ -2312,10 +2311,7 @@ def test_one_path_cited_by_many_entries_is_read_from_git_once(tmp_path: Path) ->
     _write_tracked(
         target,
         "proj",
-        "".join(
-            f"## DW-{n}\nverified: 2026-07-01 — checked\nCode: `src/shared.py:10`\n\n"
-            for n in range(1, 6)
-        ),
+        "".join(f"## DW-{n}\nverified: 2026-07-01 — checked\nCode: `src/shared.py:10`\n\n" for n in range(1, 6)),
     )
 
     log_calls: list[list[str]] = []
@@ -2417,9 +2413,7 @@ def test_a_symbol_search_is_scoped_to_the_package_the_entry_cites(
         "2026-01-01T00:00:00+00:00",
     )
 
-    scoped = chain._call_site_count(
-        target, "_helper", ["src/shared/packages/pyforge-alpha/src/alpha.py"]
-    )
+    scoped = chain._call_site_count(target, "_helper", ["src/shared/packages/pyforge-alpha/src/alpha.py"])
     unscoped = chain._call_site_count(target, "_helper")
 
     assert scoped == (0, True), scoped
@@ -2445,9 +2439,7 @@ def test_a_comment_mentioning_a_symbol_is_not_a_call_site(tmp_path: Path) -> Non
         "2026-01-01T00:00:00+00:00",
     )
 
-    result = chain._call_site_count(
-        target, "_helper", ["src/shared/packages/pyforge-alpha/src/alpha.py"]
-    )
+    result = chain._call_site_count(target, "_helper", ["src/shared/packages/pyforge-alpha/src/alpha.py"])
 
     assert result == (0, True), result
 
@@ -2468,9 +2460,7 @@ def test_a_matched_path_containing_a_colon_is_still_parsed(tmp_path: Path) -> No
         "2026-01-01T00:00:00+00:00",
     )
 
-    result = chain._call_site_count(
-        target, "_helper", ["src/shared/packages/pyforge-alpha/SPEC: notes.py"]
-    )
+    result = chain._call_site_count(target, "_helper", ["src/shared/packages/pyforge-alpha/SPEC: notes.py"])
 
     # The declaration was RECOGNISED (second element), which is what the
     # mis-split destroyed -- and no phantom call site was counted.
