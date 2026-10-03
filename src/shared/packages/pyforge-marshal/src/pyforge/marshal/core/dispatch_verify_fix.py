@@ -106,9 +106,7 @@ def extract_failed_verify_commands(
         if command in by_command:
             ordered.append(by_command[command])
         else:
-            ordered.append(
-                FailedVerifyCommand(command=command, stdout="", stderr="", exit_code=None)
-            )
+            ordered.append(FailedVerifyCommand(command=command, stdout="", stderr="", exit_code=None))
     return tuple(sorted(ordered, key=lambda item: item.command))
 
 
@@ -170,7 +168,4 @@ def choose_verify_fix_launch_mode(
 
 def fix_turn_park_message(*, failed_command: str | None) -> str:
     cmd = f" ({failed_command!r})" if failed_command else ""
-    return (
-        "verification still refused after one fix turn"
-        f"{cmd} — story parked for the operator (Story 85.1 / 83.10)"
-    )
+    return f"verification still refused after one fix turn{cmd} — story parked for the operator (Story 85.1 / 83.10)"

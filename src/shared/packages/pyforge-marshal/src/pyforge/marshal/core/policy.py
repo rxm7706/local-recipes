@@ -2099,17 +2099,11 @@ def resolve_verify_fix_settings(effective: EffectivePolicy) -> VerifyFixPolicySe
     """Story 85.1 (CAP-286): fix-turn output tail and wall-clock budget."""
     declared = effective.dispatch.value
     block: Mapping[str, object] = declared if isinstance(declared, Mapping) else {}
-    tail = _valid_positive_number(
-        block.get("verify_fix_output_tail_bytes", DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES)
-    )
-    minutes = _valid_positive_number(
-        block.get("verify_fix_wall_clock_minutes", DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES)
-    )
+    tail = _valid_positive_number(block.get("verify_fix_output_tail_bytes", DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES))
+    minutes = _valid_positive_number(block.get("verify_fix_wall_clock_minutes", DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES))
     return VerifyFixPolicySettings(
         output_tail_bytes=int(tail if tail is not None else DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES),
-        wall_clock_minutes=float(
-            minutes if minutes is not None else DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES
-        ),
+        wall_clock_minutes=float(minutes if minutes is not None else DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES),
     )
 
 

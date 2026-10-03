@@ -54,6 +54,8 @@ _SLUG = "pyforge-marshal"
 def _verify_fix_loop_off(monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 85.1: dev flag overlays default ON; these tests simulate verify without a live fix turn."""
     monkeypatch.setattr(supervisor_main, "verify_fix_loop_enabled", lambda *, repo_root: False)
+
+
 _STORY_KEY = "51.11"
 _RUN_ID = "run-53-3"
 _BASELINE = "c8277c03c117ff4779d54a2ff9d900f519415971"

@@ -19,27 +19,36 @@ from pyforge.marshal.core.policy import DEFAULT_POLICY, compose
 
 
 def test_decide_verify_fix_turn_requires_flag_and_refusal():
-    assert decide_verify_fix_turn(
-        flag_enabled=False,
-        verification_verdict=DispatchVerificationVerdict.REFUSED.value,
-        has_git_progress=True,
-        fix_turn_already_ran=False,
-        session_alive=False,
-    ).run is False
-    assert decide_verify_fix_turn(
-        flag_enabled=True,
-        verification_verdict=DispatchVerificationVerdict.VERIFIED.value,
-        has_git_progress=True,
-        fix_turn_already_ran=False,
-        session_alive=False,
-    ).run is False
-    assert decide_verify_fix_turn(
-        flag_enabled=True,
-        verification_verdict=DispatchVerificationVerdict.REFUSED.value,
-        has_git_progress=True,
-        fix_turn_already_ran=False,
-        session_alive=False,
-    ).run is True
+    assert (
+        decide_verify_fix_turn(
+            flag_enabled=False,
+            verification_verdict=DispatchVerificationVerdict.REFUSED.value,
+            has_git_progress=True,
+            fix_turn_already_ran=False,
+            session_alive=False,
+        ).run
+        is False
+    )
+    assert (
+        decide_verify_fix_turn(
+            flag_enabled=True,
+            verification_verdict=DispatchVerificationVerdict.VERIFIED.value,
+            has_git_progress=True,
+            fix_turn_already_ran=False,
+            session_alive=False,
+        ).run
+        is False
+    )
+    assert (
+        decide_verify_fix_turn(
+            flag_enabled=True,
+            verification_verdict=DispatchVerificationVerdict.REFUSED.value,
+            has_git_progress=True,
+            fix_turn_already_ran=False,
+            session_alive=False,
+        ).run
+        is True
+    )
 
 
 def test_build_verify_fix_prompt_uses_tail_only():

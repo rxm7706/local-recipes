@@ -991,9 +991,7 @@ def _maybe_run_verify_fix_turn(
         if row.get("command")
     )
     prompt = build_verify_fix_prompt(failed_cmds, output_tail_bytes=fix_policy.output_tail_bytes)
-    launch_mode = choose_verify_fix_launch_mode(
-        resume_argv=resolution.spec.resume_argv if resolution.spec else None
-    )
+    launch_mode = choose_verify_fix_launch_mode(resume_argv=resolution.spec.resume_argv if resolution.spec else None)
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
         ts=_format_entry_ts(_now_utc()),
