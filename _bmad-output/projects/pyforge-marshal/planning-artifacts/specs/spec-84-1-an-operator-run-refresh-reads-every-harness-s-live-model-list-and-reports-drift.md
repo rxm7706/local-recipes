@@ -2,8 +2,8 @@
 title: "84.1: An operator-run refresh reads every harness's live model list and reports drift"
 type: 'feature'
 created: '2026-10-02'
-status: 'ready-for-dev'
-baseline_revision: 'ec1f191a01a6d37e146f7b5052a8e6497421f9a5'
+status: 'done'
+baseline_revision: 'c41bdc60d170e53ebb4892197ae64df58e891f2b'
 followup_review_recommended: false
 review_loop_iteration: 0
 flag-exempt: detector-or-gate   # a check that judges declared model ids against live lists; a gated check reports a silent green (spec-feature-flag-governance Q2)
@@ -168,3 +168,24 @@ Residual risk: operator manual check — one live `--write` run to seed the firs
 ### 2026-10-03 — Review pass (bmad-build-auto, independent review pass 3)
 - verdicts: 10 prior findings — all addressed as `patch`; 0 new findings from abbreviated self-review
 - findings: credential leak via exception text (fixed strings + control-char guard); redirect credential follow (http.client, no urllib); HTTPException isolation; coverage/tests; no-drift when all unavailable; prior snapshot status in diff; empty parse unavailable; MRS-MDL-002/003; JSON secret scan; meta-test live-import boundary
+
+### 2026-10-03 — Review pass (bmad-build-auto, re-review pass 4)
+- verdicts: 6 evening findings — all `[patch]` closed; 0 new findings
+- findings:
+  - `[medium]` `[patch]` `--write` no longer overwrites a same-day ok snapshot when a re-run is unavailable; per-harness diff uses the newest prior ok ids (skips unavailable days).
+  - `[medium]` `[patch]` Removed dead `urllib_http_get` / `HttpResponse` from pyforge-core; listing GET stays in `adapters/model_list_http.py`; spec-pyforge-core memlog amended.
+  - `[low]` `[patch]` Unexpected HTTP page shape and Cursor `Error - …` auth lines no longer read as success.
+  - `[low]` `[patch]` Sentinel credential CLI test drives `fetch_live_ids_for_profile` with a CR key; redirect test asserts a single HTTPS request.
+  - `[low]` `[patch]` Removed unused `provider_for_harness_name`; `dataclasses.replace` for overlay `model_list` inherit; credential_env error string omits pasted values; profile_map refs prefer overlay path when present.
+
+## Auto Run Result
+
+Status: done
+Summary: Closed re-review pass 4 for `marshal adapters models`: snapshot write/diff preserve last ok harness blocks, pyforge-core redirect helper removed, listing edge cases hardened, tests updated.
+Verification: pyforge-marshal-test 10951 passed; pyforge-marshal-coverage-gate OK; pyforge-deps-test 130 passed; lint-types exit 0; `python scripts/spec_surface_reconcile.py` OK after memlog (spec-pyforge-marshal + spec-pyforge-core).
+Follow-up review recommended: false
+Residual risk: operator manual check — one live `--write` run to seed the first snapshot (per spec Verification manual checks).
+
+Governed paths reconciled (memlog):
+- spec-pyforge-marshal: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/model_list_live.py, src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/adapters.py, src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py, src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/model_list_refresh.py, src/shared/packages/pyforge-marshal/tests/unit/test_model_list_http.py, src/shared/packages/pyforge-marshal/tests/unit/test_model_list_refresh.py
+- spec-pyforge-core (co-governor): src/shared/packages/pyforge-core/src/pyforge/core/client.py
