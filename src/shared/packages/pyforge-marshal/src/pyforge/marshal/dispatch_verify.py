@@ -139,7 +139,6 @@ _DEFERRED_WORK_CHECK_COMMAND = "pixi run --frozen -e pyforge-guild deferred-work
 #: (no ``pyforge-core-coverage-gate`` task) and never a station the diff did
 #: not touch.
 _STATION_PACKAGE_SRC_PARTS = ("src", "shared", "packages")
-_PYFORGE_CORE_SLUG = "pyforge-core"
 #: The eight Dream/TEA stations in ``scripts/coverage_gate.py`` ``STATIONS``
 #: (``pyforge-core`` / testing-kit are not coverage-gate stations).
 _COVERAGE_GATE_STATION_SLUGS: frozenset[str] = frozenset(
