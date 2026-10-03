@@ -2,7 +2,7 @@
 title: "84.1: An audit purge records itself, and the audit table is append-only by privilege"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '7aa6d9925398d8e8f9a178d6d36d20595bab0279'
 review_loop_iteration: 0
 followup_review_recommended: false
