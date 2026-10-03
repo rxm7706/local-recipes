@@ -1771,6 +1771,7 @@ def _seed_refused_dispatch_land_run(
     feed = render_feed_key(dispatch_core.normalize(story_key))
     run_dir = dispatch_core.dispatch_run_dir(repo, slug, run_id)
     run_dir.mkdir(parents=True, exist_ok=True)
+    land_intent_id = JournalEntryId("w", 1)
     entries = (
         build_entry(
             id=JournalEntryId("w", 0),
@@ -1781,11 +1782,20 @@ def _seed_refused_dispatch_land_run(
             payload={"story_key": feed, "harness_profile": "claude"},
         ),
         build_entry(
-            id=JournalEntryId("w", 1),
+            id=land_intent_id,
+            ts="2026-10-02T12:00:00.500Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAND,
+            phase=Phase.INTENT,
+            payload={"verdict": "refused"},
+        ),
+        build_entry(
+            id=JournalEntryId("w", 2),
             ts="2026-10-02T12:00:01.000Z",
             run_id=run_id,
             kind=dispatch_core.KIND_DISPATCH_LAND,
             phase=Phase.OUTCOME,
+            intent_id=land_intent_id,
             payload={
                 "verdict": "refused",
                 "ok": False,

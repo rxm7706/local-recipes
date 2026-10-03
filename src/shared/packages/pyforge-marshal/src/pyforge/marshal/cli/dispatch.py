@@ -2711,7 +2711,7 @@ def dispatch_once(
     # because main's ledger is still backlog.
     live_spec_text = _spec_text_prefer_worktree(spec_path, repo_root, worktree, spec_text)
     latest_landing_verdict: str | None = None
-    latest_run_dir = _latest_story_run_dir(fs, repo_root, slug, story_key)
+    latest_run_dir = _latest_story_run_dir(fs, repo_root, slug, render_feed_key(story_key))
     if latest_run_dir is not None:
         latest_landing_verdict = gather_dispatch_journal_facts(
             fs, latest_run_dir, latest_run_dir.name

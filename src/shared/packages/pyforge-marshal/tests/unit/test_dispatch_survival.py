@@ -306,7 +306,7 @@ def test_gather_journal_reads_land_findings_regardless_of_ok() -> None:
         line = prepare_for_write(entry).line
         fs.append_line(run_dir / "journal.jsonl", line, fsync=False)
     facts = gather_dispatch_journal_facts(fs, run_dir, "run1")
-    assert facts.landing_verdict is None
+    assert facts.landing_verdict == "refused"
     assert facts.landing_findings == (
         {
             "code": "MRS-DISP-048",
