@@ -2,16 +2,19 @@
   "dev": {
     "pyforge.three_surfaces": "on",
     "pyforge.cutover_root": "local-recipes",
-    "pyforge.steward.ghe_fleet_credentials": "off"
+    "pyforge.steward.ghe_fleet_credentials": "off",
+    "pyforge.steward.sync_github_only_marker": "on"
   },
   "staging": {
     "pyforge.three_surfaces": "on",
     "pyforge.cutover_root": "local-recipes",
-    "pyforge.steward.ghe_fleet_credentials": "off"
+    "pyforge.steward.ghe_fleet_credentials": "off",
+    "pyforge.steward.sync_github_only_marker": "on"
   },
   "production": {
     "pyforge.three_surfaces": "on",
     "pyforge.cutover_root": "local-recipes",
-    "pyforge.steward.ghe_fleet_credentials": "off"
+    "pyforge.steward.ghe_fleet_credentials": "off",
+    "pyforge.steward.sync_github_only_marker": "off"
   }
 }

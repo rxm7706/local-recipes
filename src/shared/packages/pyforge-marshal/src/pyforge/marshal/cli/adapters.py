@@ -65,12 +65,14 @@ module-level ``from .init import _home_path`` would otherwise create.
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import os
 import platform
 import secrets
+import tomllib
 from collections.abc import Callable, Mapping
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -83,6 +85,7 @@ from ..adapters.harness_bmadloop import (
     resolve_loop_runner,
     write_policy_toml,
 )
+from ..adapters.model_list_live import LiveModelListFetch, fetch_live_ids_for_profile
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.conformance import (
@@ -103,7 +106,26 @@ from ..core.conformance import (
     render_matrix_markdown,
 )
 from ..core.egress import to_redacted
+from ..core.harness_profile import HarnessProfile, load_profiles
 from ..core.model import Finding, Severity, build_envelope
+from ..core.model_list_refresh import (
+    HarnessListResult,
+    HarnessListStatus,
+    accumulate_last_ok_ids,
+    build_snapshot_payload,
+    collect_catalog_refs,
+    collect_profile_map_refs,
+    collect_tier_map_refs,
+    diff_harness_ids,
+    ensure_no_secret_in_text,
+    find_not_listed,
+    merge_snapshot_blocks_for_write,
+    parse_snapshot_payload,
+    providers_named_by_profiles,
+    render_report_text,
+    snapshot_filename_for_date,
+    unchecked_catalog_providers,
+)
 from ..core.refs import local_branch_ref
 from ..core.skill_projection import CANONICAL_SKILL_TREE_REL, plan_projection
 from ..core.verdict import compute_verdict, exit_code_for
@@ -111,7 +133,7 @@ from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.record import RecordPort
 from ..ports.vcs import VcsPort
-from .config import _suppress_downstream_pipe_close, repo_root
+from .config import PROJECT_POLICY_RELPATH, _suppress_downstream_pipe_close, repo_root
 from .init import _home_path, _loop_home_root, _machine_state_dir
 
 if TYPE_CHECKING:
@@ -348,6 +370,29 @@ def add_adapters_subparser(subparsers: argparse._SubParsersAction) -> None:
     )
     matrix_parser.set_defaults(handler=run_adapters_matrix)
 
+    models_parser = adapters_subparsers.add_parser(
+        "models",
+        help="Refresh harness live model lists and report drift (FR-232 / CAP-285).",
+        description=(
+            "Operator-run only: reads each profile's declared model-list source, "
+            "reports declared ids absent from the live list, and optionally writes "
+            "a dated snapshot under planning-artifacts/model-lists/."
+        ),
+    )
+    models_parser.add_argument("slug", help="The BMAD project slug (for planning-artifacts paths).")
+    models_parser.add_argument(
+        "--write",
+        action="store_true",
+        help="Write today's model-list snapshot JSON under planning-artifacts/model-lists/.",
+    )
+    models_parser.add_argument(
+        "--format",
+        choices=("text", "json"),
+        default="text",
+        help="Output format (default: text).",
+    )
+    models_parser.set_defaults(handler=run_adapters_models)
+
     entry_files_parser = adapters_subparsers.add_parser(
         "entry-files",
         help="Detect cross-tool entry-file family drift, report-only (FR-46).",
@@ -512,6 +557,7 @@ def _emit(
     *,
     command: str = "adapters sync",
     renderer: Callable[[dict[str, object], tuple[Finding, ...]], str] = _render_text,
+    scan_output: Callable[[str], None] | None = None,
 ) -> int:
     verdict_value = compute_verdict(findings)
     envelope = build_envelope(
@@ -525,6 +571,8 @@ def _emit(
         rendered = json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True)
     else:
         rendered = renderer(envelope.data, envelope.findings)
+    if scan_output is not None:
+        scan_output(rendered)
     try:
         print(rendered, flush=True)
     except OSError:
@@ -1894,6 +1942,305 @@ def run_adapters_matrix(
         )
 
     return _emit(args, data, findings, command="adapters matrix", renderer=_render_text_matrix)
+
+
+# =====================================================================
+# ``marshal adapters models`` (Story 84.1, FR-232 / CAP-285).
+# =====================================================================
+
+
+def _render_text_models(data: dict[str, object], findings: tuple[Finding, ...]) -> str:
+    report = data.get("report")
+    lines: list[str] = []
+    if isinstance(report, str):
+        lines.append(report)
+    other_findings = tuple(f for f in findings if f.code != "MRS-MDL-001")
+    if other_findings:
+        lines.append("")
+        lines.append("findings:")
+        for finding in other_findings:
+            lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
+    return "\n".join(lines) if lines else ""
+
+
+def _scan_text_for_profile_secrets(text: str, profiles: Mapping[str, object]) -> None:
+    for profile in profiles.values():
+        source = getattr(profile, "model_list", None)
+        if source is None or not source.credential_env:
+            continue
+        secret = os.environ.get(source.credential_env, "")
+        if secret:
+            ensure_no_secret_in_text(text, secret)
+
+
+def _gather_declared_model_refs(root: Path, profiles: Mapping[str, HarnessProfile]) -> list:
+    from ..core.model_list_refresh import DeclaredModelRef
+
+    refs: list[DeclaredModelRef] = []
+    projects_root = root / "_bmad-output" / "projects"
+    if projects_root.is_dir():
+        for project_dir in sorted(projects_root.iterdir()):
+            if not project_dir.is_dir():
+                continue
+            policy_path = project_dir / "planning-artifacts" / "marshal-policy.toml"
+            if not policy_path.is_file():
+                continue
+            try:
+                policy_data = tomllib.loads(policy_path.read_text(encoding="utf-8"))
+            except tomllib.TOMLDecodeError:
+                continue
+            tier_map = policy_data.get("model_tier_map")
+            if not isinstance(tier_map, Mapping):
+                continue
+            pref = policy_data.get("harness_preference")
+            default_harness: str | None = None
+            if isinstance(pref, list) and pref and isinstance(pref[0], str):
+                default_harness = pref[0]
+            rel_policy = str(policy_path.relative_to(root))
+            refs.extend(
+                collect_tier_map_refs(
+                    policy_path=rel_policy,
+                    tier_map=tier_map,
+                    default_harness=default_harness,
+                )
+            )
+    marshal_policy = root / PROJECT_POLICY_RELPATH.format(slug="pyforge-marshal")
+    if marshal_policy.is_file():
+        try:
+            policy_data = tomllib.loads(marshal_policy.read_text(encoding="utf-8"))
+            catalog = policy_data.get("model_cost_catalog")
+            catalog_path = str(marshal_policy.relative_to(root))
+            for name, prof in profiles.items():
+                source = prof.model_list
+                provider = source.catalog_provider if source is not None else ""
+                if provider and catalog is not None:
+                    refs.extend(
+                        collect_catalog_refs(
+                            catalog=catalog,
+                            catalog_path=catalog_path,
+                            provider=provider,
+                            harness=name,
+                        )
+                    )
+        except OSError, tomllib.TOMLDecodeError:
+            pass
+    for name, profile in profiles.items():
+        if not hasattr(profile, "model_map"):
+            continue
+        overlay_path = root / "_bmad-output" / "harness-profiles" / f"{name}.toml"
+        if overlay_path.is_file():
+            profile_path = str(overlay_path.relative_to(root))
+        else:
+            profile_path = f"src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/{name}.toml"
+        refs.extend(
+            collect_profile_map_refs(
+                harness=name,
+                profile_path=profile_path,
+                model_map=dict(profile.model_map),
+            )
+        )
+    return refs
+
+
+def _snapshot_day_from_path(path: Path) -> date | None:
+    stem = path.stem
+    if not stem.startswith("model-list-"):
+        return None
+    day_str = stem.removeprefix("model-list-")
+    try:
+        return date.fromisoformat(day_str)
+    except ValueError:
+        return None
+
+
+def _load_snapshot_history(
+    snapshot_dir: Path,
+    *,
+    before: date,
+) -> list[tuple[date, dict[str, frozenset[str]], dict[str, HarnessListStatus]]]:
+    if not snapshot_dir.is_dir():
+        return []
+    dated: list[tuple[date, Path]] = []
+    for path in snapshot_dir.glob("model-list-*.json"):
+        day = _snapshot_day_from_path(path)
+        if day is not None and day < before:
+            dated.append((day, path))
+    dated.sort(key=lambda item: item[0])
+    history: list[tuple[date, dict[str, frozenset[str]], dict[str, HarnessListStatus]]] = []
+    for day, path in dated:
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except OSError, json.JSONDecodeError, ValueError:
+            continue
+        if not isinstance(raw, dict):
+            continue
+        try:
+            _snap_date, ids_map, status_map = parse_snapshot_payload(raw)
+        except ValueError:
+            continue
+        history.append((day, ids_map, status_map))
+    return history
+
+
+def run_adapters_models(
+    args: argparse.Namespace,
+    *,
+    fs: FsPort | None = None,
+    context: MarshalContext | None = None,
+) -> int:
+    """``marshal adapters models`` (Story 84.1, CAP-285): operator-run refresh."""
+    del context
+    fs = fs if fs is not None else LocalFs()
+    slug = args.slug
+    findings: list[Finding] = []
+    data: dict[str, object] = {"slug": slug}
+
+    if not policy._is_valid_project_slug(slug):
+        findings.append(
+            Finding(
+                code="MRS-ADP-001",
+                severity=Severity.ERROR,
+                message=f"malformed project slug {slug!r}",
+            )
+        )
+        return _emit(args, data, findings, command="adapters models", renderer=_render_text_models)
+
+    root = repo_root()
+    profiles, overlay_errors = load_profiles(root)
+    for err in overlay_errors:
+        findings.append(Finding(code="MRS-DISP-028", severity=Severity.WARN, message=err))
+
+    fetcher = LiveModelListFetch(repo_root=str(root))
+    harness_results: dict[str, HarnessListResult] = {}
+    harness_ids: dict[str, frozenset[str]] = {}
+    aliases_by_harness: dict[str, frozenset[str]] = {}
+    catalog_provider_by_harness: dict[str, str] = {}
+
+    for name, profile in sorted(profiles.items()):
+        try:
+            result = fetch_live_ids_for_profile(profile, fetcher)
+        except OSError, ValueError, TimeoutError, http.client.HTTPException:
+            result = HarnessListResult(
+                harness=name,
+                status="unavailable",
+                live_ids=frozenset(),
+                reason="fetch failed",
+            )
+        harness_results[name] = result
+        harness_ids[name] = result.live_ids
+        source = profile.model_list
+        aliases_by_harness[name] = frozenset(source.aliases) if source is not None else frozenset()
+        if source is not None and source.catalog_provider:
+            catalog_provider_by_harness[name] = source.catalog_provider
+
+    declared = _gather_declared_model_refs(root, profiles)
+    not_listed = find_not_listed(declared, harness_results, aliases_by_harness)
+    for item in not_listed:
+        findings.append(
+            Finding(
+                code="MRS-MDL-001",
+                severity=Severity.WARN,
+                message=(
+                    f"model {item.model_id!r} for harness {item.harness!r} not in live list "
+                    f"(declared in {item.source_file} key {item.source_key})"
+                ),
+            )
+        )
+
+    marshal_policy = root / PROJECT_POLICY_RELPATH.format(slug="pyforge-marshal")
+    unchecked: frozenset[str] = frozenset()
+    if marshal_policy.is_file():
+        try:
+            policy_data = tomllib.loads(marshal_policy.read_text(encoding="utf-8"))
+            catalog = policy_data.get("model_cost_catalog")
+            named = providers_named_by_profiles(catalog_provider_by_harness)
+            unchecked = unchecked_catalog_providers(catalog, named)
+        except OSError, tomllib.TOMLDecodeError:
+            pass
+
+    unavailable_harnesses = [name for name, r in harness_results.items() if r.status == "unavailable"]
+    if unavailable_harnesses:
+        findings.append(
+            Finding(
+                code="MRS-MDL-002",
+                severity=Severity.WARN,
+                message="harness model list unavailable: " + ", ".join(sorted(unavailable_harnesses)),
+            )
+        )
+    if unchecked:
+        findings.append(
+            Finding(
+                code="MRS-MDL-003",
+                severity=Severity.WARN,
+                message="unchecked catalog providers: " + ", ".join(sorted(unchecked)),
+            )
+        )
+    data["unchecked_providers"] = sorted(unchecked)
+
+    today = date.today()
+    snapshot_dir = root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "model-lists"
+    snapshot_diff = None
+    prior_ok_ids = accumulate_last_ok_ids(_load_snapshot_history(snapshot_dir, before=today))
+    if prior_ok_ids:
+        comparable = frozenset(name for name, result in harness_results.items() if result.status == "ok")
+        comparable &= frozenset(prior_ok_ids.keys())
+        snapshot_diff = diff_harness_ids(prior_ok_ids, harness_ids, comparable_harnesses=comparable)
+
+    report = render_report_text(
+        not_listed=not_listed,
+        harness_results=harness_results,
+        unchecked_providers=unchecked,
+        snapshot_diff=snapshot_diff,
+    )
+    data["report"] = report
+    data["harness_results"] = {
+        name: {"status": r.status, "count": len(r.live_ids), "reason": r.reason} for name, r in harness_results.items()
+    }
+
+    def _scan_output(text: str) -> None:
+        _scan_text_for_profile_secrets(text, profiles)
+
+    if args.write:
+        write_ids = dict(harness_ids)
+        write_status: dict[str, HarnessListStatus] = {name: r.status for name, r in harness_results.items()}
+        last_ok_ids = accumulate_last_ok_ids(_load_snapshot_history(snapshot_dir, before=today))
+        same_day_path = snapshot_dir / snapshot_filename_for_date(today)
+        same_day_harnesses: Mapping[str, object] | None = None
+        if same_day_path.is_file():
+            try:
+                same_raw = json.loads(same_day_path.read_text(encoding="utf-8"))
+                if isinstance(same_raw, dict):
+                    harness_block = same_raw.get("harnesses")
+                    if isinstance(harness_block, Mapping):
+                        same_day_harnesses = harness_block
+            except OSError, json.JSONDecodeError, ValueError:
+                pass
+        write_ids, write_status = merge_snapshot_blocks_for_write(
+            harness_ids=write_ids,
+            harness_status=write_status,
+            same_day_existing=same_day_harnesses,
+            last_ok_ids=last_ok_ids,
+        )
+        payload = build_snapshot_payload(
+            snapshot_date=today.isoformat(),
+            harness_ids=write_ids,
+            harness_status=write_status,
+        )
+        snapshot_text = json.dumps(payload, indent=2, sort_keys=True)
+        _scan_text_for_profile_secrets(snapshot_text, profiles)
+        out_path = snapshot_dir / snapshot_filename_for_date(today)
+        fs.ensure_dir(snapshot_dir)
+        fs.write_text_atomic(out_path, snapshot_text + "\n")
+        data["snapshot_path"] = str(out_path.relative_to(root))
+
+    return _emit(
+        args,
+        data,
+        findings,
+        command="adapters models",
+        renderer=_render_text_models,
+        scan_output=_scan_output,
+    )
 
 
 # =====================================================================

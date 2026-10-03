@@ -862,6 +862,7 @@ def test_egress_ports_registry_has_exactly_the_known_ports():
         "BuildHarnessPort",
         "SkillInvokePort",
         "RunPublisherPort",
+        "ModelListFetchPort",
     }
 
 
