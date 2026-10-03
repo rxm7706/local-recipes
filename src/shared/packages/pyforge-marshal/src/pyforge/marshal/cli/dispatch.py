@@ -1727,19 +1727,48 @@ def station_in_flight_conflict(
             effective_policy=effective_policy,
             run_dir=run_dir,
         )
-        if verdict != DispatchSessionVerdict.LIVE:
+        # Story 83.4: Also consider FAILED stories that were refused and have open PRs
+        is_blocking_story = verdict == DispatchSessionVerdict.LIVE
+        if verdict == DispatchSessionVerdict.FAILED and journal.verification_verdict == "refused":
+            # Check if this is a refused story with an open PR (unmerged branch)
+            try:
+                if journal.baseline_head_sha is not None and journal.worktree_path is not None:
+                    git_facts = gather_dispatch_git_facts(
+                        vcs,
+                        fs=fs,
+                        repo_root=repo_root,
+                        worktree=Path(journal.worktree_path),
+                        story_key=journal.story_key,
+                        project_slug=slug,
+                        baseline_head_sha=journal.baseline_head_sha,
+                        merge_subject_template=effective_policy.merge_subject_template.value,
+                        followup_review=journal.followup_review,
+                    )
+                    # If branch is not merged, the PR is still open
+                    if not git_facts.branch_merged and not git_facts.story_merged_on_main:
+                        is_blocking_story = True
+            except (VcsCommandError, ValueError):
+                pass  # If we can't gather git facts, err on the side of caution and don't block
+        
+        if not is_blocking_story:
             continue
-        evidence = _live_dispatch_evidence(
-            journal=journal,
-            verdict=verdict,
-            fs=fs,
-            vcs=vcs,
-            process=process,
-            repo_root=repo_root,
-            slug=slug,
-            effective_policy=effective_policy,
-            harness_reported_failure=harness_reported_failure,
-        )
+        # Story 83.4: Generate appropriate evidence for both LIVE and refused FAILED stories
+        if verdict == DispatchSessionVerdict.LIVE:
+            evidence = _live_dispatch_evidence(
+                journal=journal,
+                verdict=verdict,
+                fs=fs,
+                vcs=vcs,
+                process=process,
+                repo_root=repo_root,
+                slug=slug,
+                effective_policy=effective_policy,
+                harness_reported_failure=harness_reported_failure,
+            )
+        else:
+            # For refused FAILED stories, generate evidence about the open PR
+            story_key = journal.story_key or "unknown"
+            evidence = f"story {story_key!r} finished but was refused at landing with open PR"
         in_flight = journal.story_key
         if in_flight == feed_story:
             return DispatchPreflightConflict(
