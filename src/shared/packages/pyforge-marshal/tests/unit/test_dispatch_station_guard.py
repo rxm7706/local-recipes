@@ -691,25 +691,25 @@ def test_refused_story_with_open_pr_blocks_overlapping_dispatch(tmp_path: Path) 
     fs = FakeFs()
     specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
     specs.mkdir(parents=True)
-    
+
     # Create spec for refused story
     refused_spec = specs / "spec-82-4-refused.md"
     refused_spec.write_text(
         '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
         encoding="utf-8",
     )
-    
+
     # Create spec for candidate story with overlapping surface
     cand_spec = specs / "spec-82-5-candidate.md"
     cand_spec.write_text(
         '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
         encoding="utf-8",
     )
-    
+
     # Seed a refused dispatch journal (similar to the redispatch test pattern)
     run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-refused", story_key="82.4")
     journal_path = run_dir / "journal.jsonl"
-    
+
     # Add verification refusal to journal
     verification_intent = prepare_for_write(
         build_entry(
@@ -732,7 +732,7 @@ def test_refused_story_with_open_pr_blocks_overlapping_dispatch(tmp_path: Path) 
             payload={"verdict": "refused", "failed_gate": "MRS-GATE-001"},
         )
     ).line
-    
+
     with journal_path.open("a", encoding="utf-8") as fh:
         fh.write(verification_intent + "\n" + verification_outcome + "\n")
     fs.files[journal_path] = fs.files[journal_path] + verification_intent + "\n" + verification_outcome + "\n"
@@ -776,25 +776,25 @@ def test_refused_story_with_closed_pr_allows_overlapping_dispatch(tmp_path: Path
     fs = FakeFs()
     specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
     specs.mkdir(parents=True)
-    
+
     # Create spec for refused story
     refused_spec = specs / "spec-82-4-refused.md"
     refused_spec.write_text(
         '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
         encoding="utf-8",
     )
-    
+
     # Create spec for candidate story with overlapping surface
     cand_spec = specs / "spec-82-6-candidate.md"
     cand_spec.write_text(
         '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
         encoding="utf-8",
     )
-    
+
     # Seed a refused dispatch journal
     run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-refused-closed", story_key="82.4")
     journal_path = run_dir / "journal.jsonl"
-    
+
     # Add verification refusal to journal
     verification_intent = prepare_for_write(
         build_entry(
@@ -817,7 +817,7 @@ def test_refused_story_with_closed_pr_allows_overlapping_dispatch(tmp_path: Path
             payload={"verdict": "refused", "failed_gate": "MRS-GATE-001"},
         )
     ).line
-    
+
     with journal_path.open("a", encoding="utf-8") as fh:
         fh.write(verification_intent + "\n" + verification_outcome + "\n")
     fs.files[journal_path] = fs.files[journal_path] + verification_intent + "\n" + verification_outcome + "\n"
@@ -829,11 +829,11 @@ def test_refused_story_with_closed_pr_allows_overlapping_dispatch(tmp_path: Path
         def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
             # Refused story has merged branch (closed PR)
             return True
-            
+
         def branch_exists(self, repo_root: Path, branch: str) -> bool:
             # Simulate that the branch exists
             return True
-            
+
         def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
             # Return the expected worktree path for the branch
             return tmp_path / "wt"
@@ -867,25 +867,25 @@ def test_refused_story_with_disjoint_surfaces_allows_dispatch(tmp_path: Path) ->
     fs = FakeFs()
     specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
     specs.mkdir(parents=True)
-    
+
     # Create spec for refused story
     refused_spec = specs / "spec-82-4-refused.md"
     refused_spec.write_text(
         '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
         encoding="utf-8",
     )
-    
+
     # Create spec for candidate story with disjoint surface
     cand_spec = specs / "spec-82-7-candidate.md"
     cand_spec.write_text(
         '---\nsurface: ["src/shared/packages/pyforge-doctor/**"]\n---\n',
         encoding="utf-8",
     )
-    
+
     # Seed a refused dispatch journal
     run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-refused-disjoint", story_key="82.4")
     journal_path = run_dir / "journal.jsonl"
-    
+
     # Add verification refusal to journal
     verification_intent = prepare_for_write(
         build_entry(
@@ -908,7 +908,7 @@ def test_refused_story_with_disjoint_surfaces_allows_dispatch(tmp_path: Path) ->
             payload={"verdict": "refused", "failed_gate": "MRS-GATE-001"},
         )
     ).line
-    
+
     with journal_path.open("a", encoding="utf-8") as fh:
         fh.write(verification_intent + "\n" + verification_outcome + "\n")
     fs.files[journal_path] = fs.files[journal_path] + verification_intent + "\n" + verification_outcome + "\n"

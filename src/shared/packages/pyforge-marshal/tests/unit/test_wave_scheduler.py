@@ -56,7 +56,7 @@ def test_wave_planning_with_refused_story_surfaces() -> None:
     # Note: The main logic fix is in station_in_flight_conflict, but wave
     # planning should also be aware of these constraints
     wave = build_wave_batch(
-        wave_id="w4", 
+        wave_id="w4",
         ready=("83-4-a", "83-4-b"),
         cap=2,
         surfaces={
