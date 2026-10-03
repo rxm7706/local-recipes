@@ -1155,6 +1155,42 @@ def test_a_worktree_spec_left_blocked_is_disp_045(tmp_path: Path, capsys: pytest
     assert code == 4
 
 
+def test_a_blocked_worktree_spec_with_a_prior_run_is_still_disp_045(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 83.10 landing review: the verification-refusal land-only check must not swallow the blocked refusal
+    for a story that already has a run journal (every re-dispatched story does)."""
+    slug = "pyforge-marshal"
+    worktree = _seed_worktree_spec(tmp_path, slug, "22-7-fleet", "22.7", status="blocked")
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+
+    run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, "pyforge-marshal-20260930T000000000Z-abcd1234")
+    run_dir.mkdir(parents=True)
+    intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-09-30T00:00:00.000Z",
+            run_id=run_dir.name,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={"story_key": "22.7", "worktree_path": str(worktree), "baseline_head_sha": "aaa111"},
+        )
+    ).line
+    (run_dir / "journal.jsonl").write_text(intent + "\n", encoding="utf-8")
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        ledgers={slug: (("22-7-fleet", "backlog"),)},
+        capsys=capsys,
+    )
+    hits = _findings(envelope, "MRS-DRAINPLAN-001")
+    assert any("MRS-DISP-045" in f["message"] for f in hits)
+    assert code == 4
+
+
 def test_a_worktree_spec_done_is_land_only_not_a_refusal(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     slug = "pyforge-marshal"
     _seed_worktree_spec(tmp_path, slug, "22-7-fleet", "22.7", status="done")
@@ -2082,3 +2118,4 @@ def test_the_plan_lists_the_follow_ups_a_two_wide_wave_would_launch(
     assert "1 follow-up review(s) wait for a later campaign" in waiting["message"]
     assert vcs.fetched == []
     assert code == 0
+

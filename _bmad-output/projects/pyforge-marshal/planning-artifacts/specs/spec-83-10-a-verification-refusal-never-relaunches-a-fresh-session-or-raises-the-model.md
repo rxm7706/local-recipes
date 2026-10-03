@@ -74,6 +74,11 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 
 ## Review Triage Log
 
+### 2026-10-03 (later) — Landing review (operator session) — landed by hand
+- PR #1773 was merged before this session's fixes were pushed, so `main` carried the first session's code. The supervisor then read the story as merged on `main` and stopped without verifying or pushing. The operator session landed this session's fix commits through a new PR.
+- The three findings below are fixed: the blocked refusal stays reachable, MRS-GATE-018 is in the set, and the park reason names the failed message.
+- `low` `patch` (applied by the operator session) The blocked-refusal fix had no test. `test_a_blocked_worktree_spec_with_a_prior_run_is_still_disp_045` adds one (it fails with the old `elif` chain).
+
 ### 2026-10-03 — Landing review (operator session) — sent back
 - `high` `patch` **The drain plan stops refusing blocked stories.** `cli/drain_plan.py` `evaluate_story` inserts `elif latest_journal is not None:` ahead of `elif status == "blocked": refuse("MRS-DISP-045", ...)` in the same `if`/`elif` chain. So any story with a prior run, which every re-dispatched story has, enters the new branch, and the MRS-DISP-045 refusal for a `blocked` worktree spec is never reached. Fix: decide the verification-refusal land-only as its own step (for example `if not land_only and latest_journal is not None: ...`) and keep the blocked refusal reachable whenever the story is not land-only.
 - `medium` `patch` **MRS-GATE-018 is not a verification refusal here.** Story 83.2 added MRS-GATE-018 (the pre-verification deferred-work intake refused; `core/verdict.py` maps it to `GATE_FAILED`), and it is a dispatch verification refusal like 001-006. But `_VERIFY_REFUSAL_GATES` does not list it. So a 018 refusal still counts toward Story 33.6's floor-raise, and never takes the land-only path after an operator fix. That is what happened to 83.3's run `pyforge-marshal-20261003T133852198Z-8c6f8963`. Fix: add MRS-GATE-018 to the set, with a test.
