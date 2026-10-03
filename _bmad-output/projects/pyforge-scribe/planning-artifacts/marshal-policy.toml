@@ -152,6 +152,26 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   "docs/reference/bmad-estate-llms-full.md",
 ]
+"26" = [  # Phase 4+5 of the deferral burn-down: scribe's open medium and low deferrals (fix, no CAP), added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus what Story 26.1's rows
+  # reach outside the package: the portal slice and its host tests, the freshness check, governance-currency
+  # and their tests, the scribe ledger, and every Spec memlog (co-governor reconciles).
+  "src/shared/packages/pyforge-scribe/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-scribe/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-scribe/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/django-scribe/**",
+  "src/platform/tests/**",
+  "scripts/scribe_graph_freshness_check.py",
+  "scripts/governance_currency_check.py",
+  "tests/scripts/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
