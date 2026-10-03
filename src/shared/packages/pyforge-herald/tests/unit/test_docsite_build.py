@@ -113,12 +113,14 @@ def test_collect_infographics_respects_include_exclude_order_and_dedupe(build_mo
     beta = repo / "presentations/pyforge-beta/project/Beta Infographic standalone.html"
     beta.parent.mkdir(parents=True)
     beta.write_text("<html><head><title>Beta</title></head><body></body></html>", encoding="utf-8")
-    noise = repo / "presentations/pyforge-alpha/project/skip.html"
+    # The noise file matches the include glob, so only the exclude can drop it.
+    skip_rel = "presentations/pyforge-alpha/project/Skip Infographic standalone.html"
+    noise = repo / skip_rel
     noise.write_text("<html><head><title>Skip</title></head><body></body></html>", encoding="utf-8")
     cfg = {
         "infographics": {
             "include": ["presentations/pyforge-*/project/*standalone.html"],
-            "exclude": ["presentations/pyforge-alpha/project/skip.html"],
+            "exclude": [skip_rel],
             "overrides": {
                 "presentations/pyforge-beta/project/Beta Infographic standalone.html": {"order": 1},
                 "presentations/pyforge-alpha/project/Alpha Infographic standalone.html": {"order": 2},
@@ -130,7 +132,9 @@ def test_collect_infographics_respects_include_exclude_order_and_dedupe(build_mo
         "presentations/pyforge-beta/project/Beta Infographic standalone.html",
         "presentations/pyforge-alpha/project/Alpha Infographic standalone.html",
     ]
-    assert not any("skip.html" in i["source"] for i in items)
+    assert skip_rel not in {i["source"] for i in items}
+    unexcluded = build_mod.collect_infographics({"infographics": {**cfg["infographics"], "exclude": []}}, repo)
+    assert skip_rel in {i["source"] for i in unexcluded}
     dup = repo / "presentations/pyforge-gamma/project/Gamma Infographic standalone.html"
     dup.parent.mkdir(parents=True)
     dup.write_text("<html><head><title>Gamma</title></head><body></body></html>", encoding="utf-8")
@@ -260,6 +264,14 @@ def test_check_passes_on_a_green_fixture(build_mod, tmp_path: Path, capsys):
         (
             lambda od, r: (od / "decks/pyforge-alpha/downloads/alpha-deck-2026-01-01.pptx").write_bytes(b"x"),
             "download size mismatch: alpha-deck-2026-01-01.pptx",
+        ),
+        (
+            lambda od, r: (od / "decks/pyforge-alpha/downloads/alpha-2026-01-01.md").unlink(),
+            "download not published: alpha-2026-01-01.md",
+        ),
+        (
+            lambda od, r: (od / "decks/pyforge-alpha/downloads/alpha-2026-01-01.md").write_text("m", encoding="utf-8"),
+            "download size mismatch: alpha-2026-01-01.md",
         ),
     ],
 )

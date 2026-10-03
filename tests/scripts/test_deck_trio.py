@@ -1558,12 +1558,20 @@ def test_deck_trio_derives_poster_with_act_num_and_act_title_vocabulary(root):
         root / "presentations/pyforge-unifying-strategy/project/Strategy Infographic standalone.html",
         ACT_VOCAB_POSTER,
     )
-    deck_trio.main(["pyforge-unifying-strategy", "--deck"])
+    assert deck_trio.main(["pyforge-unifying-strategy", "--deck"]) == 0
     deck_path = _deck_path_for(root, "pyforge-unifying-strategy", "Strategy")
     assert deck_path.is_file()
     text = deck_path.read_text(encoding="utf-8")
     assert "ACT I" in text
     assert "Opening" in text
+    # The act band is copied verbatim, so the text checks above pass even when
+    # the parser reads no label or title; pin the parsed fields themselves.
+    parser = deck_trio._DeckStructure(ACT_VOCAB_POSTER)
+    parser.feed(ACT_VOCAB_POSTER)
+    parser.close()
+    assert len(parser.acts) == 1
+    assert parser.acts[0].lbl == "ACT I"
+    assert parser.acts[0].ttl == "Opening"
 
 
 def test_unchanged_derive_writes_stamp_when_sidecar_is_missing(root, monkeypatch):
@@ -1586,6 +1594,32 @@ def test_unchanged_derive_writes_stamp_when_sidecar_is_missing(root, monkeypatch
 
     assert calls == [head_path]
     assert stamps.read_stamp(head_path) is not None
+
+
+def test_unchanged_deck_derive_writes_stamp_when_sidecar_is_missing(root, monkeypatch):
+    """The ``--deck`` twin of the test above: an unchanged deck derive with no
+    sidecar still writes the stamp."""
+    _write(root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", DECK_POSTER)
+    deck_path = _deck_path_for(root, "pyforge-alpha", "Alpha")
+    assert deck_trio.main(["pyforge-alpha", "--deck"]) == 0
+    assert deck_path.is_file()
+    stamp_path = deck_path.with_name(deck_path.name + ".stamp.json")
+    stamp_path.unlink()
+    before = deck_path.read_bytes()
+
+    calls: list[Path] = []
+    real_write_stamp = stamps.write_stamp
+
+    def _spy(artifact_path, **kwargs):
+        calls.append(artifact_path)
+        return real_write_stamp(artifact_path, **kwargs)
+
+    monkeypatch.setattr(deck_trio.stamps, "write_stamp", _spy)
+    assert deck_trio.main(["pyforge-alpha", "--deck"]) == 0
+
+    assert deck_path.read_bytes() == before
+    assert calls == [deck_path]
+    assert stamps.read_stamp(deck_path) is not None
 
 
 def test_second_unchanged_run_does_not_refresh_the_stamp(root, monkeypatch):

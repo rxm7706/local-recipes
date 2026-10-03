@@ -990,7 +990,7 @@ deployment.
   severity: medium (unverified)
   promoted: 2026-09-14 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: closed
-  resolution: Story 35.2 (`35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence`)
+  resolution: dcd6e4f5a8 (2026-09-14); record restored by Story 35.2
   verified: 2026-09-14 — Closed with three tests that run a **real** `pytest --collect-only -q` over a throwaway package and parse its actual stdout, rather than the synthetic strings the suite had been asserting against: the plain `N tests collected` form, the `N/M tests collected` deselected form (pinning that `(?:/\d+)?` captures the SELECTED count, not the total), and the reversed-line scan, which matters because real stdout lists every node id before the summary and a forward scan could match a digit in an id. Deliberately NOT routed through `tests_command()`'s `pixi run -e pyforge-<station>`: that needs a provisioned station env and would make the tests skip on most machines — which is the same "only the plumbing is verified" hole this entry names. Mutation-verified rather than assumed: swapping the regex to `(\d+) items? collected` fails all three, and restoring passes all three, so they bite on the thing they claim to. `scripts/deck_facts.py` is byte-unchanged; this is pure verification of shipped behaviour, which is why it needed no Dream. Suite 45 -> 48 passed. Pinned at `tests/scripts/test_deck_facts.py:1053`.
 
 ### DW-21-7-1: `wasm-analytics-stack`'s standalone infographic poster is corrupted at the source and the corruption was already pushed to the live Claude Design project before it was discovered
@@ -1108,8 +1108,8 @@ deployment.
   origin: split from DW-FU-23-5, 2026-09-18
   severity: medium
   status: done
-  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
-  verified: 2026-10-03 — `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py:1` exercises `collect_infographics`, `collect_families`, and `check()` predicates under `pyforge-herald-test`.
+  resolution: Story 35.2 (`35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence`); Story 35.1 closed it before its tests made the checks fail
+  verified: 2026-10-03 — under `pyforge-herald-test`, `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py:108` pins `collect_infographics` include order, the `exclude` (a file the include glob matches is absent at :135 and present again with the exclude removed at :137) and the `-1.html` slug collision (:155); `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py:158` pins `collect_families`' exact `infographic_deck`, `executive_summary`, `pptx` and `marp` names and byte counts; `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py:202` runs `check()` green on a fixture carrying a deck, executive summary, pptx and marp, and `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py:208`-`:278` breaks each of its problem checks alone (pptx and marp downloads included) and asserts its stderr text. Mutation-checked by the landing-review fixer: removing the exclude pop, skipping the exclude loop, dropping marp from the download check, the out_name dedupe, the gallery check, the download-size check and `executive_summary` forced to None each fail a test.
 
 ### DW-FU-23-6: The idempotency AC is proven over hand-written fakes and one live smoke test that only exercised the skipped path, never a real seeded deck's unchanged path.
 
