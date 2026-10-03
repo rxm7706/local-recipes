@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 548
+# stories: 557
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -390,6 +390,13 @@ development_status:
   83-9-dispatch-applies-ruff-format-to-a-story-s-files-before-it-verifies: done
   84-1-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift: backlog
   85-1-a-verification-refusal-goes-back-to-the-session-that-wrote-the-change-for-one-fix-turn: backlog
+  86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: backlog
+  86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
+  86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: backlog
+  86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is: backlog
+  86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: backlog
+  86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: backlog
+  86-7-the-session-close-docs-name-the-context-advisory-and-the-retired-id-guard-scans-the-planning-docs: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
@@ -560,5 +567,7 @@ development_status:
   epic-84-retrospective: optional
   epic-85: backlog
   epic-85-retrospective: optional
+  epic-86: backlog
+  epic-86-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional

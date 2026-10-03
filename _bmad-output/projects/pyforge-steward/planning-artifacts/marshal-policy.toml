@@ -787,6 +787,25 @@ verify_commands = [
   "docs/reference/environments.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"84" = [  # Phase 3 of the deferral burn-down: steward's ruled fixes, added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus the flagd tree (84.4's flag),
+  # the platform deploy files (84.1's grants), the steward ledger rows each story closes, and every Spec memlog.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "scripts/.spec-surface-baseline.json",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/platform/config/settings/**",
+  "src/platform/deploy/**",
+  "src/platform/tests/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "83" = [  # Phase 2 of the deferral burn-down: steward's high deferrals (fix stories, no new CAP), added 2026-10-02.
           # The default surface, restated because a declared entry replaces it outright, plus the platform files
           # 83.2 (settings, compose) and 83.3 (chart values, compose, chart tests) touch, the ledger rows each story

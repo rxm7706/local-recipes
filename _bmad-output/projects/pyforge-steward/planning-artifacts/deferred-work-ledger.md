@@ -5537,7 +5537,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 492f999e9820 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): fix -- backlog Story 74.2's spec now requires the mounted credential to allow s3:ListBucket on the bucket (conditioned to the prefix) plus GetObject/PutObject; the requirement lands with 74.2.
+  verified: 2026-10-03 — _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-74-2-the-chart-names-the-bucket-and-prefix-per-environment-and-reaches-only-the-consumed-store.md:121 records the amendment.
   verified: 2026-10-01 — NEEDS-DECISION — src/shared/packages/django-pyforge/src/django_pyforge/object_store.py propagates every non-404 client error unchanged (docstring at line 172: '`head_object`, or None when the key is absent. Any other error propagates unchanged.') -- spec-conformant by design. The real S3 credential Story 74.2's chart would mount is still undecided: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md's Story 74.2 ('The chart names the bucket and prefix per environment and reaches only the consumed store') remains at ledger status backlog, so its IAM policy (whether it grants s3:ListBucket) has not been set. (2026-09-30 deferral burn-down triage)
   decision: Will the S3-compatible credential Story 74.2's chart mounts include s3:ListBucket? If not (a Put/Get-only credential), a head_object on an absent key will 403 rather than 404 on real S3/StorageGRID, and put_stream's first-write path needs an operator decision on whether to grant broader IAM or special-case 403-on-head as 'absent'.
 

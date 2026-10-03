@@ -946,6 +946,11 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (Phase 3)** — **Ruled: marshal's deferral decisions.** The operator ruled every live NEEDS-DECISION entry on
+  the rulings page: for marshal 20 fix, 18 close, 2 keep. **What it looks like when fixed:** the fix rulings land as seven
+  module bundles; the closes and keeps are written into the ledger with their reasons and cited evidence. **Constraints:**
+  fix stories, no CAP, no flag; two rulings amend the spine directly (AD-4 `core → ports`, AD-30 payload wording).
+  Owner `spec-pyforge-marshal`. → Epic 86 / Stories 86.1-86.7, specced 2026-10-03.
 - **2026-10-03 (night)** — **Found: a routine memory capture blocks the next landing.** Each dispatch session's
   closeout adds a line to `.claude/memory/MEMORY.md` at the end of a section, so two stories landing one after the other
   conflict there, and the landing heal refuses the second (MRS-DISP-038): 83.7 was merged by hand and 83.4 refused.
