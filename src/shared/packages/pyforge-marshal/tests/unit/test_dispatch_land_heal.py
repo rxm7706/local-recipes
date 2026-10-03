@@ -1550,9 +1550,7 @@ def test_mechanical_conflict_path_recognizes_team_memory_index() -> None:
 
 
 def _memory_index_text(*feedback_extra: str, project_extra: str = "") -> str:
-    feedback_body = "\n".join(
-        ["- [base-entry](feedback/base-entry.md) — base line", *feedback_extra]
-    )
+    feedback_body = "\n".join(["- [base-entry](feedback/base-entry.md) — base line", *feedback_extra])
     project_block = "## Project\n"
     if project_extra:
         project_block += f"\n{project_extra}\n"

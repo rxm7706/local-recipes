@@ -297,10 +297,19 @@ def union_memlog_texts(base: str, main: str, branch: str) -> str | None:
     return _render_memlog(fields, main_body + appended)
 
 
-def _union_appended_line_lists(
-    base_body: list[str], main_body: list[str], branch_body: list[str]
-) -> list[str] | None:
+def _rstrip_blank_tail(lines: list[str]) -> list[str]:
+    """Drop trailing empty lines -- ``scribe capture`` rebuilds section bodies without them."""
+    end = len(lines)
+    while end > 0 and not lines[end - 1].strip():
+        end -= 1
+    return lines[:end]
+
+
+def _union_appended_line_lists(base_body: list[str], main_body: list[str], branch_body: list[str]) -> list[str] | None:
     """Append-only union of three line lists (memlog body or a MEMORY.md section body)."""
+    base_body = _rstrip_blank_tail(base_body)
+    main_body = _rstrip_blank_tail(main_body)
+    branch_body = _rstrip_blank_tail(branch_body)
     kept = len(base_body)
     if main_body[:kept] != base_body or branch_body[:kept] != base_body:
         return None
@@ -338,11 +347,12 @@ def _parse_team_memory_index(text: str) -> tuple[list[str], list[tuple[str, list
 def _render_team_memory_index(preamble: list[str], sections: list[tuple[str, list[str]]]) -> str:
     parts: list[str] = []
     if preamble:
-        parts.append("\n".join(preamble))
+        parts.append("\n".join(_rstrip_blank_tail(preamble)))
     for heading, body in sections:
-        block = f"## {heading}"
-        if body:
-            block += "\n" + "\n".join(body)
+        content = _rstrip_blank_tail(body)
+        block = f"## {heading}\n"
+        if content:
+            block += "\n" + "\n".join(content)
         parts.append(block)
     return "\n".join(parts).rstrip("\n") + "\n"
 
@@ -366,7 +376,9 @@ def union_team_memory_index_texts(base: str, main: str, branch: str) -> str | No
         return None
     if [heading for heading, _ in branch_secs] != base_headings:
         return None
-    preamble = _union_appended_line_lists(base_pre, main_pre, branch_pre)
+    preamble = _union_appended_line_lists(
+        _rstrip_blank_tail(base_pre), _rstrip_blank_tail(main_pre), _rstrip_blank_tail(branch_pre)
+    )
     if preamble is None:
         return None
     merged_sections: list[tuple[str, list[str]]] = []
