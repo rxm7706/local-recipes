@@ -2,8 +2,8 @@
 title: "26.1: Recall breaks ties by recency, and scribe's other open deferrals close"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: 'e06362288272098346b7329a4a5e94e1ad87a513'
+status: 'in-progress'
+baseline_revision: '96743a013a9ddaf4ffa67cc987ab86518d075387'
 final_revision: 'pending-commit'
 review_loop_iteration: 0
 followup_review_recommended: false

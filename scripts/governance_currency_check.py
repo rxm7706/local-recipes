@@ -215,6 +215,20 @@ def _check_document(rel: str) -> list[dict]:
     return findings
 
 
+def _missing_cursor_rules_findings() -> list[dict]:
+    """A declared glob with zero matches is itself a finding (Story 26.1)."""
+    rules_dir = ROOT / ".cursor" / "rules"
+    if rules_dir.is_dir() and any(rules_dir.glob("*.mdc")):
+        return []
+    return [{
+        "document": _CURSOR_RULES_GLOB,
+        "kind": "missing-document",
+        "reference": _CURSOR_RULES_GLOB,
+        "line": 0,
+        "detail": "no .cursor/rules/*.mdc files matched the governed glob",
+    }]
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--json", action="store_true", help="machine-readable output")
@@ -224,6 +238,8 @@ def main(argv: list[str] | None = None) -> int:
 
     documents = tuple(args.file) if args.file else DOCUMENTS
     findings: list[dict] = []
+    if not args.file:
+        findings.extend(_missing_cursor_rules_findings())
     for rel in documents:
         findings.extend(_check_document(rel))
 
@@ -253,7 +269,7 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     try:
-        raise SystemExit(main())
+        raise SystemExit(main(sys.argv[1:]))
     except SystemExit:
         raise
     except Exception as exc:  # never a false green

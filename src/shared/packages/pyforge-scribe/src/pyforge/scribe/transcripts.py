@@ -233,7 +233,7 @@ def scan_transcripts(
     warnings: list[str] = []
 
     try:
-        jsonl_paths = sorted(transcript_root.rglob("*.jsonl"))
+        jsonl_paths = sorted(transcript_root.glob("*.jsonl"))
     except OSError:
         jsonl_paths = []
 

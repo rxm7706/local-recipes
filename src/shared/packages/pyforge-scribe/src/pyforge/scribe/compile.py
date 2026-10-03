@@ -930,14 +930,22 @@ def _read_transcript_surface(
             warnings.append(_transcript_unavailable_warning(transcript_root, exc))
             return []
 
-    root = transcript_root.resolve()
     nodes: list[GraphNode] = []
     occurrence: dict[tuple[Path, int], int] = {}
     for candidate in proposal.candidates:
         key = (candidate.source_file, candidate.line_number)
         index = occurrence.get(key, 0)
         occurrence[key] = index + 1
-        rel = candidate.source_file.resolve().relative_to(root).as_posix()
+        try:
+            rel = candidate.source_file.relative_to(transcript_root).as_posix()
+        except ValueError:
+            warnings.append(
+                _transcript_unavailable_warning(
+                    transcript_root,
+                    ValueError(f"{candidate.source_file} is outside {transcript_root}"),
+                )
+            )
+            continue
         citation = f"{rel}:L{candidate.line_number}"
         node_id = f"transcript:{citation}" if index == 0 else f"transcript:{citation}:{index}"
         nodes.append(
