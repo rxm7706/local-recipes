@@ -116,6 +116,18 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-03 (Phase 4+5) — Ruled: herald's open medium and low deferrals close in one fix story.** The
+  operator ruled on 2026-10-03 that the deferral burn-down's Phase 4 (open medium rows) and Phase 5 (open
+  low rows) run together on the idle station lanes, then, the same day, that each station takes exactly
+  one story. Herald carries 6 open medium and 15 open low rows (measured with a parser over its
+  `deferred-work-ledger.md`). **What it looks like when fixed:** `list_files` reads the live server's
+  answer; `deck sync-all` proves a standalone poster push instead of refusing it; `deck-trio` derives all
+  ten PyForge posters; `docsite/build.py` has unit tests; an ambiguous layout name is refused; the eleven
+  recommended follow-up reviews of ten landed stories have run and their findings are fixed; three rows
+  whose fix already landed are closed citing the line that holds it. **Constraints:** a `fix` story, no
+  CAP, no flag; a row closes only with a `resolution:` and a cited `verified:` line; the one open high row
+  (DW-21-7-1, the corrupted standalone poster on the live Design project) is outside these phases.
+  Owner `spec-pyforge-herald`. → Epic 35 / Story 35.1, specced 2026-10-03.
 - **2026-09-28 (night) — Proposed: a deck can be read inside the airgap, from the portal and from
   an internal Pages site, and each current export is also kept in object storage.**
   Source: the intake `archive/docs/intake/airgapped_pptx_architecture_specification.md`, triaged
