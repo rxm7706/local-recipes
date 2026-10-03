@@ -44,9 +44,11 @@ class TestSkillMdConsistency:
         scripts_dir = SKILL_DIR / "scripts"
         tests_dir = SKILL_DIR / "tests"
         existing = {p.name for p in scripts_dir.glob("*.py")}
-        # Tests are referenced from release notes / Version History entries;
-        # they are not "scripts" but they are real files in the skill.
-        existing |= {p.name for p in tests_dir.rglob("test_*.py")}
+        # Tests and test helpers are referenced from release notes / Version
+        # History entries; they are not "scripts" but they are real files in
+        # the skill. Include `_*.py` helpers (e.g. `_smithy_maintainer_stub.py`)
+        # as well as `test_*.py`.
+        existing |= {p.name for p in tests_dir.rglob("*.py")}
         # Repo-root scripts/ — the governance/detector tier (bmad_drift_check.py,
         # spec_surface_check.py, llms_full_check.py, ...). These are real scripts
         # SKILL.md legitimately cites, so they belong here rather than in the
