@@ -686,3 +686,118 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   fix: pass `refs/remotes/origin/main` (after confirming the binary accepts a full ref), through warden's chain; steward's task likewise (a `pixi.toml` change regenerates `environment.yaml`).
   status: closed
   resolved: 2026-09-27 (warden Story 13.1, spec-pyforge-warden CAP-23; steward Story 70.1, pyforge-steward:CAP-158) — the advisory's `_DEFAULT_BASE_REF`, steward's `tea-test-review` task and marshal's review lens (the task's one documented caller, whose `--base` replaces the task's) all pass `refs/remotes/origin/main`. Verified against the installed TEA 1.27.2: it diffs `<base>...HEAD` and rejects only an empty base or one starting with `-`.
+
+### DW-FRR-10-2: Follow-up review still recommended for story 10.2
+
+- source_spec: `planning-artifacts/specs/spec-10-2-first-portal-slice-start-get-one-audit.md`
+  summary: Story 10.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 10.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-10-2-first-portal-slice-start-get-one-audit.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-1-4: Follow-up review still recommended for story 1.4
+
+- source_spec: `planning-artifacts/specs/spec-1-4-osv-db-offline-provisioning-spike.md`
+  summary: Story 1.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-1-4-osv-db-offline-provisioning-spike.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-11-2: Follow-up review still recommended for story 11.2
+
+- source_spec: `planning-artifacts/specs/spec-11-2-tea-test-review-is-a-warden-advisory-finding.md`
+  summary: Story 11.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-11-2-tea-test-review-is-a-warden-advisory-finding.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-2-2: Follow-up review still recommended for story 2.2
+
+- source_spec: `planning-artifacts/specs/spec-2-2-non-rendering-extraction-common-case-differential-oracle.md`
+  summary: Story 2.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-2-2-non-rendering-extraction-common-case-differential-oracle.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-6-10: Follow-up review still recommended for story 6.10
+
+- source_spec: `planning-artifacts/specs/spec-6-10-amendment-design-spike-finding-id-families-verdict-encoding-rung-discriminator-fold-semantics.md`
+  summary: Story 6.10 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-6-10-amendment-design-spike-finding-id-families-verdict-encoding-rung-discriminator-fold-semantics.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-6-2: Follow-up review still recommended for story 6.2
+
+- source_spec: `planning-artifacts/specs/spec-6-2-license-axis-producer-gate-flags.md`
+  summary: Story 6.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-6-2-license-axis-producer-gate-flags.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-7-1: Follow-up review still recommended for story 7.1
+
+- source_spec: `planning-artifacts/specs/spec-7-1-sourcecontract-adapters-the-identity-api.md`
+  summary: Story 7.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 7.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-7-1-sourcecontract-adapters-the-identity-api.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-9-1: Follow-up review still recommended for story 9.1
+
+- source_spec: `planning-artifacts/specs/spec-9-1-warden-publishes-the-pr-gate-hook-book.md`
+  summary: Story 9.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 9.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-1-warden-publishes-the-pr-gate-hook-book.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-9-2: Follow-up review still recommended for story 9.2
+
+- source_spec: `planning-artifacts/specs/spec-9-2-current-scanners-become-optional-plugins.md`
+  summary: Story 9.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 9.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-2-current-scanners-become-optional-plugins.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-9-3: Follow-up review still recommended for story 9.3
+
+- source_spec: `planning-artifacts/specs/spec-9-3-default-warden-stays-green-without-checkmarx.md`
+  summary: Story 9.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 9.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-9-3-default-warden-stays-green-without-checkmarx.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open

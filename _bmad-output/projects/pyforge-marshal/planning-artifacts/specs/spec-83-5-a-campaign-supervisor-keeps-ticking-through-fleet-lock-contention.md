@@ -61,6 +61,11 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
+### 2026-10-03 — Landing (operator session)
+- The session passed dispatch verification; the landing refused MRS-DISP-038 on `.claude/memory/MEMORY.md` (two sessions' team-memory index lines at one spot; Story 83.11 makes the heal merge them). Merged `origin/main` by hand: `MEMORY.md` keeps both index lines, the memlog is the union of both sides.
+- Reviewed against the intent: the MRS-DRAIN-010 lock-contention refusal now sets `data["complete"] = False`, so the campaign supervisor reads a not-complete cycle and ticks again instead of counting an unreadable one; pinned in `tests/unit/test_dispatch_fleet.py`. Accepted.
+- Green on the merge: `lint-types`, `pyforge-marshal-test` (10877 passed), `pyforge-deps-test`, `pyforge-core-test`, `deferred-work-check`, `spec_surface_reconcile.py`.
+
 ### 2026-10-03 — Review pass
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
 - findings: (none — blind-hunter, edge-case-hunter, verification-gap, and intent-alignment layers reported no actionable gaps against the diff)
