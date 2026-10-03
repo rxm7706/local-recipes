@@ -5389,13 +5389,36 @@ def _call_site_count(target: Path, symbol: str, cited_paths: list[str] | None = 
     pruning already trusts, not a second independently-maintained list) via
     additional pathspecs, so the untracked-file recall `--no-exclude-standard`
     exists for is preserved everywhere EXCEPT these known-huge vendor/cache/
-    worktree trees."""
+    worktree trees.
+
+    ``cited_paths`` (DW-FU-11-3) scopes the search to the package of the
+    entry's own cited paths -- see ``_symbol_search_scope``. ``None`` or an
+    empty list searches the whole repo, as before, because an entry that
+    names no path gives nothing to narrow to.
+
+    Comment and bare docstring lines are not counted (``_PROSE_LINE_RE``,
+    DW-FU-11-3): ``-w`` matches any whole-word textual occurrence, so a
+    comment or a docstring MENTIONING the symbol inflated the live count and
+    pushed a genuinely dead symbol to ``escalate`` -- the one direction that
+    costs an agent read for nothing.
+
+    ``-z`` makes git emit ``<path>NUL<lineno>NUL<content>`` per record
+    (verified against this repo's own git), so the path and the line number
+    are split on NUL rather than by the two chained ``partition(":")`` calls
+    this used to do (DW-FU-11-3-3). Those mis-split any matched path that
+    itself contains a colon -- one tracked path here does
+    (``docs/intake/gists/.../BMAD-METHOD SPEC: Enterprise Monorepo....md``)
+    -- shifting the line's CONTENT into the line-number field, so the
+    declaration regex could not recognise a real ``def``/``class`` line in
+    such a file. Records stay newline-separated; a line's own content never
+    contains one."""
     prune_pathspecs = [f":(exclude,glob)**/{name}/**" for name in sorted(_PRUNED_DIR_NAMES)]
     try:
         out = run_git(
             target,
             [
                 "grep",
+                "-z",
                 "-n",
                 "-w",
                 "-I",
@@ -5403,6 +5426,7 @@ def _call_site_count(target: Path, symbol: str, cited_paths: list[str] | None = 
                 "--no-exclude-standard",
                 "--",
                 symbol,
+                *_symbol_search_scope(cited_paths or []),
                 ":(exclude,glob)**/deferred-work-ledger.md",
                 *prune_pathspecs,
             ],
@@ -5415,12 +5439,16 @@ def _call_site_count(target: Path, symbol: str, cited_paths: list[str] | None = 
     symbol_re = re.compile(rf"\b{escaped}\b")
     count = 0
     has_declaration = False
-    for line in out.splitlines():
-        _, _, rest = line.partition(":")
-        _, _, content = rest.partition(":")
+    for record in out.split("\n"):
+        if not record:
+            continue
+        _, _, rest = record.partition("\0")
+        _, _, content = rest.partition("\0")
         if decl_re.match(content):
             has_declaration = True
             count += len(symbol_re.findall(content)) - 1
+            continue
+        if _PROSE_LINE_RE.match(content):
             continue
         count += 1
     return count, has_declaration
@@ -5430,6 +5458,7 @@ def _attach_mechanical_verdict(
     target: Path,
     item: dict,
     symbol: str | None,
+    cited_paths: list[str] | None = None,
 ) -> None:
     """Mutate ``item`` IN PLACE, adding ``mechanical_verdict``/
     ``mechanical_symbol``/``mechanical_call_sites`` when ``symbol`` names a
@@ -5451,11 +5480,14 @@ def _attach_mechanical_verdict(
     epic AC's own framing), not any bare identifier, so a claim that cannot
     be confirmed as being about a real function/class is left for Story
     11.4's agent rather than risk a variable's own assignment line being
-    miscounted as a call site."""
+    miscounted as a call site.
+
+    ``cited_paths`` are the entry's OWN cited paths, forwarded so the search
+    is scoped to their package rather than the whole repo (DW-FU-11-3)."""
     if symbol is None:
         return
     try:
-        result = _call_site_count(target, symbol)
+        result = _call_site_count(target, symbol, cited_paths)
     except Exception:  # noqa: BLE001 -- see docstring: isolate per-entry.
         return
     if result is None:
