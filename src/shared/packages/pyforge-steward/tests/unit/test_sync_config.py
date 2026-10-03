@@ -137,7 +137,7 @@ github_only_marker:
 """,
     )
 
-    with pytest.raises(SyncConfigError, match="no non-empty"):
+    with pytest.raises(SyncConfigError, match="together"):
         load_config(path)
 
 
@@ -177,7 +177,7 @@ github_only_marker:
 """,
     )
 
-    with pytest.raises(SyncConfigError, match="no non-empty"):
+    with pytest.raises(SyncConfigError, match="together"):
         load_config(path)
 
 
