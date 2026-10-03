@@ -1785,6 +1785,29 @@ def test_readback_matches_pushed_html_tolerates_crlf_normalization():
     assert _readback_matches_pushed_body(expected, actual, path="deck.html", content_hash=content_hash)
 
 
+def test_readback_refuses_non_utf8_html_bytes():
+    from pyforge.herald.deck_pipeline import _readback_matches_pushed_body
+
+    expected = b"<html>v1</html>"
+    actual = b"\xff\xfe"
+    content_hash = hashlib.sha256(expected).hexdigest()
+    assert not _readback_matches_pushed_body(expected, actual, path="deck.html", content_hash=content_hash)
+
+
+def test_push_exports_prove_true_html_crlf_readback_succeeds(tmp_path: Path):
+    _seed_state(tmp_path, "pyforge-warden")
+    html = b"<html>v1</html>"
+    _write_export_html(tmp_path, "pyforge-warden", "2026-08-07", html.decode())
+    readme_path = tmp_path / "presentations" / "pyforge-warden" / "README.md"
+    readme_path.write_text("# Deck\n", encoding="utf-8")
+    filename = "pyforge-warden-infographic-standalone-2026-08-07.html"
+    transport = FakePushTransport(rendered_bytes={filename: html + b"\r\n"})
+
+    result = push_exports(transport, slug="pyforge-warden", repo_root=tmp_path, prove=True)
+
+    assert result.proven == (filename,)
+
+
 def test_push_exports_prove_true_mismatch_raises_and_does_not_update_state_or_ledger(
     tmp_path: Path,
 ):
