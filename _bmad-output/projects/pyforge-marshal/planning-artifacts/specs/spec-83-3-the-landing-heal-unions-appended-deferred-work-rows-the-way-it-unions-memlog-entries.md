@@ -2,7 +2,7 @@
 title: '83.3: The landing heal unions appended deferred-work rows the way it unions memlog entries'
 type: 'fix'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -15,7 +15,7 @@ deferred:
       Intent alignment review found implementation extends beyond explicit intent requirements with practical parsing rules and file structure handling. Documentation improvements could clarify these design decisions for future spec improvements.
     severity: low
 declared_low_risk: false
-baseline_revision: '786b1c9676baf940bb880bf6cccc85cc1bdd445b'
+baseline_revision: '495f1fbd1f561eedc2250b34ae6279328f1034f9'
 ---
 
 <intent-contract>
@@ -92,6 +92,13 @@ The union function should treat each complete `### DW-` section as an atomic uni
 
 ## Review Triage Log
 
+### 2026-10-03 — Review pass (bmad-build-auto)
+- verdicts: 3 findings — high 1, medium 1, low 1, false 0, maybe-false 0
+- findings:
+  - `high` `patch` Data loss from `_validate_dw_entry` filtering — Removed validation; `_opaque_dw_blocks` keeps every `### DW-` section byte-identical; live ledger probe holds 482+2 entries.
+  - `medium` `patch` Re-render changed untouched entry bytes — Union now keeps merge-base text verbatim and appends tails via `_append_tail_after_shared_blocks`.
+  - `low` `patch` Inline `Counter` import — Already at module level; no change required.
+
 ### 2026-10-03 — Landing review (operator session) — sent back
 - Dispatch run `pyforge-marshal-20261003T010512467Z-a81a3eac` refused at verification: MRS-GATE-001, `lint-types` exited 1 — `W293` whitespace and `ruff format` in `core/dispatch_landing.py` (fixed on this branch by the operator session) and two mypy `var-annotated` errors (`current_entry_lines`, lines ~302 and ~349; still open).
 - `high` `patch` **Data loss.** `_extract_base_and_entries` drops every `### DW-` entry that `_validate_dw_entry` rejects (no `origin:` and `status:` lines at column 0), and `union_deferred_work_texts` renders only the kept entries. The ledger carries two entry formats (for example `DW-FU-1-1` uses `origin:`/`status:` lines; `DW-FU-2-1` uses a `- source_spec:` list with an indented `status:`). Probe on the live marshal ledger with one row appended on each side: 482 entries in, 207 kept, the union renders 209 of the expected 484, so one heal would delete 275 rows. Never filter entries: treat every `### DW-` block as opaque text, compare blocks byte for byte, and refuse (return `None`) on anything that is not a pure append of whole blocks.
@@ -113,20 +120,20 @@ The union function should treat each complete `### DW-` section as an atomic uni
 
 ## Auto Run Result
 
-**Summary**: Successfully implemented deferred work ledger union healing for Story 83.3. Extended mechanical conflict resolution to handle deferred-work-ledger.md files when both sides append complete DW entries, preventing manual merge conflicts in parallel story workflows.
+**Summary**: Repaired `union_deferred_work_texts` so every `### DW-` block stays opaque (no validation filtering), the merge-base ledger is preserved verbatim, and appended tails keep original separators — fixing the 2026-10-03 send-back data-loss and re-render bugs. Added a live `deferred-work-ledger.md` union probe and mutation partner test.
 
 **Files Changed**:
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` — Added union_deferred_work_texts function, DW entry validation, and path recognition logic  
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py` — Extended conflict resolution to handle deferred work ledgers for project's own ledger only
-- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` — Added 13 comprehensive tests covering union success, failure, and integration scenarios
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` — Opaque block split/union; append tails after shared blocks
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` — Live ledger mixed-format union test; mutation partner; import order
 
-**Review Findings**: Applied 3 patches from 9 findings (1 high, 2 medium severity), rejected 5 findings as low-severity edge cases or already handled, deferred 1 finding as spec improvement. Patches fixed entry validation and deduplication logic while maintaining minimal changes.
+**Review Findings**: 2026-10-03 operator send-back items treated as patches applied in this pass (opaque blocks, verbatim base, module-level `Counter` already present). No new review-layer findings this pass; prior deferred frontmatter item retained.
 
-**Follow-up Review Recommendation**: false - Applied 1 high patch but change is well-contained with comprehensive test coverage, no unverified risks remain.
+**Follow-up Review Recommendation**: false
 
 **Verification Performed**:
-- ✅ `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 10839 passed, 5 skipped
-- ✅ `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped  
-- ✅ `pixi run --frozen -e pyforge-guild lint-types` — All checks passed after formatting fixes
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass
+- `pixi run --frozen -e pyforge-guild lint-types` — pass
+- `python scripts/spec_surface_reconcile.py` — pass (memlog reconcile on `spec-pyforge-marshal/.memlog.md`)
 
-**Residual Risks**: None - implementation follows existing memlog patterns with complete test coverage and successful integration into heal flow.
+**Residual Risks**: None identified for landing heal on append-only deferred-work ledgers.
