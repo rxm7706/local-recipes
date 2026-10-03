@@ -390,6 +390,28 @@ verify_commands = [
   "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"35" = [  # Phase 4+5 of the deferral burn-down: herald's open medium and low deferrals (fix, no CAP), added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus what Story 35.1's rows
+  # reach outside the package: the docs site, the deck scripts and their tests, the posters and READMEs,
+  # a detectors pin test, the persona skill, the herald ledger, and every Spec memlog.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "docsite/**",
+  "scripts/deck_trio.py",
+  "scripts/deck_facts.py",
+  "scripts/detectors.py",
+  "tests/scripts/**",
+  "presentations/**",
+  ".claude/skills/bmad-agent-herald/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
