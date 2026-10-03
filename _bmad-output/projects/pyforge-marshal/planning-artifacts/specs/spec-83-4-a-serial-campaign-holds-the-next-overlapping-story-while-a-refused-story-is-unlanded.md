@@ -2,10 +2,10 @@
 title: '83.4: A serial campaign holds the next overlapping story while a refused story is unlanded'
 type: 'fix'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
-baseline_revision: '1e9c06c17e3b4a846f961aac32c5c1931f91991d'
+baseline_revision: '13c6776fcebc99f0c825e10fba72c031c30bc18d'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -83,6 +83,10 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
+### 2026-10-03 — Review pass (bmad-build-auto, landing-refused fix)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — diff matches all acceptance criteria after operator send-back)
+
 ### 2026-10-03 — Review pass (bmad-build-auto)
 - verdicts: 3 findings — high 0, medium 0, low 0, false 3, maybe-false 0
 - findings:
@@ -101,11 +105,11 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Auto Run Result
 
-- Summary: `station_in_flight_conflict` applies MRS-DISP-011 only when the blocking journal is LIVE; refused-at-landing with open PR still blocks other overlapping stories but allows same-story re-dispatch.
-- Files changed: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (guard fix); `spec-pyforge-marshal/.memlog.md` (surface reconcile).
-- Review: 0 patches, 0 deferred; 3 false positives rejected.
+- Summary: `station_in_flight_conflict` holds overlapping stories only for a **landing** refused with an open PR (not verification refusal). Serial stations no longer blanket `MRS-DISP-021` on refused landing; overlap uses `MRS-DISP-034`. Refused landing stories never hold each other; same-story re-dispatch stays allowed (`MRS-DISP-011` remains LIVE-only).
+- Files changed: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (83.4 guard helpers and conflict walk); `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_station_guard.py` (landing-refused fixtures and AC tests); `spec-pyforge-marshal/.memlog.md` (surface reconcile).
+- Review: 0 patches, 0 deferred; 0 new findings on pass (implementation matches send-back AC).
 - Follow-up review recommended: `false`
-- Verification: `pyforge-marshal-test` 10830 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
+- Verification: `pyforge-marshal-test` 10920 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
 
 ## Verification
 
