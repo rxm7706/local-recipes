@@ -16,10 +16,13 @@ from .adapters.vcs_git import VcsCommandError
 from .core.chain_regen import parse_ledger_statuses, render_ledger_statuses
 from .core.commit_vcs import CommittingVcs
 from .core.dispatch_landing import (
+    DEFERRED_WORK_BASENAME,
+    is_deferred_work_path,
     is_mechanical_conflict_path,
     is_memlog_path,
     sprint_ledger_rel_path,
     three_way_ledger_statuses,
+    union_deferred_work_texts,
     union_memlog_texts,
     unknown_conflict_paths,
 )
@@ -54,6 +57,11 @@ class DispatchLandHealResult:
 
 def _ledger_path(project_slug: str) -> str:
     return sprint_ledger_rel_path(project_slug)
+
+
+def _deferred_work_path(project_slug: str) -> str:
+    """Repo-relative path to a project's tracked deferred-work ledger."""
+    return f"_bmad-output/projects/{project_slug}/planning-artifacts/{DEFERRED_WORK_BASENAME}"
 
 
 def try_heal_dispatch_land_merge(
@@ -96,6 +104,7 @@ def try_heal_dispatch_land_merge(
     del head_sha, fs
     probe = probe_ref if probe_ref is not None else local_branch_ref(base)
     ledger_rel = _ledger_path(project_slug)
+    deferred_work_rel = _deferred_work_path(project_slug)
     try:
         conflict_paths = vcs.merge_tree_conflict_paths(git_repo_root, probe, local_branch_ref(head_branch))
     except VcsCommandError:
@@ -109,17 +118,20 @@ def try_heal_dispatch_land_merge(
     # Story 78.1 review: the network read above precedes the text reads below, so the window between
     # reading `probe`'s memlog and ledger text and `merge_ref_resolving` resolving `probe` stays what
     # Story 59.1 left it -- never wider by a forge call.
-    unknown = unknown_conflict_paths(conflict_paths, ledger_rel=ledger_rel)
+    unknown = unknown_conflict_paths(conflict_paths, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel)
     memlog_paths = tuple(sorted(p for p in conflict_paths if is_memlog_path(p)))
+    deferred_work_paths = tuple(sorted(p for p in conflict_paths if is_deferred_work_path(p)))
     resolutions: dict[str, str] = {}
-    if memlog_paths or ledger_rel in conflict_paths:
+    if memlog_paths or ledger_rel in conflict_paths or deferred_work_paths:
         resolved = _resolve_mechanical_conflicts(
             git_repo_root=git_repo_root,
             probe=probe,
             head_branch=head_branch,
             ledger_rel=ledger_rel,
+            deferred_work_rel=deferred_work_rel,
             conflict_paths=conflict_paths,
             memlog_paths=memlog_paths,
+            deferred_work_paths=deferred_work_paths,
             vcs=vcs,
         )
         if resolved is None:
@@ -129,7 +141,7 @@ def try_heal_dispatch_land_merge(
     if unknown:
         return DispatchLandHealResult(healed=False, escalated_paths=unknown)
 
-    if conflict_paths and all(is_mechanical_conflict_path(p, ledger_rel=ledger_rel) for p in conflict_paths):
+    if conflict_paths and all(is_mechanical_conflict_path(p, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel) for p in conflict_paths):
         # Story 59.1 review (high): the union heal is the whole answer for this attempt. Once
         # its merge is committed the branch probes clean while `merge_state` is the stale
         # pre-heal read, so falling through to the local-`main` advance would land the branch

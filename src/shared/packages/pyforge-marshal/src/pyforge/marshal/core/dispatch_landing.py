@@ -275,6 +275,130 @@ def union_memlog_texts(base: str, main: str, branch: str) -> str | None:
     return _render_memlog(fields, main_body + appended)
 
 
+# --- Story 83.3: deferred-work ledger union ----------------------------------
+
+
+def _split_deferred_work_entries(text: str) -> list[str]:
+    """Split deferred work ledger text into individual DW entries, each starting with '### DW-'.
+    
+    Returns a list where each entry includes its header and all content until the next DW header.
+    The frontmatter and any content before the first DW entry is preserved as the first element
+    if it doesn't start with '### DW-'.
+    """
+    lines = text.splitlines()
+    entries = []
+    current_entry_lines = []
+    
+    for line in lines:
+        if line.startswith("### DW-"):
+            # Save the previous entry if it exists
+            if current_entry_lines:
+                entries.append("\n".join(current_entry_lines))
+                current_entry_lines = []
+            # Start new entry
+            current_entry_lines = [line]
+        else:
+            current_entry_lines.append(line)
+    
+    # Don't forget the last entry
+    if current_entry_lines:
+        entries.append("\n".join(current_entry_lines))
+    
+    return entries
+
+
+def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
+    """Extract the base text (everything before first DW entry) and all DW entries.
+    
+    Returns (base_text, dw_entries) where base_text includes frontmatter and any content
+    before the first ### DW- header, and dw_entries is a list of complete DW entries.
+    """
+    lines = text.splitlines()
+    base_lines = []
+    dw_entries = []
+    current_entry_lines = []
+    in_dw_section = False
+    
+    for line in lines:
+        if line.startswith("### DW-"):
+            # Save any previous DW entry
+            if in_dw_section and current_entry_lines:
+                dw_entries.append("\n".join(current_entry_lines))
+                current_entry_lines = []
+            # Start new DW entry
+            in_dw_section = True
+            current_entry_lines = [line]
+        elif in_dw_section:
+            current_entry_lines.append(line)
+        else:
+            # We're still in the base section
+            base_lines.append(line)
+    
+    # Don't forget the last DW entry
+    if in_dw_section and current_entry_lines:
+        dw_entries.append("\n".join(current_entry_lines))
+    
+    base_text = "\n".join(base_lines)
+    return base_text, dw_entries
+
+
+def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
+    """Story 83.3: the union of two append-only edits of one deferred-work-ledger.md, or None
+    when either side is not append-only.
+    
+    Each text is parsed to extract the base content and DW entries. A side is append-only when
+    it starts with the base's complete DW entries in order, then adds new entries. The result
+    is the base text, then main's entries, then branch's new entries (skipping duplicates that
+    main already added).
+    """
+    # Extract base content and DW entries for each version
+    base_text, base_entries = _extract_base_and_entries(base)
+    main_text, main_entries = _extract_base_and_entries(main)
+    branch_text, branch_entries = _extract_base_and_entries(branch)
+    
+    # Check if main and branch are append-only relative to base
+    base_count = len(base_entries)
+    if (len(main_entries) < base_count or 
+        len(branch_entries) < base_count or
+        main_entries[:base_count] != base_entries or
+        branch_entries[:base_count] != base_entries):
+        return None  # Not append-only
+    
+    # Get the new entries from main and branch
+    main_new_entries = main_entries[base_count:]
+    branch_new_entries = branch_entries[base_count:]
+    
+    # Create a set of main's new entries for deduplication
+    main_new_set = set(main_new_entries)
+    
+    # Add branch entries that aren't already in main's new entries
+    final_new_entries = main_new_entries.copy()
+    for entry in branch_new_entries:
+        if entry not in main_new_set:
+            final_new_entries.append(entry)
+        else:
+            # Remove from set so duplicates can still be added if they appear multiple times
+            main_new_set.discard(entry)
+    
+    # Combine all entries: base text + base entries + new entries from both sides
+    all_entries = base_entries + final_new_entries
+    
+    # Use main's base text (in case it has frontmatter updates)
+    # But fall back to base text if main's base is empty
+    result_base = main_text if main_text.strip() else base_text
+    
+    if all_entries:
+        result = result_base.rstrip() + "\n\n" + "\n\n".join(all_entries)
+    else:
+        result = result_base
+        
+    # Ensure consistent ending
+    if not result.endswith("\n"):
+        result += "\n"
+    
+    return result
+
+
 # --- Story 51.11 (CAP-258): blocked-twin promotion --------------------------
 
 
