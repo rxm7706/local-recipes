@@ -1775,11 +1775,16 @@ def station_in_flight_conflict(
             evidence = f"story {story_key!r} finished but was refused at landing with open PR"
         in_flight = journal.story_key
         if in_flight == feed_story:
-            return DispatchPreflightConflict(
-                code="MRS-DISP-011",
-                message=f"refusing redispatch: {evidence}",
-                in_flight_story_key=in_flight,
-            )
+            # CAP-2: only a LIVE session refuses redispatch of the same story.
+            # Story 83.4: refused+open-PR occupies surfaces for *other* stories;
+            # the operator re-dispatches the refused story to land fixes.
+            if verdict == DispatchSessionVerdict.LIVE:
+                return DispatchPreflightConflict(
+                    code="MRS-DISP-011",
+                    message=f"refusing redispatch: {evidence}",
+                    in_flight_story_key=in_flight,
+                )
+            continue
         if not parallel_dispatch:
             return DispatchPreflightConflict(
                 code="MRS-DISP-021",
