@@ -1172,7 +1172,11 @@ def test_a_blocked_worktree_with_a_prior_run_still_gets_disp_045(tmp_path: Path,
             run_id=run_dir.name,
             kind=dispatch_core.KIND_DISPATCH_LAUNCH,
             phase=Phase.INTENT,
-            payload={"story_key": "22.7", "worktree_path": str(worktree), "baseline_head_sha": "aaa111"},
+            payload={
+                "story_key": "22.7",
+                "worktree_path": str(worktree),
+                "baseline_head_sha": "baseline1234",
+            },
         ),
         build_entry(
             id=completion_intent,
@@ -1227,8 +1231,9 @@ def test_a_blocked_worktree_with_a_prior_run_still_gets_disp_045(tmp_path: Path,
         ledgers={slug: (("22-7-fleet", "backlog"),)},
         capsys=capsys,
     )
-    hits = _findings(envelope, "MRS-DRAINPLAN-001")
-    assert [("MRS-DISP-045" in f["message"]) for f in hits] == [True]
+    row = _station(envelope, slug)
+    assert row["refusals"], f"expected MRS-DISP-045, got row={row!r} code={code}"
+    assert [r["code"] for r in row["refusals"]] == ["MRS-DISP-045"]
     assert code == 4
 
 
