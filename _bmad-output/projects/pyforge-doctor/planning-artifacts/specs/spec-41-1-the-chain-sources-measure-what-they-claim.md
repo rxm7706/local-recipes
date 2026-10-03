@@ -2,7 +2,7 @@
 title: "41.1: The chain sources measure what they claim: spec-surface, dream-chain, the deferred-work checks and the verification sweep"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 baseline_revision: '10a40461ddefe7a7017a246c1fe189c2982bf202'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -100,4 +100,37 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 23 findings — high 0, medium 1, low 3, false 12, maybe-false 2, reject 5
+- findings:
+  - `[medium]` `[defer]` Full-stamp `_live_state()` before lock can revert scoped stamp — recorded as open `DW-FRR-12-5-1` in follow-up review of Story 12.5; fix requires moving snapshot under lock, which 12.5 KEEP forbids without operator ruling.
+  - `[low]` `[patch]` No automated parity between `scripts/spec_surface_check.py` and `chain.py` surface twins — added `test_stamp_script_parse_surface_matches_chain` and `test_stamp_script_glob_to_re_matches_chain` in `test_sources_chain_spec_surface.py`.
+  - `[low]` `[patch]` `apply_verification_verdicts.py` ImportError refusal path untested — added `test_refuses_when_citation_predicate_cannot_import`.
+  - `[low]` `[defer]` Genesis memlog named in DW-FU-21-6 resolution but absent — README is governed by `spec-pyforge-charter`; reconciled on `docs/governance/spec-pyforge-charter/.memlog.md` (2026-10-03 Story 41.1 entry).
+  - `[false]` `[reject]` STANDS vs RESOLVED `verified:` lines contradict — additive ledger history; new RESOLVED lines supersede for readers; not a regression.
+  - `[false]` `[reject]` Trailing-slash fix requires memlog on every spec with dead globs — only specs whose governed *set grew* need reconcile; atlas/herald/doctor trailing-slash entries still dead or unchanged at HEAD.
+  - `[false]` `[reject]` `_parse_verified_date` must refuse future dates internally — WARN at call sites is the story’s recorded design (`DW-FU-11-1` resolution).
+  - `[false]` `[reject]` detectors-ci must list `dream-chain --dreams` literally — `dreams-hygiene` dispatch name is the CAP-43 warn-only registration; same gather path.
+  - `[false]` `[reject]` Subdirectory target when `rev-parse` fails — `_repo_top_level` failure already returns unevaluable WARN before ls-files storm (verified at `gather_spec_surface`).
+  - `[maybe-false]` `[defer]` Scoped stamp uses pre-lock `current` dict — concurrent stamp race; same class as 12.5-1, low frequency in practice; no patch this pass.
+  - `[maybe-false]` `[reject]` `apply_verification_verdicts` uncaught exception mid-batch — batch validates in memory before write; ImportError path now tested.
+  - `[reject]` Remaining blind-hunter items (baseline bundle size, sprint-ledger in diff, dirty map.yaml stamp, team memory note, allowlist memlog, meta-test parity beyond patch, pixi task text drift) — pre-existing process noise, foreign CI staleness, or addressed by patches/deferrals above.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Story 41.1 closes 29 deferred-work rows by aligning `chain.py` with `scripts/spec_surface_check.py` on surface parsing, trailing-slash subtree globs, git `-z`/`quotePath=false` tracked paths, deferred-work and due-for-verification honesty, verdict writer guards, baseline stamp refusals, dreams-hygiene warn-only registration, and independent follow-up reviews of Stories 12.5 and 38.1.
+
+Files changed (high level): `chain.py`, `scripts/spec_surface_check.py`, `scripts/apply_verification_verdicts.py`, `scripts/deferred_work_baseline.py`, `scripts/detectors.py`, doctor unit/script tests, `scripts/.spec-surface-baseline.json`, marshal/steward scoped memlogs, `docs/dreams/README.md`, `docs/governance/spec-pyforge-charter/.memlog.md`, deferred-work ledger closures, story specs 12.5/38.1 triage logs.
+
+Review: 2 low patches applied (script/chain parity tests, ImportError refusal test). Medium full-stamp race deferred to `DW-FRR-12-5-1`.
+
+Follow-up review recommendation: false (0 high patches; 2 low patches only).
+
+Verification:
+- `python scripts/spec_surface_reconcile.py` — exit 0
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — exit 0 (3238 passed, 1 skipped)
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+
+Residual risks: merge `origin/main` before PR to clear foreign `ledger-direction` staleness; open `DW-FRR-12-5-1` and `DW-FRR-38-1-1` from follow-up reviews.
