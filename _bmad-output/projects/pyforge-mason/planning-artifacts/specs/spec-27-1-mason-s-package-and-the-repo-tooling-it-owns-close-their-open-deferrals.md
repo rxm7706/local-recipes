@@ -2,7 +2,8 @@
 title: "27.1: Mason's package and the repo tooling it owns close their open deferrals"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '10a40461ddefe7a7017a246c1fe189c2982bf202'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -125,6 +126,22 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling of 2026-10-03 (open mediu
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- **2026-10-03 (Story 27.1)** — Local patches to installer-owned SKF scripts (re-apply after `bmad-method install --action update`; traps 12–16 in `failure-modes.md`):
+  - `_bmad/skf/shared/scripts/skf-structural-diff.py` — export diff keys by `(file, name)` so same-named exports in different scripts all count (closes DW-12-3-1).
+  - `_bmad/skf/shared/scripts/skf-provenance-gap-dispatch.py` — `_classify` treats `retro-mirror` as a known amendment action (closes DW-12-1-3).
+  - `_bmad/skf/shared/scripts/schemas/skill-brief.v1.json` — `scope.amendments[].action` enum includes `retro-mirror`.
+
 ## Review Triage Log
 
-- No review has run yet.
+Independent follow-up reviews (AGENTS.md guideline 8) read each cited story's landed code against its spec; findings fixed in this story where noted.
+
+- **Story 2.2 (seam guard)** — `tests/meta/test_no_recipe_knowledge.py`, `tests/meta/test_adapter_sole_caller.py`: no new defects; carve-out removal in DW-12-7-3 is the only meta-guard delta touching this review scope.
+- **Story 1.10 (configuration surface / logging)** — no findings beyond deferrals already closed here (`environment lock` exit projection, JSON MasonError envelope).
+- **Story 2.3 (credential isolation)** — `tests/meta/test_credential_isolation.py` still green; no code changes required.
+- **Story 10.1 (build-engine hook)** — `engines/build_hooks.py` and call sites match spec; no findings.
+- **Story 8.1 (container base layer convention)** — `tests/packaging/test_containerfile_base_layer_convention.py` and reference doc aligned; no findings.
+- **Story 12.3 (skf structural diff audit)** — fixed export dedup in `skf-structural-diff.py` (see Spec Change Log); tests in `tests/scripts/test_skf_structural_diff.py`.
+- **Story 12.7 (compiled package retired)** — dead equivalence-test carve-outs removed from mason meta tests (DW-12-7-3); no further live package surface.
+- **Story 12.8 (re-scope checkpoint / clause (d))** — campaign closed at `campaign-state.yaml:80`; clause (d) status matching hardened in `cfe_rebuild_guard_check.py` (casefold/strip); no separate `re_scope_gate_2` enforcement required post–Story 15.1.

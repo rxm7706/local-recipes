@@ -203,9 +203,9 @@ class CfeTimeoutError(MasonError):
     table key (e.g. `"validate_recipe"`, `"build_native"`), not a filesystem
     path -- the same key a caller passed to a named adapter function, so the
     message points at something a user or a future `--cfe-timeout` override
-    can act on. `timeout` is the number of seconds that elapsed before the
-    child was killed, echoed verbatim into the message so a user can decide
-    whether to raise it.
+    can act on. `timeout` is the configured limit in seconds (the `timeout=`
+    argument passed to `subprocess.run`), echoed verbatim into the message
+    so a user can decide whether to raise it.
     """
 
     def __init__(self, script: str, timeout: float) -> None:
@@ -382,7 +382,8 @@ class PackageBuildTimeoutError(MasonError):
     `engines/__init__.py::_KNOWN_ENGINES` display name (`"build"` or
     `"pixi"`), the same name a caller passed to `require_engine` at the top
     of that adapter's own `build()`. `timeout` is the number of seconds that
-    elapsed before the child was killed, echoed verbatim into the message.
+    configured limit in seconds (the `timeout=` argument passed to
+    `subprocess.run`), echoed verbatim into the message.
     Unlike `CfeTimeoutError`'s `--cfe-timeout/MASON_CFE_TIMEOUT` override,
     v1 exposes no per-engine timeout flag (spec Never boundary) -- the
     message says so rather than pointing at a knob that does not exist.
@@ -564,7 +565,8 @@ class ShipUploadTimeoutError(MasonError):
     `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
     is what guarantees "no orphaned process" here -- this class only names
     the failure; it does not itself do any process cleanup. `timeout` is the
-    number of seconds that elapsed before the child was killed, echoed
+    configured limit in seconds (the `timeout=` argument passed to
+    `subprocess.run`), echoed
     verbatim into the message. v1 exposes no per-upload timeout override
     (spec Never boundary) -- the message says so rather than pointing at a
     knob that does not exist.
@@ -656,7 +658,8 @@ class ShipChannelUploadTimeoutError(MasonError):
     `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
     is what guarantees "no orphaned process" here -- this class only names
     the failure; it does not itself do any process cleanup. `timeout` is the
-    number of seconds that elapsed before the child was killed, echoed
+    configured limit in seconds (the `timeout=` argument passed to
+    `subprocess.run`), echoed
     verbatim into the message. v1 exposes no per-upload timeout override
     (spec Never boundary) -- the message says so rather than pointing at a
     knob that does not exist.
@@ -789,7 +792,8 @@ class EnvironmentLockTimeoutError(MasonError):
     `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
     is what guarantees "no orphaned process" here -- this class only names
     the failure; it does not itself do any process cleanup. `timeout` is the
-    number of seconds that elapsed before the child was killed, echoed
+    configured limit in seconds (the `timeout=` argument passed to
+    `subprocess.run`), echoed
     verbatim into the message. v1 exposes no per-lock timeout override (spec
     Never boundary) -- the message says so rather than pointing at a knob
     that does not exist. Only `condalock.lock()` ever raises this error, so
@@ -819,8 +823,7 @@ class EnvironmentLockfileMissingError(MasonError):
     failed: the caller's `--lockfile`/`-l` path does not exist on disk, is
     not a regular file (e.g. a directory or a broken symlink -- `os.path.
     isfile()` returns `False` for both), or vanished in the narrow race
-    between that check and the temp copy (Story 4.4, FR-25, FR-27, FR-29,
-    NFR-14).
+    between that check and the temp copy (Story 4.4, FR-28, NFR-14).
 
     Raised before any subprocess spawns or temp copy is made, or -- for the
     race case -- from `check()`'s own `shutil.copyfile` failure translation
@@ -873,8 +876,8 @@ class EnvironmentLockfileMissingError(MasonError):
 class EnvironmentLockfileMalformedError(MasonError):
     """`engines.condalock.check()`'s own lockfile-content precondition
     failed: the temp copy of `lockfile_path` could not be read as a
-    conda-lock lockfile after `yaml.safe_load` (Story 4.4, FR-25, FR-27,
-    FR-29, NFR-14; review pass, 2026-08-15).
+    conda-lock lockfile after `yaml.safe_load` (Story 4.4, FR-28, NFR-14;
+    review pass, 2026-08-15).
 
     Raised when the lockfile at `lockfile_path` is not valid YAML, is empty
     (`yaml.safe_load` returns `None`), is not valid UTF-8, or does not carry
@@ -929,9 +932,34 @@ class EnvironmentLockfileMalformedError(MasonError):
         return (self.__class__, (self.lockfile_path, self.reason))
 
 
+class EnvironmentCheckTempCopyUnreadableError(MasonError):
+    """`engines.condalock.check()` could not read `metadata.content_hash` from
+    the temporary lockfile copy **after** `conda-lock` ran (Story 4.4, FR-28,
+    NFR-14).
+
+    The before-read already proved the caller's own lockfile parses; a failure
+    on the after-read names the temp copy and conda-lock, never the user's
+    intact lockfile. `temp_path` is the temp copy's absolute path; `reason` is
+    the underlying library diagnostic, verbatim (AD-1).
+    """
+
+    def __init__(self, temp_path: str, reason: str) -> None:
+        if not isinstance(temp_path, str) or not temp_path.strip():
+            raise ValueError("EnvironmentCheckTempCopyUnreadableError requires a non-empty `temp_path`")
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError("EnvironmentCheckTempCopyUnreadableError requires a non-empty `reason`")
+        self.temp_path = temp_path
+        self.reason = reason
+        message = f"temporary lockfile copy {temp_path!r} could not be read after conda-lock ran: {reason}"
+        super().__init__("environment:check-temp-unreadable", message)
+
+    def __reduce__(self):
+        return (self.__class__, (self.temp_path, self.reason))
+
+
 class EnvironmentCheckTimeoutError(MasonError):
     """A `engines.condalock.check()` invocation exceeded its mandatory
-    timeout (Story 4.4, FR-25, FR-27, FR-29, AD-25, NFR-14) -- mirrors
+    timeout (Story 4.4, FR-28, AD-25, NFR-14) -- mirrors
     `EnvironmentLockTimeoutError`'s own shape and rationale exactly; only the
     wrapped operation differs (`condalock.check`'s own `--check-input-hash`
     re-run against a temporary lockfile copy rather than `condalock.lock`'s
@@ -948,10 +976,10 @@ class EnvironmentCheckTimeoutError(MasonError):
     `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
     is what guarantees "no orphaned process" here -- this class only names
     the failure; it does not itself do any process cleanup. `timeout` is the
-    number of seconds that elapsed before the child was killed, echoed
-    verbatim into the message. v1 exposes no per-check timeout override (spec
-    Never boundary) -- the message says so rather than pointing at a knob
-    that does not exist.
+    configured limit in seconds (the `timeout=` argument passed to
+    `subprocess.run`), echoed verbatim into the message. v1 exposes no
+    per-check timeout override (spec Never boundary) -- the message says so
+    rather than pointing at a knob that does not exist.
     """
 
     def __init__(self, timeout: float) -> None:

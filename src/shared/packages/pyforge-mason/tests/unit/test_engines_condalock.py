@@ -31,6 +31,7 @@ import yaml
 from pyforge.mason.engines import condalock
 from pyforge.mason.errors import (
     EngineAbsentError,
+    EnvironmentCheckTempCopyUnreadableError,
     EnvironmentCheckTimeoutError,
     EnvironmentLockfileMalformedError,
     EnvironmentLockfileMissingError,
@@ -512,6 +513,49 @@ def test_check_invokes_conda_lock_with_the_documented_argv_and_kwargs(tmp_path):
     assert kwargs["errors"] == "replace"
     assert kwargs["check"] is False
     assert "timeout" in kwargs
+
+
+def test_check_with_multiple_manifests_repeats_dash_f_in_order(tmp_path):
+    lockfile = tmp_path / "conda-lock.yml"
+    _write_lockfile(lockfile, {"linux-64": "abc"})
+    manifests = ("environment.yml", "pyproject.toml")
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ) as mock_run,
+    ):
+        condalock.check(str(lockfile), manifests, platforms=("linux-64", "osx-arm64"))
+
+    argv = mock_run.call_args.args[0]
+    f_indices = [i for i, token in enumerate(argv) if token == "-f"]
+    p_indices = [i for i, token in enumerate(argv) if token == "-p"]
+    assert [argv[i + 1] for i in f_indices] == list(manifests)
+    assert [argv[i + 1] for i in p_indices] == ["linux-64", "osx-arm64"]
+
+
+def test_check_prints_temp_copy_mapping_to_stderr_before_conda_lock(tmp_path, capsys):
+    lockfile = tmp_path / "conda-lock.yml"
+    _write_lockfile(lockfile, {"linux-64": "abc"})
+    with (
+        patch(
+            "pyforge.mason.engines.condalock.require_engine",
+            return_value="conda-lock 4.0.2",
+        ),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=_fake_completed(),
+        ),
+    ):
+        condalock.check(str(lockfile), _MANIFEST_PATHS)
+
+    err = capsys.readouterr().err
+    assert str(lockfile) in err
+    assert "temporary lockfile copy" in err
 
 
 def test_check_with_no_platforms_carries_zero_dash_p_flags(tmp_path):
@@ -1002,10 +1046,11 @@ def test_check_raises_lockfile_malformed_error_when_the_after_read_is_malformed(
             side_effect=_side_effect,
         ),
     ):
-        with pytest.raises(EnvironmentLockfileMalformedError) as excinfo:
+        with pytest.raises(EnvironmentCheckTempCopyUnreadableError) as excinfo:
             condalock.check(str(lockfile), _MANIFEST_PATHS)
 
-    assert excinfo.value.lockfile_path == str(lockfile)
+    assert excinfo.value.temp_path != str(lockfile)
+    assert "conda-lock" in str(excinfo.value)
 
 
 def test_check_removes_the_temp_copy_after_a_malformed_lockfile_error(tmp_path):

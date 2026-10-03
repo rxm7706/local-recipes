@@ -92,6 +92,8 @@ _BANNED_MODULES = (
 _SANCTIONED_YAML_EXCEPTIONS = {
     (PKG_ROOT / "engines" / "condalock.py", "yaml"),
 }
+
+_CONDALOCK_PATH = PKG_ROOT / "engines" / "condalock.py"
 """Story 4.4's narrow, deliberate carve-out (module docstring) -- applied
 only in `test_no_module_imports_a_config_file_parser` below, never inside
 `_find_config_file_parser_imports` itself, so the detector stays exception-
@@ -191,6 +193,45 @@ def test_no_module_imports_a_config_file_parser():
         "AD-13: no module under pyforge/mason/ may import a config-file "
         f"parser ({'/'.join(_BANNED_MODULES)}); found: {unsanctioned}"
     )
+
+
+def _find_unsafe_yaml_attribute_calls_in_condalock() -> list[str]:
+    """In the sanctioned `engines/condalock.py`, `yaml.<attr>` must be only
+    `safe_load` -- attribute calls can bypass a bare `import yaml` carve-out."""
+    source = _CONDALOCK_PATH.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(_CONDALOCK_PATH))
+    bad: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+            if func.value.id == "yaml" and func.attr != "safe_load":
+                bad.append(func.attr)
+    return bad
+
+
+def test_condalock_yaml_attribute_calls_are_only_safe_load():
+    assert _find_unsafe_yaml_attribute_calls_in_condalock() == []
+
+
+def test_detector_fires_on_yaml_unsafe_load_attribute_in_condalock_shape(tmp_path):
+    root = tmp_path / "mason" / "engines"
+    root.mkdir(parents=True)
+    (root / "condalock.py").write_text(
+        "import yaml\n\ndef read():\n    return yaml.unsafe_load('x: 1')\n",
+        encoding="utf-8",
+    )
+
+    source = (root / "condalock.py").read_text(encoding="utf-8-sig")
+    tree = ast.parse(source)
+    bad = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if isinstance(node.func.value, ast.Name) and node.func.value.id == "yaml":
+                if node.func.attr != "safe_load":
+                    bad.append(node.func.attr)
+    assert bad == ["unsafe_load"]
 
 
 def test_every_sanctioned_yaml_exception_is_live_and_import_form_scoped():

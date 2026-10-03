@@ -33,7 +33,8 @@ Input:
     - signature   <- signature
     - confidence  <- confidence
 
-  "name" is the primary match key. Nameless entries are skipped.
+  "(file, name)" is the primary match key. Entries missing either field are
+  skipped.
 
 Canonicalization (applied symmetrically to BOTH sides before matching):
   The baseline extractor (skf-create-skill) and the re-extractor (audit step 2)
@@ -253,21 +254,25 @@ def _normalize_entries(
     reexport_map: dict[str, str],
     transform_counts: collections.Counter,
 ) -> dict[str, dict]:
-    """Build a name-keyed dict of canonicalized records.
+    """Build a (file, name)-keyed dict of canonicalized records.
 
     Applies field-name aliasing, signature canonicalization, and re-export
     name resolution. Accumulates fired-transform counts into transform_counts.
-    Nameless entries are skipped. On duplicate resolved names, the last entry
-    wins (consistent with prior behaviour).
+    Entries missing a file or name are skipped. On duplicate keys, the last
+    entry wins (consistent with prior behaviour).
     """
     result: dict[str, dict] = {}
     for entry in entries:
         if not isinstance(entry, dict):
             continue
         raw_name = _first(entry, "name", "export_name")
+        raw_file = _first(entry, "file", "source_file")
         if not isinstance(raw_name, str) or not raw_name.strip():
             continue
+        if not isinstance(raw_file, str) or not raw_file.strip():
+            continue
         name = raw_name.strip()
+        file_path = raw_file.strip()
         resolved = reexport_map.get(name, name)
         if resolved != name:
             transform_counts["reexport-resolution"] += 1
@@ -277,14 +282,15 @@ def _normalize_entries(
         for t in sig_transforms:
             transform_counts[t] += 1
 
+        key = f"{file_path}\0{name}"
         # Normalized record — also the public entry shape emitted in
         # added[]/removed[], so both sides render into one consistent table
         # regardless of the input shape they came from.
-        result[name] = {
+        result[key] = {
             "name": name,
             "type": _first(entry, "type", "export_type"),
             "signature": canon_sig,
-            "file": _first(entry, "file", "source_file"),
+            "file": file_path,
             "line": _first(entry, "line", "source_line"),
             "confidence": entry.get("confidence"),
         }

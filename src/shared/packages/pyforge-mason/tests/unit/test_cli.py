@@ -3856,9 +3856,8 @@ def test_environment_lock_missing_output_is_a_usage_error(capsys):
 
 
 def test_environment_lock_failed_child_still_renders_ok(capsys):
-    """A non-zero delegated engine returncode is DATA, never raised (AD-4)
-    -- mirrors `package build`'s own established "the gap is data"
-    precedent."""
+    """A non-zero delegated engine returncode is DATA on the result (AD-4) and
+    projects to EXIT_FAILED like `environment check` (Story 4.4 / FR-28)."""
     failed_result = LockResult(
         manifest_paths=("environment.yml",),
         output_path="lock.yml",
@@ -3869,13 +3868,31 @@ def test_environment_lock_failed_child_still_renders_ok(capsys):
         stdout="conflict: could not solve\n",
     )
     with patch("pyforge.mason.cli.environment.lock", return_value=failed_result):
-        assert main(["environment", "lock", "environment.yml", "-o", "lock.yml"]) == EXIT_OK
+        assert main(["environment", "lock", "environment.yml", "-o", "lock.yml"]) == EXIT_FAILED
 
     out = capsys.readouterr()
     assert out.err == ""
     assert "environment lock: ok" in out.out
     assert "returncode: 1" in out.out
     assert "conflict: could not solve" in out.out
+
+
+def test_mason_error_in_main_writes_json_error_envelope_when_format_json(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.lock",
+        side_effect=EnvironmentLockfileMissingError("missing.yml"),
+    ):
+        rc = main(
+            ["environment", "lock", "environment.yml", "-o", "lock.yml", "--format", "json"],
+        )
+
+    assert rc == EXIT_FAILED
+    captured = capsys.readouterr()
+    assert "environment:lockfile-missing" in captured.err
+    doc = json.loads(captured.out)
+    assert doc["command"] == "environment lock"
+    assert doc["status"] == "error"
+    assert doc["errors"][0]["identifier"] == "environment:lockfile-missing"
 
 
 def test_environment_lock_engine_absent_error_projects_to_exit_failed(capsys):

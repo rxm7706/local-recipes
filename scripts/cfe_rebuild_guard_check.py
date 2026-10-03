@@ -138,6 +138,11 @@ RE_SCOPE_GATE_PRE_CONDITION_KEYS = (
 # (closed by real evidence, or explicitly waived by a human).
 RE_SCOPE_GATE_SATISFIED_STATUSES = frozenset({"closed", "waived"})
 
+# Case-/whitespace-insensitive view of RE_SCOPE_GATE_SATISFIED_STATUSES.
+_RE_SCOPE_GATE_SATISFIED_FOLDS = frozenset(
+    status.casefold() for status in RE_SCOPE_GATE_SATISFIED_STATUSES
+)
+
 
 def _run(root: pathlib.Path, *args: str) -> subprocess.CompletedProcess[str] | None:
     try:
@@ -204,6 +209,106 @@ def diff_name_status(root: pathlib.Path, sha: str) -> list[tuple[str, str]]:
     return []
 
 
+def _slice_ref(sl: dict) -> str:
+    raw = sl.get("id")
+    if isinstance(raw, str) and raw.strip():
+        return raw
+    return "<unknown-slice>"
+
+
+def _precondition_status_satisfied(entry: object) -> bool:
+    if not isinstance(entry, dict):
+        return False
+    status = entry.get("status")
+    if not isinstance(status, str):
+        return False
+    return status.strip().casefold() in _RE_SCOPE_GATE_SATISFIED_FOLDS
+
+
+def _brief_covers_retro_sha(brief: dict, sha: str) -> bool:
+    scope = brief.get("scope")
+    if not isinstance(scope, dict):
+        return False
+    amendments = scope.get("amendments")
+    if not isinstance(amendments, list):
+        return False
+    needle = sha[:10]
+    for amend in amendments:
+        if not isinstance(amend, dict):
+            continue
+        if amend.get("action") != "retro-mirror":
+            continue
+        for value in amend.values():
+            if isinstance(value, str) and needle in value:
+                return True
+    return False
+
+
+def _brief_defect_findings(root: pathlib.Path, slices: list) -> list[dict]:
+    findings: list[dict] = []
+    for sl in slices:
+        if not isinstance(sl, dict):
+            continue
+        brief_path = sl.get("brief_path")
+        if not brief_path:
+            continue
+        slice_id = _slice_ref(sl)
+        abs_path = root / brief_path
+        if not abs_path.is_file() or abs_path.stat().st_size == 0:
+            findings.append({
+                "kind": "brief-defect",
+                "ref": slice_id,
+                "refs": [slice_id, str(brief_path)],
+                "detail": f"slice '{slice_id}': brief_path {brief_path!r} is missing or empty",
+                "remedy": "restore the slice skill-brief.yaml or clear brief_path until one exists",
+            })
+            continue
+        try:
+            import yaml
+        except ModuleNotFoundError:
+            continue
+        try:
+            brief = yaml.safe_load(abs_path.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError):
+            findings.append({
+                "kind": "brief-defect",
+                "ref": slice_id,
+                "refs": [slice_id, str(brief_path)],
+                "detail": f"slice '{slice_id}': brief_path {brief_path!r} is not valid YAML",
+                "remedy": "repair the slice skill-brief.yaml or clear brief_path until one exists",
+            })
+            continue
+        if not isinstance(brief, dict):
+            findings.append({
+                "kind": "brief-defect",
+                "ref": slice_id,
+                "refs": [slice_id, str(brief_path)],
+                "detail": f"slice '{slice_id}': brief_path {brief_path!r} is hollow (not a mapping)",
+                "remedy": "restore a non-empty skill-brief.yaml or clear brief_path until one exists",
+            })
+            continue
+        mirrored = sl.get("brief_mirrored_through")
+        if isinstance(mirrored, str) and mirrored.strip():
+            if not _brief_covers_retro_sha(brief, mirrored.strip()):
+                findings.append({
+                    "kind": "brief-defect",
+                    "ref": slice_id,
+                    "refs": [slice_id, mirrored[:10]],
+                    "detail": f"slice '{slice_id}': brief at {brief_path!r} has no retro-mirror "
+                              f"amendment naming {mirrored[:10]}",
+                    "remedy": "mirror the retro into the brief (retro-mirror amendment) and set "
+                              "brief_mirrored_through to the retro SHA",
+                })
+    return findings
+
+
+def any_slice_has_brief_path(state: dict) -> bool:
+    slices = state.get("slices")
+    if not isinstance(slices, list):
+        return False
+    return any(isinstance(sl, dict) and sl.get("brief_path") for sl in slices)
+
+
 def retro_commits_since(root: pathlib.Path, since: str) -> list[str] | None:
     """SHAs (newest first) in `since..HEAD` that qualify as a landed CFE
     Rule-2 retro: diff touches the CFE surface AND touches CFE_CHANGELOG with
@@ -236,17 +341,19 @@ def retro_commits_since(root: pathlib.Path, since: str) -> list[str] | None:
     return retros
 
 
-def scan(state: dict, retros: list[str]) -> list[dict]:
+def scan(state: dict, retros: list[str], *, root: pathlib.Path) -> list[dict]:
     findings: list[dict] = []
     slices = state.get("slices")
     slices = slices if isinstance(slices, list) else []
     newest_retro = retros[0] if retros else None
 
+    findings.extend(_brief_defect_findings(root, slices))
+
     # Clause (a): stale-equivalence.
     for sl in slices:
         if not isinstance(sl, dict):
             continue
-        slice_id = sl.get("id", "<unknown-slice>")
+        slice_id = _slice_ref(sl)
         status = sl.get("status")
         if status not in EQUIVALENCE_GATED_STATUSES:
             continue
@@ -274,7 +381,7 @@ def scan(state: dict, retros: list[str]) -> list[dict]:
             brief_path = sl.get("brief_path")
             if not brief_path:
                 continue
-            slice_id = sl.get("id", "<unknown-slice>")
+            slice_id = _slice_ref(sl)
             mirrored_through = sl.get("brief_mirrored_through")
             if mirrored_through == newest_retro:
                 continue
@@ -328,12 +435,11 @@ def scan(state: dict, retros: list[str]) -> list[dict]:
         brief_path = sl.get("brief_path")
         if not brief_path:
             continue
-        slice_id = sl.get("id", "<unknown-slice>")
+        slice_id = _slice_ref(sl)
         unmet = []
         for key in RE_SCOPE_GATE_PRE_CONDITION_KEYS:
             entry = pre_conditions.get(key)
-            status = entry.get("status") if isinstance(entry, dict) else None
-            if status not in RE_SCOPE_GATE_SATISFIED_STATUSES:
+            if not _precondition_status_satisfied(entry):
                 unmet.append(key)
         if unmet:
             findings.append({
@@ -376,13 +482,16 @@ def main() -> int:
                          "mapping — file missing, unreadable, or malformed.",
                          args.json)
 
-    retros = retro_commits_since(ROOT, args.since)
-    if retros is None:
-        return _unknown(f"`git log {args.since}..HEAD` could not run — not a "
-                         f"git repository, or {args.since} is unreachable from "
-                         "HEAD.", args.json)
+    if any_slice_has_brief_path(state):
+        retros = retro_commits_since(ROOT, args.since)
+        if retros is None:
+            return _unknown(f"`git log {args.since}..HEAD` could not run — not a "
+                             f"git repository, or {args.since} is unreachable from "
+                             "HEAD.", args.json)
+    else:
+        retros = []
 
-    findings = scan(state, retros)
+    findings = scan(state, retros, root=ROOT)
 
     if args.json:
         print(json.dumps({"retros_scanned": len(retros), "findings": findings}, indent=2))
