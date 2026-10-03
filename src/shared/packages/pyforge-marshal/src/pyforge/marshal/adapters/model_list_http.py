@@ -9,9 +9,30 @@ from __future__ import annotations
 import http.client
 import ssl
 from collections.abc import Mapping
-from urllib.parse import urlparse
 
 from ..ports.model_list_fetch import HttpGetResult
+
+
+def _parse_https_url(url: str) -> tuple[str, int, str] | None:
+    if not url.startswith("https://"):
+        return None
+    rest = url.removeprefix("https://")
+    host_part, sep, path_part = rest.partition("/")
+    path = "/" + path_part if sep else "/"
+    if not host_part:
+        return None
+    if ":" in host_part:
+        host, port_text = host_part.rsplit(":", 1)
+        try:
+            port = int(port_text)
+        except ValueError:
+            return None
+    else:
+        host = host_part
+        port = 443
+    if not host:
+        return None
+    return host, port, path
 
 
 def http_get_for_model_list(
@@ -22,16 +43,10 @@ def http_get_for_model_list(
 ) -> HttpGetResult:
     """One HTTPS GET with explicit status; never raises to the caller."""
     try:
-        parsed = urlparse(url)
-        if parsed.scheme != "https":
+        parsed = _parse_https_url(url)
+        if parsed is None:
             return HttpGetResult(status_code=0, body=b"invalid url scheme")
-        host = parsed.hostname
-        if not host:
-            return HttpGetResult(status_code=0, body=b"invalid url")
-        port = parsed.port if parsed.port is not None else 443
-        path = parsed.path or "/"
-        if parsed.query:
-            path = path + "?" + parsed.query
+        host, port, path = parsed
         context = ssl.create_default_context()
         conn = http.client.HTTPSConnection(host, port, timeout=timeout_s, context=context)
         try:

@@ -29,7 +29,8 @@ def test_http_get_success():
     assert result.status_code == 200
     assert result.body == b'{"data":[]}'
     mock_conn.request.assert_called_once()
-    _method, path, _kwargs = mock_conn.request.call_args[0]
+    call_args = mock_conn.request.call_args
+    path = call_args[0][1]
     assert path.startswith("/v1/models")
 
 
