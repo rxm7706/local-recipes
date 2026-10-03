@@ -5171,6 +5171,7 @@ def _attach_churn_skip(
     item: dict,
     paths: list[str],
     since: date | None,
+    cache: _ChurnCache | None = None,
 ) -> None:
     """Mutate ``item`` IN PLACE, adding ``skip_reason``/
     ``churn_checked_paths`` when every one of ``paths`` is confirmed
@@ -5194,7 +5195,7 @@ def _attach_churn_skip(
     if since is None or not paths:
         return
     try:
-        churn_free = _churn_since(target, paths, since)
+        churn_free = _churn_since(target, paths, since, cache)
     except Exception:  # noqa: BLE001 -- see docstring: isolate per-entry.
         return
     if churn_free:
@@ -5474,6 +5475,8 @@ def _check_project_due_for_verification(
     proj: Path,
     findings: list[dict],
     today: date,
+    *,
+    cache: _ChurnCache | None = None,
 ) -> None:
     """Append one project's due-for-verification findings to the CALLER's
     ``findings`` list -- mirrors ``_check_project_deferred_work``'s own
@@ -5523,7 +5526,13 @@ def _check_project_due_for_verification(
     invariant-violating) id would silently collapse to one dict entry,
     pairing an EARLIER duplicate's finding with a LATER duplicate's paths
     (review finding, patch). Positional pairing is correct regardless of
-    whether ids repeat."""
+    whether ids repeat.
+
+    DW-FU-11-2: ``cache`` is the sweep-wide git-history memo, KEYWORD-only
+    and defaulted, so the fixed-arity positional stand-in that
+    ``test_one_unevaluable_project_does_not_hide_another_projects_real_finding``
+    monkeypatches in keeps working on the four parameters it names."""
+    cache = cache if cache is not None else _ChurnCache.for_target(target)
     tracked_path = proj / TRACKED_REL
     other_roots = {slug: root for slug, root in _known_project_code_roots(target).items() if slug != proj.name}
     paths_by_entry = _entry_named_paths(tracked_path)
@@ -5557,8 +5566,8 @@ def _check_project_due_for_verification(
                 item["today"] = today.isoformat()
             # The churn window cannot open at a date that has not happened;
             # fall back to the authoring proxy, as for a never-verified entry.
-            since = _authored_date(target, tracked_path, entry_id) if paths else None
-            _attach_churn_skip(target, item, paths, since)
+            since = _authored_date(target, tracked_path, entry_id, cache) if paths else None
+            _attach_churn_skip(target, item, paths, since, cache)
             if item.get("skip_reason") != "no-churn":
                 _attach_mechanical_verdict(target, item, symbol)
             findings.append(item)
@@ -5574,7 +5583,7 @@ def _check_project_due_for_verification(
                 "days_stale": days_stale,
                 "other_project_roots": other_roots,
             }
-            _attach_churn_skip(target, item, paths, parsed)
+            _attach_churn_skip(target, item, paths, parsed, cache)
             if item.get("skip_reason") != "no-churn":
                 _attach_mechanical_verdict(target, item, symbol)
             findings.append(item)
@@ -5923,9 +5932,14 @@ def _due_for_verification_findings(
     projects_dir = target / "_bmad-output" / "projects"
     if not _is_dir(projects_dir):
         return findings
+    # DW-FU-11-2: ONE memo for the whole sweep, so a path many projects'
+    # entries cite (`pixi.toml`, `chain.py`) is read from git once, not once
+    # per citing entry. Keyword-passed so a positional stand-in in a test
+    # keeps its existing arity (see the callee's own docstring).
+    cache = _ChurnCache.for_target(target)
     for proj in sorted(p for p in projects_dir.iterdir() if p.is_dir()):
         try:
-            _check_project_due_for_verification(target, proj, findings, as_of)
+            _check_project_due_for_verification(target, proj, findings, as_of, cache=cache)
         except Exception as exc:  # noqa: BLE001 -- one project's unreadable
             # ledger must not discard findings already appended for a
             # different project.
