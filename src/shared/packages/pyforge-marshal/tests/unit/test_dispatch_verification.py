@@ -38,6 +38,11 @@ from pyforge.marshal.dispatch_verify import (
 # these tests rather than silently updating them.
 LINT_TYPES = "pixi run --frozen -e pyforge-guild lint-types"
 
+# Story 83.2 (spec-83-2): the derived whole-tree check commands, pinned as
+# literals so deleting or renaming the derivation fails these tests.
+PYFORGE_CORE_TEST = "pixi run --frozen -e pyforge-core pyforge-core-test"
+DEFERRED_WORK_CHECK = "pixi run --frozen -e pyforge-guild deferred-work-check"
+
 
 def test_compose_dispatch_policy_reads_a_real_project_toml(tmp_path: Path) -> None:
     """Regression: `tomllib.loads` takes `str`, not the `bytes` `read_bytes()`
@@ -309,6 +314,8 @@ def test_evaluate_dispatch_verification_appends_surface_guard_after_declared_com
         "true",
         _SURFACE_RECONCILE_COMMAND,
         LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
     ]
 
 
