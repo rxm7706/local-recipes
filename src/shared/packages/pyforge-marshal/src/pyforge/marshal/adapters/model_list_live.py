@@ -84,7 +84,9 @@ def fetch_live_ids_for_profile(
     source = profile.model_list
     harness = profile.name
     if source is None or not source.has_source():
-        return HarnessListResult(harness=harness, status="unavailable", live_ids=frozenset(), reason="no source declared")
+        return HarnessListResult(
+            harness=harness, status="unavailable", live_ids=frozenset(), reason="no source declared"
+        )
 
     environment = env if env is not None else os.environ
 

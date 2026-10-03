@@ -5,14 +5,13 @@ Pure parsing, comparison, snapshot diff and report rendering — no I/O (AD-4).
 
 from __future__ import annotations
 
-import json
 import re
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
-from .model_cost import ADAPTER_TO_PROVIDER, catalog_declared, provider_declaring_model
+from .model_cost import ADAPTER_TO_PROVIDER, catalog_declared
 
 HarnessListStatus = Literal["ok", "unavailable", "unchecked"]
 
@@ -140,7 +139,9 @@ def find_not_listed(
     return tuple(findings)
 
 
-def diff_harness_ids(previous: Mapping[str, frozenset[str]], current: Mapping[str, frozenset[str]]) -> dict[str, SnapshotDiff]:
+def diff_harness_ids(
+    previous: Mapping[str, frozenset[str]], current: Mapping[str, frozenset[str]]
+) -> dict[str, SnapshotDiff]:
     """Ids added/removed per harness since ``previous``."""
     out: dict[str, SnapshotDiff] = {}
     harnesses = set(previous.keys()) | set(current.keys())
@@ -270,10 +271,7 @@ def render_report_text(
         lines.append("")
         lines.append("declared but not listed (and not an alias):")
         for item in not_listed:
-            lines.append(
-                f"  - {item.model_id} ({item.harness}) "
-                f"declared in {item.source_file} key {item.source_key}"
-            )
+            lines.append(f"  - {item.model_id} ({item.harness}) declared in {item.source_file} key {item.source_key}")
     if snapshot_diff:
         lines.append("")
         lines.append("since previous snapshot:")

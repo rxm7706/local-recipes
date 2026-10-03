@@ -78,13 +78,13 @@ from typing import TYPE_CHECKING
 from pyforge.core.errors import PyforgeError
 
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.model_list_live import LiveModelListFetch, fetch_live_ids_for_profile
 from ..adapters.harness_bmadloop import (
     HarnessError,
     HarnessPolicyWriteError,
     resolve_loop_runner,
     write_policy_toml,
 )
+from ..adapters.model_list_live import LiveModelListFetch, fetch_live_ids_for_profile
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
 from ..core.conformance import (
@@ -105,9 +105,8 @@ from ..core.conformance import (
     render_matrix_markdown,
 )
 from ..core.egress import to_redacted
-from ..core.model import Finding, Severity, build_envelope
-from ..core.refs import local_branch_ref
 from ..core.harness_profile import load_profiles
+from ..core.model import Finding, Severity, build_envelope
 from ..core.model_list_refresh import (
     HarnessListResult,
     build_snapshot_payload,
@@ -123,6 +122,7 @@ from ..core.model_list_refresh import (
     snapshot_filename_for_date,
     unchecked_catalog_providers,
 )
+from ..core.refs import local_branch_ref
 from ..core.skill_projection import CANONICAL_SKILL_TREE_REL, plan_projection
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
@@ -2004,7 +2004,7 @@ def _gather_declared_model_refs(root: Path, profiles: Mapping[str, object]) -> l
                             harness=name,
                         )
                     )
-        except (OSError, tomllib.TOMLDecodeError):
+        except OSError, tomllib.TOMLDecodeError:
             pass
     for name, profile in profiles.items():
         if not hasattr(profile, "model_map"):
@@ -2106,7 +2106,7 @@ def run_adapters_models(
             catalog = policy_data.get("model_cost_catalog")
             named = providers_named_by_profiles(catalog_provider_by_harness)
             unchecked = unchecked_catalog_providers(catalog, named)
-        except (OSError, tomllib.TOMLDecodeError):
+        except OSError, tomllib.TOMLDecodeError:
             pass
 
     today = date.today()
@@ -2119,7 +2119,7 @@ def run_adapters_models(
             if isinstance(prior_raw, dict):
                 _prior_date, prior_ids = parse_snapshot_payload(prior_raw)
                 snapshot_diff = diff_harness_ids(prior_ids, harness_ids)
-        except (OSError, json.JSONDecodeError, ValueError):
+        except OSError, json.JSONDecodeError, ValueError:
             pass
 
     report = render_report_text(
@@ -2130,8 +2130,7 @@ def run_adapters_models(
     )
     data["report"] = report
     data["harness_results"] = {
-        name: {"status": r.status, "count": len(r.live_ids), "reason": r.reason}
-        for name, r in harness_results.items()
+        name: {"status": r.status, "count": len(r.live_ids), "reason": r.reason} for name, r in harness_results.items()
     }
 
     if args.write:

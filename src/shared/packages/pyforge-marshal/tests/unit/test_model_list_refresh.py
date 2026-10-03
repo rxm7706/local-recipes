@@ -4,20 +4,18 @@ from __future__ import annotations
 
 import json
 
-import pytest
-
 from pyforge.marshal.adapters.model_list_live import fetch_live_ids_for_profile
 from pyforge.marshal.core.harness_profile import HarnessProfile, ModelListSource, load_packaged_profiles
 from pyforge.marshal.core.model_list_refresh import (
+    DeclaredModelRef,
+    HarnessListResult,
+    diff_harness_ids,
     find_not_listed,
     model_absent_from_live_list,
     parse_anthropic_models_page,
     parse_command_model_lines,
     parse_gemini_models_page,
     parse_snapshot_payload,
-    DeclaredModelRef,
-    HarnessListResult,
-    diff_harness_ids,
     unchecked_catalog_providers,
 )
 from pyforge.marshal.ports.model_list_fetch import CommandRunResult, HttpGetResult, ModelListFetchPort
@@ -102,9 +100,7 @@ def test_mutation_alias_rule_required():
 
 
 def test_find_not_listed_respects_aliases():
-    declared = (
-        DeclaredModelRef("grok-4.6", "cursor", "policy.toml", "model_tier_map.heavy.dev"),
-    )
+    declared = (DeclaredModelRef("grok-4.6", "cursor", "policy.toml", "model_tier_map.heavy.dev"),)
     results = {
         "cursor": HarnessListResult("cursor", "ok", frozenset({"other"})),
     }
