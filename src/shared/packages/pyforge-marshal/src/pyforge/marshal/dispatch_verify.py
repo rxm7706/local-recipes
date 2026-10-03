@@ -134,6 +134,50 @@ _PYFORGE_CORE_TEST_COMMAND = "pixi run --frozen -e pyforge-core pyforge-core-tes
 #: Both commands are seconds-long and folded in after deduplication.
 _DEFERRED_WORK_CHECK_COMMAND = "pixi run --frozen -e pyforge-guild deferred-work-check"
 
+#: Story 83.12 (spec-83-12): station packages whose ``src/`` a story touches
+#: run that station's CI-mirroring coverage gate here -- never pyforge-core
+#: (no ``pyforge-core-coverage-gate`` task) and never a station the diff did
+#: not touch.
+_STATION_PACKAGE_SRC_PARTS = ("src", "shared", "packages")
+#: The eight Dream/TEA stations in ``scripts/coverage_gate.py`` ``STATIONS``
+#: (``pyforge-core`` / testing-kit are not coverage-gate stations).
+_COVERAGE_GATE_STATION_SLUGS: frozenset[str] = frozenset(
+    f"pyforge-{name}"
+    for name in (
+        "atlas",
+        "doctor",
+        "herald",
+        "marshal",
+        "mason",
+        "scribe",
+        "steward",
+        "warden",
+    )
+)
+
+
+def _coverage_gate_command_for_station(station_slug: str) -> str:
+    return f"pixi run --frozen -e {station_slug} {station_slug}-coverage-gate"
+
+
+def coverage_gate_commands_for_changed_files(changed_files: tuple[str, ...]) -> tuple[str, ...]:
+    """Derive ``pyforge-<station>-coverage-gate`` commands from touched station ``src/`` paths."""
+    touched_slugs: set[str] = set()
+    for path in changed_files:
+        parts = Path(path).parts
+        if len(parts) < 5:
+            continue
+        if parts[0:3] != _STATION_PACKAGE_SRC_PARTS:
+            continue
+        station_slug = parts[3]
+        if station_slug not in _COVERAGE_GATE_STATION_SLUGS:
+            continue
+        if parts[4] != "src":
+            continue
+        touched_slugs.add(station_slug)
+    return tuple(_coverage_gate_command_for_station(slug) for slug in sorted(touched_slugs))
+
+
 #: Story 83.2 (spec-83-2): ``deferred_work_intake.py --fix`` refused or could
 #: not run immediately before verification -- GATE_FAILED, naming the script's
 #: own refusal (never the post-merge ``MRS-DISP-047`` WARN tier).
@@ -225,6 +269,8 @@ def run_pre_verification_deferred_work_intake(
 
 def _verify_commands_with_surface_guard(
     effective: EffectivePolicy,
+    *,
+    changed_files: tuple[str, ...] | None = None,
 ) -> tuple[str, ...]:
     """Story 53.1 (spec-53-1, CAP-261a): the S-13.7 guard, appended to a
     dispatch session's own effective verify commands the SAME way
@@ -254,17 +300,26 @@ def _verify_commands_with_surface_guard(
     the same dedupe rule, so every station's dispatch verification runs
     the checks that read the whole tree exactly once.
 
+    Story 83.12 (spec-83-12): when ``changed_files`` is supplied, each
+    station whose ``src/shared/packages/pyforge-<station>/src/`` the story
+    touched gets that station's ``pyforge-<station>-coverage-gate`` command,
+    once, in sorted slug order. Omit ``changed_files`` (or pass an empty
+    tuple) when the diff is not yet known -- pre-launch binding in
+    ``cli/drain_plan.py`` -- so no coverage gate is derived.
+
     Unlike the loop adapter, this is not a rendered file an operator can
     read before a run starts -- it is folded in at USE time, right before
     the commands actually execute and before ``check_spec_binding`` sees
     them, so a dispatch session is gated on the guard exactly like a loop
     session even though nothing in ``marshal-policy.toml`` ever declares
     it."""
+    coverage_derived = coverage_gate_commands_for_changed_files(changed_files or ())
     derived = (
         _SURFACE_RECONCILE_COMMAND,
         _LINT_TYPES_COMMAND,
         _PYFORGE_CORE_TEST_COMMAND,
         _DEFERRED_WORK_CHECK_COMMAND,
+        *coverage_derived,
     )
     normalized_derived = {" ".join(command.split()) for command in derived}
     verify = [c for c in effective.verify_commands.value if " ".join(c.split()) not in normalized_derived]
@@ -273,8 +328,14 @@ def _verify_commands_with_surface_guard(
 
 
 def run_verify_commands_only(
-    effective: EffectivePolicy, *, process: ProcessPort, worktree: Path
-) -> tuple[tuple[dict[str, object], ...], tuple[Finding, ...]]:
+    effective: EffectivePolicy,
+    *,
+    process: ProcessPort,
+    worktree: Path,
+    repo_root: Path | None = None,
+    vcs: VcsPort | None = None,
+    story_changed_files: tuple[str, ...] | None = None,
+) -> tuple[tuple[dict[str, object], ...], tuple[Finding, ...], tuple[Finding, ...]]:
     """Story 51.1: loop ``effective.verify_commands.value`` through the same
     per-command classification (``_run_verify_command``/``gate.classify_outcome``)
     ``evaluate_dispatch_verification`` uses, WITHOUT its scope/spec-binding/
@@ -296,15 +357,48 @@ def run_verify_commands_only(
     it: a merge-tree preview worktree is exactly the tree the guard needs to
     check before landing. As a result this can no longer return two empty
     tuples -- the derived guard (and, Story 79.2, ``lint-types``) is always
-    present."""
+    present.
+
+    Story 83.12 (spec-83-12): when ``repo_root`` and ``vcs`` are supplied,
+    changed files against ``origin/main`` in the preview worktree drive the
+    same per-station coverage-gate derivation as
+    ``evaluate_dispatch_verification``. When resolution fails, fall back to
+    ``story_changed_files`` from the dispatch worktree (never silently skip
+    gates); if neither is available, refuse with ``MRS-GATE-009``."""
+    changed_files: tuple[str, ...] = ()
+    preview_findings: list[Finding] = []
+    if repo_root is not None and vcs is not None:
+        try:
+            changed_files = vcs.changed_files(repo_root, worktree, base=_SCOPE_BASE)
+        except Exception as exc:
+            if story_changed_files is not None:
+                changed_files = story_changed_files
+                preview_findings.append(
+                    Finding(
+                        code="MRS-GATE-009",
+                        severity=Severity.WARN,
+                        message=(
+                            "merge-tree preview could not resolve changed files; "
+                            f"using the story worktree diff instead: {exc}"
+                        ),
+                    )
+                )
+            else:
+                preview_findings.append(
+                    Finding(
+                        code="MRS-GATE-009",
+                        severity=Severity.ERROR,
+                        message=f"merge-tree preview could not resolve changed files: {exc}",
+                    )
+                )
     command_reports: list[dict[str, object]] = []
-    findings: list[Finding] = []
-    for command in _verify_commands_with_surface_guard(effective):
+    command_findings: list[Finding] = []
+    for command in _verify_commands_with_surface_guard(effective, changed_files=changed_files):
         report, finding = _run_verify_command(command, process=process, worktree=worktree)
         command_reports.append(report)
         if finding is not None:
-            findings.append(finding)
-    return tuple(command_reports), tuple(findings)
+            command_findings.append(finding)
+    return tuple(command_reports), tuple(command_findings), tuple(preview_findings)
 
 
 def compose_dispatch_policy(slug: str, repo_root: Path) -> EffectivePolicy:
@@ -372,11 +466,25 @@ def evaluate_dispatch_verification(
         if intake_finding is not None:
             findings.append(intake_finding)
 
-    commands = _verify_commands_with_surface_guard(effective)
-    command_reports: list[dict[str, object]] = []
     scope_changed_files: tuple[str, ...] = ()
     scope_effective_surface: tuple[str, ...] = ()
     scope_check_completed = False
+    scope_changed_resolved = False
+    try:
+        scope_changed_files = vcs.changed_files(repo_root, worktree, base=_SCOPE_BASE)
+        scope_changed_resolved = True
+    except Exception as exc:
+        findings.append(
+            Finding(
+                code="MRS-GATE-009",
+                severity=Severity.ERROR,
+                message=(f"dispatch scope check could not resolve changed files for {story_key}: {exc}"),
+            )
+        )
+        data["scope_check"] = {"checked": False, "reason": str(exc)}
+
+    commands = _verify_commands_with_surface_guard(effective, changed_files=scope_changed_files)
+    command_reports: list[dict[str, object]] = []
     # Story 53.1 / 79.2: `commands` can no longer be empty -- the S-13.7 guard
     # and `lint-types` are unconditionally appended above, so a station with a
     # bare `verify_commands = []` now runs those two alone rather than nothing.
@@ -397,18 +505,8 @@ def evaluate_dispatch_verification(
                 findings.append(finding)
     data["commands"] = command_reports
 
-    try:
-        changed = vcs.changed_files(repo_root, worktree, base=_SCOPE_BASE)
-    except Exception as exc:
-        findings.append(
-            Finding(
-                code="MRS-GATE-009",
-                severity=Severity.ERROR,
-                message=(f"dispatch scope check could not resolve changed files for {story_key}: {exc}"),
-            )
-        )
-        data["scope_check"] = {"checked": False, "reason": str(exc)}
-    else:
+    if scope_changed_resolved:
+        changed = scope_changed_files
         policy_surface = gate.resolve_policy_surface(effective.epic_surfaces.value, story_key.epic, project_slug)
         try:
             spec_surface = parse_declared_surface(spec_text) if spec_text is not None else None
@@ -479,11 +577,15 @@ def evaluate_dispatch_verification(
         # refuse the landing (spec-79-2 AC2), never downgrade to MRS-GATE-014.
         # Story 83.2: the same reasoning applies to the derived whole-tree check
         # commands -- they read the whole tree and their failures must refuse.
+        # Story 83.12: per-station coverage gates measure touched modules in
+        # the station env; their output paths do not belong in blast-radius
+        # reclassification either.
         derived_commands = {
             _SURFACE_RECONCILE_COMMAND,
             _LINT_TYPES_COMMAND,
             _PYFORGE_CORE_TEST_COMMAND,
             _DEFERRED_WORK_CHECK_COMMAND,
+            *coverage_gate_commands_for_changed_files(scope_changed_files),
         }
         reclassifiable_reports = tuple(
             report for report in command_reports if report.get("command") not in derived_commands

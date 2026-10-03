@@ -496,12 +496,21 @@ class VcsPort(Protocol):
         never an exception."""
         ...
 
-    def add_worktree_for_tree(self, repo_root: Path, home: Path, tree_oid: str, *, parent: str) -> None:
+    def add_worktree_for_tree(
+        self,
+        repo_root: Path,
+        home: Path,
+        tree_oid: str,
+        *,
+        parent: str,
+        second_parent: str | None = None,
+    ) -> None:
         """Story 51.1: wraps ``tree_oid`` (typically ``merge_tree_write``'s
         own output) in a throwaway commit -- pinned ``user.name``/
         ``user.email``/``commit.gpgsign=false``, mirroring
         ``is_branch_merged``'s own ``commit-tree`` discipline -- with
-        ``parent`` as its sole parent, then checks it out detached at
+        ``parent`` as its first parent (and ``second_parent`` when supplied,
+        mirroring GitHub's merge commit), then checks it out detached at
         ``home`` (``git worktree add --detach``, mirroring ``add_worktree``
         above). The synthetic commit is never referenced by any branch or
         tag; it exists solely so ``home`` has a commit-ish to check out, and
