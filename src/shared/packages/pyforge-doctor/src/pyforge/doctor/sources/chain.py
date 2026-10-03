@@ -1660,9 +1660,36 @@ ALLOWLIST_REL = Path("scripts") / "spec_surface_allowlist.txt"
 BASELINE_REL = Path("scripts") / ".spec-surface-baseline.json"
 
 
+#: The glob metacharacters ``_glob_to_re`` below translates. A ``surface:``
+#: entry containing none of them is a literal path -- and a literal path
+#: ending in ``/`` is a DIRECTORY, which is what ``_SURFACE_DIR_SUFFIX``
+#: below reads it as.
+_GLOB_METACHARS = frozenset("*?")
+
+#: What a glob-less trailing-slash entry is expanded to (DW-FU-12-4). Written
+#: once here so ``scripts/spec_surface_check.py``'s own twin states the same
+#: rule in the same words.
+_SURFACE_DIR_SUFFIX = "**"
+
+
 def _glob_to_re(pattern: str) -> re.Pattern:
     """Verbatim from the original: ``**`` spans path separators, ``*``/``?``
-    do not; a pattern with no glob chars matches exactly."""
+    do not; a pattern with no glob chars matches exactly.
+
+    ONE addition (DW-FU-12-4): a glob-less entry ending in ``/`` governs that
+    directory's whole subtree -- it reads as ``dir/**``. ``git ls-files``
+    never emits a directory, so such an entry could previously match NOTHING
+    at all, and seven Specs' surfaces named a directory that way (measured
+    2026-10-01, the dead-glob WARN of Story 38.2): the Spec claimed a tree
+    and governed none of it. Expanding the entry instead of reporting it dead
+    is what the Spec's author plainly meant, and it is the reading
+    ``scripts/spec_surface_check.py::glob_to_re`` applies too -- the stamp and
+    the verdict must agree on what a surface covers, or a stamp writes a
+    baseline the verdict then reads as drift. An entry that already carries a
+    glob (``dir/*``, ``dir/**``) is untouched: its author already said what
+    depth they meant."""
+    if pattern.endswith("/") and not (_GLOB_METACHARS & set(pattern)):
+        pattern += _SURFACE_DIR_SUFFIX
     out: list[str] = []
     i = 0
     while i < len(pattern):
