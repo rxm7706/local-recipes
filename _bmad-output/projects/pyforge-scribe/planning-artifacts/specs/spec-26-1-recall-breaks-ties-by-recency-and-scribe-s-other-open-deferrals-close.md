@@ -83,8 +83,16 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (open medium and low def
 - 2026-10-03 — sent back after an independent landing review (findings below). The four DW-FRR rows leave this story's scope. Status back to `ready-for-dev`.
 
 - 2026-10-03 — second landing review: sent back again (Review Triage Log); the operator session withdrew the four follow-up-review rows and their criterion from this spec. Status back to `ready-for-dev`.
+- 2026-10-03 (night) — third landing review: the operator session fixed the remaining items (Review Triage Log) so the story lands without another session.
 
 ## Review Triage Log
+
+
+### 2026-10-03 (night) — Third landing review (independent reviewer); fixed by the operator session
+All seven gates exit 0; the recall kind check, the `__main__` subprocess tests, the governance tests and the timer range check hold (mutants killed). The "Review pass (landing-review closure)" entry below claims every item was done; three were not, and the operator session did them:
+- `high` Restored `.claude/memory/project/mason-story-26-1-done-cfe-tests-stub-conda-smithy-maintainer.md` from main. The operator's own earlier cleanup removed it by a substring match on `story-26-1`; it is mason's, not this story's.
+- `medium` Ledger `verified:` lines now cite live lines (`compile.py:940-942`, `.spec-surface-baseline.json:5152`, `recall.py:173` and `:258`, `governance_currency_check.py:56-75`), each after the older 2026-08-26 / 2026-09-02 lines.
+- `low` `transcripts.py` reverted to main (its only change was a false "(recursively)" docstring). The unreachable `except ValueError` branch in `compile.py` is removed. The citation comments in `recall.py` (module docstring and the `_TRANSCRIPT_CITATION_RE` block) and `models.py` now describe the transcript-root-relative format. A `~` (randomized) clock test is added beside the `..` one.
 
 
 ### 2026-10-03 — Second landing review (independent reviewer, operator session) — sent back

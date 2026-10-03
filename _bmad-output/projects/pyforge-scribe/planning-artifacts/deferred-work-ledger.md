@@ -115,11 +115,11 @@ sibling ledgers and the detector both use.
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: done
   resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
-  verified: src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py:940-941 — transcript citation/id from path relative to transcript_root; tests/unit/test_compile.py:test_transcript_same_basename_in_subdirs_get_distinct_ids_and_citations
-
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-03 — src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py:940-942 — transcript citation and node id from the path relative to transcript_root; tests/unit/test_compile.py:test_transcript_same_basename_in_subdirs_get_distinct_ids_and_citations
 
 ### DW-FU-3-2-2: The transcript surface is the only compile surface with no cost bound, and this story puts it on the unattended nightly path: every `scribe graph compile` now reads every *.jsonl under the transcript root whole into memory and runs an O(candidates x curated-sentences) difflib comparison, with no file cap, byte cap, timeout, or mtime-incremental pass.
 
@@ -147,11 +147,11 @@ sibling ledgers and the detector both use.
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: done
   resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
-  verified: scripts/.spec-surface-baseline.json — spec-surface-check reports no drift for pyforge-scribe/spec-pyforge-scribe after memlog reconcile (2026-10-03)
-
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-03 — scripts/.spec-surface-baseline.json:5152 — the pyforge-scribe/spec-pyforge-scribe entry; `pixi run -e pyforge-guild spec-surface-check` exits 0 with no drift for it after the memlog reconcile
 
 ### DW-FU-3-2-4: `recall.answer()` ranks candidates by token overlap and tie-breaks on node id ascending, never consulting `valid_from`, so between two equally-overlapping nodes the alphabetically-earlier id wins -- which for date-ordered session filenames is usually the OLDER, since-reversed statement.
 
@@ -164,11 +164,11 @@ sibling ledgers and the detector both use.
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: done
   resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
-  verified: src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py:261 — _lexical_rank_key tie-break by valid_from desc then id; tests/unit/test_recall.py:test_lexical_tie_break_prefers_newer_valid_from
-
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-03 — src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py:173 (_lexical_rank_key: overlap, then newer valid_from, then id) and :258 (the sort); tests/unit/test_recall.py:test_lexical_tie_break_prefers_newer_valid_from
 
 ### DW-CANOPY-2026-08-24
 
@@ -247,7 +247,7 @@ sibling ledgers and the detector both use.
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: done
   resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
-  verified: scripts/governance_currency_check.py:56 — governed_documents(); tests/scripts/test_governance_currency_check.py:test_governed_documents_include_pointer_files
+  verified: 2026-10-03 — scripts/governance_currency_check.py:56-75 — _DOCUMENTS_STATIC and governed_documents() (:67) add GEMINI.md, .github/copilot-instructions.md and every .cursor/rules/*.mdc; tests/scripts/test_governance_currency_check.py:test_governed_documents_include_pointer_files
 
 ### DW-FU-19-1-2: `AGENTS.md` is 476 lines and `CLAUDE.md` 357 after this story; Claude Code's guidance is under 200 lines per instruction file and BMAD's is 'only what is expensive to rediscover'. A Copilot or Devin session loads both. The shrink (nested `AGENTS.md` per station, path-scoped `.claude/rules/` and `.github/instructions/*.instructions.md`, CLAUDE.md deduplicated against the import) is Dream item (4), a later `bmad-spec` pass.
 

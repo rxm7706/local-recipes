@@ -135,7 +135,7 @@ class GraphNode(BaseModel):
 
     `citation` is always verified resolvable before `recall.py` surfaces a
     node: a repo-relative file path or `"commit:<sha>"` for a git-history
-    node point at a real repo artifact, while `"<jsonl filename>:L<line>"`
+    node point at a real repo artifact, while `"<path relative to the transcript root>.jsonl:L<line>"`
     for a ``kind == "transcript"`` node is format-checked only, never
     re-resolved against a live file, since a session transcript is
     per-user/local and can be pruned or rotated outside Scribe's control

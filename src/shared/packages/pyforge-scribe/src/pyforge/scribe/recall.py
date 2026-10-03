@@ -7,8 +7,8 @@ the compiled projection only"). Matching is pure deterministic lexical
 token-overlap scoring -- no LLM, no network call, matching AD-6's
 "no-LLM-required" v1 default (PRD Open Question 3). Every returned answer's
 citation is verified resolvable (a real file under `repo_root`, a
-well-formed `commit:<sha>`, a well-formed `<jsonl filename>:L<line>`
-transcript citation (Story 3.2), or a well-formed `<path>:L<line>` code
+well-formed `commit:<sha>`, a well-formed `<path relative to the transcript
+root>.jsonl:L<line>` transcript citation (Stories 3.2, 26.1), or a well-formed `<path>:L<line>` code
 citation whose path resolves under `repo_root` (Story 6.1's graphify
 extra)) before being returned -- an unresolvable
 citation is treated as no match and never surfaces (AD-8: "No code path in
@@ -95,19 +95,14 @@ _STOPWORDS = frozenset(
 )
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _COMMIT_SHA_RE = re.compile(r"[0-9a-f]{7,40}")
-#: A transcript citation is a BARE `<jsonl filename>:L<line>` -- Story 3.2's
-#: own format contract is "no directory path". `[^/\\:]+` enforces that
-#: literally: an earlier `.+` also admitted `nested/dir/x.jsonl:L1` and
-#: `../../../etc/passwd.jsonl:L1`, and because this branch short-circuits
-#: the `is_file()` check below, any such citation was declared resolvable
-#: without existing (review finding). `[0-9]` rather than `\d` for the same
-#: reason: `\d` also matches non-ASCII decimal digits, so `x.jsonl:L١٢`
-#: was likewise waved through without existing (review finding: reproduced).
-#: Relative to ``transcript_root`` (Story 26.1 / DW-FU-3-2): flat files stay
-#: ``session.jsonl:L<n>``; nested dirs use ``subdir/session.jsonl:L<n>``.
-#: Rejects ``..`` segments. Format-only resolvability applies only when
-#: ``kind == "transcript"`` — a ``code`` node must not skip ``is_file()``
-#: just because its path ends in ``.jsonl:L<n>`` (AD-8).
+#: A transcript citation is `<path relative to transcript_root>.jsonl:L<line>`
+#: (Story 26.1 / DW-FU-3-2): a flat file reads ``session.jsonl:L<n>``, a nested
+#: one ``subdir/session.jsonl:L<n>``. Each segment is `[^/\\:]+`, so no
+#: backslash, colon or empty segment; a ``..`` segment is refused where the
+#: citation is checked. `[0-9]` rather than `\d`:
+#: `\d` also matches non-ASCII digits (`x.jsonl:L١٢`). Format-only
+#: resolvability applies only when ``kind == "transcript"``; any other node
+#: whose path ends in ``.jsonl:L<n>`` still needs a real file (AD-8).
 _TRANSCRIPT_CITATION_RE = re.compile(r"(?:[^/\\:]+/)*[^/\\:]+\.jsonl:L[0-9]+$")
 #: A `code` node's citation (Story 6.1's graphify extra) is
 #: `<repo-relative path>:L<line>` -- e.g. `src/pyforge/scribe/compile.py:L120`,

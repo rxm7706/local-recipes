@@ -9,6 +9,7 @@ Matrix:
 Harness style matches missing_preserve_check's own meta-tests: importlib-load
 the script, monkeypatch its module-level GRAPH_STORE_PATH, seed a real file.
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -139,6 +140,16 @@ def test_scheduled_period_rejects_systemd_range_in_clock(tmp_path):
     )
     import pytest
 
+    with pytest.raises(ValueError, match="clock"):
+        mod.scheduled_period_hours(timer)
+
+
+def test_scheduled_period_rejects_randomized_clock(tmp_path):
+    import pytest
+
+    mod = _load_detector()
+    timer = tmp_path / "random.timer"
+    timer.write_text("[Timer]\nOnCalendar=*-*-* 02~14:00:00\n", encoding="utf-8")
     with pytest.raises(ValueError, match="clock"):
         mod.scheduled_period_hours(timer)
 
