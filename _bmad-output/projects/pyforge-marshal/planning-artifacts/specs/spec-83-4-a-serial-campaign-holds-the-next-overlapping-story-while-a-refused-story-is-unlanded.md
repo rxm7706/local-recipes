@@ -2,9 +2,10 @@
 title: '83.4: A serial campaign holds the next overlapping story while a refused story is unlanded'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 0
 baseline_revision: '1e9c06c17e3b4a846f961aac32c5c1931f91991d'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -79,9 +80,24 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
+### 2026-10-03 — Review pass (bmad-build-auto)
+- verdicts: 3 findings — high 0, medium 0, low 0, false 3, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Missing test for LIVE same-story still blocked — `test_live_session_still_refuses_redispatch` already covers MRS-DISP-011 for LIVE.
+  - `[false]` `[reject]` Refused blocking might skip serial MRS-DISP-021 — only the same-story branch `continue`s; other stories still hit overlap/serial paths.
+  - `[false]` `[reject]` Wave planner bypass — wave planning calls the same `station_in_flight_conflict`; Story 83.4 tests remain green.
+
 ### 2026-10-03 — Landing review (operator session) — sent back
 - Dispatch run `pyforge-marshal-20261003T013846409Z-44861046` refused at verification: MRS-GATE-001, `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exited 1, although the session reported the suite green. Reproduced in this worktree: 1 failed, 10829 passed.
 - `high` `patch` `tests/unit/test_dispatch_station_guard.py::test_redispatch_allowed_when_session_dead_and_verification_refused` fails: the extended `station_in_flight_conflict` returns `MRS-DISP-011` ("refusing redispatch: story '21.1' finished but was refused at landing with open PR") for a re-dispatch of the refused story itself. The hold must apply only to OTHER stories whose surfaces overlap the refused one; a re-dispatch of the refused story is how its fixed branch lands (Story 29.2's land-only path, and Story 83.7). Fix the guard, keep the existing test unchanged, and run the full station suite before reporting it green.
+
+## Auto Run Result
+
+- Summary: `station_in_flight_conflict` applies MRS-DISP-011 only when the blocking journal is LIVE; refused-at-landing with open PR still blocks other overlapping stories but allows same-story re-dispatch.
+- Files changed: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (guard fix); `spec-pyforge-marshal/.memlog.md` (surface reconcile).
+- Review: 0 patches, 0 deferred; 3 false positives rejected.
+- Follow-up review recommended: `false`
+- Verification: `pyforge-marshal-test` 10830 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
 
 ## Verification
 
