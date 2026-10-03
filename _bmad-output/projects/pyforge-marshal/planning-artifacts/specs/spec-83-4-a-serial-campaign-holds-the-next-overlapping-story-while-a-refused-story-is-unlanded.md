@@ -5,7 +5,6 @@ created: '2026-10-02'
 status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
-review_loop_iteration: 0
 baseline_revision: '1e9c06c17e3b4a846f961aac32c5c1931f91991d'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
