@@ -946,6 +946,14 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (night, later)** — **Found: four gaps from today's landings.** The 83.11 team-memory union reflows the
+  file's blank lines; a manual merge while a re-dispatch runs makes the supervisor declare completion and strand the
+  session's later commits (83.10, 83.4); `ruff check` findings that ruff fixes safely still refuse verification (83.9
+  formats only); Story 84.1 landed with tests that cannot catch a key leak and a partial listing read as complete.
+  **What it looks like when fixed:** the union inserts lines without reflowing; the supervisor keys completion on the
+  run's own head and lands later commits; dispatch applies ruff's safe fixes; 84.1's tests can fail. **Constraints:**
+  fix stories, no CAP, no flag (operator rulings 2026-10-03). Owner `spec-pyforge-marshal`. → Stories 83.13-83.15,
+  84.2, specced 2026-10-03.
 - **2026-10-03 (late night)** — **Found: dispatch verification passes a story that CI's coverage gate fails.** CI's
   named-module gate fails a PR when a touched module sits under the station's 80% unit floor, but dispatch verification
   never runs it and `dispatch/*` branches skip the pre-push preflight. PR #1773 went red this way (`dispatch_retry`
