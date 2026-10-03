@@ -420,10 +420,10 @@ def test_one_unevaluable_project_does_not_hide_another_projects_real_finding(
 
     real = chain._check_project_due_for_verification
 
-    def _explode(target, proj, findings, today):
+    def _explode(target, proj, findings, today, **kwargs):
         if proj.name == "zbroken":
             raise RuntimeError("unanticipated shape")
-        return real(target, proj, findings, today)
+        return real(target, proj, findings, today, **kwargs)
 
     monkeypatch.setattr(chain, "_check_project_due_for_verification", _explode)
 
@@ -1973,10 +1973,11 @@ def test_cluster_finding_survives_gather_due_for_verification_public_api(
 # the item survives `gather_due_for_verification`'s own Finding wrap (the
 # story's own AC wording). Direct-helper tests pin `today` (mirrors this
 # module's own "precise day-count assertions" convention); the one public-API
-# test below uses a far-future `verified:` date to stay time-invariant
-# (module docstring's own testing discipline), exactly like
-# `test_findings_evidence_project_key_names_its_own_project_via_public_api`'s
-# own `9999-01-01` fixture above.
+# test below writes TODAY's own date as its fresh `verified:` fixture to stay
+# time-invariant (module docstring's own testing discipline), exactly like
+# `test_findings_evidence_project_key_names_its_own_project_via_public_api`
+# above. Both used a far-future `9999-01-01` until DW-FU-11-1 made such a
+# date a finding in its own right -- a future date is a typo, not freshness.
 
 
 def test_verification_coverage_mixed_staleness_reports_correct_total_and_pct(

@@ -5627,10 +5627,10 @@ def _check_project_due_for_verification(
     (review finding, patch). Positional pairing is correct regardless of
     whether ids repeat.
 
-    DW-FU-11-2: ``cache`` is the sweep-wide git-history memo, KEYWORD-only
-    and defaulted, so the fixed-arity positional stand-in that
-    ``test_one_unevaluable_project_does_not_hide_another_projects_real_finding``
-    monkeypatches in keeps working on the four parameters it names."""
+    DW-FU-11-2: ``cache`` is the sweep-wide git-history memo -- keyword-only
+    so the four positional parameters stay the whole calling contract, and
+    defaulted so calling this helper directly (every unit test here does)
+    still works and simply gets a cache of its own."""
     cache = cache if cache is not None else _ChurnCache.for_target(target)
     tracked_path = proj / TRACKED_REL
     other_roots = {slug: root for slug, root in _known_project_code_roots(target).items() if slug != proj.name}

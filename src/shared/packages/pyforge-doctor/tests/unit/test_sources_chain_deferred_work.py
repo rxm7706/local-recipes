@@ -1220,15 +1220,16 @@ status: open
     assert swallow_victim.id is None
     assert "spec-1-2-story-identity-merge" in swallow_victim.fields["source_spec"]
 
-    # Cross-check against the live (buggy) `_anonymous()` on this same
-    # fixture: it must NOT count the swallow victim's line as anonymous --
-    # reproducing the bug this story's Never clause leaves untouched, so the
-    # regression proof above is meaningful (not a no-op comparison).
-    anon_lines = chain._anonymous(path)
-    assert swallow_victim.start_line not in anon_lines, (
-        "fixture stopped reproducing _anonymous()'s swallow bug -- "
-        "the classify_tier3_entries assertions above no longer prove anything"
-    )
+    # DW-FU-8-1: `_anonymous()` agrees with `classify_tier3_entries` now.
+    # It used to disagree: a plain-keyed `### DW-n:` header never satisfied
+    # `_ANON_RE`, so its claim on "the next anonymous field block I see"
+    # stayed open across the blank line and swallowed this topically
+    # unrelated bullet, dropping it from the anonymous count -- a Tier-3
+    # entry that no `tier3-entry-unidentified` row ever named, and so an
+    # entry nothing ever asked anyone to give an id. A header's claim now
+    # closes at the blank line that ends its own field block, so both
+    # headerless bullets in this excerpt are counted.
+    assert chain._anonymous(path) == [swallow_victim.start_line, truncated_tail.start_line]
 
     assert truncated_tail.shape is chain.Tier3Shape.LEGACY_FLAT
     assert truncated_tail.id is None
