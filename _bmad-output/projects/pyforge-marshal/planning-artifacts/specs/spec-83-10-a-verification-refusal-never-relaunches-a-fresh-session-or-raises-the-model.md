@@ -2,7 +2,7 @@
 title: "83.10: A verification refusal never relaunches a fresh session or raises the model"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'd82497d9c5a21d3a1a6b7d681577c96a10df3dd8'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -65,4 +65,23 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — adversarial self-review found no patch-worthy gaps beyond Story 83.10 tests)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Verification refusals after finished session work now classify as terminal (park) when the branch head is unchanged, land-only when the operator moved the head, and are excluded from Story 33.6's prior-failure counter.
+
+Files changed:
+- `core/dispatch_retry.py` — park/land-only helpers; verify gates with git progress are TERMINAL
+- `core/dispatch_harness_done.py` — `should_take_verification_refusal_land_only`
+- `cli/dispatch.py` — block facts, floor-raise count, CAP-4 land-only wiring
+- `cli/drain_plan.py` — drain plan land-only for fixed branches
+- `tests/unit/test_dispatch_hotfix.py`, `tests/unit/test_dispatch_retry_83_10.py` — regression + mutation
+
+Review: 0 patches applied; followup_review_recommended false.
+
+Verification: `pyforge-marshal-test` pass (10913 tests); `pyforge-deps-test` pass; `lint-types` pass; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.
