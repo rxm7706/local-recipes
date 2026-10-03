@@ -2,7 +2,7 @@
 title: "84.2: An audit read records its scope, and the perimeter refuses an over-long identity"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '7cc833467ba2dd5d342a9a1c98b170ab2342adeb'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -35,6 +35,10 @@ Type / Effort / Deps: fix / M / —.
 - Given an identity longer than the shared limit When it reaches the middleware Then the request is refused naming the limit, before any write
 - Given this story lands When its deferred-work rows are read Then each of `DW-9-3-10`, `DW-9-3-9`, `DW-9-3-2`, `DW-9-3-4` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 
+**Added 2026-10-03 (landing review):**
+- Given a reader with no established role (`reader_role=None`) and rows written with no role When `query_audit_entries` runs Then it returns no rows and still records the `AUDIT_READ` row with `row_count` 0
+- Given `models.py` When `AuditEntry.actor` and `.role` are read Then their `max_length` is `AUDIT_IDENTITY_MAX_LENGTH` from `declarations.py`, and `makemigrations --check` is green
+
 ## Boundaries & Constraints
 
 **Always:** Generate the migration; keep `makemigrations --check` green. Fix each defect where the shipped behaviour lives and pin it with a test that fails without the fix.
@@ -65,7 +69,15 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back by the operator session after the landing review (findings below). Two acceptance criteria added. Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session) — sent back
+- `high` `patch` **The audit read does not fail closed.** DW-9-3-2 asks `query_audit_entries` to follow CAP-2's row-isolation rules (`dashboard/filtering.py` `filter_by_role`). Under those rules no established role (`role=None`) sees zero rows. The fix instead filters `role__isnull=True` when `reader_role` is `None`. So a reader with no role sees every row written without a role: other unprivileged actors' activity, which is the opposite of fail-closed. Fix: when `reader_role` is `None`, return no rows (still write the `AUDIT_READ` row, with `row_count` 0). Keep the exact-equality rule for an established role, as `filter_by_role` does.
+- `medium` `patch` **The shared length constant is not shared.** The ruling for DW-9-3-9 says `AuditEntry.actor` and `.role` take their `max_length` from the one constant in `declarations.py`. `models.py` still says `max_length=255` for both. The comment on `AUDIT_IDENTITY_MAX_LENGTH` claims the three "cannot drift", and today they can. Fix: use `AUDIT_IDENTITY_MAX_LENGTH` for both fields. The value stays 255, so `makemigrations --check` should stay green with no migration; verify that.
 
 ### 2026-10-03 — Review pass (bmad-build-auto)
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
