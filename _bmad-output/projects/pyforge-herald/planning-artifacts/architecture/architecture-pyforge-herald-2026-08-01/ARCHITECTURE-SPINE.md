@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
@@ -872,3 +872,12 @@ the deck list and the viewer instead of only linking out. Story 30.2.
 
 **Content changed:** this section, AD-22, and the amendment lines on AD-3, AD-12 and AD-21 only.
 `updated:` bumped. AD-4 is untouched. No AD is removed.
+
+## Currency reconciliation — 2026-10-03 (Phase 4+5)
+
+*`prd→arch` cascade for the 2026-10-03 Phase 4+5 rulings (Epic 35 / Story 35.1, a `fix`).* Checked
+against every AD: each fix lands inside the module that already owns the behaviour, behind the ports and boundaries
+the spine already draws; no port, adapter or package boundary moves, and `src/platform/` still imports no
+`pyforge.*`.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
