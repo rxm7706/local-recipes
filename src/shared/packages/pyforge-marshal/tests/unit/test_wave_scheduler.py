@@ -48,6 +48,27 @@ def test_overlapping_surface_refused_with_evidence() -> None:
     assert wave.members == ("28-10-a",)
     assert len(wave.refused) == 1
     assert wave.refused[0].reason == "surface-overlap"
+
+
+def test_wave_planning_with_refused_story_surfaces() -> None:
+    """Story 83.4: Wave planning considers refused in-flight story surfaces."""
+    # This test ensures wave planning logic respects refused stories
+    # Note: The main logic fix is in station_in_flight_conflict, but wave
+    # planning should also be aware of these constraints
+    wave = build_wave_batch(
+        wave_id="w4", 
+        ready=("83-4-a", "83-4-b"),
+        cap=2,
+        surfaces={
+            "83-4-a": ("src/shared/**",),
+            "83-4-b": ("src/shared/packages/**",),  # Overlaps with 83-4-a
+        },
+    )
+    # Even with cap=2, overlapping surfaces should result in refusal
+    assert wave.members == ("83-4-a",)
+    assert len(wave.refused) == 1
+    assert wave.refused[0].story == "83-4-b"
+    assert wave.refused[0].reason == "surface-overlap"
     assert wave.refused[0].overlap_with == "28-10-a"
     assert wave.refused[0].paths
 

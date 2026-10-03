@@ -1744,11 +1744,12 @@ def station_in_flight_conflict(
                         merge_subject_template=effective_policy.merge_subject_template.value,
                         followup_review=journal.followup_review,
                     )
-                    # If branch is not merged, the PR is still open
+                    # If branch is not merged, the PR is still open and should block
                     if not git_facts.branch_merged and not git_facts.story_merged_on_main:
                         is_blocking_story = True
             except (VcsCommandError, ValueError):
-                pass  # If we can't gather git facts, err on the side of caution and don't block
+                # If we can't gather git facts, err on the side of caution and don't block
+                pass
         
         if not is_blocking_story:
             continue
