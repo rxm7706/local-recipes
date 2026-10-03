@@ -2,18 +2,12 @@
 title: '83.3: The landing heal unions appended deferred-work rows the way it unions memlog entries'
 type: 'fix'
 created: '2026-10-02'
-status: 'done'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
-deferred:
-  - summary: >-
-      Implementation makes reasonable decisions beyond intent scope for entry parsing and frontmatter handling
-    evidence: |-
-      Intent alignment review found implementation extends beyond explicit intent requirements with practical parsing rules and file structure handling. Documentation improvements could clarify these design decisions for future spec improvements.
-    severity: low
 declared_low_risk: false
 baseline_revision: '495f1fbd1f561eedc2250b34ae6279328f1034f9'
 ---
@@ -67,6 +61,10 @@ baseline_revision: '495f1fbd1f561eedc2250b34ae6279328f1034f9'
 **Added 2026-10-03:**
 - Given the live `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` as base with one whole row appended on each side, when the union runs, then the result holds every base entry byte for byte plus both new rows (entry count = base + 2), in a test that reads a copy of the real ledger's mixed formats.
 
+**Added 2026-10-03 (later):**
+- Given the live ledger as base, main changing one legacy `## DW-` entry's `status:` line and appending a row, and the branch appending a row, when the union runs, then it returns `None` (the heal escalates; nothing is dropped).
+- Given main appended `[A]` and the branch appended `[A, B]`, when the union runs, then the result is base, `A`, `B`, each once, separated from the entry before it by exactly one blank line (asserted on exact bytes).
+
 ## Verification
 
 **Commands:**
@@ -89,9 +87,17 @@ The union function should treat each complete `### DW-` section as an atomic uni
 ## Spec Change Log
 
 - 2026-10-03 — sent back by the operator session after the landing was refused (findings below). One acceptance criterion added: the union is proved on the live ledger, not only on fixtures. Status back to `ready-for-dev`.
+- 2026-10-03 (later) — sent back a second time (findings below). Two acceptance criteria added: legacy `## DW-` entries are compared, and an entry both sides appended appears once with the ledger's blank-line separator. Status back to `ready-for-dev`.
 
 ## Review Triage Log
 
+### 2026-10-03 (later) — Landing review (operator session) — sent back again
+- Dispatch run `pyforge-marshal-20261003T133852198Z-8c6f8963` refused at verification: MRS-GATE-018. The pre-verification deferred-work intake (Story 83.2) refused this spec's `deferred:` entry because it had no resolvable `location:`. The entry recorded no defect, so the operator session removed it. Never write a `deferred:` entry without a repo file path in `location:`.
+- `high` `patch` **Data loss in the preamble.** The marshal ledger holds legacy entries headed `## DW-1-1-1 — …` (about 16 KB of them) before the first `### DW-` header. `_opaque_dw_blocks` treats all of that text as a preamble. `union_deferred_work_texts` never compares the preamble and always renders the base's copy. So when main edits a legacy entry (probe: `status: open` changed to `closed` at offset 10221 of the live ledger) and both sides append a row, the union succeeds and main's edit is silently lost. Fix: split entries on every `## DW-` and `### DW-` header. Require the text before the first entry to be unchanged on both sides, or return `None`.
+- `high` `patch` **Duplicate entry.** When both sides append the same block and the branch appends another, `branch_only` is computed but the whole branch tail is appended. Probe: base + main `[A]` + branch `[A, B]` renders `A, A, B`. Fix: append only the `branch_only` blocks.
+- `medium` `patch` **Separator lost.** The base is `rstrip`ped and the next block starts with one newline. Probe on the live ledger: `status: closed\n### DW-probe-a`, with no blank line between entries. Fix: join appended blocks with the ledger's blank-line separator, and assert exact bytes in the live-ledger test.
+
+### 2026-10-03 — Review pass (bmad-build-auto)
 ### 2026-10-03 — Review pass (bmad-build-auto)
 - verdicts: 3 findings — high 1, medium 1, low 1, false 0, maybe-false 0
 - findings:
