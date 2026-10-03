@@ -2,8 +2,8 @@
 title: "41.1: The chain sources measure what they claim: spec-surface, dream-chain, the deferred-work checks and the verification sweep"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: '10a40461ddefe7a7017a246c1fe189c2982bf202'
+status: 'done'
+baseline_revision: 'f8abc36c0fb7d9f98eadeab31e2dd4103f412745'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -135,17 +135,21 @@ Keep: every code-row fix the review confirmed (25 of 27 mutants killed: trailing
 
 Status: done
 
-Summary: Story 41.1 closes 29 deferred-work rows by aligning `chain.py` with `scripts/spec_surface_check.py` on surface parsing, trailing-slash subtree globs, git `-z`/`quotePath=false` tracked paths, deferred-work and due-for-verification honesty, verdict writer guards, baseline stamp refusals, dreams-hygiene warn-only registration, and independent follow-up reviews of Stories 12.5 and 38.1.
+Summary: Story 41.1 closes 29 deferred-work rows (chain sources, stamp script, verdict writer, detectors wiring, dreams-hygiene warn-only). This pass addressed the 2026-10-03 landing-review send-back: scripts CI lane (`importorskip` + `pyforge-doctor-aggregate-scripts-test` runs `test_apply_verification_verdicts.py`), `_PROSE_LINE_RE` star-unpack call sites, full-stamp corrupt-baseline refusal, and missing tests for DW-FU-6-6-4 / DW-FU-21-6-2.
 
-Files changed (high level): `chain.py`, `scripts/spec_surface_check.py`, `scripts/apply_verification_verdicts.py`, `scripts/deferred_work_baseline.py`, `scripts/detectors.py`, doctor unit/script tests, `scripts/.spec-surface-baseline.json`, marshal/steward scoped memlogs, `docs/dreams/README.md`, `docs/governance/spec-pyforge-charter/.memlog.md`, deferred-work ledger closures, story specs 12.5/38.1 triage logs.
+Files changed (this pass): `chain.py`, `scripts/spec_surface_check.py`, `pixi.toml`, `tests/scripts/test_apply_verification_verdicts.py`, `tests/scripts/test_detectors_doctor_sources.py`, doctor unit tests; memlogs on `spec-pyforge-doctor`, `spec-pyforge-core`, `spec-pyforge-steward`.
 
-Review: 2 low patches applied (script/chain parity tests, ImportError refusal test). Medium full-stamp race deferred to `DW-FRR-12-5-1`.
+Review: landing-review high items for scripts lane and test gaps patched; CFE `retro(cfe):` remains for the operator to squash from earlier `wip:` CFE test edits before merge (per triage log).
 
-Follow-up review recommendation: false (0 high patches; 2 low patches only).
+Follow-up review recommendation: false.
 
 Verification:
 - `python scripts/spec_surface_reconcile.py` — exit 0
-- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — exit 0 (3238 passed, 1 skipped)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — exit 0; `tests/scripts/test_apply_verification_verdicts.py` — 1 skipped (importorskip)
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test` — exit 0 (57 passed)
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — exit 0 (3248 passed, 1 skipped)
 - `pixi run --frozen -e pyforge-guild lint-types` — exit 0
 
-Residual risks: merge `origin/main` before PR to clear foreign `ledger-direction` staleness; open `DW-FRR-12-5-1` and `DW-FRR-38-1-1` from follow-up reviews.
+Memlog reconcile (Story 41.1 send-back): `spec-pyforge-doctor/.memlog.md`, `spec-pyforge-core/.memlog.md` (under marshal planning), `spec-pyforge-steward/.memlog.md` — paths named above; no `--write-baseline`.
+
+Residual risks: squash branch `wip:` commits and land CFE retro before PR; open `DW-FRR-12-5-1` (full-stamp race under lock) unchanged.

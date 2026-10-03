@@ -1689,7 +1689,8 @@ def test_stamp_script_glob_to_re_matches_chain(pattern: str, path: str) -> None:
 
 
 def test_stamp_script_tracked_files_reads_non_ascii_paths_literally(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """DW-FU-6-6-4: the stamp script's ``tracked_files()`` matches chain's read."""
     repo = tmp_path / "repo"
@@ -1699,7 +1700,11 @@ def test_stamp_script_tracked_files_reads_non_ascii_paths_literally(
     subprocess.run(
         ["git", "-C", str(repo), "commit", "-m", "add", "--date", "2026-01-01T00:00:00+00:00"],
         check=True,
-        env={**os.environ, "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00", "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00"},
+        env={
+            **os.environ,
+            "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00",
+            "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00",
+        },
     )
 
     script = _stamp_script_module()
