@@ -338,7 +338,11 @@ def test_render_audit_table_grants_retention_role_may_purge_without_update():
         f"TO {_AUDIT_RETENTION_DB_ROLE};"
     )
     assert retention_grant in sql
-    assert "DELETE" not in sql.split(f"TO {_APP_DB_ROLE}")[-1]
+    app_grant = (
+        f"GRANT SELECT, INSERT ON TABLE public.pyforge_steward_dashboard_auditentry TO {_APP_DB_ROLE};"
+    )
+    assert app_grant in sql
+    assert "DELETE" not in app_grant
     assert "UPDATE" not in sql
 
 
