@@ -218,6 +218,47 @@ class ListedFile:
     size: int | None = None
 
 
+def parse_list_files_payload(payload: Any) -> list[ListedFile]:
+    """Normalize a ``list_files`` tool answer into ``ListedFile`` rows.
+
+    The deployed server has answered both a ``{"files": [...]}`` object and a
+    bare JSON array (directories and files mixed). When ``type`` is present
+    on an entry, only ``"file"`` rows are kept."""
+    if isinstance(payload, Mapping):
+        raw_files = payload.get("files")
+        if raw_files is None:
+            raw_files = []
+    elif isinstance(payload, Sequence) and not isinstance(payload, (str, bytes)):
+        raw_files = payload
+    else:
+        raise TransportCallError(
+            f"claude-design list_files returned {type(payload).__name__}, expected an object or list"
+        )
+    if not isinstance(raw_files, Sequence) or isinstance(raw_files, (str, bytes)):
+        raise TransportCallError(
+            f"claude-design list_files returned files as {type(raw_files).__name__}, expected a list"
+        )
+    files: list[ListedFile] = []
+    for entry in raw_files:
+        if not isinstance(entry, Mapping):
+            raise TransportCallError(
+                f"claude-design list_files returned a non-object file entry ({type(entry).__name__})"
+            )
+        entry_type = entry.get("type")
+        if entry_type is not None and entry_type != "file":
+            continue
+        raw_size = entry.get("size")
+        size = raw_size if isinstance(raw_size, int) and not isinstance(raw_size, bool) else None
+        files.append(
+            ListedFile(
+                path=as_text(entry.get("path")),
+                etag=as_text(entry.get("etag")),
+                size=size,
+            )
+        )
+    return files
+
+
 @dataclass(frozen=True)
 class ProjectSummary:
     """One project entry from ``list_projects`` (Story 23.1's 11th port

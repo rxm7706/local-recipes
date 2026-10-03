@@ -193,7 +193,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <div class="act"><div style="display:flex; align-items:baseline; gap:16px;"><span class="act-num">ACT I</span><span class="act-title">Eight terminals</span></div><span class="act-sub">The friction</span></div>
 
   <!-- 01 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">01</span><h2 class="sec-title">The problem</h2></div>
     <div style="display:grid; grid-template-columns:1.25fr 1fr 1fr 1fr; gap:0; margin-top:18px;">
       <p style="font-size:17px; line-height:1.5; margin:0; padding-right:32px;">Before the platform, someone who needed compliance findings, package health, fleet status and build queues opened eight terminals and got <b>no help relating them</b>. The environment this ships into is offline and regulated, so a prettier interface was never the point.</p>
@@ -214,7 +214,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 02 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">02</span><h2 class="sec-title">Four users, four paths</h2></div>
     <p class="lede">Every surface serves a distinct person or program, and every one of them reaches the whole estate from a single entry point.</p>
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:24px;">
@@ -242,7 +242,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <div class="act"><div style="display:flex; align-items:baseline; gap:16px;"><span class="act-num">ACT II</span><span class="act-title">One foundry</span></div><span class="act-sub">The insight — hub and spoke</span></div>
 
   <!-- 03 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">03</span><h2 class="sec-title">The hub-and-spoke shape</h2></div>
     <p class="lede">One web platform mounts all eight stations inside a single process: sign-in, portals and service faces together; long-running work handed to background workers (Celery). Each station's own command stays a first-class entry point — the platform dispatches to the stations, it does not swallow them.</p>
     <svg viewBox="0 0 1128 700" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
@@ -307,7 +307,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 04 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">04</span><h2 class="sec-title">Three lanes for people, two doors for agents</h2></div>
     <p class="lede">People use three kinds of page behind one sign-in. Agents reach the same stations through the service faces and the shared command shape — same platform, same identity rules.</p>
     <svg viewBox="0 0 1128 640" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
@@ -355,7 +355,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 05 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">05</span><h2 class="sec-title">Twenty-six capabilities — the whole contract at a glance</h2></div>
     <p class="lede">Every capability carries a success test written to <b>fail when the capability is absent</b>. Nineteen describe how the stations unify; seven describe the host platform itself and the shape any PyForge web surface renders to. Each also carries a line stating which part of its promise is exercised live and which is proven only in tests.</p>
     <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:0; border-top:2px solid var(--color-divider); border-left:2px solid var(--color-divider); font-size:11.5px;">
@@ -392,7 +392,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
 
 
   <!-- 6 · INTEGRATION SURFACE -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">06</span><h2 class="sec-title">Integration surface — what we chose, what plugs in, what we ruled out</h2></div>
     <div style="display:flex; justify-content:space-between; align-items:center; margin:0 0 18px; gap:24px;">
       <p style="font-size:14px; margin:0; color:color-mix(in srgb, var(--color-text) 62%, transparent); max-width:760px;">Every capability slot, the library that fills it and why, the alternatives that can slot in, and what was ruled out on the record. <span style="color:color-mix(in srgb, var(--color-text) 55%, transparent);">Swap-point badges — <b>fixed</b> (a contract) · <b>adapter</b> (chosen per deployment profile) · <b>plugin</b> (registered on the shared hook); filled = how this row swaps.</span></p>
@@ -409,7 +409,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <div class="act"><div style="display:flex; align-items:baseline; gap:16px;"><span class="act-num">ACT III</span><span class="act-title">How the mounting works</span></div><span class="act-sub">The mechanics</span></div>
 
   <!-- 07 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">07</span><h2 class="sec-title">One interface for eight portals</h2></div>
     <p class="lede">One installable package supplies the furniture every portal mounts: the app switcher, the base layout, sign-in awareness, the Modernist theme, and page assets served from the platform itself with no outside hosts.</p>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
@@ -431,7 +431,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 08 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">08</span><h2 class="sec-title">The front door — edited without a deployment</h2></div>
     <p class="lede">Wagtail (the content manager) serves the public front door. Editors publish pages from the database with no code release. The editing screen sits behind the enterprise sign-in; there is no local password form.</p>
     <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:40px;">
@@ -459,7 +459,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 09 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">09</span><h2 class="sec-title">Eight portals, one session, one identity path</h2></div>
     <p class="lede">Every station mounts under the same address pattern. Moving between portals needs no second sign-in, and no portal ever talks to a station directly — every call goes through one trusted client that carries who is asking.</p>
     <div style="display:flex; align-items:stretch; gap:0;">
@@ -493,7 +493,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 10 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">10</span><h2 class="sec-title">Every station has a service face</h2></div>
     <p class="lede">Eight agent endpoints, one per station, inside the same web process — using MCP, the open protocol agents use to call tools. One process, not a farm of eight.</p>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px;">
@@ -520,7 +520,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 11 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">11</span><h2 class="sec-title">The estate teaches agents its own work</h2></div>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
       <div style="border:2px solid var(--color-text); padding:22px 20px;">
@@ -557,7 +557,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <div class="act"><div style="display:flex; align-items:baseline; gap:16px;"><span class="act-num">ACT IV</span><span class="act-title">The governance mandate</span></div><span class="act-sub">Auditable · revocable · contained</span></div>
 
   <!-- 12 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">12</span><h2 class="sec-title">Database changes are governed, not incidental</h2></div>
     <p class="lede">Enforcement lives in the <b>database account itself</b> — the one control an auditor can verify and an agent cannot bypass by accident. Developers keep their usual tools for authoring a change; production applies it through one auditable path.</p>
     <div style="display:flex; align-items:stretch; gap:0;">
@@ -583,7 +583,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 13 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">13</span><h2 class="sec-title">Thirteen design directives</h2></div>
     <p class="lede">Five architectural requests and eight blind-spot fixes, written before the build. Research against the live versions changed several. The rule underneath all thirteen: <b>a rule with no test that fails in its absence is not implemented</b>, and two of them must also have a real production caller.</p>
     <div style="display:flex; gap:10px; margin-bottom:12px; font-size:11.5px; color:color-mix(in srgb, var(--color-text) 60%, transparent);"><span><span class="tag tag-neutral">as written</span> adopted unchanged</span><span><span class="tag tag-accent">revised</span> research changed the form</span><span><span class="tag tag-ink">met</span> already satisfied by shipped code</span></div>
@@ -608,7 +608,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 14 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">14</span><h2 class="sec-title">Stations tell each other things</h2></div>
     <p class="lede">A durable event log (Redis Streams) on the dedicated queue, never the cache. One station's action becomes another's input, with the failure modes designed in from the start.</p>
     <div style="display:flex; align-items:stretch; gap:0;">
@@ -640,7 +640,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 15 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">15</span><h2 class="sec-title">Revocable identity, governed secrets, runtime flags</h2></div>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
       <div style="border:2px solid var(--color-text); padding:22px 20px;">
@@ -669,7 +669,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
 
 
   <!-- 16 · GOVERNANCE MATRIX -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">16</span><h2 class="sec-title">Five promises, thirty-four rows — what an auditor can check</h2></div>
     <p class="lede">Everything the platform promises a regulator or reviewer, in one table: the promise, the mechanism that keeps it, its status today, and what you would do to check it. Status uses three plain words — <b>enforced</b> (code, test and a real caller), <b>built</b> (shipped but not yet adopted where it matters) and <b>declared</b> (written down, not yet enforced).</p>
     <div style="display:grid; grid-template-columns:44px 1.3fr 1.9fr 0.55fr 2fr; gap:0; border:2px solid var(--color-text); font-size:12px; line-height:1.45;">
@@ -869,7 +869,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <div class="act"><div style="display:flex; align-items:baseline; gap:16px;"><span class="act-num">ACT V</span><span class="act-title">The query plane</span></div><span class="act-sub">One engine · one writer · one place a question goes</span></div>
 
   <!-- 17 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">17</span><h2 class="sec-title">Three ways to run it — one image</h2></div>
     <p class="lede">The same container image runs everywhere. Scaling means adding copies. Nothing lives on a single machine: state is in the database, the cache and declared storage volumes.</p>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">
@@ -884,7 +884,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 18 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">18</span><h2 class="sec-title">One query plane — stations are clients</h2></div>
     <p class="lede">The platform unifies where a question goes. One analytical engine (DuckDB) handles live reads of the production database, cached analytics, and vector search. Agents ask the plane; they never touch the production database directly. Dashboards sit on a layer of certified metrics so every station sees the same numbers.</p>
     <svg viewBox="0 0 1128 560" style="width:100%; display:block;" xmlns="http://www.w3.org/2000/svg">
@@ -948,7 +948,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 19 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">19</span><h2 class="sec-title">Five tiers — every station, every form</h2></div>
     <p class="lede">Every station must exist in all five forms. A missing cell fails the build, so the matrix is enforced rather than aspirational. All 40 cells are present; § 20 shows how many are exercised in effect.</p>
     <div style="display:grid; grid-template-columns:1.35fr repeat(5,1fr); gap:0; border:2px solid var(--color-text); font-size:12.5px;">
@@ -970,7 +970,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <div class="act"><div style="display:flex; align-items:baseline; gap:16px;"><span class="act-num">ACT VI</span><span class="act-title">Shipped is not in effect</span></div><span class="act-sub">Built · switched on · what it costs</span></div>
 
   <!-- 20 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">20</span><h2 class="sec-title">Built, switched on, and what comes next</h2></div>
     <p class="lede">A review on 2026-09-09 found nine capabilities that were <i>done</i> — merged, tests green — but never <i>realized</i>: switched on, fed, or measured in the running system. All nine closed by 2026-09-12, and the lesson became a rule. This section separates the two honestly, first for the platform as a whole, then station by station.</p>
 
@@ -1027,7 +1027,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
 
 
   <!-- 21 · COST -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">21</span><h2 class="sec-title">Where the money goes — and the levers on it</h2></div>
     <p class="lede">An unattended build loop pays for tokens: what the model reads, what it says, and what it re-learns every session. The platform attacks each of those separately, keeps a hard ceiling above all of them, and refuses to claim a saving it has not measured.</p>
     <div style="display:grid; grid-template-columns:1.1fr 1fr; gap:28px;">
@@ -1070,7 +1070,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   <div class="act"><div style="display:flex; align-items:baseline; gap:16px;"><span class="act-num">ACT VII</span><span class="act-title">The lines that hold &amp; the on-ramp</span></div><span class="act-sub">What we will not build · how to start</span></div>
 
   <!-- 22 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">22</span><h2 class="sec-title">What the platform will not build</h2></div>
     <div style="display:grid; grid-template-columns:1.15fr 1fr; gap:40px; margin-top:18px;">
       <div>
@@ -1101,7 +1101,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- 23 -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">23</span><h2 class="sec-title">Which door, when</h2></div>
     <p class="lede">One estate, six doors — each the right one for somebody.</p>
     <div style="border-top:2px solid var(--color-text);">
@@ -1115,7 +1115,7 @@ svg text { font-family:'Archivo', system-ui, sans-serif; }
   </section>
 
   <!-- START HERE -->
-  <section style="padding:36px 0 8px;">
+  <section class="sec" style="padding:36px 0 8px;">
     <div class="sec-head"><span class="sec-num">→</span><h2 class="sec-title">Start here — the on-ramp</h2></div>
     <p class="lede">Three steps to the full estate.</p>
     <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:24px;">

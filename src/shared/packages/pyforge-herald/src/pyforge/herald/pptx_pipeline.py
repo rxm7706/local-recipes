@@ -194,10 +194,15 @@ def _resolve_layout(prs: PptxPresentation, layout_ref: object, slide_index: int)
         raise errors.InvalidContentPlanError(
             f"slide #{slide_index}: layout index {layout_ref} out of range (template has {len(layouts)} layouts)"
         )
-    for layout in layouts:
-        if layout.name == layout_ref:
-            return layout
-    raise errors.InvalidContentPlanError(f"slide #{slide_index}: no layout named {layout_ref!r} in template")
+    if isinstance(layout_ref, str):
+        indices = [idx for idx, layout in enumerate(layouts) if layout.name == layout_ref]
+        if len(indices) > 1:
+            raise errors.InvalidContentPlanError(
+                f"slide #{slide_index}: layout name {layout_ref!r} is ambiguous (matches layout indices {indices})"
+            )
+        if len(indices) == 1:
+            return layouts[indices[0]]
+        raise errors.InvalidContentPlanError(f"slide #{slide_index}: no layout named {layout_ref!r} in template")
 
 
 def _resolve_placeholder_values(

@@ -17,9 +17,9 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** Doctor's check CLI, its env and engines checks, the score and the bmad-method source carry 32 open deferrals (6 medium, 26 low): a first-match filter and a discarded degradation message, false-green exits on a typo'd path or an impossible `--source`, guard and header shapes the env scanner cannot see, a load-flaky budget test, constraint shapes the floor reader cannot parse, suite checks gated on local installs, a score that grades an unevaluable axis as a letter, packaging and meta-test gaps, and four recommended follow-up reviews (Stories 14.1, 15.1, 15.2, 38.4) that never ran.
+**Problem:** Doctor's check CLI, its env and engines checks, the score and the bmad-method source carry 28 open deferrals (6 medium, 22 low): a first-match filter and a discarded degradation message, false-green exits on a typo'd path or an impossible `--source`, guard and header shapes the env scanner cannot see, a load-flaky budget test, constraint shapes the floor reader cannot parse, suite checks gated on local installs, a score that grades an unevaluable axis as a letter, and packaging and meta-test gaps.
 
-**Approach:** Fix each row where its behaviour lives (one line each below): `gather_one` returns all matches and keeps the sentinel, the CLI refuses impossible filters and names bad paths, the env scanner gains the guard and header shapes, the floor reader parses specifier sets from every table shape, one cannot-evaluate evidence marker feeds the score; then run the four follow-up reviews.
+**Approach:** Fix each row where its behaviour lives (one line each below): `gather_one` returns all matches and keeps the sentinel, the CLI refuses impossible filters and names bad paths, the env scanner gains the guard and header shapes, the floor reader parses specifier sets from every table shape, one cannot-evaluate evidence marker feeds the score.
 
 Ledger key: `41-4-the-check-cli-the-score-and-the-bmad-method-source-report-every-degradation`.
 Type / Effort / Deps: fix / L / —.
@@ -36,12 +36,11 @@ Type / Effort / Deps: fix / L / —.
 - Given the unresolvable-head ledger WARN, `chain-layers-audit-unevaluable` and `bmad-drift-unevaluable` When `score.grade` runs Then each axis grades `incomplete`
 - Given a loaded host When `test_check_speed_budget.py` runs several times in a row Then it passes every time
 - Given any code row above When its fix is reverted Then at least one test in the station suite fails
-- Given each `DW-FRR-<story>` row this story lists When its follow-up review has run Then the reviewed story's spec reads `followup_review_recommended: false` with a dated Review Triage Log entry naming this story, every finding the review raised is fixed here (with a test) or recorded there with its reason, and the row closes citing that log line
-- Given this story lands When its deferred-work rows are read Then each of `DW-FU-1-5`, `DW-FU-1-5-3`, `DW-FU-6-4-13`, `DW-FU-6-6-8`, `DW-FU-15-2`, `DW-doctor-40-1`, `DW-1-1-3`, `DW-1-1-4`, `DW-FU-10-1-2`, `DW-FU-10-1-3`, `DW-FU-10-1-4`, `DW-FU-10-1-6`, `DW-FU-10-1-7`, `DW-FU-10-2`, `DW-FU-10-3`, `DW-FU-10-3-2`, `DW-FU-10-3-3`, `DW-FU-1-2`, `DW-FU-1-2-2`, `DW-FU-1-4`, `DW-FU-1-4-2`, `DW-FU-14-1-2`, `DW-FU-15-1`, `DW-FU-15-1-2`, `DW-FU-15-2-2`, `DW-FU-1-5-4`, `DW-FU-18-2`, `DW-FU-20-4`, `DW-FRR-14-1`, `DW-FRR-15-1`, `DW-FRR-15-2`, `DW-FRR-38-4` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
+- Given this story lands When its deferred-work rows are read Then each of `DW-FU-1-5`, `DW-FU-1-5-3`, `DW-FU-6-4-13`, `DW-FU-6-6-8`, `DW-FU-15-2`, `DW-doctor-40-1`, `DW-1-1-3`, `DW-1-1-4`, `DW-FU-10-1-2`, `DW-FU-10-1-3`, `DW-FU-10-1-4`, `DW-FU-10-1-6`, `DW-FU-10-1-7`, `DW-FU-10-2`, `DW-FU-10-3`, `DW-FU-10-3-2`, `DW-FU-10-3-3`, `DW-FU-1-2`, `DW-FU-1-2-2`, `DW-FU-1-4`, `DW-FU-1-4-2`, `DW-FU-14-1-2`, `DW-FU-15-1`, `DW-FU-15-1-2`, `DW-FU-15-2-2`, `DW-FU-1-5-4`, `DW-FU-18-2`, `DW-FU-20-4` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 
 ## Boundaries & Constraints
 
-**Always:** Keep `bmad_method.gather`'s "ok or warn, never fail" contract and its fail-open network budget. A `pixi.toml` change regenerates `environment.yaml` in the same change. A change under `.claude/skills/conda-forge-expert/` invokes the conda-forge-expert skill first and lands as one `retro(cfe):` commit with a CHANGELOG entry and semver bump. Re-verify each row at HEAD before fixing it: a row whose defect a later landing already removed closes citing the `path:line` of that fix and the test that pins it (adding the test when none exists), never on prose alone. Fix each defect where the shipped behaviour lives and pin it with a test that fails without the fix. A governed file moves only with its owning Spec's memlog naming it, then a scoped stamp for exactly that Spec (AGENTS.md pre-PR item 5); `spec-pyforge-core` co-governs every station's `src/`. Implementation and the follow-up reviews stay separate personas (AGENTS.md guideline 8). If a marshal follow-up-review dispatch closes a `DW-FRR-*` row first, cite that closure instead of re-running the review.
+**Always:** Keep `bmad_method.gather`'s "ok or warn, never fail" contract and its fail-open network budget. A `pixi.toml` change regenerates `environment.yaml` in the same change. A change under `.claude/skills/conda-forge-expert/` invokes the conda-forge-expert skill first and lands as one `retro(cfe):` commit with a CHANGELOG entry and semver bump. Re-verify each row at HEAD before fixing it: a row whose defect a later landing already removed closes citing the `path:line` of that fix and the test that pins it (adding the test when none exists), never on prose alone. Fix each defect where the shipped behaviour lives and pin it with a test that fails without the fix. A governed file moves only with its owning Spec's memlog naming it, then a scoped stamp for exactly that Spec (AGENTS.md pre-PR item 5); `spec-pyforge-core` co-governs every station's `src/`.
 
 **Never:** Never raise the speed budget without a recorded measurement, and never let a repo-scope run reach the network. Never close a row without a landed fix, a `resolution:` naming this story and a `verified:` line citing what was read. Never edit `SPEC.md` by hand or stamp a bare `--write-baseline`. Never weaken or delete a test to make a row pass. Never turn a warn-only finding into a gate.
 
@@ -49,7 +48,7 @@ Type / Effort / Deps: fix / L / —.
 
 ## Deferred-work rows this story closes (operator rulings 2026-10-03, deferral burn-down Phases 4 and 5)
 
-32 rows: 6 medium, 26 low.
+28 rows: 6 medium, 22 low.
 
 - `DW-FU-1-5` (medium) — `checks.registry.gather_one` returns every Finding for the named check (each matching file under `env`), and a named `--env` run on an incomplete scan also returns the incomplete-scan sentinel, so it can never read as clean.
 - `DW-FU-1-5-3` (medium) — An `--env`-only run on a target that is not a directory emits a not-a-directory WARN, never `0 finding(s)` with exit 0.
@@ -79,10 +78,6 @@ Type / Effort / Deps: fix / L / —.
 - `DW-FU-1-5-4` (low) — A named `--engines NAME` run on a degraded category keeps warden's specific degradation message, and the CLI's synthetic FAIL quotes it.
 - `DW-FU-18-2` (low) — The DW-FU-6-6-8 budget fix covers the cold worktree start too (the measured run is warm), so the first run in a fresh worktree no longer flakes.
 - `DW-FU-20-4` (low) — `.claude/skills/bmad-agent-doctor/SKILL.md`'s `## Allowed actions (CAP-16)` names how a doctor task consults `bmad-os-root-cause-analysis`, matching the routing note at :14.
-- `DW-FRR-14-1` (low) — Run the recommended independent follow-up review of Story 14.1's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-15-1` (low) — Run the recommended independent follow-up review of Story 15.1's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-15-2` (low) — Run the recommended independent follow-up review of Story 15.2's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-38-4` (low) — Run the recommended independent follow-up review of Story 38.4's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
 
 ## Binding
 
@@ -98,6 +93,10 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
+
+## Spec Change Log
+
+- 2026-10-03: Operator ruling (2026-10-03): a row that only an independent follow-up review of an already-landed story can close (a DW-FRR "follow-up review still recommended" row) is not in the Phase 4+5 fix stories, because an implementation session can never close it; those reviews run later as separate per-station review batches. Removed from this story's scope: `DW-FRR-14-1`, `DW-FRR-15-1`, `DW-FRR-15-2`, `DW-FRR-38-4` (4 low); the follow-up-review acceptance criterion, the review step in the Approach and the review boundary went with them. The rows stay open in the deferred-work ledger. 32 rows (6 medium, 26 low) became 28 (6 medium, 22 low).
 
 ## Review Triage Log
 

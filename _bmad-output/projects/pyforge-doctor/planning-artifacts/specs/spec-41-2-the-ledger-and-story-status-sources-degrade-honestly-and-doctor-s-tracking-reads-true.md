@@ -17,9 +17,9 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** Doctor's ledger-regression, story-status, frozen-path and capability-effect sources, its source dispatch and registry, and doctor's own tracking surfaces carry 30 open deferrals (11 medium, 19 low): parsers that truncate, mis-read quoting or skip alias and duplicate keys, reads that call an empty or failed measurement clean, a dispatcher that drops scoping flags, a capability join that resolves 7% of CAP rows, a registered Source nothing emits, epics Status lines and SPEC text that lag the ledger, and six recommended follow-up reviews (Stories 17.1, 21.10, 21.11, 26.1, 34.1, 38.5) that never ran.
+**Problem:** Doctor's ledger-regression, story-status, frozen-path and capability-effect sources, its source dispatch and registry, and doctor's own tracking surfaces carry 24 open deferrals (11 medium, 13 low): parsers that truncate, mis-read quoting or skip alias and duplicate keys, reads that call an empty or failed measurement clean, a dispatcher that drops scoping flags, a capability join that resolves 7% of CAP rows, a registered Source nothing emits, and epics Status lines and SPEC text that lag the ledger.
 
-**Approach:** Fix each row where its behaviour lives (one line each below): one status parser and one terminal test for both modules, NUL-split git reads, WARNs for every cannot-evaluate case, flag pass-through in the dispatcher, a wider capability join with the flag inventory re-run, and the SPEC changes through a memlog entry and the `bmad-spec` re-derive; then run the six follow-up reviews.
+**Approach:** Fix each row where its behaviour lives (one line each below): one status parser and one terminal test for both modules, NUL-split git reads, WARNs for every cannot-evaluate case, flag pass-through in the dispatcher, a wider capability join with the flag inventory re-run, and the SPEC changes through a memlog entry and the `bmad-spec` re-derive.
 
 Ledger key: `41-2-the-ledger-and-story-status-sources-degrade-honestly-and-doctor-s-tracking-reads-true`.
 Type / Effort / Deps: fix / L / —.
@@ -36,12 +36,11 @@ Type / Effort / Deps: fix / L / —.
 - Given the live tree When `flag-inventory` is re-run Then the `unresolved` CAP count is lower than 722 and the row's `verified:` line records the new count
 - Given doctor's `epics.md` and tracked ledger When the live-tree test compares them Then every story's `**Status:**` line matches its ledger status
 - Given any code row above When its fix is reverted Then at least one test in the station suite fails
-- Given each `DW-FRR-<story>` row this story lists When its follow-up review has run Then the reviewed story's spec reads `followup_review_recommended: false` with a dated Review Triage Log entry naming this story, every finding the review raised is fixed here (with a test) or recorded there with its reason, and the row closes citing that log line
-- Given this story lands When its deferred-work rows are read Then each of `DW-FU-6-4-4`, `DW-FU-6-4-7`, `DW-FU-6-4-9`, `DW-FU-6-4-15`, `DW-FU-6-4-16`, `DW-FU-6-4-17`, `DW-FU-6-4-19`, `DW-FU-6-4-23`, `DW-FU-6-4-24`, `DW-FU-6-4-25`, `DW-doctor-34-4`, `DW-FU-6-4-5`, `DW-FU-6-4-6`, `DW-FU-6-4-10`, `DW-FU-6-4-18`, `DW-FU-6-4-21`, `DW-FU-20-3`, `DW-FU-6-9-3`, `DW-FU-6-9-4`, `DW-FU-6-2`, `DW-FU-10-1-5`, `DW-FU-23-6`, `DW-FU-23-6-2`, `DW-FU-30-3`, `DW-FRR-17-1`, `DW-FRR-21-10`, `DW-FRR-21-11`, `DW-FRR-26-1`, `DW-FRR-34-1`, `DW-FRR-38-5` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
+- Given this story lands When its deferred-work rows are read Then each of `DW-FU-6-4-4`, `DW-FU-6-4-7`, `DW-FU-6-4-9`, `DW-FU-6-4-15`, `DW-FU-6-4-16`, `DW-FU-6-4-17`, `DW-FU-6-4-19`, `DW-FU-6-4-23`, `DW-FU-6-4-24`, `DW-FU-6-4-25`, `DW-doctor-34-4`, `DW-FU-6-4-5`, `DW-FU-6-4-6`, `DW-FU-6-4-10`, `DW-FU-6-4-18`, `DW-FU-6-4-21`, `DW-FU-20-3`, `DW-FU-6-9-3`, `DW-FU-6-9-4`, `DW-FU-6-2`, `DW-FU-10-1-5`, `DW-FU-23-6`, `DW-FU-23-6-2`, `DW-FU-30-3` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 
 ## Boundaries & Constraints
 
-**Always:** Make the SPEC.md changes only through a memlog entry and the `bmad-spec` re-derive; if the render is refused, record that in the story and leave the two rows open for the operator's render. Keep the frozen report schema additive-only. Re-verify each row at HEAD before fixing it: a row whose defect a later landing already removed closes citing the `path:line` of that fix and the test that pins it (adding the test when none exists), never on prose alone. Fix each defect where the shipped behaviour lives and pin it with a test that fails without the fix. A governed file moves only with its owning Spec's memlog naming it, then a scoped stamp for exactly that Spec (AGENTS.md pre-PR item 5); `spec-pyforge-core` co-governs every station's `src/`. Implementation and the follow-up reviews stay separate personas (AGENTS.md guideline 8). If a marshal follow-up-review dispatch closes a `DW-FRR-*` row first, cite that closure instead of re-running the review.
+**Always:** Make the SPEC.md changes only through a memlog entry and the `bmad-spec` re-derive; if the render is refused, record that in the story and leave the two rows open for the operator's render. Keep the frozen report schema additive-only. Re-verify each row at HEAD before fixing it: a row whose defect a later landing already removed closes citing the `path:line` of that fix and the test that pins it (adding the test when none exists), never on prose alone. Fix each defect where the shipped behaviour lives and pin it with a test that fails without the fix. A governed file moves only with its owning Spec's memlog naming it, then a scoped stamp for exactly that Spec (AGENTS.md pre-PR item 5); `spec-pyforge-core` co-governs every station's `src/`.
 
 **Never:** Never rename or remove a `Source` member, and never re-key a check other consumers read without updating them in this change. Never close a row without a landed fix, a `resolution:` naming this story and a `verified:` line citing what was read. Never edit `SPEC.md` by hand or stamp a bare `--write-baseline`. Never weaken or delete a test to make a row pass. Never turn a warn-only finding into a gate.
 
@@ -49,7 +48,7 @@ Type / Effort / Deps: fix / L / —.
 
 ## Deferred-work rows this story closes (operator rulings 2026-10-03, deferral burn-down Phases 4 and 5)
 
-30 rows: 11 medium, 19 low.
+24 rows: 11 medium, 13 low.
 
 - `DW-FU-6-4-4` (medium) — `_ledger_paths` tells a failed `git ls-tree` (one `ledger-regression` WARN naming the error) from a ref that genuinely holds no ledgers.
 - `DW-FU-6-4-7` (medium) — The `_git` wrappers in `sources/ledger.py` and `sources/marshal.py` degrade a `UnicodeDecodeError` from `cli_bridge.run_git` to a WARN, keeping both modules' "never raises" contract.
@@ -75,12 +74,6 @@ Type / Effort / Deps: fix / L / —.
 - `DW-FU-23-6` (low) — Every `**Status:**` line in doctor's `epics.md` matches the tracked ledger (19 mismatches at the 2026-10-01 triage, Stories 23.5 and 23.6 among them), pinned by a live-tree test for pyforge-doctor.
 - `DW-FU-23-6-2` (low) — `spec-pyforge-doctor/SPEC.md`'s CAP-53 annotation reads its realized state, through a memlog entry and the `bmad-spec` re-derive (never a hand-edit).
 - `DW-FU-30-3` (low) — `spec-pyforge-doctor/SPEC.md`'s `surface:` lists Story 30.3's docs-* generator scripts and their shared helper (the same re-derive), and their interim lines leave `scripts/spec_surface_allowlist.txt` (:112, :117).
-- `DW-FRR-17-1` (low) — Run the recommended independent follow-up review of Story 17.1's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-21-10` (low) — Run the recommended independent follow-up review of Story 21.10's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-21-11` (low) — Run the recommended independent follow-up review of Story 21.11's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-26-1` (low) — Run the recommended independent follow-up review of Story 26.1's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-34-1` (low) — Run the recommended independent follow-up review of Story 34.1's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-38-5` (low) — Run the recommended independent follow-up review of Story 38.5's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
 
 ## Binding
 
@@ -96,6 +89,10 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
+
+## Spec Change Log
+
+- 2026-10-03: Operator ruling (2026-10-03): a row that only an independent follow-up review of an already-landed story can close (a DW-FRR "follow-up review still recommended" row) is not in the Phase 4+5 fix stories, because an implementation session can never close it; those reviews run later as separate per-station review batches. Removed from this story's scope: `DW-FRR-17-1`, `DW-FRR-21-10`, `DW-FRR-21-11`, `DW-FRR-26-1`, `DW-FRR-34-1`, `DW-FRR-38-5` (6 low); the follow-up-review acceptance criterion, the review step in the Approach and the review boundary went with them. The rows stay open in the deferred-work ledger. 30 rows (11 medium, 19 low) became 24 (11 medium, 13 low).
 
 ## Review Triage Log
 
