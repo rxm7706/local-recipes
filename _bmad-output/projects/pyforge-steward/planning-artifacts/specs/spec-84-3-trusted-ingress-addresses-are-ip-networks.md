@@ -66,6 +66,11 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
+### 2026-10-03 — Landing review (operator session) — landed by hand
+- The fix holds: addresses parse as IP networks at construction, an IPv4-mapped IPv6 peer is unwrapped before the membership test, and a peer that does not parse is refused.
+- `medium` `patch` (applied by the operator session) `ipaddress.ip_network(address, strict=False)` masked host bits, so `192.168.1.10/16` was accepted as `192.168.0.0/16`: a typo on the trust perimeter silently trusted 65,536 peers. Parsing is now strict and the error names the case; `test_trusted_ingress_rejects_a_cidr_with_host_bits_set` holds it (it fails with `strict=False`).
+
+
 ### 2026-10-03 — Review pass
 - verdicts: 8 findings — high 0, medium 2, low 1, false 2, maybe-false 0, reject 3
 - findings:

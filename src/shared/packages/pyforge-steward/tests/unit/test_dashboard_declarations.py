@@ -274,6 +274,16 @@ def test_trusted_ingress_rejects_a_hostname_address():
         )
 
 
+def test_trusted_ingress_rejects_a_cidr_with_host_bits_set():
+    """Landing review (Story 84.3): `192.168.1.10/16` must fail at construction, not widen to `192.168.0.0/16`."""
+    with pytest.raises(ValueError, match=r"addresses\[0\].*192\.168\.1\.10/16.*host bits"):
+        TrustedIngress(
+            addresses=("192.168.1.10/16",),
+            identity_header="X-Forwarded-User",
+            role_header="X-Forwarded-Role",
+        )
+
+
 def test_trusted_ingress_accepts_bare_ip_as_one_address_network():
     """Story 84.3: a bare IP literal is a /32 (or /128) network."""
     ingress = TrustedIngress(

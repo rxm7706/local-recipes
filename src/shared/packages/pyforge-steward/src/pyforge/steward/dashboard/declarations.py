@@ -216,12 +216,15 @@ class TrustedIngress:
         networks: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
         for index, address in enumerate(self.addresses):
             try:
-                network = ipaddress.ip_network(address, strict=False)
+                # strict: a CIDR with host bits set (`192.168.1.10/16`) is refused, never silently widened to its
+                # network (`192.168.0.0/16`) -- on the trust perimeter a typo must fail, not trust more peers.
+                network = ipaddress.ip_network(address, strict=True)
             except ValueError as exc:
                 raise ValueError(
                     f"TrustedIngress.addresses[{index}] {address!r} is not a "
-                    f"valid IP network — a hostname or malformed address can "
-                    f"never match an ASGI peer host, so it must fail here"
+                    f"valid IP network (a hostname, a malformed address, or a "
+                    f"CIDR with host bits set) — it can never match an ASGI "
+                    f"peer host as written, so it must fail here"
                 ) from exc
             if (
                 isinstance(network, ipaddress.IPv6Network)
