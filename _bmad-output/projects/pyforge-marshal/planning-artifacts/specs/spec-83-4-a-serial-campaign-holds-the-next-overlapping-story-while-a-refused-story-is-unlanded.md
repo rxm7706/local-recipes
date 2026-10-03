@@ -2,7 +2,7 @@
 title: '83.4: A serial campaign holds the next overlapping story while a refused story is unlanded'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: 'f491d2938ec386d04e6bb45380115d3825708482'
