@@ -24,7 +24,10 @@ from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from pyforge.marshal.core import policy
+from pyforge.marshal.core.model import Severity
 from pyforge.marshal.dispatch_verify import run_verify_commands_only
+
+MARSHAL_COVERAGE_GATE = "pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate"
 
 # Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal so
 # deleting the derivation fails these tests rather than silently updating them.
@@ -56,7 +59,9 @@ def test_run_verify_commands_only_reports_pass_and_fail(tmp_path: Path) -> None:
     worktree = tmp_path / "preview"
     worktree.mkdir()
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(_effective(["true", "false"]), process=process, worktree=worktree)
+    reports, findings, preview_findings = run_verify_commands_only(
+        _effective(["true", "false"]), process=process, worktree=worktree
+    )
     assert [report["command"] for report in reports] == [
         "true",
         "false",
@@ -67,6 +72,7 @@ def test_run_verify_commands_only_reports_pass_and_fail(tmp_path: Path) -> None:
     ]
     assert reports[0]["returncode"] == 0
     assert reports[1]["returncode"] == 1
+    assert preview_findings == ()
     assert len(findings) == 1
     assert findings[0].code == "MRS-GATE-001"
     assert all(cwd == worktree for _tokens, cwd in process.calls)
@@ -76,9 +82,12 @@ def test_run_verify_commands_only_all_green_has_no_findings(tmp_path: Path) -> N
     worktree = tmp_path / "preview"
     worktree.mkdir()
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(_effective(["true", "echo ok"]), process=process, worktree=worktree)
+    reports, findings, preview_findings = run_verify_commands_only(
+        _effective(["true", "echo ok"]), process=process, worktree=worktree
+    )
     assert len(reports) == 6  # 2 station commands + 4 derived commands
     assert findings == ()
+    assert preview_findings == ()
 
 
 def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands(
@@ -90,7 +99,7 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands
     worktree = tmp_path / "preview"
     worktree.mkdir()
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(_effective([]), process=process, worktree=worktree)
+    reports, findings, preview_findings = run_verify_commands_only(_effective([]), process=process, worktree=worktree)
     assert [report["command"] for report in reports] == [
         _SURFACE_RECONCILE_COMMAND,
         LINT_TYPES,
@@ -98,9 +107,78 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands
         DEFERRED_WORK_CHECK,
     ]
     assert findings == ()
+    assert preview_findings == ()
     assert process.calls == [
         (_SURFACE_RECONCILE_COMMAND.split(), worktree),
         (LINT_TYPES.split(), worktree),
         (PYFORGE_CORE_TEST.split(), worktree),
         (DEFERRED_WORK_CHECK.split(), worktree),
     ]
+
+
+class _PreviewChangedFilesVcs:
+    def __init__(self, *, preview_changed: tuple[str, ...] | None, raise_on_preview: bool) -> None:
+        self._preview_changed = preview_changed
+        self._raise_on_preview = raise_on_preview
+
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
+        if self._raise_on_preview:
+            raise RuntimeError("git diff failed in preview")
+        assert self._preview_changed is not None
+        return self._preview_changed
+
+
+def test_run_verify_commands_only_derives_coverage_gate_from_preview_diff(tmp_path: Path) -> None:
+    preview = tmp_path / "preview"
+    preview.mkdir()
+    marshal_src = "src/shared/packages/pyforge-marshal/src/pyforge/marshal/x.py"
+    vcs = _PreviewChangedFilesVcs(preview_changed=(marshal_src,), raise_on_preview=False)
+    process = FakeProcess()
+    reports, findings, preview_findings = run_verify_commands_only(
+        _effective(["true"]),
+        process=process,
+        worktree=preview,
+        repo_root=tmp_path,
+        vcs=vcs,
+    )
+    commands = [report["command"] for report in reports]
+    assert MARSHAL_COVERAGE_GATE in commands
+    assert findings == ()
+    assert preview_findings == ()
+
+
+def test_run_verify_commands_only_falls_back_to_story_changed_files(tmp_path: Path) -> None:
+    preview = tmp_path / "preview"
+    preview.mkdir()
+    marshal_src = "src/shared/packages/pyforge-marshal/src/pyforge/marshal/x.py"
+    vcs = _PreviewChangedFilesVcs(preview_changed=None, raise_on_preview=True)
+    process = FakeProcess()
+    reports, findings, preview_findings = run_verify_commands_only(
+        _effective(["true"]),
+        process=process,
+        worktree=preview,
+        repo_root=tmp_path,
+        vcs=vcs,
+        story_changed_files=(marshal_src,),
+    )
+    commands = [report["command"] for report in reports]
+    assert MARSHAL_COVERAGE_GATE in commands
+    assert findings == ()
+    assert any(f.code == "MRS-GATE-009" and f.severity is Severity.WARN for f in preview_findings)
+
+
+def test_run_verify_commands_only_refuses_when_changed_files_unresolved(tmp_path: Path) -> None:
+    preview = tmp_path / "preview"
+    preview.mkdir()
+    vcs = _PreviewChangedFilesVcs(preview_changed=None, raise_on_preview=True)
+    process = FakeProcess()
+    _reports, findings, preview_findings = run_verify_commands_only(
+        _effective(["true"]),
+        process=process,
+        worktree=preview,
+        repo_root=tmp_path,
+        vcs=vcs,
+        story_changed_files=None,
+    )
+    assert findings == ()
+    assert any(f.code == "MRS-GATE-009" and f.severity is Severity.ERROR for f in preview_findings)

@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 558
+# stories: 566
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -380,7 +380,12 @@ development_status:
   83-1-dispatch-liveness-proves-a-pid-is-the-session-it-launched: done
   83-10-a-verification-refusal-never-relaunches-a-fresh-session-or-raises-the-model: done
   83-11-the-landing-heal-unions-appended-team-memory-index-lines: done
-  83-12-dispatch-verification-runs-the-coverage-gate-of-every-station-the-story-touches: backlog
+  83-12-dispatch-verification-runs-the-coverage-gate-of-every-station-the-story-touches: done
+  83-13-the-landing-heal-keeps-the-team-memory-index-s-blank-lines: backlog
+  83-14-a-manual-merge-mid-dispatch-never-strands-the-session-s-fixes: backlog
+  83-15-dispatch-applies-ruff-s-safe-fixes-before-it-verifies: backlog
+  83-16-dispatch-finalize-commits-paths-with-spaces: backlog
+  83-17-dispatch-refuses-a-commit-that-carries-an-attribution-trailer: backlog
   83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree: done
   83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries: done
   83-4-a-serial-campaign-holds-the-next-overlapping-story-while-a-refused-story-is-unlanded: done
@@ -390,7 +395,10 @@ development_status:
   83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes: done
   83-9-dispatch-applies-ruff-format-to-a-story-s-files-before-it-verifies: done
   84-1-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift: done
+  84-2-the-model-list-refresh-tests-can-fail-and-a-partial-listing-is-never-complete: backlog
   85-1-a-verification-refusal-goes-back-to-the-session-that-wrote-the-change-for-one-fix-turn: backlog
+  85-2-a-fix-turn-that-turns-verification-green-lands-and-survives-a-restart: backlog
+  85-3-the-fix-turn-is-safe-to-switch-on-in-dev-and-staging: backlog
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: backlog
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: backlog
