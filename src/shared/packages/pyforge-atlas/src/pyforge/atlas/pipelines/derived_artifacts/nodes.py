@@ -1216,6 +1216,9 @@ def _export_priority_merge_warnings(
     if inventory_priority_assignments is None or getattr(inventory_priority_assignments, "empty", True):
         return
     if "core_python_package_name" not in set(getattr(inventory_priority_assignments, "columns", [])):
+        logger.warning(
+            "identity_complete_export: ranking input missing column core_python_package_name; no ranked row can join"
+        )
         return
     rows_by_key: dict[str, list[str]] = {}
     for row in inventory_priority_assignments.itertuples(index=False):

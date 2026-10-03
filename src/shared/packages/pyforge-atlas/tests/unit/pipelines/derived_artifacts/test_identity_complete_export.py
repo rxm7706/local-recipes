@@ -5,10 +5,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
-from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import GIST_COLUMNS
+from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import (
+    GIST_COLUMNS,
+    stringify_export_cell,
+)
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     _IDENTITY_COMPLETE_EXPORT_COLUMNS,
     build_identity_complete_export,
@@ -340,6 +344,25 @@ def test_absent_jfrog_input_column_is_a_named_warning(caplog, column):
     assert f"identity_complete_export: JFROG consumption input missing column {column}" in _warnings(caplog)
 
 
+def test_ranked_input_without_its_join_key_warns_that_nothing_joins(caplog):
+    row = _priority_row("keyless-pkg")
+    del row["core_python_package_name"]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        out = _run([_identity_row("keyless-pkg")], priority_rows=[row])
+    assert (
+        "identity_complete_export: ranking input missing column core_python_package_name; no ranked row can join"
+        in _warnings(caplog)
+    )
+    assert pd.isna(out.iloc[0]["P"])
+
+
+def test_blank_ranked_names_are_skipped_not_counted_as_duplicates(caplog):
+    rows = [_priority_row("", P="P1"), _priority_row("   ", P="P2"), _priority_row("real-pkg")]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        _run([_identity_row("real-pkg")], priority_rows=rows)
+    assert not [w for w in _warnings(caplog) if "duplicate" in w]
+
+
 def test_complete_inputs_raise_no_merge_warning(caplog):
     with caplog.at_level("WARNING", logger=_NODES_LOGGER):
         _run(
@@ -363,3 +386,28 @@ def test_ranked_rows_sharing_a_pep503_key_warn_naming_every_row(caplog, names, e
         out = _run([_identity_row(names[-1])], priority_rows=rows)
     assert f"identity_complete_export: duplicate ranked rows normalize to {expected}" in _warnings(caplog)
     assert out.iloc[0]["P"] == f"P{len(names)}"
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 — DW-FU-21-7-6: one cell-to-text rule for every export reader
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (None, ""),
+        (pd.NA, ""),
+        (pd.NaT, ""),
+        (float("nan"), ""),
+        ("  padded  ", "padded"),
+        (7, "7"),
+        (["pkg:pypi/a", "pkg:github/b"], "pkg:pypi/a; pkg:github/b"),
+        (("x", None, "y"), "x; y"),
+        (np.array(["p", "q"]), "p; q"),
+        (["a", pd.NA], "a; "),
+        ([], ""),
+    ],
+)
+def test_stringify_export_cell(value, expected):
+    assert stringify_export_cell(value) == expected
