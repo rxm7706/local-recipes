@@ -5,7 +5,7 @@ created: '2026-10-01'
 status: 'done'
 baseline_revision: '731f299611bd290e1d3d7040e7a30d864b00b6b1'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - docs/dreams/pyforge-doctor.md
@@ -170,6 +170,57 @@ Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow"
     - `[low]` `[patch]` "The OK detail counts them" lands only in `evidence` — same as the Blind Hunter count row; patched.
     - `[low]` `[reject]` The command grammar is looser than the intent (a 24-character gap, extra spellings) and syntactic only — the intent leaves the spellings open; the gap is pinned by a reject row; same root cause as the proximity row.
     - `[false]` `[reject]` The diff goes beyond the intent's list (judges every line, one FAIL per entry, memlog and story-spec edits) — the Design Notes record the every-line choice, the task requires the memlog reconcile, and none of it fails or changes a line the intent protects.
+
+### 2026-10-03 — Independent follow-up review (run from doctor Story 41.1, `DW-FRR-38-1`)
+
+The pass-1 recommendation was honoured: a review persona that did not implement this
+story read the landed citation rule against this spec. It reviewed the CURRENT state of
+`chain.py` (this spec declares no `final_revision`, and three of pass 1's deferrals —
+the writer check, the extensionless/anchor grammar, the `pixi.toml` task text — have
+since landed in Story 41.1), and said so. **One medium: a real silent-drop in the scan's
+span walk.** Five findings; the recommendation is now `false`.
+
+- verdicts: 5 findings — high 0, medium 1, low 4 (patch 3, defer 1, reject 1)
+- findings:
+  - `[medium]` `[patch]` `_verified_citation_scan` walked only from the FIRST
+    `## DW-…` heading, so every `verified:` line *above* it — a ledger preamble, or a
+    whole ledger with no entry headings — was neither failed nor counted as
+    grandfathered. It read as clean while the grandfather total under-reported it.
+    Patched in 41.1: a pseudo-mark at offset 0 under the id `(before the first entry)`,
+    so the preamble span is judged by the same cutoff as an entry span. Two tests pin it
+    (a post-cutoff bare preamble line FAILs under that id; a pre-cutoff one is
+    grandfathered, never retro-failed). Live impact measured first: zero preamble
+    `verified:` lines in any of the tracked ledgers today, so this closes a hole rather
+    than reporting a backlog.
+  - `[low]` `[patch]` `_EXTENSIONLESS_FILENAMES` omitted `Containerfile`, which this repo
+    has at its root and which pass 1's own E1 deferral named as a live citation style.
+    Patched (one tuple entry, one accept test).
+  - `[low]` `[patch]` The `/` alternative accepts slash-bearing PROSE: `Phase 2/3:1`,
+    `and/or:1`, `N/A:1`. Real, and not fixable by a tighter character class — to this
+    grammar they are the same shape as `docs/MAP:3`, which IS a live citation style, so
+    telling them apart needs a clause-boundary decision. Measured 2026-10-03: zero
+    `verified:` lines in any tracked ledger match any of these shapes. Patched as a
+    *documented known limit* rather than a blind tightening: the regex comment names the
+    over-acceptance and two tests pin it, so a future narrowing is a deliberate act with
+    a failing test to flip. Carried as ledger row `DW-FRR-38-1-1`.
+  - `[low]` `[defer]` The 24-character command-exit proximity window false-accepts
+    `` `cmd` exited with 3 retries `` and `` `helper()` never reaches exit 1 ``. Same
+    clause-boundary problem as the row above, already rejected once in pass 1 on the same
+    reasoning (it needs an author to write exactly that sentence). Folded into
+    `DW-FRR-38-1-1` rather than minted twice.
+  - `[low]` `[reject]` "GitHub-anchor cites `chain.py:L4344` / `chain.py#L4344` are still
+    rejected; two live ledgers each carry one." The grammar claim is correct (probed: both
+    reject), the live claim is not — `git grep -E "verified:.*(:L[0-9]+|#L[0-9]+)"` over
+    every tracked `deferred-work-ledger.md` returns **zero** lines. Widening the grammar
+    for a shape nobody writes adds accept surface for no reader.
+
+**Independently verified clean** (named, with how): no second copy of the rule exists —
+`scripts/apply_verification_verdicts.py` *imports* `verified_line_cites` and refuses on
+`ImportError` rather than re-deriving it; the non-citation shapes this grammar must reject
+all reject under probe (`1.2:3`, `v1.2.3:5`, `12:30`, `127.0.0.1:8080`, `AD-23`,
+`Note: 12`); and the reviewer's "this should be warn-only" instinct was itself rejected on
+reading the spec — `verified-line-uncited` is a FAIL *because* the AC demands it, and
+`deferred-work-check` is its own gate, not the advisory doctor lane.
 
 ## Auto Run Result
 
