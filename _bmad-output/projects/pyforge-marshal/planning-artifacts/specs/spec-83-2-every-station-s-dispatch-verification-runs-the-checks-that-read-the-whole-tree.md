@@ -2,9 +2,10 @@
 title: "83.2: Every station's dispatch verification runs the checks that read the whole tree"
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: '1b490ef6ab61301170a8fefa58a9ef9fdbeab689'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -20,20 +21,6 @@ declared_low_risk: false
 
 **Approach:** Append `pixi run --frozen -e pyforge-core pyforge-core-test` and `pixi run --frozen -e pyforge-guild deferred-work-check` in the same place `lint-types` was folded in, after the same dedupe rule, so every station's verification runs them. Both are seconds-long.
 
-Ledger key: `83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree`.
-Type / Effort / Deps: fix / S / —.
-
-### Living CAP citations
-
-- Story 53.1 (CAP-261a, the derived verification guard). A defect of shipped behaviour, so no new CAP; `spec-feature-flag-governance` Q1: a `fix` needs no flag.
-
-## Acceptance Criteria
-
-- Given a story whose change fails pyforge-core's suite When its dispatch verifies Then verification fails and the landing is refused
-- Given a story whose change adds an uncited post-cutoff verified: line When its dispatch verifies Then verification fails
-- Given a story that breaks neither When its dispatch verifies Then it lands as today
-- Given either command removed from the guard When its new test runs Then it fails (mutation)
-
 ## Boundaries & Constraints
 
 **Always:** Fix the defect where the shipped behaviour lives, and pin it with a test that fails without the fix.
@@ -42,22 +29,32 @@ Type / Effort / Deps: fix / S / —.
 
 </intent-contract>
 
-## Binding
+## Code Map
 
-Parent: Story 53.1 (CAP-261a, the derived verification guard).
-Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-02 (night) entry.
-Ledger key: `83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree`.
-Ledger status at mint: `backlog`.
-Deps: —.
-Minted 2026-10-02 at the operator's request to chain the defects found landing Phase 2.
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` -- Contains `_verify_commands_with_surface_guard` function that needs modification
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` -- Test file that validates derived command behavior and needs updated assertions
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py` -- Another test file that checks command lists in merge tree scenarios
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` -- Add two new command constants and extend the `derived` tuple in `_verify_commands_with_surface_guard` to include pyforge-core-test and deferred-work-check -- Fixes the core defect where station dispatch verification was missing these critical checks
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` -- Update test assertions to expect the two new commands in the verification command lists -- Ensures tests reflect the new behavior and catch regressions
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py` -- Update test assertions to include the new commands in expected command sequences -- Maintains test coverage for merge tree verification scenarios
+
+**Acceptance Criteria:**
+- Given a story whose change fails pyforge-core's suite, when its dispatch verifies, then verification fails and the landing is refused
+- Given a story whose change adds an uncited post-cutoff verified: line, when its dispatch verifies, then verification fails
+- Given a story that breaks neither, when its dispatch verifies, then it lands as today
+- Given either command removed from the guard, when its new test runs, then it fails (mutation)
+
+## Spec Change Log
+
+## Review Triage Log
 
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
-- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
-- `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
-
-## Review Triage Log
-
-- No review has run yet.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: pass (the station's `verify_commands`; MRS-GATE-010 binding)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- expected: pass (the station's `verify_commands`; MRS-GATE-010 binding)
+- `pixi run --frozen -e pyforge-guild lint-types` -- expected: exit 0
