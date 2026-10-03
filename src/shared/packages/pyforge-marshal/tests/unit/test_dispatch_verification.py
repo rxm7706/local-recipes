@@ -32,6 +32,7 @@ from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.dispatch_verify import (
     PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
     compose_dispatch_policy,
+    coverage_gate_commands_for_changed_files,
     evaluate_dispatch_verification,
     run_pre_verification_deferred_work_intake,
 )
@@ -45,6 +46,25 @@ LINT_TYPES = "pixi run --frozen -e pyforge-guild lint-types"
 # literals so deleting or renaming the derivation fails these tests.
 PYFORGE_CORE_TEST = "pixi run --frozen -e pyforge-core pyforge-core-test"
 DEFERRED_WORK_CHECK = "pixi run --frozen -e pyforge-guild deferred-work-check"
+
+# Story 83.12 (spec-83-12): pinned literals so removing the derivation fails these tests.
+MARSHAL_COVERAGE_GATE = "pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate"
+SCRIBE_COVERAGE_GATE = "pixi run --frozen -e pyforge-scribe pyforge-scribe-coverage-gate"
+DOCTOR_COVERAGE_GATE = "pixi run --frozen -e pyforge-doctor pyforge-doctor-coverage-gate"
+
+
+def _expected_derived_commands(
+    *station_commands: str,
+    coverage_gates: tuple[str, ...] = (MARSHAL_COVERAGE_GATE,),
+) -> list[str]:
+    return [
+        *station_commands,
+        _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
+        *coverage_gates,
+    ]
 
 
 def test_compose_dispatch_policy_reads_a_real_project_toml(tmp_path: Path) -> None:
@@ -313,13 +333,7 @@ def test_evaluate_dispatch_verification_appends_surface_guard_after_declared_com
         vcs=FakeVcs(),
     )
     reports = envelope.data["commands"]
-    assert [report["command"] for report in reports] == [
-        "true",
-        _SURFACE_RECONCILE_COMMAND,
-        LINT_TYPES,
-        PYFORGE_CORE_TEST,
-        DEFERRED_WORK_CHECK,
-    ]
+    assert [report["command"] for report in reports] == _expected_derived_commands("true")
 
 
 class FakeProcessGuardFails:
@@ -424,13 +438,7 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_guard(
         vcs=FakeVcs(),
     )
     reports = envelope.data["commands"]
-    assert [report["command"] for report in reports] == [
-        "true",
-        _SURFACE_RECONCILE_COMMAND,
-        LINT_TYPES,
-        PYFORGE_CORE_TEST,
-        DEFERRED_WORK_CHECK,
-    ]
+    assert [report["command"] for report in reports] == _expected_derived_commands("true")
 
 
 def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_spacing(
@@ -461,13 +469,7 @@ def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_
         vcs=FakeVcs(),
     )
     reports = envelope.data["commands"]
-    assert [report["command"] for report in reports] == [
-        "true",
-        _SURFACE_RECONCILE_COMMAND,
-        LINT_TYPES,
-        PYFORGE_CORE_TEST,
-        DEFERRED_WORK_CHECK,
-    ]
+    assert [report["command"] for report in reports] == _expected_derived_commands("true")
 
 
 # --- Story 79.2 (spec-79-2): `lint-types` is a derived verification command ---
@@ -544,14 +546,7 @@ def test_evaluate_dispatch_verification_runs_lint_types_once_after_the_station_c
     hygiene lane runs exactly once, after them."""
     envelope = _verify_with(tmp_path, verify_commands=["true", "echo ok"], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == [
-        "true",
-        "echo ok",
-        _SURFACE_RECONCILE_COMMAND,
-        LINT_TYPES,
-        PYFORGE_CORE_TEST,
-        DEFERRED_WORK_CHECK,
-    ]
+    assert commands == _expected_derived_commands("true", "echo ok")
     assert commands.count(LINT_TYPES) == 1
     assert envelope.findings == ()
 
@@ -562,12 +557,7 @@ def test_evaluate_dispatch_verification_lint_types_runs_for_a_station_with_no_co
     """Story 79.2, AC1: a bare ``verify_commands = []`` station is gated on
     ``lint-types`` too -- it is derived, never read from the station's list."""
     envelope = _verify_with(tmp_path, verify_commands=[], process=FakeProcess())
-    assert [report["command"] for report in envelope.data["commands"]] == [
-        _SURFACE_RECONCILE_COMMAND,
-        LINT_TYPES,
-        PYFORGE_CORE_TEST,
-        DEFERRED_WORK_CHECK,
-    ]
+    assert [report["command"] for report in envelope.data["commands"]] == _expected_derived_commands()
 
 
 def test_evaluate_dispatch_verification_lint_types_failure_refuses_naming_the_lane(
@@ -702,7 +692,7 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_lint_types(
     twice."""
     envelope = _verify_with(tmp_path, verify_commands=[LINT_TYPES, "true"], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
+    assert commands == _expected_derived_commands("true")
 
 
 def test_evaluate_dispatch_verification_dedupes_a_lint_types_declared_with_different_spacing(
@@ -713,7 +703,7 @@ def test_evaluate_dispatch_verification_dedupes_a_lint_types_declared_with_diffe
     respaced = LINT_TYPES.replace(" ", "  ", 1)
     envelope = _verify_with(tmp_path, verify_commands=["true", respaced], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
+    assert commands == _expected_derived_commands("true")
 
 
 def test_evaluate_dispatch_verification_a_declared_lint_types_failure_still_refuses_once(
@@ -790,9 +780,81 @@ def test_evaluate_dispatch_verification_dedupes_already_declared_whole_tree_comm
         tmp_path, verify_commands=["true", PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK], process=FakeProcess()
     )
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
+    assert commands == _expected_derived_commands("true")
     assert commands.count(PYFORGE_CORE_TEST) == 1
     assert commands.count(DEFERRED_WORK_CHECK) == 1
+
+
+# --- Story 83.12 (spec-83-12): per-station coverage-gate derived commands ---
+
+
+def test_coverage_gate_commands_for_changed_files_derives_marshal_gate() -> None:
+    """Mutation guard: without derivation this returns an empty tuple."""
+    changed = ("src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py",)
+    assert coverage_gate_commands_for_changed_files(changed) == (MARSHAL_COVERAGE_GATE,)
+
+
+def test_coverage_gate_commands_for_changed_files_ignores_planning_and_core_src() -> None:
+    planning = ("_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",)
+    core_only = ("src/shared/packages/pyforge-core/src/pyforge/core/process.py",)
+    assert coverage_gate_commands_for_changed_files(planning) == ()
+    assert coverage_gate_commands_for_changed_files(core_only) == ()
+
+
+def test_coverage_gate_commands_for_changed_files_two_stations_once_each() -> None:
+    changed = (
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/a.py",
+        "src/shared/packages/pyforge-doctor/src/pyforge/doctor/b.py",
+    )
+    assert coverage_gate_commands_for_changed_files(changed) == (
+        DOCTOR_COVERAGE_GATE,
+        MARSHAL_COVERAGE_GATE,
+    )
+
+
+class FakeProcessCoverageGateFails:
+    """Every command succeeds except a station ``*-coverage-gate`` task."""
+
+    def run(self, tokens, *, cwd: Path):
+        if tokens and tokens[-1].endswith("-coverage-gate"):
+            return ProcessResult(returncode=1, stdout="", stderr="coverage floor missed")
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def test_evaluate_dispatch_verification_runs_marshal_coverage_gate_when_src_touched(
+    tmp_path: Path,
+) -> None:
+    envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcess())
+    commands = [report["command"] for report in envelope.data["commands"]]
+    assert MARSHAL_COVERAGE_GATE in commands
+    assert commands.count(MARSHAL_COVERAGE_GATE) == 1
+
+
+def test_evaluate_dispatch_verification_coverage_gate_failure_refuses_naming_the_command(
+    tmp_path: Path,
+) -> None:
+    envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcessCoverageGateFails())
+    inp = DispatchVerificationInput(findings=envelope.findings)
+    assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
+    gate_findings = [
+        f for f in envelope.findings if f.code == "MRS-GATE-001" and MARSHAL_COVERAGE_GATE in f.message
+    ]
+    assert len(gate_findings) == 1, envelope.findings
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings)
+
+
+def test_evaluate_dispatch_verification_no_coverage_gate_for_planning_only_diff(
+    tmp_path: Path,
+) -> None:
+    envelope = _verify_with(
+        tmp_path,
+        verify_commands=["true"],
+        process=FakeProcess(),
+        vcs=FakeVcs(changed=("_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",)),
+    )
+    commands = [report["command"] for report in envelope.data["commands"]]
+    assert MARSHAL_COVERAGE_GATE not in commands
+    assert commands == _expected_derived_commands("true", coverage_gates=())
 
 
 class _CommittingFakeVcs(FakeVcs):
