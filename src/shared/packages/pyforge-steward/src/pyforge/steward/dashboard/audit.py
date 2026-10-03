@@ -551,9 +551,7 @@ def query_audit_entries(
         effective_limit = DEFAULT_AUDIT_READ_LIMIT
     else:
         if not isinstance(limit, int) or isinstance(limit, bool):
-            raise TypeError(
-                f"query_audit_entries' limit must be an int or None, got {type(limit).__name__}"
-            )
+            raise TypeError(f"query_audit_entries' limit must be an int or None, got {type(limit).__name__}")
         if limit <= 0:
             raise ValueError(
                 f"query_audit_entries' limit must be positive, got {limit} — "

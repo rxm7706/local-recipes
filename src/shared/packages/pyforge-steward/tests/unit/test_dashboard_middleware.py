@@ -10,8 +10,7 @@ import asyncio
 
 import pytest
 
-from pyforge.steward.dashboard.declarations import TrustedIngress
-from pyforge.steward.dashboard.declarations import AUDIT_IDENTITY_MAX_LENGTH
+from pyforge.steward.dashboard.declarations import AUDIT_IDENTITY_MAX_LENGTH, TrustedIngress
 from pyforge.steward.dashboard.middleware import (
     AmbiguousIdentityHeaderError,
     DashboardIdentityMiddleware,
