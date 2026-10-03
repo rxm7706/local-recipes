@@ -2,7 +2,8 @@
 title: "27.1: The inventory exports refuse a hollow verification set, and the quartet scripts fail loud"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 10a40461ddefe7a7017a246c1fe189c2982bf202
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
