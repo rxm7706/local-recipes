@@ -87,10 +87,15 @@ The rendered grants were applied to a real PostgreSQL 17 cluster: a table shaped
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
 - findings: (orchestrator self-review after implementation; no subagent layer this run)
 
+### 2026-10-03 — Review pass (landing-review closure)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (orchestrator self-review after landing-review patches; prior high/medium items addressed in code)
+
 ## Auto Run Result
 
-- Summary: Added `AuditAction.PURGE`, required `actor` on `purge_expired_entries` with a transactional purge audit row; `steward deploy perimeter` now renders append-only PostgreSQL grants for the audit table.
-- Files: `dashboard/audit.py`, `dashboard/models.py`, migration `0006_auditaction_purge.py`, `deploy.py`, `cli.py`, `test_dashboard_audit.py`, `test_deploy_perimeter.py`, `deferred-work-ledger.md` (closed DW-9-3-3, DW-9-3-8).
-- Verification: `pyforge-steward-test` 1979 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
+- Summary: Closed landing-review gaps on audit-table grants — retention role now receives SELECT, INSERT, and DELETE (so `purge_expired_entries` can DELETE with a WHERE clause and INSERT the purge row); equal app/retention roles are refused case-insensitively. Prior pass already shipped `AuditAction.PURGE`, required `actor` on `purge_expired_entries`, and append-only app-role grants.
+- Files: `deploy.py` (`render_audit_table_grants` grants and role guard); `test_deploy_perimeter.py` (retention grant shape, no UPDATE, equal-role refusal); `deferred-work-ledger.md` (DW-9-3-8 verified line refresh); story spec status/result.
+- Review: landing-review high/medium patches applied; 0 new review findings this pass.
+- Verification: `pyforge-steward-test` 1983 passed, 2 skipped; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK after memlog reconcile on `spec-pyforge-steward/.memlog.md`.
 - Follow-up review recommended: false
 - Residual risks: In-process ORM can still bypass DB grants until adopters apply the rendered SQL; purge recording uses the same DB alias as delete but `record_audit_entry` does not pass `using=`.
