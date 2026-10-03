@@ -562,3 +562,80 @@ def test_models_cli_write_snapshot(monkeypatch, tmp_path):
     assert written
     payload = json.loads(written[0])
     assert payload["harnesses"]["cursor"]["ids"] == ["m1"]
+
+
+def test_models_cli_prior_snapshot_diff(monkeypatch, tmp_path, capsys):
+    import argparse
+
+    from pyforge.marshal.cli import adapters as adapters_cli
+
+    snap_dir = tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "model-lists"
+    snap_dir.mkdir(parents=True)
+    (snap_dir / "model-list-2026-01-01.json").write_text(
+        json.dumps({"date": "2026-01-01", "harnesses": {"cursor": {"status": "ok", "ids": ["a"]}}}),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
+    profiles = {
+        "cursor": HarnessProfile(
+            name="cursor",
+            binary="cursor-agent",
+            argv=("{prompt}",),
+            model_list=ModelListSource(catalog_provider="cursor", command=("cursor-agent", "models")),
+        ),
+    }
+    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
+    monkeypatch.setattr(
+        adapters_cli,
+        "fetch_live_ids_for_profile",
+        lambda profile, fetch, **kw: HarnessListResult("cursor", "ok", frozenset({"a", "b"})),
+    )
+    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
+    args = argparse.Namespace(slug="pyforge-marshal", format="text", write=False)
+
+    class _Fs:
+        def ensure_dir(self, path: object) -> None:
+            del path
+
+        def write_text_atomic(self, path: object, text: str) -> None:
+            del path, text
+
+    code = adapters_cli.run_adapters_models(args, fs=_Fs())
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "+ b" in out or "since previous snapshot" in out
+
+
+def test_models_cli_all_unavailable_warn_findings(monkeypatch, capsys, tmp_path):
+    import argparse
+
+    from pyforge.marshal.cli import adapters as adapters_cli
+
+    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
+    profiles = {
+        "copilot": HarnessProfile(name="copilot", binary="copilot", argv=("{prompt}",)),
+    }
+    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
+    monkeypatch.setattr(
+        adapters_cli,
+        "fetch_live_ids_for_profile",
+        lambda profile, fetch, **kw: HarnessListResult(
+            profile.name, "unavailable", frozenset(), "no source declared"
+        ),
+    )
+    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
+    args = argparse.Namespace(slug="pyforge-marshal", format="json", write=False)
+
+    class _Fs:
+        def ensure_dir(self, path: object) -> None:
+            del path
+
+        def write_text_atomic(self, path: object, text: str) -> None:
+            del path, text
+
+    code = adapters_cli.run_adapters_models(args, fs=_Fs())
+    envelope = json.loads(capsys.readouterr().out)
+    codes = {f["code"] for f in envelope["findings"]}
+    assert "MRS-MDL-002" in codes
+    assert code == 0
+    assert "no drift detected" not in envelope["data"]["report"]
