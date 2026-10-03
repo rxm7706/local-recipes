@@ -231,6 +231,37 @@ verify_commands = [
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
 ]
 
+"27" = [  # Phase 4+5 of the deferral burn-down: mason's open medium and low deferrals (fix stories, no CAP), added 2026-10-03.
+  # The station default, restated because a declared entry replaces it outright, plus what the two stories touch:
+  # 27.1 the CFE-rebuild guard and its test, the installer-owned skf scripts and their tests, tests/packaging (a review),
+  # and django-mason's portal (DW-16-3-1, only if red); 27.2 the CFE surface (one retro(cfe) commit), the failure-catalog
+  # check and its test, marshal's sync baseline (re-stamped after the CFE bump), epics.md's SM-4 record; both the
+  # deferred-work rows they close, the station ledger, and every Spec memlog a surface reconcile names.
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
+  "src/shared/packages/django-mason/**",
+  "scripts/cfe_rebuild_guard_check.py",
+  "scripts/failure_catalog_check.py",
+  "tests/scripts/**",
+  "tests/packaging/**",
+  "docs/reference/container-base-layer-convention.md",
+  "_bmad/skf/shared/scripts/skf-structural-diff.py",
+  "_bmad/skf/shared/scripts/skf-provenance-gap-dispatch.py",
+  "_bmad/skf/shared/scripts/schemas/skill-brief.v1.json",
+  ".claude/skills/conda-forge-expert/**",
+  "_bmad-output/projects/pyforge-marshal/.sync-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 "19" = [  # Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29), added 2026-09-28
   "src/shared/packages/pyforge-mason/**",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
