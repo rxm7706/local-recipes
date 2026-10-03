@@ -362,6 +362,7 @@ def test_query_audit_entries_with_no_established_role_returns_no_rows_but_record
     read_entry = AuditEntry.objects.filter(action=AuditAction.AUDIT_READ).get()
     assert read_entry.row_count == 0
     assert read_entry.role is None
+    assert read_entry.scope == {}
 
 
 def test_audit_entry_actor_and_role_max_length_use_shared_declaration():

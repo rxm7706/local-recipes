@@ -2,7 +2,7 @@
 title: "84.2: An audit read records its scope, and the perimeter refuses an over-long identity"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '24e64962a49af7adfd7f4e342d759886ac01fd18'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -83,9 +83,24 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
 - findings: orchestrator self-review after implementation; acceptance criteria verified locally
 
+### 2026-10-03 — Review pass (landing-review fixes)
+- verdicts: 9 findings — high 0, medium 0, low 1, false 5, maybe-false 0
+- findings:
+  - `[low]` `[patch]` Module-level `audit.py` docstring still described null-role readers seeing `role IS NULL` rows — updated to fail-closed wording.
+  - `[false]` `[reject]` Deferred-work ledger retains historical `STANDS` paragraphs under closed rows; triage treats them as audit history, not live status.
+  - `[false]` `[reject]` Spec metadata lag before finalize — updated in this pass with triage log and Auto Run Result.
+  - `[low]` `[patch]` Fail-closed test did not assert `scope` on the `AUDIT_READ` row — added `scope == {}`.
+  - `[false]` `[reject]` `makemigrations --check` — `test_audit_entry_migration_matches_models` in the same module already runs it.
+  - `[false]` `[defer]` Audit read uses SQL `role=` filter rather than calling `filter_by_role` — intentional; documented in docstring; full CAP-2 wiring is out of scope for this fix story.
+  - `[false]` `[reject]` `models.py` importing `AUDIT_IDENTITY_MAX_LENGTH` — required by acceptance criterion.
+  - `[false]` `[reject]` Established-role reader vs historical null-role rows — covered by `test_query_audit_entries_isolates_rows_by_reader_role`.
+  - `[false]` `[reject]` Memlog reconcile without `--write-baseline` — S-13.7 guard passed via memlog naming paths only.
+
 ## Auto Run Result
 
-- Summary: AUDIT_READ rows now store validated read filters in `AuditEntry.scope`; `query_audit_entries` enforces role isolation and a default row limit; `DashboardIdentityMiddleware` refuses over-long identity/role at the perimeter via `AUDIT_IDENTITY_MAX_LENGTH`.
-- Verification: `pyforge-steward-test` 1988 passed, 2 skipped; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK after memlog on `spec-pyforge-steward/.memlog.md`.
+- Summary: Landing-review fixes — `query_audit_entries` fails closed when `reader_role` is None (empty result, `AUDIT_READ` with `row_count` 0); `AuditEntry.actor` and `.role` take `max_length` from `AUDIT_IDENTITY_MAX_LENGTH`. Prior pass already shipped scope JSON, read limits, middleware refusal, and deferred-work closures.
+- Files changed: `dashboard/audit.py` (fail-closed read path + module docstring); `dashboard/models.py` (shared max_length); `tests/unit/test_dashboard_audit.py` (fail-closed + max_length tests); `deferred-work-ledger.md` (DW-9-3-2 verified line); story spec + `spec-pyforge-steward/.memlog.md` (surface reconcile).
+- Review: 2 patches applied (docstring, test scope assert); 5 findings rejected as false; 1 deferred as pre-existing ledger history; edge-case and verification-gap layers reported no gaps.
 - Follow-up review recommended: false
+- Verification: `pyforge-steward-test` 1990 passed, 2 skipped; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK after memlog append on `spec-pyforge-steward/.memlog.md`.
 - Deferred-work closed: DW-9-3-10, DW-9-3-9, DW-9-3-2, DW-9-3-4 in `deferred-work-ledger.md`

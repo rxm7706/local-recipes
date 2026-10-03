@@ -7,9 +7,10 @@ CAP-4's write/read/retention API over the `AuditEntry` model (`models.py`):
   action, and the row count involved.
 * `query_audit_entries` reads the trail AND, per AD-7 ("reading the audit
   trail is a recorded act"), calls `record_audit_entry` for its own
-  invocation before returning. AD-7's role-isolation half filters rows to
-  those whose stored ``role`` matches ``reader_role`` (SQL ``NULL`` when the
-  reader established no role), applies a bounded ``limit``, and persists the
+  invocation before returning. AD-7's role-isolation half returns no rows when
+  the reader established no role (fail-closed, like CAP-2's ``filter_by_role``),
+  otherwise filters to rows whose stored ``role`` equals ``reader_role``,
+  applies a bounded ``limit``, and persists the
   read's validated ``**filters`` into the ``AUDIT_READ`` row's ``scope`` field
   (Story 84.2).
 * `purge_expired_entries` requires an `AuditRetention` (`declarations.py`)
