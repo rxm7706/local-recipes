@@ -161,6 +161,7 @@ def try_heal_dispatch_land_merge(
             resolutions=resolutions,
             has_ledger=ledger_rel in resolutions,
             has_memlogs=bool(memlog_paths),
+            has_deferred_work=bool(deferred_work_paths and any(p in resolutions for p in deferred_work_paths)),
             vcs=vcs,
             forge=forge,
             await_checks=await_checks,
@@ -195,17 +196,21 @@ def _resolve_mechanical_conflicts(
     probe: str,
     head_branch: str,
     ledger_rel: str,
+    deferred_work_rel: str,
     conflict_paths: tuple[str, ...],
     memlog_paths: tuple[str, ...],
+    deferred_work_paths: tuple[str, ...],
     vcs: VcsPort,
 ) -> tuple[dict[str, str], tuple[str, ...]] | None:
-    """Story 59.1 (CAP-269) and Story 78.1 (CAP-283): the resolved text of every conflicted
-    mechanical path, plus the memlogs with no resolution, or ``None`` on a git read failure.
+    """Story 59.1 (CAP-269), Story 78.1 (CAP-283), and Story 83.3: the resolved text of every 
+    conflicted mechanical path, plus the memlogs with no resolution, or ``None`` on a git read failure.
 
     The ledger is resolved three-way against the merge base (``three_way_ledger_statuses``): a row
     one side changed takes that change, deletions hold, and precedence settles only a row both
     sides changed. A memlog is resolved by ``union_memlog_texts``: both sides only appended, or it
-    is unresolved -- never merged line by line, so no entry is ever dropped."""
+    is unresolved -- never merged line by line, so no entry is ever dropped. A deferred-work ledger
+    is resolved by ``union_deferred_work_texts``: both sides only appended whole DW entries, or it
+    is unresolved."""
     try:
         head_ref = local_branch_ref(head_branch)
         base_sha = vcs.merge_base(git_repo_root, probe, head_ref)
@@ -226,6 +231,16 @@ def _resolve_mechanical_conflicts(
                 parse_ledger_statuses(branch_text),
             )
             resolutions[ledger_rel] = render_ledger_statuses(main_text or branch_text, merged_map)
+        
+        # Handle deferred work ledger conflicts (Story 83.3)
+        for rel in deferred_work_paths:
+            if rel == deferred_work_rel:  # Only resolve the project's own deferred work ledger
+                base_text, main_text, branch_text = texts(rel)
+                union = union_deferred_work_texts(base_text, main_text, branch_text)
+                if union is not None:
+                    resolutions[rel] = union
+                # If union fails, it will be caught by the unknown paths check
+        
         unresolved: list[str] = []
         for rel in memlog_paths:
             union = union_memlog_texts(*texts(rel))
@@ -253,6 +268,7 @@ def _try_union_heal(
     resolutions: Mapping[str, str],
     has_ledger: bool,
     has_memlogs: bool,
+    has_deferred_work: bool,
     vcs: CommittingVcs,
     forge: ForgePort,
     await_checks: Callable[[str], Finding | None] | None = None,
@@ -267,7 +283,7 @@ def _try_union_heal(
     Returns ``(healed, checks_refusal)``. Story 80.1 (CAP-284): the pushed union head is a commit CI
     has not seen, so ``await_checks(new_sha)`` runs before the retried merge; a finding from it
     means the merge is NOT retried (``(False, finding)``) and the PR stays open on the pushed head."""
-    what = " and ".join(name for name, present in (("sprint ledger", has_ledger), ("memlogs", has_memlogs)) if present)
+    what = " and ".join(name for name, present in (("sprint ledger", has_ledger), ("memlogs", has_memlogs), ("deferred work", has_deferred_work)) if present)
     message = f"marshal: union {what} for {project_slug!r} while merging the base (CAP-4 heal)"
     try:
         vcs.merge_ref_resolving(worktree, VcsRef(probe), resolutions=resolutions, message=to_redacted_text(message))

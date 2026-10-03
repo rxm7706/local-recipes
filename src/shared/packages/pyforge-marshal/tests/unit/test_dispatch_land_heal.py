@@ -10,10 +10,12 @@ import pytest
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core.dispatch_landing import (
+    is_deferred_work_path,
     is_mechanical_conflict_path,
     is_memlog_path,
     ledger_status_precedence,
     three_way_ledger_statuses,
+    union_deferred_work_texts,
     union_memlog_texts,
     union_sprint_ledger_maps,
     unknown_conflict_paths,
