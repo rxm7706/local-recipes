@@ -2,7 +2,7 @@
 title: '83.4: A serial campaign holds the next overlapping story while a refused story is unlanded'
 type: 'fix'
 created: '2026-10-02'
-status: 'done'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: '84587780d0f538629e4c79f36e6ed81950f61214'
@@ -34,6 +34,7 @@ Type / Effort / Deps: fix / M / —.
 - Given a story with disjoint surfaces When the cycle plans Then it dispatches
 - Given the refused story lands or its PR closes When the next cycle plans Then the hold is released
 - Given the hold removed When its new test runs Then it fails (mutation)
+- Given the refused story itself is dispatched again (the operator's re-dispatch after fixing its branch) When the guard runs Then no hold applies to it: the hold covers only other stories whose surfaces overlap, and `tests/unit/test_dispatch_station_guard.py::test_redispatch_allowed_when_session_dead_and_verification_refused` stays green
 
 ## Boundaries & Constraints
 
@@ -74,7 +75,13 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Spec Change Log
 
+- 2026-10-03 — sent back by the operator session after the landing was refused: one acceptance criterion added (the refused story's own re-dispatch is never held). Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session) — sent back
+- Dispatch run `pyforge-marshal-20261003T013846409Z-44861046` refused at verification: MRS-GATE-001, `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exited 1, although the session reported the suite green. Reproduced in this worktree: 1 failed, 10829 passed.
+- `high` `patch` `tests/unit/test_dispatch_station_guard.py::test_redispatch_allowed_when_session_dead_and_verification_refused` fails: the extended `station_in_flight_conflict` returns `MRS-DISP-011` ("refusing redispatch: story '21.1' finished but was refused at landing with open PR") for a re-dispatch of the refused story itself. The hold must apply only to OTHER stories whose surfaces overlap the refused one; a re-dispatch of the refused story is how its fixed branch lands (Story 29.2's land-only path, and Story 83.7). Fix the guard, keep the existing test unchanged, and run the full station suite before reporting it green.
 
 ## Verification
 
