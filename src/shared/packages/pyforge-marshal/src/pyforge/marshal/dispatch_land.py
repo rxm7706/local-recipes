@@ -200,7 +200,7 @@ def _refuse_via_merge_tree_preview(
     story_changed_files: tuple[str, ...] | None = None
     try:
         story_changed_files = vcs.changed_files(git_repo_root, worktree, base=_ORIGIN_MAIN)
-    except VcsCommandError, AttributeError:
+    except VcsCommandError:
         story_changed_files = None
 
     try:
@@ -221,7 +221,7 @@ def _refuse_via_merge_tree_preview(
                 ),
             )
 
-        reports, verify_findings = run_verify_commands_only(
+        reports, command_findings, preview_findings = run_verify_commands_only(
             effective,
             process=process,
             worktree=preview_home,
@@ -243,14 +243,24 @@ def _refuse_via_merge_tree_preview(
             except VcsCommandError:
                 pass
 
-    if not verify_findings:
+    preview_errors = [f for f in preview_findings if f.severity is Severity.ERROR]
+    if preview_errors:
+        return Finding(
+            code="MRS-DISP-044",
+            severity=Severity.ERROR,
+            message=(
+                f"merge-tree preview of {head_branch!r} onto {ORIGIN_MAIN_SHORT!r} "
+                f"could not derive verification scope: {preview_errors[0].message}"
+            ),
+        )
+    if not command_findings:
         return None
     return Finding(
         code="MRS-DISP-044",
         severity=Severity.ERROR,
         message=(
             f"merge-tree preview of {head_branch!r} onto {ORIGIN_MAIN_SHORT!r} "
-            f"failed verification: {_describe_verify_failures(reports, verify_findings)}"
+            f"failed verification: {_describe_verify_failures(reports, command_findings)}"
         ),
     )
 

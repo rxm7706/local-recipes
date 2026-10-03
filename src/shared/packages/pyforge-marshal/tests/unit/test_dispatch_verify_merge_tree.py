@@ -59,7 +59,9 @@ def test_run_verify_commands_only_reports_pass_and_fail(tmp_path: Path) -> None:
     worktree = tmp_path / "preview"
     worktree.mkdir()
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(_effective(["true", "false"]), process=process, worktree=worktree)
+    reports, findings, preview_findings = run_verify_commands_only(
+        _effective(["true", "false"]), process=process, worktree=worktree
+    )
     assert [report["command"] for report in reports] == [
         "true",
         "false",
@@ -70,6 +72,7 @@ def test_run_verify_commands_only_reports_pass_and_fail(tmp_path: Path) -> None:
     ]
     assert reports[0]["returncode"] == 0
     assert reports[1]["returncode"] == 1
+    assert preview_findings == ()
     assert len(findings) == 1
     assert findings[0].code == "MRS-GATE-001"
     assert all(cwd == worktree for _tokens, cwd in process.calls)
@@ -79,9 +82,12 @@ def test_run_verify_commands_only_all_green_has_no_findings(tmp_path: Path) -> N
     worktree = tmp_path / "preview"
     worktree.mkdir()
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(_effective(["true", "echo ok"]), process=process, worktree=worktree)
+    reports, findings, preview_findings = run_verify_commands_only(
+        _effective(["true", "echo ok"]), process=process, worktree=worktree
+    )
     assert len(reports) == 6  # 2 station commands + 4 derived commands
     assert findings == ()
+    assert preview_findings == ()
 
 
 def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands(
@@ -93,7 +99,7 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands
     worktree = tmp_path / "preview"
     worktree.mkdir()
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(_effective([]), process=process, worktree=worktree)
+    reports, findings, preview_findings = run_verify_commands_only(_effective([]), process=process, worktree=worktree)
     assert [report["command"] for report in reports] == [
         _SURFACE_RECONCILE_COMMAND,
         LINT_TYPES,
@@ -101,6 +107,7 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands
         DEFERRED_WORK_CHECK,
     ]
     assert findings == ()
+    assert preview_findings == ()
     assert process.calls == [
         (_SURFACE_RECONCILE_COMMAND.split(), worktree),
         (LINT_TYPES.split(), worktree),
@@ -127,7 +134,7 @@ def test_run_verify_commands_only_derives_coverage_gate_from_preview_diff(tmp_pa
     marshal_src = "src/shared/packages/pyforge-marshal/src/pyforge/marshal/x.py"
     vcs = _PreviewChangedFilesVcs(preview_changed=(marshal_src,), raise_on_preview=False)
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(
+    reports, findings, preview_findings = run_verify_commands_only(
         _effective(["true"]),
         process=process,
         worktree=preview,
@@ -137,6 +144,7 @@ def test_run_verify_commands_only_derives_coverage_gate_from_preview_diff(tmp_pa
     commands = [report["command"] for report in reports]
     assert MARSHAL_COVERAGE_GATE in commands
     assert findings == ()
+    assert preview_findings == ()
 
 
 def test_run_verify_commands_only_falls_back_to_story_changed_files(tmp_path: Path) -> None:
@@ -145,7 +153,7 @@ def test_run_verify_commands_only_falls_back_to_story_changed_files(tmp_path: Pa
     marshal_src = "src/shared/packages/pyforge-marshal/src/pyforge/marshal/x.py"
     vcs = _PreviewChangedFilesVcs(preview_changed=None, raise_on_preview=True)
     process = FakeProcess()
-    reports, findings = run_verify_commands_only(
+    reports, findings, preview_findings = run_verify_commands_only(
         _effective(["true"]),
         process=process,
         worktree=preview,
@@ -155,7 +163,8 @@ def test_run_verify_commands_only_falls_back_to_story_changed_files(tmp_path: Pa
     )
     commands = [report["command"] for report in reports]
     assert MARSHAL_COVERAGE_GATE in commands
-    assert any(f.code == "MRS-GATE-009" and f.severity is Severity.WARN for f in findings)
+    assert findings == ()
+    assert any(f.code == "MRS-GATE-009" and f.severity is Severity.WARN for f in preview_findings)
 
 
 def test_run_verify_commands_only_refuses_when_changed_files_unresolved(tmp_path: Path) -> None:
@@ -163,7 +172,7 @@ def test_run_verify_commands_only_refuses_when_changed_files_unresolved(tmp_path
     preview.mkdir()
     vcs = _PreviewChangedFilesVcs(preview_changed=None, raise_on_preview=True)
     process = FakeProcess()
-    _reports, findings = run_verify_commands_only(
+    _reports, findings, preview_findings = run_verify_commands_only(
         _effective(["true"]),
         process=process,
         worktree=preview,
@@ -171,4 +180,5 @@ def test_run_verify_commands_only_refuses_when_changed_files_unresolved(tmp_path
         vcs=vcs,
         story_changed_files=None,
     )
-    assert any(f.code == "MRS-GATE-009" and f.severity is Severity.ERROR for f in findings)
+    assert findings == ()
+    assert any(f.code == "MRS-GATE-009" and f.severity is Severity.ERROR for f in preview_findings)

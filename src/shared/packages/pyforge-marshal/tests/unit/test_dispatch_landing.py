@@ -2244,6 +2244,8 @@ class MergeTreePreviewVcs(FakeVcs):
         fetch_raises: bool = False,
         add_worktree_raises: bool = False,
         remove_worktree_raises: bool = False,
+        preview_diff_raises: bool = False,
+        story_changed_raises: bool = False,
     ) -> None:
         super().__init__(merged=False)
         self.behind = behind
@@ -2251,12 +2253,26 @@ class MergeTreePreviewVcs(FakeVcs):
         self.fetch_raises = fetch_raises
         self.add_worktree_raises = add_worktree_raises
         self.remove_worktree_raises = remove_worktree_raises
+        self.preview_diff_raises = preview_diff_raises
+        self.story_changed_raises = story_changed_raises
         self.fetch_calls: list[tuple[str, str]] = []
         self.merge_tree_write_calls: list[tuple[str, str]] = []
-        self.add_worktree_for_tree_calls: list[tuple[Path, str, str]] = []
+        self.add_worktree_for_tree_calls: list[tuple[Path, str, str, str | None]] = []
         self.removed_worktrees: list[Path] = []
         self.pruned_repo_roots: list[Path] = []
         self.preview_home: Path | None = None
+        self.story_changed: tuple[str, ...] = ()
+        self.preview_changed: tuple[str, ...] | None = None
+
+    def changed_files(self, repo_root: Path, worktree: Path, *, base: str) -> tuple[str, ...]:
+        if self.preview_home is not None and worktree == self.preview_home:
+            if self.preview_diff_raises:
+                raise VcsCommandError("preview diff failed")
+            if self.preview_changed is not None:
+                return self.preview_changed
+        if self.story_changed_raises:
+            raise VcsCommandError("story diff failed")
+        return self.story_changed
 
     def fetch(self, repo_root: Path, remote: str, ref: str) -> None:
         self.fetch_calls.append((remote, ref))
@@ -2354,6 +2370,78 @@ def test_execute_dispatch_land_refuses_when_merge_tree_preview_is_red(
     assert result.marshal_native is True
     # the throwaway worktree is always removed, even though it refused.
     assert vcs.removed_worktrees == [vcs.preview_home]
+
+
+MARSHAL_COVERAGE_GATE = "pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate"
+_MARSHAL_SRC_TOUCH = "src/shared/packages/pyforge-marshal/src/pyforge/marshal/preview_gate_probe.py"
+
+
+def test_execute_dispatch_land_runs_coverage_gate_in_preview_from_story_fallback(
+    tmp_path: Path,
+) -> None:
+    """Story 83.12: preview wiring must pass repo_root/vcs/story_changed_files -- dropping
+    them would skip gates while every test here still passes."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(behind=2, tree_oid="preview-tree-oid", preview_diff_raises=True)
+    vcs.story_changed = (_MARSHAL_SRC_TOUCH,)
+    process = FakeProcess()
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="83-12-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        effective=effective,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=process,
+    )
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert not any(f.code == "MRS-DISP-044" for f in envelope.findings)
+    assert vcs.preview_home is not None
+    preview_commands = [
+        " ".join(tokens) for tokens, cwd in process.calls if cwd == vcs.preview_home
+    ]
+    assert MARSHAL_COVERAGE_GATE in preview_commands
+
+
+def test_execute_dispatch_land_refuses_when_preview_scope_unresolvable(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = MergeTreePreviewVcs(
+        behind=2,
+        tree_oid="preview-tree-oid",
+        preview_diff_raises=True,
+        story_changed_raises=True,
+    )
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="83-12-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        effective=effective,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    disp044 = [f for f in envelope.findings if f.code == "MRS-DISP-044"]
+    assert len(disp044) == 1
+    assert "could not derive verification scope" in disp044[0].message
 
 
 def test_execute_dispatch_land_lands_when_merge_tree_preview_is_clean(

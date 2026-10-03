@@ -336,7 +336,7 @@ def run_verify_commands_only(
     repo_root: Path | None = None,
     vcs: VcsPort | None = None,
     story_changed_files: tuple[str, ...] | None = None,
-) -> tuple[tuple[dict[str, object], ...], tuple[Finding, ...]]:
+) -> tuple[tuple[dict[str, object], ...], tuple[Finding, ...], tuple[Finding, ...]]:
     """Story 51.1: loop ``effective.verify_commands.value`` through the same
     per-command classification (``_run_verify_command``/``gate.classify_outcome``)
     ``evaluate_dispatch_verification`` uses, WITHOUT its scope/spec-binding/
@@ -393,13 +393,13 @@ def run_verify_commands_only(
                     )
                 )
     command_reports: list[dict[str, object]] = []
-    findings: list[Finding] = list(preview_findings)
+    command_findings: list[Finding] = []
     for command in _verify_commands_with_surface_guard(effective, changed_files=changed_files):
         report, finding = _run_verify_command(command, process=process, worktree=worktree)
         command_reports.append(report)
         if finding is not None:
-            findings.append(finding)
-    return tuple(command_reports), tuple(findings)
+            command_findings.append(finding)
+    return tuple(command_reports), tuple(command_findings), tuple(preview_findings)
 
 
 def compose_dispatch_policy(slug: str, repo_root: Path) -> EffectivePolicy:

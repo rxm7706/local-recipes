@@ -2498,6 +2498,8 @@ def test_merge_tree_preview_two_parent_commit_scopes_changed_files_to_the_branch
     changed = vcs.changed_files(repo, home, base="main")
     assert scribe_rel in changed
     assert doctor_rel not in changed
+    head2 = _git(home, "rev-parse", "HEAD^2").stdout.strip()
+    assert head2 == feature_sha
     assert coverage_gate_commands_for_changed_files(changed) == (
         "pixi run --frozen -e pyforge-scribe pyforge-scribe-coverage-gate",
     )
