@@ -40,11 +40,40 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 GRAPH_STORE_PATH = ROOT / ".claude" / "data" / "pyforge-scribe" / "graph.json"
+NIGHTLY_TIMER_PATH = (
+    ROOT / "src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-compile.timer"
+)
 
-# The nightly trigger's own period -- keep in sync BY HAND with
-# pyforge-scribe-nightly-compile.timer's `OnCalendar=*-*-* 02:30:00` (once
-# every 24h); parsing systemd calendar syntax has no cheap runtime value for
-# one nightly cadence.
+
+def scheduled_period_hours(timer_path: Path = NIGHTLY_TIMER_PATH) -> int:
+    """Derive the freshness period from the checked-in timer unit (Story 26.1).
+
+    Exactly one ``OnCalendar=*-*-* HH:MM:SS`` line is supported (a fixed daily
+    time, no ``*``/``/``/``,`` in the clock portion). Any other shape must
+    update this parser and ``SCHEDULE_PERIOD_HOURS`` together.
+    """
+    text = timer_path.read_text(encoding="utf-8")
+    calendars: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("OnCalendar="):
+            continue
+        calendars.append(stripped.split("=", 1)[1].strip())
+    if len(calendars) != 1:
+        raise ValueError(
+            f"expected exactly one OnCalendar= in {timer_path}, found {len(calendars)}"
+        )
+    value = calendars[0]
+    parts = value.split()
+    if len(parts) != 2 or parts[0] != "*-*-*":
+        raise ValueError(f"unsupported OnCalendar={value!r} in {timer_path}")
+    clock = parts[1]
+    if any(ch in clock for ch in ("*", "/", ",", "..", "~")):
+        raise ValueError(f"unsupported OnCalendar clock={clock!r} in {timer_path}")
+    return 24
+
+
+# The nightly trigger's own period -- must match ``scheduled_period_hours()``.
 SCHEDULE_PERIOD_HOURS = 24
 
 
@@ -134,4 +163,4 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
