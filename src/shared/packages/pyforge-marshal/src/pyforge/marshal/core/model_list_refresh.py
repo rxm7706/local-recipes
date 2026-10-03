@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Literal
 
-from .model_cost import ADAPTER_TO_PROVIDER, catalog_declared
+from .model_cost import catalog_declared
 
 HarnessListStatus = Literal["ok", "unavailable", "unchecked"]
 
@@ -57,7 +57,10 @@ def parse_command_model_lines(text: str) -> frozenset[str]:
             continue
         match = _CURSOR_LINE_RE.match(stripped)
         if match:
-            ids.add(match.group(1))
+            model_id = match.group(1)
+            if model_id.lower() == "error":
+                continue
+            ids.add(model_id)
     return frozenset(ids)
 
 
@@ -237,6 +240,50 @@ def snapshot_filename_for_date(day: date) -> str:
     return "model-list-" + day.isoformat() + ".json"
 
 
+def accumulate_last_ok_ids(
+    snapshots: Sequence[tuple[date, Mapping[str, frozenset[str]], Mapping[str, HarnessListStatus]]],
+) -> dict[str, frozenset[str]]:
+    """From oldest to newest snapshot tuples, keep the latest ``ok`` ids per harness."""
+    last_ok: dict[str, frozenset[str]] = {}
+    for _day, ids_map, status_map in snapshots:
+        for harness, status in status_map.items():
+            if status == "ok" and harness in ids_map:
+                last_ok[harness] = ids_map[harness]
+    return last_ok
+
+
+def merge_snapshot_blocks_for_write(
+    *,
+    harness_ids: Mapping[str, frozenset[str]],
+    harness_status: Mapping[str, HarnessListStatus],
+    same_day_existing: Mapping[str, object] | None,
+    last_ok_ids: Mapping[str, frozenset[str]],
+) -> tuple[dict[str, frozenset[str]], dict[str, HarnessListStatus]]:
+    """Preserve last ``ok`` blocks when a re-run is ``unavailable`` (Story 84.1)."""
+    out_ids: dict[str, frozenset[str]] = dict(harness_ids)
+    out_status: dict[str, HarnessListStatus] = dict(harness_status)
+    same_day_ok: dict[str, frozenset[str]] = {}
+    if same_day_existing is not None:
+        for name, block in same_day_existing.items():
+            if not isinstance(name, str) or not isinstance(block, Mapping):
+                continue
+            if block.get("status") == "ok":
+                id_list = block.get("ids")
+                if isinstance(id_list, list):
+                    same_day_ok[name] = frozenset(x for x in id_list if isinstance(x, str))
+    names = set(out_ids) | set(out_status) | set(same_day_ok) | set(last_ok_ids)
+    for name in names:
+        if out_status.get(name) != "unavailable":
+            continue
+        if name in same_day_ok:
+            out_ids[name] = same_day_ok[name]
+            out_status[name] = "ok"
+        elif name in last_ok_ids:
+            out_ids[name] = last_ok_ids[name]
+            out_status[name] = "ok"
+    return out_ids, out_status
+
+
 def _quote_query_value(value: str) -> str:
     out: list[str] = []
     for ch in value:
@@ -389,10 +436,6 @@ def collect_catalog_refs(
         )
         for mid in sorted(models)
     )
-
-
-def provider_for_harness_name(harness: str) -> str | None:
-    return ADAPTER_TO_PROVIDER.get(harness)
 
 
 def ensure_no_secret_in_text(text: str, secret: str) -> None:

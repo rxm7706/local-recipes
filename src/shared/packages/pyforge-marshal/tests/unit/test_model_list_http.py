@@ -49,6 +49,12 @@ def test_http_get_redirect_not_followed():
         )
     assert result.status_code == 0
     assert result.body == b"redirect not followed"
+    mock_conn.request.assert_called_once()
+    sent_headers = mock_conn.request.call_args[1].get("headers") or mock_conn.request.call_args[0][2]
+    if sent_headers is None and len(mock_conn.request.call_args[0]) > 2:
+        sent_headers = mock_conn.request.call_args[0][2]
+    assert sent_headers is None or "x-api-key" in sent_headers
+    assert mock_conn.connect.call_count <= 1
 
 
 def test_http_get_timeout():

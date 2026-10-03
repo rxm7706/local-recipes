@@ -110,6 +110,8 @@ from ..core.harness_profile import HarnessProfile, load_profiles
 from ..core.model import Finding, Severity, build_envelope
 from ..core.model_list_refresh import (
     HarnessListResult,
+    HarnessListStatus,
+    accumulate_last_ok_ids,
     build_snapshot_payload,
     collect_catalog_refs,
     collect_profile_map_refs,
@@ -117,6 +119,7 @@ from ..core.model_list_refresh import (
     diff_harness_ids,
     ensure_no_secret_in_text,
     find_not_listed,
+    merge_snapshot_blocks_for_write,
     parse_snapshot_payload,
     providers_named_by_profiles,
     render_report_text,
@@ -2035,25 +2038,44 @@ def _gather_declared_model_refs(root: Path, profiles: Mapping[str, HarnessProfil
     return refs
 
 
-def _newest_prior_snapshot(snapshot_dir: Path, before: date) -> Path | None:
-    if not snapshot_dir.is_dir():
+def _snapshot_day_from_path(path: Path) -> date | None:
+    stem = path.stem
+    if not stem.startswith("model-list-"):
         return None
-    candidates: list[tuple[date, Path]] = []
+    day_str = stem.removeprefix("model-list-")
+    try:
+        return date.fromisoformat(day_str)
+    except ValueError:
+        return None
+
+
+def _load_snapshot_history(
+    snapshot_dir: Path,
+    *,
+    before: date,
+) -> list[tuple[date, dict[str, frozenset[str]], dict[str, HarnessListStatus]]]:
+    if not snapshot_dir.is_dir():
+        return []
+    dated: list[tuple[date, Path]] = []
     for path in snapshot_dir.glob("model-list-*.json"):
-        stem = path.stem
-        if not stem.startswith("model-list-"):
-            continue
-        day_str = stem.removeprefix("model-list-")
+        day = _snapshot_day_from_path(path)
+        if day is not None and day < before:
+            dated.append((day, path))
+    dated.sort(key=lambda item: item[0])
+    history: list[tuple[date, dict[str, frozenset[str]], dict[str, HarnessListStatus]]] = []
+    for day, path in dated:
         try:
-            day = date.fromisoformat(day_str)
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except OSError, json.JSONDecodeError, ValueError:
+            continue
+        if not isinstance(raw, dict):
+            continue
+        try:
+            _snap_date, ids_map, status_map = parse_snapshot_payload(raw)
         except ValueError:
             continue
-        if day < before:
-            candidates.append((day, path))
-    if not candidates:
-        return None
-    candidates.sort(key=lambda item: item[0])
-    return candidates[-1][1]
+        history.append((day, ids_map, status_map))
+    return history
 
 
 def run_adapters_models(
@@ -2154,17 +2176,11 @@ def run_adapters_models(
     today = date.today()
     snapshot_dir = root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "model-lists"
     snapshot_diff = None
-    prior_path = _newest_prior_snapshot(snapshot_dir, today)
-    if prior_path is not None:
-        try:
-            prior_raw = json.loads(prior_path.read_text(encoding="utf-8"))
-            if isinstance(prior_raw, dict):
-                _prior_date, prior_ids, prior_status = parse_snapshot_payload(prior_raw)
-                comparable = frozenset(name for name, result in harness_results.items() if result.status == "ok")
-                comparable &= frozenset(name for name, st in prior_status.items() if st == "ok")
-                snapshot_diff = diff_harness_ids(prior_ids, harness_ids, comparable_harnesses=comparable)
-        except OSError, json.JSONDecodeError, ValueError:
-            pass
+    prior_ok_ids = accumulate_last_ok_ids(_load_snapshot_history(snapshot_dir, before=today))
+    if prior_ok_ids:
+        comparable = frozenset(name for name, result in harness_results.items() if result.status == "ok")
+        comparable &= frozenset(prior_ok_ids.keys())
+        snapshot_diff = diff_harness_ids(prior_ok_ids, harness_ids, comparable_harnesses=comparable)
 
     report = render_report_text(
         not_listed=not_listed,
@@ -2181,10 +2197,30 @@ def run_adapters_models(
         _scan_text_for_profile_secrets(text, profiles)
 
     if args.write:
+        write_ids = dict(harness_ids)
+        write_status: dict[str, HarnessListStatus] = {name: r.status for name, r in harness_results.items()}
+        last_ok_ids = accumulate_last_ok_ids(_load_snapshot_history(snapshot_dir, before=today))
+        same_day_path = snapshot_dir / snapshot_filename_for_date(today)
+        same_day_harnesses: Mapping[str, object] | None = None
+        if same_day_path.is_file():
+            try:
+                same_raw = json.loads(same_day_path.read_text(encoding="utf-8"))
+                if isinstance(same_raw, dict):
+                    harness_block = same_raw.get("harnesses")
+                    if isinstance(harness_block, Mapping):
+                        same_day_harnesses = harness_block
+            except OSError, json.JSONDecodeError, ValueError:
+                pass
+        write_ids, write_status = merge_snapshot_blocks_for_write(
+            harness_ids=write_ids,
+            harness_status=write_status,
+            same_day_existing=same_day_harnesses,
+            last_ok_ids=last_ok_ids,
+        )
         payload = build_snapshot_payload(
             snapshot_date=today.isoformat(),
-            harness_ids=harness_ids,
-            harness_status={name: r.status for name, r in harness_results.items()},
+            harness_ids=write_ids,
+            harness_status=write_status,
         )
         snapshot_text = json.dumps(payload, indent=2, sort_keys=True)
         _scan_text_for_profile_secrets(snapshot_text, profiles)

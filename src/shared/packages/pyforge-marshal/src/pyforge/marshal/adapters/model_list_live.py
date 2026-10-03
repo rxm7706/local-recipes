@@ -84,7 +84,7 @@ def _build_auth_headers(source, env: Mapping[str, str]) -> tuple[dict[str, str],
     secret: str | None = None
     if source.credential_env:
         if not _CREDENTIAL_ENV_RE.match(source.credential_env):
-            return headers, None, f"invalid credential_env name {source.credential_env!r}"
+            return headers, None, "invalid credential_env name"
         secret = env.get(source.credential_env, "")
         if not secret:
             return headers, None, None
@@ -216,7 +216,22 @@ def fetch_live_ids_for_profile(
                         live_ids=frozenset(),
                         reason="invalid JSON shape",
                     )
+                data_field = payload.get("data")
+                if data_field is not None and not isinstance(data_field, list):
+                    return HarnessListResult(
+                        harness=harness,
+                        status="unavailable",
+                        live_ids=frozenset(),
+                        reason="unexpected page shape",
+                    )
                 page_ids, has_more, next_after = parse_anthropic_models_page(payload)
+                if has_more and not page_ids:
+                    return HarnessListResult(
+                        harness=harness,
+                        status="unavailable",
+                        live_ids=frozenset(),
+                        reason="unexpected page shape",
+                    )
                 ids.update(page_ids)
                 if not has_more:
                     break
@@ -266,7 +281,22 @@ def fetch_live_ids_for_profile(
                         live_ids=frozenset(),
                         reason="invalid JSON shape",
                     )
+                models_field = payload.get("models")
+                if models_field is not None and not isinstance(models_field, list):
+                    return HarnessListResult(
+                        harness=harness,
+                        status="unavailable",
+                        live_ids=frozenset(),
+                        reason="unexpected page shape",
+                    )
                 page_ids, next_token = parse_gemini_models_page(payload)
+                if next_token and not page_ids:
+                    return HarnessListResult(
+                        harness=harness,
+                        status="unavailable",
+                        live_ids=frozenset(),
+                        reason="unexpected page shape",
+                    )
                 ids.update(page_ids)
                 if not next_token:
                     break

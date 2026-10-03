@@ -114,7 +114,7 @@ import hashlib
 import re
 import tomllib
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from importlib import resources
 from pathlib import Path
 from types import MappingProxyType
@@ -710,23 +710,7 @@ def _inherit_packaged_model_list(base: HarnessProfile, overlay: HarnessProfile) 
     keep the packaged declaration (Story 84.1)."""
     if overlay.model_list is not None or base.model_list is None:
         return overlay
-    return HarnessProfile(
-        name=overlay.name,
-        binary=overlay.binary,
-        argv=overlay.argv,
-        model_args=overlay.model_args,
-        model_map=overlay.model_map,
-        model_passthrough=overlay.model_passthrough,
-        authcheck_args=overlay.authcheck_args,
-        authcheck_ok_pattern=overlay.authcheck_ok_pattern,
-        authcheck_note=overlay.authcheck_note,
-        env=overlay.env,
-        fallback_bin_dirs=overlay.fallback_bin_dirs,
-        verified=overlay.verified,
-        notes=overlay.notes,
-        wrapper=overlay.wrapper,
-        model_list=base.model_list,
-    )
+    return replace(overlay, model_list=base.model_list)
 
 
 def load_profiles(
