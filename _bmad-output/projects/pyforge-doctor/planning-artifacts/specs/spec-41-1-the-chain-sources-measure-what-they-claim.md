@@ -2,7 +2,7 @@
 title: "41.1: The chain sources measure what they claim: spec-surface, dream-chain, the deferred-work checks and the verification sweep"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '10a40461ddefe7a7017a246c1fe189c2982bf202'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -38,8 +38,7 @@ Type / Effort / Deps: fix / L / —.
 - Given a corrupt `scripts/.spec-surface-baseline.json`, or a full stamp that discovers zero Specs over a non-empty baseline When the stamp script runs Then it exits non-zero with a diagnostic and writes nothing
 - Given `detectors-ci` When it runs Then `dream-chain --dreams` reports warn-only beside the other Doctor sources
 - Given any code row above When its fix is reverted Then at least one test in the station suite fails
-- Given each `DW-FRR-<story>` row this story lists When its follow-up review has run Then the reviewed story's spec reads `followup_review_recommended: false` with a dated Review Triage Log entry naming this story, every finding the review raised is fixed here (with a test) or recorded there with its reason, and the row closes citing that log line
-- Given this story lands When its deferred-work rows are read Then each of `DW-FU-12-4`, `DW-12-5-3`, `DW-FU-6-6-6`, `DW-FU-6-6-7`, `DW-FU-6-6-9`, `DW-FU-8-1`, `DW-FU-11-1`, `DW-OPS-2026-10-01-2`, `DW-OPS-2026-10-01-4`, `DW-doctor-38-1`, `DW-doctor-38-1-2`, `DW-FU-7-2-2`, `DW-7-3-1`, `DW-doctor-38-1-3`, `DW-doctor-38-2`, `DW-FU-11-2`, `DW-FU-11-2-2`, `DW-FU-11-3`, `DW-FU-11-3-2`, `DW-FU-11-3-3`, `DW-FU-11-4`, `DW-FU-11-4-2`, `DW-FU-12-5`, `DW-FU-12-5-2`, `DW-FU-6-6-4`, `DW-FU-21-6`, `DW-FU-21-6-2`, `DW-FRR-12-5`, `DW-FRR-38-1` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
+- Given this story lands When its deferred-work rows are read Then each of `DW-FU-12-4`, `DW-12-5-3`, `DW-FU-6-6-6`, `DW-FU-6-6-7`, `DW-FU-6-6-9`, `DW-FU-8-1`, `DW-FU-11-1`, `DW-OPS-2026-10-01-2`, `DW-OPS-2026-10-01-4`, `DW-doctor-38-1`, `DW-doctor-38-1-2`, `DW-FU-7-2-2`, `DW-7-3-1`, `DW-doctor-38-1-3`, `DW-doctor-38-2`, `DW-FU-11-2`, `DW-FU-11-2-2`, `DW-FU-11-3`, `DW-FU-11-3-2`, `DW-FU-11-3-3`, `DW-FU-11-4`, `DW-FU-11-4-2`, `DW-FU-12-5`, `DW-FU-12-5-2`, `DW-FU-6-6-4`, `DW-FU-21-6`, `DW-FU-21-6-2` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 
 ## Boundaries & Constraints
 
@@ -80,8 +79,6 @@ Type / Effort / Deps: fix / L / —.
 - `DW-FU-6-6-4` (low) — `scripts/spec_surface_check.py`'s tracked-file read uses `-c core.quotePath=false` and NUL splitting, as `chain.py` does (the script twin of DW-doctor-38-2).
 - `DW-FU-21-6` (low) — `docs/dreams/README.md`'s Phase-2b prose describes file-driven reconciliation and the three dreams-hygiene finding classes (the file is governed by `spec-pyforge-genesis`: reconcile its memlog).
 - `DW-FU-21-6-2` (low) — `scripts/detectors.py` runs `dream-chain --dreams` warn-only beside the other Doctor sources, so the three dreams-hygiene classes report in `detectors-ci` without a live-volume red (CAP-43's warn-only shape, as Story 38.3 did for the hygiene sweep).
-- `DW-FRR-12-5` (low) — Run the recommended independent follow-up review of Story 12.5's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-38-1` (low) — Run the recommended independent follow-up review of Story 38.1's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
 
 ## Binding
 
@@ -98,7 +95,25 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 (night) — sent back after an independent landing review (Review Triage Log). By operator ruling of 2026-10-03 the follow-up-review rows DW-FRR-12-5 and DW-FRR-38-1 leave this story (only an independent review of the named story can close them; they run as review batches). Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+
+### 2026-10-03 (night) — Landing review (independent reviewer, operator session) — sent back
+Keep: every code-row fix the review confirmed (25 of 27 mutants killed: trailing slash, chain `-z`, future date, duplicate id, idempotency, corrupt baseline, the `_anonymous` window, stale-high baseline, preamble span, subdirectory guard, zero-spec stamp, uncited refusal, `--project` union and the rest). The four named gates exit 0. The entries below that record "independent follow-up reviews" of Stories 12.5 and 38.1 were run by the implementing session and are void.
+- `high` **The `tests/scripts` CI lane goes red.** `scripts/apply_verification_verdicts.py` (about :133 `_citation_predicate`, refusal about :588-599) imports `pyforge.doctor.sources.chain`, which needs PyYAML and `pyforge.core`; the Detectors `scripts-suite` job and pr-preflight's `pyforge-doctor-scripts-test` leg run `tests/scripts` in `-e pyforge-ci`, where every apply test now refuses (`tests/scripts/test_apply_verification_verdicts.py` under `pyforge-ci`: 32 failed). Add a module-level `pytest.importorskip("pyforge.doctor.sources.chain")` and run the file for real under pyforge-doctor by adding it to `pyforge-doctor-aggregate-scripts-test`'s cmd in `pixi.toml` (detectors.yml and pr-preflight already call that task). Run `pixi run --frozen -e pyforge-ci pyforge-deps-test` and the scripts lane before finishing.
+- `high` **The conda-forge-expert surface changed in `wip:` commits** (59bb1effb3, 121e11b963 edit `.claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py`), so every station's "CFE not replaced" guard (`branch_diff_guard.unsanctioned_commits`) goes red. Invoke the `conda-forge-expert` skill (Rule 1) and add the Rule 2 record: a `.claude/skills/conda-forge-expert/CHANGELOG.md` entry with a semver bump, committed together with the CFE test file in ONE commit whose subject starts `retro(cfe): vX.Y.Z`. Touch no other CFE path. The earlier `wip:` commits stay on the branch; the operator rebuilds the branch into one `retro(cfe):` commit plus the story's other changes before landing.
+- `high` **DW-FRR-12-5 and DW-FRR-38-1 were closed.** Restore both blocks byte-identical to `git show origin/main:_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md`; revert `spec-12-5-*.md` and `spec-38-1-*.md` to origin/main; drop the two rows the session minted from those reviews (DW-FRR-12-5-1, DW-FRR-38-1-1) or re-key them as rows owned by this story with their own evidence; re-attribute the patches that came from those reviews in this spec's triage log and in code comments (the fsync in `scripts/spec_surface_check.py`, the POSIX markers in the CFE test, the preamble span and `Containerfile` lines in `chain.py`, the tests in `test_sources_chain_deferred_work.py`); fix the DW-12-5-3 and DW-doctor-38-1-2 resolutions that credit the "independent 12.5/38.1 review".
+- `medium` **Most `verified:` lines cite stale lines** (`chain.py` changed after the ledger edit). Re-cite at HEAD, at least: DW-FU-12-4 (about :1698), DW-FU-6-6-6 (`_covers_dreams_values`, about :465), DW-FU-6-6-7 (about :2565 / guard :2610), DW-FU-6-6-9 (about :1817), DW-FU-8-1 (:2742), DW-FU-11-1 (:5745 / :6178), DW-OPS-2026-10-01-4 (:4852), DW-doctor-38-1-2 (:4825), DW-7-3-1 (:4294), DW-doctor-38-2 and DW-FU-6-6-4 (:1993), DW-FU-11-2 (:5093), DW-FU-11-2-2 (:5078), DW-FU-11-3 / -3-3 (:5420 / :5388), DW-FU-11-3-2 (:5322), DW-12-5-3 (`spec_surface_check.py`, `with _baseline_lock()`). DW-doctor-38-1 names a test that does not exist; the real one is `test_uncited_evidence_is_refused_and_nothing_is_written`.
+- `medium` **`_PROSE_LINE_RE` (`chain.py`, about :5385) drops real call sites**: a line starting `*f(x),` or `**f(x),` counts 0, so the sweep reports used code as unused (live: `_symbol_search_scope`'s only call). Use `\*(?=\s|/|$)` for the comment alternative and add a test with a star-unpacked call.
+- `medium` **Two code rows fail no test when reverted:** DW-FU-6-6-4 (the script's `tracked_files` quotePath/`-z` change; add a non-ASCII-path test for the script twin) and DW-FU-21-6-2 (assert `("dreams-hygiene", "dreams-hygiene-check") in detectors._DOCTOR_SOURCE_TASKS` in `tests/scripts/test_detectors_doctor_sources.py`).
+- `medium` **Surface reconcile is incomplete:** `chain.py`, `sources/__init__.py`, `sources/__main__.py` and five doctor test files are governed by `spec-pyforge-doctor` (and `spec-pyforge-core` for `src/`); neither memlog names them. Append memlog entries naming each path to both, then let the landing stamp scoped.
+- `low` A full stamp over a corrupt baseline exits 0 and rewrites it; AC 5 says any stamp refuses. Read the baseline unconditionally in the full branch, or narrow the AC and the resolution to scoped stamps.
+- `low` DW-FU-21-6's resolution names `spec-pyforge-genesis` but the entry went to `docs/governance/spec-pyforge-charter/.memlog.md`, which also says "spec-surface reconciliation" where it means dreams-hygiene; the steward memlog's second-pass entry repeats marshal's wording; correct both with appended entries.
+- `low` `test_spec_surface_check.py` (about :441) mislabels its row (DW-12-5-2) and misdescribes main's behaviour.
 
 ### 2026-10-03 — Review pass
 - verdicts: 23 findings — high 0, medium 1, low 3, false 12, maybe-false 2, reject 5
