@@ -20,6 +20,10 @@ from .adapters.vcs_git import VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
 from .core.commit_vcs import CommittingVcs
+from .core.dispatch_ruff_format import (
+    DispatchRuffFormatResult,
+    apply_dispatch_ruff_format_before_verify,
+)
 from .core.dispatch_verification import reclassify_pre_existing_gate_findings
 from .core.egress import to_redacted_text
 from .core.identity import StoryKey, render_feed_key
@@ -551,4 +555,20 @@ def evaluate_dispatch_verification(
         verdict=verdict_value,
         data=data,
         findings=tuple(findings),
+    )
+
+
+def run_dispatch_ruff_format_before_verify(
+    *,
+    worktree: Path,
+    repo_root: Path,
+    vcs: CommittingVcs,
+    process: ProcessPort,
+) -> DispatchRuffFormatResult:
+    """Story 83.9 entry: format only the story's changed ``.py`` files before verify."""
+    return apply_dispatch_ruff_format_before_verify(
+        worktree=worktree,
+        repo_root=repo_root,
+        vcs=vcs,
+        process=process,
     )

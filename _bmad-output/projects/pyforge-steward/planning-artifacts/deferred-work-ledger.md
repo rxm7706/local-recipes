@@ -720,7 +720,9 @@ status: resolved
 - source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-9-2-an-unauthorized-page-is-absent-not-hidden.md`
   summary: The wiring-time uniqueness check in `views.py` (`if page.path in seen_paths`) compares declared `Page.path` values as exact strings, so two pages differing only by a trailing slash or letter case pass as "distinct" even though many adopter routers would treat them as the same route, reopening the ambiguous-duplicate-entry hazard the guard exists to prevent, just one layer up.
   evidence: Raised by Blind Hunter in this story's review pass. Not patched here: fixing this requires choosing a path-canonicalization policy (trailing-slash handling, case sensitivity) that nothing in the spec's Boundaries & Constraints or I/O matrix specifies, and guessing one risks introducing behavior inconsistent with whatever router an adopter actually wires this into (AD-1 explicitly leaves routing to the adopter). Belongs with a future story or an explicit spec decision, not an unprompted guess in this pass.
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: build_navigation_view is a Django view factory, and Django's own URL resolver treats `/reports` and `/reports/` (and different letter case) as different routes. Exact-string uniqueness therefore matches the router it plugs into, and canonicalizing would reject pairs that Django serves as two separate pages. The factory also has no production caller.
+  verified: 2026-10-03 — dashboard/views.py:47-57 compares paths as exact strings. A search of non-test src/ finds no caller of build_navigation_view. django_steward_portal/urls.py routes only chrome_home.
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views.py:47-57 `seen_paths: dict[str, Page] = {}` / `if page.path in seen_paths:` still compares declared `Page.path` values as exact strings only, no normalization. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should `Page.path` uniqueness treat a trailing slash or case difference as the same route (matching common router behavior), and if so which canonicalization rule — this depends on which router an adopter ultimately wires in, which AD-1 deliberately leaves to the adopter.
@@ -734,7 +736,9 @@ status: resolved
 - source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-9-2-an-unauthorized-page-is-absent-not-hidden.md`
   summary: Story 9.1's `DashboardIdentityMiddleware` stores `scope["dashboard_role"]` verbatim whenever `role.strip()` is truthy (only blank/whitespace-only values are rejected), so a role like `" east"` from a misbehaving proxy reaches both of this story's new consumers unstripped. `filter_by_role` then raises `ValueError` for it (per this story's own "unrecognized role is a configuration defect" rule, since `" east"` is not in `declaration.roles`), while `build_navigation` silently returns an empty tuple for the same value (`Page.roles` has no closed vocabulary to validate an "unrecognized" role against, by design — see the Design Notes' "two independent declared vocabularies"). The same artifact on the same request therefore 500s one dashboard surface and quietly shows nothing on the other.
   evidence: Raised by Blind Hunter in this story's review pass; confirmed by reading `middleware.py`'s `role = roles[0] if roles else ""` / `scope["dashboard_role"] = role if role.strip() else None` directly. Not patched here: the root cause is Story 9.1's already-reviewed, deliberate decision not to normalize role values, which that story's own review pass 3 explicitly deferred to Story 9.3's audit-row work ("trimming/normalizing a real identity is the identity-model decision deferred to Story 9.3"), and this story's spec explicitly inherits that deferral rather than re-deciding it. Each of `filter_by_role`'s raise and `build_navigation`'s silent-empty is independently correct against its own module's stated contract; only the cross-module asymmetry is new, and reconciling it means picking a normalization policy that belongs with Story 9.3, not an unprompted guess here.
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: storing identity and role verbatim was ruled by design on 2026-10-01 (DW-FU-9-1-13, closed). Both outcomes fail closed, one with a loud refusal and the other with an empty navigation, and neither leaks a row or a page. A padded role cannot reach either consumer through a real server, because daphne's twisted parser strips header whitespace, and the only production caller of filter_by_role (the atlas board) checks the role against its declaration first.
+  verified: 2026-10-03 — middleware.py:246-247 stores the role verbatim; filtering.py:96-101 raises on a role outside the vocabulary; navigation.py:118 returns empty. twisted/web/http.py:2502 in the pyforge-steward env runs `data.strip(b" \t")` on header values. django_atlas_portal/board.py:44-54 maps an unknown role to None before calling filter_by_role at :67. Ledger entry DW-FU-9-1-13 is closed BY-DESIGN.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/middleware.py:247 `scope["dashboard_role"] = role if role.strip() else None` still stores the role verbatim (only blank/whitespace rejected). dashboard/filtering.py:73-76 `filter_by_role` still compares `role` "by exact equality only -- no normalization or stripping" and its own docstring still says this was "explicitly deferred ... to Story 9.3's audit rows"; dashboard/audit.py (Story 9.3, now landed) never implemented any role normalization — the deferral was never picked up. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Which module owns role/identity normalization (trim/case-fold), and should an out-of-vocabulary role raise (as `filter_by_role` does) or silently degrade to no-pages-visible (as `build_navigation` does) — the two current behaviors for the same malformed input are inconsistent and neither has been chosen as the sanctioned one.
@@ -841,7 +845,9 @@ status: resolved
 - source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-9-3-the-audit-trail-records-what-was-seen.md`
   summary: Review pass 2 wrapped the read and its `AUDIT_READ` write in one `transaction.atomic()` block and documented it as closing AD-7's unrecorded-read hole, but Django's `atomic()` nested inside an already-open transaction is a savepoint, not an independent transaction — so under `ATOMIC_REQUESTS=True` (an ordinary Django production setting) or any service-level `@transaction.atomic`, a rollback removes the audit record of a read whose rows the caller has already received, leaving an unrecorded read that is repeatable on demand.
   evidence: Raised independently by both reviewers in this story's review pass 3 and reproduced by execution twice — once by wrapping the call in `transaction.atomic()` plus `transaction.set_rollback(True)`, once by raising inside the outer block; both left the caller holding the returned rows with zero `audit_read` rows surviving. Not patched: the two available fixes each change what deployments may call this function. `transaction.atomic(durable=True)` converts the silent hole into a loud `RuntimeError`, which is the module's own "refused rather than run unrecorded" idiom but makes `query_audit_entries` uncallable from any view running under `ATOMIC_REQUESTS=True`; writing the `AUDIT_READ` row on a separate connection so it commits independently sidesteps that but puts the audit write outside the caller's transaction entirely, which is a durability model the spec does not choose between. Pass 3 patched the docstring's overclaim so the guarantee is stated accurately (scope, not durability) and named the caller's responsibility; the substantive choice belongs with whichever story first puts a real request-path caller in front of the trail — Story 9.2's `filtering.py` or the export surface — since only a real caller settles which of the two costs is acceptable.
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: the platform runs with ATOMIC_REQUESTS=True, so durable=True would make query_audit_entries raise in every platform view, and an out-of-band connection would add a second transaction model without adding protection. Any in-process code can already read AuditEntry directly and leave no AUDIT_READ row at all, so a rollback is not a new way to read unrecorded. Committing the record together with the caller's own transaction is ordinary Django behavior, and the function's docstring already says so.
+  verified: 2026-10-03 — src/platform/config/settings/base.py:114 sets DATABASES['default']['ATOMIC_REQUESTS'] = True. audit.py:481-491 docstring states the scope-not-durability contract; audit.py:523-532 is the atomic block. A search of non-test src/ finds no caller of query_audit_entries.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/audit.py:522-532 — `with transaction.atomic(using=using): rows = list(...); record_audit_entry(...)`. The function's own docstring (lines 481-491) confirms this is a savepoint under an already-open outer transaction, not an independent one, and explicitly says the durability question is 'tracked on the deferred-work ledger rather than decided here'. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should query_audit_entries's AUDIT_READ write use durable=True (fails loudly under ATOMIC_REQUESTS=True/nested atomic) or an out-of-band connection (write survives an outer rollback but leaves the caller's transaction model)?
@@ -2829,7 +2835,9 @@ open. Relayed from the story worktree's ephemeral Tier-3 file at landing, 2026-0
   summary: Story 8.7 relaxed `_read_both_sides`' trailing reciprocity check so the AF-5 gap (one side resolved, the other side's own link field empty) becomes a repair. The same relaxation also covers a case the story's intent contract never scoped: `reconcile(github_item_id=..., jira_issue_key=...)` where BOTH link fields are empty. Pre-8.7 that raised `SyncUnlinkedError`; it now writes each side's link field to point at the other, minting a brand-new pair from two identifiers the caller merely named together, and then cross-propagating their status and assignee. That is link CREATION, not the link REPAIR the story scopes ("this story only writes VALUES into fields that already exist" is honored, but "a pair `reconcile()` has already resolved by SOME means" is not -- nothing resolved this pair).
   evidence: Raised by Edge Case Hunter in Story 8.7's second review pass and confirmed against the code: the trailing check only fires for a non-empty link, so two empty links reach `reconcile`, where `link_repair_github`/`link_repair_jira` are both computed as needed and both written unconditionally. Not patched in that pass because it is not reachable from the shipped CLI (`cli.py`'s `--github-item`/`--jira-issue`/`--schedule` are an `add_mutually_exclusive_group`, so an operator cannot supply both) and because whether "both named, neither linked" SHOULD mean "link them" is a genuine intent question, not a mechanical fix -- the module docstring currently asserts it as intended behavior, so resolving it means deciding the contract first. `reconcile()` is nonetheless a public module API with its own conformance test for the both-identifiers branch, and `SyncDuty.run` forwards both parameters unconditionally, so a future caller (or a CLI change dropping the mutual exclusion) reaches it. The one-sided variant of this -- one link non-empty and naming a DIFFERENT counterpart -- WAS patched in that pass and is not part of this entry.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: passing both identifiers is the caller asserting that they are a pair, and the module documents that writing both links in that case is intended. The dangerous variant, where either side already links to something else, is refused and tested. The shipped CLI cannot reach this path at all, because --github-item, --jira-issue and --schedule form one required mutually exclusive group.
+  verified: 2026-10-03 — sync.py:1137-1144: the _read_both_sides docstring names the 'both sides empty, both identifiers given' case as intended. sync.py:1178-1182 refuses a non-empty mismatch. cli.py:935-937 sets add_mutually_exclusive_group(required=True). tests/unit/test_sync_reconcile_propagation.py:1530-1554 proves an existing third-party link is untouched.
   severity: medium
   verified: 2026-10-01 — NEEDS-DECISION — sync.py:1046-1116 `_read_both_sides`'s trailing reciprocity check (line 1111) only raises SyncUnlinkedError for a non-empty mismatched link; when both `github_item_id` and `jira_issue_key` are given directly with BOTH sides' link fields empty, it returns the pair unchanged, and `reconcile`'s link-repair step then writes both link fields, minting a new pair. cli.py:935-937 confirms `--github-item`/`--jira-issue` remain a mutually exclusive argparse group, so this path is unreachable via the shipped CLI today. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should reconcile(github_item_id=..., jira_issue_key=...) with BOTH sides' link fields empty mint a brand-new pair (today's documented behavior), or raise SyncUnlinkedError as it did pre-Story-8.7? reconcile() is a public module API and SyncDuty.run forwards both parameters, so a future caller (not just the CLI) could reach this path.
@@ -3209,7 +3217,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred b1923db21c86 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: every station ships in the one platform image (all eight portals are always in INSTALLED_APPS and the chart has no per-station switch), so a station's schema change can only reach an estate through a platform release anyway. Liquibase labels or contexts would split DDL by a release unit that does not exist. Per-distribution numbering already removed the serialization red-team B-1 named, and the concrete harm, scribe's pgvector DDL failing every estate (DW-FU-41-3-9), was fixed by Story 83.3.
+  verified: 2026-10-03 — db.changelog-master.yaml:73-94 lists scribe and mybmad changesets in the single master changelog. base.py:31-40,199 always installs all eight portals. No per-station enable flag exists in the chart values.yaml. db/liquibase_update.py:76-87 runs a plain `update` with no label or context filter. Ledger entry DW-FU-41-3-9 was closed 2026-10-02 (pgvector/pgvector:pg17 is now the default image).
   verified: 2026-10-01 — NEEDS-DECISION — src/platform/db/changelog/db.changelog-master.yaml:67-86 still includes pyforge-scribe:1-4 and pyforge-mybmad:1-2 directly in the single master changelog. `grep -l 'context:|labels:|includeAll'` over db/changelog finds nothing, and templates/liquibase-job.yaml passes no label filter, so every estate applies scribe's DDL. db/sqlmigrate-map.yaml:7 still has default: python-agent-platform for unmapped first-party migrations. (2026-09-30 deferral burn-down triage)
   decision: Should station DDL ride a per-station release (Liquibase labels, contexts or per-distribution changelogs, closing red-team B-1), or is one platform-release DDL train the accepted design?
 
@@ -4196,7 +4206,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred b9762643b07d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- By design: COMPONENT_RUNTIME is the single locality authority by contract, and running the production image with COMPONENT_RUNTIME=local is a supported shape. The Containerfile's collectstatic and the compose stack both run it, so refusing it at the production leaf would break both. Reaching CERT_NONE takes two deliberate opt-ins (the local marker plus COMPONENT_BROKER_SSL_CERT_REQS=none), the chart sets neither, and Story 83.2 reused the same two-key pattern for cookies.
+  verified: 2026-10-03 — stage_one.py:197-198 and :232-233 return early when not deployed. locality.py:40-49: only an explicit `local` counts as local. Containerfile:293-296 runs collectstatic with COMPONENT_RUNTIME=local. compose/compose.yml:159,247 set COMPONENT_RUNTIME: local. production.py:49-56 shows the Story 83.2 cookie precedent. A search of src/platform/deploy finds no COMPONENT_RUNTIME.
   verified: 2026-10-01 — NEEDS-DECISION — src/platform/config/startup/stage_one.py run_stage_one still begins `if not is_deployed(): return`, so config.settings.production with COMPONENT_RUNTIME=local skips refuse_unverified_broker_tls and composes ssl_cert_reqs=CERT_NONE. It is unchanged since 3a9030c8bb. (2026-09-30 deferral burn-down triage)
   decision: Should the production settings leaf itself refuse CERT_NONE (R-14's 'must fail the production settings check'), or is the COMPONENT_RUNTIME marker the sole authority as the intent says?
 
@@ -5356,7 +5368,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 7684351f25e0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Superseded: the repo has retired the exception. AGENTS.md (Dream-first item 6 and Session guardrails), the guild-roster session_denials rule, the hook and marshal's dispatch prompt all forbid running the switch script from any worktree. The exception lives on only in the operator's personal auto-memory note feedback_bmad_loop_operations.md, which the operator can delete; no team memory or repo file carries it.
+  verified: 2026-10-03 — .claude/hooks/pre-shell.py:493-502 denies the script in any worktree. docs/governance/guild-roster.json:306-309 holds the deny rule. AGENTS.md:162 and :248-249 forbid it. pyforge-marshal adapters/harness_bmadbuild.py:230 forbids it in the dispatch prompt. ~/.claude/projects/<repo>/memory/feedback_bmad_loop_operations.md:238 holds the stale exception; a search of .claude/memory/ finds nothing. Separately, today the hook also denied a read-only grep whose pattern was the script name, because it matches tokens; that is a false positive outside this entry.
   verified: 2026-10-01 — NEEDS-DECISION — .claude/hooks/pre-shell.py:493-502 match_bmad_switch_unsafe still denies any bmad-switch token when BMAD_ACTIVE_PROJECT is set or is_worktree(cwd) is true, with no loop-home carve-out. The repo now states the same rule everywhere: docs/governance/guild-roster.json:306-309 (trigger 'scripts/bmad-switch run from a worktree, or with BMAD_ACTIVE_PROJECT already set'), AGENTS.md § Session guardrails ('scripts/bmad-switch from a worktree ...' is an enforced denial), and marshal's dispatch prompt (pyforge-marshal/.../adapters/harness_bmadbuild.py:228-230: 'never scripts/bmad-switch'). The exception the entry cites is not in .claude/memory/ (grep finds no bmad-switch there); it exists only in the o… Severity high -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
   decision: Is the 2026-07-26 'run bmad-switch inside a bmad-loop run worktree' exception retired, given the hook, guild-roster.json, AGENTS.md and marshal's dispatch prompt all forbid it? Or should the hook learn a loop-home signal?
 
@@ -5394,7 +5408,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 8b063dc17d11 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-20 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Covered: the authoritative commit-msg hook checks every commit however its message was written, including editor, -C and --fixup paths. Story 66.2 has `steward setup` install it and precommit-config-check police it in detectors-ci. An agent's Bash session has no terminal for an editor, so the pre-emptive gap is mostly theoretical, and denying every commit without a message flag would add a governance rule for no added protection.
+  verified: 2026-10-03 — pre-shell.py:352-379 (_extract_commit_message reads only -m/-F) and :505-520 (attribution check is skipped when there is no message). .pre-commit-config.yaml:8-18 declares the commit-msg-no-attribution hook. .git/hooks/commit-msg is present (the pre-commit-generated shim). pixi.toml:1315-1328 defines precommit-config-check and wires it into lint-types.
   verified: 2026-10-01 — NEEDS-DECISION — .claude/hooks/pre-shell.py:352-379 _extract_commit_message still reads only -m/--message/-F/--file argv tokens, and :505-520 match_git_commit_guardrail skips the attribution check when no message is found. The same blind spot covers -C/-c/--reuse-message and --fixup. The authoritative layer is installed: .pre-commit-config.yaml:8,12-18 commit-msg-no-attribution runs scripts/commit_msg_hook.py, and .git/hooks/commit-msg is the pre-commit-generated shim. Severity high -> low by the 2026-10-01 triage. (2026-09-30 deferral burn-down triage)
   decision: Should the pre-emptive hook deny agent `git commit` calls that carry no inspectable message, a new session_denials rule, or is the installed commit-msg hook enough?
 
@@ -5537,7 +5553,9 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   origin: spec-deferred 492f999e9820 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): fix -- backlog Story 74.2's spec now requires the mounted credential to allow s3:ListBucket on the bucket (conditioned to the prefix) plus GetObject/PutObject; the requirement lands with 74.2.
+  verified: 2026-10-03 — _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-74-2-the-chart-names-the-bucket-and-prefix-per-environment-and-reaches-only-the-consumed-store.md:121 records the amendment.
   verified: 2026-10-01 — NEEDS-DECISION — src/shared/packages/django-pyforge/src/django_pyforge/object_store.py propagates every non-404 client error unchanged (docstring at line 172: '`head_object`, or None when the key is absent. Any other error propagates unchanged.') -- spec-conformant by design. The real S3 credential Story 74.2's chart would mount is still undecided: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md's Story 74.2 ('The chart names the bucket and prefix per environment and reaches only the consumed store') remains at ledger status backlog, so its IAM policy (whether it grants s3:ListBucket) has not been set. (2026-09-30 deferral burn-down triage)
   decision: Will the S3-compatible credential Story 74.2's chart mounts include s3:ListBucket? If not (a Put/Get-only credential), a head_object on an absent key will 403 rather than 404 on real S3/StorageGRID, and put_stream's first-write path needs an operator decision on whether to grant broader IAM or special-case 403-on-head as 'absent'.
 
@@ -5702,3 +5720,485 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-02 — dispatch-land finalize
   status: open
+
+### DW-FRR-13-1: Follow-up review still recommended for story 13.1
+
+- source_spec: `planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md`
+  summary: Story 13.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 13.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-13-4: Follow-up review still recommended for story 13.4
+
+- source_spec: `planning-artifacts/specs/spec-13-4-the-set-reports-and-tears-down-safely.md`
+  summary: Story 13.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 13.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-13-4-the-set-reports-and-tears-down-safely.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-14-1: Follow-up review still recommended for story 14.1
+
+- source_spec: `planning-artifacts/specs/spec-14-1-the-pre-flight-diff-retrodicts-a-real-upgrade.md`
+  summary: Story 14.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 14.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-14-1-the-pre-flight-diff-retrodicts-a-real-upgrade.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-14-2: Follow-up review still recommended for story 14.2
+
+- source_spec: `planning-artifacts/specs/spec-14-2-apply-is-deliberate-branched-and-never-clobbers-custom.md`
+  summary: Story 14.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 14.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-14-2-apply-is-deliberate-branched-and-never-clobbers-custom.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-15-1: Follow-up review still recommended for story 15.1
+
+- source_spec: `planning-artifacts/specs/spec-15-1-one-command-reports-the-whole-pipelines-truth.md`
+  summary: Story 15.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 15.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-15-1-one-command-reports-the-whole-pipelines-truth.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-15-3: Follow-up review still recommended for story 15.3
+
+- source_spec: `planning-artifacts/specs/spec-15-3-five-modules-wire-through-the-provisioning-verb.md`
+  summary: Story 15.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 15.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-15-3-five-modules-wire-through-the-provisioning-verb.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-15-4: Follow-up review still recommended for story 15.4
+
+- source_spec: `planning-artifacts/specs/spec-15-4-the-upgrade-gate-spot-checks-one-native-path-per-class.md`
+  summary: Story 15.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 15.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-15-4-the-upgrade-gate-spot-checks-one-native-path-per-class.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-16-2: Follow-up review still recommended for story 16.2
+
+- source_spec: `planning-artifacts/specs/spec-16-2-startup-refuses-misconfiguration-two-stage-and-named.md`
+  summary: Story 16.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 16.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-16-2-startup-refuses-misconfiguration-two-stage-and-named.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-18-1: Follow-up review still recommended for story 18.1
+
+- source_spec: `planning-artifacts/specs/spec-18-1-django-pyforge-is-the-only-chrome.md`
+  summary: Story 18.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 18.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-18-1-django-pyforge-is-the-only-chrome.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-18-2: Follow-up review still recommended for story 18.2
+
+- source_spec: `planning-artifacts/specs/spec-18-2-the-switcher-shows-only-what-the-user-may-reach.md`
+  summary: Story 18.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 18.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-18-2-the-switcher-shows-only-what-the-user-may-reach.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-18-3: Follow-up review still recommended for story 18.3
+
+- source_spec: `planning-artifacts/specs/spec-18-3-two-clients-one-rs256-assertion.md`
+  summary: Story 18.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 18.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-18-3-two-clients-one-rs256-assertion.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-19-2: Follow-up review still recommended for story 19.2
+
+- source_spec: `planning-artifacts/specs/spec-19-2-seven-more-portal-shells-under-the-prefix.md`
+  summary: Story 19.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 19.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-19-2-seven-more-portal-shells-under-the-prefix.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-20-1: Follow-up review still recommended for story 20.1
+
+- source_spec: `planning-artifacts/specs/spec-20-1-wagtail-publishes-without-a-deploy.md`
+  summary: Story 20.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 20.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-20-1-wagtail-publishes-without-a-deploy.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-21-1: Follow-up review still recommended for story 21.1
+
+- source_spec: `planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md`
+  summary: Story 21.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 21.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-21-5: Follow-up review still recommended for story 21.5
+
+- source_spec: `planning-artifacts/specs/spec-21-5-front-door-queries-the-supervisor.md`
+  summary: Story 21.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 21.5 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-5-front-door-queries-the-supervisor.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-23-1: Follow-up review still recommended for story 23.1
+
+- source_spec: `planning-artifacts/specs/spec-23-1-same-url-different-rows.md`
+  summary: Story 23.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 23.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-23-1-same-url-different-rows.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-24-1: Follow-up review still recommended for story 24.1
+
+- source_spec: `planning-artifacts/specs/spec-24-1-cloudevents-on-redis-broker.md`
+  summary: Story 24.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 24.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-24-1-cloudevents-on-redis-broker.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-29-3: Follow-up review still recommended for story 29.3
+
+- source_spec: `planning-artifacts/specs/spec-29-3-five-tier-check.md`
+  summary: Story 29.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 29.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-3-five-tier-check.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-32-1: Follow-up review still recommended for story 32.1
+
+- source_spec: `planning-artifacts/specs/spec-32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core.md`
+  summary: Story 32.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 32.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-32-2: Follow-up review still recommended for story 32.2
+
+- source_spec: `planning-artifacts/specs/spec-32-2-steward-deploy-profile-adapters-are-plugins.md`
+  summary: Story 32.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 32.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-32-2-steward-deploy-profile-adapters-are-plugins.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-33-2: Follow-up review still recommended for story 33.2
+
+- source_spec: `planning-artifacts/specs/spec-33-2-first-portal-slice-provision-inventory.md`
+  summary: Story 33.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 33.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-33-2-first-portal-slice-provision-inventory.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-39-4: Follow-up review still recommended for story 39.4
+
+- source_spec: `planning-artifacts/specs/spec-39-4-optional-pixi-feature-bundle-suite-cap-4.md`
+  summary: Story 39.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-39-4-optional-pixi-feature-bundle-suite-cap-4.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-48-2: Follow-up review still recommended for story 48.2
+
+- source_spec: `planning-artifacts/specs/spec-48-2-r-18-sizing-rewrite.md`
+  summary: Story 48.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 48.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-2-r-18-sizing-rewrite.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-48-6: Follow-up review still recommended for story 48.6
+
+- source_spec: `planning-artifacts/specs/spec-48-6-r-22-live-browser-streaming-or-the-pillar-deleted.md`
+  summary: Story 48.6 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 48.6 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-6-r-22-live-browser-streaming-or-the-pillar-deleted.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-48-9: Follow-up review still recommended for story 48.9
+
+- source_spec: `planning-artifacts/specs/spec-48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept.md`
+  summary: Story 48.9 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 48.9 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-11-2: Follow-up review still recommended for story 11.2
+
+- source_spec: `planning-artifacts/specs/spec-11-2-db-gpt-joins-via-its-configured-integration-pattern.md`
+  summary: Story 11.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 11.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-11-2-db-gpt-joins-via-its-configured-integration-pattern.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-11-4: Follow-up review still recommended for story 11.4
+
+- source_spec: `planning-artifacts/specs/spec-11-4-isolation-and-statelessness-proven.md`
+  summary: Story 11.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 11.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-11-4-isolation-and-statelessness-proven.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-1: Follow-up review still recommended for story 12.1
+
+- source_spec: `planning-artifacts/specs/spec-12-1-the-vanilla-chart-with-an-ocp-overlay.md`
+  summary: Story 12.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-1-the-vanilla-chart-with-an-ocp-overlay.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-2: Follow-up review still recommended for story 12.2
+
+- source_spec: `planning-artifacts/specs/spec-12-2-gke-as-a-portability-profile.md`
+  summary: Story 12.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-2-gke-as-a-portability-profile.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-3: Follow-up review still recommended for story 12.3
+
+- source_spec: `planning-artifacts/specs/spec-12-3-air-gap-parity-is-a-failing-check.md`
+  summary: Story 12.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-3-air-gap-parity-is-a-failing-check.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-42-3: Follow-up review still recommended for story 42.3
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: Story 42.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-45-2: Follow-up review still recommended for story 45.2
+
+- source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
+  summary: Story 45.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-46-1: Follow-up review still recommended for story 46.1
+
+- source_spec: `planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md`
+  summary: Story 46.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-46-2: Follow-up review still recommended for story 46.2
+
+- source_spec: `planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md`
+  summary: Story 46.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-46-3: Follow-up review still recommended for story 46.3
+
+- source_spec: `planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md`
+  summary: Story 46.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-46-4: Follow-up review still recommended for story 46.4
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: Story 46.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-60-1: Follow-up review still recommended for story 60.1
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: Story 60.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 60.1 landed on origin/main (Merge pyforge-steward/60-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-61-1: Follow-up review still recommended for story 61.1
+
+- source_spec: `planning-artifacts/specs/spec-61-1-corridor-transports-upload-default.md`
+  summary: Story 61.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 61.1 landed on origin/main (Merge pyforge-steward/61-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-61-1-corridor-transports-upload-default.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-63-4: Follow-up review still recommended for story 63.4
+
+- source_spec: `planning-artifacts/specs/spec-63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point.md`
+  summary: Story 63.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 63.4 landed on origin/main (Merge pyforge-steward/63-4 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-75-1: Follow-up review still recommended for story 75.1
+
+- source_spec: `planning-artifacts/specs/spec-75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity.md`
+  summary: Story 75.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 75.1 landed on origin/main (Merge pyforge-steward/75-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-76-2: Follow-up review still recommended for story 76.2
+
+- source_spec: `planning-artifacts/specs/spec-76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata.md`
+  summary: Story 76.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 76.2 landed on origin/main (Merge pyforge-steward/76-2 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-78-1: Follow-up review still recommended for story 78.1
+
+- source_spec: `planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md`
+  summary: Story 78.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 78.1 landed on origin/main (Merge pyforge-steward/78-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-8-7: Follow-up review still recommended for story 8.7
+
+- source_spec: `planning-artifacts/specs/spec-8-7-assignee-and-identity-link-propagation.md`
+  summary: Story 8.7 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-8-7-assignee-and-identity-link-propagation.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed

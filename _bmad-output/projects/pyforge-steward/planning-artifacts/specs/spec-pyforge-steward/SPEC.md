@@ -2,7 +2,7 @@
 id: SPEC-steward
 spec: pyforge-steward
 status: ready
-updated: "2026-10-01"
+updated: "2026-10-03"
 owner-dream: docs/dreams/pyforge-steward.md
 covers-dreams:
   - docs/dreams/pyforge-steward.md
@@ -308,6 +308,7 @@ A mandate this repo has already paid for meeting late, twice: `_http.py` attache
 - **CAP-60 — fail loud, fail alone on broken links** ← spec-jira-github-projects-sync CAP-4 (shipped 2026-09-17)
   - **intent:** An item missing its cross-system link fails loudly in a log — never silently
   - **success:** a batch containing one unlinked item completes for all other items and emits
+  - **amended 2026-10-03 (operator ruling, Phase 3, DW-8-5-2):** an item carrying the GitHub-only marker declared in `sync-config.yaml` (a label or single-select field value) is skipped and logged at info, never failed; every other unlinked item still fails loudly. Behind the flag `pyforge.steward.sync_github_only_marker` (OFF in production). Story 84.4.
 - **CAP-61 — explicit status-vocabulary translation** ← spec-jira-github-projects-sync CAP-5 (shipped 2026-09-17)
   - **intent:** Status vocabulary differences between the two systems ("Done" vs "Closed") are
   - **success:** every status value crossing the boundary passes through the translation

@@ -946,6 +946,59 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (Phase 3)** — **Ruled: marshal's deferral decisions.** The operator ruled every live NEEDS-DECISION entry on
+  the rulings page: for marshal 20 fix, 18 close, 2 keep. **What it looks like when fixed:** the fix rulings land as seven
+  module bundles; the closes and keeps are written into the ledger with their reasons and cited evidence. **Constraints:**
+  fix stories, no CAP, no flag; two rulings amend the spine directly (AD-4 `core → ports`, AD-30 payload wording).
+  Owner `spec-pyforge-marshal`. → Epic 86 / Stories 86.1-86.7, specced 2026-10-03.
+- **2026-10-03 (night)** — **Found: a routine memory capture blocks the next landing.** Each dispatch session's
+  closeout adds a line to `.claude/memory/MEMORY.md` at the end of a section, so two stories landing one after the other
+  conflict there, and the landing heal refuses the second (MRS-DISP-038): 83.7 was merged by hand and 83.4 refused.
+  **What it looks like when fixed:** the heal merges appended index lines the way it merges memlog entries; an edit or
+  removal still escalates. **Constraints:** a `fix` story, no CAP and no flag; sessions keep capturing (operator ruling
+  2026-10-03). Owner `spec-pyforge-marshal`. → Story 83.11, specced 2026-10-03.
+- **2026-10-03 (evening)** — **Found: a verification refusal throws the finished work away.** Dispatch
+  verification is the one authority on a finished story's tree (2-3 minutes, no tokens), but it can only refuse. A
+  campaign then relaunches a fresh session, and after two failures Story 33.6 raises the model: 83.2 ran three times
+  (48 minutes, the third on opus), each refused on the same unformatted line. The other refused Cursor stories were fixed
+  by hand, about four extra full-suite runs each. bmad-build-auto already tells the session to re-run the spec's checks
+  after its review patches; the Cursor sessions did not, so restating that rule changes nothing.
+  **What it looks like when fixed:** a verification refusal never relaunches a fresh session and never raises the model;
+  the story parks, or lands once its branch is fixed; and with a flag on, the refusal first goes back to the session
+  that wrote the change for one bounded fix turn, re-verified once.
+  **Constraints:** verification is never relaxed; one fix turn per refusal; the resume form is profile data (AD-19); the
+  retry change is a `fix` (no CAP, no flag), the fix turn is new behaviour (a CAP, flagged OFF in production). Owner
+  `spec-pyforge-marshal`. → Story 83.10 and CAP-286 / Epic 85 / Story 85.1 (FR-233), specced 2026-10-03.
+- **2026-10-03 (later)** — **Found: every Cursor session is refused on formatting.** Each Cursor dispatch of marshal
+  Epics 83 and 66 and Story 84.1 finished its work and was refused at verification on `lint-types`, most often on
+  `ruff format` alone, and was fixed by hand before landing; the sessions reported the check green.
+  **What it looks like when fixed:** dispatch applies `ruff format` to the story's own files before verification and
+  commits the result; type and lint errors still refuse. **Constraints:** a `fix` story, no CAP and no flag; never a
+  file the story did not change. Owner `spec-pyforge-marshal`. → Story 83.9, specced 2026-10-03.
+- **2026-10-03** — **Found: a session halts on the status a story is minted with.** Story specs are minted at
+  `status: 'backlog'` to match their ledger row, and bmad-build-auto does not recognize `backlog`. Claude sessions fell
+  through to planning; a Cursor session for 83.5 halted before any work and set the spec `blocked`.
+  **What it looks like when fixed:** dispatch hands the session `ready-for-dev` in the worktree copy of a `backlog`
+  spec, journaled; the spec on `main` and the ledger are untouched. **Constraints:** a `fix` story, no CAP and no flag;
+  bmad-build-auto is installer-owned and stays unedited. Same day (operator ruling): marshal dispatches on Cursor with
+  `composer-2.5-fast`, after the Epic 83 campaign landed 1 of 5 stories with the `sonnet` id passed straight through.
+  Owner `spec-pyforge-marshal`. → Story 83.8, specced 2026-10-03.
+- **2026-10-02 (night, later)** — **Wanted: refresh every harness's model list from its own live source.** The model
+  ids in marshal's policies have been refreshed by hand. On 2026-10-02 Cursor no longer listed `grok-4.6`, which four
+  station tier maps named, and listed a new `grok-4.7-high`; nothing in marshal could say so. Each harness exposes its
+  list differently: Cursor's CLI lists the account's models (`cursor-agent models`, 246 ids on 2026-10-02); Claude Code
+  and the Gemini CLI have no listing subcommand, but their APIs do (Anthropic `GET /v1/models`, Gemini `models.list`,
+  both paged); the Copilot CLI documents none.
+  **What it looks like when fixed:** one operator-run marshal command reads each harness's live list from the source
+  its profile declares and writes a dated snapshot of every id it read. It reports each id that a station tier map, the
+  price catalog or a harness profile declares and the live list no longer carries, and each id added or removed since
+  the last snapshot. A harness whose source cannot be read is reported unavailable with the reason; the others still
+  report.
+  **Constraints:** operator-run only, never during dispatch or policy load; the listing source is profile data, never a
+  per-harness branch (AD-19); no LLM client and no model call; the report is advisory. Operator rulings 2026-10-02: the
+  snapshot, not the price catalog, records every live id, and the catalog keeps only priced models; the Gemini and
+  Copilot CLIs stay out of the Guild environment for now. Owner `spec-pyforge-marshal`. → CAP-285 / Epic 84 /
+  Story 84.1 (FR-232), specced 2026-10-02.
 - **2026-10-01 (night)** — **Found: a campaign forgets `--retry-environment-blocks` after its first cycle.**
   `_spawn_campaign_supervisor` hands the detached supervisor the station, the story list, the harness and the in-flight
   cap, but not `retry_environment_blocks`. A campaign launched with the flag skipped 81.1 (an OAuth-refresh race at

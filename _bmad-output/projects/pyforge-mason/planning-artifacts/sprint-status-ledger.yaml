@@ -77,7 +77,7 @@ development_status:
   24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell: done
   25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed: backlog
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: backlog
-  26-1-cfe-s-tests-never-ask-github-whether-a-recipe-maintainer-exists: backlog
+  26-1-cfe-s-tests-never-ask-github-whether-a-recipe-maintainer-exists: done
   3-1-engine-protocol-and-provisioning: done
   3-2-mason-package-build: done
   3-3-ship-target-vocabulary-and-dry-run-default: done

@@ -167,6 +167,58 @@ def _extra_mirror_env_vars() -> tuple[str, ...]:
     return tuple(module._EXTRA_MIRROR_ENV_VARS)
 
 
+@pytest.fixture(scope="session")
+def _smithy_stub_sitecustomize_dir(tmp_path_factory):
+    """A sitecustomize that stubs conda-smithy maintainer lookups in children."""
+    from _smithy_maintainer_stub import sitecustomize_source
+
+    site = tmp_path_factory.mktemp("cfe_smithy_stub_site")
+    (site / "sitecustomize.py").write_text(sitecustomize_source(), encoding="utf-8")
+    return site
+
+
+@pytest.fixture(autouse=True)
+def stub_smithy_maintainer_lookups(
+    request, monkeypatch, _smithy_stub_sitecustomize_dir,
+):
+    """Replace conda-smithy maintainer lookups unless the test is marked network.
+
+    ``_maintainer_exists`` (and ``_team_exists`` for ``org/team``) ask
+    github.com when ``GH_TOKEN`` is unset. The ``cfe-regression-net`` lane
+    has no token, so an unauthenticated HEAD from a CI runner flaked
+    (2026-10-02) with ``Recipe maintainer "rxm7706" does not exist``.
+
+    Autouse for every test that is not marked ``network`` — the opposite of
+    ``clean_mirror_env``, which is opt-in so network tests keep real mirrors.
+    In-process ``monkeypatch`` covers tests that import conda-smithy
+    directly. ``PYTHONPATH`` sitecustomize covers the conda-smithy child
+    that ``validate_recipe.run_external_lint`` starts (``script_runner``
+    copies ``os.environ`` via ``_ensure_path``). Runtime lint is unchanged.
+    """
+    if request.node.get_closest_marker("network"):
+        return
+    from _smithy_maintainer_stub import (
+        CFE_STUB_SMITHY_LOOKUPS_ENV,
+        stub_maintainer_exists,
+        stub_team_exists,
+    )
+
+    try:
+        import conda_smithy.lint_recipe as lint_recipe
+    except ImportError:
+        pass
+    else:
+        monkeypatch.setattr(lint_recipe, "_maintainer_exists", stub_maintainer_exists)
+        monkeypatch.setattr(lint_recipe, "_team_exists", stub_team_exists)
+    monkeypatch.setenv(CFE_STUB_SMITHY_LOOKUPS_ENV, "1")
+    existing = os.environ.get("PYTHONPATH", "")
+    prefix = str(_smithy_stub_sitecustomize_dir)
+    monkeypatch.setenv(
+        "PYTHONPATH",
+        f"{prefix}{os.pathsep}{existing}" if existing else prefix,
+    )
+
+
 @pytest.fixture
 def clean_mirror_env(monkeypatch):
     """Remove every ambient mirror-routing env var for one test.
