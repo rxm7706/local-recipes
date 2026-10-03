@@ -23,7 +23,7 @@ from pyforge.warden.eligibility import (
     status_from_eligibility_result,
 )
 from pyforge.warden.models import Ecosystem
-from pyforge.warden.sources import PackageIdentity, SourceEvidence, resolve_identity
+from pyforge.warden.sources import SourceEvidence, resolve_identity
 
 _NOW = datetime(2026, 8, 22, 12, 0, 0, tzinfo=UTC)
 

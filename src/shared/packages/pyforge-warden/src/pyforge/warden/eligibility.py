@@ -42,7 +42,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
-from .models import Ecosystem
 from .sources import PackageIdentity, SourceEvidence
 
 
