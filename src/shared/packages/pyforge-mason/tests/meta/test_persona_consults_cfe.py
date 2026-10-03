@@ -7,7 +7,6 @@ import re
 import subprocess
 from pathlib import Path
 
-from conftest import exclude_cfe_rebuild_equivalence_tests
 from pyforge.testing_kit import (
     changed_paths_since,
     commit_files,
@@ -309,9 +308,7 @@ def test_conda_forge_expert_not_replaced_or_skf_nested():
     unsanctioned = unsanctioned_commits(
         root, pathspec=".claude/skills/conda-forge-expert", changelog_path=_CFE_CHANGELOG
     )
-    dirty = exclude_cfe_rebuild_equivalence_tests(
-        root, _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
-    )
+    dirty = _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
     assert not unsanctioned, (
         "this story must not edit conda-forge-expert outside a sanctioned `retro:` "
         f"commit that moves its CHANGELOG: {unsanctioned}"

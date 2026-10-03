@@ -7,8 +7,13 @@ stranded behind legacy code for months).
 
 Reads `campaign-state.yaml` (the real, tracked instance at
 `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/
-spec-conda-forge-expert-rebuild/campaign-state.yaml`) plus bounded git
-history and enforces four clauses:
+spec-conda-forge-expert-rebuild/campaign-state.yaml`), every brief a slice's
+`brief_path` names, and -- only when at least one slice carries a
+`brief_path` -- git history from `--since` to HEAD. With no `brief_path` on
+any slice (true since Story 15.1 closed the campaign) no clause needs a
+retro, so no history is walked at all (`retros_scanned: null` in `--json`).
+Status strings are matched stripped and case-folded. Enforces four clauses,
+clause (b) in two halves ((b) against git history, (b') against the brief):
 
     (a) stale-equivalence          any slice whose `status` is `parallel`,
                                     `audited`, or `cut-over` must have
@@ -44,6 +49,19 @@ history and enforces four clauses:
                                     `brief_path: null` are never checked --
                                     no brief exists yet for anything to go
                                     stale.
+
+    (b') brief-defect              the brief a set `brief_path` names is
+                                    opened: a non-string path, a missing or
+                                    empty file, invalid YAML, a non-mapping,
+                                    a required skill-brief key missing or
+                                    null/empty, or a scope without a `type`
+                                    is a finding; so is any qualifying retro
+                                    at or older than `brief_mirrored_through`
+                                    that no `retro-mirror` amendment names in
+                                    a SHA field (the full SHA or a prefix of
+                                    at least 10 hex characters as the field's
+                                    whole value -- never a substring of free
+                                    text such as `reason`).
 
     (c) legacy-caller-at-endgame   only evaluated when
                                     `campaign.endgame_declared: true`; any
@@ -81,7 +99,7 @@ clause (c) or a real equivalence-harness runner for clause (a) -- both are
 declared-state readers only.
 
 Exit codes: 0 clean, 1 findings, 2 could not run (bad/missing
-campaign-state.yaml, or `git log` failed). `--json` machine output
+campaign-state.yaml, or the history walk's `git log` failed). `--json` machine output
 supported.
 """
 from __future__ import annotations
@@ -115,8 +133,27 @@ CFE_SURFACE_PREFIXES = (
 )
 CFE_SURFACE_FILES = frozenset({".claude/tools/conda_forge_server.py"})
 
+# Clause (b'): a retro-mirror amendment names a retro SHA when one of its
+# fields holds the full SHA, or a prefix of at least this many hex characters,
+# as the field's whole value (or as one item of a list value).
+MIN_SHA_PREFIX = 10
+
 # Clause (a): slice statuses that require equivalence: "green".
 EQUIVALENCE_GATED_STATUSES = frozenset({"parallel", "audited", "cut-over"})
+EQUIVALENCE_GATED_FOLDS = frozenset(s.casefold() for s in EQUIVALENCE_GATED_STATUSES)
+# Clause (b'): the top-level keys `skill-brief.v1.json` requires; each must be
+# present AND carry a value (null or an empty string/list/mapping is hollow).
+_BRIEF_REQUIRED_TOP_KEYS = (
+    "name",
+    "version",
+    "source_repo",
+    "language",
+    "description",
+    "forge_tier",
+    "created",
+    "created_by",
+    "scope",
+)
 
 # Clause (d): slices at this order or higher are gated by the re-scope gate's
 # pre-conditions before their `brief_path` may be set (CAP-4's "second slice
@@ -138,11 +175,16 @@ RE_SCOPE_GATE_PRE_CONDITION_KEYS = (
 # (closed by real evidence, or explicitly waived by a human).
 RE_SCOPE_GATE_SATISFIED_STATUSES = frozenset({"closed", "waived"})
 
+# Case-/whitespace-insensitive view of RE_SCOPE_GATE_SATISFIED_STATUSES.
+_RE_SCOPE_GATE_SATISFIED_FOLDS = frozenset(
+    status.casefold() for status in RE_SCOPE_GATE_SATISFIED_STATUSES
+)
+
 
 def _run(root: pathlib.Path, *args: str) -> subprocess.CompletedProcess[str] | None:
     try:
         return subprocess.run(["git", *args], cwd=root, capture_output=True,
-                               text=True, timeout=120)
+                               text=True, timeout=120, check=False)
     except (OSError, subprocess.TimeoutExpired):
         return None
 
@@ -204,6 +246,181 @@ def diff_name_status(root: pathlib.Path, sha: str) -> list[tuple[str, str]]:
     return []
 
 
+def _slice_ref(sl: dict) -> str:
+    raw = sl.get("id")
+    if raw is None:
+        return "<unknown-slice>"
+    if isinstance(raw, str):
+        return raw.strip() if raw.strip() else "<unknown-slice>"
+    return str(raw)
+
+
+def _precondition_status_satisfied(entry: object) -> bool:
+    if not isinstance(entry, dict):
+        return False
+    status = entry.get("status")
+    if not isinstance(status, str):
+        return False
+    return status.strip().casefold() in _RE_SCOPE_GATE_SATISFIED_FOLDS
+
+
+def _is_hex_sha_token(value: str) -> bool:
+    return (MIN_SHA_PREFIX <= len(value) <= 40
+            and all(ch in "0123456789abcdef" for ch in value))
+
+
+def _sha_matches(token: str, sha: str) -> bool:
+    """`token` (a field's whole value) names `sha`: the full SHA, or a hex
+    prefix of at least MIN_SHA_PREFIX characters. Case-insensitive."""
+    token = token.strip().lower()
+    return _is_hex_sha_token(token) and sha.strip().lower().startswith(token)
+
+
+def _amendment_sha_tokens(amend: dict) -> list[str]:
+    """Every string an amendment carries as a whole field value, or as one
+    item of a list value -- the only places a SHA field can live. Free text
+    (`reason: "mirrored 565ef7d194 into ..."`) is one token that is not a SHA,
+    so a SHA quoted inside prose never matches."""
+    tokens: list[str] = []
+    for value in amend.values():
+        if isinstance(value, str):
+            tokens.append(value)
+        elif isinstance(value, list):
+            tokens.extend(item for item in value if isinstance(item, str))
+    return tokens
+
+
+def _brief_covers_retro_sha(brief: dict, sha: str) -> bool:
+    scope = brief.get("scope")
+    if not isinstance(scope, dict):
+        return False
+    amendments = scope.get("amendments")
+    if not isinstance(amendments, list):
+        return False
+    for amend in amendments:
+        if not isinstance(amend, dict) or amend.get("action") != "retro-mirror":
+            continue
+        if any(_sha_matches(token, sha) for token in _amendment_sha_tokens(amend)):
+            return True
+    return False
+
+
+def _required_mirror_shas(mirrored: str, retros: list[str]) -> list[str]:
+    """The retro SHAs a brief mirrored through `mirrored` must name: every
+    qualifying retro at or older than it (`retros` is newest first). When
+    `mirrored` is not a qualifying retro in range (older than `--since`, or a
+    retro that no longer qualifies), the pointer itself is still owed."""
+    for idx, sha in enumerate(retros):
+        if _sha_matches(mirrored, sha):
+            return retros[idx:]
+    return [mirrored]
+
+
+def _is_blank(value: object) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str):
+        return not value.strip()
+    if isinstance(value, (list, dict)):
+        return not value
+    return False
+
+
+def _brief_defect(slice_id: str, ref: str, detail: str, remedy: str) -> dict:
+    return {
+        "kind": "brief-defect",
+        "ref": slice_id,
+        "refs": [slice_id, ref],
+        "detail": f"slice '{slice_id}': {detail}",
+        "remedy": remedy,
+    }
+
+
+def _brief_defect_findings(root: pathlib.Path, slices: list, retros: list[str]) -> list[dict]:
+    """Clause (b'): open each brief a slice's `brief_path` names and check it
+    is a real skill brief that mirrors every qualifying retro up to its
+    `brief_mirrored_through` (module docstring)."""
+    findings: list[dict] = []
+    for sl in slices:
+        if not isinstance(sl, dict):
+            continue
+        brief_path = sl.get("brief_path")
+        if not brief_path:
+            continue
+        slice_id = _slice_ref(sl)
+        if not isinstance(brief_path, str):
+            findings.append(_brief_defect(
+                slice_id, repr(brief_path),
+                f"brief_path {brief_path!r} is not a path string",
+                "set brief_path to the brief's repo-relative path, or null until one exists"))
+            continue
+        abs_path = root / brief_path
+        if not abs_path.is_file() or abs_path.stat().st_size == 0:
+            findings.append(_brief_defect(
+                slice_id, brief_path,
+                f"brief_path {brief_path!r} is missing or empty",
+                "restore the slice skill-brief.yaml or clear brief_path until one exists"))
+            continue
+        try:
+            import yaml
+        except ModuleNotFoundError:
+            continue
+        try:
+            brief = yaml.safe_load(abs_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, yaml.YAMLError):
+            findings.append(_brief_defect(
+                slice_id, brief_path,
+                f"brief_path {brief_path!r} is not valid YAML",
+                "repair the slice skill-brief.yaml or clear brief_path until one exists"))
+            continue
+        if not isinstance(brief, dict):
+            findings.append(_brief_defect(
+                slice_id, brief_path,
+                f"brief_path {brief_path!r} is hollow (not a mapping)",
+                "restore a non-empty skill-brief.yaml or clear brief_path until one exists"))
+            continue
+        hollow_keys = [k for k in _BRIEF_REQUIRED_TOP_KEYS if _is_blank(brief.get(k))]
+        if hollow_keys:
+            findings.append(_brief_defect(
+                slice_id, brief_path,
+                f"brief at {brief_path!r} is missing required skill-brief keys "
+                f"(absent, null or empty): {hollow_keys!r}",
+                "restore a complete skill-brief.yaml or clear brief_path until one exists"))
+            continue
+        scope = brief.get("scope")
+        if not isinstance(scope, dict) or _is_blank(scope.get("type")):
+            findings.append(_brief_defect(
+                slice_id, brief_path,
+                f"brief at {brief_path!r} has a hollow or missing scope",
+                "restore a complete skill-brief scope block or clear brief_path until one exists"))
+            continue
+        mirrored = sl.get("brief_mirrored_through")
+        if not isinstance(mirrored, str) or not mirrored.strip():
+            continue
+        missing = [sha for sha in _required_mirror_shas(mirrored.strip(), retros)
+                   if not _brief_covers_retro_sha(brief, sha)]
+        if missing:
+            short = [sha[:MIN_SHA_PREFIX] for sha in missing]
+            findings.append({
+                "kind": "brief-defect",
+                "ref": slice_id,
+                "refs": [slice_id, *short],
+                "detail": f"slice '{slice_id}': brief at {brief_path!r} has no retro-mirror "
+                          f"amendment naming {', '.join(short)} (each qualifying retro at or "
+                          f"older than brief_mirrored_through must be named in a SHA field)",
+                "remedy": "mirror each retro into the brief as a retro-mirror amendment whose "
+                          "SHA field holds the retro's SHA (or a >=10-char prefix)",
+            })
+    return findings
+
+
+def any_slice_has_brief_path(state: dict) -> bool:
+    slices = state.get("slices")
+    if not isinstance(slices, list):
+        return False
+    return any(isinstance(sl, dict) and sl.get("brief_path") for sl in slices)
+
+
 def retro_commits_since(root: pathlib.Path, since: str) -> list[str] | None:
     """SHAs (newest first) in `since..HEAD` that qualify as a landed CFE
     Rule-2 retro: diff touches the CFE surface AND touches CFE_CHANGELOG with
@@ -236,19 +453,23 @@ def retro_commits_since(root: pathlib.Path, since: str) -> list[str] | None:
     return retros
 
 
-def scan(state: dict, retros: list[str]) -> list[dict]:
+def scan(state: dict, retros: list[str], *, root: pathlib.Path) -> list[dict]:
     findings: list[dict] = []
     slices = state.get("slices")
     slices = slices if isinstance(slices, list) else []
     newest_retro = retros[0] if retros else None
 
+    findings.extend(_brief_defect_findings(root, slices, retros))
+
     # Clause (a): stale-equivalence.
     for sl in slices:
         if not isinstance(sl, dict):
             continue
-        slice_id = sl.get("id", "<unknown-slice>")
+        slice_id = _slice_ref(sl)
         status = sl.get("status")
-        if status not in EQUIVALENCE_GATED_STATUSES:
+        if not isinstance(status, str):
+            continue
+        if status.strip().casefold() not in EQUIVALENCE_GATED_FOLDS:
             continue
         equivalence = sl.get("equivalence")
         if equivalence == "green":
@@ -274,7 +495,7 @@ def scan(state: dict, retros: list[str]) -> list[dict]:
             brief_path = sl.get("brief_path")
             if not brief_path:
                 continue
-            slice_id = sl.get("id", "<unknown-slice>")
+            slice_id = _slice_ref(sl)
             mirrored_through = sl.get("brief_mirrored_through")
             if mirrored_through == newest_retro:
                 continue
@@ -326,14 +547,16 @@ def scan(state: dict, retros: list[str]) -> list[dict]:
         if not isinstance(order, int) or order < RE_SCOPE_GATED_ORDER_FLOOR:
             continue
         brief_path = sl.get("brief_path")
+        # Clause (d) applies only to a slice that sets brief_path. Story 15.1
+        # closed the campaign (campaign-state.yaml `current_focus:
+        # "campaign-closed"`), so no order>=2 slice carries one to gate.
         if not brief_path:
             continue
-        slice_id = sl.get("id", "<unknown-slice>")
+        slice_id = _slice_ref(sl)
         unmet = []
         for key in RE_SCOPE_GATE_PRE_CONDITION_KEYS:
             entry = pre_conditions.get(key)
-            status = entry.get("status") if isinstance(entry, dict) else None
-            if status not in RE_SCOPE_GATE_SATISFIED_STATUSES:
+            if not _precondition_status_satisfied(entry):
                 unmet.append(key)
         if unmet:
             findings.append({
@@ -376,20 +599,32 @@ def main() -> int:
                          "mapping — file missing, unreadable, or malformed.",
                          args.json)
 
-    retros = retro_commits_since(ROOT, args.since)
-    if retros is None:
-        return _unknown(f"`git log {args.since}..HEAD` could not run — not a "
-                         f"git repository, or {args.since} is unreachable from "
-                         "HEAD.", args.json)
+    history_skipped = not any_slice_has_brief_path(state)
+    if history_skipped:
+        retros: list[str] = []
+    else:
+        walked = retro_commits_since(ROOT, args.since)
+        if walked is None:
+            return _unknown(f"`git log {args.since}..HEAD` could not run — not a "
+                             f"git repository, or {args.since} is unreachable from "
+                             "HEAD.", args.json)
+        retros = walked
 
-    findings = scan(state, retros)
+    findings = scan(state, retros, root=ROOT)
 
     if args.json:
-        print(json.dumps({"retros_scanned": len(retros), "findings": findings}, indent=2))
+        payload = {
+            "retros_scanned": None if history_skipped else len(retros),
+            "findings": findings,
+        }
+        print(json.dumps(payload, indent=2))
         return 1 if findings else 0
 
-    print(f"cfe-rebuild-guard-check: {len(retros)} qualifying CFE retro commit(s) "
-          f"in {args.since[:10]}..HEAD\n")
+    if history_skipped:
+        print("cfe-rebuild-guard-check: skipped retro history walk (no slice carries brief_path)\n")
+    else:
+        print(f"cfe-rebuild-guard-check: {len(retros)} qualifying CFE retro commit(s) "
+              f"in {args.since[:10]}..HEAD\n")
     if not findings:
         print("  clean — no slice has a stale equivalence result, no briefed "
               "slice is behind a landed retro, no legacy caller survives "

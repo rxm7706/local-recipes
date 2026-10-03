@@ -69,6 +69,55 @@ def _write(repo: Path, rel: str, content: str = "x") -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def _write_brief(repo: Path, rel: str, *, mirrored_shas: tuple[str, ...] = ()) -> None:
+    """A schema-shaped skill brief; one `retro-mirror` amendment per SHA in
+    `mirrored_shas`, each naming its retro in a `commit:` SHA field."""
+    lines = [
+        "name: test-skill",
+        "version: 1.0.0",
+        "source_repo: https://example.com",
+        "language: python",
+        "description: test",
+        "forge_tier: Quick",
+        "created: 2026-01-01",
+        "created_by: test",
+        "scope:",
+        "  type: full-library",
+        "  include: []",
+        "  exclude: []",
+        "  notes: test",
+    ]
+    if mirrored_shas:
+        lines.append("  amendments:")
+        for sha in mirrored_shas:
+            lines.extend([
+                "    - action: retro-mirror",
+                f"      commit: {sha}",
+                "      reason: mirrored a landed CFE retro",
+            ])
+    _write(repo, rel, "\n".join(lines) + "\n")
+
+
+def _ensure_briefs_for_state(repo: Path, state: dict, retros: list[str] | None = None) -> None:
+    """Write a complete brief for every slice with a `brief_path`, naming its
+    `brief_mirrored_through` and every retro in `retros` so clause (b')
+    stays quiet unless a test means to trip it."""
+    slices = state.get("slices")
+    if not isinstance(slices, list):
+        return
+    for sl in slices:
+        if not isinstance(sl, dict):
+            continue
+        brief_path = sl.get("brief_path")
+        if not brief_path:
+            continue
+        shas = list(retros or [])
+        mirrored = sl.get("brief_mirrored_through")
+        if isinstance(mirrored, str) and mirrored.strip() and mirrored.strip() not in shas:
+            shas.append(mirrored.strip())
+        _write_brief(repo, brief_path, mirrored_shas=tuple(shas))
+
+
 def _commit_all(repo: Path, message: str) -> str:
     _git(repo, "add", "-A")
     _git(repo, "commit", "-q", "-m", message)
@@ -121,8 +170,23 @@ def test_clean_campaign_zero_findings(tmp_path: Path) -> None:
 
     retros = m.retro_commits_since(tmp_path, baseline)
     assert retros == []
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
+
+
+def test_stale_equivalence_red_when_status_parallel_with_wrong_case(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state([_slice(id="slice-1", status="Parallel", equivalence="red")])
+    retros = m.retro_commits_since(tmp_path, baseline)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0]["kind"] == "stale-equivalence"
 
 
 def test_stale_equivalence_red(tmp_path: Path) -> None:
@@ -132,7 +196,8 @@ def test_stale_equivalence_red(tmp_path: Path) -> None:
 
     state = _state([_slice(id="slice-1", status="parallel", equivalence="red")])
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
 
     assert len(findings) == 1
     f = findings[0]
@@ -149,7 +214,8 @@ def test_stale_equivalence_missing_null(tmp_path: Path) -> None:
 
     state = _state([_slice(id="slice-1", status="audited", equivalence=None)])
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
 
     assert len(findings) == 1
     assert findings[0]["kind"] == "stale-equivalence"
@@ -165,7 +231,8 @@ def test_equivalence_green_on_gated_status_is_clean(tmp_path: Path) -> None:
         _slice(id="slice-2", status="cut-over", equivalence="green"),
     ])
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -178,7 +245,8 @@ def test_equivalence_ignored_for_non_gated_status(tmp_path: Path) -> None:
 
     state = _state([_slice(id="slice-1", status="compiled", equivalence="red")])
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -200,7 +268,8 @@ def test_unmirrored_retro_subject_independent(tmp_path: Path) -> None:
     retros = m.retro_commits_since(tmp_path, baseline)
     assert retros == [retro_sha]
 
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert len(findings) == 1
     f = findings[0]
     assert f["kind"] == "unmirrored-retro"
@@ -255,7 +324,8 @@ def test_retro_without_changelog_touch_not_counted(tmp_path: Path) -> None:
     retros = m.retro_commits_since(tmp_path, baseline)
     assert retros == []
 
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -273,7 +343,8 @@ def test_mirrored_slice_stays_clean(tmp_path: Path) -> None:
     state = _state([_slice(id="slice-1", brief_path="briefs/slice-1.md",
                             brief_mirrored_through=retro_sha)])
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -290,7 +361,8 @@ def test_slice_with_null_brief_path_never_checked(tmp_path: Path) -> None:
 
     state = _state([_slice(id="slice-1", brief_path=None, brief_mirrored_through=None)])
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -305,7 +377,8 @@ def test_legacy_caller_at_endgame(tmp_path: Path) -> None:
         callers=[{"name": "generate_recipe_from_pypi", "resolves_to": "legacy"}],
     )
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
 
     assert len(findings) == 1
     f = findings[0]
@@ -326,7 +399,8 @@ def test_legacy_caller_vacuous_while_endgame_not_declared(tmp_path: Path) -> Non
         callers=[{"name": "generate_recipe_from_pypi", "resolves_to": "legacy"}],
     )
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -341,7 +415,8 @@ def test_endgame_with_replacement_only_callers_is_clean(tmp_path: Path) -> None:
         callers=[{"name": "generate_recipe_from_pypi", "resolves_to": "replacement"}],
     )
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -358,7 +433,8 @@ def test_gate_bypassed_order2_brief_with_open_precondition_red(tmp_path: Path) -
         re_scope_gate={"pre_conditions": _pre_conditions(d_ownership_decision="open")},
     )
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
 
     assert len(findings) == 1
     f = findings[0]
@@ -380,7 +456,8 @@ def test_gate_bypassed_order2_brief_with_all_preconditions_closed_is_clean(
         re_scope_gate={"pre_conditions": _pre_conditions()},
     )
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -398,7 +475,8 @@ def test_gate_bypassed_waived_precondition_counts_as_satisfied(tmp_path: Path) -
         re_scope_gate={"pre_conditions": _pre_conditions(d_ownership_decision="waived")},
     )
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -417,7 +495,8 @@ def test_gate_bypassed_order1_slice_never_checked(tmp_path: Path) -> None:
             c_cross_slice_rederivation="open", d_ownership_decision="open")},
     )
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -435,7 +514,8 @@ def test_gate_not_checked_when_order2_brief_path_still_null(tmp_path: Path) -> N
             c_cross_slice_rederivation="open", d_ownership_decision="open")},
     )
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -453,7 +533,8 @@ def test_gate_bypassed_lists_only_the_unmet_keys(tmp_path: Path) -> None:
             c_cross_slice_rederivation="open", d_ownership_decision="open")},
     )
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
 
     assert len(findings) == 1
     f = findings[0]
@@ -473,7 +554,8 @@ def test_gate_bypassed_missing_re_scope_gate_treated_as_all_open(tmp_path: Path)
     state = _state([_slice(id="slice-2", order=2, status="briefed",
                             brief_path="briefs/slice-2.md")])
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
 
     assert len(findings) == 1
     assert findings[0]["kind"] == "gate-bypassed"
@@ -491,7 +573,8 @@ def test_gate_bypassed_non_int_order_not_crashed_and_not_gated(tmp_path: Path) -
     state = _state([_slice(id="slice-x", order="two", status="briefed",
                             brief_path="briefs/slice-x.md")])
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -500,28 +583,32 @@ def test_scan_tolerates_non_dict_slice_entries() -> None:
     entry that is a scalar rather than a mapping) must not crash scan() with
     an AttributeError -- it is simply ignored, same tolerance every other
     malformed-shape case in this file gets."""
-    assert m.scan({"campaign": {}, "slices": [1, 2, 3]}, []) == []
-    assert m.scan({"campaign": {}, "slices": "not-a-list"}, []) == []
+    assert m.scan({"campaign": {}, "slices": [1, 2, 3]}, [], root=REPO_ROOT) == []
+    assert m.scan({"campaign": {}, "slices": "not-a-list"}, [], root=REPO_ROOT) == []
 
 
 def test_scan_tolerates_non_dict_campaign() -> None:
     """`campaign` present but not a mapping (e.g. a string) must not crash
     clause (c)'s lookup."""
-    assert m.scan({"campaign": "not-a-dict", "slices": []}, []) == []
+    assert m.scan({"campaign": "not-a-dict", "slices": []}, [], root=REPO_ROOT) == []
 
 
-def test_scan_tolerates_non_dict_re_scope_gate_and_pre_conditions() -> None:
+def test_scan_tolerates_non_dict_re_scope_gate_and_pre_conditions(tmp_path: Path) -> None:
     """`campaign.re_scope_gate` or its `pre_conditions` present but not a
     mapping must not crash clause (d)'s lookup -- treated as every
     pre-condition unmet, same as it being absent entirely."""
     order2_brief = [_slice(id="slice-2", order=2, brief_path="briefs/slice-2.md")]
-    findings_a = m.scan(
-        {"campaign": {"re_scope_gate": "not-a-dict"}, "slices": order2_brief}, [])
+    state_a = {"campaign": {"re_scope_gate": "not-a-dict"}, "slices": order2_brief}
+    _ensure_briefs_for_state(tmp_path, state_a)
+    findings_a = m.scan(state_a, [], root=tmp_path)
     assert len(findings_a) == 1 and findings_a[0]["kind"] == "gate-bypassed"
 
-    findings_b = m.scan(
-        {"campaign": {"re_scope_gate": {"pre_conditions": "not-a-dict"}},
-         "slices": order2_brief}, [])
+    state_b = {
+        "campaign": {"re_scope_gate": {"pre_conditions": "not-a-dict"}},
+        "slices": order2_brief,
+    }
+    _ensure_briefs_for_state(tmp_path, state_b)
+    findings_b = m.scan(state_b, [], root=tmp_path)
     assert len(findings_b) == 1 and findings_b[0]["kind"] == "gate-bypassed"
 
 
@@ -539,7 +626,8 @@ def test_unmirrored_retro_empty_string_brief_path_treated_as_null(tmp_path: Path
 
     state = _state([_slice(id="slice-1", brief_path="", brief_mirrored_through=None)])
     retros = m.retro_commits_since(tmp_path, baseline)
-    findings = m.scan(state, retros)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
     assert findings == []
 
 
@@ -580,15 +668,301 @@ def test_retro_commits_since_unknown_sha_also_none(tmp_path: Path) -> None:
     assert m.retro_commits_since(tmp_path, "0" * 40) is None
 
 
+def test_slice_with_explicit_null_id_renders_unknown_placeholder(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state([_slice(id=None, status="parallel", equivalence="red")])
+    retros = m.retro_commits_since(tmp_path, baseline)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0]["ref"] == "<unknown-slice>"
+
+
+def test_gate_bypassed_closed_status_with_trailing_space_is_satisfied(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    pre = _pre_conditions()
+    pre["d_ownership_decision"] = {"status": "Closed ", "note": "test"}
+    state = _state(
+        [_slice(id="slice-2", order=2, status="briefed", brief_path="briefs/slice-2.md")],
+        re_scope_gate={"pre_conditions": pre},
+    )
+    retros = m.retro_commits_since(tmp_path, baseline)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
+    assert findings == []
+
+
+def test_brief_hollow_mapping_is_a_finding(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    brief_rel = "briefs/hollow.yaml"
+    _write(tmp_path, brief_rel, "{}\n")
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=None)])
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros, root=tmp_path)
+
+    assert any(f["kind"] == "brief-defect" and "missing required" in f["detail"] for f in findings)
+
+
+def test_brief_path_missing_file_is_a_finding(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state(
+        [_slice(id="slice-1", brief_path="briefs/missing.yaml", brief_mirrored_through=None)],
+    )
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros, root=tmp_path)
+
+    assert any(f["kind"] == "brief-defect" for f in findings)
+
+
+def test_brief_without_retro_mirror_amendment_is_a_finding(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    brief_rel = "briefs/slice-1.yaml"
+    _write_brief(tmp_path, brief_rel)
+    retro_sha = "a" * 40
+    state = _state(
+        [_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=retro_sha)],
+    )
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros, root=tmp_path)
+
+    assert any(f["kind"] == "brief-defect" and retro_sha[:10] in f["detail"] for f in findings)
+
+
+def _two_retro_repo(tmp_path: Path) -> tuple[str, str, str]:
+    """A scratch repo with two qualifying retros; returns (baseline, older, newer)."""
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+    _write(tmp_path, ".claude/skills/conda-forge-expert/SKILL.md", "first")
+    _write(tmp_path, CFE_CHANGELOG, "## first entry")
+    older = _commit_all(tmp_path, "docs: first retro")
+    _write(tmp_path, ".claude/skills/conda-forge-expert/SKILL.md", "second")
+    _write(tmp_path, CFE_CHANGELOG, "## second entry")
+    newer = _commit_all(tmp_path, "docs: second retro")
+    return baseline, older, newer
+
+
+def test_brief_must_name_every_retro_at_or_older_than_the_pointer(tmp_path: Path) -> None:
+    """Clause (b'): a brief mirrored through the newest of two retros must
+    name BOTH; naming only the pointer leaves the older retro unmirrored."""
+    baseline, older, newer = _two_retro_repo(tmp_path)
+    retros = m.retro_commits_since(tmp_path, baseline)
+    assert retros == [newer, older]
+    brief_rel = "briefs/slice-1.yaml"
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=newer)])
+
+    _write_brief(tmp_path, brief_rel, mirrored_shas=(newer,))
+    findings = m.scan(state, retros, root=tmp_path)
+    assert [f["kind"] for f in findings] == ["brief-defect"]
+    assert older[:10] in findings[0]["refs"]
+    assert newer[:10] not in findings[0]["refs"]
+
+    _write_brief(tmp_path, brief_rel, mirrored_shas=(newer, older[:10]))
+    assert m.scan(state, retros, root=tmp_path) == []
+
+
+def test_brief_pointer_at_the_older_retro_owes_only_that_retro(tmp_path: Path) -> None:
+    """A retro NEWER than brief_mirrored_through is clause (b)'s business
+    (unmirrored-retro), never a brief-defect."""
+    baseline, older, newer = _two_retro_repo(tmp_path)
+    retros = m.retro_commits_since(tmp_path, baseline)
+    brief_rel = "briefs/slice-1.yaml"
+    _write_brief(tmp_path, brief_rel, mirrored_shas=(older,))
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=older)])
+
+    findings = m.scan(state, retros, root=tmp_path)
+    assert [f["kind"] for f in findings] == ["unmirrored-retro"]
+    assert newer[:10] in findings[0]["refs"]
+
+
+def test_retro_sha_quoted_in_free_text_does_not_count(tmp_path: Path) -> None:
+    """A SHA must be a field's whole value; one quoted inside `reason`
+    prose, or a prefix shorter than 10 characters, names nothing."""
+    baseline, older, _newer = _two_retro_repo(tmp_path)
+    retros = m.retro_commits_since(tmp_path, baseline)
+    brief_rel = "briefs/slice-1.yaml"
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=older)])
+
+    _write_brief(tmp_path, brief_rel)
+    with (tmp_path / brief_rel).open("a", encoding="utf-8") as handle:
+        handle.write(
+            "  amendments:\n"
+            "    - action: retro-mirror\n"
+            f"      reason: mirrored {older} into the brief\n"
+            f"      commit: {older[:9]}\n"
+        )
+    findings = m.scan(state, retros, root=tmp_path)
+    assert any(f["kind"] == "brief-defect" and older[:10] in f["refs"] for f in findings)
+
+
+def test_retro_sha_in_a_list_field_counts(tmp_path: Path) -> None:
+    """A list-valued field (feat + merge SHAs of one dual landing) names
+    each SHA it carries; a non-`retro-mirror` amendment names none."""
+    baseline, older, newer = _two_retro_repo(tmp_path)
+    retros = m.retro_commits_since(tmp_path, baseline)
+    brief_rel = "briefs/slice-1.yaml"
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=newer)])
+
+    _write_brief(tmp_path, brief_rel)
+    with (tmp_path / brief_rel).open("a", encoding="utf-8") as handle:
+        handle.write(
+            "  amendments:\n"
+            "    - action: promoted\n"
+            f"      commit: {older}\n"
+            "    - action: retro-mirror\n"
+            f"      commits: [{newer.upper()}]\n"
+        )
+    findings = m.scan(state, retros, root=tmp_path)
+    assert [f["refs"][1:] for f in findings if f["kind"] == "brief-defect"] == [[older[:10]]]
+
+
+def test_brief_with_only_a_name_is_a_finding(tmp_path: Path) -> None:
+    brief_rel = "briefs/name-only.yaml"
+    _write(tmp_path, brief_rel, "name: x\n")
+    state = _state([_slice(id="slice-1", brief_path=brief_rel)])
+    findings = m.scan(state, [], root=tmp_path)
+    assert len(findings) == 1
+    assert findings[0]["kind"] == "brief-defect"
+    assert "missing required" in findings[0]["detail"]
+    assert "'version'" in findings[0]["detail"]
+    assert "'name'" not in findings[0]["detail"]
+
+
+def test_brief_with_all_required_keys_null_is_a_finding(tmp_path: Path) -> None:
+    brief_rel = "briefs/all-null.yaml"
+    _write(tmp_path, brief_rel, "".join(f"{k}: null\n" for k in m._BRIEF_REQUIRED_TOP_KEYS))
+    state = _state([_slice(id="slice-1", brief_path=brief_rel)])
+    findings = m.scan(state, [], root=tmp_path)
+    assert len(findings) == 1
+    assert "missing required" in findings[0]["detail"]
+    for key in m._BRIEF_REQUIRED_TOP_KEYS:
+        assert repr(key) in findings[0]["detail"]
+
+
+def test_brief_scope_without_a_type_is_a_finding(tmp_path: Path) -> None:
+    brief_rel = "briefs/hollow-scope.yaml"
+    _write_brief(tmp_path, brief_rel)
+    text = (tmp_path / brief_rel).read_text(encoding="utf-8")
+    (tmp_path / brief_rel).write_text(text.replace("  type: full-library\n", ""), encoding="utf-8")
+    state = _state([_slice(id="slice-1", brief_path=brief_rel)])
+    findings = m.scan(state, [], root=tmp_path)
+    assert len(findings) == 1
+    assert "hollow or missing scope" in findings[0]["detail"]
+
+
+def test_non_string_brief_path_is_a_finding_not_a_traceback(tmp_path: Path) -> None:
+    state = _state([_slice(id="slice-1", brief_path=["briefs/a.yaml"])])
+    findings = m.scan(state, [], root=tmp_path)
+    assert [f["kind"] for f in findings] == ["brief-defect"]
+    assert "not a path string" in findings[0]["detail"]
+
+
+def test_stale_equivalence_status_with_trailing_space_is_gated(tmp_path: Path) -> None:
+    """Clause (a) strips as well as case-folds: `"parallel "` is gated."""
+    state = _state([_slice(id="slice-1", status="parallel ", equivalence="red")])
+    findings = m.scan(state, [], root=tmp_path)
+    assert [f["kind"] for f in findings] == ["stale-equivalence"]
+
+
+def test_slice_ref_keeps_an_integer_id(tmp_path: Path) -> None:
+    state = _state([_slice(id=7, status="parallel", equivalence="red")])
+    findings = m.scan(state, [], root=tmp_path)
+    assert findings[0]["ref"] == "7"
+    assert m._slice_ref({"id": "  "}) == "<unknown-slice>"
+
+
+def test_main_skips_git_walk_when_no_slice_has_brief_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    state_path = tmp_path / "campaign-state.yaml"
+    state_path.write_text(
+        "campaign:\n  endgame_declared: false\n  callers: []\n"
+        "slices:\n"
+        "  - id: slice-1\n"
+        "    status: mapped\n"
+        "    brief_path: null\n",
+        encoding="utf-8",
+    )
+
+    def _fail_walk(*_args: object, **_kwargs: object) -> list[str]:
+        raise AssertionError("retro_commits_since must not run when no slice has brief_path")
+
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    monkeypatch.setattr(m, "CAMPAIGN_STATE_PATH", state_path)
+    monkeypatch.setattr(m, "retro_commits_since", _fail_walk)
+    monkeypatch.setattr(sys, "argv", ["cfe_rebuild_guard_check.py"])
+    assert m.main() == 0
+
+
+def test_main_text_mode_skipped_history_never_claims_zero_retros(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    state_path = tmp_path / "campaign-state.yaml"
+    state_path.write_text(
+        "campaign:\n  endgame_declared: false\n  callers: []\n"
+        "slices:\n"
+        "  - id: slice-1\n"
+        "    status: mapped\n"
+        "    brief_path: null\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    monkeypatch.setattr(m, "CAMPAIGN_STATE_PATH", state_path)
+    monkeypatch.setattr(sys, "argv", ["cfe_rebuild_guard_check.py"])
+    assert m.main() == 0
+    out = capsys.readouterr().out
+    assert "skipped retro history walk" in out
+    assert "qualifying CFE retro commit" not in out
+
+
+def test_main_json_skipped_history_reports_null_retros_scanned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    state_path = tmp_path / "campaign-state.yaml"
+    state_path.write_text(
+        "campaign:\n  endgame_declared: false\n  callers: []\n"
+        "slices:\n"
+        "  - id: slice-1\n"
+        "    status: mapped\n"
+        "    brief_path: null\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    monkeypatch.setattr(m, "CAMPAIGN_STATE_PATH", state_path)
+    monkeypatch.setattr(sys, "argv", ["cfe_rebuild_guard_check.py", "--json"])
+    assert m.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["retros_scanned"] is None
+
+
 def test_live_repo_today_is_clean() -> None:
     """Confirms the real, unmodified campaign-state.yaml stays clean under the
     new detector the moment this story lands (per the spec's Verification
     section) -- not a synthetic fixture."""
     state = m.campaign_state(m.CAMPAIGN_STATE_PATH)
     assert state is not None
-    retros = m.retro_commits_since(REPO_ROOT, m.DEFAULT_SINCE)
-    assert retros is not None
-    findings = m.scan(state, retros)
+    if m.any_slice_has_brief_path(state):
+        retros = m.retro_commits_since(REPO_ROOT, m.DEFAULT_SINCE)
+        assert retros is not None
+    else:
+        retros = []
+    findings = m.scan(state, retros, root=REPO_ROOT)
     assert findings == []
 
 
@@ -681,6 +1055,7 @@ def test_main_exit_1_gate_bypassed_json(tmp_path: Path, monkeypatch: pytest.Monk
         "    brief_mirrored_through: null\n",
         encoding="utf-8",
     )
+    _write_brief(tmp_path, "briefs/slice-2.md")
 
     monkeypatch.setattr(m, "ROOT", tmp_path)
     monkeypatch.setattr(m, "CAMPAIGN_STATE_PATH", state_path)
@@ -691,8 +1066,9 @@ def test_main_exit_1_gate_bypassed_json(tmp_path: Path, monkeypatch: pytest.Monk
 
     assert rc == 1
     payload = json.loads(out)
-    assert len(payload["findings"]) == 1
-    assert payload["findings"][0]["kind"] == "gate-bypassed"
+    assert any(f["kind"] == "gate-bypassed" for f in payload["findings"])
+    gate = next(f for f in payload["findings"] if f["kind"] == "gate-bypassed")
+    assert gate["ref"] == "slice-2"
     assert payload["findings"][0]["ref"] == "slice-2"
 
 
@@ -711,10 +1087,17 @@ def test_main_exit_2_missing_campaign_state(tmp_path: Path, monkeypatch: pytest.
 def test_main_exit_2_git_log_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
                                     capsys: pytest.CaptureFixture[str]) -> None:
     state_path = tmp_path / "campaign-state.yaml"
-    state_path.write_text("campaign:\n  endgame_declared: false\nslices: []\n",
-                           encoding="utf-8")
+    state_path.write_text(
+        "campaign:\n  endgame_declared: false\n  callers: []\n"
+        "slices:\n"
+        "  - id: slice-1\n"
+        "    brief_path: briefs/slice-1.yaml\n",
+        encoding="utf-8",
+    )
+    _write_brief(tmp_path, "briefs/slice-1.yaml")
 
-    # tmp_path is not a git repository -- `git log` itself fails.
+    # tmp_path is not a git repository -- `git log` itself fails once a brief_path
+    # forces the retro history walk.
     monkeypatch.setattr(m, "ROOT", tmp_path)
     monkeypatch.setattr(m, "CAMPAIGN_STATE_PATH", state_path)
     monkeypatch.setattr(sys, "argv", ["cfe_rebuild_guard_check.py"])
@@ -748,7 +1131,7 @@ def test_cli_against_live_repo_exits_zero() -> None:
     from the spec's Verification section, invoked directly here."""
     proc = subprocess.run(
         [sys.executable, str(REPO_ROOT / "scripts" / "cfe_rebuild_guard_check.py")],
-        cwd=REPO_ROOT, capture_output=True, text=True,
+        cwd=REPO_ROOT, capture_output=True, text=True, check=False,
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert "clean" in proc.stdout
