@@ -398,9 +398,16 @@ def _write_baseline(merged: dict) -> None:
     # Atomic: sibling temp file + os.replace, so the read-only Doctor
     # detector never sees a torn baseline. The fixed .tmp name is safe
     # because it is only ever written under _baseline_lock().
+    # os.replace gives atomic VISIBILITY, not durability: on a delayed-
+    # allocation filesystem a crash between the write and the writeback can
+    # publish a zero-length baseline, which reads as "every spec ungoverned"
+    # -- the exact silent-governance-loss this file exists to prevent. fsync
+    # the temp before the rename (Story 41.1, independent 12.5 review).
     tmp = BASELINE.with_name(BASELINE.name + ".tmp")
-    tmp.write_text(json.dumps(merged, indent=1, sort_keys=True) + "\n",
-                   encoding="utf-8")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(merged, indent=1, sort_keys=True) + "\n")
+        fh.flush()
+        os.fsync(fh.fileno())
     os.replace(tmp, BASELINE)
 
 

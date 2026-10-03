@@ -4793,7 +4793,16 @@ VERIFIED_CITATION_CUTOFF = date(2026, 10, 2)
 #: `/`, nothing distinguishes a filename from an ordinary capitalised word,
 #: so a bare `Note: 12` must not read as a citation. Add a name here only
 #: when a ledger line really cites that file.
-_EXTENSIONLESS_FILENAMES = ("CODEOWNERS", "Dockerfile", "Justfile", "LICENSE", "Makefile", "NOTICE", "Procfile")
+_EXTENSIONLESS_FILENAMES = (
+    "CODEOWNERS",
+    "Containerfile",  # at this repo's root (Story 41.1, independent 38.1 review)
+    "Dockerfile",
+    "Justfile",
+    "LICENSE",
+    "Makefile",
+    "NOTICE",
+    "Procfile",
+)
 
 #: A citation anywhere in a `verified:` line's value: a path followed by
 #: either `:<n>` / `:<n>-<m>` (a line or line range) or `::<symbol>` (an
@@ -4810,6 +4819,14 @@ _EXTENSIONLESS_FILENAMES = ("CODEOWNERS", "Dockerfile", "Justfile", "LICENSE", "
 #:
 #: `(?<![\w.])` keeps a match from starting mid-word or mid-extension, while
 #: a leading `./`, `../` or `.github/` is part of the path.
+#:
+#: KNOWN over-acceptance of the `/` alternative (Story 41.1, independent 38.1
+#: review): slash-bearing PROSE followed by `:<n>` reads as a citation --
+#: `Phase 2/3:1`, `and/or:1`, `N/A:1`. Nothing in the grammar distinguishes
+#: those from `docs/MAP:3`, which is a real live citation style, so tightening
+#: this needs a clause-boundary decision rather than a tighter character
+#: class. Measured 2026-10-03: zero `verified:` lines in any tracked ledger
+#: match any of these shapes. Tracked as a deferred row, not fixed blind.
 _VERIFIED_PATH_LINE_RE = re.compile(
     r"(?<![\w.])"
     r"(?:"
@@ -4866,11 +4883,20 @@ def _verified_citation_scan(path: Path) -> tuple[list[tuple[str, int]], int]:
     line whose leading token is not a ``YYYY-MM-DD`` date is neither failed
     nor counted -- it already reads as never-verified in 11.1. Duplicates
     ``_verification()``'s boundary walk rather than extracting a shared
-    primitive (that function stays untouched)."""
+    primitive (that function stays untouched).
+
+    The span BEFORE the first ``DW-`` heading is judged too, under the id
+    ``(before the first entry)`` (Story 41.1, independent 38.1 review): the
+    walk used to start at the first mark, so a bare post-cutoff line written
+    into a ledger's preamble -- or into a ledger with no entry headings at
+    all -- was neither failed nor counted as grandfathered. It read as clean
+    while the grandfather total under-reported it."""
     if not _is_file(path):
         return [], 0
     text = path.read_text(encoding="utf-8", errors="replace")
     marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
+    if not marks or marks[0][0] > 0:
+        marks.insert(0, (0, "(before the first entry)"))
     uncited: list[tuple[str, int]] = []
     grandfathered = 0
     for i, (pos, ident) in enumerate(marks):
