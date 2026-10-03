@@ -2,7 +2,7 @@
 title: '83.5: A campaign supervisor keeps ticking through fleet-lock contention'
 type: 'fix'
 created: '2026-10-02'
-status: 'blocked'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -62,7 +62,5 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 - No review has run yet.
 
-## Auto Run Result
-
-Status: blocked
-Blocking condition: unrecognized status in existing story file
+### 2026-10-03 — Reset by the operator session
+- Run `pyforge-marshal-20261003T020120169Z-d937e761` halted before any work: bmad-build-auto does not recognize the minted status `backlog` (step-01: "status missing or unrecognized"), so it set `blocked`. Status reset to `ready-for-dev`; nothing else changed. The seam defect is chained as Story 83.8.
