@@ -534,8 +534,14 @@ def query_audit_entries(*, reader_actor: str, reader_role: str | None, **filters
     return rows
 
 
-def purge_expired_entries(retention: AuditRetention, *, now=None) -> int:
+def purge_expired_entries(retention: AuditRetention, *, actor: str, now=None) -> int:
     """Delete every `AuditEntry` older than `retention.days`, and return the count.
+
+    ``actor`` names the retention job's identity (required, keyword-only) —
+    the same "who" contract as every other audit write. After the delete,
+    one `AuditAction.PURGE` row records ``actor``, the cutoff (as ``target``),
+    and the deleted row count, in the same database transaction as the delete
+    (Story 84.1).
 
     ``retention`` has NO default value — the only way to call this function
     at all is to supply an `AuditRetention`, which is itself
@@ -564,6 +570,14 @@ def purge_expired_entries(retention: AuditRetention, *, now=None) -> int:
     subclass overriding `__post_init__` without calling `super()` skips that
     validation entirely (review pass 3).
     """
+    _check_actor_and_role(
+        actor,
+        None,
+        caller="purge_expired_entries",
+        actor_param="actor",
+        role_param="role",
+    )
+
     if not isinstance(retention, AuditRetention):
         raise TypeError(
             f"purge_expired_entries requires an AuditRetention, got "
@@ -625,5 +639,16 @@ def purge_expired_entries(retention: AuditRetention, *, now=None) -> int:
             f"span"
         ) from None
 
-    deleted_count, _ = AuditEntry.objects.filter(occurred_at__lt=cutoff).delete()
+    using = router.db_for_write(AuditEntry)
+    cutoff_target = cutoff.isoformat()
+    with transaction.atomic(using=using):
+        deleted_count, _ = AuditEntry.objects.using(using).filter(occurred_at__lt=cutoff).delete()
+        record_audit_entry(
+            actor=actor,
+            role=None,
+            action=AuditAction.PURGE,
+            row_count=deleted_count,
+            target=cutoff_target,
+            occurred_at=now,
+        )
     return deleted_count
