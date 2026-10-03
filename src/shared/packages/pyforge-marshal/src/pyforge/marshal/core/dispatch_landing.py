@@ -141,6 +141,7 @@ def three_way_ledger_statuses(
 
 
 MEMLOG_BASENAME = ".memlog.md"
+DEFERRED_WORK_BASENAME = "deferred-work-ledger.md"
 
 
 def is_memlog_path(path: str) -> bool:
@@ -150,24 +151,36 @@ def is_memlog_path(path: str) -> bool:
     return path.replace("\\", "/").rsplit("/", 1)[-1] == MEMLOG_BASENAME
 
 
-def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None) -> bool:
+def is_deferred_work_path(path: str) -> bool:
+    """True when ``path`` is a deferred-work ledger: its basename is ``deferred-work-ledger.md``."""
+    return path.replace("\\", "/").rsplit("/", 1)[-1] == DEFERRED_WORK_BASENAME
+
+
+def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None, deferred_work_rel: str | None = None) -> bool:
     """True when ``path`` is a known mechanical-only merge conflict: a Spec memlog (Story 78.1;
-    the heal still escalates one that is not append-only) or a sprint ledger. Given
-    ``ledger_rel`` (the landing project's own ledger), only that exact path is a mechanical
-    ledger -- another project's ledger is not this landing's to resolve (Story 59.1)."""
+    the heal still escalates one that is not append-only), a sprint ledger, or a deferred-work 
+    ledger (Story 83.3). Given ``ledger_rel`` (the landing project's own ledger), only that exact 
+    path is a mechanical ledger -- another project's ledger is not this landing's to resolve 
+    (Story 59.1). Similarly for ``deferred_work_rel`` - only the project's own deferred work ledger."""
     normalized = path.replace("\\", "/")
     if is_memlog_path(normalized):
         return True
-    if ledger_rel is not None:
-        return normalized == ledger_rel
-    return normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}") or normalized.endswith(
-        SPRINT_LEDGER_BASENAME
-    )
+    if ledger_rel is not None and normalized == ledger_rel:
+        return True
+    if deferred_work_rel is not None and normalized == deferred_work_rel:
+        return True
+    # Legacy fallback for when no specific paths provided
+    if ledger_rel is None and deferred_work_rel is None:
+        return (normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}") or 
+                normalized.endswith(SPRINT_LEDGER_BASENAME) or
+                normalized.endswith(f"planning-artifacts/{DEFERRED_WORK_BASENAME}") or
+                normalized.endswith(DEFERRED_WORK_BASENAME))
+    return False
 
 
-def unknown_conflict_paths(paths: tuple[str, ...], *, ledger_rel: str | None = None) -> tuple[str, ...]:
+def unknown_conflict_paths(paths: tuple[str, ...], *, ledger_rel: str | None = None, deferred_work_rel: str | None = None) -> tuple[str, ...]:
     """Conflict paths that are not mechanical — must escalate, never merge."""
-    return tuple(sorted(p for p in paths if not is_mechanical_conflict_path(p, ledger_rel=ledger_rel)))
+    return tuple(sorted(p for p in paths if not is_mechanical_conflict_path(p, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel)))
 
 
 # --- Story 78.1 (CAP-283): append-only memlog union ------------------------
