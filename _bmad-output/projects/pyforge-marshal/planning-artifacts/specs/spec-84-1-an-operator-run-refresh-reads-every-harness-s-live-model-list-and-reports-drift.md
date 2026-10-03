@@ -2,7 +2,7 @@
 title: "84.1: An operator-run refresh reads every harness's live model list and reports drift"
 type: 'feature'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'in-progress'
 baseline_revision: '263ab6eebb0be49d153e3c83d95f372afc8c95d9'
 review_loop_iteration: 0
 followup_review_recommended: false

@@ -46,7 +46,7 @@ notes = "Verified 2026-08-27: authenticated, smoke-tested --trust -p shape; bina
 [model_list]
 catalog_provider = "cursor"
 command = ["cursor-agent", "models"]
-aliases = ["grok-4.6", "sonnet"]
+aliases = ["sonnet"]
 
 # No [wrapper] section -- deliberate, not an omission (Story 28.29,
 # SPEC-marshal-token-economy CAP-2, live-verified 2026-09-10). `headroom

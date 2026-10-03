@@ -1239,6 +1239,11 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # ownership between stations for a shared repo-level file is unsettled),
 # so no code here ever classifies ERROR/GATE_FAILED for a failed write --
 # there is no write to fail.
+# Story 84.1 (operator-run model-list refresh, CAP-285 / FR-232) adds
+# `cli/adapters.py`'s own `run_adapters_models` (`marshal adapters models`)
+# -- `MRS-MDL-001` (a declared model id is absent from its harness live
+# list and not declared as a profile alias) classifies WARN, never ERROR:
+# drift is advisory and must not change the rendered-report exit code.
 # Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37) adds
 # `cli/adapters.py`'s own `run_adapters_matrix` (`marshal adapters matrix`)
 # -- a NEW area, `MRS-MATRIX-*`, reusing `MRS-ADP-001` verbatim for its one
@@ -1590,6 +1595,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SMOKE-005",
         "MRS-SMOKE-006",
         "MRS-SMOKE-007",
+        "MRS-MDL-001",
         "MRS-MATRIX-001",
         "MRS-MATRIX-002",
         "MRS-ENTRY-001",

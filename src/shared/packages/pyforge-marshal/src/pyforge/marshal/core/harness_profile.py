@@ -701,6 +701,30 @@ def load_packaged_profiles() -> dict[str, HarnessProfile]:
     return profiles
 
 
+def _inherit_packaged_model_list(base: HarnessProfile, overlay: HarnessProfile) -> HarnessProfile:
+    """When an overlay replaces a packaged profile but omits ``[model_list]``,
+    keep the packaged declaration (Story 84.1)."""
+    if overlay.model_list is not None or base.model_list is None:
+        return overlay
+    return HarnessProfile(
+        name=overlay.name,
+        binary=overlay.binary,
+        argv=overlay.argv,
+        model_args=overlay.model_args,
+        model_map=overlay.model_map,
+        model_passthrough=overlay.model_passthrough,
+        authcheck_args=overlay.authcheck_args,
+        authcheck_ok_pattern=overlay.authcheck_ok_pattern,
+        authcheck_note=overlay.authcheck_note,
+        env=overlay.env,
+        fallback_bin_dirs=overlay.fallback_bin_dirs,
+        verified=overlay.verified,
+        notes=overlay.notes,
+        wrapper=overlay.wrapper,
+        model_list=base.model_list,
+    )
+
+
 def load_profiles(
     repo_root: Path | None,
 ) -> tuple[dict[str, HarnessProfile], tuple[str, ...]]:
@@ -720,7 +744,11 @@ def load_profiles(
     for path in sorted(overlay_dir.glob("*.toml")):
         try:
             text = path.read_text(encoding="utf-8")
-            profiles[path.stem] = _parse_profile_toml(text, source=f"overlay profile {path}", expected_name=path.stem)
+            overlay = _parse_profile_toml(text, source=f"overlay profile {path}", expected_name=path.stem)
+            base = profiles.get(path.stem)
+            if base is not None:
+                overlay = _inherit_packaged_model_list(base, overlay)
+            profiles[path.stem] = overlay
         except (OSError, UnicodeDecodeError, HarnessProfileError) as exc:
             errors.append(f"overlay profile {path} ignored: {exc}")
     return profiles, tuple(errors)

@@ -1947,12 +1947,23 @@ def _render_text_models(data: dict[str, object], findings: tuple[Finding, ...]) 
     lines: list[str] = []
     if isinstance(report, str):
         lines.append(report)
-    if findings:
+    other_findings = tuple(f for f in findings if f.code != "MRS-MDL-001")
+    if other_findings:
         lines.append("")
         lines.append("findings:")
-        for finding in findings:
+        for finding in other_findings:
             lines.append(f"  {finding.code} [{finding.severity.value}] {finding.message}")
     return "\n".join(lines) if lines else ""
+
+
+def _scan_text_for_profile_secrets(text: str, profiles: Mapping[str, object]) -> None:
+    for profile in profiles.values():
+        source = getattr(profile, "model_list", None)
+        if source is None or not source.credential_env:
+            continue
+        secret = os.environ.get(source.credential_env, "")
+        if secret:
+            ensure_no_secret_in_text(text, secret)
 
 
 def _gather_declared_model_refs(root: Path, profiles: Mapping[str, object]) -> list:
@@ -2076,7 +2087,15 @@ def run_adapters_models(
     catalog_provider_by_harness: dict[str, str] = {}
 
     for name, profile in sorted(profiles.items()):
-        result = fetch_live_ids_for_profile(profile, fetcher)
+        try:
+            result = fetch_live_ids_for_profile(profile, fetcher)
+        except (OSError, ValueError, TimeoutError) as exc:
+            result = HarnessListResult(
+                harness=name,
+                status="unavailable",
+                live_ids=frozenset(),
+                reason=str(exc),
+            )
         harness_results[name] = result
         harness_ids[name] = result.live_ids
         source = profile.model_list
@@ -2118,7 +2137,10 @@ def run_adapters_models(
             prior_raw = json.loads(prior_path.read_text(encoding="utf-8"))
             if isinstance(prior_raw, dict):
                 _prior_date, prior_ids = parse_snapshot_payload(prior_raw)
-                snapshot_diff = diff_harness_ids(prior_ids, harness_ids)
+                comparable = frozenset(
+                    name for name, result in harness_results.items() if result.status == "ok"
+                )
+                snapshot_diff = diff_harness_ids(prior_ids, harness_ids, comparable_harnesses=comparable)
         except OSError, json.JSONDecodeError, ValueError:
             pass
 
@@ -2133,6 +2155,8 @@ def run_adapters_models(
         name: {"status": r.status, "count": len(r.live_ids), "reason": r.reason} for name, r in harness_results.items()
     }
 
+    _scan_text_for_profile_secrets(report, profiles)
+
     if args.write:
         payload = build_snapshot_payload(
             snapshot_date=today.isoformat(),
@@ -2140,14 +2164,7 @@ def run_adapters_models(
             harness_status={name: r.status for name, r in harness_results.items()},
         )
         snapshot_text = json.dumps(payload, indent=2, sort_keys=True)
-        for profile in profiles.values():
-            source = profile.model_list
-            if source and source.credential_env:
-                secret = os.environ.get(source.credential_env, "")
-                if secret:
-                    ensure_no_secret_in_text(snapshot_text, secret)
-        ensure_no_secret_in_text(report, os.environ.get("ANTHROPIC_API_KEY", ""))
-        ensure_no_secret_in_text(report, os.environ.get("GEMINI_API_KEY", ""))
+        _scan_text_for_profile_secrets(snapshot_text, profiles)
         out_path = snapshot_dir / snapshot_filename_for_date(today)
         fs.ensure_dir(snapshot_dir)
         fs.write_text_atomic(out_path, snapshot_text + "\n")

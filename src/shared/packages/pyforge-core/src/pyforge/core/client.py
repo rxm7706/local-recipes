@@ -142,6 +142,35 @@ def urllib_request(
         raise StationClientError from exc
 
 
+class HttpResponse:
+    """Status and body from one stdlib HTTP response (Story 84.1 listing GET)."""
+
+    __slots__ = ("status_code", "body")
+
+    def __init__(self, status_code: int, body: bytes) -> None:
+        self.status_code = status_code
+        self.body = body
+
+
+def urllib_http_get(url: str, headers: dict[str, str], *, timeout_s: float = 30.0) -> HttpResponse:
+    """GET returning status and body; HTTP error responses are not raised."""
+    request = urllib.request.Request(  # noqa: S310 -- URL is caller-configured
+        url,
+        headers=headers,
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_s) as response:  # noqa: S310
+            return HttpResponse(response.status, response.read())
+    except urllib.error.HTTPError as exc:
+        return HttpResponse(exc.code, exc.read())
+    except urllib.error.URLError as exc:
+        reason = exc.reason
+        if isinstance(reason, TimeoutError):
+            raise StationClientError("timeout") from exc
+        raise StationClientError(str(reason)) from exc
+
+
 def form_urlencode(params: dict[str, str]) -> str:
     """URL-encode form fields for OIDC token exchange."""
     return urllib.parse.urlencode(params)

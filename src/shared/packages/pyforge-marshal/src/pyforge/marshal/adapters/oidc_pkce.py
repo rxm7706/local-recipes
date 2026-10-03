@@ -118,14 +118,6 @@ def _default_transport(url: str, headers: dict[str, str], body: bytes) -> bytes:
         raise PkceLoginError("token exchange failed") from exc
 
 
-def http_get_bytes(url: str, headers: Mapping[str, str]) -> bytes:
-    """Story 84.1: one GET for operator-run model-list refresh (AD-20)."""
-    try:
-        return urllib_request("GET", url, dict(headers), None)
-    except StationClientError as exc:
-        raise PkceLoginError("HTTP GET failed") from exc
-
-
 def exchange_authorization_code(
     *,
     issuer: str,

@@ -140,11 +140,21 @@ def find_not_listed(
 
 
 def diff_harness_ids(
-    previous: Mapping[str, frozenset[str]], current: Mapping[str, frozenset[str]]
+    previous: Mapping[str, frozenset[str]],
+    current: Mapping[str, frozenset[str]],
+    *,
+    comparable_harnesses: frozenset[str] | None = None,
 ) -> dict[str, SnapshotDiff]:
-    """Ids added/removed per harness since ``previous``."""
+    """Ids added/removed per harness since ``previous``.
+
+    Harnesses not in ``comparable_harnesses`` are omitted (unavailable lists
+    are not diffed as empty).
+    """
     out: dict[str, SnapshotDiff] = {}
-    harnesses = set(previous.keys()) | set(current.keys())
+    if comparable_harnesses is None:
+        harnesses = set(previous.keys()) | set(current.keys())
+    else:
+        harnesses = {name for name in comparable_harnesses if name in previous or name in current}
     for harness in sorted(harnesses):
         prev = previous.get(harness, frozenset())
         curr = current.get(harness, frozenset())
@@ -221,9 +231,20 @@ def snapshot_filename_for_date(day: date) -> str:
     return "model-list-" + day.isoformat() + ".json"
 
 
+def _quote_query_value(value: str) -> str:
+    out: list[str] = []
+    for ch in value:
+        code = ord(ch)
+        if (48 <= code <= 57) or (65 <= code <= 90) or (97 <= code <= 122) or ch in "-_.~":
+            out.append(ch)
+        else:
+            out.append(f"%{code:02X}")
+    return "".join(out)
+
+
 def append_query_params(base: str, params: Mapping[str, str]) -> str:
     """Pure URL query append without importing urllib (AD-4 / AD-65)."""
-    parts = [key + "=" + value for key, value in params.items() if value]
+    parts = [key + "=" + _quote_query_value(value) for key, value in params.items() if value]
     if not parts:
         return base
     query = "&".join(parts)
@@ -272,18 +293,22 @@ def render_report_text(
         lines.append("declared but not listed (and not an alias):")
         for item in not_listed:
             lines.append(f"  - {item.model_id} ({item.harness}) declared in {item.source_file} key {item.source_key}")
+    diff_lines: list[str] = []
     if snapshot_diff:
-        lines.append("")
-        lines.append("since previous snapshot:")
         for harness, diff in sorted(snapshot_diff.items()):
             if not diff.added and not diff.removed:
                 continue
-            lines.append(f"  [{harness}]")
+            diff_lines.append(f"  [{harness}]")
             for mid in sorted(diff.added):
-                lines.append(f"    + {mid}")
+                diff_lines.append(f"    + {mid}")
             for mid in sorted(diff.removed):
-                lines.append(f"    - {mid}")
-    if not not_listed and not unchecked_providers and not snapshot_diff:
+                diff_lines.append(f"    - {mid}")
+    if diff_lines:
+        lines.append("")
+        lines.append("since previous snapshot:")
+        lines.extend(diff_lines)
+    has_snapshot_changes = bool(diff_lines)
+    if not not_listed and not unchecked_providers and not has_snapshot_changes:
         lines.append("")
         lines.append("no drift detected")
     return "\n".join(lines)

@@ -973,6 +973,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SMOKE-005": Verdict.UNEVALUABLE,
     "MRS-SMOKE-006": Verdict.ERROR,
     "MRS-SMOKE-007": Verdict.WARN,
+    # Story 84.1 (operator-run model-list refresh, CAP-285): MRS-MDL-001
+    # (declared model id absent from live list and not an alias) at WARN --
+    # advisory drift, never blocks the rendered-report exit code.
+    "MRS-MDL-001": Verdict.WARN,
     # Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37):
     # MRS-MATRIX-001 (a pre-existing adapter-probes.json/adapter-smoke.json
     # was malformed) at WARN, mirroring MRS-ADP-016/MRS-SMOKE-007's own
