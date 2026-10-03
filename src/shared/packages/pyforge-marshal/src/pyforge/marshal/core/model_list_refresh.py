@@ -211,20 +211,26 @@ def build_snapshot_payload(
     }
 
 
-def parse_snapshot_payload(raw: Mapping[str, object]) -> tuple[str, dict[str, frozenset[str]]]:
+def parse_snapshot_payload(
+    raw: Mapping[str, object],
+) -> tuple[str, dict[str, frozenset[str]], dict[str, HarnessListStatus]]:
     snapshot_date = raw.get("date")
     if not isinstance(snapshot_date, str):
         raise ValueError("snapshot missing date")
     harnesses = raw.get("harnesses")
     ids_by_harness: dict[str, frozenset[str]] = {}
+    status_by_harness: dict[str, HarnessListStatus] = {}
     if isinstance(harnesses, Mapping):
         for name, block in harnesses.items():
             if not isinstance(name, str) or not isinstance(block, Mapping):
                 continue
+            status_raw = block.get("status")
+            if status_raw in ("ok", "unavailable", "unchecked"):
+                status_by_harness[name] = status_raw
             id_list = block.get("ids")
             if isinstance(id_list, list):
                 ids_by_harness[name] = frozenset(x for x in id_list if isinstance(x, str))
-    return snapshot_date, ids_by_harness
+    return snapshot_date, ids_by_harness, status_by_harness
 
 
 def snapshot_filename_for_date(day: date) -> str:
@@ -307,9 +313,13 @@ def render_report_text(
         lines.append("")
         lines.append("since previous snapshot:")
         lines.extend(diff_lines)
+    compared = sum(1 for r in harness_results.values() if r.status == "ok")
+    unavailable = sum(1 for r in harness_results.values() if r.status == "unavailable")
+    lines.append("")
+    lines.append(f"summary: {compared} harness(es) compared, {unavailable} unavailable")
     has_snapshot_changes = bool(diff_lines)
-    if not not_listed and not unchecked_providers and not has_snapshot_changes:
-        lines.append("")
+    can_claim_clean = compared > 0 and unavailable == 0
+    if can_claim_clean and not not_listed and not unchecked_providers and not has_snapshot_changes:
         lines.append("no drift detected")
     return "\n".join(lines)
 

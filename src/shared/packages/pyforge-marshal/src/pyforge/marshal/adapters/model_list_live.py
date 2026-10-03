@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
+import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
@@ -65,32 +67,59 @@ class LiveModelListFetch(ModelListFetchPort):
         effective_timeout = timeout_s if timeout_s > 0 else self._timeout_s
         try:
             return http_get_for_model_list(url, headers, timeout_s=effective_timeout)
-        except ValueError as exc:
-            return HttpGetResult(status_code=0, body=str(exc).encode("utf-8"))
+        except (OSError, http.client.HTTPException, ValueError):
+            return HttpGetResult(status_code=0, body=b"network error")
 
 
-def _build_auth_headers(source, env: Mapping[str, str]) -> tuple[dict[str, str], str | None]:
+_CREDENTIAL_ENV_RE = re.compile(r"^[A-Z_][A-Z0-9_]*$")
+
+
+def _credential_has_control_chars(value: str) -> bool:
+    return any(ord(ch) < 32 or ord(ch) == 127 for ch in value)
+
+
+def _build_auth_headers(source, env: Mapping[str, str]) -> tuple[dict[str, str], str | None, str | None]:
+    """Returns (headers, secret, unavailable_reason)."""
     headers = dict(source.static_headers)
     secret: str | None = None
     if source.credential_env:
+        if not _CREDENTIAL_ENV_RE.match(source.credential_env):
+            return headers, None, f"invalid credential_env name {source.credential_env!r}"
         secret = env.get(source.credential_env, "")
         if not secret:
-            return headers, None
+            return headers, None, None
+        if _credential_has_control_chars(secret):
+            return headers, None, f"credential env {source.credential_env!r} contains invalid characters"
         if source.credential_header:
             headers[source.credential_header] = secret
-    return headers, secret
+    return headers, secret, None
 
 
 def _http_unavailable(harness: str, result: HttpGetResult) -> HarnessListResult:
     if result.status_code == 0:
-        detail = result.body.decode("utf-8", errors="replace").strip() or "network error"
-        if detail == "timeout":
+        token = result.body.decode("ascii", errors="ignore").strip()
+        if token == "timeout":
             reason = "HTTP request timed out"
+        elif token == "redirect not followed":
+            reason = "HTTP redirect not followed"
+        elif token == "invalid url scheme":
+            reason = "HTTP URL must use https"
         else:
-            reason = detail
+            reason = "HTTP network error"
     else:
         reason = "HTTP " + str(result.status_code)
     return HarnessListResult(harness=harness, status="unavailable", live_ids=frozenset(), reason=reason)
+
+
+def _ok_or_empty(harness: str, ids: frozenset[str]) -> HarnessListResult:
+    if not ids:
+        return HarnessListResult(
+            harness=harness,
+            status="unavailable",
+            live_ids=frozenset(),
+            reason="no ids parsed",
+        )
+    return HarnessListResult(harness=harness, status="ok", live_ids=ids)
 
 
 def fetch_live_ids_for_profile(
@@ -131,21 +160,23 @@ def fetch_live_ids_for_profile(
                 reason="command timed out",
             )
         if run.exit_code != 0:
-            detail = (run.stderr or run.stdout).strip() or f"exit {run.exit_code}"
             return HarnessListResult(
                 harness=harness,
                 status="unavailable",
                 live_ids=frozenset(),
-                reason="command failed: " + detail,
+                reason=f"command failed with exit {run.exit_code}",
             )
-        return HarnessListResult(
-            harness=harness,
-            status="ok",
-            live_ids=parse_command_model_lines(run.stdout),
-        )
+        return _ok_or_empty(harness, parse_command_model_lines(run.stdout))
 
     if source.url:
-        headers, secret = _build_auth_headers(source, environment)
+        headers, secret, header_err = _build_auth_headers(source, environment)
+        if header_err:
+            return HarnessListResult(
+                harness=harness,
+                status="unavailable",
+                live_ids=frozenset(),
+                reason=header_err,
+            )
         if source.credential_env and secret is None:
             return HarnessListResult(
                 harness=harness,
@@ -159,24 +190,24 @@ def fetch_live_ids_for_profile(
             for _page in range(_MAX_HTTP_PAGES):
                 try:
                     url = anthropic_models_page_url(source.url, after_id)
-                except ValueError as exc:
+                except ValueError:
                     return HarnessListResult(
                         harness=harness,
                         status="unavailable",
                         live_ids=frozenset(),
-                        reason=str(exc),
+                        reason="invalid model list URL",
                     )
                 result = fetch.http_get(url, headers, timeout_s=timeout_s)
                 if result.status_code != 200:
                     return _http_unavailable(harness, result)
                 try:
                     payload = json.loads(result.body.decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                except (UnicodeDecodeError, json.JSONDecodeError):
                     return HarnessListResult(
                         harness=harness,
                         status="unavailable",
                         live_ids=frozenset(),
-                        reason="invalid JSON: " + str(exc),
+                        reason="invalid JSON response",
                     )
                 if not isinstance(payload, dict):
                     return HarnessListResult(
@@ -209,24 +240,24 @@ def fetch_live_ids_for_profile(
             for _page in range(_MAX_HTTP_PAGES):
                 try:
                     url = gemini_models_page_url(source.url, page_token)
-                except ValueError as exc:
+                except ValueError:
                     return HarnessListResult(
                         harness=harness,
                         status="unavailable",
                         live_ids=frozenset(),
-                        reason=str(exc),
+                        reason="invalid model list URL",
                     )
                 result = fetch.http_get(url, headers, timeout_s=timeout_s)
                 if result.status_code != 200:
                     return _http_unavailable(harness, result)
                 try:
                     payload = json.loads(result.body.decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                except (UnicodeDecodeError, json.JSONDecodeError):
                     return HarnessListResult(
                         harness=harness,
                         status="unavailable",
                         live_ids=frozenset(),
-                        reason="invalid JSON: " + str(exc),
+                        reason="invalid JSON response",
                     )
                 if not isinstance(payload, dict):
                     return HarnessListResult(
@@ -261,6 +292,6 @@ def fetch_live_ids_for_profile(
                 live_ids=frozenset(),
                 reason="HTTP source missing pagination kind",
             )
-        return HarnessListResult(harness=harness, status="ok", live_ids=frozenset(ids))
+        return _ok_or_empty(harness, frozenset(ids))
 
     return HarnessListResult(harness=harness, status="unavailable", live_ids=frozenset(), reason="no source declared")

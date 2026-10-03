@@ -475,6 +475,10 @@ def parse_model_list(data: Mapping[str, object], *, source: str) -> ModelListSou
     credential_env = _require_str(data, "credential_env", source)
     if url and not credential_env:
         raise HarnessProfileError(f"{source}: model_list.url requires credential_env")
+    if url and not url.startswith("https://"):
+        raise HarnessProfileError(f"{source}: model_list.url must use https")
+    if credential_env and not re.fullmatch(r"[A-Z_][A-Z0-9_]*", credential_env):
+        raise HarnessProfileError(f"{source}: model_list.credential_env must match [A-Z_][A-Z0-9_]*")
     return ModelListSource(
         catalog_provider=_require_str(data, "catalog_provider", source),
         command=command,
