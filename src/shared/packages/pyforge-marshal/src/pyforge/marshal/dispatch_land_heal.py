@@ -233,13 +233,18 @@ def _resolve_mechanical_conflicts(
             resolutions[ledger_rel] = render_ledger_statuses(main_text or branch_text, merged_map)
         
         # Handle deferred work ledger conflicts (Story 83.3)
+        unresolved_deferred_work: list[str] = []
         for rel in deferred_work_paths:
             if rel == deferred_work_rel:  # Only resolve the project's own deferred work ledger
                 base_text, main_text, branch_text = texts(rel)
                 union = union_deferred_work_texts(base_text, main_text, branch_text)
                 if union is not None:
                     resolutions[rel] = union
-                # If union fails, it will be caught by the unknown paths check
+                else:
+                    unresolved_deferred_work.append(rel)
+            else:
+                # Other project's deferred work ledger - cannot resolve
+                unresolved_deferred_work.append(rel)
         
         unresolved: list[str] = []
         for rel in memlog_paths:
@@ -248,6 +253,9 @@ def _resolve_mechanical_conflicts(
                 unresolved.append(rel)
             else:
                 resolutions[rel] = union
+        
+        # Add unresolved deferred work to the unresolved list
+        unresolved.extend(unresolved_deferred_work)
     except VcsCommandError:
         return None
     return resolutions, tuple(unresolved)
