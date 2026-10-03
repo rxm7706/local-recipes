@@ -211,13 +211,19 @@ Print:
 
 Total final unique packages processed: <number>
 Count not on conda-forge: <number>
-Count from analysis-dataset portion not on conda-forge: <number>
-Count parsed from OpenTeams-style portion:
-  - rows used by rule (a): <number>
-  - rows used by rule (b): <number>
-  - rows ignored by rule (c): <number>
-  - unique packages extracted from that portion: <number>
+AOSS-Free Mason queue rows: <number>
+Verification timestamp (UTC): <timestamp>
+
+Wrote CSV: <path>
+Wrote Markdown: <path>
+Wrote AOSS-Free queue CSV: <path>
+Wrote revised prompt: <path>
 ```
+
+The `Verification timestamp (UTC)` line appears only when the verified export has
+rows; the `Wrote revised prompt` line is omitted under `--skip-revised-prompt`.
+`scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` pins this
+block against the actuator's stdout.
 
 ---
 

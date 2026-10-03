@@ -23,10 +23,10 @@ METRICS_PATH = Path(__file__).resolve().parent.parent / (
 )
 SNAPSHOT_MD = Path(__file__).resolve().parent / "fixtures/inventory_universe/expected_report.md.sha256"
 SNAPSHOT_CSV = Path(__file__).resolve().parent / "fixtures/inventory_universe/expected_report.csv.sha256"
-_LOW_FLOOR = {
-    "verification_sets": {"cf_or_pm_floor": 0, "pypi_universe_floor": 0},
+# Non-zero floors the fixture meets (one conda-forge core name, one PyPI name).
+_PARAMS = {
+    "verification_sets": {"core_packages_enumerated_floor": 1, "pypi_universe_floor": 1},
     "inventory_verified_packages": {"verification_timestamp_utc": "2026-08-30T12:00:00Z"},
-    "inventory_aoss_free_queue": {"verification_timestamp_utc": "2026-08-30T12:00:00Z"},
 }
 
 
@@ -73,10 +73,10 @@ def test_inventory_nodes_then_metrics_actuator_matches_snapshot(tmp_path: Path):
     conda_maint = pd.DataFrame(columns=["core_python_package_name"])
 
     verified = build_inventory_verified_packages(
-        universe, core, pypi, mapping, priority, _LOW_FLOOR
+        universe, core, pypi, mapping, priority, _PARAMS
     )
     queue = build_inventory_aoss_free_queue(
-        aoss_src, core, pypi, mapping, jfrog, conda_maint, _LOW_FLOOR
+        aoss_src, core, pypi, mapping, jfrog, conda_maint, _PARAMS
     )
 
     verified_path = (

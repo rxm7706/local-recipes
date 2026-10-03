@@ -311,45 +311,136 @@ def test_load_atlas_exports_chains_keyerror(tmp_path: Path):
 
 
 def test_load_atlas_exports_parquet_deadline(tmp_path: Path, monkeypatch):
+    import threading
     import time
 
     root = tmp_path / "root"
     _make_catalog_root(root)
-    monkeypatch.setattr(metrics, "PARQUET_READ_DEADLINE_SECONDS", 0.01)
+    release = threading.Event()
 
-    def _slow(_path: Path):
-        time.sleep(0.2)
+    def _blocked(_path: Path):
+        release.wait(5)
         return pd.DataFrame([_sample_verified_row("slow")])
 
     started = time.monotonic()
-    result = metrics.load_atlas_exports(root, read_parquet_fn=_slow, deadline_seconds=0.01)
-    elapsed = time.monotonic() - started
-    assert result.failed is True
-    assert any("deadline" in w.lower() for w in result.warnings)
-    assert elapsed < 0.15, f"deadline did not return promptly ({elapsed:.2f}s)"
+    try:
+        result = metrics.load_atlas_exports(root, read_parquet_fn=_blocked, deadline_seconds=0.05)
+        elapsed = time.monotonic() - started
+        assert result.failed is True
+        assert any("deadline" in w.lower() for w in result.warnings)
+        assert elapsed < 1.0, f"deadline did not return promptly ({elapsed:.2f}s)"
+        # The stuck reader runs on a daemon thread, so it cannot hold interpreter exit.
+        stuck = [t for t in threading.enumerate() if t.name.startswith("parquet-read:") and t.is_alive()]
+        assert stuck, "the timed-out reader thread should still be running"
+        assert all(t.daemon for t in stuck)
+    finally:
+        release.set()
+
+
+def test_parquet_deadline_reraises_reader_error_on_caller_thread(tmp_path: Path):
+    def _boom(_path: Path):
+        raise KeyError("column renamed upstream")
+
+    with pytest.raises(KeyError, match="column renamed upstream"):
+        metrics._read_parquet_with_deadline(tmp_path / "x.parquet", read_fn=_boom, deadline_seconds=5)
+
+
+def _run_help() -> str:
+    import subprocess
+
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPT_PATH), "--help"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert proc.returncode == 0, proc.stderr
+    return proc.stdout
 
 
 def test_metrics_help_documents_verification_floors():
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--live-catalog", type=Path)
-    help_text = metrics._help_epilog()
-    assert "pypi-to-conda mapping" in help_text.lower() or "mapping table" in help_text.lower()
-    assert "cf_or_pm" not in help_text
+    help_text = " ".join(_run_help().split())
+    assert "core_packages_enumerated_floor" in help_text
+    assert "pypi_universe_floor" in help_text
+    assert "mapping table carries no floor" in help_text
 
 
 def test_metrics_help_has_no_internal_variable_names():
-    epilog = metrics._help_epilog()
-    for forbidden in ("_verification_sets", "cf_or_pm", "pypi_index", "subdirs"):
-        assert forbidden not in epilog
+    help_text = _run_help()
+    for forbidden in ("_verification_sets", "cf_or_pm", "pypi_index", "parselmouth_pypi", "cf_packages", "subdirs"):
+        assert forbidden not in help_text, forbidden
+
+
+_EXPECTED_FLAGS = frozenset(
+    {
+        "-h",
+        "--help",
+        "--analysis-xlsx",
+        "--live-catalog",
+        "--output-csv",
+        "--output-md",
+        "--output-revised-prompt",
+        "--skip-revised-prompt",
+    }
+)
 
 
 def test_argparse_has_no_strict_fetch_flag():
+    """Pin the actuator's whole flag set: no accepted-and-ignored flag survives Story 23.9."""
+    parser = metrics.build_parser()
+    flags = {opt for action in parser._actions for opt in action.option_strings}
+    assert flags == _EXPECTED_FLAGS
+    assert "--strict-fetch" not in flags
     text = SCRIPT_PATH.read_text(encoding="utf-8")
-    assert "--strict-fetch" not in text
     main_body = text.split("def main")[1].split('if __name__ == "__main__"')[0]
     assert "subdirs" not in main_body
+
+
+_DOCS = Path(__file__).resolve().parents[2] / "docs/reference"
+_PLACEHOLDERS = {"<number>": r"[\d,]+", "<path>": r".+", "<timestamp>": r"\S+"}
+
+
+def _doc_summary_block(doc: Path) -> list[str]:
+    text = doc.read_text(encoding="utf-8")
+    start = text.index("=== MASTER PROMPT V3.0 EXECUTION SUMMARY METRICS ===")
+    return text[start : text.index("```", start)].rstrip("\n").split("\n")
+
+
+def _line_pattern(doc_line: str) -> re.Pattern[str]:
+    pattern = re.escape(doc_line)
+    for token, regex in _PLACEHOLDERS.items():
+        pattern = pattern.replace(re.escape(token), regex)
+    return re.compile(rf"^{pattern}$")
+
+
+@pytest.mark.parametrize(
+    "doc_name",
+    [
+        "conda-forge-packaging-inventory-operations_prompt.md",
+        "conda-forge-packaging-inventory-operations_replay.md",
+    ],
+)
+def test_terminal_summary_matches_both_docs_exactly(tmp_path: Path, capsys, doc_name: str):
+    catalog_root = tmp_path / "catalog"
+    _make_catalog_root(catalog_root)
+    argv = [
+        "metrics",
+        "--live-catalog",
+        str(catalog_root),
+        "--output-csv",
+        str(tmp_path / "out.csv"),
+        "--output-md",
+        str(tmp_path / "out.md"),
+        "--output-revised-prompt",
+        str(tmp_path / "revised-prompt.md"),
+    ]
+    with mock.patch.object(sys, "argv", argv):
+        assert metrics.main() == 0
+    printed = capsys.readouterr().out.rstrip("\n").split("\n")
+    expected = _doc_summary_block(_DOCS / doc_name)
+    assert len(printed) == len(expected), (printed, expected)
+    for got, want in zip(printed, expected, strict=True):
+        assert _line_pattern(want).match(got), f"{doc_name}: {got!r} does not match {want!r}"
 
 
 if __name__ == "__main__":

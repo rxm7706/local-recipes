@@ -19,9 +19,9 @@ from __future__ import annotations
 import argparse
 import csv
 import sys
+import threading
 from collections import Counter
 from collections.abc import Callable
-from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -87,20 +87,30 @@ def _read_parquet_with_deadline(
     read_fn: Callable[[Path], Any] | None = None,
     deadline_seconds: float = PARQUET_READ_DEADLINE_SECONDS,
 ) -> Any:
+    """Run one Parquet read on a daemon thread and give up after ``deadline_seconds``.
+
+    A daemon worker bounds the process as well as the call: a read stuck on a dead
+    network mount cannot hold interpreter exit the way a pool worker would.
+    """
     import pandas as pd
 
     reader = read_fn if read_fn is not None else pd.read_parquet
-    pool = ThreadPoolExecutor(max_workers=1)
-    future = pool.submit(reader, path)
-    try:
-        return future.result(timeout=deadline_seconds)
-    except FuturesTimeoutError as exc:
-        pool.shutdown(wait=False, cancel_futures=True)
-        raise TimeoutError(
-            f"parquet read deadline exceeded ({deadline_seconds}s) for {path}"
-        ) from exc
-    finally:
-        pool.shutdown(wait=False, cancel_futures=True)
+    outcome: dict[str, Any] = {}
+
+    def _work() -> None:
+        try:
+            outcome["value"] = reader(path)
+        except BaseException as exc:  # re-raised on the caller's thread below
+            outcome["error"] = exc
+
+    worker = threading.Thread(target=_work, name=f"parquet-read:{path.name}", daemon=True)
+    worker.start()
+    worker.join(deadline_seconds)
+    if worker.is_alive():
+        raise TimeoutError(f"parquet read deadline exceeded ({deadline_seconds}s) for {path}")
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["value"]
 
 
 def load_atlas_exports(
@@ -248,13 +258,15 @@ def _queue_output_path(output_csv: Path, queue_rows: list[dict[str, str]]) -> Pa
 def _help_epilog() -> str:
     return (
         "Verification scale floors (enforced in Kedro derived_artifacts nodes, not "
-        "in this actuator): core_packages_enumerated (normalized conda-forge core "
-        "names) must meet a large scale floor; the PyPI universe set must meet a "
-        "minimum floor; the PyPI-to-conda mapping table carries no floor."
+        "in this actuator), counted after package-name normalization: "
+        "core_packages_enumerated (conda-forge core names) must meet "
+        "params verification_sets.core_packages_enumerated_floor (default 30,000); "
+        "the PyPI universe must meet verification_sets.pypi_universe_floor "
+        "(default 1); the PyPI-to-conda mapping table carries no floor."
     )
 
 
-def main() -> int:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="conda-forge-packaging-inventory-operations-metrics",
         description=(
@@ -303,7 +315,11 @@ def main() -> int:
         action="store_true",
         help="Do not overwrite docs/reference/conda-forge-packaging-inventory-operations_prompt.md.",
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
 
     if args.analysis_xlsx is not None:
         print(_RETIRED_WORKBOOK_MSG, file=sys.stderr)
@@ -321,8 +337,8 @@ def main() -> int:
     write_aoss_queue_csv(queue_path, exports.queue_rows)
     if not args.skip_revised_prompt:
         write_revised_prompt(args.output_revised_prompt, args)
-        print(f"Wrote revised prompt: {args.output_revised_prompt}")
 
+    # Terminal summary: the exact shape both docs/reference/...{prompt,replay}.md show.
     not_on_cf_count = sum(
         1 for row in exports.verified_rows if row.get("CondaForge_Verified") != "Yes"
     )
@@ -340,6 +356,8 @@ def main() -> int:
     print(f"Wrote CSV: {args.output_csv}")
     print(f"Wrote Markdown: {args.output_md}")
     print(f"Wrote AOSS-Free queue CSV: {queue_path}")
+    if not args.skip_revised_prompt:
+        print(f"Wrote revised prompt: {args.output_revised_prompt}")
     return 0
 
 
