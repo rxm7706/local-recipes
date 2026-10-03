@@ -180,6 +180,41 @@ harness_preference = ["cursor"]
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"27" = [  # Phase 4+5 of the deferral burn-down: atlas's open medium and low deferrals (fix, no CAP), added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus what the four stories touch
+  # outside the package: 27.1's quartet scripts, tests and replay docs; 27.2's bootstrap task and CI job; 27.3's portal
+  # chrome; 27.4's planning documents, steward's adoption-register test, the atlas persona and the CIS override.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/*.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  # 27.1: the inventory quartet, its tests and fixtures, and the replay and prompt docs it keeps in step
+  "scripts/conda-forge-packaging-inventory-operations_*.py",
+  "scripts/openteams_identity_dashboards.py",
+  "scripts/tests/test_conda_forge_packaging_inventory_operations_*.py",
+  "scripts/tests/test_openteams_identity_dashboards*.py",
+  "scripts/tests/fixtures/**",
+  "tests/packaging/test_openteams_handoffs.py",
+  "docs/reference/conda-forge-packaging-inventory-operations_*.md",
+  "conf/conda-forge-packaging-inventory-operations*",
+  # 27.2: the atlas job of the station-tests workflow
+  ".github/workflows/pyforge-station-tests.yml",
+  # 27.3: the portal chrome (base.html and a vendored htmx static file)
+  "src/shared/packages/django-pyforge/**",
+  # 27.4: steward's adoption-register test, the atlas persona, the CIS override
+  "src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py",
+  ".claude/skills/bmad-agent-atlas/**",
+  "_bmad/custom/bmad-cis-design-thinking.toml",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
 #  the first table header on 2026-09-02; see its comment there for why.)
 
