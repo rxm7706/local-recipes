@@ -658,6 +658,27 @@ def test_evaluate_dispatch_verification_deferred_work_red_on_the_story_own_file_
     assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings), envelope.findings
 
 
+def test_evaluate_dispatch_verification_surface_guard_red_on_the_story_own_file_is_never_pre_existing(
+    tmp_path: Path,
+) -> None:
+    """Story 83.2, reclassification test: a surface reconcile (S-13.7 guard) failure must
+    refuse as MRS-GATE-001 and never be downgraded to MRS-GATE-014 by the pre-existing
+    reclassifier -- the guard reads the whole tree and its failures must refuse."""
+    envelope = _verify_with(
+        tmp_path,
+        slug="pyforge-scribe",
+        verify_commands=["true"],
+        process=FakeProcessGuardFails(),
+        vcs=FakeVcs(changed=_SCRIBE_CHANGED),
+    )
+    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
+        DispatchVerificationVerdict.REFUSED
+    )
+    guard_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and "spec_surface_reconcile" in f.message]
+    assert len(guard_findings) == 1, envelope.findings
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings), envelope.findings
+
+
 def test_evaluate_dispatch_verification_lint_types_green_is_not_a_finding(tmp_path: Path) -> None:
     """Story 79.2, Edge-Case Matrix row 1: a clean change verifies."""
     envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcess())
