@@ -66,6 +66,20 @@ dashboards = _load_module("openteams_identity_dashboards.py")
 priority = _load_module("conda-forge-packaging-inventory-operations_priority.py")
 
 
+@pytest.fixture(autouse=True)
+def _forbid_unmocked_gh(monkeypatch):
+    """Never invoke the real ``gh`` binary from this module (Story 27.1 TEST SAFETY)."""
+    real_run = subprocess.run
+
+    def guarded_run(cmd, *args, **kwargs):
+        executable = cmd[0] if isinstance(cmd, (list, tuple)) and cmd else cmd
+        if executable == "gh":
+            raise AssertionError(f"unmocked gh subprocess.run: {cmd!r}")
+        return real_run(cmd, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", guarded_run)
+
+
 def test_discovery_is_not_vacuous():
     """If any of these stopped existing (typo, rename), every test below would
     fail on AttributeError with a confusing traceback -- this fails loudly
@@ -90,13 +104,13 @@ def _row(name: str, issue_url: str = "") -> dict[str, str]:
 
 
 def test_dry_run_default_makes_no_gh_call(monkeypatch):
-    calls: list[tuple[str, tuple, dict]] = []
-    monkeypatch.setattr(
-        subprocess, "check_output", lambda *a, **k: calls.append(("check_output", a, k)) or ""
-    )
-    monkeypatch.setattr(
-        subprocess, "check_call", lambda *a, **k: calls.append(("check_call", a, k)) or 0
-    )
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(list(cmd))
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     row = _row("some-pkg")
     result = identity.create_missing_issues("gh", [row], board={}, dry_run=True)
@@ -110,8 +124,11 @@ def test_dry_run_is_the_default_parameter_value(monkeypatch):
     """`--create-issues` is opt-in: calling without `dry_run` at all must also
     make no gh call (mirrors main()'s `dry_run=not args.create_issues` wiring
     when the flag is absent)."""
-    monkeypatch.setattr(subprocess, "check_output", lambda *a, **k: (_ for _ in ()).throw(AssertionError("gh called")))
-    monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: (_ for _ in ()).throw(AssertionError("gh called")))
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *a, **k: (_ for _ in ()).throw(AssertionError("gh called")),
+    )
 
     result = identity.create_missing_issues(None, [_row("some-pkg")], board={})
     assert result == [("some-pkg", "[Conda-Forge Packaging] some-pkg")]
@@ -172,9 +189,13 @@ def test_create_issues_flag_invokes_gh_and_merges_url(monkeypatch):
 
 
 def test_existing_issue_is_skipped_regardless_of_flag(monkeypatch):
-    calls: list = []
-    monkeypatch.setattr(subprocess, "check_output", lambda *a, **k: calls.append(a) or "unexpected")
-    monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: calls.append(a) or 0)
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(list(cmd))
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     row = _row("already-tracked-pkg", issue_url="https://github.com/x/y/issues/1")
     result_dry = identity.create_missing_issues("gh", [dict(row)], board={}, dry_run=True)
@@ -232,9 +253,13 @@ def test_blank_package_name_is_skipped(monkeypatch):
     """A row with a blank/missing Core_Python_Package_Name must never reach
     `gh issue create` -- it would mint a garbage `[Conda-Forge Packaging] `
     title."""
-    calls: list = []
-    monkeypatch.setattr(subprocess, "check_output", lambda *a, **k: calls.append(a) or "unexpected")
-    monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: calls.append(a) or 0)
+    calls: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(list(cmd))
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
 
     blank_row = _row("")
     blank_row["Core_Python_Package_Name"] = "   "  # whitespace-only, still blank
@@ -249,12 +274,12 @@ def test_gh_binary_vanishing_mid_run_is_caught_not_fatal(monkeypatch):
     """A non-CalledProcessError OSError (e.g. FileNotFoundError if `gh`
     disappears mid-run) must be caught too, in both the issue-create and the
     project-item-add call, so the loop genuinely never aborts."""
-    monkeypatch.setattr(
-        subprocess,
-        "check_output",
-        lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError("gh vanished")),
-    )
-    monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: 0)
+
+    def fake_run(cmd, **kwargs):
+        raise FileNotFoundError("gh vanished")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(identity.time, "sleep", lambda _s: None)
 
     result = identity.create_missing_issues("gh", [_row("some-pkg")], board={}, dry_run=False)
     assert result == []  # issue-create itself failed; nothing to report as created
@@ -266,16 +291,17 @@ def test_project_item_add_failure_does_not_mark_row_as_tracked(monkeypatch):
     Atlas Phase D run's own board join (Story 21.7: this script no longer
     performs that join itself) still sees it as missing and retries the
     project-add step -- otherwise it is silently done forever."""
-    monkeypatch.setattr(
-        subprocess,
-        "check_output",
-        lambda *a, **k: "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/42\n",
-    )
-    monkeypatch.setattr(
-        subprocess,
-        "check_call",
-        lambda *a, **k: (_ for _ in ()).throw(subprocess.CalledProcessError(1, a)),
-    )
+    issue_url = "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/42"
+
+    def fake_run(cmd, **kwargs):
+        if cmd[1] == "issue":
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout=f"{issue_url}\n", stderr=""
+            )
+        raise subprocess.CalledProcessError(1, cmd, stderr="project add failed")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(identity.time, "sleep", lambda _s: None)
 
     row = _row("some-pkg")
     board: dict[str, str] = {}
@@ -285,7 +311,7 @@ def test_project_item_add_failure_does_not_mark_row_as_tracked(monkeypatch):
     )
 
     assert result == []
-    assert not_filed == [("some-pkg", "[Conda-Forge Packaging] some-pkg")]
+    assert not_filed == [("some-pkg", f"filed-but-not-added: {issue_url}")]
     assert row["OpenTeams_Issue_URL"] == ""
     assert board == {}
 
@@ -906,6 +932,7 @@ def test_create_missing_issues_retries_rate_limit_text_on_exit_code_one(monkeypa
     rate_calls = {"n": 0}
 
     def fake_run(cmd, **kwargs):
+        assert kwargs.get("capture_output") is True, "gh rate-limit detection needs stderr captured"
         calls.append(cmd[1])
         if cmd[1] == "issue" and rate_calls["n"] < 1:
             rate_calls["n"] += 1

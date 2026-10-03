@@ -59,9 +59,10 @@ Verification and classification:
    23.8, execution mode 5), the package universe itself is ALSO read from that
    same Kedro data plane (`inventory_universe.parquet`) instead of the
    workbook's sheets.
-   Story 27.1 scale floors (Kedro ``derived_artifacts`` only): the conda-forge
-   union set and the PyPI universe must each meet a minimum row count after
-   package-name normalization; the PyPI-to-conda mapping table carries no floor.
+   Story 27.1 scale floors (Kedro ``derived_artifacts`` only):
+   ``core_packages_enumerated`` (normalized conda-forge core names) and the PyPI
+   universe must each meet a minimum row count after package-name normalization;
+   the PyPI-to-conda mapping table carries no floor.
    The metrics actuator summarizes these floors in its ``--help`` epilog.
 2. Assign `Packaging_Candidate_Status`:
    - Already Packaged: PyPI = Yes and conda-forge = Yes

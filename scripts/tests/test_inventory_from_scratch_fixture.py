@@ -22,6 +22,7 @@ METRICS_PATH = Path(__file__).resolve().parent.parent / (
     "conda-forge-packaging-inventory-operations_metrics.py"
 )
 SNAPSHOT_MD = Path(__file__).resolve().parent / "fixtures/inventory_universe/expected_report.md.sha256"
+SNAPSHOT_CSV = Path(__file__).resolve().parent / "fixtures/inventory_universe/expected_report.csv.sha256"
 _LOW_FLOOR = {
     "verification_sets": {"cf_or_pm_floor": 0, "pypi_universe_floor": 0},
     "inventory_verified_packages": {"verification_timestamp_utc": "2026-08-30T12:00:00Z"},
@@ -104,6 +105,7 @@ def test_inventory_nodes_then_metrics_actuator_matches_snapshot(tmp_path: Path):
         rc = metrics.main()
     assert rc == 0
     assert csv_path.is_file()
-    digest = hashlib.sha256(md_path.read_bytes()).hexdigest()
-    expected = SNAPSHOT_MD.read_text(encoding="utf-8").strip()
-    assert digest == expected
+    md_digest = hashlib.sha256(md_path.read_bytes()).hexdigest()
+    csv_digest = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+    assert md_digest == SNAPSHOT_MD.read_text(encoding="utf-8").strip()
+    assert csv_digest == SNAPSHOT_CSV.read_text(encoding="utf-8").strip()

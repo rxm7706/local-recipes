@@ -248,10 +248,9 @@ def _queue_output_path(output_csv: Path, queue_rows: list[dict[str, str]]) -> Pa
 def _help_epilog() -> str:
     return (
         "Verification scale floors (enforced in Kedro derived_artifacts nodes, not "
-        "in this actuator): the conda-forge union set (conda-forge packages plus "
-        "parselmouth-mapped PyPI names) must meet a large scale floor after name "
-        "normalization; the PyPI universe set must meet a minimum floor; the "
-        "pypi-to-conda mapping table carries no floor."
+        "in this actuator): core_packages_enumerated (normalized conda-forge core "
+        "names) must meet a large scale floor; the PyPI universe set must meet a "
+        "minimum floor; the PyPI-to-conda mapping table carries no floor."
     )
 
 
@@ -322,6 +321,7 @@ def main() -> int:
     write_aoss_queue_csv(queue_path, exports.queue_rows)
     if not args.skip_revised_prompt:
         write_revised_prompt(args.output_revised_prompt, args)
+        print(f"Wrote revised prompt: {args.output_revised_prompt}")
 
     not_on_cf_count = sum(
         1 for row in exports.verified_rows if row.get("CondaForge_Verified") != "Yes"
