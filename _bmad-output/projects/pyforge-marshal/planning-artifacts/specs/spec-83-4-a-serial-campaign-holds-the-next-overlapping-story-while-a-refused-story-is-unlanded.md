@@ -83,6 +83,11 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
+### 2026-10-03 (evening) — Landing review (operator session) — landed by hand
+- #1764 was merged before this session's work existed, so `main` carried the second session's hold (any verification refusal, every story). The supervisor read the story as merged on `main` and stopped; the session finished unsupervised. The operator session reworded its commit subject (`Story 83.4:` is a landing-evidence grammar) and landed it through a new PR.
+- The second send-back's findings are fixed: the hold keys on a refused landing with an unmerged branch, scopes to overlapping surfaces, and refused stories never hold each other. On the live run history neither marshal (364 runs) nor steward (130 runs) has a holding story.
+- `medium` `patch` (applied by the operator session) The scan gathered git facts for every run, twice (once in `_refused_landing_open_pr_story_keys`, once in the loop): about 50 s per pass on marshal's 364 runs, added to every dispatch preflight. Only a run whose `landing_verdict` is `refused` now pays for the verdict and git facts, and the loop reuses the scanned set: 8.1 s for marshal, 1.6 s for steward.
+
 ### 2026-10-03 — Review pass (bmad-build-auto, landing-refused fix)
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
 - findings: (none — diff matches all acceptance criteria after operator send-back)
