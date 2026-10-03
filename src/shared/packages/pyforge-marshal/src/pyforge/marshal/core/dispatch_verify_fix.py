@@ -27,9 +27,7 @@ _VERIFY_REFUSAL_GATE_PREFIX = "MRS-GATE-"
 # Story 85.1 (M7): scrub credential-shaped text before fix-turn prompt/journal tails.
 _URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s/]+)@")
 _BEARER_TOKEN = re.compile(r"(?i)(Authorization:\s*Bearer\s+)\S+")
-_SECRET_ASSIGNMENT = re.compile(
-    r"(?i)(\b(?:password|passwd|secret|api[_-]?key|token)\s*=\s*['\"]?)[^'\"\s]+(['\"]?)"
-)
+_SECRET_ASSIGNMENT = re.compile(r"(?i)(\b(?:password|passwd|secret|api[_-]?key|token)\s*=\s*['\"]?)[^'\"\s]+(['\"]?)")
 
 
 def scrub_fix_turn_exposure(text: str) -> str:

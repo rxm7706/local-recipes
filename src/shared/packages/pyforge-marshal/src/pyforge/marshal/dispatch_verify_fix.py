@@ -66,7 +66,7 @@ def wait_for_process(
         reaped, status = os.waitpid(pid, os.WNOHANG)
         if reaped == pid:
             return ProcessWaitResult(exited=True, returncode=os.waitstatus_to_exitcode(status))
-    except (ChildProcessError, OSError):
+    except ChildProcessError, OSError:
         pass
     return ProcessWaitResult(exited=False, returncode=None)
 

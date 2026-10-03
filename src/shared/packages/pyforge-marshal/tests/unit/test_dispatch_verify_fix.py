@@ -141,11 +141,7 @@ def test_policy_verify_fix_defaults_compose():
 
 
 def test_scrub_fix_turn_exposure_redacts_common_credential_shapes():
-    raw = (
-        "postgres://admin:secret@db/x\n"
-        "Authorization: Bearer eyJhbGciOi\n"
-        "password = 'hunter2'"
-    )
+    raw = "postgres://admin:secret@db/x\nAuthorization: Bearer eyJhbGciOi\npassword = 'hunter2'"
     scrubbed = scrub_fix_turn_exposure(raw)
     assert "secret" not in scrubbed
     assert "eyJhbGciOi" not in scrubbed
