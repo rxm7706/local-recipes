@@ -325,6 +325,39 @@ def test_query_audit_entries_on_an_empty_trail_still_records_a_zero_row_read():
     assert read_entry.row_count == 0
 
 
+def test_two_different_reads_record_two_different_scopes():
+    record_audit_entry("alice", "east", AuditAction.LOAD, 1)
+    record_audit_entry("bob", "west", AuditAction.LOAD, 1)
+
+    query_audit_entries(reader_actor="mallory", reader_role="east", actor="alice")
+    query_audit_entries(reader_actor="mallory", reader_role="west", action=AuditAction.LOAD)
+
+    reads = list(AuditEntry.objects.filter(action=AuditAction.AUDIT_READ).order_by("id"))
+    assert len(reads) == 2
+    assert reads[0].scope == {"actor": "alice"}
+    assert reads[1].scope == {"action": AuditAction.LOAD}
+    assert reads[0].scope != reads[1].scope
+
+
+def test_query_audit_entries_isolates_rows_by_reader_role():
+    record_audit_entry("alice", "east", AuditAction.LOAD, 1)
+    record_audit_entry("bob", "west", AuditAction.LOAD, 1)
+
+    east_view = query_audit_entries(reader_actor="r1", reader_role="east")
+    west_view = query_audit_entries(reader_actor="r2", reader_role="west")
+
+    assert len(east_view) == 1 and east_view[0].actor == "alice"
+    assert len(west_view) == 1 and west_view[0].actor == "bob"
+
+
+def test_query_audit_entries_honors_limit():
+    for i in range(5):
+        record_audit_entry("alice", "east", AuditAction.LOAD, i)
+
+    rows = query_audit_entries(reader_actor="bob", reader_role="east", limit=2)
+    assert len(rows) == 2
+
+
 # --- purge_expired_entries -------------------------------------------------
 
 

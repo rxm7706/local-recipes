@@ -11,9 +11,11 @@ import asyncio
 import pytest
 
 from pyforge.steward.dashboard.declarations import TrustedIngress
+from pyforge.steward.dashboard.declarations import AUDIT_IDENTITY_MAX_LENGTH
 from pyforge.steward.dashboard.middleware import (
     AmbiguousIdentityHeaderError,
     DashboardIdentityMiddleware,
+    OverLongIdentityError,
     UntrustedIngressError,
 )
 
@@ -397,6 +399,35 @@ def test_whitespace_only_identity_header_establishes_no_identity():
     assert calls, "a blank identity degrades to no identity — it is not a refusal"
     assert "dashboard_identity" not in scope
     assert "dashboard_role" not in scope
+
+
+def test_over_long_identity_is_refused_before_the_response_starts():
+    events: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app([]), TRUSTED)
+    long_identity = "x" * (AUDIT_IDENTITY_MAX_LENGTH + 1)
+    scope = _scope("10.0.0.1", headers=[("X-Forwarded-User", long_identity)])
+
+    with pytest.raises(OverLongIdentityError, match=f"{AUDIT_IDENTITY_MAX_LENGTH}-character"):
+        asyncio.run(middleware(scope, _receive, _fake_send(events)))
+
+    assert events == []
+    assert "dashboard_identity" not in scope
+
+
+def test_over_long_role_is_refused_before_the_response_starts():
+    events: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app([]), TRUSTED)
+    long_role = "r" * (AUDIT_IDENTITY_MAX_LENGTH + 1)
+    scope = _scope(
+        "10.0.0.1",
+        headers=[("X-Forwarded-User", "alice"), ("X-Forwarded-Role", long_role)],
+    )
+
+    with pytest.raises(OverLongIdentityError, match=f"{AUDIT_IDENTITY_MAX_LENGTH}-character"):
+        asyncio.run(middleware(scope, _receive, _fake_send(events)))
+
+    assert events == []
+    assert "dashboard_identity" not in scope
 
 
 def test_whitespace_only_role_header_establishes_no_role():
