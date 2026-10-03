@@ -199,9 +199,8 @@ class TrustedIngress:
             # the same "a typo becomes 'refuse every request' with no
             # diagnostic" consequence cited for the element-type check above,
             # from the same config-file provenance as the header-name check
-            # below. This constrains only surrounding whitespace, never the
-            # address FORM (CIDR/hostname/IPv6 spellings), which stays with
-            # Story 9.5's ingress model on the deferred-work ledger.
+            # below. Surrounding whitespace only; address FORM is validated as
+            # an IP network in the loop that follows (Story 84.3).
             if not address.strip():
                 raise ValueError(
                     f"TrustedIngress.addresses[{index}] must not be empty or "
