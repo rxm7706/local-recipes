@@ -2,11 +2,10 @@
 title: "27.1: The inventory exports refuse a hollow verification set, and the quartet scripts fail loud"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
-followup_review_recommended: true
+status: 'in-review'
 baseline_revision: a7746bc0b6
 review_loop_iteration: 1
-followup_review_recommended: false
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
@@ -107,8 +106,22 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 
 - 2026-10-03 — sent back after an independent landing review (findings in the Review Triage Log). Status back to `ready-for-dev`.
 - 2026-10-03 (night) — sent back a third time after the second landing review (Review Triage Log); the operator removed the duplicate `review_loop_iteration` key. Status back to `ready-for-dev`.
+- 2026-10-03 (night) — the third landing review's findings fixed by the operator's fixer (Review Triage Log); no row reopened. Status `in-review`, awaiting the next independent review; one `followup_review_recommended` key.
 
 ## Review Triage Log
+
+### 2026-10-03 (night) — Third landing review; fixed by the operator's fixer
+Reopened: none. Every finding landed with a test that fails on the reverted code, so all 25 rows stay closed and are re-cited at the fixer's final HEAD; the NFR-3 skip-and-mark-stale entry in `deferred:` is unchanged. Mutants ran in copies under the session scratchpad, never in this worktree.
+- `high` **HIGH 1 — mutant-killing tests: fixed.** New tests: `resolve_canvas_dir` (environment, then `conf/conda-forge-packaging-inventory-operations.local.env`, then unset), the identity and priority unset-skip messages and the env-dir canvas targets (DW-FU-17-2-2); the `?` priority/work buckets and an unknown recipe type kept after the known ones (DW-FU-17-2-3); the gist, its dashboards companion, the CSV and the export Parquet carrying one `Verification_Timestamp_UTC` (DW-FU-21-7); the reader's absent ranking/secondary-column warnings and per-row duplicate warnings (DW-FU-21-7-5, DW-FU-21-7-7) and the node's (ranked-input and JFROG-consumption columns, rows counted per key); AC 3(b) — a blank timestamp raises `IdentityGistError` from both renderers and `--gist-only --skip-gist` exits 1 writing nothing; AC 3(c) — a list cell from a pipeline-produced export renders `a; b` in the gist table. Killed: M3 (`_export_priority_merge_warnings` call dropped), M4 (`?` buckets and `ordered_types` reverted), M4a (unknown types only), M5 (synthetic `datetime.now` in both gist renderers), M5b (dashboards only), M5c (gist ignores the export stamp), and M6-M15 (reader/node set-dedupe, reader without secondary columns, node without JFROG warnings, home-dir canvas default, silent `cf_or_pm_floor` alias, revised-prompt line first, non-daemon deadline, filed-but-not-added folded into not-filed, gh guard without `Popen`, floor on the union). The unmutated copy passes the same 42 tests.
+- `high` **HIGH 2 — re-cite: fixed.** All 25 `verified:` lines rewritten at the live `path:line` (each read back after the last edit), dated 2026-10-03 and placed after the older verified lines; DW-FU-17-2-7's undated line removed.
+- `medium` **MEDIUM 1 — DW-FU-23-5: fixed, not reopened.** `test_derived_artifacts_e2e.py` runs the six inventory/export nodes (universe, Basilisk rollup, priority, verified packages, AOSS-free queue, `build_identity_complete_export`) through a `KedroSession` in a `tmp_path` copy of `pyproject.toml`, `conf/base` and `src`; `conf/local` is never copied — the test seeds stub credentials and a `catalog.yml` pointing every free input at fixture Parquet. Floors 3 and 5, which the fixture meets; the AOSS queue is asserted row for row; a second test runs the session with a sub-floor core set and asserts the refusal and no queue file; the member's real `data/` tree is fingerprinted (file list + sha256) before and after.
+- `medium` **MEDIUM 2 — gh guard: fixed.** The autouse guard subclasses `subprocess.Popen` (so `run`, `check_output`, `check_call` and `call` are all covered) on `Path(argv[0]).name == "gh"` (also `executable=` and `shell=True` strings) and pins `identity.gh_bin()` / `identity.DEFAULT_GH` to a sentinel path that cannot exist; a parametrized test proves five launch paths are blocked; the module docstring says so.
+- `medium` **MEDIUM 3 — floor key: renamed.** `core_packages_enumerated_floor` / `DEFAULT_CORE_PACKAGES_ENUMERATED_FLOOR` everywhere (code, atlas tests, handoffs, from-scratch, the e2e runtime params; `conf/base/parameters.yml` carries no `verification_sets` block). No alias: any other key in `params:verification_sets`, including the retired `cf_or_pm_floor`, raises a named `ValueError` instead of falling back to a default.
+- `medium` **MEDIUM 4 — prompt sync: fixed in one commit.** The actuator prints the summary block, then every `Wrote` line with `Wrote revised prompt` last (omitted under `--skip-revised-prompt`); `prompt.md` section 7 and `replay.md` show that exact shape, and a parametrized test matches stdout line by line against each doc.
+- `medium` **MEDIUM 5 — frontmatter: fixed.** One `followup_review_recommended: true`; `status: in-review`.
+- `low` Fixed: `identity.py --help` names `PYFORGE_INVENTORY_CANVAS_DIR` in `conf/conda-forge-packaging-inventory-operations.local.env` (tested through `--help`); filed-but-not-added issues print in their own section with the URL and a by-hand hint, apart from "Could not file" (tested through `main`); `stringify_export_cell` has one home in `identity_export_contract.py` with direct unit cases (the identity script and `identity_gist.py` bind it); `openteams_identity_dashboards.py` imports `importlib` at the top with PEP 8 spacing; the Parquet deadline runs on a daemon thread (tested); the e2e restores `sys.path`, `PYTHONPATH` and Kedro's project state with monkeypatch; the handoffs `_load_module` reuses a matching `sys.modules` entry and a fixture pins the patched copies (order-independent with `test_identity_parity.py`, run both ways); `test_argparse_has_no_strict_fetch_flag` pins the parser's whole flag set via `build_parser()`; the help tests run `--help`.
+- `low` Found while fixing: `identity_export_contract.py` read 72.4% under the 80% unit floor (`pyforge-atlas-coverage-gate`) — fixed with the stringify cases; a ranked input with no `core_python_package_name` column now warns that nothing joins; an unused `datetime` import in the identity script removed.
+- `low` For the operator: wip auto-checkpoints 738b2c3013 and 43e37b0661 hand-added six `surface:` entries to `spec-pyforge-atlas/SPEC.md` (the from-scratch test and fixtures, both sha256 snapshots, the e2e test). Left as is here — re-derive with `bmad-spec`.
 
 
 ### 2026-10-03 — Build-auto review pass (third send-back fixes)
