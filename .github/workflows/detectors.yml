@@ -87,13 +87,14 @@ jobs:
           cache: true
       - name: tests/scripts (pyforge-doctor-scripts-test)
         run: pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test
-      # The detector-aggregate tests that load Doctor's dispatch table skip above
-      # (pyforge-ci has none of Doctor's run-deps, by design); they run for real here,
-      # where Doctor's run-deps are installed (doctor Story 38.5). pr-preflight
-      # runs the same task (doctor Story 39.1): every step in this job must be a
+      # The detector-aggregate tests that load Doctor's dispatch table, and the
+      # verdict-writer tests that import its citation predicate (doctor Story 41.1),
+      # skip above (pyforge-ci has none of Doctor's run-deps, by design); they run
+      # for real here, where Doctor's run-deps are installed (doctor Story 38.5).
+      # pr-preflight runs the same task (doctor Story 39.1): every step in this job must be a
       # `pixi run --frozen -e <env> <task>` that pr-preflight also runs, or
       # doctor's test_preflight_mirrors_scripts_suite.py reds.
-      - name: tests/scripts/test_detectors_doctor_sources.py (pyforge-doctor-aggregate-scripts-test)
+      - name: tests/scripts/test_detectors_doctor_sources.py + test_apply_verification_verdicts.py (pyforge-doctor-aggregate-scripts-test)
         run: pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test
 
   detectors:

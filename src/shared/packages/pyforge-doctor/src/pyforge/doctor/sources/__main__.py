@@ -162,6 +162,13 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # WARN, so the CLI dies with a traceback and `scripts/detectors.py` reads
     # the row `unknown`, never green.
     Source.BMAD_OUTPUT_HYGIENE.value: hygiene.gather,
+    # Story 41.1 (DW-FU-21-6-2) -- the three dreams-hygiene classes, until
+    # now reachable ONLY as `dream-chain --dreams`, which is why nothing in
+    # `scripts/detectors.py` could run them: that file threads DISPATCH
+    # NAMES, not flags. A DISPATCH name of its own is what puts them in
+    # `detectors-ci`. `--dreams` keeps working and keeps calling the same
+    # gather; it is now a second door onto this entry, not the only one.
+    Source.DREAMS_HYGIENE.value: chain.gather_dreams_hygiene,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six
