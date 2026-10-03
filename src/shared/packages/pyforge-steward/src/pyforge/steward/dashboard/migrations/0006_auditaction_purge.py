@@ -4,7 +4,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("pyforge_steward_dashboard", "0005_corridorload_signer_corridorload_slice_name"),
     ]
