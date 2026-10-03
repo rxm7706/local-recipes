@@ -66,6 +66,7 @@ from pyforge.mason.errors import (
     CfeTimeoutError,
     CfeUnresolvedError,
     EngineAbsentError,
+    EnvironmentCheckTempCopyUnreadableError,
     EnvironmentCheckTimeoutError,
     EnvironmentLockfileMalformedError,
     EnvironmentLockfileMissingError,
@@ -1400,6 +1401,29 @@ def test_environment_check_timeout_error_survives_pickle_round_trip():
     assert clone.timeout == original.timeout
     assert clone.identifier == original.identifier
     assert clone.message == original.message
+
+
+# --- Story 4.4: EnvironmentCheckTempCopyUnreadableError -----------------------
+
+
+def test_environment_check_temp_copy_unreadable_error_identifier():
+    exc = EnvironmentCheckTempCopyUnreadableError("/tmp/t.yml", "truncated")
+    assert exc.identifier == "environment:check-temp-copy-unreadable"
+
+
+def test_environment_check_temp_copy_unreadable_error_rejects_empty_arguments():
+    with pytest.raises(ValueError):
+        EnvironmentCheckTempCopyUnreadableError("", "reason")
+    with pytest.raises(ValueError):
+        EnvironmentCheckTempCopyUnreadableError("/tmp/t.yml", "")
+
+
+def test_environment_check_temp_copy_unreadable_error_survives_pickle_round_trip():
+    original = EnvironmentCheckTempCopyUnreadableError("/tmp/t.yml", "bad yaml")
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, EnvironmentCheckTempCopyUnreadableError)
+    assert clone.temp_path == original.temp_path
+    assert clone.reason == original.reason
 
 
 # --- Story 4.2: EnvironmentManifestsNotFoundError -----------------------------

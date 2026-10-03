@@ -2369,6 +2369,20 @@ def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monke
 # --- Story 1.7: CfeUnresolvedError degrades to EXIT_CFE_UNAVAILABLE --------
 
 
+def test_cfe_unresolved_error_json_mode_writes_error_envelope(monkeypatch, capsys):
+    monkeypatch.setattr(
+        "pyforge.mason.cli.build_parser",
+        lambda: (_ for _ in ()).throw(CfeUnresolvedError()),
+    )
+    rc = main(["recipe", "validate", "recipes/foo", "--format", "json"])
+    assert rc == EXIT_CFE_UNAVAILABLE
+    captured = capsys.readouterr()
+    assert captured.err.strip() == str(CfeUnresolvedError())
+    doc = json.loads(captured.out)
+    assert doc["status"] == "error"
+    assert doc["errors"][0]["identifier"] == CfeUnresolvedError().identifier
+
+
 def test_cfe_unresolved_error_raised_in_main_returns_exit_cfe_unavailable(monkeypatch, capsys):
     """A `CfeUnresolvedError` raised inside main()'s try block must be caught
     by its own branch -- listed before `except MasonError`, since it is a

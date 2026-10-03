@@ -104,6 +104,7 @@ precedent (`OSError` on removal swallowed).
 from __future__ import annotations
 
 import json
+import logging
 import os
 import shutil
 import subprocess
@@ -367,9 +368,10 @@ def check(
 
         before = _read_content_hash(temp_lockfile_path, user_lockfile_path=lockfile_path)
 
-        print(
-            f"mason environment check: using temporary lockfile copy {temp_lockfile_path!r} (from {lockfile_path!r})",
-            file=sys.stderr,
+        logging.getLogger(__name__).info(
+            "mason environment check: using temporary lockfile copy %r (from %r)",
+            temp_lockfile_path,
+            lockfile_path,
         )
 
         argv = [_BINARY_NAME, "lock", "--check-input-hash"]

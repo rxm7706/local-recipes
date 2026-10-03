@@ -168,7 +168,7 @@ status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
   resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
-  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/errors.py:971
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/errors.py:979
 
 ### DW-4-4-9
 
@@ -228,7 +228,7 @@ status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
   resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
-  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/engines/condalock.py:370
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/engines/condalock.py:371
 
 ### DW-4-4-13
 
@@ -759,26 +759,26 @@ status: closed
   origin: bmad-correct-course Phase 5 headless-express 2026-08-24
   severity: medium
   promoted: 2026-08-24
-  status: closed
+  status: open
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  re-homed: mason Story 19.1 (`19-1-compile-pyforge-mason-station-skill`, backlog) owns the missing `.claude/skills/pyforge-mason/` SKF station skill; portal, MCP, persona, CloudEvents, and PostgreSQL-first boot reconcile are live at `src/shared/packages/django-mason/src/django_mason_portal/apps.py:14`, `src/shared/packages/django-mason/src/django_mason_portal/mcp_asgi.py:35`, `.claude/skills/bmad-agent-mason/SKILL.md:1`, `src/shared/packages/django-pyforge/src/django_pyforge/events/constants.py:96`, and `src/shared/packages/django-mason/src/django_mason_portal/boot_reconcile.py:14`.
 
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
   summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
   owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
-  status: closed
+  status: open
   recorded: 2026-08-24
   close_when: steward S-32.1 done; mason S-10.1 done (build-engine hook spec; today's engine is default plugin); no competing CI verdict
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
-  verified: src/shared/packages/django-mason/src/django_mason_portal/apps.py:14; src/shared/packages/django-mason/src/django_mason_portal/mcp_asgi.py:35; src/shared/packages/django-pyforge/src/django_pyforge/events/constants.py:96; .claude/skills/bmad-agent-mason/SKILL.md:1; src/shared/packages/django-mason/src/django_mason_portal/boot_reconcile.py:14
 
 ### DW-12-1-1: Guard clause (b) never opens the brief it certifies -- brief_mirrored_through is a pure string equality against tracked YAML, so a re-lost or hollowed-out skill-brief.yaml ships green.
 
@@ -822,7 +822,7 @@ status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
   resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
-  verified: _bmad/skf/shared/scripts/skf-provenance-gap-dispatch.py:310
+  verified: _bmad/skf/shared/scripts/skf-provenance-gap-dispatch.py:311; _bmad/skf/shared/scripts/schemas/skill-brief.v1.json:1
 
 ### DW-12-2-1: DW-12-2-3: test_github_updater_gap_closed (test_slice1_equivalence.py) makes a live GitHub API call but is marked only @pytest.mark.slow, not @pytest.mark.network, so the new blocking test-ci gate's "-m 'not network'" selection does not actually exclude it.
 
@@ -1492,7 +1492,7 @@ status: closed
 
   scope-corrected: 2026-09-08 — this entry's own summary says "Celery REST round-trip", and that half is NOT this sidecar's to prove. `pixi list -e dbgpt-sidecar` carries no celery and no redis package, `container-dbgpt` starts no broker, and `src/platform/compose/dbgpt/Containerfile` states the split in its own words: "Story 11.2/11.3 owns wiring this sidecar to real credentials and the shared Postgres/Celery surface; this story only has to make the container build, boot, and reach a healthy state on its own." The Celery surface belongs to python-agent-platform (pap:AD-7) and its wiring to Stories 11.2/11.3. Steward 43.7 therefore owns the achievable half — the SQLite metadata store proved created and migrated, plus a real API round-trip past /api/health — and the Celery half is recorded here as 11.2/11.3's rather than left implied. Caught before any CI step was written, which would not have passed.
   resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
-  verified: .github/workflows/platform-ci.yml:903
+  verified: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-43-7-sidecar-runtime-validation-on-python-3-14.md:100; .github/workflows/platform-ci.yml:903
 
 ### DW-13-2-3: Full pixi lock probe including dbgpt-app on 3.14 blocked on onnxruntime cap (outside dbgpt-client scope).
 

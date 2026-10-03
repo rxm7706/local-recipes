@@ -853,7 +853,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Story 4.3: mason environment lock <manifest_path>... --output/-o PATH
     # [--platform PLATFORMS] -- the `environment` noun's first verb (FR-25,
-    # FR-27, FR-29). Mirrors `package build`'s own registration shape
+    # FR-27, FR-29 for lock; Story 4.3). Mirrors `package build`'s own registration shape
     # (parents=[global_flags], for the same "a global flag given after the
     # verb and its positionals" reason documented on that registration
     # above). `--output`/`-o` mirrors `recipe new --output`'s exact
@@ -896,8 +896,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # Story 4.4: mason environment check <manifest_path>... --lockfile/-l PATH
-    # [--platform PLATFORMS] -- the `environment` noun's second verb (FR-25,
-    # FR-27, FR-29), CI's own companion to `lock` above: reports whether an
+    # [--platform PLATFORMS] -- the `environment` noun's second verb (FR-28,
+    # Story 4.4), CI's own companion to `lock` above: reports whether an
     # EXISTING lockfile has gone stale relative to its manifests, rather than
     # producing one. Mirrors `lock`'s own registration shape
     # (parents=[global_flags], `manifest_path` positional -- identical
@@ -1577,8 +1577,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         # first except clause the raised exception is an instance of, and
         # this one maps to the distinct EXIT_CFE_UNAVAILABLE (3), not the
         # generic EXIT_FAILED the MasonError branch produces (Story 1.7,
-        # FR-5). Same print-to-stderr/no-traceback pattern as MasonError.
+        # FR-5). Same stderr line plus JSON error envelope as MasonError
+        # when `--format json` (Story 27.1 / DW-4-4-13 parity).
+        fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text") if ns is not None else "text"
         print(str(exc), file=sys.stderr)
+        if fmt == "json":
+            command = "mason"
+            if ns is not None and getattr(ns, "noun", None):
+                verb = getattr(ns, "verb", None)
+                command = f"{ns.noun} {verb}" if verb else ns.noun
+            render.write(
+                fmt,
+                sys.stdout,
+                command,
+                "error",
+                {},
+                [{"identifier": exc.identifier, "message": exc.message}],
+            )
         return EXIT_CFE_UNAVAILABLE
     except MasonError as exc:
         # Anticipated failure (AD-7): the identifier + message is the whole

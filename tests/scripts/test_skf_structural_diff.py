@@ -34,3 +34,24 @@ def test_structural_diff_keys_exports_by_file_and_name():
     assert diff["summary"]["added"] == 2
     assert diff["summary"]["removed"] == 0
     assert diff["summary"]["unchanged"] == 2
+
+
+def test_structural_diff_reports_export_move_by_name():
+    m = _load_module()
+    baseline = [{"name": "helper", "type": "function", "file": "old.py", "line": 1}]
+    current = [{"name": "helper", "type": "function", "file": "new.py", "line": 1}]
+    diff = m.diff_inventories(baseline, current)
+    assert diff["summary"]["moved"] == 1
+    assert diff["summary"]["added"] == 0
+    assert diff["summary"]["removed"] == 0
+    assert diff["moved"][0]["name"] == "helper"
+    assert "\0" not in diff["moved"][0]["name"]
+
+
+def test_structural_diff_fileless_inventory_still_diffs():
+    m = _load_module()
+    baseline = [{"name": "orphan", "type": "function", "line": 1}]
+    current = baseline + [{"name": "other", "type": "function", "line": 2}]
+    diff = m.diff_inventories(baseline, current)
+    assert diff["summary"]["added"] == 1
+    assert diff["added"][0]["name"] == "other"

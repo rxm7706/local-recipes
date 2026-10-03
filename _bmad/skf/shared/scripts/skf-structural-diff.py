@@ -269,10 +269,8 @@ def _normalize_entries(
         raw_file = _first(entry, "file", "source_file")
         if not isinstance(raw_name, str) or not raw_name.strip():
             continue
-        if not isinstance(raw_file, str) or not raw_file.strip():
-            continue
         name = raw_name.strip()
-        file_path = raw_file.strip()
+        file_path = raw_file.strip() if isinstance(raw_file, str) and raw_file.strip() else None
         resolved = reexport_map.get(name, name)
         if resolved != name:
             transform_counts["reexport-resolution"] += 1
@@ -282,7 +280,7 @@ def _normalize_entries(
         for t in sig_transforms:
             transform_counts[t] += 1
 
-        key = f"{file_path}\0{name}"
+        key = name if file_path is None else f"{file_path}\0{name}"
         # Normalized record — also the public entry shape emitted in
         # added[]/removed[], so both sides render into one consistent table
         # regardless of the input shape they came from.
@@ -335,19 +333,9 @@ def diff_inventories(
     moved: list[dict] = []
     unchanged_count = 0
 
-    for name in sorted(common_names):
-        base_rec = baseline[name]
-        curr_rec = current[name]
-
-        # File moves are tracked separately from field changes.
-        base_file = base_rec.get("file")
-        curr_file = curr_rec.get("file")
-        if base_file and curr_file and base_file != curr_file:
-            moved.append({
-                "name": name,
-                "previous_file": base_file,
-                "current_file": curr_file,
-            })
+    for key in sorted(common_names):
+        base_rec = baseline[key]
+        curr_rec = current[key]
 
         entry_changed = False
         for field in DIFF_FIELDS:
@@ -359,7 +347,7 @@ def diff_inventories(
                 continue
             if base_val != curr_val:
                 changed.append({
-                    "name": name,
+                    "name": base_rec["name"],
                     "field": field,
                     "baseline_value": base_val,
                     "current_value": curr_val,
@@ -368,6 +356,36 @@ def diff_inventories(
 
         if not entry_changed:
             unchanged_count += 1
+
+    # Pair leftover removed/added entries that share an export name but moved files.
+    removed_by_name: dict[str, list[dict]] = collections.defaultdict(list)
+    added_by_name: dict[str, list[dict]] = collections.defaultdict(list)
+    for rec in removed:
+        removed_by_name[rec["name"]].append(rec)
+    for rec in added:
+        added_by_name[rec["name"]].append(rec)
+
+    paired_removed: set[int] = set()
+    paired_added: set[int] = set()
+    for export_name in sorted(set(removed_by_name) & set(added_by_name)):
+        r_list = removed_by_name[export_name]
+        a_list = added_by_name[export_name]
+        while r_list and a_list:
+            r_rec = r_list.pop()
+            a_rec = a_list.pop()
+            r_file, a_file = r_rec.get("file"), a_rec.get("file")
+            if r_file and a_file and r_file != a_file:
+                moved.append({
+                    "name": export_name,
+                    "previous_file": r_file,
+                    "current_file": a_file,
+                })
+                paired_removed.add(id(r_rec))
+                paired_added.add(id(a_rec))
+
+    if paired_removed or paired_added:
+        removed = [rec for rec in removed if id(rec) not in paired_removed]
+        added = [rec for rec in added if id(rec) not in paired_added]
 
     changed_names = len({c["name"] for c in changed})
 

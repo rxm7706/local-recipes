@@ -117,6 +117,18 @@ CFE_SURFACE_FILES = frozenset({".claude/tools/conda_forge_server.py"})
 
 # Clause (a): slice statuses that require equivalence: "green".
 EQUIVALENCE_GATED_STATUSES = frozenset({"parallel", "audited", "cut-over"})
+EQUIVALENCE_GATED_FOLDS = frozenset(s.casefold() for s in EQUIVALENCE_GATED_STATUSES)
+_BRIEF_REQUIRED_TOP_KEYS = (
+    "name",
+    "version",
+    "source_repo",
+    "language",
+    "description",
+    "forge_tier",
+    "created",
+    "created_by",
+    "scope",
+)
 
 # Clause (d): slices at this order or higher are gated by the re-scope gate's
 # pre-conditions before their `brief_path` may be set (CAP-4's "second slice
@@ -211,9 +223,11 @@ def diff_name_status(root: pathlib.Path, sha: str) -> list[tuple[str, str]]:
 
 def _slice_ref(sl: dict) -> str:
     raw = sl.get("id")
-    if isinstance(raw, str) and raw.strip():
-        return raw
-    return "<unknown-slice>"
+    if raw is None:
+        return "<unknown-slice>"
+    if isinstance(raw, str):
+        return raw.strip() if raw.strip() else "<unknown-slice>"
+    return str(raw)
 
 
 def _precondition_status_satisfied(entry: object) -> bool:
@@ -287,6 +301,27 @@ def _brief_defect_findings(root: pathlib.Path, slices: list) -> list[dict]:
                 "remedy": "restore a non-empty skill-brief.yaml or clear brief_path until one exists",
             })
             continue
+        missing_keys = [k for k in _BRIEF_REQUIRED_TOP_KEYS if k not in brief]
+        if missing_keys:
+            findings.append({
+                "kind": "brief-defect",
+                "ref": slice_id,
+                "refs": [slice_id, str(brief_path)],
+                "detail": f"slice '{slice_id}': brief at {brief_path!r} is missing required "
+                          f"skill-brief keys {missing_keys!r}",
+                "remedy": "restore a complete skill-brief.yaml or clear brief_path until one exists",
+            })
+            continue
+        scope = brief.get("scope")
+        if not isinstance(scope, dict) or not scope.get("type"):
+            findings.append({
+                "kind": "brief-defect",
+                "ref": slice_id,
+                "refs": [slice_id, str(brief_path)],
+                "detail": f"slice '{slice_id}': brief at {brief_path!r} has a hollow or missing scope",
+                "remedy": "restore a complete skill-brief scope block or clear brief_path until one exists",
+            })
+            continue
         mirrored = sl.get("brief_mirrored_through")
         if isinstance(mirrored, str) and mirrored.strip():
             if not _brief_covers_retro_sha(brief, mirrored.strip()):
@@ -355,7 +390,9 @@ def scan(state: dict, retros: list[str], *, root: pathlib.Path) -> list[dict]:
             continue
         slice_id = _slice_ref(sl)
         status = sl.get("status")
-        if status not in EQUIVALENCE_GATED_STATUSES:
+        if not isinstance(status, str):
+            continue
+        if status.strip().casefold() not in EQUIVALENCE_GATED_FOLDS:
             continue
         equivalence = sl.get("equivalence")
         if equivalence == "green":
@@ -482,23 +519,32 @@ def main() -> int:
                          "mapping — file missing, unreadable, or malformed.",
                          args.json)
 
-    if any_slice_has_brief_path(state):
-        retros = retro_commits_since(ROOT, args.since)
-        if retros is None:
+    history_skipped = not any_slice_has_brief_path(state)
+    if history_skipped:
+        retros: list[str] = []
+    else:
+        walked = retro_commits_since(ROOT, args.since)
+        if walked is None:
             return _unknown(f"`git log {args.since}..HEAD` could not run — not a "
                              f"git repository, or {args.since} is unreachable from "
                              "HEAD.", args.json)
-    else:
-        retros = []
+        retros = walked
 
     findings = scan(state, retros, root=ROOT)
 
     if args.json:
-        print(json.dumps({"retros_scanned": len(retros), "findings": findings}, indent=2))
+        payload = {
+            "retros_scanned": None if history_skipped else len(retros),
+            "findings": findings,
+        }
+        print(json.dumps(payload, indent=2))
         return 1 if findings else 0
 
-    print(f"cfe-rebuild-guard-check: {len(retros)} qualifying CFE retro commit(s) "
-          f"in {args.since[:10]}..HEAD\n")
+    if history_skipped:
+        print("cfe-rebuild-guard-check: skipped retro history walk (no slice carries brief_path)\n")
+    else:
+        print(f"cfe-rebuild-guard-check: {len(retros)} qualifying CFE retro commit(s) "
+              f"in {args.since[:10]}..HEAD\n")
     if not findings:
         print("  clean — no slice has a stale equivalence result, no briefed "
               "slice is behind a landed retro, no legacy caller survives "

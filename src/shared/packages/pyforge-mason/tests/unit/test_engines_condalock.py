@@ -538,7 +538,10 @@ def test_check_with_multiple_manifests_repeats_dash_f_in_order(tmp_path):
     assert [argv[i + 1] for i in p_indices] == ["linux-64", "osx-arm64"]
 
 
-def test_check_prints_temp_copy_mapping_to_stderr_before_conda_lock(tmp_path, capsys):
+def test_check_logs_temp_copy_mapping_before_conda_lock(tmp_path, caplog):
+    import logging
+
+    caplog.set_level(logging.INFO, logger="pyforge.mason.engines.condalock")
     lockfile = tmp_path / "conda-lock.yml"
     _write_lockfile(lockfile, {"linux-64": "abc"})
     with (
@@ -553,9 +556,8 @@ def test_check_prints_temp_copy_mapping_to_stderr_before_conda_lock(tmp_path, ca
     ):
         condalock.check(str(lockfile), _MANIFEST_PATHS)
 
-    err = capsys.readouterr().err
-    assert str(lockfile) in err
-    assert "temporary lockfile copy" in err
+    assert str(lockfile) in caplog.text
+    assert "temporary lockfile copy" in caplog.text
 
 
 def test_check_with_no_platforms_carries_zero_dash_p_flags(tmp_path):

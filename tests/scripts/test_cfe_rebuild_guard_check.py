@@ -168,6 +168,20 @@ def test_clean_campaign_zero_findings(tmp_path: Path) -> None:
     assert findings == []
 
 
+def test_stale_equivalence_red_when_status_parallel_with_wrong_case(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    state = _state([_slice(id="slice-1", status="Parallel", equivalence="red")])
+    retros = m.retro_commits_since(tmp_path, baseline)
+    _ensure_briefs_for_state(tmp_path, state)
+    findings = m.scan(state, retros, root=tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0]["kind"] == "stale-equivalence"
+
+
 def test_stale_equivalence_red(tmp_path: Path) -> None:
     _init_repo(tmp_path)
     _write(tmp_path, "README.md", "baseline")
@@ -678,6 +692,20 @@ def test_gate_bypassed_closed_status_with_trailing_space_is_satisfied(tmp_path: 
     assert findings == []
 
 
+def test_brief_hollow_mapping_is_a_finding(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    _write(tmp_path, "README.md", "baseline")
+    baseline = _commit_all(tmp_path, "feat: baseline")
+
+    brief_rel = "briefs/hollow.yaml"
+    _write(tmp_path, brief_rel, "{}\n")
+    state = _state([_slice(id="slice-1", brief_path=brief_rel, brief_mirrored_through=None)])
+    retros = m.retro_commits_since(tmp_path, baseline)
+    findings = m.scan(state, retros, root=tmp_path)
+
+    assert any(f["kind"] == "brief-defect" and "missing required" in f["detail"] for f in findings)
+
+
 def test_brief_path_missing_file_is_a_finding(tmp_path: Path) -> None:
     _init_repo(tmp_path)
     _write(tmp_path, "README.md", "baseline")
@@ -734,6 +762,26 @@ def test_main_skips_git_walk_when_no_slice_has_brief_path(
     monkeypatch.setattr(m, "retro_commits_since", _fail_walk)
     monkeypatch.setattr(sys, "argv", ["cfe_rebuild_guard_check.py"])
     assert m.main() == 0
+
+
+def test_main_json_skipped_history_reports_null_retros_scanned(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    state_path = tmp_path / "campaign-state.yaml"
+    state_path.write_text(
+        "campaign:\n  endgame_declared: false\n  callers: []\n"
+        "slices:\n"
+        "  - id: slice-1\n"
+        "    status: mapped\n"
+        "    brief_path: null\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(m, "ROOT", tmp_path)
+    monkeypatch.setattr(m, "CAMPAIGN_STATE_PATH", state_path)
+    monkeypatch.setattr(sys, "argv", ["cfe_rebuild_guard_check.py", "--json"])
+    assert m.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["retros_scanned"] is None
 
 
 def test_live_repo_today_is_clean() -> None:

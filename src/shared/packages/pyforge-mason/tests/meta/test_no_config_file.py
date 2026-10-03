@@ -195,19 +195,23 @@ def test_no_module_imports_a_config_file_parser():
     )
 
 
-def _find_unsafe_yaml_attribute_calls_in_condalock() -> list[str]:
-    """In the sanctioned `engines/condalock.py`, `yaml.<attr>` must be only
-    `safe_load` -- attribute calls can bypass a bare `import yaml` carve-out."""
-    source = _CONDALOCK_PATH.read_text(encoding="utf-8-sig")
-    tree = ast.parse(source, filename=str(_CONDALOCK_PATH))
+def _find_unsafe_yaml_attribute_calls_in_condalock(path: Path = _CONDALOCK_PATH) -> list[str]:
+    """In the sanctioned condalock module, `yaml.<attr>` must be only
+    `safe_load` -- attribute references can bypass a bare `import yaml` carve-out."""
+    source = path.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(path))
     bad: list[str] = []
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call):
-            continue
-        func = node.func
-        if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
-            if func.value.id == "yaml" and func.attr != "safe_load":
-                bad.append(func.attr)
+        if isinstance(node, ast.Call):
+            func = node.func
+            if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+                if func.value.id == "yaml" and func.attr != "safe_load":
+                    bad.append(func.attr)
+        elif isinstance(node, ast.Assign):
+            value = node.value
+            if isinstance(value, ast.Attribute) and isinstance(value.value, ast.Name):
+                if value.value.id == "yaml" and value.attr != "safe_load":
+                    bad.append(value.attr)
     return bad
 
 
@@ -218,20 +222,12 @@ def test_condalock_yaml_attribute_calls_are_only_safe_load():
 def test_detector_fires_on_yaml_unsafe_load_attribute_in_condalock_shape(tmp_path):
     root = tmp_path / "mason" / "engines"
     root.mkdir(parents=True)
-    (root / "condalock.py").write_text(
-        "import yaml\n\ndef read():\n    return yaml.unsafe_load('x: 1')\n",
+    path = root / "condalock.py"
+    path.write_text(
+        "import yaml\n\n_loader = yaml.unsafe_load\n\ndef read():\n    return yaml.unsafe_load('x: 1')\n",
         encoding="utf-8",
     )
-
-    source = (root / "condalock.py").read_text(encoding="utf-8-sig")
-    tree = ast.parse(source)
-    bad = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
-            if isinstance(node.func.value, ast.Name) and node.func.value.id == "yaml":
-                if node.func.attr != "safe_load":
-                    bad.append(node.func.attr)
-    assert bad == ["unsafe_load"]
+    assert _find_unsafe_yaml_attribute_calls_in_condalock(path) == ["unsafe_load", "unsafe_load"]
 
 
 def test_every_sanctioned_yaml_exception_is_live_and_import_form_scoped():

@@ -19,8 +19,15 @@ def _load_module():
     return mod
 
 
-def test_classify_retro_mirror_as_already_in_scope():
+def test_classify_retro_mirror_alone_does_not_override_unresolved():
     m = _load_module()
     status, prior = m._classify(["retro-mirror"])
-    assert status == m._ALREADY_IN_SCOPE
-    assert prior == "retro-mirror"
+    assert status == m._UNRESOLVED
+    assert prior is None
+
+
+def test_classify_demoted_exclude_wins_over_later_retro_mirror():
+    m = _load_module()
+    status, prior = m._classify(["demoted-exclude", "retro-mirror"])
+    assert status == m._PRE_DECIDED_DEMOTED
+    assert prior == "demoted-exclude"

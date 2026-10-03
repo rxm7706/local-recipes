@@ -381,9 +381,9 @@ class PackageBuildTimeoutError(MasonError):
     the failure; it does not itself do any process cleanup. `engine` is the
     `engines/__init__.py::_KNOWN_ENGINES` display name (`"build"` or
     `"pixi"`), the same name a caller passed to `require_engine` at the top
-    of that adapter's own `build()`. `timeout` is the number of seconds that
-    configured limit in seconds (the `timeout=` argument passed to
-    `subprocess.run`), echoed verbatim into the message.
+    of that adapter's own `build()`. `timeout` is the configured limit in
+    seconds (the `timeout=` argument passed to `subprocess.run`), echoed
+    verbatim into the message.
     Unlike `CfeTimeoutError`'s `--cfe-timeout/MASON_CFE_TIMEOUT` override,
     v1 exposes no per-engine timeout flag (spec Never boundary) -- the
     message says so rather than pointing at a knob that does not exist.
