@@ -2467,9 +2467,7 @@ def test_add_worktree_for_tree_raises_vcs_command_error_on_an_unresolvable_paren
         vcs.add_worktree_for_tree(repo, home, tree_oid, parent="no-such-ref")
 
 
-def test_merge_tree_preview_two_parent_commit_scopes_changed_files_to_the_branch(
-    vcs, repo, tmp_path
-) -> None:
+def test_merge_tree_preview_two_parent_commit_scopes_changed_files_to_the_branch(vcs, repo, tmp_path) -> None:
     """Story 83.12: GitHub-style merge parents so ``origin/main...HEAD`` is the story diff."""
     from pyforge.marshal.dispatch_verify import coverage_gate_commands_for_changed_files
 
