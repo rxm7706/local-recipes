@@ -589,6 +589,11 @@ _SHIPPED_BOOLEANS = {
     "pyforge.three_surfaces": True,
     "pyforge.steward.ghe_fleet_credentials": False,
     "pyforge.steward.object_store_consumer": False,
+    "pyforge.steward.sync_github_only_marker": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
 }
 _METADATA_FIELDS = ("owner", "story", "created", "on_everywhere", "cleanup_by")
 
@@ -604,7 +609,8 @@ def test_the_shipped_tree_with_metadata_evaluates_as_it_did_without(
     )
     _isolate_flag_environment(monkeypatch, _FLAGS_JSON, environment)
     for key, expected in _SHIPPED_BOOLEANS.items():
-        assert _three_readings(_FLAGS_JSON, key) == (expected,) * 3, (environment, key)
+        expected_val = expected[environment] if isinstance(expected, dict) else expected
+        assert _three_readings(_FLAGS_JSON, key) == (expected_val,) * 3, (environment, key)
     _assert_cutover_root_agrees(_FLAGS_JSON, environment)
     assert evaluate_cutover_root(_FLAGS_JSON) == "local-recipes"
 
