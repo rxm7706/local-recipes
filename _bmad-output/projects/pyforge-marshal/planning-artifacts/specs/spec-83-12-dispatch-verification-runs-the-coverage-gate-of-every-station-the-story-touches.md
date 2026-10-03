@@ -2,7 +2,7 @@
 title: "83.12: Dispatch verification runs the coverage gate of every station the story touches"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '2f131c2bae4fd9a7a0951ab5be1986b3ce4a9931'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -73,8 +73,20 @@ Minted 2026-10-03 at the operator's request (PR #1773 went red on the coverage g
 ## Spec Change Log
 
 - 2026-10-03 — sent back after an independent landing review (findings in the Review Triage Log). Status back to `ready-for-dev`.
+- 2026-10-03 (night) — sent back again after the second landing review (Review Triage Log). Status back to `ready-for-dev`.
 
 ## Review Triage Log
+
+
+### 2026-10-03 (night) — Second landing review (independent reviewer, operator session) — sent back
+Keep: the eight-station derivation, the two-parent preview commit (a real-git probe of a scribe-only story behind a main that touched doctor and warden ran only scribe's gate, in the preview), the reclassifier exclusion test, the docstring. All four gates exit 0.
+- `high` **Every new fallback and refusal path in the preview crashes `dispatch land` with `ValueError`.** `run_verify_commands_only` puts its MRS-GATE-009 finding (WARN on the fallback, ERROR with no fallback) at the front of `findings` (`dispatch_verify.py`, about 374-396); `_refuse_via_merge_tree_preview` treats any finding as a failure (`dispatch_land.py`, about :246); `_describe_verify_failures` then zips failing reports with findings `strict=True` (about :129) and raises (`zip() argument 2 is longer than argument 1`), uncaught out of `execute_dispatch_land`. Keep diff-resolution findings out of the per-command list (a separate return value, or filtered by code before the zip); refuse only on ERROR, with an MRS-DISP-044 naming the unresolved diff; let the WARN through. Add tests through `execute_dispatch_land` with a `MergeTreePreviewVcs.changed_files` that raises for the preview home: with the fallback the landing proceeds and the story's station gate ran; with no fallback it refuses MRS-DISP-044.
+- `medium` **Send-back item (a) is still open: the preview wiring has no test that fails without it.** Dropping `repo_root=`, `vcs=` and `story_changed_files=` from the call in `dispatch_land.py` (about 224-231) passes every test and the preview silently runs zero coverage gates. Give `MergeTreePreviewVcs` a `changed_files` returning a station `src/` path for the preview home and assert that station's `pyforge-<station>-coverage-gate` ran with cwd = the preview home; consider making `repo_root` and `vcs` required (`dispatch_verify.py`, about 336-338; one caller).
+- `low` `test_vcs_git.py` (about :2470): the "two_parent" test never checks the second parent; assert `HEAD^2 == feature_sha`.
+- `low` `dispatch_land.py` (about :173 and :212) resolves `refs/remotes/origin/main` twice (merge-tree, then `commit-tree -p`); rev-parse once to a SHA and pass it to both.
+- `low` `dispatch_land.py` (about :203): drop `AttributeError` from the `except`; it hides port-conformance bugs.
+- `low` `test_dispatch_landing.py` (about :2256): the annotation says 3-tuples while :2282 appends 4-tuples.
+- `low` Optional: a parity test that `dispatch_verify.py`'s station slugs equal `scripts/coverage_gate.py` `STATIONS`.
 
 ### 2026-10-03 — Landing review (independent reviewer, operator session) — sent back
 Keep: the derivation for the eight stations (each in its own environment, once per station; pyforge-core-only and planning-only stories add none), the MRS-GATE-001 refusal naming the command, and the full-refname diff base. All step-5 commands are green and AC5's mutation fails 12 tests.
