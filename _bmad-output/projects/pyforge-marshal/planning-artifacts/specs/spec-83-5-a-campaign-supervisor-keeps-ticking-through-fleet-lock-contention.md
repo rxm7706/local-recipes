@@ -2,7 +2,7 @@
 title: '83.5: A campaign supervisor keeps ticking through fleet-lock contention'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'e32c50a30f0afc2bf42e6aa37e8f0f177bb84c0f'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -61,7 +61,37 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — blind-hunter, edge-case-hunter, verification-gap, and intent-alignment layers reported no actionable gaps against the diff)
 
 ### 2026-10-03 — Reset by the operator session
 - Run `pyforge-marshal-20261003T020120169Z-d937e761` halted before any work: bmad-build-auto does not recognize the minted status `backlog` (step-01: "status missing or unrecognized"), so it set `blocked`. Status reset to `ready-for-dev`; nothing else changed. The seam defect is chained as Story 83.8.
+
+## Auto Run Result
+
+Status: done
+
+### Summary
+MRS-DRAIN-010 fleet-cycle lock refusals now emit `data.complete: false`, so `cycle_completion` treats contended ticks as ordinary not-complete cycles instead of unreadable envelopes that trip the supervisor’s five-cycle stop.
+
+### Files changed
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — set `data["complete"] = False` on lock refusal before emit.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py` — assert JSON envelope on MRS-DRAIN-010; supervisor integration test for eight contended ticks.
+
+### Review
+- Patches applied: 0
+- Deferred: 0
+- Rejected: none
+
+### Follow-up review recommendation
+`followup_review_recommended: false` (no patch findings this pass).
+
+### Verification
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass (10827 passed)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass (130 passed)
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+
+### Residual risks
+None identified; unreadable-cycle behavior for truly broken commands remains covered by existing supervisor tests.
