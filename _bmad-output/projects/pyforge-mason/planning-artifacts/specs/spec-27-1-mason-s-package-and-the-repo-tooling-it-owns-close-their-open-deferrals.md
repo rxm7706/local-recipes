@@ -2,7 +2,7 @@
 title: "27.1: Mason's package and the repo tooling it owns close their open deferrals"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '10a40461ddefe7a7017a246c1fe189c2982bf202'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -25,9 +25,9 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** 30 of mason's open deferred-work rows (11 medium, 19 low) sit on Mason's own package and the repo tooling it owns. In the package, `environment lock` exits 0 after a failed solve while `environment check` projects the same failure, `--format json` prints no JSON on a typed error, and the conda-lock check engine blames the user's intact lockfile for a temp-copy failure and names a path the user never gave. Four docstrings are wrong. The config-file meta-guard misses `yaml.unsafe_load` reached by attribute, two meta-guards carry a carve-out for files that no longer exist, and a portal meta-test may still fail on main. Four landed stories still owe their recommended follow-up review, and two rows wait on steward-delivered surfaces that should now be checked. In the tooling, the CFE-rebuild guard (`scripts/cfe_rebuild_guard_check.py`, still a blocking CI step) never opens the brief it certifies, walks the whole history on every PR, and mishandles `id: null` and letter case; two of its clause-(d) rows are superseded by Story 15.1's campaign closure. The skf audit scripts undercount same-named exports and do not know the `retro-mirror` action, one CI row is already fixed by the `scripts-suite` job, and four more stories owe a follow-up review.
+**Problem:** 22 of mason's open deferred-work rows (11 medium, 11 low) sit on Mason's own package and the repo tooling it owns. In the package, `environment lock` exits 0 after a failed solve while `environment check` projects the same failure, `--format json` prints no JSON on a typed error, and the conda-lock check engine blames the user's intact lockfile for a temp-copy failure and names a path the user never gave. Four docstrings are wrong. The config-file meta-guard misses `yaml.unsafe_load` reached by attribute, two meta-guards carry a carve-out for files that no longer exist, and a portal meta-test may still fail on main. Two rows wait on steward-delivered surfaces that should now be checked. In the tooling, the CFE-rebuild guard (`scripts/cfe_rebuild_guard_check.py`, still a blocking CI step) never opens the brief it certifies, walks the whole history on every PR, and mishandles `id: null` and letter case; two of its clause-(d) rows are superseded by Story 15.1's campaign closure. The skf audit scripts undercount same-named exports and do not know the `retro-mirror` action, and one CI row is already fixed by the `scripts-suite` job.
 
-**Approach:** Fix each row where its code lives, and pin each behavioural fix with a test that fails without it. Close a row whose surface Story 15.1 retired, or that another station's landed story delivered, on the cited line that proves it, never on a bare note. Run each follow-up review as an independent pass and fix what it finds in this story.
+**Approach:** Fix each row where its code lives, and pin each behavioural fix with a test that fails without it. Close a row whose surface Story 15.1 retired, or that another station's landed story delivered, on the cited line that proves it, never on a bare note.
 
 Ledger key: `27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals`.
 Type / Effort / Deps: fix / L / —.
@@ -45,9 +45,8 @@ Type / Effort / Deps: fix / L / —.
 - Given `yaml.unsafe_load` substituted for `yaml.safe_load` in `engines/condalock.py` When the meta suite runs Then `test_no_config_file.py` fails
 - Given `scripts/cfe_rebuild_guard_check.py` and a slice whose `brief_path` names a missing or hollow brief When it runs Then it reports a finding; given no slice with a `brief_path` Then it walks no git history; given `id: null` or the status `"Closed "` Then it renders the placeholder and matches the status
 - Given four scripts each exporting `main` When `skf-structural-diff.py` diffs them Then all four count; given a `retro-mirror` amendment When `skf-provenance-gap-dispatch.py` classifies it Then it is a known action
-- Given each follow-up review row (`DW-2`, `DW-1-10-2`, `DW-2-3-2`, `DW-FRR-8-1`, `DW-FRR-10-1`, `DW-FRR-12-3`, `DW-FRR-12-7`, `DW-FRR-12-8`) When this story runs Then a reviewer that did not implement it reviews that story's landed code against its spec, and every finding is fixed here and logged in this spec's Review Triage Log
 - Given `DW-12-4-2`, `DW-12-8-1`, `DW-7-2-3`, `DW-CANOPY-2026-08-24`, `DW-13-2-2` (and `DW-16-3-1` if it is green on main) When this story closes them Then each `verified:` line cites the live line that proves the closure; a row whose proof is missing is fixed or re-homed, never closed
-- Given this story lands When its deferred-work rows are read Then each of `DW-4-4-11`, `DW-4-4-13`, `DW-4-4-6`, `DW-4-4-7`, `DW-4-4-8`, `DW-4-4-9`, `DW-4-4-12`, `DW-4-4-10`, `DW-4-4-5`, `DW-16-3-1`, `DW-12-7-3`, `DW-2`, `DW-1-10-2`, `DW-2-3-2`, `DW-FRR-10-1`, `DW-CANOPY-2026-08-24`, `DW-13-2-2`, `DW-12-1-1`, `DW-12-2-2`, `DW-12-4-3`, `DW-12-4-4`, `DW-12-4-2`, `DW-12-8-1`, `DW-7-2-3`, `DW-12-3-1`, `DW-12-1-3`, `DW-FRR-8-1`, `DW-FRR-12-3`, `DW-FRR-12-7`, `DW-FRR-12-8` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed (only `DW-CANOPY-2026-08-24` and `DW-13-2-2` may instead carry a `re-homed:` line naming the steward story that owns what is missing, and stay open)
+- Given this story lands When its deferred-work rows are read Then each of `DW-4-4-11`, `DW-4-4-13`, `DW-4-4-6`, `DW-4-4-7`, `DW-4-4-8`, `DW-4-4-9`, `DW-4-4-12`, `DW-4-4-10`, `DW-4-4-5`, `DW-16-3-1`, `DW-12-7-3`, `DW-CANOPY-2026-08-24`, `DW-13-2-2`, `DW-12-1-1`, `DW-12-2-2`, `DW-12-4-3`, `DW-12-4-4`, `DW-12-4-2`, `DW-12-8-1`, `DW-7-2-3`, `DW-12-3-1`, `DW-12-1-3` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed (only `DW-CANOPY-2026-08-24` and `DW-13-2-2` may instead carry a `re-homed:` line naming the steward story that owns what is missing, and stay open)
 - Given this story's changes When `pixi run --frozen -e pyforge-mason pyforge-mason-test` runs Then it passes
 
 ## Boundaries & Constraints
@@ -58,7 +57,7 @@ Type / Effort / Deps: fix / L / —.
 
 </intent-contract>
 
-## Deferred-work rows this story closes (30: 11 medium, 19 low; deferral burn-down Phases 4 and 5)
+## Deferred-work rows this story closes (22: 11 medium, 11 low; deferral burn-down Phases 4 and 5)
 
 Each line is the row, its severity, and the fix that closes it. Line numbers are as of main on 2026-10-03; re-read the
 code before editing.
@@ -100,17 +99,6 @@ code before editing.
 - `DW-12-3-1` (medium) — `_bmad/skf/shared/scripts/skf-structural-diff.py` keys exports by file and name, so same-named exports in different scripts all count; a test with four `main` exports. The file is installer-owned: record the local patch so the next `bmad-method install --action update` re-applies it, and open no upstream PR without an explicit ask.
 - `DW-12-1-3` (low) — `_bmad/skf/shared/scripts/skf-provenance-gap-dispatch.py`'s `_classify` knows the `retro-mirror` action and `schemas/skill-brief.v1.json` constrains `scope.amendments[].action`; a test classifies a `retro-mirror` amendment; the same local-patch record as DW-12-3-1.
 
-### Follow-up reviews owed (8)
-
-- `DW-2` (low) — Run the follow-up review Story 2.2 (the seam guard: `tests/meta/test_no_recipe_knowledge.py`, `tests/meta/test_adapter_sole_caller.py`) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log.
-- `DW-1-10-2` (low) — Run the follow-up review Story 1.10 (the configuration surface, logging and `run_streamed` child-output streaming) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log.
-- `DW-2-3-2` (low) — Run the follow-up review Story 2.3 (credential isolation, `tests/meta/test_credential_isolation.py`) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log.
-- `DW-FRR-10-1` (low) — Run the follow-up review Story 10.1 (the build-engine hook, `engines/build_hooks.py` and its call in `recipe.py`) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log.
-- `DW-FRR-8-1` (low) — Run the follow-up review Story 8.1 (`tests/packaging/test_containerfile_base_layer_convention.py`, `docs/reference/container-base-layer-convention.md`) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log.
-- `DW-FRR-12-3` (low) — Run the follow-up review Story 12.3 (the real skf audit run and its structural diff) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log; taken with DW-12-3-1.
-- `DW-FRR-12-7` (low) — Run the follow-up review Story 12.7 still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log. Its compiled package is retired, so the review covers what stays live: the mason meta-test carve-outs DW-12-7-3 removes.
-- `DW-FRR-12-8` (low) — Run the follow-up review Story 12.8 (the second re-scope checkpoint: `re_scope_gate_2` in `campaign-state.yaml` and clause (d) of `scripts/cfe_rebuild_guard_check.py`) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log.
-
 ## Binding
 
 Parent: `spec-pyforge-mason` CAP-4 (`mason environment`), CAP-5 (the CLI shell and output contract), CAP-7 (proving the seam holds) and CAP-16 (the anti-atlas guard, enforced by a detector): the capabilities that shipped each behaviour.
@@ -133,7 +121,28 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling of 2026-10-03 (open mediu
   - `_bmad/skf/shared/scripts/skf-provenance-gap-dispatch.py` — `_classify` treats `retro-mirror` as a known amendment action (closes DW-12-1-3).
   - `_bmad/skf/shared/scripts/schemas/skill-brief.v1.json` — `scope.amendments[].action` enum includes `retro-mirror`.
 
+- **2026-10-03 (landing review, operator)** — Sent back (findings in the Review Triage Log). By operator ruling of 2026-10-03, the eight follow-up-review rows (DW-2, DW-1-10-2, DW-2-3-2, DW-FRR-10-1, DW-FRR-8-1, DW-FRR-12-3, DW-FRR-12-7, DW-FRR-12-8) leave this story: only an independent review of the named landed story can close them, so they run later as per-station review batches. The story now closes 22 rows (11 medium, 11 low). Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (independent reviewer, operator session) — sent back
+
+The entry below this one, dated with the implementation run, is void: no reviewer separate from the implementer ran, and its follow-up-review claims are withdrawn. Keep: the lock exit projection, the JSON envelope for `MasonError`, the temp-copy error naming, the guard's status casefold in clause (d), the `retro-mirror` schema enum, and the `yaml.unsafe_load` guard (all four mutants were caught). The operator session reworded `dad089fe03` to drop its `Co-authored-by: Cursor` trailer; never add a `Co-authored-by` or other AI-attribution trailer to any commit (the `commit-msg` hook refuses it, and a landing would carry it onto main).
+
+- `high` **Reopen the eight follow-up-review rows**: DW-2, DW-1-10-2, DW-2-3-2, DW-FRR-8-1, DW-FRR-10-1, DW-FRR-12-3, DW-FRR-12-7, DW-FRR-12-8 go back to `status: open` with the new `resolution:` and `verified:` lines dropped (their text as on main). They are out of this story's scope.
+- `high` **DW-CANOPY-2026-08-24 stays open; DW-OM-2026-08-24 was closed by mistake.** `.claude/skills/pyforge-mason/` does not exist on main, and mason Story 19.1 (still `backlog`) owns it. Restore `## DW-OM-2026-08-24` to its text on main (it is not this story's row). Give `## DW-CANOPY-2026-08-24` `status: open` and a `re-homed:` line inside its own block naming mason Story 19.1 for the missing surface and citing the live line for each surface that does exist.
+- `medium` **`_bmad/skf/shared/scripts/skf-structural-diff.py` (DW-12-3-1) broke move detection and output names.** Match exports on `(file, name)`; then pair leftover removed and added entries by name to recover moves; emit `rec["name"]` (never the composite key with its NUL byte) in `changed[]` and `moved[]`; keep entries with no `file` keyed by name. Add a test for each: a moved export reports `moved`, names carry no NUL, a file-less inventory still diffs. Update the Spec Change Log local-patch record.
+- `medium` **DW-12-4-4 is half done**: clause (a) in `scripts/cfe_rebuild_guard_check.py` (about line 357) still compares `status not in EQUIVALENCE_GATED_STATUSES` raw, so `"Parallel"` or `"parallel "` with red equivalence yields no finding. Strip and casefold there too, with a test.
+- `medium` **A hollow brief must be a finding (DW-12-1-1)**: `_brief_defect_findings` (about lines 247-301) accepts `{}` or `name: x`. Require the brief schema's required keys or a non-empty scope, and check each mirrored retro SHA, not only `brief_mirrored_through`; tests for both.
+- `medium` **`CfeUnresolvedError` skips the JSON error envelope**: its handler in `cli.py` (about lines 1574-1582) prints only to stderr, so `--format json` gives rc 3 and empty stdout. Emit the same envelope there, with a test.
+- `medium` **`_classify` in `skf-provenance-gap-dispatch.py` (about lines 310-311)**: a later `retro-mirror` overrides an earlier `demoted-exclude` or `skipped` and claims in-scope without reading `scope.include`. Skip `retro-mirror` in the loop (`continue`) so earlier decisions stand; a test with `demoted-exclude` then `retro-mirror` on one path.
+- `low` DW-4-4-6 misses three FR citations: `environment.py:19-20`, `environment.py:149` (the `check()` docstring) and `cli.py:899-900` still cite FR-25/27/29; make them FR-28.
+- `low` `errors.py:384-385` now reads "the number of seconds that configured limit in seconds"; remove the leftover fragment (DW-4-4-8).
+- `low` `tests/meta/test_no_config_file.py`: move `_CONDALOCK_PATH` so `_SANCTIONED_YAML_EXCEPTIONS` keeps its docstring (about lines 96-97); make the test at about 218-235 call `_find_unsafe_yaml_attribute_calls_in_condalock` instead of re-implementing it; walk `ast.Attribute` so `f = yaml.unsafe_load` is caught, with a test.
+- `low` Guard: `_slice_ref` (about 212-216) must keep an integer id (`sl.get("id")` rendered with `str`), and `main()` must not print "0 qualifying CFE retro commit(s)" or report `retros_scanned: 0` when it skipped the history walk; tests for both.
+- `low` `EnvironmentCheckTempCopyUnreadableError` needs the tests every sibling in `tests/unit/test_errors.py` has (identifier, empty-argument rejection, pickle round-trip).
+- `low` Correct the `verified:` citations: DW-4-4-8 at the corrected sentence (about `errors.py:979`), DW-4-4-12 at the print (`condalock.py:372`), DW-16-3-1 naming the commit that fixed it, DW-13-2-2 citing steward Story 43.7's acceptance line beside `platform-ci.yml:903`.
+- `low` The temp-copy mapping line in `engines/condalock.py` (about 370-373) uses a bare `print`; route it through Story 1.10's logging so `--quiet` suppresses it.
 
 Independent follow-up reviews (AGENTS.md guideline 8) read each cited story's landed code against its spec; findings fixed in this story where noted.
 
