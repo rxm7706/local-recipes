@@ -321,18 +321,18 @@ def _split_deferred_work_entries(text: str) -> list[str]:
 
 def _validate_dw_entry(entry: str) -> bool:
     """Validate that a DW entry has basic required structure.
-    
+
     Checks for presence of required metadata fields: origin, status.
     Returns True if entry is valid, False otherwise.
     """
     lines = entry.split("\n")
     if not lines or not lines[0].startswith("### DW-"):
         return False
-    
+
     # Check for required fields
     has_origin = any(line.strip().startswith("origin:") for line in lines[1:])
     has_status = any(line.strip().startswith("status:") for line in lines[1:])
-    
+
     return has_origin and has_status
 
 
@@ -414,11 +414,12 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
     # Get the new entries from main and branch
     main_new_entries = main_entries[base_count:]
     branch_new_entries = branch_entries[base_count:]
-    
+
     # Create a counter of main's new entries for deduplication
     from collections import Counter
+
     main_new_count = Counter(main_new_entries)
-    
+
     # Add branch entries that aren't already in main's new entries
     final_new_entries = main_new_entries.copy()
     for entry in branch_new_entries:

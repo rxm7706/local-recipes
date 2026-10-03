@@ -2,7 +2,7 @@
 title: '83.3: The landing heal unions appended deferred-work rows the way it unions memlog entries'
 type: 'fix'
 created: '2026-10-02'
-status: 'done'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -64,6 +64,9 @@ baseline_revision: '786b1c9676baf940bb880bf6cccc85cc1bdd445b'
 - Given the conflict is in another project's ledger, when the heal runs, then it refuses
 - Given the ledger rule removed, when its new test runs, then it fails (mutation test)
 
+**Added 2026-10-03:**
+- Given the live `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` as base with one whole row appended on each side, when the union runs, then the result holds every base entry byte for byte plus both new rows (entry count = base + 2), in a test that reads a copy of the real ledger's mixed formats.
+
 ## Verification
 
 **Commands:**
@@ -83,7 +86,17 @@ The union function should treat each complete `### DW-` section as an atomic uni
 - Need to parse entry boundaries by `### DW-` headers
 - Preserve complete entries including all metadata and verification lines
 
+## Spec Change Log
+
+- 2026-10-03 — sent back by the operator session after the landing was refused (findings below). One acceptance criterion added: the union is proved on the live ledger, not only on fixtures. Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session) — sent back
+- Dispatch run `pyforge-marshal-20261003T010512467Z-a81a3eac` refused at verification: MRS-GATE-001, `lint-types` exited 1 — `W293` whitespace and `ruff format` in `core/dispatch_landing.py` (fixed on this branch by the operator session) and two mypy `var-annotated` errors (`current_entry_lines`, lines ~302 and ~349; still open).
+- `high` `patch` **Data loss.** `_extract_base_and_entries` drops every `### DW-` entry that `_validate_dw_entry` rejects (no `origin:` and `status:` lines at column 0), and `union_deferred_work_texts` renders only the kept entries. The ledger carries two entry formats (for example `DW-FU-1-1` uses `origin:`/`status:` lines; `DW-FU-2-1` uses a `- source_spec:` list with an indented `status:`). Probe on the live marshal ledger with one row appended on each side: 482 entries in, 207 kept, the union renders 209 of the expected 484, so one heal would delete 275 rows. Never filter entries: treat every `### DW-` block as opaque text, compare blocks byte for byte, and refuse (return `None`) on anything that is not a pure append of whole blocks.
+- `medium` `patch` The rendered union re-joins every block with a single blank line and strips trailing blank lines, so untouched entries change bytes. Preserve the base's text verbatim and append only the new blocks.
+- `low` `patch` `from collections import Counter` inside `union_deferred_work_texts`; import at module level.
 
 ### 2026-10-02 — Review pass
 - verdicts: 9 findings — high 1, medium 2, low 4, false 1, maybe-false 0
