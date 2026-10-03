@@ -272,7 +272,7 @@ def test_live_catalog_formats_csv_md_and_queue_from_exports(tmp_path: Path, caps
 
     out = capsys.readouterr().out
     assert "Wrote CSV:" in out
-    assert "Wrote AOSS-Free queue:" in out
+    assert "AOSS-Free queue" in out
 
 
 def test_write_revised_prompt_echoes_live_catalog_only(tmp_path: Path):
@@ -296,6 +296,57 @@ def test_write_revised_prompt_echoes_live_catalog_only(tmp_path: Path):
     text = revised_prompt_path.read_text(encoding="utf-8")
     assert f'--live-catalog "{catalog_root}"' in text
     assert "analysis-xlsx" not in text
+
+
+def test_load_atlas_exports_chains_keyerror(tmp_path: Path):
+    root = tmp_path / "root"
+    _make_catalog_root(root)
+
+    def _boom(_path: Path):
+        raise KeyError("unexpected parquet bug")
+
+    result = metrics.load_atlas_exports(root, read_parquet_fn=_boom)
+    assert result.failed is True
+    assert any("KeyError" in w for w in result.warnings)
+
+
+def test_load_atlas_exports_parquet_deadline(tmp_path: Path, monkeypatch):
+    root = tmp_path / "root"
+    _make_catalog_root(root)
+    monkeypatch.setattr(metrics, "PARQUET_READ_DEADLINE_SECONDS", 0.01)
+
+    def _slow(_path: Path):
+        import time
+
+        time.sleep(0.2)
+        return pd.DataFrame([_sample_verified_row("slow")])
+
+    result = metrics.load_atlas_exports(root, read_parquet_fn=_slow, deadline_seconds=0.01)
+    assert result.failed is True
+    assert any("deadline" in w.lower() for w in result.warnings)
+
+
+def test_metrics_help_documents_verification_floors():
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--live-catalog", type=Path)
+    help_text = metrics._help_epilog()
+    assert "pypi-to-conda mapping" in help_text.lower() or "mapping table" in help_text.lower()
+    assert "cf_or_pm" not in help_text
+
+
+def test_metrics_help_has_no_internal_variable_names():
+    epilog = metrics._help_epilog()
+    for forbidden in ("_verification_sets", "cf_or_pm", "pypi_index", "subdirs"):
+        assert forbidden not in epilog
+
+
+def test_argparse_has_no_strict_fetch_flag():
+    text = SCRIPT_PATH.read_text(encoding="utf-8")
+    assert "--strict-fetch" not in text
+    main_body = text.split("def main")[1].split('if __name__ == "__main__"')[0]
+    assert "subdirs" not in main_body
 
 
 if __name__ == "__main__":

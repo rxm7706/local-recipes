@@ -803,3 +803,112 @@ def test_dead_flags_removed_from_argparse():
         "--refresh-staged-prs",
     ):
         assert dead_flag not in proc.stdout, dead_flag
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 — rate limits, export reader, schema parity
+# ---------------------------------------------------------------------------
+
+
+def test_create_missing_issues_retries_secondary_rate_limit(monkeypatch):
+    calls: list[str] = []
+    rate_calls = {"n": 0}
+
+    def fake_output(cmd, text=True):
+        calls.append(cmd[1])
+        if cmd[1] == "issue" and rate_calls["n"] < 2:
+            rate_calls["n"] += 1
+            raise subprocess.CalledProcessError(
+                403, cmd, stderr="secondary rate limit exceeded"
+            )
+        return "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/99\n"
+
+    monkeypatch.setattr(subprocess, "check_output", fake_output)
+    monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: 0)
+    monkeypatch.setattr(identity, "time", types.SimpleNamespace(sleep=lambda _s: None))
+
+    not_filed: list[tuple[str, str]] = []
+    result = identity.create_missing_issues(
+        "gh",
+        [_row("retry-pkg")],
+        board={},
+        dry_run=False,
+        not_filed=not_filed,
+    )
+    assert result == [("retry-pkg", "[Conda-Forge Packaging] retry-pkg")]
+    assert not_filed == []
+    assert calls.count("issue") >= 3
+
+
+def test_read_identity_export_corrupt_parquet_named_error(monkeypatch, tmp_path, capsys):
+    bad = tmp_path / "bad.parquet"
+    bad.write_bytes(b"not-parquet")
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: bad)
+    assert identity.read_identity_complete_export_records() is None
+    err = capsys.readouterr().err
+    assert "identity_complete_export not found" in err or "unreadable" in err
+
+
+def test_read_identity_export_stringifies_list_cells(monkeypatch, tmp_path):
+    path = tmp_path / "identity_complete_export.parquet"
+    pd.DataFrame(
+        [{"Core_Python_Package_Name": "pkg-a", "alternative_purls": ["a", "b"], "P": "P4"}]
+    ).to_parquet(path)
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: path)
+    records = identity.read_identity_complete_export_records()
+    assert records is not None
+    assert records[0]["alternative_purls"] == "a; b"
+
+
+def test_empty_pyforge_atlas_data_root_refused(monkeypatch, capsys):
+    monkeypatch.setenv(identity.PYFORGE_ATLAS_DATA_ROOT_ENV, "")
+    assert identity.identity_complete_export_parquet_path() is None
+    assert "empty" in capsys.readouterr().err.lower()
+
+
+def test_gist_columns_match_identity_export_contract():
+    atlas_src = REPO_ROOT / "src/shared/packages/pyforge-atlas/src"
+    if str(atlas_src) not in sys.path:
+        sys.path.insert(0, str(atlas_src))
+    from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import (
+        GIST_COLUMNS as contract_cols,
+    )
+
+    assert list(contract_cols) == identity.GIST_COLUMNS
+
+
+def test_pipeline_export_readable_by_quartet_reader(monkeypatch, tmp_path):
+    atlas_src = REPO_ROOT / "src/shared/packages/pyforge-atlas/src"
+    if str(atlas_src) not in sys.path:
+        sys.path.insert(0, str(atlas_src))
+    from pyforge.atlas.pipelines.derived_artifacts.nodes import build_identity_complete_export
+
+    corpus_path = (
+        REPO_ROOT
+        / "src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity/complete_export_expected.json"
+    )
+    import json
+
+    corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
+    params = {
+        "identity_complete_export": {"verification_timestamp_utc": "2026-08-30T12:00:00Z"},
+        "verification_sets": {"cf_or_pm_floor": 0, "pypi_universe_floor": 0},
+        "inventory_verified_packages": {"verification_timestamp_utc": "2026-08-30T12:00:00Z"},
+    }
+    df = build_identity_complete_export(
+        pd.DataFrame(corpus["identity_packages_primary"]),
+        pd.DataFrame(corpus["inventory_priority_assignments"]),
+        pd.DataFrame(corpus.get("enterprise_jfrog_consumption") or []),
+        pd.DataFrame([]),
+        pd.DataFrame(corpus.get("inventory_verified_packages") or []),
+        pd.DataFrame([]),
+        pd.DataFrame([]),
+        pd.DataFrame(corpus.get("inventory_universe") or []),
+        params,
+    )
+    export_path = tmp_path / "identity_complete_export.parquet"
+    df.to_parquet(export_path, index=False)
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: export_path)
+    records = identity.read_identity_complete_export_records()
+    assert records is not None
+    assert records[0]["Verification_Timestamp_UTC"] == "2026-08-30T12:00:00Z"

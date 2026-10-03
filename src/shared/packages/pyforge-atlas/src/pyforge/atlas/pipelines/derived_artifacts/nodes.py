@@ -34,19 +34,18 @@ PURE nodes: pandas + stdlib only; no inline IO; ``dagster``/``kedro_mcp`` never 
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 import time
 from datetime import datetime, timezone
 from typing import Any
 
-import logging
-
 import pandas as pd
 
 from ..universal_sbom.nodes import conda_purl
 from .identity_export_contract import IDENTITY_COMPLETE_EXPORT_COLUMNS
-from .inventory_verification import HollowVerificationSetError, verification_sets
+from .inventory_verification import verification_sets
 
 logger = logging.getLogger(__name__)
 
