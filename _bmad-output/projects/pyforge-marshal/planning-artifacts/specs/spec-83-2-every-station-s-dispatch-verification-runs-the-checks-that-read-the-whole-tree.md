@@ -90,6 +90,17 @@ declared_low_risk: false
 
 **Follow-up review recommendation:** `true` — One high-severity patch was applied to fix reclassification logic that could have allowed surface reconcile failures to be incorrectly downgraded as pre-existing issues.
 
+### 2026-10-02 — Review pass
+- verdicts: 7 findings — high 1, medium 0, low 0, false 5, maybe-false 1  
+- findings:
+  - `false` `reject` Missing error handling for malformed derived commands during deduplication — Commands are constants, not user input; deduplication uses standard string operations that cannot fail
+  - `false` `reject` Missing documentation about performance implications — Intent explicitly states both commands are "seconds-long"
+  - `false` `reject` Missing test coverage for simultaneous command failures — Each command tested independently; simultaneous failures are multiple independent failures with same handling
+  - `false` `reject` Missing validation that command constants are valid pixi commands — Constants follow established pattern; validation not done for any derived commands
+  - `false` `reject` Missing integration test for all four derived commands together — Existing tests cover derived behavior; integration covered by main verification flow
+  - `maybe-false` `defer` Missing backward compatibility for command output parsing — Cannot verify if anything parses derived commands list format without extensive search; would need codebase-wide analysis to determine impact
+  - `high` `patch` Missing reclassification tests for new derived commands — Tests exist for command failures but not for verifying failures are never downgraded to pre-existing issues like existing test for lint-types
+
 **Verification performed:**
 - `pyforge-marshal-test`: All tests passed (10,829 passed, 5 skipped)
 - `pyforge-deps-test`: All tests passed (130 passed, 3 skipped)  
