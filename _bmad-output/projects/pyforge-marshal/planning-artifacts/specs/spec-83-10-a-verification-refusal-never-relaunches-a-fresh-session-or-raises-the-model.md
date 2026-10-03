@@ -2,7 +2,7 @@
 title: "83.10: A verification refusal never relaunches a fresh session or raises the model"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: 'd82497d9c5a21d3a1a6b7d681577c96a10df3dd8'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -39,6 +39,11 @@ Type / Effort / Deps: fix / M / —.
 - Given a story whose session failed (crash, halt, blocked, harness failure) When it is retried Then retry and Story 33.6's floor-raise behave as today
 - Given the park rule removed When its new test runs Then it fails (mutation)
 
+**Added 2026-10-03 (landing review):**
+- Given a story with a prior refused run whose worktree spec reads `status: blocked` When the drain plan evaluates it Then it refuses MRS-DISP-045, as before this story.
+- Given a story refused at MRS-GATE-018 after a finished session When it is next dispatched Then that refusal does not count toward `max_dev_attempts`, and an operator fix (head moved) takes the land-only path.
+- Given a parked story When the plan reports it Then the reason names the failed verification command or message from the refused run.
+
 ## Boundaries & Constraints
 
 **Always:** Fix the defect where the shipped behaviour lives (`core/dispatch_retry.py`, the campaign's retry decision, `_count_prior_failed_dispatch_attempts`), and pin it with a test that fails without the fix. The single-story `marshal factory dispatch` override (an operator's explicit re-dispatch) keeps working.
@@ -63,7 +68,16 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back by the operator session after the landing review (findings below). Three acceptance criteria added. Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session) — sent back
+- `high` `patch` **The drain plan stops refusing blocked stories.** `cli/drain_plan.py` `evaluate_story` inserts `elif latest_journal is not None:` ahead of `elif status == "blocked": refuse("MRS-DISP-045", ...)` in the same `if`/`elif` chain. So any story with a prior run, which every re-dispatched story has, enters the new branch, and the MRS-DISP-045 refusal for a `blocked` worktree spec is never reached. Fix: decide the verification-refusal land-only as its own step (for example `if not land_only and latest_journal is not None: ...`) and keep the blocked refusal reachable whenever the story is not land-only.
+- `medium` `patch` **MRS-GATE-018 is not a verification refusal here.** Story 83.2 added MRS-GATE-018 (the pre-verification deferred-work intake refused; `core/verdict.py` maps it to `GATE_FAILED`), and it is a dispatch verification refusal like 001-006. But `_VERIFY_REFUSAL_GATES` does not list it. So a 018 refusal still counts toward Story 33.6's floor-raise, and never takes the land-only path after an operator fix. That is what happened to 83.3's run `pyforge-marshal-20261003T133852198Z-8c6f8963`. Fix: add MRS-GATE-018 to the set, with a test.
+- `medium` `patch` **The park reason does not name the failed command.** `format_verification_refusal_park_reason` takes `failed_command`, but `station_story_block_facts` never passes it. So the park reason names only the gate, and the first acceptance criterion asks for the failed verification command. Fix: pass the refused verification's failed command or message from the journal (`dispatch-verification` outcome `failed_message`), and test the text.
 
 ### 2026-10-03 — Review pass
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
