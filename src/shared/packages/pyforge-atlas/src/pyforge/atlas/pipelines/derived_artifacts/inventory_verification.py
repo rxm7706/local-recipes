@@ -39,9 +39,7 @@ def verification_sets(
     cf_or_pm = cf_packages | parselmouth_pypi
 
     pypi_floor = _floor_override(parameters, "pypi_universe_floor", DEFAULT_PYPI_UNIVERSE_FLOOR)
-    core_floor = _floor_override(
-        parameters, "core_packages_enumerated_floor", DEFAULT_CF_OR_PM_FLOOR
-    )
+    core_floor = _floor_override(parameters, "core_packages_enumerated_floor", DEFAULT_CF_OR_PM_FLOOR)
 
     if len(pypi_index) < pypi_floor:
         raise HollowVerificationSetError(

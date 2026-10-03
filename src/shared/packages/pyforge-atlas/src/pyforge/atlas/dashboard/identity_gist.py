@@ -213,12 +213,12 @@ def _stringify_export_cell(value: object) -> str:
     try:
         if value is pd.NA or (isinstance(value, float) and pd.isna(value)):
             return ""
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         pass
     try:
         if pd.isna(value):
             return ""
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         pass
     if isinstance(value, (list, tuple)):
         return "; ".join(_stringify_export_cell(v) for v in value if v is not None)
@@ -233,10 +233,7 @@ def _stringify_export_cell(value: object) -> str:
 
 
 def _records_from_frame(df: pd.DataFrame) -> list[dict[str, str]]:
-    return [
-        {str(k): _stringify_export_cell(v) for k, v in row.items()}
-        for row in df.to_dict(orient="records")
-    ]
+    return [{str(k): _stringify_export_cell(v) for k, v in row.items()} for row in df.to_dict(orient="records")]
 
 
 def _pep503_name(value: str) -> str:

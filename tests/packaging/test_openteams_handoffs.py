@@ -120,22 +120,23 @@ def test_dry_run_is_the_default_parameter_value(monkeypatch):
 def test_create_issues_flag_invokes_gh_and_merges_url(monkeypatch):
     calls: list[tuple[str, list]] = []
 
-    def fake_check_output(args, **kwargs):
-        calls.append(("check_output", args))
-        return "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/123\n"
+    def fake_run(cmd, **kwargs):
+        calls.append(("run", cmd))
+        stdout = (
+            "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/123\n"
+            if cmd[1] == "issue"
+            else ""
+        )
+        return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
 
-    def fake_check_call(args, **kwargs):
-        calls.append(("check_call", args))
-        return 0
-
-    monkeypatch.setattr(subprocess, "check_output", fake_check_output)
-    monkeypatch.setattr(subprocess, "check_call", fake_check_call)
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(identity.time, "sleep", lambda _s: None)
 
     row = _row("some-pkg")
     board: dict[str, str] = {}
     result = identity.create_missing_issues("gh", [row], board=board, dry_run=False)
 
-    issue_calls = [c[1] for c in calls if c[0] == "check_output"]
+    issue_calls = [c[1] for c in calls if c[0] == "run" and c[1][1] == "issue"]
     assert len(issue_calls) == 1, "exactly one gh issue create call"
     assert issue_calls[0] == [
         "gh",
@@ -148,7 +149,7 @@ def test_create_issues_flag_invokes_gh_and_merges_url(monkeypatch):
     ]
     assert identity.ISSUE_CREATE_REPO == "OpenTeams-WFT-CDO/mgmt-wf-python-modernization"
 
-    project_calls = [c[1] for c in calls if c[0] == "check_call"]
+    project_calls = [c[1] for c in calls if c[0] == "run" and c[1][1] == "project"]
     assert len(project_calls) == 1, "the created issue is added to OpenTeams project 1"
     assert project_calls[0] == [
         "gh",
@@ -187,19 +188,25 @@ def test_existing_issue_is_skipped_regardless_of_flag(monkeypatch):
 def test_gh_failure_for_one_name_does_not_abort_the_run(monkeypatch):
     calls: list = []
 
-    def fake_check_output(args, **kwargs):
-        calls.append(args)
-        if "bad-pkg" in args[args.index("--title") + 1]:
-            raise subprocess.CalledProcessError(1, args)
-        return "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/999\n"
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        if cmd[1] == "issue" and "bad-pkg" in cmd[cmd.index("--title") + 1]:
+            raise subprocess.CalledProcessError(1, cmd, stderr="failed")
+        stdout = (
+            "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/999\n"
+            if cmd[1] == "issue"
+            else ""
+        )
+        return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
 
-    monkeypatch.setattr(subprocess, "check_output", fake_check_output)
-    monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: 0)
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(identity.time, "sleep", lambda _s: None)
 
     rows = [_row("bad-pkg"), _row("good-pkg")]
     result = identity.create_missing_issues("gh", rows, board={}, dry_run=False)
 
-    assert len(calls) == 2, "both names are attempted -- the failure does not abort the loop"
+    issue_attempts = [c for c in calls if c[1] == "issue"]
+    assert len(issue_attempts) == 2, "both names are attempted -- the failure does not abort the loop"
     assert [name for name, _title in result] == ["good-pkg"]
     assert rows[0]["OpenTeams_Issue_URL"] == "", "unchanged on gh failure"
     assert rows[1]["OpenTeams_Issue_URL"].endswith("/999")
