@@ -946,6 +946,18 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (evening)** — **Found: a verification refusal throws the finished work away.** Dispatch
+  verification is the one authority on a finished story's tree (2-3 minutes, no tokens), but it can only refuse. A
+  campaign then relaunches a fresh session, and after two failures Story 33.6 raises the model: 83.2 ran three times
+  (48 minutes, the third on opus), each refused on the same unformatted line. The other refused Cursor stories were fixed
+  by hand, about four extra full-suite runs each. bmad-build-auto already tells the session to re-run the spec's checks
+  after its review patches; the Cursor sessions did not, so restating that rule changes nothing.
+  **What it looks like when fixed:** a verification refusal never relaunches a fresh session and never raises the model;
+  the story parks, or lands once its branch is fixed; and with a flag on, the refusal first goes back to the session
+  that wrote the change for one bounded fix turn, re-verified once.
+  **Constraints:** verification is never relaxed; one fix turn per refusal; the resume form is profile data (AD-19); the
+  retry change is a `fix` (no CAP, no flag), the fix turn is new behaviour (a CAP, flagged OFF in production). Owner
+  `spec-pyforge-marshal`. → Story 83.10 and CAP-286 / Epic 85 / Story 85.1 (FR-233), specced 2026-10-03.
 - **2026-10-03 (later)** — **Found: every Cursor session is refused on formatting.** Each Cursor dispatch of marshal
   Epics 83 and 66 and Story 84.1 finished its work and was refused at verification on `lint-types`, most often on
   `ruff format` alone, and was fixed by hand before landing; the sessions reported the check green.

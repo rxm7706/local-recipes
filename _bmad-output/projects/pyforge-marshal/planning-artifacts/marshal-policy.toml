@@ -416,6 +416,21 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-testing-charter governs the kit)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"85" = [  # a verification refusal goes back to the session for one fix turn (spec-pyforge-marshal CAP-286), added 2026-10-03
+  # The default surface, restated because a declared entry replaces it outright, plus the flagd tree the story's flag
+  # joins and every Spec memlog.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "84" = [  # an operator-run refresh reads every harness's live model list (spec-pyforge-marshal CAP-285), added 2026-10-02
   # The default surface, restated because a declared entry replaces it outright, plus every Spec memlog.
   "src/shared/packages/pyforge-marshal/**",
