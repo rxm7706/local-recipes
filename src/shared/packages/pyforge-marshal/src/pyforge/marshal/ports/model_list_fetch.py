@@ -21,6 +21,12 @@ class HttpGetResult:
 
 
 class ModelListFetchPort(Protocol):
-    def run_command(self, argv: Sequence[str], *, timeout_s: float) -> CommandRunResult: ...
+    def run_command(
+        self,
+        argv: Sequence[str],
+        *,
+        timeout_s: float,
+        fallback_bin_dirs: Sequence[str] = (),
+    ) -> CommandRunResult: ...
 
     def http_get(self, url: str, headers: Mapping[str, str], *, timeout_s: float) -> HttpGetResult: ...

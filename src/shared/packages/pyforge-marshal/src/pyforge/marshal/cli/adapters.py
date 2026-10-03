@@ -109,6 +109,7 @@ from ..core.model import Finding, Severity, build_envelope
 from ..core.refs import local_branch_ref
 from ..core.harness_profile import load_profiles
 from ..core.model_list_refresh import (
+    HarnessListResult,
     build_snapshot_payload,
     collect_catalog_refs,
     collect_profile_map_refs,
@@ -1988,25 +1989,22 @@ def _gather_declared_model_refs(root: Path, profiles: Mapping[str, object]) -> l
     marshal_policy = root / PROJECT_POLICY_RELPATH.format(slug="pyforge-marshal")
     if marshal_policy.is_file():
         try:
-            effective, _findings = policy.compose(project_slug="pyforge-marshal", project=None, flags={})
-            catalog = effective.model_cost_catalog.value
+            policy_data = tomllib.loads(marshal_policy.read_text(encoding="utf-8"))
+            catalog = policy_data.get("model_cost_catalog")
             catalog_path = str(marshal_policy.relative_to(root))
-            provider_by_harness = {
-                name: (getattr(p, "model_list", None) and p.model_list.catalog_provider or "")
-                for name, p in profiles.items()
-                if hasattr(p, "model_list")
-            }
-            for harness, provider in provider_by_harness.items():
-                if provider:
+            for name, prof in profiles.items():
+                source = prof.model_list
+                provider = source.catalog_provider if source is not None else ""
+                if provider and catalog is not None:
                     refs.extend(
                         collect_catalog_refs(
                             catalog=catalog,
                             catalog_path=catalog_path,
                             provider=provider,
-                            harness=harness,
+                            harness=name,
                         )
                     )
-        except (OSError, PyforgeError):
+        except (OSError, tomllib.TOMLDecodeError):
             pass
     for name, profile in profiles.items():
         if not hasattr(profile, "model_map"):
@@ -2072,7 +2070,7 @@ def run_adapters_models(
         findings.append(Finding(code="MRS-DISP-028", severity=Severity.WARN, message=err))
 
     fetcher = LiveModelListFetch(repo_root=str(root))
-    harness_results: dict[str, object] = {}
+    harness_results: dict[str, HarnessListResult] = {}
     harness_ids: dict[str, frozenset[str]] = {}
     aliases_by_harness: dict[str, frozenset[str]] = {}
     catalog_provider_by_harness: dict[str, str] = {}
@@ -2082,18 +2080,9 @@ def run_adapters_models(
         harness_results[name] = result
         harness_ids[name] = result.live_ids
         source = profile.model_list
-        if source is not None:
-            aliases_by_harness[name] = frozenset(source.aliases)
-            if source.catalog_provider:
-                catalog_provider_by_harness[name] = source.catalog_provider
-        else:
-            aliases_by_harness[name] = frozenset()
-            harness_results[name] = type(result)(
-                harness=name,
-                status="unavailable",
-                live_ids=frozenset(),
-                reason="no source declared",
-            )
+        aliases_by_harness[name] = frozenset(source.aliases) if source is not None else frozenset()
+        if source is not None and source.catalog_provider:
+            catalog_provider_by_harness[name] = source.catalog_provider
 
     declared = _gather_declared_model_refs(root, profiles)
     not_listed = find_not_listed(declared, harness_results, aliases_by_harness)
@@ -2113,10 +2102,11 @@ def run_adapters_models(
     unchecked: frozenset[str] = frozenset()
     if marshal_policy.is_file():
         try:
-            effective, _ = policy.compose(project_slug="pyforge-marshal", project=None, flags={})
+            policy_data = tomllib.loads(marshal_policy.read_text(encoding="utf-8"))
+            catalog = policy_data.get("model_cost_catalog")
             named = providers_named_by_profiles(catalog_provider_by_harness)
-            unchecked = unchecked_catalog_providers(effective.model_cost_catalog.value, named)
-        except (OSError, PyforgeError):
+            unchecked = unchecked_catalog_providers(catalog, named)
+        except (OSError, tomllib.TOMLDecodeError):
             pass
 
     today = date.today()

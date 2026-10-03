@@ -31,13 +31,19 @@ class LiveModelListFetch(ModelListFetchPort):
         self._repo_root = repo_root
         self._process = PosixProcess()
 
-    def run_command(self, argv: Sequence[str], *, timeout_s: float = _DEFAULT_TIMEOUT_S) -> CommandRunResult:
+    def run_command(
+        self,
+        argv: Sequence[str],
+        *,
+        timeout_s: float = _DEFAULT_TIMEOUT_S,
+        fallback_bin_dirs: Sequence[str] = (),
+    ) -> CommandRunResult:
         if not argv:
             return CommandRunResult(exit_code=127, stdout="", stderr="empty argv")
         binary = argv[0]
         rest = list(argv[1:])
         root = Path(self._repo_root) if self._repo_root is not None else None
-        resolved = self._resolve_binary(binary, (), root)
+        resolved = self._resolve_binary(binary, fallback_bin_dirs, root)
         if resolved is None and root is not None:
             resolved = self._resolve_binary(binary, (".pixi/envs/pyforge-guild/bin",), root)
         if resolved is None:
@@ -46,7 +52,7 @@ class LiveModelListFetch(ModelListFetchPort):
             result = self._process.run([resolved, *rest], cwd=Path.cwd(), timeout_s=timeout_s)
         except ProcessError as exc:
             return CommandRunResult(exit_code=1, stdout="", stderr=str(exc))
-        return CommandRunResult(exit_code=result.exit_code, stdout=result.stdout, stderr=result.stderr)
+        return CommandRunResult(exit_code=result.returncode, stdout=result.stdout, stderr=result.stderr)
 
     def http_get(self, url: str, headers: Mapping[str, str], *, timeout_s: float = _DEFAULT_TIMEOUT_S) -> HttpGetResult:
         del timeout_s
@@ -84,8 +90,11 @@ def fetch_live_ids_for_profile(
     environment = env if env is not None else os.environ
 
     if source.command:
-        argv = tuple(source.command)
-        run = fetch.run_command(argv, timeout_s=_DEFAULT_TIMEOUT_S)
+        run = fetch.run_command(
+            source.command,
+            timeout_s=_DEFAULT_TIMEOUT_S,
+            fallback_bin_dirs=profile.fallback_bin_dirs,
+        )
         if run.exit_code != 0:
             detail = (run.stderr or run.stdout).strip() or f"exit {run.exit_code}"
             return HarnessListResult(
