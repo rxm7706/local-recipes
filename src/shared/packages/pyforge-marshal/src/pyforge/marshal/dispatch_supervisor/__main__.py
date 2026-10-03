@@ -1515,6 +1515,7 @@ def _run_and_journal_verification(
         spec_text=spec_text,
         process=process,
         vcs=vcs,
+        committing_vcs=vcs,
     )
     verification_verdict = judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
     failed = primary_gate_failure(envelope.findings)

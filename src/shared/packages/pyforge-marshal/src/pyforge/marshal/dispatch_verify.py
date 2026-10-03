@@ -9,12 +9,14 @@ inputs. Lives outside ``cli/`` so ``dispatch_supervisor`` may import it
 from __future__ import annotations
 
 import shlex
+import sys
 import tomllib
 from pathlib import Path
 
 from pyforge.core.process import ProcessError, ProcessPort
 
 from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
+from .adapters.vcs_git import VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
 from .core.commit_vcs import CommittingVcs
@@ -23,6 +25,7 @@ from .core.dispatch_ruff_format import (
     apply_dispatch_ruff_format_before_verify,
 )
 from .core.dispatch_verification import reclassify_pre_existing_gate_findings
+from .core.egress import to_redacted_text
 from .core.identity import StoryKey, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
@@ -120,6 +123,105 @@ def _bare_shell_metacharacters(command: str) -> list[str]:
 #: the same for every station.
 _LINT_TYPES_COMMAND = "pixi run --frozen -e pyforge-guild lint-types"
 
+#: Story 83.2 (spec-83-2): the pyforge-core test suite every dispatch
+#: verification runs, deriving it the same way as the surface guard and
+#: lint-types. This ensures that stories changing core internals are
+#: gated on the core suite that would catch breakage.
+_PYFORGE_CORE_TEST_COMMAND = "pixi run --frozen -e pyforge-core pyforge-core-test"
+
+#: Story 83.2 (spec-83-2): the deferred work check every dispatch
+#: verification runs, ensuring uncited verified: lines are caught.
+#: Both commands are seconds-long and folded in after deduplication.
+_DEFERRED_WORK_CHECK_COMMAND = "pixi run --frozen -e pyforge-guild deferred-work-check"
+
+#: Story 83.2 (spec-83-2): ``deferred_work_intake.py --fix`` refused or could
+#: not run immediately before verification -- GATE_FAILED, naming the script's
+#: own refusal (never the post-merge ``MRS-DISP-047`` WARN tier).
+PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE = "MRS-GATE-018"
+
+#: ``deferred_work_intake.py``'s ``--project`` flag takes the short slug.
+_PROJECT_SLUG_PREFIX = "pyforge-"
+
+
+def _deferred_work_ledger_rel(project_slug: str) -> str:
+    return f"_bmad-output/projects/{project_slug}/planning-artifacts/deferred-work-ledger.md"
+
+
+def run_pre_verification_deferred_work_intake(
+    *,
+    process: ProcessPort,
+    committing_vcs: CommittingVcs,
+    worktree: Path,
+    project_slug: str,
+) -> Finding | None:
+    """Story 83.2 (spec-83-2): promote this session's spec-frontmatter
+    ``deferred:`` rows into the tracked ledger on the story branch BEFORE
+    the derived ``deferred-work-check`` runs.
+
+    Returns ``None`` on a clean run or when the intake changed nothing.
+    Commits the ledger onto the story branch when ``--fix`` writes new rows."""
+    short_slug = project_slug.removeprefix(_PROJECT_SLUG_PREFIX)
+    ledger_rel = _deferred_work_ledger_rel(project_slug)
+    ledger_path = worktree / ledger_rel
+    try:
+        original_text = ledger_path.read_text(encoding="utf-8") if ledger_path.is_file() else None
+    except OSError as exc:
+        return Finding(
+            code=PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
+            severity=Severity.ERROR,
+            message=f"pre-verification deferred-work intake could not read {ledger_rel!r}: {exc}",
+            path=ledger_rel,
+        )
+    script = worktree / "scripts" / "deferred_work_intake.py"
+    try:
+        result = process.run(
+            [sys.executable, str(script), "--fix", "--project", short_slug],
+            cwd=worktree,
+        )
+    except ProcessError as exc:
+        return Finding(
+            code=PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
+            severity=Severity.ERROR,
+            message=f"pre-verification deferred-work intake could not run for {short_slug!r}: {exc}",
+        )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        return Finding(
+            code=PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
+            severity=Severity.ERROR,
+            message=(
+                f"pre-verification deferred-work intake refused (exit {result.returncode}) for {short_slug!r}: {detail}"
+            ),
+        )
+    try:
+        new_text = ledger_path.read_text(encoding="utf-8") if ledger_path.is_file() else None
+    except OSError as exc:
+        return Finding(
+            code=PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
+            severity=Severity.ERROR,
+            message=(f"pre-verification deferred-work intake could not read {ledger_rel!r} after run: {exc}"),
+            path=ledger_rel,
+        )
+    if new_text == original_text:
+        return None
+    try:
+        committing_vcs.commit_paths(
+            worktree,
+            (ledger_path,),
+            to_redacted_text(f"marshal: pre-verification deferred-work intake for {short_slug!r}"),
+        )
+    except VcsCommandError as exc:
+        return Finding(
+            code=PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
+            severity=Severity.ERROR,
+            message=(
+                f"pre-verification deferred-work intake wrote {ledger_rel!r} but could not commit "
+                f"on the story branch: {exc}"
+            ),
+            path=ledger_rel,
+        )
+    return None
+
 
 def _verify_commands_with_surface_guard(
     effective: EffectivePolicy,
@@ -147,13 +249,23 @@ def _verify_commands_with_surface_guard(
     ``_verify_commands_with_surface_guard`` (three callers use it); it now
     folds in every derived command, not the guard alone.
 
+    Story 83.2 (spec-83-2): ``_PYFORGE_CORE_TEST_COMMAND`` and
+    ``_DEFERRED_WORK_CHECK_COMMAND`` are derived here too, appended after
+    the same dedupe rule, so every station's dispatch verification runs
+    the checks that read the whole tree exactly once.
+
     Unlike the loop adapter, this is not a rendered file an operator can
     read before a run starts -- it is folded in at USE time, right before
     the commands actually execute and before ``check_spec_binding`` sees
     them, so a dispatch session is gated on the guard exactly like a loop
     session even though nothing in ``marshal-policy.toml`` ever declares
     it."""
-    derived = (_SURFACE_RECONCILE_COMMAND, _LINT_TYPES_COMMAND)
+    derived = (
+        _SURFACE_RECONCILE_COMMAND,
+        _LINT_TYPES_COMMAND,
+        _PYFORGE_CORE_TEST_COMMAND,
+        _DEFERRED_WORK_CHECK_COMMAND,
+    )
     normalized_derived = {" ".join(command.split()) for command in derived}
     verify = [c for c in effective.verify_commands.value if " ".join(c.split()) not in normalized_derived]
     verify.extend(derived)
@@ -236,6 +348,7 @@ def evaluate_dispatch_verification(
     spec_text: str | None,
     process: ProcessPort,
     vcs: VcsPort,
+    committing_vcs: CommittingVcs | None = None,
 ) -> Envelope:
     """Run Epic 2 gate objects against a dispatch worktree (CAP-3)."""
     findings: list[Finding] = []
@@ -245,6 +358,19 @@ def evaluate_dispatch_verification(
         "worktree": str(worktree),
         "scope": "dispatch-worktree",
     }
+
+    if committing_vcs is not None:
+        intake_finding = run_pre_verification_deferred_work_intake(
+            process=process,
+            committing_vcs=committing_vcs,
+            worktree=worktree,
+            project_slug=project_slug,
+        )
+        data["pre_verification_deferred_work_intake"] = (
+            None if intake_finding is None else intake_finding.to_json_dict()
+        )
+        if intake_finding is not None:
+            findings.append(intake_finding)
 
     commands = _verify_commands_with_surface_guard(effective)
     command_reports: list[dict[str, object]] = []
@@ -351,8 +477,16 @@ def evaluate_dispatch_verification(
         # can never match the story's repo-relative changed files: "outside the
         # story's blast radius" is meaningless here, and a red `lint-types` must
         # refuse the landing (spec-79-2 AC2), never downgrade to MRS-GATE-014.
+        # Story 83.2: the same reasoning applies to the derived whole-tree check
+        # commands -- they read the whole tree and their failures must refuse.
+        derived_commands = {
+            _SURFACE_RECONCILE_COMMAND,
+            _LINT_TYPES_COMMAND,
+            _PYFORGE_CORE_TEST_COMMAND,
+            _DEFERRED_WORK_CHECK_COMMAND,
+        }
         reclassifiable_reports = tuple(
-            report for report in command_reports if report.get("command") != _LINT_TYPES_COMMAND
+            report for report in command_reports if report.get("command") not in derived_commands
         )
         findings = list(
             reclassify_pre_existing_gate_findings(

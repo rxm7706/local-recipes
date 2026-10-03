@@ -8152,6 +8152,17 @@ status: open
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
 
+### DW-marshal-83-2: Missing backward compatibility for command output parsing
+
+- source_spec: `planning-artifacts/specs/spec-83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree.md`
+  summary: Missing backward compatibility for command output parsing
+  evidence: Cannot verify if anything parses derived commands list format without extensive search; would need codebase-wide analysis to determine impact
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py:280
+  origin: spec-deferred d7c45192a41b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low (unverified)
+  promoted: 2026-10-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
 ### DW-FRR-12-2: Follow-up review still recommended for story 12.2
 
 - source_spec: `planning-artifacts/specs/spec-12-2-the-local-recipes-empty-plan-oracle-critical.md`
