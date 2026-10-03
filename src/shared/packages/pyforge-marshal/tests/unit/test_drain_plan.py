@@ -2118,4 +2118,3 @@ def test_the_plan_lists_the_follow_ups_a_two_wide_wave_would_launch(
     assert "1 follow-up review(s) wait for a later campaign" in waiting["message"]
     assert vcs.fetched == []
     assert code == 0
-
