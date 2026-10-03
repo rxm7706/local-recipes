@@ -4977,7 +4977,59 @@ def _entry_named_paths(path: Path) -> list[tuple[str, list[str]]]:
     return out
 
 
-def _authored_date(target: Path, tracked_path: Path, entry_id: str) -> date | None:
+#: The ref ``_churn_since``/``_authored_date`` read history from
+#: (DW-FU-11-2-2). A bare ``git log`` sees only what is reachable from the
+#: CHECKED-OUT branch, so a change that landed on ``main`` but has not been
+#: merged into the worktree the sweep runs from was invisible to ``--since``
+#: and the entry was wrongly tagged ``skip_reason: no-churn`` -- a false
+#: "nothing could have invalidated this claim" in the one direction that
+#: silently retires a real finding. Every sweep here runs from a worktree
+#: branched off ``origin/main``, so that remote-tracking ref is the honest
+#: history; ``HEAD`` is the fallback when it does not exist (a fresh clone
+#: with no remote, or a test fixture's bare ``git init``).
+_CHURN_PREFERRED_REF = "refs/remotes/origin/main"
+
+
+def _churn_ref(target: Path) -> str:
+    """``refs/remotes/origin/main`` when it exists in ``target``, else
+    ``HEAD`` -- resolved once per sweep by ``_ChurnCache`` below, never per
+    entry."""
+    try:
+        run_git(target, ["rev-parse", "--verify", "--quiet", _CHURN_PREFERRED_REF])
+    except CliBridgeError, UnicodeDecodeError:
+        return "HEAD"
+    return _CHURN_PREFERRED_REF
+
+
+@dataclass
+class _ChurnCache:
+    """One sweep's memo of the git history reads ``_churn_since`` and
+    ``_authored_date`` make (DW-FU-11-2).
+
+    Both used to spawn a fresh ``git log`` per ledger entry with no sharing,
+    so a commonly-cited path -- ``chain.py`` itself, ``pixi.toml`` -- cited
+    by many due entries fleet-wide paid for one identical subprocess per
+    citing entry, working directly against this filter's own stated
+    cost-reduction purpose. Keyed by exactly what the answer depends on:
+    ``(rel, since)`` for churn, ``(rel, entry_id)`` for authoring, and the
+    ref once.
+
+    Scoped to ONE sweep (constructed in ``_due_for_verification_findings``,
+    discarded with it) rather than a module-level cache: Doctor's gathers are
+    read-only but not immutable -- a long-lived process gathering twice would
+    otherwise answer the second run from the first run's git state."""
+
+    target: Path
+    ref: str
+    churn: dict[tuple[str, date], bool] = field(default_factory=dict)
+    authored: dict[tuple[str, str], date | None] = field(default_factory=dict)
+
+    @classmethod
+    def for_target(cls, target: Path) -> _ChurnCache:
+        return cls(target=target, ref=_churn_ref(target))
+
+
+def _authored_date(target: Path, tracked_path: Path, entry_id: str, cache: _ChurnCache | None = None) -> date | None:
     """The date ``entry_id`` was first introduced into ``tracked_path``'s
     own git history -- the "since authoring" churn-window start for a
     never-verified entry, which carries no ``verified:`` date of its own.
@@ -5003,13 +5055,22 @@ def _authored_date(target: Path, tracked_path: Path, entry_id: str) -> date | No
     ``None`` -- never raises -- on any git failure, an empty match (the
     ledger was never committed, or genuinely has no commit whose diff
     introduced this id's literal text), or an unparseable date, so the
-    caller fails toward "not skipped" (I/O matrix)."""
+    caller fails toward "not skipped" (I/O matrix).
+
+    ``cache`` memoizes the answer per ``(path, entry_id)`` and supplies the
+    explicit history ref (DW-FU-11-2 / DW-FU-11-2-2); ``None`` resolves its
+    own, which is what a direct unit-test call does."""
     rel = str(tracked_path.relative_to(target))
+    cache = cache if cache is not None else _ChurnCache.for_target(target)
+    key = (rel, entry_id)
+    if key in cache.authored:
+        return cache.authored[key]
     try:
         out = run_git(
             target,
             [
                 "log",
+                cache.ref,
                 "--reverse",
                 "--follow",
                 "--format=%ad",
@@ -5021,17 +5082,18 @@ def _authored_date(target: Path, tracked_path: Path, entry_id: str) -> date | No
             ],
         )
     except CliBridgeError, UnicodeDecodeError:
+        cache.authored[key] = None
         return None
     first = out.splitlines()[0].strip() if out.strip() else ""
-    if not first:
-        return None
     try:
-        return date.fromisoformat(first)
+        authored = date.fromisoformat(first) if first else None
     except ValueError:
-        return None
+        authored = None
+    cache.authored[key] = authored
+    return authored
 
 
-def _churn_since(target: Path, rel_paths: list[str], since: date) -> bool:
+def _churn_since(target: Path, rel_paths: list[str], since: date, cache: _ChurnCache | None = None) -> bool:
     """``True`` only when EVERY path in ``rel_paths`` is both tracked in
     this repo's history (step 1) and untouched since ``since`` (step 2) --
     the two-step algorithm the Boundaries section spells out, short-
@@ -5053,32 +5115,55 @@ def _churn_since(target: Path, rel_paths: list[str], since: date) -> bool:
     A ``run_git`` failure for ANY path -- ``CliBridgeError`` or
     ``UnicodeDecodeError`` -- degrades the WHOLE check to ``False`` (not
     churn-free), indistinguishable by design from a path with no tracked
-    history, never raised past this function."""
+    history, never raised past this function.
+
+    Both reads name an explicit ref (``cache.ref``, DW-FU-11-2-2) instead of
+    whatever branch happens to be checked out, and the PER-PATH answer is
+    memoized per ``(path, since)`` (DW-FU-11-2), so one path cited by many
+    due entries costs one pair of ``git log`` calls per sweep, not one pair
+    per citing entry. The memo is per path, not per path LIST, so entries
+    citing overlapping sets share every path they have in common.
+    ``cache=None`` resolves a fresh one, which is what a direct unit-test
+    call does."""
+    cache = cache if cache is not None else _ChurnCache.for_target(target)
     for rel in rel_paths:
-        try:
-            tracked = run_git(target, ["log", "--oneline", "-1", "--", rel])
-        except CliBridgeError, UnicodeDecodeError:
-            return False
-        if not tracked.strip():
-            return False
-        try:
-            since_out = run_git(
-                target,
-                [
-                    "log",
-                    "--oneline",
-                    "-1",
-                    "--since",
-                    since.isoformat(),
-                    "--",
-                    rel,
-                ],
-            )
-        except CliBridgeError, UnicodeDecodeError:
-            return False
-        if since_out.strip():
+        key = (rel, since)
+        if key in cache.churn:
+            if not cache.churn[key]:
+                return False
+            continue
+        cache.churn[key] = _path_churn_free(target, rel, since, cache.ref)
+        if not cache.churn[key]:
             return False
     return True
+
+
+def _path_churn_free(target: Path, rel: str, since: date, ref: str) -> bool:
+    """One path's half of ``_churn_since``'s two-step test -- split out so
+    the memo above has exactly one value to store per ``(path, since)``."""
+    try:
+        tracked = run_git(target, ["log", ref, "--oneline", "-1", "--", rel])
+    except CliBridgeError, UnicodeDecodeError:
+        return False
+    if not tracked.strip():
+        return False
+    try:
+        since_out = run_git(
+            target,
+            [
+                "log",
+                ref,
+                "--oneline",
+                "-1",
+                "--since",
+                since.isoformat(),
+                "--",
+                rel,
+            ],
+        )
+    except CliBridgeError, UnicodeDecodeError:
+        return False
+    return not since_out.strip()
 
 
 def _attach_churn_skip(
@@ -5774,7 +5859,9 @@ def _verification_coverage(target: Path, *, today: date | None = None) -> list[d
                 if not raw_verified:
                     continue
                 parsed = _parse_verified_date(raw_verified)
-                if parsed is not None and (as_of - parsed).days <= DUE_FOR_VERIFICATION_STALENESS_DAYS:
+                if parsed is None or parsed > as_of:
+                    continue
+                if (as_of - parsed).days <= DUE_FOR_VERIFICATION_STALENESS_DAYS:
                     verified_within_window += 1
             items.append(
                 {
