@@ -5584,6 +5584,9 @@ def run_fleet_drain(
                 ),
             )
         )
+        # Readable "not complete" so a detached campaign supervisor ticks
+        # again instead of counting this refusal toward the unreadable ceiling.
+        data["complete"] = False
         return _emit(args, data, findings, command="factory drain")
 
     retry_environment_blocks = bool(getattr(args, "retry_environment_blocks", False))

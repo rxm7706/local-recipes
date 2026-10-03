@@ -2,7 +2,8 @@
 title: '83.5: A campaign supervisor keeps ticking through fleet-lock contention'
 type: 'fix'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'e32c50a30f0afc2bf42e6aa37e8f0f177bb84c0f'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
