@@ -2,7 +2,8 @@
 title: "83.9: Dispatch applies ruff format to a story's files before it verifies"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'aed01eccf995261125cccccdbbe65f3c6a8d2b8c'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
