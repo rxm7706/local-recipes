@@ -485,13 +485,37 @@ def _apply_project(
             f"{TRACKED_REL.as_posix()} for this project",
         )
 
-    entries_by_id = _entry_spans(tracked_text)
-    problems = _validate_project_batch(entries_by_id, items)
+    try:
+        entries_by_id = _entry_spans(tracked_text)
+    except DuplicateEntryId as exc:
+        return _Outcome(
+            project, "aborted",
+            f"{project}: ABORTED, no write -- {exc}",
+        )
+    problems = _validate_project_batch(entries_by_id, items, cites)
     if problems:
         detail = "; ".join(problems)
         return _Outcome(
             project, "aborted",
             f"{project}: ABORTED, no write -- {len(problems)} problem(s): {detail}",
+        )
+
+    # DW-FU-11-4-2: drop every verdict whose own line is already on its
+    # entry. Done AFTER validation so a re-run still reports a malformed
+    # sibling verdict, and before the race check so an all-skipped batch
+    # writes nothing at all and cannot abort on an unrelated concurrent
+    # edit -- there is nothing left to write.
+    skipped = [item for item in items if _already_applied(tracked_text, entries_by_id, item, today)]
+    items = [item for item in items if item not in skipped]
+    skipped_note = (
+        f" -- skipped {len(skipped)} already-applied: {', '.join(it['id'] for it in skipped)}"
+        if skipped
+        else ""
+    )
+    if not items:
+        return _Outcome(
+            project, "applied",
+            f"{project}: applied 0 verdict(s), no write needed{skipped_note}",
         )
 
     # Re-read-and-compare immediately before the terminal write: if the
@@ -527,7 +551,7 @@ def _apply_project(
     ids_str = ", ".join(item["id"] for item in items)
     return _Outcome(
         project, "applied",
-        f"{project}: applied {len(items)} verdict(s) -- {ids_str}",
+        f"{project}: applied {len(items)} verdict(s) -- {ids_str}{skipped_note}",
     )
 
 
@@ -562,6 +586,19 @@ def main() -> int:
         return 2
 
     try:
+        cites = _citation_predicate()
+    except ImportError as exc:
+        print(
+            f"pyforge.doctor unavailable in this interpreter ({exc}); refusing "
+            f"to write -- the `verified:`-line citation rule lives there and "
+            f"this script never carries a copy of it. Re-run under "
+            f"`pixi run --frozen -e pyforge-doctor python "
+            f"scripts/apply_verification_verdicts.py ...`.",
+            file=sys.stderr,
+        )
+        return 2
+
+    try:
         items = _load_verdicts(args.verdicts_file)
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
@@ -582,7 +619,7 @@ def main() -> int:
     exit_code = 0
     for project in sorted(by_project):
         try:
-            outcome = _apply_project(project, by_project[project], today)
+            outcome = _apply_project(project, by_project[project], today, cites)
         except Exception as exc:  # noqa: BLE001 -- one project's crash must
             # not abort a sibling's clean run (Boundaries), mirroring
             # `deferred_work_promote.py`'s own per-project isolation in main().
