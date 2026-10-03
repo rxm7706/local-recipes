@@ -946,6 +946,12 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (night)** — **Found: a routine memory capture blocks the next landing.** Each dispatch session's
+  closeout adds a line to `.claude/memory/MEMORY.md` at the end of a section, so two stories landing one after the other
+  conflict there, and the landing heal refuses the second (MRS-DISP-038): 83.7 was merged by hand and 83.4 refused.
+  **What it looks like when fixed:** the heal merges appended index lines the way it merges memlog entries; an edit or
+  removal still escalates. **Constraints:** a `fix` story, no CAP and no flag; sessions keep capturing (operator ruling
+  2026-10-03). Owner `spec-pyforge-marshal`. → Story 83.11, specced 2026-10-03.
 - **2026-10-03 (evening)** — **Found: a verification refusal throws the finished work away.** Dispatch
   verification is the one authority on a finished story's tree (2-3 minutes, no tokens), but it can only refuse. A
   campaign then relaunches a fresh session, and after two failures Story 33.6 raises the model: 83.2 ran three times
