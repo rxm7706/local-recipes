@@ -54,6 +54,20 @@ eligible targets: any existing tracked entry id is a valid target, since a
 human or agent calling this script already knows which entry it just
 investigated.
 
+**The citation rule is SHARED, never copied** (DW-doctor-38-1). Story 38.1's
+deferred-work source reds a post-cutoff `verified:` line that cites nothing,
+and this script is the one sanctioned writer of such a line -- so it refuses
+a verdict whose evidence would fail that same predicate, rather than
+appending a line the reader then reds. The predicate is imported as
+`pyforge.doctor.sources.chain.verified_line_cites` (the ONE definition; the
+reason that name is public). Unlike `_ENTRY_RE`, whose pattern SHAPE is
+deliberately duplicated above, a RULE cannot be duplicated: a copy drifts,
+and a drifted copy is exactly how an uncitable line gets written by the tool
+that exists to prevent it. `pyforge.doctor` is reached install-free, by
+putting this checkout's own `pyforge-doctor/src` on `sys.path` -- mirroring
+`scripts/spec_surface_reconcile.py`. When it genuinely cannot be imported
+this script REFUSES (exit 2) rather than writing unchecked lines.
+
 Usage (plain `python`, no pixi task -- mirrors `deferred_work_promote.py`'s
 own precedent):
         python scripts/apply_verification_verdicts.py --verdicts-file PATH --fix
@@ -67,11 +81,16 @@ import re
 import stat
 import sys
 import tempfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+_DOCTOR_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doctor" / "src"
+if str(_DOCTOR_SRC) not in sys.path:
+    sys.path.insert(0, str(_DOCTOR_SRC))
 
 TRACKED_REL = Path("planning-artifacts") / "deferred-work-ledger.md"
 
@@ -109,6 +128,25 @@ _HEADING_RE = re.compile(r"^#{1,6}\s", re.MULTILINE)
 #: "evidence restates the entry's own prose" guard could never fire for an
 #: entire documented, tested-as-valid entry shape.
 _FIELD_RE = re.compile(r"^\s*(?:-\s+)?(summary|evidence|reason):\s*(.*)$")
+
+
+def _citation_predicate():
+    """Story 38.1's own ``verified:``-line citation predicate (DW-doctor-38-1)
+    -- THE definition, imported, never re-expressed here.
+
+    Returns the callable, or raises ``ImportError``. The caller turns that
+    into a top-level refusal: without the rule this script cannot tell a
+    citable line from an uncitable one, and writing one unchecked is worse
+    than not writing it (`chain.py` needs PyYAML, which a truly bare
+    interpreter may lack -- the same degradation
+    `spec_surface_reconcile.py` documents)."""
+    from pyforge.doctor.sources.chain import verified_line_cites
+
+    return verified_line_cites
+
+
+class DuplicateEntryId(ValueError):
+    """A tracked ledger holds two entries under one ``DW-`` id."""
 
 
 def _probe(p: Path) -> os.stat_result | None:
@@ -168,11 +206,28 @@ def _entry_spans(text: str) -> dict[str, tuple[int, int, dict[str, str]]]:
     unlike `chain.py`'s own fuller `classify_tier3_entries`: every real
     `summary:`/`evidence:` value observed live across the fleet's tracked
     ledgers is one long physical line, and this is a narrow, mechanical
-    anti-restatement proxy (Design Notes), not a full field parser."""
+    anti-restatement proxy (Design Notes), not a full field parser.
+
+    Raises ``DuplicateEntryId`` when two entries share one id, naming BOTH
+    line numbers (DW-FU-11-4). This used to be a plain dict assignment, so
+    the second entry silently overwrote the first: the verdict then landed
+    on whichever span happened to come last, and the other entry -- the one
+    the agent may well have read -- was never written to and stayed due. A
+    duplicate id is a defect in the ledger, and the only safe answer is to
+    write nothing and say which two lines to reconcile."""
     marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
     headings = [m.start() for m in _HEADING_RE.finditer(text)]
     spans: dict[str, tuple[int, int, dict[str, str]]] = {}
+    lines_by_id: dict[str, int] = {}
     for pos, ident in marks:
+        line_no = text.count("\n", 0, pos) + 1
+        if ident in lines_by_id:
+            raise DuplicateEntryId(
+                f"{ident} appears twice in the tracked ledger, at line "
+                f"{lines_by_id[ident]} and line {line_no} -- an id names one "
+                f"entry; reconcile the ledger before applying a verdict"
+            )
+        lines_by_id[ident] = line_no
         end = next((h for h in headings if h > pos), len(text))
         fields: dict[str, str] = {}
         for line in text[pos:end].splitlines():
@@ -231,17 +286,26 @@ def _load_verdicts(path: Path) -> list[dict[str, str]]:
 def _validate_project_batch(
     entries_by_id: dict[str, tuple[int, int, dict[str, str]]],
     items: list[dict[str, str]],
+    cites: Callable[[str], bool],
 ) -> list[str]:
     """Every problem found in one project's whole to-be-applied batch, or
     ``[]`` for a clean batch -- PURE, no I/O (Boundaries: validate the WHOLE
     batch in memory before writing anything for that project).
 
     Checks: verdict-vocabulary membership, non-empty single-line evidence,
-    the id actually exists in ``entries_by_id``, the evidence does not
-    normalize identical to that entry's own ``summary:``/``evidence:``/
-    ``reason:`` field text, and no id repeats within this batch (the same
-    entry cannot receive two different verdicts in one run -- ambiguous
-    which should win)."""
+    the evidence CITES what was read, the id actually exists in
+    ``entries_by_id``, the evidence does not normalize identical to that
+    entry's own ``summary:``/``evidence:``/``reason:`` field text, and no id
+    repeats within this batch (the same entry cannot receive two different
+    verdicts in one run -- ambiguous which should win).
+
+    ``cites`` is Story 38.1's own predicate, passed in rather than reached
+    for (DW-doctor-38-1) so this function stays pure and testable; see
+    ``_citation_predicate`` for why it is imported and never copied. The
+    evidence is judged on its own, exactly as the written line's reader will
+    judge it: ``_format_verified_line`` puts the date and verdict in front
+    of this text and nothing else after it, so a citation present here is a
+    citation present there."""
     problems: list[str] = []
     seen: dict[str, int] = {}
     for i, item in enumerate(items):
@@ -276,6 +340,13 @@ def _validate_project_batch(
             problems.append(
                 f"{entry_id}: evidence must be a single physical line "
                 f"(contains an embedded newline)"
+            )
+        elif not cites(evidence):
+            problems.append(
+                f"{entry_id}: evidence cites nothing it read -- a `verified:` "
+                f"line must carry a path:line (or path::symbol) reference, or "
+                f"a backtick-quoted command with its exit code, or the "
+                f"deferred-work check reds the line this would write"
             )
 
         if entry_id not in entries_by_id:
@@ -355,8 +426,30 @@ def _known_projects() -> frozenset[str]:
     return frozenset(p.name for p in projects_dir.iterdir() if p.is_dir())
 
 
+def _already_applied(
+    text: str,
+    entries_by_id: dict[str, tuple[int, int, dict[str, str]]],
+    item: dict[str, str],
+    today: date,
+) -> bool:
+    """Does the EXACT line this verdict would write already sit on its own
+    entry (DW-FU-11-4-2)?
+
+    Re-running one verdicts file -- after a sibling project aborted, after a
+    race abort, after an interrupted sweep -- used to append a second,
+    byte-identical ``verified:`` line every time, and Story 38.1's scan
+    judges EVERY line in an entry, so the duplicates were not merely noise.
+    Matching the formatted line verbatim against the entry's own span keeps
+    this narrow: a DIFFERENT verdict, different evidence, or the same
+    verdict on a different day is new information and is still written."""
+    start, end, _ = entries_by_id[item["id"]]
+    return _format_verified_line(item["verdict"], item["evidence"], today).strip() in (
+        line.strip() for line in text[start:end].splitlines()
+    )
+
+
 def _apply_project(
-    project: str, items: list[dict[str, str]], today: date,
+    project: str, items: list[dict[str, str]], today: date, cites: Callable[[str], bool],
 ) -> _Outcome:
     """Compute and (on a clean batch) write one project's verdicts --
     snapshot -> validate -> re-check-then-write on success, mirroring
