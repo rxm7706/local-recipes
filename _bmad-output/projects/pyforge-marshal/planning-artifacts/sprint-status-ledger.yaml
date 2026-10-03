@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 557
+# stories: 558
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -380,6 +380,7 @@ development_status:
   83-1-dispatch-liveness-proves-a-pid-is-the-session-it-launched: done
   83-10-a-verification-refusal-never-relaunches-a-fresh-session-or-raises-the-model: done
   83-11-the-landing-heal-unions-appended-team-memory-index-lines: backlog
+  83-12-dispatch-verification-runs-the-coverage-gate-of-every-station-the-story-touches: backlog
   83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree: done
   83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries: done
   83-4-a-serial-campaign-holds-the-next-overlapping-story-while-a-refused-story-is-unlanded: done
@@ -561,7 +562,7 @@ development_status:
   epic-81-retrospective: optional
   epic-82: done
   epic-82-retrospective: optional
-  epic-83: backlog
+  epic-83: in-progress
   epic-83-retrospective: optional
   epic-84: backlog
   epic-84-retrospective: optional
