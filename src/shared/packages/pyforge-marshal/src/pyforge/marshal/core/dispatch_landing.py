@@ -289,163 +289,103 @@ def union_memlog_texts(base: str, main: str, branch: str) -> str | None:
 
 # --- Story 83.3: deferred-work ledger union ----------------------------------
 
+_DW_HEADER = "### DW-"
 
-def _split_deferred_work_entries(text: str) -> list[str]:
-    """Split deferred work ledger text into individual DW entries, each starting with '### DW-'.
 
-    Returns a list where each entry includes its header and all content until the next DW header.
-    The frontmatter and any content before the first DW entry is preserved as the first element
-    if it doesn't start with '### DW-'.
+def _opaque_dw_blocks(text: str) -> tuple[str, list[str]]:
+    """Split ledger text into preamble (before the first ``### DW-``) and opaque blocks.
+
+    Each block is the full text from one ``### DW-`` header through the line before the next
+    header. No validation or normalization — mixed entry formats stay byte-identical.
     """
-    lines = text.splitlines()
-    entries = []
-    current_entry_lines = []
-
-    for line in lines:
-        if line.startswith("### DW-"):
-            # Save the previous entry if it exists
-            if current_entry_lines:
-                entries.append("\n".join(current_entry_lines))
-                current_entry_lines = []
-            # Start new entry
-            current_entry_lines = [line]
-        else:
-            current_entry_lines.append(line)
-
-    # Don't forget the last entry
-    if current_entry_lines:
-        entries.append("\n".join(current_entry_lines))
-
-    return entries
+    first = text.find(_DW_HEADER)
+    if first == -1:
+        return text, []
+    preamble = text[:first]
+    rest = text[first:]
+    blocks: list[str] = []
+    start = 0
+    while start < len(rest):
+        boundary = rest.find("\n" + _DW_HEADER, start + len(_DW_HEADER))
+        if boundary == -1:
+            blocks.append(rest[start:])
+            break
+        blocks.append(rest[start:boundary])
+        start = boundary + 1
+    return preamble, blocks
 
 
-def _validate_dw_entry(entry: str) -> bool:
-    """Validate that a DW entry has basic required structure.
-
-    Checks for presence of required metadata fields: origin, status.
-    Returns True if entry is valid, False otherwise.
-    """
-    lines = entry.split("\n")
-    if not lines or not lines[0].startswith("### DW-"):
-        return False
-
-    # Check for required fields
-    has_origin = any(line.strip().startswith("origin:") for line in lines[1:])
-    has_status = any(line.strip().startswith("status:") for line in lines[1:])
-
-    return has_origin and has_status
-
-
-def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
-    """Extract the base text (everything before first DW entry) and all DW entries.
-
-    Returns (base_text, dw_entries) where base_text includes frontmatter and any content
-    before the first ### DW- header, and dw_entries is a list of complete DW entries.
-    Validates entry structure and excludes malformed entries.
-    """
-    lines = text.splitlines()
-    base_lines = []
-    dw_entries = []
-    current_entry_lines = []
-    in_dw_section = False
-
-    for line in lines:
-        if line.startswith("### DW-"):
-            # Save any previous DW entry
-            if in_dw_section and current_entry_lines:
-                # Remove trailing empty lines from the entry
-                while current_entry_lines and current_entry_lines[-1] == "":
-                    current_entry_lines.pop()
-                if current_entry_lines:
-                    entry_text = "\n".join(current_entry_lines)
-                    if _validate_dw_entry(entry_text):
-                        dw_entries.append(entry_text)
-                current_entry_lines = []
-            # Start new DW entry
-            in_dw_section = True
-            current_entry_lines = [line]
-        elif in_dw_section:
-            current_entry_lines.append(line)
-        else:
-            # We're still in the base section
-            base_lines.append(line)
-
-    # Don't forget the last DW entry
-    if in_dw_section and current_entry_lines:
-        # Remove trailing empty lines from the entry
-        while current_entry_lines and current_entry_lines[-1] == "":
-            current_entry_lines.pop()
-        if current_entry_lines:
-            entry_text = "\n".join(current_entry_lines)
-            if _validate_dw_entry(entry_text):
-                dw_entries.append(entry_text)
-
-    # Remove trailing empty lines from base text
-    while base_lines and base_lines[-1] == "":
-        base_lines.pop()
-    base_text = "\n".join(base_lines)
-    return base_text, dw_entries
+def _suffix_from_first_block(full: str, blocks: list[str], index: int) -> str:
+    """Return ``full`` from the start of ``blocks[index]`` through EOF (empty when none)."""
+    if index >= len(blocks):
+        return ""
+    pos = full.find(blocks[index])
+    if pos < 0:
+        return ""
+    return full[pos:]
 
 
 def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
     """Story 83.3: the union of two append-only edits of one deferred-work-ledger.md, or None
     when either side is not append-only.
 
-    Each text is parsed to extract the base content and DW entries. A side is append-only when
-    it starts with the base's complete DW entries in order, then adds new entries. The result
-    is the base text, then main's entries, then branch's new entries (skipping duplicates that
-    main already added).
+    Each ``### DW-`` section is an opaque block compared byte for byte. A side is append-only
+    when its block list starts with the merge-base blocks unchanged, then adds whole blocks at
+    the end. The result is the merge-base file verbatim, then main's appended tail, then branch
+    blocks main did not already append (counter dedup, same as ``union_memlog_texts``).
     """
-    # Extract base content and DW entries for each version
-    base_text, base_entries = _extract_base_and_entries(base)
-    main_text, main_entries = _extract_base_and_entries(main)
-    branch_text, branch_entries = _extract_base_and_entries(branch)
+    _, base_blocks = _opaque_dw_blocks(base)
+    _, main_blocks = _opaque_dw_blocks(main)
+    _, branch_blocks = _opaque_dw_blocks(branch)
 
-    # Check if main and branch are append-only relative to base
-    base_count = len(base_entries)
+    base_count = len(base_blocks)
     if (
-        len(main_entries) < base_count
-        or len(branch_entries) < base_count
-        or main_entries[:base_count] != base_entries
-        or branch_entries[:base_count] != base_entries
+        len(main_blocks) < base_count
+        or len(branch_blocks) < base_count
+        or main_blocks[:base_count] != base_blocks
+        or branch_blocks[:base_count] != base_blocks
     ):
-        return None  # Not append-only
+        return None
 
-    # Get the new entries from main and branch
-    main_new_entries = main_entries[base_count:]
-    branch_new_entries = branch_entries[base_count:]
+    main_new = main_blocks[base_count:]
+    branch_new = branch_blocks[base_count:]
 
-    # Create a counter of main's new entries for deduplication
-    from collections import Counter
-
-    main_new_count = Counter(main_new_entries)
-
-    # Add branch entries that aren't already in main's new entries
-    final_new_entries = main_new_entries.copy()
-    for entry in branch_new_entries:
-        if main_new_count[entry] > 0:
-            # Entry already appears in main, decrement counter to handle duplicates
-            main_new_count[entry] -= 1
+    main_new_count = Counter(main_new)
+    branch_only: list[str] = []
+    for block in branch_new:
+        if main_new_count[block] > 0:
+            main_new_count[block] -= 1
         else:
-            # Entry not in main or all occurrences already accounted for
-            final_new_entries.append(entry)
+            branch_only.append(block)
 
-    # Combine all entries: base text + base entries + new entries from both sides
-    all_entries = base_entries + final_new_entries
+    result = base.rstrip("\n")
+    if main_new:
+        main_tail = _suffix_from_first_block(main, main_blocks, base_count)
+        if not main_tail:
+            return None
+        result += main_tail.rstrip("\n")
+    elif branch_new:
+        branch_tail = _suffix_from_first_block(branch, branch_blocks, base_count)
+        if not branch_tail:
+            return None
+        result += branch_tail.rstrip("\n")
+    if branch_only and main_new:
+        cursor = 0
+        if base_count:
+            last_shared = branch_blocks[base_count - 1]
+            pos = branch.find(last_shared)
+            cursor = pos + len(last_shared) if pos >= 0 else 0
+        extra = ""
+        for block in branch_only:
+            pos = branch.find(block, cursor)
+            if pos < 0:
+                return None
+            extra += branch[cursor:pos] + block
+            cursor = pos + len(block)
+        result += extra.rstrip("\n")
 
-    # Use main's base text (in case it has frontmatter updates)
-    # But fall back to base text if main's base is empty
-    result_base = main_text if main_text.strip() else base_text
-
-    if all_entries:
-        result = result_base.rstrip() + "\n\n" + "\n\n".join(all_entries)
-    else:
-        result = result_base
-
-    # Ensure consistent ending
     if not result.endswith("\n"):
         result += "\n"
-
     return result
 
 
