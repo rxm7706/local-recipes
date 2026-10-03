@@ -5239,16 +5239,30 @@ def _entry_unused_symbol_claims(path: Path) -> list[tuple[str, str | None]]:
     shared primitive (Design Notes: neither ``_entries()`` nor
     ``_verification()`` is touched by this story).
 
-    DW-FU-11-3-2: the symbol is the one bound to the NEAREST backticked
-    identifier across ALL matches, not ``search()``'s first match in
-    document order. ``_UNUSED_CLAIM_RE`` allows up to 80 characters between
-    the identifier and the "unused"-family phrase, so an entry naming two
-    identifiers -- "`` `_helper` `` unused? No, actually `` `_foo` `` is
-    unused." -- bound the phrase to ``_helper``, the subject the sentence
-    explicitly rejects, and then mechanically recomputed the wrong symbol's
-    call sites. Scoring every match by the gap between the identifier and
-    the phrase, and taking the smallest, picks the subject the phrase
-    actually sits next to."""
+    DW-FU-11-3-2: the symbol is read from ALL of an entry's matches, not
+    ``search()``'s FIRST in document order, and an entry whose matches
+    DISAGREE yields ``None``.
+
+    Because ``_UNUSED_CLAIM_RE``'s own gap class is ``[^`]{0,80}?``, each
+    individual match already binds a phrase to its nearest PRECEDING
+    backticked identifier -- no backtick can sit between them. What
+    ``search()`` got wrong was choosing among an entry's several phrase
+    occurrences: the row's own example, "`` `_helper` `` unused? No,
+    actually `` `_foo` `` is unused.", yields two matches, and the first
+    names ``_helper`` -- the subject that sentence explicitly rejects.
+    Picking by smallest gap does not fix it either (``_helper`` sits one
+    character from its phrase, ``_foo`` four from its own), and "take the
+    last" is a guess about prose order, not a reading of it.
+
+    So when an entry's matches name two different identifiers, this
+    mechanism does not know which the entry meant, and says so by returning
+    ``None``: that entry gets no ``mechanical_verdict`` and stays fully due
+    for a human read. This is the same "an honest unevaluable beats a
+    confident wrong answer" rule the rest of this module applies, and it is
+    what makes the claim never name the WRONG subject. Live, no entry's
+    matches disagree (measured over all eight tracked ledgers: five entries
+    carry a claim, one has two matches and both name the same symbol), so
+    this costs no verdict anything is relying on today."""
     if not _is_file(path):
         return []
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -5256,14 +5270,8 @@ def _entry_unused_symbol_claims(path: Path) -> list[tuple[str, str | None]]:
     out = []
     for i, (pos, ident) in enumerate(marks):
         end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
-        best: tuple[int, str] | None = None
-        for match in _UNUSED_CLAIM_RE.finditer(text[pos:end]):
-            # The gap is what the pattern's own `[^`]{0,80}?` spans: from the
-            # identifier's closing backtick to the phrase's first character.
-            gap = match.end() - match.start() - len(match.group(1))
-            if best is None or gap < best[0]:
-                best = (gap, match.group(1))
-        out.append((ident, best[1] if best else None))
+        claimed = {m.group(1) for m in _UNUSED_CLAIM_RE.finditer(text[pos:end])}
+        out.append((ident, claimed.pop() if len(claimed) == 1 else None))
     return out
 
 
@@ -5278,10 +5286,53 @@ def _entry_unused_symbol_claims(path: Path) -> list[tuple[str, str | None]]:
 _DECLARATION_RE_TEMPLATE = r"^\s*(?:async\s+def|def|class)\s+{}\b"
 
 
-def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
-    """``(call_sites, has_declaration)`` for ``symbol`` across the whole
-    repo -- ``git grep -n -w -I --untracked --no-exclude-standard -- <symbol>``
-    (whole repo, whole-word, binary-excluded, including not-yet-committed
+#: A line whose content is a COMMENT or a bare docstring/string line, not
+#: code -- a textual mention of a symbol, never a call (DW-FU-11-3). Matched
+#: against the line's own content as `git grep` returns it: a `#` comment
+#: line in any of the repo's line-comment languages, a `//` or `*` line
+#: (JS/TS, C, a block-comment continuation), or a line that opens or
+#: continues a triple-quoted string. Deliberately a LINE-shape test, not a
+#: language parse: a trailing comment after real code (`foo()  # see _bar`)
+#: still counts, because the line does contain a call.
+_PROSE_LINE_RE = re.compile(r"^\s*(?:#|//|\*|\"\"\"|'''|<!--|--\s)")
+
+
+def _symbol_search_scope(cited_paths: list[str]) -> list[str]:
+    """The ``git grep`` pathspecs that scope a symbol search to the PACKAGE
+    of an entry's own cited paths (DW-FU-11-3), or ``[]`` when the entry
+    cites nothing usable and the whole repo is the only honest scope.
+
+    An unscoped whole-repo search attributed any whole-word textual
+    occurrence of a short, generic name (``_run``, ``_helper``, ``_probe``)
+    to whichever entry happened to claim it, so two unrelated functions
+    sharing one name counted each other's usages. The entry already names
+    where its own code lives; the package root of those paths is the
+    narrowest scope that cannot exclude a real call site within the same
+    package.
+
+    The package root is the first three segments of a
+    ``src/shared/packages/<pkg>/`` path and the first two of anything else
+    (``scripts/x.py`` -> ``scripts``, ``src/platform/...`` -> ``src/platform``),
+    so an entry citing one station's module searches that station, not the
+    fleet. A cited path at the repo root (``pixi.toml``) yields no scope of
+    its own and is skipped -- it would otherwise widen the search back to
+    everything."""
+    scopes: list[str] = []
+    for rel in cited_paths:
+        parts = PurePosixPath(rel).parts
+        if len(parts) < 2:
+            continue
+        depth = 4 if parts[:3] == ("src", "shared", "packages") else 2
+        root = "/".join(parts[:depth])
+        if root not in scopes:
+            scopes.append(root)
+    return [f"{root}/**" for root in scopes]
+
+
+def _call_site_count(target: Path, symbol: str, cited_paths: list[str] | None = None) -> tuple[int, bool] | None:
+    """``(call_sites, has_declaration)`` for ``symbol`` across the repo --
+    ``git grep -z -n -w -I --untracked --no-exclude-standard -- <symbol>``
+    (whole-word, binary-excluded, including not-yet-committed
     files) via ``run_git``, with ``ok_exit_codes={0, 1}`` since git grep's
     exit code 1 ("no matches") is the expected, common "still-open" outcome
     here, never an error (Boundaries).
