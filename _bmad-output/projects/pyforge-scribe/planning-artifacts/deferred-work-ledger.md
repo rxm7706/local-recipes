@@ -281,3 +281,72 @@ sibling ledgers and the detector both use.
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+
+### DW-FRR-1-1: Follow-up review still recommended for story 1.1
+
+- source_spec: `planning-artifacts/specs/spec-1-1-package-scaffold-direct-capture-into-team-memory.md`
+  summary: Story 1.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 1.1 landed on origin/main (Merge pyforge-scribe/21-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-1-1-package-scaffold-direct-capture-into-team-memory.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-3-1: Follow-up review still recommended for story 3.1
+
+- source_spec: `planning-artifacts/specs/spec-3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed.md`
+  summary: Story 3.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 3.1 landed on origin/main (Merge pyforge-scribe/23-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-3-2: Follow-up review still recommended for story 3.2
+
+- source_spec: `planning-artifacts/specs/spec-3-2-transcripts-join-the-compile-sources.md`
+  summary: Story 3.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-3-2-transcripts-join-the-compile-sources.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-4-1: Follow-up review still recommended for story 4.1
+
+- source_spec: `planning-artifacts/specs/spec-4-1-register-graphstore-as-cap-18-plugins.md`
+  summary: Story 4.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 4.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-4-1-register-graphstore-as-cap-18-plugins.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-6-2: Follow-up review still recommended for story 6.2
+
+- source_spec: `planning-artifacts/specs/spec-6-2-the-cocoindex-incremental-ingest-extra.md`
+  summary: Story 6.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-2-the-cocoindex-incremental-ingest-extra.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-6-3: Follow-up review still recommended for story 6.3
+
+- source_spec: `planning-artifacts/specs/spec-6-3-the-graph-node-staleness-flag.md`
+  summary: Story 6.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-6-3-the-graph-node-staleness-flag.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed

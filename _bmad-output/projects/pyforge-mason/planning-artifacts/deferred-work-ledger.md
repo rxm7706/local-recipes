@@ -1709,3 +1709,71 @@ status: open
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+
+### DW-FRR-10-1: Follow-up review still recommended for story 10.1
+
+- source_spec: `planning-artifacts/specs/spec-10-1-extract-the-build-engine-hook.md`
+  summary: Story 10.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 10.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-10-1-extract-the-build-engine-hook.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-14-1: Follow-up review still recommended for story 14.1
+
+- source_spec: `planning-artifacts/specs/spec-14-1-bmad-eval-quality-builds-a-__win-variant.md`
+  summary: Story 14.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-14-1-bmad-eval-quality-builds-a-__win-variant.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-24-1: Follow-up review still recommended for story 24.1
+
+- source_spec: `planning-artifacts/specs/spec-24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell.md`
+  summary: Story 24.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 24.1 landed on origin/main (Merge pyforge-mason/24-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-5-5: Follow-up review still recommended for story 5.5
+
+- source_spec: `planning-artifacts/specs/spec-5-5-rule-2-conda-forge-expert-retrospective.md`
+  summary: Story 5.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-5-5-rule-2-conda-forge-expert-retrospective.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-7-1: Follow-up review still recommended for story 7.1
+
+- source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
+  summary: Story 7.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 7.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-8-1: Follow-up review still recommended for story 8.1
+
+- source_spec: `planning-artifacts/specs/spec-8-1-the-convention-is-written-and-guarded.md`
+  summary: Story 8.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 8.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-8-1-the-convention-is-written-and-guarded.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open

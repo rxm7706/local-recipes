@@ -5978,3 +5978,209 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+
+### DW-FRR-11-2: Follow-up review still recommended for story 11.2
+
+- source_spec: `planning-artifacts/specs/spec-11-2-db-gpt-joins-via-its-configured-integration-pattern.md`
+  summary: Story 11.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 11.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-11-2-db-gpt-joins-via-its-configured-integration-pattern.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-11-4: Follow-up review still recommended for story 11.4
+
+- source_spec: `planning-artifacts/specs/spec-11-4-isolation-and-statelessness-proven.md`
+  summary: Story 11.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 11.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-11-4-isolation-and-statelessness-proven.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-1: Follow-up review still recommended for story 12.1
+
+- source_spec: `planning-artifacts/specs/spec-12-1-the-vanilla-chart-with-an-ocp-overlay.md`
+  summary: Story 12.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-1-the-vanilla-chart-with-an-ocp-overlay.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-2: Follow-up review still recommended for story 12.2
+
+- source_spec: `planning-artifacts/specs/spec-12-2-gke-as-a-portability-profile.md`
+  summary: Story 12.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-2-gke-as-a-portability-profile.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-3: Follow-up review still recommended for story 12.3
+
+- source_spec: `planning-artifacts/specs/spec-12-3-air-gap-parity-is-a-failing-check.md`
+  summary: Story 12.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-12-3-air-gap-parity-is-a-failing-check.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-42-3: Follow-up review still recommended for story 42.3
+
+- source_spec: `planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md`
+  summary: Story 42.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-42-3-bus-delivery-semantics-and-a-deployed-consumer.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-45-2: Follow-up review still recommended for story 45.2
+
+- source_spec: `planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md`
+  summary: Story 45.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-45-2-the-reviewer-is-measured-against-a-planted-defect.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-46-1: Follow-up review still recommended for story 46.1
+
+- source_spec: `planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md`
+  summary: Story 46.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-1-the-adoption-register-governs-wiring.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-46-2: Follow-up review still recommended for story 46.2
+
+- source_spec: `planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md`
+  summary: Story 46.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-2-utility-skills-is-provisioned-and-its-ten-skills-have-wielders.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-46-3: Follow-up review still recommended for story 46.3
+
+- source_spec: `planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md`
+  summary: Story 46.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-3-tea-is-provisioned-and-tea-test-review-is-a-pixi-task.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-46-4: Follow-up review still recommended for story 46.4
+
+- source_spec: `planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md`
+  summary: Story 46.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-46-4-bmad-builder-is-provisioned-beside-skf-with-the-cleanup-legacy-guard-proven.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-60-1: Follow-up review still recommended for story 60.1
+
+- source_spec: `planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md`
+  summary: Story 60.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 60.1 landed on origin/main (Merge pyforge-steward/60-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-60-1-the-catalog-config-names-backends-and-sources.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-61-1: Follow-up review still recommended for story 61.1
+
+- source_spec: `planning-artifacts/specs/spec-61-1-corridor-transports-upload-default.md`
+  summary: Story 61.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 61.1 landed on origin/main (Merge pyforge-steward/61-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-61-1-corridor-transports-upload-default.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-63-4: Follow-up review still recommended for story 63.4
+
+- source_spec: `planning-artifacts/specs/spec-63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point.md`
+  summary: Story 63.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 63.4 landed on origin/main (Merge pyforge-steward/63-4 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-75-1: Follow-up review still recommended for story 75.1
+
+- source_spec: `planning-artifacts/specs/spec-75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity.md`
+  summary: Story 75.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 75.1 landed on origin/main (Merge pyforge-steward/75-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-75-1-steward-keys-resolves-the-github-enterprise-host-with-a-read-identity-and-a-pr-draft-identity.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-76-2: Follow-up review still recommended for story 76.2
+
+- source_spec: `planning-artifacts/specs/spec-76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata.md`
+  summary: Story 76.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 76.2 landed on origin/main (Merge pyforge-steward/76-2 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-78-1: Follow-up review still recommended for story 78.1
+
+- source_spec: `planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md`
+  summary: Story 78.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 78.1 landed on origin/main (Merge pyforge-steward/78-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-8-7: Follow-up review still recommended for story 8.7
+
+- source_spec: `planning-artifacts/specs/spec-8-7-assignee-and-identity-link-propagation.md`
+  summary: Story 8.7 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-8-7-assignee-and-identity-link-propagation.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
