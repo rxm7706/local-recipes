@@ -135,10 +135,12 @@ class GraphNode(BaseModel):
 
     `citation` is always verified resolvable before `recall.py` surfaces a
     node: a repo-relative file path or `"commit:<sha>"` for a git-history
-    node point at a real repo artifact, while `"<jsonl filename>:L<line>"`
-    for a transcript node is format-checked only, never re-resolved against
-    a live file, since a session transcript is per-user/local and can be
-    pruned or rotated outside Scribe's control (AD-8, Story 3.2).
+    node point at a real repo artifact, while `"<path relative to the transcript root>.jsonl:L<line>"`
+    for a ``kind == "transcript"`` node is format-checked only, never
+    re-resolved against a live file, since a session transcript is
+    per-user/local and can be pruned or rotated outside Scribe's control
+    (AD-8, Story 3.2). Other kinds still require a live path check even when
+    the citation string ends in ``.jsonl:L<n>``.
 
     `stale` (Story 6.3, CAP-13) is a git-timestamp-only signal, orthogonal to
     `is_current`: `compile_graph()` sets it on a CURRENT node (Story 2.3's

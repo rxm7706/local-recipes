@@ -15,6 +15,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -23,6 +24,7 @@ from pyforge.scribe.capture import _DESCRIPTION_MAX_LEN, _truncate, capture
 from pyforge.scribe.compile import compile_graph
 from pyforge.scribe.extras import graphify as graphify_module
 from pyforge.scribe.graph_store import FlatFileGraphStore
+from pyforge.scribe.transcripts import TranscriptCandidate, TranscriptScanProposal
 
 _MEMORY_MD_STARTER = """# Team Memory Index
 
@@ -670,6 +672,100 @@ def test_transcript_surface_ids_are_keyed_by_file_and_line_not_a_global_index(
 
     ids = {n.id for n in store.iter_nodes() if n.kind == "transcript"}
     assert ids == {"transcript:session-a.jsonl:L1", "transcript:session-b.jsonl:L1"}
+
+
+def test_transcript_same_basename_in_subdirs_get_distinct_ids_and_citations(tmp_path: Path, memory_root: Path) -> None:
+    """Story 26.1 / DW-FU-3-2: ids and citations are relative to ``transcript_root``.
+
+    The live scanner still globs only the flat directory; path-relative ids are
+    pinned by feeding nested ``source_file`` paths through the compile surface.
+    """
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    file_a = transcript_root / "dir-a" / "session-x.jsonl"
+    file_b = transcript_root / "dir-b" / "session-x.jsonl"
+    file_flat = transcript_root / "flat.jsonl"
+    file_a.parent.mkdir(parents=True)
+    file_b.parent.mkdir(parents=True)
+    for path, text in (
+        (file_a, "We decided to adopt SQLite for the edge cache layer."),
+        (file_b, "We decided to retire the legacy webhook retry queue."),
+        (file_flat, "We decided to keep flat-directory citations unchanged."),
+    ):
+        path.write_text(
+            _assistant_transcript_line(text) + "\n",
+            encoding="utf-8",
+        )
+    proposal = TranscriptScanProposal(
+        transcript_root=transcript_root,
+        candidates=(
+            TranscriptCandidate(
+                source_file=file_a,
+                line_number=1,
+                timestamp="2026-08-20T12:00:00.000Z",
+                text=file_a.read_text(encoding="utf-8").strip(),
+                snippet="SQLite edge cache",
+                capture_type="project",
+            ),
+            TranscriptCandidate(
+                source_file=file_b,
+                line_number=1,
+                timestamp="2026-08-20T12:00:00.000Z",
+                text="We decided to retire the legacy webhook retry queue.",
+                snippet="retire webhook",
+                capture_type="project",
+            ),
+            TranscriptCandidate(
+                source_file=file_flat,
+                line_number=1,
+                timestamp="2026-08-20T12:00:00.000Z",
+                text="We decided to keep flat-directory citations unchanged.",
+                snippet="flat directory",
+                capture_type="project",
+            ),
+        ),
+    )
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    with patch.object(compile_module, "scan_transcripts", return_value=proposal):
+        compile_graph(
+            memory_root=memory_root,
+            repo_root=tmp_path,
+            store=store,
+            transcript_root=transcript_root,
+        )
+
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    by_id = {n.id: n for n in transcript_nodes}
+    assert by_id["transcript:dir-a/session-x.jsonl:L1"].citation == "dir-a/session-x.jsonl:L1"
+    assert by_id["transcript:dir-b/session-x.jsonl:L1"].citation == "dir-b/session-x.jsonl:L1"
+    assert by_id["transcript:flat.jsonl:L1"].citation == "flat.jsonl:L1"
+
+
+def test_transcript_symlink_to_outside_root_does_not_crash_compile(tmp_path: Path, memory_root: Path) -> None:
+    """Story 26.1 landing review: ``resolve().relative_to()`` raised on symlinks."""
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    _write_transcript_jsonl(
+        outside,
+        "session.jsonl",
+        [_assistant_transcript_line("We decided to keep symlink handling safe.")],
+    )
+    link = transcript_root / "session.jsonl"
+    link.symlink_to(outside / "session.jsonl")
+
+    store = FlatFileGraphStore(tmp_path / "graph.json")
+    result = compile_graph(
+        memory_root=memory_root,
+        repo_root=tmp_path,
+        store=store,
+        transcript_root=transcript_root,
+    )
+    assert result.node_count >= 1
+    transcript_nodes = [n for n in store.iter_nodes() if n.kind == "transcript"]
+    assert any(n.citation == "session.jsonl:L1" for n in transcript_nodes)
 
 
 def test_transcript_surface_citation_carries_the_real_line_number(tmp_path: Path, memory_root: Path) -> None:

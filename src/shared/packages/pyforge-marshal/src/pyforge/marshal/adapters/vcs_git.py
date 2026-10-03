@@ -1333,34 +1333,43 @@ class GitVcs:
             raise VcsCommandError(f"git merge-tree --write-tree {base} {branch} produced no tree oid")
         return tree_oid
 
-    def add_worktree_for_tree(self, repo_root: Path, home: Path, tree_oid: str, *, parent: str) -> None:
+    def add_worktree_for_tree(
+        self,
+        repo_root: Path,
+        home: Path,
+        tree_oid: str,
+        *,
+        parent: str,
+        second_parent: str | None = None,
+    ) -> None:
         """Story 51.1: wraps ``tree_oid`` in a throwaway commit -- pinned
         ``user.name``/``user.email``/``commit.gpgsign=false`` via ``-c``
         flags, mirroring ``is_branch_merged``'s own ``commit-tree``
-        discipline exactly -- with ``parent`` as its sole parent, then
-        checks it out DETACHED at ``home`` (``git worktree add --detach``,
+        discipline exactly -- with ``parent`` as its first parent (and
+        ``second_parent`` when supplied, mirroring GitHub's merge commit),
+        then checks it out DETACHED at ``home`` (``git worktree add --detach``,
         mirroring ``add_worktree``'s own invocation style). The synthetic
         commit is never referenced by any branch or tag; it exists solely
         so ``home`` has a commit-ish to check out."""
-        commit_result = _run(
-            [
-                "git",
-                "-C",
-                str(repo_root),
-                "-c",
-                "user.name=marshal-land-verify",
-                "-c",
-                "user.email=marshal-land-verify@localhost",
-                "-c",
-                "commit.gpgsign=false",
-                "commit-tree",
-                tree_oid,
-                "-p",
-                parent,
-                "-m",
-                "marshal merge-tree preview (not a real commit)",
-            ]
-        )
+        commit_args = [
+            "git",
+            "-C",
+            str(repo_root),
+            "-c",
+            "user.name=marshal-land-verify",
+            "-c",
+            "user.email=marshal-land-verify@localhost",
+            "-c",
+            "commit.gpgsign=false",
+            "commit-tree",
+            tree_oid,
+            "-p",
+            parent,
+        ]
+        if second_parent is not None:
+            commit_args.extend(["-p", second_parent])
+        commit_args.extend(["-m", "marshal merge-tree preview (not a real commit)"])
+        commit_result = _run(commit_args)
         if commit_result.returncode != 0:
             raise VcsCommandError(
                 f"cannot build the merge-tree preview commit for tree "

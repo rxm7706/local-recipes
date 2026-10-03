@@ -936,7 +936,9 @@ def _read_transcript_surface(
         key = (candidate.source_file, candidate.line_number)
         index = occurrence.get(key, 0)
         occurrence[key] = index + 1
-        citation = f"{candidate.source_file.name}:L{candidate.line_number}"
+        # The scanner yields only files directly under ``transcript_root``, so this never raises.
+        rel = candidate.source_file.relative_to(transcript_root).as_posix()
+        citation = f"{rel}:L{candidate.line_number}"
         node_id = f"transcript:{citation}" if index == 0 else f"transcript:{citation}:{index}"
         nodes.append(
             GraphNode(

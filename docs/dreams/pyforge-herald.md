@@ -116,6 +116,12 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-03 (night) — Found: Story 35.1 landed with two rows closed on thin evidence.** It auto-landed after
+  its send-back pass, before a landing review. The docs-site check has tests for 4 of its 15 problems, the sync-proof
+  row closed on a speculative normaliser and a tautological hash branch, and the act vocabulary, a README sentence and
+  one row's closure record were left wrong. **What it looks like when fixed:** each check fails a test when broken, the
+  sync-proof row stays open until a live proof exists, and the records read true. Fix story, no CAP, no flag. Owner
+  `spec-pyforge-herald`. → Story 35.2, specced 2026-10-03.
 - **2026-10-03 (Phase 4+5) — Ruled: herald's open medium and low deferrals close in one fix story.** The
   operator ruled on 2026-10-03 that the deferral burn-down's Phase 4 (open medium rows) and Phase 5 (open
   low rows) run together on the idle station lanes, then, the same day, that each station takes exactly
