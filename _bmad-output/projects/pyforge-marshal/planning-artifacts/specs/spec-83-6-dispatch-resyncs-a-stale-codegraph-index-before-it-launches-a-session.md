@@ -2,7 +2,8 @@
 title: '83.6: Dispatch resyncs a stale codegraph index before it launches a session'
 type: 'fix'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'abbb7ba05f5ce65e54b320b4d30e2c9e7d916c90'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -60,4 +61,28 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Landing review (operator session)
+- The first verification failed on the operator's launch environment (`python` not on PATH); the land-only re-dispatch then refused on `lint-types`: mypy `call-arg`, `index_builder(repo_root, stale=True, process=process)` does not match the `IndexBuilder` protocol `(repo_root, *, stale)`. Fixed mechanically: `_resync_stale_codegraph_index` no longer takes or passes `process` (production's `build_codegraph_index` defaults it; the test fakes accept and ignore it). `lint-types`, `pyforge-marshal-test` (10830 passed), `pyforge-deps-test`, `pyforge-core-test`, `deferred-work-check` and `spec_surface_reconcile.py` green.
+- Reviewed against the intent contract: resync only when the non-ok rows are exactly `token-kit` + a stale `codegraph-index`, one re-check, never blocks — accepted.
+
+### 2026-10-02 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — blind/edge/verification-gap/intent layers found no actionable gaps on the diff)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Prelaunch now runs the kit's incremental `codegraph sync` when `steward session check` reports only stale `token-kit` / `codegraph-index` rows, re-checks once, and omits MRS-DISP-049 when the second check passes.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — resync + re-check path in `_surface_session_precondition_findings`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py` — AC coverage and mutation test
+
+**Review:** 0 patches; nothing deferred.
+
+**Follow-up review recommended:** false
+
+**Verification:** `pyforge-marshal-test` pass; `pyforge-deps-test` pass; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK after memlog reconcile.
+
+**Residual risk:** Resync triggers only when the codegraph-index detail contains the substring `stale` (matches steward's stale wording); missing-index kit failures still warn without auto-init.

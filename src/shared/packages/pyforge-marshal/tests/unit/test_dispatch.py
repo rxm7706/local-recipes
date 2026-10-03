@@ -284,6 +284,22 @@ def _steward_failing_report_on_stderr(*non_ok: str) -> ProcessResult:
     return ProcessResult(returncode=1, stdout="", stderr=report + "\n")
 
 
+def _steward_stale_codegraph_report_on_stderr() -> ProcessResult:
+    """Story 83.6: steward's shape when only the codegraph index is stale."""
+    findings = [
+        {"name": "token-kit", "ok": False, "detail": "codegraph-index: stale", "remedy": "marshal seed kit"},
+        {
+            "name": "codegraph-index",
+            "ok": False,
+            "detail": "codegraph-index: stale -- predates HEAD",
+            "remedy": "marshal seed kit",
+        },
+        {"name": "pixi-guild", "ok": True, "detail": "fine", "remedy": None},
+    ]
+    report = json.dumps({"ok": False, "findings": findings}, indent=2)
+    return ProcessResult(returncode=1, stdout="", stderr=report + "\n")
+
+
 def test_surface_session_precondition_findings_reads_the_report_from_stderr(tmp_path: Path) -> None:
     class Proc:
         def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
@@ -332,6 +348,91 @@ def test_surface_session_precondition_findings_prefers_a_stdout_report(tmp_path:
     assert finding is not None
     assert "gh-auth" in finding.message
     assert "tier3-feed" not in finding.message
+
+
+def test_surface_session_precondition_resyncs_stale_codegraph_then_clears_warn(tmp_path: Path) -> None:
+    """Story 83.6 AC1: stale-only session check triggers resync and a clean re-check."""
+    resync_calls: list[tuple[Path, bool]] = []
+
+    def index_builder(root: Path, *, stale: bool, process=None) -> str | None:
+        resync_calls.append((root, stale))
+        assert stale is True
+        return None
+
+    class Proc:
+        def __init__(self) -> None:
+            self.checks = 0
+
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            assert list(argv) == list(dispatch_module._SESSION_CHECK_ARGV)
+            self.checks += 1
+            if self.checks == 1:
+                return _steward_stale_codegraph_report_on_stderr()
+            return ProcessResult(returncode=0, stdout="", stderr="")
+
+    proc = Proc()
+    finding = _surface_session_precondition_findings(process=proc, repo_root=tmp_path, index_builder=index_builder)
+    assert finding is None
+    assert proc.checks == 2
+    assert resync_calls == [(tmp_path, True)]
+
+
+def test_surface_session_precondition_resync_failure_still_warns(tmp_path: Path) -> None:
+    """Story 83.6 AC2: a failed resync leaves MRS-DISP-049 and never blocks."""
+
+    def failing_builder(_root: Path, *, stale: bool, process=None) -> str:
+        return "codegraph sync exited 1"
+
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            return _steward_stale_codegraph_report_on_stderr()
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path, index_builder=failing_builder)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
+
+
+def test_surface_session_precondition_skips_resync_when_other_findings_non_ok(tmp_path: Path) -> None:
+    """Story 83.6 AC3: gh-auth (or any third non-ok row) skips resync."""
+    resync_calls: list[Path] = []
+
+    def index_builder(root: Path, *, stale: bool, process=None) -> str | None:
+        resync_calls.append(root)
+        return None
+
+    class Proc:
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            findings = [
+                {"name": "token-kit", "ok": False, "detail": "codegraph-index: stale"},
+                {"name": "codegraph-index", "ok": False, "detail": "codegraph-index: stale"},
+                {"name": "gh-auth", "ok": False, "detail": "not logged in"},
+            ]
+            report = json.dumps({"ok": False, "findings": findings}, indent=2)
+            return ProcessResult(returncode=1, stdout="", stderr=report + "\n")
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path, index_builder=index_builder)
+    assert finding is not None
+    assert "gh-auth" in finding.message
+    assert resync_calls == []
+
+
+def test_surface_session_precondition_resync_is_required_for_stale_clear(tmp_path: Path) -> None:
+    """Story 83.6 mutation: without the resync step the stale warning remains."""
+
+    class Proc:
+        def __init__(self) -> None:
+            self.checks = 0
+
+        def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+            self.checks += 1
+            return _steward_stale_codegraph_report_on_stderr()
+
+    def noop_builder(_root: Path, *, stale: bool, process=None) -> str | None:
+        return None
+
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path, index_builder=noop_builder)
+    assert finding is not None
+    assert finding.code == "MRS-DISP-049"
 
 
 def test_dispatch_once_surfaces_mrs_disp_049_when_session_check_non_ok(
