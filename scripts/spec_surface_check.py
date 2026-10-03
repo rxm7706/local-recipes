@@ -36,6 +36,23 @@ its own pre-lock live snapshot -- that is its documented accept-everything
 semantics, unchanged by the serialization; only the scoped path reads and
 merges.)
 
+**What the lock does NOT span (DW-12-5-3).** `fcntl.flock` is per-inode, so
+it serializes stamps against ONE baseline file. Two git worktrees of this
+repo each hold their OWN `scripts/.spec-surface-baseline.json` at their own
+inode, and a stamp in each one takes a different lock: both succeed, and the
+two divergent files meet later as a git merge conflict, which no advisory
+lock can prevent or detect. That is the documented boundary of this
+serialization, not a gap in it -- resolve such a conflict by re-stamping the
+specs each side reconciled, never by hand-merging the JSON.
+
+**Refusals that leave the baseline byte-identical.** A corrupt committed
+baseline is a diagnostic naming the file and the recovery path, exit 1,
+never an `except -> {}` fallback that silently turns a scoped stamp into a
+full one (DW-FU-12-5). A `--spec`-less full stamp that discovers zero Specs
+over a non-empty baseline refuses rather than wiping it (DW-FU-12-5-2). A
+spec whose `surface:` declares nothing readable is never stamped, scoped or
+not (DW-FU-6-6-9).
+
 Marshal Story 82.3 (DW-9-1-1): a SCOPED stamp no longer accepts a path
 nobody narrated. A `--spec NAME` stamp merges every file NAME's surface
 matches, so a drifted file under a broad glob was absorbed as reconciled with
