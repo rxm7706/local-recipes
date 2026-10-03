@@ -220,6 +220,9 @@ EGRESS_PORTS: Mapping[str, bool] = {
     # Story 33.4 (CAP-18): host run-state publish -- network lives in the adapter,
     # not the port; ``PublishRecord`` carries shaped facts, not redacted egress text.
     "RunPublisherPort": False,
+    # Story 84.1 (CAP-285): operator-run model-list fetch -- ingress to providers,
+    # not a durable egress sink; credentials stay at the adapter boundary (AD-34).
+    "ModelListFetchPort": False,
 }
 
 
