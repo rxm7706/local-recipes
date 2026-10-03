@@ -1607,3 +1607,173 @@ status: open
   fix: `refs/remotes/origin/${{ github.base_ref }}...HEAD` in all four, through the recipe factory's chain.
   status: closed
   resolved: 2026-09-27 (mason Story 18.1, spec-pyforge-mason CAP-28) — all four diff from `refs/remotes/origin/${{ github.base_ref }}...HEAD`. Correction found in review: the branch is dormant today (no recipe workflow runs on `pull_request`; `test-all.yml` is dispatch-only and calls the other three), so no PR could have built nothing from it; this is hardening, kept by pyforge-core:CAP-10's workflow scan.
+
+### DW-FRR-1-3: Follow-up review still recommended for story 1.3
+
+- source_spec: `planning-artifacts/specs/spec-1-3-error-taxonomy-and-exit-code-contract.md`
+  summary: Story 1.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-1-3-error-taxonomy-and-exit-code-contract.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-12-1: Follow-up review still recommended for story 12.1
+
+- source_spec: `planning-artifacts/specs/spec-12-1-landed-retros-are-mirrored-into-the-pilot-brief.md`
+  summary: Story 12.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-1-landed-retros-are-mirrored-into-the-pilot-brief.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-12-2: Follow-up review still recommended for story 12.2
+
+- source_spec: `planning-artifacts/specs/spec-12-2-ci-enforcement-for-the-guard-and-the-equivalence-net.md`
+  summary: Story 12.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-2-ci-enforcement-for-the-guard-and-the-equivalence-net.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-12-3: Follow-up review still recommended for story 12.3
+
+- source_spec: `planning-artifacts/specs/spec-12-3-the-real-audit-tool-backs-the-pilot-zero-drift-claim.md`
+  summary: Story 12.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-3-the-real-audit-tool-backs-the-pilot-zero-drift-claim.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-5: Follow-up review still recommended for story 12.5
+
+- source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
+  summary: Story 12.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.5 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-6: Follow-up review still recommended for story 12.6
+
+- source_spec: `planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md`
+  summary: Story 12.6 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.6 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-7: Follow-up review still recommended for story 12.7
+
+- source_spec: `planning-artifacts/specs/spec-12-7-slice-2-compiled-and-equivalence-validated.md`
+  summary: Story 12.7 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.7 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-7-slice-2-compiled-and-equivalence-validated.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-12-8: Follow-up review still recommended for story 12.8
+
+- source_spec: `planning-artifacts/specs/spec-12-8-the-slice-2-re-scope-checkpoint.md`
+  summary: Story 12.8 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 12.8 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-8-the-slice-2-re-scope-checkpoint.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-7-2: Follow-up review still recommended for story 7.2
+
+- source_spec: `planning-artifacts/specs/spec-7-2-the-pointers-lint-and-the-drift-gates.md`
+  summary: Story 7.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 7.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-7-2-the-pointers-lint-and-the-drift-gates.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-10-1: Follow-up review still recommended for story 10.1
+
+- source_spec: `planning-artifacts/specs/spec-10-1-extract-the-build-engine-hook.md`
+  summary: Story 10.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 10.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-10-1-extract-the-build-engine-hook.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-14-1: Follow-up review still recommended for story 14.1
+
+- source_spec: `planning-artifacts/specs/spec-14-1-bmad-eval-quality-builds-a-__win-variant.md`
+  summary: Story 14.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-14-1-bmad-eval-quality-builds-a-__win-variant.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-24-1: Follow-up review still recommended for story 24.1
+
+- source_spec: `planning-artifacts/specs/spec-24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell.md`
+  summary: Story 24.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 24.1 landed on origin/main (Merge pyforge-mason/24-1 into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-5-5: Follow-up review still recommended for story 5.5
+
+- source_spec: `planning-artifacts/specs/spec-5-5-rule-2-conda-forge-expert-retrospective.md`
+  summary: Story 5.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-5-5-rule-2-conda-forge-expert-retrospective.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-7-1: Follow-up review still recommended for story 7.1
+
+- source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
+  summary: Story 7.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 7.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-8-1: Follow-up review still recommended for story 8.1
+
+- source_spec: `planning-artifacts/specs/spec-8-1-the-convention-is-written-and-guarded.md`
+  summary: Story 8.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 8.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-8-1-the-convention-is-written-and-guarded.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
