@@ -17,7 +17,7 @@ class HollowVerificationSetError(ValueError):
 def _floor_override(parameters: dict[str, Any] | None, key: str, default: int) -> int:
     params = parameters or {}
     block = params.get("verification_sets") or {}
-    raw = block.get(key, default)
+    raw = block.get(key, block.get("cf_or_pm_floor", default) if key == "core_packages_enumerated_floor" else default)
     return int(raw)
 
 
