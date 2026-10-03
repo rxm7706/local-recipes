@@ -2744,24 +2744,49 @@ def _entries(path: Path) -> list[tuple[str, bool]]:
 
 def _anonymous(path: Path) -> list[int]:
     """Line numbers of entries with no ``## DW-<id>`` heading of their own --
-    verbatim from the original (see its own docstring for the positional
-    ``- source_spec:`` disambiguation rule)."""
+    the original's positional ``- source_spec:`` disambiguation rule, with
+    the header's claim WINDOW bounded (DW-FU-8-1).
+
+    An ID'd header claims the first ``- source_spec:`` bullet in its OWN
+    field block. The original bounded that claim only by the next heading,
+    so a ``### DW-<n>:`` header whose body uses PLAIN (non-bulleted)
+    ``origin:``/``source_spec:`` keys never satisfied ``_ANON_RE`` at all,
+    left ``field_taken`` False for the rest of the section, and then claimed
+    the next topically unrelated headerless bullet anywhere later --
+    silently dropping a real orphan from the count. 38 such headers exist
+    fleet-wide and 25 swallow a real orphan this way (this story's own
+    measurement, via ``classify_tier3_entries``, which never had the bug).
+
+    The window now closes at the first blank line AFTER the field block has
+    begun, which is where ``classify_tier3_entries`` already ends a header's
+    claim. The blank line between a heading and its own first field line is
+    not that boundary -- every real entry has one -- so ``block`` tracks
+    whether any content has been seen yet."""
     if not _is_file(path):
         return []
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     out: list[int] = []
     field_taken = False
     in_entry = False
+    block = False
     for n, ln in enumerate(lines, 1):
         if _ENTRY_RE.match(ln):
-            field_taken, in_entry = False, True
-        elif re.match(r"^#{1,6}\s", ln):
-            field_taken, in_entry = False, False
+            field_taken, in_entry, block = False, True, False
+        elif _HEADING_RE.match(ln):
+            field_taken, in_entry, block = False, False, False
+        elif not ln.strip():
+            if block:
+                # The entry's own field block ended; nothing after it belongs
+                # to that header.
+                field_taken, in_entry, block = False, False, False
         elif _ANON_RE.match(ln):
+            block = True
             if in_entry and not field_taken:
                 field_taken = True
             else:
                 out.append(n)
+        else:
+            block = True
     return out
 
 
