@@ -2,7 +2,7 @@
 title: "83.10: A verification refusal never relaunches a fresh session or raises the model"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '302b6ad99859f4305316a419b3b3afba2f5545e3'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -87,15 +87,15 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 
 Status: done
 
-Summary: Verification refusals after finished session work now classify as terminal (park) when the branch head is unchanged, land-only when the operator moved the head, and are excluded from Story 33.6's prior-failure counter.
+Summary: Landing-review fixes: drain plan keeps `MRS-DISP-045` reachable when a prior run exists; `MRS-GATE-018` is a verification refusal for park/land-only and floor-raise exclusion; park reasons include the journaled verification `failed_message`.
 
 Files changed:
-- `core/dispatch_retry.py` — park/land-only helpers; verify gates with git progress are TERMINAL
-- `core/dispatch_harness_done.py` — `should_take_verification_refusal_land_only`
-- `cli/dispatch.py` — block facts, floor-raise count, CAP-4 land-only wiring
-- `cli/drain_plan.py` — drain plan land-only for fixed branches
-- `tests/unit/test_dispatch_hotfix.py`, `tests/unit/test_dispatch_retry_83_10.py` — regression + mutation
+- `core/dispatch_retry.py` — add `MRS-GATE-018` to verification refusal gates
+- `core/dispatch.py` — `DispatchJournalFacts.verification_failed_message`
+- `cli/dispatch.py` — read `failed_message` from verification journal; pass into park reason
+- `cli/drain_plan.py` — verification-refusal land-only and blocked refusal are separate steps
+- `tests/unit/test_dispatch_retry_83_10.py` — 018 + park message + terminal classification
 
-Review: 0 patches applied; followup_review_recommended false.
+Review: 0 patch-worthy findings on pass 2; followup_review_recommended false.
 
-Verification: `pyforge-marshal-test` pass (10913 tests); `pyforge-deps-test` pass; `lint-types` pass; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.
+Verification: `pyforge-marshal-test` pass (10917 tests); `pyforge-deps-test` pass; `lint-types` pass; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.
