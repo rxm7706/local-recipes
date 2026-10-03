@@ -114,7 +114,7 @@ import hashlib
 import re
 import tomllib
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from importlib import resources
 from pathlib import Path
 from types import MappingProxyType
@@ -191,6 +191,21 @@ _PROFILE_KEYS: frozenset[str] = frozenset(
         # Story 28.2 (SPEC-marshal-token-economy CAP-2): the optional
         # wire-compression `[wrapper]` sub-table -- see `parse_wrapper`.
         "wrapper",
+        # Story 84.1 (CAP-285): optional live model-list source declaration.
+        "model_list",
+    }
+)
+
+_MODEL_LIST_KEYS: frozenset[str] = frozenset(
+    {
+        "catalog_provider",
+        "command",
+        "url",
+        "credential_env",
+        "credential_header",
+        "static_headers",
+        "pagination",
+        "aliases",
     }
 )
 
@@ -343,6 +358,26 @@ class WireWrap:
 
 
 @dataclass(frozen=True)
+class ModelListSource:
+    """Declared live model-list source for one harness profile (Story 84.1)."""
+
+    catalog_provider: str = ""
+    command: tuple[str, ...] = ()
+    url: str = ""
+    credential_env: str = ""
+    credential_header: str = ""
+    static_headers: Mapping[str, str] = field(default_factory=dict)
+    pagination: str = ""
+    aliases: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "static_headers", MappingProxyType(dict(self.static_headers)))
+
+    def has_source(self) -> bool:
+        return bool(self.command) or bool(self.url)
+
+
+@dataclass(frozen=True)
 class HarnessProfile:
     """One declarative session-harness CLI profile -- see the module
     docstring for the field-by-field contract."""
@@ -361,6 +396,7 @@ class HarnessProfile:
     verified: bool = False
     notes: str = ""
     wrapper: HarnessWrapper | None = None
+    model_list: ModelListSource | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "model_map", MappingProxyType(dict(self.model_map)))
@@ -419,6 +455,40 @@ def _require_clean_relpath(entry: str, key: str, source: str) -> str:
     if entry.startswith("/") or any(part in ("", "..") for part in parts):
         raise HarnessProfileError(f"{source}: {key!r} entries must be clean relative paths, got {entry!r}")
     return entry
+
+
+def parse_model_list(data: Mapping[str, object], *, source: str) -> ModelListSource:
+    unknown = set(data.keys()) - _MODEL_LIST_KEYS
+    if unknown:
+        raise HarnessProfileError(f"{source}: unknown model_list key(s) {sorted(unknown)}")
+    command = _require_str_list(data, "command", source)
+    url = _require_str(data, "url", source)
+    if command and url:
+        raise HarnessProfileError(f"{source}: model_list declares both command and url")
+    pagination = _require_str(data, "pagination", source)
+    if url and pagination not in ("anthropic", "gemini"):
+        raise HarnessProfileError(
+            f"{source}: model_list.url requires pagination = 'anthropic' or 'gemini', got {pagination!r}"
+        )
+    if command and pagination:
+        raise HarnessProfileError(f"{source}: model_list.command must not declare pagination")
+    credential_env = _require_str(data, "credential_env", source)
+    if url and not credential_env:
+        raise HarnessProfileError(f"{source}: model_list.url requires credential_env")
+    if url and not url.startswith("https://"):
+        raise HarnessProfileError(f"{source}: model_list.url must use https")
+    if credential_env and not re.fullmatch(r"[A-Z_][A-Z0-9_]*", credential_env):
+        raise HarnessProfileError(f"{source}: model_list.credential_env must match [A-Z_][A-Z0-9_]*")
+    return ModelListSource(
+        catalog_provider=_require_str(data, "catalog_provider", source),
+        command=command,
+        url=url,
+        credential_env=credential_env,
+        credential_header=_require_str(data, "credential_header", source),
+        static_headers=_require_str_map(data, "static_headers", source),
+        pagination=pagination,
+        aliases=_require_str_list(data, "aliases", source),
+    )
 
 
 def parse_wrapper(data: Mapping[str, object], *, source: str) -> HarnessWrapper:
@@ -559,6 +629,13 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
     # declared = this profile has no wire-compression seam, which
     # `resolve_wire_wrap` degrades with a named reason rather than treating
     # as an error -- most CLIs have no wrapper counterpart at all).
+    model_list_data = data.get("model_list")
+    model_list: ModelListSource | None = None
+    if model_list_data is not None:
+        if isinstance(model_list_data, str) or not isinstance(model_list_data, Mapping):
+            raise HarnessProfileError(f"{source}: 'model_list' must be a table, got {model_list_data!r}")
+        model_list = parse_model_list(model_list_data, source=f"{source} [model_list]")
+
     wrapper_data = data.get("wrapper")
     wrapper: HarnessWrapper | None = None
     if wrapper_data is not None:
@@ -598,6 +675,7 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
         verified=_require_bool(data, "verified", source),
         notes=_require_str(data, "notes", source),
         wrapper=wrapper,
+        model_list=model_list,
     )
 
 
@@ -627,6 +705,14 @@ def load_packaged_profiles() -> dict[str, HarnessProfile]:
     return profiles
 
 
+def _inherit_packaged_model_list(base: HarnessProfile, overlay: HarnessProfile) -> HarnessProfile:
+    """When an overlay replaces a packaged profile but omits ``[model_list]``,
+    keep the packaged declaration (Story 84.1)."""
+    if overlay.model_list is not None or base.model_list is None:
+        return overlay
+    return replace(overlay, model_list=base.model_list)
+
+
 def load_profiles(
     repo_root: Path | None,
 ) -> tuple[dict[str, HarnessProfile], tuple[str, ...]]:
@@ -646,7 +732,11 @@ def load_profiles(
     for path in sorted(overlay_dir.glob("*.toml")):
         try:
             text = path.read_text(encoding="utf-8")
-            profiles[path.stem] = _parse_profile_toml(text, source=f"overlay profile {path}", expected_name=path.stem)
+            overlay = _parse_profile_toml(text, source=f"overlay profile {path}", expected_name=path.stem)
+            base = profiles.get(path.stem)
+            if base is not None:
+                overlay = _inherit_packaged_model_list(base, overlay)
+            profiles[path.stem] = overlay
         except (OSError, UnicodeDecodeError, HarnessProfileError) as exc:
             errors.append(f"overlay profile {path} ignored: {exc}")
     return profiles, tuple(errors)
