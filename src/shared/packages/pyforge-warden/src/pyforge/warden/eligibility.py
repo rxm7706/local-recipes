@@ -102,11 +102,6 @@ class EligibilityResult:
     effective_required_authority_sources: frozenset[str]
 
 
-def _identity_group_key(identity: PackageIdentity) -> tuple[Ecosystem, str, str | None]:
-    """Stable merge key for one logical package across adapter observations."""
-    return (identity.ecosystem, identity.canonical_name, identity.version)
-
-
 def classify_eligibility_status(
     *,
     observed_authority_sources: frozenset[str],
@@ -168,16 +163,12 @@ def compute_eligibility_union(
         else required_authority_sources
     )
 
-    groups: dict[tuple[Ecosystem, str, str | None], list[SourceEvidence]] = {}
-    representative_identity: dict[tuple[Ecosystem, str, str | None], PackageIdentity] = {}
+    groups: dict[PackageIdentity, list[SourceEvidence]] = {}
     for ev in evidence:
-        key = _identity_group_key(ev.identity)
-        groups.setdefault(key, []).append(ev)
-        representative_identity.setdefault(key, ev.identity)
+        groups.setdefault(ev.identity, []).append(ev)
 
     results: list[EligibilityResult] = []
-    for key, group in groups.items():
-        identity = representative_identity[key]
+    for identity, group in groups.items():
         observed = frozenset(ev.source_name for ev in group)
         status = classify_eligibility_status(
             observed_authority_sources=observed,

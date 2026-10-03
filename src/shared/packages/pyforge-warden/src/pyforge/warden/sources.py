@@ -262,10 +262,12 @@ class CycloneDXSourceAdapter:
             return None
 
     def validate(self, parsed: object | None) -> list[object] | None:
-        """Checks ``bomFormat == "CycloneDX"`` and a list ``components``
-        key; returns the component list, or ``None`` on anything else
-        untrustworthy (not an object, wrong ``bomFormat``, non-list/absent
-        ``components``)."""
+        """Checks ``bomFormat == "CycloneDX"``, ``specVersion`` against the
+        supported set, and a list ``components`` key; returns the component
+        list, or ``None`` on anything else untrustworthy (not an object, wrong
+        ``bomFormat``, non-list/absent ``components``). Raises
+        ``CycloneDXUnsupportedSpecVersionError`` when ``specVersion`` is
+        outside the supported set."""
         if not isinstance(parsed, dict):
             return None
         if parsed.get("bomFormat") != _CYCLONEDX_BOM_FORMAT:
@@ -280,10 +282,7 @@ class CycloneDXSourceAdapter:
 
     def ingest(self) -> tuple[SourceEvidence, ...]:
         parsed = self.parse(self.fetch())
-        try:
-            components = self.validate(parsed)
-        except CycloneDXUnsupportedSpecVersionError:
-            raise
+        components = self.validate(parsed)
         if not components:
             return ()
         evidence: list[SourceEvidence] = []

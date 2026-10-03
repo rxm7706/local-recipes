@@ -75,6 +75,8 @@ def test_eligibility_cyclonedx_is_deterministic():
     b = render_eligibility_cyclonedx(results, serial_number=FIXED_SERIAL, timestamp=FIXED_TS)
     assert a == b
     assert "eligible-union" in a
+    assert "cfe:required_authority_sources" in a
+    assert "cyclonedx" in a
     assert "pkg:pypi/requests@2.32.3" in a
 
 

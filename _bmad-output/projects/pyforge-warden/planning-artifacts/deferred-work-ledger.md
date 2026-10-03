@@ -221,9 +221,7 @@ origin: review-budget-followup
 source_spec: `spec-6-3-currency-axis-producer-gate-flags.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260723-184834-a653; this entry preserves the lingering recommendation for a deliberate later review.
-resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-verified: 2026-10-03 — src/shared/packages/pyforge-warden/tests/unit/test_story_17_1_followup_reviews.py:1
-status: closed
+status: open
 
 verified: 2026-07-30 — CONFIRMED STILL OPEN — the recommended independent follow-up review never happened. `_bmad-output/projects/pyforge-warden/planning-artifacts/` holds one adversarial review (`adversarial-review-pyforge-warden-spec-2026-07-15.md`, which predates this 2026-07-23 story) and five implementation-readiness reports, none covering `6-3-currency-axis-producer-gate-flags`. Grepping the whole planning-artifacts tree for that story slug matches only `sprint-status-ledger.yaml` and this ledger — no review artifact exists. Standing note: the four 6-3-* entries verified alongside this one are themselves the unreviewed residue.
 
@@ -599,7 +597,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py:145
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py:166
   status: closed
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -616,7 +614,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py:268
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py:273
   status: closed
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -633,7 +631,9 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py:101
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py:102
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py:119
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility_sbom.py:93
   status: closed
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open

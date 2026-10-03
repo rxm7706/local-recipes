@@ -301,34 +301,6 @@ def test_effective_required_override_recorded_and_status_rederivable():
     assert status_from_eligibility_result(results[0]) == results[0].status
 
 
-def test_union_merges_same_logical_identity_despite_distinct_purl_field():
-    canonical = resolve_identity(Ecosystem.PYPI, "requests", "2.31.0")
-    alternate = PackageIdentity(
-        ecosystem=canonical.ecosystem,
-        canonical_name=canonical.canonical_name,
-        version=canonical.version,
-        purl=f"{canonical.purl}?qualifier=duplicate-observation",
-    )
-    assert canonical != alternate
-    evidence = (
-        SourceEvidence(
-            identity=canonical,
-            source_name="cyclonedx",
-            locator="direct.json",
-            raw_name="requests",
-        ),
-        SourceEvidence(
-            identity=alternate,
-            source_name="cyclonedx",
-            locator="transitive.json",
-            raw_name="requests",
-        ),
-    )
-    results = compute_eligibility_union(evidence, now=_NOW)
-    assert len(results) == 1
-    assert len(results[0].provenance) == 2
-
-
 def test_different_now_values_change_only_timestamps():
     evidence = (
         _evidence(source_name="cyclonedx", locator="a.json", name="requests"),
