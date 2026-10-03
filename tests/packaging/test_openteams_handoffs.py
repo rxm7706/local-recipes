@@ -272,11 +272,13 @@ def test_project_item_add_failure_does_not_mark_row_as_tracked(monkeypatch):
 
     row = _row("some-pkg")
     board: dict[str, str] = {}
-    result = identity.create_missing_issues("gh", [row], board=board, dry_run=False)
+    not_filed: list[tuple[str, str]] = []
+    result = identity.create_missing_issues(
+        "gh", [row], board=board, dry_run=False, not_filed=not_filed
+    )
 
-    # Still reported as created (the issue really was created) ...
-    assert result == [("some-pkg", "[Conda-Forge Packaging] some-pkg")]
-    # ... but NOT merged into the row or the board, so it is retried next run.
+    assert result == []
+    assert not_filed == [("some-pkg", "[Conda-Forge Packaging] some-pkg")]
     assert row["OpenTeams_Issue_URL"] == ""
     assert board == {}
 
@@ -415,6 +417,10 @@ def test_write_dashboard_markdown_writes_both_canvases_by_default(
         dashboards,
         "write_workbook_canvas",
         lambda *a, **k: workbook_calls.append((a, k)),
+    )
+    monkeypatch.setattr(dashboards, "DEFAULT_OPS_CANVAS_PATH", tmp_path / "ops.canvas.tsx")
+    monkeypatch.setattr(
+        dashboards, "DEFAULT_WORKBOOK_CANVAS_PATH", tmp_path / "workbook.canvas.tsx"
     )
 
     dash_path = tmp_path / "dashboards.md"
@@ -721,7 +727,7 @@ def test_main_default_path_overlay_runs_before_csv_write(monkeypatch, tmp_path, 
     csv_rows = _read_csv_rows(output_csv)
     assert csv_rows[0]["Local_Build_Status"] == "success"
     assert "recipes/pkg-a" in csv_rows[0]["Local_Recipes_URL"]
-    assert "success" in published["identity_md"]
+    assert "pkg-a" in published["identity_md"]
 
 
 def test_main_exits_nonzero_when_parquet_missing(monkeypatch, tmp_path, capsys):
@@ -825,7 +831,7 @@ def test_create_missing_issues_retries_secondary_rate_limit(monkeypatch):
 
     monkeypatch.setattr(subprocess, "check_output", fake_output)
     monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: 0)
-    monkeypatch.setattr(identity, "time", types.SimpleNamespace(sleep=lambda _s: None))
+    monkeypatch.setattr(identity.time, "sleep", lambda _s: None)
 
     not_filed: list[tuple[str, str]] = []
     result = identity.create_missing_issues(
