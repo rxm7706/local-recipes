@@ -341,12 +341,12 @@ def test_src_platform_does_not_import_pyforge() -> None:
 def test_chart_configmap_is_the_one_tree_and_has_no_flag_sidecar() -> None:
     docs = _render_core()
     # Story 76.1: the one tree, rendered for the release's environment (dev here).
-    # The shipped overlay starts every key at its tree value, so this is also the
-    # tree as it was.
+    # Since Story 84.4 a dev overlay may differ from its tree default (a flag ON in dev,
+    # OFF in production), so the configmap is the dev render, carrying every tree key.
     rendered = _flags_configmap(docs)
     on_disk = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
     assert rendered == json.loads(render_flag_tree("dev", _FLAGS_JSON))
-    assert rendered == on_disk
+    assert set(rendered["flags"]) == set(on_disk["flags"])
 
     blob = json.dumps(docs).lower()
     for needle in ("reloader", "stakater", "flagd:", "ghcr.io/open-feature/flagd"):
@@ -610,7 +610,8 @@ def test_the_shipped_tree_with_metadata_evaluates_as_it_did_without(
     _isolate_flag_environment(monkeypatch, _FLAGS_JSON, environment)
     for key, expected in _SHIPPED_BOOLEANS.items():
         expected_val = expected[environment] if isinstance(expected, dict) else expected
-        assert _three_readings(_FLAGS_JSON, key) == (expected_val,) * 3, (environment, key)
+        readings = _three_readings(_FLAGS_JSON, key)
+        assert readings == (expected_val,) * 3, (environment, key)
     _assert_cutover_root_agrees(_FLAGS_JSON, environment)
     assert evaluate_cutover_root(_FLAGS_JSON) == "local-recipes"
 
