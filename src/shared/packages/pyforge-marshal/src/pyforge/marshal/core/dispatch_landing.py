@@ -319,11 +319,29 @@ def _split_deferred_work_entries(text: str) -> list[str]:
     return entries
 
 
+def _validate_dw_entry(entry: str) -> bool:
+    """Validate that a DW entry has basic required structure.
+    
+    Checks for presence of required metadata fields: origin, status.
+    Returns True if entry is valid, False otherwise.
+    """
+    lines = entry.split("\n")
+    if not lines or not lines[0].startswith("### DW-"):
+        return False
+    
+    # Check for required fields
+    has_origin = any(line.strip().startswith("origin:") for line in lines[1:])
+    has_status = any(line.strip().startswith("status:") for line in lines[1:])
+    
+    return has_origin and has_status
+
+
 def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
     """Extract the base text (everything before first DW entry) and all DW entries.
 
     Returns (base_text, dw_entries) where base_text includes frontmatter and any content
     before the first ### DW- header, and dw_entries is a list of complete DW entries.
+    Validates entry structure and excludes malformed entries.
     """
     lines = text.splitlines()
     base_lines = []
@@ -339,7 +357,9 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
                 while current_entry_lines and current_entry_lines[-1] == "":
                     current_entry_lines.pop()
                 if current_entry_lines:
-                    dw_entries.append("\n".join(current_entry_lines))
+                    entry_text = "\n".join(current_entry_lines)
+                    if _validate_dw_entry(entry_text):
+                        dw_entries.append(entry_text)
                 current_entry_lines = []
             # Start new DW entry
             in_dw_section = True
@@ -356,7 +376,9 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
         while current_entry_lines and current_entry_lines[-1] == "":
             current_entry_lines.pop()
         if current_entry_lines:
-            dw_entries.append("\n".join(current_entry_lines))
+            entry_text = "\n".join(current_entry_lines)
+            if _validate_dw_entry(entry_text):
+                dw_entries.append(entry_text)
 
     # Remove trailing empty lines from base text
     while base_lines and base_lines[-1] == "":
@@ -392,18 +414,20 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
     # Get the new entries from main and branch
     main_new_entries = main_entries[base_count:]
     branch_new_entries = branch_entries[base_count:]
-
-    # Create a set of main's new entries for deduplication
-    main_new_set = set(main_new_entries)
-
+    
+    # Create a counter of main's new entries for deduplication
+    from collections import Counter
+    main_new_count = Counter(main_new_entries)
+    
     # Add branch entries that aren't already in main's new entries
     final_new_entries = main_new_entries.copy()
     for entry in branch_new_entries:
-        if entry not in main_new_set:
-            final_new_entries.append(entry)
+        if main_new_count[entry] > 0:
+            # Entry already appears in main, decrement counter to handle duplicates
+            main_new_count[entry] -= 1
         else:
-            # Remove from set so duplicates can still be added if they appear multiple times
-            main_new_set.discard(entry)
+            # Entry not in main or all occurrences already accounted for
+            final_new_entries.append(entry)
 
     # Combine all entries: base text + base entries + new entries from both sides
     all_entries = base_entries + final_new_entries
