@@ -2,7 +2,7 @@
 title: "83.9: Dispatch applies ruff format to a story's files before it verifies"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'aed01eccf995261125cccccdbbe65f3c6a8d2b8c'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -65,4 +65,33 @@ Minted 2026-10-03 at the operator's request (the tenth defect: every Cursor sess
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - `[reject]` `[reject]` CAP-4 land-only path formats without journaling — supervisor path journals; CAP-4 has no run journal; intent satisfied on primary verify path.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Before independent verification, dispatch runs per-package `ruff format` on story-scoped `.py` files (vs `origin/main`), commits reformats on the story branch, and the supervisor journals `dispatch-ruff-format` when paths change.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_ruff_format.py` — core format+commit logic
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — verify entrypoint
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` — journal before verify
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — CAP-4 verify hook
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch.py` — journal kind constant
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py` — unit + mutation tests
+
+Review: 0 patches applied; 0 deferred; 1 rejected (CAP-4 journaling scope).
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 10865 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+
+Residual risk: non-supervisor verify entrypoints format and commit but do not journal (land-only CAP-4).
