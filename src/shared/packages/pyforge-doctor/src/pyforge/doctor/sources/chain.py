@@ -462,6 +462,32 @@ def _collect_dreams(target: Path, findings: list[dict]) -> dict[str, dict]:
     return dreams
 
 
+def _covers_dreams_values(raw: object) -> list[str]:
+    """``covers-dreams:``'s declared values as a list (DW-FU-6-6-6).
+
+    A bare SCALAR reads as the one-item list it plainly means. The original
+    iterated the raw value directly, so a scalar was walked CHARACTER BY
+    CHARACTER: the Dream it consolidates was still reported FAIL
+    ``dream-without-spec`` -- a false gating failure -- while any
+    one-character Dream slug would have been silently marked covered.
+
+    Any OTHER non-list shape (a mapping, a number) RAISES, which
+    ``_append_spec_entry``'s own per-spec isolation turns into one named
+    ``dream-chain-unevaluable`` WARN for that Spec. Guessing at a shape
+    nobody writes deliberately is how the character-by-character read
+    happened in the first place."""
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        return [raw]
+    if isinstance(raw, list):
+        return [c or "" for c in raw]
+    raise ValueError(
+        f"covers-dreams: must be a list of Dream paths (or one bare path), "
+        f"got {type(raw).__name__}"
+    )
+
+
 def _spec_entry(sp: Path, project: str, target: Path) -> dict:
     """One Spec's collected fields -- verbatim from the original's own
     ``collect()`` (both the per-project and the governance loop build this
@@ -474,7 +500,7 @@ def _spec_entry(sp: Path, project: str, target: Path) -> dict:
         # `covers-dreams:` -- a consolidating Spec's explicit declaration that
         # it also satisfies INV-1 for OTHER Dreams whose whole chain was
         # folded in here (2026-08-02 satellite-consolidation convention).
-        "covers": [(c or "").split("/")[-1].removesuffix(".md") for c in (fm.get("covers-dreams") or [])],
+        "covers": [c.split("/")[-1].removesuffix(".md") for c in _covers_dreams_values(fm.get("covers-dreams"))],
         "satellite_titles": _satellite_titles(sp),
         "status": str(fm.get("status") or "").strip(),
         "path": str(sp.relative_to(target)),
