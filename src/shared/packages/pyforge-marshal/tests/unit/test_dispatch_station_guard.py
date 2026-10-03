@@ -932,3 +932,92 @@ def test_refused_story_with_disjoint_surfaces_allows_dispatch(tmp_path: Path) ->
     )
     # Should allow dispatch since surfaces are disjoint
     assert conflict is None
+
+
+def test_debug_merged_branch_verdict(tmp_path: Path) -> None:
+    """Debug test to understand what verdict is returned for merged branch."""
+    from pyforge.marshal.cli.dispatch import _compose_policy, resolve_dispatch_session_verdict
+
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    
+    # Seed a refused dispatch journal
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-debug", story_key="debug.1")
+    journal_path = run_dir / "journal.jsonl"
+    
+    # Add verification refusal to journal
+    verification_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-10-02T00:00:00.000Z",
+            run_id="run-debug",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.INTENT,
+            payload={"verdict": "refused"},
+        )
+    ).line
+    verification_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 3),
+            ts="2026-10-02T00:00:00.000Z",
+            run_id="run-debug",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 2),
+            payload={"verdict": "refused", "failed_gate": "MRS-GATE-001"},
+        )
+    ).line
+    
+    with journal_path.open("a", encoding="utf-8") as fh:
+        fh.write(verification_intent + "\n" + verification_outcome + "\n")
+    fs.files[journal_path] = fs.files[journal_path] + verification_intent + "\n" + verification_outcome + "\n"
+
+    class DebugVcs(FakeVcs):
+        def __init__(self, repo_root: Path, *, merged: bool):
+            super().__init__(repo_root)
+            self.merged = merged
+            
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/shared/packages/pyforge-marshal/cli/dispatch.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+            return self.merged
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "bbb222"
+
+    journal = gather_dispatch_journal_facts(fs, run_dir, "run-debug")
+    
+    # Test with merged branch
+    verdict_merged = resolve_dispatch_session_verdict(
+        fs=fs,
+        vcs=DebugVcs(tmp_path, merged=True),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        journal=journal,
+        effective_policy=_compose_policy(slug),
+        run_dir=run_dir,
+    )
+    
+    # Test with unmerged branch  
+    verdict_unmerged = resolve_dispatch_session_verdict(
+        fs=fs,
+        vcs=DebugVcs(tmp_path, merged=False),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        journal=journal,
+        effective_policy=_compose_policy(slug),
+        run_dir=run_dir,
+    )
+    
+    print(f"Merged branch verdict: {verdict_merged}")
+    print(f"Unmerged branch verdict: {verdict_unmerged}")
+    print(f"Journal verification_verdict: {journal.verification_verdict}")
+    
+    # For debugging - let's see what the expected behavior should be
+    assert verdict_merged != verdict_unmerged  # They should be different
