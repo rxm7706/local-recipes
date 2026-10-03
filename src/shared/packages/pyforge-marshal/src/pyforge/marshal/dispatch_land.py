@@ -209,7 +209,13 @@ def _refuse_via_merge_tree_preview(
                 ),
             )
 
-        reports, verify_findings = run_verify_commands_only(effective, process=process, worktree=preview_home)
+        reports, verify_findings = run_verify_commands_only(
+            effective,
+            process=process,
+            worktree=preview_home,
+            repo_root=git_repo_root,
+            vcs=vcs,
+        )
     finally:
         removed = False
         try:
