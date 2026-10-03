@@ -5,15 +5,13 @@ from __future__ import annotations
 import logging
 
 import pytest
-
 from pyforge.steward.sync import (
+    SYNC_GITHUB_ONLY_MARKER_FLAG,
     GitHubOnlyMarker,
     SyncConfig,
-    SYNC_GITHUB_ONLY_MARKER_FLAG,
     reconcile,
     reconcile_schedule_batch,
 )
-
 from test_sync_reconcile_propagation import CONFIG, FakeTransport, ScheduleFakeTransport
 
 

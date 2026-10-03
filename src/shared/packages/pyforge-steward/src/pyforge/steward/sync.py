@@ -57,7 +57,6 @@ from typing import Callable, Mapping
 from urllib.parse import quote, urlparse
 
 import yaml
-
 from pyforge.core.flags import read_boolean
 
 from .interfaces import DutyResult
