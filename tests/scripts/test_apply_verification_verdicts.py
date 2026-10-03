@@ -774,3 +774,119 @@ def test_blank_line_spacing_around_the_target_entry_is_unchanged(tmp_path: Path)
     assert lines[verified_idx - 2].strip() == "status: open"
     assert lines[verified_idx + 1] == ""
     assert lines[verified_idx + 2].startswith("## Deferred from:")
+
+
+# === Story 41.1: the writer obeys the rule its reader enforces ===============
+
+
+def test_uncited_evidence_is_refused_and_nothing_is_written(tmp_path: Path):
+    """DW-doctor-38-1: Story 38.1's deferred-work check reds a post-cutoff
+    `verified:` line that cites nothing, and this script is the one
+    sanctioned writer of such a line -- so it must refuse the verdict
+    rather than write a line the reader then reds. The refusal names the
+    shapes that would satisfy the rule, and the ledger is untouched."""
+    repo = _fixture_repo(tmp_path)
+    script = _patched_script(repo)
+    before = _tracked_text(repo, "pyforge-mason")
+    vfile = _write_verdicts(repo, [
+        _verdict(evidence="I looked and it is definitely still broken."),
+    ])
+
+    r = _run(script, repo, "--verdicts-file", str(vfile))
+
+    assert r.returncode == 1, r.stdout
+    assert "ABORTED, no write" in r.stdout
+    assert "cites nothing it read" in r.stdout
+    assert "path:line" in r.stdout
+    assert _tracked_text(repo, "pyforge-mason") == before
+
+
+def test_citation_predicate_is_the_imported_one_not_a_local_copy():
+    """DW-doctor-38-1: ONE definition. The script's `_citation_predicate`
+    must hand back `chain.verified_line_cites` ITSELF -- an identity check,
+    so a future "just inline the regex here" edit fails this test instead of
+    quietly letting the writer and the reader disagree."""
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    sys.path.insert(0, str(REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doctor" / "src"))
+    try:
+        import apply_verification_verdicts as script_mod
+        from pyforge.doctor.sources import chain
+    finally:
+        sys.path.pop(0)
+        sys.path.pop(0)
+
+    assert script_mod._citation_predicate() is chain.verified_line_cites
+
+
+def test_duplicate_entry_id_in_the_ledger_aborts_naming_both_lines(tmp_path: Path):
+    """DW-FU-11-4: `_entry_spans` built its map by plain dict assignment, so
+    a ledger holding two `## DW-1-1-1` entries silently kept only the LAST
+    span -- the verdict landed on whichever came last and the other entry,
+    possibly the one actually read, was never written to and stayed due. A
+    duplicate id is a ledger defect: write nothing, and name both lines so
+    it can be reconciled."""
+    repo = _fixture_repo(tmp_path)
+    mason = repo / "_bmad-output" / "projects" / "pyforge-mason"
+    _write_tracked(mason, _ledger(_ENTRY_ALPHA) + "\n" + _ENTRY_ALPHA)
+    script = _patched_script(repo)
+    before = _tracked_text(repo, "pyforge-mason")
+    vfile = _write_verdicts(repo, [_verdict()])
+
+    r = _run(script, repo, "--verdicts-file", str(vfile))
+
+    assert r.returncode == 1, r.stdout
+    assert "ABORTED, no write" in r.stdout
+    assert "DW-1-1-1 appears twice" in r.stdout
+    # BOTH line numbers, so the two entries can actually be found.
+    lines = before.splitlines()
+    both = [str(i) for i, ln in enumerate(lines, 1) if ln.startswith("## DW-1-1-1")]
+    assert len(both) == 2
+    for line_no in both:
+        assert f"line {line_no}" in r.stdout
+    assert _tracked_text(repo, "pyforge-mason") == before
+
+
+def test_rerunning_the_same_verdicts_file_is_idempotent(tmp_path: Path):
+    """DW-FU-11-4-2: a re-run -- after a sibling project aborted, after a
+    race abort, after an interrupted sweep -- used to append a second,
+    byte-identical `verified:` line every time. Story 38.1's scan judges
+    EVERY line in an entry, so those duplicates were not merely noise. The
+    second run must skip, say so, and leave the file byte-identical."""
+    repo = _fixture_repo(tmp_path)
+    script = _patched_script(repo)
+    vfile = _write_verdicts(repo, [_verdict()])
+
+    first = _run(script, repo, "--verdicts-file", str(vfile))
+    assert first.returncode == 0, first.stderr
+    after_first = _tracked_text(repo, "pyforge-mason")
+
+    second = _run(script, repo, "--verdicts-file", str(vfile))
+
+    assert second.returncode == 0, second.stderr
+    assert "applied 0 verdict(s), no write needed" in second.stdout
+    assert "skipped 1 already-applied: DW-1-1-1" in second.stdout
+    assert _tracked_text(repo, "pyforge-mason") == after_first
+    assert after_first.count("verified:") == 1
+
+
+def test_a_different_verdict_on_an_already_verified_entry_still_lands(tmp_path: Path):
+    """DW-FU-11-4-2 stays NARROW: the skip matches the exact line, so a
+    different verdict or different evidence on the same entry is new
+    information and is still written. Re-verification history is additive
+    (the module's own Never clause)."""
+    repo = _fixture_repo(tmp_path)
+    script = _patched_script(repo)
+
+    first = _run(script, repo, "--verdicts-file", str(_write_verdicts(repo, [_verdict()])))
+    assert first.returncode == 0, first.stderr
+
+    changed = _verdict(verdict="resolved", evidence="Now fixed: `foo.py:14`.")
+    second = _run(script, repo, "--verdicts-file", str(_write_verdicts(repo, [changed])))
+
+    assert second.returncode == 0, second.stderr
+    assert "applied 1 verdict(s) -- DW-1-1-1" in second.stdout
+    assert "skipped" not in second.stdout
+    after = _tracked_text(repo, "pyforge-mason")
+    assert after.count("verified:") == 2
+    assert " — still-open — Re-checked live" in after
+    assert " — resolved — Now fixed" in after
