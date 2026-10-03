@@ -21,6 +21,7 @@ from pyforge.core.errors import PyforgeError
 from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import (
     GIST_COLUMNS,
     GIST_SCHEMA,
+    stringify_export_cell,
 )
 from pyforge.atlas.semantic import models
 from pyforge.atlas.semantic.query_helpers import bsl_query
@@ -207,33 +208,8 @@ def _data_root_from_export(export_path: Path) -> Path:
     return export_path.parent.parent.parent
 
 
-def _stringify_export_cell(value: object) -> str:
-    if value is None:
-        return ""
-    try:
-        if value is pd.NA or (isinstance(value, float) and pd.isna(value)):
-            return ""
-    except TypeError, ValueError:
-        pass
-    try:
-        if pd.isna(value):
-            return ""
-    except TypeError, ValueError:
-        pass
-    if isinstance(value, (list, tuple)):
-        return "; ".join(_stringify_export_cell(v) for v in value if v is not None)
-    try:
-        import numpy as np
-
-        if isinstance(value, np.ndarray):
-            return "; ".join(_stringify_export_cell(v) for v in value.tolist())
-    except ImportError:
-        pass
-    return str(value).strip()
-
-
 def _records_from_frame(df: pd.DataFrame) -> list[dict[str, str]]:
-    return [{str(k): _stringify_export_cell(v) for k, v in row.items()} for row in df.to_dict(orient="records")]
+    return [{str(k): stringify_export_cell(v) for k, v in row.items()} for row in df.to_dict(orient="records")]
 
 
 def _pep503_name(value: str) -> str:

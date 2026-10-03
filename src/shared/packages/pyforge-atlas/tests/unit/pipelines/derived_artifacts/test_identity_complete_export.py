@@ -284,3 +284,82 @@ def test_fixture_corpus_column_parity():
             assert pd.isna(got[key])
         else:
             assert got[key] == exp
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 — DW-FU-21-7-5 / DW-FU-21-7-7: the ranking merge warns, never blanks silently
+# ---------------------------------------------------------------------------
+
+_NODES_LOGGER = "pyforge.atlas.pipelines.derived_artifacts.nodes"
+
+
+def _warnings(caplog) -> list[str]:
+    return [r.getMessage() for r in caplog.records if r.name == _NODES_LOGGER and r.levelname == "WARNING"]
+
+
+@pytest.mark.parametrize(
+    "column",
+    [
+        "P",
+        "Rank",
+        "Score",
+        "Work",
+        "Priority_Bucket_Description",
+        "Priority_Source",
+        "Priority_Reason",
+        "risk_level",
+        "jfrog_latest_vuln_count",
+        "vuln_status",
+    ],
+)
+def test_absent_ranking_input_column_is_a_named_warning(caplog, column):
+    row = _priority_row("warn-pkg")
+    del row[column]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        out = _run([_identity_row("warn-pkg")], priority_rows=[row])
+    assert f"identity_complete_export: ranking input missing column {column}" in _warnings(caplog)
+    assert len(out) == 1
+
+
+@pytest.mark.parametrize(
+    "column",
+    [
+        "platform_env_count",
+        "internal_app_count",
+        "artifactory_downloads",
+        "artifactory_version_count",
+        "internal_component_count",
+        "internal_lob_count",
+    ],
+)
+def test_absent_jfrog_input_column_is_a_named_warning(caplog, column):
+    row = _jfrog_row("warn-pkg")
+    del row[column]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        _run([_identity_row("warn-pkg")], priority_rows=[_priority_row("warn-pkg")], jfrog_rows=[row])
+    assert f"identity_complete_export: JFROG consumption input missing column {column}" in _warnings(caplog)
+
+
+def test_complete_inputs_raise_no_merge_warning(caplog):
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        _run(
+            [_identity_row("clean-pkg")],
+            priority_rows=[_priority_row("clean-pkg")],
+            jfrog_rows=[_jfrog_row("clean-pkg")],
+        )
+    assert _warnings(caplog) == []
+
+
+@pytest.mark.parametrize(
+    ("names", "expected"),
+    [
+        (["My_Pkg", "my-pkg"], "my-pkg (2 rows, last wins): My_Pkg, my-pkg"),
+        (["dup-pkg", "dup-pkg"], "dup-pkg (2 rows, last wins): dup-pkg, dup-pkg"),
+    ],
+)
+def test_ranked_rows_sharing_a_pep503_key_warn_naming_every_row(caplog, names, expected):
+    rows = [_priority_row(name, P=f"P{i + 1}") for i, name in enumerate(names)]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        out = _run([_identity_row(names[-1])], priority_rows=rows)
+    assert f"identity_complete_export: duplicate ranked rows normalize to {expected}" in _warnings(caplog)
+    assert out.iloc[0]["P"] == f"P{len(names)}"

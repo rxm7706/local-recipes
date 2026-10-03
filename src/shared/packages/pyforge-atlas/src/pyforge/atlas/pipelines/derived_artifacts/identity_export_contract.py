@@ -2,10 +2,14 @@
 
 The Kedro ``identity_complete_export`` node, ``identity_gist`` dashboard renderer,
 and ``conda-forge-packaging-inventory-operations_openteams_identity.py`` must stay
-aligned — tests import this module directly.
+aligned — tests import this module directly. ``stringify_export_cell`` is the one
+cell-to-text rule both readers of the export Parquet use.
 """
 
 from __future__ import annotations
+
+import numpy as np
+import pandas as pd
 
 IDENTITY_COMPLETE_EXPORT_COLUMNS: tuple[str, ...] = (
     "P",
@@ -174,3 +178,37 @@ GIST_SCHEMA: tuple[tuple[str, str, str, str], ...] = (
 GIST_COLUMNS: tuple[str, ...] = tuple(name for name, _typ, _req, _meaning in GIST_SCHEMA)
 
 RANKING_COLUMNS: tuple[str, ...] = ("P", "Rank", "Score", "Work")
+
+# The secondary ranking / JFROG columns the pre-23.5 ``merge_ranking_columns`` copied
+# from the ranked tab; the export now carries them, and a reader warns when one is absent.
+SECONDARY_RANKING_COLUMNS: tuple[str, ...] = (
+    "Platforms",
+    "Apps",
+    "Downloads",
+    "Versions",
+    "Vuln",
+    "Priority_Bucket_Description",
+    "Priority_Source",
+    "Priority_Reason",
+    "JFROG_risk_level",
+    "JFROG_latest_vuln_count",
+    "internal_component_count",
+    "internal_lob_count",
+)
+
+
+def stringify_export_cell(value: object) -> str:
+    """One export cell as text: ``None``/NA/NaN/NaT read as ``""``; a list, tuple or
+    array joins its items with ``"; "`` instead of crashing ``pd.isna``."""
+    if value is None:
+        return ""
+    if isinstance(value, np.ndarray):
+        value = value.tolist()
+    if isinstance(value, (list, tuple)):
+        return "; ".join(stringify_export_cell(v) for v in value if v is not None)
+    try:
+        if pd.isna(value):
+            return ""
+    except TypeError, ValueError:
+        pass
+    return str(value).strip()

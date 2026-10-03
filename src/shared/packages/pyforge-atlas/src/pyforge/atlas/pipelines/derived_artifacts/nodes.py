@@ -1171,38 +1171,66 @@ def _export_blank(value: Any) -> Any:
     return value
 
 
-def _export_priority_merge_warnings(inventory_priority_assignments: pd.DataFrame | None) -> None:
-    """Warn on duplicate pep503 keys or absent ranking columns (Story 27.1)."""
+# The ranked-input and JFROG-consumption columns ``build_identity_complete_export``
+# copies onto the export: one absent from a non-empty input is a warning, never a
+# silent blank (Story 27.1, DW-FU-21-7-5).
+_EXPORT_RANKED_INPUT_COLUMNS: tuple[str, ...] = (
+    "P",
+    "Rank",
+    "Score",
+    "Work",
+    "Priority_Bucket_Description",
+    "Priority_Source",
+    "Priority_Reason",
+    "risk_level",
+    "jfrog_latest_vuln_count",
+    "vuln_status",
+)
+_EXPORT_JFROG_INPUT_COLUMNS: tuple[str, ...] = (
+    "platform_env_count",
+    "internal_app_count",
+    "artifactory_downloads",
+    "artifactory_version_count",
+    "internal_component_count",
+    "internal_lob_count",
+)
+
+
+def _export_missing_column_warnings(df: pd.DataFrame | None, label: str, columns: tuple[str, ...]) -> None:
+    if df is None or getattr(df, "empty", True):
+        return
+    present = set(getattr(df, "columns", []))
+    for col in columns:
+        if col not in present:
+            logger.warning("identity_complete_export: %s input missing column %s", label, col)
+
+
+def _export_priority_merge_warnings(
+    inventory_priority_assignments: pd.DataFrame | None,
+    enterprise_jfrog_consumption: pd.DataFrame | None = None,
+) -> None:
+    """Warn on absent ranking / JFROG columns and on ranked rows sharing a pep503 key
+    (Story 27.1, DW-FU-21-7-5 / DW-FU-21-7-7)."""
+    _export_missing_column_warnings(inventory_priority_assignments, "ranking", _EXPORT_RANKED_INPUT_COLUMNS)
+    _export_missing_column_warnings(enterprise_jfrog_consumption, "JFROG consumption", _EXPORT_JFROG_INPUT_COLUMNS)
     if inventory_priority_assignments is None or getattr(inventory_priority_assignments, "empty", True):
         return
-    cols = set(getattr(inventory_priority_assignments, "columns", []))
-    for col in (
-        "P",
-        "Rank",
-        "Score",
-        "Work",
-        "risk_level",
-        "jfrog_latest_vuln_count",
-        "vuln_status",
-    ):
-        if col not in cols:
-            logger.warning("identity_complete_export: ranking input missing column %s", col)
-    if "core_python_package_name" not in cols:
+    if "core_python_package_name" not in set(getattr(inventory_priority_assignments, "columns", [])):
         return
-    by_key: dict[str, list[str]] = {}
+    rows_by_key: dict[str, list[str]] = {}
     for row in inventory_priority_assignments.itertuples(index=False):
         raw = getattr(row, "core_python_package_name", None)
         key = _priority_pep503(raw)
         if not key:
             continue
-        by_key.setdefault(key, []).append(str(raw or ""))
-    for key, names in by_key.items():
-        unique = sorted({n for n in names if n})
-        if len(unique) > 1:
+        rows_by_key.setdefault(key, []).append(str(raw))
+    for key, names in rows_by_key.items():
+        if len(names) > 1:
             logger.warning(
-                "identity_complete_export: duplicate ranked rows normalize to %s: %s",
+                "identity_complete_export: duplicate ranked rows normalize to %s (%d rows, last wins): %s",
                 key,
-                ", ".join(unique),
+                len(names),
+                ", ".join(names),
             )
 
 
@@ -1272,7 +1300,7 @@ def build_identity_complete_export(
     upstream Parquet degrades to blank/NULL columns (AD-13)."""
     _ = enterprise_conda_maintainers  # consumed indirectly via upstream stories; kept for contract parity
     timestamp = _export_timestamp(parameters)
-    _export_priority_merge_warnings(inventory_priority_assignments)
+    _export_priority_merge_warnings(inventory_priority_assignments, enterprise_jfrog_consumption)
 
     if identity_packages_primary is None or getattr(identity_packages_primary, "empty", True):
         return pd.DataFrame(columns=list(_IDENTITY_COMPLETE_EXPORT_COLUMNS))
