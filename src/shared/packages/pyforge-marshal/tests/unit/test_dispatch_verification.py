@@ -836,9 +836,7 @@ def test_evaluate_dispatch_verification_coverage_gate_failure_refuses_naming_the
     envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcessCoverageGateFails())
     inp = DispatchVerificationInput(findings=envelope.findings)
     assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
-    gate_findings = [
-        f for f in envelope.findings if f.code == "MRS-GATE-001" and MARSHAL_COVERAGE_GATE in f.message
-    ]
+    gate_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and MARSHAL_COVERAGE_GATE in f.message]
     assert len(gate_findings) == 1, envelope.findings
     assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings)
 
