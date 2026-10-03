@@ -26,7 +26,7 @@ def test_story_scoped_pyforge_py_paths_filters_packages() -> None:
         "src/platform/foo.py",
         _OTHER_PY,
     )
-    assert story_scoped_pyforge_py_paths(paths) == (_OTHER_PY, _STORY_PY)
+    assert story_scoped_pyforge_py_paths(paths) == (_STORY_PY, _OTHER_PY)
 
 
 class _FormatVcs:
@@ -101,7 +101,9 @@ def test_apply_skips_when_already_formatted(tmp_path: Path) -> None:
 def test_verification_journals_ruff_format_when_paths_change(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from . import test_dispatch_supervisor_main_loop as loop_tests
+    import importlib
+
+    loop_tests = importlib.import_module("test_dispatch_supervisor_main_loop")
 
     repo_root = loop_tests._repo(tmp_path)
     worktree = loop_tests._worktree(repo_root)
@@ -124,7 +126,9 @@ def test_mutation_verification_without_ruff_format_journal_partner(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Mutation partner: skipping the journal hook must drop the format entry."""
-    from . import test_dispatch_supervisor_main_loop as loop_tests
+    import importlib
+
+    loop_tests = importlib.import_module("test_dispatch_supervisor_main_loop")
 
     repo_root = loop_tests._repo(tmp_path)
     worktree = loop_tests._worktree(repo_root)
