@@ -4285,7 +4285,29 @@ def _check_project_deferred_work(
         # count 0.
         if baseline is not None:
             count = baseline.get(proj.name, 0)
-            for n in _anonymous(t3_path)[count:]:
+            anonymous = _anonymous(t3_path)
+            if count > len(anonymous):
+                # DW-7-3-1: the stamp is HIGHER than the live count, so the
+                # positional slice above grandfathers entries that are not
+                # there -- and will keep grandfathering the next `count -
+                # len(anonymous)` entries appended to this file, which are
+                # new work nothing will ever name. The slice is only sound
+                # while the stamp equals the count it was taken from, so
+                # baseline freshness is checked on every run, not assumed.
+                findings.append(
+                    {
+                        "kind": "stale-deferred-work-baseline",
+                        "project": proj.name,
+                        "id": "",
+                        "tier3": str(t3_path.relative_to(target)),
+                        "baseline": str(DEFERRED_WORK_BASELINE_REL),
+                        "stamped": count,
+                        "live": len(anonymous),
+                        "warn": True,
+                        "generic_id": False,
+                    }
+                )
+            for n in anonymous[count:]:
                 entry = t3_entries_by_line.get(n)
                 if entry is not None and _tier3_entry_already_promoted(
                     entry,
@@ -4470,6 +4492,16 @@ def _deferred_work_message(item: dict) -> str:
             f"neither a `path:line` nor a backtick-quoted command with its exit "
             f"code — a verdict written from now on says what it read "
             f"(spec-deferred-work-resolution-sweep CAP-4)"
+        )
+    if kind == "stale-deferred-work-baseline":
+        return (
+            f"{item['project']}: {item['baseline']} stamps "
+            f"{item['stamped']} anonymous Tier-3 entries but {item['tier3']} "
+            f"now holds {item['live']} — a stale-high stamp grandfathers "
+            f"entries that are not there, and will grandfather the next "
+            f"{item['stamped'] - item['live']} appended to that file. "
+            f"Re-stamp with `python scripts/deferred_work_baseline.py "
+            f"--write-baseline --project {item['project']}`."
         )
     if kind == "no-deferred-work-baseline":
         return item["detail"]
