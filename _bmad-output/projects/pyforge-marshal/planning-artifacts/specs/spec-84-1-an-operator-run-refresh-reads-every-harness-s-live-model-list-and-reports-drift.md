@@ -2,7 +2,8 @@
 title: "84.1: An operator-run refresh reads every harness's live model list and reports drift"
 type: 'feature'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '263ab6eebb0be49d153e3c83d95f372afc8c95d9'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: detector-or-gate   # a check that judges declared model ids against live lists; a gated check reports a silent green (spec-feature-flag-governance Q2)
@@ -92,4 +93,9 @@ Minted 2026-10-02 at the operator's request: refresh the model lists for Claude,
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-03: bmad-build-auto verification green (`pyforge-marshal-test`, `pyforge-deps-test`, `lint-types`); `spec_surface_reconcile.py` OK after memlog.
+
+## Auto Run Result
+
+Status: done
+Verification: pyforge-marshal-test 10896 passed; pyforge-deps-test 130 passed; lint-types exit 0; spec_surface_reconcile OK.
