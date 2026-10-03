@@ -41,3 +41,11 @@ notes = "Verified 2026-08-27: authenticated; --skip-trust --yolo -p shape smoke-
 opus = "gemini-3-pro-preview"
 sonnet = "gemini-3-pro-preview"
 haiku = "gemini-3-flash-preview"
+
+# Story 84.1 (CAP-285): Gemini models.list over HTTP (no listing subcommand on the CLI).
+[model_list]
+catalog_provider = "google"
+url = "https://generativelanguage.googleapis.com/v1beta/models"
+credential_env = "GEMINI_API_KEY"
+credential_header = "x-goog-api-key"
+pagination = "gemini"
