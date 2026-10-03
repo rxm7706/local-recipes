@@ -594,7 +594,7 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
-    # Story 85.1 (CAP-286): fix-turn machinery dormant — off in every environment until Story 85.3.
+    # Story 85.1 (CAP-286): dormant -- off everywhere until Story 85.3.
     "pyforge.marshal.verify_fix_loop": False,
 }
 _METADATA_FIELDS = ("owner", "story", "created", "on_everywhere", "cleanup_by")
