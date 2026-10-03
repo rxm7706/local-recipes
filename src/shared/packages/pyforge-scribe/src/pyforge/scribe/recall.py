@@ -106,9 +106,7 @@ _COMMIT_SHA_RE = re.compile(r"[0-9a-f]{7,40}")
 #: Relative to ``transcript_root`` (Story 26.1 / DW-FU-3-2): flat files stay
 #: ``session.jsonl:L<n>``; nested dirs use ``subdir/session.jsonl:L<n>``.
 #: Rejects ``..`` segments and absolute-looking paths.
-_TRANSCRIPT_CITATION_RE = re.compile(
-    r"(?:[a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+\.jsonl:L[0-9]+$"
-)
+_TRANSCRIPT_CITATION_RE = re.compile(r"(?:[a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+\.jsonl:L[0-9]+$")
 #: A `code` node's citation (Story 6.1's graphify extra) is
 #: `<repo-relative path>:L<line>` -- e.g. `src/pyforge/scribe/compile.py:L120`,
 #: matching graphify's own `source_location` shape. Unlike the transcript

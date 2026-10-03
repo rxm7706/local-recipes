@@ -672,9 +672,7 @@ def test_transcript_surface_ids_are_keyed_by_file_and_line_not_a_global_index(
     assert ids == {"transcript:session-a.jsonl:L1", "transcript:session-b.jsonl:L1"}
 
 
-def test_transcript_same_basename_in_subdirs_get_distinct_ids_and_citations(
-    tmp_path: Path, memory_root: Path
-) -> None:
+def test_transcript_same_basename_in_subdirs_get_distinct_ids_and_citations(tmp_path: Path, memory_root: Path) -> None:
     """Story 26.1 / DW-FU-3-2: ids and citations are relative to ``transcript_root``."""
     transcript_root = tmp_path / "transcripts"
     _write_transcript_jsonl(
