@@ -822,9 +822,7 @@ class FakeProcessCoverageGateFails:
     """Every command succeeds except a station ``*-coverage-gate`` task."""
 
     def __init__(self, *, stderr: str | None = None) -> None:
-        self._stderr = stderr or (
-            "src/shared/packages/pyforge-doctor/src/pyforge/doctor/unrelated.py below 80% floor"
-        )
+        self._stderr = stderr or ("src/shared/packages/pyforge-doctor/src/pyforge/doctor/unrelated.py below 80% floor")
 
     def run(self, tokens, *, cwd: Path):
         if tokens and tokens[-1].endswith("-coverage-gate"):

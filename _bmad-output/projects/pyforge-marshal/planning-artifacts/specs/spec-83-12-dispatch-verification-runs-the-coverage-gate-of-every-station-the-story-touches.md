@@ -2,7 +2,7 @@
 title: "83.12: Dispatch verification runs the coverage gate of every station the story touches"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '2f131c2bae4fd9a7a0951ab5be1986b3ce4a9931'
 review_loop_iteration: 0
 followup_review_recommended: false
