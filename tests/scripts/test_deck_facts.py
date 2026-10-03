@@ -843,6 +843,17 @@ def test_discover_surfaces_names_ambiguous_suffix_matches(root):
     assert surfaces["exec-summary"].name == "Alpha - Executive Summary.dc.html"
 
 
+def test_check_alone_prints_ambiguous_surface_discovery_notes_to_stderr(root, capsys):
+    project = root / "presentations/pyforge-alpha/project"
+    _write(project / "Alpha Infographic standalone.html", '<p data-fact="x">1</p>')
+    _write(project / "Alpha - Executive Summary.dc.html", '<p data-fact="x">1</p>')
+    _write(project / "Zeta - Executive Summary.dc.html", '<p data-fact="x">1</p>')
+    deck_facts.main(["pyforge-alpha"])
+    deck_facts.main(["pyforge-alpha", "--check"])
+    err = capsys.readouterr().err
+    assert "multiple matches" in err and "Executive Summary" in err
+
+
 def test_check_names_the_surface_and_a_clean_surface_is_silent(root, capsys):
     project = root / "presentations/pyforge-alpha/project"
     # fleet_epics_done_total resolves cleanly on the poster already ("2 / 4");

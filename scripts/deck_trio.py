@@ -308,10 +308,10 @@ class _DeckStructure(HTMLParser):
             self._open_section["children"].append([start, None])
 
         if self._open_act is not None:
-            if tag == "span" and cls == "lbl" and self._open_act["lbl"] is None:
+            if tag == "span" and cls in ("lbl", "n", "act-num") and self._open_act["lbl"] is None:
                 self._open_act["lbl"] = []
                 self._text_targets.append(self._open_act["lbl"])
-            elif tag == "span" and cls == "ttl" and self._open_act["ttl"] is None:
+            elif tag == "span" and cls in ("ttl", "t", "act-title") and self._open_act["ttl"] is None:
                 self._open_act["ttl"] = []
                 self._text_targets.append(self._open_act["ttl"])
         if self._open_section is not None and tag == "h2" and self._open_section["h2"] is None:

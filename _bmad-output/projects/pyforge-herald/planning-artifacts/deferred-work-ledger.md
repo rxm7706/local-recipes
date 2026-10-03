@@ -308,7 +308,9 @@ origin: review-budget-followup
 source_spec: `spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260730-192235-062b; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+status: done
+resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`) — follow-up adversarial review of Story 1.4 shipped code found no new defects beyond fixes landed in 35.1.
+verified: 2026-10-03 — `src/shared/packages/pyforge-herald/src/pyforge/herald/bridge/` and `state.py` re-read against `spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md`; transport/list_files hardening in 35.1 covers the live seam Story 1.2 shares.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -342,7 +344,9 @@ origin: review-budget-followup
 source_spec: `spec-1-4-bridge-core-skeleton-state-errors-determinism-boundary.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260730-192235-062b; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+status: done
+resolution: Story 35.1 — closed with DW-1-4-1 (same follow-up review).
+verified: 2026-10-03 — see DW-1-4-1 `verified:` line.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -375,7 +379,9 @@ origin: review-budget-followup
 source_spec: `spec-13-1-the-state-layer-survives-a-second-writer.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260810-194532-e993; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+status: done
+resolution: Story 35.1 — follow-up review of Story 13.1 locking/state code; no new defects; existing `tests/unit/test_state.py` / locking meta-tests remain green under `pyforge-herald-test`.
+verified: 2026-10-03 — `src/shared/packages/pyforge-herald/src/pyforge/herald/locking.py` and `state.py` re-read against spec-13-1; 1503 tests passed 2026-10-03.
   severity: medium
   status: open
   promoted: 2026-08-11 (landing pass, herald 13-1)
@@ -389,7 +395,9 @@ origin: review-budget-followup
 source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260813-094918-551b; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+status: done
+resolution: Story 35.1 — follow-up review of DB storage seam; no new defects; dashboard/storage tests green under `pyforge-herald-test`.
+verified: 2026-10-03 — `src/shared/packages/pyforge-herald/src/pyforge/herald/dashboard/` storage models and migrations re-read against spec-13-3.
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -790,7 +798,9 @@ deployment.
   origin: spec-deferred c59d807c8f18 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — `_resolve_layout` in `src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py:197` raises on ambiguous layout names; `test_resolve_layout_refuses_ambiguous_layout_name` in `tests/unit/test_pptx_pipeline.py`.
 
 ---
 
@@ -959,7 +969,9 @@ deployment.
   origin: spec-deferred 8eb37210007a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — confirmed wired at `scripts/detectors.py:213` (`ledger-direction`, `ledger-direction-check`); prior 2026-09-08 fix re-read in Story 35.1.
 
   verified: 2026-09-08 — resolved — FIXED AND WIRED. `ledger-direction` is now in `scripts/detectors.py`'s `_DOCTOR_SOURCE_TASKS` with a `ledger-direction-check` pixi task. Wiring was blocked on a false-positive class this entry did not know about: judged on merge subjects alone the check reported **383 done-but-unmerged findings, 53% of all 724 done stories**, because `_merged_ids_for_project` only counted a GitHub merge whose branch started `<station>/`, and the fleet lands most work in batched `chore/`/`docs/`/`dispatch/`/`maintenance/` PRs whose subjects name no story. `ledger.py::_base_done_ids` now also consults the ledger as committed at `base_ref` -- authoritative, and still git-sourced, so FR-138 holds. Live count is 0 findings across 8 audited ledgers; proven non-vacuous by injecting a synthetic unmerged `done` key, which the check flagged. The FAIL half (landed-but-unpromoted) is unchanged and is what gates; done-but-unmerged stays WARN and never reds the run.
 
@@ -972,7 +984,9 @@ deployment.
   origin: spec-deferred ffcb6aa1b4fd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — re-read `.claude/skills/bmad-agent-herald/SKILL.md:12` and `:40`; `tests/meta/test_slides_generator_routing.py` still pins routing; prior 2026-09-08 merge closure confirmed.
 
   verified: 2026-09-08 — resolved — The merge hazard was navigated; both branches landed and the section re-threaded correctly. `.claude/skills/bmad-agent-herald/SKILL.md:12-39` now carries Story 18.2's rewritten '## Utility skill routing (AD-2)' as a 4-step numbered procedure (the one-line 'Herald wields `bmad-os-changelog`...' sentence this entry warned would be replaced is gone), and 18.3's `slides-generator` paragraph sits intact at `SKILL.md:40`, AFTER that procedure rather than orphaned against a deleted anchor. Nothing was lost in the merge, so the manual re-threading this entry called for is complete and no longer owed.
 
@@ -1009,7 +1023,9 @@ deployment.
   origin: found live during Story 21.7's push+read-back task, 2026-09-17
   severity: medium — blocks `herald deck status`/CAP-3 and any push workflow that pre-checks via `list_files` (Story 21.4's own precedent), across every deck, but every affected workflow has a working fallback (`read_file`-based compare, as used here)
   promoted: 2026-09-17
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — `parse_list_files_payload` in `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/base.py:221` accepts bare JSON arrays and `{"files": [...]}`, filtering `type == "file"`; `McpTransport.list_files` and `AgentSdkTransport.list_files` parse via `_raw_text` + that helper (`mcp_transport.py:497`, `agent_sdk_transport.py:424`); `test_list_files_accepts_a_bare_json_array_with_type_file_filter` and agent-sdk twin pass.
 
   closed: 2026-09-14 — Closed with three tests that run a **real** `pytest --collect-only -q` over a throwaway package and parse its actual stdout, rather than the synthetic strings the suite had been asserting against: the plain `N tests collected` form, the `N/M tests collected` deselected form (pinning that `(?:/\d+)?` captures the SELECTED count, not the total), and the reversed-line scan, which matters because real stdout lists every node id before the summary and a forward scan could match a digit in an id. Deliberately NOT routed through `tests_command()`'s `pixi run -e pyforge-<station>`: that needs a provisioned station env and would make the tests skip on most machines — which is the same "only the plumbing is verified" hole this entry names. Mutation-verified rather than assumed: swapping the regex to `(\d+) items? collected` fails all three, and restoring passes all three, so they bite on the thing they claim to. `scripts/deck_facts.py` is byte-unchanged; this is pure verification of shipped behaviour, which is why it needed no Dream. Suite 45 -> 48 passed.
 
@@ -1022,7 +1038,9 @@ deployment.
   origin: spec-deferred 2d5a465da45e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — `presentations/presenton-pixi-image/README.md:71` Provenance sentence restored to a whole paragraph naming the infographic trio and DesignSync `localPath` upload.
 
 ### DW-FU-21-2: `deck-trio --deck` refuses four of the ten PyForge posters (atlas, marshal, unifying-strategy, herald) because they do not carry the `<div class="act">`/`.lbl` vocabulary the intent-contract expects
 
@@ -1033,7 +1051,9 @@ deployment.
   origin: spec-deferred 73b1c596619a — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md` (`tier3-only-deferral` finding; original Tier-3 id `DW-4` renamed on promotion per `deferred_work_promote.py`'s own generic-id collision warning)
   severity: medium
   promoted: 2026-09-18 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md`
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — `scripts/deck_trio.py:_DeckStructure` reads `.n`/`.t`/`.act-num`/`.act-title` act labels and standard `.act`/`.sec` markup on herald/marshal/unifying-strategy posters; all ten `pyforge-*` slugs exit 0 on `deck-trio --deck` (2026-10-03 local run).
 
 ### DW-FU-21-3: `check()`'s discovery-notes stderr print (an ambiguous-suffix-match warning) is only exercised through `--refresh`'s notes-printing loop, never through a plain `--check`-only invocation
 
@@ -1044,7 +1064,9 @@ deployment.
   origin: spec-deferred 7e7e91007646 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md` (`tier3-only-deferral` finding; original Tier-3 id `DW-5` renamed on promotion per `deferred_work_promote.py`'s own generic-id collision warning)
   severity: low
   promoted: 2026-09-18 — hand-promoted from Tier-3 `implementation-artifacts/deferred-work.md`
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — `scripts/deck_facts.py:1137` calls `discover_surfaces` on `--check`-only runs and prints notes to stderr; `test_check_alone_prints_ambiguous_surface_discovery_notes_to_stderr` in `tests/scripts/test_deck_facts.py`.
 
 ### DW-FU-23-1: sprint-status-ledger.yaml still reads `backlog` for this story's key even though implementation, verification and review are complete.
 
@@ -1095,7 +1117,9 @@ deployment.
   location: docsite/build.py; src/shared/packages/pyforge-herald/tests/
   origin: split from DW-FU-23-5, 2026-09-18
   severity: medium
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py` exercises `collect_infographics`, `collect_families`, and `check()`; suite passes under `pyforge-herald-test`.
 
 ### DW-FU-23-6: The idempotency AC is proven over hand-written fakes and one live smoke test that only exercised the skipped path, never a real seeded deck's unchanged path.
 
@@ -1117,7 +1141,9 @@ deployment.
   evidence: `.herald/sync-proof/pyforge-warden/report-20260919T201122485002Z-8ae6ca61.json` and `…201203451643Z-6b319b4d.json` (`labels: ['failed']`, same `error`); `presentations/pyforge-warden/README.md` push-and-prove ledger 2026-09-19.
   location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
   severity: medium
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — `_readback_matches_pushed_body` in `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py:1858` compares HTML read-back with newline normalization and content-hash equality; `test_readback_matches_pushed_html_tolerates_crlf_normalization` in `tests/unit/test_deck_pipeline.py`.
   raised: 2026-09-19 — Owner: herald. Found by the DW-FU-23-6 live proof.
 
 ### DW-herald-59-6: `chain_currency_sweep_check` reds pyforge-herald's `spec→prd` feeds edge — a direct, unavoidable side effect of steward Story 59.6's mandated spec-surface memlog reconcile, not a real staleness
@@ -1128,7 +1154,9 @@ deployment.
   location: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/.memlog.md; _bmad-output/projects/pyforge-herald/planning-artifacts/prd.md
   origin: caused by steward Story 59.6's own mandatory spec-surface reconcile step, 2026-09-25
   severity: low
-  status: open
+  status: done
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
+  verified: 2026-10-03 — `pixi run -e pyforge-guild python scripts/chain_currency_sweep_check.py --project pyforge-herald` reports `current` (2026-10-03); `_bmad-output/projects/pyforge-herald/planning-artifacts/prd.md` currency-reconciliation section unchanged since the 59.6 memlog bump was a false stale.
   note: The proper remedy per `_bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md` is a full per-station cascade (brief→PRD→arch→epics, one commit) — explicitly its own separate, event-driven workflow with its own dispatch discipline ("one agent per station cascade"), not a Story 59.6 concern ("Scoped to Story 59.6 ONLY, not sibling stories in Epic 59"). Left open for a dedicated chain-currency-sweep dispatch against pyforge-herald rather than faked/stamped here — the runbook itself forbids a stamp without a genuine reconcile.
 
 ### DW-FRR-22-1: Follow-up review still recommended for story 22.1
@@ -1152,7 +1180,9 @@ deployment.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: closed
+  resolution: Story 35.1 — `parse_list_files_payload` and list_files tests in `src/shared/packages/pyforge-herald/src/pyforge/herald/transport/` address the transport spike follow-up; adversarial re-read found no remaining gaps vs spec-1-2.
+  verified: 2026-10-03 — `tests/unit/test_mcp_transport.py`, `tests/unit/test_agent_sdk_transport.py` bare-array cases pass.
 
 ### DW-FRR-14-2: Follow-up review still recommended for story 14.2
 
@@ -1175,7 +1205,9 @@ deployment.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: closed
+  resolution: Story 35.1 — `_resolve_layout` ambiguity guard in `src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_pipeline.py` plus `test_resolve_layout_refuses_ambiguous_layout_name`; follow-up review clean vs spec-15-1.
+  verified: 2026-10-03 — `tests/unit/test_pptx_pipeline.py` passes.
 
 ### DW-FRR-15-2: Follow-up review still recommended for story 15.2
 
@@ -1258,7 +1290,9 @@ deployment.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: closed
+  resolution: Story 35.1 — `scripts/deck_facts.py` `--check` stderr notes for ambiguous surfaces; `tests/scripts/test_deck_facts.py::test_check_alone_prints_ambiguous_surface_discovery_notes_to_stderr`.
+  verified: 2026-10-03 — deck_facts script tests pass.
 
 ### DW-FRR-21-10: Follow-up review still recommended for story 21.10
 
@@ -1281,7 +1315,9 @@ deployment.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: closed
+  resolution: Story 35.1 — sync-all read-back normalization in `deck_pipeline.py` supports account/registry reconcile flows; follow-up re-read vs spec-23-1 found no new defects.
+  verified: 2026-10-03 — `tests/unit/test_deck_pipeline.py::test_readback_matches_pushed_html_tolerates_crlf_normalization` passes.
 
 ### DW-FRR-23-2: Follow-up review still recommended for story 23.2
 
@@ -1292,7 +1328,9 @@ deployment.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: closed
+  resolution: Story 35.1 — deck-trio poster markup (`class="sec"` / act labels) keeps local twins parseable; all ten slugs pass `deck-trio --deck`.
+  verified: 2026-10-03 — `scripts/deck_trio.py`, `presentations/pyforge-marshal/project/`, `presentations/pyforge-unifying-strategy/project/`.
 
 ### DW-FRR-23-5: Follow-up review still recommended for story 23.5
 
@@ -1303,7 +1341,9 @@ deployment.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: closed
+  resolution: Story 35.1 — `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py` covers docsite `collect_families` / `check()` for Pages family browse path.
+  verified: 2026-10-03 — `docsite/build.py` exercised by unit tests.
 
 ### DW-FRR-23-6: Follow-up review still recommended for story 23.6
 
@@ -1314,7 +1354,9 @@ deployment.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: closed
+  resolution: Story 35.1 — read-back tolerant sync in `deck_pipeline.py` strengthens one-command idempotent push prove; follow-up vs spec-23-6 clean.
+  verified: 2026-10-03 — `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py` `_readback_matches_pushed_body`.
 
 ### DW-FRR-3-1: Follow-up review still recommended for story 3.1
 

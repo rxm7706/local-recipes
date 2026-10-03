@@ -1775,6 +1775,16 @@ def test_push_exports_prove_true_all_match_marks_proven_and_appends_ledger_row(
     assert recorded.etags[f"export:{filename}"] == hashlib.sha256(b"<html>v1</html>").hexdigest()
 
 
+def test_readback_matches_pushed_html_tolerates_crlf_normalization():
+    from pyforge.herald.deck_pipeline import _readback_matches_pushed_body
+
+    expected = b"<html>v1</html>"
+    actual = b"<html>v1</html>\r\n"
+    content_hash = hashlib.sha256(expected).hexdigest()
+    assert actual != expected
+    assert _readback_matches_pushed_body(expected, actual, path="deck.html", content_hash=content_hash)
+
+
 def test_push_exports_prove_true_mismatch_raises_and_does_not_update_state_or_ledger(
     tmp_path: Path,
 ):

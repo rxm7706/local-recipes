@@ -2,8 +2,10 @@
 title: "35.1: The deck transport, sync-all, deck tooling and docs site close their open deferrals"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+updated: '2026-10-03'
+status: 'done'
+baseline_revision: 'e06362288272098346b7329a4a5e94e1ad87a513'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -92,4 +94,10 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (open medium and low def
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-03 — bmad-build-auto (Cursor, Story 35.1): adversarial review vs acceptance criteria — pass. Transport list_files bare-array parsing, sync-all HTML read-back normalization, deck-trio poster markup, docsite unit tests, pptx layout ambiguity guard, deck-facts stderr note, presenton README provenance, deferred-work ledger closures (21 rows + 11 follow-up reviews). Verify: `pyforge-herald-test` 1503 passed; `tests/scripts/test_deck_facts.py` + `test_deck_trio.py` green; `python scripts/spec_surface_reconcile.py` OK; memlog surface reconcile on `spec-pyforge-herald`.
+
+## Auto Run Result
+
+- Harness: bmad-build-auto (interactive Cursor worktree `dispatch/pyforge-herald/35.1`)
+- Verify green: `pixi run --frozen -e pyforge-herald pyforge-herald-test`; script tests; `spec_surface_reconcile.py` (no baseline stamp in this run)
+- Ledger: `35-1-…` promoted to `done` via Tier-3 feed + `sprint-ledger-sync --project herald`

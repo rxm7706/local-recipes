@@ -1524,7 +1524,7 @@ So that the deferral burn-down closes them with landed fixes and cited evidence,
 **Then** `list_files` parses the live server's answer, `deck sync-all` publishes the standalone poster, `deck-trio --deck` derives all ten PyForge posters, `docsite/build.py` has unit tests, an ambiguous layout name is refused, and every review finding is fixed
 **And** each row is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed; no poster is re-pushed and no visible poster text changes; `pixi run --frozen -e pyforge-herald pyforge-herald-test` green
 **Spec:** `planning-artifacts/specs/spec-35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals.md`
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 

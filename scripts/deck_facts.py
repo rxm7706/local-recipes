@@ -1138,6 +1138,10 @@ def main(argv: list[str] | None = None) -> int:
         if previous is None:
             ap.error(f"presentations/{args.slug}/facts.yaml not found -- run: "
                      f"pixi run -e local-recipes deck-facts {args.slug}")
+        discovery_notes: list[str] = []
+        discover_surfaces(root, args.slug, discovery_notes)
+        for note in discovery_notes:
+            print(note, file=sys.stderr)
         for line in check(root, args.slug, previous, fresh, omitted):
             print(line)
         return 0
