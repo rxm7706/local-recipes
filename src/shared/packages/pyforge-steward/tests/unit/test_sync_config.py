@@ -98,6 +98,62 @@ github_only_marker:
     assert config.github_only_marker == GitHubOnlyMarker(field_id="PVTF_scope", field_value="GitHub only")
 
 
+def test_github_only_marker_rejects_unknown_keys(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  label: github-only
+  extra: nope
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="unknown key"):
+        load_config(path)
+
+
+def test_github_only_marker_rejects_empty_label(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  label: ""
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="no non-empty"):
+        load_config(path)
+
+
+def test_github_only_marker_rejects_lone_field_id(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  field_id: PVTF_scope
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="no non-empty"):
+        load_config(path)
+
+
+def test_github_only_marker_empty_mapping_is_none(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker: {}
+""",
+    )
+
+    config = load_config(path)
+    assert config.github_only_marker is None
+
+
 def test_github_only_marker_rejects_both_modes(tmp_path):
     path = _write(
         tmp_path,

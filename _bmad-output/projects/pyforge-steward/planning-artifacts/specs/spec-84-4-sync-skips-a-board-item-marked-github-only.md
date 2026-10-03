@@ -2,8 +2,8 @@
 title: "84.4: Sync skips a board item marked GitHub-only"
 type: 'feature'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: '2360e20e336e1e5edbd180ced25d4cede6832019'
+status: 'in-progress'
+baseline_revision: 'ed596f7ef2239c738708ec0f02b4b0fe5470547a'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -71,6 +71,8 @@ Deps: —.
 Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` collection; "group them by module, as Phase 2 did").
 
 ## Verification
+
+**Tests:** `src/shared/packages/pyforge-steward/tests/unit/test_sync_github_only_marker.py` (two flag trees via `PYFORGE_FLAGS_PATH`, schedule batch skip summary, flag-read degradation).
 
 **Commands:**
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
