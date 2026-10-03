@@ -2,7 +2,8 @@
 title: "17.1: Eligibility records its policy, and warden's other open deferrals close"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'e06362288272098346b7329a4a5e94e1ad87a513'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -80,3 +81,27 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (open medium and low def
 ## Review Triage Log
 
 - No review has run yet.
+
+### 2026-10-03 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — build-auto review layers found no material defects in the implementation diff)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Closed 11 deferred-work rows (3 medium, 8 low) by recording effective eligibility policy on each result, merging duplicate logical identities in the union, refusing unsupported CycloneDX specVersion values, re-pinning the TEA roster refusal, and running follow-up review pins for Stories 7.1/9.x/10.2/5.1/6.3.
+
+Files changed:
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py` — policy field, merge key, re-derivation helpers
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py` — specVersion gate
+- `src/shared/packages/pyforge-warden/tests/unit/test_eligibility.py` — policy/merge tests
+- `src/shared/packages/pyforge-warden/tests/unit/test_eligibility_sbom.py` — EligibilityResult constructor
+- `src/shared/packages/pyforge-warden/tests/unit/test_sources.py` — specVersion tests
+- `src/shared/packages/pyforge-warden/tests/unit/test_story_17_1_followup_reviews.py` — follow-up review pins
+- `_bmad-output/projects/pyforge-warden/planning-artifacts/deferred-work-ledger.md` — row closures
+- `_bmad-output/projects/pyforge-warden/planning-artifacts/sprint-status-ledger.yaml` — story/epic 17 done via sync
+
+Review: 0 patch findings; follow-up review recommended false.
+
+Verification: `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2132 passed, 11 deselected; `python scripts/spec_surface_reconcile.py` — OK.

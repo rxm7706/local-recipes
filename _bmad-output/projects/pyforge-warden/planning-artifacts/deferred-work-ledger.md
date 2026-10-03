@@ -820,4 +820,6 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/tests/unit/test_story_17_1_followup_reviews.py:27
+  status: closed
