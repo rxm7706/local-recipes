@@ -217,8 +217,8 @@ span walk.** Five findings; the recommendation is now `false`.
 **Independently verified clean** (named, with how): no second copy of the rule exists —
 `scripts/apply_verification_verdicts.py` *imports* `verified_line_cites` and refuses on
 `ImportError` rather than re-deriving it; the non-citation shapes this grammar must reject
-all reject under probe (`1.2:3`, `v1.2.3:5`, `12:30`, `127.0.0.1:8080`, `AD-23`,
-`Note: 12`); and the reviewer's "this should be warn-only" instinct was itself rejected on
+all reject under probe (`1.2:3`, `v1.2.3:5`, `12:30`, `127.0.0.1:8080`, a bare
+architecture-decision id, `Note: 12`); and the reviewer's "this should be warn-only" instinct was itself rejected on
 reading the spec — `verified-line-uncited` is a FAIL *because* the AC demands it, and
 `deferred-work-check` is its own gate, not the advisory doctor lane.
 
