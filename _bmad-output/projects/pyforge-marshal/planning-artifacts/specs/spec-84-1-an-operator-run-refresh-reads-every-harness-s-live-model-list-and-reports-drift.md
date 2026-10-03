@@ -2,7 +2,7 @@
 title: "84.1: An operator-run refresh reads every harness's live model list and reports drift"
 type: 'feature'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '263ab6eebb0be49d153e3c83d95f372afc8c95d9'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -119,7 +119,14 @@ Minted 2026-10-02 at the operator's request: refresh the model lists for Claude,
 
 - 2026-10-03: bmad-build-auto verification green (`pyforge-marshal-test`, `pyforge-deps-test`, `lint-types`); `spec_surface_reconcile.py` OK after memlog.
 
+### 2026-10-03 — Review pass (bmad-build-auto, landing-review fixes)
+- verdicts: 12 prior findings — all addressed as `patch`; 0 new findings from abbreviated self-review
+- findings: prior landing-review rows remediated in code (MRS-MDL-001 registration, overlay `model_list` inherit, HTTP adapter split, paging/timeouts, snapshot diff scope, credential scan from profiles, tests)
+
 ## Auto Run Result
 
 Status: done
-Verification: pyforge-marshal-test 10896 passed; pyforge-deps-test 130 passed; lint-types exit 0; spec_surface_reconcile OK.
+Summary: `marshal adapters models` reads declared live sources, reports advisory drift (`MRS-MDL-001` WARN, exit 0), and optionally writes dated snapshots; landing-review gaps closed.
+Verification: pyforge-marshal-test 10918 passed; pyforge-deps-test 130 passed; lint-types exit 0; `python scripts/spec_surface_reconcile.py` OK.
+Follow-up review recommended: false
+Residual risk: operator manual check — one live `--write` run to seed the first snapshot (per spec Verification manual checks).
