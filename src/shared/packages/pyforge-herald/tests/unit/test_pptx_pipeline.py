@@ -914,7 +914,7 @@ def test_resolve_layout_refuses_ambiguous_layout_name():
             _FakeLayout("Title Slide", [_FakePlaceholder(1)]),
         ]
 
-    with pytest.raises(errors.InvalidContentPlanError, match="ambiguous"):
+    with pytest.raises(errors.InvalidContentPlanError, match=r"ambiguous \(matches layout indices \[0, 1\]\)"):
         pptx_pipeline._resolve_layout(_FakePrs(), "Title Slide", 3)
 
 

@@ -203,9 +203,6 @@ def _resolve_layout(prs: PptxPresentation, layout_ref: object, slide_index: int)
         if len(indices) == 1:
             return layouts[indices[0]]
         raise errors.InvalidContentPlanError(f"slide #{slide_index}: no layout named {layout_ref!r} in template")
-    raise errors.InvalidContentPlanError(
-        f"slide #{slide_index}: 'layout' must be an int index or string name, got {layout_ref!r}"
-    )
 
 
 def _resolve_placeholder_values(

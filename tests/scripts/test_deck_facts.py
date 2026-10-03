@@ -851,7 +851,8 @@ def test_check_alone_prints_ambiguous_surface_discovery_notes_to_stderr(root, ca
     deck_facts.main(["pyforge-alpha"])
     deck_facts.main(["pyforge-alpha", "--check"])
     err = capsys.readouterr().err
-    assert "multiple matches" in err and "Executive Summary" in err
+    assert err.count("multiple matches") == 1
+    assert "Executive Summary" in err
 
 
 def test_check_names_the_surface_and_a_clean_surface_is_silent(root, capsys):

@@ -1510,10 +1510,9 @@ def test_head_and_deck_together_both_get_stamped(root):
     assert stamps.read_stamp(_deck_path_for(root, "pyforge-alpha", "Alpha")) is not None
 
 
-def test_second_unchanged_run_still_refreshes_the_stamp(root, monkeypatch):
-    """``_write_if_changed`` skips the rewrite on an unchanged poster, but
-    every call still reaches ``stamps.write_stamp`` -- the stamp records
-    "derived (or reverified) at this tree", not only "bytes changed"."""
+def test_second_unchanged_run_does_not_refresh_the_stamp(root, monkeypatch):
+    """When derived bytes match disk, ``_write_if_changed`` skips the write
+    and ``write_stamp`` is not called — verification runs leave the tree clean."""
     deck_trio.main(["pyforge-alpha", "--head"])
     first = stamps.read_stamp(_head_path(root))
 
@@ -1527,10 +1526,9 @@ def test_second_unchanged_run_still_refreshes_the_stamp(root, monkeypatch):
     monkeypatch.setattr(deck_trio.stamps, "write_stamp", _spy)
     deck_trio.main(["pyforge-alpha", "--head"])
 
-    assert calls == [_head_path(root)]
+    assert calls == []
     second = stamps.read_stamp(_head_path(root))
-    assert second.tree == first.tree
-    assert second.derived_at >= first.derived_at
+    assert second == first
 
 
 def test_a_refused_run_writes_no_stamp(root):

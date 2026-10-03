@@ -1846,12 +1846,16 @@ non-greedy ``.*?`` body plus a backreferenced closing tag keeps a run of
 several such tags from being swallowed as one match."""
 
 
-def _normalize_html_readback_body(body: bytes) -> bytes:
+def _normalize_html_readback_body(body: bytes) -> bytes | None:
     """Line-ending normalization for HTML export read-back (Story 35.1).
 
     Claude Design may store a pushed HTML artifact with normalized newlines
-    even when the semantic content is unchanged."""
-    text = body.decode("utf-8")
+    even when the semantic content is unchanged. Non-UTF-8 bodies cannot be
+    normalized and are treated as a mismatch."""
+    try:
+        text = body.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     return text.rstrip("\n").encode("utf-8")
 
@@ -1860,8 +1864,8 @@ def _readback_matches_pushed_body(expected: bytes, actual: bytes, *, path: str, 
     """True when ``actual`` (post-harness) matches what was pushed.
 
     Byte identity is tried first, then the recorded ``content_hash`` (SHA-256
-    of the raw pushed bytes), then the same checks after HTML newline
-    normalization."""
+    of the raw pushed bytes), then HTML newline normalization for ``.html``
+    paths only."""
     if actual == expected:
         return True
     if hashlib.sha256(actual).hexdigest() == content_hash:
@@ -1870,9 +1874,9 @@ def _readback_matches_pushed_body(expected: bytes, actual: bytes, *, path: str, 
         return False
     norm_expected = _normalize_html_readback_body(expected)
     norm_actual = _normalize_html_readback_body(actual)
-    if norm_actual == norm_expected:
-        return True
-    return hashlib.sha256(norm_actual).hexdigest() == hashlib.sha256(norm_expected).hexdigest()
+    if norm_expected is None or norm_actual is None:
+        return False
+    return norm_actual == norm_expected
 
 
 def _strip_serve_harness(content: bytes, *, path: str) -> bytes:

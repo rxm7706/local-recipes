@@ -699,19 +699,20 @@ def measure_all_sections(
 
 # --------------------------------------------------------------------- main
 
-def _write_if_changed(slug: str, root: Path, path: Path, new_bytes: bytes) -> None:
+def _write_if_changed(slug: str, root: Path, path: Path, new_bytes: bytes) -> bool:
     """Compare-before-write idempotency shared by ``--head`` and ``--deck``:
     skip the write (mtime untouched) when the derived bytes already match
     what's on disk. Temp file + ``os.replace``: an interrupted write never
     leaves a truncated artifact, mirroring ``deck_facts.py``'s own
-    poster-rewrite idiom."""
+    poster-rewrite idiom. Returns ``True`` when bytes were written."""
     if path.is_file() and path.read_bytes() == new_bytes:
         print(f"{slug}: unchanged {path.relative_to(root).as_posix()}")
-        return
+        return False
     tmp = path.with_name(path.name + ".deck-trio.tmp")
     tmp.write_bytes(new_bytes)
     os.replace(tmp, path)
     print(f"{slug}: wrote {path.relative_to(root).as_posix()}")
+    return True
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -851,11 +852,11 @@ def main(argv: list[str] | None = None) -> int:
         deck_path = poster.parent / f"{persona}{DECK_SUFFIX}"
 
     if head_path is not None and head_bytes is not None:
-        _write_if_changed(args.slug, root, head_path, head_bytes)
-        stamps.write_stamp(head_path, repo_root=root, slug=args.slug)
+        if _write_if_changed(args.slug, root, head_path, head_bytes):
+            stamps.write_stamp(head_path, repo_root=root, slug=args.slug)
     if deck_path is not None and deck_bytes is not None:
-        _write_if_changed(args.slug, root, deck_path, deck_bytes)
-        stamps.write_stamp(deck_path, repo_root=root, slug=args.slug)
+        if _write_if_changed(args.slug, root, deck_path, deck_bytes):
+            stamps.write_stamp(deck_path, repo_root=root, slug=args.slug)
     return 0
 
 
