@@ -598,7 +598,8 @@ def test_egress_ports_registry_contents():
         "BuildHarnessPort": False,
         "SkillInvokePort": False,
         "RunPublisherPort": False,
-    }
+        "ModelListFetchPort": False,
+        }
 
 
 # --- review pass 3: token-run tail, producer<->schema agreement ----------------
