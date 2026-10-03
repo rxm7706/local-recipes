@@ -8787,3 +8787,14 @@ status: open
   promoted: 2026-10-03 — Story 66.2 backfill
   reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
   status: closed
+
+### DW-marshal-83-12: Optional parity test that dispatch coverage-gate station slugs match scripts/coverage_gate.py STATIONS.
+
+- source_spec: `planning-artifacts/specs/spec-83-12-dispatch-verification-runs-the-coverage-gate-of-every-station-the-story-touches.md`
+  summary: Optional parity test that dispatch coverage-gate station slugs match scripts/coverage_gate.py STATIONS.
+  evidence: Landing review listed this as optional; slugs are duplicated as a frozenset in dispatch_verify.py today.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py:145
+  origin: spec-deferred bdac97b66476 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
