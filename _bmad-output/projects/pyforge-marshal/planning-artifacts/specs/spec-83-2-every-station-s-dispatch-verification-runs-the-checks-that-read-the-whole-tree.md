@@ -2,8 +2,8 @@
 title: "83.2: Every station's dispatch verification runs the checks that read the whole tree"
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
-review_loop_iteration: 0
+status: 'done'
+review_loop_iteration: 1
 followup_review_recommended: false
 baseline_revision: '1b490ef6ab61301170a8fefa58a9ef9fdbeab689'
 context:
@@ -114,3 +114,25 @@ declared_low_risk: false
 - `lint-types`: All checks passed after formatting fixes
 
 **Residual risks:** The reclassification fix ensures surface reconcile command failures are properly treated as blocking, maintaining spec surface integrity. No residual risks identified.
+
+### 2026-10-02 — Review pass (bmad-build-auto follow-up)
+- verdicts: 8 findings — high 1, medium 0, low 3, false 4, maybe-false 0
+- findings:
+  - `low` `reject` Missing newline at end of spec file — Cosmetic; does not affect functionality
+  - `false` `reject` Contradictory follow-up review flag in frontmatter vs narrative — Handled by the Finalize section which computes and sets the correct value
+  - `low` `reject` Deferred-item location wrong (cites line 280) — Location is approximate and refers to a different function; not a defect
+  - `false` `reject` Surface-reconcile memlog entries too sparse — Entries follow the correct reconcile format
+  - `low` `reject` Inconsistent pinned-vs-imported constants in tests — Minor inconsistency where `_SURFACE_RECONCILE_COMMAND` is imported while others are pinned; not worth the complexity of fixing
+  - `false` `reject` Long line in implementation — lint-types passes; no long line issue
+  - `false` `reject` Magic-number comment in test — Cosmetic comment; not worth fixing
+  - `high` `patch` Missing reclassification test for `_SURFACE_RECONCILE_COMMAND` — Added `test_evaluate_dispatch_verification_surface_guard_red_on_the_story_own_file_is_never_pre_existing` to verify surface guard failures are never reclassified to MRS-GATE-014
+
+**Verification performed:**
+- `pyforge-marshal-test`: All tests passed (10,832 passed, 5 skipped)
+- `pyforge-deps-test`: All tests passed (130 passed, 3 skipped)
+- `lint-types`: All checks passed
+- `spec_surface_reconcile.py`: OK — every tracked file governed or allowlisted; no drift
+
+**Follow-up review recommendation:** `false` — One high-severity patch was applied but it is a straightforward test addition following the established pattern; no unverified risk remains.
+
+**Residual risks:** None. The new test pins the reclassification behavior for the surface reconcile command, closing the mutation gap identified by the Verification Gap reviewer.
