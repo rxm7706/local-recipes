@@ -2,7 +2,8 @@
 title: "83.11: The landing heal unions appended team-memory index lines"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '15ecacb04f7491e8bb88d50d1609ea14f0594604'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

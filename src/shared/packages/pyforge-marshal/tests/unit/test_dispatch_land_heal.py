@@ -11,14 +11,17 @@ from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core import dispatch_landing as _dispatch_landing
 from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core.dispatch_landing import (
+    TEAM_MEMORY_INDEX_REL,
     is_deferred_work_path,
     is_mechanical_conflict_path,
     is_memlog_path,
+    is_team_memory_index_path,
     ledger_status_precedence,
     three_way_ledger_statuses,
     union_deferred_work_texts,
     union_memlog_texts,
     union_sprint_ledger_maps,
+    union_team_memory_index_texts,
     unknown_conflict_paths,
 )
 from pyforge.marshal.core.egress import Redacted

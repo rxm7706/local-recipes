@@ -17,6 +17,7 @@ from .core.chain_regen import parse_ledger_statuses, render_ledger_statuses
 from .core.commit_vcs import CommittingVcs
 from .core.dispatch_landing import (
     DEFERRED_WORK_BASENAME,
+    TEAM_MEMORY_INDEX_REL,
     is_deferred_work_path,
     is_mechanical_conflict_path,
     is_memlog_path,
@@ -24,6 +25,7 @@ from .core.dispatch_landing import (
     three_way_ledger_statuses,
     union_deferred_work_texts,
     union_memlog_texts,
+    union_team_memory_index_texts,
     unknown_conflict_paths,
 )
 from .core.egress import to_redacted_text
@@ -121,8 +123,9 @@ def try_heal_dispatch_land_merge(
     unknown = unknown_conflict_paths(conflict_paths, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel)
     memlog_paths = tuple(sorted(p for p in conflict_paths if is_memlog_path(p)))
     deferred_work_paths = tuple(sorted(p for p in conflict_paths if is_deferred_work_path(p)))
+    team_memory_in_conflict = TEAM_MEMORY_INDEX_REL in conflict_paths
     resolutions: dict[str, str] = {}
-    if memlog_paths or ledger_rel in conflict_paths or deferred_work_paths:
+    if memlog_paths or ledger_rel in conflict_paths or deferred_work_paths or team_memory_in_conflict:
         resolved = _resolve_mechanical_conflicts(
             git_repo_root=git_repo_root,
             probe=probe,
@@ -165,6 +168,7 @@ def try_heal_dispatch_land_merge(
             has_ledger=ledger_rel in resolutions,
             has_memlogs=bool(memlog_paths),
             has_deferred_work=bool(deferred_work_paths and any(p in resolutions for p in deferred_work_paths)),
+            has_team_memory=TEAM_MEMORY_INDEX_REL in resolutions,
             vcs=vcs,
             forge=forge,
             await_checks=await_checks,
@@ -213,7 +217,7 @@ def _resolve_mechanical_conflicts(
     sides changed. A memlog is resolved by ``union_memlog_texts``: both sides only appended, or it
     is unresolved -- never merged line by line, so no entry is ever dropped. A deferred-work ledger
     is resolved by ``union_deferred_work_texts``: both sides only appended whole DW entries, or it
-    is unresolved."""
+    is unresolved. ``MEMORY.md`` is resolved by ``union_team_memory_index_texts`` (Story 83.11)."""
     try:
         head_ref = local_branch_ref(head_branch)
         base_sha = vcs.merge_base(git_repo_root, probe, head_ref)
@@ -257,6 +261,13 @@ def _resolve_mechanical_conflicts(
             else:
                 resolutions[rel] = union
 
+        if TEAM_MEMORY_INDEX_REL in conflict_paths:
+            union = union_team_memory_index_texts(*texts(TEAM_MEMORY_INDEX_REL))
+            if union is None:
+                unresolved.append(TEAM_MEMORY_INDEX_REL)
+            else:
+                resolutions[TEAM_MEMORY_INDEX_REL] = union
+
         # Add unresolved deferred work to the unresolved list
         unresolved.extend(unresolved_deferred_work)
     except VcsCommandError:
@@ -280,6 +291,7 @@ def _try_union_heal(
     has_ledger: bool,
     has_memlogs: bool,
     has_deferred_work: bool,
+    has_team_memory: bool = False,
     vcs: CommittingVcs,
     forge: ForgePort,
     await_checks: Callable[[str], Finding | None] | None = None,
@@ -300,6 +312,7 @@ def _try_union_heal(
             ("sprint ledger", has_ledger),
             ("memlogs", has_memlogs),
             ("deferred work", has_deferred_work),
+            ("team memory index", has_team_memory),
         )
         if present
     )

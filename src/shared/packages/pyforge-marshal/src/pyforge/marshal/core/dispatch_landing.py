@@ -143,6 +143,7 @@ def three_way_ledger_statuses(
 
 MEMLOG_BASENAME = ".memlog.md"
 DEFERRED_WORK_BASENAME = "deferred-work-ledger.md"
+TEAM_MEMORY_INDEX_REL = ".claude/memory/MEMORY.md"
 
 
 def is_memlog_path(path: str) -> bool:
@@ -157,15 +158,23 @@ def is_deferred_work_path(path: str) -> bool:
     return path.replace("\\", "/").rsplit("/", 1)[-1] == DEFERRED_WORK_BASENAME
 
 
+def is_team_memory_index_path(path: str) -> bool:
+    """True when ``path`` is the checked-in team-memory index (Story 83.11)."""
+    return path.replace("\\", "/") == TEAM_MEMORY_INDEX_REL
+
+
 def is_mechanical_conflict_path(
     path: str, *, ledger_rel: str | None = None, deferred_work_rel: str | None = None
 ) -> bool:
     """True when ``path`` is a known mechanical-only merge conflict: a Spec memlog (Story 78.1;
-    the heal still escalates one that is not append-only), a sprint ledger, or a deferred-work
-    ledger (Story 83.3). Given ``ledger_rel`` (the landing project's own ledger), only that exact
-    path is a mechanical ledger -- another project's ledger is not this landing's to resolve
-    (Story 59.1). Similarly for ``deferred_work_rel`` - only the project's own deferred work ledger."""
+    the heal still escalates one that is not append-only), a sprint ledger, a deferred-work
+    ledger (Story 83.3), or ``.claude/memory/MEMORY.md`` (Story 83.11). Given ``ledger_rel``
+    (the landing project's own ledger), only that exact path is a mechanical ledger -- another
+    project's ledger is not this landing's to resolve (Story 59.1). Similarly for
+    ``deferred_work_rel`` - only the project's own deferred work ledger."""
     normalized = path.replace("\\", "/")
+    if is_team_memory_index_path(normalized):
+        return True
     if is_memlog_path(normalized):
         return True
     if ledger_rel is not None and normalized == ledger_rel:
@@ -286,6 +295,87 @@ def union_memlog_texts(base: str, main: str, branch: str) -> str | None:
         else:
             appended.append(line)
     return _render_memlog(fields, main_body + appended)
+
+
+def _union_appended_line_lists(
+    base_body: list[str], main_body: list[str], branch_body: list[str]
+) -> list[str] | None:
+    """Append-only union of three line lists (memlog body or a MEMORY.md section body)."""
+    kept = len(base_body)
+    if main_body[:kept] != base_body or branch_body[:kept] != base_body:
+        return None
+    already_on_main = Counter(main_body[kept:])
+    appended: list[str] = []
+    for line in branch_body[kept:]:
+        if already_on_main[line] > 0:
+            already_on_main[line] -= 1
+        else:
+            appended.append(line)
+    return main_body + appended
+
+
+def _parse_team_memory_index(text: str) -> tuple[list[str], list[tuple[str, list[str]]]] | None:
+    """Preamble lines before the first ``## `` heading, then ordered ``(heading, body lines)``."""
+    lines = text.splitlines()
+    first_h2 = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
+    preamble = lines[:first_h2]
+    sections: list[tuple[str, list[str]]] = []
+    index = first_h2
+    while index < len(lines):
+        line = lines[index]
+        if not line.startswith("## "):
+            return None
+        heading = line[3:].strip()
+        index += 1
+        body: list[str] = []
+        while index < len(lines) and not lines[index].startswith("## "):
+            body.append(lines[index])
+            index += 1
+        sections.append((heading, body))
+    return preamble, sections
+
+
+def _render_team_memory_index(preamble: list[str], sections: list[tuple[str, list[str]]]) -> str:
+    parts: list[str] = []
+    if preamble:
+        parts.append("\n".join(preamble))
+    for heading, body in sections:
+        block = f"## {heading}"
+        if body:
+            block += "\n" + "\n".join(body)
+        parts.append(block)
+    return "\n".join(parts).rstrip("\n") + "\n"
+
+
+def union_team_memory_index_texts(base: str, main: str, branch: str) -> str | None:
+    """Story 83.11: union two append-only edits of ``.claude/memory/MEMORY.md``, or ``None`` when
+    either side edited, removed, or reordered an existing line or section.
+
+    Each ``## `` section is unioned like a memlog body: base lines survive byte-for-byte, then
+    main's appended lines, then branch-only lines (deduped against main). Lines are opaque text."""
+    base_parts = _parse_team_memory_index(base)
+    main_parts = _parse_team_memory_index(main)
+    branch_parts = _parse_team_memory_index(branch)
+    if base_parts is None or main_parts is None or branch_parts is None:
+        return None
+    base_pre, base_secs = base_parts
+    main_pre, main_secs = main_parts
+    branch_pre, branch_secs = branch_parts
+    base_headings = [heading for heading, _ in base_secs]
+    if [heading for heading, _ in main_secs] != base_headings:
+        return None
+    if [heading for heading, _ in branch_secs] != base_headings:
+        return None
+    preamble = _union_appended_line_lists(base_pre, main_pre, branch_pre)
+    if preamble is None:
+        return None
+    merged_sections: list[tuple[str, list[str]]] = []
+    for (heading, base_body), (_, main_body), (_, branch_body) in zip(base_secs, main_secs, branch_secs):
+        body = _union_appended_line_lists(base_body, main_body, branch_body)
+        if body is None:
+            return None
+        merged_sections.append((heading, body))
+    return _render_team_memory_index(preamble, merged_sections)
 
 
 # --- Story 83.3: deferred-work ledger union ----------------------------------
