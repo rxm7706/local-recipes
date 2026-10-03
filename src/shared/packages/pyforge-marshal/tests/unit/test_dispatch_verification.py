@@ -425,6 +425,8 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_guard(
         "true",
         _SURFACE_RECONCILE_COMMAND,
         LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
     ]
 
 
@@ -460,6 +462,8 @@ def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_
         "true",
         _SURFACE_RECONCILE_COMMAND,
         LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
     ]
 
 
@@ -517,7 +521,7 @@ def test_evaluate_dispatch_verification_runs_lint_types_once_after_the_station_c
     hygiene lane runs exactly once, after them."""
     envelope = _verify_with(tmp_path, verify_commands=["true", "echo ok"], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", "echo ok", _SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert commands == ["true", "echo ok", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
     assert commands.count(LINT_TYPES) == 1
     assert envelope.findings == ()
 
@@ -528,7 +532,7 @@ def test_evaluate_dispatch_verification_lint_types_runs_for_a_station_with_no_co
     """Story 79.2, AC1: a bare ``verify_commands = []`` station is gated on
     ``lint-types`` too -- it is derived, never read from the station's list."""
     envelope = _verify_with(tmp_path, verify_commands=[], process=FakeProcess())
-    assert [report["command"] for report in envelope.data["commands"]] == [_SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert [report["command"] for report in envelope.data["commands"]] == [_SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
 
 
 def test_evaluate_dispatch_verification_lint_types_failure_refuses_naming_the_lane(
@@ -598,7 +602,7 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_lint_types(
     twice."""
     envelope = _verify_with(tmp_path, verify_commands=[LINT_TYPES, "true"], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
 
 
 def test_evaluate_dispatch_verification_dedupes_a_lint_types_declared_with_different_spacing(
@@ -609,7 +613,7 @@ def test_evaluate_dispatch_verification_dedupes_a_lint_types_declared_with_diffe
     respaced = LINT_TYPES.replace(" ", "  ", 1)
     envelope = _verify_with(tmp_path, verify_commands=["true", respaced], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
 
 
 def test_evaluate_dispatch_verification_a_declared_lint_types_failure_still_refuses_once(
