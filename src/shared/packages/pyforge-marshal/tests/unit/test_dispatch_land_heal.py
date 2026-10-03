@@ -1416,7 +1416,7 @@ def test_heal_escalates_other_projects_deferred_work_ledger(tmp_path: Path) -> N
     worktree = tmp_path / "wt"
     worktree.mkdir()
     foreign_dw_rel = "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md"
-    
+
     vcs = FakeVcsHeal(conflict_paths=(foreign_dw_rel,))
     forge = FakeForgeHeal()
     pr = PrInfo(number=833, url="https://example/pr/833", state="open", base="main")
@@ -1426,7 +1426,7 @@ def test_heal_escalates_other_projects_deferred_work_ledger(tmp_path: Path) -> N
         git_repo_root=tmp_path,
         worktree=worktree,
         base="main",
-        head_branch="dispatch/pyforge-marshal/83.3", 
+        head_branch="dispatch/pyforge-marshal/83.3",
         head_sha="abc123",
         subject="Merge 83.3 into main",
         merge_strategy="merge",
