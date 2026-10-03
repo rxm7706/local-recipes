@@ -8,7 +8,12 @@ followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
-deferred: []
+deferred:
+  - summary: >-
+      Implementation makes reasonable decisions beyond intent scope for entry parsing and frontmatter handling
+    evidence: |-
+      Intent alignment review found implementation extends beyond explicit intent requirements with practical parsing rules and file structure handling. Documentation improvements could clarify these design decisions for future spec improvements.
+    severity: low
 declared_low_risk: false
 baseline_revision: '786b1c9676baf940bb880bf6cccc85cc1bdd445b'
 ---
