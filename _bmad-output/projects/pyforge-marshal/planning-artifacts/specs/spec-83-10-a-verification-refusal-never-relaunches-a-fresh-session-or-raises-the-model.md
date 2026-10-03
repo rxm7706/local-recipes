@@ -2,8 +2,8 @@
 title: "83.10: A verification refusal never relaunches a fresh session or raises the model"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: 'd82497d9c5a21d3a1a6b7d681577c96a10df3dd8'
+status: 'in-progress'
+baseline_revision: '302b6ad99859f4305316a419b3b3afba2f5545e3'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
