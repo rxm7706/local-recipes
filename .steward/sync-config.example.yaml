@@ -88,3 +88,18 @@ status_mapping: {}
 user_mapping: {}
 # user_mapping:
 #   octocat: "5b10a2844c20165700ede21g"
+
+# Optional (Story 84.4, flag `pyforge.steward.sync_github_only_marker`): mark
+# board items that are intentionally GitHub-only so `sync reconcile --schedule`
+# skips them at info level instead of failing every tick. Only UNLINKED items
+# carrying the marker are skipped; a linked item still reconciles normally.
+# Declare exactly one of a label on the underlying Issue/PR, or a Projects V2
+# custom field value (TEXT or single-select). When the flag is off or this
+# block is omitted, every unlinked item still fails loudly (CAP-60). OFF in
+# production requires `PYFORGE_ENVIRONMENT=production` — when unset, the file
+# provider reads `dev` and the marker flag is ON in dev/staging overlays.
+# github_only_marker:
+#   label: github-only
+# github_only_marker:
+#   field_id: PVTF_xxxxxxxxxxxxxxxxxxxx
+#   field_value: GitHub only
