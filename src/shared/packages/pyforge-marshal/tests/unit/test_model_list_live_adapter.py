@@ -66,6 +66,7 @@ def test_live_fetch_run_command_process_error_other(monkeypatch):
         "pyforge.marshal.adapters.model_list_live._resolve_binary",
         lambda *a, **k: "/bin/true",
     )
+
     def _boom(*a, **k):
         raise ProcessError("boom")
 
@@ -80,6 +81,7 @@ def test_live_fetch_run_command_timeout_error(monkeypatch):
         "pyforge.marshal.adapters.model_list_live._resolve_binary",
         lambda *a, **k: "/bin/true",
     )
+
     def _timeout(*a, **k):
         raise TimeoutError()
 

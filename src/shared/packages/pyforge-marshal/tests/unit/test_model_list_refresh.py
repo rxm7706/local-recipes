@@ -619,9 +619,7 @@ def test_models_cli_all_unavailable_warn_findings(monkeypatch, capsys, tmp_path)
     monkeypatch.setattr(
         adapters_cli,
         "fetch_live_ids_for_profile",
-        lambda profile, fetch, **kw: HarnessListResult(
-            profile.name, "unavailable", frozenset(), "no source declared"
-        ),
+        lambda profile, fetch, **kw: HarnessListResult(profile.name, "unavailable", frozenset(), "no source declared"),
     )
     monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
     args = argparse.Namespace(slug="pyforge-marshal", format="json", write=False)

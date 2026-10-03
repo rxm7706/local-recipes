@@ -61,5 +61,5 @@ def http_get_for_model_list(
         return HttpGetResult(status_code=status, body=body)
     except TimeoutError:
         return HttpGetResult(status_code=0, body=b"timeout")
-    except (OSError, http.client.HTTPException, ValueError):
+    except OSError, http.client.HTTPException, ValueError:
         return HttpGetResult(status_code=0, body=b"network error")

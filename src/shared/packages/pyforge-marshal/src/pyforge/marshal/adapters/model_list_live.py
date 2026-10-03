@@ -67,7 +67,7 @@ class LiveModelListFetch(ModelListFetchPort):
         effective_timeout = timeout_s if timeout_s > 0 else self._timeout_s
         try:
             return http_get_for_model_list(url, headers, timeout_s=effective_timeout)
-        except (OSError, http.client.HTTPException, ValueError):
+        except OSError, http.client.HTTPException, ValueError:
             return HttpGetResult(status_code=0, body=b"network error")
 
 
@@ -202,7 +202,7 @@ def fetch_live_ids_for_profile(
                     return _http_unavailable(harness, result)
                 try:
                     payload = json.loads(result.body.decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError):
+                except UnicodeDecodeError, json.JSONDecodeError:
                     return HarnessListResult(
                         harness=harness,
                         status="unavailable",
@@ -252,7 +252,7 @@ def fetch_live_ids_for_profile(
                     return _http_unavailable(harness, result)
                 try:
                     payload = json.loads(result.body.decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError):
+                except UnicodeDecodeError, json.JSONDecodeError:
                     return HarnessListResult(
                         harness=harness,
                         status="unavailable",

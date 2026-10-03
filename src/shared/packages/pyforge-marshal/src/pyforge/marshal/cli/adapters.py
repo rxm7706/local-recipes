@@ -2093,7 +2093,7 @@ def run_adapters_models(
     for name, profile in sorted(profiles.items()):
         try:
             result = fetch_live_ids_for_profile(profile, fetcher)
-        except (OSError, ValueError, TimeoutError, http.client.HTTPException):
+        except OSError, ValueError, TimeoutError, http.client.HTTPException:
             result = HarnessListResult(
                 harness=name,
                 status="unavailable",
