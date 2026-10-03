@@ -710,20 +710,40 @@ def write_dashboard_markdown(
     )
 
     helpers = types.SimpleNamespace(**globals())
-    try:
-        write_ops_canvas(ops_canvas or DEFAULT_OPS_CANVAS_PATH, records, tab, helpers=helpers)
-    except Exception as exc:
-        print(f"ops canvas write failed ({exc}); continuing", file=sys.stderr)
-    try:
-        write_workbook_canvas(
-            workbook_canvas or DEFAULT_WORKBOOK_CANVAS_PATH,
-            records,
-            export_path,
-            tab,
-            helpers=helpers,
+    ops_target = ops_canvas if ops_canvas is not None else DEFAULT_OPS_CANVAS_PATH
+    workbook_target = (
+        workbook_canvas if workbook_canvas is not None else DEFAULT_WORKBOOK_CANVAS_PATH
+    )
+    if ops_target is None:
+        from openteams_identity_dashboards import _priority_mod
+
+        print(
+            f"Skipped ops canvas write ({_priority_mod.INVENTORY_CANVAS_DIR_ENV} unset)",
+            flush=True,
         )
-    except Exception as exc:
-        print(f"workbook canvas write failed ({exc}); continuing", file=sys.stderr)
+    else:
+        try:
+            write_ops_canvas(ops_target, records, tab, helpers=helpers)
+        except Exception as exc:
+            print(f"ops canvas write failed ({exc}); continuing", file=sys.stderr)
+    if workbook_target is None:
+        from openteams_identity_dashboards import _priority_mod
+
+        print(
+            f"Skipped workbook canvas write ({_priority_mod.INVENTORY_CANVAS_DIR_ENV} unset)",
+            flush=True,
+        )
+    else:
+        try:
+            write_workbook_canvas(
+                workbook_target,
+                records,
+                export_path,
+                tab,
+                helpers=helpers,
+            )
+        except Exception as exc:
+            print(f"workbook canvas write failed ({exc}); continuing", file=sys.stderr)
 
 
 def gist_file_names(gh: str, gist_id: str) -> set[str]:

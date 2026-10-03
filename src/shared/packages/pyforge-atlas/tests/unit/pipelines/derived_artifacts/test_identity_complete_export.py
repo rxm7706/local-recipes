@@ -2,39 +2,23 @@
 
 from __future__ import annotations
 
-import ast
 import json
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
+from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import GIST_COLUMNS
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     _IDENTITY_COMPLETE_EXPORT_COLUMNS,
     build_identity_complete_export,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[8]
-_IDENTITY_SCRIPT = _REPO_ROOT / "scripts" / "conda-forge-packaging-inventory-operations_openteams_identity.py"
 _FIXTURE_DIR = _REPO_ROOT / "src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity"
 
 _FIXED_TS = "2026-08-30T12:00:00Z"
 _PARAMS = {"identity_complete_export": {"verification_timestamp_utc": _FIXED_TS}}
-
-
-def _gist_columns_from_script() -> list[str]:
-    """Parse ``GIST_SCHEMA`` names without importing the legacy script (openpyxl)."""
-    source = _IDENTITY_SCRIPT.read_text(encoding="utf-8")
-    for node in ast.walk(ast.parse(source)):
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "GIST_SCHEMA":
-                    schema = ast.literal_eval(node.value)
-                    return [str(row[0]) for row in schema]
-    raise RuntimeError(f"GIST_SCHEMA not found in {_IDENTITY_SCRIPT}")
-
-
-GIST_COLUMNS = _gist_columns_from_script()
 
 
 def _identity_row(

@@ -1,0 +1,85 @@
+"""Story 27.1 — verification set scale floors and hollow-set refusal."""
+
+from __future__ import annotations
+
+import pandas as pd
+import pytest
+
+from pyforge.atlas.pipelines.derived_artifacts.inventory_verification import (
+    HollowVerificationSetError,
+    verification_sets,
+)
+from pyforge.atlas.pipelines.derived_artifacts.nodes import (
+    build_inventory_aoss_free_queue,
+    build_inventory_verified_packages,
+)
+
+
+def _low_floor_params() -> dict:
+    return {
+        "verification_sets": {"cf_or_pm_floor": 0, "pypi_universe_floor": 0},
+        "inventory_verified_packages": {"verification_timestamp_utc": "2026-08-30T12:00:00Z"},
+    }
+
+
+def test_verification_sets_refuses_empty_pypi_universe():
+    with pytest.raises(HollowVerificationSetError, match="hollow_pypi_universe"):
+        verification_sets(
+            pd.DataFrame([{"conda_name": "a"}]),
+            pd.DataFrame(columns=["pypi_name"]),
+            pd.DataFrame(columns=["pypi_name"]),
+            {"verification_sets": {"cf_or_pm_floor": 0, "pypi_universe_floor": 1}},
+        )
+
+
+def test_verification_sets_refuses_sub_floor_cf_or_pm():
+    with pytest.raises(HollowVerificationSetError, match="hollow_cf_or_pm"):
+        verification_sets(
+            pd.DataFrame([{"conda_name": "only-one"}]),
+            pd.DataFrame([{"pypi_name": "only-one"}]),
+            pd.DataFrame(columns=["pypi_name"]),
+            {"verification_sets": {"cf_or_pm_floor": 2, "pypi_universe_floor": 0}},
+        )
+
+
+def test_build_inventory_verified_packages_propagates_hollow_error():
+    universe = pd.DataFrame(
+        [{"core_python_package_name": "x", "package_input_names": ["x"], "sources": [], "role": "N/A"}]
+    )
+    with pytest.raises(HollowVerificationSetError):
+        build_inventory_verified_packages(
+            universe,
+            pd.DataFrame(columns=["conda_name"]),
+            pd.DataFrame(columns=["pypi_name"]),
+            pd.DataFrame(columns=["pypi_name"]),
+            pd.DataFrame(columns=["core_python_package_name", "P"]),
+            {"verification_sets": {"cf_or_pm_floor": 1, "pypi_universe_floor": 1}},
+        )
+
+
+def test_build_inventory_aoss_free_queue_propagates_hollow_error():
+    with pytest.raises(HollowVerificationSetError):
+        build_inventory_aoss_free_queue(
+            pd.DataFrame([{"pypi_name": "a"}]),
+            pd.DataFrame(columns=["conda_name"]),
+            pd.DataFrame(columns=["pypi_name"]),
+            pd.DataFrame(columns=["pypi_name"]),
+            pd.DataFrame(columns=["core_python_package_name"]),
+            pd.DataFrame(columns=["core_python_package_name"]),
+            {"verification_sets": {"cf_or_pm_floor": 1, "pypi_universe_floor": 1}},
+        )
+
+
+def test_floors_count_after_norm_pkg():
+    """Distinct raw values that normalize to one name count once toward the floor."""
+    cf = pd.DataFrame([{"conda_name": "My_Pkg"}, {"conda_name": "my-pkg"}])
+    pypi = pd.DataFrame([{"pypi_name": "widget"}])
+    _, pypi_index, cf_or_pm = verification_sets(
+        cf,
+        pypi,
+        pd.DataFrame(columns=["pypi_name"]),
+        {"verification_sets": {"cf_or_pm_floor": 1, "pypi_universe_floor": 1}},
+    )
+    assert len(cf_or_pm) == 1
+    assert "my-pkg" in cf_or_pm
+    assert len(pypi_index) == 1
