@@ -642,9 +642,7 @@ def purge_expired_entries(retention: AuditRetention, *, actor: str, now=None) ->
     using = router.db_for_write(AuditEntry)
     cutoff_target = cutoff.isoformat()
     with transaction.atomic(using=using):
-        deleted_count, _ = (
-            AuditEntry.objects.using(using).filter(occurred_at__lt=cutoff).delete()
-        )
+        deleted_count, _ = AuditEntry.objects.using(using).filter(occurred_at__lt=cutoff).delete()
         record_audit_entry(
             actor=actor,
             role=None,

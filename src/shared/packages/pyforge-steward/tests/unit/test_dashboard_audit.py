@@ -401,9 +401,7 @@ def test_purge_expired_entries_leaves_a_row_exactly_at_the_cutoff():
         occurred_at=now - dt.timedelta(days=cutoff_days),
     )
 
-    deleted = purge_expired_entries(
-        AuditRetention(days=cutoff_days), actor="retention-runner", now=now
-    )
+    deleted = purge_expired_entries(AuditRetention(days=cutoff_days), actor="retention-runner", now=now)
 
     assert deleted == 0
     assert AuditEntry.objects.filter(pk=at_cutoff.pk).exists()
@@ -797,9 +795,7 @@ def test_purge_expired_entries_rechecks_days_a_subclass_could_have_skipped():
     record_audit_entry("bob", "west", AuditAction.EXPORT, 2)
 
     with pytest.raises(ValueError, match="retention.days"):
-        purge_expired_entries(
-            _LabeledRetention(days=0, label="skips validation"), actor="retention-runner"
-        )
+        purge_expired_entries(_LabeledRetention(days=0, label="skips validation"), actor="retention-runner")
 
     assert AuditEntry.objects.count() == 2, "a refused purge deletes nothing"
 

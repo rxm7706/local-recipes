@@ -638,7 +638,7 @@ _UNSAFE_NGINX_VALUE_CHARS = frozenset(";{}#$")
 # the application role while reserving DELETE for the retention runner role.
 _DEFAULT_AUDIT_SCHEMA = "public"
 _DEFAULT_AUDIT_TABLE = "pyforge_steward_dashboard_auditentry"
-_UNSAFE_SQL_IDENTIFIER_CHARS = frozenset(';"\' \t\n\r{}#$')
+_UNSAFE_SQL_IDENTIFIER_CHARS = frozenset(";\"' \t\n\r{}#$")
 
 
 def _validate_sql_identifier(field_name: str, value: str) -> None:
@@ -980,8 +980,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
     return DutyResult(
         ok=True,
         summary=(
-            f"deploy perimeter: rendered daphne unit + nginx edge config + "
-            f"audit-table grants SQL to {output_path}"
+            f"deploy perimeter: rendered daphne unit + nginx edge config + audit-table grants SQL to {output_path}"
         ),
     )
 

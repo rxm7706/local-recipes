@@ -324,10 +324,7 @@ def test_render_audit_table_grants_app_role_is_append_only():
         retention_role=_AUDIT_RETENTION_DB_ROLE,
     )
     assert f"REVOKE ALL ON TABLE public.pyforge_steward_dashboard_auditentry FROM {_APP_DB_ROLE};" in sql
-    assert (
-        f"GRANT SELECT, INSERT ON TABLE public.pyforge_steward_dashboard_auditentry TO {_APP_DB_ROLE};"
-        in sql
-    )
+    assert f"GRANT SELECT, INSERT ON TABLE public.pyforge_steward_dashboard_auditentry TO {_APP_DB_ROLE};" in sql
     assert "UPDATE" not in sql.split(f"TO {_APP_DB_ROLE}")[-1]
 
 
@@ -336,11 +333,7 @@ def test_render_audit_table_grants_retention_role_may_delete():
         app_role=_APP_DB_ROLE,
         retention_role=_AUDIT_RETENTION_DB_ROLE,
     )
-    assert (
-        f"GRANT DELETE ON TABLE public.pyforge_steward_dashboard_auditentry "
-        f"TO {_AUDIT_RETENTION_DB_ROLE};"
-        in sql
-    )
+    assert f"GRANT DELETE ON TABLE public.pyforge_steward_dashboard_auditentry TO {_AUDIT_RETENTION_DB_ROLE};" in sql
 
 
 # ── `steward deploy perimeter` verb (I/O matrix rows 6-8) ───────────────────
