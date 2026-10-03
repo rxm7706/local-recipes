@@ -2391,10 +2391,14 @@ def _stale_surface_findings(specs: dict[str, dict], files: list[str]) -> list[di
     never judged here; the existing ``spec-surface-unevaluable`` WARN names
     it. Judged by ``_glob_to_re``'s own compiled regex -- the matcher
     governance itself uses -- so a glob this reports dead really governs
-    nothing: a trailing-slash directory glob or a brace glob is dead, not
-    "live by directory existence" or "live by brace expansion". A match is
+    nothing: a brace glob is dead, not "live by brace expansion". A match is
     independent of every OTHER Spec's surface, so (like ``stale-allowlist``)
-    an unreadable sibling Spec cannot make this a false positive."""
+    an unreadable sibling Spec cannot make this a false positive.
+
+    A glob-less trailing-slash entry is NO LONGER among the dead shapes: as
+    of DW-FU-12-4 ``_glob_to_re`` expands ``dir/`` to ``dir/**``, so such an
+    entry is dead here only when the directory itself holds no tracked file.
+    The remedy text below says so."""
     items: list[dict] = []
     for name, s in sorted(specs.items()):
         seen: set[str] = set()
@@ -2410,9 +2414,10 @@ def _stale_surface_findings(specs: dict[str, dict], files: list[str]) -> list[di
                     "path": name,
                     "detail": (
                         f"{name}: surface glob {glob!r} matches no tracked file "
-                        "(a trailing '/' or a '{a,b}' brace is not expanded; write "
-                        "'dir/**', one glob per name) — fix it in the owning Spec, "
-                        "re-derived with bmad-spec, never hand-edited"
+                        "(a '{a,b}' brace is not expanded; write one glob per name. "
+                        "A trailing '/' IS read as that directory's subtree, so this "
+                        "names a directory holding no tracked file) — fix it in the "
+                        "owning Spec, re-derived with bmad-spec, never hand-edited"
                     ),
                 }
             )
@@ -2554,16 +2559,6 @@ def gather_spec_surface(target: Path) -> tuple[Finding, ...]:
 
 
 def _gather_spec_surface(target: Path) -> tuple[Finding, ...]:
-    # NOTE: deliberately NO "target is not a monorepo root" guard here, unlike
-    # `_gather_dream_chain`/`_gather_deferred_work`. Review proposed one (a
-    # run from a subdirectory reports every file in that subtree FAIL
-    # `ungoverned`), but the two cases are not symmetric: those guards
-    # replace a false OK -- a SILENT wrong answer -- whereas one here would
-    # replace a false FAIL, which is loud and self-evident, with a WARN that
-    # also silences the legitimate "this repo governs nothing yet" FAIL an
-    # unconfigured root should report (an empty repo and a subdirectory are
-    # indistinguishable from the filesystem alone). Trading a loud wrong
-    # answer for a quiet one is the defect class this module exists to avoid.
     files = _tracked_files(target)
     if files is None:
         return (
@@ -2573,6 +2568,39 @@ def _gather_spec_surface(target: Path) -> tuple[Finding, ...]:
                 status=DoctorStatus.WARN,
                 message=(f"git is unavailable or {target} is not a repository — spec surface cannot be evaluated"),
                 evidence={"target": str(target)},
+            ),
+        )
+
+    # DW-FU-6-6-7, reversing this function's earlier "deliberately no root
+    # guard" note. The argument for leaving it out was that a subdirectory run
+    # trades a loud wrong answer (every file FAIL `ungoverned`) for a quiet
+    # one, and that an empty repo root and a subdirectory look alike. Neither
+    # half held: git itself tells the two apart in one call
+    # (`rev-parse --show-toplevel`), and the FAIL storm is not self-evident at
+    # all -- `git ls-files` run in a subdirectory returns paths relative to
+    # THAT directory, `target.glob(SPEC_GLOB)` finds no Spec there, and the
+    # output is hundreds of confident "no spec surface and no allowlist entry"
+    # FAILs about paths that are governed perfectly well one level up. One
+    # WARN naming BOTH paths is the honest answer; the "this repo governs
+    # nothing yet" FAIL an unconfigured ROOT should report is untouched,
+    # because the guard only fires when the two paths genuinely differ.
+    top = _repo_top_level(target)
+    try:
+        here = target.resolve()
+    except OSError:
+        here = target
+    if top is not None and top != here:
+        return (
+            Finding(
+                source=Source.SPEC_SURFACE,
+                check="spec-surface-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{here} is a subdirectory of the repository rooted at {top}, "
+                    f"not its top level — spec surface is evaluated for a whole "
+                    f"repository only; re-run from {top}"
+                ),
+                evidence={"target": str(here), "top_level": str(top)},
             ),
         )
 
