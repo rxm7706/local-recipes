@@ -51,7 +51,7 @@ import os
 import re
 import stat
 from collections.abc import Mapping, Sequence, Set
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
@@ -5233,12 +5233,22 @@ _UNUSED_CLAIM_RE = re.compile(
 
 def _entry_unused_symbol_claims(path: Path) -> list[tuple[str, str | None]]:
     """``(id, symbol)`` for every ID'd entry in a tracked ledger -- ``symbol``
-    is the entry's own FIRST ``_UNUSED_CLAIM_RE`` match (its claimed-unused
-    bare identifier), or ``None`` when the entry's body carries no
-    recognizable claim of that shape. Duplicates ``_verification()``'s own
-    boundary-walk shape rather than extracting a shared primitive (Design
-    Notes: neither ``_entries()`` nor ``_verification()`` is touched by this
-    story)."""
+    is the bare identifier the entry claims is unused, or ``None`` when the
+    entry's body carries no recognizable claim of that shape. Duplicates
+    ``_verification()``'s own boundary-walk shape rather than extracting a
+    shared primitive (Design Notes: neither ``_entries()`` nor
+    ``_verification()`` is touched by this story).
+
+    DW-FU-11-3-2: the symbol is the one bound to the NEAREST backticked
+    identifier across ALL matches, not ``search()``'s first match in
+    document order. ``_UNUSED_CLAIM_RE`` allows up to 80 characters between
+    the identifier and the "unused"-family phrase, so an entry naming two
+    identifiers -- "`` `_helper` `` unused? No, actually `` `_foo` `` is
+    unused." -- bound the phrase to ``_helper``, the subject the sentence
+    explicitly rejects, and then mechanically recomputed the wrong symbol's
+    call sites. Scoring every match by the gap between the identifier and
+    the phrase, and taking the smallest, picks the subject the phrase
+    actually sits next to."""
     if not _is_file(path):
         return []
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -5246,8 +5256,14 @@ def _entry_unused_symbol_claims(path: Path) -> list[tuple[str, str | None]]:
     out = []
     for i, (pos, ident) in enumerate(marks):
         end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
-        match = _UNUSED_CLAIM_RE.search(text[pos:end])
-        out.append((ident, match.group(1) if match else None))
+        best: tuple[int, str] | None = None
+        for match in _UNUSED_CLAIM_RE.finditer(text[pos:end]):
+            # The gap is what the pattern's own `[^`]{0,80}?` spans: from the
+            # identifier's closing backtick to the phrase's first character.
+            gap = match.end() - match.start() - len(match.group(1))
+            if best is None or gap < best[0]:
+                best = (gap, match.group(1))
+        out.append((ident, best[1] if best else None))
     return out
 
 
