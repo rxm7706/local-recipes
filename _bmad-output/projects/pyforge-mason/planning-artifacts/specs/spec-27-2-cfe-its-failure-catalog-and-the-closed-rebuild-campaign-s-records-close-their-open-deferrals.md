@@ -23,7 +23,7 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** 31 open rows (8 medium, 23 low) sit on conda-forge-expert, the failure catalog it generates and the script that checks it, the db-gpt recipe, and the records of the CFE-rebuild campaign Story 15.1 closed. In CFE, the failure catalog's symptom signatures carry tokens that cannot diagnose, its fenced-block and enforced-by heuristics are narrow, and the YAML has no schema version. Its check matches one spelling of a check code and tells drift by a stderr string. The commands cheatsheet misses `test-ci`, strip-on-push was never re-checked against a real published feedstock, the SM-4 free-inheritance record waits on a re-run, and marshal's sync baseline lags CFE's version. In the records, the resume header points a session at one slice, the slice map and `spec-12-5` carry stale or unsourced text, and the rebuild Spec's ruling cites an unqualified CAP-19. Seven rows name surfaces Story 15.1 retired or a fix already on main. Six landed stories still owe their recommended follow-up review.
+**Problem:** 25 open rows (8 medium, 17 low) sit on conda-forge-expert, the failure catalog it generates and the script that checks it, the db-gpt recipe, and the records of the CFE-rebuild campaign Story 15.1 closed. In CFE, the failure catalog's symptom signatures carry tokens that cannot diagnose, its fenced-block and enforced-by heuristics are narrow, and the YAML has no schema version. Its check matches one spelling of a check code and tells drift by a stderr string. The commands cheatsheet misses `test-ci`, strip-on-push was never re-checked against a real published feedstock, the SM-4 free-inheritance record waits on a re-run, and marshal's sync baseline lags CFE's version. In the records, the resume header points a session at one slice, the slice map and `spec-12-5` carry stale or unsourced text, and the rebuild Spec's ruling cites an unqualified CAP-19. Seven rows name surfaces Story 15.1 retired or a fix already on main.
 
 **Approach:** Go through `conda-forge-expert` (Rule 1). Fix each CFE row in code with a test that fails without it, and land every CFE-surface edit in one commit whose subject starts `retro(cfe):` and whose CFE `CHANGELOG.md` gets a semver entry (AD-15, FR-47). Correct the campaign records in place with dated notes; the rebuild Spec's `SPEC.md` changes only through its `.memlog.md` and a `bmad-spec` re-derive. Close a row whose surface Story 15.1 retired, or whose fix is already on main, on the cited line that records it.
 
@@ -45,10 +45,9 @@ Type / Effort / Deps: fix / L / —.
 - Given `mason recipe optimize` re-run When the SM-4 record in `epics.md` § Story 5.4 is read Then it carries the observed verb-level delta and its date
 - Given this story's CFE bump When `_bmad-output/projects/pyforge-marshal/.sync-baseline.json` is re-stamped Then its `skill_version` equals the CFE version this story lands
 - Given the campaign records When a session resumes Then `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml`'s header says the campaign is closed; and `slice-map.md`, `spec-12-5` and the rebuild Spec carry the corrections DW-12-6-2, DW-12-4-1 and DW-12-5-1 to DW-12-5-5 name, with dated notes and the ruling's own words kept
-- Given each follow-up review row (`DW-FU-5-5`, `DW-FRR-7-1`, `DW-FRR-7-2`, `DW-FRR-12-5`, `DW-FRR-12-6`, `DW-FRR-24-1`) When this story runs Then a reviewer that did not implement it reviews that story's landed code against its spec, and every finding is fixed here and logged in this spec's Review Triage Log
 - Given `DW-12-1-2`, `DW-12-3-2`, `DW-12-6-3`, `DW-12-6-4`, `DW-12-7-1`, `DW-12-7-2`, `DW-13-2-3` When this story closes them Then each `verified:` line cites the live line that records the retirement or the fix
 - Given this story lands When its CFE-surface commit is read Then its subject starts `retro(cfe):`, it moves `.claude/skills/conda-forge-expert/CHANGELOG.md` with a semver entry and the version carriers, and it touches no `src/shared/packages/pyforge-mason/` path; CFE's own suite (`test-ci`) stays green
-- Given this story lands When its deferred-work rows are read Then each of `DW-7-1-1`, `DW-7-1-2`, `DW-7-1-3`, `DW-7-1-4`, `DW-7-2-1`, `DW-7-2-2`, `DW-FRR-7-1`, `DW-FRR-7-2`, `DW-12-2-3`, `DW-17-2-1`, `DW-FRR-24-1`, `DW-FU-5-5`, `DW-5-4-1`, `DW-15-1-1`, `DW-13-2-3`, `DW-12-1-2`, `DW-12-6-1`, `DW-12-6-4`, `DW-12-6-3`, `DW-12-6-2`, `DW-12-4-1`, `DW-12-5-1`, `DW-12-5-2`, `DW-12-5-3`, `DW-12-5-4`, `DW-12-5-5`, `DW-12-7-1`, `DW-12-7-2`, `DW-12-3-2`, `DW-FRR-12-5`, `DW-FRR-12-6` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
+- Given this story lands When its deferred-work rows are read Then each of `DW-7-1-1`, `DW-7-1-2`, `DW-7-1-3`, `DW-7-1-4`, `DW-7-2-1`, `DW-7-2-2`, `DW-12-2-3`, `DW-17-2-1`, `DW-5-4-1`, `DW-15-1-1`, `DW-13-2-3`, `DW-12-1-2`, `DW-12-6-1`, `DW-12-6-4`, `DW-12-6-3`, `DW-12-6-2`, `DW-12-4-1`, `DW-12-5-1`, `DW-12-5-2`, `DW-12-5-3`, `DW-12-5-4`, `DW-12-5-5`, `DW-12-7-1`, `DW-12-7-2`, `DW-12-3-2` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 - Given this story's changes When `pixi run --frozen -e pyforge-mason pyforge-mason-test` runs Then it passes
 
 ## Boundaries & Constraints
@@ -59,7 +58,7 @@ Type / Effort / Deps: fix / L / —.
 
 </intent-contract>
 
-## Deferred-work rows this story closes (31: 8 medium, 23 low; deferral burn-down Phases 4 and 5)
+## Deferred-work rows this story closes (25: 8 medium, 17 low; deferral burn-down Phases 4 and 5)
 
 Each line is the row, its severity, and the fix that closes it. Line numbers are as of main on 2026-10-03; re-read the
 code before editing.
@@ -101,15 +100,6 @@ code before editing.
 - `DW-12-7-2` (low) — The retired package's Design Notes went with it: close on `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:679`.
 - `DW-12-3-2` (medium) — The compiled `cfe-recipe-generation` package and its `metadata.json` are retired (`_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:547`): close on that line.
 
-### Follow-up reviews owed (6)
-
-- `DW-FRR-7-1` (low) — Run the follow-up review Story 7.1 (the failure catalog generator) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log; taken with DW-7-1-1 to DW-7-1-4.
-- `DW-FRR-7-2` (low) — Run the follow-up review Story 7.2 (the pointers lint and the drift gates) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log; taken with DW-7-2-1 and DW-7-2-2.
-- `DW-FRR-24-1` (low) — Run the follow-up review Story 24.1 (the CFE host-gate tests and `clean_mirror_env`) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log.
-- `DW-FU-5-5` (low) — Run the follow-up review Story 5.5 (the Rule-2 CFE retrospective: `_paths.py` and its migrated call sites) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log.
-- `DW-FRR-12-5` (low) — Run the follow-up review Story 12.5 (the ownership decision record) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log; taken with DW-12-4-1 and DW-12-5-1 to DW-12-5-5.
-- `DW-FRR-12-6` (low) — Run the follow-up review Story 12.6 (slice 2's brief and cross-slice dependencies) still owes: a reviewer separate from this story's implementer (AGENTS.md guideline 8) reads that story's landed code against its spec; each finding is fixed in this story and recorded in this spec's Review Triage Log; taken with DW-12-6-1 to DW-12-6-4.
-
 ## Binding
 
 Parent: `spec-pyforge-mason` CAP-14 (the slice map), CAP-17 (campaign state), CAP-19 (per-recipe internal metadata), CAP-21 (the generated catalog), CAP-22 (the lint and drift gate), CAP-23 (recipe lifecycle machinery) and CAP-34 (CFE's tests give the same verdict in any environment): the capabilities that shipped each behaviour.
@@ -124,6 +114,10 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling of 2026-10-03 (open mediu
 **Commands:**
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
+
+## Spec Change Log
+
+- 2026-10-03: Operator ruling (2026-10-03): a row that only an independent follow-up review of an already-landed story can close (a DW-FRR "follow-up review still recommended" row, or a row asking for a follow-up review of a landed story) is not in the Phase 4+5 fix stories, because an implementation session can never close it; those reviews run later as separate per-station review batches. Removed from this story's scope: `DW-FRR-7-1`, `DW-FRR-7-2`, `DW-FRR-24-1`, `DW-FU-5-5`, `DW-FRR-12-5`, `DW-FRR-12-6` (6 low; the follow-up reviews of Stories 7.1, 7.2, 24.1, 5.5, 12.5 and 12.6), with the follow-up-review acceptance criterion and the "Follow-up reviews owed" list. The rows stay open in the deferred-work ledger. 31 rows (8 medium, 23 low) became 25 (8 medium, 17 low).
 
 ## Review Triage Log
 

@@ -98,6 +98,30 @@ class EligibilityResult:
     identity: PackageIdentity
     status: EligibilityStatus
     provenance: tuple[ProvenanceEntry, ...]
+    effective_required_authority_sources: frozenset[str]
+
+
+def classify_eligibility_status(
+    *,
+    observed_authority_sources: frozenset[str],
+    required_authority_sources: frozenset[str],
+) -> EligibilityStatus:
+    """Pure status rule shared by ``compute_eligibility_union`` and re-derivation."""
+    required_present = observed_authority_sources & required_authority_sources
+    if required_authority_sources and required_present == required_authority_sources:
+        return EligibilityStatus.ELIGIBLE_UNION
+    if required_present:
+        return EligibilityStatus.FLAGGED_FOR_REVIEW
+    return EligibilityStatus.OBSERVED_IN_USE
+
+
+def status_from_eligibility_result(result: EligibilityResult) -> EligibilityStatus:
+    """Re-derive status from a result's provenance + recorded policy alone."""
+    observed = frozenset(entry.source for entry in result.provenance)
+    return classify_eligibility_status(
+        observed_authority_sources=observed,
+        required_authority_sources=result.effective_required_authority_sources,
+    )
 
 
 def compute_eligibility_union(
@@ -132,8 +156,11 @@ def compute_eligibility_union(
     # for the default computation, once for grouping), so a one-shot
     # iterable/generator would silently look empty on the second pass.
     evidence = tuple(evidence)
-    if required_authority_sources is None:
-        required_authority_sources = frozenset(ev.source_name for ev in evidence)
+    effective_required = (
+        frozenset(ev.source_name for ev in evidence)
+        if required_authority_sources is None
+        else required_authority_sources
+    )
 
     groups: dict[PackageIdentity, list[SourceEvidence]] = {}
     for ev in evidence:
@@ -142,13 +169,10 @@ def compute_eligibility_union(
     results: list[EligibilityResult] = []
     for identity, group in groups.items():
         observed = frozenset(ev.source_name for ev in group)
-        required_present = observed & required_authority_sources
-        if required_authority_sources and required_present == required_authority_sources:
-            status = EligibilityStatus.ELIGIBLE_UNION
-        elif required_present:
-            status = EligibilityStatus.FLAGGED_FOR_REVIEW
-        else:
-            status = EligibilityStatus.OBSERVED_IN_USE
+        status = classify_eligibility_status(
+            observed_authority_sources=observed,
+            required_authority_sources=effective_required,
+        )
 
         seen: set[tuple[str, str]] = set()
         provenance: list[ProvenanceEntry] = []
@@ -166,7 +190,14 @@ def compute_eligibility_union(
             )
         provenance.sort(key=lambda p: (p.source, p.locator))
 
-        results.append(EligibilityResult(identity=identity, status=status, provenance=tuple(provenance)))
+        results.append(
+            EligibilityResult(
+                identity=identity,
+                status=status,
+                provenance=tuple(provenance),
+                effective_required_authority_sources=effective_required,
+            )
+        )
 
     results.sort(
         key=lambda r: (
