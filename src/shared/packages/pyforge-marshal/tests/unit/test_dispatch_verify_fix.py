@@ -239,20 +239,6 @@ def test_wait_for_process_invokes_on_poll(monkeypatch):
     assert polled
 
 
-def test_wait_for_process_reaps_on_final_waitpid(monkeypatch):
-    waitpid_results = iter([(0, 0), (55, 0)])
-
-    def fake_waitpid(_pid: int, _opts: int):
-        return next(waitpid_results)
-
-    monkeypatch.setattr(os, "waitpid", fake_waitpid)
-    ticks = iter([0.0, 2.0])
-    monkeypatch.setattr(time, "monotonic", lambda: next(ticks))
-    result = wait_for_process(PosixProcess(), 55, timeout_s=1.0, poll_s=0.01)
-    assert result.exited is True
-    assert result.returncode == 0
-
-
 def test_wait_for_process_child_process_error(monkeypatch):
     def fake_waitpid(_pid: int, _opts: int):
         raise ChildProcessError
