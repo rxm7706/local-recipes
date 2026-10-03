@@ -2405,9 +2405,7 @@ def test_execute_dispatch_land_runs_coverage_gate_in_preview_from_story_fallback
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert not any(f.code == "MRS-DISP-044" for f in envelope.findings)
     assert vcs.preview_home is not None
-    preview_commands = [
-        " ".join(tokens) for tokens, cwd in process.calls if cwd == vcs.preview_home
-    ]
+    preview_commands = [" ".join(tokens) for tokens, cwd in process.calls if cwd == vcs.preview_home]
     assert MARSHAL_COVERAGE_GATE in preview_commands
 
 
