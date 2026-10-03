@@ -1815,7 +1815,9 @@ def _seed_refused_dispatch_land_run(
     )
 
 
-def test_in_progress_spec_with_refused_landing_journal_is_land_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_in_progress_spec_with_refused_landing_journal_is_land_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Story 83.7: a refused dispatch-land on the latest run → CAP-4 only, no session."""
     from pyforge.marshal.cli import dispatch as dispatch_module
 
@@ -1849,7 +1851,9 @@ def test_in_progress_spec_with_refused_landing_journal_is_land_only(tmp_path: Pa
     assert attempt.data["land_verdict"] == "landed"
 
 
-def test_in_progress_spec_without_landing_journal_still_launches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_in_progress_spec_without_landing_journal_still_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Story 83.7: no journaled landing attempt → session launches as before."""
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)

@@ -2713,9 +2713,7 @@ def dispatch_once(
     latest_landing_verdict: str | None = None
     latest_run_dir = _latest_story_run_dir(fs, repo_root, slug, render_feed_key(story_key))
     if latest_run_dir is not None:
-        latest_landing_verdict = gather_dispatch_journal_facts(
-            fs, latest_run_dir, latest_run_dir.name
-        ).landing_verdict
+        latest_landing_verdict = gather_dispatch_journal_facts(fs, latest_run_dir, latest_run_dir.name).landing_verdict
     if should_take_harness_done_land_only(
         parse_spec_status(live_spec_text),
         followup_review_recommended(live_spec_text),
