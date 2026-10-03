@@ -2,7 +2,7 @@
 title: "84.4: Sync skips a board item marked GitHub-only"
 type: 'feature'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '2360e20e336e1e5edbd180ced25d4cede6832019'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -44,6 +44,11 @@ Type / Effort / Deps: feature / S / —.
 - Given no marker declared in sync-config.yaml When reconcile runs Then behaviour is exactly today's
 - Given this story lands When its deferred-work rows are read Then each of `DW-8-5-2` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 
+**Added 2026-10-03 (independent review):**
+- Given an unknown `PYFORGE_ENVIRONMENT` or an unusable overlay file, with or without a declared marker When `sync reconcile --schedule` runs Then it completes the batch exactly as today (per-item results), logs a warning, and never crashes
+- Given the change When Platform CI's `test_openfeature_file_flags.py` and the repo-scope `flag_gate_check` run Then both pass, the marker tests write two flag trees, and `## Verification` names the test file
+- Given a batch with a skipped GitHub-only item When it finishes Then its summary names the skip count and the skipped ids
+
 ## Boundaries & Constraints
 
 **Always:** Add the flag to the flagd tree (src/platform/config/flags.json, flag-overlays.json) with owner, story and cleanup metadata; amend CAP-60's text (done in this chain). Fix each defect where the shipped behaviour lives and pin it with a test that fails without the fix.
@@ -71,7 +76,31 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back after an independent review (findings below); dispatch verification had refused on pyforge-core's shipped-flag pin, fixed on this branch by the operator session (keep that commit). Three acceptance criteria added. Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Independent review (operator session) — sent back
+Passed: the flag pins agree (flags.json, overlays, the spec's `flag:` block, pyforge-core's `test_flags.py`); real flag reads give production False, staging and dev True; labels match by exact set membership and field values by `==`; the steward coverage gate exits 0.
+
+**High**
+- **H1 Platform CI goes red (6 failures).** `src/platform/tests/test_openfeature_file_flags.py` pins the shipped flag set (`_SHIPPED_BOOLEANS`, the set equality, the per-environment expectations) and does not list the new key: `test_the_shipped_tree_with_metadata_evaluates_as_it_did_without[dev|staging|production]` fails "a key joined or left the shipped tree", and `test_every_flag_in_the_shipped_tree_carries_its_metadata_through_the_file_provider[...]` fails TYPE_MISMATCH. Fix: add the key with dev True, staging True, production False, and run `pixi run -e platform-ci-test platform-ci-local -- --test` (or the file under `src/platform` with the platform-ci-test env).
+- **H2 detectors-ci gains a FAIL from the flag gate.** `scripts/flag_gate_check.py` (repo scope) fails `flag-verification-names-no-test` on this spec: `## Verification` names no test file. Naming it is not enough: `flag-test-not-two-state` requires the testing kit's `flag_states` or two flag-tree writes, and `test_sync_github_only_marker.py` monkeypatches `_github_only_marker_feature_enabled` instead. Fix: write two flag trees and set `PYFORGE_FLAGS_PATH` as Story 75.1 does (`tests/unit/test_keys_ghe_credentials.py`), then name the test file in `## Verification`.
+- **H3 A flag-read error crashes the whole `--schedule` batch, with or without a marker.** `sync.py` calls `_github_only_marker_feature_enabled()` before checking `config.github_only_marker is not None`; `read_boolean` raises `FlagConfigError` (a `ValueError`) for an unknown `PYFORGE_ENVIRONMENT` or a bad overlay, which nothing catches before the CLI crash boundary (exit 70). Probe: `PYFORGE_ENVIRONMENT=prod` with no marker makes `reconcile_schedule_batch` raise, so the linked item never syncs (on main the batch completes with a per-item `unlinked` failure). Fix: check `config.github_only_marker is not None` first; catch `FlagConfigError` in the gate, warn and return False; read the flag once per batch.
+
+**Medium**
+- **M1 A skip is invisible.** The skip logs at INFO through the only logger call in the package, with no handler configured, so the line is dropped; the batch counts the skip as `ok`. Fix: report `K skipped (github-only)` and the skipped ids in the batch summary.
+- **M2 Flag OFF is not exactly today's.** `_parse_field_values` now writes single-select `name` values into the same map link/status/baseline read from, flag on or off (a native single-select Status field would now propagate status). Fix: keep single-select values in a separate map used only by `_item_carries_github_only_marker`; correct the docstring that says every field is read as TEXT.
+- **M3 Mutations survive.** `read_boolean(..., default=True)`, the gate body replaced with `return True`, case-insensitive or substring matching, removing the empty-marker refusal, and removing single-select parsing all pass the tests. Fix: the two-flag-tree tests (H2), near-miss negatives (`not-github-only`, `GitHub-Only`, `GitHub only (temp)`), a single-select node fixture, refusal tests for an empty label, a lone `field_id`, and a non-mapping value.
+
+**Low**
+- **L1** Reject unknown marker keys, a half-declared field pair, and an empty mapping at config load (all fail safe today, but silently).
+- **L2** State in the deploy notes that OFF in production requires `PYFORGE_ENVIRONMENT=production` (unset reads `dev`, ON).
+- **L3** DW-8-5-2's `verified:` line should cite the skip line, not the `raise SyncUnlinkedError` line.
+
+### 2026-10-03 — Review pass
 
 ### 2026-10-03 — Review pass
 - verdicts: 4 findings — high 0, medium 0, low 0, false 3, reject 1
