@@ -4334,3 +4334,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   promoted: 2026-10-03 — Story 66.2 backfill
   reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
   status: closed
+
+### DW-atlas-27-1: HollowVerificationSetError still aborts the full derived_artifacts Kedro run instead of skip-and-mark-stale on inventory outputs only (NFR-3).
+
+- source_spec: `planning-artifacts/specs/spec-27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud.md`
+  summary: HollowVerificationSetError still aborts the full derived_artifacts Kedro run instead of skip-and-mark-stale on inventory outputs only (NFR-3).
+  evidence: verification_sets raises inside inventory nodes; Kedro propagates and fails the SBOM path. Operator may prefer per-node stale markers without failing build_universe_sbom.
+  location: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/inventory_verification.py
+  origin: spec-deferred 21585c8b7cfe — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
