@@ -6,7 +6,6 @@ from pathlib import Path
 
 import pytest
 from pyforge.core.process import ProcessResult
-from pyforge.marshal.core.egress import Redacted
 
 from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from pyforge.marshal.core import gate, policy
@@ -26,6 +25,7 @@ from pyforge.marshal.core.dispatch_verification import (
     reclassify_pre_existing_gate_findings,
     would_land_on_self_report_only,
 )
+from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row

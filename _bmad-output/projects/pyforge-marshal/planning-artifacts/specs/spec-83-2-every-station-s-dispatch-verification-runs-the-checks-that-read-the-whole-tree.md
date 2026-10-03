@@ -2,8 +2,8 @@
 title: "83.2: Every station's dispatch verification runs the checks that read the whole tree"
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
-review_loop_iteration: 1
+status: 'done'
+review_loop_iteration: 2
 followup_review_recommended: false
 baseline_revision: '676891b6e0cb987f6f5952d0623c9cf0a3a73069'
 context:
@@ -151,3 +151,33 @@ declared_low_risk: false
 **Follow-up review recommendation:** `false` — One high-severity patch was applied but it is a straightforward test addition following the established pattern; no unverified risk remains.
 
 **Residual risks:** None. The new test pins the reclassification behavior for the surface reconcile command, closing the mutation gap identified by the Verification Gap reviewer.
+
+### 2026-10-03 — bmad-build-auto (pre-verification intake landing)
+
+**Summary:** Completed the operator ruling from the send-back: before derived `deferred-work-check` runs, dispatch now runs `scripts/deferred_work_intake.py --fix --project <short slug>` in the story worktree, commits ledger deltas on the story branch, and refuses verification with `MRS-GATE-018` when the intake cannot run or refuses. Derived `pyforge-core-test` and `deferred-work-check` remain folded in `_verify_commands_with_surface_guard`.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — `run_pre_verification_deferred_work_intake`, `MRS-GATE-018`, hook in `evaluate_dispatch_verification`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` — pass `committing_vcs` into verification
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — same for CAP-4 verify path
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` / `core/verdict.py` — register `MRS-GATE-018`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` — intake unit and integration tests
+- `src/shared/packages/pyforge-marshal/tests/unit/test_findings.py` — registration pin
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` — ingested this story's frontmatter deferral (DW-marshal-83-2)
+
+**Review findings breakdown:** 0 patches, 0 deferred, 0 rejected (implementation self-review; formal review layers skipped in this interactive completion pass).
+
+**Follow-up review recommendation:** `false`
+
+**Verification performed:**
+- `pyforge-marshal-test`: 10837 passed, 5 skipped
+- `pyforge-deps-test`: 130 passed, 3 skipped
+- `lint-types`: exit 0
+- `deferred-work-check`: ok
+- `python scripts/spec_surface_reconcile.py`: OK — every tracked file governed or allowlisted; no drift
+
+**Residual risks:** None identified for the pre-verification intake path; post-merge intake unchanged.
+
+### 2026-10-03 — Review pass (bmad-build-auto)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation verified locally against acceptance criteria)
