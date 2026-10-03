@@ -2896,7 +2896,7 @@ def test_a_bare_post_cutoff_line_does_not_hide_another_findings_kind(tmp_path: P
     ],
 )
 def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code(raw: str) -> None:
-    assert chain._verified_line_cites(raw), raw
+    assert chain.verified_line_cites(raw), raw
 
 
 @pytest.mark.parametrize(
@@ -2916,7 +2916,7 @@ def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code
     ],
 )
 def test_verified_line_cites_rejects_a_bare_verdict(raw: str) -> None:
-    assert not chain._verified_line_cites(raw), raw
+    assert not chain.verified_line_cites(raw), raw
 
 
 def test_the_live_tracked_ledgers_carry_no_uncited_post_cutoff_verified_line() -> None:

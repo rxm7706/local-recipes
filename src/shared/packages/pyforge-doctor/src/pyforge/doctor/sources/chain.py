@@ -4756,12 +4756,38 @@ def _parse_verified_date(raw: str) -> date | None:
 #: the earliest cutoff that does not.
 VERIFIED_CITATION_CUTOFF = date(2026, 10, 2)
 
-#: A `path:line` reference -- `<path>.<ext>:<n>` or `<path>.<ext>:<n>-<m>` --
-#: anywhere in a `verified:` line's value. The extension must start with a
-#: letter so a version or an address (`3.14:5`, `127.0.0.1:8080`) is not read
-#: as a file; `(?<!\w)` keeps a match from starting mid-word, while a leading
-#: `./`, `../` or `.github/` is part of the path.
-_VERIFIED_PATH_LINE_RE = re.compile(r"(?<!\w)[\w./-]*\w\.[A-Za-z][A-Za-z0-9]*:\d+(?:-\d+)?")
+#: Extensionless filenames this grammar recognises as paths on their own
+#: (DW-doctor-38-1-2). A CLOSED list on purpose: without an extension or a
+#: `/`, nothing distinguishes a filename from an ordinary capitalised word,
+#: so a bare `Note: 12` must not read as a citation. Add a name here only
+#: when a ledger line really cites that file.
+_EXTENSIONLESS_FILENAMES = ("CODEOWNERS", "Dockerfile", "Justfile", "LICENSE", "Makefile", "NOTICE", "Procfile")
+
+#: A citation anywhere in a `verified:` line's value: a path followed by
+#: either `:<n>` / `:<n>-<m>` (a line or line range) or `::<symbol>` (an
+#: anchor-style cite, the shape the ledgers already use for "this function
+#: in this module" -- DW-doctor-38-1-2).
+#:
+#: A path is recognised three ways, because a citation's job is to be
+#: followable and all three shapes are: it carries an EXTENSION that starts
+#: with a letter (`chain.py`, so a version or an address -- `3.14:5`,
+#: `127.0.0.1:8080` -- is not read as a file); or it is a DOTFILE
+#: (`.gitignore:3`); or it contains a `/`, which proves it is a path whatever
+#: its last segment looks like (`docs/MAP:3`). `_EXTENSIONLESS_FILENAMES`
+#: covers the one remaining real shape, a bare `Makefile:12`.
+#:
+#: `(?<![\w.])` keeps a match from starting mid-word or mid-extension, while
+#: a leading `./`, `../` or `.github/` is part of the path.
+_VERIFIED_PATH_LINE_RE = re.compile(
+    r"(?<![\w.])"
+    r"(?:"
+    r"[\w./-]*\w\.[A-Za-z][A-Za-z0-9]*"
+    r"|\.[A-Za-z][\w-]*"
+    r"|[\w.-]*/[\w./-]*[A-Za-z0-9_-]"
+    r"|(?:" + "|".join(_EXTENSIONLESS_FILENAMES) + r")"
+    r")"
+    r"(?:::[A-Za-z_]\w*|:\d+(?:-\d+)?)"
+)
 
 #: A backtick-quoted command followed (within a short gap, so `` `cmd` -> exit
 #: 0 `` and `` `cmd` (exit code 1) `` both count) by an exit code: `exit 0`,
@@ -4779,10 +4805,19 @@ _VERIFIED_COMMAND_EXIT_RE = re.compile(
 )
 
 
-def _verified_line_cites(raw: str) -> bool:
+def verified_line_cites(raw: str) -> bool:
     """Does a raw ``verified:`` value cite what it read -- a ``path:line``
-    (or ``path:n-m``) reference, or a backtick-quoted command followed by its
-    exit code (Story 38.1)?"""
+    (``path:n-m``, ``path::symbol``) reference, or a backtick-quoted command
+    followed by its exit code (Story 38.1)?
+
+    PUBLIC, unlike its neighbours here (DW-doctor-38-1): this predicate is
+    the rule, and ``scripts/apply_verification_verdicts.py`` -- the one
+    sanctioned writer of a ``verified:`` line -- must refuse a line that
+    this would FAIL. A writer that cannot see the rule writes lines the
+    reader then reds, so the two share ONE definition rather than a copy
+    that drifts. Everything else in this module stays private; a public
+    name here is what makes "never a copy" possible across the
+    read-only/mutation boundary."""
     return bool(_VERIFIED_PATH_LINE_RE.search(raw) or _VERIFIED_COMMAND_EXIT_RE.search(raw))
 
 
@@ -4812,7 +4847,7 @@ def _verified_citation_scan(path: Path) -> tuple[list[tuple[str, int]], int]:
         for m in _VERIFIED_RE.finditer(text[pos:end]):
             raw = m.group(1).strip()
             verified_on = _parse_verified_date(raw)
-            if verified_on is None or _verified_line_cites(raw):
+            if verified_on is None or verified_line_cites(raw):
                 continue
             if verified_on >= VERIFIED_CITATION_CUTOFF:
                 bare += 1
