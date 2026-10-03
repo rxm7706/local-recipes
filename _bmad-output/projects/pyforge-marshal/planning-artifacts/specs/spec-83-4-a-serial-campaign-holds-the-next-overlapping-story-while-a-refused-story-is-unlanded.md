@@ -2,7 +2,7 @@
 title: '83.4: A serial campaign holds the next overlapping story while a refused story is unlanded'
 type: 'fix'
 created: '2026-10-02'
-status: 'done'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 baseline_revision: '1e9c06c17e3b4a846f961aac32c5c1931f91991d'
@@ -35,6 +35,9 @@ Type / Effort / Deps: fix / M / —.
 - Given the refused story lands or its PR closes When the next cycle plans Then the hold is released
 - Given the hold removed When its new test runs Then it fails (mutation)
 - Given the refused story itself is dispatched again (the operator's re-dispatch after fixing its branch) When the guard runs Then no hold applies to it: the hold covers only other stories whose surfaces overlap, and `tests/unit/test_dispatch_station_guard.py::test_redispatch_allowed_when_session_dead_and_verification_refused` stays green
+- Given a story refused at dispatch verification (its run journaled no refused `dispatch-land`, so no PR was opened) When another story dispatches Then it is not held: the hold applies only to a landing refused with its PR open
+- Given a serial station whose only other story is a landing-refused one with disjoint surfaces When a story dispatches Then it is not held and no MRS-DISP-021 names the refused story (MRS-DISP-021 still applies to a LIVE session, as today)
+- Given two refused, unlanded stories When either is dispatched Then the other never holds it (a refused story is held only by a LIVE session), so refused stories can never hold each other
 
 ## Boundaries & Constraints
 
@@ -76,6 +79,7 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 ## Spec Change Log
 
 - 2026-10-03 — sent back by the operator session after the landing was refused: one acceptance criterion added (the refused story's own re-dispatch is never held). Status back to `ready-for-dev`.
+- 2026-10-03 (second send-back) — three acceptance criteria added: the hold is for a landing refused with its PR open only (not a verification refusal), it holds only overlapping stories (never a serial-station blanket MRS-DISP-021), and refused stories never hold each other. Status back to `ready-for-dev`.
 
 ## Review Triage Log
 
@@ -85,6 +89,11 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
   - `[false]` `[reject]` Missing test for LIVE same-story still blocked — `test_live_session_still_refuses_redispatch` already covers MRS-DISP-011 for LIVE.
   - `[false]` `[reject]` Refused blocking might skip serial MRS-DISP-021 — only the same-story branch `continue`s; other stories still hit overlap/serial paths.
   - `[false]` `[reject]` Wave planner bypass — wave planning calls the same `station_in_flight_conflict`; Story 83.4 tests remain green.
+
+### 2026-10-03 — Second landing review (operator session) — sent back
+- Run `pyforge-marshal-20261003T112056933Z-2e628afd` passed verification; the landing refused MRS-DISP-038 on `.claude/memory/MEMORY.md` (a team-memory index line added by this and another session at the same spot).
+- `high` `patch` The new hold is blanket, not surface-scoped. In `station_in_flight_conflict`, any story with `journal.verification_verdict == "refused"` and an unmerged branch becomes blocking, and on a serial station (`not parallel_dispatch`) every OTHER story then gets MRS-DISP-021, whatever its surfaces. That breaks this spec's Never rule ("Do not hold a story with disjoint surfaces"). It also keys on a verification refusal, where no PR exists, instead of a landing refused with its PR open. Live consequence: with 83.2, 83.3 and 84.1 all refused at verification and parked on their branches, each would hold every other, so no marshal story could dispatch (a deadlock). The review pass judged the serial path intended; the spec says otherwise.
+- Fix: hold only on a refused `dispatch-land` outcome whose branch is unmerged, check the refused story's surfaces against the candidate's and hold only on overlap (both serial and parallel paths), and never let one refused story hold another (only a LIVE session holds a refused story). Pin each with a test.
 
 ### 2026-10-03 — Landing review (operator session) — sent back
 - Dispatch run `pyforge-marshal-20261003T013846409Z-44861046` refused at verification: MRS-GATE-001, `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` exited 1, although the session reported the suite green. Reproduced in this worktree: 1 failed, 10829 passed.
