@@ -2467,6 +2467,46 @@ def test_add_worktree_for_tree_raises_vcs_command_error_on_an_unresolvable_paren
         vcs.add_worktree_for_tree(repo, home, tree_oid, parent="no-such-ref")
 
 
+def test_merge_tree_preview_two_parent_commit_scopes_changed_files_to_the_branch(
+    vcs, repo, tmp_path
+) -> None:
+    """Story 83.12: GitHub-style merge parents so ``origin/main...HEAD`` is the story diff."""
+    from pyforge.marshal.dispatch_verify import coverage_gate_commands_for_changed_files
+
+    _git(repo, "checkout", "-b", "feature/scribe")
+    scribe_rel = "src/shared/packages/pyforge-scribe/src/pyforge/scribe/story_only.py"
+    scribe_path = repo / scribe_rel
+    scribe_path.parent.mkdir(parents=True, exist_ok=True)
+    scribe_path.write_text("# story\n", encoding="utf-8")
+    _git(repo, "add", scribe_rel)
+    _git(repo, "commit", "-m", "scribe story change")
+    feature_sha = _git(repo, "rev-parse", "HEAD").stdout.strip()
+
+    _git(repo, "checkout", "main")
+    doctor_rel = "src/shared/packages/pyforge-doctor/src/pyforge/doctor/main_only.py"
+    doctor_path = repo / doctor_rel
+    doctor_path.parent.mkdir(parents=True, exist_ok=True)
+    doctor_path.write_text("# main\n", encoding="utf-8")
+    _git(repo, "add", doctor_rel)
+    _git(repo, "commit", "-m", "main-only doctor change")
+    main_sha = _git(repo, "rev-parse", "main").stdout.strip()
+
+    tree_oid = vcs.merge_tree_write(repo, "main", feature_sha)
+    assert tree_oid is not None
+
+    home = tmp_path / "merge-tree-preview-two-parent"
+    vcs.add_worktree_for_tree(repo, home, tree_oid, parent=main_sha, second_parent=feature_sha)
+
+    changed = vcs.changed_files(repo, home, base="main")
+    assert scribe_rel in changed
+    assert doctor_rel not in changed
+    assert coverage_gate_commands_for_changed_files(changed) == (
+        "pixi run --frozen -e pyforge-scribe pyforge-scribe-coverage-gate",
+    )
+
+    vcs.remove_worktree(repo, home, force=True)
+
+
 # --- Story 82.9 (DW-FU-2-6-4): commit text is declared egress ------------------
 #
 # `CommitPort` is classified egress (AD-34): the message is `Redacted`, every other text

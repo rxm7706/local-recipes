@@ -200,7 +200,7 @@ def _refuse_via_merge_tree_preview(
     story_changed_files: tuple[str, ...] | None = None
     try:
         story_changed_files = vcs.changed_files(git_repo_root, worktree, base=_ORIGIN_MAIN)
-    except VcsCommandError:
+    except (VcsCommandError, AttributeError):
         story_changed_files = None
 
     try:

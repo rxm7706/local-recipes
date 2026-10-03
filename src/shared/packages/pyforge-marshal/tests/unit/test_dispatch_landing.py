@@ -164,6 +164,9 @@ class FakeVcs:
         if self.fetch_fails:
             raise VcsCommandError("could not read from remote repository")
 
+    def changed_files(self, repo_root: Path, worktree: Path, *, base: str) -> tuple[str, ...]:
+        return ()
+
     def commits_behind(self, worktree_path: Path, tip_ref: str) -> int:
         """Story 51.1: ``0`` by default -- "already even with origin/main",
         the byte-identical-to-pre-51.1 path every pre-existing test in this
@@ -2267,8 +2270,16 @@ class MergeTreePreviewVcs(FakeVcs):
         self.merge_tree_write_calls.append((base, branch))
         return self.tree_oid
 
-    def add_worktree_for_tree(self, repo_root: Path, home: Path, tree_oid: str, *, parent: str) -> None:
-        self.add_worktree_for_tree_calls.append((home, tree_oid, parent))
+    def add_worktree_for_tree(
+        self,
+        repo_root: Path,
+        home: Path,
+        tree_oid: str,
+        *,
+        parent: str,
+        second_parent: str | None = None,
+    ) -> None:
+        self.add_worktree_for_tree_calls.append((home, tree_oid, parent, second_parent))
         self.preview_home = home
         if self.add_worktree_raises:
             raise VcsCommandError("git worktree add --detach failed: disk full")
@@ -2367,6 +2378,9 @@ def test_execute_dispatch_land_lands_when_merge_tree_preview_is_clean(
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert not any(f.code == "MRS-DISP-044" for f in envelope.findings)
     assert len(vcs.add_worktree_for_tree_calls) == 1
+    _home, _tree, parent, second_parent = vcs.add_worktree_for_tree_calls[0]
+    assert parent == "refs/remotes/origin/main"
+    assert second_parent == "abc123"
     assert vcs.removed_worktrees == [vcs.preview_home]
 
 

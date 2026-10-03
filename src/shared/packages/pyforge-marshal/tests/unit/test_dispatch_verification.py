@@ -801,6 +801,12 @@ def test_coverage_gate_commands_for_changed_files_ignores_planning_and_core_src(
     assert coverage_gate_commands_for_changed_files(core_only) == ()
 
 
+def test_coverage_gate_commands_for_changed_files_ignores_testing_kit_src() -> None:
+    """Story 83.12: testing-kit is not one of the eight coverage-gate stations."""
+    changed = ("src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/foo.py",)
+    assert coverage_gate_commands_for_changed_files(changed) == ()
+
+
 def test_coverage_gate_commands_for_changed_files_two_stations_once_each() -> None:
     changed = (
         "src/shared/packages/pyforge-marshal/src/pyforge/marshal/a.py",
@@ -815,9 +821,14 @@ def test_coverage_gate_commands_for_changed_files_two_stations_once_each() -> No
 class FakeProcessCoverageGateFails:
     """Every command succeeds except a station ``*-coverage-gate`` task."""
 
+    def __init__(self, *, stderr: str | None = None) -> None:
+        self._stderr = stderr or (
+            "src/shared/packages/pyforge-doctor/src/pyforge/doctor/unrelated.py below 80% floor"
+        )
+
     def run(self, tokens, *, cwd: Path):
         if tokens and tokens[-1].endswith("-coverage-gate"):
-            return ProcessResult(returncode=1, stdout="", stderr="coverage floor missed")
+            return ProcessResult(returncode=1, stdout="", stderr=self._stderr)
         return ProcessResult(returncode=0, stdout="ok", stderr="")
 
 
@@ -839,6 +850,17 @@ def test_evaluate_dispatch_verification_coverage_gate_failure_refuses_naming_the
     gate_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and MARSHAL_COVERAGE_GATE in f.message]
     assert len(gate_findings) == 1, envelope.findings
     assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings)
+
+
+def test_evaluate_dispatch_verification_coverage_gate_failure_not_reclassified_as_pre_existing(
+    tmp_path: Path,
+) -> None:
+    """Mutation guard: stderr names a ``.py`` path outside the story diff; without
+    excluding coverage-gate reports from the reclassifier this becomes MRS-GATE-014."""
+    envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcessCoverageGateFails())
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings)
+    gate_001 = [f for f in envelope.findings if f.code == "MRS-GATE-001" and MARSHAL_COVERAGE_GATE in f.message]
+    assert len(gate_001) == 1
 
 
 def test_evaluate_dispatch_verification_no_coverage_gate_for_planning_only_diff(
