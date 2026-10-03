@@ -1846,6 +1846,39 @@ non-greedy ``.*?`` body plus a backreferenced closing tag keeps a run of
 several such tags from being swallowed as one match."""
 
 
+def _normalize_html_readback_body(body: bytes) -> bytes | None:
+    """Line-ending normalization for HTML export read-back (Story 35.1).
+
+    Claude Design may store a pushed HTML artifact with normalized newlines
+    even when the semantic content is unchanged. Non-UTF-8 bodies cannot be
+    normalized and are treated as a mismatch."""
+    try:
+        text = body.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    return text.rstrip("\n").encode("utf-8")
+
+
+def _readback_matches_pushed_body(expected: bytes, actual: bytes, *, path: str, content_hash: str) -> bool:
+    """True when ``actual`` (post-harness) matches what was pushed.
+
+    Byte identity is tried first, then the recorded ``content_hash`` (SHA-256
+    of the raw pushed bytes), then HTML newline normalization for ``.html``
+    paths only."""
+    if actual == expected:
+        return True
+    if hashlib.sha256(actual).hexdigest() == content_hash:
+        return True
+    if not path.lower().endswith(".html"):
+        return False
+    norm_expected = _normalize_html_readback_body(expected)
+    norm_actual = _normalize_html_readback_body(actual)
+    if norm_expected is None or norm_actual is None:
+        return False
+    return norm_actual == norm_expected
+
+
 def _strip_serve_harness(content: bytes, *, path: str) -> bytes:
     """Undo Design's injected preview harness from ``render_preview``'s
     served bytes for ``path`` (Story 23.4's ``--prove``), so the result can
@@ -2023,7 +2056,7 @@ def push_exports(
                     new_etags.pop(key, None)
                 continue
             actual = _strip_serve_harness(raw, path=filename)
-            if actual != expected:
+            if not _readback_matches_pushed_body(expected, actual, path=filename, content_hash=candidate.local_hash):
                 mismatches.append(filename)
                 key = f"{_EXPORT_ARTIFACT_PREFIX}{filename}"
                 if key in existing.etags:
