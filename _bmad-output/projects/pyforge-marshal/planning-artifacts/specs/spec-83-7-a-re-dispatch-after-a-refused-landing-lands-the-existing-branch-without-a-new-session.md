@@ -2,7 +2,7 @@
 title: '83.7: A re-dispatch after a refused landing lands the existing branch without a new session'
 type: 'fix'
 created: '2026-10-02'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: 'abbb7ba05f5ce65e54b320b4d30e2c9e7d916c90'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -44,6 +44,8 @@ Type / Effort / Deps: fix / S / —.
 - Given a latest run that journaled no landing attempt When a single-story dispatch runs Then it launches a session as today
 - Given the land-only path meets a refusal it cannot clear When it runs Then it refuses again and leaves the PR open
 - Given the journal rule removed When its new test runs Then it fails (mutation)
+- Given a latest run that journaled a refused dispatch-land outcome and a worktree spec reading `ready-for-dev` or `draft` (the story was sent back after the refusal) When a single-story dispatch runs Then it launches a session and never takes the land-only path; the refused-landing rule applies only while the spec reads where a session stopped (`in-progress`, `in-review`)
+- Given the send-back guard removed When its new test runs Then it fails (mutation)
 
 ## Boundaries & Constraints
 
@@ -69,7 +71,15 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back by the operator session (landing review). Two acceptance criteria added: a sent-back spec (`ready-for-dev`, `draft`) always launches a session, with a mutation test. Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session) — sent back
+- Dispatch run `pyforge-marshal-20261003T033616311Z-73036a43` failed verification on the operator's launch environment (`python` not on PATH; not this story's code).
+- `high` `patch` `should_take_harness_done_land_only` returns True whenever the latest run journaled a refused `dispatch-land`, whatever the worktree spec says. A story the operator sends back after a refused landing (status reset to `ready-for-dev` because review found a defect) would then take land-only: re-verify, and merge the known-bad branch if verification passes. On 2026-10-03 landing review found a defect verification cannot see (83.3's deferred-work union deleting 275 of 484 live entries); had that branch been refused at landing instead of at verification, this rule would have merged it. Apply the refused-landing rule only while the spec reads `in-progress` or `in-review`; `ready-for-dev` and `draft` always launch a session. Keep the shared rule in `core/dispatch_harness_done.py` so `cli/dispatch.py` and `cli/drain_plan.py` agree.
 
 ### 2026-10-02 — Review pass
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
