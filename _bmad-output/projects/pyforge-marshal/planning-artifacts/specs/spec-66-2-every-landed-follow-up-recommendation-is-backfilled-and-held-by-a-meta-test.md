@@ -2,7 +2,7 @@
 title: '66.2: Every landed follow-up recommendation is backfilled and held by a meta test'
 type: 'chore'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md

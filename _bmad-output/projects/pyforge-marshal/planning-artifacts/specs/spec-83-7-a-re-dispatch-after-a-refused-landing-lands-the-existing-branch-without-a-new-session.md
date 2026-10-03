@@ -2,7 +2,7 @@
 title: '83.7: A re-dispatch after a refused landing lands the existing branch without a new session'
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
