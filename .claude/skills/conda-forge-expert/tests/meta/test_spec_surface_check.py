@@ -49,6 +49,16 @@ import pytest
 # NOTE: `fcntl` is imported function-locally by the S-12.5 lock tests below --
 # a module-level import would turn every test in this file (including the
 # POSIX-clean S-13.1 set) into a collection error off POSIX.
+#
+# Function-local importing keeps COLLECTION clean, but the lock tests
+# themselves still need POSIX (`fcntl`) and, for the two that observe a
+# blocked child, a Linux `/proc` fd table. Without the markers below they
+# ERROR rather than skip off Linux, which reads as a broken suite instead of
+# an unsupported platform (Story 41.1, independent 12.5 review).
+_needs_posix = pytest.mark.skipif(
+    not hasattr(os, "fork"), reason="POSIX fcntl.flock required")
+_needs_procfs = pytest.mark.skipif(
+    not Path("/proc").is_dir(), reason="Linux /proc fd table required")
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 CHECKER = REPO_ROOT / "scripts" / "spec_surface_check.py"
@@ -245,6 +255,7 @@ def _wait_until_blocked_on_lock(proc: subprocess.Popen, lock_path: Path,
         time.sleep(0.05)
 
 
+@_needs_posix
 def test_concurrent_scoped_stamps_neither_write_lost(tmp_path: Path):
     """The race itself, forced deterministically. A 2-party barrier gates
     `_read_baseline` inside `_stamp_baseline`'s critical section: on the
@@ -377,6 +388,8 @@ def _run_cli_against_held_lock(tmp_path: Path, extra_args: list[str]):
     return stale, json.loads(baseline.read_text())
 
 
+@_needs_posix
+@_needs_procfs
 def test_write_baseline_blocks_while_lock_held(tmp_path: Path):
     """Scoped stamp: blocks while the sidecar flock is held elsewhere, then
     lands the merge."""
@@ -388,6 +401,8 @@ def test_write_baseline_blocks_while_lock_held(tmp_path: Path):
         "scoped stamp leaked into another spec")
 
 
+@_needs_posix
+@_needs_procfs
 def test_full_stamp_blocks_while_lock_held(tmp_path: Path):
     """Full (--spec-less) stamp: the lock must bracket BOTH paths -- a future
     refactor that moves the lock inside the scoped branch (reopening the

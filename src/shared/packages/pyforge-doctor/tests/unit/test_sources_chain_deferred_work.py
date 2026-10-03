@@ -2705,6 +2705,38 @@ def test_post_cutoff_bare_line_reports_one_fail_naming_the_entry(tmp_path: Path)
     assert _POST in finding.message
 
 
+def test_a_bare_line_above_the_first_entry_heading_is_judged_too(tmp_path: Path) -> None:
+    """Story 41.1, independent 38.1 review. The citation walk used to start
+    at the FIRST ``DW-`` heading, so a bare post-cutoff line written into a
+    ledger's preamble was neither failed nor counted as grandfathered -- it
+    read as clean. It is now judged under a named pseudo-id."""
+    findings = _gather_verified(
+        tmp_path,
+        f"# Deferred work\n\nverified: {_POST} STANDS\n\n"
+        f"## DW-x-1\nstatus: open\nverified: {_POST} FIXED `chain.py:4344` reads it\n",
+    )
+
+    uncited = _uncited(findings)
+    assert len(uncited) == 1
+    assert uncited[0].evidence["id"] == "(before the first entry)"
+    assert uncited[0].evidence["uncited_lines"] == 1
+
+
+def test_a_pre_cutoff_line_above_the_first_heading_is_grandfathered_not_failed(
+    tmp_path: Path,
+) -> None:
+    """The preamble span obeys the SAME cutoff as an entry span: judging it
+    must not retro-fail the lines the burn-down grandfathered."""
+    findings = _gather_verified(
+        tmp_path,
+        f"# Deferred work\n\nverified: {_PRE} STANDS\n\n## DW-x-1\nstatus: open\n",
+    )
+
+    assert not _uncited(findings)
+    assert findings[0].status is DoctorStatus.OK
+    assert "1 pre-cutoff" in findings[0].message
+
+
 def test_pre_cutoff_bare_line_is_grandfathered_and_counted_on_the_ok_finding(tmp_path: Path) -> None:
     findings = _gather_verified(
         tmp_path,
@@ -2900,6 +2932,15 @@ def test_a_bare_post_cutoff_line_does_not_hide_another_findings_kind(tmp_path: P
         "STANDS `docs/MAP:3`",
         "STANDS chain.py::_glob_to_re",
         "STANDS `scripts/detectors.py::_DOCTOR_SOURCE_TASKS`",
+        # Story 41.1, independent 38.1 review: this repo has a root
+        # `Containerfile`, so a line citing it is followable.
+        "STANDS Containerfile:7",
+        # The `/` alternative's documented over-acceptance. Pinned as a
+        # KNOWN limit, not an aspiration: `docs/MAP:3` above and
+        # `Phase 2/3:1` here are the same shape to this grammar, and no
+        # live `verified:` line writes the prose form (measured 2026-10-03).
+        "STANDS Phase 2/3:1",
+        "STANDS and/or:1",
     ],
 )
 def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code(raw: str) -> None:
