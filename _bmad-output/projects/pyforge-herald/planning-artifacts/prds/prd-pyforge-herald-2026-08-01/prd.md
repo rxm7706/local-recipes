@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
@@ -1270,3 +1270,16 @@ someone without PowerPoint reads one.
 (a current export's second home in object storage), and AD-3, AD-12 and AD-21 are amended; see the
 spine's § Currency reconciliation — 2026-09-28 (night). § Success Metrics is unchanged, because
 reading a deck inside the airgap is not yet a measured audience.
+
+## Currency reconciliation — 2026-10-03 (Phase 4+5)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-herald`'s `.memlog.md` gained the operator's 2026-10-03
+Phase 4+5 rulings on the deferral burn-down (open medium and low deferred-work rows close together through fix stories,
+one story per station) and the event that minted Epic 35 / Story 35.1.*
+
+**What moved, and why the FR delta is none.** Story 35.1 is a `fix`: it repairs shipped behaviour under the
+capabilities that already carry it and closes the station's open medium and low deferred-work rows, each with a
+`resolution:` and a cited `verified:` line. No CAP is minted, no FR is added, renumbered or removed, and no success
+metric changes.
+
+**Content changed:** this section only. `updated:` bumped to record that the check ran.

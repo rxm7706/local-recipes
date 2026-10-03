@@ -131,6 +131,18 @@ the host or the source.
   Spec's "never invokes pixi at runtime" now reads "except the actuator's real `--open-fix-prs` path",
   in a throwaway copy (dry-run still opens no socket); and the lifted non-Python Non-goal became its
   own story (16.4), because it is core-scan work rather than `django-warden` work.
+- **2026-10-03 (Phase 4+5) — Ruled: warden's open medium and low deferrals close in one fix story.** The
+  operator ruled on 2026-10-03 that the deferral burn-down's Phase 4 (open medium rows) and Phase 5 (open
+  low rows) run together on the idle station lanes, then, the same day, that each station takes exactly
+  one story. Warden carries 3 open medium and 8 open low rows (measured with a parser over its
+  `deferred-work-ledger.md`). **What it looks like when fixed:** each eligibility result records the
+  effective required authority set, so the answer is reproducible from the result alone (CAP-2); one
+  package identity yields one result whose provenance keeps every observation; an unsupported CycloneDX
+  `specVersion` is refused; the TEA roster refusal that landed on 2026-09-07 is pinned and its row closed;
+  seven recommended follow-up reviews have run and their findings are fixed. **Constraints:** a `fix`
+  story, no CAP, no flag; a row closes only with a `resolution:` and a cited `verified:` line; `warden
+  scan` stays the sole PR verdict and the report schema changes additively only.
+  Owner `spec-pyforge-warden`. → Epic 17 / Story 17.1, specced 2026-10-03.
 
 ## Folded Dreams (2026-09-17)
 

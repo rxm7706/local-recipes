@@ -61,6 +61,7 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from packageurl import PackageURL
+from pyforge.core.errors import PyforgeError
 
 from . import discovery
 from .extract import extractor_for
@@ -209,6 +210,17 @@ def registered_sources() -> tuple[SourceContract, ...]:
 # --- CycloneDXSourceAdapter --------------------------------------------------
 
 _CYCLONEDX_BOM_FORMAT = "CycloneDX"
+_SUPPORTED_CYCLONEDX_SPEC_VERSIONS: frozenset[str] = frozenset({"1.6"})
+
+
+class CycloneDXUnsupportedSpecVersionError(PyforgeError, ValueError):
+    """Raised when a CycloneDX document's ``specVersion`` is outside the supported set."""
+
+    def __init__(self, spec_version: object) -> None:
+        self.spec_version = spec_version
+        supported = ", ".join(sorted(_SUPPORTED_CYCLONEDX_SPEC_VERSIONS))
+        super().__init__(f"unsupported CycloneDX specVersion {spec_version!r}; supported: {supported}")
+
 
 # purl type token -> Ecosystem (derived from the enum, never hand-spelled
 # twice -- both ecosystems' purl type strings equal their StrEnum value).
@@ -250,14 +262,19 @@ class CycloneDXSourceAdapter:
             return None
 
     def validate(self, parsed: object | None) -> list[object] | None:
-        """Checks ``bomFormat == "CycloneDX"`` and a list ``components``
-        key; returns the component list, or ``None`` on anything else
-        untrustworthy (not an object, wrong ``bomFormat``, non-list/absent
-        ``components``)."""
+        """Checks ``bomFormat == "CycloneDX"``, ``specVersion`` against the
+        supported set, and a list ``components`` key; returns the component
+        list, or ``None`` on anything else untrustworthy (not an object, wrong
+        ``bomFormat``, non-list/absent ``components``). Raises
+        ``CycloneDXUnsupportedSpecVersionError`` when ``specVersion`` is
+        outside the supported set."""
         if not isinstance(parsed, dict):
             return None
         if parsed.get("bomFormat") != _CYCLONEDX_BOM_FORMAT:
             return None
+        spec_version = parsed.get("specVersion")
+        if spec_version not in _SUPPORTED_CYCLONEDX_SPEC_VERSIONS:
+            raise CycloneDXUnsupportedSpecVersionError(spec_version)
         components = parsed.get("components")
         if not isinstance(components, list):
             return None

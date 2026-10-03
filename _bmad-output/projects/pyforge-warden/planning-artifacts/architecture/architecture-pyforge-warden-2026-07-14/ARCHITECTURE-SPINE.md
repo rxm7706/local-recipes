@@ -41,7 +41,7 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 17, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
 currency_review: "Reviewed 2026-09-07 — cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed: two advisory lenses registered in the existing pyforge.core.hooks plugin bundle, no new architectural surface; DW-FU-11-2's fail-closed roster-missing posture resolved inside the existing plugin-error seam). v1 body and the 2026-08-26 entry below remain accurate. See § Currency reconciliation — 2026-09-07."
 ---
 
@@ -580,3 +580,12 @@ published as a JSON export that Atlas reads as data (`spec-pyforge-atlas:CAP-61`
 
 **Content changed:** this section, the `canopy:FR-44` qualification on the Epic 9 line in § New architectural surfaces
 since the v1 close, and `updated:`. No prior decision reversed.
+
+## Currency reconciliation — 2026-10-03 (Phase 4+5)
+
+*`prd→arch` cascade for the 2026-10-03 Phase 4+5 rulings (Epic 17 / Story 17.1, a `fix`).* Checked
+against every AD: each fix lands inside the module that already owns the behaviour, behind the ports and boundaries
+the spine already draws; no port, adapter or package boundary moves, and `src/platform/` still imports no
+`pyforge.*`.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

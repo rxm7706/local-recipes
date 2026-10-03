@@ -133,6 +133,11 @@ def test_run_doctor_sources_filters_by_scope_like_a_scanned_detector():
     assert "dashboard-drift" in {row["name"] for row in all_rows}
 
 
+def test_doctor_source_tasks_include_ledger_direction_wiring():
+    """Story 35.1 / DW-FU-18-1: ledger-direction stays wired in detectors-ci."""
+    assert ("ledger-direction", "ledger-direction-check") in detectors._DOCTOR_SOURCE_TASKS
+
+
 def test_doctor_source_tasks_include_capability_effect_beside_story_status():
     """Story 21.11: capability-effect must stay in the detectors sweep
     immediately after story-status so one run answers both questions."""

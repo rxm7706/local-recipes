@@ -81,6 +81,7 @@ from .base import (
     ToolResult,
     as_optional_text,
     as_text,
+    parse_list_files_payload,
     parse_read_response,
     require_conditional,
     sanitize_payload,
@@ -495,30 +496,13 @@ class McpTransport:
         )
 
     def list_files(self, *, project_id: str) -> Sequence[ListedFile]:
-        payload = self._call_json("list_files", {"project_id": project_id})
-        raw_files = payload.get("files")
-        if raw_files is None:
-            raw_files = []
-        if not isinstance(raw_files, Sequence) or isinstance(raw_files, (str, bytes)):
-            raise TransportCallError(
-                f"claude-design list_files returned files as {type(raw_files).__name__}, expected a list"
-            )
-        files: list[ListedFile] = []
-        for entry in raw_files:
-            if not isinstance(entry, Mapping):
-                raise TransportCallError(
-                    f"claude-design list_files returned a non-object file entry ({type(entry).__name__})"
-                )
-            raw_size = entry.get("size")
-            size = raw_size if isinstance(raw_size, int) and not isinstance(raw_size, bool) else None
-            files.append(
-                ListedFile(
-                    path=as_text(entry.get("path")),
-                    etag=as_text(entry.get("etag")),
-                    size=size,
-                )
-            )
-        return files
+        text = self._raw_text("list_files", {"project_id": project_id})
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError as exc:
+            raise TransportCallError("claude-design list_files returned an unparseable answer") from exc
+        payload = sanitize_payload(payload)
+        return parse_list_files_payload(payload)
 
     def list_projects(self) -> Sequence[ProjectSummary]:
         """Story 23.1's 11th port method (CAP-1). Verified live 2026-09-18:

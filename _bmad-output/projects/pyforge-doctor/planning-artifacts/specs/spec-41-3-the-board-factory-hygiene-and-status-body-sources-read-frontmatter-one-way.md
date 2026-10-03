@@ -17,9 +17,9 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** Doctor's board, factory, hygiene, status-body, sibling-dream and docs-shelf sources, and the docs pages they police, carry 31 open deferrals (10 medium, 21 low): frontmatter readers that disagree with CAP-81 and with each other, 34 Dreams refused as unparseable, substring and preamble leaks in INV-A, a module cache that leaks between targets, factory checks that skip, fabricate or silently degrade, hygiene checks that crash together or mask orphans, stale doc counts and admonitions, and four recommended follow-up reviews (Stories 12.3, 23.3, 30.2, 30.3) that never ran.
+**Problem:** Doctor's board, factory, hygiene, status-body, sibling-dream and docs-shelf sources, and the docs pages they police, carry 27 open deferrals (10 medium, 17 low): frontmatter readers that disagree with CAP-81 and with each other, 34 Dreams refused as unparseable, substring and preamble leaks in INV-A, a module cache that leaks between targets, factory checks that skip, fabricate or silently degrade, hygiene checks that crash together or mask orphans, and stale doc counts and admonitions.
 
-**Approach:** Fix each row where its behaviour lives (one line each below): one shared fence-bounded frontmatter reader for every doctor reader, the 34 openers split, whole-token and section-scoped INV-A, per-check isolation and named WARNs in the factory and hygiene sweeps, the docs pages corrected; then run the four follow-up reviews.
+**Approach:** Fix each row where its behaviour lives (one line each below): one shared fence-bounded frontmatter reader for every doctor reader, the 34 openers split, whole-token and section-scoped INV-A, per-check isolation and named WARNs in the factory and hygiene sweeps, the docs pages corrected.
 
 Ledger key: `41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way`.
 Type / Effort / Deps: fix / L / —.
@@ -36,12 +36,11 @@ Type / Effort / Deps: fix / L / —.
 - Given an absent `CLAUDE.md`, a `blocked` spec with a matching retro, a `retro-.md` file, an unreadable count source or one raising hygiene check When the factory or hygiene sweep runs Then each yields one named WARN and every other check still runs
 - Given two targets in one process When the dashboard-drift gather loads each Then each sees only its own tree's modules
 - Given any code row above When its fix is reverted Then at least one test in the station suite fails
-- Given each `DW-FRR-<story>` row this story lists When its follow-up review has run Then the reviewed story's spec reads `followup_review_recommended: false` with a dated Review Triage Log entry naming this story, every finding the review raised is fixed here (with a test) or recorded there with its reason, and the row closes citing that log line
-- Given this story lands When its deferred-work rows are read Then each of `DW-CHAIN-COMPLETENESS-4`, `DW-FU-6-5-6`, `DW-FU-6-5-8`, `DW-FU-6-8-5`, `DW-FU-6-8-11`, `DW-FU-6-8-12`, `DW-FU-6-9`, `DW-FU-28-1`, `DW-FU-28-1-3`, `DW-FU-28-1-4`, `DW-6-11-1`, `DW-CHAIN-COMPLETENESS-3`, `DW-CHAIN-COMPLETENESS-5`, `DW-FU-6-8-2`, `DW-FU-6-8-6`, `DW-FU-6-8-7`, `DW-FU-6-8-8`, `DW-FU-6-8-9`, `DW-FU-9-2`, `DW-FU-9-2-2`, `DW-FU-9-2-3`, `DW-FU-9-3`, `DW-FU-28-1-2`, `DW-FU-28-1-5`, `DW-FU-23-5`, `DW-FU-30-1`, `DW-FU-30-1-2`, `DW-FRR-12-3`, `DW-FRR-23-3`, `DW-FRR-30-2`, `DW-FRR-30-3` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
+- Given this story lands When its deferred-work rows are read Then each of `DW-CHAIN-COMPLETENESS-4`, `DW-FU-6-5-6`, `DW-FU-6-5-8`, `DW-FU-6-8-5`, `DW-FU-6-8-11`, `DW-FU-6-8-12`, `DW-FU-6-9`, `DW-FU-28-1`, `DW-FU-28-1-3`, `DW-FU-28-1-4`, `DW-6-11-1`, `DW-CHAIN-COMPLETENESS-3`, `DW-CHAIN-COMPLETENESS-5`, `DW-FU-6-8-2`, `DW-FU-6-8-6`, `DW-FU-6-8-7`, `DW-FU-6-8-8`, `DW-FU-6-8-9`, `DW-FU-9-2`, `DW-FU-9-2-2`, `DW-FU-9-2-3`, `DW-FU-9-3`, `DW-FU-28-1-2`, `DW-FU-28-1-5`, `DW-FU-23-5`, `DW-FU-30-1`, `DW-FU-30-1-2` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 
 ## Boundaries & Constraints
 
-**Always:** Split the Dream openers byte-minimally (a line break after the dashes, nothing else), and reconcile and scoped-stamp the two steward-governed Dreams and any other Spec the detector names. Re-measure every live-tree count test the repair moves and record the old and new numbers. Re-verify each row at HEAD before fixing it: a row whose defect a later landing already removed closes citing the `path:line` of that fix and the test that pins it (adding the test when none exists), never on prose alone. Fix each defect where the shipped behaviour lives and pin it with a test that fails without the fix. A governed file moves only with its owning Spec's memlog naming it, then a scoped stamp for exactly that Spec (AGENTS.md pre-PR item 5); `spec-pyforge-core` co-governs every station's `src/`. Implementation and the follow-up reviews stay separate personas (AGENTS.md guideline 8). If a marshal follow-up-review dispatch closes a `DW-FRR-*` row first, cite that closure instead of re-running the review.
+**Always:** Split the Dream openers byte-minimally (a line break after the dashes, nothing else), and reconcile and scoped-stamp the two steward-governed Dreams and any other Spec the detector names. Re-measure every live-tree count test the repair moves and record the old and new numbers. Re-verify each row at HEAD before fixing it: a row whose defect a later landing already removed closes citing the `path:line` of that fix and the test that pins it (adding the test when none exists), never on prose alone. Fix each defect where the shipped behaviour lives and pin it with a test that fails without the fix. A governed file moves only with its owning Spec's memlog naming it, then a scoped stamp for exactly that Spec (AGENTS.md pre-PR item 5); `spec-pyforge-core` co-governs every station's `src/`.
 
 **Never:** Never rewrite a Dream's content beyond its opener, and never parse an unbounded opener leniently. Never close a row without a landed fix, a `resolution:` naming this story and a `verified:` line citing what was read. Never edit `SPEC.md` by hand or stamp a bare `--write-baseline`. Never weaken or delete a test to make a row pass. Never turn a warn-only finding into a gate.
 
@@ -49,7 +48,7 @@ Type / Effort / Deps: fix / L / —.
 
 ## Deferred-work rows this story closes (operator rulings 2026-10-03, deferral burn-down Phases 4 and 5)
 
-31 rows: 10 medium, 21 low.
+27 rows: 10 medium, 17 low.
 
 - `DW-CHAIN-COMPLETENESS-4` (medium) — `board.py`'s per-file stripping keeps only decomposition-relevant sections (epic, story and capability headings) instead of everything after the first `## `, so a `## Changelog` mention of a slug near a CAP id opens no citation window.
 - `DW-FU-6-5-6` (medium) — `_load_foreign_module` removes every `sys.modules` entry the executed file added (snapshot before, restore after), so a second target never reuses the first target's transitive imports.
@@ -78,10 +77,6 @@ Type / Effort / Deps: fix / L / —.
 - `DW-FU-23-5` (low) — A repeatable check (in `docs_shelf`) reds a live doc that cites the old `_bmad-output/` root path of the five archived files, with a test.
 - `DW-FU-30-1` (low) — `docs/how-to/github-actions-recipe-ci.md:7` points at the generated workflow table (`docs/reference/github-workflows.md`) instead of a hand-typed count.
 - `DW-FU-30-1-2` (low) — `docs/explanation/pyforge-estate-overview.md`'s `:::note` admonitions become GitHub's `> [!NOTE]` form, and `docs/_STYLE_GUIDE.md` names that one admonition syntax for `docs/`.
-- `DW-FRR-12-3` (low) — Run the recommended independent follow-up review of Story 12.3's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-23-3` (low) — Run the recommended independent follow-up review of Story 23.3's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-30-2` (low) — Run the recommended independent follow-up review of Story 30.2's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
-- `DW-FRR-30-3` (low) — Run the recommended independent follow-up review of Story 30.3's landed diff against its spec (a review persona that did not implement it); fix its findings in this story or record why each stands, write them to that spec's Review Triage Log, and set its `followup_review_recommended: false`.
 
 ## Binding
 
@@ -97,6 +92,10 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 **Commands:**
 - `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
+
+## Spec Change Log
+
+- 2026-10-03: Operator ruling (2026-10-03): a row that only an independent follow-up review of an already-landed story can close (a DW-FRR "follow-up review still recommended" row) is not in the Phase 4+5 fix stories, because an implementation session can never close it; those reviews run later as separate per-station review batches. Removed from this story's scope: `DW-FRR-12-3`, `DW-FRR-23-3`, `DW-FRR-30-2`, `DW-FRR-30-3` (4 low); the follow-up-review acceptance criterion, the review step in the Approach and the review boundary went with them. The rows stay open in the deferred-work ledger. 31 rows (10 medium, 21 low) became 27 (10 medium, 17 low).
 
 ## Review Triage Log
 
