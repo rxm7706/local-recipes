@@ -487,9 +487,7 @@ origin: review-budget-followup
 source_spec: `spec-5-1-actionable-diagnostics-safe-by-default-posture.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260724-162245-3440; this entry preserves the lingering recommendation for a deliberate later review.
-resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-verified: 2026-10-03 — src/shared/packages/pyforge-warden/tests/unit/test_story_17_1_followup_reviews.py:1
-status: closed
+status: open
 
 verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by the same measurement. No review artifact for `5-1-actionable-diagnostics-safe-by-default-posture` exists anywhere in `planning-artifacts/`; the story slug matches only `sprint-status-ledger.yaml` and this ledger. The damping cap spent its one follow-up and the recommendation has sat unactioned since 2026-07-24.
 
@@ -708,9 +706,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/tests/unit/test_story_17_1_followup_reviews.py:1
-  status: closed
+  status: open
 
 ### DW-FRR-1-4: Follow-up review still recommended for story 1.4
 
@@ -781,9 +777,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/tests/unit/test_sources.py:172
-  status: closed
+  status: open
 
 ### DW-FRR-9-1: Follow-up review still recommended for story 9.1
 
@@ -794,9 +788,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/tests/unit/test_hooks.py:58
-  status: closed
+  status: open
 
 ### DW-FRR-9-2: Follow-up review still recommended for story 9.2
 
@@ -807,9 +799,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/tests/unit/test_story_17_1_followup_reviews.py:20
-  status: closed
+  status: open
 
 ### DW-FRR-9-3: Follow-up review still recommended for story 9.3
 
@@ -820,6 +810,4 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/tests/unit/test_story_17_1_followup_reviews.py:27
-  status: closed
+  status: open
