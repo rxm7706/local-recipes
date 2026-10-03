@@ -46,7 +46,11 @@ gate_mode = "none"
 # station whose tier map names an inline `{ harness = "cursor", ... }` dev entry
 # (Story 28.11 leads the walk with it; spec-pyforge-marshal CAP-246 / Story 50.3
 # is the fix). Flip this line and the tier map together when Cursor returns.
-harness_preference = ["claude"]
+# 2026-10-03 (operator ruling): cursor-only again, on composer-2.5-fast. The Epic 83 campaign ran with
+# `--harness cursor` over this claude-pinned map, so the tier model `sonnet` passed straight through to
+# cursor-agent; it landed 1 of 5 stories. The operator chose Cursor with a stronger model over the claude
+# harness. Flip both back together (git history has the claude map) when the operator says so.
+harness_preference = ["cursor"]
 
 # merge_subject_template: no override -- the repo default
 # ("Merge {slug}/{key} into main", Story 50.4/spec-pyforge-marshal CAP-247)
@@ -412,6 +416,50 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-testing-charter governs the kit)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"86" = [  # Phase 3 of the deferral burn-down: marshal's ruled fixes (fix stories, no CAP), added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus what the bundles touch outside
+  # the package: 86.2's adopted files, 86.5's scripts, 86.6's matrices and detectors, 86.7's docs and the CFE guard.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/**",
+  "tests/scripts/**",
+  "_bmad/scripts/bmad_tea_playwright.py",
+  "_bmad-output/projects/*/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/*.md",
+  "_bmad-output/PROJECTS.md",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "README.md",
+  ".marshal/**",
+  ".github/workflows/**",
+  ".claude/skills/pyforge-marshal/**",
+  ".claude/skills/conda-forge-expert/tests/meta/**",
+  ".claude/skills/conda-forge-expert/CHANGELOG.md",
+  ".claude/skills/conda-forge-expert/SKILL.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"85" = [  # a verification refusal goes back to the session for one fix turn (spec-pyforge-marshal CAP-286), added 2026-10-03
+  # The default surface, restated because a declared entry replaces it outright, plus the flagd tree the story's flag
+  # joins and every Spec memlog.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "84" = [  # an operator-run refresh reads every harness's live model list (spec-pyforge-marshal CAP-285), added 2026-10-02
   # The default surface, restated because a declared entry replaces it outright, plus every Spec memlog.
   "src/shared/packages/pyforge-marshal/**",
@@ -561,16 +609,18 @@ max_parallel = 2
 # shape Story 33.15 established (spec-cursor-native-tier-map CAP-1). The
 # 2026-09-13 Cursor Ultra ladder (composer-2.5-fast / grok-4.6 / composer-2.5)
 # is in git history for the week Cursor usage returns.
+# 2026-10-03 (operator ruling, see harness_preference above): Cursor on composer-2.5-fast for dev and review in the
+# heavy and medium tiers (an undeclared difficulty resolves to medium on dispatch); easy keeps composer-2.5.
 [model_tier_map.heavy]
-dev = { harness = "claude", model = "sonnet" }
-review = { harness = "claude", model = "opus" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.medium]
-dev = { harness = "claude", model = "sonnet" }
-review = { harness = "claude", model = "opus" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.easy]
-dev = { harness = "claude", model = "sonnet" }
+dev = { harness = "cursor", model = "composer-2.5" }
 
 # model_cost_catalog (Story 28.10, CAP-11): declared price snapshot from
 # spec-marshal-token-economy/model-economics.md (2026-08-30). Advisory only —

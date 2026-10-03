@@ -16,11 +16,14 @@ from pyforge.marshal.core.deferred_work import (
     deferrals_to_promote,
     followup_review_candidate,
     followup_review_id,
+    followup_review_orphans,
     followup_review_to_promote,
     open_followup_review_id,
     open_followup_review_story_keys,
     parse_followup_deferrals,
+    parse_followup_review_carried_source_specs,
     promoted_id,
+    render_followup_review_backfill_entry,
     render_followup_review_entry,
     render_ledger_entry,
 )
@@ -210,6 +213,7 @@ def test_render_ledger_entry_matches_the_golden_shape():
         "`implementation-artifacts/deferred-work.md` (id `DW-8` there) "
         "under the ledger's `DW-FU-<story>` convention, so the next damped "
         "story cannot collide with a generic `DW-8`.\n"
+        "  origin: review-budget-followup\n"
         "  severity: low\n"
         "  status: open\n"
     )
@@ -730,3 +734,40 @@ def test_close_then_carry_adds_no_second_row():
     closed = close_followup_review_row(_open_row_ledger(), "DW-FRR-51-2", resolved_date="2026-10-02", landing="L")
     assert closed is not None
     assert followup_review_to_promote(_frr_candidate(), closed) is None
+
+
+# --- follow-up review carried (Story 66.2) ---------------------------------
+
+
+def test_parse_followup_review_carried_source_specs_reads_both_origins():
+    ledger = (
+        "### DW-FRR-51-2: x\n\n"
+        "- source_spec: `planning-artifacts/specs/spec-51-2-a.md`\n"
+        "  origin: dispatch-followup-review\n"
+        "### DW-FU-2-1: y\n\n"
+        "- source_spec: `spec-2-1-b.md`\n"
+        "  origin: review-budget-followup\n"
+    )
+    assert parse_followup_review_carried_source_specs(ledger) == frozenset({"spec-51-2-a.md", "spec-2-1-b.md"})
+
+
+def test_parse_followup_review_carried_source_specs_ignores_other_origins():
+    ledger = "### DW-FU-51-2-1: hand-filed\n\n- source_spec: `spec-51-2-c.md`\n  origin: post-hoc review\n"
+    assert parse_followup_review_carried_source_specs(ledger) == frozenset()
+
+
+def test_followup_review_orphans_reports_a_done_flagged_spec_without_a_carry():
+    spec = "---\nstatus: done\nfollowup_review_recommended: true\n---\n"
+    assert followup_review_orphans(spec_basename="spec-9-9-x.md", spec_text=spec, ledger_text="")
+
+
+def test_followup_review_orphans_is_false_when_dispatch_carry_exists():
+    spec = "---\nstatus: done\nfollowup_review_recommended: true\n---\n"
+    ledger = "### DW-FRR-9-9: x\n\n- source_spec: `spec-9-9-x.md`\n  origin: dispatch-followup-review\n"
+    assert not followup_review_orphans(spec_basename="spec-9-9-x.md", spec_text=spec, ledger_text=ledger)
+
+
+def test_render_followup_review_backfill_entry_closed_for_loop_era():
+    entry = render_followup_review_backfill_entry(_frr_candidate(), promoted_date="2026-10-03", dispatch_era=False)
+    assert "  status: closed\n" in entry
+    assert "  reason: bmad-loop wave landing" in entry

@@ -1997,6 +1997,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # unreadable tree revision, a failed write); WARN, because the record is evidence
         # about the verdict and never an input to it -- the verdict and exit code stand.
         "MRS-GATE-017",
+        # Story 83.2 (spec-83-2): MRS-GATE-018 -- pre-verification
+        # ``deferred_work_intake.py --fix`` refused or could not run before
+        # the derived ``deferred-work-check``; GATE_FAILED, never WARN.
+        "MRS-GATE-018",
         # Story 34.2 shipped `marshal factory checkpoint` building these three findings
         # without registering them, so every failure path of that command raised
         # `UnregisteredFindingCodeError` out of `Finding(...)` instead of exiting non-zero

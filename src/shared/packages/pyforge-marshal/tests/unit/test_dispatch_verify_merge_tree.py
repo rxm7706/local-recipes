@@ -30,6 +30,11 @@ from pyforge.marshal.dispatch_verify import run_verify_commands_only
 # deleting the derivation fails these tests rather than silently updating them.
 LINT_TYPES = "pixi run --frozen -e pyforge-guild lint-types"
 
+# Story 83.2 (spec-83-2): the derived whole-tree check commands, pinned as
+# literals so deleting the derivation fails these tests.
+PYFORGE_CORE_TEST = "pixi run --frozen -e pyforge-core pyforge-core-test"
+DEFERRED_WORK_CHECK = "pixi run --frozen -e pyforge-guild deferred-work-check"
+
 
 class FakeProcess:
     def __init__(self) -> None:
@@ -57,6 +62,8 @@ def test_run_verify_commands_only_reports_pass_and_fail(tmp_path: Path) -> None:
         "false",
         _SURFACE_RECONCILE_COMMAND,
         LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
     ]
     assert reports[0]["returncode"] == 0
     assert reports[1]["returncode"] == 1
@@ -70,7 +77,7 @@ def test_run_verify_commands_only_all_green_has_no_findings(tmp_path: Path) -> N
     worktree.mkdir()
     process = FakeProcess()
     reports, findings = run_verify_commands_only(_effective(["true", "echo ok"]), process=process, worktree=worktree)
-    assert len(reports) == 4
+    assert len(reports) == 6  # 2 station commands + 4 derived commands
     assert findings == ()
 
 
@@ -84,9 +91,16 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands
     worktree.mkdir()
     process = FakeProcess()
     reports, findings = run_verify_commands_only(_effective([]), process=process, worktree=worktree)
-    assert [report["command"] for report in reports] == [_SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert [report["command"] for report in reports] == [
+        _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
+    ]
     assert findings == ()
     assert process.calls == [
         (_SURFACE_RECONCILE_COMMAND.split(), worktree),
         (LINT_TYPES.split(), worktree),
+        (PYFORGE_CORE_TEST.split(), worktree),
+        (DEFERRED_WORK_CHECK.split(), worktree),
     ]

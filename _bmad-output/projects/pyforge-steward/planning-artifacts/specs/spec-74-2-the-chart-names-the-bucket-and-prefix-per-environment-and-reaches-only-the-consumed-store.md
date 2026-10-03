@@ -116,4 +116,12 @@ Deps: S-74.1 (the settings the chart feeds).
 - `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: `test_chart_invariants.py` passes with `helm` on `PATH`.
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings.
 
+## Spec Change Log (amendment)
+
+- 2026-10-03 — operator ruling (deferral burn-down Phase 3, DW-steward-74-1-2): the mounted S3 credential must allow
+  `s3:ListBucket` on the bucket (conditioned to the prefix) as well as `s3:GetObject` and `s3:PutObject` on the prefix.
+  On real S3 a `head_object` on an absent key answers 403 instead of 404 without ListBucket, which the store would read
+  as a failure rather than "absent". State it in the chart values docs and in this story's acceptance criteria when it is
+  dispatched.
+
 ## Review Triage Log

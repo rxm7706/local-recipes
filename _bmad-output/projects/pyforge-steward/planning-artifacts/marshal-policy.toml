@@ -37,7 +37,11 @@ gate_mode = "none"
 # (uncatalogued model, MRS-DISP-043 silent -- marshal Story 51.5), and on
 # `--harness cursor` the CLI answered "You're out of usage". Flip this line and
 # the tier map together when Cursor returns.
-harness_preference = ["claude"]
+# 2026-10-03 (operator ruling): cursor-only, on composer-2.5-fast, as pyforge-marshal has run since #1757.
+# A bare `--harness cursor` over the claude-pinned map passes the tier model `sonnet` straight to
+# cursor-agent (marshal campaign 1902053 landed 1 of 5). Flip both back together (git history has
+# the claude map) when the operator says so.
+harness_preference = ["cursor"]
 
 
 # verify_commands: THIS station's own suite. Every home except atlas and warden was
@@ -787,6 +791,25 @@ verify_commands = [
   "docs/reference/environments.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"84" = [  # Phase 3 of the deferral burn-down: steward's ruled fixes, added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus the flagd tree (84.4's flag),
+  # the platform deploy files (84.1's grants), the steward ledger rows each story closes, and every Spec memlog.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "scripts/.spec-surface-baseline.json",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "src/platform/config/settings/**",
+  "src/platform/deploy/**",
+  "src/platform/tests/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "83" = [  # Phase 2 of the deferral burn-down: steward's high deferrals (fix stories, no new CAP), added 2026-10-02.
           # The default surface, restated because a declared entry replaces it outright, plus the platform files
           # 83.2 (settings, compose) and 83.3 (chart values, compose, chart tests) touch, the ledger rows each story
@@ -897,14 +920,16 @@ verify_commands = [
 # in the fails-safe {harness, model} shape. The 2026-09-13 Cursor Ultra
 # ladder (composer-2.5-fast / grok-4.6 / composer-2.5) is in git history for
 # the week Cursor usage returns.
+# 2026-10-03 (operator ruling, see harness_preference above): Cursor on composer-2.5-fast for dev and review in the
+# heavy and medium tiers (an undeclared difficulty resolves to medium on dispatch); easy keeps composer-2.5.
 [model_tier_map.heavy]
-dev = { harness = "claude", model = "sonnet" }
-review = { harness = "claude", model = "opus" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.medium]
-dev = { harness = "claude", model = "sonnet" }
-review = { harness = "claude", model = "opus" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.easy]
-dev = { harness = "claude", model = "sonnet" }
+dev = { harness = "cursor", model = "composer-2.5" }
 

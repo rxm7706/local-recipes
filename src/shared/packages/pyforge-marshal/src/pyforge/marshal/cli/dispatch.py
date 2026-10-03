@@ -45,7 +45,7 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 from pyforge.core.errors import PyforgeError
-from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort, ProcessResult
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
@@ -73,19 +73,23 @@ from ..core.dispatch_completion import (
 )
 from ..core.dispatch_harness_done import (
     FollowupReview,
-    blocks_harness_relaunch,
     followup_review_recommended,
     is_followup_review_spec,
     land_fail_operator_message,
     parse_blocking_condition,
     parse_spec_status,
+    should_take_harness_done_land_only,
+    should_take_verification_refusal_land_only,
 )
 from ..core.dispatch_landing import DispatchLandingVerdict
 from ..core.dispatch_retry import (
     DispatchBlockKind,
     classify_dispatch_block,
     exclude_harness_profiles_after_transient_failure,
+    format_verification_refusal_park_reason,
+    is_dispatch_verification_refusal,
     prune_blocked_stories_merged_on_main,
+    verification_refusal_head_unchanged,
 )
 from ..core.dispatch_supervisor_finalize import (
     finalize_attempt_failed,
@@ -130,15 +134,15 @@ from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_
 from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
-from ..dispatch_verify import evaluate_dispatch_verification
+from ..dispatch_verify import evaluate_dispatch_verification, run_dispatch_ruff_format_before_verify
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
 from ..ports.vcs import VcsPort
 from ..scope import format_scope_drift, verify_scope
 from ..seed.detect.kit import layer_enabled, probe_instrument
-from ..seed.model.kit import KitItemId, kit_item
-from ..seed.verbs.kit import build_codegraph_index, render_deployed_skill
+from ..seed.model.kit import CODEGRAPH_INDEX_RELPATH, KitItemId, kit_item
+from ..seed.verbs.kit import IndexBuilder, build_codegraph_index, render_deployed_skill
 from .config import (
     PolicyIOError,
     _read_project_policy,
@@ -468,6 +472,15 @@ def _surface_worktree_wip_before_dispatch(
 
 _SESSION_CHECK_ARGV = ("pixi", "run", "--frozen", "-e", "pyforge-guild", "steward", "session", "check", "--json")
 _SESSION_CHECK_TIMEOUT_S = 60.0
+#: Story 83.6: when steward's only non-ok rows are the kit aggregate and the
+#: codegraph-index row reporting a stale index, prelaunch may resync before
+#: re-checking. Any other non-ok name keeps today's warn-only path.
+_STALE_CODEGRAPH_RESYNC_FINDING_NAMES = frozenset({"token-kit", "codegraph-index"})
+
+
+def _run_steward_session_check(*, process: ProcessPort, repo_root: Path) -> ProcessResult:
+    """Shell ``steward session check --json`` once."""
+    return process.run(list(_SESSION_CHECK_ARGV), cwd=repo_root, timeout_s=_SESSION_CHECK_TIMEOUT_S)
 
 
 def _session_report_payload(stdout: str | None, stderr: str | None) -> dict[str, Any] | None:
@@ -498,24 +511,47 @@ def _session_report_payload(stdout: str | None, stderr: str | None) -> dict[str,
     return None
 
 
-def _surface_session_precondition_findings(*, process: ProcessPort, repo_root: Path) -> Finding | None:
-    """Story 63.4 (spec-pyforge-steward CAP-5): shell ``steward session check
-    --json`` right after ``repo_root`` resolves and fold a non-ok
-    session-precondition verdict (pixi/pyforge-guild, bmad-method drift, the
-    token-economy kit + codegraph index, gh auth/rate-limit, the Tier-3
-    sprint-status feed) into a WARN finding -- non-blocking, mirroring
-    ``_surface_worktree_wip_before_dispatch``'s shape. Never escalated to
-    ERROR: a session-precondition gap is worth flagging before a dispatch
-    launches, not worth refusing the launch over.
-    """
+def _session_check_only_stale_codegraph(payload: Mapping[str, object]) -> bool:
+    """True when every non-ok steward finding is the kit/codegraph stale pair."""
     try:
-        result = process.run(list(_SESSION_CHECK_ARGV), cwd=repo_root, timeout_s=_SESSION_CHECK_TIMEOUT_S)
-    except ProcessError as exc:
-        return Finding(
-            code="MRS-DISP-049",
-            severity=Severity.WARN,
-            message=f"steward session check could not run: {exc} -- session preconditions unverified",
-        )
+        rows = payload.get("findings", [])
+        if not isinstance(rows, list):
+            return False
+        non_ok = [row for row in rows if isinstance(row, Mapping) and not row.get("ok", True)]
+    except AttributeError, TypeError:
+        return False
+    if not non_ok:
+        return False
+    names = {row.get("name") for row in non_ok}
+    if not names or not names <= _STALE_CODEGRAPH_RESYNC_FINDING_NAMES:
+        return False
+    codegraph = next((row for row in non_ok if row.get("name") == "codegraph-index"), None)
+    if codegraph is None:
+        return False
+    detail = str(codegraph.get("detail") or "").lower()
+    return "stale" in detail
+
+
+def _resync_stale_codegraph_index(
+    repo_root: Path,
+    *,
+    index_builder: IndexBuilder = build_codegraph_index,
+) -> None:
+    """Run the kit's incremental resync and stamp the index mtime (Story 83.6).
+
+    Failures are ignored here: the follow-up session check decides whether to
+    warn. Never blocks a launch."""
+    error = index_builder(repo_root, stale=True)
+    if error is not None:
+        return
+    try:
+        os.utime(repo_root / CODEGRAPH_INDEX_RELPATH, None)
+    except OSError:
+        pass
+
+
+def _finding_from_session_check_result(result: ProcessResult) -> Finding | None:
+    """Fold one ``steward session check`` subprocess result into MRS-DISP-049."""
     if result.returncode == 0:
         return None
     detail: str | None = None
@@ -534,6 +570,51 @@ def _surface_session_precondition_findings(*, process: ProcessPort, repo_root: P
         severity=Severity.WARN,
         message=f"steward session check reported a non-ok session-precondition verdict: {detail}",
     )
+
+
+def _surface_session_precondition_findings(
+    *,
+    process: ProcessPort,
+    repo_root: Path,
+    index_builder: IndexBuilder = build_codegraph_index,
+) -> Finding | None:
+    """Story 63.4 (spec-pyforge-steward CAP-5): shell ``steward session check
+    --json`` right after ``repo_root`` resolves and fold a non-ok
+    session-precondition verdict (pixi/pyforge-guild, bmad-method drift, the
+    token-economy kit + codegraph index, gh auth/rate-limit, the Tier-3
+    sprint-status feed) into a WARN finding -- non-blocking, mirroring
+    ``_surface_worktree_wip_before_dispatch``'s shape. Never escalated to
+    ERROR: a session-precondition gap is worth flagging before a dispatch
+    launches, not worth refusing the launch over.
+
+    Story 83.6: when the only non-ok rows are ``token-kit`` and
+    ``codegraph-index`` reporting a stale index, run the kit's incremental
+    ``codegraph sync`` (via ``build_codegraph_index(..., stale=True)``),
+    re-check once, and omit MRS-DISP-049 when the second check passes. A
+    resync failure or timeout leaves today's warning; any other non-ok row
+    skips the resync entirely.
+    """
+    try:
+        result = _run_steward_session_check(process=process, repo_root=repo_root)
+    except ProcessError as exc:
+        return Finding(
+            code="MRS-DISP-049",
+            severity=Severity.WARN,
+            message=f"steward session check could not run: {exc} -- session preconditions unverified",
+        )
+    if result.returncode != 0:
+        payload = _session_report_payload(result.stdout, result.stderr)
+        if payload is not None and _session_check_only_stale_codegraph(payload):
+            _resync_stale_codegraph_index(repo_root, index_builder=index_builder)
+            try:
+                result = _run_steward_session_check(process=process, repo_root=repo_root)
+            except ProcessError as exc:
+                return Finding(
+                    code="MRS-DISP-049",
+                    severity=Severity.WARN,
+                    message=f"steward session check could not run: {exc} -- session preconditions unverified",
+                )
+    return _finding_from_session_check_result(result)
 
 
 _FLAG_GATE_TIMEOUT_S = 60.0
@@ -945,9 +1026,16 @@ def _verification_verdict_for_cap4(
     effective_policy: policy.EffectivePolicy,
     spec_text: str,
     process: ProcessPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
 ) -> DispatchVerificationVerdict:
     """Independent verify only — never a harness self-report (CAP-3)."""
+    if callable(getattr(vcs, "commit_paths", None)):
+        run_dispatch_ruff_format_before_verify(
+            worktree=worktree,
+            repo_root=repo_root,
+            vcs=vcs,  # CommittingVcs duck type
+            process=process,
+        )
     try:
         envelope = evaluate_dispatch_verification(
             project_slug=slug,
@@ -958,6 +1046,7 @@ def _verification_verdict_for_cap4(
             spec_text=spec_text,
             process=process,
             vcs=vcs,
+            committing_vcs=vcs,
         )
     except ProcessError, VcsCommandError, OSError, TypeError, AttributeError:
         return DispatchVerificationVerdict.REFUSED
@@ -1141,6 +1230,14 @@ def _count_prior_failed_dispatch_attempts(fs: FsPort, repo_root: Path, slug: str
         if journal.completion_verdict == DispatchSessionVerdict.COMPLETED.value:
             break
         if journal.completion_verdict == DispatchSessionVerdict.FAILED.value:
+            # Story 83.10: verification refusals are not session failures for
+            # Story 33.6's floor-raise counter.
+            if is_dispatch_verification_refusal(
+                completion_verdict=journal.completion_verdict,
+                verification_verdict=journal.verification_verdict,
+                verification_failed_gate=journal.verification_failed_gate,
+            ):
+                continue
             count += 1
     return count
 
@@ -1287,9 +1384,11 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     landing_findings: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND):
         if entry.phase == Phase.OUTCOME:
-            if entry.payload.get("ok"):
-                verdict_val = entry.payload.get("verdict")
-                if isinstance(verdict_val, str):
+            verdict_val = entry.payload.get("verdict")
+            if isinstance(verdict_val, str):
+                # Story 83.7: refused outcomes carry ``ok: false`` but still
+                # record ``verdict: refused`` for the land-only re-dispatch gate.
+                if entry.payload.get("ok") or verdict_val == DispatchLandingVerdict.REFUSED.value:
                     landing_verdict = verdict_val
             # Story 53.2 review (I1): read regardless of `ok` -- a refused
             # landing (MRS-DISP-048) is exactly the case this must surface.
@@ -2123,6 +2222,31 @@ def station_story_block_facts(
                 git_changed_paths, narration_spec_path(spec_relative_path, followup_review=journal.followup_review)
             ):
                 classify_changed_path_count = 0
+            if is_dispatch_verification_refusal(
+                completion_verdict=journal.completion_verdict,
+                verification_verdict=journal.verification_verdict,
+                verification_failed_gate=journal.verification_failed_gate,
+            ):
+                current_head: str | None = None
+                if journal.worktree_path is not None:
+                    try:
+                        current_head = vcs.worktree_head_sha(Path(journal.worktree_path))
+                    except VcsCommandError:
+                        current_head = None
+                refusal_head = journal.final_revision or journal.baseline_head_sha
+                if not verification_refusal_head_unchanged(
+                    refusal_head_sha=refusal_head,
+                    current_head_sha=current_head,
+                ):
+                    return None
+                return dispatch_fleet.StationBlockEvidence(
+                    reason=format_verification_refusal_park_reason(
+                        story_key=feed_story,
+                        run_id=run_dir.name,
+                        failed_gate=journal.verification_failed_gate,
+                    ),
+                    block_class=dispatch_fleet.FleetBlockClass.STORY,
+                )
             block_kind = classify_dispatch_block(
                 session_log=session_log,
                 failed_gate=journal.verification_failed_gate,
@@ -2746,10 +2870,51 @@ def dispatch_once(
     # is session-terminal. CAP-4 only — never another bmad-build-auto
     # because main's ledger is still backlog.
     live_spec_text = _spec_text_prefer_worktree(spec_path, repo_root, worktree, spec_text)
-    if blocks_harness_relaunch(
-        parse_spec_status(live_spec_text),
-        followup_review_recommended(live_spec_text),
-    ):
+    spec_status_rewrite: dict[str, str] | None = None
+    rewritten_spec_text, spec_status_rewrite = dispatch_core.rewrite_worktree_spec_status_for_bmad_build_auto(
+        live_spec_text
+    )
+    if spec_status_rewrite is not None:
+        try:
+            fs.write_text_atomic(spec_path, rewritten_spec_text)
+        except FsError as exc:
+            findings.append(
+                Finding(
+                    code="MRS-DISP-005",
+                    severity=Severity.ERROR,
+                    message=f"cannot rewrite worktree spec status for harness launch: {exc}",
+                )
+            )
+            return _done()
+        live_spec_text = rewritten_spec_text
+    latest_landing_verdict: str | None = None
+    latest_journal: dispatch_core.DispatchJournalFacts | None = None
+    latest_run_dir = _latest_story_run_dir(fs, repo_root, slug, render_feed_key(story_key))
+    if latest_run_dir is not None:
+        latest_journal = gather_dispatch_journal_facts(fs, latest_run_dir, latest_run_dir.name)
+        latest_landing_verdict = latest_journal.landing_verdict
+    spec_status = parse_spec_status(live_spec_text)
+    followup = followup_review_recommended(live_spec_text)
+    take_land_only = should_take_harness_done_land_only(
+        spec_status,
+        followup,
+        latest_landing_verdict=latest_landing_verdict,
+    )
+    if not take_land_only and latest_journal is not None:
+        try:
+            current_head = vcs.worktree_head_sha(worktree)
+        except VcsCommandError:
+            current_head = None
+        take_land_only = should_take_verification_refusal_land_only(
+            spec_status,
+            followup,
+            completion_verdict=latest_journal.completion_verdict,
+            verification_verdict=latest_journal.verification_verdict,
+            verification_failed_gate=latest_journal.verification_failed_gate,
+            refusal_head_sha=latest_journal.final_revision or latest_journal.baseline_head_sha,
+            current_head_sha=current_head,
+        )
+    if take_land_only:
         data["harness_done_land_only"] = True
         land_verdict, named_target, land_envelope = _attempt_harness_done_cap4(
             slug=slug,
@@ -2873,6 +3038,7 @@ def dispatch_once(
                 else {}
             ),
             **(followup_review.to_intent_payload() if followup_review is not None else {}),
+            **({"spec_status_rewrite": spec_status_rewrite} if spec_status_rewrite is not None else {}),
         },
     )
     try:
@@ -5622,6 +5788,9 @@ def run_fleet_drain(
                 ),
             )
         )
+        # Readable "not complete" so a detached campaign supervisor ticks
+        # again instead of counting this refusal toward the unreadable ceiling.
+        data["complete"] = False
         return _emit(args, data, findings, command="factory drain")
 
     retry_environment_blocks = bool(getattr(args, "retry_environment_blocks", False))

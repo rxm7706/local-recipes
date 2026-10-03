@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 483
+# stories: 489
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -324,6 +324,10 @@ development_status:
   83-1-steward-keys-resolves-its-http-bridge-on-first-use-and-reports-a-missing-age-as-a-duty-failure: done
   83-2-login-works-on-the-plain-http-local-stack-and-sync-retries-rate-limits-and-names-each-failed-candidate: done
   83-3-the-platform-chart-and-the-compose-stack-run-a-postgres-image-that-carries-pgvector: done
+  84-1-an-audit-purge-records-itself-and-the-audit-table-is-append-only-by-privilege: done
+  84-2-an-audit-read-records-its-scope-and-the-perimeter-refuses-an-over-long-identity: backlog
+  84-3-trusted-ingress-addresses-are-ip-networks: backlog
+  84-4-sync-skips-a-board-item-marked-github-only: backlog
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
@@ -495,5 +499,7 @@ development_status:
   epic-82-retrospective: optional
   epic-83: done
   epic-83-retrospective: optional
+  epic-84: in-progress
+  epic-84-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
