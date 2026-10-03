@@ -60,14 +60,28 @@ needs the extra itself).
 
 from __future__ import annotations
 
+import ipaddress
 from typing import Any, Awaitable, Callable
 
-from .declarations import TrustedIngress
+from .declarations import AUDIT_IDENTITY_MAX_LENGTH, TrustedIngress
 
 Scope = dict[str, Any]
 Receive = Callable[[], Awaitable[dict[str, Any]]]
 Send = Callable[[dict[str, Any]], Awaitable[None]]
 ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
+
+
+def _peer_in_trusted_ingress(peer_host: str | None, ingress: TrustedIngress) -> bool:
+    """Return whether ``peer_host`` falls inside any declared ingress network."""
+    if peer_host is None:
+        return False
+    try:
+        peer = ipaddress.ip_address(peer_host)
+    except ValueError:
+        return False
+    if isinstance(peer, ipaddress.IPv6Address) and peer.ipv4_mapped is not None:
+        peer = peer.ipv4_mapped
+    return any(peer in network for network in ingress._networks)
 
 
 class UntrustedIngressError(Exception):
@@ -122,6 +136,15 @@ class AmbiguousIdentityHeaderError(UntrustedIngressError):
     A subclass so `except UntrustedIngressError` still catches it: both are
     the same refusal on the same refuse-the-start path, and both mean the
     declared header cannot be trusted to say who the caller is.
+    """
+
+
+class OverLongIdentityError(UntrustedIngressError):
+    """Story 84.2: identity or role exceeds `AUDIT_IDENTITY_MAX_LENGTH`.
+
+    Refused before the response starts so an over-long value never reaches
+    `record_audit_entry` (which would raise on the request path) and so the
+    attempt is not silently truncated.
     """
 
 
@@ -190,7 +213,7 @@ class DashboardIdentityMiddleware:
 
         client = scope.get("client")
         peer_host = client[0] if client else None
-        if peer_host not in self.ingress.addresses:
+        if not _peer_in_trusted_ingress(peer_host, self.ingress):
             # AD-4: refuse the START, not the request -- raise before `send`
             # (and therefore before the wrapped app) is ever invoked. Note
             # this fires for a PRESENT header regardless of its value: an
@@ -218,6 +241,14 @@ class DashboardIdentityMiddleware:
             )
 
         identity = identities[0]
+        if len(identity) > AUDIT_IDENTITY_MAX_LENGTH:
+            raise OverLongIdentityError(
+                f"identity header {self.ingress.identity_header!r} value exceeds "
+                f"the {AUDIT_IDENTITY_MAX_LENGTH}-character audit field cap "
+                f"(got {len(identity)} characters) — refused rather than "
+                f"truncated, so the dashboard never admits an identity the "
+                f"audit trail cannot store"
+            )
         if not identity.strip():
             # Header present but carrying no identity. CAP-1 degrades to a
             # known-unprivileged identity, which is the no-identity-set state
@@ -235,6 +266,16 @@ class DashboardIdentityMiddleware:
             await self.app(scope, receive, send)
             return
 
+        role = roles[0] if roles else ""
+        if role.strip() and len(role) > AUDIT_IDENTITY_MAX_LENGTH:
+            raise OverLongIdentityError(
+                f"role header {self.ingress.role_header!r} value exceeds "
+                f"the {AUDIT_IDENTITY_MAX_LENGTH}-character audit field cap "
+                f"(got {len(role)} characters) — refused rather than "
+                f"truncated, so the dashboard never admits a role the audit "
+                f"trail cannot store"
+            )
+
         scope["dashboard_identity"] = identity
         # A blank role establishes no role, for the same reason and by the
         # same `.strip()` test as the identity above (review pass 3 for `''`,
@@ -243,6 +284,5 @@ class DashboardIdentityMiddleware:
         # `AccessDeclaration` forbids declaring, since it raises on both an
         # empty and a whitespace-only role name, so the middleware would
         # otherwise manufacture a role an adopter is not allowed to declare.
-        role = roles[0] if roles else ""
         scope["dashboard_role"] = role if role.strip() else None
         await self.app(scope, receive, send)

@@ -93,7 +93,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from .dispatch_harness_done import followup_review_recommended, parse_spec_status
+from .dispatch_harness_done import followup_review_recommended, is_followup_review_spec, parse_spec_status
 from .identity import MalformedStoryKeyError, StoryKey, normalize, render_filename_slug
 from .promotion import SPEC_STATUS_DONE
 
@@ -256,6 +256,7 @@ def render_ledger_entry(candidate: DeferralCandidate, *, promoted_date: str) -> 
             "`DW-FU-<story>` convention, so the next damped story cannot "
             f"collide with a generic `{candidate.tier3_id}`."
         ),
+        f"  origin: {_ORIGIN_VALUE}",
         f"  severity: {candidate.severity}",
         f"  status: {candidate.status}",
     ]
@@ -371,12 +372,97 @@ def followup_review_to_promote(
     return candidate
 
 
-def render_followup_review_entry(candidate: FollowupReviewCandidate, *, promoted_date: str) -> str:
+_LOOP_ERA_LANDING_REASON = "bmad-loop wave landing — the loop's own follow-up budget governed the recommendation."
+
+_FOLLOWUP_REVIEW_CARRY_ORIGINS = frozenset({_FOLLOWUP_REVIEW_ORIGIN, _ORIGIN_VALUE})
+
+# Any ``### DW-…`` heading -- the deferred-work ledger's id'd entry form.
+_LEDGER_DW_HEADING_RE = re.compile(r"^### (?P<dw_id>DW-[A-Za-z0-9-]+): ", re.MULTILINE)
+
+_SOURCE_SPEC_FIELD_RE = re.compile(
+    r"^[ \t]*(?:-[ \t]+)?source_spec:[ \t]*(?P<value>[^\n]*)$",
+    re.MULTILINE,
+)
+_ORIGIN_FIELD_RE = re.compile(
+    r"^[ \t]*(?:-[ \t]+)?origin:[ \t]*(?P<value>[^\n]*)$",
+    re.MULTILINE,
+)
+
+_STATUS_OPEN = "open"
+_STATUS_CLOSED = "closed"
+
+
+def _status_token(raw_value: str) -> str:
+    """A ``status:`` or ``origin:`` value's TOKEN: the text before any ``#`` comment, stripped."""
+    return raw_value.partition("#")[0].strip()
+
+
+def _normalize_source_spec_basename(raw: str) -> str:
+    """The spec filename a ``source_spec:`` field names -- basename only, backticks stripped."""
+    name = raw.strip("`").strip()
+    if "/" in name:
+        name = name.rsplit("/", 1)[-1]
+    return name
+
+
+def _ledger_block_span(text: str, heading_start: int) -> tuple[int, int]:
+    next_heading = _NEXT_HEADING_RE.search(text, heading_start + 1)
+    end = next_heading.start() if next_heading is not None else len(text)
+    return heading_start, end
+
+
+def parse_followup_review_carried_source_specs(ledger_text: str) -> frozenset[str]:
+    """Every spec basename carried as a follow-up recommendation (Story 66.2).
+
+    A row counts when it is headed ``### DW-…:``, its ``source_spec:`` names a spec file and its
+    ``origin:`` reads ``dispatch-followup-review`` or ``review-budget-followup`` -- the two carriers
+    the meta test and doctor's deferred-work source recognise. Any other ``origin:`` is ignored."""
+    carried: set[str] = set()
+    for heading in _LEDGER_DW_HEADING_RE.finditer(ledger_text):
+        start, end = _ledger_block_span(ledger_text, heading.start())
+        block = ledger_text[start:end]
+        source_line = _SOURCE_SPEC_FIELD_RE.search(block)
+        origin_line = _ORIGIN_FIELD_RE.search(block)
+        if source_line is None or origin_line is None:
+            continue
+        origin = _status_token(origin_line.group("value"))
+        if origin not in _FOLLOWUP_REVIEW_CARRY_ORIGINS:
+            continue
+        carried.add(_normalize_source_spec_basename(source_line.group("value")))
+    return frozenset(carried)
+
+
+def followup_review_orphans(
+    *,
+    spec_basename: str,
+    spec_text: str,
+    ledger_text: str,
+) -> bool:
+    """True when ``spec_text`` is a ``done`` spec with the follow-up flag and ``ledger_text`` does not carry it."""
+    if not is_followup_review_spec(spec_text):
+        return False
+    return spec_basename not in parse_followup_review_carried_source_specs(ledger_text)
+
+
+def render_followup_review_entry(
+    candidate: FollowupReviewCandidate,
+    *,
+    promoted_date: str,
+    row_status: str = _STATUS_OPEN,
+    landing_evidence: str | None = None,
+    closed_reason: str | None = None,
+    promoted_label: str = "dispatch-land finalize",
+) -> str:
     """The tracked ledger's row text for ``candidate`` (Story 66.1): the ``### DW-FRR-<story>:`` heading and
     the bulleted ``source_spec:`` / ``summary:`` / ``evidence:`` / ``location:`` / ``origin:`` /
     ``severity:`` / ``promoted:`` / ``status:`` shape the hand-filed follow-up rows already use
     (``DW-FU-51-2-1``). Returns text ending in exactly one trailing newline."""
     key = candidate.story_key
+    if landing_evidence is None:
+        landing_evidence = (
+            f"Story {key} landed on origin/main with its tracked spec reading `status: done` "
+            "and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation."
+        )
     lines = [
         f"### {followup_review_id(key)}: Follow-up review still recommended for story {key}",
         "",
@@ -385,17 +471,47 @@ def render_followup_review_entry(candidate: FollowupReviewCandidate, *, promoted
             f"  summary: Story {key} landed with `followup_review_recommended: true`; the recommended "
             "independent follow-up review has not run and nothing else carries the recommendation."
         ),
-        (
-            f"  evidence: Story {key} landed on origin/main with its tracked spec reading `status: done` "
-            "and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation."
-        ),
+        f"  evidence: {landing_evidence}",
         f"  location: {candidate.spec_path}",
         f"  origin: {_FOLLOWUP_REVIEW_ORIGIN}",
         f"  severity: {_FOLLOWUP_REVIEW_SEVERITY}",
-        f"  promoted: {promoted_date} — dispatch-land finalize",
-        "  status: open",
+        f"  promoted: {promoted_date} — {promoted_label}",
+        f"  status: {row_status}",
     ]
+    if closed_reason is not None:
+        lines.insert(-1, f"  reason: {closed_reason}")
     return "\n".join(lines) + "\n"
+
+
+def render_followup_review_backfill_entry(
+    candidate: FollowupReviewCandidate,
+    *,
+    promoted_date: str,
+    dispatch_era: bool,
+    landing_subject: str | None = None,
+) -> str:
+    """One ``DW-FRR-<story>`` row for Story 66.2's backfill -- open for a factory-dispatch-era landing, closed otherwise."""
+    if dispatch_era:
+        named = landing_subject or "Merge <slug>/<key> into main"
+        evidence = (
+            f"Story {candidate.story_key} landed on origin/main ({named}); "
+            "Story 66.2 backfill carried the recommended follow-up review."
+        )
+        return render_followup_review_entry(
+            candidate,
+            promoted_date=promoted_date,
+            row_status=_STATUS_OPEN,
+            landing_evidence=evidence,
+            promoted_label="Story 66.2 backfill",
+        )
+    return render_followup_review_entry(
+        candidate,
+        promoted_date=promoted_date,
+        row_status=_STATUS_CLOSED,
+        landing_evidence=_LOOP_ERA_LANDING_REASON,
+        closed_reason=_LOOP_ERA_LANDING_REASON,
+        promoted_label="Story 66.2 backfill",
+    )
 
 
 def append_ledger_entry(ledger_text: str, entry_text: str) -> str:
@@ -410,16 +526,8 @@ def append_ledger_entry(ledger_text: str, entry_text: str) -> str:
 #: ``- status: open`` and a column-0 ``status: open`` alike. ``lead`` is everything before the key.
 _ROW_STATUS_LINE_RE = re.compile(r"^(?P<lead>[ \t]*(?:-[ \t]+)?)status:[ \t]*(?P<value>[^\n]*)$", re.MULTILINE)
 
-_STATUS_OPEN = "open"
-_STATUS_CLOSED = "closed"
-
 #: ``resolved:`` text when a landing names nothing (a blank subject) -- the line must still say what closed it.
 _UNNAMED_LANDING = "the follow-up review landed"
-
-
-def _status_token(raw_value: str) -> str:
-    """A ``status:`` value's TOKEN: the text before any ``#`` comment, stripped."""
-    return raw_value.partition("#")[0].strip()
 
 
 def _open_followup_review_rows(ledger_text: str, row_id: str) -> tuple[re.Match[str], ...]:

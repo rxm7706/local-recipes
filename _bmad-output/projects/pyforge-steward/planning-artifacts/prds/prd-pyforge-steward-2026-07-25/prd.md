@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-10-01"   # RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2461,3 +2461,21 @@ and `spec-pyforge-unifying-strategy` CAP-12 through Story 49.6). They decompose 
 **ONE kernel FR space still FR-1..FR-37** (FR-38 = next free id).
 
 **Content changed:** this section only. No FR added, renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-03
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward`'s memlog gained the operator's 2026-10-03 Phase 3
+rulings, which amend CAP-60 and mint Epic 84.*
+
+### 84.0 The FR space: no FR registered
+
+CAP-60 (fail loud, fail alone on broken links; folded from `spec-jira-github-projects-sync` CAP-4) is amended: an item
+carrying the GitHub-only marker declared in `sync-config.yaml` is skipped and logged at info, behind the flag
+`pyforge.steward.sync_github_only_marker`; every other unlinked item still fails loudly (Story 84.4, the operator's
+override on DW-8-5-2). The audit-trail and ingress rulings are fixes under Epic 9's shipped capabilities (Stories
+84.1-84.3). No kernel FR changes.
+
+**ONE kernel FR space still FR-1..FR-37** (FR-38 = next free id).
+
+**Content changed:** this section only. No FR added, renumbered or removed. `updated:` bumped.
+

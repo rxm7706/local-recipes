@@ -1281,6 +1281,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # reached, so a missing loop home or a failed write must not turn a green gate red -- and
     # `evaluate_gate` appends the finding AFTER the verdict is computed, never recomputing it.
     "MRS-GATE-017": Verdict.WARN,
+    # Story 83.2 (spec-83-2): pre-verification deferred-work intake refused or
+    # could not run -- GATE_FAILED, same rung as MRS-GATE-001.
+    "MRS-GATE-018": Verdict.GATE_FAILED,
     # Story 82.9 (found registering the touched-module coverage of `cli/checkpoint.py`):
     # `marshal factory checkpoint`'s three precondition failures -- no dispatch worktree in
     # the journal (001), not inside a git repository (002), no loop home (003). ERROR, the

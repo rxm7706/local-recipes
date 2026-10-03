@@ -525,6 +525,12 @@ Drift — orphaned between stations.
   closes its DW rows on landing. Six already-fixed rows close without a story (DW-FU-11-1, DW-FU-26-1: Story 78.1;
   DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1: Story 80.1).
   Owner: steward. → Epic 83 / Stories 83.1–83.3, specced 2026-10-02.
+- **2026-10-03 (Phase 3) — Ruled: steward's deferral decisions.** The operator ruled steward's 15 live NEEDS-DECISION
+  entries: 7 fix, 8 close. The fixes land as four module bundles: audit purges recorded and the audit table append-only
+  by privilege; audit reads record their scope and the perimeter refuses over-long identities; trusted ingress parses IP
+  networks; and sync skips a board item marked GitHub-only (the operator overrode the recommendation to close it,
+  amending CAP-60, flagged). Backlog Story 74.2's spec gains the S3 ListBucket requirement.
+  Owner: steward. → Epic 84 / Stories 84.1-84.4, specced 2026-10-03.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

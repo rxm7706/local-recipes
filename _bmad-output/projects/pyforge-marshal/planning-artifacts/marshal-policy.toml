@@ -416,6 +416,50 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-testing-charter governs the kit)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"86" = [  # Phase 3 of the deferral burn-down: marshal's ruled fixes (fix stories, no CAP), added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus what the bundles touch outside
+  # the package: 86.2's adopted files, 86.5's scripts, 86.6's matrices and detectors, 86.7's docs and the CFE guard.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/**",
+  "tests/scripts/**",
+  "_bmad/scripts/bmad_tea_playwright.py",
+  "_bmad-output/projects/*/planning-artifacts/test-architecture.md",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/*.md",
+  "_bmad-output/PROJECTS.md",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "README.md",
+  ".marshal/**",
+  ".github/workflows/**",
+  ".claude/skills/pyforge-marshal/**",
+  ".claude/skills/conda-forge-expert/tests/meta/**",
+  ".claude/skills/conda-forge-expert/CHANGELOG.md",
+  ".claude/skills/conda-forge-expert/SKILL.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+"85" = [  # a verification refusal goes back to the session for one fix turn (spec-pyforge-marshal CAP-286), added 2026-10-03
+  # The default surface, restated because a declared entry replaces it outright, plus the flagd tree the story's flag
+  # joins and every Spec memlog.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "84" = [  # an operator-run refresh reads every harness's live model list (spec-pyforge-marshal CAP-285), added 2026-10-02
   # The default surface, restated because a declared entry replaces it outright, plus every Spec memlog.
   "src/shared/packages/pyforge-marshal/**",

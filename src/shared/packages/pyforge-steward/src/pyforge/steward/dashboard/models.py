@@ -4,7 +4,9 @@ CAP-4's contract is "who saw how many rows of what, and when" — this model
 is that record. `AuditAction` names the four request-time actions CAP-4
 requires (`load`/`filter`/`navigate`/`export`) plus `audit_read`, the fifth
 action `audit.py::query_audit_entries` writes for its own invocation per
-AD-7 ("reading the audit trail is itself a recorded act").
+AD-7 ("reading the audit trail is itself a recorded act"), and `purge`, the
+sixth action `audit.py::purge_expired_entries` writes when retention deletes
+expired rows (Story 84.1).
 
 This is the package's first Django model, so it is also the first thing
 that exercises AD-13's reusable-app scaffold (`apps.py`'s explicit
@@ -29,15 +31,18 @@ from __future__ import annotations
 
 from django.db import models
 
+from .declarations import AUDIT_IDENTITY_MAX_LENGTH
+
 
 class AuditAction(models.TextChoices):
-    """CAP-4's four request-time actions, plus AD-7's audit-of-the-audit action."""
+    """CAP-4's four request-time actions, plus AD-7's audit-of-the-audit action and retention purge."""
 
     LOAD = "load", "Load"
     FILTER = "filter", "Filter"
     NAVIGATE = "navigate", "Navigate"
     EXPORT = "export", "Export"
     AUDIT_READ = "audit_read", "Audit read"
+    PURGE = "purge", "Purge"
 
 
 class AuditEntry(models.Model):
@@ -71,12 +76,20 @@ class AuditEntry(models.Model):
     caller stamping a batch of rows with one timestamp creates them.
     """
 
-    actor = models.CharField(max_length=255, db_index=True)
-    role = models.CharField(max_length=255, null=True, blank=True)
+    actor = models.CharField(max_length=AUDIT_IDENTITY_MAX_LENGTH, db_index=True)
+    role = models.CharField(max_length=AUDIT_IDENTITY_MAX_LENGTH, null=True, blank=True)
     action = models.CharField(max_length=16, choices=AuditAction.choices)
     target = models.CharField(max_length=255, blank=True, default="")
     row_count = models.PositiveIntegerField()
     occurred_at = models.DateTimeField(db_index=True)
+    scope = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "For AUDIT_READ rows: the validated filter lookups that scoped "
+            "the read, as sorted string keys to string values (Story 84.2)."
+        ),
+    )
 
     class Meta:
         ordering = ["-occurred_at", "-id"]

@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-09-29"   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2139,6 +2139,46 @@ Steward Epic 77, herald Epic 34 and marshal Epic 76 carry the other readers. The
 **And** the dry-run test asserts no `docs/specs` row where it asserted at least one, so it passes before and after
 `docs/specs/` empties; `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
 
+## Epic 27: Phase 4+5 of the deferral burn-down — atlas's open medium and low deferrals, fixed
+
+Minted 2026-10-03 from the operator's Phase 4+5 ruling: every open medium and low row in atlas's tracked deferred-work ledger is fixed where it lives, and closed only by a landed fix with a `resolution:` and a cited `verified:` line. A parser over `deferred-work-ledger.md` counts 36 open medium and 60 open low rows (114 unrated open rows are outside the ruling). All 96 are placed in four stories split by package area, per the operator's same-day sizing ruling: fewer, larger stories, at most about 30 rows each. These are `fix` stories: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1). 18 rows repeat another row (later intakes re-ingested the same text) and close with it. Story 23.9 thinned the inventory quartet into actuators over Atlas's Kedro exports after many of these rows were raised, so each story re-locates a row before fixing it.
+
+### Story 27.1: The inventory exports refuse a hollow verification set, and the quartet scripts fail loud
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • AD-3, AD-11, AD-13
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/derived_artifacts/` (the inventory and identity-export nodes), `scripts/conda-forge-packaging-inventory-operations_{metrics,openteams_identity,priority}.py`, `scripts/openteams_identity_dashboards.py`, `scripts/tests/` (their tests and fixtures), `tests/packaging/test_openteams_handoffs.py`, `src/shared/packages/pyforge-atlas/tests/pipelines/derived_artifacts/`, `docs/reference/conda-forge-packaging-inventory-operations_*.md` (the replay and prompt docs, in step with the scripts), the atlas deferred-work ledger
+**Spec:** `planning-artifacts/specs/spec-27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud.md`
+**Given** the 25 open rows against the inventory quartet and the Kedro `derived_artifacts` exports it now formats
+**When** each row is re-located against the current tree and fixed where its behaviour lives
+**Then** an empty or sub-floor verification set is refused by name, `create_missing_issues` backs off, the export reader fails named on bad input, the gist and export columns share one schema, and a from-scratch fixture run reproduces the committed inventory
+**And** 25 rows (9 medium, 16 low) are each closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed: DW-FU-17-1, DW-FU-17-2, DW-FU-21-3-2, DW-FU-21-3-7, DW-FU-21-3-12, DW-FU-21-7, DW-FU-21-7-2, DW-FU-21-7-3, DW-FU-21-7-4, DW-FU-17-2-2, DW-FU-17-2-3, DW-FU-17-2-7, DW-FU-21-3-3, DW-FU-21-3-4, DW-FU-21-3-5, DW-FU-21-3-6, DW-FU-21-3-8, DW-FU-21-3-9, DW-FU-21-3-10, DW-FU-21-3-11, DW-FU-21-7-5, DW-FU-21-7-6, DW-FU-21-7-7, DW-FU-21-7-8, DW-FU-23-5; `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
+
+### Story 27.2: The data plane honours its data root, degrades offline and fetches what it claims
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • AD-2, AD-3, AD-5, AD-6, AD-13
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/` (`vcs_sources.py`, `request_datasets.py`, `refresh.py`, `core_sources.py`, `identity_sources.py`, `basilisk.py`, `upstream_discovery.py`), `src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/` (`vcs_health/`, `upstream_discovery/`, `pypi_intelligence/`), `src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py`, `src/shared/packages/pyforge-atlas/conf/base/` (`catalog.yml`, `globals.yml`, `parameters.yml`), `src/shared/packages/pyforge-atlas/tests/` (`pipelines/`, `parity/`, `catalog/`), `src/shared/packages/pyforge-atlas/README.md`, the `pyforge-atlas-bootstrap` task description (member or root `pixi.toml`, with `environment.yaml` regenerated if the root changes), `.github/workflows/pyforge-station-tests.yml` (the atlas job), `planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md` (a Spec Change Log line only), the atlas deferred-work ledger
+**Spec:** `planning-artifacts/specs/spec-27-2-the-data-plane-honours-its-data-root-and-fetches-what-it-claims.md`
+**Given** the 26 open rows against Atlas's datasets, catalog, pipelines, orchestration and CI lane
+**When** the story lands
+**Then** every output lands under `PYFORGE_ATLAS_DATA_ROOT`, a partial refresh batch keeps the rows outside it, the vcs triggers fetch real identifiers, offline and fresh-root runs exit 0 with stale markers, and CI runs both atlas gates
+**And** 26 rows (12 medium, 14 low) are each closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed: DW-FU-21-2-2, DW-FU-21-2-4, DW-FU-21-4, DW-FU-21-5, DW-FU-21-5-3, DW-FU-21-6, DW-FU-21-8-2, DW-FU-21-8-9, DW-FU-21-8-3, DW-FU-21-8-5, DW-FU-21-8-10, DW-FU-21-8-8, DW-FU-21-2-3, DW-FU-21-2-5, DW-FU-21-2-6, DW-FU-21-2-7, DW-FU-21-2-8, DW-FU-21-3, DW-FU-21-4-2, DW-FU-21-4-3, DW-FU-21-4-4, DW-FU-21-6-2, DW-FU-21-6-3, DW-FU-21-6-4, DW-FU-21-8, DW-FU-21-8-4; `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
+
+### Story 27.3: The read surfaces render what DESIGN.md specifies, and prove it on fixture data
+**Type:** fix • **Effort:** L • **Deps:** S-26.1 • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • AD-1, AD-4, AD-7, AD-8, AD-17
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/query_plane_boot.py`, `src/shared/packages/pyforge-atlas/tests/query_plane/`, `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/` (`app.py`, `data.py`, `factory_status.py`, `__init__.py`), `src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/`, `src/shared/packages/pyforge-atlas/tests/dashboard/`, `src/shared/packages/pyforge-atlas/tests/integration/dashboard/`, `src/shared/packages/pyforge-atlas/tests/pipelines/semantic_packages/`, `src/shared/packages/pyforge-atlas/README.md`, `src/shared/packages/django-pyforge/` (`base.html` and a vendored htmx static file), the atlas deferred-work ledger
+**Spec:** `planning-artifacts/specs/spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data.md`
+**Given** the 21 open rows against the query plane, the dashboard, the semantic layer and the portal chrome
+**When** the story lands
+**Then** the yielded plane raises a typed error, the parity gate covers NULL, date, timestamp, decimal and blob values, every page renders its declared DESIGN.md controls, the scan pages run a scan through `pyforge.core.process`, and the e2e suite passes against fixture data with navigation and main landmarks
+**And** 21 rows (8 medium, 13 low) are each closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed: DW-FU-20-1, DW-FU-20-2-2, DW-FU-20-5, DW-FU-20-5-8, DW-FU-20-5-2, DW-FU-20-5-9, DW-FU-20-5-4, DW-FU-20-5-11, DW-FU-20-2-3, DW-FU-20-3, DW-FU-20-3-2, DW-FU-20-3-3, DW-FU-20-5-3, DW-FU-20-5-10, DW-FU-20-5-5, DW-FU-20-5-12, DW-FU-20-5-6, DW-FU-20-5-13, DW-FU-20-5-7, DW-FU-20-5-14, DW-FU-19-2; `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
+
+### Story 27.4: The planning record matches the tree, the cross-station seams hold, and the owed follow-up reviews run
+**Type:** fix • **Effort:** L • **Deps:** S-27.1, S-27.2, S-27.3 • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • — (planning record and review; the code each review touches keeps its own ADs)
+**Surface:** `planning-artifacts/DESIGN.md`, `planning-artifacts/epics.md` (per-story `Status:` lines only), `planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md`, the atlas deferred-work ledger, `src/shared/packages/pyforge-atlas/tests/meta/` (the planning and citation tests), `src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py`, `.claude/skills/bmad-agent-atlas/SKILL.md`, `_bmad/custom/bmad-cis-design-thinking.toml`, the eight reviewed story specs' Review Triage Logs, and whatever atlas code a review finding fixes
+**Spec:** `planning-artifacts/specs/spec-27-4-the-planning-record-matches-the-tree-and-owed-reviews-run.md`
+**Given** the 24 open rows in Atlas's planning record, at its seams with doctor and steward, and in the eight follow-up reviews it owes
+**When** Stories 27.1-27.3 have landed and this story runs
+**Then** DESIGN.md, epics.md, catalog-sources.md and the ledger match the tree under tests that fail on drift, every closed row's citation resolves, steward's register test checks the routing constraint, the template placeholder resolves through `_bmad/custom/`, and each review's findings are recorded and fixed
+**And** 24 rows (7 medium, 17 low) are each closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed: DW-FU-20-4-2, DW-FU-20-4-5, DW-FU-20-4-4, DW-FU-20-4-7, DW-FU-21-8-6, DW-FU-21-8-11, DW-FU-24-1, DW-FU-20-2, DW-FU-20-4, DW-FU-21-5-2, DW-FU-21-5-4, DW-FU-21-8-7, DW-FU-20-4-3, DW-FU-20-4-6, DW-FU-24-1-2, DW-FU-13-3, DW-13-3-7, DW-10-5-9, DW-10-6-4, DW-FRR-16-1, DW-FRR-19-1, DW-FRR-20-2, DW-FRR-20-3, DW-FRR-20-4; `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
+
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
 Validated against the architecture spine as re-cut today (its `## Currency
@@ -2238,3 +2278,10 @@ station-local, so the gate is prose on the `**Deps:**` line and the operator fli
 the new atlas Story 25.2. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml`
 key (`25-1`, `25-2` and `epic-25` added, `epic-25-retrospective` at `optional`, through the Tier-3 feed and
 `sprint-ledger-sync`). `updated:` bumped.
+
+## Currency reconciliation — 2026-10-03
+
+`arch→epics` edge after the spine re-stamp of 2026-10-03 (marshal Story 66.2 (`pyforge-marshal:CAP-275`) backfilled a `DW-FRR-<story>` row into every station's tracked deferred-work ledger for each landed story spec that still recommends a follow-up review, atlas's included, and recorded the co-governor surface reconcile on `spec-pyforge-atlas`'s memlog on 2026-10-03). No epic or story is minted: the `DW-FRR` rows are
+review work recorded in the deferred-work ledger, and any follow-up review they lead to is dispatched against its own
+story's key. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key; no ledger key moved. `updated:`
+bumped.

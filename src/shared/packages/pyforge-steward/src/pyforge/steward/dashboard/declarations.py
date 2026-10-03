@@ -16,8 +16,9 @@ installed.
 
 from __future__ import annotations
 
+import ipaddress
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 # Story 9.3: the widest gap any two representable datetimes can have, so a
@@ -35,6 +36,17 @@ from datetime import datetime
 # cannot be judged without a `now`, so `purge_expired_entries` catches that
 # case at the point of computation and raises its own named error there.
 _MAX_RETENTION_DAYS = (datetime.max - datetime.min).days
+
+# Story 84.2: one cap for audit identity strings — `AuditEntry.actor` and
+# `.role` max_length, and the dashboard perimeter refusal in
+# `DashboardIdentityMiddleware`. Kept here (not copied into middleware or
+# audit.py) so the three cannot drift.
+AUDIT_IDENTITY_MAX_LENGTH = 255
+
+# Default row cap for `query_audit_entries` when the caller passes no `limit`
+# (DW-9-3-4). Deliberately not unbounded: the trail accumulates between
+# purges and every read appends an `AUDIT_READ` row.
+DEFAULT_AUDIT_READ_LIMIT = 10_000
 
 # RFC 9110 §5.1 `token`: the grammar a header *name* must satisfy to exist on
 # the wire at all. Validated because a name that is merely latin-1-encodable
@@ -132,11 +144,12 @@ class AccessDeclaration:
 class TrustedIngress:
     """AD-4: the trusted ingress and the identity/role header names.
 
-    ``addresses`` is the declared set of peer addresses the proxy connects
-    from, matched against whatever the ASGI server reports as
-    ``scope["client"]``; an identity header arriving on a connection from
-    outside this set is what `middleware.py`'s `DashboardIdentityMiddleware`
-    refuses. Note that ``scope["client"]`` is the *server's* claim about the
+    ``addresses`` is the declared set of IP networks (CIDR or bare host —
+    each parsed with ``ipaddress.ip_network`` at construction; hostnames are
+    rejected) the proxy may connect from, matched by network membership
+    against whatever the ASGI server reports as ``scope["client"]``; an
+    identity header arriving on a connection from outside these networks is
+    what `middleware.py`'s `DashboardIdentityMiddleware` refuses. Note that ``scope["client"]`` is the *server's* claim about the
     peer, not necessarily the TCP peer — see `middleware.py`'s module
     docstring for the deployment precondition that claim depends on.
     ``identity_header``/``role_header`` name the proxy headers that carry
@@ -148,6 +161,7 @@ class TrustedIngress:
     addresses: tuple[str, ...]
     identity_header: str
     role_header: str
+    _networks: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.addresses, tuple):
@@ -184,9 +198,8 @@ class TrustedIngress:
             # the same "a typo becomes 'refuse every request' with no
             # diagnostic" consequence cited for the element-type check above,
             # from the same config-file provenance as the header-name check
-            # below. This constrains only surrounding whitespace, never the
-            # address FORM (CIDR/hostname/IPv6 spellings), which stays with
-            # Story 9.5's ingress model on the deferred-work ledger.
+            # below. Surrounding whitespace only; address FORM is validated as
+            # an IP network in the loop that follows (Story 84.3).
             if not address.strip():
                 raise ValueError(
                     f"TrustedIngress.addresses[{index}] must not be empty or "
@@ -200,6 +213,27 @@ class TrustedIngress:
                     f"leading/trailing whitespace — the ASGI peer host it is "
                     f"compared against never does, so it can never match"
                 )
+        networks: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
+        for index, address in enumerate(self.addresses):
+            try:
+                # strict: a CIDR with host bits set (`192.168.1.10/16`) is refused, never silently widened to its
+                # network (`192.168.0.0/16`) -- on the trust perimeter a typo must fail, not trust more peers.
+                network = ipaddress.ip_network(address, strict=True)
+            except ValueError as exc:
+                raise ValueError(
+                    f"TrustedIngress.addresses[{index}] {address!r} is not a "
+                    f"valid IP network (a hostname, a malformed address, or a "
+                    f"CIDR with host bits set) — it can never match an ASGI "
+                    f"peer host as written, so it must fail here"
+                ) from exc
+            if (
+                isinstance(network, ipaddress.IPv6Network)
+                and network.prefixlen == 128
+                and (mapped := network.network_address.ipv4_mapped) is not None
+            ):
+                network = ipaddress.ip_network(mapped, strict=False)
+            networks.append(network)
+        object.__setattr__(self, "_networks", tuple(networks))
         for field_name, header in (
             ("identity_header", self.identity_header),
             ("role_header", self.role_header),

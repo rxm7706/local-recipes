@@ -25,18 +25,26 @@ from pyforge.marshal.core.dispatch_verification import (
     reclassify_pre_existing_gate_findings,
     would_land_on_self_report_only,
 )
+from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.dispatch_verify import (
+    PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
     compose_dispatch_policy,
     evaluate_dispatch_verification,
+    run_pre_verification_deferred_work_intake,
 )
 
 # Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal (not
 # imported from `dispatch_verify`) so deleting or renaming the derivation fails
 # these tests rather than silently updating them.
 LINT_TYPES = "pixi run --frozen -e pyforge-guild lint-types"
+
+# Story 83.2 (spec-83-2): the derived whole-tree check commands, pinned as
+# literals so deleting or renaming the derivation fails these tests.
+PYFORGE_CORE_TEST = "pixi run --frozen -e pyforge-core pyforge-core-test"
+DEFERRED_WORK_CHECK = "pixi run --frozen -e pyforge-guild deferred-work-check"
 
 
 def test_compose_dispatch_policy_reads_a_real_project_toml(tmp_path: Path) -> None:
@@ -309,6 +317,8 @@ def test_evaluate_dispatch_verification_appends_surface_guard_after_declared_com
         "true",
         _SURFACE_RECONCILE_COMMAND,
         LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
     ]
 
 
@@ -418,6 +428,8 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_guard(
         "true",
         _SURFACE_RECONCILE_COMMAND,
         LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
     ]
 
 
@@ -453,6 +465,8 @@ def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_
         "true",
         _SURFACE_RECONCILE_COMMAND,
         LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
     ]
 
 
@@ -472,6 +486,26 @@ class FakeProcessLintFails:
     def run(self, tokens, *, cwd: Path):
         if tokens and tokens[-1] == "lint-types":
             return ProcessResult(returncode=1, stdout=self._output, stderr="")
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+class FakeProcessCoreTestFails:
+    """Every command succeeds EXCEPT ``pyforge-core-test`` -- isolates a
+    core test failure from other commands."""
+
+    def run(self, tokens, *, cwd: Path):
+        if tokens and tokens[-1] == "pyforge-core-test":
+            return ProcessResult(returncode=1, stdout="", stderr="core test failed")
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+class FakeProcessDeferredWorkFails:
+    """Every command succeeds EXCEPT ``deferred-work-check`` -- isolates a
+    deferred work check failure from other commands."""
+
+    def run(self, tokens, *, cwd: Path):
+        if tokens and tokens[-1] == "deferred-work-check":
+            return ProcessResult(returncode=1, stdout="", stderr="found uncited verified lines")
         return ProcessResult(returncode=0, stdout="ok", stderr="")
 
 
@@ -510,7 +544,14 @@ def test_evaluate_dispatch_verification_runs_lint_types_once_after_the_station_c
     hygiene lane runs exactly once, after them."""
     envelope = _verify_with(tmp_path, verify_commands=["true", "echo ok"], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", "echo ok", _SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert commands == [
+        "true",
+        "echo ok",
+        _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
+    ]
     assert commands.count(LINT_TYPES) == 1
     assert envelope.findings == ()
 
@@ -521,7 +562,12 @@ def test_evaluate_dispatch_verification_lint_types_runs_for_a_station_with_no_co
     """Story 79.2, AC1: a bare ``verify_commands = []`` station is gated on
     ``lint-types`` too -- it is derived, never read from the station's list."""
     envelope = _verify_with(tmp_path, verify_commands=[], process=FakeProcess())
-    assert [report["command"] for report in envelope.data["commands"]] == [_SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert [report["command"] for report in envelope.data["commands"]] == [
+        _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
+    ]
 
 
 def test_evaluate_dispatch_verification_lint_types_failure_refuses_naming_the_lane(
@@ -575,6 +621,71 @@ def test_evaluate_dispatch_verification_lint_types_red_on_the_story_own_file_is_
     assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings), envelope.findings
 
 
+def test_evaluate_dispatch_verification_core_test_red_on_the_story_own_file_is_never_pre_existing(
+    tmp_path: Path,
+) -> None:
+    """Story 83.2, reclassification test: a pyforge-core-test failure must refuse as
+    MRS-GATE-001 and never be downgraded to MRS-GATE-014 by the pre-existing reclassifier."""
+    envelope = _verify_with(
+        tmp_path,
+        slug="pyforge-scribe",
+        verify_commands=["true"],
+        process=FakeProcessCoreTestFails(),
+        vcs=FakeVcs(changed=_SCRIBE_CHANGED),
+    )
+    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
+        DispatchVerificationVerdict.REFUSED
+    )
+    core_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and "pyforge-core-test" in f.message]
+    assert len(core_findings) == 1, envelope.findings
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings), envelope.findings
+
+
+def test_evaluate_dispatch_verification_deferred_work_red_on_the_story_own_file_is_never_pre_existing(
+    tmp_path: Path,
+) -> None:
+    """Story 83.2, reclassification test: a deferred-work-check failure must refuse as
+    MRS-GATE-001 and never be downgraded to MRS-GATE-014 by the pre-existing reclassifier."""
+    envelope = _verify_with(
+        tmp_path,
+        slug="pyforge-scribe",
+        verify_commands=["true"],
+        process=FakeProcessDeferredWorkFails(),
+        vcs=FakeVcs(changed=_SCRIBE_CHANGED),
+    )
+    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
+        DispatchVerificationVerdict.REFUSED
+    )
+    deferred_findings = [
+        f for f in envelope.findings if f.code == "MRS-GATE-001" and "deferred-work-check" in f.message
+    ]
+    assert len(deferred_findings) == 1, envelope.findings
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings), envelope.findings
+
+
+def test_evaluate_dispatch_verification_surface_guard_red_on_the_story_own_file_is_never_pre_existing(
+    tmp_path: Path,
+) -> None:
+    """Story 83.2, reclassification test: a surface reconcile (S-13.7 guard) failure must
+    refuse as MRS-GATE-001 and never be downgraded to MRS-GATE-014 by the pre-existing
+    reclassifier -- the guard reads the whole tree and its failures must refuse."""
+    envelope = _verify_with(
+        tmp_path,
+        slug="pyforge-scribe",
+        verify_commands=["true"],
+        process=FakeProcessGuardFails(),
+        vcs=FakeVcs(changed=_SCRIBE_CHANGED),
+    )
+    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
+        DispatchVerificationVerdict.REFUSED
+    )
+    guard_findings = [
+        f for f in envelope.findings if f.code == "MRS-GATE-001" and "spec_surface_reconcile" in f.message
+    ]
+    assert len(guard_findings) == 1, envelope.findings
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings), envelope.findings
+
+
 def test_evaluate_dispatch_verification_lint_types_green_is_not_a_finding(tmp_path: Path) -> None:
     """Story 79.2, Edge-Case Matrix row 1: a clean change verifies."""
     envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcess())
@@ -591,7 +702,7 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_lint_types(
     twice."""
     envelope = _verify_with(tmp_path, verify_commands=[LINT_TYPES, "true"], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
 
 
 def test_evaluate_dispatch_verification_dedupes_a_lint_types_declared_with_different_spacing(
@@ -602,7 +713,7 @@ def test_evaluate_dispatch_verification_dedupes_a_lint_types_declared_with_diffe
     respaced = LINT_TYPES.replace(" ", "  ", 1)
     envelope = _verify_with(tmp_path, verify_commands=["true", respaced], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES]
+    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
 
 
 def test_evaluate_dispatch_verification_a_declared_lint_types_failure_still_refuses_once(
@@ -635,12 +746,214 @@ def test_evaluate_dispatch_verification_spec_binding_unchanged_by_the_derived_li
     assert not any(f.code == "MRS-GATE-011" for f in clean_own.findings + clean_lint.findings)
 
 
+# --- Story 83.2 (spec-83-2): pyforge-core-test and deferred-work-check derived commands ---
+
+
+def test_evaluate_dispatch_verification_core_test_failure_refuses_naming_the_command(
+    tmp_path: Path,
+) -> None:
+    """Story 83.2, AC1: a change that is green on the station's own commands
+    but red on ``pyforge-core-test`` is REFUSED, and the finding names the
+    command (an ordinary MRS-GATE-001)."""
+    envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcessCoreTestFails())
+    inp = DispatchVerificationInput(findings=envelope.findings)
+    assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
+    core_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and "pyforge-core-test" in f.message]
+    assert len(core_findings) == 1, envelope.findings
+    assert PYFORGE_CORE_TEST in core_findings[0].message
+    assert primary_gate_failure(envelope.findings) is not None
+
+
+def test_evaluate_dispatch_verification_deferred_work_failure_refuses_naming_the_command(
+    tmp_path: Path,
+) -> None:
+    """Story 83.2, AC2: a change that is green on the station's own commands
+    but red on ``deferred-work-check`` is REFUSED, and the finding names the
+    command (an ordinary MRS-GATE-001)."""
+    envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcessDeferredWorkFails())
+    inp = DispatchVerificationInput(findings=envelope.findings)
+    assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
+    deferred_findings = [
+        f for f in envelope.findings if f.code == "MRS-GATE-001" and "deferred-work-check" in f.message
+    ]
+    assert len(deferred_findings) == 1, envelope.findings
+    assert DEFERRED_WORK_CHECK in deferred_findings[0].message
+    assert primary_gate_failure(envelope.findings) is not None
+
+
+def test_evaluate_dispatch_verification_dedupes_already_declared_whole_tree_commands(
+    tmp_path: Path,
+) -> None:
+    """Story 83.2: stations that already declare the whole-tree commands
+    still run them once, de-duplicated like the other derived commands."""
+    envelope = _verify_with(
+        tmp_path, verify_commands=["true", PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK], process=FakeProcess()
+    )
+    commands = [report["command"] for report in envelope.data["commands"]]
+    assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
+    assert commands.count(PYFORGE_CORE_TEST) == 1
+    assert commands.count(DEFERRED_WORK_CHECK) == 1
+
+
+class _CommittingFakeVcs(FakeVcs):
+    def __init__(self) -> None:
+        super().__init__(changed=())
+        self.committed: list[tuple[Path, tuple[Path, ...]]] = []
+
+    def commit_paths(self, worktree: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        self.committed.append((worktree, paths))
+        return "deadbeef"
+
+
+class _IntakeScriptProcess:
+    """Runs ``deferred_work_intake.py`` with a controlled exit and optional ledger write."""
+
+    def __init__(self, *, intake_exit: int = 0, append_ledger: str | None = None) -> None:
+        self._intake_exit = intake_exit
+        self._append_ledger = append_ledger
+
+    def run(self, tokens, *, cwd: Path):
+        joined = " ".join(tokens)
+        if "deferred_work_intake.py" in joined:
+            if self._append_ledger is not None:
+                ledger = cwd / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+                ledger.parent.mkdir(parents=True, exist_ok=True)
+                ledger.write_text(self._append_ledger, encoding="utf-8")
+            return ProcessResult(
+                returncode=self._intake_exit,
+                stdout="" if self._intake_exit == 0 else "",
+                stderr="intake refused" if self._intake_exit else "",
+            )
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def test_run_pre_verification_deferred_work_intake_refusal_returns_mrs_gate_018(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    (worktree / "scripts").mkdir()
+    (worktree / "scripts" / "deferred_work_intake.py").write_text("# stub\n", encoding="utf-8")
+    finding = run_pre_verification_deferred_work_intake(
+        process=_IntakeScriptProcess(intake_exit=2),
+        committing_vcs=_CommittingFakeVcs(),
+        worktree=worktree,
+        project_slug="pyforge-marshal",
+    )
+    assert finding is not None
+    assert finding.code == PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE
+    assert "refused" in finding.message
+
+
+def test_run_pre_verification_deferred_work_intake_commits_when_ledger_changes(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    (worktree / "scripts").mkdir()
+    (worktree / "scripts" / "deferred_work_intake.py").write_text("# stub\n", encoding="utf-8")
+    vcs = _CommittingFakeVcs()
+    new_body = "### DW-TEST-1\n\nsummary\n"
+    assert (
+        run_pre_verification_deferred_work_intake(
+            process=_IntakeScriptProcess(append_ledger=new_body),
+            committing_vcs=vcs,
+            worktree=worktree,
+            project_slug="pyforge-marshal",
+        )
+        is None
+    )
+    assert len(vcs.committed) == 1
+
+
+def test_run_pre_verification_deferred_work_intake_no_op_does_not_commit(tmp_path: Path) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    ledger = worktree / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text("stable\n", encoding="utf-8")
+    (worktree / "scripts").mkdir()
+    (worktree / "scripts" / "deferred_work_intake.py").write_text("# stub\n", encoding="utf-8")
+    vcs = _CommittingFakeVcs()
+    assert (
+        run_pre_verification_deferred_work_intake(
+            process=_IntakeScriptProcess(),
+            committing_vcs=vcs,
+            worktree=worktree,
+            project_slug="pyforge-marshal",
+        )
+        is None
+    )
+    assert vcs.committed == []
+
+
+def test_evaluate_dispatch_verification_runs_pre_verification_intake_when_committing_vcs_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_verify.run_pre_verification_deferred_work_intake",
+        lambda **kwargs: calls.append("intake") or None,
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=normalize("22-3-verification-is-the-product-no-landing-on-a-self-report"),
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+        committing_vcs=_CommittingFakeVcs(),
+    )
+    assert calls == ["intake"]
+
+
+def test_evaluate_dispatch_verification_intake_refusal_refuses_verification(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    (worktree / "scripts").mkdir()
+    (worktree / "scripts" / "deferred_work_intake.py").write_text("# stub\n", encoding="utf-8")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=normalize("22-3-verification-is-the-product-no-landing-on-a-self-report"),
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=_IntakeScriptProcess(intake_exit=1),
+        vcs=FakeVcs(),
+        committing_vcs=_CommittingFakeVcs(),
+    )
+    assert any(f.code == PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE for f in envelope.findings)
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
+        == DispatchVerificationVerdict.REFUSED
+    )
+
+
 def test_every_tracked_story_spec_binds_the_same_with_lint_types_widened() -> None:
     """Story 79.2, AC4, against the live tree: for every tracked story spec
     of every station, widening the policy's commands with the derived
     ``lint-types`` lane adds no ``MRS-GATE-010``/``MRS-GATE-011`` finding the
     pre-79.2 widening (station commands + the S-13.7 guard) did not already
-    report -- ``gate.check_spec_binding`` is one-directional."""
+    report -- ``gate.check_spec_binding`` is one-directional.
+
+    Story 83.2: extends to include the new whole-tree check commands."""
     import tomllib
 
     from pyforge.marshal.core import spec_binding
@@ -663,6 +976,8 @@ def test_every_tracked_story_spec_binds_the_same_with_lint_types_widened() -> No
         before = (*effective.verify_commands.value, _SURFACE_RECONCILE_COMMAND)
         widened = _verify_commands_with_surface_guard(effective)
         assert LINT_TYPES in widened
+        assert PYFORGE_CORE_TEST in widened
+        assert DEFERRED_WORK_CHECK in widened
         before_messages = {f.message for f in gate.check_spec_binding(declared, before)}
         after_messages = {f.message for f in gate.check_spec_binding(declared, widened)}
         assert after_messages <= before_messages, (spec_path.name, after_messages - before_messages)

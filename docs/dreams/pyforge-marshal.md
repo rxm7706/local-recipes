@@ -946,6 +946,42 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (late night)** — **Found: dispatch verification passes a story that CI's coverage gate fails.** CI's
+  named-module gate fails a PR when a touched module sits under the station's 80% unit floor, but dispatch verification
+  never runs it and `dispatch/*` branches skip the pre-push preflight. PR #1773 went red this way (`dispatch_retry`
+  78.1%) after verification passed. **What it looks like when fixed:** verification runs each touched station's coverage
+  gate in that station's own environment, and an under-floor module refuses before the push. **Constraints:** a `fix`
+  story, no CAP and no flag; no floor changes (operator ruling 2026-10-03). Owner `spec-pyforge-marshal`. → Story 83.12,
+  specced 2026-10-03.
+- **2026-10-03 (Phase 3)** — **Ruled: marshal's deferral decisions.** The operator ruled every live NEEDS-DECISION entry on
+  the rulings page: for marshal 20 fix, 18 close, 2 keep. **What it looks like when fixed:** the fix rulings land as seven
+  module bundles; the closes and keeps are written into the ledger with their reasons and cited evidence. **Constraints:**
+  fix stories, no CAP, no flag; two rulings amend the spine directly (AD-4 `core → ports`, AD-30 payload wording).
+  Owner `spec-pyforge-marshal`. → Epic 86 / Stories 86.1-86.7, specced 2026-10-03.
+- **2026-10-03 (night)** — **Found: a routine memory capture blocks the next landing.** Each dispatch session's
+  closeout adds a line to `.claude/memory/MEMORY.md` at the end of a section, so two stories landing one after the other
+  conflict there, and the landing heal refuses the second (MRS-DISP-038): 83.7 was merged by hand and 83.4 refused.
+  **What it looks like when fixed:** the heal merges appended index lines the way it merges memlog entries; an edit or
+  removal still escalates. **Constraints:** a `fix` story, no CAP and no flag; sessions keep capturing (operator ruling
+  2026-10-03). Owner `spec-pyforge-marshal`. → Story 83.11, specced 2026-10-03.
+- **2026-10-03 (evening)** — **Found: a verification refusal throws the finished work away.** Dispatch
+  verification is the one authority on a finished story's tree (2-3 minutes, no tokens), but it can only refuse. A
+  campaign then relaunches a fresh session, and after two failures Story 33.6 raises the model: 83.2 ran three times
+  (48 minutes, the third on opus), each refused on the same unformatted line. The other refused Cursor stories were fixed
+  by hand, about four extra full-suite runs each. bmad-build-auto already tells the session to re-run the spec's checks
+  after its review patches; the Cursor sessions did not, so restating that rule changes nothing.
+  **What it looks like when fixed:** a verification refusal never relaunches a fresh session and never raises the model;
+  the story parks, or lands once its branch is fixed; and with a flag on, the refusal first goes back to the session
+  that wrote the change for one bounded fix turn, re-verified once.
+  **Constraints:** verification is never relaxed; one fix turn per refusal; the resume form is profile data (AD-19); the
+  retry change is a `fix` (no CAP, no flag), the fix turn is new behaviour (a CAP, flagged OFF in production). Owner
+  `spec-pyforge-marshal`. → Story 83.10 and CAP-286 / Epic 85 / Story 85.1 (FR-233), specced 2026-10-03.
+- **2026-10-03 (later)** — **Found: every Cursor session is refused on formatting.** Each Cursor dispatch of marshal
+  Epics 83 and 66 and Story 84.1 finished its work and was refused at verification on `lint-types`, most often on
+  `ruff format` alone, and was fixed by hand before landing; the sessions reported the check green.
+  **What it looks like when fixed:** dispatch applies `ruff format` to the story's own files before verification and
+  commits the result; type and lint errors still refuse. **Constraints:** a `fix` story, no CAP and no flag; never a
+  file the story did not change. Owner `spec-pyforge-marshal`. → Story 83.9, specced 2026-10-03.
 - **2026-10-03** — **Found: a session halts on the status a story is minted with.** Story specs are minted at
   `status: 'backlog'` to match their ledger row, and bmad-build-auto does not recognize `backlog`. Claude sessions fell
   through to planning; a Cursor session for 83.5 halted before any work and set the spec `blocked`.

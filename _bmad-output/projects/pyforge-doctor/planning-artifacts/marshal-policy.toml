@@ -36,7 +36,9 @@ gate_mode = "none"
 # station whose tier map names an inline `{ harness = "cursor", ... }` dev entry
 # (Story 28.11 leads the walk with it; spec-pyforge-marshal CAP-246 / Story 50.3
 # is the fix). Flip this line and the tier map together when Cursor returns.
-harness_preference = ["claude"]
+# 2026-10-03 (operator ruling): cursor-only, on composer-2.5-fast, the setup marshal (#1757) and steward (#1770)
+# run. Flip the harness line and the tier map together.
+harness_preference = ["cursor"]
 
 # merge_subject_template: no override -- the repo default
 # ("Merge {slug}/{key} into main", Story 50.4/spec-pyforge-marshal CAP-247)
@@ -309,6 +311,49 @@ verify_commands = [
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"41" = [  # Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals (fix stories, no new CAP), added 2026-10-03
+  # The default surface, restated because a declared entry replaces it outright, plus what the four stories touch
+  # outside the package: the spec-surface, verdict-writer and baseline scripts and their tests (41.1), the detectors
+  # registry and fleet_scan.py (41.1-41.4), doctor's epics Status lines, SPEC re-derive and allowlist (41.2), the
+  # flag-inventory re-run (41.2), the 34 glued Dream openers and the docs pages (41.3), the doctor persona, the
+  # hatchling pins and the CFE fleet-picture and spec-surface meta-tests (41.1, 41.4), the ledger rows each closes,
+  # and every Spec memlog a reconcile names.
+  "src/shared/packages/pyforge-doctor/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-doctor/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "scripts/spec_surface_check.py",
+  "scripts/spec_surface_allowlist.txt",
+  "scripts/apply_verification_verdicts.py",
+  "scripts/deferred_work_baseline.py",
+  "scripts/.deferred-work-baseline.json",
+  "scripts/detectors.py",
+  "scripts/fleet_scan.py",
+  "tests/scripts/**",
+  ".github/workflows/detectors.yml",
+  "docs/dreams/*.md",
+  "docs/how-to/github-actions-recipe-ci.md",
+  "docs/explanation/pyforge-estate-overview.md",
+  "docs/_STYLE_GUIDE.md",
+  "docs/reference/**",
+  "docs/map.yaml",
+  "docs/MAP.md",
+  "docs/governance/flag-inventory/**",
+  ".claude/skills/bmad-agent-doctor/**",
+  ".claude/skills/conda-forge-expert/tests/meta/**",
+  ".claude/skills/conda-forge-expert/CHANGELOG.md",
+  ".claude/skills/conda-forge-expert/SKILL.md",
+  # co-governor reconciles (spec-pyforge-core governs every station's src; genesis, marshal, steward and
+  # spec-surface-drift-reconciliation govern files named above)
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "40" = [  # Phase 2 of the deferral burn-down: doctor's high deferrals (a fix story, no new CAP), added 2026-10-02
   # 40.1 touches only sources/board.py, sources/factory.py, sources/ledger.py, score.py and their tests, inside the
   # default surface; restated here with the ledger rows it closes and every Spec memlog.
@@ -373,13 +418,15 @@ verify_commands = [
 # shape Story 33.15 established (spec-cursor-native-tier-map CAP-1). The
 # 2026-09-13 Cursor Ultra ladder (composer-2.5-fast / grok-4.6 / composer-2.5)
 # is in git history for the week Cursor usage returns.
+# 2026-10-03 (operator ruling, see harness_preference above): Cursor on composer-2.5-fast for dev and review in the
+# heavy and medium tiers (an undeclared difficulty resolves to medium on dispatch); easy keeps composer-2.5.
 [model_tier_map.heavy]
-dev = { harness = "claude", model = "sonnet" }
-review = { harness = "claude", model = "opus" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.medium]
-dev = { harness = "claude", model = "sonnet" }
-review = { harness = "claude", model = "opus" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.easy]
-dev = { harness = "claude", model = "sonnet" }
+dev = { harness = "cursor", model = "composer-2.5" }

@@ -10,10 +10,11 @@ import asyncio
 
 import pytest
 
-from pyforge.steward.dashboard.declarations import TrustedIngress
+from pyforge.steward.dashboard.declarations import AUDIT_IDENTITY_MAX_LENGTH, TrustedIngress
 from pyforge.steward.dashboard.middleware import (
     AmbiguousIdentityHeaderError,
     DashboardIdentityMiddleware,
+    OverLongIdentityError,
     UntrustedIngressError,
 )
 
@@ -72,6 +73,61 @@ def test_trusted_ingress_with_identity_header_passes_through_and_sets_scope():
         {"type": "http.response.start", "status": 200, "headers": []},
         {"type": "http.response.body", "body": b"ok"},
     ]
+
+
+def test_trusted_ingress_matches_a_peer_inside_a_declared_cidr():
+    """Story 84.3: membership is by network, not exact string equality."""
+    ingress = TrustedIngress(
+        addresses=("10.0.0.0/24",),
+        identity_header="X-Forwarded-User",
+        role_header="X-Forwarded-Role",
+    )
+    calls: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app(calls), ingress)
+    scope = _scope(
+        "10.0.0.42",
+        headers=[("X-Forwarded-User", "alice"), ("X-Forwarded-Role", "admin")],
+    )
+
+    asyncio.run(middleware(scope, _receive, _fake_send([])))
+
+    assert calls[0]["dashboard_identity"] == "alice"
+
+
+def test_untrusted_peer_outside_a_declared_cidr_is_refused():
+    """Story 84.3: CIDR ingress refuses peers outside the prefix, not only accepts inside."""
+    ingress = TrustedIngress(
+        addresses=("10.0.0.0/24",),
+        identity_header="X-Forwarded-User",
+        role_header="X-Forwarded-Role",
+    )
+    calls: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app(calls), ingress)
+    scope = _scope("10.0.1.1", headers=[("X-Forwarded-User", "eve")])
+
+    with pytest.raises(UntrustedIngressError):
+        asyncio.run(middleware(scope, _receive, _fake_send([])))
+
+    assert calls == []
+
+
+def test_trusted_ingress_matches_ipv4_mapped_ipv6_peer_against_ipv4_network():
+    """Story 84.3: unwrap IPv4-mapped IPv6 before checking network membership."""
+    ingress = TrustedIngress(
+        addresses=("10.0.0.1",),
+        identity_header="X-Forwarded-User",
+        role_header="X-Forwarded-Role",
+    )
+    calls: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app(calls), ingress)
+    scope = _scope(
+        "::ffff:10.0.0.1",
+        headers=[("X-Forwarded-User", "alice"), ("X-Forwarded-Role", "admin")],
+    )
+
+    asyncio.run(middleware(scope, _receive, _fake_send([])))
+
+    assert calls[0]["dashboard_identity"] == "alice"
 
 
 def test_untrusted_ingress_with_identity_header_raises_before_any_send():
@@ -294,7 +350,7 @@ def test_the_refusal_message_never_discloses_the_declared_ingress():
     already have it); the declaration does not (they do).
     """
     ingress = TrustedIngress(
-        addresses=("10.42.7.11", "internal-edge-proxy-01"),
+        addresses=("10.42.7.11", "10.42.7.12"),
         identity_header="X-Forwarded-User",
         role_header="X-Forwarded-Role",
     )
@@ -397,6 +453,35 @@ def test_whitespace_only_identity_header_establishes_no_identity():
     assert calls, "a blank identity degrades to no identity — it is not a refusal"
     assert "dashboard_identity" not in scope
     assert "dashboard_role" not in scope
+
+
+def test_over_long_identity_is_refused_before_the_response_starts():
+    events: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app([]), TRUSTED)
+    long_identity = "x" * (AUDIT_IDENTITY_MAX_LENGTH + 1)
+    scope = _scope("10.0.0.1", headers=[("X-Forwarded-User", long_identity)])
+
+    with pytest.raises(OverLongIdentityError, match=f"{AUDIT_IDENTITY_MAX_LENGTH}-character"):
+        asyncio.run(middleware(scope, _receive, _fake_send(events)))
+
+    assert events == []
+    assert "dashboard_identity" not in scope
+
+
+def test_over_long_role_is_refused_before_the_response_starts():
+    events: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app([]), TRUSTED)
+    long_role = "r" * (AUDIT_IDENTITY_MAX_LENGTH + 1)
+    scope = _scope(
+        "10.0.0.1",
+        headers=[("X-Forwarded-User", "alice"), ("X-Forwarded-Role", long_role)],
+    )
+
+    with pytest.raises(OverLongIdentityError, match=f"{AUDIT_IDENTITY_MAX_LENGTH}-character"):
+        asyncio.run(middleware(scope, _receive, _fake_send(events)))
+
+    assert events == []
+    assert "dashboard_identity" not in scope
 
 
 def test_whitespace_only_role_header_establishes_no_role():

@@ -73,19 +73,23 @@ from ..core.dispatch_completion import (
 )
 from ..core.dispatch_harness_done import (
     FollowupReview,
-    blocks_harness_relaunch,
     followup_review_recommended,
     is_followup_review_spec,
     land_fail_operator_message,
     parse_blocking_condition,
     parse_spec_status,
+    should_take_harness_done_land_only,
+    should_take_verification_refusal_land_only,
 )
 from ..core.dispatch_landing import DispatchLandingVerdict
 from ..core.dispatch_retry import (
     DispatchBlockKind,
     classify_dispatch_block,
     exclude_harness_profiles_after_transient_failure,
+    format_verification_refusal_park_reason,
+    is_dispatch_verification_refusal,
     prune_blocked_stories_merged_on_main,
+    verification_refusal_head_unchanged,
 )
 from ..core.dispatch_supervisor_finalize import (
     finalize_attempt_failed,
@@ -130,7 +134,7 @@ from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_
 from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
-from ..dispatch_verify import evaluate_dispatch_verification
+from ..dispatch_verify import evaluate_dispatch_verification, run_dispatch_ruff_format_before_verify
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -1022,9 +1026,16 @@ def _verification_verdict_for_cap4(
     effective_policy: policy.EffectivePolicy,
     spec_text: str,
     process: ProcessPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
 ) -> DispatchVerificationVerdict:
     """Independent verify only — never a harness self-report (CAP-3)."""
+    if callable(getattr(vcs, "commit_paths", None)):
+        run_dispatch_ruff_format_before_verify(
+            worktree=worktree,
+            repo_root=repo_root,
+            vcs=vcs,  # CommittingVcs duck type
+            process=process,
+        )
     try:
         envelope = evaluate_dispatch_verification(
             project_slug=slug,
@@ -1035,6 +1046,7 @@ def _verification_verdict_for_cap4(
             spec_text=spec_text,
             process=process,
             vcs=vcs,
+            committing_vcs=vcs,
         )
     except ProcessError, VcsCommandError, OSError, TypeError, AttributeError:
         return DispatchVerificationVerdict.REFUSED
@@ -1218,6 +1230,14 @@ def _count_prior_failed_dispatch_attempts(fs: FsPort, repo_root: Path, slug: str
         if journal.completion_verdict == DispatchSessionVerdict.COMPLETED.value:
             break
         if journal.completion_verdict == DispatchSessionVerdict.FAILED.value:
+            # Story 83.10: verification refusals are not session failures for
+            # Story 33.6's floor-raise counter.
+            if is_dispatch_verification_refusal(
+                completion_verdict=journal.completion_verdict,
+                verification_verdict=journal.verification_verdict,
+                verification_failed_gate=journal.verification_failed_gate,
+            ):
+                continue
             count += 1
     return count
 
@@ -1323,6 +1343,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     completion_stop_reason: str | None = None
     verification_verdict: str | None = None
     verification_failed_gate: str | None = None
+    verification_failed_message: str | None = None
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         if entry.phase == Phase.INTENT:
@@ -1364,9 +1385,11 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     landing_findings: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAND):
         if entry.phase == Phase.OUTCOME:
-            if entry.payload.get("ok"):
-                verdict_val = entry.payload.get("verdict")
-                if isinstance(verdict_val, str):
+            verdict_val = entry.payload.get("verdict")
+            if isinstance(verdict_val, str):
+                # Story 83.7: refused outcomes carry ``ok: false`` but still
+                # record ``verdict: refused`` for the land-only re-dispatch gate.
+                if entry.payload.get("ok") or verdict_val == DispatchLandingVerdict.REFUSED.value:
                     landing_verdict = verdict_val
             # Story 53.2 review (I1): read regardless of `ok` -- a refused
             # landing (MRS-DISP-048) is exactly the case this must surface.
@@ -1379,6 +1402,9 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
             gate_val = entry.payload.get("failed_gate")
             if isinstance(gate_val, str):
                 verification_failed_gate = gate_val
+            msg_val = entry.payload.get("failed_message")
+            if isinstance(msg_val, str):
+                verification_failed_message = msg_val
             # Story 28.15 (CAP-17): best-effort, matching every other
             # journal-payload read in this function -- a malformed/missing
             # entry degrades to the empty tuple rather than raising, never
@@ -1427,6 +1453,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         completion_stop_reason=completion_stop_reason,
         verification_verdict=verification_verdict,
         verification_failed_gate=verification_failed_gate,
+        verification_failed_message=verification_failed_message,
         verification_scope_advisories=verification_scope_advisories,
         landing_verdict=landing_verdict,
         landing_findings=landing_findings,
@@ -1755,6 +1782,86 @@ def station_finalize_pending_story(
     return on_backlog, evidence
 
 
+def _dispatch_git_facts_for_journal(
+    *,
+    vcs: VcsPort,
+    fs: FsPort,
+    repo_root: Path,
+    slug: str,
+    journal: dispatch_core.DispatchJournalFacts,
+    effective_policy: policy.EffectivePolicy,
+) -> DispatchGitFacts | None:
+    if journal.baseline_head_sha is None or journal.worktree_path is None:
+        return None
+    try:
+        return gather_dispatch_git_facts(
+            vcs,
+            fs=fs,
+            repo_root=repo_root,
+            worktree=Path(journal.worktree_path),
+            story_key=journal.story_key,
+            project_slug=slug,
+            baseline_head_sha=journal.baseline_head_sha,
+            merge_subject_template=effective_policy.merge_subject_template.value,
+            followup_review=journal.followup_review,
+        )
+    except VcsCommandError, ValueError:
+        return None
+
+
+def _refused_landing_open_pr(
+    journal: dispatch_core.DispatchJournalFacts,
+    git_facts: DispatchGitFacts | None,
+) -> bool:
+    """Story 83.4: landing refused with an unmerged branch (open PR)."""
+    if journal.landing_verdict != "refused":
+        return False
+    if git_facts is None:
+        return False
+    return not git_facts.branch_merged and not git_facts.story_merged_on_main
+
+
+def _refused_landing_open_pr_story_keys(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    effective_policy: policy.EffectivePolicy,
+) -> frozenset[str]:
+    keys: set[str] = set()
+    for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
+        journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+        # The journal read is cheap; the session verdict and git facts below are not (they shell out), so only a
+        # run whose landing was refused pays for them (landing review: ~50 s over 364 marshal runs otherwise).
+        if journal.story_key is None or journal.landing_verdict != "refused":
+            continue
+        verdict = resolve_dispatch_session_verdict(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            journal=journal,
+            effective_policy=effective_policy,
+            run_dir=run_dir,
+        )
+        if verdict == DispatchSessionVerdict.LIVE:
+            continue
+        git_facts = _dispatch_git_facts_for_journal(
+            vcs=vcs,
+            fs=fs,
+            repo_root=repo_root,
+            slug=slug,
+            journal=journal,
+            effective_policy=effective_policy,
+        )
+        if _refused_landing_open_pr(journal, git_facts):
+            keys.add(journal.story_key)
+    return frozenset(keys)
+
+
 def station_in_flight_conflict(
     *,
     fs: FsPort,
@@ -1790,6 +1897,15 @@ def station_in_flight_conflict(
         except ValueError:
             candidate_surface = None
     graph = dict(deps_graph or {})
+    refused_landing_open = _refused_landing_open_pr_story_keys(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        effective_policy=effective_policy,
+    )
+    candidate_refused_landing_open = feed_story in refused_landing_open
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
         if journal.story_key is None:
@@ -1804,27 +1920,44 @@ def station_in_flight_conflict(
             effective_policy=effective_policy,
             run_dir=run_dir,
         )
-        if verdict != DispatchSessionVerdict.LIVE:
-            continue
-        evidence = _live_dispatch_evidence(
-            journal=journal,
-            verdict=verdict,
-            fs=fs,
-            vcs=vcs,
-            process=process,
-            repo_root=repo_root,
-            slug=slug,
-            effective_policy=effective_policy,
-            harness_reported_failure=harness_reported_failure,
+        is_live = verdict == DispatchSessionVerdict.LIVE
+        # Reuse the scan above rather than gathering git facts again for every run.
+        is_refused_landing_open = (
+            not is_live and journal.landing_verdict == "refused" and journal.story_key in refused_landing_open
         )
+        if not is_live and not is_refused_landing_open:
+            continue
+        if is_live:
+            evidence = _live_dispatch_evidence(
+                journal=journal,
+                verdict=verdict,
+                fs=fs,
+                vcs=vcs,
+                process=process,
+                repo_root=repo_root,
+                slug=slug,
+                effective_policy=effective_policy,
+                harness_reported_failure=harness_reported_failure,
+            )
+        else:
+            blocked_story_key = journal.story_key or "unknown"
+            evidence = f"story {blocked_story_key!r} finished but was refused at landing with open PR"
         in_flight = journal.story_key
         if in_flight == feed_story:
-            return DispatchPreflightConflict(
-                code="MRS-DISP-011",
-                message=f"refusing redispatch: {evidence}",
-                in_flight_story_key=in_flight,
-            )
-        if not parallel_dispatch:
+            # CAP-2: only a LIVE session refuses redispatch of the same story.
+            # Story 83.4: refused+open-PR occupies surfaces for *other* stories;
+            # the operator re-dispatches the refused story to land fixes.
+            if is_live:
+                return DispatchPreflightConflict(
+                    code="MRS-DISP-011",
+                    message=f"refusing redispatch: {evidence}",
+                    in_flight_story_key=in_flight,
+                )
+            continue
+        if is_refused_landing_open and candidate_refused_landing_open:
+            # Story 83.4: refused stories never hold each other (only LIVE holds refused).
+            continue
+        if not parallel_dispatch and is_live:
             return DispatchPreflightConflict(
                 code="MRS-DISP-021",
                 message=(f"refusing dispatch: station {slug!r} already has in-flight story {in_flight!r} ({evidence})"),
@@ -2162,6 +2295,32 @@ def station_story_block_facts(
                 git_changed_paths, narration_spec_path(spec_relative_path, followup_review=journal.followup_review)
             ):
                 classify_changed_path_count = 0
+            if is_dispatch_verification_refusal(
+                completion_verdict=journal.completion_verdict,
+                verification_verdict=journal.verification_verdict,
+                verification_failed_gate=journal.verification_failed_gate,
+            ):
+                current_head: str | None = None
+                if journal.worktree_path is not None:
+                    try:
+                        current_head = vcs.worktree_head_sha(Path(journal.worktree_path))
+                    except VcsCommandError:
+                        current_head = None
+                refusal_head = journal.final_revision or journal.baseline_head_sha
+                if not verification_refusal_head_unchanged(
+                    refusal_head_sha=refusal_head,
+                    current_head_sha=current_head,
+                ):
+                    return None
+                return dispatch_fleet.StationBlockEvidence(
+                    reason=format_verification_refusal_park_reason(
+                        story_key=feed_story,
+                        run_id=run_dir.name,
+                        failed_gate=journal.verification_failed_gate,
+                        failed_command=journal.verification_failed_message,
+                    ),
+                    block_class=dispatch_fleet.FleetBlockClass.STORY,
+                )
             block_kind = classify_dispatch_block(
                 session_log=session_log,
                 failed_gate=journal.verification_failed_gate,
@@ -2802,10 +2961,34 @@ def dispatch_once(
             )
             return _done()
         live_spec_text = rewritten_spec_text
-    if blocks_harness_relaunch(
-        parse_spec_status(live_spec_text),
-        followup_review_recommended(live_spec_text),
-    ):
+    latest_landing_verdict: str | None = None
+    latest_journal: dispatch_core.DispatchJournalFacts | None = None
+    latest_run_dir = _latest_story_run_dir(fs, repo_root, slug, render_feed_key(story_key))
+    if latest_run_dir is not None:
+        latest_journal = gather_dispatch_journal_facts(fs, latest_run_dir, latest_run_dir.name)
+        latest_landing_verdict = latest_journal.landing_verdict
+    spec_status = parse_spec_status(live_spec_text)
+    followup = followup_review_recommended(live_spec_text)
+    take_land_only = should_take_harness_done_land_only(
+        spec_status,
+        followup,
+        latest_landing_verdict=latest_landing_verdict,
+    )
+    if not take_land_only and latest_journal is not None:
+        try:
+            current_head = vcs.worktree_head_sha(worktree)
+        except VcsCommandError:
+            current_head = None
+        take_land_only = should_take_verification_refusal_land_only(
+            spec_status,
+            followup,
+            completion_verdict=latest_journal.completion_verdict,
+            verification_verdict=latest_journal.verification_verdict,
+            verification_failed_gate=latest_journal.verification_failed_gate,
+            refusal_head_sha=latest_journal.final_revision or latest_journal.baseline_head_sha,
+            current_head_sha=current_head,
+        )
+    if take_land_only:
         data["harness_done_land_only"] = True
         land_verdict, named_target, land_envelope = _attempt_harness_done_cap4(
             slug=slug,
@@ -5679,6 +5862,9 @@ def run_fleet_drain(
                 ),
             )
         )
+        # Readable "not complete" so a detached campaign supervisor ticks
+        # again instead of counting this refusal toward the unreadable ceiling.
+        data["complete"] = False
         return _emit(args, data, findings, command="factory drain")
 
     retry_environment_blocks = bool(getattr(args, "retry_environment_blocks", False))

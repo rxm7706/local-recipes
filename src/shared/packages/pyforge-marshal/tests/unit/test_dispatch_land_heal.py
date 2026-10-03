@@ -8,14 +8,20 @@ from pathlib import Path
 import pytest
 
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
+from pyforge.marshal.core import dispatch_landing as _dispatch_landing
 from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core.dispatch_landing import (
+    TEAM_MEMORY_INDEX_REL,
+    is_deferred_work_path,
     is_mechanical_conflict_path,
     is_memlog_path,
+    is_team_memory_index_path,
     ledger_status_precedence,
     three_way_ledger_statuses,
+    union_deferred_work_texts,
     union_memlog_texts,
     union_sprint_ledger_maps,
+    union_team_memory_index_texts,
     unknown_conflict_paths,
 )
 from pyforge.marshal.core.egress import Redacted
@@ -1121,3 +1127,583 @@ def test_real_heal_merges_the_union_head_once_await_checks_clears_it(tmp_path: P
 
     assert result == DispatchLandHealResult(healed=True, retried_forge_merge=True)
     assert forge.merge_calls == 1
+
+
+# --- Story 83.3: deferred-work ledger union ----------------------------------------------------------
+
+
+def test_is_deferred_work_path_recognizes_deferred_work_ledger() -> None:
+    assert is_deferred_work_path("_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md")
+    assert is_deferred_work_path("_bmad-output/projects/pyforge-core/planning-artifacts/deferred-work-ledger.md")
+    assert not is_deferred_work_path("src/pyforge/marshal/foo.py")
+    assert not is_deferred_work_path("deferred-work.md")
+
+
+def test_mechanical_conflict_path_recognizes_deferred_work_ledger() -> None:
+    dw_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    ledger_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+
+    assert is_mechanical_conflict_path(dw_path, deferred_work_rel=dw_path)
+    assert is_mechanical_conflict_path(ledger_path, ledger_rel=ledger_path)
+    assert not is_mechanical_conflict_path(dw_path, ledger_rel=ledger_path)  # Wrong type
+    assert not is_mechanical_conflict_path("src/pyforge/marshal/foo.py", deferred_work_rel=dw_path)
+
+
+def _deferred_work_text(
+    *entries: str, frontmatter: str = "---\ndoc_type: deferred-work-ledger\n---\n\n# Deferred Work\n\n"
+) -> str:
+    """Create a deferred work ledger text with the given DW entries."""
+    if entries:
+        return frontmatter + "\n\n".join(entries) + "\n"
+    else:
+        return frontmatter.rstrip() + "\n"
+
+
+def test_union_deferred_work_texts_both_sides_append_entries() -> None:
+    """Both sides append new DW entries after the same base."""
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Main entry\norigin: main\nstatus: open"
+    )
+    branch = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-3: Branch entry\norigin: branch\nstatus: open"
+    )
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert "### DW-1: Base entry" in result
+    assert "### DW-2: Main entry" in result
+    assert "### DW-3: Branch entry" in result
+    # Entries should be in order: base, then main's additions, then branch's additions
+    base_pos = result.find("### DW-1:")
+    main_pos = result.find("### DW-2:")
+    branch_pos = result.find("### DW-3:")
+    assert base_pos < main_pos < branch_pos
+
+
+def test_union_deferred_work_texts_only_branch_appends() -> None:
+    """Only the branch side appends a new entry."""
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = base  # No changes on main
+    branch = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Branch entry\norigin: branch\nstatus: open"
+    )
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert "### DW-1: Base entry" in result
+    assert "### DW-2: Branch entry" in result
+
+
+def test_union_deferred_work_texts_only_main_appends() -> None:
+    """Only main side appends a new entry."""
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Main entry\norigin: main\nstatus: open"
+    )
+    branch = base  # No changes on branch
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert "### DW-1: Base entry" in result
+    assert "### DW-2: Main entry" in result
+    assert "### DW-3:" not in result
+
+
+def test_union_deferred_work_texts_both_add_same_entry() -> None:
+    """Both sides add the same entry - should appear only once."""
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    same_entry = "### DW-2: Same entry\norigin: both\nstatus: open"
+    main = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open", same_entry)
+    branch = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open", same_entry)
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert "### DW-1: Base entry" in result
+    assert result.count("### DW-2: Same entry") == 1
+
+
+def test_union_deferred_work_texts_refuses_edited_entry() -> None:
+    """Should refuse when an existing entry is edited."""
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: done")  # Status changed
+    branch = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Branch entry\norigin: branch\nstatus: open"
+    )
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is None  # Should refuse
+
+
+def test_union_deferred_work_texts_refuses_a_line_appended_to_the_last_entry_beside_a_main_append() -> None:
+    """Both sides append, and the branch's suffix starts with a line added to the base's last entry:
+    the whole-block union would drop that line, so it refuses (landing review, 2026-10-03)."""
+    base = "### DW-1: Base entry\n\n- summary: s\n  status: open\n"
+    main = base + "\n### DW-2: Main entry\n\n- summary: m\n  status: open\n"
+    branch = base + "  verified: 2026-10-03 -- still open\n\n### DW-3: Branch entry\n\n- summary: b\n  status: open\n"
+
+    assert union_deferred_work_texts(base, main, branch) is None
+
+
+def test_union_deferred_work_texts_refuses_dropped_entry() -> None:
+    """Should refuse when an entry is dropped."""
+    base = _deferred_work_text(
+        "### DW-1: First entry\norigin: test\nstatus: open", "### DW-2: Second entry\norigin: test\nstatus: open"
+    )
+    main = _deferred_work_text("### DW-1: First entry\norigin: test\nstatus: open")  # DW-2 dropped
+    branch = _deferred_work_text(
+        "### DW-1: First entry\norigin: test\nstatus: open",
+        "### DW-2: Second entry\norigin: test\nstatus: open",
+        "### DW-3: Branch entry\norigin: branch\nstatus: open",
+    )
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is None  # Should refuse
+
+
+def test_union_deferred_work_texts_empty_base() -> None:
+    """Handle case where base has no DW entries."""
+    frontmatter = "---\ndoc_type: deferred-work-ledger\n---\n\n# Deferred Work\n\n"
+    base = frontmatter
+    main = _deferred_work_text("### DW-1: Main entry\norigin: main\nstatus: open", frontmatter=frontmatter)
+    branch = _deferred_work_text("### DW-2: Branch entry\norigin: branch\nstatus: open", frontmatter=frontmatter)
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert "### DW-1: Main entry" in result
+    assert "### DW-2: Branch entry" in result
+
+
+def _dw_block_count(text: str) -> int:
+    return len(_dispatch_landing._opaque_dw_blocks(text)[1])
+
+
+def test_union_deferred_work_texts_live_marshal_ledger_mixed_formats() -> None:
+    """AC 2026-10-03: union on a copy of the real ledger preserves every base block and both appends."""
+    repo_root = Path(__file__).resolve().parents[6]
+    ledger_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    base = ledger_path.read_text(encoding="utf-8")
+    base_count = _dw_block_count(base)
+
+    main_append = "\n\n### DW-TEST-MAIN-83-3: Story 83.3 union probe (main)\norigin: test\nstatus: open\n"
+    branch_append = (
+        "\n\n### DW-TEST-BRANCH-83-3: Story 83.3 union probe (branch)\n"
+        "- source_spec: `spec-83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries.md`\n"
+        "  status: open\n"
+    )
+    main = base.rstrip("\n") + main_append
+    branch = base.rstrip("\n") + branch_append
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert result.startswith(base.rstrip("\n"))
+    assert _dw_block_count(result) == base_count + 2
+    assert "DW-TEST-MAIN-83-3" in result
+    assert "DW-TEST-BRANCH-83-3" in result
+
+
+def test_union_deferred_work_texts_parallel_append_dedupes_shared_block() -> None:
+    """Parallel branches from the same base: shared append once, branch-only row kept."""
+    block_a = "### DW-A: Shared append\norigin: test\nstatus: open\n"
+    block_b = "### DW-B: Branch-only append\norigin: test\nstatus: open\n"
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = base.rstrip("\n") + "\n\n" + block_a
+    branch = base.rstrip("\n") + "\n\n" + block_a + "\n\n" + block_b
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert result.count("### DW-A:") == 1
+    assert "### DW-B:" in result
+
+
+def test_union_deferred_work_texts_refuses_legacy_entry_edit_on_live_ledger() -> None:
+    """AC 2026-10-03: editing a legacy ``## DW-`` entry while appending refuses union."""
+    repo_root = Path(__file__).resolve().parents[6]
+    ledger_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    base = ledger_path.read_text(encoding="utf-8")
+    probe = "\n\n### DW-PROBE-83-3-LEGACY: union legacy-edit probe\norigin: test\nstatus: open\n"
+    branch = base.rstrip("\n") + probe
+    main = base.replace("status: open\n  severity: low", "status: closed\n  severity: low", 1)
+    main = main.rstrip("\n") + probe
+
+    assert union_deferred_work_texts(base, main, branch) is None
+
+
+def test_union_deferred_work_texts_main_a_branch_a_b_exact_bytes() -> None:
+    """AC 2026-10-03: shared append once, branch-only second row, one blank line between entries."""
+    block_a = "### DW-A: Shared append\norigin: test\nstatus: open\n"
+    block_b = "### DW-B: Branch-only append\norigin: test\nstatus: open\n"
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = base.rstrip("\n") + "\n\n" + block_a
+    branch = main.rstrip("\n") + "\n\n" + block_b
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert result.count("### DW-A:") == 1
+    assert result.count("### DW-B:") == 1
+    dw_b = result.index("### DW-B:")
+    assert result[dw_b - 2 : dw_b] == "\n\n"
+    assert result.startswith(base)
+    assert block_a.strip() in result
+    assert block_b.strip() in result
+
+
+def test_mutation_union_deferred_work_texts_stub_none_refuses_append() -> None:
+    """Mutation partner: a union that always returns None breaks the live-ledger append proof."""
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Main entry\norigin: main\nstatus: open"
+    )
+    branch = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-3: Branch entry\norigin: branch\nstatus: open"
+    )
+    assert union_deferred_work_texts(base, main, branch) is not None
+
+
+def test_unknown_conflict_paths_filters_deferred_work() -> None:
+    """Test that unknown_conflict_paths properly filters deferred work ledgers."""
+    dw_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    ledger_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    unknown_path = "src/pyforge/marshal/foo.py"
+
+    unknown = unknown_conflict_paths(
+        (dw_path, ledger_path, unknown_path), ledger_rel=ledger_path, deferred_work_rel=dw_path
+    )
+
+    assert unknown == (unknown_path,)
+
+
+class FakeVcsHealWithDeferredWork(FakeVcsHeal):
+    """Extended fake VCS that can handle deferred work ledger conflicts."""
+
+    def __init__(
+        self, *, deferred_work_base: str = "", deferred_work_main: str = "", deferred_work_branch: str = "", **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.deferred_work_base = deferred_work_base
+        self.deferred_work_main = deferred_work_main
+        self.deferred_work_branch = deferred_work_branch
+
+    def file_text_at_ref(self, _repo_root: Path, ref: str, path: str):
+        if path.endswith("deferred-work-ledger.md"):
+            if ref == "base000":
+                return self.deferred_work_base
+            if ref == "refs/heads/main":
+                return self.deferred_work_main
+            return self.deferred_work_branch
+        return super().file_text_at_ref(_repo_root, ref, path)
+
+
+def test_heal_unions_deferred_work_ledger_conflict_and_retries_merge(tmp_path: Path) -> None:
+    """Test that deferred work ledger conflicts are healed and merge is retried."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    dw_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+
+    base_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main_dw = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Main entry\norigin: main\nstatus: open"
+    )
+    branch_dw = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-3: Branch entry\norigin: branch\nstatus: open"
+    )
+
+    vcs = FakeVcsHealWithDeferredWork(
+        conflict_paths=(dw_rel,),
+        deferred_work_base=base_dw,
+        deferred_work_main=main_dw,
+        deferred_work_branch=branch_dw,
+    )
+    forge = FakeForgeHeal()
+    pr = PrInfo(number=831, url="https://example/pr/831", state="open", base="main")
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        base="main",
+        head_branch="dispatch/pyforge-marshal/83.3",
+        head_sha="abc123",
+        subject="Merge 83.3 into main",
+        merge_strategy="merge",
+        delete_branch=True,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=pr,
+        fs=FakeFsHeal(),
+        vcs=vcs,
+        forge=forge,
+    )
+
+    assert result == DispatchLandHealResult(healed=True, retried_forge_merge=True)
+    assert vcs.pushed == ["dispatch/pyforge-marshal/83.3"]
+    assert forge.merge_calls == 1
+    assert len(vcs.merges) == 1
+    merged_into, merged_ref, resolutions, _message = vcs.merges[0]
+    assert (merged_into, merged_ref, list(resolutions)) == (worktree, "refs/heads/main", [dw_rel])
+
+    # Check that the union was created correctly
+    written = (worktree / dw_rel).read_text(encoding="utf-8")
+    assert "### DW-1: Base entry" in written
+    assert "### DW-2: Main entry" in written
+    assert "### DW-3: Branch entry" in written
+
+
+def test_heal_escalates_edited_deferred_work_entry(tmp_path: Path) -> None:
+    """Test that editing existing deferred work entries escalates the conflict."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    dw_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+
+    base_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: done")  # Status changed
+    branch_dw = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Branch entry\norigin: branch\nstatus: open"
+    )
+
+    vcs = FakeVcsHealWithDeferredWork(
+        conflict_paths=(dw_rel,),
+        deferred_work_base=base_dw,
+        deferred_work_main=main_dw,
+        deferred_work_branch=branch_dw,
+    )
+    forge = FakeForgeHeal()
+    pr = PrInfo(number=832, url="https://example/pr/832", state="open", base="main")
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        base="main",
+        head_branch="dispatch/pyforge-marshal/83.3",
+        head_sha="abc123",
+        subject="Merge 83.3 into main",
+        merge_strategy="merge",
+        delete_branch=True,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=pr,
+        fs=FakeFsHeal(),
+        vcs=vcs,
+        forge=forge,
+    )
+
+    assert result.healed is False
+    assert result.escalated_paths == (dw_rel,)
+    assert forge.merge_calls == 0
+
+
+def test_heal_escalates_other_projects_deferred_work_ledger(tmp_path: Path) -> None:
+    """Test that conflicts in another project's deferred work ledger are escalated."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    foreign_dw_rel = "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md"
+
+    vcs = FakeVcsHeal(conflict_paths=(foreign_dw_rel,))
+    forge = FakeForgeHeal()
+    pr = PrInfo(number=833, url="https://example/pr/833", state="open", base="main")
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",  # Different project
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        base="main",
+        head_branch="dispatch/pyforge-marshal/83.3",
+        head_sha="abc123",
+        subject="Merge 83.3 into main",
+        merge_strategy="merge",
+        delete_branch=True,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=pr,
+        fs=FakeFsHeal(),
+        vcs=vcs,
+        forge=forge,
+    )
+
+    assert result.healed is False
+    assert result.escalated_paths == (foreign_dw_rel,)
+    assert forge.merge_calls == 0
+
+
+# --- Story 83.11: team-memory index union -------------------------------------------------------------
+
+
+def test_is_team_memory_index_path_recognizes_memory_md() -> None:
+    assert is_team_memory_index_path(".claude/memory/MEMORY.md")
+    assert is_team_memory_index_path(".claude\\memory\\MEMORY.md")
+    assert not is_team_memory_index_path(".claude/memory/README.md")
+
+
+def test_mechanical_conflict_path_recognizes_team_memory_index() -> None:
+    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    assert is_mechanical_conflict_path(TEAM_MEMORY_INDEX_REL, ledger_rel=ledger, deferred_work_rel=dw)
+    assert not is_mechanical_conflict_path("src/pyforge/marshal/foo.py", ledger_rel=ledger, deferred_work_rel=dw)
+
+
+def _memory_index_text(*feedback_extra: str, project_extra: str = "") -> str:
+    feedback_body = "\n".join(["- [base-entry](feedback/base-entry.md) — base line", *feedback_extra])
+    project_block = "## Project\n"
+    if project_extra:
+        project_block += f"\n{project_extra}\n"
+    return (
+        "# Team Memory Index\n\n"
+        "Preamble stays fixed.\n\n"
+        f"## Feedback\n\n{feedback_body}\n\n"
+        f"{project_block}\n"
+        "## Reference\n\n"
+    )
+
+
+_MAIN_INDEX_LINE = "- [main-83-11](feedback/main-83-11.md) — appended on main"
+_BRANCH_INDEX_LINE = "- [branch-83-11](feedback/branch-83-11.md) — appended on branch"
+_SAME_INDEX_LINE = "- [same-83-11](feedback/same-83-11.md) — both sides appended this"
+
+
+def test_union_team_memory_index_texts_appends_in_same_section() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_MAIN_INDEX_LINE)
+    branch = _memory_index_text(_BRANCH_INDEX_LINE)
+    result = union_team_memory_index_texts(base, main, branch)
+    assert result is not None
+    assert _MAIN_INDEX_LINE in result
+    assert _BRANCH_INDEX_LINE in result
+    assert result.index(_MAIN_INDEX_LINE) < result.index(_BRANCH_INDEX_LINE)
+
+
+def test_union_team_memory_index_texts_dedupes_identical_appended_line() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_SAME_INDEX_LINE)
+    branch = _memory_index_text(_SAME_INDEX_LINE)
+    result = union_team_memory_index_texts(base, main, branch)
+    assert result is not None
+    assert result.count(_SAME_INDEX_LINE) == 1
+
+
+def test_union_team_memory_index_texts_refuses_edited_existing_line() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text()
+    branch_text = base.replace("base line", "edited line")
+    assert union_team_memory_index_texts(base, main, branch_text) is None
+
+
+def test_union_team_memory_index_texts_appends_to_different_sections() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_MAIN_INDEX_LINE)
+    branch = _memory_index_text(project_extra=_BRANCH_INDEX_LINE)
+    result = union_team_memory_index_texts(base, main, branch)
+    assert result is not None
+    assert _MAIN_INDEX_LINE in result
+    assert _BRANCH_INDEX_LINE in result
+
+
+def _index_entry_lines(text: str) -> list[str]:
+    return [line for line in text.splitlines() if line.startswith("- [")]
+
+
+def test_union_team_memory_index_texts_live_memory_md_parallel_appends() -> None:
+    repo_root = Path(__file__).resolve().parents[6]
+    memory_path = repo_root / ".claude" / "memory" / "MEMORY.md"
+    base = memory_path.read_text(encoding="utf-8")
+    main_line = "- [union-probe-main-83-11](feedback/union-probe-main-83-11.md) — Story 83.11 live union probe (main)"
+    branch_line = (
+        "- [union-probe-branch-83-11](feedback/union-probe-branch-83-11.md) — Story 83.11 live union probe (branch)"
+    )
+    feedback_heading = "## Feedback"
+    assert feedback_heading in base
+    insert_at = base.index(feedback_heading)
+    project_at = base.index("## Project", insert_at)
+    main = base[:project_at].rstrip("\n") + f"\n{main_line}\n" + base[project_at:]
+    branch = base[:project_at].rstrip("\n") + f"\n{branch_line}\n" + base[project_at:]
+    result = union_team_memory_index_texts(base, main, branch)
+    assert result is not None
+    for line in base.splitlines():
+        assert line in result.splitlines()
+    base_entries = _index_entry_lines(base)
+    result_entries = _index_entry_lines(result)
+    assert len(result_entries) == len(base_entries) + 2
+
+
+def test_mutation_mechanical_set_includes_team_memory_index() -> None:
+    """Removing `.claude/memory/MEMORY.md` from the mechanical set breaks this test."""
+    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    assert is_mechanical_conflict_path(TEAM_MEMORY_INDEX_REL, ledger_rel=ledger, deferred_work_rel=dw)
+
+
+def test_mutation_union_team_memory_index_texts_stub_none_refuses_append() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_MAIN_INDEX_LINE)
+    branch = _memory_index_text(_BRANCH_INDEX_LINE)
+    assert union_team_memory_index_texts(base, main, branch) is not None
+
+
+class FakeVcsHealWithTeamMemory(FakeVcsHeal):
+    def __init__(
+        self,
+        *,
+        memory_base: str = "",
+        memory_main: str = "",
+        memory_branch: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.memory_base = memory_base
+        self.memory_main = memory_main
+        self.memory_branch = memory_branch
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
+        if path == TEAM_MEMORY_INDEX_REL:
+            if ref == "base000":
+                return self.memory_base
+            if ref == "refs/heads/main":
+                return self.memory_main
+            return self.memory_branch
+        return super().file_text_at_ref(repo_root, ref, path)
+
+
+def test_heal_unions_team_memory_index_conflict_and_retries_merge(tmp_path: Path) -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_MAIN_INDEX_LINE)
+    branch = _memory_index_text(_BRANCH_INDEX_LINE)
+    vcs = FakeVcsHealWithTeamMemory(
+        conflict_paths=(TEAM_MEMORY_INDEX_REL,),
+        memory_base=base,
+        memory_main=main,
+        memory_branch=branch,
+    )
+    forge = FakeForgeHeal()
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    pr = PrInfo(number=8311, url="https://example/pr/8311", state="open", base="main")
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        base="main",
+        head_branch="dispatch/pyforge-marshal/83.11",
+        head_sha="abc123",
+        subject="Merge 83.11 into main",
+        merge_strategy="merge",
+        delete_branch=True,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=pr,
+        fs=FakeFsHeal(),
+        vcs=vcs,
+        forge=forge,
+    )
+
+    assert result == DispatchLandHealResult(healed=True, retried_forge_merge=True)
+    assert forge.merge_calls == 1
+    written = (worktree / TEAM_MEMORY_INDEX_REL).read_text(encoding="utf-8")
+    assert _MAIN_INDEX_LINE in written
+    assert _BRANCH_INDEX_LINE in written

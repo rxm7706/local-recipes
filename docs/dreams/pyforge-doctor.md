@@ -86,6 +86,20 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-03 (Phase 4+5)** — **Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals.**
+  Measured on `main` with a parser over `deferred-work-ledger.md`: 39 open medium and 84 open low rows. The
+  operator ruled both phases run now, on the idle station lanes: every medium row is fixed, each fix also closes
+  the low rows in the modules it touches, and no row closes without a landed fix, a `resolution:` and a cited
+  `verified:` line; then, overriding the module-cluster sizing, fewer and larger stories split by package area,
+  at most about 30 rows each. **What it looks like when fixed:** the chain sources (spec-surface, dream-chain,
+  the deferred-work checks, the verification sweep), the ledger, story-status and capability-effect sources,
+  the board, factory, hygiene and status-body readers, and the check CLI, score and bmad-method source each
+  report what they measured and say when they could not; the 14 recommended follow-up reviews run; doctor's
+  own epics Status lines, Spec annotations and docs pages read true. **Constraints:** fix stories, no new CAP,
+  no flag (`spec-feature-flag-governance` Q1). DW-FU-7-1-7 is marshal's code and goes to marshal's chain; the one
+  high (unverified) row, DW-doctor-40-1-2, waits for its ruling. Owner `spec-pyforge-doctor`. → Epic 41 /
+  Stories 41.1-41.4, specced 2026-10-03.
+
 - **2026-10-02** — **Phase 2 of the deferral burn-down: doctor's high deferrals.** Re-verified at HEAD, three
   detector-correctness deferrals stand: the chain-layers audit `exec`s `scripts/fleet_scan.py` from the tree it judges
   (`sources/factory.py` does the same with `scripts/pixi_env_matrix.py`), `ledger-regression` never verifies `head` and

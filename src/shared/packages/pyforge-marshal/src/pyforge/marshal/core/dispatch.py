@@ -52,6 +52,9 @@ KIND_DISPATCH_PRESERVE = "dispatch-preserve"
 #: Story 28.21 (CAP-4): push ``origin/dispatch/<slug>/<story>`` once the
 #: session has a commitable result, before independent verify.
 KIND_DISPATCH_PUSH = "dispatch-push"
+#: Story 83.9: ``ruff format`` applied to the story's own changed ``.py`` files
+#: immediately before independent verification runs.
+KIND_DISPATCH_RUFF_FORMAT = "dispatch-ruff-format"
 #: Story 28.16 (parallel dispatch fan-out, CAP-3): one wave's membership,
 #: cap, refused candidates, and per-member terminal outcomes.
 KIND_DISPATCH_WAVE = "dispatch-wave"
@@ -103,6 +106,7 @@ class DispatchJournalFacts:
     completion_stop_reason: str | None = None
     verification_verdict: str | None = None
     verification_failed_gate: str | None = None
+    verification_failed_message: str | None = None
     # Story 28.15 (CAP-17): the station's own `warn`-mode scope-violation
     # advisories from the LATEST dispatch verification -- a tuple of plain
     # ``{code, message, path}`` dicts (JSON-safe), never journal-only (AC4:
