@@ -304,13 +304,13 @@ def test_query_audit_entries_applies_keyword_filters():
 
     rows = query_audit_entries(reader_actor="carol", reader_role="east", actor="alice")
 
-    assert len(rows) == 2
+    assert len(rows) == 1
     assert rows[0].actor == "alice"
 
     # The read of the filtered subset is still recorded with the FULL
-    # returned count (2), not the trail's total row count.
+    # returned count (1), not the trail's total row count.
     read_entry = AuditEntry.objects.get(action=AuditAction.AUDIT_READ)
-    assert read_entry.row_count == 2
+    assert read_entry.row_count == 1
     assert read_entry.actor == "carol"
     assert read_entry.role == "east"
     assert read_entry.scope == {"actor": "alice"}

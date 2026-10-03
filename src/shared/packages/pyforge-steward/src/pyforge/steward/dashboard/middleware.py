@@ -252,14 +252,6 @@ class DashboardIdentityMiddleware:
             await self.app(scope, receive, send)
             return
 
-        scope["dashboard_identity"] = identity
-        # A blank role establishes no role, for the same reason and by the
-        # same `.strip()` test as the identity above (review pass 3 for `''`,
-        # widened to whitespace-only in pass 4): a falsy-but-present role is
-        # the exact state the identity path was changed to avoid -- and one
-        # `AccessDeclaration` forbids declaring, since it raises on both an
-        # empty and a whitespace-only role name, so the middleware would
-        # otherwise manufacture a role an adopter is not allowed to declare.
         role = roles[0] if roles else ""
         if role.strip() and len(role) > AUDIT_IDENTITY_MAX_LENGTH:
             raise OverLongIdentityError(
@@ -269,5 +261,14 @@ class DashboardIdentityMiddleware:
                 f"truncated, so the dashboard never admits a role the audit "
                 f"trail cannot store"
             )
+
+        scope["dashboard_identity"] = identity
+        # A blank role establishes no role, for the same reason and by the
+        # same `.strip()` test as the identity above (review pass 3 for `''`,
+        # widened to whitespace-only in pass 4): a falsy-but-present role is
+        # the exact state the identity path was changed to avoid -- and one
+        # `AccessDeclaration` forbids declaring, since it raises on both an
+        # empty and a whitespace-only role name, so the middleware would
+        # otherwise manufacture a role an adopter is not allowed to declare.
         scope["dashboard_role"] = role if role.strip() else None
         await self.app(scope, receive, send)
