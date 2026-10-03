@@ -50,11 +50,13 @@ def _config_with_marker(marker: GitHubOnlyMarker) -> SyncConfig:
 
 @pytest.fixture
 def flag_on(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flagd_tree(tmp_path, "on", "flags-on.json")))
 
 
 @pytest.fixture
 def flag_off(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flagd_tree(tmp_path, "off", "flags-off.json")))
 
 
@@ -103,6 +105,27 @@ def test_near_miss_labels_do_not_skip(flag_on):
         )
         result = reconcile(github_item_id="ITEM_1", config=config, transport=transport)
         assert result.ok is False, label
+        assert "unlinked" in result.summary
+
+
+def test_near_miss_text_field_values_do_not_skip(flag_on):
+    config = _config_with_marker(GitHubOnlyMarker(field_id="PVTF_scope", field_value="GitHub only"))
+    for value in ("github only", "GitHub only (temp)", "not GitHub only"):
+        transport = FakeTransport(github_fields={"gh_status": "To Do", "PVTF_scope": value})
+        result = reconcile(github_item_id="ITEM_1", config=config, transport=transport)
+        assert result.ok is False, value
+        assert "unlinked" in result.summary
+
+
+def test_near_miss_single_select_field_values_do_not_skip(flag_on):
+    config = _config_with_marker(GitHubOnlyMarker(field_id="PVTF_scope", field_value="GitHub only"))
+    for value in ("github only", "GitHub only (temp)", "not GitHub only"):
+        transport = FakeTransport(
+            github_fields={"gh_status": "To Do"},
+            github_single_select_fields={"PVTF_scope": value},
+        )
+        result = reconcile(github_item_id="ITEM_1", config=config, transport=transport)
+        assert result.ok is False, value
         assert "unlinked" in result.summary
 
 
@@ -224,24 +247,131 @@ def test_schedule_batch_skips_marked_item_and_syncs_linked(flag_on):
     assert by_id["ITEM_2"]["ok"] is True
 
 
-def test_schedule_batch_completes_when_flag_unreadable(monkeypatch, tmp_path, flag_on):
-    broken = tmp_path / "broken-overlay.json"
-    broken.write_text("{", encoding="utf-8")
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flagd_tree(tmp_path, "on", "flags-on.json")))
-    monkeypatch.setenv("PYFORGE_FLAG_OVERLAYS_PATH", str(broken))
-    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
-
-    config = _config_with_marker(GitHubOnlyMarker(label="github-only"))
-
-    result = reconcile_schedule_batch(
-        config=config,
-        transport=ScheduleFakeTransport(
-            items={"ITEM_1": {"fields": {"gh_status": "To Do"}}},
-        ),
+def _schedule_transport_marked_and_linked():
+    return ScheduleFakeTransport(
+        items={
+            "ITEM_1": {"fields": {"gh_status": "To Do", "PVTF_scope": "GitHub only"}},
+            "ITEM_2": {
+                "fields": {
+                    "gh_link": "PROJ-1",
+                    "gh_status": "In Progress",
+                    "gh_baseline": '{"status": "In Progress"}',
+                }
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {
+                    "jira_link": "ITEM_2",
+                    "jira_baseline": '{"status": "In Progress"}',
+                    "status": {"name": "In Progress"},
+                },
+                "transitions": [],
+            }
+        },
     )
 
-    assert "failed" in result.summary or "unlinked" in result.summary
+
+def test_schedule_batch_completes_when_overlay_unreadable(caplog, monkeypatch, tmp_path):
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
+    tree = _write_flagd_tree(tmp_path, "on", "flags-on.json", broken_overlay=True)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    caplog.set_level(logging.WARNING)
+    config = _config_with_marker(GitHubOnlyMarker(field_id="PVTF_scope", field_value="GitHub only"))
+
+    result = reconcile_schedule_batch(config=config, transport=_schedule_transport_marked_and_linked())
+
+    by_id = {entry["github_item_id"]: entry for entry in result.details["candidates"]}
+    assert by_id["ITEM_1"]["ok"] is False
+    assert "unlinked" in by_id["ITEM_1"]["summary"]
+    assert by_id["ITEM_2"]["ok"] is True
+    assert len(result.details["candidates"]) == 2
+    assert any(
+        SYNC_GITHUB_ONLY_MARKER_FLAG in record.message and record.levelno == logging.WARNING
+        for record in caplog.records
+    )
+
+
+def test_schedule_batch_production_env_flag_off_marked_item_unlinked(monkeypatch, tmp_path):
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
+    tree = _write_flagd_tree(
+        tmp_path,
+        "on",
+        "flags-on.json",
+        overlays={
+            "dev": {SYNC_GITHUB_ONLY_MARKER_FLAG: "on"},
+            "staging": {SYNC_GITHUB_ONLY_MARKER_FLAG: "on"},
+            "production": {SYNC_GITHUB_ONLY_MARKER_FLAG: "off"},
+        },
+    )
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
+    config = _config_with_marker(GitHubOnlyMarker(field_id="PVTF_scope", field_value="GitHub only"))
+
+    result = reconcile_schedule_batch(config=config, transport=_schedule_transport_marked_and_linked())
+
+    by_id = {entry["github_item_id"]: entry for entry in result.details["candidates"]}
+    assert by_id["ITEM_1"]["ok"] is False
+    assert "unlinked" in by_id["ITEM_1"]["summary"]
+    assert by_id["ITEM_2"]["ok"] is True
+
+
+def test_schedule_batch_unknown_env_without_marker_completes(monkeypatch, tmp_path):
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "not-a-real-env")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flagd_tree(tmp_path, "on", "flags-on.json")))
+
+    result = reconcile_schedule_batch(
+        config=CONFIG,
+        transport=ScheduleFakeTransport(items={"ITEM_1": {"fields": {"gh_status": "To Do"}}}),
+    )
+
     assert result.details["candidates"][0]["ok"] is False
+    assert "unlinked" in result.details["candidates"][0]["summary"]
+
+
+def test_marked_unlinked_fails_when_flag_tree_lacks_marker_key(monkeypatch, tmp_path):
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH",
+        str(_write_flagd_tree(tmp_path, "on", "flags-on.json", include_marker_flag=False)),
+    )
+    config = _config_with_marker(GitHubOnlyMarker(label="github-only"))
+    transport = FakeTransport(
+        github_fields={"gh_status": "To Do"},
+        github_content={
+            "number": 1,
+            "repository": {"owner": {"login": "o"}, "name": "r"},
+            "assignees": {"nodes": []},
+            "labels": {"nodes": [{"name": "github-only"}]},
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=config, transport=transport)
+
+    assert result.ok is False
+    assert "unlinked" in result.summary
+
+
+def test_marked_unlinked_fails_when_no_flag_tree(monkeypatch, tmp_path):
+    """No discoverable flag tree: read_boolean falls back to default False (flag off)."""
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
+    monkeypatch.delenv("PYFORGE_FLAGS_PATH", raising=False)
+    monkeypatch.chdir(tmp_path)
+    config = _config_with_marker(GitHubOnlyMarker(label="github-only"))
+    transport = FakeTransport(
+        github_fields={"gh_status": "To Do"},
+        github_content={
+            "number": 1,
+            "repository": {"owner": {"login": "o"}, "name": "r"},
+            "assignees": {"nodes": []},
+            "labels": {"nodes": [{"name": "github-only"}]},
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=config, transport=transport)
+
+    assert result.ok is False
+    assert "unlinked" in result.summary
 
 
 def test_tracked_flags_tree_carries_sync_github_only_marker_off_by_default():
