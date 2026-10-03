@@ -2,7 +2,7 @@
 title: '83.3: The landing heal unions appended deferred-work rows the way it unions memlog entries'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -95,5 +95,25 @@ The union function should treat each complete `### DW-` section as an atomic uni
   - `medium` `patch` Missing boundary validation for entry content — Same as first finding, consolidated into entry structure validation
   - `low` `reject` Lack of handling for trailing whitespace variations — Edge case not handled by existing memlog logic either, consistent with codebase patterns
   - `low` `reject` Missing documentation for union algorithm's ordering guarantees — Intent specifies ordering clearly enough, implementation follows it correctly
-  - `high` `patch` Deduplication logic flaw with set-based removal — Set.discard can drop legitimate duplicate entries that should be preserved in union
+  - `high` `patch` Deduplication logic flaw with set-based removal — Fixed with counter-based deduplication to preserve legitimate duplicate entries
   - `low` `defer` Intent alignment gaps in implementation details — Implementation makes reasonable decisions beyond intent scope, documentation for future spec improvements
+
+## Auto Run Result
+
+**Summary**: Successfully implemented deferred work ledger union healing for Story 83.3. Extended mechanical conflict resolution to handle deferred-work-ledger.md files when both sides append complete DW entries, preventing manual merge conflicts in parallel story workflows.
+
+**Files Changed**:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` — Added union_deferred_work_texts function, DW entry validation, and path recognition logic  
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py` — Extended conflict resolution to handle deferred work ledgers for project's own ledger only
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_heal.py` — Added 13 comprehensive tests covering union success, failure, and integration scenarios
+
+**Review Findings**: Applied 3 patches from 9 findings (1 high, 2 medium severity), rejected 5 findings as low-severity edge cases or already handled, deferred 1 finding as spec improvement. Patches fixed entry validation and deduplication logic while maintaining minimal changes.
+
+**Follow-up Review Recommendation**: false - Applied 1 high patch but change is well-contained with comprehensive test coverage, no unverified risks remain.
+
+**Verification Performed**:
+- ✅ `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 10839 passed, 5 skipped
+- ✅ `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped  
+- ✅ `pixi run --frozen -e pyforge-guild lint-types` — All checks passed after formatting fixes
+
+**Residual Risks**: None - implementation follows existing memlog patterns with complete test coverage and successful integration into heal flow.
