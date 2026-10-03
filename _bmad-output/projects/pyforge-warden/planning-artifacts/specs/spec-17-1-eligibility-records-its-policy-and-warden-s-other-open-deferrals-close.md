@@ -2,7 +2,7 @@
 title: "17.1: Eligibility records its policy, and warden's other open deferrals close"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 followup_review_recommended: false
 baseline_revision: 'e06362288272098346b7329a4a5e94e1ad87a513'
 review_loop_iteration: 0
@@ -77,7 +77,20 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (open medium and low def
 - `pixi run --frozen -e pyforge-warden pyforge-warden-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back after an independent landing review (findings below). By operator ruling, the follow-up-review rows leave this story: an implementation session cannot close them (they run as review-agent batches). Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session) — sent back
+Hold: the fixes for DW-FU-7-2 (in memory), DW-FU-7-1-2 and DW-FU-11-2; the CLI stays the sole gate and `--doctor` never exits 1. The operator session reparented `CycloneDXUnsupportedSpecVersionError` under `PyforgeError` (pyforge-core CAP-5); keep that commit.
+- `high` **Seven follow-up-review rows were closed with no review run**: DW-FRR-7-1, DW-FRR-9-1, DW-FRR-9-2, DW-FRR-9-3, DW-FRR-10-2, DW-FU-6-3, DW-FU-5-1. Reopen all seven (`status: open`; drop the new `resolution:` and `verified:` lines), remove them from this story, and remove the false review claim from `tests/unit/test_story_17_1_followup_reviews.py`'s docstring (drop the file if its tests only restate shipped behaviour).
+- `medium` **DW-FU-7-1 was closed on a change that does nothing**: both adapters build identity through `resolve_identity`, so `PackageIdentity` equality already equals the new group key, and the result's purl now depends on input order. Revert the merge-key change, and close the row citing Story 7.2's existing grouping (the real `path:line`).
+- `medium` **Correct the `verified:` citations**: DW-FU-7-2 is the new field and the re-derivation (`eligibility.py:102`, `:111-130`), DW-FU-7-1-2 the check (`sources.py:273-275`); the follow-up-review rows' citations go away with the reopen.
+- `low` DW-FU-7-2 is fixed in memory but not in the saved output: `eligibility_sbom.py` `_build_component` still writes only status and provenance. Add the effective required set as an additive CycloneDX property, or record in `spec-package-inventory-eligibility/.memlog.md` that this half stays open.
+- `low` `sources.py`: drop the no-op `try/except CycloneDXUnsupportedSpecVersionError: raise` in `ingest`; correct the `validate` docstring (it now raises on specVersion). Drop the redundant `test_dw_fu_11_2_roster_missing_still_refuses` or make it use `pytest.raises`.
+
 
 - No review has run yet.
 
