@@ -2,7 +2,7 @@
 title: "84.1: An operator-run refresh reads every harness's live model list and reports drift"
 type: 'feature'
 created: '2026-10-02'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '263ab6eebb0be49d153e3c83d95f372afc8c95d9'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -94,8 +94,28 @@ Minted 2026-10-02 at the operator's request: refresh the model lists for Claude,
 ## Spec Change Log
 
 - 2026-10-03 — sent back by the operator session after the landing was refused and an adversarial review of the diff (findings below). Two acceptance criteria added (the command runs end to end through the CLI with drift and exits on the rendered-report code; the tracked project overlay keeps the packaged `model_list`). Status back to `ready-for-dev`.
+- 2026-10-03 (later) — sent back a second time after an independent review (findings below); dispatch verification had refused on one mypy error, fixed on this branch by the operator session (commit 3d49bfe9b0, keep it). Three acceptance criteria added. Status back to `ready-for-dev`.
 
 ## Review Triage Log
+
+### 2026-10-03 (later) — Independent review (operator session) — sent back again
+The earlier findings: the finding code is registered (fixed) and the cursor overlay keeps `model_list` (fixed); the tests are only half fixed (finding 4).
+
+**High**
+- **1 The API key can reach stdout and the JSON report.** `adapters/model_list_http.py` puts `str(exc)` in the result body and `adapters/model_list_live.py` turns it into `reason`. A key with a stray CR/LF (a CRLF `.env`) makes `http.client.putheader` raise `ValueError("Invalid header value b'<KEY>\r'")` before connecting; the message lands in the report and `data.harness_results.*.reason`. `_scan_text_for_profile_secrets` matches the raw key only, so the escaped repr passes. Fix: never pass transport exception text into `reason` (fixed strings per cause); refuse a credential with control characters, naming only the env var; a sentinel-key test through `run_adapters_models` in text and JSON.
+- **2 The key follows redirects to any host.** `pyforge-core` `client.py` `urllib_http_get` uses urllib's default redirect handler, which copies every request header (including `x-api-key`) to the redirect target, across hosts and https→http (probe: a 302 from 127.0.0.1 to another local port delivered the key). Fix: send the credential with `add_unredirected_header`, or use an opener without redirects and report a 3xx as `unavailable`; require `https` in `parse_model_list`.
+- **3 One truncated response still kills every harness.** `http.client.IncompleteRead`, `BadStatusLine` and `LineTooLong` are not `OSError`/`ValueError`/`TimeoutError`; nothing catches them, and the CLI loop catches only those three, so one bad response is a traceback, exit 1, and no report for any harness. Fix: catch `(OSError, http.client.HTTPException)` in the fetch, and catch per harness in the loop, recording `unavailable`.
+- **4 The touched-module coverage gate fails** (`pyforge-marshal-coverage-gate` exit 1: `adapters.model_list_http` 33.3%, `adapters.model_list_live` 47.9%, `cli.adapters` 76.3%, `core.model_list_refresh` 79.1%), and the Gemini page loop, the page-cap and cursor guards, the five `unavailable` causes, the live adapters, `--write` and the secret scan have no test. Fix: a two-page Gemini `RecordingFetch` test (pageToken URL, `x-goog-api-key`, union of ids); one test per `unavailable` cause beside a healthy harness; adapter tests against a local socket server or a patched `urllib_http_get`; a CLI test with a prior snapshot, `--write` and a sentinel key. Run `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` before you report done.
+
+**Medium**
+- **5 "no drift" when nothing was compared.** The text report prints "no drift detected" with every harness unavailable, and the JSON envelope is `clean` with no finding; the spec says an unchecked provider is never clean. Fix: report "N compared, M unavailable" and drop the no-drift line when any harness is unavailable; register a WARN code for unavailable and unchecked (exit stays 0); add `unchecked_providers` to `data`.
+- **6 A harness unavailable in the prior snapshot shows every id as added.** `parse_snapshot_payload` ignores `status`; compare only harnesses `ok` in both snapshots.
+- **7 An unexpected response counts as an empty success.** A 200 body without `data`/`models`, or a `cursor-agent models` run with no parseable lines, is `ok` with zero ids. Treat it as `unavailable` ("no ids parsed").
+
+**Low**
+- **8** Require `credential_env` to match `^[A-Z_][A-Z0-9_]*$`, so a pasted key is never echoed as a variable name.
+- **9** A meta-test that only `cli/adapters.py` imports `adapters.model_list_live` (dispatch, drain, spin and policy load never read a live list).
+- **10** `provider_for_harness_name` is still unused; the `model_map` refs always name the packaged profile path even when an overlay declared the map; the review-fix memlog entry names `adapters/oidc_pkce.py`, which the diff does not touch; take the fetch port as a handler parameter instead of monkeypatching module globals; the new team-memory entry claims the review gaps were closed, so amend or drop it.
 
 ### 2026-10-03 — Landing review (operator session, independent adversarial review) — sent back
 - Dispatch run `pyforge-marshal-20261003T092451153Z-76e32539` refused at verification: MRS-GATE-001, `lint-types` exited 1 (`ruff format` in `tests/unit/test_egress.py:602`; mypy `attr-defined` at `cli/adapters.py:1996`). The spec's Auto Run Result claimed `lint-types` exit 0.
@@ -112,6 +132,11 @@ Minted 2026-10-02 at the operator's request: refresh the model lists for Claude,
 - `low` `patch` Untested: `render_report_text`, `collect_tier_map_refs`, `collect_catalog_refs`, `collect_profile_map_refs`, `_newest_prior_snapshot`, `run_adapters_models`; query values not URL-encoded (a Gemini `pageToken` with `+`/`/`/`=` corrupts page 2); report prints an empty "since previous snapshot" header and duplicates drift lines in text mode; unused `provider_for_harness_name`.
 
 ## Acceptance Criteria (added 2026-10-03)
+
+**Added 2026-10-03 (later):**
+- Given a sentinel credential (including one ending in a CR) and a transport failure, an HTTP redirect, or a truncated response When `marshal adapters models` runs in text and JSON Then the sentinel never appears in the output, the key is never sent to the redirect target, and the other harnesses still report
+- Given every harness unavailable When the report renders Then it does not say "no drift", and the JSON carries a WARN finding and the unchecked providers
+- Given the change When `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` runs Then it exits 0
 
 - Given a declared id absent from its live list When the command runs through the CLI Then it exits with the rendered-report code, prints the report, and raises no unregistered-finding error
 - Given the tracked project overlay for a harness that omits `model_list` When profiles load from the repo root Then the packaged `model_list` still applies, and the harness reports its live list, not `no source declared`
