@@ -7,7 +7,6 @@ import logging
 from pathlib import Path
 
 import pytest
-from test_sync_reconcile_propagation import CONFIG, FakeTransport, ScheduleFakeTransport
 
 from pyforge.core.flags import read_boolean as _read_boolean_flag
 from pyforge.steward.sync import (
@@ -17,6 +16,7 @@ from pyforge.steward.sync import (
     reconcile,
     reconcile_schedule_batch,
 )
+from test_sync_reconcile_propagation import CONFIG, FakeTransport, ScheduleFakeTransport
 
 _FLAG_FIXTURE_METADATA = {
     "owner": "steward",
