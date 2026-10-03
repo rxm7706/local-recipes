@@ -3,9 +3,9 @@ title: "35.1: The deck transport, sync-all, deck tooling and docs site close the
 type: 'fix'
 created: '2026-10-03'
 updated: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: 'e06362288272098346b7329a4a5e94e1ad87a513'
-review_loop_iteration: 1
+status: 'done'
+baseline_revision: 'b467e70721299ca9439bec343182c1006c62fccb'
+review_loop_iteration: 2
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -102,6 +102,13 @@ The entry below this one is void: the implementing session reviewed its own work
 
 ## Auto Run Result
 
-- Harness: bmad-build-auto (interactive Cursor worktree `dispatch/pyforge-herald/35.1`)
-- Verify green: `pixi run --frozen -e pyforge-herald pyforge-herald-test`; script tests; `spec_surface_reconcile.py` (no baseline stamp in this run)
-- Ledger: `35-1-…` promoted to `done` via Tier-3 feed + `sprint-ledger-sync --project herald`
+- Harness: bmad-build-auto (Cursor worktree `dispatch/pyforge-herald/35.1`, 2026-10-03)
+- Summary: Closed ten Phase 4+5 deferrals (transport `list_files`, HTML push read-back, deck-trio vocabulary, docsite unit tests, layout ambiguity, deck-facts stderr, presenton README, plus three already-landed rows). Reopened eleven follow-up-review ledger rows to `open` on main text; did not close them in this story.
+- Files: `deck_pipeline.py`, `pptx_pipeline.py`, `transport/base.py`, `scripts/deck_trio.py`, `scripts/deck_facts.py`, herald and script tests, `deferred-work-ledger.md`.
+- Review: landing-review patches applied (ledger `verified:` citations, non-vacuous docsite tests, CRLF prove test, duplicate discovery pass removed, stamp skip on unchanged writes, follow-up rows reverted).
+- Follow-up review recommendation: `false` (one medium patch round; no unverified high risk).
+- Verify: `pyforge-herald-test` 1509 passed; script suites 145 passed; `deferred-work-check` exit 0; `python scripts/spec_surface_reconcile.py` OK; `sprint-ledger-sync --project herald` wrote `35-1-…` → `done`.
+- Residual: DW-FU-23-6-1 HTML normalisation is CRLF-only in tests (no live re-push per spec Never); DW-21-7-1 high row remains open.
+
+### 2026-10-03 — Review pass (bmad-build-auto, iteration 2)
+- verdicts: 0 new findings after patch round — prior landing-review items addressed in code and ledger.
