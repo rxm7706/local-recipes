@@ -2,8 +2,8 @@
 title: "83.10: A verification refusal never relaunches a fresh session or raises the model"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: 'd82497d9c5a21d3a1a6b7d681577c96a10df3dd8'
+status: 'done'
+baseline_revision: '302b6ad99859f4305316a419b3b3afba2f5545e3'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -74,6 +74,11 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 
 ## Review Triage Log
 
+### 2026-10-03 (later) — Landing review (operator session) — landed by hand
+- PR #1773 was merged before this session's fixes were pushed, so `main` carried the first session's code. The supervisor then read the story as merged on `main` and stopped without verifying or pushing. The operator session landed this session's fix commits through a new PR.
+- The three findings below are fixed: the blocked refusal stays reachable, MRS-GATE-018 is in the set, and the park reason names the failed message.
+- `low` `patch` (applied by the operator session) The blocked-refusal fix had no test. `test_a_blocked_worktree_spec_with_a_prior_run_is_still_disp_045` adds one (it fails with the old `elif` chain).
+
 ### 2026-10-03 — Landing review (operator session) — sent back
 - `high` `patch` **The drain plan stops refusing blocked stories.** `cli/drain_plan.py` `evaluate_story` inserts `elif latest_journal is not None:` ahead of `elif status == "blocked": refuse("MRS-DISP-045", ...)` in the same `if`/`elif` chain. So any story with a prior run, which every re-dispatched story has, enters the new branch, and the MRS-DISP-045 refusal for a `blocked` worktree spec is never reached. Fix: decide the verification-refusal land-only as its own step (for example `if not land_only and latest_journal is not None: ...`) and keep the blocked refusal reachable whenever the story is not land-only.
 - `medium` `patch` **MRS-GATE-018 is not a verification refusal here.** Story 83.2 added MRS-GATE-018 (the pre-verification deferred-work intake refused; `core/verdict.py` maps it to `GATE_FAILED`), and it is a dispatch verification refusal like 001-006. But `_VERIFY_REFUSAL_GATES` does not list it. So a 018 refusal still counts toward Story 33.6's floor-raise, and never takes the land-only path after an operator fix. That is what happened to 83.3's run `pyforge-marshal-20261003T133852198Z-8c6f8963`. Fix: add MRS-GATE-018 to the set, with a test.
@@ -87,15 +92,15 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 
 Status: done
 
-Summary: Verification refusals after finished session work now classify as terminal (park) when the branch head is unchanged, land-only when the operator moved the head, and are excluded from Story 33.6's prior-failure counter.
+Summary: Landing-review fixes: drain plan keeps `MRS-DISP-045` reachable when a prior run exists; `MRS-GATE-018` is a verification refusal for park/land-only and floor-raise exclusion; park reasons include the journaled verification `failed_message`.
 
 Files changed:
-- `core/dispatch_retry.py` — park/land-only helpers; verify gates with git progress are TERMINAL
-- `core/dispatch_harness_done.py` — `should_take_verification_refusal_land_only`
-- `cli/dispatch.py` — block facts, floor-raise count, CAP-4 land-only wiring
-- `cli/drain_plan.py` — drain plan land-only for fixed branches
-- `tests/unit/test_dispatch_hotfix.py`, `tests/unit/test_dispatch_retry_83_10.py` — regression + mutation
+- `core/dispatch_retry.py` — add `MRS-GATE-018` to verification refusal gates
+- `core/dispatch.py` — `DispatchJournalFacts.verification_failed_message`
+- `cli/dispatch.py` — read `failed_message` from verification journal; pass into park reason
+- `cli/drain_plan.py` — verification-refusal land-only and blocked refusal are separate steps
+- `tests/unit/test_dispatch_retry_83_10.py` — 018 + park message + terminal classification
 
-Review: 0 patches applied; followup_review_recommended false.
+Review: 0 patch-worthy findings on pass 2; followup_review_recommended false.
 
-Verification: `pyforge-marshal-test` pass (10913 tests); `pyforge-deps-test` pass; `lint-types` pass; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.
+Verification: `pyforge-marshal-test` pass (10917 tests); `pyforge-deps-test` pass; `lint-types` pass; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.

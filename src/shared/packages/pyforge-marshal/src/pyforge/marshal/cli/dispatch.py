@@ -1343,6 +1343,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     completion_stop_reason: str | None = None
     verification_verdict: str | None = None
     verification_failed_gate: str | None = None
+    verification_failed_message: str | None = None
     verification_scope_advisories: tuple[dict[str, object], ...] = ()
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         if entry.phase == Phase.INTENT:
@@ -1401,6 +1402,9 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
             gate_val = entry.payload.get("failed_gate")
             if isinstance(gate_val, str):
                 verification_failed_gate = gate_val
+            msg_val = entry.payload.get("failed_message")
+            if isinstance(msg_val, str):
+                verification_failed_message = msg_val
             # Story 28.15 (CAP-17): best-effort, matching every other
             # journal-payload read in this function -- a malformed/missing
             # entry degrades to the empty tuple rather than raising, never
@@ -1449,6 +1453,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         completion_stop_reason=completion_stop_reason,
         verification_verdict=verification_verdict,
         verification_failed_gate=verification_failed_gate,
+        verification_failed_message=verification_failed_message,
         verification_scope_advisories=verification_scope_advisories,
         landing_verdict=landing_verdict,
         landing_findings=landing_findings,
@@ -2312,6 +2317,7 @@ def station_story_block_facts(
                         story_key=feed_story,
                         run_id=run_dir.name,
                         failed_gate=journal.verification_failed_gate,
+                        failed_command=journal.verification_failed_message,
                     ),
                     block_class=dispatch_fleet.FleetBlockClass.STORY,
                 )
