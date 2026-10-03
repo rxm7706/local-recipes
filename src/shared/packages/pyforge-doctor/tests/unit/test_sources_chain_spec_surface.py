@@ -1500,3 +1500,138 @@ def test_dead_glob_does_not_change_an_existing_gating_finding(tmp_path: Path) ->
     assert [f.evidence["path"] for f in stale_allow] == ["nowhere/**"]
     assert stale_allow[0].status is DoctorStatus.FAIL
     assert len(_stale_surface(findings)) == 1
+
+
+# === Story 41.1: the surface contract measures what it claims =================
+
+
+def _write_raw_spec(repo: Path, project: str, spec: str, frontmatter: str) -> Path:
+    """A SPEC.md whose frontmatter is written VERBATIM -- `_write_spec` only
+    emits one canonical shape, and these tests are about the shapes a human
+    actually writes (quoted, flow, oddly indented, empty)."""
+    sd = _spec_dir(repo, project, spec)
+    sd.mkdir(parents=True, exist_ok=True)
+    (sd / "SPEC.md").write_text(f"---\n{frontmatter}---\n\nbody\n", encoding="utf-8")
+    return sd
+
+
+@pytest.mark.parametrize(
+    ("frontmatter", "expected"),
+    [
+        # Quoted globs, both quote styles -- the quotes are YAML syntax, not
+        # part of the path, so an unstripped quote governed nothing.
+        ('surface:\n  - "a.py"\n  - \'b.py\'\n', ["a.py", "b.py"]),
+        # A flow sequence on one line, the shape a short surface is written in.
+        ("surface: [a.py, b.py]\n", ["a.py", "b.py"]),
+        ("surface: ['a.py', \"b.py\"]\n", ["a.py", "b.py"]),
+        # One bare scalar, no sequence at all.
+        ("surface: a.py\n", ["a.py"]),
+        # Any indent: four spaces, a tab, none at all -- YAML permits each.
+        ("surface:\n    - a.py\n", ["a.py"]),
+        ("surface:\n- a.py\n", ["a.py"]),
+        # A trailing comment belongs to the reader, not to the path.
+        ("surface:\n  - a.py  # the one module\n", ["a.py"]),
+    ],
+)
+def test_parse_surface_reads_every_shape_a_human_writes(
+    tmp_path: Path, frontmatter: str, expected: list[str]
+) -> None:
+    """DW-FU-6-6-9: `_parse_surface` is a hand-rolled frontmatter reader, and
+    every shape it silently mis-read was a surface that governed nothing --
+    a FAIL-storm of `ungoverned` for files whose Spec plainly claims them,
+    or worse a drift verdict computed over an empty governed set."""
+    spec_md = tmp_path / "SPEC.md"
+    spec_md.write_text(f"---\n{frontmatter}---\n\nbody\n", encoding="utf-8")
+
+    globs, _excludes, _drift = chain._parse_surface(spec_md)
+
+    assert globs == expected
+
+
+def test_a_declared_but_valueless_surface_is_unevaluable_not_empty(tmp_path: Path) -> None:
+    """DW-FU-6-6-9: a `surface:` key with no readable value at all is a
+    surface nobody can know, and an unknown surface is not an EMPTY one. It
+    used to read as empty, which made every tracked file in the repo
+    `ungoverned` on that Spec's behalf -- a confident FAIL derived from a
+    parse failure. One WARN naming the Spec is the honest answer."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_raw_spec(repo, "pyforge-x", "spec-dark", "surface:\nsome-other-key: 1\n")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+
+    dark = [f for f in findings if f.check == "spec-surface-unevaluable"]
+    assert len(dark) == 1, [f.check for f in findings]
+    assert dark[0].status is DoctorStatus.WARN
+    assert dark[0].evidence["path"] == "pyforge-x/spec-dark"
+    assert "not evaluable" in dark[0].message
+
+
+def test_an_explicitly_empty_surface_stays_empty_not_unevaluable(tmp_path: Path) -> None:
+    """The carve-out that keeps DW-FU-6-6-9 honest: nine live Specs declare
+    `surface: []` deliberately ("archived -- no live surface"). An author
+    who wrote the empty sequence SAID the surface is empty; that is a known
+    answer, not a missing one, and must not become a WARN."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_raw_spec(repo, "pyforge-x", "spec-archived", "surface: []\n")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+
+    assert [f for f in findings if f.check == "spec-surface-unevaluable"] == []
+
+
+def test_a_subdirectory_target_is_one_warn_not_an_ungoverned_storm(tmp_path: Path) -> None:
+    """DW-FU-6-6-7: `git ls-files` run from a SUBDIRECTORY lists only that
+    subtree, while Spec discovery still walks `_bmad-output/projects/` from
+    the given target -- which does not exist there. So every file the
+    subdirectory does contain came back `ungoverned`: a FAIL storm whose
+    real cause was standing in the wrong place. Spec surface is a
+    whole-repository verdict; say so once, and say where to re-run."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["pkg/**"])
+    (repo / "pkg").mkdir()
+    for name in ("a.py", "b.py", "c.py"):
+        (repo / "pkg" / name).write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo / "pkg")
+
+    assert len(findings) == 1, [f.check for f in findings]
+    assert findings[0].check == "spec-surface-unevaluable"
+    assert findings[0].status is DoctorStatus.WARN
+    assert str(repo.resolve()) in findings[0].message
+    assert findings[0].evidence["top_level"] == str(repo.resolve())
+
+
+def test_a_path_needing_quoting_is_read_literally(tmp_path: Path) -> None:
+    """DW-doctor-38-2 / DW-FU-6-6-4: `git ls-files` C-quotes and
+    octal-escapes any path with a non-ASCII or special character unless
+    `core.quotePath=false`, so a Diátaxis spec's own filename came back as
+    `"...di\\303\\241taxis..."` -- a string that matches no glob and no
+    allowlist entry, and therefore read as a brand-new ungoverned file that
+    could only be silenced by allowlisting the ESCAPED form. `-z` with a NUL
+    split is the other half: a path containing a literal newline cannot be
+    recovered from newline-separated output at all."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["diátaxis.md"])
+    (repo / "diátaxis.md").write_text("x\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    tracked = chain._tracked_files(repo)
+
+    assert tracked is not None
+    assert "diátaxis.md" in tracked
+    assert not any("\\303" in path or path.startswith('"') for path in tracked)
+    # And the literal path really is governed by the literal glob.
+    ungoverned = {f.evidence["path"] for f in chain.gather_spec_surface(repo) if f.check == "ungoverned"}
+    assert "diátaxis.md" not in ungoverned

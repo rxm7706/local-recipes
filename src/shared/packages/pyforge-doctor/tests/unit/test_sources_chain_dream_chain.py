@@ -851,3 +851,59 @@ def test_unreadable_spec_dir_names_the_project_not_the_literal_specs_dir(
 
     subjects = {f.evidence["subject"] for f in findings if f.check == "dream-chain-unevaluable"}
     assert subjects == {"pyforge-doctor", "pyforge-mason"}, subjects
+
+
+# === Story 41.1: covers-dreams is read, not iterated =========================
+
+
+def _write_raw_spec(target: Path, project: str, spec_dir: str, frontmatter: str) -> Path:
+    """A SPEC.md whose frontmatter is written VERBATIM -- `_write_spec` only
+    emits `covers-dreams:` as a block sequence, and these tests are about the
+    other shapes a human writes."""
+    path = target / "_bmad-output" / "projects" / project / "planning-artifacts" / "specs" / spec_dir / "SPEC.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"---\n{frontmatter}---\n\nbody\n", encoding="utf-8")
+    return path
+
+
+def test_a_bare_covers_dreams_scalar_covers_that_one_dream(tmp_path: Path) -> None:
+    """DW-FU-6-6-6: `covers-dreams:` was iterated directly, so a bare scalar
+    -- the shape a Spec folding in exactly ONE satellite naturally writes --
+    was walked CHARACTER BY CHARACTER. The folded Dream was still reported
+    FAIL `dream-without-spec`, a false gating failure, while any
+    one-character slug would have been silently marked covered."""
+    _write_dream(tmp_path, "satellite-scalar", "doctor")
+    _write_dream(tmp_path, "host-scalar", "doctor")
+    _write_raw_spec(
+        tmp_path,
+        "pyforge-doctor",
+        "spec-host-scalar",
+        "owner-dream: docs/dreams/host-scalar.md\n"
+        "covers-dreams: docs/dreams/satellite-scalar.md\n",
+    )
+
+    findings = chain.gather_dream_chain(tmp_path)
+
+    without_spec = {f.evidence.get("dream") for f in findings if f.check == "dream-without-spec"}
+    assert "satellite-scalar" not in without_spec
+
+
+def test_a_covers_dreams_shape_nobody_writes_is_one_warn_not_a_crash(tmp_path: Path) -> None:
+    """DW-FU-6-6-6's other half: any OTHER non-list shape RAISES, and
+    `_collect_specs`'s own per-spec isolation turns that into one named
+    `dream-chain-unevaluable` WARN for that Spec. Guessing at a shape nobody
+    writes deliberately is how the character-by-character read happened."""
+    _write_dream(tmp_path, "host-mapping", "doctor")
+    _write_raw_spec(
+        tmp_path,
+        "pyforge-doctor",
+        "spec-host-mapping",
+        "owner-dream: docs/dreams/host-mapping.md\ncovers-dreams:\n  a: 1\n",
+    )
+
+    findings = chain.gather_dream_chain(tmp_path)
+
+    unevaluable = [f for f in findings if f.check == "dream-chain-unevaluable"]
+    assert len(unevaluable) == 1, [f.check for f in findings]
+    assert unevaluable[0].status is DoctorStatus.WARN
+    assert "spec-host-mapping" in unevaluable[0].message
