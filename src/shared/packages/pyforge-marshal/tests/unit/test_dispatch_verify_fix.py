@@ -240,13 +240,13 @@ def test_wait_for_process_invokes_on_poll(monkeypatch):
 
 
 def test_wait_for_process_reaps_on_final_waitpid(monkeypatch):
-    calls = iter([(0, 0), (0, 0), (55, 0)])
+    waitpid_results = iter([(0, 0), (55, 0)])
 
     def fake_waitpid(_pid: int, _opts: int):
-        return next(calls)
+        return next(waitpid_results)
 
     monkeypatch.setattr(os, "waitpid", fake_waitpid)
-    ticks = iter([0.0, 0.0, 100.0])
+    ticks = iter([0.0, 2.0])
     monkeypatch.setattr(time, "monotonic", lambda: next(ticks))
     result = wait_for_process(PosixProcess(), 55, timeout_s=1.0, poll_s=0.01)
     assert result.exited is True
@@ -286,6 +286,12 @@ def test_terminate_process_group_falls_back_to_kill_when_no_pgid(monkeypatch):
     assert kills == [(77, signal.SIGTERM)]
 
 
+def test_terminate_process_group_swallows_kill_oserror(monkeypatch):
+    monkeypatch.setattr(os, "getpgid", lambda _pid: (_ for _ in ()).throw(OSError))
+    monkeypatch.setattr(os, "kill", lambda *_args: (_ for _ in ()).throw(OSError))
+    terminate_process_group(1)  # must not raise
+
+
 def test_terminate_process_group_killpg_failure_falls_back_to_kill(monkeypatch):
     kills: list[tuple[int, int]] = []
 
@@ -301,6 +307,13 @@ def test_terminate_process_group_killpg_failure_falls_back_to_kill(monkeypatch):
     monkeypatch.setattr(os, "kill", fake_kill)
     terminate_process_group(88)
     assert kills == [(88, signal.SIGTERM)]
+
+
+def test_terminate_process_group_killpg_and_kill_both_fail(monkeypatch):
+    monkeypatch.setattr(os, "getpgid", lambda _pid: 5)
+    monkeypatch.setattr(os, "killpg", lambda *_args: (_ for _ in ()).throw(OSError))
+    monkeypatch.setattr(os, "kill", lambda *_args: (_ for _ in ()).throw(OSError))
+    terminate_process_group(88)  # must not raise
 
 
 def test_terminate_process_group_signals_process_group(monkeypatch):
