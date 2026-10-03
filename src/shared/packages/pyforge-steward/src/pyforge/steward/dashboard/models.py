@@ -4,7 +4,9 @@ CAP-4's contract is "who saw how many rows of what, and when" — this model
 is that record. `AuditAction` names the four request-time actions CAP-4
 requires (`load`/`filter`/`navigate`/`export`) plus `audit_read`, the fifth
 action `audit.py::query_audit_entries` writes for its own invocation per
-AD-7 ("reading the audit trail is itself a recorded act").
+AD-7 ("reading the audit trail is itself a recorded act"), and `purge`, the
+sixth action `audit.py::purge_expired_entries` writes when retention deletes
+expired rows (Story 84.1).
 
 This is the package's first Django model, so it is also the first thing
 that exercises AD-13's reusable-app scaffold (`apps.py`'s explicit
@@ -31,13 +33,14 @@ from django.db import models
 
 
 class AuditAction(models.TextChoices):
-    """CAP-4's four request-time actions, plus AD-7's audit-of-the-audit action."""
+    """CAP-4's four request-time actions, plus AD-7's audit-of-the-audit action and retention purge."""
 
     LOAD = "load", "Load"
     FILTER = "filter", "Filter"
     NAVIGATE = "navigate", "Navigate"
     EXPORT = "export", "Export"
     AUDIT_READ = "audit_read", "Audit read"
+    PURGE = "purge", "Purge"
 
 
 class AuditEntry(models.Model):

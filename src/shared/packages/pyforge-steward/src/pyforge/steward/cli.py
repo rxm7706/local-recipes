@@ -798,6 +798,22 @@ def _add_deploy_subparsers(deploy_parser: argparse.ArgumentParser) -> None:
         metavar="DIR",
         help="write the rendered daphne unit + nginx edge config here (omit for validation-only)",
     )
+    perimeter.add_argument(
+        "--app-db-role",
+        metavar="ROLE",
+        help=(
+            "PostgreSQL role the dashboard app uses — required with --output-dir; "
+            "rendered audit grants allow only SELECT and INSERT on the audit table"
+        ),
+    )
+    perimeter.add_argument(
+        "--audit-retention-db-role",
+        metavar="ROLE",
+        help=(
+            "PostgreSQL role that runs audit retention — required with --output-dir; "
+            "rendered audit grants grant it DELETE on the audit table only"
+        ),
+    )
 
     static = deploy_subs.add_parser(
         "static",

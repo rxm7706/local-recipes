@@ -2,7 +2,8 @@
 title: "84.1: An audit purge records itself, and the audit table is append-only by privilege"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '7aa6d9925398d8e8f9a178d6d36d20595bab0279'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -35,6 +36,10 @@ Type / Effort / Deps: fix / M / —.
 - Given the retention role When it purges Then it succeeds and records the purge
 - Given this story lands When its deferred-work rows are read Then each of `DW-9-3-3`, `DW-9-3-8` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 
+**Added 2026-10-03 (landing review):**
+- Given the rendered grants When the retention role runs the purge's DELETE with its WHERE clause and inserts the purge row Then both succeed, and an UPDATE by the retention role is refused. Test the rendered SQL for SELECT, INSERT and DELETE to the retention role and no UPDATE to either role.
+- Given `app_role` and `retention_role` name the same role (in any letter case) When the grants render Then they refuse with a `ValueError`.
+
 ## Boundaries & Constraints
 
 **Always:** Generate the Django migration and keep `makemigrations --check` green (AGENTS.md pre-PR item 3). Fix each defect where the shipped behaviour lives and pin it with a test that fails without the fix.
@@ -63,6 +68,34 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back by the operator session after the landing review (findings below). Two acceptance criteria added. Status back to `ready-for-dev`.
+
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Landing review (operator session) — sent back
+The rendered grants were applied to a real PostgreSQL 17 cluster: a table shaped like `pyforge_steward_dashboard_auditentry` (identity `id`), owned by a migration role, with roles `app` and `retention`.
+- The app role works as intended: INSERT succeeds; UPDATE and DELETE are refused.
+- `high` `patch` **The retention role cannot purge.** `render_audit_table_grants` grants it DELETE only.
+  - Its `DELETE ... WHERE occurred_at < ...` (what `purge_expired_entries` runs) fails with `permission denied for table pyforge_steward_dashboard_auditentry`, because PostgreSQL needs SELECT on the columns a WHERE clause reads.
+  - The purge row `purge_expired_entries` writes in the same transaction also fails: the retention role has no INSERT.
+  - So the third acceptance criterion fails on a real database. Fix: grant the retention role SELECT, INSERT and DELETE, and never UPDATE.
+- `medium` `patch` **The same role can be named twice.** `render_audit_table_grants(app_role="app", retention_role="app")` renders `GRANT DELETE ... TO app`. That breaks the Never rule: never let the app role delete audit rows. Fix: refuse equal roles (compare case-insensitively, since unquoted PostgreSQL identifiers fold to lower case).
+
+### 2026-10-03 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (orchestrator self-review after implementation; no subagent layer this run)
+
+### 2026-10-03 — Review pass (landing-review closure)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (orchestrator self-review after landing-review patches; prior high/medium items addressed in code)
+
+## Auto Run Result
+
+- Summary: Closed landing-review gaps on audit-table grants — retention role now receives SELECT, INSERT, and DELETE (so `purge_expired_entries` can DELETE with a WHERE clause and INSERT the purge row); equal app/retention roles are refused case-insensitively. Prior pass already shipped `AuditAction.PURGE`, required `actor` on `purge_expired_entries`, and append-only app-role grants.
+- Files: `deploy.py` (`render_audit_table_grants` grants and role guard); `test_deploy_perimeter.py` (retention grant shape, no UPDATE, equal-role refusal); `deferred-work-ledger.md` (DW-9-3-8 verified line refresh); story spec status/result.
+- Review: landing-review high/medium patches applied; 0 new review findings this pass.
+- Verification: `pyforge-steward-test` 1983 passed, 2 skipped; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK after memlog reconcile on `spec-pyforge-steward/.memlog.md`.
+- Follow-up review recommended: false
+- Residual risks: In-process ORM can still bypass DB grants until adopters apply the rendered SQL; purge recording uses the same DB alias as delete but `record_audit_entry` does not pass `using=`.
