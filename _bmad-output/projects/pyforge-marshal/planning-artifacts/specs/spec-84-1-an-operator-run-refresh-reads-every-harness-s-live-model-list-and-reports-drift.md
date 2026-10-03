@@ -2,10 +2,10 @@
 title: "84.1: An operator-run refresh reads every harness's live model list and reports drift"
 type: 'feature'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'ec1f191a01a6d37e146f7b5052a8e6497421f9a5'
-review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 0
 flag-exempt: detector-or-gate   # a check that judges declared model ids against live lists; a gated check reports a silent green (spec-feature-flag-governance Q2)
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -151,7 +151,11 @@ The earlier findings: the finding code is registered (fixed) and the cursor over
 ## Auto Run Result
 
 Status: done
-Summary: `marshal adapters models` reads declared live sources, reports advisory drift (`MRS-MDL-001` WARN, exit 0), and optionally writes dated snapshots; landing-review gaps closed.
-Verification: pyforge-marshal-test 10918 passed; pyforge-deps-test 130 passed; lint-types exit 0; `python scripts/spec_surface_reconcile.py` OK.
+Summary: Closed independent-review pass 3 for `marshal adapters models`: HTTPS listing transport without redirect credential leak, sanitized unavailable reasons, MRS-MDL-002/003 when lists are unavailable or providers unchecked, snapshot diff limited to harnesses ok in both snapshots, coverage gate green.
+Verification: pyforge-marshal-test 10946 passed; pyforge-marshal-coverage-gate OK; pyforge-deps-test 130 passed; lint-types exit 0; `python scripts/spec_surface_reconcile.py` OK after memlog.
 Follow-up review recommended: false
 Residual risk: operator manual check — one live `--write` run to seed the first snapshot (per spec Verification manual checks).
+
+### 2026-10-03 — Review pass (bmad-build-auto, independent review pass 3)
+- verdicts: 10 prior findings — all addressed as `patch`; 0 new findings from abbreviated self-review
+- findings: credential leak via exception text (fixed strings + control-char guard); redirect credential follow (http.client, no urllib); HTTPException isolation; coverage/tests; no-drift when all unavailable; prior snapshot status in diff; empty parse unavailable; MRS-MDL-002/003; JSON secret scan; meta-test live-import boundary
