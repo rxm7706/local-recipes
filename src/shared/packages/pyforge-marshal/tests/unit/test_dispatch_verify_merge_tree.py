@@ -77,7 +77,7 @@ def test_run_verify_commands_only_all_green_has_no_findings(tmp_path: Path) -> N
     worktree.mkdir()
     process = FakeProcess()
     reports, findings = run_verify_commands_only(_effective(["true", "echo ok"]), process=process, worktree=worktree)
-    assert len(reports) == 4
+    assert len(reports) == 6  # 2 station commands + 4 derived commands
     assert findings == ()
 
 
