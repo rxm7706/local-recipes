@@ -2,9 +2,9 @@
 title: "83.2: Every station's dispatch verification runs the checks that read the whole tree"
 type: 'fix'
 created: '2026-10-02'
-status: 'done'
+status: 'in-review'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 baseline_revision: '1b490ef6ab61301170a8fefa58a9ef9fdbeab689'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
