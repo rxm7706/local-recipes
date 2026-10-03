@@ -2,7 +2,8 @@
 title: '66.2: Every landed follow-up recommendation is backfilled and held by a meta test'
 type: 'chore'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '263ab6eebb0be49d153e3c83d95f372afc8c95d9'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -81,6 +82,11 @@ Dream: `docs/dreams/pyforge-marshal.md` § Realization log → *2026-09-19 (the 
 Ledger key: `66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test`.
 Ledger status at mint: `backlog`.
 Deferred-work row closed by this story: `DW-FU-51-2-1`.
+
+## Auto Run Result
+
+Status: done
+Verification: pyforge-marshal-test (10845 passed), pyforge-deps-test (130 passed), deferred-work-check ok, spec_surface_reconcile ok, spec-surface-check ok.
 
 ## Verification
 
