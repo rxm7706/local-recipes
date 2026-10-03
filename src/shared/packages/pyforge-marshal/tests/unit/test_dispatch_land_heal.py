@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
-from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core import dispatch_landing as _dispatch_landing
+from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core.dispatch_landing import (
     is_deferred_work_path,
     is_mechanical_conflict_path,
@@ -1279,10 +1279,7 @@ def test_union_deferred_work_texts_live_marshal_ledger_mixed_formats() -> None:
     base = ledger_path.read_text(encoding="utf-8")
     base_count = _dw_block_count(base)
 
-    main_append = (
-        "\n\n### DW-TEST-MAIN-83-3: Story 83.3 union probe (main)\n"
-        "origin: test\nstatus: open\n"
-    )
+    main_append = "\n\n### DW-TEST-MAIN-83-3: Story 83.3 union probe (main)\norigin: test\nstatus: open\n"
     branch_append = (
         "\n\n### DW-TEST-BRANCH-83-3: Story 83.3 union probe (branch)\n"
         "- source_spec: `spec-83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries.md`\n"
