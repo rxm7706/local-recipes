@@ -945,7 +945,7 @@ def _verification_verdict_for_cap4(
     effective_policy: policy.EffectivePolicy,
     spec_text: str,
     process: ProcessPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
 ) -> DispatchVerificationVerdict:
     """Independent verify only — never a harness self-report (CAP-3)."""
     try:
@@ -958,6 +958,7 @@ def _verification_verdict_for_cap4(
             spec_text=spec_text,
             process=process,
             vcs=vcs,
+            committing_vcs=vcs,
         )
     except ProcessError, VcsCommandError, OSError, TypeError, AttributeError:
         return DispatchVerificationVerdict.REFUSED

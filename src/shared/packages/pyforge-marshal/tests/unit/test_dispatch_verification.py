@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pyforge.core.egress import Redacted
 from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
@@ -29,8 +30,10 @@ from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.dispatch_verify import (
+    PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
     compose_dispatch_policy,
     evaluate_dispatch_verification,
+    run_pre_verification_deferred_work_intake,
 )
 
 # Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal (not
@@ -790,6 +793,157 @@ def test_evaluate_dispatch_verification_dedupes_already_declared_whole_tree_comm
     assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
     assert commands.count(PYFORGE_CORE_TEST) == 1
     assert commands.count(DEFERRED_WORK_CHECK) == 1
+
+
+class _CommittingFakeVcs(FakeVcs):
+    def __init__(self) -> None:
+        super().__init__(changed=())
+        self.committed: list[tuple[Path, tuple[Path, ...]]] = []
+
+    def commit_paths(self, worktree: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        self.committed.append((worktree, paths))
+        return "deadbeef"
+
+
+class _IntakeScriptProcess:
+    """Runs ``deferred_work_intake.py`` with a controlled exit and optional ledger write."""
+
+    def __init__(self, *, intake_exit: int = 0, append_ledger: str | None = None) -> None:
+        self._intake_exit = intake_exit
+        self._append_ledger = append_ledger
+
+    def run(self, tokens, *, cwd: Path):
+        joined = " ".join(tokens)
+        if "deferred_work_intake.py" in joined:
+            if self._append_ledger is not None:
+                ledger = cwd / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+                ledger.parent.mkdir(parents=True, exist_ok=True)
+                ledger.write_text(self._append_ledger, encoding="utf-8")
+            return ProcessResult(
+                returncode=self._intake_exit,
+                stdout="" if self._intake_exit == 0 else "",
+                stderr="intake refused" if self._intake_exit else "",
+            )
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+def test_run_pre_verification_deferred_work_intake_refusal_returns_mrs_gate_018(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    (worktree / "scripts").mkdir()
+    (worktree / "scripts" / "deferred_work_intake.py").write_text("# stub\n", encoding="utf-8")
+    finding = run_pre_verification_deferred_work_intake(
+        process=_IntakeScriptProcess(intake_exit=2),
+        committing_vcs=_CommittingFakeVcs(),
+        worktree=worktree,
+        project_slug="pyforge-marshal",
+    )
+    assert finding is not None
+    assert finding.code == PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE
+    assert "refused" in finding.message
+
+
+def test_run_pre_verification_deferred_work_intake_commits_when_ledger_changes(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    (worktree / "scripts").mkdir()
+    (worktree / "scripts" / "deferred_work_intake.py").write_text("# stub\n", encoding="utf-8")
+    vcs = _CommittingFakeVcs()
+    new_body = "### DW-TEST-1\n\nsummary\n"
+    assert (
+        run_pre_verification_deferred_work_intake(
+            process=_IntakeScriptProcess(append_ledger=new_body),
+            committing_vcs=vcs,
+            worktree=worktree,
+            project_slug="pyforge-marshal",
+        )
+        is None
+    )
+    assert len(vcs.committed) == 1
+
+
+def test_run_pre_verification_deferred_work_intake_no_op_does_not_commit(tmp_path: Path) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    ledger = worktree / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_text("stable\n", encoding="utf-8")
+    (worktree / "scripts").mkdir()
+    (worktree / "scripts" / "deferred_work_intake.py").write_text("# stub\n", encoding="utf-8")
+    vcs = _CommittingFakeVcs()
+    assert (
+        run_pre_verification_deferred_work_intake(
+            process=_IntakeScriptProcess(),
+            committing_vcs=vcs,
+            worktree=worktree,
+            project_slug="pyforge-marshal",
+        )
+        is None
+    )
+    assert vcs.committed == []
+
+
+def test_evaluate_dispatch_verification_runs_pre_verification_intake_when_committing_vcs_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_verify.run_pre_verification_deferred_work_intake",
+        lambda **kwargs: calls.append("intake") or None,
+    )
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=normalize("22-3-verification-is-the-product-no-landing-on-a-self-report"),
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+        committing_vcs=_CommittingFakeVcs(),
+    )
+    assert calls == ["intake"]
+
+
+def test_evaluate_dispatch_verification_intake_refusal_refuses_verification(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    (worktree / "scripts").mkdir()
+    (worktree / "scripts" / "deferred_work_intake.py").write_text("# stub\n", encoding="utf-8")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=normalize("22-3-verification-is-the-product-no-landing-on-a-self-report"),
+        worktree=worktree,
+        repo_root=tmp_path,
+        effective=effective,
+        spec_text=None,
+        process=_IntakeScriptProcess(intake_exit=1),
+        vcs=FakeVcs(),
+        committing_vcs=_CommittingFakeVcs(),
+    )
+    assert any(f.code == PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE for f in envelope.findings)
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
+        == DispatchVerificationVerdict.REFUSED
+    )
 
 
 def test_every_tracked_story_spec_binds_the_same_with_lint_types_widened() -> None:
