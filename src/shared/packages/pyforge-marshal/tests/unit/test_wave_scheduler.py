@@ -69,7 +69,7 @@ def test_wave_planning_with_refused_story_surfaces() -> None:
     assert len(wave.refused) == 1
     assert wave.refused[0].story == "83-4-b"
     assert wave.refused[0].reason == "surface-overlap"
-    assert wave.refused[0].overlap_with == "28-10-a"
+    assert wave.refused[0].overlap_with == "83-4-a"
     assert wave.refused[0].paths
 
 

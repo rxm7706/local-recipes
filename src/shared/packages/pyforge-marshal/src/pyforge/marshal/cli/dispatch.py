@@ -1747,18 +1747,10 @@ def station_in_flight_conflict(
                         merge_subject_template=effective_policy.merge_subject_template.value,
                         followup_review=journal.followup_review,
                     )
-                    # Debug: print git facts to understand what's happening
-                    if story_key == "82-6-candidate":  # Only for the test case
-                        print(f"DEBUG: git_facts.branch_merged = {git_facts.branch_merged}")
-                        print(f"DEBUG: git_facts.story_merged_on_main = {git_facts.story_merged_on_main}")
-                    
                     # If branch is not merged, the PR is still open and should block
                     if not git_facts.branch_merged and not git_facts.story_merged_on_main:
                         is_blocking_story = True
-            except (VcsCommandError, ValueError) as e:
-                # Debug: print exception to understand what's happening
-                if story_key == "82-6-candidate":  # Only for the test case
-                    print(f"DEBUG: Exception gathering git facts: {e}")
+            except (VcsCommandError, ValueError):
                 # If we can't gather git facts, err on the side of caution and don't block
                 pass
         
