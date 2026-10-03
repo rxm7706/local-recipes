@@ -441,7 +441,10 @@ def test_tracked_files_is_fetched_once_and_reused(tmp_path: Path, monkeypatch) -
 
     chain.gather_spec_surface(repo)
 
-    ls_files_calls = [c for c in calls if c == ["ls-files"]]
+    # DW-doctor-38-2/DW-FU-6-6-4 moved the invocation to
+    # `-c core.quotePath=false ls-files -z`; match on the subcommand, not the
+    # whole argv, so this stays a once-only assertion and not an arg-shape one.
+    ls_files_calls = [c for c in calls if "ls-files" in c]
     assert len(ls_files_calls) == 1, f"git ls-files was called {len(ls_files_calls)} times, expected 1: {calls}"
 
 
@@ -1361,24 +1364,30 @@ def test_live_globs_report_no_stale_surface_row(tmp_path: Path) -> None:
 def test_trailing_slash_and_brace_globs_are_judged_by_what_they_match(
     tmp_path: Path,
 ) -> None:
-    """``_glob_to_re`` is the one governing matcher: a trailing ``/`` matches no
-    file and ``{a,b}`` is not expanded, so both govern nothing and are dead --
-    even though the directory exists and ``a.py``/``b.py`` are tracked. A brace
-    glob that equals a tracked file's literal name does match it, so it is live."""
+    """``_glob_to_re`` is the one governing matcher, and DW-FU-12-4 makes a
+    trailing ``/`` govern that directory's whole subtree -- the shape every
+    Spec author already writes and every reader already assumes. ``{a,b}`` is
+    still NOT expanded, so a brace glob governs nothing and is dead, while a
+    brace glob equal to a tracked file's literal name does match it and is
+    live. ``empty/`` names a directory holding no tracked file, so the
+    trailing slash is read and still finds nothing: dead, as it should be."""
     repo = tmp_path / "repo"
     _init_repo(repo)
     _write_spec(
         repo,
         "pyforge-x",
         "spec-foo",
-        surface=["src/", "src/{a,b}.py", "src/*.py", "lit/x{1,2}.txt"],
+        surface=["src/", "src/{a,b}.py", "src/*.py", "lit/x{1,2}.txt", "empty/"],
         drift="exempt",
     )
     (repo / "src").mkdir()
     (repo / "src" / "a.py").write_text("a = 1\n", encoding="utf-8")
     (repo / "src" / "b.py").write_text("b = 1\n", encoding="utf-8")
+    (repo / "src" / "deep").mkdir()
+    (repo / "src" / "deep" / "c.py").write_text("c = 1\n", encoding="utf-8")
     (repo / "lit").mkdir()
     (repo / "lit" / "x{1,2}.txt").write_text("literal\n", encoding="utf-8")
+    (repo / "empty").mkdir()
     _write_allowlist(repo, [("**", "everything else")])
     _add_commit(repo)
 
@@ -1386,10 +1395,14 @@ def test_trailing_slash_and_brace_globs_are_judged_by_what_they_match(
 
     messages = " | ".join(f.message for f in rows)
     assert len(rows) == 2, rows
-    assert "'src/'" in messages
+    assert "'src/'" not in messages
+    assert "'empty/'" in messages
     assert "'src/{a,b}.py'" in messages
     assert "'src/*.py'" not in messages
     assert "lit/x{1,2}.txt" not in messages
+    # The subtree really is governed, not just the directory's own children:
+    # `src/deep/c.py` is matched by `src/` alone.
+    assert chain._glob_to_re("src/").match("src/deep/c.py")
 
 
 def test_unreadable_spec_surface_is_not_judged_stale(tmp_path: Path) -> None:

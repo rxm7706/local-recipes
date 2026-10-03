@@ -283,7 +283,10 @@ def test_findings_evidence_project_key_names_its_own_project_via_public_api(
     tmp_path: Path,
 ) -> None:
     _write_tracked(tmp_path, "alpha", "## DW-1\nstatus: open\n")  # never-verified, due
-    _write_tracked(tmp_path, "beta", "## DW-1\nverified: 9999-01-01\n")  # far future, fresh
+    # DW-FU-11-1: a far-future date is no longer "fresh forever" -- it is a
+    # typo and is now due. Today's own date is the time-invariant fresh
+    # fixture for a public-API test that cannot pin `today`.
+    _write_tracked(tmp_path, "beta", f"## DW-1\nverified: {date.today().isoformat()}\n")
 
     findings = chain.gather_due_for_verification(tmp_path)
 
@@ -327,7 +330,9 @@ def test_fleet_wide_none_due_reports_vacuous_ok_never_empty(tmp_path: Path) -> N
 
 
 def test_fully_fresh_project_reports_vacuous_ok_with_scanned_count(tmp_path: Path) -> None:
-    _write_tracked(tmp_path, "proj", "## DW-1\nverified: 9999-01-01\n")
+    # DW-FU-11-1: today's own date, not a far-future one -- see the sibling
+    # test above for why a `9999-` date is itself a finding now.
+    _write_tracked(tmp_path, "proj", f"## DW-1\nverified: {date.today().isoformat()}\n")
 
     findings = chain.gather_due_for_verification(tmp_path)
 
@@ -2121,7 +2126,7 @@ def test_gather_due_for_verification_carries_verification_coverage_item(
     _write_tracked(
         tmp_path,
         "proj",
-        "## DW-1\nverified: 9999-01-01 — always fresh\n\n"
+        f"## DW-1\nverified: {date.today().isoformat()} — fresh\n\n"
         "## DW-2\nverified: 2000-01-01 — ancient\n\n"
         "## DW-3\nstatus: open\n",
     )
