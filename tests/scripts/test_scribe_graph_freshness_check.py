@@ -9,10 +9,12 @@ Matrix:
 Harness style matches missing_preserve_check's own meta-tests: importlib-load
 the script, monkeypatch its module-level GRAPH_STORE_PATH, seed a real file.
 """
+
 from __future__ import annotations
 
 import importlib.util
 import json
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -109,6 +111,74 @@ def test_check_freshness_pure_function_boundary():
     assert status == "missing"
     assert age_hours is None
     assert str(graph_path) in reason
+
+
+def test_schedule_period_matches_nightly_timer_unit():
+    mod = _load_detector()
+    assert mod.scheduled_period_hours() == mod.SCHEDULE_PERIOD_HOURS
+
+
+def test_scheduled_period_rejects_twice_daily_calendar(tmp_path):
+    mod = _load_detector()
+    timer = tmp_path / "bad.timer"
+    timer.write_text(
+        "[Timer]\nOnCalendar=*-*-* 02,14:00:00\n",
+        encoding="utf-8",
+    )
+    import pytest
+
+    with pytest.raises(ValueError, match="clock"):
+        mod.scheduled_period_hours(timer)
+
+
+def test_scheduled_period_rejects_systemd_range_in_clock(tmp_path):
+    mod = _load_detector()
+    timer = tmp_path / "bad.timer"
+    timer.write_text(
+        "[Timer]\nOnCalendar=*-*-* 02..14:00:00\n",
+        encoding="utf-8",
+    )
+    import pytest
+
+    with pytest.raises(ValueError, match="clock"):
+        mod.scheduled_period_hours(timer)
+
+
+def test_scheduled_period_rejects_randomized_clock(tmp_path):
+    import pytest
+
+    mod = _load_detector()
+    timer = tmp_path / "random.timer"
+    timer.write_text("[Timer]\nOnCalendar=*-*-* 02~14:00:00\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="clock"):
+        mod.scheduled_period_hours(timer)
+
+
+def test_scheduled_period_rejects_multiple_oncalendar_lines(tmp_path):
+    mod = _load_detector()
+    timer = tmp_path / "bad.timer"
+    timer.write_text(
+        "[Timer]\nOnCalendar=*-*-* 02:30:00\nOnCalendar=*-*-* 03:00:00\n",
+        encoding="utf-8",
+    )
+    import pytest
+
+    with pytest.raises(ValueError, match="exactly one"):
+        mod.scheduled_period_hours(timer)
+
+
+def test_main_subprocess_json_flag():
+    proc = subprocess.run(
+        [sys.executable, str(DETECTOR_PATH), "--json"],
+        capture_output=True,
+        text=True,
+        check=False,
+        cwd=REPO_ROOT,
+    )
+    assert proc.returncode in (0, 1)
+    payload = json.loads(proc.stdout)
+    assert "status" in payload
+    assert "_findings" in payload
 
 
 def test_placement_is_scripts_runtime_not_doctor():

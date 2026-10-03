@@ -7,8 +7,8 @@ the compiled projection only"). Matching is pure deterministic lexical
 token-overlap scoring -- no LLM, no network call, matching AD-6's
 "no-LLM-required" v1 default (PRD Open Question 3). Every returned answer's
 citation is verified resolvable (a real file under `repo_root`, a
-well-formed `commit:<sha>`, a well-formed `<jsonl filename>:L<line>`
-transcript citation (Story 3.2), or a well-formed `<path>:L<line>` code
+well-formed `commit:<sha>`, a well-formed `<path relative to the transcript
+root>.jsonl:L<line>` transcript citation (Stories 3.2, 26.1), or a well-formed `<path>:L<line>` code
 citation whose path resolves under `repo_root` (Story 6.1's graphify
 extra)) before being returned -- an unresolvable
 citation is treated as no match and never surfaces (AD-8: "No code path in
@@ -95,15 +95,15 @@ _STOPWORDS = frozenset(
 )
 _TOKEN_RE = re.compile(r"[a-z0-9]+")
 _COMMIT_SHA_RE = re.compile(r"[0-9a-f]{7,40}")
-#: A transcript citation is a BARE `<jsonl filename>:L<line>` -- Story 3.2's
-#: own format contract is "no directory path". `[^/\\:]+` enforces that
-#: literally: an earlier `.+` also admitted `nested/dir/x.jsonl:L1` and
-#: `../../../etc/passwd.jsonl:L1`, and because this branch short-circuits
-#: the `is_file()` check below, any such citation was declared resolvable
-#: without existing (review finding). `[0-9]` rather than `\d` for the same
-#: reason: `\d` also matches non-ASCII decimal digits, so `x.jsonl:L١٢`
-#: was likewise waved through without existing (review finding: reproduced).
-_TRANSCRIPT_CITATION_RE = re.compile(r"[^/\\:]+\.jsonl:L[0-9]+")
+#: A transcript citation is `<path relative to transcript_root>.jsonl:L<line>`
+#: (Story 26.1 / DW-FU-3-2): a flat file reads ``session.jsonl:L<n>``, a nested
+#: one ``subdir/session.jsonl:L<n>``. Each segment is `[^/\\:]+`, so no
+#: backslash, colon or empty segment; a ``..`` segment is refused where the
+#: citation is checked. `[0-9]` rather than `\d`:
+#: `\d` also matches non-ASCII digits (`x.jsonl:L١٢`). Format-only
+#: resolvability applies only when ``kind == "transcript"``; any other node
+#: whose path ends in ``.jsonl:L<n>`` still needs a real file (AD-8).
+_TRANSCRIPT_CITATION_RE = re.compile(r"(?:[^/\\:]+/)*[^/\\:]+\.jsonl:L[0-9]+$")
 #: A `code` node's citation (Story 6.1's graphify extra) is
 #: `<repo-relative path>:L<line>` -- e.g. `src/pyforge/scribe/compile.py:L120`,
 #: matching graphify's own `source_location` shape. Unlike the transcript
@@ -170,6 +170,12 @@ def resolve_recall_kinds(kinds: frozenset[str] | None) -> frozenset[str]:
     return kinds
 
 
+def _lexical_rank_key(overlap: int, node: GraphNode) -> tuple[int, float, str]:
+    """Overlap desc, ``valid_from`` desc (newest first), id asc."""
+    ts = node.valid_from.timestamp()
+    return (-overlap, -ts, node.id)
+
+
 def resolve_recall_selection(
     *,
     kinds: frozenset[str] | None = None,
@@ -205,7 +211,8 @@ def answer(
     Only `is_current` nodes are candidates -- a superseded fact (Story 2.3)
     stays queryable via `store.query_by_citation()`/`iter_nodes()`, but
     never surfaces here as if it were still current. Lexical candidates are
-    ranked by query/node token-overlap (desc), tie-broken by node id (asc).
+    ranked by query/node token-overlap (desc), then ``valid_from`` (desc,
+    newest first), then node id (asc) on a full tie.
     Semantic candidates come from `store.query_similar` (Story 28.2) — the
     caller does not select a driver. Then citation resolvability filters
     the ranked list -- an unresolvable top match is skipped, never returned.
@@ -248,12 +255,12 @@ def answer(
         if overlap > 0:
             scored.append((overlap, node))
 
-    scored.sort(key=lambda pair: (-pair[0], pair[1].id))
+    scored.sort(key=lambda pair: _lexical_rank_key(pair[0], pair[1]))
 
     for _score, node in scored:
         if _withheld_as_stale(node, store, repo_root):
             continue
-        if _citation_is_resolvable(node.citation, repo_root):
+        if _citation_is_resolvable(node.citation, repo_root, kind=node.kind):
             return RecallAnswer(grounded=True, text=node.text, citation=node.citation, node_id=node.id)
         # Unresolvable citation -- never surface an uncited/unverifiable answer; try the next candidate.
 
@@ -280,7 +287,7 @@ def _answer_semantic(
             continue
         if _withheld_as_stale(node, store, repo_root):
             continue
-        if _citation_is_resolvable(node.citation, repo_root):
+        if _citation_is_resolvable(node.citation, repo_root, kind=node.kind):
             return RecallAnswer(grounded=True, text=node.text, citation=node.citation, node_id=node.id)
     return _no_grounded_answer()
 
@@ -299,15 +306,16 @@ def _no_grounded_answer() -> RecallAnswer:
     return RecallAnswer(grounded=False, text="no grounded answer found", citation=None, node_id=None)
 
 
-def _citation_is_resolvable(citation: str, repo_root: Path) -> bool:
+def _citation_is_resolvable(citation: str, repo_root: Path, *, kind: str) -> bool:
     if citation.startswith("commit:"):
         sha = citation.removeprefix("commit:")
         return bool(_COMMIT_SHA_RE.fullmatch(sha))
-    if _TRANSCRIPT_CITATION_RE.fullmatch(citation):
-        # A transcript citation (`<jsonl filename>:L<line>`) is format-checked
-        # only, never re-resolved against a live file: transcripts are
-        # per-user/local and can be pruned or rotated outside Scribe's
-        # control (Story 3.2), mirroring the `commit:<sha>` precedent above.
+    if kind == "transcript" and _TRANSCRIPT_CITATION_RE.fullmatch(citation):
+        # Format-checked only (Story 3.2); path is relative to transcript_root
+        # (Story 26.1). Reject traversal segments.
+        path_part = citation.rsplit(":L", 1)[0]
+        if ".." in path_part.split("/"):
+            return False
         return True
     code_match = _CODE_LINE_CITATION_RE.match(citation)
     if code_match:
