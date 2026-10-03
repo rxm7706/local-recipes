@@ -89,7 +89,9 @@ Durability first; curation is owned follow-up work.
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260808-210255-c88b; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-1`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Story 6.4 landed in a bmad-loop run, and Story 66.2's Spec rules that every loop-era follow-up recommendation is closed because the loop's own follow-up budget governed it. Nothing will ever run this one: the 73.2 drain schedules only open DW-FRR rows. A review of the 2026-08-08 diff would now look at code that has changed a lot since, after the story already went through three or more review passes.
+  verified: 2026-10-03 — Doctor ledger on main has no DW-FRR-6-4. The 66.2 backfill skipped 6.4 because DW-FU-6-4 already counts as its carrier (origin: review-budget-followup, ledger :84-92; marshal core/deferred_work.py:414-432 parse_followup_review_carried_source_specs). spec-66-2 :24 and :64-66 say a loop-era landing gets a closed row ('the loop's own follow-up budget governed the recommendation'), and the backfill minted closed rows for other loop-era doctor stories (DW-FRR-1-4, 8-1..8-5, 20-3, 20-4). spec-6-6 :248-249 records that 6.4 needed three-plus review passes. sources/ledger.py has had 21 commits on origin/main since 2026-08-11. Closing the row does not red test_followup_review_carried.py: its carrier check never reads status (tests/meta/test_followup_review_carried.py:36-41; deferred_work.py:420-432).
   verified: 2026-10-01 — NEEDS-DECISION — No location/evidence in the ledger entry beyond the damping-cap bookkeeping note; no code claim to verify. (2026-09-30 deferral burn-down triage)
   decision: Is it worth spending a dedicated follow-up review pass on spec-6-4 now, long after the story shipped, or should this debt marker be closed as accepted risk?
 
@@ -105,7 +107,9 @@ Durability first; curation is owned follow-up work.
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260808-210255-c88b; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-2` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-2`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
   severity: low
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Same case as 6.4: a bmad-loop landing whose follow-up budget was spent, which Story 66.2 rules closed for every loop-era story, and no drain will ever schedule it. The story already went through four adversarial review passes. The code it touched (sources/board.py) has been reworked by dozens of later, separately reviewed stories.
+  verified: 2026-10-03 — Doctor ledger has no DW-FRR-6-5. DW-FU-6-5 (_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md:100-108, origin: review-budget-followup) is the carrier that made 66.2 skip it. spec-6-5-the-board-verdicts-come-home.md:257 records a fourth adversarial review pass, and frontmatter :5/:7 reads done plus flagged. sources/board.py has had 37 commits on origin/main since 2026-08-11. The rule is in spec-66-2 :24/:65. Closing keeps the meta test green because the carrier check ignores status.
   verified: 2026-10-01 — NEEDS-DECISION — No location/evidence in the ledger entry beyond the damping-cap bookkeeping note; no code claim to verify. (2026-09-30 deferral burn-down triage)
   decision: Is it worth spending a dedicated follow-up review pass on spec-6-5 now, long after the story shipped, or should this debt marker be closed as accepted risk?
 
@@ -124,7 +128,9 @@ Durability first; curation is owned follow-up work.
     Story 4.13 exists to make this promotion an obligation of the story rather than
     archaeology someone performs later.
   severity: low
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- This is a loop-era landing that Story 66.2's rule closes, and nothing will schedule it. The story already had four full review passes (the first plus three follow-ups) that patched 33 findings. sources/chain.py has had about 50 commits since, so a review of the August diff no longer reviews live code.
+  verified: 2026-10-03 — Doctor ledger has no DW-FRR-6-6. DW-FU-6-6 (_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md:116-127, origin: review-budget-followup) is the carrier. In spec-6-6-the-chain-verdicts-come-home.md the Review Triage Log :147-236 shows four passes on 2026-08-09 with 5+8+7+13 patches, and the Auto Run Result :264 says 'follow-up review pass 3'. sources/chain.py has had 50 commits on origin/main since 2026-08-11. The loop-era rule is in spec-66-2 :24/:65.
   verified: 2026-10-01 — NEEDS-DECISION — No location/evidence in the ledger entry beyond the damping-cap bookkeeping note; no code claim to verify. (2026-09-30 deferral burn-down triage)
   decision: Is it worth spending a dedicated follow-up review pass on spec-6-6 now, long after the story shipped, or should this debt marker be closed as accepted risk?
 
@@ -152,7 +158,9 @@ Durability first; curation is owned follow-up work.
     Story 4.13 exists to make this promotion an obligation of the story rather than
     archaeology someone performs later.
   severity: low
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Story 66.2's rule closes this loop-era landing too, and no drain will schedule it. The tracked spec now records 'Follow-up review recommendation: false' and has no flag in its frontmatter, so this row is the only place the recommendation survives. sources/factory.py has since grown from 1,197 to 1,599 lines over 21 separately reviewed commits, so reviewing the 2026-08-09 diff is obsolete; a fresh review of factory.py would need a named defect, and none is cited.
+  verified: 2026-10-03 — _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-6-8-bmad_drift-comes-home-without-breaking-the-board.md:1-13 has no followup_review_recommended key. Doctor ledger has no DW-FRR-6-8. spec-6-8-bmad_drift-comes-home-without-breaking-the-board.md frontmatter :1-13 has no followup_review_recommended key, and its reconstructed Auto Run Result (:130-135, 2026-09-20) reads 'Follow-up review recommendation: false', so the 66.2 meta test does not cover it. The row's source_spec spells the file with a hyphen (`bmad-drift`), but the real file uses an underscore (`bmad_drift`). sources/factory.py is 1,599 lines today with 21 commits on origin/main since 2026-08-11. The loop-era rule is in spec-66-2 :24/:65.
   verified: 2026-10-01 — NEEDS-DECISION — No location/evidence beyond the damping-cap bookkeeping note (evidence text is truncated in the ledger itself, cut off mid-sentence at 'the'); no code claim to verify. (2026-09-30 deferral burn-down triage)
   decision: Is it worth spending a dedicated follow-up review pass on spec-6-8 now, long after the story shipped, or should this debt marker be closed as accepted risk?
 
@@ -249,11 +257,13 @@ origin: review-budget-followup
 source_spec: `spec-7-1-the-emitter-mints-identity-at-defer-time.md`
 severity: low
 reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260810-192603-53da; this entry preserves the lingering recommendation for a deliberate later review.
-status: open
+status: closed
   verified: 2026-10-01 — NEEDS-DECISION — No location/evidence in the ledger entry; it is a bookkeeping marker that a follow-up review was recommended for spec-7-1 but never spent (the damping cap of 2 follow-up reviews per run was already exhausted). No code claim to verify. (2026-09-30 deferral burn-down triage)
   decision: Is it worth spending a dedicated follow-up review pass on spec-7-1 now, this long after the story shipped, or should this debt marker simply be closed as accepted risk?
   severity: medium
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- Story 7.1's whole change has been removed. It edited bmad-dev-auto's step-04-review.md so that defer-time ids were minted into Tier-3; that skill is retired, and the current bmad-build-auto step 4 writes defers only to spec frontmatter, where intake mints ids. Every other 7.1 review finding was already closed as obsolete or resolved on 2026-10-01, and Story 66.2's loop-era rule applies here too.
+  verified: 2026-10-03 — .claude/skills/bmad-dev-auto/step-04-review.md does not exist on main. The current .claude/skills/bmad-build-auto/step-04-review.md:84-95 writes deferrals only to frontmatter `deferred:`. Sibling rows were closed: DW-FU-7-1 and DW-FU-7-1-3 as obsolete, DW-FU-7-1-2/-4/-5/-6 as resolved (_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md:163-245). There is no DW-FRR-7-1, because DW-5 (_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md:247-256, origin: review-budget-followup at column 0) is the carrier for spec-7-1, which is done plus flagged (frontmatter :5/:7). The block has two status: lines (:252, :256) and two severities (low, medium); whoever closes it must flip both. The carrier check ignores status, so the meta test stays green.
   promoted: 2026-08-11 (landing pass, doctor 7-1 review)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -603,7 +613,9 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
   summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
   owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- The open question actually belongs to the following `## DW-OM-2026-08-24` operating-model row; DW-CANOPY itself is already resolved. Doctor already extracted its own process hook specs in Story 17.1, and both conditions in the row's close_when are now met: steward S-32.1 is done and doctor S-17.1 is done, with findings kept out of any PR verdict. Close DW-OM in doctor's ledger as resolved.
+  verified: 2026-10-03 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/hooks.py:1-26 defines GATHER_HOOK_SPEC `pyforge.doctor.gather` and PRESCRIBE_HOOK_SPEC `pyforge.doctor.prescribe` (owner doctor) on pyforge.core.hooks, and its docstring states the plugins never call publish_verdict. spec-17-1-extract-gather-prescribe-source-plugins.md has status done, and DW-FRR-17-1 records it landed on origin/main. The steward sprint-status-ledger.yaml:116 reads `32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core: done` and :384 reads epic-32 done. DW-OM's close_when (in the input ledger_block) names exactly steward S-32.1 and doctor S-17.1.
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — No location/evidence recorded in the ledger entry itself; source_spec is a cross-cutting Grounding doc reference, not a code path. Could not find any doctor-owned 'process hook spec' artifact distinct from the existing sources/ modules to compare against. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should pyforge-doctor extract its own shared process-hook spec (aligned with pyforge-core's shared hook-spec and Warden Epic 9's PR-gate retrofit), and if so, on what timeline? This is a station-scoping/roadmap call, not a code defect.
@@ -688,7 +700,9 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: Warden's ok-with-caveat self-check states (e.g. "EPSS feed present but stale", "operating air-gapped") flatten to plain `DoctorStatus.OK` through `gather()`'s spec-mandated binary `ok`→OK/FAIL mapping, so `DoctorStatus.WARN` is unreachable from `Source.WARDEN_DOCTOR` and a JSON consumer filtering `status != "ok"` never sees those caveats — Story 1.3's tri-state/WARN work should decide whether specific warden check shapes deserve WARN promotion before the report contract hardens further.
   evidence: `pyforge.warden.engines._doctor_check_feed` (engines.py ~lines 687–695) encodes stale-optional-feed and air-gapped conditions as `ok=True` with the consequence only in message text — a pre-existing coarseness of warden's own `DoctorCheck.ok: bool`, faithfully mirrored (not introduced) by this story's spec-mandated 1:1 binary mapping (epics AC4 and the spec's I/O matrix both mandate OK-or-FAIL). Doctor loses no information a warden CLI user would have had (message text is preserved verbatim), so this is a cross-story design decision for the WARN tier, not a defect in this story's code.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Operator ruling 2026-10-03 (deferral burn-down Phase 3): close -- This is by design, and warden owns the contract. Warden's DoctorCheck deliberately treats an absent optional feed (air-gapped) as the expected default, and it already promoted the one stale case that matters, the KEV feed whose gate is on by default, to ok=False. Stale EPSS and endoflife feeds stay informational because no default gate reads them; mapping them to WARN in doctor would mean matching message strings against the 1:1 AD-1 mapping, and doctor loses no information today.
+  verified: 2026-10-03 — pyforge-warden src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py:487-504 (DoctorCheck docstring: ok=True covers a healthy check and an absent optional feed, the 'expected default posture, never a failure'; ok=False is reserved for genuine operability problems, including stale KEV). :590-613 and :655-659 show stale_is_problem makes a stale KEV feed ok=False while EPSS and endoflife keep the informational ok=True. Doctor's sources/warden.py:95 still maps `check.ok is True` to OK and everything else to FAIL, carrying the message verbatim. DoctorStatus.WARN exists (models.py:38-43), but nothing on warden's side marks a caveat as warn-worthy.
   severity: low
   verified: 2026-10-01 — NEEDS-DECISION — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/warden.py:88-102 (:95) still maps `check.ok is True` to OK and everything else to FAIL. pyforge-warden engines.py:488-500 (DoctorCheck) is still `ok: bool`, with the caveats only in the message (air-gapped :618, present-but-stale :659). The live `doctor check` shows kev-feed, epss-feed and endoflife-feed as `ok -- operating air-gapped ...`. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should warden's ok-with-caveat self-check states (stale optional feed, operating air-gapped) surface as WARN in doctor, which needs a tri-state field on warden's DoctorCheck contract, or is OK-with-message the intended contract?
