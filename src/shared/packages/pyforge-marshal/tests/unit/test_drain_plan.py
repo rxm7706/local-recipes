@@ -1163,6 +1163,8 @@ def test_a_blocked_worktree_with_a_prior_run_still_gets_disp_045(tmp_path: Path,
 
     run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, "pyforge-marshal-20261003T000000000Z-abcd1234")
     run_dir.mkdir(parents=True)
+    completion_intent = JournalEntryId("w", 1)
+    verification_intent = JournalEntryId("w", 2)
     entries = [
         build_entry(
             id=JournalEntryId("w", 0),
@@ -1173,19 +1175,37 @@ def test_a_blocked_worktree_with_a_prior_run_still_gets_disp_045(tmp_path: Path,
             payload={"story_key": "22.7", "worktree_path": str(worktree), "baseline_head_sha": "aaa111"},
         ),
         build_entry(
-            id=JournalEntryId("w", 1),
+            id=completion_intent,
             ts="2026-10-03T00:00:01.000Z",
             run_id=run_dir.name,
             kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.INTENT,
+            payload={"verdict": "failed"},
+        ),
+        build_entry(
+            id=JournalEntryId("w", 3),
+            ts="2026-10-03T00:00:01.500Z",
+            run_id=run_dir.name,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
             phase=Phase.OUTCOME,
+            intent_id=completion_intent,
             payload={"verdict": "failed", "ok": True},
         ),
         build_entry(
-            id=JournalEntryId("w", 2),
+            id=verification_intent,
             ts="2026-10-03T00:00:02.000Z",
             run_id=run_dir.name,
             kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.INTENT,
+            payload={"verdict": "refused", "failed_gate": "MRS-GATE-010"},
+        ),
+        build_entry(
+            id=JournalEntryId("w", 4),
+            ts="2026-10-03T00:00:02.500Z",
+            run_id=run_dir.name,
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
             phase=Phase.OUTCOME,
+            intent_id=verification_intent,
             payload={
                 "verdict": "refused",
                 "ok": False,
