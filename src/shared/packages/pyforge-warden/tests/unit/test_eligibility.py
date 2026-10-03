@@ -20,6 +20,7 @@ from pyforge.warden.eligibility import (
     EligibilityStatus,
     ProvenanceEntry,
     compute_eligibility_union,
+    status_from_eligibility_result,
 )
 from pyforge.warden.models import Ecosystem
 from pyforge.warden.sources import SourceEvidence, resolve_identity
@@ -189,7 +190,12 @@ def test_ac_each_calls_default_reflects_only_its_own_evidence_set():
 def test_eligibility_result_and_provenance_entry_are_frozen():
     identity = resolve_identity(Ecosystem.PYPI, "requests", "2.31.0")
     entry = ProvenanceEntry(source="cyclonedx", locator="a.json", timestamp=_NOW.isoformat())
-    result = EligibilityResult(identity=identity, status=EligibilityStatus.ELIGIBLE_UNION, provenance=(entry,))
+    result = EligibilityResult(
+        identity=identity,
+        status=EligibilityStatus.ELIGIBLE_UNION,
+        provenance=(entry,),
+        effective_required_authority_sources=frozenset({"cyclonedx"}),
+    )
 
     with pytest.raises(dataclasses.FrozenInstanceError):
         entry.source = "other"  # type: ignore[misc]
@@ -272,6 +278,27 @@ def test_cross_ecosystem_evidence_groups_and_sorts_independently():
 
     assert len(results) == 2
     assert [r.identity.ecosystem for r in results] == [Ecosystem.CONDA, Ecosystem.PYPI]
+
+
+def test_effective_required_default_is_consensus_and_status_rederivable():
+    evidence = (
+        _evidence(source_name="cyclonedx", locator="a.json"),
+        _evidence(source_name="manifest", locator="/proj"),
+    )
+    results = compute_eligibility_union(evidence, now=_NOW)
+    assert results[0].effective_required_authority_sources == frozenset({"cyclonedx", "manifest"})
+    assert status_from_eligibility_result(results[0]) == results[0].status
+
+
+def test_effective_required_override_recorded_and_status_rederivable():
+    override = frozenset({"cyclonedx"})
+    evidence = (
+        _evidence(source_name="cyclonedx", locator="a.json"),
+        _evidence(source_name="manifest", locator="/proj"),
+    )
+    results = compute_eligibility_union(evidence, required_authority_sources=override, now=_NOW)
+    assert results[0].effective_required_authority_sources == override
+    assert status_from_eligibility_result(results[0]) == results[0].status
 
 
 def test_different_now_values_change_only_timestamps():

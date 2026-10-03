@@ -89,8 +89,10 @@ def render_eligibility_cyclonedx(
 def _build_component(result: EligibilityResult) -> CdxComponent:
     identity = result.identity
     purl = _identity_purl(identity.ecosystem, identity.canonical_name, identity.version)
+    required_sorted = ",".join(sorted(result.effective_required_authority_sources))
     props = [
         Property(name="cfe:eligibility_status", value=result.status.value),
+        Property(name="cfe:required_authority_sources", value=required_sorted),
     ]
     for entry in result.provenance:
         props.append(
