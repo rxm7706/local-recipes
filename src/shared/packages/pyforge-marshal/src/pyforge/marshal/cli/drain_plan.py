@@ -310,9 +310,7 @@ def evaluate_story(reads: _StationReads, story: str) -> StoryEvaluation:
                 latest_journal = None
                 latest_run_dir = dispatch_cli._latest_story_run_dir(fs, repo_root, slug, feed)
                 if latest_run_dir is not None:
-                    latest_journal = dispatch_cli.gather_dispatch_journal_facts(
-                        fs, latest_run_dir, latest_run_dir.name
-                    )
+                    latest_journal = dispatch_cli.gather_dispatch_journal_facts(fs, latest_run_dir, latest_run_dir.name)
                     latest_landing_verdict = latest_journal.landing_verdict
                 followup = followup_review_recommended(live)
                 if should_take_harness_done_land_only(
