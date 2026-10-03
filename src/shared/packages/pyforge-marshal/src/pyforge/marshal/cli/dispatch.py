@@ -1729,7 +1729,7 @@ def station_in_flight_conflict(
         )
         # Story 83.4: Also consider refused stories with open PRs as blocking
         is_blocking_story = False
-        
+
         if verdict == DispatchSessionVerdict.LIVE:
             is_blocking_story = True
         elif journal.verification_verdict == "refused":
@@ -1750,10 +1750,10 @@ def station_in_flight_conflict(
                     # If branch is not merged, the PR is still open and should block
                     if not git_facts.branch_merged and not git_facts.story_merged_on_main:
                         is_blocking_story = True
-            except (VcsCommandError, ValueError):
+            except VcsCommandError, ValueError:
                 # If we can't gather git facts, err on the side of caution and don't block
                 pass
-        
+
         if not is_blocking_story:
             continue
         # Story 83.4: Generate appropriate evidence for blocking stories

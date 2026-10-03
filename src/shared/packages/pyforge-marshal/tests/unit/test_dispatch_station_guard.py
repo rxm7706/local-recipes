@@ -940,5 +940,3 @@ def test_refused_story_with_disjoint_surfaces_allows_dispatch(tmp_path: Path) ->
     )
     # Should allow dispatch since surfaces are disjoint
     assert conflict is None
-
-
