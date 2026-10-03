@@ -5,12 +5,13 @@ from __future__ import annotations
 from typing import Any
 
 import pandas as pd
+from pyforge.core.errors import PyforgeError
 
 DEFAULT_CF_OR_PM_FLOOR = 30_000
 DEFAULT_PYPI_UNIVERSE_FLOOR = 1
 
 
-class HollowVerificationSetError(ValueError):
+class HollowVerificationSetError(PyforgeError, ValueError):
     """A Tier-0 verification set is empty or below its scale floor after ``norm_pkg``."""
 
 
