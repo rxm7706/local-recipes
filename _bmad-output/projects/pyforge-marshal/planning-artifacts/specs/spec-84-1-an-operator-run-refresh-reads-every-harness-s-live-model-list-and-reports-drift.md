@@ -157,14 +157,6 @@ The earlier findings: the finding code is registered (fixed) and the cursor over
 - verdicts: 12 prior findings — all addressed as `patch`; 0 new findings from abbreviated self-review
 - findings: prior landing-review rows remediated in code (MRS-MDL-001 registration, overlay `model_list` inherit, HTTP adapter split, paging/timeouts, snapshot diff scope, credential scan from profiles, tests)
 
-## Auto Run Result
-
-Status: done
-Summary: Closed independent-review pass 3 for `marshal adapters models`: HTTPS listing transport without redirect credential leak, sanitized unavailable reasons, MRS-MDL-002/003 when lists are unavailable or providers unchecked, snapshot diff limited to harnesses ok in both snapshots, coverage gate green.
-Verification: pyforge-marshal-test 10946 passed; pyforge-marshal-coverage-gate OK; pyforge-deps-test 130 passed; lint-types exit 0; `python scripts/spec_surface_reconcile.py` OK after memlog.
-Follow-up review recommended: false
-Residual risk: operator manual check — one live `--write` run to seed the first snapshot (per spec Verification manual checks).
-
 ### 2026-10-03 — Review pass (bmad-build-auto, independent review pass 3)
 - verdicts: 10 prior findings — all addressed as `patch`; 0 new findings from abbreviated self-review
 - findings: credential leak via exception text (fixed strings + control-char guard); redirect credential follow (http.client, no urllib); HTTPException isolation; coverage/tests; no-drift when all unavailable; prior snapshot status in diff; empty parse unavailable; MRS-MDL-002/003; JSON secret scan; meta-test live-import boundary
