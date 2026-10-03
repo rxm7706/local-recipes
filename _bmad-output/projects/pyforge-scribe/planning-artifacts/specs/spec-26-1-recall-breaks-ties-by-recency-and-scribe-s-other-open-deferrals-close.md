@@ -2,7 +2,7 @@
 title: "26.1: Recall breaks ties by recency, and scribe's other open deferrals close"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: 'e06362288272098346b7329a4a5e94e1ad87a513'
 final_revision: 'pending-commit'
 review_loop_iteration: 0
@@ -85,7 +85,23 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (open medium and low def
 - `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back after an independent landing review (findings below). The four DW-FRR rows leave this story's scope. Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session) — sent back
+Correct and tested: the recall recency tie-break (only equal overlap reorders; deterministic; ungrounded misses stay ungrounded). Fix:
+- `high` **`scripts/governance_currency_check.py` ignores `--json` and `--file` from the command line**: `ap.parse_args([] if argv is None else argv)` with `__main__` calling `main()` makes the parser always see `[]` (main had `ap.parse_args()`). Have `__main__` pass `sys.argv[1:]`, tests call `main([])`, and add a test running `--json --file`. Fix the same flaw in `scripts/scribe_graph_freshness_check.py` (its `--json` prints text).
+- `high` **The four DW-FRR rows (DW-FRR-1-1, -3-1, -4-1, -5-2) are closed with no follow-up review run.** A follow-up-review row closes only after an independent review of that story's shipped code has run and its findings are fixed; an implementation session cannot close it. Reopen all four (status open, drop the `resolution:` and the new `verified:` lines) and remove them from this story; they stay with the follow-up review drain (marshal 73.x).
+- `medium` **`compile.py` crashes the whole compile on a symlinked transcript**: `candidate.source_file.resolve().relative_to(root)` raises `ValueError` for a `.jsonl` symlink pointing outside the root. Use `candidate.source_file.relative_to(transcript_root)` without `resolve()`; add a symlink test.
+- `medium` **`transcripts.py` switched `glob` to `rglob`, widening the scan to nested `<uuid>/subagents/agent-*.jsonl` files** (on this host 227 nested files beside 37 top-level, past `_DEFAULT_MAX_FILES=256`, so every run skips some and subagent output feeds team-memory candidates). The spec described today's flat directory. Keep `glob` (test the id derivation another way); widening needs an operator ruling.
+- `medium` **DW-8-1-1's criterion is not met**: `scheduled_period_hours()` returns 24 for any `*-*-*` value, so hourly, every-6-hours, twice-daily and two `OnCalendar=` lines all pass. Require exactly one `OnCalendar=` with a fixed time (no `*`, `/` or `,`), raise otherwise, and test a twice-daily value.
+- `medium` **Nothing tests that a nested citation can be recalled** (reverting `_TRANSCRIPT_CITATION_RE` passes every test). Add a positive `dir-a/session-x.jsonl:L1` case and a compile-then-recall test.
+- `low` The citation class now rejects names main accepted (`session 1.jsonl`, `sessión.jsonl`, `a+b.jsonl`); use `(?:[^/\\:]+/)*[^/\\:]+\.jsonl:L[0-9]+`. Apply the format-only citation exemption only when `kind == "transcript"`. In governance-currency, an empty `.cursor/rules/*.mdc` match must be a finding, and `_CURSOR_RULES_GLOB` is unused; add the stale-name and missing-file tests the criterion asks for.
+- `low` Correct the `verified:` citations (DW-FU-3-2 is `compile.py:940-941`; DW-FU-3-2-3's baseline entry is `:5139`) and put each new `verified:` line after the older ones; update `pixi.toml`'s governance-currency description (four documents) and the spec's `final_revision`.
+
 
 ### 2026-10-03 — Review pass
 - verdicts: 4 findings — high 0, medium 0, low 0, false 3, reject 1
