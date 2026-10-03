@@ -158,9 +158,9 @@ def is_deferred_work_path(path: str) -> bool:
 
 def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None, deferred_work_rel: str | None = None) -> bool:
     """True when ``path`` is a known mechanical-only merge conflict: a Spec memlog (Story 78.1;
-    the heal still escalates one that is not append-only), a sprint ledger, or a deferred-work 
-    ledger (Story 83.3). Given ``ledger_rel`` (the landing project's own ledger), only that exact 
-    path is a mechanical ledger -- another project's ledger is not this landing's to resolve 
+    the heal still escalates one that is not append-only), a sprint ledger, or a deferred-work
+    ledger (Story 83.3). Given ``ledger_rel`` (the landing project's own ledger), only that exact
+    path is a mechanical ledger -- another project's ledger is not this landing's to resolve
     (Story 59.1). Similarly for ``deferred_work_rel`` - only the project's own deferred work ledger."""
     normalized = path.replace("\\", "/")
     if is_memlog_path(normalized):
@@ -171,7 +171,7 @@ def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None, def
         return True
     # Legacy fallback for when no specific paths provided
     if ledger_rel is None and deferred_work_rel is None:
-        return (normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}") or 
+        return (normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}") or
                 normalized.endswith(SPRINT_LEDGER_BASENAME) or
                 normalized.endswith(f"planning-artifacts/{DEFERRED_WORK_BASENAME}") or
                 normalized.endswith(DEFERRED_WORK_BASENAME))
@@ -280,7 +280,7 @@ def union_memlog_texts(base: str, main: str, branch: str) -> str | None:
 
 def _split_deferred_work_entries(text: str) -> list[str]:
     """Split deferred work ledger text into individual DW entries, each starting with '### DW-'.
-    
+
     Returns a list where each entry includes its header and all content until the next DW header.
     The frontmatter and any content before the first DW entry is preserved as the first element
     if it doesn't start with '### DW-'.
@@ -288,7 +288,7 @@ def _split_deferred_work_entries(text: str) -> list[str]:
     lines = text.splitlines()
     entries = []
     current_entry_lines = []
-    
+
     for line in lines:
         if line.startswith("### DW-"):
             # Save the previous entry if it exists
@@ -299,17 +299,17 @@ def _split_deferred_work_entries(text: str) -> list[str]:
             current_entry_lines = [line]
         else:
             current_entry_lines.append(line)
-    
+
     # Don't forget the last entry
     if current_entry_lines:
         entries.append("\n".join(current_entry_lines))
-    
+
     return entries
 
 
 def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
     """Extract the base text (everything before first DW entry) and all DW entries.
-    
+
     Returns (base_text, dw_entries) where base_text includes frontmatter and any content
     before the first ### DW- header, and dw_entries is a list of complete DW entries.
     """
@@ -318,7 +318,7 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
     dw_entries = []
     current_entry_lines = []
     in_dw_section = False
-    
+
     for line in lines:
         if line.startswith("### DW-"):
             # Save any previous DW entry
@@ -337,7 +337,7 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
         else:
             # We're still in the base section
             base_lines.append(line)
-    
+
     # Don't forget the last DW entry
     if in_dw_section and current_entry_lines:
         # Remove trailing empty lines from the entry
@@ -345,7 +345,7 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
             current_entry_lines.pop()
         if current_entry_lines:
             dw_entries.append("\n".join(current_entry_lines))
-    
+
     # Remove trailing empty lines from base text
     while base_lines and base_lines[-1] == '':
         base_lines.pop()
@@ -356,7 +356,7 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
 def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
     """Story 83.3: the union of two append-only edits of one deferred-work-ledger.md, or None
     when either side is not append-only.
-    
+
     Each text is parsed to extract the base content and DW entries. A side is append-only when
     it starts with the base's complete DW entries in order, then adds new entries. The result
     is the base text, then main's entries, then branch's new entries (skipping duplicates that
@@ -366,22 +366,22 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
     base_text, base_entries = _extract_base_and_entries(base)
     main_text, main_entries = _extract_base_and_entries(main)
     branch_text, branch_entries = _extract_base_and_entries(branch)
-    
+
     # Check if main and branch are append-only relative to base
     base_count = len(base_entries)
-    if (len(main_entries) < base_count or 
+    if (len(main_entries) < base_count or
         len(branch_entries) < base_count or
         main_entries[:base_count] != base_entries or
         branch_entries[:base_count] != base_entries):
         return None  # Not append-only
-    
+
     # Get the new entries from main and branch
     main_new_entries = main_entries[base_count:]
     branch_new_entries = branch_entries[base_count:]
-    
+
     # Create a set of main's new entries for deduplication
     main_new_set = set(main_new_entries)
-    
+
     # Add branch entries that aren't already in main's new entries
     final_new_entries = main_new_entries.copy()
     for entry in branch_new_entries:
@@ -390,23 +390,23 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
         else:
             # Remove from set so duplicates can still be added if they appear multiple times
             main_new_set.discard(entry)
-    
+
     # Combine all entries: base text + base entries + new entries from both sides
     all_entries = base_entries + final_new_entries
-    
+
     # Use main's base text (in case it has frontmatter updates)
     # But fall back to base text if main's base is empty
     result_base = main_text if main_text.strip() else base_text
-    
+
     if all_entries:
         result = result_base.rstrip() + "\n\n" + "\n\n".join(all_entries)
     else:
         result = result_base
-        
+
     # Ensure consistent ending
     if not result.endswith("\n"):
         result += "\n"
-    
+
     return result
 
 

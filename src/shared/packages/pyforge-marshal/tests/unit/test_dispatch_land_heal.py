@@ -1138,7 +1138,7 @@ def test_is_deferred_work_path_recognizes_deferred_work_ledger() -> None:
 def test_mechanical_conflict_path_recognizes_deferred_work_ledger() -> None:
     dw_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
     ledger_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
-    
+
     assert is_mechanical_conflict_path(dw_path, deferred_work_rel=dw_path)
     assert is_mechanical_conflict_path(ledger_path, ledger_rel=ledger_path)
     assert not is_mechanical_conflict_path(dw_path, ledger_rel=ledger_path)  # Wrong type
@@ -1161,12 +1161,12 @@ def test_union_deferred_work_texts_both_sides_append_entries() -> None:
         "### DW-2: Main entry\norigin: main\nstatus: open"
     )
     branch = _deferred_work_text(
-        "### DW-1: Base entry\norigin: test\nstatus: open", 
+        "### DW-1: Base entry\norigin: test\nstatus: open",
         "### DW-3: Branch entry\norigin: branch\nstatus: open"
     )
-    
+
     result = union_deferred_work_texts(base, main, branch)
-    
+
     assert result is not None
     assert "### DW-1: Base entry" in result
     assert "### DW-2: Main entry" in result
@@ -1186,9 +1186,9 @@ def test_union_deferred_work_texts_only_branch_appends() -> None:
         "### DW-1: Base entry\norigin: test\nstatus: open",
         "### DW-2: Branch entry\norigin: branch\nstatus: open"
     )
-    
+
     result = union_deferred_work_texts(base, main, branch)
-    
+
     assert result is not None
     assert "### DW-1: Base entry" in result
     assert "### DW-2: Branch entry" in result
@@ -1202,9 +1202,9 @@ def test_union_deferred_work_texts_only_main_appends() -> None:
         "### DW-2: Main entry\norigin: main\nstatus: open"
     )
     branch = base  # No changes on branch
-    
+
     result = union_deferred_work_texts(base, main, branch)
-    
+
     assert result is not None
     assert "### DW-1: Base entry" in result
     assert "### DW-2: Main entry" in result
@@ -1223,9 +1223,9 @@ def test_union_deferred_work_texts_both_add_same_entry() -> None:
         "### DW-1: Base entry\norigin: test\nstatus: open",
         same_entry
     )
-    
+
     result = union_deferred_work_texts(base, main, branch)
-    
+
     assert result is not None
     assert "### DW-1: Base entry" in result
     assert result.count("### DW-2: Same entry") == 1
@@ -1239,9 +1239,9 @@ def test_union_deferred_work_texts_refuses_edited_entry() -> None:
         "### DW-1: Base entry\norigin: test\nstatus: open",
         "### DW-2: Branch entry\norigin: branch\nstatus: open"
     )
-    
+
     result = union_deferred_work_texts(base, main, branch)
-    
+
     assert result is None  # Should refuse
 
 
@@ -1257,9 +1257,9 @@ def test_union_deferred_work_texts_refuses_dropped_entry() -> None:
         "### DW-2: Second entry\norigin: test\nstatus: open",
         "### DW-3: Branch entry\norigin: branch\nstatus: open"
     )
-    
+
     result = union_deferred_work_texts(base, main, branch)
-    
+
     assert result is None  # Should refuse
 
 
@@ -1269,9 +1269,9 @@ def test_union_deferred_work_texts_empty_base() -> None:
     base = frontmatter
     main = _deferred_work_text("### DW-1: Main entry\norigin: main\nstatus: open", frontmatter=frontmatter)
     branch = _deferred_work_text("### DW-2: Branch entry\norigin: branch\nstatus: open", frontmatter=frontmatter)
-    
+
     result = union_deferred_work_texts(base, main, branch)
-    
+
     assert result is not None
     assert "### DW-1: Main entry" in result
     assert "### DW-2: Branch entry" in result
@@ -1282,25 +1282,25 @@ def test_unknown_conflict_paths_filters_deferred_work() -> None:
     dw_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
     ledger_path = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
     unknown_path = "src/pyforge/marshal/foo.py"
-    
+
     unknown = unknown_conflict_paths(
-        (dw_path, ledger_path, unknown_path), 
+        (dw_path, ledger_path, unknown_path),
         ledger_rel=ledger_path,
         deferred_work_rel=dw_path
     )
-    
+
     assert unknown == (unknown_path,)
 
 
 class FakeVcsHealWithDeferredWork(FakeVcsHeal):
     """Extended fake VCS that can handle deferred work ledger conflicts."""
-    
+
     def __init__(self, *, deferred_work_base: str = "", deferred_work_main: str = "", deferred_work_branch: str = "", **kwargs):
         super().__init__(**kwargs)
         self.deferred_work_base = deferred_work_base
         self.deferred_work_main = deferred_work_main
         self.deferred_work_branch = deferred_work_branch
-    
+
     def file_text_at_ref(self, _repo_root: Path, ref: str, path: str):
         if path.endswith("deferred-work-ledger.md"):
             if ref == "base000":
@@ -1316,7 +1316,7 @@ def test_heal_unions_deferred_work_ledger_conflict_and_retries_merge(tmp_path: P
     worktree = tmp_path / "wt"
     worktree.mkdir()
     dw_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
-    
+
     base_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main_dw = _deferred_work_text(
         "### DW-1: Base entry\norigin: test\nstatus: open",
@@ -1326,7 +1326,7 @@ def test_heal_unions_deferred_work_ledger_conflict_and_retries_merge(tmp_path: P
         "### DW-1: Base entry\norigin: test\nstatus: open",
         "### DW-3: Branch entry\norigin: branch\nstatus: open"
     )
-    
+
     vcs = FakeVcsHealWithDeferredWork(
         conflict_paths=(dw_rel,),
         deferred_work_base=base_dw,
@@ -1359,11 +1359,11 @@ def test_heal_unions_deferred_work_ledger_conflict_and_retries_merge(tmp_path: P
     assert len(vcs.merges) == 1
     merged_into, merged_ref, resolutions, _message = vcs.merges[0]
     assert (merged_into, merged_ref, list(resolutions)) == (worktree, "refs/heads/main", [dw_rel])
-    
+
     # Check that the union was created correctly
     written = (worktree / dw_rel).read_text(encoding="utf-8")
     assert "### DW-1: Base entry" in written
-    assert "### DW-2: Main entry" in written 
+    assert "### DW-2: Main entry" in written
     assert "### DW-3: Branch entry" in written
 
 
@@ -1372,18 +1372,18 @@ def test_heal_escalates_edited_deferred_work_entry(tmp_path: Path) -> None:
     worktree = tmp_path / "wt"
     worktree.mkdir()
     dw_rel = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
-    
+
     base_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
     main_dw = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: done")  # Status changed
     branch_dw = _deferred_work_text(
         "### DW-1: Base entry\norigin: test\nstatus: open",
         "### DW-2: Branch entry\norigin: branch\nstatus: open"
     )
-    
+
     vcs = FakeVcsHealWithDeferredWork(
         conflict_paths=(dw_rel,),
         deferred_work_base=base_dw,
-        deferred_work_main=main_dw, 
+        deferred_work_main=main_dw,
         deferred_work_branch=branch_dw,
     )
     forge = FakeForgeHeal()
@@ -1393,7 +1393,7 @@ def test_heal_escalates_edited_deferred_work_entry(tmp_path: Path) -> None:
         project_slug="pyforge-marshal",
         git_repo_root=tmp_path,
         worktree=worktree,
-        base="main", 
+        base="main",
         head_branch="dispatch/pyforge-marshal/83.3",
         head_sha="abc123",
         subject="Merge 83.3 into main",
