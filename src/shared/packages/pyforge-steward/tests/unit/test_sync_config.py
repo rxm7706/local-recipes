@@ -141,7 +141,7 @@ github_only_marker:
         load_config(path)
 
 
-def test_github_only_marker_empty_mapping_is_none(tmp_path):
+def test_github_only_marker_rejects_empty_mapping(tmp_path):
     path = _write(
         tmp_path,
         _VALID_DOCUMENT
@@ -150,8 +150,35 @@ github_only_marker: {}
 """,
     )
 
-    config = load_config(path)
-    assert config.github_only_marker is None
+    with pytest.raises(SyncConfigError, match="empty mapping"):
+        load_config(path)
+
+
+def test_github_only_marker_rejects_non_mapping(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker: github-only
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="must be a mapping"):
+        load_config(path)
+
+
+def test_github_only_marker_rejects_lone_field_value(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  field_value: GitHub only
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="no non-empty"):
+        load_config(path)
 
 
 def test_github_only_marker_rejects_both_modes(tmp_path):

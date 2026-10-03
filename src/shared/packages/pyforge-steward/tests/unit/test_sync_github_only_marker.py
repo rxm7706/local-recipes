@@ -18,22 +18,29 @@ from pyforge.steward.sync import (
 )
 
 
-def _write_flagd_tree(tmp_path: Path, variant: str, name: str) -> Path:
+def _write_flagd_tree(
+    tmp_path: Path,
+    variant: str,
+    name: str,
+    *,
+    include_marker_flag: bool = True,
+    overlays: dict[str, dict[str, str]] | None = None,
+    broken_overlay: bool = False,
+) -> Path:
+    flags: dict = {}
+    if include_marker_flag:
+        flags[SYNC_GITHUB_ONLY_MARKER_FLAG] = {
+            "state": "ENABLED",
+            "variants": {"on": True, "off": False},
+            "defaultVariant": variant,
+        }
     path = tmp_path / name
-    path.write_text(
-        json.dumps(
-            {
-                "flags": {
-                    SYNC_GITHUB_ONLY_MARKER_FLAG: {
-                        "state": "ENABLED",
-                        "variants": {"on": True, "off": False},
-                        "defaultVariant": variant,
-                    }
-                }
-            }
-        ),
-        encoding="utf-8",
-    )
+    path.write_text(json.dumps({"flags": flags}), encoding="utf-8")
+    overlay_path = path.with_name("flag-overlays.json")
+    if broken_overlay:
+        overlay_path.write_text("{", encoding="utf-8")
+    elif overlays is not None:
+        overlay_path.write_text(json.dumps(overlays), encoding="utf-8")
     return path
 
 

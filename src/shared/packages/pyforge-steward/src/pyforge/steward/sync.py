@@ -304,12 +304,14 @@ def _load_github_only_marker(document_path: Path, section: object) -> GitHubOnly
             f"{document_path}: 'github_only_marker' must declare either 'label' or 'field_id'+'field_value', not both"
         )
     if not has_label and not has_field:
-        if label is not None or field_id is not None or field_value is not None:
+        if not section:
             raise SyncConfigError(
-                f"{document_path}: 'github_only_marker' is present but declares no "
-                "non-empty label or field_id/field_value pair"
+                f"{document_path}: 'github_only_marker' must not be an empty mapping"
             )
-        return None
+        raise SyncConfigError(
+            f"{document_path}: 'github_only_marker' is present but declares no "
+            "non-empty label or field_id/field_value pair"
+        )
     if has_label:
         if not isinstance(label, str):
             raise SyncConfigError(f"{document_path}: 'github_only_marker.label' must be a string")
