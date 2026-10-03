@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pyforge.core.process import PosixProcess
+
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.dispatch_verify_fix import (
     FailedVerifyCommand,
@@ -13,12 +15,11 @@ from pyforge.marshal.core.dispatch_verify_fix import (
     scrub_fix_turn_exposure,
     tail_bytes,
 )
-from pyforge.marshal.dispatch_verify_fix import ProcessWaitResult, wait_for_process
-from pyforge.core.process import PosixProcess
 from pyforge.marshal.core.harness_profile import parse_profile
 from pyforge.marshal.core.harness_profile import render_verify_fix_argv as render_fix
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.policy import DEFAULT_POLICY, compose
+from pyforge.marshal.dispatch_verify_fix import ProcessWaitResult, wait_for_process
 
 
 def test_decide_verify_fix_turn_requires_flag_and_refusal():
