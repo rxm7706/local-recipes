@@ -1828,7 +1828,9 @@ def _refused_landing_open_pr_story_keys(
     keys: set[str] = set()
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
-        if journal.story_key is None:
+        # The journal read is cheap; the session verdict and git facts below are not (they shell out), so only a
+        # run whose landing was refused pays for them (landing review: ~50 s over 364 marshal runs otherwise).
+        if journal.story_key is None or journal.landing_verdict != "refused":
             continue
         verdict = resolve_dispatch_session_verdict(
             fs=fs,
@@ -1913,16 +1915,11 @@ def station_in_flight_conflict(
             effective_policy=effective_policy,
             run_dir=run_dir,
         )
-        git_facts = _dispatch_git_facts_for_journal(
-            vcs=vcs,
-            fs=fs,
-            repo_root=repo_root,
-            slug=slug,
-            journal=journal,
-            effective_policy=effective_policy,
-        )
         is_live = verdict == DispatchSessionVerdict.LIVE
-        is_refused_landing_open = not is_live and _refused_landing_open_pr(journal, git_facts)
+        # Reuse the scan above rather than gathering git facts again for every run.
+        is_refused_landing_open = (
+            not is_live and journal.landing_verdict == "refused" and journal.story_key in refused_landing_open
+        )
         if not is_live and not is_refused_landing_open:
             continue
         if is_live:
