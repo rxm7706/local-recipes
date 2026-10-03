@@ -1566,6 +1566,10 @@ def test_cross_project_evidence_closes_the_entry_via_apply_verification_verdicts
             }
         ],
         date(2026, 8, 21),
+        # DW-doctor-38-1: the writer now applies Story 38.1's own citation
+        # predicate, passed in. This evidence cites a real `path:line`, so it
+        # satisfies it -- the point of the test is unchanged.
+        chain.verified_line_cites,
     )
 
     assert outcome.status == "applied"
