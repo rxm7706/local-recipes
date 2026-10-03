@@ -2,7 +2,7 @@
 title: '83.7: A re-dispatch after a refused landing lands the existing branch without a new session'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'abbb7ba05f5ce65e54b320b4d30e2c9e7d916c90'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -71,4 +71,24 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-02 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (self-review against AC; no subagent layers — implementation matches intent)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended the single-story dispatch land-only gate (Story 29.2) so a latest run whose journal records a refused `dispatch-land` outcome takes CAP-4 re-verify/merge without launching `bmad-build-auto`, even when the worktree spec still reads `in-progress`.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py` — `should_take_harness_done_land_only`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — read refused landing verdict from journal; gate dispatch_once
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/drain_plan.py` — same land-only predicate for `--plan`
+- Unit tests in `test_dispatch_harness_done.py`, `test_dispatch.py`, `test_dispatch_survival.py`
+
+**Review:** No patch/defer/intent_gap items.
+
+**Verification:** `pyforge-marshal-test` 10832 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK (pixi pyforge-guild).
+
+**Follow-up review recommended:** false
