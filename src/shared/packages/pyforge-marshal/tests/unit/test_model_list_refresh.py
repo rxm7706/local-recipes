@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -229,9 +230,10 @@ def test_snapshot_roundtrip():
         "date": "2026-10-02",
         "harnesses": {"cursor": {"status": "ok", "ids": ["a", "b"]}},
     }
-    day, ids = parse_snapshot_payload(payload)
+    day, ids, status = parse_snapshot_payload(payload)
     assert day == "2026-10-02"
     assert ids["cursor"] == frozenset({"a", "b"})
+    assert status["cursor"] == "ok"
 
 
 def test_query_values_are_url_encoded():
@@ -388,3 +390,175 @@ def test_models_cli_drift_exits_zero(monkeypatch, capsys, tmp_path):
     assert "MRS-MDL-001" in codes
     assert code == 0
     assert "missing-model" in envelope["data"]["report"]
+
+
+def test_fetch_command_empty_output_unavailable():
+    profile = HarnessProfile(
+        name="cursor",
+        binary="cursor-agent",
+        argv=("{prompt}",),
+        model_list=ModelListSource(catalog_provider="cursor", command=("cursor-agent", "models")),
+    )
+    fetch = FakeFetch(command_output="no parseable lines\n")
+    result = fetch_live_ids_for_profile(profile, fetch)
+    assert result.status == "unavailable"
+    assert result.reason == "no ids parsed"
+
+
+def test_fetch_http_gemini_two_pages():
+    base = "https://generativelanguage.googleapis.com/v1beta/models"
+    page1_url = gemini_models_page_url(base, None)
+    page2_url = gemini_models_page_url(base, "tok1")
+    pages = {
+        page1_url: json.dumps(
+            {
+                "models": [
+                    {"name": "models/gemini-a", "supportedGenerationMethods": ["generateContent"]},
+                ],
+                "nextPageToken": "tok1",
+            },
+        ).encode(),
+        page2_url: json.dumps(
+            {
+                "models": [
+                    {"name": "models/gemini-b", "supportedGenerationMethods": ["generateContent"]},
+                ],
+            },
+        ).encode(),
+    }
+    profile = HarnessProfile(
+        name="gemini",
+        binary="gemini",
+        argv=("{prompt}",),
+        model_list=ModelListSource(
+            catalog_provider="google",
+            url=base,
+            credential_env="GEMINI_API_KEY",
+            credential_header="x-goog-api-key",
+            pagination="gemini",
+        ),
+    )
+    fetch = RecordingFetch(pages)
+    result = fetch_live_ids_for_profile(profile, fetch, env={"GEMINI_API_KEY": "g-secret"})
+    assert result.status == "ok"
+    assert result.live_ids == frozenset({"gemini-a", "gemini-b"})
+    assert len(fetch.calls) == 2
+    assert fetch.calls[0][1]["x-goog-api-key"] == "g-secret"
+    assert fetch.calls[1][0] == page2_url
+
+
+def test_fetch_credential_with_cr_unavailable():
+    profile = HarnessProfile(
+        name="claude",
+        binary="claude",
+        argv=("{prompt}",),
+        model_list=ModelListSource(
+            catalog_provider="anthropic",
+            url="https://api.anthropic.com/v1/models",
+            credential_env="ANTHROPIC_API_KEY",
+            credential_header="x-api-key",
+            pagination="anthropic",
+        ),
+    )
+    fetch = FakeFetch()
+    bad_key = "secret\r"
+    result = fetch_live_ids_for_profile(profile, fetch, env={"ANTHROPIC_API_KEY": bad_key})
+    assert result.status == "unavailable"
+    assert "invalid characters" in (result.reason or "")
+
+
+def test_render_report_no_drift_when_all_unavailable():
+    text = render_report_text(
+        not_listed=(),
+        harness_results={
+            "claude": HarnessListResult("claude", "unavailable", frozenset(), "unset"),
+            "copilot": HarnessListResult("copilot", "unavailable", frozenset(), "no source"),
+        },
+        unchecked_providers=frozenset(),
+        snapshot_diff=None,
+    )
+    assert "no drift detected" not in text
+    assert "0 harness(es) compared" in text
+
+
+def test_models_cli_sentinel_secret_not_in_json_output(monkeypatch, capsys, tmp_path):
+    import argparse
+
+    from pyforge.marshal.cli import adapters as adapters_cli
+
+    sentinel = "SENTINEL-KEY-84-1\r"
+    monkeypatch.setenv("ANTHROPIC_API_KEY", sentinel)
+    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
+    profiles = {
+        "claude": HarnessProfile(
+            name="claude",
+            binary="claude",
+            argv=("{prompt}",),
+            model_list=ModelListSource(
+                catalog_provider="anthropic",
+                url="https://api.anthropic.com/v1/models",
+                credential_env="ANTHROPIC_API_KEY",
+                credential_header="x-api-key",
+                pagination="anthropic",
+            ),
+        ),
+    }
+    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
+    monkeypatch.setattr(
+        adapters_cli,
+        "fetch_live_ids_for_profile",
+        lambda profile, fetch, **kw: HarnessListResult("claude", "unavailable", frozenset(), "credential invalid"),
+    )
+    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
+    args = argparse.Namespace(slug="pyforge-marshal", format="json", write=False)
+
+    class _MinimalFs:
+        def ensure_dir(self, path: object) -> None:
+            del path
+
+        def write_text_atomic(self, path: object, text: str) -> None:
+            del path, text
+
+    code = adapters_cli.run_adapters_models(args, fs=_MinimalFs())
+    out = capsys.readouterr().out
+    assert sentinel not in out
+    assert code == 0
+
+
+def test_models_cli_write_snapshot(monkeypatch, tmp_path):
+    import argparse
+
+    from pyforge.marshal.cli import adapters as adapters_cli
+
+    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
+    profiles = {
+        "cursor": HarnessProfile(
+            name="cursor",
+            binary="cursor-agent",
+            argv=("{prompt}",),
+            model_list=ModelListSource(catalog_provider="cursor", command=("cursor-agent", "models")),
+        ),
+    }
+    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
+    monkeypatch.setattr(
+        adapters_cli,
+        "fetch_live_ids_for_profile",
+        lambda profile, fetch, **kw: HarnessListResult("cursor", "ok", frozenset({"m1"})),
+    )
+    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
+    args = argparse.Namespace(slug="pyforge-marshal", format="text", write=True)
+    written: list[str] = []
+
+    class _Fs:
+        def ensure_dir(self, path: object) -> None:
+            Path(path).mkdir(parents=True, exist_ok=True)
+
+        def write_text_atomic(self, path: object, text: str) -> None:
+            written.append(text)
+            Path(path).write_text(text, encoding="utf-8")
+
+    code = adapters_cli.run_adapters_models(args, fs=_Fs())
+    assert code == 0
+    assert written
+    payload = json.loads(written[0])
+    assert payload["harnesses"]["cursor"]["ids"] == ["m1"]

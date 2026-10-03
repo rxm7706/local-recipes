@@ -65,6 +65,7 @@ module-level ``from .init import _home_path`` would otherwise create.
 from __future__ import annotations
 
 import argparse
+import http.client
 import json
 import os
 import platform
@@ -553,6 +554,7 @@ def _emit(
     *,
     command: str = "adapters sync",
     renderer: Callable[[dict[str, object], tuple[Finding, ...]], str] = _render_text,
+    scan_output: Callable[[str], None] | None = None,
 ) -> int:
     verdict_value = compute_verdict(findings)
     envelope = build_envelope(
@@ -566,6 +568,8 @@ def _emit(
         rendered = json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True)
     else:
         rendered = renderer(envelope.data, envelope.findings)
+    if scan_output is not None:
+        scan_output(rendered)
     try:
         print(rendered, flush=True)
     except OSError:
@@ -2089,12 +2093,12 @@ def run_adapters_models(
     for name, profile in sorted(profiles.items()):
         try:
             result = fetch_live_ids_for_profile(profile, fetcher)
-        except (OSError, ValueError, TimeoutError) as exc:
+        except (OSError, ValueError, TimeoutError, http.client.HTTPException):
             result = HarnessListResult(
                 harness=name,
                 status="unavailable",
                 live_ids=frozenset(),
-                reason=str(exc),
+                reason="fetch failed",
             )
         harness_results[name] = result
         harness_ids[name] = result.live_ids
@@ -2128,6 +2132,25 @@ def run_adapters_models(
         except OSError, tomllib.TOMLDecodeError:
             pass
 
+    unavailable_harnesses = [name for name, r in harness_results.items() if r.status == "unavailable"]
+    if unavailable_harnesses:
+        findings.append(
+            Finding(
+                code="MRS-MDL-002",
+                severity=Severity.WARN,
+                message="harness model list unavailable: " + ", ".join(sorted(unavailable_harnesses)),
+            )
+        )
+    if unchecked:
+        findings.append(
+            Finding(
+                code="MRS-MDL-003",
+                severity=Severity.WARN,
+                message="unchecked catalog providers: " + ", ".join(sorted(unchecked)),
+            )
+        )
+    data["unchecked_providers"] = sorted(unchecked)
+
     today = date.today()
     snapshot_dir = root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "model-lists"
     snapshot_diff = None
@@ -2136,8 +2159,9 @@ def run_adapters_models(
         try:
             prior_raw = json.loads(prior_path.read_text(encoding="utf-8"))
             if isinstance(prior_raw, dict):
-                _prior_date, prior_ids = parse_snapshot_payload(prior_raw)
+                _prior_date, prior_ids, prior_status = parse_snapshot_payload(prior_raw)
                 comparable = frozenset(name for name, result in harness_results.items() if result.status == "ok")
+                comparable &= frozenset(name for name, st in prior_status.items() if st == "ok")
                 snapshot_diff = diff_harness_ids(prior_ids, harness_ids, comparable_harnesses=comparable)
         except OSError, json.JSONDecodeError, ValueError:
             pass
@@ -2153,7 +2177,8 @@ def run_adapters_models(
         name: {"status": r.status, "count": len(r.live_ids), "reason": r.reason} for name, r in harness_results.items()
     }
 
-    _scan_text_for_profile_secrets(report, profiles)
+    def _scan_output(text: str) -> None:
+        _scan_text_for_profile_secrets(text, profiles)
 
     if args.write:
         payload = build_snapshot_payload(
@@ -2168,7 +2193,14 @@ def run_adapters_models(
         fs.write_text_atomic(out_path, snapshot_text + "\n")
         data["snapshot_path"] = str(out_path.relative_to(root))
 
-    return _emit(args, data, findings, command="adapters models", renderer=_render_text_models)
+    return _emit(
+        args,
+        data,
+        findings,
+        command="adapters models",
+        renderer=_render_text_models,
+        scan_output=_scan_output,
+    )
 
 
 # =====================================================================

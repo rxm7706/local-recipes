@@ -1244,6 +1244,9 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # -- `MRS-MDL-001` (a declared model id is absent from its harness live
 # list and not declared as a profile alias) classifies WARN, never ERROR:
 # drift is advisory and must not change the rendered-report exit code.
+# `MRS-MDL-002` (one or more harness live lists unavailable) and
+# `MRS-MDL-003` (unchecked catalog providers) classify WARN for the same
+# rendered-report exit tier.
 # Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37) adds
 # `cli/adapters.py`'s own `run_adapters_matrix` (`marshal adapters matrix`)
 # -- a NEW area, `MRS-MATRIX-*`, reusing `MRS-ADP-001` verbatim for its one
@@ -1596,6 +1599,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SMOKE-006",
         "MRS-SMOKE-007",
         "MRS-MDL-001",
+        "MRS-MDL-002",
+        "MRS-MDL-003",
         "MRS-MATRIX-001",
         "MRS-MATRIX-002",
         "MRS-ENTRY-001",

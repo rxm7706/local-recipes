@@ -2,8 +2,8 @@
 title: "84.1: An operator-run refresh reads every harness's live model list and reports drift"
 type: 'feature'
 created: '2026-10-02'
-status: 'ready-for-dev'
-baseline_revision: '263ab6eebb0be49d153e3c83d95f372afc8c95d9'
+status: 'in-progress'
+baseline_revision: 'ec1f191a01a6d37e146f7b5052a8e6497421f9a5'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: detector-or-gate   # a check that judges declared model ids against live lists; a gated check reports a silent green (spec-feature-flag-governance Q2)

@@ -977,6 +977,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # (declared model id absent from live list and not an alias) at WARN --
     # advisory drift, never blocks the rendered-report exit code.
     "MRS-MDL-001": Verdict.WARN,
+    "MRS-MDL-002": Verdict.WARN,
+    "MRS-MDL-003": Verdict.WARN,
     # Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37):
     # MRS-MATRIX-001 (a pre-existing adapter-probes.json/adapter-smoke.json
     # was malformed) at WARN, mirroring MRS-ADP-016/MRS-SMOKE-007's own
