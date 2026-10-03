@@ -1755,6 +1755,146 @@ def test_dirty_pr_land_fail_names_pr_and_does_not_relaunch(tmp_path: Path, monke
     assert "CHAIN" in finding.message
 
 
+_IN_PROGRESS_SPEC = "---\nstatus: in-progress\ndifficulty: medium\n---\n# spec\n"
+
+
+def _seed_refused_dispatch_land_run(
+    repo: Path,
+    slug: str,
+    *,
+    run_id: str,
+    story_key: str,
+) -> None:
+    from pyforge.marshal.core.identity import render_feed_key
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+
+    feed = render_feed_key(dispatch_core.normalize(story_key))
+    run_dir = dispatch_core.dispatch_run_dir(repo, slug, run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    entries = (
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-10-02T12:00:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={"story_key": feed, "harness_profile": "claude"},
+        ),
+        build_entry(
+            id=JournalEntryId("w", 1),
+            ts="2026-10-02T12:00:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAND,
+            phase=Phase.OUTCOME,
+            payload={
+                "verdict": "refused",
+                "ok": False,
+                "land_findings": [
+                    {
+                        "code": "MRS-DISP-056",
+                        "severity": "error",
+                        "message": "check run blocks the landing",
+                    }
+                ],
+            },
+        ),
+    )
+    (run_dir / "journal.jsonl").write_text(
+        "".join(prepare_for_write(entry).line.rstrip("\n") + "\n" for entry in entries),
+        encoding="utf-8",
+    )
+
+
+def test_in_progress_spec_with_refused_landing_journal_is_land_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 83.7: a refused dispatch-land on the latest run → CAP-4 only, no session."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-7-redispatch"
+    _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
+    _seed_refused_dispatch_land_run(
+        tmp_path,
+        slug,
+        run_id="pyforge-marshal-20261002T120000000Z-deadbeef",
+        story_key=story,
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.LANDED, "PR #83", None),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data["harness_done_land_only"] is True
+    assert attempt.data["land_verdict"] == "landed"
+
+
+def test_in_progress_spec_without_landing_journal_still_launches(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 83.7: no journaled landing attempt → session launches as before."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-7-fresh"
+    _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls
+
+
+def test_refused_land_only_retry_refuses_again_when_cap4_still_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.7: a land-only path that still cannot merge leaves the PR open."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-7-still-refused"
+    _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
+    _seed_refused_dispatch_land_run(
+        tmp_path,
+        slug,
+        run_id="pyforge-marshal-20261002T130000000Z-cafebabe",
+        story_key=story,
+    )
+    pr_url = "https://github.com/rxm7706/local-recipes/pull/8307"
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.REFUSED, pr_url, None),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    [finding] = [f for f in attempt.findings if f.code == "MRS-DISP-040"]
+    assert "8307" in finding.message
+
+
 def test_harness_done_lands_via_cap4_without_second_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """When CAP-4 can land, no second session and no MRS-DISP-040."""
     from pyforge.marshal.cli import dispatch as dispatch_module

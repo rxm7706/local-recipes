@@ -137,6 +137,22 @@ def blocks_harness_relaunch(status: str | None, followup: bool) -> bool:
     return status == "done" and not followup
 
 
+def should_take_harness_done_land_only(
+    status: str | None,
+    followup: bool,
+    *,
+    latest_landing_verdict: str | None,
+) -> bool:
+    """True when single-story dispatch must take CAP-4 land-only (Story 29.2, 83.7).
+
+    Besides a harness-done worktree spec, a latest run that journaled a refused
+    ``dispatch-land`` outcome finished its session — re-dispatch verifies and
+    lands without launching ``bmad-build-auto``."""
+    if blocks_harness_relaunch(status, followup):
+        return True
+    return latest_landing_verdict == "refused"
+
+
 #: The launch INTENT payload key that marks a follow-up review run (Story 73.1, CAP-281).
 FOLLOWUP_REVIEW_PAYLOAD_KEY = "followup_review"
 #: The launch INTENT payload key that records ``origin/main``'s resolved tip at launch (Story 73.1, CAP-281).
