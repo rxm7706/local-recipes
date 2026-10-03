@@ -23,7 +23,7 @@ from pyforge.warden.eligibility import (
     status_from_eligibility_result,
 )
 from pyforge.warden.models import Ecosystem
-from pyforge.warden.sources import SourceEvidence, resolve_identity
+from pyforge.warden.sources import PackageIdentity, SourceEvidence, resolve_identity
 
 _NOW = datetime(2026, 8, 22, 12, 0, 0, tzinfo=UTC)
 
@@ -278,6 +278,55 @@ def test_cross_ecosystem_evidence_groups_and_sorts_independently():
 
     assert len(results) == 2
     assert [r.identity.ecosystem for r in results] == [Ecosystem.CONDA, Ecosystem.PYPI]
+
+
+def test_effective_required_default_is_consensus_and_status_rederivable():
+    evidence = (
+        _evidence(source_name="cyclonedx", locator="a.json"),
+        _evidence(source_name="manifest", locator="/proj"),
+    )
+    results = compute_eligibility_union(evidence, now=_NOW)
+    assert results[0].effective_required_authority_sources == frozenset({"cyclonedx", "manifest"})
+    assert status_from_eligibility_result(results[0]) == results[0].status
+
+
+def test_effective_required_override_recorded_and_status_rederivable():
+    override = frozenset({"cyclonedx"})
+    evidence = (
+        _evidence(source_name="cyclonedx", locator="a.json"),
+        _evidence(source_name="manifest", locator="/proj"),
+    )
+    results = compute_eligibility_union(evidence, required_authority_sources=override, now=_NOW)
+    assert results[0].effective_required_authority_sources == override
+    assert status_from_eligibility_result(results[0]) == results[0].status
+
+
+def test_union_merges_same_logical_identity_despite_distinct_purl_field():
+    canonical = resolve_identity(Ecosystem.PYPI, "requests", "2.31.0")
+    alternate = PackageIdentity(
+        ecosystem=canonical.ecosystem,
+        canonical_name=canonical.canonical_name,
+        version=canonical.version,
+        purl=f"{canonical.purl}?qualifier=duplicate-observation",
+    )
+    assert canonical != alternate
+    evidence = (
+        SourceEvidence(
+            identity=canonical,
+            source_name="cyclonedx",
+            locator="direct.json",
+            raw_name="requests",
+        ),
+        SourceEvidence(
+            identity=alternate,
+            source_name="cyclonedx",
+            locator="transitive.json",
+            raw_name="requests",
+        ),
+    )
+    results = compute_eligibility_union(evidence, now=_NOW)
+    assert len(results) == 1
+    assert len(results[0].provenance) == 2
 
 
 def test_different_now_values_change_only_timestamps():

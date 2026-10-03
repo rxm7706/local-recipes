@@ -21,6 +21,7 @@ from pyforge.warden import sources as sources_module
 from pyforge.warden.models import Ecosystem
 from pyforge.warden.sources import (
     CycloneDXSourceAdapter,
+    CycloneDXUnsupportedSpecVersionError,
     ManifestSourceAdapter,
     PackageIdentity,
     SourceContract,
@@ -158,8 +159,8 @@ def test_cyclonedx_adapter_missing_document_degrades_to_empty(tmp_path):
         json.dumps([1, 2, 3]),  # top-level not an object
         json.dumps({"specVersion": "1.6", "components": []}),  # missing bomFormat
         json.dumps({"bomFormat": "SPDX", "components": []}),  # wrong bomFormat
-        json.dumps({"bomFormat": "CycloneDX"}),  # missing components
-        json.dumps({"bomFormat": "CycloneDX", "components": "nope"}),  # not a list
+        json.dumps({"bomFormat": "CycloneDX", "specVersion": "1.6"}),  # missing components
+        json.dumps({"bomFormat": "CycloneDX", "specVersion": "1.6", "components": "nope"}),  # not a list
     ],
 )
 def test_cyclonedx_adapter_malformed_doc_validation_fails(tmp_path, raw_text):
@@ -170,9 +171,34 @@ def test_cyclonedx_adapter_malformed_doc_validation_fails(tmp_path, raw_text):
     assert adapter.ingest() == ()
 
 
+def test_cyclonedx_adapter_unsupported_spec_version_refused(tmp_path):
+    document = {
+        "bomFormat": "CycloneDX",
+        "specVersion": "1.4",
+        "components": [],
+    }
+    path = _write_cyclonedx(tmp_path, document)
+    adapter = CycloneDXSourceAdapter(path)
+    with pytest.raises(CycloneDXUnsupportedSpecVersionError) as exc_info:
+        adapter.validate(adapter.parse(adapter.fetch()))
+    assert "1.4" in str(exc_info.value)
+    with pytest.raises(CycloneDXUnsupportedSpecVersionError):
+        adapter.ingest()
+
+
+def test_cyclonedx_adapter_missing_spec_version_refused(tmp_path):
+    document = {"bomFormat": "CycloneDX", "components": []}
+    path = _write_cyclonedx(tmp_path, document)
+    adapter = CycloneDXSourceAdapter(path)
+    with pytest.raises(CycloneDXUnsupportedSpecVersionError) as exc_info:
+        adapter.validate(adapter.parse(adapter.fetch()))
+    assert "None" in str(exc_info.value) or "unsupported" in str(exc_info.value).lower()
+
+
 def test_cyclonedx_adapter_component_missing_purl_is_skipped(tmp_path):
     document = {
         "bomFormat": "CycloneDX",
+        "specVersion": "1.6",
         "components": [
             {"name": "no-purl-pkg", "version": "1.0.0"},
             {"name": "empty-purl-pkg", "version": "1.0.0", "purl": ""},
@@ -191,6 +217,7 @@ def test_cyclonedx_adapter_component_missing_purl_is_skipped(tmp_path):
 def test_cyclonedx_adapter_unparseable_purl_string_is_skipped_not_raised(tmp_path):
     document = {
         "bomFormat": "CycloneDX",
+        "specVersion": "1.6",
         "components": [
             {"name": "bad", "purl": "not-a-purl"},
             {
@@ -208,6 +235,7 @@ def test_cyclonedx_adapter_unparseable_purl_string_is_skipped_not_raised(tmp_pat
 def test_cyclonedx_adapter_unrecognized_purl_type_is_skipped(tmp_path):
     document = {
         "bomFormat": "CycloneDX",
+        "specVersion": "1.6",
         "components": [
             {"name": "leftpad", "purl": "pkg:npm/leftpad@1.0.0"},
             {
@@ -225,6 +253,7 @@ def test_cyclonedx_adapter_unrecognized_purl_type_is_skipped(tmp_path):
 def test_cyclonedx_adapter_missing_name_falls_back_to_purl_name(tmp_path):
     document = {
         "bomFormat": "CycloneDX",
+        "specVersion": "1.6",
         "components": [{"version": "2.31.0", "purl": "pkg:pypi/requests@2.31.0"}],
     }
     path = _write_cyclonedx(tmp_path, document)
@@ -236,6 +265,7 @@ def test_cyclonedx_adapter_missing_name_falls_back_to_purl_name(tmp_path):
 def test_cyclonedx_adapter_versionless_purl_resolves_to_none_version(tmp_path):
     document = {
         "bomFormat": "CycloneDX",
+        "specVersion": "1.6",
         "components": [{"name": "requests", "purl": "pkg:pypi/requests"}],
     }
     path = _write_cyclonedx(tmp_path, document)
@@ -341,6 +371,7 @@ def test_ac1_heterogeneous_sources_yield_evidence_through_identical_interface(
         tmp_path,
         {
             "bomFormat": "CycloneDX",
+            "specVersion": "1.6",
             "components": [
                 {
                     "name": "requests",
