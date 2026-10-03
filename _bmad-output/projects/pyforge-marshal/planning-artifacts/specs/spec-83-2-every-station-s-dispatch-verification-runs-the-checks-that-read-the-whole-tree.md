@@ -9,7 +9,14 @@ baseline_revision: '1b490ef6ab61301170a8fefa58a9ef9fdbeab689'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
-deferred: []
+deferred:
+  - summary: >-
+      Missing backward compatibility for command output parsing
+    evidence: |-
+      Cannot verify if anything parses derived commands list format without extensive search; would need codebase-wide analysis to determine impact
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py:280
+    severity: low (unverified)
 declared_low_risk: false
 ---
 
