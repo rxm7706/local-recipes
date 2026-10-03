@@ -11,14 +11,17 @@ from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core import dispatch_landing as _dispatch_landing
 from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core.dispatch_landing import (
+    TEAM_MEMORY_INDEX_REL,
     is_deferred_work_path,
     is_mechanical_conflict_path,
     is_memlog_path,
+    is_team_memory_index_path,
     ledger_status_precedence,
     three_way_ledger_statuses,
     union_deferred_work_texts,
     union_memlog_texts,
     union_sprint_ledger_maps,
+    union_team_memory_index_texts,
     unknown_conflict_paths,
 )
 from pyforge.marshal.core.egress import Redacted
@@ -1528,3 +1531,179 @@ def test_heal_escalates_other_projects_deferred_work_ledger(tmp_path: Path) -> N
     assert result.healed is False
     assert result.escalated_paths == (foreign_dw_rel,)
     assert forge.merge_calls == 0
+
+
+# --- Story 83.11: team-memory index union -------------------------------------------------------------
+
+
+def test_is_team_memory_index_path_recognizes_memory_md() -> None:
+    assert is_team_memory_index_path(".claude/memory/MEMORY.md")
+    assert is_team_memory_index_path(".claude\\memory\\MEMORY.md")
+    assert not is_team_memory_index_path(".claude/memory/README.md")
+
+
+def test_mechanical_conflict_path_recognizes_team_memory_index() -> None:
+    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    assert is_mechanical_conflict_path(TEAM_MEMORY_INDEX_REL, ledger_rel=ledger, deferred_work_rel=dw)
+    assert not is_mechanical_conflict_path("src/pyforge/marshal/foo.py", ledger_rel=ledger, deferred_work_rel=dw)
+
+
+def _memory_index_text(*feedback_extra: str, project_extra: str = "") -> str:
+    feedback_body = "\n".join(["- [base-entry](feedback/base-entry.md) — base line", *feedback_extra])
+    project_block = "## Project\n"
+    if project_extra:
+        project_block += f"\n{project_extra}\n"
+    return (
+        "# Team Memory Index\n\n"
+        "Preamble stays fixed.\n\n"
+        f"## Feedback\n\n{feedback_body}\n\n"
+        f"{project_block}\n"
+        "## Reference\n\n"
+    )
+
+
+_MAIN_INDEX_LINE = "- [main-83-11](feedback/main-83-11.md) — appended on main"
+_BRANCH_INDEX_LINE = "- [branch-83-11](feedback/branch-83-11.md) — appended on branch"
+_SAME_INDEX_LINE = "- [same-83-11](feedback/same-83-11.md) — both sides appended this"
+
+
+def test_union_team_memory_index_texts_appends_in_same_section() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_MAIN_INDEX_LINE)
+    branch = _memory_index_text(_BRANCH_INDEX_LINE)
+    result = union_team_memory_index_texts(base, main, branch)
+    assert result is not None
+    assert _MAIN_INDEX_LINE in result
+    assert _BRANCH_INDEX_LINE in result
+    assert result.index(_MAIN_INDEX_LINE) < result.index(_BRANCH_INDEX_LINE)
+
+
+def test_union_team_memory_index_texts_dedupes_identical_appended_line() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_SAME_INDEX_LINE)
+    branch = _memory_index_text(_SAME_INDEX_LINE)
+    result = union_team_memory_index_texts(base, main, branch)
+    assert result is not None
+    assert result.count(_SAME_INDEX_LINE) == 1
+
+
+def test_union_team_memory_index_texts_refuses_edited_existing_line() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text()
+    branch_text = base.replace("base line", "edited line")
+    assert union_team_memory_index_texts(base, main, branch_text) is None
+
+
+def test_union_team_memory_index_texts_appends_to_different_sections() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_MAIN_INDEX_LINE)
+    branch = _memory_index_text(project_extra=_BRANCH_INDEX_LINE)
+    result = union_team_memory_index_texts(base, main, branch)
+    assert result is not None
+    assert _MAIN_INDEX_LINE in result
+    assert _BRANCH_INDEX_LINE in result
+
+
+def _index_entry_lines(text: str) -> list[str]:
+    return [line for line in text.splitlines() if line.startswith("- [")]
+
+
+def test_union_team_memory_index_texts_live_memory_md_parallel_appends() -> None:
+    repo_root = Path(__file__).resolve().parents[6]
+    memory_path = repo_root / ".claude" / "memory" / "MEMORY.md"
+    base = memory_path.read_text(encoding="utf-8")
+    main_line = "- [union-probe-main-83-11](feedback/union-probe-main-83-11.md) — Story 83.11 live union probe (main)"
+    branch_line = (
+        "- [union-probe-branch-83-11](feedback/union-probe-branch-83-11.md) — Story 83.11 live union probe (branch)"
+    )
+    feedback_heading = "## Feedback"
+    assert feedback_heading in base
+    insert_at = base.index(feedback_heading)
+    project_at = base.index("## Project", insert_at)
+    main = base[:project_at].rstrip("\n") + f"\n{main_line}\n" + base[project_at:]
+    branch = base[:project_at].rstrip("\n") + f"\n{branch_line}\n" + base[project_at:]
+    result = union_team_memory_index_texts(base, main, branch)
+    assert result is not None
+    for line in base.splitlines():
+        assert line in result.splitlines()
+    base_entries = _index_entry_lines(base)
+    result_entries = _index_entry_lines(result)
+    assert len(result_entries) == len(base_entries) + 2
+
+
+def test_mutation_mechanical_set_includes_team_memory_index() -> None:
+    """Removing `.claude/memory/MEMORY.md` from the mechanical set breaks this test."""
+    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    assert is_mechanical_conflict_path(TEAM_MEMORY_INDEX_REL, ledger_rel=ledger, deferred_work_rel=dw)
+
+
+def test_mutation_union_team_memory_index_texts_stub_none_refuses_append() -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_MAIN_INDEX_LINE)
+    branch = _memory_index_text(_BRANCH_INDEX_LINE)
+    assert union_team_memory_index_texts(base, main, branch) is not None
+
+
+class FakeVcsHealWithTeamMemory(FakeVcsHeal):
+    def __init__(
+        self,
+        *,
+        memory_base: str = "",
+        memory_main: str = "",
+        memory_branch: str = "",
+        **kwargs,
+    ) -> None:
+        super().__init__(**kwargs)
+        self.memory_base = memory_base
+        self.memory_main = memory_main
+        self.memory_branch = memory_branch
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
+        if path == TEAM_MEMORY_INDEX_REL:
+            if ref == "base000":
+                return self.memory_base
+            if ref == "refs/heads/main":
+                return self.memory_main
+            return self.memory_branch
+        return super().file_text_at_ref(repo_root, ref, path)
+
+
+def test_heal_unions_team_memory_index_conflict_and_retries_merge(tmp_path: Path) -> None:
+    base = _memory_index_text()
+    main = _memory_index_text(_MAIN_INDEX_LINE)
+    branch = _memory_index_text(_BRANCH_INDEX_LINE)
+    vcs = FakeVcsHealWithTeamMemory(
+        conflict_paths=(TEAM_MEMORY_INDEX_REL,),
+        memory_base=base,
+        memory_main=main,
+        memory_branch=branch,
+    )
+    forge = FakeForgeHeal()
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    pr = PrInfo(number=8311, url="https://example/pr/8311", state="open", base="main")
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        base="main",
+        head_branch="dispatch/pyforge-marshal/83.11",
+        head_sha="abc123",
+        subject="Merge 83.11 into main",
+        merge_strategy="merge",
+        delete_branch=True,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=pr,
+        fs=FakeFsHeal(),
+        vcs=vcs,
+        forge=forge,
+    )
+
+    assert result == DispatchLandHealResult(healed=True, retried_forge_merge=True)
+    assert forge.merge_calls == 1
+    written = (worktree / TEAM_MEMORY_INDEX_REL).read_text(encoding="utf-8")
+    assert _MAIN_INDEX_LINE in written
+    assert _BRANCH_INDEX_LINE in written
