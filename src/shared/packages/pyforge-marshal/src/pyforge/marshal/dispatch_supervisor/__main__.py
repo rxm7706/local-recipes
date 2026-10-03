@@ -59,6 +59,12 @@ from ..core.dispatch_survival import (
     build_timing_record,
     timing_record_payload,
 )
+from ..core.dispatch_verification import (
+    DispatchVerificationInput,
+    DispatchVerificationVerdict,
+    judge_dispatch_verification,
+    primary_gate_failure,
+)
 from ..core.dispatch_verify_fix import (
     FIX_TURN_START_FAILED_CODE,
     FIX_TURN_TIMEOUT_CODE,
@@ -67,13 +73,6 @@ from ..core.dispatch_verify_fix import (
     decide_verify_fix_turn,
     extract_failed_verify_commands,
 )
-from ..core.dispatch_verification import (
-    DispatchVerificationInput,
-    DispatchVerificationVerdict,
-    judge_dispatch_verification,
-    primary_gate_failure,
-)
-from ..core.policy import resolve_verify_fix_settings
 from ..core.egress import redact_raw_text, to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
@@ -89,6 +88,7 @@ from ..core.journal import (
     sidecar_texts_for_lines,
 )
 from ..core.model import Finding, Severity
+from ..core.policy import resolve_verify_fix_settings
 from ..core.publish import dispatch_complete_result, shape_dispatch_publish
 from ..core.refs import ORIGIN_MAIN
 from ..core.supervise import resolve_terminal_session_verdict

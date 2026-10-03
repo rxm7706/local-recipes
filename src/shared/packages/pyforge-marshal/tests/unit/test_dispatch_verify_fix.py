@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.dispatch_verify_fix import (
     FailedVerifyCommand,
     VerifyFixLaunchMode,
@@ -11,7 +12,6 @@ from pyforge.marshal.core.dispatch_verify_fix import (
     extract_failed_verify_commands,
     tail_bytes,
 )
-from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.harness_profile import parse_profile
 from pyforge.marshal.core.harness_profile import render_verify_fix_argv as render_fix
 from pyforge.marshal.core.model import Finding, Severity
