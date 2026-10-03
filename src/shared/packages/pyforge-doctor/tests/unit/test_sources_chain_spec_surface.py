@@ -1660,9 +1660,7 @@ def _stamp_script_module():
         ("surface:\n    - meta/\n", ["meta/"]),
     ],
 )
-def test_stamp_script_parse_surface_matches_chain(
-    tmp_path: Path, frontmatter: str, expected: list[str]
-) -> None:
+def test_stamp_script_parse_surface_matches_chain(tmp_path: Path, frontmatter: str, expected: list[str]) -> None:
     """Story 41.1: `parse_surface` and `_parse_surface` read the contract identically."""
     spec_md = tmp_path / "SPEC.md"
     spec_md.write_text(f"---\n{frontmatter}---\n\nbody\n", encoding="utf-8")
