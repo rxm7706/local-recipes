@@ -7,6 +7,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 
 from pyforge.core.flags import FlagConfigError
 from pyforge.core.process import PosixProcess
@@ -227,6 +228,79 @@ def test_verify_fix_loop_enabled_flag_config_error_returns_warning(monkeypatch, 
     enabled, warning = verify_fix_loop_enabled(repo_root=tmp_path)
     assert enabled is False
     assert warning == "unknown environment"
+
+
+def test_wait_for_process_invokes_on_poll(monkeypatch):
+    ticks = iter([0.0, 0.0, 10.0])
+    monkeypatch.setattr(time, "monotonic", lambda: next(ticks))
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    polled: list[str] = []
+    wait_for_process(PosixProcess(), 1, timeout_s=5.0, on_poll=lambda: polled.append("x"))
+    assert polled
+
+
+def test_wait_for_process_reaps_on_final_waitpid(monkeypatch):
+    calls = iter([(0, 0), (0, 0), (55, 0)])
+
+    def fake_waitpid(_pid: int, _opts: int):
+        return next(calls)
+
+    monkeypatch.setattr(os, "waitpid", fake_waitpid)
+    ticks = iter([0.0, 0.0, 100.0])
+    monkeypatch.setattr(time, "monotonic", lambda: next(ticks))
+    result = wait_for_process(PosixProcess(), 55, timeout_s=1.0, poll_s=0.01)
+    assert result.exited is True
+    assert result.returncode == 0
+
+
+def test_wait_for_process_child_process_error(monkeypatch):
+    def fake_waitpid(_pid: int, _opts: int):
+        raise ChildProcessError
+
+    monkeypatch.setattr(os, "waitpid", fake_waitpid)
+    result = wait_for_process(PosixProcess(), 123, timeout_s=1.0)
+    assert result == ProcessWaitResult(exited=True, returncode=None)
+
+
+def test_wait_for_process_os_error_in_loop(monkeypatch):
+    def fake_waitpid(_pid: int, _opts: int):
+        raise OSError
+
+    monkeypatch.setattr(os, "waitpid", fake_waitpid)
+    result = wait_for_process(PosixProcess(), 123, timeout_s=1.0)
+    assert result == ProcessWaitResult(exited=False, returncode=None)
+
+
+def test_terminate_process_group_falls_back_to_kill_when_no_pgid(monkeypatch):
+    kills: list[tuple[int, int]] = []
+
+    def fake_getpgid(_pid: int) -> int:
+        raise OSError
+
+    def fake_kill(pid: int, sig: int) -> None:
+        kills.append((pid, sig))
+
+    monkeypatch.setattr(os, "getpgid", fake_getpgid)
+    monkeypatch.setattr(os, "kill", fake_kill)
+    terminate_process_group(77)
+    assert kills == [(77, signal.SIGTERM)]
+
+
+def test_terminate_process_group_killpg_failure_falls_back_to_kill(monkeypatch):
+    kills: list[tuple[int, int]] = []
+
+    monkeypatch.setattr(os, "getpgid", lambda _pid: 5)
+
+    def fake_killpg(_pgid: int, _sig: int) -> None:
+        raise OSError
+
+    def fake_kill(pid: int, sig: int) -> None:
+        kills.append((pid, sig))
+
+    monkeypatch.setattr(os, "killpg", fake_killpg)
+    monkeypatch.setattr(os, "kill", fake_kill)
+    terminate_process_group(88)
+    assert kills == [(88, signal.SIGTERM)]
 
 
 def test_terminate_process_group_signals_process_group(monkeypatch):
