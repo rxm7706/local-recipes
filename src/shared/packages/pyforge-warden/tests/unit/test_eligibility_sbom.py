@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -75,9 +76,9 @@ def test_eligibility_cyclonedx_is_deterministic():
     b = render_eligibility_cyclonedx(results, serial_number=FIXED_SERIAL, timestamp=FIXED_TS)
     assert a == b
     assert "eligible-union" in a
-    assert "cfe:required_authority_sources" in a
-    assert "cyclonedx" in a
     assert "pkg:pypi/requests@2.32.3" in a
+    props = _component_properties(json.loads(a), "pkg:pypi/requests@2.32.3")
+    assert props["cfe:required_authority_sources"] == "cyclonedx"
 
 
 def test_union_then_render_round_trip():
@@ -100,4 +101,14 @@ def test_union_then_render_round_trip():
     results = compute_eligibility_union(evidence, now=now)
     doc = render_eligibility_cyclonedx(results, serial_number=FIXED_SERIAL, timestamp=now)
     assert results[0].status is EligibilityStatus.ELIGIBLE_UNION
-    assert "cfe:eligibility_status" in doc or "eligible-union" in doc
+    assert results[0].effective_required_authority_sources == frozenset({"cyclonedx", "manifest"})
+    props = _component_properties(json.loads(doc), "pkg:pypi/requests@2.32.3")
+    assert props["cfe:required_authority_sources"] == "cyclonedx,manifest"
+    assert props["cfe:eligibility_status"] == "eligible-union"
+
+
+def _component_properties(bom: dict, purl: str) -> dict[str, str]:
+    for component in bom.get("components") or []:
+        if component.get("purl") == purl:
+            return {p["name"]: p["value"] for p in component.get("properties") or []}
+    raise AssertionError(f"no component with purl {purl!r}")
