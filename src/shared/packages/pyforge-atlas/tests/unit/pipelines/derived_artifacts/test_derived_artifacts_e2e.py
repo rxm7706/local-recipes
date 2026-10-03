@@ -14,7 +14,9 @@ from pyforge.atlas.pipelines.derived_artifacts.nodes import (
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[8]
-_FIXTURE_JSON = _REPO_ROOT / "src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity/complete_export_expected.json"
+_FIXTURE_JSON = (
+    _REPO_ROOT / "src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity/complete_export_expected.json"
+)
 _LOW_FLOOR = {
     "verification_sets": {"cf_or_pm_floor": 0, "pypi_universe_floor": 0},
     "identity_complete_export": {"verification_timestamp_utc": "2026-08-30T12:00:00Z"},
