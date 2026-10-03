@@ -224,7 +224,6 @@ def test_schedule_batch_completes_when_flag_unreadable(monkeypatch, tmp_path, fl
     monkeypatch.setenv("PYFORGE_FLAG_OVERLAYS_PATH", str(broken))
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
 
-    transport = FakeTransport(github_fields={"gh_status": "To Do"})
     config = _config_with_marker(GitHubOnlyMarker(label="github-only"))
 
     result = reconcile_schedule_batch(

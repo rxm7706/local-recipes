@@ -2,7 +2,7 @@
 title: "84.4: Sync skips a board item marked GitHub-only"
 type: 'feature'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'ed596f7ef2239c738708ec0f02b4b0fe5470547a'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -102,7 +102,12 @@ Passed: the flag pins agree (flags.json, overlays, the spec's `flag:` block, pyf
 - **L2** State in the deploy notes that OFF in production requires `PYFORGE_ENVIRONMENT=production` (unset reads `dev`, ON).
 - **L3** DW-8-5-2's `verified:` line should cite the skip line, not the `raise SyncUnlinkedError` line.
 
-### 2026-10-03 — Review pass
+### 2026-10-03 — Review pass (post-fix)
+- verdicts: 3 findings — high 0, medium 0, low 0, false 3, reject 0
+- findings:
+  - `[false]` `[reject]` H1 platform shipped-tree still missing key — `_SHIPPED_BOOLEANS` includes `pyforge.steward.sync_github_only_marker` in `src/platform/tests/test_openfeature_file_flags.py`.
+  - `[false]` `[reject]` H2 flag gate / two-state tests — `test_sync_github_only_marker.py` uses two `PYFORGE_FLAGS_PATH` trees; `## Verification` names the test file.
+  - `[false]` `[reject]` H3 batch crash on flag read — marker checked before flag read; `FlagConfigError` warns and treats flag off; schedule reads flag once per batch.
 
 ### 2026-10-03 — Review pass
 - verdicts: 4 findings — high 0, medium 0, low 0, false 3, reject 1
@@ -116,21 +121,23 @@ Passed: the flag pins agree (flags.json, overlays, the spec's `flag:` block, pyf
 
 Status: done
 
-Summary: Added optional `github_only_marker` in sync config, flag `pyforge.steward.sync_github_only_marker` (off in production via overlays), and reconcile skip with info logging for unlinked marked items when the flag is on; closed DW-8-5-2.
+Summary: Closed independent-review gaps for Story 84.4: TEXT vs single-select parsing (M2), safe flag reads and once-per-batch evaluation (H3), schedule skip summary (M1), platform shipped-tree pin (H1), two-tree flag tests (H2/M3); DW-8-5-2 verified lines updated.
 
 Files changed:
-- `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` — config load, marker detection, skip exception path
-- `src/shared/packages/pyforge-steward/tests/unit/test_sync_github_only_marker.py` — acceptance tests
-- `src/shared/packages/pyforge-steward/tests/unit/test_sync_config.py` — marker load validation
-- `src/platform/config/flags.json` and `flag-overlays.json` — new flag and env defaults
-- `.steward/sync-config.example.yaml` — operator docs
-- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` — DW-8-5-2 closed
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` — text/single-select split, safe flag gate, batch skip summary
+- `src/shared/packages/pyforge-steward/tests/unit/test_sync_github_only_marker.py` — two `PYFORGE_FLAGS_PATH` trees and expanded AC coverage
+- `src/shared/packages/pyforge-steward/tests/unit/test_sync_config.py` — marker validation (unknown keys, empty mapping)
+- `src/shared/packages/pyforge-steward/tests/unit/test_sync_reconcile_propagation.py` — single-select GraphQL nodes in fakes
+- `src/platform/tests/test_openfeature_file_flags.py` — shipped boolean for sync github-only marker
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-84-4-sync-skips-a-board-item-marked-github-only.md` — Verification names test file
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` — DW-8-5-2 `verified:` cites skip path
 
-Review: 0 patches; 4 findings rejected/false.
+Review: 0 patches this pass; prior H1–H3/M1–M3 fixed in implementation.
 
 Follow-up review recommended: false
 
 Verification:
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2003 passed, 5 skipped
-- `pixi run --frozen -e pyforge-guild lint-types` — green after ruff import fix on steward
-- `python scripts/spec_surface_reconcile.py` — OK after memlog reconcile
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2014 passed, 2 skipped
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+- `python scripts/flag_gate_check.py` — ok (0 fail for this spec)

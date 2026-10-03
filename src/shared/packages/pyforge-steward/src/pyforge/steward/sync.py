@@ -1293,10 +1293,9 @@ def _read_both_sides(
     elif github_item_id:
         gh = get_project_item(github_item_id, config=config, credential=github_credential, transport=transport)
         if not gh.link:
-            if (
-                _github_only_marker_feature_enabled(config, batch_flag_state=github_only_batch_flag)
-                and _item_carries_github_only_marker(gh, config.github_only_marker)
-            ):
+            if _github_only_marker_feature_enabled(
+                config, batch_flag_state=github_only_batch_flag
+            ) and _item_carries_github_only_marker(gh, config.github_only_marker):
                 raise SyncGitHubOnlySkipped(github_item_id)
             raise SyncUnlinkedError(f"unlinked: github item {github_item_id} has no linked jira issue")
         _validate_jira_project(gh.link, config)
@@ -1962,9 +1961,7 @@ def reconcile_schedule_batch(
             summary=f"sync reconcile --schedule: failed enumerating candidates: {exc}",
         )
 
-    batch_github_only_flag = (
-        _read_github_only_marker_flag_safe() if config.github_only_marker is not None else None
-    )
+    batch_github_only_flag = _read_github_only_marker_flag_safe() if config.github_only_marker is not None else None
 
     entries: list[dict[str, object]] = []
     for candidate in candidates:

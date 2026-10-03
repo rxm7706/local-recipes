@@ -128,8 +128,7 @@ class FakeTransport:
 
         field_nodes = [{"text": value, "field": {"id": field_id}} for field_id, value in self.github_fields.items()]
         field_nodes.extend(
-            {"name": name, "field": {"id": field_id}}
-            for field_id, name in self.github_single_select_fields.items()
+            {"name": name, "field": {"id": field_id}} for field_id, name in self.github_single_select_fields.items()
         )
         node = {
             "id": self.github_item_id,
@@ -2209,9 +2208,7 @@ class ScheduleFakeTransport:
         return self._list_page(variables.get("after"))
 
     def _node(self, item_id: str, entry: dict[str, object]) -> dict[str, object]:
-        field_nodes = [
-            {"text": value, "field": {"id": field_id}} for field_id, value in entry["fields"].items()
-        ]
+        field_nodes = [{"text": value, "field": {"id": field_id}} for field_id, value in entry["fields"].items()]
         single_select = entry.get("single_select_fields") or {}
         if isinstance(single_select, dict):
             field_nodes.extend(
