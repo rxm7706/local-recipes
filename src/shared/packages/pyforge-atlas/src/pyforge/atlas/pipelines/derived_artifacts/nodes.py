@@ -1003,9 +1003,7 @@ def build_inventory_verified_packages(
     Tier-0 sets; ``Priority_Bucket`` comes from Story 23.3's assignments (default P9).
     """
     timestamp = _verification_timestamp(parameters)
-    _, pypi_index, cf_or_pm = verification_sets(
-        core_packages_enumerated, pypi_universe, pypi_conda_mapping, parameters
-    )
+    _, pypi_index, cf_or_pm = verification_sets(core_packages_enumerated, pypi_universe, pypi_conda_mapping, parameters)
     priority_map = _priority_map_from_assignments(inventory_priority_assignments)
     maint, co = _maint_co_from_universe(inventory_universe)
 
@@ -1087,9 +1085,7 @@ def build_inventory_aoss_free_queue(
 ) -> pd.DataFrame:
     """AOSS-Free Mason queue — supplementary artifact, never expands OpenTeams universe."""
     timestamp = _verification_timestamp(parameters)
-    _, pypi_index, cf_or_pm = verification_sets(
-        core_packages_enumerated, pypi_universe, pypi_conda_mapping, parameters
-    )
+    _, pypi_index, cf_or_pm = verification_sets(core_packages_enumerated, pypi_universe, pypi_conda_mapping, parameters)
     aoss_free = _names_from_column(discovery_aoss_free_python_raw, "pypi_name")
     aoss_free_candidates = {pkg for pkg in aoss_free if pkg in pypi_index and pkg not in cf_or_pm}
     must_keep = _universe_membership_names(enterprise_jfrog_consumption, enterprise_conda_maintainers)
@@ -1177,17 +1173,12 @@ def _export_blank(value: Any) -> Any:
 
 def _export_priority_merge_warnings(inventory_priority_assignments: pd.DataFrame | None) -> None:
     """Warn on duplicate pep503 keys or absent ranking columns (Story 27.1)."""
-    if (
-        inventory_priority_assignments is None
-        or getattr(inventory_priority_assignments, "empty", True)
-    ):
+    if inventory_priority_assignments is None or getattr(inventory_priority_assignments, "empty", True):
         return
     cols = set(getattr(inventory_priority_assignments, "columns", []))
     for col in ("P", "Rank", "Score", "Work"):
         if col not in cols:
-            logger.warning(
-                "identity_complete_export: ranking input missing column %s", col
-            )
+            logger.warning("identity_complete_export: ranking input missing column %s", col)
     if "core_python_package_name" not in cols:
         return
     by_key: dict[str, list[str]] = {}

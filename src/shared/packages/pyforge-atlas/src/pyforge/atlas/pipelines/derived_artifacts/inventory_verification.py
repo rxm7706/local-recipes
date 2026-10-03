@@ -40,12 +40,10 @@ def verification_sets(
 
     if len(pypi_index) < pypi_floor:
         raise HollowVerificationSetError(
-            "hollow_pypi_universe: "
-            f"{len(pypi_index)} normalized PyPI names (floor {pypi_floor})"
+            f"hollow_pypi_universe: {len(pypi_index)} normalized PyPI names (floor {pypi_floor})"
         )
     if len(cf_or_pm) < cf_floor:
         raise HollowVerificationSetError(
-            "hollow_cf_or_pm: "
-            f"{len(cf_or_pm)} normalized conda-forge or parselmouth names (floor {cf_floor})"
+            f"hollow_cf_or_pm: {len(cf_or_pm)} normalized conda-forge or parselmouth names (floor {cf_floor})"
         )
     return cf_packages, pypi_index, cf_or_pm
