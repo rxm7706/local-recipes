@@ -46,7 +46,7 @@ class FakeFetch(ModelListFetchPort):
             stderr="" if self.command_exit == 0 else "fail",
         )
 
-    def http_get(self, url, headers, *, timeout_s: float) -> HttpGetResult:
+    def http_get(self, url, headers, *, timeout_s: float = 60.0) -> HttpGetResult:
         del url, headers, timeout_s
         if self.http_status != 200:
             return HttpGetResult(status_code=self.http_status, body=b"")

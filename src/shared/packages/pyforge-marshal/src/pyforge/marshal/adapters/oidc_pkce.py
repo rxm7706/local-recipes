@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import threading
 import webbrowser
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from pyforge.core.client import (
@@ -116,6 +116,14 @@ def _default_transport(url: str, headers: dict[str, str], body: bytes) -> bytes:
         return urllib_request("POST", url, headers, body)
     except StationClientError as exc:
         raise PkceLoginError("token exchange failed") from exc
+
+
+def http_get_bytes(url: str, headers: Mapping[str, str]) -> bytes:
+    """Story 84.1: one GET for operator-run model-list refresh (AD-20)."""
+    try:
+        return urllib_request("GET", url, dict(headers), None)
+    except StationClientError as exc:
+        raise PkceLoginError("HTTP GET failed") from exc
 
 
 def exchange_authorization_code(

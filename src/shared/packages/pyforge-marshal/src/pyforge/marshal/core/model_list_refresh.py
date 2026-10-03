@@ -217,7 +217,32 @@ def parse_snapshot_payload(raw: Mapping[str, object]) -> tuple[str, dict[str, fr
 
 
 def snapshot_filename_for_date(day: date) -> str:
-    return f"model-list-{day.isoformat()}.json"
+    return "model-list-" + day.isoformat() + ".json"
+
+
+def append_query_params(base: str, params: Mapping[str, str]) -> str:
+    """Pure URL query append without importing urllib (AD-4 / AD-65)."""
+    parts = [key + "=" + value for key, value in params.items() if value]
+    if not parts:
+        return base
+    query = "&".join(parts)
+    if "?" in base:
+        return base + "&" + query
+    return base + "?" + query
+
+
+def anthropic_models_page_url(base: str, after_id: str | None) -> str:
+    params: dict[str, str] = {"limit": "1000"}
+    if after_id:
+        params["after_id"] = after_id
+    return append_query_params(base, params)
+
+
+def gemini_models_page_url(base: str, page_token: str | None) -> str:
+    params: dict[str, str] = {"pageSize": "1000"}
+    if page_token:
+        params["pageToken"] = page_token
+    return append_query_params(base, params)
 
 
 def render_report_text(
@@ -280,7 +305,7 @@ def collect_tier_map_refs(
             continue
         normalized = normalize_stage_entries(stages)
         for stage, candidates in normalized.items():
-            key = f"model_tier_map.{difficulty}.{stage}"
+            key = "model_tier_map." + difficulty + "." + stage
             for candidate in candidates:
                 harness = candidate.harness if candidate.harness is not None else default_harness
                 if harness is None:
@@ -327,7 +352,7 @@ def collect_catalog_refs(
             model_id=mid,
             harness=harness,
             source_file=catalog_path,
-            source_key=f"model_cost_catalog.providers.{provider}.models.{mid}",
+            source_key="model_cost_catalog.providers." + provider + ".models." + mid,
         )
         for mid in sorted(models)
     )
