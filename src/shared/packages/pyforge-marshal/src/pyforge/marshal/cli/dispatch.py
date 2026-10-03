@@ -79,13 +79,17 @@ from ..core.dispatch_harness_done import (
     parse_blocking_condition,
     parse_spec_status,
     should_take_harness_done_land_only,
+    should_take_verification_refusal_land_only,
 )
 from ..core.dispatch_landing import DispatchLandingVerdict
 from ..core.dispatch_retry import (
     DispatchBlockKind,
     classify_dispatch_block,
     exclude_harness_profiles_after_transient_failure,
+    format_verification_refusal_park_reason,
+    is_dispatch_verification_refusal,
     prune_blocked_stories_merged_on_main,
+    verification_refusal_head_unchanged,
 )
 from ..core.dispatch_supervisor_finalize import (
     finalize_attempt_failed,
@@ -1226,6 +1230,14 @@ def _count_prior_failed_dispatch_attempts(fs: FsPort, repo_root: Path, slug: str
         if journal.completion_verdict == DispatchSessionVerdict.COMPLETED.value:
             break
         if journal.completion_verdict == DispatchSessionVerdict.FAILED.value:
+            # Story 83.10: verification refusals are not session failures for
+            # Story 33.6's floor-raise counter.
+            if is_dispatch_verification_refusal(
+                completion_verdict=journal.completion_verdict,
+                verification_verdict=journal.verification_verdict,
+                verification_failed_gate=journal.verification_failed_gate,
+            ):
+                continue
             count += 1
     return count
 
@@ -2172,6 +2184,31 @@ def station_story_block_facts(
                 git_changed_paths, narration_spec_path(spec_relative_path, followup_review=journal.followup_review)
             ):
                 classify_changed_path_count = 0
+            if is_dispatch_verification_refusal(
+                completion_verdict=journal.completion_verdict,
+                verification_verdict=journal.verification_verdict,
+                verification_failed_gate=journal.verification_failed_gate,
+            ):
+                current_head: str | None = None
+                if journal.worktree_path is not None:
+                    try:
+                        current_head = vcs.worktree_head_sha(Path(journal.worktree_path))
+                    except VcsCommandError:
+                        current_head = None
+                refusal_head = journal.final_revision or journal.baseline_head_sha
+                if not verification_refusal_head_unchanged(
+                    refusal_head_sha=refusal_head,
+                    current_head_sha=current_head,
+                ):
+                    return None
+                return dispatch_fleet.StationBlockEvidence(
+                    reason=format_verification_refusal_park_reason(
+                        story_key=feed_story,
+                        run_id=run_dir.name,
+                        failed_gate=journal.verification_failed_gate,
+                    ),
+                    block_class=dispatch_fleet.FleetBlockClass.STORY,
+                )
             block_kind = classify_dispatch_block(
                 session_log=session_log,
                 failed_gate=journal.verification_failed_gate,
@@ -2813,14 +2850,33 @@ def dispatch_once(
             return _done()
         live_spec_text = rewritten_spec_text
     latest_landing_verdict: str | None = None
+    latest_journal: dispatch_core.DispatchJournalFacts | None = None
     latest_run_dir = _latest_story_run_dir(fs, repo_root, slug, render_feed_key(story_key))
     if latest_run_dir is not None:
-        latest_landing_verdict = gather_dispatch_journal_facts(fs, latest_run_dir, latest_run_dir.name).landing_verdict
-    if should_take_harness_done_land_only(
-        parse_spec_status(live_spec_text),
-        followup_review_recommended(live_spec_text),
+        latest_journal = gather_dispatch_journal_facts(fs, latest_run_dir, latest_run_dir.name)
+        latest_landing_verdict = latest_journal.landing_verdict
+    spec_status = parse_spec_status(live_spec_text)
+    followup = followup_review_recommended(live_spec_text)
+    take_land_only = should_take_harness_done_land_only(
+        spec_status,
+        followup,
         latest_landing_verdict=latest_landing_verdict,
-    ):
+    )
+    if not take_land_only and latest_journal is not None:
+        try:
+            current_head = vcs.worktree_head_sha(worktree)
+        except VcsCommandError:
+            current_head = None
+        take_land_only = should_take_verification_refusal_land_only(
+            spec_status,
+            followup,
+            completion_verdict=latest_journal.completion_verdict,
+            verification_verdict=latest_journal.verification_verdict,
+            verification_failed_gate=latest_journal.verification_failed_gate,
+            refusal_head_sha=latest_journal.final_revision or latest_journal.baseline_head_sha,
+            current_head_sha=current_head,
+        )
+    if take_land_only:
         data["harness_done_land_only"] = True
         land_verdict, named_target, land_envelope = _attempt_harness_done_cap4(
             slug=slug,

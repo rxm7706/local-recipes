@@ -113,11 +113,21 @@ def test_terminal_block_on_scope_gate() -> None:
     assert kind is DispatchBlockKind.TERMINAL
 
 
-def test_transient_block_on_verify_gate() -> None:
+def test_terminal_block_on_verify_gate_with_git_progress() -> None:
+    """Story 83.10: verify refusal after finished work parks — never TRANSIENT."""
     kind = classify_dispatch_block(
         session_log="tests failed",
         failed_gate="MRS-GATE-001",
         changed_path_count=5,
+    )
+    assert kind is DispatchBlockKind.TERMINAL
+
+
+def test_transient_block_on_verify_gate_without_git_progress() -> None:
+    kind = classify_dispatch_block(
+        session_log="tests failed",
+        failed_gate="MRS-GATE-001",
+        changed_path_count=0,
     )
     assert kind is DispatchBlockKind.TRANSIENT
 

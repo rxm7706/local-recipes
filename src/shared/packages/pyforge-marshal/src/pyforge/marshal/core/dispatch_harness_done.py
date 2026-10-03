@@ -162,6 +162,44 @@ def should_take_harness_done_land_only(
     return status in _REFUSED_LANDING_LAND_ONLY_STATUSES
 
 
+def should_take_verification_refusal_land_only(
+    status: str | None,
+    followup: bool,
+    *,
+    completion_verdict: str | None,
+    verification_verdict: str | None,
+    verification_failed_gate: str | None,
+    refusal_head_sha: str | None,
+    current_head_sha: str | None,
+) -> bool:
+    """True when an operator-fixed branch should re-verify and land (Story 83.10).
+
+    Applies only after independent verify refused on a finished session and the
+    worktree head moved since that refusal. A send-back to ``ready-for-dev`` or
+    ``draft`` still launches a session (same rule as Story 83.7)."""
+    from .dispatch_retry import (
+        is_dispatch_verification_refusal,
+        verification_refusal_head_unchanged,
+    )
+
+    if status in {"ready-for-dev", "draft", "backlog"}:
+        return False
+    if not is_dispatch_verification_refusal(
+        completion_verdict=completion_verdict,
+        verification_verdict=verification_verdict,
+        verification_failed_gate=verification_failed_gate,
+    ):
+        return False
+    if verification_refusal_head_unchanged(
+        refusal_head_sha=refusal_head_sha,
+        current_head_sha=current_head_sha,
+    ):
+        return False
+    if blocks_harness_relaunch(status, followup):
+        return True
+    return status in _REFUSED_LANDING_LAND_ONLY_STATUSES
+
+
 #: The launch INTENT payload key that marks a follow-up review run (Story 73.1, CAP-281).
 FOLLOWUP_REVIEW_PAYLOAD_KEY = "followup_review"
 #: The launch INTENT payload key that records ``origin/main``'s resolved tip at launch (Story 73.1, CAP-281).

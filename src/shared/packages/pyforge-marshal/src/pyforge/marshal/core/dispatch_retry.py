@@ -20,8 +20,10 @@ class DispatchBlockKind(StrEnum):
     TERMINAL = "terminal"
 
 
-# Verify/test failures are retriable once WIP is committed or code fixed.
-_TRANSIENT_FAILED_GATES: frozenset[str] = frozenset(
+# Dispatch verification refusal gates (Story 83.10): after a session finished
+# its work, a refusal at independent verify must park or land-only — never a
+# fresh bmad-build-auto session or a Story 33.6 floor-raise.
+_VERIFY_REFUSAL_GATES: frozenset[str] = frozenset(
     {
         "MRS-GATE-001",
         "MRS-GATE-002",
@@ -35,6 +37,10 @@ _TRANSIENT_FAILED_GATES: frozenset[str] = frozenset(
     }
 )
 
+# Legacy alias: pre-83.10 transient set equaled verify gates; session failures
+# that never reached verify still use terminal classification below.
+_TRANSIENT_FAILED_GATES: frozenset[str] = _VERIFY_REFUSAL_GATES
+
 _TERMINAL_FAILED_GATES: frozenset[str] = frozenset(
     {
         "MRS-GATE-007",
@@ -44,6 +50,62 @@ _TERMINAL_FAILED_GATES: frozenset[str] = frozenset(
         "MRS-DISP-030",
     }
 )
+
+
+def is_verify_refusal_gate(failed_gate: str | None) -> bool:
+    """True when ``failed_gate`` names an independent verification refusal."""
+    return failed_gate in _VERIFY_REFUSAL_GATES
+
+
+def is_dispatch_verification_refusal(
+    *,
+    completion_verdict: str | None,
+    verification_verdict: str | None,
+    verification_failed_gate: str | None,
+) -> bool:
+    """True when the session finished and independent verify refused (Story 83.10)."""
+    from .dispatch_completion import DispatchSessionVerdict
+    from .dispatch_verification import DispatchVerificationVerdict
+
+    if completion_verdict != DispatchSessionVerdict.FAILED.value:
+        return False
+    if verification_verdict != DispatchVerificationVerdict.REFUSED.value:
+        return False
+    return is_verify_refusal_gate(verification_failed_gate) or verification_failed_gate in {
+        "MRS-GATE-012",
+        "MRS-GATE-013",
+    }
+
+
+def verification_refusal_head_unchanged(
+    *,
+    refusal_head_sha: str | None,
+    current_head_sha: str | None,
+) -> bool:
+    """True when the worktree head still matches the refused verification tip."""
+    if not refusal_head_sha or not current_head_sha:
+        return True
+    return refusal_head_sha == current_head_sha
+
+
+def format_verification_refusal_park_reason(
+    *,
+    story_key: str,
+    run_id: str,
+    failed_gate: str | None,
+    failed_command: str | None = None,
+) -> str:
+    """Operator-facing park reason naming the failed verification command."""
+    gate = failed_gate or "unknown gate"
+    if failed_command:
+        cmd = f" ({failed_command!r})"
+    else:
+        cmd = ""
+    return (
+        f"dispatch verification refused for {story_key!r} (run {run_id!r}): "
+        f"{gate}{cmd} -- branch unchanged since refusal; parked for operator fix "
+        "(no fresh session; Story 83.10)"
+    )
 
 
 def classify_dispatch_block(
@@ -58,9 +120,15 @@ def classify_dispatch_block(
         return DispatchBlockKind.TRANSIENT
     if failed_gate in _TERMINAL_FAILED_GATES:
         return DispatchBlockKind.TERMINAL
+    # Story 83.10: a verify refusal after real git progress parks — never
+    # TRANSIENT (which would relaunch bmad-build-auto and feed floor-raise).
+    if is_verify_refusal_gate(failed_gate) and changed_path_count > 0:
+        return DispatchBlockKind.TERMINAL
     if failed_gate in _TRANSIENT_FAILED_GATES:
         return DispatchBlockKind.TRANSIENT
     if failed_gate in {"MRS-GATE-012", "MRS-GATE-013"}:
+        if changed_path_count > 0:
+            return DispatchBlockKind.TERMINAL
         return DispatchBlockKind.TRANSIENT
     return DispatchBlockKind.TERMINAL
 
