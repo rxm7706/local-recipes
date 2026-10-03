@@ -36,6 +36,17 @@ from datetime import datetime
 # case at the point of computation and raises its own named error there.
 _MAX_RETENTION_DAYS = (datetime.max - datetime.min).days
 
+# Story 84.2: one cap for audit identity strings — `AuditEntry.actor` and
+# `.role` max_length, and the dashboard perimeter refusal in
+# `DashboardIdentityMiddleware`. Kept here (not copied into middleware or
+# audit.py) so the three cannot drift.
+AUDIT_IDENTITY_MAX_LENGTH = 255
+
+# Default row cap for `query_audit_entries` when the caller passes no `limit`
+# (DW-9-3-4). Deliberately not unbounded: the trail accumulates between
+# purges and every read appends an `AUDIT_READ` row.
+DEFAULT_AUDIT_READ_LIMIT = 10_000
+
 # RFC 9110 §5.1 `token`: the grammar a header *name* must satisfy to exist on
 # the wire at all. Validated because a name that is merely latin-1-encodable
 # but not a token (a trailing space from a config file, an embedded ":" or

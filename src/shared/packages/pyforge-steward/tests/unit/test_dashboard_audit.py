@@ -153,6 +153,7 @@ from pyforge.steward.dashboard.audit import (  # noqa: E402
 )
 from pyforge.steward.dashboard.declarations import (  # noqa: E402
     _MAX_RETENTION_DAYS,
+    AUDIT_IDENTITY_MAX_LENGTH,
     AuditRetention,
 )
 from pyforge.steward.dashboard.models import AuditAction, AuditEntry  # noqa: E402
@@ -282,26 +283,27 @@ def test_query_audit_entries_returns_prior_rows_and_records_its_own_read():
     record_audit_entry("alice", "east", AuditAction.FILTER, 4)
     record_audit_entry("bob", "west", AuditAction.NAVIGATE, 0)
 
-    rows = query_audit_entries(reader_actor="bob", reader_role="auditor")
+    rows = query_audit_entries(reader_actor="bob", reader_role="east")
 
     assert isinstance(rows, list)
-    assert len(rows) == 3
-    assert {row.actor for row in rows} == {"alice", "bob"}
+    assert len(rows) == 2
+    assert {row.actor for row in rows} == {"alice"}
 
     all_rows = list(AuditEntry.objects.all())
     assert len(all_rows) == 4, "reading the trail must itself be recorded as a 4th entry (AD-7)"
     read_entry = AuditEntry.objects.get(action=AuditAction.AUDIT_READ)
     assert read_entry.actor == "bob"
-    assert read_entry.role == "auditor"
+    assert read_entry.role == "east"
     assert read_entry.target == "audit_trail"
-    assert read_entry.row_count == 3
+    assert read_entry.row_count == 2
+    assert read_entry.scope == {}
 
 
 def test_query_audit_entries_applies_keyword_filters():
     record_audit_entry("alice", "east", AuditAction.LOAD, 10)
     record_audit_entry("bob", "west", AuditAction.LOAD, 5)
 
-    rows = query_audit_entries(reader_actor="carol", reader_role=None, actor="alice")
+    rows = query_audit_entries(reader_actor="carol", reader_role="east", actor="alice")
 
     assert len(rows) == 1
     assert rows[0].actor == "alice"
@@ -311,7 +313,8 @@ def test_query_audit_entries_applies_keyword_filters():
     read_entry = AuditEntry.objects.get(action=AuditAction.AUDIT_READ)
     assert read_entry.row_count == 1
     assert read_entry.actor == "carol"
-    assert read_entry.role is None
+    assert read_entry.role == "east"
+    assert read_entry.scope == {"actor": "alice"}
 
 
 def test_query_audit_entries_on_an_empty_trail_still_records_a_zero_row_read():
@@ -321,6 +324,58 @@ def test_query_audit_entries_on_an_empty_trail_still_records_a_zero_row_read():
     read_entry = AuditEntry.objects.get()
     assert read_entry.action == AuditAction.AUDIT_READ
     assert read_entry.row_count == 0
+
+
+def test_two_different_reads_record_two_different_scopes():
+    record_audit_entry("alice", "east", AuditAction.LOAD, 1)
+    record_audit_entry("bob", "west", AuditAction.LOAD, 1)
+
+    query_audit_entries(reader_actor="mallory", reader_role="east", actor="alice")
+    query_audit_entries(reader_actor="mallory", reader_role="west", action=AuditAction.LOAD)
+
+    reads = list(AuditEntry.objects.filter(action=AuditAction.AUDIT_READ).order_by("id"))
+    assert len(reads) == 2
+    assert reads[0].scope == {"actor": "alice"}
+    assert reads[1].scope == {"action": AuditAction.LOAD}
+    assert reads[0].scope != reads[1].scope
+
+
+def test_query_audit_entries_isolates_rows_by_reader_role():
+    record_audit_entry("alice", "east", AuditAction.LOAD, 1)
+    record_audit_entry("bob", "west", AuditAction.LOAD, 1)
+
+    east_view = query_audit_entries(reader_actor="r1", reader_role="east")
+    west_view = query_audit_entries(reader_actor="r2", reader_role="west")
+
+    assert len(east_view) == 1 and east_view[0].actor == "alice"
+    assert len(west_view) == 1 and west_view[0].actor == "bob"
+
+
+def test_query_audit_entries_with_no_established_role_returns_no_rows_but_records_read():
+    """Story 84.2 landing review: fail-closed like ``filter_by_role`` when role is None."""
+    record_audit_entry("alice", None, AuditAction.LOAD, 1)
+    record_audit_entry("bob", "east", AuditAction.LOAD, 1)
+
+    rows = query_audit_entries(reader_actor="reader", reader_role=None)
+
+    assert rows == []
+    read_entry = AuditEntry.objects.filter(action=AuditAction.AUDIT_READ).get()
+    assert read_entry.row_count == 0
+    assert read_entry.role is None
+    assert read_entry.scope == {}
+
+
+def test_audit_entry_actor_and_role_max_length_use_shared_declaration():
+    assert AuditEntry._meta.get_field("actor").max_length == AUDIT_IDENTITY_MAX_LENGTH
+    assert AuditEntry._meta.get_field("role").max_length == AUDIT_IDENTITY_MAX_LENGTH
+
+
+def test_query_audit_entries_honors_limit():
+    for i in range(5):
+        record_audit_entry("alice", "east", AuditAction.LOAD, i)
+
+    rows = query_audit_entries(reader_actor="bob", reader_role="east", limit=2)
+    assert len(rows) == 2
 
 
 # --- purge_expired_entries -------------------------------------------------
@@ -530,7 +585,7 @@ def test_query_audit_entries_returns_rows_most_recent_first():
     middle = record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=1))
     newest = record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now)
 
-    rows = query_audit_entries(reader_actor="bob", reader_role="auditor")
+    rows = query_audit_entries(reader_actor="bob", reader_role="east")
 
     assert [row.pk for row in rows] == [newest.pk, middle.pk, oldest.pk]
 
@@ -608,7 +663,7 @@ def test_a_failed_read_leaves_no_partial_state_behind():
     record_audit_entry("alice", "east", AuditAction.LOAD, 3)
 
     with pytest.raises(FieldError):
-        query_audit_entries(reader_actor="mallory", reader_role=None, actro="alice")
+        query_audit_entries(reader_actor="mallory", reader_role="east", actro="alice")
 
     assert AuditEntry.objects.count() == 1
     assert not AuditEntry.objects.filter(actor="mallory").exists()
@@ -839,7 +894,7 @@ def test_query_audit_entries_rejects_a_naive_datetime_filter_under_use_tz_true()
     with pytest.raises(ValueError, match="occurred_at__gte"):
         query_audit_entries(
             reader_actor="bob",
-            reader_role="auditor",
+            reader_role="east",
             occurred_at__gte=dt.datetime(2026, 1, 1),
         )
     # Refused before anything ran: no AUDIT_READ row, original row intact.
@@ -916,7 +971,7 @@ def test_a_filter_the_write_path_refuses_is_refused_on_the_read_path_too(bad_val
     record_audit_entry("alice", "east", AuditAction.LOAD, 1)
 
     with pytest.raises((TypeError, ValueError), match="occurred_at__gte"):
-        query_audit_entries(reader_actor="bob", reader_role="auditor", occurred_at__gte=bad_value)
+        query_audit_entries(reader_actor="bob", reader_role="east", occurred_at__gte=bad_value)
     # Refused before anything ran: no AUDIT_READ row, original row intact.
     assert AuditEntry.objects.count() == 1
 
@@ -933,8 +988,8 @@ def test_a_date_part_lookup_still_accepts_a_date():
     record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=stamped)
 
     local_date = timezone.localtime(stamped).date()
-    assert len(query_audit_entries(reader_actor="bob", reader_role=None, occurred_at__date=local_date)) == 1
-    assert len(query_audit_entries(reader_actor="bob", reader_role=None, occurred_at__year=local_date.year)) >= 1
+    assert len(query_audit_entries(reader_actor="bob", reader_role="east", occurred_at__date=local_date)) == 1
+    assert len(query_audit_entries(reader_actor="bob", reader_role="east", occurred_at__year=local_date.year)) >= 1
 
 
 @pytest.mark.parametrize("container", [set, frozenset, iter, list, tuple])
@@ -964,7 +1019,7 @@ def test_a_generator_filter_is_materialized_rather_than_consumed():
     stamped = timezone.now()
     record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=stamped)
 
-    rows = query_audit_entries(reader_actor="bob", reader_role=None, occurred_at__in=(t for t in [stamped]))
+    rows = query_audit_entries(reader_actor="bob", reader_role="east", occurred_at__in=(t for t in [stamped]))
     assert len(rows) == 1
 
 
@@ -998,7 +1053,7 @@ def test_an_over_long_filter_value_is_still_a_legitimate_query():
     AUDIT_READ row correctly records `row_count=0`).
     """
     cap = AuditEntry._meta.get_field("actor").max_length
-    rows = query_audit_entries(reader_actor="bob", reader_role=None, actor="x" * (cap + 45))
+    rows = query_audit_entries(reader_actor="bob", reader_role="east", actor="x" * (cap + 45))
     assert rows == []
     assert AuditEntry.objects.filter(action=AuditAction.AUDIT_READ).count() == 1
 

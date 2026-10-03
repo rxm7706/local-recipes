@@ -16,7 +16,7 @@ class AuditEntryAdmin(admin.ModelAdmin):
     list_filter = ("action", "role", "occurred_at")
     search_fields = ("actor", "target", "role")
     ordering = ("-occurred_at",)
-    readonly_fields = ("actor", "role", "action", "target", "row_count", "occurred_at")
+    readonly_fields = ("actor", "role", "action", "target", "row_count", "occurred_at", "scope")
 
     def has_add_permission(self, request):
         return False

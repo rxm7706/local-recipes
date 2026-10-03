@@ -7,9 +7,12 @@ CAP-4's write/read/retention API over the `AuditEntry` model (`models.py`):
   action, and the row count involved.
 * `query_audit_entries` reads the trail AND, per AD-7 ("reading the audit
   trail is a recorded act"), calls `record_audit_entry` for its own
-  invocation before returning. AD-7's other half — the trail as
-  *role-isolated* data — is NOT implemented here; see that function's own
-  docstring.
+  invocation before returning. AD-7's role-isolation half returns no rows when
+  the reader established no role (fail-closed, like CAP-2's ``filter_by_role``),
+  otherwise filters to rows whose stored ``role`` equals ``reader_role``,
+  applies a bounded ``limit``, and persists the
+  read's validated ``**filters`` into the ``AUDIT_READ`` row's ``scope`` field
+  (Story 84.2).
 * `purge_expired_entries` requires an `AuditRetention` (`declarations.py`)
   with **no default anywhere** — AD-7's "refused rather than run unbounded",
   enforced the same way AD-6 enforces filter-then-search: by the function's
@@ -51,7 +54,7 @@ from django.db import models, router, transaction
 from django.db.backends.base.operations import BaseDatabaseOperations
 from django.utils import timezone
 
-from .declarations import AuditRetention
+from .declarations import DEFAULT_AUDIT_READ_LIMIT, AuditRetention
 from .models import AuditAction, AuditEntry
 
 # How far a caller's `now` may lead this process's clock before
@@ -284,6 +287,28 @@ def _check_actor_and_role(
     _check_string_field("role", role, label=role_param)
 
 
+def _filter_value_to_scope_string(value: object) -> str:
+    """One filter value as a storable scope string (Story 84.2)."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, _dt.datetime):
+        return value.isoformat()
+    if isinstance(value, _dt.date):
+        return value.isoformat()
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)):
+        return ",".join(_filter_value_to_scope_string(element) for element in value)
+    return repr(value)
+
+
+def _scope_from_filters(filters: dict) -> dict[str, str]:
+    """Sorted filter lookups with string values for an ``AUDIT_READ`` row."""
+    return {key: _filter_value_to_scope_string(filters[key]) for key in sorted(filters)}
+
+
 def _check_filters(filters: dict) -> None:
     """Hold `query_audit_entries`' `**filters` to the write path's own rules.
 
@@ -357,6 +382,7 @@ def record_audit_entry(
     *,
     target: str = "",
     occurred_at=None,
+    scope: dict[str, str] | None = None,
 ) -> AuditEntry:
     """CAP-4's write primitive: record that `actor` (as `role`) did `action`
     to `row_count` rows of `target`, at `occurred_at`.
@@ -431,17 +457,26 @@ def record_audit_entry(
     else:
         _check_reference_datetime("occurred_at", occurred_at)
 
-    return AuditEntry.objects.create(
-        actor=actor,
-        role=role,
-        action=action,
-        target=target,
-        row_count=row_count,
-        occurred_at=occurred_at,
-    )
+    create_kwargs: dict = {
+        "actor": actor,
+        "role": role,
+        "action": action,
+        "target": target,
+        "row_count": row_count,
+        "occurred_at": occurred_at,
+    }
+    if scope is not None:
+        create_kwargs["scope"] = scope
+    return AuditEntry.objects.create(**create_kwargs)
 
 
-def query_audit_entries(*, reader_actor: str, reader_role: str | None, **filters) -> list[AuditEntry]:
+def query_audit_entries(
+    *,
+    reader_actor: str,
+    reader_role: str | None,
+    limit: int | None = None,
+    **filters,
+) -> list[AuditEntry]:
     """Read the audit trail, and record that this read happened (AD-7).
 
     Any keyword filters are applied via `AuditEntry.objects.filter(**filters)`.
@@ -452,15 +487,19 @@ def query_audit_entries(*, reader_actor: str, reader_role: str | None, **filters
     optional and cannot be skipped by a caller: it is this function's whole
     point, not a side effect of it.
 
-    **Only the recorded-act half of AD-7 is implemented here.** AD-7 also
-    calls the trail "role-isolated data", and this function does NOT filter
-    its rows by ``reader_role`` — every reader sees every row. ``reader_role``
-    is recorded, not enforced; do not read it as an authorization input. The
-    row-isolation half needs Story 9.2's `filtering.py`, which does not exist
-    in this worktree, and is tracked as a deferred item rather than being
-    half-built here (review pass 2 made this explicit, since quoting AD-7's
-    isolation clause without saying so implied a guarantee that is not
-    delivered).
+    **Role isolation (Story 84.2).** When ``reader_role`` is ``None`` (no
+    established role), the result set is empty — the same fail-closed shape
+    as CAP-2's ``filter_by_role``. When ``reader_role`` is set, rows are
+    limited to those whose stored ``role`` equals it exactly. ``reader_role``
+    is both recorded on the ``AUDIT_READ`` row and enforced on the result
+    set. Caller-supplied ``**filters`` are ANDed with that isolation
+    predicate when a role is established.
+
+    **Bounded reads (Story 84.2).** At most ``limit`` rows are returned; when
+    omitted, ``DEFAULT_AUDIT_READ_LIMIT`` from ``declarations.py`` applies.
+
+    **Read scope (Story 84.2).** The ``AUDIT_READ`` row's ``scope`` field
+    holds the validated ``**filters`` as sorted string lookups.
 
     A read that cannot be recorded does not happen: ``reader_actor`` and
     ``reader_role`` are validated against `record_audit_entry`'s own rules
@@ -510,6 +549,20 @@ def query_audit_entries(*, reader_actor: str, reader_role: str | None, **filters
     )
     _check_filters(filters)
 
+    if limit is None:
+        effective_limit = DEFAULT_AUDIT_READ_LIMIT
+    else:
+        if not isinstance(limit, int) or isinstance(limit, bool):
+            raise TypeError(f"query_audit_entries' limit must be an int or None, got {type(limit).__name__}")
+        if limit <= 0:
+            raise ValueError(
+                f"query_audit_entries' limit must be positive, got {limit} — "
+                f"an unbounded or zero-length read is not expressible here"
+            )
+        effective_limit = limit
+
+    read_scope = _scope_from_filters(filters)
+
     # Bind the transaction to the alias this model is actually routed to
     # (review pass 3). A bare `transaction.atomic()` opens a transaction on
     # `"default"` — so an adopter routing `AuditEntry` to a dedicated audit
@@ -521,7 +574,11 @@ def query_audit_entries(*, reader_actor: str, reader_role: str | None, **filters
     # a compliance read must not come off a replica anyway.
     using = router.db_for_write(AuditEntry)
     with transaction.atomic(using=using):
-        rows = list(AuditEntry.objects.using(using).filter(**filters))
+        if reader_role is None:
+            rows: list[AuditEntry] = []
+        else:
+            queryset = AuditEntry.objects.using(using).filter(**filters).filter(role=reader_role)
+            rows = list(queryset[:effective_limit])
 
         record_audit_entry(
             actor=reader_actor,
@@ -529,6 +586,7 @@ def query_audit_entries(*, reader_actor: str, reader_role: str | None, **filters
             action=AuditAction.AUDIT_READ,
             row_count=len(rows),
             target="audit_trail",
+            scope=read_scope,
         )
 
     return rows
