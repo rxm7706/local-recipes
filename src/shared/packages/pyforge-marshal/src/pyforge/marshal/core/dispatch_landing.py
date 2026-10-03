@@ -323,7 +323,11 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
         if line.startswith("### DW-"):
             # Save any previous DW entry
             if in_dw_section and current_entry_lines:
-                dw_entries.append("\n".join(current_entry_lines))
+                # Remove trailing empty lines from the entry
+                while current_entry_lines and current_entry_lines[-1] == '':
+                    current_entry_lines.pop()
+                if current_entry_lines:
+                    dw_entries.append("\n".join(current_entry_lines))
                 current_entry_lines = []
             # Start new DW entry
             in_dw_section = True
@@ -336,8 +340,15 @@ def _extract_base_and_entries(text: str) -> tuple[str, list[str]]:
     
     # Don't forget the last DW entry
     if in_dw_section and current_entry_lines:
-        dw_entries.append("\n".join(current_entry_lines))
+        # Remove trailing empty lines from the entry
+        while current_entry_lines and current_entry_lines[-1] == '':
+            current_entry_lines.pop()
+        if current_entry_lines:
+            dw_entries.append("\n".join(current_entry_lines))
     
+    # Remove trailing empty lines from base text
+    while base_lines and base_lines[-1] == '':
+        base_lines.pop()
     base_text = "\n".join(base_lines)
     return base_text, dw_entries
 
