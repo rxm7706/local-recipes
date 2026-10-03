@@ -6,13 +6,14 @@ turn may hand the failure back to the writing harness. AD-4: no I/O here.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import StrEnum
 
 from .dispatch_verification import DispatchVerificationVerdict, _command_from_gate_001_message
 from .gate import CROSS_SURFACE_GATE_CODE
 from .model import Finding, Severity, Status, status_for
-from .verdict import classify, compute_verdict
+from .verdict import classify
 
 VERIFY_FIX_LOOP_FLAG_KEY = "pyforge.marshal.verify_fix_loop"
 
@@ -22,6 +23,21 @@ FIX_TURN_TIMEOUT_CODE = "MRS-DISP-059"
 FIX_TURN_REVERIFY_REFUSED_CODE = "MRS-DISP-060"
 
 _VERIFY_REFUSAL_GATE_PREFIX = "MRS-GATE-"
+
+# Story 85.1 (M7): scrub credential-shaped text before fix-turn prompt/journal tails.
+_URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s/]+)@")
+_BEARER_TOKEN = re.compile(r"(?i)(Authorization:\s*Bearer\s+)\S+")
+_SECRET_ASSIGNMENT = re.compile(
+    r"(?i)(\b(?:password|passwd|secret|api[_-]?key|token)\s*=\s*['\"]?)[^'\"\s]+(['\"]?)"
+)
+
+
+def scrub_fix_turn_exposure(text: str) -> str:
+    """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1)."""
+    scrubbed = _URL_CREDENTIALS.sub(r"\1:***REDACTED***@", text)
+    scrubbed = _BEARER_TOKEN.sub(r"\1***REDACTED***", scrubbed)
+    scrubbed = _SECRET_ASSIGNMENT.sub(r"\1***REDACTED***\2", scrubbed)
+    return scrubbed
 
 
 class VerifyFixLaunchMode(StrEnum):
@@ -81,11 +97,6 @@ def extract_failed_verify_commands(
                 failed_commands.add(cmd)
         elif code == "MRS-GATE-018":
             failed_commands.add("pre-verification deferred-work intake")
-    if not failed_commands and findings:
-        verdict = compute_verdict(findings)
-        if status_for(verdict) is not Status.OK:
-            primary = findings[0]
-            failed_commands.add(primary.message.split(":", 1)[0][:200])
     by_command: dict[str, FailedVerifyCommand] = {}
     for report in command_reports:
         command = report.get("command")
@@ -128,7 +139,7 @@ def build_verify_fix_prompt(
             lines.append(f"Exit code: {item.exit_code}")
         combined = "\n".join(part for part in (item.stdout, item.stderr) if part.strip())
         if combined.strip():
-            tail = tail_bytes(combined, max_bytes=output_tail_bytes)
+            tail = tail_bytes(scrub_fix_turn_exposure(combined), max_bytes=output_tail_bytes)
             lines.append("Output tail:")
             lines.append(tail)
         lines.append("")
@@ -142,6 +153,7 @@ def decide_verify_fix_turn(
     has_git_progress: bool,
     fix_turn_already_ran: bool,
     session_alive: bool,
+    has_failed_commands: bool = True,
 ) -> VerifyFixDecision:
     """Whether dispatch may run exactly one fix turn for this refusal."""
     if not flag_enabled:
@@ -154,6 +166,8 @@ def decide_verify_fix_turn(
         return VerifyFixDecision(run=False, reason="verification did not refuse")
     if not has_git_progress:
         return VerifyFixDecision(run=False, reason="no git progress on the story branch")
+    if not has_failed_commands:
+        return VerifyFixDecision(run=False, reason="no failed verify command to fix")
     return VerifyFixDecision(run=True)
 
 

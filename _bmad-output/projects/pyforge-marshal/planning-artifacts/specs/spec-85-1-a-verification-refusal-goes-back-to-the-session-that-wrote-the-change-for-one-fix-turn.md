@@ -2,8 +2,8 @@
 title: "85.1: A verification refusal goes back to the session that wrote the change for one fix turn"
 type: 'feature'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: '620de41c0733d09439db9e1c934f24bd24f51509'
+status: 'in-progress'
+baseline_revision: '116baedaa38bf2c88ca2bdb8cbb448cd5f82fc1e'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:

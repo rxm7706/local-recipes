@@ -53,7 +53,7 @@ _SLUG = "pyforge-marshal"
 @pytest.fixture(autouse=True)
 def _verify_fix_loop_off(monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 85.1: dev flag overlays default ON; these tests simulate verify without a live fix turn."""
-    monkeypatch.setattr(supervisor_main, "verify_fix_loop_enabled", lambda *, repo_root: False)
+    monkeypatch.setattr(supervisor_main, "verify_fix_loop_enabled", lambda *, repo_root: (False, None))
 
 
 _STORY_KEY = "51.11"
@@ -1031,6 +1031,27 @@ def test_landing_predicates_are_empty_on_a_bare_launch(tmp_path: Path) -> None:
     assert supervisor_main._verification_already_journaled(folded, _RUN_ID) is False
     assert supervisor_main._dispatch_push_already_journaled(folded, _RUN_ID) is False
     assert supervisor_main._verification_outcome_verdict(folded, _RUN_ID) is None
+
+
+def test_verification_outcome_verdict_reads_the_latest_outcome(tmp_path: Path) -> None:
+    folded = _folded_from(
+        tmp_path,
+        (
+            _launch_line(),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                payload={"verdict": "refused", "ok": False},
+                counter=1,
+            ),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                payload={"verdict": "verified", "ok": True},
+                counter=3,
+            ),
+        ),
+    )
+
+    assert supervisor_main._verification_outcome_verdict(folded, _RUN_ID) == "verified"
 
 
 def test_verification_outcome_verdict_reads_the_outcome_entry(tmp_path: Path) -> None:

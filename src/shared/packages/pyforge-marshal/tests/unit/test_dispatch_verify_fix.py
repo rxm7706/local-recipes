@@ -10,8 +10,11 @@ from pyforge.marshal.core.dispatch_verify_fix import (
     choose_verify_fix_launch_mode,
     decide_verify_fix_turn,
     extract_failed_verify_commands,
+    scrub_fix_turn_exposure,
     tail_bytes,
 )
+from pyforge.marshal.dispatch_verify_fix import ProcessWaitResult, wait_for_process
+from pyforge.core.process import PosixProcess
 from pyforge.marshal.core.harness_profile import parse_profile
 from pyforge.marshal.core.harness_profile import render_verify_fix_argv as render_fix
 from pyforge.marshal.core.model import Finding, Severity
@@ -135,6 +138,43 @@ def test_policy_verify_fix_defaults_compose():
     block = effective.dispatch.value
     assert block["verify_fix_output_tail_bytes"] == DEFAULT_POLICY["dispatch"]["verify_fix_output_tail_bytes"]
     assert block["verify_fix_wall_clock_minutes"] == DEFAULT_POLICY["dispatch"]["verify_fix_wall_clock_minutes"]
+
+
+def test_scrub_fix_turn_exposure_redacts_common_credential_shapes():
+    raw = (
+        "postgres://admin:secret@db/x\n"
+        "Authorization: Bearer eyJhbGciOi\n"
+        "password = 'hunter2'"
+    )
+    scrubbed = scrub_fix_turn_exposure(raw)
+    assert "secret" not in scrubbed
+    assert "eyJhbGciOi" not in scrubbed
+    assert "hunter2" not in scrubbed
+
+
+def test_wait_for_process_reaps_exited_child_without_zombie_poll():
+    import subprocess
+    import sys
+
+    proc = subprocess.Popen([sys.executable, "-c", "pass"], start_new_session=True)
+    result = wait_for_process(PosixProcess(), proc.pid, timeout_s=30.0)
+    assert isinstance(result, ProcessWaitResult)
+    assert result.exited is True
+    assert result.returncode == 0
+
+
+def test_decide_verify_fix_turn_skips_without_failed_commands():
+    assert (
+        decide_verify_fix_turn(
+            flag_enabled=True,
+            verification_verdict=DispatchVerificationVerdict.REFUSED.value,
+            has_git_progress=True,
+            fix_turn_already_ran=False,
+            session_alive=False,
+            has_failed_commands=False,
+        ).run
+        is False
+    )
 
 
 def test_fix_turn_rule_mutation_flag_off_skips_turn():
