@@ -2,7 +2,7 @@
 title: "84.4: Sync skips a board item marked GitHub-only"
 type: 'feature'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '2360e20e336e1e5edbd180ced25d4cede6832019'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -73,4 +73,33 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 3, reject 1
+- findings:
+  - `[false]` `[reject]` Skip path only runs on `--github-item` entry, not `--jira-issue` — unlinked GitHub-only items are always discovered by GitHub item id in schedule/single-item flows; jira-first entry is for linked pairs.
+  - `[false]` `[reject]` Single-select marker values other than `name` unsupported — GraphQL fragment reads `ProjectV2ItemFieldSingleSelectValue.name`, matching spec “single-select field value”.
+  - `[false]` `[reject]` Flag on with empty `github_only_marker: {}` would skip all items — empty mapping loads as `None`, behaviour unchanged.
+  - `[reject]` `[reject]` Missing integration test against live flagd — unit tests monkeypatch the flag gate; sufficient for CAP-60 oracle per story verification commands.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added optional `github_only_marker` in sync config, flag `pyforge.steward.sync_github_only_marker` (off in production via overlays), and reconcile skip with info logging for unlinked marked items when the flag is on; closed DW-8-5-2.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` — config load, marker detection, skip exception path
+- `src/shared/packages/pyforge-steward/tests/unit/test_sync_github_only_marker.py` — acceptance tests
+- `src/shared/packages/pyforge-steward/tests/unit/test_sync_config.py` — marker load validation
+- `src/platform/config/flags.json` and `flag-overlays.json` — new flag and env defaults
+- `.steward/sync-config.example.yaml` — operator docs
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` — DW-8-5-2 closed
+
+Review: 0 patches; 4 findings rejected/false.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2003 passed, 5 skipped
+- `pixi run --frozen -e pyforge-guild lint-types` — green after ruff import fix on steward
+- `python scripts/spec_surface_reconcile.py` — OK after memlog reconcile

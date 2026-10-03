@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 
 import pytest
+from test_sync_reconcile_propagation import CONFIG, FakeTransport, ScheduleFakeTransport
+
 from pyforge.steward.sync import (
     SYNC_GITHUB_ONLY_MARKER_FLAG,
     GitHubOnlyMarker,
@@ -12,7 +14,6 @@ from pyforge.steward.sync import (
     reconcile,
     reconcile_schedule_batch,
 )
-from test_sync_reconcile_propagation import CONFIG, FakeTransport, ScheduleFakeTransport
 
 
 def _config_with_marker(marker: GitHubOnlyMarker) -> SyncConfig:

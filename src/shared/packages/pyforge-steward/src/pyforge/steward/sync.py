@@ -292,8 +292,7 @@ def _load_github_only_marker(document_path: Path, section: object) -> GitHubOnly
     has_field = isinstance(field_id, str) and field_id.strip() and isinstance(field_value, str) and field_value.strip()
     if has_label and has_field:
         raise SyncConfigError(
-            f"{document_path}: 'github_only_marker' must declare either 'label' or "
-            "'field_id'+'field_value', not both"
+            f"{document_path}: 'github_only_marker' must declare either 'label' or 'field_id'+'field_value', not both"
         )
     if not has_label and not has_field:
         if label is not None or field_id is not None or field_value is not None:
@@ -708,7 +707,7 @@ def _parse_field_values(node: dict[str, object]) -> dict[str, str]:
     for entry in (node.get("fieldValues") or {}).get("nodes") or []:
         if not isinstance(entry, dict):
             continue
-        field_id = ((entry.get("field") or {}).get("id") if isinstance(entry.get("field"), dict) else None)
+        field_id = (entry.get("field") or {}).get("id") if isinstance(entry.get("field"), dict) else None
         text = entry.get("text")
         name = entry.get("name")
         if field_id is None:
