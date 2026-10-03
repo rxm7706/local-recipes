@@ -91,6 +91,17 @@ def test_should_not_take_verification_refusal_land_only_after_send_back_to_ready
     )
 
 
+def test_terminal_block_on_mrs_gate_018_with_git_progress() -> None:
+    assert (
+        classify_dispatch_block(
+            session_log="deferred-work intake refused",
+            failed_gate="MRS-GATE-018",
+            changed_path_count=1,
+        )
+        is DispatchBlockKind.TERMINAL
+    )
+
+
 def test_park_rule_mutation_terminal_on_verify_with_progress() -> None:
     """Removing Story 83.10's progress rule makes this assertion fail (was TRANSIENT)."""
     assert (
