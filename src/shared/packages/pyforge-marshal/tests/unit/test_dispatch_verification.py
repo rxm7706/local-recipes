@@ -541,7 +541,14 @@ def test_evaluate_dispatch_verification_runs_lint_types_once_after_the_station_c
     hygiene lane runs exactly once, after them."""
     envelope = _verify_with(tmp_path, verify_commands=["true", "echo ok"], process=FakeProcess())
     commands = [report["command"] for report in envelope.data["commands"]]
-    assert commands == ["true", "echo ok", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
+    assert commands == [
+        "true",
+        "echo ok",
+        _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
+    ]
     assert commands.count(LINT_TYPES) == 1
     assert envelope.findings == ()
 
@@ -552,7 +559,12 @@ def test_evaluate_dispatch_verification_lint_types_runs_for_a_station_with_no_co
     """Story 79.2, AC1: a bare ``verify_commands = []`` station is gated on
     ``lint-types`` too -- it is derived, never read from the station's list."""
     envelope = _verify_with(tmp_path, verify_commands=[], process=FakeProcess())
-    assert [report["command"] for report in envelope.data["commands"]] == [_SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
+    assert [report["command"] for report in envelope.data["commands"]] == [
+        _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
+    ]
 
 
 def test_evaluate_dispatch_verification_lint_types_failure_refuses_naming_the_lane(
@@ -689,11 +701,13 @@ def test_evaluate_dispatch_verification_deferred_work_failure_refuses_naming_the
 ) -> None:
     """Story 83.2, AC2: a change that is green on the station's own commands
     but red on ``deferred-work-check`` is REFUSED, and the finding names the
-    command (an ordinary MRS-GATE-001).""" 
+    command (an ordinary MRS-GATE-001)."""
     envelope = _verify_with(tmp_path, verify_commands=["true"], process=FakeProcessDeferredWorkFails())
     inp = DispatchVerificationInput(findings=envelope.findings)
     assert judge_dispatch_verification(inp) == DispatchVerificationVerdict.REFUSED
-    deferred_findings = [f for f in envelope.findings if f.code == "MRS-GATE-001" and "deferred-work-check" in f.message]
+    deferred_findings = [
+        f for f in envelope.findings if f.code == "MRS-GATE-001" and "deferred-work-check" in f.message
+    ]
     assert len(deferred_findings) == 1, envelope.findings
     assert DEFERRED_WORK_CHECK in deferred_findings[0].message
     assert primary_gate_failure(envelope.findings) is not None
@@ -705,9 +719,7 @@ def test_evaluate_dispatch_verification_dedupes_already_declared_whole_tree_comm
     """Story 83.2: stations that already declare the whole-tree commands
     still run them once, de-duplicated like the other derived commands."""
     envelope = _verify_with(
-        tmp_path, 
-        verify_commands=["true", PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK], 
-        process=FakeProcess()
+        tmp_path, verify_commands=["true", PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK], process=FakeProcess()
     )
     commands = [report["command"] for report in envelope.data["commands"]]
     assert commands == ["true", _SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
@@ -721,7 +733,7 @@ def test_every_tracked_story_spec_binds_the_same_with_lint_types_widened() -> No
     ``lint-types`` lane adds no ``MRS-GATE-010``/``MRS-GATE-011`` finding the
     pre-79.2 widening (station commands + the S-13.7 guard) did not already
     report -- ``gate.check_spec_binding`` is one-directional.
-    
+
     Story 83.2: extends to include the new whole-tree check commands."""
     import tomllib
 

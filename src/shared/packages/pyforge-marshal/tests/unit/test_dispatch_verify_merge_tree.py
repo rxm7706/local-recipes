@@ -30,7 +30,7 @@ from pyforge.marshal.dispatch_verify import run_verify_commands_only
 # deleting the derivation fails these tests rather than silently updating them.
 LINT_TYPES = "pixi run --frozen -e pyforge-guild lint-types"
 
-# Story 83.2 (spec-83-2): the derived whole-tree check commands, pinned as 
+# Story 83.2 (spec-83-2): the derived whole-tree check commands, pinned as
 # literals so deleting the derivation fails these tests.
 PYFORGE_CORE_TEST = "pixi run --frozen -e pyforge-core pyforge-core-test"
 DEFERRED_WORK_CHECK = "pixi run --frozen -e pyforge-guild deferred-work-check"
@@ -91,7 +91,12 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands
     worktree.mkdir()
     process = FakeProcess()
     reports, findings = run_verify_commands_only(_effective([]), process=process, worktree=worktree)
-    assert [report["command"] for report in reports] == [_SURFACE_RECONCILE_COMMAND, LINT_TYPES, PYFORGE_CORE_TEST, DEFERRED_WORK_CHECK]
+    assert [report["command"] for report in reports] == [
+        _SURFACE_RECONCILE_COMMAND,
+        LINT_TYPES,
+        PYFORGE_CORE_TEST,
+        DEFERRED_WORK_CHECK,
+    ]
     assert findings == ()
     assert process.calls == [
         (_SURFACE_RECONCILE_COMMAND.split(), worktree),

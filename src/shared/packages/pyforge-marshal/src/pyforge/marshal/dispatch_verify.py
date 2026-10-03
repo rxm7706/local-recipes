@@ -121,7 +121,7 @@ _LINT_TYPES_COMMAND = "pixi run --frozen -e pyforge-guild lint-types"
 #: gated on the core suite that would catch breakage.
 _PYFORGE_CORE_TEST_COMMAND = "pixi run --frozen -e pyforge-core pyforge-core-test"
 
-#: Story 83.2 (spec-83-2): the deferred work check every dispatch 
+#: Story 83.2 (spec-83-2): the deferred work check every dispatch
 #: verification runs, ensuring uncited verified: lines are caught.
 #: Both commands are seconds-long and folded in after deduplication.
 _DEFERRED_WORK_CHECK_COMMAND = "pixi run --frozen -e pyforge-guild deferred-work-check"
@@ -153,7 +153,7 @@ def _verify_commands_with_surface_guard(
     ``_verify_commands_with_surface_guard`` (three callers use it); it now
     folds in every derived command, not the guard alone.
 
-    Story 83.2 (spec-83-2): ``_PYFORGE_CORE_TEST_COMMAND`` and 
+    Story 83.2 (spec-83-2): ``_PYFORGE_CORE_TEST_COMMAND`` and
     ``_DEFERRED_WORK_CHECK_COMMAND`` are derived here too, appended after
     the same dedupe rule, so every station's dispatch verification runs
     the checks that read the whole tree exactly once.
@@ -164,7 +164,12 @@ def _verify_commands_with_surface_guard(
     them, so a dispatch session is gated on the guard exactly like a loop
     session even though nothing in ``marshal-policy.toml`` ever declares
     it."""
-    derived = (_SURFACE_RECONCILE_COMMAND, _LINT_TYPES_COMMAND, _PYFORGE_CORE_TEST_COMMAND, _DEFERRED_WORK_CHECK_COMMAND)
+    derived = (
+        _SURFACE_RECONCILE_COMMAND,
+        _LINT_TYPES_COMMAND,
+        _PYFORGE_CORE_TEST_COMMAND,
+        _DEFERRED_WORK_CHECK_COMMAND,
+    )
     normalized_derived = {" ".join(command.split()) for command in derived}
     verify = [c for c in effective.verify_commands.value if " ".join(c.split()) not in normalized_derived]
     verify.extend(derived)
