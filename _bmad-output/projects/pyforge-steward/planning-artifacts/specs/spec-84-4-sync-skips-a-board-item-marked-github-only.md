@@ -2,8 +2,8 @@
 title: "84.4: Sync skips a board item marked GitHub-only"
 type: 'feature'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: 'ed596f7ef2239c738708ec0f02b4b0fe5470547a'
+status: 'done'
+baseline_revision: '7ac2e658ea08bfe5e770cdb6133d85e81310d630'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -117,6 +117,11 @@ Passed: the flag pins agree (flags.json, overlays, the spec's `flag:` block, pyf
   - `[false]` `[reject]` H1 platform shipped-tree still missing key — `_SHIPPED_BOOLEANS` includes `pyforge.steward.sync_github_only_marker` in `src/platform/tests/test_openfeature_file_flags.py`.
   - `[false]` `[reject]` H2 flag gate / two-state tests — `test_sync_github_only_marker.py` uses two `PYFORGE_FLAGS_PATH` trees; `## Verification` names the test file.
   - `[false]` `[reject]` H3 batch crash on flag read — marker checked before flag read; `FlagConfigError` warns and treats flag off; schedule reads flag once per batch.
+
+### 2026-10-03 — Review pass (build-auto, evening test fixes)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - `[reject]` Evening re-review test gaps (H3 false-green, M3 mutants, empty mapping, example docs) were patched in this run; full steward suite and lint-types green.
 
 ### 2026-10-03 — Review pass
 - verdicts: 4 findings — high 0, medium 0, low 0, false 3, reject 1

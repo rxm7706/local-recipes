@@ -305,9 +305,7 @@ def _load_github_only_marker(document_path: Path, section: object) -> GitHubOnly
         )
     if not has_label and not has_field:
         if not section:
-            raise SyncConfigError(
-                f"{document_path}: 'github_only_marker' must not be an empty mapping"
-            )
+            raise SyncConfigError(f"{document_path}: 'github_only_marker' must not be an empty mapping")
         raise SyncConfigError(
             f"{document_path}: 'github_only_marker' is present but declares no "
             "non-empty label or field_id/field_value pair"
