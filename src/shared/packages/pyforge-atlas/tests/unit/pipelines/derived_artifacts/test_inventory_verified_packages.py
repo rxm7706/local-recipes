@@ -15,7 +15,10 @@ from pyforge.atlas.pipelines.derived_artifacts.nodes import (
 )
 
 _FIXED_TS = "2026-08-30T12:00:00Z"
-_PARAMS = {"inventory_verified_packages": {"verification_timestamp_utc": _FIXED_TS}}
+_PARAMS = {
+    "inventory_verified_packages": {"verification_timestamp_utc": _FIXED_TS},
+    "verification_sets": {"cf_or_pm_floor": 0, "pypi_universe_floor": 0},
+}
 
 
 def _universe_row(

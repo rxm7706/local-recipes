@@ -20,8 +20,11 @@ import argparse
 import csv
 import sys
 from collections import Counter
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 _VERIFIED_PACKAGES_REL = (
     "derived/inventory_verified_packages/inventory_verified_packages.parquet"
@@ -65,6 +68,8 @@ _RETIRED_WORKBOOK_MSG = (
     f"{_VERIFIED_PACKAGES_REL} + {_AOSS_QUEUE_REL} under PYFORGE_ATLAS_DATA_ROOT"
 )
 
+PARQUET_READ_DEADLINE_SECONDS = 120
+
 
 @dataclass
 class AtlasExports:
@@ -76,7 +81,31 @@ class AtlasExports:
     failed: bool = False
 
 
-def load_atlas_exports(root: Path) -> AtlasExports:
+def _read_parquet_with_deadline(
+    path: Path,
+    *,
+    read_fn: Callable[[Path], Any] | None = None,
+    deadline_seconds: float = PARQUET_READ_DEADLINE_SECONDS,
+) -> Any:
+    import pandas as pd
+
+    reader = read_fn if read_fn is not None else pd.read_parquet
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(reader, path)
+        try:
+            return future.result(timeout=deadline_seconds)
+        except FuturesTimeoutError as exc:
+            raise TimeoutError(
+                f"parquet read deadline exceeded ({deadline_seconds}s) for {path}"
+            ) from exc
+
+
+def load_atlas_exports(
+    root: Path,
+    *,
+    read_parquet_fn: Callable[[Path], Any] | None = None,
+    deadline_seconds: float = PARQUET_READ_DEADLINE_SECONDS,
+) -> AtlasExports:
     """Read Story 23.4 Parquet exports under ``root`` (``PYFORGE_ATLAS_DATA_ROOT``).
 
     Lazily imports pandas. A missing or unreadable export is fatal (``failed``)
@@ -97,10 +126,14 @@ def load_atlas_exports(root: Path) -> AtlasExports:
                 result.failed = True
                 result.warnings.append(f"--live-catalog: {key} missing at {path}")
                 return result
-            df = pd.read_parquet(path)
+            df = _read_parquet_with_deadline(
+                path, read_fn=read_parquet_fn, deadline_seconds=deadline_seconds
+            )
         except Exception as exc:
             result.failed = True
-            result.warnings.append(f"--live-catalog: {key} unreadable at {path}: {exc}")
+            result.warnings.append(
+                f"--live-catalog: {key} unreadable at {path} ({type(exc).__name__}): {exc}"
+            )
             return result
         missing = [col for col in required_cols if col not in df.columns]
         if missing:
@@ -153,10 +186,13 @@ def write_markdown(
         and row["Packaging_Candidate_Status"] in _NET_NEW_STATUSES
     )
     not_on_cf_count = sum(1 for row in rows if row.get("CondaForge_Verified") != "Yes")
+    stamp = rows[0].get("Verification_Timestamp_UTC", "") if rows else ""
 
     lines: list[str] = []
     lines.append("# Consolidated Verified Package Inventory Report")
     lines.append("")
+    if stamp:
+        lines.append(f"- Verification timestamp (UTC): **{stamp}**")
     lines.append(f"- Total final unique package count: **{len(rows):,}**")
     lines.append(f"- Count not on conda-forge: **{not_on_cf_count:,}**")
     lines.append(f"- AOSS-Free Mason queue rows: **{queue_count:,}**")
@@ -206,6 +242,16 @@ def _queue_output_path(output_csv: Path, queue_rows: list[dict[str, str]]) -> Pa
     return output_csv.parent / f"aoss-free-queue-{stamp}.csv"
 
 
+def _help_epilog() -> str:
+    return (
+        "Verification scale floors (enforced in Kedro derived_artifacts nodes, not "
+        "in this actuator): the conda-forge union set (conda-forge packages plus "
+        "parselmouth-mapped PyPI names) must meet a large scale floor after name "
+        "normalization; the PyPI universe set must meet a minimum floor; the "
+        "pypi-to-conda mapping table carries no floor."
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         prog="conda-forge-packaging-inventory-operations-metrics",
@@ -214,6 +260,8 @@ def main() -> int:
             "Story 23.4 Parquet exports (inventory_verified_packages + "
             "inventory_aoss_free_queue)."
         ),
+        epilog=_help_epilog(),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         _RETIRED_WORKBOOK_FLAG,
@@ -278,18 +326,19 @@ def main() -> int:
     print("=== MASTER PROMPT V3.0 EXECUTION SUMMARY METRICS ===")
     print()
     print(f"Total final unique packages processed: {len(exports.verified_rows):,}")
-    print(f"Count not on conda-forge: {not_on_cf_count:,}")
+    print(f"Packages not on conda-forge: {not_on_cf_count:,}")
+    print(f"AOSS-Free Mason queue rows: {len(exports.queue_rows):,}")
+    if exports.verified_rows:
+        print(
+            "Verification timestamp (UTC): "
+            f"{exports.verified_rows[0].get('Verification_Timestamp_UTC', '')}"
+        )
+    print()
     print(f"Wrote CSV: {args.output_csv}")
-    print(f"Wrote Markdown report: {args.output_md}")
-    print(f"Wrote AOSS-Free queue: {queue_path} ({len(exports.queue_rows):,} rows)")
-    if not args.skip_revised_prompt:
-        print(f"Wrote revised prompt: {args.output_revised_prompt}")
-    if exports.warnings:
-        print("\nWarnings:")
-        for warning in exports.warnings:
-            print(f"  - {warning}")
+    print(f"Wrote Markdown: {args.output_md}")
+    print(f"Wrote AOSS-Free queue CSV: {queue_path}")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())
