@@ -60,6 +60,7 @@ needs the extra itself).
 
 from __future__ import annotations
 
+import ipaddress
 from typing import Any, Awaitable, Callable
 
 from .declarations import AUDIT_IDENTITY_MAX_LENGTH, TrustedIngress
@@ -68,6 +69,19 @@ Scope = dict[str, Any]
 Receive = Callable[[], Awaitable[dict[str, Any]]]
 Send = Callable[[dict[str, Any]], Awaitable[None]]
 ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
+
+
+def _peer_in_trusted_ingress(peer_host: str | None, ingress: TrustedIngress) -> bool:
+    """Return whether ``peer_host`` falls inside any declared ingress network."""
+    if peer_host is None:
+        return False
+    try:
+        peer = ipaddress.ip_address(peer_host)
+    except ValueError:
+        return False
+    if isinstance(peer, ipaddress.IPv6Address) and peer.ipv4_mapped is not None:
+        peer = peer.ipv4_mapped
+    return any(peer in network for network in ingress._networks)
 
 
 class UntrustedIngressError(Exception):
@@ -199,7 +213,7 @@ class DashboardIdentityMiddleware:
 
         client = scope.get("client")
         peer_host = client[0] if client else None
-        if peer_host not in self.ingress.addresses:
+        if not _peer_in_trusted_ingress(peer_host, self.ingress):
             # AD-4: refuse the START, not the request -- raise before `send`
             # (and therefore before the wrapped app) is ever invoked. Note
             # this fires for a PRESENT header regardless of its value: an
