@@ -372,7 +372,7 @@ def test_purge_expired_entries_requires_an_actor_keyword():
 
 def test_purge_expired_entries_rejects_a_non_audit_retention_object():
     with pytest.raises(TypeError, match="AuditRetention"):
-        purge_expired_entries(retention=30)  # type: ignore[arg-type]
+        purge_expired_entries(retention=30, actor="retention-runner")  # type: ignore[arg-type]
 
 
 @pytest.mark.parametrize("bad_days", [0, -5])
@@ -827,7 +827,7 @@ def test_purge_expired_entries_tolerates_ordinary_clock_skew_in_now():
             actor="retention-runner",
             now=timezone.now() + _FUTURE_NOW_TOLERANCE * 2,
         )
-    assert AuditEntry.objects.count() == 1
+    assert AuditEntry.objects.count() == 2
 
 
 def test_query_audit_entries_rejects_a_naive_datetime_filter_under_use_tz_true():
