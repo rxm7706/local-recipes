@@ -355,29 +355,32 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
     if main_tail is None or branch_tail is None:
         return None
 
-    main_new = _dw_blocks_from_append_tail(main_tail)
-    branch_new = _dw_blocks_from_append_tail(branch_tail)
-
-    main_new_count = Counter(main_new)
-    branch_only: list[str] = []
-    for block in branch_new:
-        if main_new_count[block] > 0:
-            main_new_count[block] -= 1
-        else:
-            branch_only.append(block)
-
     result = base
     if main_tail:
         if not main_tail.strip():
             return None
         result += main_tail
-    elif branch_tail:
+
+    branch_after_main = _append_only_tail(main, branch)
+    if branch_after_main is not None:
+        if branch_after_main.strip():
+            result += branch_after_main
+    elif not main_tail and branch_tail:
         if not branch_tail.strip():
             return None
         result += branch_tail
-
-    if branch_only and main_tail:
-        result = _append_branch_only_blocks(result, branch_only)
+    elif main_tail and branch_tail:
+        main_new = _dw_blocks_from_append_tail(main_tail)
+        branch_new = _dw_blocks_from_append_tail(branch_tail)
+        main_new_count = Counter(main_new)
+        branch_only: list[str] = []
+        for block in branch_new:
+            if main_new_count[block] > 0:
+                main_new_count[block] -= 1
+            else:
+                branch_only.append(block)
+        if branch_only:
+            result = _append_branch_only_blocks(result, branch_only)
 
     if not result.endswith("\n"):
         result += "\n"

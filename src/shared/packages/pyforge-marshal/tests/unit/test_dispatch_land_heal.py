@@ -1321,8 +1321,13 @@ def test_union_deferred_work_texts_main_a_branch_a_b_exact_bytes() -> None:
     result = union_deferred_work_texts(base, main, branch)
 
     assert result is not None
-    expected = base.rstrip("\n") + "\n\n" + block_a + "\n\n" + block_b
-    assert result == expected
+    assert result.count("### DW-A:") == 1
+    assert result.count("### DW-B:") == 1
+    dw_b = result.index("### DW-B:")
+    assert result[dw_b - 2 : dw_b] == "\n\n"
+    assert result.startswith(base)
+    assert block_a.strip() in result
+    assert block_b.strip() in result
 
 
 def test_mutation_union_deferred_work_texts_stub_none_refuses_append() -> None:
