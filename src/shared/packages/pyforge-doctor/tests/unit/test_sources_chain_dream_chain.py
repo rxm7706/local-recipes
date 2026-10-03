@@ -874,6 +874,10 @@ def test_a_bare_covers_dreams_scalar_covers_that_one_dream(tmp_path: Path) -> No
     one-character slug would have been silently marked covered."""
     _write_dream(tmp_path, "satellite-scalar", "doctor")
     _write_dream(tmp_path, "host-scalar", "doctor")
+    # The control: a Dream with neither a Spec of its own nor a covering
+    # declaration, so this fixture is known to be able to produce the
+    # finding the assertion below says is absent.
+    _write_dream(tmp_path, "uncovered-scalar", "doctor")
     _write_raw_spec(
         tmp_path,
         "pyforge-doctor",
@@ -884,8 +888,8 @@ def test_a_bare_covers_dreams_scalar_covers_that_one_dream(tmp_path: Path) -> No
 
     findings = chain.gather_dream_chain(tmp_path)
 
-    without_spec = {f.evidence.get("dream") for f in findings if f.check == "dream-without-spec"}
-    assert "satellite-scalar" not in without_spec
+    without_spec = {f.evidence["subject"] for f in findings if f.check == "dream-without-spec"}
+    assert without_spec == {"uncovered-scalar"}
 
 
 def test_a_covers_dreams_shape_nobody_writes_is_one_warn_not_a_crash(tmp_path: Path) -> None:
