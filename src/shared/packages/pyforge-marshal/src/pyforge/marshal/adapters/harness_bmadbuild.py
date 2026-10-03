@@ -152,11 +152,13 @@ class BmadBuildHarness:
         project_slug: str,
     ) -> tuple[int, tuple[str, ...]]:
         """Detach-launch an already-rendered argv (Story 85.1 fix turn)."""
+        # Precedence, lowest to highest: operator env, profile vars, wire layer,
+        # marshal's per-invocation project pin, policy budget env.
         child_env = {
             **os.environ,
             **dict(profile.env),
             **dict(wire.env),
-            **({"BMAD_ACTIVE_PROJECT": project_slug} if project_slug else {}),
+            "BMAD_ACTIVE_PROJECT": project_slug,
             **dict(budget_env),
         }
         if wire.applied and resolution.binary_path is not None:
@@ -169,6 +171,11 @@ class BmadBuildHarness:
             raise BuildHarnessError(f"cannot open dispatch log {str(log_path)!r}: {exc}") from exc
         with log_file:
             try:
+                # Story 14.4, CAP-6: stays raw subprocess, exempted file-level in
+                # test_process_sole_ownership.py -- needs a capability
+                # pyforge.core.process does NOT offer (detached launch with a
+                # per-invocation custom env). Mutating os.environ would race
+                # concurrent dispatches for different projects.
                 process = subprocess.Popen(
                     list(argv),
                     cwd=worktree,

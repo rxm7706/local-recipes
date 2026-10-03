@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
+import json
+import os
+import signal
+import subprocess
+import sys
+
+from pyforge.core.flags import FlagConfigError
 from pyforge.core.process import PosixProcess
 
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
@@ -19,7 +26,12 @@ from pyforge.marshal.core.harness_profile import parse_profile
 from pyforge.marshal.core.harness_profile import render_verify_fix_argv as render_fix
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.policy import DEFAULT_POLICY, compose
-from pyforge.marshal.dispatch_verify_fix import ProcessWaitResult, wait_for_process
+from pyforge.marshal.dispatch_verify_fix import (
+    ProcessWaitResult,
+    terminate_process_group,
+    verify_fix_loop_enabled,
+    wait_for_process,
+)
 
 
 def test_decide_verify_fix_turn_requires_flag_and_refusal():
@@ -172,6 +184,78 @@ def test_decide_verify_fix_turn_skips_without_failed_commands():
         ).run
         is False
     )
+
+
+def test_verify_fix_loop_enabled_reads_off_from_shipped_tree(tmp_path):
+    repo = tmp_path / "repo"
+    flags_dir = repo / "src/platform/config"
+    flags_dir.mkdir(parents=True)
+    flags_dir.joinpath("flags.json").write_text(
+        json.dumps(
+            {
+                "flags": {
+                    "pyforge.marshal.verify_fix_loop": {
+                        "state": "ENABLED",
+                        "variants": {"on": True, "off": False},
+                        "defaultVariant": "off",
+                        "metadata": {
+                            "owner": "marshal",
+                            "story": "85-1-",
+                            "created": "2026-10-03",
+                            "on_everywhere": "",
+                            "cleanup_by": "",
+                        },
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    enabled, warning = verify_fix_loop_enabled(repo_root=repo)
+    assert enabled is False
+    assert warning is None
+
+
+def test_verify_fix_loop_enabled_flag_config_error_returns_warning(monkeypatch, tmp_path):
+    def _raise_flag_config(*_args, **_kwargs):
+        raise FlagConfigError("unknown environment")
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_verify_fix.read_boolean",
+        _raise_flag_config,
+    )
+    enabled, warning = verify_fix_loop_enabled(repo_root=tmp_path)
+    assert enabled is False
+    assert warning == "unknown environment"
+
+
+def test_terminate_process_group_signals_process_group(monkeypatch):
+    calls: list[tuple[int, int]] = []
+
+    def fake_getpgid(pid: int) -> int:
+        assert pid == 99
+        return 42
+
+    def fake_killpg(pgid: int, sig: int) -> None:
+        calls.append((pgid, sig))
+
+    monkeypatch.setattr(os, "getpgid", fake_getpgid)
+    monkeypatch.setattr(os, "killpg", fake_killpg)
+    terminate_process_group(99)
+    assert calls == [(42, signal.SIGTERM)]
+
+
+def test_wait_for_process_times_out_on_slow_child():
+    proc = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)"],
+        start_new_session=True,
+    )
+    try:
+        result = wait_for_process(PosixProcess(), proc.pid, timeout_s=0.2, poll_s=0.05)
+        assert result.exited is False
+        assert result.returncode is None
+    finally:
+        terminate_process_group(proc.pid)
 
 
 def test_fix_turn_rule_mutation_flag_off_skips_turn():
