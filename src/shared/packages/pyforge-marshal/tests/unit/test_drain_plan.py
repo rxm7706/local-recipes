@@ -1155,6 +1155,63 @@ def test_a_worktree_spec_left_blocked_is_disp_045(tmp_path: Path, capsys: pytest
     assert code == 4
 
 
+def test_a_blocked_worktree_with_a_prior_run_still_gets_disp_045(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    """Story 83.10: a prior journal must not hide MRS-DISP-045 for status: blocked."""
+    slug = "pyforge-marshal"
+    worktree = _seed_worktree_spec(tmp_path, slug, "22-7-fleet", "22.7", status="blocked")
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+
+    run_dir = dispatch_core.dispatch_run_dir(tmp_path, slug, "pyforge-marshal-20261003T000000000Z-abcd1234")
+    run_dir.mkdir(parents=True)
+    entries = [
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-10-03T00:00:00.000Z",
+            run_id=run_dir.name,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={"story_key": "22.7", "worktree_path": str(worktree), "baseline_head_sha": "aaa111"},
+        ),
+        build_entry(
+            id=JournalEntryId("w", 1),
+            ts="2026-10-03T00:00:01.000Z",
+            run_id=run_dir.name,
+            kind=dispatch_core.KIND_DISPATCH_COMPLETION,
+            phase=Phase.OUTCOME,
+            payload={"verdict": "failed", "ok": True},
+        ),
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-10-03T00:00:02.000Z",
+            run_id=run_dir.name,
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.OUTCOME,
+            payload={
+                "verdict": "refused",
+                "ok": False,
+                "failed_gate": "MRS-GATE-010",
+                "failed_message": "pixi run -e pyforge-guild lint-types",
+            },
+        ),
+    ]
+    (run_dir / "journal.jsonl").write_text(
+        "".join(prepare_for_write(entry).line.rstrip("\n") + "\n" for entry in entries),
+        encoding="utf-8",
+    )
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        ledgers={slug: (("22-7-fleet", "backlog"),)},
+        capsys=capsys,
+    )
+    hits = _findings(envelope, "MRS-DRAINPLAN-001")
+    assert [("MRS-DISP-045" in f["message"]) for f in hits] == [True]
+    assert code == 4
+
+
 def test_a_worktree_spec_done_is_land_only_not_a_refusal(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     slug = "pyforge-marshal"
     _seed_worktree_spec(tmp_path, slug, "22-7-fleet", "22.7", status="done")

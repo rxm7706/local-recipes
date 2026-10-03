@@ -322,7 +322,7 @@ def evaluate_story(reads: _StationReads, story: str) -> StoryEvaluation:
                     # work instead of launching a session -- reported as
                     # land-only, never as a refusal.
                     land_only = True
-                elif latest_journal is not None:
+                if not land_only and latest_journal is not None:
                     try:
                         current_head = vcs.worktree_head_sha(worktree)
                     except VcsCommandError:
@@ -337,7 +337,7 @@ def evaluate_story(reads: _StationReads, story: str) -> StoryEvaluation:
                         current_head_sha=current_head,
                     ):
                         land_only = True
-                elif status == "blocked":
+                if not land_only and status == "blocked":
                     refuse(
                         "MRS-DISP-045",
                         f"story {feed!r} worktree spec is status: blocked -- not relaunching "

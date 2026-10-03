@@ -106,6 +106,7 @@ class DispatchJournalFacts:
     completion_stop_reason: str | None = None
     verification_verdict: str | None = None
     verification_failed_gate: str | None = None
+    verification_failed_message: str | None = None
     # Story 28.15 (CAP-17): the station's own `warn`-mode scope-violation
     # advisories from the LATEST dispatch verification -- a tuple of plain
     # ``{code, message, path}`` dicts (JSON-safe), never journal-only (AC4:

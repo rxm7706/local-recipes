@@ -7,9 +7,34 @@ from pyforge.marshal.core.dispatch_harness_done import should_take_verification_
 from pyforge.marshal.core.dispatch_retry import (
     DispatchBlockKind,
     classify_dispatch_block,
+    format_verification_refusal_park_reason,
     is_dispatch_verification_refusal,
+    is_verify_refusal_gate,
 )
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
+
+
+def test_mrs_gate_018_is_a_verification_refusal_gate() -> None:
+    assert is_verify_refusal_gate("MRS-GATE-018")
+
+
+def test_is_dispatch_verification_refusal_for_gate_018() -> None:
+    assert is_dispatch_verification_refusal(
+        completion_verdict=DispatchSessionVerdict.FAILED.value,
+        verification_verdict=DispatchVerificationVerdict.REFUSED.value,
+        verification_failed_gate="MRS-GATE-018",
+    )
+
+
+def test_park_reason_names_the_failed_verification_message() -> None:
+    reason = format_verification_refusal_park_reason(
+        story_key="83.10",
+        run_id="run-1",
+        failed_gate="MRS-GATE-010",
+        failed_command="pixi run -e pyforge-guild lint-types",
+    )
+    assert "MRS-GATE-010" in reason
+    assert "pixi run -e pyforge-guild lint-types" in reason
 
 
 def test_is_dispatch_verification_refusal() -> None:

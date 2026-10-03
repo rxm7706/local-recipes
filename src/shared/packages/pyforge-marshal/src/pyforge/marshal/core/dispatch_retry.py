@@ -34,6 +34,7 @@ _VERIFY_REFUSAL_GATES: frozenset[str] = frozenset(
         "MRS-GATE-010",
         "MRS-GATE-011",
         "MRS-GATE-015",  # Story 22.12: cross-surface gate fail — retriable like 001
+        "MRS-GATE-018",  # Story 83.2: pre-verification deferred-work intake refused
     }
 )
 
