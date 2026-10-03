@@ -438,8 +438,13 @@ _DISPATCH_BLOCK_KEYS: frozenset[str] = frozenset(
         "landing_check_timeout_minutes",
         "landing_check_grace_seconds",
         MAX_FOLLOWUP_REVIEWS_KEY,
+        # Story 85.1 (CAP-286): bounded fix turn after verification refusal.
+        "verify_fix_output_tail_bytes",
+        "verify_fix_wall_clock_minutes",
     }
 )
+DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES = 8192
+DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES = 15
 # Story 4.7's closed vocabulary for `landing_merge_strategy` -- "merge" is
 # the default because it matches this repo's own observed real practice
 # (`git log --merges` shows real, non-squash merge commits throughout).
@@ -668,6 +673,8 @@ DEFAULT_POLICY: Mapping[str, object] = {
         "landing_check_timeout_minutes": DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES,
         "landing_check_grace_seconds": DEFAULT_LANDING_CHECK_GRACE_SECONDS,
         MAX_FOLLOWUP_REVIEWS_KEY: DEFAULT_MAX_FOLLOWUP_REVIEWS_PER_CAMPAIGN,
+        "verify_fix_output_tail_bytes": DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES,
+        "verify_fix_wall_clock_minutes": DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES,
     },
 }
 
@@ -988,6 +995,8 @@ def _valid_dispatch_block(value: object) -> dict[str, object] | None:
         "landing_check_timeout_minutes": _valid_positive_number,
         "landing_check_grace_seconds": _valid_landing_grace_seconds,
         MAX_FOLLOWUP_REVIEWS_KEY: _valid_followup_review_cap,
+        "verify_fix_output_tail_bytes": _valid_positive_number,
+        "verify_fix_wall_clock_minutes": _valid_positive_number,
     }
     validated: dict[str, object] = {}
     for key in value:
@@ -2073,6 +2082,34 @@ def resolve_landing_check_settings(effective: EffectivePolicy) -> LandingCheckSe
         poll_seconds=float(poll if poll is not None else DEFAULT_LANDING_CHECK_POLL_SECONDS),
         timeout_minutes=float(timeout if timeout is not None else DEFAULT_LANDING_CHECK_TIMEOUT_MINUTES),
         grace_seconds=float(grace if grace is not None else DEFAULT_LANDING_CHECK_GRACE_SECONDS),
+    )
+
+
+@dataclass(frozen=True)
+class VerifyFixPolicySettings:
+    output_tail_bytes: int
+    wall_clock_minutes: float
+
+    @property
+    def wall_clock_seconds(self) -> float:
+        return self.wall_clock_minutes * 60.0
+
+
+def resolve_verify_fix_settings(effective: EffectivePolicy) -> VerifyFixPolicySettings:
+    """Story 85.1 (CAP-286): fix-turn output tail and wall-clock budget."""
+    declared = effective.dispatch.value
+    block: Mapping[str, object] = declared if isinstance(declared, Mapping) else {}
+    tail = _valid_positive_number(
+        block.get("verify_fix_output_tail_bytes", DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES)
+    )
+    minutes = _valid_positive_number(
+        block.get("verify_fix_wall_clock_minutes", DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES)
+    )
+    return VerifyFixPolicySettings(
+        output_tail_bytes=int(tail if tail is not None else DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES),
+        wall_clock_minutes=float(
+            minutes if minutes is not None else DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES
+        ),
     )
 
 
