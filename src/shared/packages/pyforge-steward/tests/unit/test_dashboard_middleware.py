@@ -94,6 +94,23 @@ def test_trusted_ingress_matches_a_peer_inside_a_declared_cidr():
     assert calls[0]["dashboard_identity"] == "alice"
 
 
+def test_untrusted_peer_outside_a_declared_cidr_is_refused():
+    """Story 84.3: CIDR ingress refuses peers outside the prefix, not only accepts inside."""
+    ingress = TrustedIngress(
+        addresses=("10.0.0.0/24",),
+        identity_header="X-Forwarded-User",
+        role_header="X-Forwarded-Role",
+    )
+    calls: list[dict] = []
+    middleware = DashboardIdentityMiddleware(_fake_app(calls), ingress)
+    scope = _scope("10.0.1.1", headers=[("X-Forwarded-User", "eve")])
+
+    with pytest.raises(UntrustedIngressError):
+        asyncio.run(middleware(scope, _receive, _fake_send([])))
+
+    assert calls == []
+
+
 def test_trusted_ingress_matches_ipv4_mapped_ipv6_peer_against_ipv4_network():
     """Story 84.3: unwrap IPv4-mapped IPv6 before checking network membership."""
     ingress = TrustedIngress(

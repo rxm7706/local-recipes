@@ -255,6 +255,13 @@ def test_trusted_ingress_rejects_a_whitespace_padded_address():
         identity_header="X-Forwarded-User",
         role_header="X-Forwarded-Role",
     )
+    # IPv4-mapped literal declarations collapse to the IPv4 network (Story 84.3).
+    mapped = TrustedIngress(
+        addresses=("::ffff:10.0.0.1",),
+        identity_header="X-Forwarded-User",
+        role_header="X-Forwarded-Role",
+    )
+    assert mapped._networks[0].version == 4
 
 
 def test_trusted_ingress_rejects_a_hostname_address():

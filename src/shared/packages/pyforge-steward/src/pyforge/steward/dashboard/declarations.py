@@ -215,13 +215,20 @@ class TrustedIngress:
         networks: list[ipaddress.IPv4Network | ipaddress.IPv6Network] = []
         for index, address in enumerate(self.addresses):
             try:
-                networks.append(ipaddress.ip_network(address, strict=False))
+                network = ipaddress.ip_network(address, strict=False)
             except ValueError as exc:
                 raise ValueError(
                     f"TrustedIngress.addresses[{index}] {address!r} is not a "
                     f"valid IP network — a hostname or malformed address can "
                     f"never match an ASGI peer host, so it must fail here"
                 ) from exc
+            if (
+                isinstance(network, ipaddress.IPv6Network)
+                and network.prefixlen == 128
+                and (mapped := network.network_address.ipv4_mapped) is not None
+            ):
+                network = ipaddress.ip_network(mapped, strict=False)
+            networks.append(network)
         object.__setattr__(self, "_networks", tuple(networks))
         for field_name, header in (
             ("identity_header", self.identity_header),
