@@ -68,6 +68,7 @@ from ..core.dispatch_verification import (
 from ..core.dispatch_verify_fix import (
     FIX_TURN_START_FAILED_CODE,
     FIX_TURN_TIMEOUT_CODE,
+    FailedVerifyCommand,
     build_verify_fix_prompt,
     choose_verify_fix_launch_mode,
     decide_verify_fix_turn,
@@ -972,14 +973,12 @@ def _maybe_run_verify_fix_turn(
     effective = compose_dispatch_policy(slug, repo_root)
     fix_policy = resolve_verify_fix_settings(effective)
     profile_name, model, wire_layer = _launch_context_from_folded(folded, run_id)
-    preference = tuple(effective.harness_preference.value)
+    preference: tuple[str, ...] = tuple(effective.harness_preference.value)
     if profile_name and profile_name in preference:
         preference = (profile_name, *(p for p in preference if p != profile_name))
     harness = BmadBuildHarness()
     resolution = harness.binary_present(preference, repo_root=repo_root)
     failed_rows = _failed_commands_from_verification_journal(folded, run_id)
-    from ..core.dispatch_verify_fix import FailedVerifyCommand
-
     failed_cmds = tuple(
         FailedVerifyCommand(
             command=str(row.get("command", "")),
