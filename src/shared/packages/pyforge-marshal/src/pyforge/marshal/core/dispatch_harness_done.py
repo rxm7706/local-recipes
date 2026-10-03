@@ -137,6 +137,11 @@ def blocks_harness_relaunch(status: str | None, followup: bool) -> bool:
     return status == "done" and not followup
 
 
+# Story 83.7: refused-landing land-only applies only while the spec reads where a
+# session stopped — not after an operator send-back to ``ready-for-dev``/``draft``.
+_REFUSED_LANDING_LAND_ONLY_STATUSES = frozenset({"in-progress", "in-review"})
+
+
 def should_take_harness_done_land_only(
     status: str | None,
     followup: bool,
@@ -147,10 +152,14 @@ def should_take_harness_done_land_only(
 
     Besides a harness-done worktree spec, a latest run that journaled a refused
     ``dispatch-land`` outcome finished its session — re-dispatch verifies and
-    lands without launching ``bmad-build-auto``."""
+    lands without launching ``bmad-build-auto`` — but only while the worktree
+    spec still reads ``in-progress`` or ``in-review``. A send-back to
+    ``ready-for-dev`` or ``draft`` always launches a session."""
     if blocks_harness_relaunch(status, followup):
         return True
-    return latest_landing_verdict == "refused"
+    if latest_landing_verdict != "refused":
+        return False
+    return status in _REFUSED_LANDING_LAND_ONLY_STATUSES
 
 
 #: The launch INTENT payload key that marks a follow-up review run (Story 73.1, CAP-281).

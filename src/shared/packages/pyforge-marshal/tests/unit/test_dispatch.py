@@ -1872,6 +1872,39 @@ def test_in_progress_spec_without_landing_journal_still_launches(
     assert harness.calls
 
 
+def test_ready_for_dev_with_refused_landing_journal_still_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.7: operator send-back after a refused landing → session, not land-only."""
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-7-sent-back"
+    _write_worktree_spec(
+        tmp_path,
+        slug,
+        story,
+        "---\nstatus: ready-for-dev\ndifficulty: medium\n---\n# spec\n",
+    )
+    _seed_refused_dispatch_land_run(
+        tmp_path,
+        slug,
+        run_id="pyforge-marshal-20261003T120000000Z-cafebabe",
+        story_key=story,
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls
+    assert attempt.data.get("harness_done_land_only") is not True
+
+
 def test_refused_land_only_retry_refuses_again_when_cap4_still_fails(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -73,6 +73,51 @@ def test_should_not_take_land_only_without_a_refused_landing_when_spec_not_done(
     )
 
 
+def test_should_take_land_only_when_refused_and_spec_in_review() -> None:
+    assert (
+        should_take_harness_done_land_only(
+            "in-review",
+            False,
+            latest_landing_verdict="refused",
+        )
+        is True
+    )
+
+
+def test_refused_landing_does_not_force_land_only_after_send_back_to_ready_for_dev() -> None:
+    assert (
+        should_take_harness_done_land_only(
+            "ready-for-dev",
+            False,
+            latest_landing_verdict="refused",
+        )
+        is False
+    )
+
+
+def test_refused_landing_does_not_force_land_only_after_send_back_to_draft() -> None:
+    assert (
+        should_take_harness_done_land_only(
+            "draft",
+            False,
+            latest_landing_verdict="refused",
+        )
+        is False
+    )
+
+
+def test_removing_the_send_back_guard_would_land_only_on_ready_for_dev_after_refusal() -> None:
+    """Mutation guard (Story 83.7 AC): send-back statuses must never take land-only."""
+    assert (
+        should_take_harness_done_land_only(
+            "ready-for-dev",
+            False,
+            latest_landing_verdict="refused",
+        )
+        is False
+    )
+
+
 def test_removing_the_refused_landing_journal_rule_leaves_in_progress_stories_launchable() -> None:
     """Mutation guard (Story 83.7 AC): land-only must not fire without the journal fact."""
     assert blocks_harness_relaunch("in-progress", False) is False
