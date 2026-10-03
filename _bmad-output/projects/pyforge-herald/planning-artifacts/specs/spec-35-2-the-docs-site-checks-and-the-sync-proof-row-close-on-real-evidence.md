@@ -2,7 +2,8 @@
 title: "35.2: The docs-site checks and the sync-proof row close on real evidence"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: db7a31eef2404357ec6430457104683ac42910fe
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

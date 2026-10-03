@@ -990,6 +990,8 @@ deployment.
   severity: medium (unverified)
   promoted: 2026-09-14 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: closed
+  resolution: Story 35.2 (`35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence`)
+  verified: 2026-09-14 — Closed with three tests that run a **real** `pytest --collect-only -q` over a throwaway package and parse its actual stdout, rather than the synthetic strings the suite had been asserting against: the plain `N tests collected` form, the `N/M tests collected` deselected form (pinning that `(?:/\d+)?` captures the SELECTED count, not the total), and the reversed-line scan, which matters because real stdout lists every node id before the summary and a forward scan could match a digit in an id. Deliberately NOT routed through `tests_command()`'s `pixi run -e pyforge-<station>`: that needs a provisioned station env and would make the tests skip on most machines — which is the same "only the plumbing is verified" hole this entry names. Mutation-verified rather than assumed: swapping the regex to `(\d+) items? collected` fails all three, and restoring passes all three, so they bite on the thing they claim to. `scripts/deck_facts.py` is byte-unchanged; this is pure verification of shipped behaviour, which is why it needed no Dream. Suite 45 -> 48 passed. Pinned at `tests/scripts/test_deck_facts.py:1053`.
 
 ### DW-21-7-1: `wasm-analytics-stack`'s standalone infographic poster is corrupted at the source and the corruption was already pushed to the live Claude Design project before it was discovered
 
@@ -1027,8 +1029,8 @@ deployment.
   severity: low
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: done
-  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
-  verified: 2026-10-03 — Provenance sentence reconstructed at `presentations/presenton-pixi-image/README.md:71` (no whole revision existed in git history; meaning restored: trio awaits DesignSync).
+  resolution: Story 35.2 (`35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence`)
+  verified: 2026-10-03 — Provenance sentence reconstructed at `presentations/presenton-pixi-image/README.md:71` (no whole revision existed in git history; the sentence was reconstructed: trio was not seeded on 2026-07-25 and awaits a DesignSync pass).
 
 ### DW-FU-21-2: `deck-trio --deck` refuses four of the ten PyForge posters (atlas, marshal, unifying-strategy, herald) because they do not carry the `<div class="act">`/`.lbl` vocabulary the intent-contract expects
 
@@ -1129,10 +1131,10 @@ deployment.
   evidence: `.herald/sync-proof/pyforge-warden/report-20260919T201122485002Z-8ae6ca61.json` and `…201203451643Z-6b319b4d.json` (`labels: ['failed']`, same `error`); `presentations/pyforge-warden/README.md` push-and-prove ledger 2026-09-19.
   location: src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py
   severity: medium
-  status: done
-  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`)
-  verified: 2026-10-03 — `_readback_matches_pushed_body` at `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py:1863`; `tests/unit/test_deck_pipeline.py:1797` proves CRLF read-back under `push_exports(prove=True)`.
+  status: open
+  note: Missing live proof — a `deck sync-all --slug pyforge-warden` run reaching `unchanged` after HTML read-back is fixed. Story 35.2 removed the tautological content-hash branch from `_readback_matches_pushed_body` (`src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py:1863`); CRLF-only normalisation remains until byte evidence of Design's HTML mutation is captured or a server content hash is wired.
   raised: 2026-09-19 — Owner: herald. Found by the DW-FU-23-6 live proof.
+  resolution: Story 35.1 (`35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals`) closed prematurely; reopened by Story 35.2.
 
 ### DW-herald-59-6: `chain_currency_sweep_check` reds pyforge-herald's `spec→prd` feeds edge — a direct, unavoidable side effect of steward Story 59.6's mandated spec-surface memlog reconcile, not a real staleness
 
