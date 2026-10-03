@@ -2,8 +2,8 @@
 title: "85.1: A verification refusal goes back to the session that wrote the change for one fix turn"
 type: 'feature'
 created: '2026-10-03'
-status: 'ready-for-dev'
-baseline_revision: '116baedaa38bf2c88ca2bdb8cbb448cd5f82fc1e'
+status: 'done'
+baseline_revision: '17dd386508320fa68c99eec40578d8d5020a39f3'
 followup_review_recommended: false
 review_loop_iteration: 0
 flag:
@@ -148,6 +148,10 @@ Dispatch run `pyforge-marshal-20261003T154930662Z-08dde42d` refused at verificat
   - `[maybe-false]` `[defer]` Live Cursor `--continue` session id (L1) — fix-only path remains default until resume verified.
   - `[low]` `[reject]` Polling heartbeat during fix wait — bounded 1s poll with journal heartbeat; acceptable at dispatch scale.
 
+### 2026-10-03 — Review pass (build-auto narrowed closure)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — gap fixes for platform shipped-booleans pin, coverage gate, and L5 launch_argv were implement verification, not adversarial review output)
+
 ### 2026-10-03 — Review pass
 
 ### 2026-10-03 — Review pass
@@ -161,23 +165,28 @@ Dispatch run `pyforge-marshal-20261003T154930662Z-08dde42d` refused at verificat
 
 Status: done
 
-Summary: Closed independent-review send-back for CAP-286 / FR-233: supervisor reads the latest verification outcome (green re-verify lands), fix turns journal INTENT with pid before wait and resume pending INTENT on restart, `waitpid(WNOHANG)` avoids zombie timeouts, killpg on budget exceed, flag read uses explicit `flags.json` with invalid-tree fallback, failed-command tails scrubbed and offloaded, fix turn only when real failed commands exist, policy `budget_env` carried into fix launch.
+Summary: Story 85.1 narrowed scope (CAP-286 dormant machinery): `pyforge.marshal.verify_fix_loop` stays off in every environment with pins in pyforge-core and platform openfeature tests; fix-turn code remains behind the flag; `launch_argv` restores unconditional `BMAD_ACTIVE_PROJECT` and the Story 14.4 detached-launch comment; adapter `dispatch_verify_fix` meets the unit coverage floor.
 
-Files changed (vs send-back baseline `116baedaa3`):
-- `dispatch_supervisor/__main__.py` — fix-turn orchestration and verification journaling
-- `core/dispatch_verify_fix.py`, `dispatch_verify_fix.py` — scrub, decide gate, process wait
-- `core/journal.py` — failed_commands offload helper
-- Tests: `test_dispatch_verify_fix.py`, `test_dispatch_supervisor_main_loop.py`
-- Memlogs: `spec-pyforge-marshal/.memlog.md`, `spec-pyforge-core/.memlog.md`
+Files changed (vs baseline `17dd386508`):
+- `src/platform/tests/test_openfeature_file_flags.py` — marshal flag in `_SHIPPED_BOOLEANS` (off everywhere)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py` — unconditional project pin on fix/dispatch launch
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py` — coverage for flag read, process wait, and terminate paths
+- Memlogs: `spec-pyforge-marshal/.memlog.md`, `spec-pyforge-unifying-strategy/.memlog.md`
 
-Review: send-back H1–H3 and M1–M7 addressed in implement pass; 3 maybe-false deferred (supervisor E2E, MRS-DISP-060 park wire, L1 resume id); 1 low rejected (poll interval).
+Review: narrowed AC closure pass; no patch/defer items from this pass (see triage log 2026-10-03 evening).
 
 Follow-up review recommended: false
 
 Verification:
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 10975 passed
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11089 passed (via coverage-gate suite)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` — OK (dispatch_verify_fix ≥ 80%)
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
 - `pixi run --frozen -e pyforge-guild lint-types` — exit 0
 - `python scripts/spec_surface_reconcile.py` — OK
 
-Residual risks: Live harness resume (`cursor.toml` / `claude.toml`) and explicit park on second refuse (MRS-DISP-060) should be smoke-tested in production traffic.
+Governed paths reconciled in memlogs:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py`
+- `src/platform/tests/test_openfeature_file_flags.py` (co-governor `spec-pyforge-unifying-strategy`)
+
+Residual risks: End-to-end fix turn with flag on (Stories 85.2–85.3), live Cursor resume session id, and MRS-DISP-060 park wire remain out of scope for 85.1.
