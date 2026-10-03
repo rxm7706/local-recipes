@@ -52,6 +52,21 @@ declared_low_risk: false
 
 ## Review Triage Log
 
+### 2026-10-02 — Review pass
+- verdicts: 11 findings — high 1, medium 0, low 2, false 8, maybe-false 0
+- findings:
+  - `false` `reject` Missing story binding information — Spec was correctly transformed from legacy format to new BMAD format per workflow
+  - `false` `reject` Missing "Living CAP citations" section — Correct transformation per BMAD workflow 
+  - `false` `reject` Missing "Ledger key" and "Type / Effort / Deps" information — Correct transformation per BMAD workflow
+  - `low` `reject` Missing mutation test coverage for derived commands — Comprehensive test coverage exists; mutation tests would be cosmetic
+  - `low` `reject` Missing documentation in docstrings explaining relationships — Code is clear with well-established pattern
+  - `false` `reject` Missing error handling/validation in function — Commands are constants, validation unnecessary
+  - `false` `reject` Missing test coverage for edge cases like malformed commands — Commands are constants, not user input
+  - `false` `reject` Missing integration test for all derived commands together — Existing tests already cover this integration
+  - `false` `reject` Missing deduplication test for different environment prefixes — Deduplication is whitespace-based, not prefix-based
+  - `false` `reject` Missing performance impact documentation — Intent explicitly states commands are "seconds-long"
+  - `high` `patch` Surface reconcile command missing from reclassification set — Added _SURFACE_RECONCILE_COMMAND to derived_commands set
+
 ## Verification
 
 **Commands:**

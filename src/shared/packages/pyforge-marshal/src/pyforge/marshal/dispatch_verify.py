@@ -369,7 +369,7 @@ def evaluate_dispatch_verification(
         # refuse the landing (spec-79-2 AC2), never downgrade to MRS-GATE-014.
         # Story 83.2: the same reasoning applies to the derived whole-tree check
         # commands -- they read the whole tree and their failures must refuse.
-        derived_commands = {_LINT_TYPES_COMMAND, _PYFORGE_CORE_TEST_COMMAND, _DEFERRED_WORK_CHECK_COMMAND}
+        derived_commands = {_SURFACE_RECONCILE_COMMAND, _LINT_TYPES_COMMAND, _PYFORGE_CORE_TEST_COMMAND, _DEFERRED_WORK_CHECK_COMMAND}
         reclassifiable_reports = tuple(
             report for report in command_reports if report.get("command") not in derived_commands
         )
