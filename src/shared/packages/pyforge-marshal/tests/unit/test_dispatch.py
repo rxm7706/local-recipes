@@ -387,9 +387,7 @@ def test_surface_session_precondition_resync_failure_still_warns(tmp_path: Path)
         def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
             return _steward_stale_codegraph_report_on_stderr()
 
-    finding = _surface_session_precondition_findings(
-        process=Proc(), repo_root=tmp_path, index_builder=failing_builder
-    )
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path, index_builder=failing_builder)
     assert finding is not None
     assert finding.code == "MRS-DISP-049"
 
@@ -412,9 +410,7 @@ def test_surface_session_precondition_skips_resync_when_other_findings_non_ok(tm
             report = json.dumps({"ok": False, "findings": findings}, indent=2)
             return ProcessResult(returncode=1, stdout="", stderr=report + "\n")
 
-    finding = _surface_session_precondition_findings(
-        process=Proc(), repo_root=tmp_path, index_builder=index_builder
-    )
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path, index_builder=index_builder)
     assert finding is not None
     assert "gh-auth" in finding.message
     assert resync_calls == []
@@ -434,9 +430,7 @@ def test_surface_session_precondition_resync_is_required_for_stale_clear(tmp_pat
     def noop_builder(_root: Path, *, stale: bool, process=None) -> str | None:
         return None
 
-    finding = _surface_session_precondition_findings(
-        process=Proc(), repo_root=tmp_path, index_builder=noop_builder
-    )
+    finding = _surface_session_precondition_findings(process=Proc(), repo_root=tmp_path, index_builder=noop_builder)
     assert finding is not None
     assert finding.code == "MRS-DISP-049"
 
