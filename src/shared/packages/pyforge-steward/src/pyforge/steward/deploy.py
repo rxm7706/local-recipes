@@ -667,9 +667,10 @@ def render_audit_table_grants(
 ) -> str:
     """Render SQL granting the app role only SELECT and INSERT on the audit table.
 
-    DELETE is granted to ``retention_role`` alone — the database identity that
-    runs ``purge_expired_entries``. UPDATE is not granted to either role, so
-    the trail cannot be rewritten in place at the privilege layer (Story 84.1).
+    The retention role receives SELECT, INSERT, and DELETE — enough to run
+    ``purge_expired_entries`` (WHERE needs SELECT; the purge audit row needs
+    INSERT). UPDATE is not granted to either role, so the trail cannot be
+    rewritten in place at the privilege layer (Story 84.1).
     """
     for field_name, value in (
         ("app_role", app_role),
@@ -679,13 +680,20 @@ def render_audit_table_grants(
     ):
         _validate_sql_identifier(field_name, value)
 
+    if app_role.casefold() == retention_role.casefold():
+        raise ValueError(
+            "render_audit_table_grants: app_role and retention_role must differ "
+            "(compared case-insensitively) — the app role must never hold DELETE"
+        )
+
     qualified = f"{schema}.{table}"
     return f"""\
 -- CAP-4 audit trail — append-only for the application role (Story 84.1).
 -- Apply as the migration role after {qualified} exists.
 REVOKE ALL ON TABLE {qualified} FROM {app_role};
 GRANT SELECT, INSERT ON TABLE {qualified} TO {app_role};
-GRANT DELETE ON TABLE {qualified} TO {retention_role};
+REVOKE ALL ON TABLE {qualified} FROM {retention_role};
+GRANT SELECT, INSERT, DELETE ON TABLE {qualified} TO {retention_role};
 """
 
 

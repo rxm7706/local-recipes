@@ -328,12 +328,25 @@ def test_render_audit_table_grants_app_role_is_append_only():
     assert "UPDATE" not in sql.split(f"TO {_APP_DB_ROLE}")[-1]
 
 
-def test_render_audit_table_grants_retention_role_may_delete():
+def test_render_audit_table_grants_retention_role_may_purge_without_update():
     sql = render_audit_table_grants(
         app_role=_APP_DB_ROLE,
         retention_role=_AUDIT_RETENTION_DB_ROLE,
     )
-    assert f"GRANT DELETE ON TABLE public.pyforge_steward_dashboard_auditentry TO {_AUDIT_RETENTION_DB_ROLE};" in sql
+    retention_grant = (
+        f"GRANT SELECT, INSERT, DELETE ON TABLE public.pyforge_steward_dashboard_auditentry "
+        f"TO {_AUDIT_RETENTION_DB_ROLE};"
+    )
+    assert retention_grant in sql
+    assert "DELETE" not in sql.split(f"TO {_APP_DB_ROLE}")[-1]
+    assert "UPDATE" not in sql
+
+
+def test_render_audit_table_grants_refuses_equal_roles_case_insensitively():
+    with pytest.raises(ValueError, match="must differ"):
+        render_audit_table_grants(app_role="platform_app", retention_role="platform_app")
+    with pytest.raises(ValueError, match="must differ"):
+        render_audit_table_grants(app_role="Platform_App", retention_role="platform_app")
 
 
 # ── `steward deploy perimeter` verb (I/O matrix rows 6-8) ───────────────────
