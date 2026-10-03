@@ -2,7 +2,8 @@
 title: '83.6: Dispatch resyncs a stale codegraph index before it launches a session'
 type: 'fix'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'abbb7ba05f5ce65e54b320b4d30e2c9e7d916c90'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
