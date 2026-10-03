@@ -256,6 +256,54 @@ neutralized → 3 deterministic failures) as the proof the tests can fail.
     per-user; (7) environment-pinned 63→64 AC numbers rot — dated-observation convention,
     already bracket-noted in the AC (Story 12.4 precedent).
 
+### 2026-10-03 — Independent follow-up review (run from doctor Story 41.1, `DW-FRR-12-5`)
+
+The pass-1 recommendation (`followup_review_recommended: true`) was honoured: a review
+persona that did not implement this story read the landed diff
+(`3783e63bc5` → `e7f921ba06`, `scripts/spec_surface_check.py` +
+`.claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py`) against this
+spec, with the KEEP section as the bar. **No high or medium defect in the lock mechanism
+itself.** Five findings; the recommendation is now `false`.
+
+- verdicts: 5 findings — high 0, medium 1, low 4 (patch 2, defer 1, reject 2)
+- findings:
+  - `[low]` `[patch]` No `flush`/`fsync` on the temp before `os.replace`
+    (`scripts/spec_surface_check.py:397`): `os.replace` gives atomic *visibility*, not
+    durability, so a crash before writeback can publish a zero-length baseline — which
+    reads as "every spec ungoverned", the exact silent-governance-loss this file exists
+    to prevent. **This overturns pass 1's reject row (4)**, which argued crash-durability
+    of a git-tracked artifact is answered by `git checkout`. That argument stands for
+    *severity*; it is not an argument against a three-line fix that a second independent
+    reviewer raised unprompted. Patched in 41.1: the write goes through an explicit
+    handle with `flush()` + `os.fsync()` before the rename. KEEP is untouched — same
+    sidecar flock, same whole-span bracket, same `os.replace`, same CLI bytes.
+  - `[low]` `[patch]` The three S-12.5 lock tests carry no platform marker, so off Linux
+    they ERROR (not skip) on `fcntl` / `/proc`, contradicting this file's own
+    POSIX-clean-collection note. Patched: `_needs_posix` on all three and `_needs_procfs`
+    on the two that observe a blocked child's fd table.
+  - `[medium]` `[defer]` The `--spec`-less full stamp writes `merged = current`, a
+    snapshot taken *before* the lock, so a full stamp can revert a scoped stamp (including
+    a Story 82.3 `--accept` reconcile) that landed in between. Serialization holds;
+    staleness does not. Deferred, not patched: closing it means moving `_live_state()`
+    inside the lock, which this spec's KEEP explicitly forbids, and the full stamp's
+    accept-everything semantics are a governance decision, not a code one. New ledger row
+    `DW-FRR-12-5-1`.
+  - `[low]` `[reject]` "The temp is a fixed `.tmp` sibling, not `tempfile.mkstemp`." Neither
+    this spec nor the code ever claimed `mkstemp` (grepped: zero occurrences in both); the
+    fixed name is safe because it is only ever written under `_baseline_lock()`, and the
+    code comment says exactly that.
+  - `[low]` `[reject]` "The no-lost-write test uses threads, not processes." Verified not a
+    defect: each `_baseline_lock()` call opens a fresh fd, so `flock` conflicts
+    same-process, and the test fails deterministically with the lock removed — which is
+    what it is for. The two cross-process tests cover the process case.
+
+**Independently verified clean** (named, with how): the lock brackets read → merge →
+`os.replace` on **both** branches (one `with _baseline_lock():` wrapping the whole
+`if/else`, not the scoped branch only); `os.close(fd)` sits in a `finally` *after* the
+`yield`, so the fd neither leaks nor releases early; the sidecar — not the replaced inode —
+is locked, and both `.lock` and `.tmp` are gitignored; and
+`test_full_stamp_blocks_while_lock_held` genuinely fails a scoped-only refactor.
+
 ## Design Notes
 
 - **Spec location deviation (recorded):** this spec is authored directly at the
