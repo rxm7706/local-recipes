@@ -525,6 +525,11 @@ Drift — orphaned between stations.
   closes its DW rows on landing. Six already-fixed rows close without a story (DW-FU-11-1, DW-FU-26-1: Story 78.1;
   DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1: Story 80.1).
   Owner: steward. → Epic 83 / Stories 83.1–83.3, specced 2026-10-02.
+- **2026-10-03 (night) — Found: Story 84.4's tests cannot all fail.** It landed by operator ruling with its behaviour
+  proved by probes; its fourth review found a false-green production test, a missing `prod` case, a no-marker test that
+  does not prove the flag is unread, half declarations config still accepts, and two stale citations. **What it looks
+  like when fixed:** every marker test fails with its mutant and config refuses the halves. Fix story, no CAP, no flag.
+  Owner: steward. → Story 84.5, specced 2026-10-03.
 - **2026-10-03 (Phase 3) — Ruled: steward's deferral decisions.** The operator ruled steward's 15 live NEEDS-DECISION
   entries: 7 fix, 8 close. The fixes land as four module bundles: audit purges recorded and the audit table append-only
   by privilege; audit reads record their scope and the perimeter refuses over-long identities; trusted ingress parses IP
