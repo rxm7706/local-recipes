@@ -458,9 +458,12 @@ def _render_identity_catalog(
         key = _filled_key(col)
         fills[col] = _scalar_measure(model, key)
 
-    ts = (rows[0].get("Verification_Timestamp_UTC") if rows else "") or datetime.now(timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
-    )
+    ts = str(rows[0].get("Verification_Timestamp_UTC") or "").strip() if rows else ""
+    if not ts:
+        raise PyforgeError(
+            "identity_complete_export missing Verification_Timestamp_UTC; "
+            "refusing to publish gist with a synthetic timestamp"
+        )
     for row in rows:
         row["Verification_Timestamp_UTC"] = ts
     sha = _file_sha256(export_path)

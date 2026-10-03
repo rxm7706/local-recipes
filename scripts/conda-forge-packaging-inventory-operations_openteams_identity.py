@@ -224,9 +224,9 @@ def _gh_secondary_rate_limit(exc: BaseException) -> bool:
     text = str(exc).lower()
     if isinstance(exc, subprocess.CalledProcessError):
         text += (getattr(exc, "stderr", "") or "").lower()
-        if exc.returncode == 403:
-            return True
-    return "secondary rate limit" in text or "rate limit" in text and "403" in text
+    return "secondary rate limit" in text or (
+        "rate limit" in text and ("403" in text or "429" in text)
+    )
 
 
 def _run_gh(
@@ -580,7 +580,6 @@ def read_identity_complete_export_records() -> list[dict[str, str]] | None:
     try:
         df = pd.read_parquet(path)
     except Exception as exc:
-        print(_identity_export_missing_message(path), file=sys.stderr)
         print(f"identity_complete_export unreadable at {path}: {exc}", file=sys.stderr)
         return None
     if df.empty:
@@ -703,16 +702,16 @@ def write_dashboard_markdown(
         sys.path.insert(0, script_dir)
     import types
     from openteams_identity_dashboards import (
-        DEFAULT_OPS_CANVAS_PATH,
-        DEFAULT_WORKBOOK_CANVAS_PATH,
+        default_ops_canvas_path,
+        default_workbook_canvas_path,
         write_ops_canvas,
         write_workbook_canvas,
     )
 
     helpers = types.SimpleNamespace(**globals())
-    ops_target = ops_canvas if ops_canvas is not None else DEFAULT_OPS_CANVAS_PATH
+    ops_target = ops_canvas if ops_canvas is not None else default_ops_canvas_path()
     workbook_target = (
-        workbook_canvas if workbook_canvas is not None else DEFAULT_WORKBOOK_CANVAS_PATH
+        workbook_canvas if workbook_canvas is not None else default_workbook_canvas_path()
     )
     if ops_target is None:
         from openteams_identity_dashboards import _priority_mod
@@ -991,12 +990,23 @@ def main() -> int:
 
     overlay_live_local(records, REPO_ROOT / "recipes")
 
-    created = create_missing_issues(gh_bin(), records, {}, dry_run=not args.create_issues)
+    not_filed: list[tuple[str, str]] = []
+    created = create_missing_issues(
+        gh_bin(),
+        records,
+        {},
+        dry_run=not args.create_issues,
+        not_filed=not_filed,
+    )
     if created:
         label = "Created" if args.create_issues else "Would create (dry-run)"
         print(f"{label} {len(created)} missing OpenTeams issue(s):")
         for name, title in created:
             print(f"  {name}: {title}")
+    if not_filed:
+        print(f"Could not file {len(not_filed)} OpenTeams issue(s):", file=sys.stderr)
+        for name, title in not_filed:
+            print(f"  {name}: {title}", file=sys.stderr)
 
     export_path = identity_complete_export_parquet_path()
     if args.output_csv:

@@ -741,8 +741,12 @@ _priority_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_priority_mod)
 _CANVAS_PREFIX = _priority_mod._CANVAS_PREFIX
 resolve_canvas_dir = _priority_mod.resolve_canvas_dir
-DEFAULT_OPS_CANVAS_PATH = _priority_mod.default_ops_canvas_path()
-DEFAULT_WORKBOOK_CANVAS_PATH = _priority_mod.default_workbook_canvas_path()
+def default_ops_canvas_path() -> Path | None:
+    return _priority_mod.default_ops_canvas_path()
+
+
+def default_workbook_canvas_path() -> Path | None:
+    return _priority_mod.default_workbook_canvas_path()
 
 _OPS_CANVAS_SUFFIX = r""" as {
   tab: string;
