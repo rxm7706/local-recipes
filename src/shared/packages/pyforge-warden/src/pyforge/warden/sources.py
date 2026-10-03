@@ -220,6 +220,7 @@ class CycloneDXUnsupportedSpecVersionError(ValueError):
         supported = ", ".join(sorted(_SUPPORTED_CYCLONEDX_SPEC_VERSIONS))
         super().__init__(f"unsupported CycloneDX specVersion {spec_version!r}; supported: {supported}")
 
+
 # purl type token -> Ecosystem (derived from the enum, never hand-spelled
 # twice -- both ecosystems' purl type strings equal their StrEnum value).
 _ECOSYSTEM_BY_PURL_TYPE: dict[str, Ecosystem] = {ecosystem.value: ecosystem for ecosystem in Ecosystem}
