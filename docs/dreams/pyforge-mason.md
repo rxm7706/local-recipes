@@ -426,6 +426,21 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   **Constraints:** tests only; CFE's validator keeps calling conda-smithy's real lint at runtime. The change lands in
   one `retro(cfe):` commit with a CHANGELOG bump (AD-15). Same class as Story 24.1 (a test whose verdict depends on
   its environment). Owner: mason. → `spec-pyforge-mason` CAP-34 / Epic 26 / Story 26.1 (FR-56), specced 2026-10-02.
+- **2026-10-03 (Phase 4+5) — Ruled: mason's open medium and low deferrals are fixed where they sit.** Operator ruling,
+  2026-10-03: Phases 4 (open medium deferrals) and 5 (open low deferrals) of the deferral burn-down run together on the
+  idle station lanes, and, by a second ruling the same day, as fewer, larger stories of at most about 30 rows each, split by
+  package area, with the CFE-surface rows in their own story so its `retro(cfe):` landing stays separate. Mason's ledger
+  holds 20 open medium and 42 open low rows, counted with a parser over its `DW-` entries. **What it looks like when
+  fixed:** two fix stories close 61 of them. One covers Mason's package and the repo tooling it owns: the environment
+  verbs' exit codes and JSON error path, the conda-lock check engine, the meta-guards, the CFE-rebuild guard script and
+  the skf audit scripts. The other covers conda-forge-expert, its failure catalog and the closed CFE-rebuild campaign's
+  records. Each row closes with a `resolution:` naming its story and a `verified:` line citing the line that fixed it; a
+  row whose surface Story 15.1 retired closes on the line that records the retirement. **Constraints:** `fix` stories, no
+  CAP, no flag (`spec-feature-flag-governance` Q1). The CFE story goes through `conda-forge-expert` and lands its CFE edits
+  in a `retro(cfe):` commit with a CHANGELOG semver entry (AD-15). No commit touches both Mason's package and the CFE
+  surface (`mason-cfe-surface-check`). DW-PRESENTON-PHASE0-1 stays open: its exits wait on decisions and access outside
+  this repo. The 71 open rows that carry no severity, and the one open high row, are outside these two phases. Owner:
+  mason (`spec-pyforge-mason`, no new CAP). → Epic 27 / Stories 27.1–27.2, specced 2026-10-03.
 
 ## One-chain fold — 2026-09-17
 
