@@ -384,7 +384,7 @@ development_status:
   83-4-a-serial-campaign-holds-the-next-overlapping-story-while-a-refused-story-is-unlanded: backlog
   83-5-a-campaign-supervisor-keeps-ticking-through-fleet-lock-contention: backlog
   83-6-dispatch-resyncs-a-stale-codegraph-index-before-it-launches-a-session: done
-  83-7-a-re-dispatch-after-a-refused-landing-lands-the-existing-branch-without-a-new-session: backlog
+  83-7-a-re-dispatch-after-a-refused-landing-lands-the-existing-branch-without-a-new-session: done
   83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes: done
   83-9-dispatch-applies-ruff-format-to-a-story-s-files-before-it-verifies: done
   84-1-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift: backlog
