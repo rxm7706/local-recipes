@@ -46,6 +46,7 @@ from ..core.dispatch_harness_done import (
     parse_blocking_condition,
     parse_spec_status,
     should_take_harness_done_land_only,
+    should_take_verification_refusal_land_only,
 )
 from ..core.dispatch_landing import merge_subject_is_marshal_native
 from ..core.dispatch_retry import exclude_harness_profiles_after_transient_failure
@@ -306,20 +307,38 @@ def evaluate_story(reads: _StationReads, story: str) -> StoryEvaluation:
                 live = dispatch_cli._spec_text_prefer_worktree(spec_path, repo_root, worktree, spec_text)
                 status = parse_spec_status(live)
                 latest_landing_verdict: str | None = None
+                latest_journal = None
                 latest_run_dir = dispatch_cli._latest_story_run_dir(fs, repo_root, slug, feed)
                 if latest_run_dir is not None:
-                    latest_landing_verdict = dispatch_cli.gather_dispatch_journal_facts(
+                    latest_journal = dispatch_cli.gather_dispatch_journal_facts(
                         fs, latest_run_dir, latest_run_dir.name
-                    ).landing_verdict
+                    )
+                    latest_landing_verdict = latest_journal.landing_verdict
+                followup = followup_review_recommended(live)
                 if should_take_harness_done_land_only(
                     status,
-                    followup_review_recommended(live),
+                    followup,
                     latest_landing_verdict=latest_landing_verdict,
                 ):
                     # MRS-DISP-040's CAP-4 path: dispatch lands the finished
                     # work instead of launching a session -- reported as
                     # land-only, never as a refusal.
                     land_only = True
+                elif latest_journal is not None:
+                    try:
+                        current_head = vcs.worktree_head_sha(worktree)
+                    except VcsCommandError:
+                        current_head = None
+                    if should_take_verification_refusal_land_only(
+                        status,
+                        followup,
+                        completion_verdict=latest_journal.completion_verdict,
+                        verification_verdict=latest_journal.verification_verdict,
+                        verification_failed_gate=latest_journal.verification_failed_gate,
+                        refusal_head_sha=latest_journal.final_revision or latest_journal.baseline_head_sha,
+                        current_head_sha=current_head,
+                    ):
+                        land_only = True
                 elif status == "blocked":
                     refuse(
                         "MRS-DISP-045",
