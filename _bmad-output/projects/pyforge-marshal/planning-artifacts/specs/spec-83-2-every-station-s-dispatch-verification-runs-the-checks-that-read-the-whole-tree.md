@@ -2,7 +2,7 @@
 title: "83.2: Every station's dispatch verification runs the checks that read the whole tree"
 type: 'fix'
 created: '2026-10-02'
-status: 'done'
+status: 'ready-for-dev'
 review_loop_iteration: 1
 followup_review_recommended: false
 baseline_revision: '1b490ef6ab61301170a8fefa58a9ef9fdbeab689'
@@ -28,11 +28,13 @@ declared_low_risk: false
 
 **Approach:** Append `pixi run --frozen -e pyforge-core pyforge-core-test` and `pixi run --frozen -e pyforge-guild deferred-work-check` in the same place `lint-types` was folded in, after the same dedupe rule, so every station's verification runs them. Both are seconds-long.
 
+*Amended 2026-10-03 (operator ruling, after the first landing was refused):* the deferred-work check fails on any deferral the session itself records in its spec frontmatter (`spec-frontmatter-only-deferral`), because today those rows reach the tracked ledger only after the merge (`dispatch_land_finalize/__main__.py::_run_deferred_work_intake`, Story 53.2). So before verification runs, dispatch runs `scripts/deferred_work_intake.py --fix --project <short slug>` in the story worktree and commits the rows it writes to the story branch. The PR then carries its own deferral rows for review, and the post-merge intake finds nothing left to add.
+
 ## Boundaries & Constraints
 
-**Always:** Fix the defect where the shipped behaviour lives, and pin it with a test that fails without the fix.
+**Always:** Fix the defect where the shipped behaviour lives, and pin it with a test that fails without the fix. Rows come from `deferred_work_intake.py`, the same script and the same short-slug `--project` form the post-merge step uses; never hand-written.
 
-**Never:** Do not edit any station's `verify_commands`. Do not make a WARN-only detector finding fail verification.
+**Never:** Do not edit any station's `verify_commands`. Do not make a WARN-only detector finding fail verification. Do not remove the post-merge intake (it still covers runs that did not go through dispatch verification). Do not write another station's ledger.
 
 </intent-contract>
 
@@ -41,6 +43,8 @@ declared_low_risk: false
 - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` -- Contains `_verify_commands_with_surface_guard` function that needs modification
 - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` -- Test file that validates derived command behavior and needs updated assertions
 - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py` -- Another test file that checks command lists in merge tree scenarios
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` -- `_run_deferred_work_intake` (Story 53.2): the post-merge intake whose invocation (script path, short-slug `--project`) the pre-verification step reuses
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py::evaluate_dispatch_verification` -- where verification runs; the intake and its commit happen before it, in the worktree, on the story branch
 
 ## Tasks & Acceptance
 
@@ -54,10 +58,21 @@ declared_low_risk: false
 - Given a story whose change adds an uncited post-cutoff verified: line, when its dispatch verifies, then verification fails
 - Given a story that breaks neither, when its dispatch verifies, then it lands as today
 - Given either command removed from the guard, when its new test runs, then it fails (mutation)
+- Given a session that records a deferral in its spec frontmatter, when its dispatch verifies, then dispatch first runs `deferred_work_intake.py --fix --project <short slug>` in the worktree and commits the new rows to the story branch, the deferred-work check passes, and the landing's post-merge intake adds nothing
+- Given a session that records no deferral, when its dispatch verifies, then no intake commit is made
+- Given the intake refuses a deferral (it cites no resolvable repo path, Story 21.8) or exits non-zero, when its dispatch verifies, then verification fails naming the intake's refusal, never passes silently
+- Given the pre-verification intake removed, when its new test runs, then it fails (mutation)
 
 ## Spec Change Log
 
+- 2026-10-03 — operator ruling ("write rows first"). The first landing was refused on `lint-types` (`ruff format` on `dispatch_verify.py:372`, fixed on this branch by the operator session). Landing review then found the design defect: `pixi run --frozen -e pyforge-guild deferred-work-check` exits 2 on this branch with `spec-frontmatter-only-deferral` for this spec's own `deferred:` entry, so with the derived check as built every dispatch that records a deferral would be refused. Amended Approach, Boundaries, Code Map and four acceptance criteria (pre-verification intake on the story branch). Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session) — sent back
+- Dispatch run `pyforge-marshal-20261003T002853465Z-a34606bb` refused at verification: MRS-GATE-001, `pixi run --frozen -e pyforge-guild lint-types` exited 1 (`ruff format`, `dispatch_verify.py:372`). Fixed on the branch by `ruff format`; `lint-types`, `pyforge-marshal-test` (10832 passed), `pyforge-deps-test` (130 passed) and `pyforge-core-test` (2171 passed) then green.
+- `high` `bad_spec` `deferred-work-check` exits 2 on this branch: `spec-frontmatter-only-deferral` for this spec's own `deferred:` entry, because frontmatter deferrals reach the tracked ledger only post-merge. As built, the derived check refuses every dispatch that records a deferral. Operator ruling 2026-10-03: run the intake before verification and commit its rows to the story branch (Spec Change Log).
+- The open `deferred:` entry ("Missing backward compatibility for command output parsing") is left for the pre-verification intake to ingest, which is the amended behaviour's own first exercise.
 
 ### 2026-10-02 — Review pass
 - verdicts: 11 findings — high 1, medium 0, low 2, false 8, maybe-false 0
