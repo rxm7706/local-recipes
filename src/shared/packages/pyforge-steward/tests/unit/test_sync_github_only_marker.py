@@ -18,7 +18,7 @@ from pyforge.steward.sync import (
 )
 
 
-def _write_flag_tree(tmp_path: Path, variant: str, name: str) -> Path:
+def _write_flagd_tree(tmp_path: Path, variant: str, name: str) -> Path:
     path = tmp_path / name
     path.write_text(
         json.dumps(
@@ -43,12 +43,12 @@ def _config_with_marker(marker: GitHubOnlyMarker) -> SyncConfig:
 
 @pytest.fixture
 def flag_on(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flag_tree(tmp_path, "on", "flags-on.json")))
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flagd_tree(tmp_path, "on", "flags-on.json")))
 
 
 @pytest.fixture
 def flag_off(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flag_tree(tmp_path, "off", "flags-off.json")))
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flagd_tree(tmp_path, "off", "flags-off.json")))
 
 
 def test_flag_on_labeled_unlinked_item_is_skipped_ok(flag_on, caplog):
@@ -220,7 +220,7 @@ def test_schedule_batch_skips_marked_item_and_syncs_linked(flag_on):
 def test_schedule_batch_completes_when_flag_unreadable(monkeypatch, tmp_path, flag_on):
     broken = tmp_path / "broken-overlay.json"
     broken.write_text("{", encoding="utf-8")
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flag_tree(tmp_path, "on", "flags-on.json")))
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_write_flagd_tree(tmp_path, "on", "flags-on.json")))
     monkeypatch.setenv("PYFORGE_FLAG_OVERLAYS_PATH", str(broken))
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
 
@@ -242,3 +242,8 @@ def test_tracked_flags_tree_carries_sync_github_only_marker_off_by_default():
     entry = json.loads(tree.read_text(encoding="utf-8"))["flags"][SYNC_GITHUB_ONLY_MARKER_FLAG]
     assert entry["defaultVariant"] == "off"
     assert entry["metadata"]["story"] == "84-4-sync-skips-a-board-item-marked-github-only"
+
+
+def test_the_marker_flag_key_is_the_shipped_key():
+    """The constant the sync gate reads is the key flags.json ships (and the flag gate looks for)."""
+    assert SYNC_GITHUB_ONLY_MARKER_FLAG == "pyforge.steward.sync_github_only_marker"
