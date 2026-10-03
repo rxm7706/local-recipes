@@ -11,7 +11,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-scribe/planning-artifacts/briefs/brief-pyforge-scribe-2026-07-25/brief.md
   - docs/specs/claude-team-memory.md
 mode: headless-express — no interactive elicitation; epic/story structure drafted directly from the PRD's Wave 1/Wave 2 split and the architecture spine's module breakdown
-updated: "2026-09-29"   # RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 26 / Story 26.1 minted (fix, no CAP): nine of scribe's 14 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29: Epic 24 minted (24.1–24.3, spec-pyforge-scribe CAP-32) from the station Dream entry of 2026-09-29. Prior 2026-09-28:  chain-currency cascade (arch -> epics) after the 2026-09-28 spine re-stamp; no story change. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 21 minted (21.1, spec-python-foundry-cutover fnd:CAP-15). Prior 2026-09-20
 currency_review: "Reviewed 2026-09-17 (one-chain scribe fold) — INV-A window cites spec-pyforge-scribe CAP-1..26; epic numbers unchanged. No blocked keys flipped."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -910,6 +910,25 @@ So that `bmad-estate-check` reads the same on my checkout as it does in CI, and 
 **When** the catalog is derived from a root that is a git work tree
 **Then** a directory under `.claude/skills/` counts, as a skill or as a no-`SKILL.md` directory, only when git lists at least one file in it that it does not ignore (tracked, or untracked and not ignored); an ignored directory and a directory holding only ignored files are skipped; a new, not-yet-added skill still counts; when the root is not a work tree or git is unavailable, the disk walk is today's
 **And** on a clean checkout `scribe catalog bmad-estate --check` exits 0 and `--write` changes no byte; on the primary checkout with `caveman` deployed it exits 0; the new tests build a temporary work tree with an ignored skill, an ignored-files-only directory, a tracked skill and an untracked skill, and fail when the filter is removed (mutation); `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
+**Status:** backlog
+
+## Epic 26: Phase 4+5 of the deferral burn-down: scribe's open medium and low deferrals
+
+Minted 2026-10-03 from the station Dream's Realization log entry of the same date: the operator's Phase 4+5 rulings on the deferral burn-down (open medium and low rows close together through fix stories; then, the same day, exactly one story per station). One `fix` story, no CAP, no flag; it closes 9 of 14 open rows: 1 of 2 medium, 8 of 12 low (measured with a parser over the station's `deferred-work-ledger.md`), each with a `resolution:` and a cited `verified:` line. **HARD boundaries:** no blanket closure (a row closes only by a landed fix or the cited line that already holds it); each fix is pinned by a test that fails without it; a recommended follow-up review runs as an independent adversarial pass. Five open rows cannot close through a fix and stay open: DW-FU-19-1-3 (operator-bound); DW-8-1-2 (operator-bound); DW-FU-19-2 (new capability, not a defect); DW-FU-19-1-2 (new capability, not a defect); DW-SCRIBE-2026-09-09-ADR-INTEROP (a question, not a defect).
+
+### Story 26.1: Recall breaks ties by recency, and scribe's other open deferrals close
+
+As a session that asks team memory what was decided,
+I want scribe's open medium and low deferred-work rows fixed where they live,
+So that recall answers with the current statement and the deferral burn-down closes each row with a landed fix.
+
+**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** the capabilities that shipped each behaviour (the stories each row names); no new CAP, no flag (`spec-feature-flag-governance` Q1) • **Closes:** DW-FU-3-2-4, DW-FU-3-2, DW-FU-3-2-3, DW-8-1-1, DW-FU-19-1, DW-FRR-1-1, DW-FRR-3-1, DW-FRR-4-1, DW-FRR-5-2
+**Surface:** `src/shared/packages/pyforge-scribe/src/pyforge/scribe/` (`recall.py`, `compile.py`, `transcripts.py`, `capture.py`, `graph_store_plugins.py`, and the modules the follow-up reviews reach), the scribe tests; `src/shared/packages/django-scribe/` (Story 5.2's portal slice, if its review finds a defect there) and `src/platform/tests/`; `scripts/scribe_graph_freshness_check.py`, `src/shared/packages/pyforge-scribe/ops/systemd/`, `scripts/governance_currency_check.py`, `tests/scripts/`; `scripts/.spec-surface-baseline.json`; the scribe `deferred-work-ledger.md`
+**Given** scribe's 14 open medium and low deferred-work rows (measured 2026-10-03 with a parser over the ledger), nine of which a fix can close
+**When** each of the nine is fixed where its behaviour lives and the four recommended follow-up reviews run as independent adversarial passes
+**Then** recall breaks an overlap tie by recency, transcript node ids no longer collide across subdirectories, the timer and the freshness period cannot drift apart silently, `governance-currency` reads the per-tool pointer files, the Epic 3 surface is reconciled, and every review finding is fixed
+**And** each of the nine rows is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed; the five operator-bound or capability rows stay open; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green
+**Spec:** `planning-artifacts/specs/spec-26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close.md`
 **Status:** backlog
 
 ## Platform floor addendum — 2026-09-07
