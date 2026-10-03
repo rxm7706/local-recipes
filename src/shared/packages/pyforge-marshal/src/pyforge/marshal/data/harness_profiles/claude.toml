@@ -39,6 +39,27 @@ authcheck_ok_pattern = "\"loggedIn\":\\s*true"
 verified = true
 notes = "Verified 2026-08-27: authenticated (claude.ai), smoke-tested -p invocation shape."
 
+# Story 85.1 (CAP-286): verification fix turn — continue the same conversation in the worktree cwd.
+resume_argv = [
+  "-p",
+  "--permission-mode",
+  "bypassPermissions",
+  "--settings",
+  '{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}',
+  "--continue",
+  "{model_args}",
+  "{prompt}",
+]
+fix_only_argv = [
+  "-p",
+  "--permission-mode",
+  "bypassPermissions",
+  "--settings",
+  '{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}',
+  "{model_args}",
+  "{prompt}",
+]
+
 # Story 28.2 (SPEC-marshal-token-economy CAP-2): the wire-compression
 # wrapper, applied ONLY when policy's `[context]` block enables the `wire`
 # layer (Story 28.1). Absent that declaration nothing below is read and the

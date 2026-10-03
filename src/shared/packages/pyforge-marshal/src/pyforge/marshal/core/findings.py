@@ -1935,6 +1935,12 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # immediately before the merge, the tier of MRS-DISP-044/048.
         "MRS-DISP-056",
         "MRS-DISP-057",
+        # Story 85.1 (CAP-286): verification fix turn could not start, exceeded
+        # its wall-clock budget, or re-verification still refused — ERROR, never
+        # a pass or a second turn.
+        "MRS-DISP-058",
+        "MRS-DISP-059",
+        "MRS-DISP-060",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

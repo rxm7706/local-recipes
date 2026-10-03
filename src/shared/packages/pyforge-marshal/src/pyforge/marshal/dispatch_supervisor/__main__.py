@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import signal
 import sys
 import time
 from collections.abc import Callable
@@ -15,6 +16,7 @@ import yaml
 from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
+from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from ..adapters.publisher_host import HostPublisher
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
@@ -57,12 +59,22 @@ from ..core.dispatch_survival import (
     build_timing_record,
     timing_record_payload,
 )
+from ..core.dispatch_verify_fix import (
+    FIX_TURN_REVERIFY_REFUSED_CODE,
+    FIX_TURN_START_FAILED_CODE,
+    FIX_TURN_TIMEOUT_CODE,
+    build_verify_fix_prompt,
+    choose_verify_fix_launch_mode,
+    decide_verify_fix_turn,
+    extract_failed_verify_commands,
+)
 from ..core.dispatch_verification import (
     DispatchVerificationInput,
     DispatchVerificationVerdict,
     judge_dispatch_verification,
     primary_gate_failure,
 )
+from ..core.policy import resolve_verify_fix_settings
 from ..core.egress import to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
@@ -92,6 +104,7 @@ from ..dispatch_verify import (
     resolve_spec_text_for_story,
     run_dispatch_ruff_format_before_verify,
 )
+from ..dispatch_verify_fix import verify_fix_loop_enabled, wait_for_process
 from ..ports.commit import VcsRef
 from ..ports.fs import FsPort
 from ..ports.publisher import RunPublisherPort
@@ -462,11 +475,33 @@ def _landing_succeeded(folded, run_id: str) -> bool:
     return landing_journal_indicates_complete(_landing_outcome_verdict(folded, run_id))
 
 
-def _verification_already_journaled(folded, run_id: str) -> bool:
+def _verify_fix_turn_completed(folded, run_id: str) -> bool:
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX):
+        if entry.run_id == run_id and entry.phase == Phase.OUTCOME:
+            return bool(entry.payload.get("ok"))
+    return False
+
+
+def _verify_fix_turn_journaled(folded, run_id: str) -> bool:
     return any(
         entry.run_id == run_id and entry.phase == Phase.OUTCOME
-        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION)
+        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX)
     )
+
+
+def _verification_already_journaled(folded, run_id: str) -> bool:
+    outcomes = [
+        entry
+        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION)
+        if entry.run_id == run_id and entry.phase == Phase.OUTCOME
+    ]
+    if not outcomes:
+        return False
+    if len(outcomes) >= 2:
+        return True
+    if _verify_fix_turn_completed(folded, run_id):
+        return False
+    return True
 
 
 def _dispatch_push_already_journaled(folded, run_id: str) -> bool:
@@ -876,6 +911,221 @@ def _promote_blocked_twin(
     return counter
 
 
+def _launch_context_from_folded(folded, run_id: str) -> tuple[str | None, str | None, dict[str, object] | None]:
+    profile_name: str | None = None
+    model: str | None = None
+    wire_layer: dict[str, object] | None = None
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
+        if entry.run_id != run_id:
+            continue
+        if entry.phase == Phase.INTENT:
+            raw_model = entry.payload.get("model")
+            model = raw_model if isinstance(raw_model, str) else None
+            context = entry.payload.get("context")
+            if isinstance(context, dict):
+                wire = context.get("wire")
+                wire_layer = wire if isinstance(wire, dict) else None
+        elif entry.phase == Phase.OUTCOME:
+            raw_profile = entry.payload.get("harness_profile")
+            profile_name = raw_profile if isinstance(raw_profile, str) else None
+    return profile_name, model, wire_layer
+
+
+def _failed_commands_from_verification_journal(folded, run_id: str) -> tuple[dict[str, object], ...]:
+    for entry in reversed(folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION)):
+        if entry.run_id != run_id or entry.phase != Phase.OUTCOME:
+            continue
+        raw = entry.payload.get("failed_commands")
+        if isinstance(raw, list):
+            return tuple(item for item in raw if isinstance(item, dict))
+    return ()
+
+
+def _maybe_run_verify_fix_turn(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    repo_root: Path,
+    slug: str,
+    story_key: str,
+    worktree: Path,
+    git_facts: DispatchGitFacts,
+    folded,
+    session_alive: bool,
+) -> tuple[int, bool, object]:
+    """Run at most one fix turn; re-verify once. Returns (counter, verified, folded)."""
+    v_outcome = _verification_outcome_verdict(folded, run_id)
+    decision = decide_verify_fix_turn(
+        flag_enabled=verify_fix_loop_enabled(repo_root=repo_root),
+        verification_verdict=v_outcome,
+        has_git_progress=has_git_progress(git_facts),
+        fix_turn_already_ran=_verify_fix_turn_journaled(folded, run_id),
+        session_alive=session_alive,
+    )
+    if not decision.run:
+        return counter, False, folded
+
+    effective = compose_dispatch_policy(slug, repo_root)
+    fix_policy = resolve_verify_fix_settings(effective)
+    profile_name, model, wire_layer = _launch_context_from_folded(folded, run_id)
+    preference = tuple(effective.harness_preference.value)
+    if profile_name and profile_name in preference:
+        preference = (profile_name, *(p for p in preference if p != profile_name))
+    harness = BmadBuildHarness()
+    resolution = harness.binary_present(preference, repo_root=repo_root)
+    failed_rows = _failed_commands_from_verification_journal(folded, run_id)
+    from ..core.dispatch_verify_fix import FailedVerifyCommand
+
+    failed_cmds = tuple(
+        FailedVerifyCommand(
+            command=str(row.get("command", "")),
+            stdout=str(row.get("output_tail") or ""),
+            stderr="",
+            exit_code=row.get("exit_code") if isinstance(row.get("exit_code"), int) else None,
+        )
+        for row in failed_rows
+        if row.get("command")
+    )
+    prompt = build_verify_fix_prompt(failed_cmds, output_tail_bytes=fix_policy.output_tail_bytes)
+    launch_mode = choose_verify_fix_launch_mode(
+        resume_argv=resolution.spec.resume_argv if resolution.spec else None
+    )
+    intent_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+        phase=Phase.INTENT,
+        payload={
+            "launch_mode": launch_mode.value,
+            "prompt_bytes": len(prompt.encode("utf-8")),
+            "failed_command_count": len(failed_cmds),
+            "wall_clock_budget_s": fix_policy.wall_clock_seconds,
+        },
+    )
+    counter += 1
+    fix_log = run_dir / "verify-fix.log"
+    started = time.monotonic()
+    launch_error: str | None = None
+    fix_pid: int | None = None
+    try:
+        launch = harness.dispatch_verify_fix(
+            worktree,
+            resolution=resolution,
+            prompt=prompt,
+            model=model,
+            log_path=fix_log,
+            wire_layer=wire_layer,
+            launch_mode=launch_mode.value,
+            project_slug=slug,
+            budget_env={},
+        )
+        fix_pid = launch.pid
+    except BuildHarnessError as exc:
+        launch_error = str(exc)
+
+    if launch_error is not None or fix_pid is None:
+        outcome_entry = build_entry(
+            id=JournalEntryId(writer_id, counter),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+            phase=Phase.OUTCOME,
+            intent_id=intent_entry.id,
+            payload={
+                "ok": False,
+                "code": FIX_TURN_START_FAILED_CODE,
+                "error": launch_error or "launch returned no pid",
+                "elapsed_s": time.monotonic() - started,
+            },
+        )
+        counter += 1
+        try:
+            _append_entry(fs, run_dir, intent_entry, fsync=True)
+            _append_entry(fs, run_dir, outcome_entry, fsync=False)
+        except FsError:
+            pass
+        return counter, False, folded
+
+    exited = wait_for_process(process, fix_pid, timeout_s=fix_policy.wall_clock_seconds)
+    elapsed = time.monotonic() - started
+    if not exited:
+        try:
+            os.kill(fix_pid, signal.SIGTERM)
+        except OSError:
+            pass
+        outcome_entry = build_entry(
+            id=JournalEntryId(writer_id, counter),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+            phase=Phase.OUTCOME,
+            intent_id=intent_entry.id,
+            payload={
+                "ok": False,
+                "code": FIX_TURN_TIMEOUT_CODE,
+                "session_pid": fix_pid,
+                "elapsed_s": elapsed,
+            },
+        )
+        counter += 1
+        try:
+            _append_entry(fs, run_dir, intent_entry, fsync=True)
+            _append_entry(fs, run_dir, outcome_entry, fsync=False)
+        except FsError:
+            pass
+        return counter, False, folded
+
+    outcome_entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+        phase=Phase.OUTCOME,
+        intent_id=intent_entry.id,
+        payload={
+            "ok": True,
+            "session_pid": fix_pid,
+            "elapsed_s": elapsed,
+            "launch_mode": launch_mode.value,
+        },
+    )
+    counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+        _append_entry(fs, run_dir, outcome_entry, fsync=False)
+    except FsError:
+        pass
+    text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+    if text is not None:
+        folded = _fold_dispatch_journal(fs, run_dir, text)
+
+    counter = _run_and_journal_verification(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        run_dir=run_dir,
+        run_id=run_id,
+        writer_id=writer_id,
+        counter=counter,
+        repo_root=repo_root,
+        slug=slug,
+        story_key=story_key,
+        worktree=worktree,
+    )
+    text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+    if text is not None:
+        folded = _fold_dispatch_journal(fs, run_dir, text)
+    v_after = _verification_outcome_verdict(folded, run_id)
+    verified = v_after == DispatchVerificationVerdict.VERIFIED.value
+    return counter, verified, folded
+
+
 def _run_supervisor_finalize_sequence(
     *,
     fs: FsPort,
@@ -1058,6 +1308,24 @@ def _run_supervisor_finalize_sequence(
     else:
         v_outcome = _verification_outcome_verdict(folded, run_id)
         verified = v_outcome == DispatchVerificationVerdict.VERIFIED.value
+
+    if not verified:
+        counter, verified, folded = _maybe_run_verify_fix_turn(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            repo_root=repo_root,
+            slug=slug,
+            story_key=story_key,
+            worktree=worktree,
+            git_facts=git_facts,
+            folded=folded,
+            session_alive=False,
+        )
 
     counter = _journal_finalize_attempt(
         fs=fs,
@@ -1519,6 +1787,22 @@ def _run_and_journal_verification(
     )
     verification_verdict = judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
     failed = primary_gate_failure(envelope.findings)
+    command_reports = envelope.data.get("commands")
+    reports_tuple = tuple(command_reports) if isinstance(command_reports, list) else ()
+    fix_settings = resolve_verify_fix_settings(effective)
+    failed_commands_payload: list[dict[str, object]] = []
+    if verification_verdict == DispatchVerificationVerdict.REFUSED:
+        for item in extract_failed_verify_commands(reports_tuple, envelope.findings):
+            combined = "\n".join(part for part in (item.stdout, item.stderr) if part.strip())
+            encoded = combined.encode("utf-8", errors="replace")
+            tail = encoded[-fix_settings.output_tail_bytes :].decode("utf-8", errors="replace")
+            failed_commands_payload.append(
+                {
+                    "command": item.command,
+                    "exit_code": item.exit_code,
+                    "output_tail": to_redacted_text(tail),
+                }
+            )
     # Story 28.15 (CAP-17): a `warn`-mode scope-violation advisory never
     # becomes `failed` above (it classifies Verdict.WARN, ok-status) -- so
     # without this it would be invisible outside the raw journal, exactly
@@ -1558,6 +1842,7 @@ def _run_and_journal_verification(
             "failed_gate": failed.code if failed is not None else None,
             "failed_message": failed.message if failed is not None else None,
             "scope_violation_advisories": scope_advisories,
+            "failed_commands": failed_commands_payload,
         },
     )
     counter += 1
