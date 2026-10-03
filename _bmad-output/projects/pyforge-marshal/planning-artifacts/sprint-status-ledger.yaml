@@ -380,7 +380,7 @@ development_status:
   83-1-dispatch-liveness-proves-a-pid-is-the-session-it-launched: done
   83-10-a-verification-refusal-never-relaunches-a-fresh-session-or-raises-the-model: done
   83-11-the-landing-heal-unions-appended-team-memory-index-lines: done
-  83-12-dispatch-verification-runs-the-coverage-gate-of-every-station-the-story-touches: backlog
+  83-12-dispatch-verification-runs-the-coverage-gate-of-every-station-the-story-touches: done
   83-13-the-landing-heal-keeps-the-team-memory-index-s-blank-lines: backlog
   83-14-a-manual-merge-mid-dispatch-never-strands-the-session-s-fixes: backlog
   83-15-dispatch-applies-ruff-s-safe-fixes-before-it-verifies: backlog
@@ -572,9 +572,9 @@ development_status:
   epic-81-retrospective: optional
   epic-82: done
   epic-82-retrospective: optional
-  epic-83: in-progress
+  epic-83: backlog
   epic-83-retrospective: optional
-  epic-84: in-progress
+  epic-84: backlog
   epic-84-retrospective: optional
   epic-85: backlog
   epic-85-retrospective: optional
