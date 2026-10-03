@@ -1509,7 +1509,7 @@ pyforge-herald pyforge-herald-test` green
 
 ## Epic 35: Phase 4+5 of the deferral burn-down: herald's open medium and low deferrals
 
-Minted 2026-10-03 from the station Dream's Realization log entry of the same date: the operator's Phase 4+5 rulings on the deferral burn-down (open medium and low rows close together through fix stories; then, the same day, exactly one story per station). One `fix` story, no CAP, no flag; it closes 21 open rows: 6 medium, 15 low (measured with a parser over the station's `deferred-work-ledger.md`), each with a `resolution:` and a cited `verified:` line. **HARD boundaries:** no blanket closure (a row closes only by a landed fix or the cited line that already holds it); each fix is pinned by a test that fails without it; a recommended follow-up review runs as an independent adversarial pass. The one open high row (DW-21-7-1) is outside Phases 4 and 5.
+Minted 2026-10-03 from the station Dream's Realization log entry of the same date: the operator's Phase 4+5 rulings on the deferral burn-down (open medium and low rows close together through fix stories; then, the same day, exactly one story per station). One `fix` story, no CAP, no flag; it closes 10 open rows: 6 medium, 4 low (the eleven follow-up-review rows left it by operator ruling 2026-10-03 and run as review batches) (measured with a parser over the station's `deferred-work-ledger.md`), each with a `resolution:` and a cited `verified:` line. **HARD boundaries:** no blanket closure (a row closes only by a landed fix or the cited line that already holds it); each fix is pinned by a test that fails without it. The one open high row (DW-21-7-1) is outside Phases 4 and 5.
 
 ### Story 35.1: The deck transport, sync-all, deck tooling and docs site close their open deferrals
 
@@ -1517,14 +1517,14 @@ As the owner of the deck family,
 I want herald's open medium and low deferred-work rows fixed where they live,
 So that the deferral burn-down closes them with landed fixes and cited evidence, not a blanket close.
 
-**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** the capabilities that shipped each behaviour (the stories each row names); no new CAP, no flag (`spec-feature-flag-governance` Q1) • **Closes:** DW-21-7-2, DW-FU-23-6-1, DW-FU-21-2, DW-FU-24-2-1, DW-FU-18-1, DW-FU-18-3, DW-FU-15-1-2, DW-FU-21-10, DW-FU-21-3, DW-herald-59-6, DW-1-4-1, DW-1, DW-2, DW-3, DW-FRR-1-2, DW-FRR-15-1, DW-FRR-20-2, DW-FRR-23-1, DW-FRR-23-2, DW-FRR-23-5, DW-FRR-23-6
-**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/` (`transport/mcp_transport.py`, `transport/agent_sdk_transport.py`, `deck_pipeline.py`, `sync_all.py`, `pptx_pipeline.py`, and the modules the follow-up reviews reach), the herald tests; `docsite/build.py`; `scripts/deck_trio.py`, `scripts/deck_facts.py`, `tests/scripts/test_deck_trio.py`, `tests/scripts/test_deck_facts.py`; `presentations/**` (the four posters' markup, the presenton README); `scripts/detectors.py` and `tests/scripts/` (a pin test only, if none exists); the herald `deferred-work-ledger.md`
-**Given** herald's 21 open medium and low deferred-work rows (measured 2026-10-03 with a parser over the ledger)
-**When** each is fixed where its behaviour lives, the three whose fix already landed are re-read and pinned, and the eleven recommended follow-up reviews run as independent adversarial passes
-**Then** `list_files` parses the live server's answer, `deck sync-all` publishes the standalone poster, `deck-trio --deck` derives all ten PyForge posters, `docsite/build.py` has unit tests, an ambiguous layout name is refused, and every review finding is fixed
+**Type:** fix • **Effort:** L • **Deps:** — • **FR/AD:** the capabilities that shipped each behaviour (the stories each row names); no new CAP, no flag (`spec-feature-flag-governance` Q1) • **Closes:** DW-21-7-2, DW-FU-23-6-1, DW-FU-21-2, DW-FU-24-2-1, DW-FU-18-1, DW-FU-18-3, DW-FU-15-1-2, DW-FU-21-10, DW-FU-21-3, DW-herald-59-6
+**Surface:** `src/shared/packages/pyforge-herald/src/pyforge/herald/` (`transport/mcp_transport.py`, `transport/agent_sdk_transport.py`, `deck_pipeline.py`, `sync_all.py`, `pptx_pipeline.py`), the herald tests; `docsite/build.py`; `scripts/deck_trio.py`, `scripts/deck_facts.py`, `tests/scripts/test_deck_trio.py`, `tests/scripts/test_deck_facts.py`; `presentations/**` (the four posters' markup, the presenton README); `scripts/detectors.py` and `tests/scripts/` (a pin test only, if none exists); the herald `deferred-work-ledger.md`
+**Given** herald's 10 open medium and low deferred-work rows in scope (measured 2026-10-03 with a parser over the ledger)
+**When** each is fixed where its behaviour lives and the three whose fix already landed are re-read and pinned
+**Then** `list_files` parses the live server's answer, `deck sync-all` publishes the standalone poster, `deck-trio --deck` derives all ten PyForge posters, `docsite/build.py` has unit tests, and an ambiguous layout name is refused
 **And** each row is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed; no poster is re-pushed and no visible poster text changes; `pixi run --frozen -e pyforge-herald pyforge-herald-test` green
 **Spec:** `planning-artifacts/specs/spec-35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals.md`
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
