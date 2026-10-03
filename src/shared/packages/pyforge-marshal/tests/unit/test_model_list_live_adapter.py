@@ -7,6 +7,7 @@ import json
 from unittest.mock import MagicMock
 
 from pyforge.core.process import ProcessError
+
 from pyforge.marshal.adapters.model_list_http import http_get_for_model_list
 from pyforge.marshal.adapters.model_list_live import LiveModelListFetch, fetch_live_ids_for_profile
 from pyforge.marshal.core.harness_profile import HarnessProfile, ModelListSource
@@ -156,7 +157,6 @@ def test_fetch_invalid_credential_env_name():
 
 def test_fetch_anthropic_pagination_stuck():
     base = "https://api.anthropic.com/v1/models"
-    page_url = base + "?limit=1000"
     body = json.dumps({"data": [{"id": "m1"}], "has_more": True, "last_id": "m1"}).encode()
 
     class _StuckFetch:
