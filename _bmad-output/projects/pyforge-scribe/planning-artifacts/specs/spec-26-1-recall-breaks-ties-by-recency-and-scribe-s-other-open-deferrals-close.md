@@ -2,9 +2,9 @@
 title: "26.1: Recall breaks ties by recency, and scribe's other open deferrals close"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: '96743a013a9ddaf4ffa67cc987ab86518d075387'
-final_revision: '796d388ef6931a333b126ce2478ae28416283c64'
+final_revision: 'db545fec9dade676ea98330999b2ff75d525b631'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -118,6 +118,10 @@ Correct and tested: the recall recency tie-break (only equal overlap reorders; d
   - `[false]` `[reject]` Verification gap: no test for equal valid_from tie-break — disproved by `test_lexical_tie_break_equal_valid_from_orders_by_id`.
   - `[reject]` `[reject]` Low: governance DOCUMENTS tuple order unstable — ruff-format only; no runtime harm.
 
+### 2026-10-03 — Review pass (landing-review closure)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, reject 0
+- findings: (none — second send-back items implemented: kind-gated transcript citation resolvability, subprocess `__main__` tests, governance tmp_path cases, memlog correction, OnCalendar `..` rejection)
+
 ### 2026-10-03 — Review pass (post send-back)
 - verdicts: 5 findings — high 0, medium 0, low 0, false 5, reject 0
 - findings:
@@ -131,15 +135,17 @@ Correct and tested: the recall recency tie-break (only equal overlap reorders; d
 
 Status: done
 
-Summary: Landing-review fixes for Story 26.1: five non-FRR deferrals closed (recency tie-break, path-relative transcript ids without widening scan, spec-surface memlog, strict timer period parser, governance-currency pointer files and CLI flags). DW-FRR rows stay open for marshal 73.x drain.
+Summary: Story 26.1 closes five deferrals (recency tie-break, path-relative transcript ids, spec-surface reconcile, timer period sync test, governance-currency pointer files). Second landing-review closure: transcript citation format-only when `kind == "transcript"`, subprocess tests for script `__main__` blocks, expanded governance script tests, memlog wording fix (flat glob). DW-FRR rows remain open for marshal 73.x.
 
 Files changed:
-- `recall.py` — `(?:[^/\\:]+/)*` nested transcript citation regex
-- `compile.py` — path-relative ids without `resolve()`; skip outside-root candidates
-- `transcripts.py` — flat `glob("*.jsonl")` preserved
-- `governance_currency_check.py` / `scribe_graph_freshness_check.py` — CLI argv; cursor-rules glob finding; stricter `OnCalendar=` parser
-- Tests and script tests; `pixi.toml` governance-currency description; memlogs; deferred-work ledger (FRR reopened)
+- `recall.py`, `models.py`, `test_recall.py` — kind-gated citation resolvability; filename edge cases
+- `compile.py`, `transcripts.py` — path-relative ids; flat scan preserved
+- `governance_currency_check.py`, `scribe_graph_freshness_check.py` — CLI argv, governed docs, strict `OnCalendar=` parser
+- `tests/scripts/test_governance_currency_check.py`, `tests/scripts/test_scribe_graph_freshness_check.py`
+- `spec-pyforge-scribe/.memlog.md`, `spec-fleet-consistency-standard/.memlog.md`; deferred-work ledger
 
-Verification: `pyforge-scribe-test` 418 passed; `lint-types` exit 0; `pytest tests/scripts/test_governance_currency_check.py tests/scripts/test_scribe_graph_freshness_check.py` 14 passed; `python scripts/spec_surface_reconcile.py` OK.
+Verification: `pyforge-scribe-test` 422 passed; `lint-types` exit 0; script tests 19 passed; `python scripts/spec_surface_reconcile.py` OK.
+
+Review: landing-review closure pass — 0 patch findings; prior send-back items addressed in `db545fec9d`.
 
 Follow-up review recommendation: false
