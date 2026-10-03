@@ -1709,15 +1709,109 @@ def _glob_to_re(pattern: str) -> re.Pattern:
     return re.compile("^" + "".join(out) + "$")
 
 
+class SurfaceUnevaluable(Exception):
+    """A SPEC.md declares ``surface:`` but no glob can be read from it
+    (DW-FU-6-6-9) -- raised by ``_parse_surface`` so ``_collect_surfaces``
+    reports ONE named ``spec-surface-unevaluable`` WARN for that Spec,
+    exactly as it already does for an unreadable SPEC.md.
+
+    Not raised for an EXPLICIT empty sequence (``surface: []``): nine live
+    Specs declare that deliberately with an "archived -- no live surface"
+    comment beside it, and an author who wrote ``[]`` has said "governs
+    nothing" out loud. The defect this exception names is the SILENT kind --
+    a ``surface:`` key whose items the reader could not see at all."""
+
+
+def _strip_surface_comment(value: str) -> str:
+    """``value`` with a trailing ``#`` comment removed -- but only one that
+    starts a word OUTSIDE any quoted run. A bare ``split("#", 1)`` (the
+    original) truncates ``"docs/#notes/**"`` and, worse, any quoted glob
+    whose own text carries a ``#``; a glob also legitimately contains ``#``
+    nowhere else, so the quote-aware scan costs nothing and cannot lose a
+    character the author wrote."""
+    quote = ""
+    for i, ch in enumerate(value):
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#" and (i == 0 or value[i - 1] in " \t"):
+            return value[:i]
+    return value
+
+
+def _unquote_surface(token: str) -> str:
+    """``token`` with one matched pair of surrounding YAML quotes removed.
+    ``- "src/**"`` is as valid as ``- src/**`` and means the same glob; the
+    original read the quotes as part of the pattern, so the entry matched
+    nothing (five of steward's own surface entries are quoted, measured
+    2026-10-01)."""
+    token = token.strip()
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in "\"'":
+        return token[1:-1]
+    return token
+
+
+def _split_flow_items(inner: str) -> list[str]:
+    """A YAML flow sequence's body split on the commas that are OUTSIDE any
+    quoted run -- a brace glob (``"a/{b,c}/**"``) must be quoted to be valid
+    YAML flow syntax, so its own commas are always inside quotes here."""
+    items: list[str] = []
+    buf: list[str] = []
+    quote = ""
+    for ch in inner:
+        if quote:
+            buf.append(ch)
+            if ch == quote:
+                quote = ""
+            continue
+        if ch in "\"'":
+            quote = ch
+            buf.append(ch)
+        elif ch == ",":
+            items.append("".join(buf))
+            buf = []
+        else:
+            buf.append(ch)
+    items.append("".join(buf))
+    return items
+
+
+def _surface_flow_sequence(value: str) -> list[str] | None:
+    """A ``[a, "b"]`` flow sequence's items, or ``None`` when ``value`` is
+    not a flow sequence at all. ``[]`` returns ``[]`` -- an EXPLICIT empty
+    surface, which ``_parse_surface`` distinguishes from an unreadable one."""
+    value = value.strip()
+    if not (value.startswith("[") and value.endswith("]")):
+        return None
+    inner = value[1:-1].strip()
+    if not inner:
+        return []
+    return [g for g in (_unquote_surface(part) for part in _split_flow_items(inner)) if g]
+
+
 def _parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
     """(``surface:`` globs, ``surface-drift-exclude:`` globs, drift mode)
-    from a SPEC.md's frontmatter -- verbatim hand-rolled reader from the
-    original (NOT ``yaml.safe_load``: preserve, don't redesign -- unlike
-    ``gather_dream_chain``'s frontmatter, this parser's own comments explain
-    why a comment/blank line inside a block sequence must not end the
-    section, a real historical bug this port keeps fixed).
+    from a SPEC.md's frontmatter -- a YAML frontmatter reader, still
+    hand-rolled rather than ``yaml.safe_load`` so ``scripts/spec_surface_
+    check.py``'s stdlib-only twin can state the identical contract, and so a
+    comment or blank line inside a block sequence still does not end the
+    section (a real historical bug this reader keeps fixed).
 
-    RAISES on an unreadable/non-UTF-8 SPEC.md rather than degrading to an
+    Four spellings of the SAME declaration are read, where the original
+    recognised exactly one (``  - glob`` at that one indent) and parsed the
+    other three to an EMPTY surface with no word of warning -- DW-FU-6-6-9:
+
+    * a block sequence item at ANY indent (``- g``, ``  - g``, ``    - g``);
+    * a quoted item (``- "src/**"``, ``- 'src/**'``);
+    * a flow sequence (``surface: [a, "b/{c,d}/**"]``);
+    * a scalar (``surface: src/**``), read as the one-item list it is --
+      the same ruling DW-FU-6-6-6 applies to ``covers-dreams:``.
+
+    RAISES on an unreadable/non-UTF-8 SPEC.md, and raises
+    ``SurfaceUnevaluable`` when ``surface:`` is declared but yields no glob
+    and was not written as an explicit ``[]``, rather than degrading to an
     empty surface. An empty surface is indistinguishable from "this spec
     governs nothing", so degrading here silently UN-GOVERNS every file the
     spec really owns: each one is then reported FAIL ``ungoverned`` ("no spec
@@ -1733,6 +1827,8 @@ def _parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
     globs: list[str] = []
     excludes: list[str] = []
     drift = "memlog"
+    surface_declared = False
+    surface_explicitly_empty = False
     text = spec_md.read_text(encoding="utf-8")
     in_fm = False
     section: str | None = None
@@ -1744,18 +1840,43 @@ def _parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
             continue
         if not in_fm:
             continue
-        if section and line.startswith("  - "):
-            (globs if section == "surface" else excludes).append(line[4:].split("#", 1)[0].strip())
+        stripped = line.strip()
+        if section and (stripped.startswith("- ") or stripped == "-"):
+            item = _unquote_surface(_strip_surface_comment(stripped[1:]))
+            if item:
+                (globs if section == "surface" else excludes).append(item)
             continue
-        if section and (not line.strip() or line.lstrip().startswith("#")):
+        if section and (not stripped or stripped.startswith("#")):
             continue
         section = None
-        if line.startswith("surface:"):
-            section = "surface"
-        elif line.startswith("surface-drift-exclude:"):
-            section = "exclude"
-        elif line.startswith("surface-drift:"):
-            drift = line.split(":", 1)[1].split("#", 1)[0].strip()
+        # Frontmatter keys sit at column 0; an indented `surface:` belongs to
+        # some other key's mapping and is not this contract.
+        key, sep, raw = line.partition(":")
+        if not sep or key not in ("surface", "surface-drift-exclude", "surface-drift"):
+            continue
+        value = _strip_surface_comment(raw).strip()
+        if key == "surface-drift":
+            drift = _unquote_surface(value)
+            continue
+        target = globs if key == "surface" else excludes
+        if key == "surface":
+            surface_declared = True
+        flow = _surface_flow_sequence(value)
+        if flow is not None:
+            target.extend(flow)
+            if key == "surface" and not flow:
+                surface_explicitly_empty = True
+            continue
+        if value:
+            target.append(_unquote_surface(value))
+            continue
+        section = "surface" if key == "surface" else "exclude"
+    if surface_declared and not globs and not surface_explicitly_empty:
+        raise SurfaceUnevaluable(
+            f"{spec_md.name} declares surface: but no glob could be read from it "
+            f"— write one `- <glob>` per line, or an explicit `surface: []` to "
+            f"say it governs nothing"
+        )
     return globs, excludes, drift
 
 
@@ -1851,6 +1972,18 @@ def _tracked_files(target: Path) -> list[str] | None:
     routes through ``cli_bridge.run_git`` (AD-5: the sole subprocess site),
     unlike the original's own direct ``subprocess.run`` call.
 
+    ``-c core.quotePath=false`` and ``-z`` (DW-doctor-38-2): git's DEFAULT
+    path quoting wraps any path carrying a non-ASCII byte in double quotes
+    and octal-escapes the byte, so ``docs/café.md`` arrived as
+    ``"docs/caf\\303\\251.md"`` -- a string no literal ``surface:`` glob and
+    no allowlist pattern can match, producing a spurious ``ungoverned`` FAIL
+    for a file whose real drift then went unmeasured. Turning the quoting off
+    and splitting on NUL instead of newline also makes a path containing a
+    newline arrive whole, for the same reason: this list is matched against
+    globs and hashed, so every element must be the literal path on disk.
+    ``scripts/spec_surface_check.py::tracked_files`` reads git identically
+    (DW-FU-6-6-4) -- the stamp and the verdict must see the same file set.
+
     ``UnicodeDecodeError`` is caught alongside ``CliBridgeError`` because
     ``run_git`` decodes with ``text=True`` -- a tracked path containing a
     non-UTF-8 byte would otherwise raise straight out of this function and
@@ -1858,10 +1991,29 @@ def _tracked_files(target: Path) -> list[str] | None:
     the exact gap ``sources/ledger.py``'s own ``_git`` wrapper already
     guards against for the same underlying cause."""
     try:
-        out = run_git(target, ["ls-files"])
+        out = run_git(target, ["-c", "core.quotePath=false", "ls-files", "-z"])
     except CliBridgeError, UnicodeDecodeError:
         return None
-    return [line for line in out.splitlines() if line]
+    return [path for path in out.split("\0") if path]
+
+
+def _repo_top_level(target: Path) -> Path | None:
+    """``target``'s repository top level, or ``None`` when git cannot say --
+    the one probe that tells a monorepo ROOT apart from a SUBDIRECTORY of
+    one (DW-FU-6-6-7). Resolved on both sides before the caller compares
+    them, so a symlinked checkout (``/tmp`` -> ``/private/tmp``) is not read
+    as a subdirectory of itself."""
+    try:
+        out = run_git(target, ["rev-parse", "--show-toplevel"])
+    except CliBridgeError, UnicodeDecodeError:
+        return None
+    top = out.strip()
+    if not top:
+        return None
+    try:
+        return Path(top).resolve()
+    except OSError:
+        return None
 
 
 def _governed_and_ungoverned(
@@ -2189,6 +2341,19 @@ def _collect_surfaces(target: Path) -> tuple[dict[str, dict], list[dict]]:
             name = f"{proj.name}/{sd.name}"
             try:
                 globs, excludes, drift = _parse_surface(spec_md)
+            except SurfaceUnevaluable as exc:
+                # DW-FU-6-6-9: the surface key is THERE and declares nothing
+                # readable. Named separately from the unreadable-file branch
+                # below so the message says what to fix, not "could not be read".
+                unsound.append(
+                    {
+                        "kind": "spec-surface-unevaluable",
+                        "path": name,
+                        "detail": f"{name}: {exc}; its surface is unknown, so coverage is not evaluable",
+                        "warn": True,
+                    }
+                )
+                continue
             except Exception as exc:  # noqa: BLE001 -- one spec's unreadable
                 # SPEC.md must degrade to a named WARN, never to a silently
                 # empty surface (see `_parse_surface`'s own docstring).
