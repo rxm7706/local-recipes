@@ -7,6 +7,7 @@ self-report without passing independent verification (Story 22.3).
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from collections.abc import Mapping
 from enum import StrEnum
@@ -141,6 +142,7 @@ def three_way_ledger_statuses(
 
 
 MEMLOG_BASENAME = ".memlog.md"
+DEFERRED_WORK_BASENAME = "deferred-work-ledger.md"
 
 
 def is_memlog_path(path: str) -> bool:
@@ -150,24 +152,48 @@ def is_memlog_path(path: str) -> bool:
     return path.replace("\\", "/").rsplit("/", 1)[-1] == MEMLOG_BASENAME
 
 
-def is_mechanical_conflict_path(path: str, *, ledger_rel: str | None = None) -> bool:
+def is_deferred_work_path(path: str) -> bool:
+    """True when ``path`` is a deferred-work ledger: its basename is ``deferred-work-ledger.md``."""
+    return path.replace("\\", "/").rsplit("/", 1)[-1] == DEFERRED_WORK_BASENAME
+
+
+def is_mechanical_conflict_path(
+    path: str, *, ledger_rel: str | None = None, deferred_work_rel: str | None = None
+) -> bool:
     """True when ``path`` is a known mechanical-only merge conflict: a Spec memlog (Story 78.1;
-    the heal still escalates one that is not append-only) or a sprint ledger. Given
-    ``ledger_rel`` (the landing project's own ledger), only that exact path is a mechanical
-    ledger -- another project's ledger is not this landing's to resolve (Story 59.1)."""
+    the heal still escalates one that is not append-only), a sprint ledger, or a deferred-work
+    ledger (Story 83.3). Given ``ledger_rel`` (the landing project's own ledger), only that exact
+    path is a mechanical ledger -- another project's ledger is not this landing's to resolve
+    (Story 59.1). Similarly for ``deferred_work_rel`` - only the project's own deferred work ledger."""
     normalized = path.replace("\\", "/")
     if is_memlog_path(normalized):
         return True
-    if ledger_rel is not None:
-        return normalized == ledger_rel
-    return normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}") or normalized.endswith(
-        SPRINT_LEDGER_BASENAME
-    )
+    if ledger_rel is not None and normalized == ledger_rel:
+        return True
+    if deferred_work_rel is not None and normalized == deferred_work_rel:
+        return True
+    # Legacy fallback for when no specific paths provided
+    if ledger_rel is None and deferred_work_rel is None:
+        return (
+            normalized.endswith(f"planning-artifacts/{SPRINT_LEDGER_BASENAME}")
+            or normalized.endswith(SPRINT_LEDGER_BASENAME)
+            or normalized.endswith(f"planning-artifacts/{DEFERRED_WORK_BASENAME}")
+            or normalized.endswith(DEFERRED_WORK_BASENAME)
+        )
+    return False
 
 
-def unknown_conflict_paths(paths: tuple[str, ...], *, ledger_rel: str | None = None) -> tuple[str, ...]:
+def unknown_conflict_paths(
+    paths: tuple[str, ...], *, ledger_rel: str | None = None, deferred_work_rel: str | None = None
+) -> tuple[str, ...]:
     """Conflict paths that are not mechanical — must escalate, never merge."""
-    return tuple(sorted(p for p in paths if not is_mechanical_conflict_path(p, ledger_rel=ledger_rel)))
+    return tuple(
+        sorted(
+            p
+            for p in paths
+            if not is_mechanical_conflict_path(p, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel)
+        )
+    )
 
 
 # --- Story 78.1 (CAP-283): append-only memlog union ------------------------
@@ -260,6 +286,111 @@ def union_memlog_texts(base: str, main: str, branch: str) -> str | None:
         else:
             appended.append(line)
     return _render_memlog(fields, main_body + appended)
+
+
+# --- Story 83.3: deferred-work ledger union ----------------------------------
+
+_DW_ENTRY_START = re.compile(r"^(?:## DW-|### DW-)", re.MULTILINE)
+
+
+def _opaque_dw_blocks(text: str) -> tuple[str, list[str]]:
+    """Split ledger text into preamble and opaque DW entry blocks.
+
+    Entries begin at a line starting with ``## DW-`` (legacy) or ``### DW-``. Each block is
+    byte-identical text from one header through the character before the next header.
+    """
+    matches = list(_DW_ENTRY_START.finditer(text))
+    if not matches:
+        return text, []
+    preamble = text[: matches[0].start()]
+    blocks: list[str] = []
+    for index, match in enumerate(matches):
+        start = match.start()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+        blocks.append(text[start:end])
+    return preamble, blocks
+
+
+def _dw_blocks_from_append_tail(tail: str) -> list[str] | None:
+    """Opaque ``## DW-`` / ``### DW-`` blocks parsed from an append-only suffix, or ``None`` when
+    the suffix carries text before its first entry header (lines appended to the base's last entry),
+    which no whole-block union may drop."""
+    text = tail.lstrip("\n")
+    if not text:
+        return []
+    preamble, blocks = _opaque_dw_blocks(text)
+    if preamble.strip():
+        return None
+    return blocks
+
+
+def _append_branch_only_blocks(result: str, branch_only: list[str]) -> str:
+    """Append blocks main did not already add, separated by one blank line each."""
+    for block in branch_only:
+        if not result.endswith("\n\n"):
+            result += "\n" if result.endswith("\n") else "\n\n"
+        result += block.lstrip("\n")
+    return result
+
+
+def _append_only_tail(base: str, side: str) -> str | None:
+    """Suffix ``side`` added after unchanged ``base``, or ``None`` if ``side`` edited ``base``."""
+    if side == base:
+        return ""
+    if side.startswith(base):
+        return side[len(base) :]
+    core = base.rstrip("\n")
+    if side.startswith(core):
+        return side[len(core) :]
+    return None
+
+
+def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
+    """Story 83.3: the union of two append-only edits of one deferred-work-ledger.md, or None
+    when either side is not append-only.
+
+    Each ``## DW-`` / ``### DW-`` section is an opaque block. A side is append-only when its
+    full text still starts with the merge-base text (trailing newlines on the base may be
+    stripped before the append). The result is the merge-base file verbatim, then main's tail,
+    then branch-only blocks (counter dedup).
+    """
+    main_tail = _append_only_tail(base, main)
+    branch_tail = _append_only_tail(base, branch)
+    if main_tail is None or branch_tail is None:
+        return None
+
+    result = base
+    if main_tail:
+        if not main_tail.strip():
+            return None
+        result += main_tail
+
+    branch_after_main = _append_only_tail(main, branch)
+    if branch_after_main is not None:
+        if branch_after_main.strip():
+            result += branch_after_main
+    elif not main_tail and branch_tail:
+        if not branch_tail.strip():
+            return None
+        result += branch_tail
+    elif main_tail and branch_tail:
+        main_new = _dw_blocks_from_append_tail(main_tail)
+        branch_new = _dw_blocks_from_append_tail(branch_tail)
+        if main_new is None or branch_new is None:
+            return None
+        main_new_count = Counter(main_new)
+        branch_only: list[str] = []
+        for block in branch_new:
+            if main_new_count[block] > 0:
+                main_new_count[block] -= 1
+            else:
+                branch_only.append(block)
+        if branch_only:
+            result = _append_branch_only_blocks(result, branch_only)
+
+    if not result.endswith("\n"):
+        result += "\n"
+    return result
 
 
 # --- Story 51.11 (CAP-258): blocked-twin promotion --------------------------
