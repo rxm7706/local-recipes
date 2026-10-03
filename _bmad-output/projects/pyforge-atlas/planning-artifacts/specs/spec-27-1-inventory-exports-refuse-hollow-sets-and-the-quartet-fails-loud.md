@@ -2,7 +2,7 @@
 title: "27.1: The inventory exports refuse a hollow verification set, and the quartet scripts fail loud"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: 10a40461ddefe7a7017a246c1fe189c2982bf202
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -95,7 +95,29 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 - `pixi run -e pyforge-atlas kedro-catalog-check` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back after an independent landing review (findings in the Review Triage Log). Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (independent reviewer, operator session) — sent back
+Keep: the floor refusal (removing it fails four tests), the corrupt-Parquet catch, the rate-limit text detector, `identity_export_contract` and the canvas path resolution. All gates exit 0. The two rejects and the defer in the review pass below are overturned where a finding here names them.
+- `high` **Two rows outside this story were closed.** `## DW-CANOPY-2026-08-24` and `## DW-OM-2026-08-24` (the `##` rows after `DW-FU-17-2-7` in `deferred-work-ledger.md`) went to `closed` with no resolution, and DW-FU-17-2-7's `verified:` line (`openteams_identity_dashboards.py:742`) landed inside DW-OM's block. Restore both rows to their text on main and move the `verified:` line into `DW-FU-17-2-7`'s own block. Split ledger blocks on every heading level, not `###` only.
+- `high` **The DW-FU-17-2 backoff never fires against real `gh`.** `_run_gh` calls `check_output(cmd, text=True)` / `check_call(cmd)` without capturing stderr, so `CalledProcessError.stderr` is None and `_gh_secondary_rate_limit` (`identity.py`, about 223-229) sees only "returned non-zero exit status 1". The test passes only because its fake raises with return code 403. Capture stderr, and test with `returncode=1` and the rate-limit text in stderr only.
+- `high` **Two rows were closed without the fix they require.** DW-FU-23-5 requires a run through a Kedro session over materialized Parquet; `test_derived_artifacts_e2e.py` calls three node functions on in-memory frames with floors set to 0. DW-FU-17-1 (AC 5) requires the nodes over the fixture Parquet, then the actuator with `--live-catalog`, then CSV and Markdown compared to a committed snapshot; `test_inventory_from_scratch_fixture.py` reads Parquet `generate_fixtures.py` writes by hand, never runs the nodes or `main()`, and hashes the Markdown only. Implement both as specified, or reopen the row and record why in this spec (`deferred:` must then name it).
+- `medium` **The floor is not the one AC 1 names.** The code floors the union of conda-forge and parselmouth names at 30k (`inventory_verification.py`, about 36 and 45); before Story 23.9 the 30k floor applied to `core_packages_enumerated` alone. Empty core plus 30,000 mapping names passes and the queue lists `numpy` as not on conda-forge. Floor `core_packages_enumerated` itself (after `norm_pkg`), and add a test with the default floors.
+- `medium` **AC 3 still crashes in three probed cases.** (a) `--gist-only` with `PYFORGE_ATLAS_DATA_ROOT=""`: the resolver returns None and `publish_gist_from_export(None)` raises AttributeError (`identity.py`, about 794); refuse with a named error. (b) A blank `Verification_Timestamp_UTC`: `identity_gist.py` (about 462 and 597) raises the base `PyforgeError`, but `identity.py` (about 836) catches only `IdentityGistError`; raise `IdentityGistError`. (c) A list-valued cell: the gist renderer crashes with "ambiguous truth value" (`identity_gist.py`, about 212) and `identity.py` (about 841) keeps the old `pd.isna` stringify; route both through `_stringify_export_cell`. A test for each.
+- `medium` **The Parquet deadline does not bound the wait.** `_read_parquet_with_deadline` (`metrics.py`, about 84-100) exits a `with ThreadPoolExecutor` block, which waits for the worker: a 3 s reader with a 0.1 s deadline returned after 3.00 s. Use `shutdown(wait=False, cancel_futures=True)` and assert the elapsed time in the test.
+- `medium` **Fixes with no test that fails without them (AC 7).** Mutants that stayed green: removing the `_export_priority_merge_warnings` call (DW-FU-21-7-5, DW-FU-21-7-7); reverting the `?` bucket and unknown-recipe-type handling (DW-FU-17-2-3); restoring a synthetic timestamp in `identity_gist` (DW-FU-21-7, whose row also asks for a test that compares them). DW-FU-17-2-2 has no test of `resolve_canvas_dir` or the unset-skip message. Add a test for each that fails on the reverted code.
+- `medium` **Correct the `verified:` citations** (re-read at HEAD before writing): DW-FU-21-7 → `identity_gist.py` the timestamp refusal (about 460-465 / 595-600); DW-FU-21-7-2 → `identity.py` about 580-584; DW-FU-21-7-6 → about 543-557; DW-FU-21-7-8 → about 529-536; DW-FU-21-7-4 → `test_pipeline_export_readable_by_quartet_reader`; DW-FU-21-3-3 → the argparse in `metrics.py` (about 255-303); DW-FU-21-3-4 → `metrics.py` about 132-136; DW-FU-21-3-5 → about 245-252; DW-FU-21-3-6 → `test_metrics.py` about 339; DW-FU-21-3-9 → `main` in `metrics.py`; DW-FU-21-3-2 → `inventory_verification.py` about 41-44; DW-FU-21-3-7 and DW-FU-21-3-12 → about 45-48; DW-FU-21-3-8 → about 33-36; DW-FU-23-5 → the test itself.
+- `medium` **The prompt-sync contract drifted.** The actuator now prints "Packages not on conda-forge:" (`metrics.py`, about 329) while `replay.md` (about 173-179) and `prompt.md` (about 205-213, marked "exact shape") still require "Count not on conda-forge: <number>", and the "Wrote revised prompt" line is gone though the actuator still overwrites the tracked prompt doc. Make the actuator output and both docs agree.
+- `low` When `gh project item-add` fails after `gh issue create` succeeded, the issue goes to `not_filed` and its URL is lost, so a re-run files a duplicate. Report it as filed-but-not-added with its URL.
+- `low` DW-FU-21-7-5 is partly fixed: the node warns only for P, Rank, Score and Work (`nodes.py`, about 1179-1181); the row names the secondary ranking and JFROG columns. Cover them.
+- `low` Restore the two weakened assertions: `test_main_default_path_overlay_runs_before_csv_write` must again check that the gist reflects the local build overlay ("success"), and `test_live_catalog_formats_csv_md_and_queue_from_exports` must check that a queue is written, not only the count line.
+- `low` `_stringify_export_cell` renders `pd.NA` as "<NA>" and `NaT` as "NaT" where the old reader gave ""; keep "".
+- `low` `--ops-canvas` / `--workbook-canvas` help (`identity.py`, about 948-962) still names the Cursor home-directory default; describe the environment or local-env source.
+- `low` NFR-3: `HollowVerificationSetError` aborts the whole `derived_artifacts` run, including the universal SBOM. Atlas's rule is skip-and-mark-stale; make the inventory export nodes refuse their own outputs (named error logged, outputs marked stale) without failing the SBOM, or record in this spec why the abort is right.
 
 ### 2026-10-03 — Review pass
 - verdicts: 9 findings — high 0, medium 5, low 0, false 2, maybe-false 2
