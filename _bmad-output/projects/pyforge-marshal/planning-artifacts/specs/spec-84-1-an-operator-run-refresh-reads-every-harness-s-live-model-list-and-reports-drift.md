@@ -2,7 +2,7 @@
 title: "84.1: An operator-run refresh reads every harness's live model list and reports drift"
 type: 'feature'
 created: '2026-10-02'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: 'ec1f191a01a6d37e146f7b5052a8e6497421f9a5'
 followup_review_recommended: false
 review_loop_iteration: 0
@@ -97,6 +97,15 @@ Minted 2026-10-02 at the operator's request: refresh the model lists for Claude,
 - 2026-10-03 (later) — sent back a second time after an independent review (findings below); dispatch verification had refused on one mypy error, fixed on this branch by the operator session (commit 3d49bfe9b0, keep it). Three acceptance criteria added. Status back to `ready-for-dev`.
 
 ## Review Triage Log
+
+### 2026-10-03 (evening) — Independent re-review (operator session) — sent back (narrow)
+Fixed and proved with probes against local TLS servers: the key never reaches stdout, JSON, the journal or an exception (finding 1), is never sent to a redirect target and https is enforced (2), one bad response no longer kills the other harnesses (3), the coverage gate exits 0 (4), "no drift" only when everything was compared (5), and prior-unavailable harnesses are not diffed (6). Close these:
+- `medium` **`--write` destroys an unavailable harness's baseline.** A same-day re-run with the key unset overwrites the morning's ok block with `{'ids': [], 'status': 'unavailable'}`; and day 1 ok `[a,b]`, day 2 unavailable, day 3 ok `[a]` never reports `b` removed, because the baseline is the newest file. Fix: carry an unavailable harness's last ok block forward (with the date it came from), or pick the baseline per harness as the newest earlier snapshot where it was ok; never overwrite an ok block on a same-day re-run.
+- `medium` **The redirect-following helper is still shipped in pyforge-core as dead code.** `pyforge-core/src/pyforge/core/client.py` `HttpResponse` / `urllib_http_get` (urllib's default redirect handler copies every header to the target) has no caller and no test, and its spec-pyforge-core memlog entry still calls it the model-list GET; it also makes this a shared-surface PR (all eight station suites). Fix: delete both and amend the memlog entry.
+- `low` **A partial listing reads as complete.** A later page with a 200 status but no `data`/`models` list ends the loop `ok`; any non-list page must make the harness `unavailable` ("unexpected page shape"). Cursor output such as `Error - not authenticated…` must not parse as the id `Error`.
+- `low` **The CLI test for the first added criterion cannot fail.** `test_model_list_refresh.py` stubs `fetch_live_ids_for_profile`, so the sentinel can never reach the output; drive `run_adapters_models` in text and JSON through a patched `HTTPSConnection` that raises with the sentinel in its message, add a redirect to a second port, and include a second healthy harness. `test_http_get_redirect_not_followed` mocks the connection; make it show the key is withheld from the target.
+- `low` **Finding 10 is not fixed, though the Auto Run Result says it is.** Remove the unused `provider_for_harness_name`; name the overlay path in `model_map` refs when an overlay declared the map; drop `adapters/oidc_pkce.py` from the memlog entries that list it; take the fetch port as a handler parameter; amend or drop `.claude/memory/project/story-84-1-bmad-build-auto-closed-landing-review-gaps-for-ma.md`. Correct the Auto Run Result.
+- `low` Use `dataclasses.replace(overlay, model_list=base.model_list)` in `_inherit_packaged_model_list`; drop the value from the dead `invalid credential_env name {value!r}` message; widen the single-importer meta-test to `ast.Import`, `from ..adapters import model_list_live`, and `model_list_http`.
 
 ### 2026-10-03 (later) — Independent review (operator session) — sent back again
 The earlier findings: the finding code is registered (fixed) and the cursor overlay keeps `model_list` (fixed); the tests are only half fixed (finding 4).
