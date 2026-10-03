@@ -531,14 +531,13 @@ def _session_check_only_stale_codegraph(payload: Mapping[str, object]) -> bool:
 def _resync_stale_codegraph_index(
     repo_root: Path,
     *,
-    process: ProcessPort,
     index_builder: IndexBuilder = build_codegraph_index,
 ) -> None:
     """Run the kit's incremental resync and stamp the index mtime (Story 83.6).
 
     Failures are ignored here: the follow-up session check decides whether to
     warn. Never blocks a launch."""
-    error = index_builder(repo_root, stale=True, process=process)
+    error = index_builder(repo_root, stale=True)
     if error is not None:
         return
     try:
@@ -602,7 +601,7 @@ def _surface_session_precondition_findings(
     if result.returncode != 0:
         payload = _session_report_payload(result.stdout, result.stderr)
         if payload is not None and _session_check_only_stale_codegraph(payload):
-            _resync_stale_codegraph_index(repo_root, process=process, index_builder=index_builder)
+            _resync_stale_codegraph_index(repo_root, index_builder=index_builder)
             try:
                 result = _run_steward_session_check(process=process, repo_root=repo_root)
             except ProcessError as exc:

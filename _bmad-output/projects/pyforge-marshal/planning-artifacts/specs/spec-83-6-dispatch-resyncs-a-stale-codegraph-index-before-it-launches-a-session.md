@@ -61,6 +61,10 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
+### 2026-10-03 — Landing review (operator session)
+- The first verification failed on the operator's launch environment (`python` not on PATH); the land-only re-dispatch then refused on `lint-types`: mypy `call-arg`, `index_builder(repo_root, stale=True, process=process)` does not match the `IndexBuilder` protocol `(repo_root, *, stale)`. Fixed mechanically: `_resync_stale_codegraph_index` no longer takes or passes `process` (production's `build_codegraph_index` defaults it; the test fakes accept and ignore it). `lint-types`, `pyforge-marshal-test` (10830 passed), `pyforge-deps-test`, `pyforge-core-test`, `deferred-work-check` and `spec_surface_reconcile.py` green.
+- Reviewed against the intent contract: resync only when the non-ok rows are exactly `token-kit` + a stale `codegraph-index`, one re-check, never blocks — accepted.
+
 ### 2026-10-02 — Review pass
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
 - findings: (none — blind/edge/verification-gap/intent layers found no actionable gaps on the diff)
