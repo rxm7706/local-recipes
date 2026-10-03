@@ -160,9 +160,7 @@ class TrustedIngress:
     addresses: tuple[str, ...]
     identity_header: str
     role_header: str
-    _networks: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = field(
-        init=False, repr=False, compare=False
-    )
+    _networks: tuple[ipaddress.IPv4Network | ipaddress.IPv6Network, ...] = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if not isinstance(self.addresses, tuple):
