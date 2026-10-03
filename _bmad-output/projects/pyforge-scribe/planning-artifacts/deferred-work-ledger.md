@@ -113,7 +113,9 @@ sibling ledgers and the detector both use.
   origin: spec-deferred 0bc7fb271ee1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done
+  resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
+  verified: src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py:933 — transcript citation/id from path relative to transcript_root; tests/unit/test_compile.py:test_transcript_same_basename_in_subdirs_get_distinct_ids_and_citations
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -143,7 +145,9 @@ sibling ledgers and the detector both use.
   origin: spec-deferred 8a74d96a6c3c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done
+  resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
+  verified: scripts/.spec-surface-baseline.json — spec-surface-check reports no drift for pyforge-scribe/spec-pyforge-scribe after memlog reconcile (2026-10-03)
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -158,7 +162,9 @@ sibling ledgers and the detector both use.
   origin: spec-deferred c7a73445c0be — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done
+  resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
+  verified: src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py:261 — _lexical_rank_key tie-break by valid_from desc then id; tests/unit/test_recall.py:test_lexical_tie_break_prefers_newer_valid_from
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -214,7 +220,9 @@ sibling ledgers and the detector both use.
   severity: low
   reason: Settling this properly would need a test parsing the .timer's OnCalendar= value and asserting it equals SCHEDULE_PERIOD_HOURS.
   promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
-  status: open
+  status: done
+  resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
+  verified: scripts/scribe_graph_freshness_check.py:48 — scheduled_period_hours(); tests/scripts/test_scribe_graph_freshness_check.py:test_schedule_period_matches_nightly_timer_unit
 
 ### DW-8-1-2: The "four consecutive scheduled runs are recorded" half of the Trigger-fires-on-schedule matrix row cannot be closed by this diff — it requires real elapsed time on an operator's own machine.
 
@@ -237,7 +245,9 @@ sibling ledgers and the detector both use.
   origin: spec-deferred 34593f74f8b6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: done
+  resolution: Story 26.1 (26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close)
+  verified: scripts/governance_currency_check.py:56 — governed_documents(); tests/scripts/test_governance_currency_check.py:test_governed_documents_include_pointer_files
 
 ### DW-FU-19-1-2: `AGENTS.md` is 476 lines and `CLAUDE.md` 357 after this story; Claude Code's guidance is under 200 lines per instruction file and BMAD's is 'only what is expensive to rediscover'. A Copilot or Devin session loads both. The shrink (nested `AGENTS.md` per station, path-scoped `.claude/rules/` and `.github/instructions/*.instructions.md`, CLAUDE.md deduplicated against the import) is Dream item (4), a later `bmad-spec` pass.
 
@@ -280,7 +290,9 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: done
+  resolution: Story 26.1 follow-up review pass (2026-10-03): no new defects; recall tie-break fix covers portal recall path
+  verified: tests/meta/test_first_portal_slice.py — portal slice tests still green with Story 26.1 recall ranking
 
 ### DW-FRR-1-1: Follow-up review still recommended for story 1.1
 
@@ -291,7 +303,9 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: done
+  resolution: Story 26.1 follow-up review pass (2026-10-03): capture matrix and concurrency tests still match spec 1.1; no new defects
+  verified: src/shared/packages/pyforge-scribe/tests/unit/test_capture.py — I/O matrix coverage unchanged and green
 
 ### DW-FRR-3-1: Follow-up review still recommended for story 3.1
 
@@ -302,7 +316,9 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: done
+  resolution: Story 26.1 follow-up review pass (2026-10-03): rglob scan + path-relative compile ids; no scanner regressions
+  verified: src/shared/packages/pyforge-scribe/src/pyforge/scribe/transcripts.py:236 — rglob("*.jsonl")
 
 ### DW-FRR-3-2: Follow-up review still recommended for story 3.2
 
@@ -325,7 +341,9 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  status: done
+  resolution: Story 26.1 follow-up review pass (2026-10-03): GraphStore plugin registration unchanged; tests/unit/test_graph_store_plugins.py green
+  verified: src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plugins.py
 
 ### DW-FRR-6-2: Follow-up review still recommended for story 6.2
 

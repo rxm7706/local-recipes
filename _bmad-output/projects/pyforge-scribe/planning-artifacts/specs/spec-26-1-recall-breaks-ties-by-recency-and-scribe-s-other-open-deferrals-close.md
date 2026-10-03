@@ -2,8 +2,9 @@
 title: "26.1: Recall breaks ties by recency, and scribe's other open deferrals close"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'e06362288272098346b7329a4a5e94e1ad87a513'
+final_revision: 'pending-commit'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -86,4 +87,28 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (open medium and low def
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 3, reject 1
+- findings:
+  - `[false]` `[reject]` Blind Hunter: SCHEDULE_PERIOD_HOURS still hand-maintained — disproved by `scheduled_period_hours()` plus `test_schedule_period_matches_nightly_timer_unit`.
+  - `[false]` `[reject]` Edge case: nested transcript citations break recall regex — disproved; regex updated and `..` rejected in `_citation_is_resolvable`.
+  - `[false]` `[reject]` Verification gap: no test for equal valid_from tie-break — disproved by `test_lexical_tie_break_equal_valid_from_orders_by_id`.
+  - `[reject]` `[reject]` Low: governance DOCUMENTS tuple order unstable — ruff-format only; no runtime harm.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Closed nine deferred-work rows (Phase 4+5 burn-down): recall lexical tie-break uses `valid_from` then id; transcript ids/citations are path-relative with recursive scan; governance-currency scans pointer files; timer period sync test; spec-surface reconcile via memlog; follow-up reviews for Stories 1.1, 3.1, 4.1, 5.2 with no new defects.
+
+Files changed:
+- `recall.py` — recency-aware lexical tie-break; nested transcript citation regex
+- `compile.py` / `transcripts.py` — path-relative transcript surface; rglob scan
+- `governance_currency_check.py` — `governed_documents()` includes GEMINI, Copilot, Cursor rules
+- `scribe_graph_freshness_check.py` — `scheduled_period_hours()` parser
+- Tests in `test_recall.py`, `test_compile.py`, `tests/scripts/*`
+- `deferred-work-ledger.md` — nine rows closed
+
+Verification: `pyforge-scribe-test` 415 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK; script tests for freshness and governance green.
+
+Follow-up review recommendation: false
