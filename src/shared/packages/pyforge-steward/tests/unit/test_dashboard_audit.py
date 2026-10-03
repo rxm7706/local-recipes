@@ -331,23 +331,29 @@ def test_purge_expired_entries_deletes_only_rows_older_than_the_cutoff():
     old = record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=40))
     recent = record_audit_entry("alice", "east", AuditAction.LOAD, 2, occurred_at=now - dt.timedelta(days=10))
 
-    deleted = purge_expired_entries(AuditRetention(days=30), now=now)
+    deleted = purge_expired_entries(AuditRetention(days=30), actor="retention-runner", now=now)
 
     assert deleted == 1
-    remaining = list(AuditEntry.objects.all())
-    assert len(remaining) == 1
-    assert remaining[0].pk == recent.pk
+    remaining = list(AuditEntry.objects.order_by("-occurred_at", "-id"))
+    assert len(remaining) == 2
+    assert remaining[1].pk == recent.pk
     assert not AuditEntry.objects.filter(pk=old.pk).exists()
+    purge_row = AuditEntry.objects.get(action=AuditAction.PURGE)
+    assert purge_row.actor == "retention-runner"
+    assert purge_row.row_count == 1
+    assert purge_row.target
 
 
 def test_purge_expired_entries_returns_zero_when_nothing_is_older_than_the_cutoff():
     now = timezone.now()
     record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=1))
 
-    deleted = purge_expired_entries(AuditRetention(days=30), now=now)
+    deleted = purge_expired_entries(AuditRetention(days=30), actor="retention-runner", now=now)
 
     assert deleted == 0
-    assert AuditEntry.objects.count() == 1
+    assert AuditEntry.objects.count() == 2
+    purge_row = AuditEntry.objects.get(action=AuditAction.PURGE)
+    assert purge_row.row_count == 0
 
 
 def test_purge_expired_entries_requires_a_retention_argument():
@@ -357,6 +363,11 @@ def test_purge_expired_entries_requires_a_retention_argument():
     """
     with pytest.raises(TypeError):
         purge_expired_entries()  # type: ignore[call-arg]
+
+
+def test_purge_expired_entries_requires_an_actor_keyword():
+    with pytest.raises(TypeError):
+        purge_expired_entries(AuditRetention(days=30))  # type: ignore[call-arg]
 
 
 def test_purge_expired_entries_rejects_a_non_audit_retention_object():
@@ -390,7 +401,9 @@ def test_purge_expired_entries_leaves_a_row_exactly_at_the_cutoff():
         occurred_at=now - dt.timedelta(days=cutoff_days),
     )
 
-    deleted = purge_expired_entries(AuditRetention(days=cutoff_days), now=now)
+    deleted = purge_expired_entries(
+        AuditRetention(days=cutoff_days), actor="retention-runner", now=now
+    )
 
     assert deleted == 0
     assert AuditEntry.objects.filter(pk=at_cutoff.pk).exists()
@@ -507,7 +520,7 @@ def test_record_audit_entry_rejects_a_naive_occurred_at_under_use_tz_true():
 def test_purge_expired_entries_rejects_a_naive_now_under_use_tz_true():
     naive = dt.datetime(2026, 1, 1, 12, 0, 0)
     with pytest.raises(ValueError, match="now"):
-        purge_expired_entries(AuditRetention(days=30), now=naive)
+        purge_expired_entries(AuditRetention(days=30), actor="retention-runner", now=naive)
 
 
 # --- ordering --------------------------------------------------------------
@@ -686,7 +699,7 @@ def test_a_non_datetime_reference_time_raises_a_named_type_error(bad):
     with pytest.raises(TypeError, match="occurred_at"):
         record_audit_entry("alice", None, AuditAction.LOAD, 1, occurred_at=bad)
     with pytest.raises(TypeError, match="now"):
-        purge_expired_entries(AuditRetention(days=30), now=bad)
+        purge_expired_entries(AuditRetention(days=30), actor="retention-runner", now=bad)
 
 
 def test_purge_expired_entries_refuses_a_future_reference_time():
@@ -698,7 +711,11 @@ def test_purge_expired_entries_refuses_a_future_reference_time():
     record_audit_entry("alice", "east", AuditAction.LOAD, 1)
 
     with pytest.raises(ValueError, match="future"):
-        purge_expired_entries(AuditRetention(days=36500), now=timezone.now() + dt.timedelta(days=100_000))
+        purge_expired_entries(
+            AuditRetention(days=36500),
+            actor="retention-runner",
+            now=timezone.now() + dt.timedelta(days=100_000),
+        )
 
     assert AuditEntry.objects.count() == 1, "nothing may be deleted by a refused purge"
 
@@ -709,7 +726,7 @@ def test_purge_expired_entries_names_a_retention_this_now_cannot_span():
     this module's own named error rather than a bare `OverflowError`.
     """
     with pytest.raises(ValueError, match="cutoff"):
-        purge_expired_entries(AuditRetention(days=_MAX_RETENTION_DAYS))
+        purge_expired_entries(AuditRetention(days=_MAX_RETENTION_DAYS), actor="retention-runner")
 
 
 def test_the_shipped_migration_matches_the_model():
@@ -780,7 +797,9 @@ def test_purge_expired_entries_rechecks_days_a_subclass_could_have_skipped():
     record_audit_entry("bob", "west", AuditAction.EXPORT, 2)
 
     with pytest.raises(ValueError, match="retention.days"):
-        purge_expired_entries(_LabeledRetention(days=0, label="skips validation"))
+        purge_expired_entries(
+            _LabeledRetention(days=0, label="skips validation"), actor="retention-runner"
+        )
 
     assert AuditEntry.objects.count() == 2, "a refused purge deletes nothing"
 
@@ -797,13 +816,17 @@ def test_purge_expired_entries_tolerates_ordinary_clock_skew_in_now():
     record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=90))
 
     skewed = now + dt.timedelta(milliseconds=1)
-    assert purge_expired_entries(AuditRetention(days=30), now=skewed) == 1
+    assert purge_expired_entries(AuditRetention(days=30), actor="retention-runner", now=skewed) == 1
 
     # ...and the refusal still bites well before any retention this API can
     # express, so the tolerance did not turn the guard off.
     record_audit_entry("bob", "west", AuditAction.LOAD, 1)
     with pytest.raises(ValueError, match="future"):
-        purge_expired_entries(AuditRetention(days=30), now=timezone.now() + _FUTURE_NOW_TOLERANCE * 2)
+        purge_expired_entries(
+            AuditRetention(days=30),
+            actor="retention-runner",
+            now=timezone.now() + _FUTURE_NOW_TOLERANCE * 2,
+        )
     assert AuditEntry.objects.count() == 1
 
 

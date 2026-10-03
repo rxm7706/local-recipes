@@ -634,6 +634,60 @@ WantedBy=multi-user.target
 # the original three-character set).
 _UNSAFE_NGINX_VALUE_CHARS = frozenset(";{}#$")
 
+# Story 84.1 — PostgreSQL grants that make CAP-4's audit table append-only for
+# the application role while reserving DELETE for the retention runner role.
+_DEFAULT_AUDIT_SCHEMA = "public"
+_DEFAULT_AUDIT_TABLE = "pyforge_steward_dashboard_auditentry"
+_UNSAFE_SQL_IDENTIFIER_CHARS = frozenset(';"\' \t\n\r{}#$')
+
+
+def _validate_sql_identifier(field_name: str, value: str) -> None:
+    """Reject values that cannot safely be interpolated as PostgreSQL identifiers."""
+    if not value or not value.strip():
+        raise ValueError(f"render_audit_table_grants: {field_name} must not be empty or whitespace-only")
+    if any(ch.isspace() for ch in value):
+        raise ValueError(
+            f"render_audit_table_grants: {field_name} {value!r} contains whitespace — "
+            "refused rather than rendering a corrupted grant script"
+        )
+    if any(ch in _UNSAFE_SQL_IDENTIFIER_CHARS for ch in value):
+        raise ValueError(
+            f"render_audit_table_grants: {field_name} {value!r} contains a character "
+            f"that could break out of the generated SQL (one of "
+            f"{''.join(sorted(_UNSAFE_SQL_IDENTIFIER_CHARS))!r})"
+        )
+
+
+def render_audit_table_grants(
+    *,
+    app_role: str,
+    retention_role: str,
+    schema: str = _DEFAULT_AUDIT_SCHEMA,
+    table: str = _DEFAULT_AUDIT_TABLE,
+) -> str:
+    """Render SQL granting the app role only SELECT and INSERT on the audit table.
+
+    DELETE is granted to ``retention_role`` alone — the database identity that
+    runs ``purge_expired_entries``. UPDATE is not granted to either role, so
+    the trail cannot be rewritten in place at the privilege layer (Story 84.1).
+    """
+    for field_name, value in (
+        ("app_role", app_role),
+        ("retention_role", retention_role),
+        ("schema", schema),
+        ("table", table),
+    ):
+        _validate_sql_identifier(field_name, value)
+
+    qualified = f"{schema}.{table}"
+    return f"""\
+-- CAP-4 audit trail — append-only for the application role (Story 84.1).
+-- Apply as the migration role after {qualified} exists.
+REVOKE ALL ON TABLE {qualified} FROM {app_role};
+GRANT SELECT, INSERT ON TABLE {qualified} TO {app_role};
+GRANT DELETE ON TABLE {qualified} TO {retention_role};
+"""
+
 
 def _validate_nginx_value(field_name: str, value: str) -> None:
     """Shared emptiness/whitespace/injection-character guard for every
@@ -830,12 +884,16 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
     trusted_addresses = tuple(getattr(ns, "trusted_address", None) or ())
     tls_cert = getattr(ns, "tls_cert", None)
     tls_key = getattr(ns, "tls_key", None)
+    app_db_role = getattr(ns, "app_db_role", None)
+    audit_retention_db_role = getattr(ns, "audit_retention_db_role", None)
     missing = [
         flag
         for flag, value in (
             ("--trusted-address", trusted_addresses),
             ("--tls-cert", tls_cert),
             ("--tls-key", tls_key),
+            ("--app-db-role", app_db_role),
+            ("--audit-retention-db-role", audit_retention_db_role),
         )
         if not value
     ]
@@ -845,8 +903,9 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
             summary=(
                 "deploy perimeter: refused — --output-dir was given but "
                 f"{', '.join(missing)} was not supplied; an edge config "
-                "cannot be rendered without a declared trusted ingress and "
-                "a TLS certificate/key pair"
+                "cannot be rendered without a declared trusted ingress, "
+                "a TLS certificate/key pair, and the audit-table database "
+                "roles (Story 84.1)"
             ),
         )
 
@@ -858,12 +917,17 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
             tls_cert=tls_cert,
             tls_key=tls_key,
         )
+        grants_text = render_audit_table_grants(
+            app_role=app_db_role,
+            retention_role=audit_retention_db_role,
+        )
     except (TypeError, ValueError) as exc:
         return DutyResult(ok=False, summary=f"deploy perimeter: refused — {exc}")
 
     output_path = Path(output_dir)
     unit_path = output_path / "pyforge-steward-dashboard@.service"
     edge_path = output_path / "pyforge-steward-dashboard.nginx.conf"
+    grants_path = output_path / "pyforge-steward-dashboard-audit-grants.sql"
     # Write both to temp names, then rename both onto their final names only
     # once BOTH writes succeeded (same-directory rename is atomic on POSIX) --
     # review pass: writing directly to the final names left a lone unit file
@@ -871,10 +935,12 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
     # reported `ok=False` and wrote nothing per the I/O matrix.
     unit_tmp = output_path / (unit_path.name + ".tmp")
     edge_tmp = output_path / (edge_path.name + ".tmp")
+    grants_tmp = output_path / (grants_path.name + ".tmp")
     try:
         output_path.mkdir(parents=True, exist_ok=True)
         unit_tmp.write_text(unit_text, encoding="utf-8")
         edge_tmp.write_text(edge_text, encoding="utf-8")
+        grants_tmp.write_text(grants_text, encoding="utf-8")
     except OSError as exc:
         # Best-effort cleanup: e.g. `output_path.mkdir()` itself failing
         # (review pass's own regression -- a FILE already at `output_path`)
@@ -882,7 +948,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
         # raises `NotADirectoryError` (still an `OSError`) rather than
         # `FileNotFoundError` -- caught here so cleanup can never mask the
         # real error this branch is already reporting.
-        for tmp in (unit_tmp, edge_tmp):
+        for tmp in (unit_tmp, edge_tmp, grants_tmp):
             try:
                 tmp.unlink(missing_ok=True)
             except OSError:
@@ -891,6 +957,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
     try:
         unit_tmp.rename(unit_path)
         edge_tmp.rename(edge_path)
+        grants_tmp.rename(grants_path)
     except OSError as exc:
         # Review pass: the renames themselves previously sat OUTSIDE this
         # guard, so a rename failure (e.g. a directory already at the target
@@ -900,7 +967,7 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
         # first `rename()` succeeding before the second fails is a residual
         # this cleanup cannot undo without a backup of any prior content at
         # that path, which is out of this story's scope.
-        for tmp in (unit_tmp, edge_tmp):
+        for tmp in (unit_tmp, edge_tmp, grants_tmp):
             try:
                 tmp.unlink(missing_ok=True)
             except OSError:
@@ -912,7 +979,10 @@ def _run_perimeter(ns: argparse.Namespace) -> DutyResult:
 
     return DutyResult(
         ok=True,
-        summary=f"deploy perimeter: rendered daphne unit + nginx edge config to {output_path}",
+        summary=(
+            f"deploy perimeter: rendered daphne unit + nginx edge config + "
+            f"audit-table grants SQL to {output_path}"
+        ),
     )
 
 

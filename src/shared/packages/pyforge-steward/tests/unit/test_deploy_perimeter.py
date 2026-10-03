@@ -19,9 +19,13 @@ from pyforge.steward.deploy import (
     DeploymentTopology,
     UnshareableStateError,
     check_shareable_state,
+    render_audit_table_grants,
     render_daphne_unit,
     render_edge_config,
 )
+
+_APP_DB_ROLE = "platform_app"
+_AUDIT_RETENTION_DB_ROLE = "platform_audit_retention"
 
 _LOCMEM_CACHE = "django.core.cache.backends.locmem.LocMemCache"
 _INMEMORY_CHANNEL_LAYER = "channels.layers.InMemoryChannelLayer"
@@ -314,6 +318,31 @@ def test_daphne_and_edge_manifests_agree_on_worker_ports():
         assert f"127.0.0.1:{port};" in edge_text
 
 
+def test_render_audit_table_grants_app_role_is_append_only():
+    sql = render_audit_table_grants(
+        app_role=_APP_DB_ROLE,
+        retention_role=_AUDIT_RETENTION_DB_ROLE,
+    )
+    assert f"REVOKE ALL ON TABLE public.pyforge_steward_dashboard_auditentry FROM {_APP_DB_ROLE};" in sql
+    assert (
+        f"GRANT SELECT, INSERT ON TABLE public.pyforge_steward_dashboard_auditentry TO {_APP_DB_ROLE};"
+        in sql
+    )
+    assert "UPDATE" not in sql.split(f"TO {_APP_DB_ROLE}")[-1]
+
+
+def test_render_audit_table_grants_retention_role_may_delete():
+    sql = render_audit_table_grants(
+        app_role=_APP_DB_ROLE,
+        retention_role=_AUDIT_RETENTION_DB_ROLE,
+    )
+    assert (
+        f"GRANT DELETE ON TABLE public.pyforge_steward_dashboard_auditentry "
+        f"TO {_AUDIT_RETENTION_DB_ROLE};"
+        in sql
+    )
+
+
 # ── `steward deploy perimeter` verb (I/O matrix rows 6-8) ───────────────────
 
 
@@ -342,7 +371,7 @@ def test_perimeter_refusal_names_the_offending_declaration_and_writes_nothing(tm
 
 def test_perimeter_with_output_dir_renders_both_manifests(tmp_path):
     """Row: perimeter verb, --output-dir on success -- daphne unit + nginx
-    config rendered to the directory."""
+    config + audit grants SQL rendered to the directory."""
     duty = DeployDuty()
     output_dir = tmp_path / "manifests"
     ns = argparse.Namespace(
@@ -353,6 +382,8 @@ def test_perimeter_with_output_dir_renders_both_manifests(tmp_path):
         trusted_address=["10.0.0.1", "10.0.0.2"],
         tls_cert="/etc/tls/dashboard.crt",
         tls_key="/etc/tls/dashboard.key",
+        app_db_role=_APP_DB_ROLE,
+        audit_retention_db_role=_AUDIT_RETENTION_DB_ROLE,
         output_dir=str(output_dir),
     )
 
@@ -361,10 +392,15 @@ def test_perimeter_with_output_dir_renders_both_manifests(tmp_path):
     assert result.ok is True
     unit_path = output_dir / "pyforge-steward-dashboard@.service"
     edge_path = output_dir / "pyforge-steward-dashboard.nginx.conf"
+    grants_path = output_dir / "pyforge-steward-dashboard-audit-grants.sql"
     assert unit_path.is_file()
     assert edge_path.is_file()
+    assert grants_path.is_file()
     assert "ExecStart=daphne" in unit_path.read_text()
     assert "ssl_certificate /etc/tls/dashboard.crt;" in edge_path.read_text()
+    assert f"GRANT SELECT, INSERT ON TABLE public.pyforge_steward_dashboard_auditentry TO {_APP_DB_ROLE};" in (
+        grants_path.read_text()
+    )
 
 
 def test_perimeter_without_output_dir_is_validation_only_and_writes_nothing(tmp_path):
@@ -434,6 +470,30 @@ def test_perimeter_with_output_dir_but_no_tls_refuses(tmp_path):
     assert not output_dir.exists()
 
 
+def test_perimeter_with_output_dir_but_no_db_roles_refuses(tmp_path):
+    duty = DeployDuty()
+    output_dir = tmp_path / "manifests"
+    ns = argparse.Namespace(
+        deploy_verb="perimeter",
+        workers=1,
+        cache_backend=_LOCMEM_CACHE,
+        channel_layer_backend=_INMEMORY_CHANNEL_LAYER,
+        trusted_address=["10.0.0.1"],
+        tls_cert="/etc/tls/dashboard.crt",
+        tls_key="/etc/tls/dashboard.key",
+        app_db_role=None,
+        audit_retention_db_role=None,
+        output_dir=str(output_dir),
+    )
+
+    result = duty.run(ns)
+
+    assert result.ok is False
+    assert "--app-db-role" in result.summary
+    assert "--audit-retention-db-role" in result.summary
+    assert not output_dir.exists()
+
+
 def test_perimeter_output_dir_write_failure_is_a_named_refusal_not_a_crash(tmp_path):
     """Row: `_run_perimeter`'s documented `OSError` path (an unwritable
     `--output-dir`) -- a FILE already at the target path makes
@@ -451,6 +511,8 @@ def test_perimeter_output_dir_write_failure_is_a_named_refusal_not_a_crash(tmp_p
         trusted_address=["10.0.0.1"],
         tls_cert="/etc/tls/dashboard.crt",
         tls_key="/etc/tls/dashboard.key",
+        app_db_role=_APP_DB_ROLE,
+        audit_retention_db_role=_AUDIT_RETENTION_DB_ROLE,
         output_dir=str(blocked_path),
     )
 
@@ -479,6 +541,8 @@ def test_perimeter_manifest_rename_failure_is_a_named_refusal_not_a_crash(tmp_pa
         trusted_address=["10.0.0.1"],
         tls_cert="/etc/tls/dashboard.crt",
         tls_key="/etc/tls/dashboard.key",
+        app_db_role=_APP_DB_ROLE,
+        audit_retention_db_role=_AUDIT_RETENTION_DB_ROLE,
         output_dir=str(output_dir),
     )
 
@@ -584,6 +648,10 @@ def test_perimeter_via_cli_renders_manifests_to_output_dir(tmp_path):
             "/etc/tls/dashboard.crt",
             "--tls-key",
             "/etc/tls/dashboard.key",
+            "--app-db-role",
+            _APP_DB_ROLE,
+            "--audit-retention-db-role",
+            _AUDIT_RETENTION_DB_ROLE,
             "--output-dir",
             str(output_dir),
         ]
@@ -592,6 +660,7 @@ def test_perimeter_via_cli_renders_manifests_to_output_dir(tmp_path):
     assert rc == EXIT_OK
     assert (output_dir / "pyforge-steward-dashboard@.service").is_file()
     assert (output_dir / "pyforge-steward-dashboard.nginx.conf").is_file()
+    assert (output_dir / "pyforge-steward-dashboard-audit-grants.sql").is_file()
 
 
 def test_bare_deploy_still_names_perimeter_among_available_verbs():
