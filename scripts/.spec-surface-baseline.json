@@ -2582,7 +2582,7 @@
    "src/shared/packages/pyforge-herald/tests/unit/test_deck_pipeline.py": "3dd39e4180435659285531fa02de6e6b835a0dca",
    "src/shared/packages/pyforge-herald/tests/unit/test_deck_qa.py": "41a8188f1f76c6796e59bb7f0eed48853b4bfe3e",
    "src/shared/packages/pyforge-herald/tests/unit/test_deck_status.py": "1542ec7db87d4caf8d70687b7db61d9d605746f6",
-   "src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py": "0cfaa10fc71c348731bff30c3a5a19f7b685e91c",
+   "src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py": "8f52ac13e537283b60e5ecc26be4240acd79b0b1",
    "src/shared/packages/pyforge-herald/tests/unit/test_dossier_structure.py": "fc63bba1bf609167ea020691a4897a873603f1b0",
    "src/shared/packages/pyforge-herald/tests/unit/test_errors.py": "25bbfc9a6c8bba50c777e4e7b107ab331edc7114",
    "src/shared/packages/pyforge-herald/tests/unit/test_evidence.py": "8d7ce646c74888559b92918e3232c60f774b3fa7",
@@ -2641,7 +2641,7 @@
    "src/shared/packages/pyforge-herald/web/src/test/setup.js": "1d74541c291183bb6027ebb5bf6de480115262ea",
    "src/shared/packages/pyforge-herald/web/vite.config.js": "bcd53f517a2d51fe2992404dd852b2599b15d84f"
   },
-  "memlog": "4c74fcf03af2794e00bb8f210e1f0ba0d6e4665b"
+  "memlog": "da2003207ec2ea96a004a26e4526f6440ae0e9b5"
  },
  "pyforge-herald/spec-pyforge-pages": {
   "files": {
