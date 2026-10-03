@@ -2137,9 +2137,7 @@ def run_adapters_models(
             prior_raw = json.loads(prior_path.read_text(encoding="utf-8"))
             if isinstance(prior_raw, dict):
                 _prior_date, prior_ids = parse_snapshot_payload(prior_raw)
-                comparable = frozenset(
-                    name for name, result in harness_results.items() if result.status == "ok"
-                )
+                comparable = frozenset(name for name, result in harness_results.items() if result.status == "ok")
                 snapshot_diff = diff_harness_ids(prior_ids, harness_ids, comparable_harnesses=comparable)
         except OSError, json.JSONDecodeError, ValueError:
             pass

@@ -313,10 +313,7 @@ def test_overlay_inherits_packaged_model_list(tmp_path):
     overlay_dir = tmp_path / "_bmad-output" / "harness-profiles"
     overlay_dir.mkdir(parents=True)
     (overlay_dir / "cursor.toml").write_text(
-        'name = "cursor"\n'
-        'binary = "cursor-agent"\n'
-        'argv = ["-p", "{prompt}"]\n'
-        "model_passthrough = true\n",
+        'name = "cursor"\nbinary = "cursor-agent"\nargv = ["-p", "{prompt}"]\nmodel_passthrough = true\n',
         encoding="utf-8",
     )
     profiles, errors = load_profiles(tmp_path)
@@ -376,6 +373,7 @@ def test_models_cli_drift_exits_zero(monkeypatch, capsys, tmp_path):
         ],
     )
     args = argparse.Namespace(slug="pyforge-marshal", format="json", write=False)
+
     class _MinimalFs:
         def ensure_dir(self, path: object) -> None:
             del path
