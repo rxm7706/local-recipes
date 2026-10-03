@@ -2,7 +2,7 @@
 title: "84.2: An audit read records its scope, and the perimeter refuses an over-long identity"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '7cc833467ba2dd5d342a9a1c98b170ab2342adeb'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -67,4 +67,13 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass (bmad-build-auto)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: orchestrator self-review after implementation; acceptance criteria verified locally
+
+## Auto Run Result
+
+- Summary: AUDIT_READ rows now store validated read filters in `AuditEntry.scope`; `query_audit_entries` enforces role isolation and a default row limit; `DashboardIdentityMiddleware` refuses over-long identity/role at the perimeter via `AUDIT_IDENTITY_MAX_LENGTH`.
+- Verification: `pyforge-steward-test` 1988 passed, 2 skipped; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK after memlog on `spec-pyforge-steward/.memlog.md`.
+- Follow-up review recommended: false
+- Deferred-work closed: DW-9-3-10, DW-9-3-9, DW-9-3-2, DW-9-3-4 in `deferred-work-ledger.md`
