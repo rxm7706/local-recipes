@@ -80,9 +80,7 @@ def _load_fixture_inputs() -> dict[str, pd.DataFrame]:
     empty_maint = pd.DataFrame(columns=["core_python_package_name"])
     return {
         "inventory_universe": _read("derived/inventory_universe/inventory_universe.parquet"),
-        "core_packages_enumerated": _read(
-            "intermediate/core_packages_enumerated/core_packages_enumerated.parquet"
-        ),
+        "core_packages_enumerated": _read("intermediate/core_packages_enumerated/core_packages_enumerated.parquet"),
         "pypi_universe": _read("intermediate/pypi_universe/pypi_universe.parquet"),
         "pypi_conda_mapping": _read("primary/pypi_conda_mapping/pypi_conda_mapping.parquet"),
         "inventory_priority_assignments": priority,
@@ -96,10 +94,7 @@ def test_derived_artifacts_inventory_slice_via_kedro_session(tmp_path: Path):
     from kedro.framework.session import KedroSession
     from kedro.framework.startup import bootstrap_project
 
-    marker = (
-        _REAL_DATA
-        / "derived/inventory_verified_packages/inventory_verified_packages.parquet"
-    )
+    marker = _REAL_DATA / "derived/inventory_verified_packages/inventory_verified_packages.parquet"
     mtime_before = marker.stat().st_mtime_ns if marker.is_file() else None
 
     project_path = _copy_kedro_project(tmp_path)
