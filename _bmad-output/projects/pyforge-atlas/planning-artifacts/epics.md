@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-09-29"   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2238,3 +2238,10 @@ station-local, so the gate is prose on the `**Deps:**` line and the operator fli
 the new atlas Story 25.2. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml`
 key (`25-1`, `25-2` and `epic-25` added, `epic-25-retrospective` at `optional`, through the Tier-3 feed and
 `sprint-ledger-sync`). `updated:` bumped.
+
+## Currency reconciliation — 2026-10-03
+
+`arch→epics` edge after the spine re-stamp of 2026-10-03 (marshal Story 66.2 (`pyforge-marshal:CAP-275`) backfilled a `DW-FRR-<story>` row into every station's tracked deferred-work ledger for each landed story spec that still recommends a follow-up review, atlas's included, and recorded the co-governor surface reconcile on `spec-pyforge-atlas`'s memlog on 2026-10-03). No epic or story is minted: the `DW-FRR` rows are
+review work recorded in the deferred-work ledger, and any follow-up review they lead to is dispatched against its own
+story's key. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key; no ledger key moved. `updated:`
+bumped.

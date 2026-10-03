@@ -946,6 +946,12 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (later)** — **Found: every Cursor session is refused on formatting.** Each Cursor dispatch of marshal
+  Epics 83 and 66 and Story 84.1 finished its work and was refused at verification on `lint-types`, most often on
+  `ruff format` alone, and was fixed by hand before landing; the sessions reported the check green.
+  **What it looks like when fixed:** dispatch applies `ruff format` to the story's own files before verification and
+  commits the result; type and lint errors still refuse. **Constraints:** a `fix` story, no CAP and no flag; never a
+  file the story did not change. Owner `spec-pyforge-marshal`. → Story 83.9, specced 2026-10-03.
 - **2026-10-03** — **Found: a session halts on the status a story is minted with.** Story specs are minted at
   `status: 'backlog'` to match their ledger row, and bmad-build-auto does not recognize `backlog`. Claude sessions fell
   through to planning; a Cursor session for 83.5 halted before any work and set the spec `blocked`.
