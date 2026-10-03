@@ -2757,36 +2757,40 @@ def _anonymous(path: Path) -> list[int]:
     fleet-wide and 25 swallow a real orphan this way (this story's own
     measurement, via ``classify_tier3_entries``, which never had the bug).
 
-    The window now closes at the first blank line AFTER the field block has
-    begun, which is where ``classify_tier3_entries`` already ends a header's
-    claim. The blank line between a heading and its own first field line is
-    not that boundary -- every real entry has one -- so ``block`` tracks
-    whether any content has been seen yet."""
+    The window now closes at the first blank line AFTER the entry's own
+    FIELD block has begun, which is where ``classify_tier3_entries`` already
+    ends a header's claim. Two blank lines are deliberately NOT that
+    boundary, because neither ends a field block: the one every real entry
+    has between its heading and its first field line, and the one around an
+    ``<!-- id assigned ... -->`` provenance comment, which marshal's own
+    ledger puts between the heading and the bullet (lines 170 and 260). So
+    ``in_block`` turns on for a KNOWN field key (``_FIELD_BLOCK_LINE_RE``),
+    never for arbitrary prose."""
     if not _is_file(path):
         return []
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     out: list[int] = []
     field_taken = False
     in_entry = False
-    block = False
+    in_block = False
     for n, ln in enumerate(lines, 1):
         if _ENTRY_RE.match(ln):
-            field_taken, in_entry, block = False, True, False
+            field_taken, in_entry, in_block = False, True, False
         elif _HEADING_RE.match(ln):
-            field_taken, in_entry, block = False, False, False
+            field_taken, in_entry, in_block = False, False, False
         elif not ln.strip():
-            if block:
+            if in_block:
                 # The entry's own field block ended; nothing after it belongs
                 # to that header.
-                field_taken, in_entry, block = False, False, False
+                field_taken, in_entry, in_block = False, False, False
         elif _ANON_RE.match(ln):
-            block = True
+            in_block = True
             if in_entry and not field_taken:
                 field_taken = True
             else:
                 out.append(n)
-        else:
-            block = True
+        elif _FIELD_BLOCK_LINE_RE.match(ln):
+            in_block = True
     return out
 
 
@@ -2879,6 +2883,15 @@ _KNOWN_FIELD_KEYS = (
     "note",
 )
 _CONT_KEY_RE = re.compile(r"^\s{2,}(" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):\s*(.*)$")
+
+#: Any line that belongs to an entry's own FIELD block -- a known field key,
+#: at any indent, bulleted or not. Read by ``_anonymous`` (DW-FU-8-1) to know
+#: when an ID'd header's field block has actually begun, so the blank line
+#: that ENDS that block can close the header's claim without the blank line
+#: before it (or around a provenance comment) closing it early.
+_FIELD_BLOCK_LINE_RE = re.compile(
+    r"^\s*(?:-\s+)?(?:" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):"
+)
 
 
 class Tier3Shape(StrEnum):
