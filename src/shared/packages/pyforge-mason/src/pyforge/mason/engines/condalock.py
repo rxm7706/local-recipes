@@ -108,7 +108,6 @@ import logging
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass
