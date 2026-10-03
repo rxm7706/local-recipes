@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 538
+# stories: 541
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -384,6 +384,7 @@ development_status:
   83-5-a-campaign-supervisor-keeps-ticking-through-fleet-lock-contention: backlog
   83-6-dispatch-resyncs-a-stale-codegraph-index-before-it-launches-a-session: backlog
   83-7-a-re-dispatch-after-a-refused-landing-lands-the-existing-branch-without-a-new-session: backlog
+  84-1-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
@@ -510,7 +511,7 @@ development_status:
   epic-64-retrospective: optional
   epic-65: in-progress
   epic-65-retrospective: optional
-  epic-66: backlog
+  epic-66: in-progress
   epic-66-retrospective: optional
   epic-67: done
   epic-67-retrospective: optional
@@ -548,7 +549,9 @@ development_status:
   epic-81-retrospective: optional
   epic-82: done
   epic-82-retrospective: optional
-  epic-83: backlog
+  epic-83: in-progress
   epic-83-retrospective: optional
+  epic-84: backlog
+  epic-84-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional

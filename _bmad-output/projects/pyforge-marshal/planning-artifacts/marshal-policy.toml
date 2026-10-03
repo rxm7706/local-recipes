@@ -412,6 +412,18 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-testing-charter governs the kit)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"84" = [  # an operator-run refresh reads every harness's live model list (spec-pyforge-marshal CAP-285), added 2026-10-02
+  # The default surface, restated because a declared entry replaces it outright, plus every Spec memlog.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "83" = [  # Phase 2 landing defects (fix stories, no CAP), added 2026-10-02.
   # The default surface, restated because a declared entry replaces it outright, plus pyforge-core's process module
   # and tests (Story 83.1's liveness fix), the station deferred-work ledger, and every Spec memlog.

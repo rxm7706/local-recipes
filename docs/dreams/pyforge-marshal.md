@@ -946,6 +946,22 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-02 (night, later)** — **Wanted: refresh every harness's model list from its own live source.** The model
+  ids in marshal's policies have been refreshed by hand. On 2026-10-02 Cursor no longer listed `grok-4.6`, which four
+  station tier maps named, and listed a new `grok-4.7-high`; nothing in marshal could say so. Each harness exposes its
+  list differently: Cursor's CLI lists the account's models (`cursor-agent models`, 246 ids on 2026-10-02); Claude Code
+  and the Gemini CLI have no listing subcommand, but their APIs do (Anthropic `GET /v1/models`, Gemini `models.list`,
+  both paged); the Copilot CLI documents none.
+  **What it looks like when fixed:** one operator-run marshal command reads each harness's live list from the source
+  its profile declares and writes a dated snapshot of every id it read. It reports each id that a station tier map, the
+  price catalog or a harness profile declares and the live list no longer carries, and each id added or removed since
+  the last snapshot. A harness whose source cannot be read is reported unavailable with the reason; the others still
+  report.
+  **Constraints:** operator-run only, never during dispatch or policy load; the listing source is profile data, never a
+  per-harness branch (AD-19); no LLM client and no model call; the report is advisory. Operator rulings 2026-10-02: the
+  snapshot, not the price catalog, records every live id, and the catalog keeps only priced models; the Gemini and
+  Copilot CLIs stay out of the Guild environment for now. Owner `spec-pyforge-marshal`. → CAP-285 / Epic 84 /
+  Story 84.1 (FR-232), specced 2026-10-02.
 - **2026-10-01 (night)** — **Found: a campaign forgets `--retry-environment-blocks` after its first cycle.**
   `_spawn_campaign_supervisor` hands the detached supervisor the station, the story list, the harness and the in-flight
   cap, but not `retry_environment_blocks`. A campaign launched with the flag skipped 81.1 (an OAuth-refresh race at
