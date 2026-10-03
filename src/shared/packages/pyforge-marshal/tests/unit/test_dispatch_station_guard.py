@@ -829,6 +829,14 @@ def test_refused_story_with_closed_pr_allows_overlapping_dispatch(tmp_path: Path
         def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
             # Refused story has merged branch (closed PR)
             return True
+            
+        def branch_exists(self, repo_root: Path, branch: str) -> bool:
+            # Simulate that the branch exists
+            return True
+            
+        def worktree_path_for_branch(self, repo_root: Path, branch: str) -> Path | None:
+            # Return the expected worktree path for the branch
+            return tmp_path / "wt"
 
         def commit_subjects(self, repo_root: Path, ref: str):
             return ()
