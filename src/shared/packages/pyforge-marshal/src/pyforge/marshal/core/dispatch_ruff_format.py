@@ -65,12 +65,11 @@ def apply_dispatch_ruff_format_before_verify(
     repo_root: Path,
     vcs: CommittingVcs,
     process: ProcessPort,
-    base: str = ORIGIN_MAIN,
 ) -> DispatchRuffFormatResult:
     """Format story-scoped ``.py`` files in ``worktree`` and commit when needed."""
     git_repo = dispatch_core.canonical_repo_root(repo_root)
     try:
-        scope_changed = vcs.changed_files(git_repo, worktree, base=base)
+        scope_changed = vcs.changed_files(git_repo, worktree, base=ORIGIN_MAIN)
     except Exception:
         return DispatchRuffFormatResult((), False)
 
