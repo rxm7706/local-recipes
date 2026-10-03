@@ -18,8 +18,11 @@ Story 21.7 / 23.9 ("quartet thin-out and workbook retirement"):
    and publishes gist markdown from that export (ranking columns already present).
 
 Per this project's Testing Contract, this file never touches real GitHub
-credentials or the network: every `gh` call is mocked
-(`subprocess.check_output` / `subprocess.check_call`).
+credentials or the network: every `gh` call a test makes goes through a fake
+`subprocess.run`, and the autouse `_forbid_unmocked_gh` guard fails any test that
+would start a real `gh` -- by bare name or absolute path, through `subprocess.run`
+or any `subprocess.Popen` caller (`check_output`, `check_call`, `call`) -- and pins
+`identity.gh_bin()` / `identity.DEFAULT_GH` to a sentinel path that cannot exist.
 """
 
 from __future__ import annotations
@@ -27,6 +30,9 @@ from __future__ import annotations
 import csv
 import importlib.util
 import json
+import os
+import re
+import shlex
 import subprocess
 import sys
 import types
@@ -50,6 +56,12 @@ def _load_module(filename: str):
     script_path = SCRIPTS_DIR / filename
     assert script_path.is_file(), f"script not found: {script_path}"
     module_name = script_path.stem.replace("-", "_")
+    # Reuse a copy another test module (e.g. pyforge-atlas's test_identity_parity.py)
+    # already loaded from this same file, so the two never hold diverging copies.
+    existing = sys.modules.get(module_name)
+    existing_file = getattr(existing, "__file__", None)
+    if existing is not None and existing_file and Path(existing_file).resolve() == script_path.resolve():
+        return existing
     spec = importlib.util.spec_from_file_location(module_name, script_path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
@@ -66,18 +78,84 @@ dashboards = _load_module("openteams_identity_dashboards.py")
 priority = _load_module("conda-forge-packaging-inventory-operations_priority.py")
 
 
+_GH_SENTINEL = "/nonexistent-gh-sentinel/gh"
+
+
+def _subprocess_argv0(args, kwargs) -> str:
+    executable = kwargs.get("executable")
+    if executable:
+        return os.fsdecode(executable)
+    if isinstance(args, (str, bytes, os.PathLike)):
+        text = os.fsdecode(args)
+        if kwargs.get("shell"):
+            parts = shlex.split(text)
+            return parts[0] if parts else ""
+        return text
+    try:
+        return os.fsdecode(list(args)[0])
+    except (IndexError, TypeError):
+        return ""
+
+
+def _is_gh(args, kwargs) -> bool:
+    return Path(_subprocess_argv0(args, kwargs)).name in {"gh", "gh.exe"}
+
+
 @pytest.fixture(autouse=True)
 def _forbid_unmocked_gh(monkeypatch):
-    """Never invoke the real ``gh`` binary from this module (Story 27.1 TEST SAFETY)."""
+    """Never start a real ``gh`` from this module (Story 27.1 TEST SAFETY).
+
+    ``subprocess.run``, ``check_output``, ``check_call`` and ``call`` all construct a
+    ``subprocess.Popen``; guarding ``Popen`` on the basename of argv[0] catches a bare
+    ``gh`` and an absolute path alike. ``gh_bin()`` / ``DEFAULT_GH`` point at a sentinel
+    that cannot exist, so even an unguarded path could only fail to start."""
+    real_popen = subprocess.Popen
     real_run = subprocess.run
 
+    class _GuardedPopen(real_popen):
+        def __init__(self, args, *a, **kw):
+            if _is_gh(args, kw):
+                raise AssertionError(f"unmocked gh subprocess: {args!r}")
+            super().__init__(args, *a, **kw)
+
     def guarded_run(cmd, *args, **kwargs):
-        executable = cmd[0] if isinstance(cmd, (list, tuple)) and cmd else cmd
-        if executable == "gh":
+        if _is_gh(cmd, kwargs):
             raise AssertionError(f"unmocked gh subprocess.run: {cmd!r}")
         return real_run(cmd, *args, **kwargs)
 
+    monkeypatch.setattr(subprocess, "Popen", _GuardedPopen)
     monkeypatch.setattr(subprocess, "run", guarded_run)
+    monkeypatch.setattr(identity, "DEFAULT_GH", Path(_GH_SENTINEL))
+    monkeypatch.setattr(identity, "gh_bin", lambda: _GH_SENTINEL)
+
+
+@pytest.fixture(autouse=True)
+def _pin_script_modules(monkeypatch):
+    """``identity`` imports ``openteams_identity_dashboards`` by name at call time; pin the
+    copies this module patches, whatever another test module left in ``sys.modules``."""
+    for module in (identity, metrics, dashboards, priority):
+        monkeypatch.setitem(sys.modules, module.__name__, module)
+
+
+@pytest.mark.parametrize(
+    "launch",
+    [
+        lambda: subprocess.check_call([_GH_SENTINEL, "issue", "list"]),
+        lambda: subprocess.check_output(["/usr/bin/gh", "api", "user"]),
+        lambda: subprocess.Popen(["gh", "auth", "status"]),
+        lambda: subprocess.call("gh gist view x", shell=True),
+        lambda: subprocess.run([identity.gh_bin(), "issue", "create"]),
+    ],
+)
+def test_gh_guard_blocks_every_launch_path(launch):
+    with pytest.raises(AssertionError, match="unmocked gh"):
+        launch()
+
+
+def test_gh_bin_and_default_gh_are_pinned_to_the_sentinel():
+    assert identity.gh_bin() == _GH_SENTINEL
+    assert identity.DEFAULT_GH == Path(_GH_SENTINEL)
+    assert not Path(_GH_SENTINEL).exists()
 
 
 def test_discovery_is_not_vacuous():
@@ -972,26 +1050,26 @@ def test_gist_columns_match_identity_export_contract():
     assert list(contract_cols) == identity.GIST_COLUMNS
 
 
-def test_pipeline_export_readable_by_quartet_reader(monkeypatch, tmp_path):
+_EXPORT_TS = "2026-08-30T12:00:00Z"
+_CORPUS_PATH = (
+    REPO_ROOT / "src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity/complete_export_expected.json"
+)
+
+
+def _pipeline_export(tmp_path: Path, *, ts: str = _EXPORT_TS, **identity_overrides) -> Path:
+    """Run Atlas's real ``build_identity_complete_export`` node over the frozen corpus and
+    write its output where the export lives under a data root (DW-FU-21-7-4)."""
     atlas_src = REPO_ROOT / "src/shared/packages/pyforge-atlas/src"
     if str(atlas_src) not in sys.path:
         sys.path.insert(0, str(atlas_src))
-    from pyforge.atlas.pipelines.derived_artifacts.nodes import build_identity_complete_export
-
-    corpus_path = (
-        REPO_ROOT
-        / "src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity/complete_export_expected.json"
+    from pyforge.atlas.pipelines.derived_artifacts.nodes import (
+        build_identity_complete_export,
     )
-    import json
 
-    corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
-    params = {
-        "identity_complete_export": {"verification_timestamp_utc": "2026-08-30T12:00:00Z"},
-        "verification_sets": {"cf_or_pm_floor": 0, "pypi_universe_floor": 0},
-        "inventory_verified_packages": {"verification_timestamp_utc": "2026-08-30T12:00:00Z"},
-    }
+    corpus = json.loads(_CORPUS_PATH.read_text(encoding="utf-8"))
+    identity_rows = [dict(row, **identity_overrides) for row in corpus["identity_packages_primary"]]
     df = build_identity_complete_export(
-        pd.DataFrame(corpus["identity_packages_primary"]),
+        pd.DataFrame(identity_rows),
         pd.DataFrame(corpus["inventory_priority_assignments"]),
         pd.DataFrame(corpus.get("enterprise_jfrog_consumption") or []),
         pd.DataFrame([]),
@@ -999,11 +1077,396 @@ def test_pipeline_export_readable_by_quartet_reader(monkeypatch, tmp_path):
         pd.DataFrame([]),
         pd.DataFrame([]),
         pd.DataFrame(corpus.get("inventory_universe") or []),
-        params,
+        {"identity_complete_export": {"verification_timestamp_utc": ts}},
     )
-    export_path = tmp_path / "identity_complete_export.parquet"
+    export_path = tmp_path / "data/derived/identity_complete_export/identity_complete_export.parquet"
+    export_path.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(export_path, index=False)
+    return export_path
+
+
+def test_pipeline_export_readable_by_quartet_reader(monkeypatch, tmp_path, capsys):
+    export_path = _pipeline_export(tmp_path)
     monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: export_path)
     records = identity.read_identity_complete_export_records()
     assert records is not None
-    assert records[0]["Verification_Timestamp_UTC"] == "2026-08-30T12:00:00Z"
+    assert records[0]["Verification_Timestamp_UTC"] == _EXPORT_TS
+    assert records[0]["P"] == "P5"
+    assert records[0]["Core_Python_Package_Name"] == "fixture-pkg"
+    assert set(identity.GIST_COLUMNS) <= set(records[0])
+    assert identity.IDENTITY_EXPORT_READ_WARNINGS == []
+    assert "warning:" not in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 third review -- reader warnings (DW-FU-21-7-5 / DW-FU-21-7-7)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("column", ["Score", "Priority_Source", "JFROG_risk_level", "internal_lob_count"])
+def test_reader_warns_on_absent_ranking_or_jfrog_column(monkeypatch, tmp_path, capsys, column):
+    df = pd.read_parquet(_pipeline_export(tmp_path)).drop(columns=[column])
+    path = tmp_path / "trimmed.parquet"
+    df.to_parquet(path, index=False)
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: path)
+
+    records = identity.read_identity_complete_export_records()
+
+    assert records is not None
+    msg = f"identity_complete_export: ranking column {column} absent from export"
+    assert identity.IDENTITY_EXPORT_READ_WARNINGS == [msg]
+    assert f"warning: {msg}" in capsys.readouterr().err
+
+
+def test_reader_warns_on_rows_sharing_a_pep503_key_counting_every_row(monkeypatch, tmp_path, capsys):
+    path = tmp_path / "dups.parquet"
+    pd.DataFrame(
+        [
+            _complete_export_row(Core_Python_Package_Name="Foo_Bar", Package="Foo_Bar"),
+            _complete_export_row(Core_Python_Package_Name="foo-bar", Package="foo-bar"),
+            _complete_export_row(Core_Python_Package_Name="dup", Package="dup"),
+            _complete_export_row(Core_Python_Package_Name="dup", Package="dup"),
+            _complete_export_row(Core_Python_Package_Name="solo", Package="solo"),
+        ]
+    ).to_parquet(path, index=False)
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: path)
+
+    records = identity.read_identity_complete_export_records()
+
+    assert records is not None and len(records) == 5
+    dup_warnings = [w for w in identity.IDENTITY_EXPORT_READ_WARNINGS if "duplicate" in w]
+    assert dup_warnings == [
+        "identity_complete_export: duplicate ranked rows normalize to foo-bar (2 rows): Foo_Bar, foo-bar",
+        "identity_complete_export: duplicate ranked rows normalize to dup (2 rows): dup, dup",
+    ]
+    assert "solo" not in capsys.readouterr().err
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 third review -- canvas directory resolution (DW-FU-17-2-2)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def _no_canvas_dir(monkeypatch, tmp_path):
+    monkeypatch.delenv(priority.INVENTORY_CANVAS_DIR_ENV, raising=False)
+    missing_env_file = tmp_path / "absent.local.env"
+    monkeypatch.setattr(priority, "LOCAL_ENV_PATH", missing_env_file)
+    monkeypatch.setattr(dashboards._priority_mod, "LOCAL_ENV_PATH", missing_env_file)
+    return missing_env_file
+
+
+def test_resolve_canvas_dir_reads_env_then_local_env_then_unset(monkeypatch, tmp_path, _no_canvas_dir):
+    assert priority.INVENTORY_CANVAS_DIR_ENV == "PYFORGE_INVENTORY_CANVAS_DIR"
+    assert priority.resolve_canvas_dir() is None
+    assert priority.default_ops_canvas_path() is None
+    assert priority.default_workbook_canvas_path() is None
+
+    env_file = tmp_path / "ops.local.env"
+    env_file.write_text("# local\nPYFORGE_INVENTORY_CANVAS_DIR='/srv/canvases/from-file'\n", encoding="utf-8")
+    monkeypatch.setattr(priority, "LOCAL_ENV_PATH", env_file)
+    assert priority.resolve_canvas_dir() == Path("/srv/canvases/from-file")
+
+    monkeypatch.setenv(priority.INVENTORY_CANVAS_DIR_ENV, "   ")
+    assert priority.resolve_canvas_dir() == Path("/srv/canvases/from-file"), "blank env falls through"
+
+    monkeypatch.setenv(priority.INVENTORY_CANVAS_DIR_ENV, str(tmp_path / "from-env"))
+    assert priority.resolve_canvas_dir() == tmp_path / "from-env"
+    assert priority.default_ops_canvas_path() == tmp_path / "from-env/identity-ops.canvas.tsx"
+    assert priority.default_workbook_canvas_path() == tmp_path / "from-env/jfrog-workbook.canvas.tsx"
+
+
+def test_no_canvas_default_points_under_a_home_directory():
+    for script in (
+        "conda-forge-packaging-inventory-operations_priority.py",
+        "openteams_identity_dashboards.py",
+        "conda-forge-packaging-inventory-operations_openteams_identity.py",
+    ):
+        text = (SCRIPTS_DIR / script).read_text(encoding="utf-8")
+        assert "/home/" not in text and ".cursor/projects" not in text, script
+
+
+def _canvas_spies(monkeypatch) -> tuple[list, list]:
+    ops_calls: list = []
+    workbook_calls: list = []
+    monkeypatch.setattr(dashboards, "write_ops_canvas", lambda path, *a, **k: ops_calls.append(path))
+    monkeypatch.setattr(dashboards, "write_workbook_canvas", lambda path, *a, **k: workbook_calls.append(path))
+    return ops_calls, workbook_calls
+
+
+def _export_stub(tmp_path: Path) -> Path:
+    export_path = tmp_path / "derived/identity_complete_export/identity_complete_export.parquet"
+    export_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame([{"Core_Python_Package_Name": "pkg-a"}]).to_parquet(export_path)
+    return export_path
+
+
+def test_unset_canvas_dir_skips_both_canvas_writes_with_a_message(monkeypatch, tmp_path, capsys, _no_canvas_dir):
+    monkeypatch.delenv(identity.INVENTORY_IDENTITY_UI_ENV, raising=False)
+    ops_calls, workbook_calls = _canvas_spies(monkeypatch)
+
+    identity.write_dashboard_markdown(
+        tmp_path / "dash.md", "# dash\n", [{"Core_Python_Package_Name": "pkg-a"}], "tab", _export_stub(tmp_path)
+    )
+
+    out = capsys.readouterr().out
+    assert "Skipped ops canvas write (PYFORGE_INVENTORY_CANVAS_DIR unset)" in out
+    assert "Skipped workbook canvas write (PYFORGE_INVENTORY_CANVAS_DIR unset)" in out
+    assert ops_calls == [] and workbook_calls == []
+    assert (tmp_path / "dash.md").read_text(encoding="utf-8") == "# dash\n"
+
+
+def test_canvas_dir_from_env_targets_both_canvases(monkeypatch, tmp_path, capsys, _no_canvas_dir):
+    monkeypatch.delenv(identity.INVENTORY_IDENTITY_UI_ENV, raising=False)
+    monkeypatch.setenv(priority.INVENTORY_CANVAS_DIR_ENV, str(tmp_path / "canvases"))
+    ops_calls, workbook_calls = _canvas_spies(monkeypatch)
+
+    identity.write_dashboard_markdown(
+        tmp_path / "dash.md", "# dash\n", [{"Core_Python_Package_Name": "pkg-a"}], "tab", _export_stub(tmp_path)
+    )
+
+    assert ops_calls == [tmp_path / "canvases/identity-ops.canvas.tsx"]
+    assert workbook_calls == [tmp_path / "canvases/jfrog-workbook.canvas.tsx"]
+    assert "Skipped" not in capsys.readouterr().out
+
+
+def _priority_main(monkeypatch, tmp_path: Path) -> int:
+    assignments = tmp_path / "inventory_priority_assignments.parquet"
+    pd.DataFrame(
+        [{"core_python_package_name": "pkg-a", "P": "P4", "Rank": 1, "Score": 80, "Work": "Create recipe"}]
+    ).to_parquet(assignments, index=False)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "priority",
+            "--priority-assignments",
+            str(assignments),
+            "--jfrog-parquet",
+            str(tmp_path / "no-jfrog.parquet"),
+            "--ranked-export",
+            str(tmp_path / "ranked.parquet"),
+        ],
+    )
+    return priority.main()
+
+
+def test_priority_canvas_unset_skips_with_a_message(monkeypatch, tmp_path, capsys, _no_canvas_dir):
+    monkeypatch.delenv(priority.INVENTORY_IDENTITY_UI_ENV, raising=False)
+    assert _priority_main(monkeypatch, tmp_path) == 0
+    assert "Skipped canvas write (PYFORGE_INVENTORY_CANVAS_DIR unset" in capsys.readouterr().out
+    assert not list(tmp_path.rglob("*.canvas.tsx"))
+
+
+def test_priority_canvas_defaults_under_the_env_canvas_dir(monkeypatch, tmp_path, _no_canvas_dir):
+    monkeypatch.delenv(priority.INVENTORY_IDENTITY_UI_ENV, raising=False)
+    monkeypatch.setenv(priority.INVENTORY_CANVAS_DIR_ENV, str(tmp_path / "canvases"))
+    assert _priority_main(monkeypatch, tmp_path) == 0
+    canvas = tmp_path / "canvases/identity-2026-08-20.canvas.tsx"
+    assert canvas.read_text(encoding="utf-8").startswith(priority._CANVAS_PREFIX)
+
+
+def test_identity_canvas_help_names_the_real_setting():
+    proc = subprocess.run(
+        [sys.executable, str(SCRIPTS_DIR / "conda-forge-packaging-inventory-operations_openteams_identity.py"), "--help"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert proc.returncode == 0, proc.stderr
+    help_text = "".join(proc.stdout.split())  # argparse wraps on spaces and hyphens
+    assert "PYFORGE_INVENTORY_CANVAS_DIR" in help_text
+    assert "conf/conda-forge-packaging-inventory-operations.local.env" in help_text
+    assert "PYFORGE_ATLAS_CANVAS_DIR" not in help_text
+    assert ".env.local" not in help_text
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 third review -- `?` buckets and unknown recipe types (DW-FU-17-2-3)
+# ---------------------------------------------------------------------------
+
+
+def test_ops_canvas_shows_unset_buckets_and_keeps_unknown_recipe_types(tmp_path):
+    recipes_url = "https://github.com/rxm7706/local-recipes/tree/main/recipes/{}"
+    records = [
+        {
+            "Core_Python_Package_Name": "known",
+            "P": "P4",
+            "Work": "Create recipe",
+            "Local_Build_Status": "success",
+            "Local_Recipes_URL": recipes_url.format("known"),
+        },
+        {"Core_Python_Package_Name": "unset", "P": "", "Work": "", "Local_Build_Status": ""},
+        {
+            "Core_Python_Package_Name": "oddtype",
+            "P": "P9",
+            "Work": "Already tracked",
+            "Local_Build_Status": "failed",
+            "Local_Recipes_URL": recipes_url.format("oddtype"),
+        },
+    ]
+    helpers = types.SimpleNamespace(**vars(identity))
+    helpers.overlay_live_local = lambda _records, _dir: None
+    helpers.load_local_recipe_type = lambda _dir: {"known": "noarch-python", "oddtype": "rust-binary"}
+    helpers.REPO_ROOT = tmp_path
+    path = tmp_path / "identity-ops.canvas.tsx"
+
+    dashboards.write_ops_canvas(path, records, "identity-fixture", helpers)
+
+    data = _decode_data_blob(path.read_text(encoding="utf-8"), dashboards._CANVAS_PREFIX)
+    assert data["priorityDefs"][-1] == ["?", "Unknown / unset priority", 1]
+    assert data["workDefs"][-1] == ["?", "Unknown / unset work type", 1]
+    assert [row[0] for row in data["priorityDefs"]] == [*identity.P_ORDER, "?"]
+    assert [row[0] for row in data["buildByType"]] == ["noarch-python", "none", "rust-binary"]
+    assert data["buildByType"][-1] == ["rust-binary", 1, 0, 0, 1, 0, 0]
+    assert sum(row[1] for row in data["buildByType"]) == data["n"] == 3
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 third review -- one export timestamp (DW-FU-21-7) and AC 3(b)/(c)
+# ---------------------------------------------------------------------------
+
+
+def _gist_run_setup(monkeypatch, tmp_path: Path, export_path: Path) -> dict:
+    (tmp_path / "recipes").mkdir(exist_ok=True)
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: export_path)
+    monkeypatch.setattr(identity, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(identity, "CACHE_DIR", tmp_path / "cache")
+    monkeypatch.setattr(identity, "resolve_gist_id", lambda _cli: "fake-gist-id")
+    monkeypatch.setattr(dashboards, "write_ops_canvas", lambda *a, **k: None)
+    monkeypatch.setattr(dashboards, "write_workbook_canvas", lambda *a, **k: None)
+    published: dict = {}
+
+    def _fake_publish(gh, gist_id, identity_path, dashboard_path):
+        published["gh"] = gh
+        published["identity_md"] = identity_path.read_text(encoding="utf-8")
+        published["dashboards_md"] = dashboard_path.read_text(encoding="utf-8")
+
+    monkeypatch.setattr(identity, "publish_gist_files", _fake_publish)
+    return published
+
+
+def _gist_table_column(identity_md: str, column: str) -> list[str]:
+    lines = identity_md.rsplit("\n## Identity rows\n", 1)[1].strip().splitlines()
+    header = [c.strip() for c in lines[0].strip("|").split("|")]
+    idx = header.index(column)
+    return [re.split(r"(?<!\\)\|", line.strip().strip("|"))[idx].strip() for line in lines[2:] if line.strip()]
+
+
+def test_gist_csv_and_tab_carry_the_one_export_timestamp(monkeypatch, tmp_path, capsys):
+    pytest.importorskip("pyforge.atlas.dashboard.identity_gist")
+    export_path = _pipeline_export(tmp_path)
+    published = _gist_run_setup(monkeypatch, tmp_path, export_path)
+    output_csv = tmp_path / "identity.csv"
+    monkeypatch.setattr(sys, "argv", ["prog", "--output-csv", str(output_csv)])
+
+    assert identity.main() == 0
+
+    export_ts = set(pd.read_parquet(export_path)["Verification_Timestamp_UTC"])
+    assert export_ts == {_EXPORT_TS}
+    csv_ts = {row["Verification_Timestamp_UTC"] for row in _read_csv_rows(output_csv)}
+    assert csv_ts == export_ts
+    assert f"Verification_Timestamp_UTC: {_EXPORT_TS}" in capsys.readouterr().out
+    identity_md = published["identity_md"]
+    assert f"generated: {_EXPORT_TS}" in identity_md
+    assert f"- Generated: `{_EXPORT_TS}`" in identity_md
+    assert set(_gist_table_column(identity_md, "Verification_Timestamp_UTC")) == export_ts
+    stamps = set(re.findall(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", published["dashboards_md"]))
+    assert stamps == export_ts, "the dashboards companion carries only the export's timestamp"
+    assert published["gh"] == _GH_SENTINEL
+
+
+def test_blank_export_timestamp_raises_identity_gist_error(tmp_path):
+    identity_gist = pytest.importorskip("pyforge.atlas.dashboard.identity_gist")
+    export_path = _pipeline_export(tmp_path, ts="")
+    with pytest.raises(identity_gist.IdentityGistError, match="refusing to publish gist with a synthetic timestamp"):
+        identity_gist.render_identity_gist_markdown(export_path, gist_id="x", repo_root=tmp_path)
+
+
+def test_blank_export_timestamp_refuses_the_dashboards_companion_too(monkeypatch, tmp_path):
+    identity_gist = pytest.importorskip("pyforge.atlas.dashboard.identity_gist")
+    export_path = _pipeline_export(tmp_path, ts="")
+    monkeypatch.setattr(identity_gist, "_render_identity_catalog", lambda *a, **k: "")
+    with pytest.raises(identity_gist.IdentityGistError, match="refusing dashboard companion with a synthetic timestamp"):
+        identity_gist.render_identity_gist_markdown(export_path, gist_id="x", repo_root=tmp_path)
+
+
+def test_blank_export_timestamp_makes_the_script_exit_1(monkeypatch, tmp_path, capsys):
+    pytest.importorskip("pyforge.atlas.dashboard.identity_gist")
+    export_path = _pipeline_export(tmp_path, ts="")
+    published = _gist_run_setup(monkeypatch, tmp_path, export_path)
+    monkeypatch.setattr(sys, "argv", ["prog", "--gist-only", "--skip-gist"])
+
+    assert identity.main() == 1
+
+    assert "missing Verification_Timestamp_UTC" in capsys.readouterr().err
+    assert published == {}
+    assert not (tmp_path / "cache" / identity.GIST_FILENAME).exists()
+
+
+def test_list_valued_cell_renders_through_the_gist(monkeypatch, tmp_path):
+    pytest.importorskip("pyforge.atlas.dashboard.identity_gist")
+    export_path = _pipeline_export(tmp_path, alternative_purls=["pkg:pypi/fixture-pkg", "pkg:github/org/fixture-pkg"])
+    assert list(pd.read_parquet(export_path)["alternative_purls"].iloc[0]) == [
+        "pkg:pypi/fixture-pkg",
+        "pkg:github/org/fixture-pkg",
+    ]
+    _gist_run_setup(monkeypatch, tmp_path, export_path)
+    monkeypatch.setattr(sys, "argv", ["prog", "--gist-only", "--skip-gist"])
+
+    assert identity.main() == 0
+
+    identity_md = (tmp_path / "cache" / identity.GIST_FILENAME).read_text(encoding="utf-8")
+    assert _gist_table_column(identity_md, "alternative_purls") == ["pkg:pypi/fixture-pkg; pkg:github/org/fixture-pkg"]
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 third review -- filed-but-not-added is labelled apart from not filed
+# ---------------------------------------------------------------------------
+
+
+def test_main_labels_filed_but_not_added_apart_from_could_not_file(monkeypatch, tmp_path, capsys):
+    path = tmp_path / "identity_complete_export.parquet"
+    pd.DataFrame(
+        [
+            _complete_export_row(
+                Core_Python_Package_Name=name,
+                Package=name,
+                OpenTeams_Title=f"[Conda-Forge Packaging] {name}",
+                OpenTeams_Issue_URL="",
+            )
+            for name in ("pkg-ok", "pkg-noadd", "pkg-fail")
+        ]
+    ).to_parquet(path, index=False)
+    (tmp_path / "recipes").mkdir()
+    monkeypatch.setattr(identity, "identity_complete_export_parquet_path", lambda: path)
+    monkeypatch.setattr(identity, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(identity.time, "sleep", lambda _s: None)
+    issue_base = "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/"
+    numbers = {"pkg-ok": 1, "pkg-noadd": 2}
+
+    def fake_run(cmd, **kwargs):
+        assert cmd[0] == _GH_SENTINEL
+        if cmd[1] == "issue":
+            name = cmd[cmd.index("--title") + 1].rsplit(" ", 1)[-1]
+            if name == "pkg-fail":
+                raise subprocess.CalledProcessError(1, cmd, stderr="validation failed")
+            return subprocess.CompletedProcess(cmd, 0, stdout=f"{issue_base}{numbers[name]}\n", stderr="")
+        if cmd[cmd.index("--url") + 1].endswith("/2"):
+            raise subprocess.CalledProcessError(1, cmd, stderr="project add failed")
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(sys, "argv", ["prog", "--create-issues", "--skip-gist"])
+
+    assert identity.main() == 0
+
+    captured = capsys.readouterr()
+    assert "Created 1 missing OpenTeams issue(s):" in captured.out
+    err = captured.err
+    could_not = err.split("Could not file 1 OpenTeams issue(s):", 1)[1].split("Filed but not added", 1)[0]
+    assert "pkg-fail: [Conda-Forge Packaging] pkg-fail" in could_not
+    assert "pkg-noadd" not in could_not
+    filed = err.split("Filed but not added to OpenTeams project 1 (1)", 1)[1]
+    assert f"pkg-noadd: {issue_base}2" in filed
+    assert "filed-but-not-added" not in err

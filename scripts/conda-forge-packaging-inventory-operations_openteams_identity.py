@@ -39,9 +39,9 @@ import shutil
 import subprocess
 import sys
 import time
+import types
 from collections import Counter, defaultdict
 from collections.abc import Callable
-from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -93,20 +93,24 @@ GIST_ID_ENV = "OPENTEAMS_IDENTITY_GIST_ID"
 INVENTORY_IDENTITY_UI_ENV = "INVENTORY_IDENTITY_UI"
 _VALID_IDENTITY_UI_MODES = frozenset({"both", "canvas", "vizro"})
 LOCAL_ENV_PATH = REPO_ROOT / "conf/conda-forge-packaging-inventory-operations.local.env"
-def _load_identity_export_contract() -> tuple[tuple[tuple[str, str, str, str], ...], list[str]]:
+
+
+def _load_identity_export_contract() -> types.ModuleType:
+    """Atlas's ``identity_export_contract`` -- the one schema and cell rule (Story 27.1)."""
     atlas_src = PYFORGE_ATLAS_PROJECT_DIR / "src"
     if str(atlas_src) not in sys.path:
         sys.path.insert(0, str(atlas_src))
-    from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import (
-        GIST_COLUMNS as contract_columns,
-        GIST_SCHEMA as contract_schema,
-    )
+    from pyforge.atlas.pipelines.derived_artifacts import identity_export_contract
 
-    return contract_schema, list(contract_columns)
+    return identity_export_contract
 
 
-GIST_SCHEMA, GIST_COLUMNS = _load_identity_export_contract()
+_EXPORT_CONTRACT = _load_identity_export_contract()
+GIST_SCHEMA: tuple[tuple[str, str, str, str], ...] = _EXPORT_CONTRACT.GIST_SCHEMA
+GIST_COLUMNS: list[str] = list(_EXPORT_CONTRACT.GIST_COLUMNS)
+_stringify_export_cell = _EXPORT_CONTRACT.stringify_export_cell
 IDENTITY_EXPORT_READ_WARNINGS: list[str] = []
+_FILED_NOT_ADDED_PREFIX = "filed-but-not-added: "
 _GH_PACE_SECONDS = 0.25
 _GH_MAX_RETRIES = 5
 _GH_BACKOFF_BASE = 2.0
@@ -357,7 +361,7 @@ def create_missing_issues(
                 f"gh project item-add failed for {name} (issue filed at {url}): {exc}",
                 file=sys.stderr,
             )
-            failed.append((name, f"filed-but-not-added: {url}"))
+            failed.append((name, f"{_FILED_NOT_ADDED_PREFIX}{url}"))
             continue
         row["OpenTeams_Issue_URL"] = url
         board[pep503_name(name)] = url
@@ -549,36 +553,16 @@ def identity_complete_export_parquet_path() -> Path | None:
     return data_root / IDENTITY_COMPLETE_EXPORT_RELPATH
 
 
-def _stringify_export_cell(value: object) -> str:
-    if value is None:
-        return ""
-    try:
-        if value is pd.NA or (isinstance(value, float) and pd.isna(value)):
-            return ""
-    except (TypeError, ValueError):
-        pass
-    try:
-        if pd.isna(value):
-            return ""
-    except (TypeError, ValueError):
-        pass
-    if isinstance(value, (list, tuple)):
-        return "; ".join(_stringify_export_cell(v) for v in value if v is not None)
-    try:
-        import numpy as np
-
-        if isinstance(value, np.ndarray):
-            return "; ".join(_stringify_export_cell(v) for v in value.tolist())
-    except ImportError:
-        pass
-    return str(value).strip()
-
-
 def _identity_export_missing_message(path: Path) -> str:
     return (
         f"identity_complete_export not found at {path} -- run "
         "`pixi run -e pyforge-atlas pyforge-atlas-bootstrap` first"
     )
+
+
+def _export_read_warning(msg: str) -> None:
+    IDENTITY_EXPORT_READ_WARNINGS.append(msg)
+    print(f"warning: {msg}", file=sys.stderr)
 
 
 def read_identity_complete_export_records() -> list[dict[str, str]] | None:
@@ -605,32 +589,20 @@ def read_identity_complete_export_records() -> list[dict[str, str]] | None:
             file=sys.stderr,
         )
         return None
-    atlas_src = PYFORGE_ATLAS_PROJECT_DIR / "src"
-    if str(atlas_src) not in sys.path:
-        sys.path.insert(0, str(atlas_src))
-    from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import (
-        RANKING_COLUMNS,
-    )
-
-    for col in RANKING_COLUMNS:
+    ranked = (*_EXPORT_CONTRACT.RANKING_COLUMNS, *_EXPORT_CONTRACT.SECONDARY_RANKING_COLUMNS)
+    for col in ranked:
         if col not in df.columns:
-            msg = f"identity_complete_export: ranking column {col} absent from export"
-            IDENTITY_EXPORT_READ_WARNINGS.append(msg)
-            print(f"warning: {msg}", file=sys.stderr)
-    seen: dict[str, list[str]] = {}
+            _export_read_warning(f"identity_complete_export: ranking column {col} absent from export")
     if "Core_Python_Package_Name" in df.columns:
+        rows_by_key: dict[str, list[str]] = defaultdict(list)
         for raw in df["Core_Python_Package_Name"].dropna():
-            key = pep503_name(str(raw))
-            seen.setdefault(key, []).append(str(raw))
-        for key, names in seen.items():
-            unique = sorted({n for n in names if n})
-            if len(unique) > 1:
-                msg = (
+            rows_by_key[pep503_name(str(raw))].append(str(raw))
+        for key, names in rows_by_key.items():
+            if key and len(names) > 1:
+                _export_read_warning(
                     f"identity_complete_export: duplicate ranked rows normalize to "
-                    f"{key}: {', '.join(unique)}"
+                    f"{key} ({len(names)} rows): {', '.join(names)}"
                 )
-                IDENTITY_EXPORT_READ_WARNINGS.append(msg)
-                print(f"warning: {msg}", file=sys.stderr)
     return [
         {str(k): _stringify_export_cell(v) for k, v in row.items()}
         for row in df.to_dict(orient="records")
@@ -717,7 +689,6 @@ def write_dashboard_markdown(
     script_dir = str(Path(__file__).resolve().parent)
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir)
-    import types
     from openteams_identity_dashboards import (
         default_ops_canvas_path,
         default_workbook_canvas_path,
@@ -970,8 +941,9 @@ def main() -> int:
         default=None,
         help=(
             "Ops dashboard canvas output path (Priority/Issues/Builds/Census). "
-            "Default: resolved from PYFORGE_ATLAS_CANVAS_DIR or .env.local at write "
-            "time; unset skips the canvas write. Override for offline tests."
+            "Default: identity-ops.canvas.tsx under PYFORGE_INVENTORY_CANVAS_DIR "
+            "(environment, else conf/conda-forge-packaging-inventory-operations.local.env), "
+            "resolved at write time; unset skips the canvas write with a message."
         ),
     )
     p.add_argument(
@@ -979,9 +951,9 @@ def main() -> int:
         type=Path,
         default=None,
         help=(
-            "Artifactory/workbook dashboard canvas output path. Default: same "
-            "environment or local-env canvas directory as --ops-canvas; unset "
-            "skips the write. Override for offline tests."
+            "Artifactory/workbook dashboard canvas output path. Default: "
+            "jfrog-workbook.canvas.tsx under the same PYFORGE_INVENTORY_CANVAS_DIR as "
+            "--ops-canvas; unset skips the write with a message."
         ),
     )
     args = p.parse_args()
@@ -1026,10 +998,21 @@ def main() -> int:
         print(f"{label} {len(created)} missing OpenTeams issue(s):")
         for name, title in created:
             print(f"  {name}: {title}")
-    if not_filed:
-        print(f"Could not file {len(not_filed)} OpenTeams issue(s):", file=sys.stderr)
-        for name, title in not_filed:
+    filed_not_added = [(n, d) for n, d in not_filed if d.startswith(_FILED_NOT_ADDED_PREFIX)]
+    could_not_file = [(n, d) for n, d in not_filed if not d.startswith(_FILED_NOT_ADDED_PREFIX)]
+    if could_not_file:
+        print(f"Could not file {len(could_not_file)} OpenTeams issue(s):", file=sys.stderr)
+        for name, title in could_not_file:
             print(f"  {name}: {title}", file=sys.stderr)
+    if filed_not_added:
+        print(
+            f"Filed but not added to OpenTeams project {PROJECT_NUMBER} "
+            f"({len(filed_not_added)}) -- add each by hand with `gh project item-add`; "
+            "a re-run would file a duplicate issue:",
+            file=sys.stderr,
+        )
+        for name, detail in filed_not_added:
+            print(f"  {name}: {detail.removeprefix(_FILED_NOT_ADDED_PREFIX)}", file=sys.stderr)
 
     export_path = identity_complete_export_parquet_path()
     if args.output_csv:

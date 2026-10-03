@@ -6,6 +6,7 @@ Rendered by conda-forge-packaging-inventory-operations_openteams_identity.py
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -730,8 +731,6 @@ def render(
 # its markdown mirror into a `cursor/canvas` TSX file. Same import block and
 # DATA-blob structural pattern as write_canvas -- `_CANVAS_PREFIX` lives in
 # conda-forge-packaging-inventory-operations_priority.py (Story 27.1).
-import importlib.util
-
 _PRIORITY_SCRIPT = Path(__file__).resolve().parent / (
     "conda-forge-packaging-inventory-operations_priority.py"
 )
@@ -741,12 +740,15 @@ _priority_mod = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_priority_mod)
 _CANVAS_PREFIX = _priority_mod._CANVAS_PREFIX
 resolve_canvas_dir = _priority_mod.resolve_canvas_dir
+
+
 def default_ops_canvas_path() -> Path | None:
     return _priority_mod.default_ops_canvas_path()
 
 
 def default_workbook_canvas_path() -> Path | None:
     return _priority_mod.default_workbook_canvas_path()
+
 
 _OPS_CANVAS_SUFFIX = r""" as {
   tab: string;
