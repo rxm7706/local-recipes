@@ -941,6 +941,10 @@ def test_debug_merged_branch_verdict(tmp_path: Path) -> None:
     slug = "pyforge-marshal"
     fs = FakeFs()
     
+    # Create the worktree directory that the journal references
+    worktree_path = tmp_path / "wt"
+    worktree_path.mkdir(parents=True, exist_ok=True)
+    
     # Seed a refused dispatch journal
     run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-debug", story_key="debug.1")
     journal_path = run_dir / "journal.jsonl"
