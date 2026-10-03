@@ -261,6 +261,23 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
   **Operator ruling (2026-09-29):** keep it, and don't build it yet. No CAP is minted until the operator
   wants it built. **Kinships:** [[pyforge-mason]] (the `auto-recipe` ruling of the same day). Owner:
   atlas.
+- **2026-10-03 (Phase 4+5) — Ruled: atlas's open medium and low deferrals are fixed.** The operator ruled that
+  Phase 4 (open medium deferrals) and Phase 5 (open low deferrals) of the deferral burn-down run together, now, on the
+  idle station lanes; the same day the operator asked for fewer, larger stories, at most about 30 rows each, split by
+  package area. A parser over atlas's tracked `deferred-work-ledger.md` counts 36 open medium and 60 open
+  low rows (114 unrated open rows are outside the ruling).
+  **What it looks like when fixed:** each of the 96 rows reads `closed`, with a `resolution:` naming its story and a
+  `verified:` line citing the `path:line` it fixed. The inventory exports refuse a hollow verification set and the
+  quartet scripts fail loud; the data plane honours `PYFORGE_ATLAS_DATA_ROOT`, degrades offline and fetches what it
+  claims; the read surfaces render what DESIGN.md specifies and are proven on fixture data; the planning record matches
+  the tree, and the eight follow-up reviews atlas owes have run.
+  **Constraints:**
+  - `fix` stories: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1).
+  - Each defect is pinned by a test that fails without its fix.
+  - A row whose code a later story removed (Story 23.9 thinned the quartet) is re-located and fixed where the behaviour
+    went; it closes on citation alone only when the behaviour is gone.
+  - NFR-1 holds: every gate stays fixture-based and non-credentialed.
+  Owner `spec-pyforge-atlas`. → Epic 27 / Stories 27.1–27.4, specced 2026-10-03.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 
