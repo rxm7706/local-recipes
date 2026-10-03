@@ -146,6 +146,9 @@ SIDECAR_THRESHOLD_BYTES = 4096
 SCOPE_VIOLATION_ADVISORIES_FIELD = "scope_violation_advisories"
 SCOPE_VIOLATION_ADVISORIES_SIDECAR_REF = "scope_violation_advisories_sidecar_ref"
 
+# Story 85.1 (CAP-286): failed verify command tails may offload so verdict keys stay inline.
+VERIFY_FAILED_COMMANDS_FIELD = "failed_commands"
+
 # Dispatch landing findings (Story 53.2): `execute_dispatch_land`'s envelope
 # findings (MRS-DISP-047/048) -- always 0-1 items, so no sidecar-offload path
 # is needed unlike the scope-advisories field above.
@@ -484,6 +487,20 @@ def sidecar_texts_for_lines(
 ) -> dict[str, str | None]:
     """Build the ``sidecars`` mapping for ``fold`` from journal ``lines``."""
     return {ref: read_sidecar(ref) for ref in sidecar_refs_from_lines(lines)}
+
+
+def resolve_verify_failed_commands_from_payload(
+    payload: Mapping[str, object],
+    *,
+    sidecars: Mapping[str, str | None] = MappingProxyType({}),
+) -> tuple[dict[str, object], ...]:
+    """Read failed verify commands from inline list or offload sidecar (Story 85.1)."""
+    inline = payload.get(VERIFY_FAILED_COMMANDS_FIELD)
+    if not isinstance(inline, list):
+        inline = _offloaded_payload_field(payload, VERIFY_FAILED_COMMANDS_FIELD, sidecars)
+    if isinstance(inline, list):
+        return tuple(item for item in inline if isinstance(item, dict))
+    return ()
 
 
 def resolve_scope_violation_advisories_from_payload(

@@ -42,6 +42,24 @@ authcheck_ok_pattern = "Logged in as"
 verified = true
 notes = "Verified 2026-08-27: authenticated, smoke-tested --trust -p shape; binary corrected cursor->cursor-agent."
 
+# Story 85.1 (CAP-286): verification fix turn — resume prior session in the same workspace.
+resume_argv = [
+  "-p",
+  "--trust",
+  "--workspace",
+  "{worktree}",
+  "--continue",
+  "{model_args}",
+  "{prompt}",
+]
+fix_only_argv = [
+  "-p",
+  "--trust",
+  "--workspace",
+  "{worktree}",
+  "{model_args}",
+  "{prompt}",
+]
 # Story 84.1 (CAP-285): live model-list source for operator-run refresh.
 [model_list]
 catalog_provider = "cursor"
