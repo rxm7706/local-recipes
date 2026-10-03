@@ -593,9 +593,12 @@ def _render_dashboards(
     repo_root: Path,
 ) -> str:
     n = len(records)
-    ts = (records[0].get("Verification_Timestamp_UTC") if records else "") or datetime.now(timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
-    )
+    ts = str(records[0].get("Verification_Timestamp_UTC") or "").strip() if records else ""
+    if not ts:
+        raise PyforgeError(
+            "identity_complete_export missing Verification_Timestamp_UTC; "
+            "refusing dashboard companion with a synthetic timestamp"
+        )
     sha = _file_sha256(export_path)
 
     p_df = _query_counts(model, ["P"])

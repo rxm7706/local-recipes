@@ -418,9 +418,15 @@ def test_write_dashboard_markdown_writes_both_canvases_by_default(
         "write_workbook_canvas",
         lambda *a, **k: workbook_calls.append((a, k)),
     )
-    monkeypatch.setattr(dashboards, "DEFAULT_OPS_CANVAS_PATH", tmp_path / "ops.canvas.tsx")
     monkeypatch.setattr(
-        dashboards, "DEFAULT_WORKBOOK_CANVAS_PATH", tmp_path / "workbook.canvas.tsx"
+        dashboards,
+        "default_ops_canvas_path",
+        lambda: tmp_path / "ops.canvas.tsx",
+    )
+    monkeypatch.setattr(
+        dashboards,
+        "default_workbook_canvas_path",
+        lambda: tmp_path / "workbook.canvas.tsx",
     )
 
     dash_path = tmp_path / "dashboards.md"

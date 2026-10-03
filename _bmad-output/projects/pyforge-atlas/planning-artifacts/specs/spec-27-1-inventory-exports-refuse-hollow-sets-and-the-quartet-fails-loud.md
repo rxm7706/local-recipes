@@ -2,7 +2,7 @@
 title: "27.1: The inventory exports refuse a hollow verification set, and the quartet scripts fail loud"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 10a40461ddefe7a7017a246c1fe189c2982bf202
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -97,4 +97,25 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 9 findings — high 0, medium 5, low 0, false 2, maybe-false 2
+- findings:
+  - `[medium]` `[patch]` `main()` now passes `not_filed` and prints a run-level summary — wired at scripts/conda-forge-packaging-inventory-operations_openteams_identity.py
+  - `[medium]` `[patch]` `_gh_secondary_rate_limit` matches rate-limit text, not every 403 — scripts/conda-forge-packaging-inventory-operations_openteams_identity.py
+  - `[medium]` `[patch]` corrupt Parquet stderr no longer says "not found" first — same script
+  - `[medium]` `[patch]` gist/dashboard refuse synthetic timestamps — identity_gist.py + test fixture timestamp
+  - `[medium]` `[patch]` canvas defaults resolve at write time via `default_*_canvas_path()` — openteams_identity_dashboards.py
+  - `[medium]` `[patch]` `GIST_COLUMNS` ⊆ `IDENTITY_COMPLETE_EXPORT_COLUMNS` test — test_inventory_verification.py
+  - `[false]` `[reject]` parquet executor thread cancellation — bounded deadline already fails named; full cancel deferred
+  - `[false]` `[reject]` from-scratch test CSV-only — MD snapshot is the CAP-1 bar witness; CSV covered by actuator tests
+  - `[maybe-false]` `[defer]` Kedro `Session` e2e vs direct node calls — e2e test exercises node chain; full session left for 27.2 if needed
+
+## Auto Run Result
+
+Status: done
+
+Summary: Story 27.1 lands verification-set floors and hollow-set refusal in Kedro inventory nodes, hardens the inventory quartet scripts (export reader, gh backoff, canvas paths, shared `identity_export_contract`), adds offline fixture/e2e tests, closes 25 deferred-work rows, and passes station verification plus `spec_surface_reconcile.py`.
+
+Verification: `kedro-test` 0 (1877 passed), `kedro-catalog-check` 0, `lint-types` 0, `spec_surface_reconcile.py` 0, scripts/tests + packaging handoff tests 0.
+
+Follow-up review recommended: false (patched mediums converged; deferred items are unverified session-scope only).

@@ -336,6 +336,7 @@ def rendered_env(tmp_path: Path):
 
     def row(**overrides):
         base = {c: "" for c in ig.GIST_COLUMNS}
+        base["Verification_Timestamp_UTC"] = "2026-08-30T12:00:00Z"
         base.update(overrides)
         return base
 

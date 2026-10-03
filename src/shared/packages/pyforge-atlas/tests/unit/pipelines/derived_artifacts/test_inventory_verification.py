@@ -5,6 +5,10 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
+from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import (
+    GIST_COLUMNS,
+    IDENTITY_COMPLETE_EXPORT_COLUMNS,
+)
 from pyforge.atlas.pipelines.derived_artifacts.inventory_verification import (
     HollowVerificationSetError,
     verification_sets,
@@ -83,3 +87,9 @@ def test_floors_count_after_norm_pkg():
     assert len(cf_or_pm) == 1
     assert "my-pkg" in cf_or_pm
     assert len(pypi_index) == 1
+
+
+def test_gist_columns_are_subset_of_identity_complete_export_columns():
+    export_cols = set(IDENTITY_COMPLETE_EXPORT_COLUMNS)
+    missing = [c for c in GIST_COLUMNS if c not in export_cols]
+    assert missing == [], f"GIST_COLUMNS not on export: {missing}"
