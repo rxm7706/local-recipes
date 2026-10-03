@@ -69,6 +69,8 @@ verify_commands = [
 # Story 21.10 for `.github/workflows/kedro-viz-publish.yml` -- a path epic 21
 # below has declared all along. Keep every scalar/array policy key ABOVE the
 # first table header.
+# 2026-10-03 (operator ruling): cursor-only, on composer-2.5-fast, the setup marshal (#1757) and steward (#1770)
+# run. Flip the harness line and the tier map together.
 harness_preference = ["cursor"]
 
 
@@ -197,15 +199,15 @@ harness_preference = ["cursor"]
 # ladder as explicit {harness, model} tables so a Cursor id cannot land
 # on claude --model (fails-safe CAP-1). Unattended drain stays off until
 # 28.29 is separately proven. This IDE drives the wave.
+# 2026-10-03 (operator ruling, see harness_preference above): Cursor on composer-2.5-fast for dev and review in the
+# heavy and medium tiers (an undeclared difficulty resolves to medium on dispatch); easy keeps composer-2.5.
 [model_tier_map.heavy]
 dev = { harness = "cursor", model = "composer-2.5-fast" }
 review = { harness = "cursor", model = "composer-2.5-fast" }
 
-# 2026-10-02 (operator ruling): `grok-4.6` is no longer a Cursor model id (the live list names
-# `cursor-grok-4.6-*` and the newer `grok-4.7-*`); the medium tier moves to `grok-4.7-high`.
 [model_tier_map.medium]
-dev = { harness = "cursor", model = "grok-4.7-high" }
-review = { harness = "cursor", model = "grok-4.7-high" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.easy]
 dev = { harness = "cursor", model = "composer-2.5" }
