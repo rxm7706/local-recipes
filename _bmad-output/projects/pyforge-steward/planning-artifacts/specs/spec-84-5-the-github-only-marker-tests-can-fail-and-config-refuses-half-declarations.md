@@ -2,7 +2,7 @@
 title: "84.5: The GitHub-only marker tests can fail, and config refuses half declarations"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: db7a31eef2404357ec6430457104683ac42910fe
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -64,4 +64,17 @@ Minted 2026-10-03 at the operator's request.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — build-auto review pass
+- verdicts: 0 findings — high 0, medium 0, low 0
+- All acceptance criteria satisfied; steward tests and lint-types green; `python scripts/spec_surface_reconcile.py` OK.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Hardened GitHub-only marker tests (metadata on flag trees, production overlay without WARNING, `PYFORGE_ENVIRONMENT=prod` case, no-marker flag-read guard), refused label mixed with lone field halves in config load, corrected DW-8-5-2 citations and appended Story 84.4 review correction.
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2026 passed, 2 skipped
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
