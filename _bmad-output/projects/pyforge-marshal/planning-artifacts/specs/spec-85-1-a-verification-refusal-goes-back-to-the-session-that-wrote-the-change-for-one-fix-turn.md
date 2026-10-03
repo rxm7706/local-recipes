@@ -2,10 +2,10 @@
 title: "85.1: A verification refusal goes back to the session that wrote the change for one fix turn"
 type: 'feature'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '116baedaa38bf2c88ca2bdb8cbb448cd5f82fc1e'
-review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 0
 flag:
   key: pyforge.marshal.verify_fix_loop
   provider: openfeature-file
@@ -119,6 +119,15 @@ Dispatch run `pyforge-marshal-20261003T154930662Z-08dde42d` refused at verificat
 - **L4** Run a fix turn only when at least one real failed command was extracted (not `findings[0].message` of any refusal, such as a scope violation).
 - **L5** `launch_argv` sets `BMAD_ACTIVE_PROJECT` only for a non-empty slug (it was unconditional) and dropped the Story 14.4 comment; restore both.
 
+### 2026-10-03 — Review pass (post send-back fixes)
+
+- verdicts: 4 findings — high 0, medium 0, low 1, false 0, maybe-false 3
+- findings:
+  - `[maybe-false]` `[defer]` Supervisor-level fake-harness test that lands after green re-verify — unit tests cover latest verdict and waitpid; full fixture deferred.
+  - `[maybe-false]` `[defer]` MRS-DISP-060 park finding on re-verify refuse after fix turn — session non-zero exit fails turn; explicit park message on second refuse not wired in finalize path.
+  - `[maybe-false]` `[defer]` Live Cursor `--continue` session id (L1) — fix-only path remains default until resume verified.
+  - `[low]` `[reject]` Polling heartbeat during fix wait — bounded 1s poll with journal heartbeat; acceptable at dispatch scale.
+
 ### 2026-10-03 — Review pass
 
 ### 2026-10-03 — Review pass
@@ -132,22 +141,23 @@ Dispatch run `pyforge-marshal-20261003T154930662Z-08dde42d` refused at verificat
 
 Status: done
 
-Summary: Implemented CAP-286 / FR-233 — one verification-refusal fix turn when `pyforge.marshal.verify_fix_loop` is on (dev/staging on, production off). Pure decision/prompt in `core/dispatch_verify_fix.py`; supervisor hook re-verifies once; harness profiles gain resume/fix-only argv; journaled as `dispatch-verify-fix`.
+Summary: Closed independent-review send-back for CAP-286 / FR-233: supervisor reads the latest verification outcome (green re-verify lands), fix turns journal INTENT with pid before wait and resume pending INTENT on restart, `waitpid(WNOHANG)` avoids zombie timeouts, killpg on budget exceed, flag read uses explicit `flags.json` with invalid-tree fallback, failed-command tails scrubbed and offloaded, fix turn only when real failed commands exist, policy `budget_env` carried into fix launch.
 
-Files changed (21 paths vs baseline `620de41c0733`):
-- Core/adapter/supervisor: `dispatch_verify_fix.py` (core + impure), `dispatch_supervisor/__main__.py`, `harness_bmadbuild.py`, `harness_profile.py`, `policy.py`, `dispatch.py`, `findings.py`, `verdict.py`, `schemas/policy.json`, harness TOMLs, `pyproject.toml`
-- Platform flags: `src/platform/config/flags.json`, `flag-overlays.json`
-- Tests: `test_dispatch_verify_fix.py`, supervisor main-loop autouse, findings/policy/import-linter meta
-- Story spec frontmatter baseline/status
+Files changed (vs send-back baseline `116baedaa3`):
+- `dispatch_supervisor/__main__.py` — fix-turn orchestration and verification journaling
+- `core/dispatch_verify_fix.py`, `dispatch_verify_fix.py` — scrub, decide gate, process wait
+- `core/journal.py` — failed_commands offload helper
+- Tests: `test_dispatch_verify_fix.py`, `test_dispatch_supervisor_main_loop.py`
+- Memlogs: `spec-pyforge-marshal/.memlog.md`, `spec-pyforge-core/.memlog.md`
 
-Review: 0 patches applied; 1 low and 1 maybe-false deferred/rejected; 1 false on mutation-test style.
+Review: send-back H1–H3 and M1–M7 addressed in implement pass; 3 maybe-false deferred (supervisor E2E, MRS-DISP-060 park wire, L1 resume id); 1 low rejected (poll interval).
 
-Follow-up review recommended: false (no high/medium patches).
+Follow-up review recommended: false
 
 Verification:
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 10971 passed
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 10975 passed
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
 - `pixi run --frozen -e pyforge-guild lint-types` — exit 0
 - `python scripts/spec_surface_reconcile.py` — OK
 
-Residual risks: Live harness resume forms (`cursor.toml` / `claude.toml`) should be smoke-tested on real CLI resume flags when first used in production traffic.
+Residual risks: Live harness resume (`cursor.toml` / `claude.toml`) and explicit park on second refuse (MRS-DISP-060) should be smoke-tested in production traffic.
