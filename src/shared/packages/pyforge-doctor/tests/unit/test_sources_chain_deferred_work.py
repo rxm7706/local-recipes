@@ -2893,6 +2893,13 @@ def test_a_bare_post_cutoff_line_does_not_hide_another_findings_kind(tmp_path: P
         "FIXED `cmd` exited with code 1",
         "FIXED `cmd` exited with 1",
         "FIXED `cmd` exit_code 0",
+        # DW-doctor-38-1-2: shapes the ledgers already use. An
+        # extensionless path is still followable, and so is an anchor.
+        "STANDS .gitignore:3",
+        "STANDS Makefile:12",
+        "STANDS `docs/MAP:3`",
+        "STANDS chain.py::_glob_to_re",
+        "STANDS `scripts/detectors.py::_DOCTOR_SOURCE_TASKS`",
     ],
 )
 def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code(raw: str) -> None:
@@ -2913,6 +2920,11 @@ def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code
         "FIXED `cmd` returned 0",
         "FIXED `cmd` returns 0",
         "FIXED `pytest -q` was run; see `notes` for the outcome and a long gap before the final exit 0",
+        # DW-doctor-38-1-2 stays NARROW: without an extension, a `/`, or
+        # a name on the closed extensionless list, nothing distinguishes
+        # a filename from an ordinary capitalised word.
+        "STANDS Note: 12 lines of it",
+        "STANDS see AD-23 and Epic 44",
     ],
 )
 def test_verified_line_cites_rejects_a_bare_verdict(raw: str) -> None:
@@ -2930,3 +2942,42 @@ def test_the_live_tracked_ledgers_carry_no_uncited_post_cutoff_verified_line() -
     uncited = _uncited(chain.gather_deferred_work(_REPO_ROOT))
 
     assert not uncited, [(f.evidence["project"], f.evidence["id"]) for f in uncited]
+
+
+# === Story 41.1: baseline freshness is checked, not assumed ==================
+
+
+def test_a_stale_high_baseline_is_warned_about(tmp_path: Path) -> None:
+    """DW-7-3-1: the Tier-3-anonymous check is a POSITIONAL slice -- entries
+    beyond the stamped count are "new". That is only sound while the stamp
+    EQUALS the count it was taken from. A stamp left higher than the live
+    count grandfathers entries that are not there, and keeps grandfathering
+    the next few appended to the file -- new work nothing will ever name. So
+    freshness is checked on every run, and the WARN says how to re-stamp."""
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(tmp_path, "proj", "")
+    _write_baseline(tmp_path, {"proj": 5})
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    stale = [f for f in findings if f.check == "stale-deferred-work-baseline"]
+    assert len(stale) == 1, [f.check for f in findings]
+    assert stale[0].status is DoctorStatus.WARN
+    assert stale[0].evidence["stamped"] == 5
+    assert stale[0].evidence["live"] == 1
+    assert "deferred_work_baseline.py" in stale[0].message
+    assert "--project proj" in stale[0].message
+
+
+def test_a_baseline_matching_the_live_count_is_not_warned_about(tmp_path: Path) -> None:
+    """The WARN is one-directional and narrow: a stamp EQUAL to the live
+    count is exactly what a fresh stamp looks like, and a stamp BELOW it is
+    the ordinary case the slice exists to serve -- the entries past it are
+    the new ones, reported as `tier3-entry-unidentified`."""
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(tmp_path, "proj", "")
+    _write_baseline(tmp_path, {"proj": 1})
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert [f for f in findings if f.check == "stale-deferred-work-baseline"] == []
