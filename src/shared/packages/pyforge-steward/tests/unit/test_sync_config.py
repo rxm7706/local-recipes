@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.steward.sync import SyncConfig, SyncConfigError, load_config
+from pyforge.steward.sync import GitHubOnlyMarker, SyncConfig, SyncConfigError, load_config
 
 _VALID_DOCUMENT = """\
 github:
@@ -46,6 +46,7 @@ def test_happy_path_loads_a_fully_populated_config(tmp_path):
     assert config.field_overrides == {}
     assert config.user_mapping == {}
     assert config.status_mapping == {}
+    assert config.github_only_marker is None
 
 
 def test_happy_path_with_field_overrides_and_user_mapping(tmp_path):
@@ -64,6 +65,53 @@ user_mapping:
 
     assert config.field_overrides == {"status": "jira"}
     assert config.user_mapping == {"octocat": "5b10a2844c20165700ede21g"}
+
+
+def test_github_only_marker_by_label(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  label: github-only
+""",
+    )
+
+    config = load_config(path)
+
+    assert config.github_only_marker == GitHubOnlyMarker(label="github-only")
+
+
+def test_github_only_marker_by_field_value(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  field_id: PVTF_scope
+  field_value: GitHub only
+""",
+    )
+
+    config = load_config(path)
+
+    assert config.github_only_marker == GitHubOnlyMarker(field_id="PVTF_scope", field_value="GitHub only")
+
+
+def test_github_only_marker_rejects_both_modes(tmp_path):
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+github_only_marker:
+  label: github-only
+  field_id: PVTF_scope
+  field_value: GitHub only
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="not both"):
+        load_config(path)
 
 
 def test_happy_path_with_status_mapping(tmp_path):
