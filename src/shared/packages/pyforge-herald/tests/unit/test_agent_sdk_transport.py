@@ -314,6 +314,19 @@ def test_list_files_refuses_a_non_list_files_value(fake_launcher):
         transport.list_files(project_id="p")
 
 
+def test_list_files_accepts_a_bare_json_array(fake_launcher):
+    transport, _ = _transport(
+        fake_launcher,
+        {
+            "list_files": _ok(
+                '[{"path": "a.html", "etag": "E1", "type": "file"}, {"path": "dir/", "type": "directory"}]'
+            )
+        },
+    )
+    files = transport.list_files(project_id="p")
+    assert files == [ListedFile(path="a.html", etag="E1", size=None)]
+
+
 # --- list_projects (Story 23.1, CAP-1) --------------------------------------
 
 
