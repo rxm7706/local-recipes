@@ -83,23 +83,17 @@ def test_unlinked_without_marker_still_fails_loud(flag_on):
 
 
 def test_near_miss_labels_do_not_skip(flag_on):
-    transport = FakeTransport(
-        github_fields={"gh_status": "To Do"},
-        github_content={
-            "number": 1,
-            "repository": {"owner": {"login": "o"}, "name": "r"},
-            "assignees": {"nodes": []},
-            "labels": {"nodes": [{"name": label}]},
-        },
-    )
     config = _config_with_marker(GitHubOnlyMarker(label="github-only"))
     for label in ("not-github-only", "GitHub-Only", "GitHub only (temp)"):
-        transport.github_content = {
-            "number": 1,
-            "repository": {"owner": {"login": "o"}, "name": "r"},
-            "assignees": {"nodes": []},
-            "labels": {"nodes": [{"name": label}]},
-        }
+        transport = FakeTransport(
+            github_fields={"gh_status": "To Do"},
+            github_content={
+                "number": 1,
+                "repository": {"owner": {"login": "o"}, "name": "r"},
+                "assignees": {"nodes": []},
+                "labels": {"nodes": [{"name": label}]},
+            },
+        )
         result = reconcile(github_item_id="ITEM_1", config=config, transport=transport)
         assert result.ok is False, label
         assert "unlinked" in result.summary
@@ -166,9 +160,13 @@ def test_single_select_marker_skips_when_flag_on(flag_on):
 
 
 def test_single_select_on_status_field_does_not_change_reconcile_status_when_flag_off(flag_off):
-    """M2: native single-select Status must not populate `gh.status` when flag is off."""
+    """M2: single-select on the status field id must not override TEXT `gh.status`."""
     transport = FakeTransport(
-        github_fields={"gh_link": "PROJ-1", "gh_baseline": '{"status": "To Do"}'},
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do"}',
+        },
         github_single_select_fields={CONFIG.github_status_field_id: "In Progress"},
         jira_fields={
             "jira_link": "ITEM_1",
