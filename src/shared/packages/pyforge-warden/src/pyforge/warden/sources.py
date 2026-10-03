@@ -281,8 +281,7 @@ class CycloneDXSourceAdapter:
         return components
 
     def ingest(self) -> tuple[SourceEvidence, ...]:
-        parsed = self.parse(self.fetch())
-        components = self.validate(parsed)
+        components = self.validate(self.parse(self.fetch()))
         if not components:
             return ()
         evidence: list[SourceEvidence] = []

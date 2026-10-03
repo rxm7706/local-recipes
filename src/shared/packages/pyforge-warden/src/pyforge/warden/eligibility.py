@@ -177,10 +177,10 @@ def compute_eligibility_union(
         seen: set[tuple[str, str]] = set()
         provenance: list[ProvenanceEntry] = []
         for ev in group:
-            prov_key = (ev.source_name, ev.locator)
-            if prov_key in seen:
+            key = (ev.source_name, ev.locator)
+            if key in seen:
                 continue
-            seen.add(prov_key)
+            seen.add(key)
             provenance.append(
                 ProvenanceEntry(
                     source=ev.source_name,

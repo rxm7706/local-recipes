@@ -612,7 +612,7 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py:273
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py:275
   status: closed
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
@@ -629,9 +629,9 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   resolution: 17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py:102
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py:119
-  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility_sbom.py:93
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py:101
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility.py:118
+  verified: 2026-10-03 — src/shared/packages/pyforge-warden/src/pyforge/warden/eligibility_sbom.py:95
   status: closed
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open

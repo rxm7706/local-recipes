@@ -192,7 +192,8 @@ def test_cyclonedx_adapter_missing_spec_version_refused(tmp_path):
     adapter = CycloneDXSourceAdapter(path)
     with pytest.raises(CycloneDXUnsupportedSpecVersionError) as exc_info:
         adapter.validate(adapter.parse(adapter.fetch()))
-    assert "None" in str(exc_info.value) or "unsupported" in str(exc_info.value).lower()
+    assert exc_info.value.spec_version is None
+    assert "None" in str(exc_info.value)
 
 
 def test_cyclonedx_adapter_component_missing_purl_is_skipped(tmp_path):
