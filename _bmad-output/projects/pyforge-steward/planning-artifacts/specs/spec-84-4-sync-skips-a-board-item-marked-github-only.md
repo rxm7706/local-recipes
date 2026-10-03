@@ -135,23 +135,21 @@ Passed: the flag pins agree (flags.json, overlays, the spec's `flag:` block, pyf
 
 Status: done
 
-Summary: Closed independent-review gaps for Story 84.4: TEXT vs single-select parsing (M2), safe flag reads and once-per-batch evaluation (H3), schedule skip summary (M1), platform shipped-tree pin (H1), two-tree flag tests (H2/M3); DW-8-5-2 verified lines updated.
+Summary: Closed the evening independent re-review (tests-only): real flag-overlays.json degradation cases, production/unknown-environment schedule batches, mutant-killing negatives, empty-marker config refusal, and deploy notes in the example sync-config; DW-8-5-2 `verified:` cites the skip raise path.
 
 Files changed:
-- `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` — text/single-select split, safe flag gate, batch skip summary
-- `src/shared/packages/pyforge-steward/tests/unit/test_sync_github_only_marker.py` — two `PYFORGE_FLAGS_PATH` trees and expanded AC coverage
-- `src/shared/packages/pyforge-steward/tests/unit/test_sync_config.py` — marker validation (unknown keys, empty mapping)
-- `src/shared/packages/pyforge-steward/tests/unit/test_sync_reconcile_propagation.py` — single-select GraphQL nodes in fakes
-- `src/platform/tests/test_openfeature_file_flags.py` — shipped boolean for sync github-only marker
-- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-84-4-sync-skips-a-board-item-marked-github-only.md` — Verification names test file
-- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` — DW-8-5-2 `verified:` cites skip path
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py` — refuse empty `github_only_marker` mapping at load
+- `src/shared/packages/pyforge-steward/tests/unit/test_sync_github_only_marker.py` — overlay/production/unknown-env flag tests and expanded negatives
+- `src/shared/packages/pyforge-steward/tests/unit/test_sync_config.py` — empty mapping, scalar, lone field_value refused
+- `.steward/sync-config.example.yaml` — production env and linked-item behaviour documented
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md` — DW-8-5-2 verified line
 
-Review: 0 patches this pass; prior H1–H3/M1–M3 fixed in implementation.
+Review: Evening re-review items patched; this pass 0 new findings.
 
 Follow-up review recommended: false
 
 Verification:
-- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2014 passed, 2 skipped
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2023 passed, 2 skipped
 - `pixi run --frozen -e pyforge-guild lint-types` — exit 0
 - `python scripts/spec_surface_reconcile.py` — OK
 - `python scripts/flag_gate_check.py` — ok (0 fail for this spec)
