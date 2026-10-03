@@ -61,6 +61,7 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from packageurl import PackageURL
+from pyforge.core.errors import PyforgeError
 
 from . import discovery
 from .extract import extractor_for
@@ -212,7 +213,7 @@ _CYCLONEDX_BOM_FORMAT = "CycloneDX"
 _SUPPORTED_CYCLONEDX_SPEC_VERSIONS: frozenset[str] = frozenset({"1.6"})
 
 
-class CycloneDXUnsupportedSpecVersionError(ValueError):
+class CycloneDXUnsupportedSpecVersionError(PyforgeError, ValueError):
     """Raised when a CycloneDX document's ``specVersion`` is outside the supported set."""
 
     def __init__(self, spec_version: object) -> None:
