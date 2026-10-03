@@ -389,7 +389,7 @@ development_status:
   83-7-a-re-dispatch-after-a-refused-landing-lands-the-existing-branch-without-a-new-session: done
   83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes: done
   83-9-dispatch-applies-ruff-format-to-a-story-s-files-before-it-verifies: done
-  84-1-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift: backlog
+  84-1-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift: done
   85-1-a-verification-refusal-goes-back-to-the-session-that-wrote-the-change-for-one-fix-turn: backlog
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: backlog
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
@@ -562,7 +562,7 @@ development_status:
   epic-81-retrospective: optional
   epic-82: done
   epic-82-retrospective: optional
-  epic-83: in-progress
+  epic-83: backlog
   epic-83-retrospective: optional
   epic-84: backlog
   epic-84-retrospective: optional
