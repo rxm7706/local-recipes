@@ -97,3 +97,10 @@ Verification: pyforge-marshal-test (10845 passed), pyforge-deps-test (130 passed
 **Manual checks:**
 - `pixi run -e pyforge-guild deferred-work-check` — exit 0.
 - `pixi run -e pyforge-guild spec-surface-check` — exit 0 (the atlas ledger reconciled on `spec-pyforge-atlas`'s memlog).
+
+## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session)
+- Dispatch run `pyforge-marshal-20261003T090623496Z-d1e0c441` refused at verification: MRS-GATE-001, `lint-types` exited 1 on `ruff format` only (`core/deferred_work.py`, `tests/meta/test_followup_review_carried.py`, `tests/unit/test_deferred_work.py`). Fixed by `ruff format`.
+- Reviewed against the intent contract: eight station ledgers gain only appended `DW-FRR-<story>` rows; the two removed lines are a missing final newline re-added (atlas) and `DW-FU-51-2-1` closed with `resolution: Superseded by DW-FRR-51-2 (Story 66.2 backfill)` — the row this story exists to supersede. Accepted.
+- Green after the fix: `lint-types`, `pyforge-marshal-test` (10845 passed), `pyforge-deps-test`, `pyforge-core-test`, `deferred-work-check`, `spec_surface_reconcile.py`, and `pyforge-doctor-test` (3187 passed; doctor's live-ledger tests read these ledgers).

@@ -60,22 +60,16 @@ def test_followup_review_orphans_predicate_on_a_fixture_tree(tmp_path: Path) -> 
     assert followup_review_orphans(spec_basename=spec_name, spec_text=spec_text, ledger_text=ledger.read_text())
 
     ledger.write_text(
-        "# Ledger\n\n### DW-FRR-1-1: x\n\n- source_spec: `"
-        + spec_name
-        + "`\n  origin: dispatch-followup-review\n",
+        "# Ledger\n\n### DW-FRR-1-1: x\n\n- source_spec: `" + spec_name + "`\n  origin: dispatch-followup-review\n",
         encoding="utf-8",
     )
-    assert not followup_review_orphans(
-        spec_basename=spec_name, spec_text=spec_text, ledger_text=ledger.read_text()
-    )
+    assert not followup_review_orphans(spec_basename=spec_name, spec_text=spec_text, ledger_text=ledger.read_text())
 
     ledger.write_text(
         "# Ledger\n\n### DW-FU-1-1: x\n\n- source_spec: `" + spec_name + "`\n  origin: review-budget-followup\n",
         encoding="utf-8",
     )
-    assert not followup_review_orphans(
-        spec_basename=spec_name, spec_text=spec_text, ledger_text=ledger.read_text()
-    )
+    assert not followup_review_orphans(spec_basename=spec_name, spec_text=spec_text, ledger_text=ledger.read_text())
 
     ledger.write_text(
         "# Ledger\n\n### DW-X-1: x\n\n- source_spec: `" + spec_name + "`\n  origin: spec-deferred\n",

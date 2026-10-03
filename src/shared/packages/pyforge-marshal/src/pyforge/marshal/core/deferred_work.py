@@ -250,11 +250,11 @@ def render_ledger_entry(candidate: DeferralCandidate, *, promoted_date: str) -> 
         f"  summary: {candidate.title}",
         f"  evidence: {candidate.reason}",
         (
-        f"  promoted: {promoted_date} — promoted from Tier-3 "
-        "`implementation-artifacts/deferred-work.md` "
-        f"(id `{candidate.tier3_id}` there) under the ledger's "
-        "`DW-FU-<story>` convention, so the next damped story cannot "
-        f"collide with a generic `{candidate.tier3_id}`."
+            f"  promoted: {promoted_date} — promoted from Tier-3 "
+            "`implementation-artifacts/deferred-work.md` "
+            f"(id `{candidate.tier3_id}` there) under the ledger's "
+            "`DW-FU-<story>` convention, so the next damped story cannot "
+            f"collide with a generic `{candidate.tier3_id}`."
         ),
         f"  origin: {_ORIGIN_VALUE}",
         f"  severity: {candidate.severity}",
@@ -372,9 +372,7 @@ def followup_review_to_promote(
     return candidate
 
 
-_LOOP_ERA_LANDING_REASON = (
-    "bmad-loop wave landing — the loop's own follow-up budget governed the recommendation."
-)
+_LOOP_ERA_LANDING_REASON = "bmad-loop wave landing — the loop's own follow-up budget governed the recommendation."
 
 _FOLLOWUP_REVIEW_CARRY_ORIGINS = frozenset({_FOLLOWUP_REVIEW_ORIGIN, _ORIGIN_VALUE})
 

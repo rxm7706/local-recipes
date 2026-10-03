@@ -752,11 +752,7 @@ def test_parse_followup_review_carried_source_specs_reads_both_origins():
 
 
 def test_parse_followup_review_carried_source_specs_ignores_other_origins():
-    ledger = (
-        "### DW-FU-51-2-1: hand-filed\n\n"
-        "- source_spec: `spec-51-2-c.md`\n"
-        "  origin: post-hoc review\n"
-    )
+    ledger = "### DW-FU-51-2-1: hand-filed\n\n- source_spec: `spec-51-2-c.md`\n  origin: post-hoc review\n"
     assert parse_followup_review_carried_source_specs(ledger) == frozenset()
 
 
@@ -772,8 +768,6 @@ def test_followup_review_orphans_is_false_when_dispatch_carry_exists():
 
 
 def test_render_followup_review_backfill_entry_closed_for_loop_era():
-    entry = render_followup_review_backfill_entry(
-        _frr_candidate(), promoted_date="2026-10-03", dispatch_era=False
-    )
+    entry = render_followup_review_backfill_entry(_frr_candidate(), promoted_date="2026-10-03", dispatch_era=False)
     assert "  status: closed\n" in entry
     assert "  reason: bmad-loop wave landing" in entry
