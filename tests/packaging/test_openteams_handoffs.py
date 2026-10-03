@@ -672,10 +672,12 @@ def _mock_identity_gist_render(monkeypatch):
     identity_gist = pytest.importorskip("pyforge.atlas.dashboard.identity_gist")
 
     def _render(export_path, **kwargs):
-        df = pd.read_parquet(export_path)
+        root = kwargs.get("repo_root") or identity.REPO_ROOT
+        records = pd.read_parquet(export_path).to_dict(orient="records")
+        identity.overlay_live_local(records, Path(root) / "recipes")
         body = "\n".join(
             f"{r.get('Core_Python_Package_Name', '')} {r.get('P', '')} {r.get('Local_Build_Status', '')}"
-            for r in df.to_dict(orient="records")
+            for r in records
         )
         return body, "# dash\n"
 
@@ -827,17 +829,21 @@ def test_create_missing_issues_retries_secondary_rate_limit(monkeypatch):
     calls: list[str] = []
     rate_calls = {"n": 0}
 
-    def fake_output(cmd, text=True):
+    def fake_run(cmd, **kwargs):
         calls.append(cmd[1])
         if cmd[1] == "issue" and rate_calls["n"] < 2:
             rate_calls["n"] += 1
             raise subprocess.CalledProcessError(
                 403, cmd, stderr="secondary rate limit exceeded"
             )
-        return "https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/99\n"
+        return subprocess.CompletedProcess(
+            cmd,
+            0,
+            stdout="https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/99\n",
+            stderr="",
+        )
 
-    monkeypatch.setattr(subprocess, "check_output", fake_output)
-    monkeypatch.setattr(subprocess, "check_call", lambda *a, **k: 0)
+    monkeypatch.setattr(subprocess, "run", fake_run)
     monkeypatch.setattr(identity.time, "sleep", lambda _s: None)
 
     not_filed: list[tuple[str, str]] = []
@@ -877,6 +883,48 @@ def test_empty_pyforge_atlas_data_root_refused(monkeypatch, capsys):
     monkeypatch.setenv(identity.PYFORGE_ATLAS_DATA_ROOT_ENV, "")
     assert identity.identity_complete_export_parquet_path() is None
     assert "empty" in capsys.readouterr().err.lower()
+
+
+def test_gist_only_refuses_empty_pyforge_atlas_data_root(monkeypatch, capsys):
+    monkeypatch.setenv(identity.PYFORGE_ATLAS_DATA_ROOT_ENV, "")
+    monkeypatch.setattr(sys, "argv", ["prog", "--gist-only", "--skip-gist"])
+    rc = identity.main()
+    err = capsys.readouterr().err.lower()
+    assert rc == 1
+    assert "unresolved" in err or "empty" in err
+
+
+def test_create_missing_issues_retries_rate_limit_text_on_exit_code_one(monkeypatch):
+    calls: list[str] = []
+    rate_calls = {"n": 0}
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd[1])
+        if cmd[1] == "issue" and rate_calls["n"] < 1:
+            rate_calls["n"] += 1
+            raise subprocess.CalledProcessError(
+                1,
+                cmd,
+                stderr="You have exceeded a secondary rate limit",
+            )
+        return subprocess.CompletedProcess(
+            cmd,
+            0,
+            stdout="https://github.com/OpenTeams-WFT-CDO/mgmt-wf-python-modernization/issues/42\n",
+            stderr="",
+        )
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.setattr(identity.time, "sleep", lambda _s: None)
+
+    result = identity.create_missing_issues(
+        "gh",
+        [_row("stderr-limit-pkg")],
+        board={},
+        dry_run=False,
+    )
+    assert result
+    assert calls.count("issue") >= 2
 
 
 def test_gist_columns_match_identity_export_contract():
