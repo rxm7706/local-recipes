@@ -2,7 +2,8 @@
 title: "27.1: The inventory exports refuse a hollow verification set, and the quartet scripts fail loud"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: true
 baseline_revision: a7746bc0b6
 review_loop_iteration: 1
 followup_review_recommended: false
@@ -110,6 +111,14 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 ## Review Triage Log
 
 
+### 2026-10-03 — Build-auto review pass (third send-back fixes)
+- verdicts: 4 findings — high 0, medium 1, low 2, false 1, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Prior HIGH gh-live-call — autouse `_forbid_unmocked_gh` and `subprocess.run` mocks on all create_missing_issues tests; isolated run of vanishing-gh and project-add tests passes without network.
+  - `[medium]` `[defer]` Mutant-killing coverage for canvas unset-skip, ranking warnings, gist timestamp parity, list-cell gist path — still below AC 7 bar for several DW-FU rows; location: tests/packaging/test_openteams_handoffs.py
+  - `[low]` `[defer]` `scripts/tests/` and handoffs not in kedro-test CI lane — preferred move to pyforge-atlas/tests/; location: scripts/tests/test_inventory_from_scratch_fixture.py
+  - `[low]` `[defer]` `conda-forge-packaging-inventory-operations_prompt.md` exact-shape sync with metrics stdout — replay.md updated; prompt body still manual; location: docs/reference/conda-forge-packaging-inventory-operations_prompt.md
+
 ### 2026-10-03 (night) — Second landing review (independent reviewer, operator session) — sent back
 Keep: the core floor on `core_packages_enumerated` after `norm_pkg` (with a default-floor test), the captured `gh` stderr, AC 3(a)'s refusal, `pd.NA`/`NaT` as `""`, the two restored assertions, the NFR-3 deferral row, `HollowVerificationSetError` under `PyforgeError`, and the ledger scope (only the 25 rows; DW-CANOPY / DW-OM identical to main). Fix the TEST SAFETY items first: until they land, never run `kedro-test` from the primary checkout.
 - `high` **`test_derived_artifacts_e2e.py` (about :47-56) writes fixture Parquet into atlas's real `data/` tree**, depends on test order (alone it fails `KeyError: 'bigquery_adc'`; it passes only because an orchestration conftest seeds `conf/local/credentials.yml` first) and runs one node, not the pipeline. Run the session against a `tmp_path` project copy (or a `DataCatalog` rooted in `tmp_path` driven by a runner), seed stub credentials inside the test, and run the whole inventory and export slice; otherwise reopen DW-FU-23-5 with a `deferred:` entry naming it. Add a guard test that the real `data/` tree is unchanged after the suite.
@@ -167,12 +176,12 @@ Keep: the floor refusal (removing it fails four tests), the corrupt-Parquet catc
 
 Status: done
 
-Summary: Landing-review fixes for Story 27.1 — core conda-forge floor (not mapping union), gh rate-limit detection via captured stderr, Kedro-session and from-scratch inventory tests, ledger hygiene for DW-CANOPY/DW-OM, and quartet export/gist hardening.
+Summary: Third send-back TEST SAFETY and snapshot bar — Kedro session e2e runs in an isolated project copy with stub credentials (no writes to member `data/`), gh handoff tests mock `subprocess.run` with an autouse guard, from-scratch fixture compares CSV and Markdown sha256 snapshots, metrics help/epilog documents `core_packages_enumerated` floor and restores the revised-prompt stdout line.
 
-Files: `inventory_verification.py` (core_packages_enumerated floor); `nodes.py` (JFROG ranking warnings); `identity_gist.py` (stringify cells, IdentityGistError); quartet scripts (gh run, gist None guard, parquet deadline, summary line); tests and fixture snapshot hash; `deferred-work-ledger.md` (restore cross-story rows).
+Files: `test_derived_artifacts_e2e.py`; `test_openteams_handoffs.py`; `test_inventory_from_scratch_fixture.py`; `expected_report.csv.sha256`; `conda-forge-packaging-inventory-operations_metrics.py`; `conda-forge-packaging-inventory-operations_replay.md`; spec surface memlogs and `spec-pyforge-atlas/SPEC.md`.
 
-Review: prior landing-review highs addressed in this pass; one NFR-3 item deferred (inventory abort vs skip-and-mark-stale).
+Review: HIGH send-back items addressed; medium mutant-coverage and prompt.md exact-shape sync deferred (see triage log above).
 
-Follow-up review recommended: false
+Follow-up review recommended: true — mutant-killing tests for canvas/timestamp/warning paths and prompt.md sync remain unverified at AC 7.
 
-Verification: `kedro-test` 1879 passed; `kedro-catalog-check` 68 passed; `lint-types` 0; `spec_surface_reconcile.py` 0; `tests/packaging/test_openteams_handoffs.py` 52 passed; `scripts/tests/test_inventory_from_scratch_fixture.py` passed.
+Verification: `kedro-test` 1879 passed; `kedro-catalog-check` 68 passed; `lint-types` 0; `spec_surface_reconcile.py` 0; `tests/packaging/test_openteams_handoffs.py` 53 passed; `scripts/tests/test_inventory_from_scratch_fixture.py` passed.
