@@ -2,11 +2,10 @@
 title: "83.12: Dispatch verification runs the coverage gate of every station the story touches"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '2f131c2bae4fd9a7a0951ab5be1986b3ce4a9931'
 review_loop_iteration: 0
 followup_review_recommended: false
-review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -71,7 +70,20 @@ Minted 2026-10-03 at the operator's request (PR #1773 went red on the coverage g
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back after an independent landing review (findings in the Review Triage Log). Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (independent reviewer, operator session) — sent back
+Keep: the derivation for the eight stations (each in its own environment, once per station; pyforge-core-only and planning-only stories add none), the MRS-GATE-001 refusal naming the command, and the full-refname diff base. All step-5 commands are green and AC5's mutation fails 12 tests.
+- `high` **A testing-kit path derives a task that does not exist, so verification always refuses it.** `dispatch_verify.py` (about lines 149-165) filters on `startswith("pyforge-") and != "pyforge-core"`, so `src/shared/packages/pyforge-testing-kit/src/` derives `pixi run --frozen -e pyforge-testing-kit pyforge-testing-kit-coverage-gate` (exit 127, MRS-GATE-001 forever; dispatch 74.1 touched that tree). Derive only for the eight station slugs, mirroring `scripts/coverage_gate.py`'s `STATIONS`, and add a test that a testing-kit path derives nothing.
+- `high` **The merge-tree preview derives gates from main's changes, not the story's.** `run_verify_commands_only` resolves changed files in the preview with `base=refs/remotes/origin/main`, but the preview commit's only parent is `head_sha` (`adapters/vcs_git.py`, `commit-tree -p`), so `origin/main...HEAD` includes everything main changed since the branch's base. A probe with a scribe-only story behind a main that touched doctor and warden ran three gates. That breaks "Never add the gate for a station the story did not touch", costs about 2.5 minutes per extra station, and can refuse a landing on scribe's Postgres for a station the story never touched; the gate task inside the preview also measures main's modules. Fix by one of: build the preview commit with two parents (`-p refs/remotes/origin/main -p <head_sha>`, as GitHub's PR merge commit does; preferred, since it also fixes the gate task's own diff), or pass the story's changed files from the dispatch worktree into `run_verify_commands_only`. Add a real-git test: a story behind a main that touched another station derives only its own station's gate in the preview. Correct the design note that calls the preview "the merge result CI will see" if the fix does not make it so.
+- `medium` **The preview drops the gate silently when changed files cannot be resolved** (`except Exception: changed_files = ()`). The preview runs at landing and its verdict is final, so a skipped evaluation must not read as clean: report a finding, or fall back to the story's own changed files, with a test.
+- `medium` **Two parts have no test that fails without them.** (a) The preview wiring: with `repo_root=`/`vcs=` dropped from the `run_verify_commands_only` call in `dispatch_land.py`, `test_dispatch_landing.py` and `test_dispatch_verify_merge_tree.py` still pass. (b) The new exclusion from the pre-existing reclassifier (`dispatch_verify.py`, about lines 546-552): with it removed, `test_dispatch_verification.py` still passes, because the test's stderr names no `.py` path and `core/dispatch_verification.py` already keeps such failures as MRS-GATE-001. Make the test's stderr name a touched module so it fails without the exclusion.
+- `low` `cli/drain_plan.py` (about lines 167-169): the docstring still says these are "the commands the post-session gate runs"; pre-launch binding derives no coverage gates, so say that.
+- `low` The operator removed the duplicate `review_loop_iteration` frontmatter key from this spec (strict YAML rejects it).
 
 ### 2026-10-03 — Review pass
 - verdicts: 4 findings — high 0, medium 0, low 0, false 4, maybe-false 0
