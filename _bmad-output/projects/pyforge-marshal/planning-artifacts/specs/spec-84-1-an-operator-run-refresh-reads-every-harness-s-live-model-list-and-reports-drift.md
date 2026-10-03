@@ -2,7 +2,7 @@
 title: "84.1: An operator-run refresh reads every harness's live model list and reports drift"
 type: 'feature'
 created: '2026-10-02'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '263ab6eebb0be49d153e3c83d95f372afc8c95d9'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -91,7 +91,31 @@ Minted 2026-10-02 at the operator's request: refresh the model lists for Claude,
 **Manual checks (operator, after landing):**
 - Run the new command live with `--write` once, read the report, and commit the first snapshot.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back by the operator session after the landing was refused and an adversarial review of the diff (findings below). Two acceptance criteria added (the command runs end to end through the CLI with drift and exits on the rendered-report code; the tracked project overlay keeps the packaged `model_list`). Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Landing review (operator session, independent adversarial review) — sent back
+- Dispatch run `pyforge-marshal-20261003T092451153Z-76e32539` refused at verification: MRS-GATE-001, `lint-types` exited 1 (`ruff format` in `tests/unit/test_egress.py:602`; mypy `attr-defined` at `cli/adapters.py:1996`). The spec's Auto Run Result claimed `lint-types` exit 0.
+- `high` `patch` Any drift crashes the command: finding code `MRS-MDL-001` is not registered in `core/findings.py`, so `Finding.__post_init__` raises `UnregisteredFindingCodeError` and the run exits 1 with no report. Register it (WARN, exit 0) and add a CLI-level test with drift asserting exit 0 and the report content.
+- `high` `patch` Cursor's source is never read in this repo: the tracked overlay `_bmad-output/harness-profiles/cursor.toml` replaces the packaged profile wholesale and has no `[model_list]`, so a real run reports `[cursor] unavailable: no source declared` and the `cursor` catalog provider `unchecked`. Carry `model_list` over from the packaged profile when an overlay omits it (or add it to the overlay), and test through `load_profiles(repo_root)`.
+- `high` `patch` One bad HTTP source stops every harness: `TimeoutError`, `ValueError` (a malformed URL) and `http.client` errors escape the adapter and kill the run; `timeout_s` is discarded. Catch them in the adapter as `unavailable` with a reason, honour `timeout_s`, and guard each harness in the CLI loop.
+- `high` `patch` The paging and credential tests are vacuous: the fake fetch ignores URL and headers, so stopping after page 1, never sending `after_id`/`pageToken`, or never setting the credential header all still pass. Use a recording fake that asserts each page's URL, the header value, and the union of ids across two or more pages for both paging schemes.
+- `medium` `patch` Paging can loop forever when a server repeats `has_more`/`nextPageToken` without advancing; stop when the cursor does not advance and cap the pages (`unavailable`).
+- `medium` `patch` Every HTTP failure becomes `reason='HTTP 0'`; return the real status and name timeouts and network errors; test each of the five `unavailable` causes and that the others still report.
+- `medium` `patch` The snapshot diff treats an `unavailable` harness as an empty list (every previous id reported removed, then added back next run); leave non-ok harnesses out of the diff and say "not compared".
+- `medium` `patch` `grok-4.6` is declared as an accepted Cursor alias, which hides the exact drift that motivated this story; remove it (`sonnet` stays only if the CLI's own alias list documents it).
+- `medium` `patch` The listing GET was added to `adapters/oidc_pkce.py` (the auth adapter) to dodge `test_publisher_single_importer.py`; give the listing its own adapter with its own timeout and error mapping, and widen that meta-test's allowlist explicitly with the reason in the memlog.
+- `medium` `patch` The credential guard runs only with `--write` and hard-codes `ANTHROPIC_API_KEY`/`GEMINI_API_KEY` (harness knowledge in code, AD-19); take the env names from the profiles, check the printed report and the JSON in both modes, and test with a sentinel secret.
+- `low` `patch` Untested: `render_report_text`, `collect_tier_map_refs`, `collect_catalog_refs`, `collect_profile_map_refs`, `_newest_prior_snapshot`, `run_adapters_models`; query values not URL-encoded (a Gemini `pageToken` with `+`/`/`/`=` corrupts page 2); report prints an empty "since previous snapshot" header and duplicates drift lines in text mode; unused `provider_for_harness_name`.
+
+## Acceptance Criteria (added 2026-10-03)
+
+- Given a declared id absent from its live list When the command runs through the CLI Then it exits with the rendered-report code, prints the report, and raises no unregistered-finding error
+- Given the tracked project overlay for a harness that omits `model_list` When profiles load from the repo root Then the packaged `model_list` still applies, and the harness reports its live list, not `no source declared`
+
 
 - 2026-10-03: bmad-build-auto verification green (`pyforge-marshal-test`, `pyforge-deps-test`, `lint-types`); `spec_surface_reconcile.py` OK after memlog.
 
