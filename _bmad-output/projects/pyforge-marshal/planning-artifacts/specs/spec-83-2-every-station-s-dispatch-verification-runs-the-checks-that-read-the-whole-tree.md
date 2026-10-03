@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-02'
 status: 'in-review'
 review_loop_iteration: 0
-followup_review_recommended: false
+followup_review_recommended: true
 baseline_revision: '1b490ef6ab61301170a8fefa58a9ef9fdbeab689'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -73,3 +73,26 @@ declared_low_risk: false
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: pass (the station's `verify_commands`; MRS-GATE-010 binding)
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- expected: pass (the station's `verify_commands`; MRS-GATE-010 binding)
 - `pixi run --frozen -e pyforge-guild lint-types` -- expected: exit 0
+
+## Auto Run Result
+
+**Summary:** Implemented the addition of two derived commands (`pyforge-core-test` and `deferred-work-check`) to every station's dispatch verification, following the same pattern as existing derived commands.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — Added two new command constants and extended derived tuple in _verify_commands_with_surface_guard
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` — Updated test assertions and added new test cases for derived command behavior
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py` — Updated test assertions for merge tree verification scenarios
+
+**Review findings breakdown:**
+- **Patches applied:** 1 high-severity patch (added _SURFACE_RECONCILE_COMMAND to derived_commands set for proper reclassification handling)
+- **Items deferred:** 0  
+- **Rejected findings:** 10 (8 false findings for spec format changes and test coverage assumptions, 2 low findings for cosmetic improvements not worth the complexity)
+
+**Follow-up review recommendation:** `true` — One high-severity patch was applied to fix reclassification logic that could have allowed surface reconcile failures to be incorrectly downgraded as pre-existing issues.
+
+**Verification performed:**
+- `pyforge-marshal-test`: All tests passed (10,829 passed, 5 skipped)
+- `pyforge-deps-test`: All tests passed (130 passed, 3 skipped)  
+- `lint-types`: All checks passed after formatting fixes
+
+**Residual risks:** The reclassification fix ensures surface reconcile command failures are properly treated as blocking, maintaining spec surface integrity. No residual risks identified.
