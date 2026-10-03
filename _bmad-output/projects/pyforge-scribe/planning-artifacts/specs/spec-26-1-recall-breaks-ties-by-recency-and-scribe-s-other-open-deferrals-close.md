@@ -2,7 +2,7 @@
 title: "26.1: Recall breaks ties by recency, and scribe's other open deferrals close"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '96743a013a9ddaf4ffa67cc987ab86518d075387'
 final_revision: '796d388ef6931a333b126ce2478ae28416283c64'
 review_loop_iteration: 0
@@ -19,9 +19,9 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** Scribe carries open deferred-work rows the operator ruled on 2026-10-03 to close now (deferral burn-down Phases 4 and 5, open medium and low rows together), in exactly one story per station (the same day's ruling on sizing). The rows were measured 2026-10-03 with a parser over `deferred-work-ledger.md` (`## DW-`/`### DW-` entries whose first `status:` reads `open`): 2 medium, 12 low (one recorded `low (unverified)`) and 9 unrated (outside these phases). Nine close here. The medium: `recall.answer()` ranks by token overlap and breaks ties on node id ascending, never consulting `valid_from`, so for date-ordered transcript nodes the older, since-reversed statement usually wins a tie (DW-FU-3-2-4). The lows: a transcript node's id comes from its basename alone (DW-FU-3-2); the Epic 3 spec-surface reconcile was never done (DW-FU-3-2-3); the freshness check's 24-hour period duplicates the timer's cadence with no test (DW-8-1-1); `governance-currency` does not read the per-tool pointer files (DW-FU-19-1); and four recommended follow-up reviews never ran (DW-FRR-1-1, DW-FRR-3-1, DW-FRR-4-1, DW-FRR-5-2). Five rows cannot close through a fix and stay open (see Boundaries).
+**Problem:** Scribe carries open deferred-work rows the operator ruled on 2026-10-03 to close now (deferral burn-down Phases 4 and 5, open medium and low rows together), in exactly one story per station (the same day's ruling on sizing). The rows were measured 2026-10-03 with a parser over `deferred-work-ledger.md` (`## DW-`/`### DW-` entries whose first `status:` reads `open`): 2 medium, 12 low (one recorded `low (unverified)`) and 9 unrated (outside these phases). Five close here. The medium: `recall.answer()` ranks by token overlap and breaks ties on node id ascending, never consulting `valid_from`, so for date-ordered transcript nodes the older, since-reversed statement usually wins a tie (DW-FU-3-2-4). The lows: a transcript node's id comes from its basename alone (DW-FU-3-2); the Epic 3 spec-surface reconcile was never done (DW-FU-3-2-3); the freshness check's 24-hour period duplicates the timer's cadence with no test (DW-8-1-1); and `governance-currency` does not read the per-tool pointer files (DW-FU-19-1). The four follow-up-review rows (DW-FRR-1-1, DW-FRR-3-1, DW-FRR-4-1, DW-FRR-5-2) left this story by operator ruling 2026-10-03. Five rows cannot close through a fix and stay open (see Boundaries).
 
-**Approach:** Fix each row where its behaviour lives: the recall tie-break (`src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py`) with the review of Story 5.2; the transcript surface (`src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`) with the reviews of Stories 3.1 and 4.1; the scaffold and capture path with the review of Story 1.1; the freshness check and its timer (a sync test); `governance-currency`'s documents; and the spec-surface reconcile. Each row closes in the scribe ledger with a `resolution:` naming this story and a `verified:` line citing the `path:line` that holds the fix.
+**Approach:** Fix each row where its behaviour lives: the recall tie-break (`src/shared/packages/pyforge-scribe/src/pyforge/scribe/recall.py`); the transcript surface (`src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py`); the freshness check and its timer (a sync test); `governance-currency`'s documents; and the spec-surface reconcile. Each row closes in the scribe ledger with a `resolution:` naming this story and a `verified:` line citing the `path:line` that holds the fix.
 
 Ledger key: `26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close`.
 Type / Effort / Deps: fix / M / —.
@@ -37,8 +37,7 @@ Type / Effort / Deps: fix / M / —.
 - Given `spec-surface-check` When it runs after this story Then `pyforge-scribe/spec-pyforge-scribe` reports no drift, and DW-FU-3-2-3 closes citing the baseline entry or the reconcile that cleared it
 - Given the timer unit's `OnCalendar=` and `SCHEDULE_PERIOD_HOURS` When either changes alone Then the new test fails
 - Given `GEMINI.md`, `.github/copilot-instructions.md` and `.cursor/rules/*.mdc` When `governance-currency` runs Then each is read, a stale name in any of them is a finding, a missing one is a finding, and the live tree reads clean
-- Given each recommended follow-up review (Stories 1.1, 3.1, 4.1, 5.2) When it runs as an independent adversarial pass reading the story's shipped code against its spec Then every finding is fixed here with a test, and the row closes naming the review's result
-- Given this story lands When its deferred-work rows are read Then each of `DW-FU-3-2-4`, `DW-FU-3-2`, `DW-FU-3-2-3`, `DW-8-1-1`, `DW-FU-19-1`, `DW-FRR-1-1`, `DW-FRR-3-1`, `DW-FRR-4-1`, `DW-FRR-5-2` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
+- Given this story lands When its deferred-work rows are read Then each of `DW-FU-3-2-4`, `DW-FU-3-2`, `DW-FU-3-2-3`, `DW-8-1-1`, `DW-FU-19-1` is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed
 
 ## Boundaries & Constraints
 
@@ -55,15 +54,9 @@ Type / Effort / Deps: fix / M / —.
 - `DW-FU-3-2-3` (low) — Re-run `spec-surface-check`: if `pyforge-scribe/spec-pyforge-scribe` carries no drift today (later reconciles stamped it), close citing its baseline entry in `scripts/.spec-surface-baseline.json`; if any of the twelve files still drifts, reconcile it (a memlog entry naming the paths, then a scoped stamp) and close citing that.
 - `DW-8-1-1` (low) — A test parses `OnCalendar=` in `src/shared/packages/pyforge-scribe/ops/systemd/pyforge-scribe-nightly-compile.timer` and asserts its period equals `SCHEDULE_PERIOD_HOURS` (`scripts/scribe_graph_freshness_check.py:48`); changing either alone fails it.
 - `DW-FU-19-1` (low) — `scripts/governance_currency_check.py`'s `DOCUMENTS` (`:56`) adds `GEMINI.md`, `.github/copilot-instructions.md` and every `.cursor/rules/*.mdc` (a declared glob, so a missing file is still a finding), with a test, and every stale name the wider scan finds is fixed; the script's owning Spec (`spec-fleet-consistency-standard` CAP-6) is reconciled as `spec-surface` names it.
-- `DW-FRR-1-1` (low) — The follow-up review of Story 1.1 (the package scaffold; direct capture into team memory).
-- `DW-FRR-3-1` (low) — The follow-up review of Story 3.1 (the scanner surfaces what sessions said but memory missed); it sits beside DW-FU-3-2's module.
-- `DW-FRR-4-1` (low) — The follow-up review of Story 4.1 (GraphStore registered as CAP-18 plugins).
-- `DW-FRR-5-2` (low) — The follow-up review of Story 5.2 (the first portal slice: one recall query); it sits on DW-FU-3-2-4's recall path.
-
-A follow-up review row closes when that review has run as an independent adversarial pass (the reviewer reads the story's shipped code against its spec, never the implementer's summary) and every finding is fixed here with a test; if a drain-scheduled follow-up review (marshal Stories 73.1/73.2) closed the row first, this story cites that closure instead of repeating the review.
-
 ### Open rows this story does not close
 
+- `DW-FRR-1-1`, `DW-FRR-3-1`, `DW-FRR-4-1`, `DW-FRR-5-2` (low) — the follow-up reviews of Stories 1.1, 3.1, 4.1 and 5.2. By operator ruling 2026-10-03 only an independent review of the named story can close them; they run in the follow-up review drain (marshal Stories 73.1/73.2), not here.
 - `DW-FU-19-1-3` (medium) — operator-bound: one live session per harness (Gemini CLI, Cursor, Copilot cloud agent / CLI / VS Code chat, Devin) needs a seat; only `cursor-agent` is installed on this host.
 - `DW-8-1-2` (low (unverified)) — operator-bound: four consecutive scheduled firings of the installed nightly timer need real elapsed time on the operator's machine; the timer is not installed on this host.
 - `DW-FU-19-2` (low) — new capability, not a defect: recall over the station MCP (the generic stub face in `src/platform/mcp_host/app.py` has no recall tool) is Dream item (7)'s second half and needs a CAP.
@@ -89,7 +82,21 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (open medium and low def
 
 - 2026-10-03 — sent back after an independent landing review (findings below). The four DW-FRR rows leave this story's scope. Status back to `ready-for-dev`.
 
+- 2026-10-03 — second landing review: sent back again (Review Triage Log); the operator session withdrew the four follow-up-review rows and their criterion from this spec. Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+
+### 2026-10-03 — Second landing review (independent reviewer, operator session) — sent back
+Keep: the recency tie-break, the symlink fix, the flat glob, the strict `OnCalendar=` parser, the nested-citation recall and the command-line flag fix (all mutants killed except where noted). All four gates exit 0. The operator session removed the follow-up-review rows from this spec.
+- `medium` **Recall returns an answer whose citation names a missing file** (`recall.py`, about 312-321): the widened `_TRANSCRIPT_CITATION_RE` (about :109) matches any `*.jsonl:L<n>`, and `_citation_is_resolvable` skips `is_file()` for it whatever the node's kind. A `code` node cited as `data/missing.jsonl:L1` comes back grounded; on main it is ungrounded (AD-8). Pass `node.kind` into `_citation_is_resolvable` (both callers) and take the format-only branch only for `kind == "transcript"`. Add a test that a non-transcript node citing a missing `.jsonl` is ungrounded, and positive cases for `session 1.jsonl:L1`, `sessión.jsonl:L1` and `a+b.jsonl:L1`. Update the comments at about `recall.py:98-104` and `:8-12` and `models.py:138`.
+- `medium` **No test runs the `__main__` blocks**, so reverting `scripts/governance_currency_check.py:272` or `scripts/scribe_graph_freshness_check.py:166` to `main()` survives. Add a subprocess test per script (`[sys.executable, <script>, "--json", ...]`) that parses stdout as JSON (and that `documents` equals the `--file` value).
+- `low` Governance tests still missing: a `tmp_path` tree where `GEMINI.md` names a script or skill that does not exist (a finding) and one with no `.github/copilot-instructions.md` (a `missing-document` finding). `test_main_json_file_flags` (`tests/scripts/test_governance_currency_check.py`, about 35-46) writes into the real repo's `.cursor/`; patch `ROOT` to `tmp_path`.
+- `low` Ledger `verified:` lines: DW-FU-3-2's cites `compile.py:940-941` (the live lines are `:940` and `:949-950`); DW-FU-3-2-3's lacks the `:5139` baseline line; DW-FU-19-1's cites `:56` labelled `governed_documents()`, which is at `:67` (cite `:56-75`). Put each new `verified:` line after the older 2026-08-26 / 2026-09-02 lines in its block.
+- `low` `transcripts.py`: its only change is a docstring saying "(recursively)" while the scan stays a flat `glob("*.jsonl")`; revert the file to main.
+- `low` Team memory and memlog describe the first attempt: the operator removes `.claude/memory/project/story-26-1-*` at landing; append a correcting entry to `spec-pyforge-scribe/.memlog.md` (its line about 156 says "recursive scan").
+- `low` The timer parser accepts systemd ranges: `*-*-* 02..14:00:00` returns 24. Reject `..` and `~` in the clock part, with a test.
+- `low` `compile.py` (about 939-948) is an unreachable branch with misleading wording; delete it, or give it its own wording and a test.
 
 ### 2026-10-03 — Landing review (operator session) — sent back
 Correct and tested: the recall recency tie-break (only equal overlap reorders; deterministic; ungrounded misses stay ungrounded). Fix:
