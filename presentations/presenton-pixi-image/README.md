@@ -68,10 +68,7 @@ Seeded 2026-07-25 (every upload byte-verified against the local file):
 | `src/marp/presenton-pixi-image-executive-summary-2026-07-25.md` | same path locally | 3802 |
 | `src/marp/presenton-pixi-image-infographic-2026-07-25.md` | same path locally | 4104 |
 
-**seeded 2026-07-25 via DesignSync (byte-exact localPath upload).dc.html`, `Infographic standalone.html`,
-`- Infographic Deck.dc.html`). The `DesignSync` tool was not exposed in the authoring session
-and MCP `write_files` accepts inline `data` only, so these three await a DesignSync pass
-(`finalize_plan` with `localDir`, then `write_files` with `localPath`).
+The infographic trio (`Presenton Conda-Native - Infographic.dc.html`, `Presenton Conda-Native Infographic standalone.html`, `Presenton Conda-Native - Infographic Deck.dc.html`) was seeded 2026-07-25 via DesignSync (byte-exact `localPath` upload). The building agent correctly declined to relay disk bytes through context; MCP `write_files` accepts inline `data` only, so those uploads went through DesignSync's `localPath` path (`finalize_plan` with `localDir`, then `write_files` with `localPath`).
 
 ## Ledger — 2026-09-17 corruption fix + push (Story 21.9 fix)
 

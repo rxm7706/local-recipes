@@ -60,6 +60,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.steward.sync_github_only_marker": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "84-4-sync-skips-a-board-item-marked-github-only",
+        "created": "2026-10-03",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.marshal.verify_fix_loop": {
       "state": "ENABLED",
       "variants": {

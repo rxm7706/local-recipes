@@ -60,6 +60,11 @@ fix_only_argv = [
   "{model_args}",
   "{prompt}",
 ]
+# Story 84.1 (CAP-285): live model-list source for operator-run refresh.
+[model_list]
+catalog_provider = "cursor"
+command = ["cursor-agent", "models"]
+aliases = ["sonnet"]
 
 # No [wrapper] section -- deliberate, not an omission (Story 28.29,
 # SPEC-marshal-token-economy CAP-2, live-verified 2026-09-10). `headroom

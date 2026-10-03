@@ -59,6 +59,17 @@ fix_only_argv = [
   "{model_args}",
   "{prompt}",
 ]
+# Story 84.1 (CAP-285): Anthropic models API (no listing subcommand on the CLI).
+[model_list]
+catalog_provider = "anthropic"
+url = "https://api.anthropic.com/v1/models"
+credential_env = "ANTHROPIC_API_KEY"
+credential_header = "x-api-key"
+pagination = "anthropic"
+aliases = ["sonnet", "opus", "haiku", "default"]
+
+[model_list.static_headers]
+anthropic-version = "2023-06-01"
 
 # Story 28.2 (SPEC-marshal-token-economy CAP-2): the wire-compression
 # wrapper, applied ONLY when policy's `[context]` block enables the `wire`

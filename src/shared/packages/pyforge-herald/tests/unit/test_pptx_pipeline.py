@@ -907,6 +907,17 @@ def test_fill_template_non_positive_shape_geometry_raises(template_path: Path, g
         pptx_pipeline.fill_template(template_path, plan)
 
 
+def test_resolve_layout_refuses_ambiguous_layout_name():
+    class _FakePrs:
+        slide_layouts = [
+            _FakeLayout("Title Slide", [_FakePlaceholder(0)]),
+            _FakeLayout("Title Slide", [_FakePlaceholder(1)]),
+        ]
+
+    with pytest.raises(errors.InvalidContentPlanError, match=r"ambiguous \(matches layout indices \[0, 1\]\)"):
+        pptx_pipeline._resolve_layout(_FakePrs(), "Title Slide", 3)
+
+
 def test_fill_template_shape_geometry_bool_value_raises(template_path: Path):
     """``bool`` is an ``int`` subclass in Python -- a shape's geometry
     field must still reject ``true``/``false``, not silently treat it as

@@ -69,6 +69,8 @@ verify_commands = [
 # Story 21.10 for `.github/workflows/kedro-viz-publish.yml` -- a path epic 21
 # below has declared all along. Keep every scalar/array policy key ABOVE the
 # first table header.
+# 2026-10-03 (operator ruling): cursor-only, on composer-2.5-fast, the setup marshal (#1757) and steward (#1770)
+# run. Flip the harness line and the tier map together.
 harness_preference = ["cursor"]
 
 
@@ -180,6 +182,41 @@ harness_preference = ["cursor"]
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
+"27" = [  # Phase 4+5 of the deferral burn-down: atlas's open medium and low deferrals (fix, no CAP), added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus what the four stories touch
+  # outside the package: 27.1's quartet scripts, tests and replay docs; 27.2's bootstrap task and CI job; 27.3's portal
+  # chrome; 27.4's planning documents, steward's adoption-register test, the atlas persona and the CIS override.
+  "src/shared/packages/pyforge-atlas/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-atlas/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/*.md",
+  "_bmad-output/projects/pyforge-atlas/planning-artifacts/sprint-status-ledger.yaml",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  # 27.1: the inventory quartet, its tests and fixtures, and the replay and prompt docs it keeps in step
+  "scripts/conda-forge-packaging-inventory-operations_*.py",
+  "scripts/openteams_identity_dashboards.py",
+  "scripts/tests/test_conda_forge_packaging_inventory_operations_*.py",
+  "scripts/tests/test_openteams_identity_dashboards*.py",
+  "scripts/tests/fixtures/**",
+  "tests/packaging/test_openteams_handoffs.py",
+  "docs/reference/conda-forge-packaging-inventory-operations_*.md",
+  "conf/conda-forge-packaging-inventory-operations*",
+  # 27.2: the atlas job of the station-tests workflow
+  ".github/workflows/pyforge-station-tests.yml",
+  # 27.3: the portal chrome (base.html and a vendored htmx static file)
+  "src/shared/packages/django-pyforge/**",
+  # 27.4: steward's adoption-register test, the atlas persona, the CIS override
+  "src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py",
+  ".claude/skills/bmad-agent-atlas/**",
+  "_bmad/custom/bmad-cis-design-thinking.toml",
+  # co-governor reconciles
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 # (`harness_preference` used to sit here, inside [epic_surfaces] — moved above
 #  the first table header on 2026-09-02; see its comment there for why.)
 
@@ -197,15 +234,15 @@ harness_preference = ["cursor"]
 # ladder as explicit {harness, model} tables so a Cursor id cannot land
 # on claude --model (fails-safe CAP-1). Unattended drain stays off until
 # 28.29 is separately proven. This IDE drives the wave.
+# 2026-10-03 (operator ruling, see harness_preference above): Cursor on composer-2.5-fast for dev and review in the
+# heavy and medium tiers (an undeclared difficulty resolves to medium on dispatch); easy keeps composer-2.5.
 [model_tier_map.heavy]
 dev = { harness = "cursor", model = "composer-2.5-fast" }
 review = { harness = "cursor", model = "composer-2.5-fast" }
 
-# 2026-10-02 (operator ruling): `grok-4.6` is no longer a Cursor model id (the live list names
-# `cursor-grok-4.6-*` and the newer `grok-4.7-*`); the medium tier moves to `grok-4.7-high`.
 [model_tier_map.medium]
-dev = { harness = "cursor", model = "grok-4.7-high" }
-review = { harness = "cursor", model = "grok-4.7-high" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.easy]
 dev = { harness = "cursor", model = "composer-2.5" }

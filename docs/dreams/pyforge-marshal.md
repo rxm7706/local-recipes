@@ -946,6 +946,20 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (85.1 split)** — **Ruled: split the fix turn.** Two independent reviews of Story 85.1 found the
+  fix turn could not do its job (a green re-verify never landed; failed commands were read only inline; uncommitted edits
+  were verified but not landed; a restart could start a second turn) and was not yet safe (credentials past redaction,
+  an incomplete timeout kill, no publisher heartbeat). **What it looks like when fixed:** 85.1 lands the machinery
+  dormant with the flag OFF everywhere; 85.2 makes one turn work end to end, proved by a supervisor-level test; 85.3 makes
+  it safe and switches it on in dev and staging. **Constraints:** same CAP-286 and flag; keep Cursor (operator ruling
+  2026-10-03). Owner `spec-pyforge-marshal`. → Stories 85.2, 85.3, specced 2026-10-03.
+- **2026-10-03 (late night)** — **Found: dispatch verification passes a story that CI's coverage gate fails.** CI's
+  named-module gate fails a PR when a touched module sits under the station's 80% unit floor, but dispatch verification
+  never runs it and `dispatch/*` branches skip the pre-push preflight. PR #1773 went red this way (`dispatch_retry`
+  78.1%) after verification passed. **What it looks like when fixed:** verification runs each touched station's coverage
+  gate in that station's own environment, and an under-floor module refuses before the push. **Constraints:** a `fix`
+  story, no CAP and no flag; no floor changes (operator ruling 2026-10-03). Owner `spec-pyforge-marshal`. → Story 83.12,
+  specced 2026-10-03.
 - **2026-10-03 (Phase 3)** — **Ruled: marshal's deferral decisions.** The operator ruled every live NEEDS-DECISION entry on
   the rulings page: for marshal 20 fix, 18 close, 2 keep. **What it looks like when fixed:** the fix rulings land as seven
   module bundles; the closes and keeps are written into the ledger with their reasons and cited evidence. **Constraints:**

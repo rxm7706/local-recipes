@@ -81,6 +81,7 @@ class FakeTransport:
         github_item_id: str = "ITEM_1",
         github_fields: dict[str, str] | None = None,
         github_content: dict[str, object] | None = None,
+        github_single_select_fields: dict[str, str] | None = None,
         github_content_unreadable: bool = False,
         jira_issue_key: str = "PROJ-1",
         jira_fields: dict[str, object] | None = None,
@@ -93,6 +94,7 @@ class FakeTransport:
         # KEY ABSENT, matching a DraftIssue exactly (both parse to
         # assignee=None, content_ref=None, assignee_unknown=False).
         self.github_content = github_content
+        self.github_single_select_fields = dict(github_single_select_fields or {})
         # RESOLVED 2026-08-15 (escalation, finding 3): distinct from the
         # above -- an explicit `content: null` (a partial-response
         # signature, e.g. a permission gap), which reads as UNKNOWN, never
@@ -124,11 +126,13 @@ class FakeTransport:
             payload = {"data": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": variables["itemId"]}}}}
             return TransportResponse(status=200, body=json.dumps(payload).encode())
 
+        field_nodes = [{"text": value, "field": {"id": field_id}} for field_id, value in self.github_fields.items()]
+        field_nodes.extend(
+            {"name": name, "field": {"id": field_id}} for field_id, name in self.github_single_select_fields.items()
+        )
         node = {
             "id": self.github_item_id,
-            "fieldValues": {
-                "nodes": [{"text": value, "field": {"id": field_id}} for field_id, value in self.github_fields.items()]
-            },
+            "fieldValues": {"nodes": field_nodes},
         }
         if self.github_content_unreadable:
             node["content"] = None
@@ -2204,12 +2208,18 @@ class ScheduleFakeTransport:
         return self._list_page(variables.get("after"))
 
     def _node(self, item_id: str, entry: dict[str, object]) -> dict[str, object]:
+        field_nodes = [{"text": value, "field": {"id": field_id}} for field_id, value in entry["fields"].items()]
+        single_select = entry.get("single_select_fields") or {}
+        if isinstance(single_select, dict):
+            field_nodes.extend(
+                {"name": name, "field": {"id": field_id}}
+                for field_id, name in single_select.items()
+                if isinstance(field_id, str) and isinstance(name, str)
+            )
         node = {
             "id": item_id,
             "updatedAt": entry.get("updated_at"),
-            "fieldValues": {
-                "nodes": [{"text": value, "field": {"id": field_id}} for field_id, value in entry["fields"].items()]
-            },
+            "fieldValues": {"nodes": field_nodes},
         }
         if entry.get("content") is not None:
             node["content"] = entry["content"]

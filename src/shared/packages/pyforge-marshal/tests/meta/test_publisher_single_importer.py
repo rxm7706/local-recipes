@@ -13,6 +13,8 @@ if _PACKAGE_FILE is None:
 PACKAGE_DIR = Path(_PACKAGE_FILE).resolve().parent
 PUBLISHER_ADAPTER = PACKAGE_DIR / "adapters" / "publisher_host.py"
 LOGIN_ADAPTER = PACKAGE_DIR / "adapters" / "oidc_pkce.py"
+MODEL_LIST_LIVE_ADAPTER = PACKAGE_DIR / "adapters" / "model_list_live.py"
+CLI_ADAPTERS = PACKAGE_DIR / "cli" / "adapters.py"
 
 
 def _module_paths() -> list[Path]:
@@ -33,9 +35,25 @@ def _imports_client_for_publishing(path: Path) -> bool:
 
 def test_exactly_one_pyforge_core_client_importer_for_publishing() -> None:
     importers = [path for path in _module_paths() if _imports_client_for_publishing(path)]
-    publish_importers = [path for path in importers if path != LOGIN_ADAPTER]
+    exempt = {LOGIN_ADAPTER}
+    publish_importers = [path for path in importers if path not in exempt]
     assert publish_importers == [PUBLISHER_ADAPTER]
     assert LOGIN_ADAPTER in importers
+
+
+def _imports_model_list_live(path: Path) -> bool:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            mod = node.module
+            if mod == "pyforge.marshal.adapters.model_list_live" or mod.endswith(".model_list_live"):
+                return True
+    return False
+
+
+def test_only_cli_adapters_imports_model_list_live() -> None:
+    importers = [path for path in _module_paths() if _imports_model_list_live(path)]
+    assert importers == [CLI_ADAPTERS]
 
 
 def test_no_django_pyforge_imports_under_marshal_src() -> None:

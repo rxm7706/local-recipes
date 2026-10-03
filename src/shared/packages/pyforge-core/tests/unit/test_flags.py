@@ -875,6 +875,7 @@ _SHIPPED_CLOCKS = {
     "pyforge.cutover_root": ("steward", "44-12-", "2026-09-13", "", ""),
     "pyforge.steward.ghe_fleet_credentials": ("steward", "75-1-", "2026-09-29", "", ""),
     "pyforge.steward.object_store_consumer": ("steward", "74-1-", "2026-09-29", "", ""),
+    "pyforge.steward.sync_github_only_marker": ("steward", "84-4-", "2026-10-03", "", ""),
     "pyforge.marshal.verify_fix_loop": ("marshal", "85-1-", "2026-10-03", "", ""),
 }
 
@@ -925,8 +926,8 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.ghe_fleet_credentials": False,
         "pyforge.steward.object_store_consumer": False,
     }
-    # Story 85.1 (CAP-286): the one-fix-turn flag differs by environment -- on in dev and staging, off in production.
-    per_environment = {"pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False}}
+    # Story 84.4: the GitHub-only marker flag differs by environment -- on in dev and staging, off in production.
+    per_environment = {"pyforge.steward.sync_github_only_marker": {"dev": True, "staging": True, "production": False}}
     assert {k for k, e in payload["flags"].items() if all(isinstance(v, bool) for v in e["variants"].values())} == set(
         expected
     ) | set(per_environment)

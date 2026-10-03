@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: pyforge-scribe
 created: 2026-07-25
-updated: "2026-09-28"   # RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
+updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 26, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-26 (Stories 21.1 / 21.2 / 22.1 / 23.1 landing reconciles; surface gains the instruction pointer files) and 2026-09-28 (AGENTS.md Policy line, mason CAP-29 surface reconcile); no FR change. See § Currency reconciliation — 2026-09-28. Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-scribe memlog moved 2026-09-24T20:28 (marshal 46.3 surface reconciles); no FR change. Prior 2026-09-20
 status: final
 currency_review: "Reviewed 2026-09-17 — one-chain scribe fold; FR-1..15 cite CAP-1..4; reminted station CAPs 1..26 live on spec-pyforge-scribe. FR delta: citations only."
 ---
@@ -438,3 +438,16 @@ nothing new is required of Scribe. `updated:` bumped to record that the check ra
 CAP-31 (minted 2026-09-25) is the local test cluster's start path and states no requirement of Scribe's users; this
 reconcile registers no FR for it, and leaves that reading to the next scribe `bmad-prd` pass. `updated:` bumped to record
 that the check ran.
+
+## Currency reconciliation — 2026-10-03 (Phase 4+5)
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-scribe`'s `.memlog.md` gained the operator's 2026-10-03
+Phase 4+5 rulings on the deferral burn-down (open medium and low deferred-work rows close together through fix stories,
+one story per station) and the event that minted Epic 26 / Story 26.1.*
+
+**What moved, and why the FR delta is none.** Story 26.1 is a `fix`: it repairs shipped behaviour under the
+capabilities that already carry it and closes the station's open medium and low deferred-work rows, each with a
+`resolution:` and a cited `verified:` line. No CAP is minted, no FR is added, renumbered or removed, and no success
+metric changes.
+
+**Content changed:** this section only. `updated:` bumped to record that the check ran.
