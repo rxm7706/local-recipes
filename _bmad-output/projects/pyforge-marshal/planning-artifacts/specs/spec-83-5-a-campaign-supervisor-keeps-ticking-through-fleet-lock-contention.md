@@ -2,7 +2,7 @@
 title: '83.5: A campaign supervisor keeps ticking through fleet-lock contention'
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'blocked'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -61,3 +61,8 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: blocked
+Blocking condition: unrecognized status in existing story file
