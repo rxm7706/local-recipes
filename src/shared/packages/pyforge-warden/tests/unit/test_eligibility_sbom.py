@@ -68,6 +68,7 @@ def test_eligibility_cyclonedx_is_deterministic():
                     timestamp=FIXED_TS.isoformat(),
                 ),
             ),
+            effective_required_authority_sources=frozenset({"cyclonedx"}),
         ),
     )
     a = render_eligibility_cyclonedx(results, serial_number=FIXED_SERIAL, timestamp=FIXED_TS)

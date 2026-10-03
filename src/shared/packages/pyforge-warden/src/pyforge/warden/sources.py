@@ -209,6 +209,16 @@ def registered_sources() -> tuple[SourceContract, ...]:
 # --- CycloneDXSourceAdapter --------------------------------------------------
 
 _CYCLONEDX_BOM_FORMAT = "CycloneDX"
+_SUPPORTED_CYCLONEDX_SPEC_VERSIONS: frozenset[str] = frozenset({"1.6"})
+
+
+class CycloneDXUnsupportedSpecVersionError(ValueError):
+    """Raised when a CycloneDX document's ``specVersion`` is outside the supported set."""
+
+    def __init__(self, spec_version: object) -> None:
+        self.spec_version = spec_version
+        supported = ", ".join(sorted(_SUPPORTED_CYCLONEDX_SPEC_VERSIONS))
+        super().__init__(f"unsupported CycloneDX specVersion {spec_version!r}; supported: {supported}")
 
 # purl type token -> Ecosystem (derived from the enum, never hand-spelled
 # twice -- both ecosystems' purl type strings equal their StrEnum value).
@@ -258,13 +268,20 @@ class CycloneDXSourceAdapter:
             return None
         if parsed.get("bomFormat") != _CYCLONEDX_BOM_FORMAT:
             return None
+        spec_version = parsed.get("specVersion")
+        if spec_version not in _SUPPORTED_CYCLONEDX_SPEC_VERSIONS:
+            raise CycloneDXUnsupportedSpecVersionError(spec_version)
         components = parsed.get("components")
         if not isinstance(components, list):
             return None
         return components
 
     def ingest(self) -> tuple[SourceEvidence, ...]:
-        components = self.validate(self.parse(self.fetch()))
+        parsed = self.parse(self.fetch())
+        try:
+            components = self.validate(parsed)
+        except CycloneDXUnsupportedSpecVersionError:
+            raise
         if not components:
             return ()
         evidence: list[SourceEvidence] = []

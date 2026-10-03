@@ -20,6 +20,7 @@ from pyforge.warden.eligibility import (
     EligibilityStatus,
     ProvenanceEntry,
     compute_eligibility_union,
+    status_from_eligibility_result,
 )
 from pyforge.warden.models import Ecosystem
 from pyforge.warden.sources import SourceEvidence, resolve_identity
@@ -189,7 +190,12 @@ def test_ac_each_calls_default_reflects_only_its_own_evidence_set():
 def test_eligibility_result_and_provenance_entry_are_frozen():
     identity = resolve_identity(Ecosystem.PYPI, "requests", "2.31.0")
     entry = ProvenanceEntry(source="cyclonedx", locator="a.json", timestamp=_NOW.isoformat())
-    result = EligibilityResult(identity=identity, status=EligibilityStatus.ELIGIBLE_UNION, provenance=(entry,))
+    result = EligibilityResult(
+        identity=identity,
+        status=EligibilityStatus.ELIGIBLE_UNION,
+        provenance=(entry,),
+        effective_required_authority_sources=frozenset({"cyclonedx"}),
+    )
 
     with pytest.raises(dataclasses.FrozenInstanceError):
         entry.source = "other"  # type: ignore[misc]

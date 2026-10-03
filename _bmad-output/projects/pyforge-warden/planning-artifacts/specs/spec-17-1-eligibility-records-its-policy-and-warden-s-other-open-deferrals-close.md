@@ -2,7 +2,8 @@
 title: "17.1: Eligibility records its policy, and warden's other open deferrals close"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'e06362288272098346b7329a4a5e94e1ad87a513'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
