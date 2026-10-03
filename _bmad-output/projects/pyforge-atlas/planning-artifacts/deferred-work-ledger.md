@@ -4035,3 +4035,27 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
     So imports are ~0.36s of a 2.29s run and pandas is ~0.28s — **about 12% of the cost, not the cause.** The remaining ~1.95s is **Kedro framework bootstrap**: `main()` calls `configure_project()` and hands off to Kedro's Click group, which loads `kedro.framework.project` (installing its rich-logging config — the INFO banner naming `rich_logging.yml` is visible on any `--help`) and `kedro.framework.cli`. The original `python -X importtime` reading was taken inside an already-running interpreter, so it measured only the import half and attributed the whole gap to it.
   raised-correction: the proposed remedies were therefore also aimed wrong — a console entry point that skips the package, PEP 562 `__getattr__`, or narrowing the pandas guarantee would each save ~0.28s of a 2.29s problem while risking AUD-ATLAS-011. **The pandas pin should be left alone.**
   accepted: 2026-09-14 — Re-classified as accepted risk rather than an open defect, because the cost is **inherent to the architecture, not a repair**: atlas deliberately delegates its CLI to Kedro's own Click group, and you cannot render Kedro's help without building Kedro's CLI. Story 7.1's `--version` intercept works precisely because that output is atlas's own; `--help`'s is not, so the same trick cannot apply without atlas hand-authoring a help surface that would then drift from the commands Kedro actually exposes. The CI symptom — `guild-container` flaking on a 10s `cli-smoke` budget — is fixed and stays fixed by the 10→30 raise, which is now justified by the *right* reason: this is a Kedro bootstrap inherent to the station, not a fixable import. Anyone who later wants a sub-second `pyforge-atlas --help` is proposing that atlas stop delegating its CLI to Kedro, which is an architecture decision needing its own Dream — not a startup micro-optimisation.
+
+### DW-FRR-11-2: Follow-up review still recommended for story 11.2
+
+- source_spec: `planning-artifacts/specs/spec-11-2-publish-the-real-dag-continuously-fr-62.md`
+  summary: Story 11.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-11-2-publish-the-real-dag-continuously-fr-62.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-18-2: Follow-up review still recommended for story 18.2
+
+- source_spec: `planning-artifacts/specs/spec-18-2-first-portal-slice-one-inventory-run-row.md`
+  summary: Story 18.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-18-2-first-portal-slice-one-inventory-run-row.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed

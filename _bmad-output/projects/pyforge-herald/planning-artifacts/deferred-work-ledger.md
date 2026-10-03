@@ -1130,3 +1130,15 @@ deployment.
   severity: low
   status: open
   note: The proper remedy per `_bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md` is a full per-station cascade (brief→PRD→arch→epics, one commit) — explicitly its own separate, event-driven workflow with its own dispatch discipline ("one agent per station cascade"), not a Story 59.6 concern ("Scoped to Story 59.6 ONLY, not sibling stories in Epic 59"). Left open for a dedicated chain-currency-sweep dispatch against pyforge-herald rather than faked/stamped here — the runbook itself forbids a stamp without a genuine reconcile.
+
+### DW-FRR-22-1: Follow-up review still recommended for story 22.1
+
+- source_spec: `planning-artifacts/specs/spec-22-1-the-dossier-is-the-source-and-pages-is-a-render.md`
+  summary: Story 22.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-22-1-the-dossier-is-the-source-and-pages-is-a-render.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed

@@ -270,3 +270,14 @@ sibling ledgers and the detector both use.
   severity: medium
   status: open
   raised: 2026-09-19 — Owner: scribe. Asked of the operator in the 2026-09-19 session; recorded here so the ask survives the session.
+
+### DW-FRR-5-2: Follow-up review still recommended for story 5.2
+
+- source_spec: `planning-artifacts/specs/spec-5-2-first-portal-slice-one-recall-query.md`
+  summary: Story 5.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 5.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-5-2-first-portal-slice-one-recall-query.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open

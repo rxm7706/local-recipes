@@ -5702,3 +5702,279 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-02 — dispatch-land finalize
   status: open
+
+### DW-FRR-13-1: Follow-up review still recommended for story 13.1
+
+- source_spec: `planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md`
+  summary: Story 13.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 13.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-13-1-workspace-verbs-over-git-worktree.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-13-4: Follow-up review still recommended for story 13.4
+
+- source_spec: `planning-artifacts/specs/spec-13-4-the-set-reports-and-tears-down-safely.md`
+  summary: Story 13.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 13.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-13-4-the-set-reports-and-tears-down-safely.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-14-1: Follow-up review still recommended for story 14.1
+
+- source_spec: `planning-artifacts/specs/spec-14-1-the-pre-flight-diff-retrodicts-a-real-upgrade.md`
+  summary: Story 14.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 14.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-14-1-the-pre-flight-diff-retrodicts-a-real-upgrade.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-14-2: Follow-up review still recommended for story 14.2
+
+- source_spec: `planning-artifacts/specs/spec-14-2-apply-is-deliberate-branched-and-never-clobbers-custom.md`
+  summary: Story 14.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 14.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-14-2-apply-is-deliberate-branched-and-never-clobbers-custom.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-15-1: Follow-up review still recommended for story 15.1
+
+- source_spec: `planning-artifacts/specs/spec-15-1-one-command-reports-the-whole-pipelines-truth.md`
+  summary: Story 15.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 15.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-15-1-one-command-reports-the-whole-pipelines-truth.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-15-3: Follow-up review still recommended for story 15.3
+
+- source_spec: `planning-artifacts/specs/spec-15-3-five-modules-wire-through-the-provisioning-verb.md`
+  summary: Story 15.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 15.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-15-3-five-modules-wire-through-the-provisioning-verb.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-15-4: Follow-up review still recommended for story 15.4
+
+- source_spec: `planning-artifacts/specs/spec-15-4-the-upgrade-gate-spot-checks-one-native-path-per-class.md`
+  summary: Story 15.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 15.4 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-15-4-the-upgrade-gate-spot-checks-one-native-path-per-class.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-16-2: Follow-up review still recommended for story 16.2
+
+- source_spec: `planning-artifacts/specs/spec-16-2-startup-refuses-misconfiguration-two-stage-and-named.md`
+  summary: Story 16.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 16.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-16-2-startup-refuses-misconfiguration-two-stage-and-named.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-18-1: Follow-up review still recommended for story 18.1
+
+- source_spec: `planning-artifacts/specs/spec-18-1-django-pyforge-is-the-only-chrome.md`
+  summary: Story 18.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 18.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-18-1-django-pyforge-is-the-only-chrome.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-18-2: Follow-up review still recommended for story 18.2
+
+- source_spec: `planning-artifacts/specs/spec-18-2-the-switcher-shows-only-what-the-user-may-reach.md`
+  summary: Story 18.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 18.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-18-2-the-switcher-shows-only-what-the-user-may-reach.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-18-3: Follow-up review still recommended for story 18.3
+
+- source_spec: `planning-artifacts/specs/spec-18-3-two-clients-one-rs256-assertion.md`
+  summary: Story 18.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 18.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-18-3-two-clients-one-rs256-assertion.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-19-2: Follow-up review still recommended for story 19.2
+
+- source_spec: `planning-artifacts/specs/spec-19-2-seven-more-portal-shells-under-the-prefix.md`
+  summary: Story 19.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 19.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-19-2-seven-more-portal-shells-under-the-prefix.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-20-1: Follow-up review still recommended for story 20.1
+
+- source_spec: `planning-artifacts/specs/spec-20-1-wagtail-publishes-without-a-deploy.md`
+  summary: Story 20.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 20.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-20-1-wagtail-publishes-without-a-deploy.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-21-1: Follow-up review still recommended for story 21.1
+
+- source_spec: `planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md`
+  summary: Story 21.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 21.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-1-supervisor-tables-in-public.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-21-5: Follow-up review still recommended for story 21.5
+
+- source_spec: `planning-artifacts/specs/spec-21-5-front-door-queries-the-supervisor.md`
+  summary: Story 21.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 21.5 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-21-5-front-door-queries-the-supervisor.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-23-1: Follow-up review still recommended for story 23.1
+
+- source_spec: `planning-artifacts/specs/spec-23-1-same-url-different-rows.md`
+  summary: Story 23.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 23.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-23-1-same-url-different-rows.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-24-1: Follow-up review still recommended for story 24.1
+
+- source_spec: `planning-artifacts/specs/spec-24-1-cloudevents-on-redis-broker.md`
+  summary: Story 24.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 24.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-24-1-cloudevents-on-redis-broker.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-29-3: Follow-up review still recommended for story 29.3
+
+- source_spec: `planning-artifacts/specs/spec-29-3-five-tier-check.md`
+  summary: Story 29.3 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 29.3 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-29-3-five-tier-check.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-32-1: Follow-up review still recommended for story 32.1
+
+- source_spec: `planning-artifacts/specs/spec-32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core.md`
+  summary: Story 32.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 32.1 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-32-1-shared-hook-spec-and-plugin-registration-in-pyforge-core.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-32-2: Follow-up review still recommended for story 32.2
+
+- source_spec: `planning-artifacts/specs/spec-32-2-steward-deploy-profile-adapters-are-plugins.md`
+  summary: Story 32.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 32.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-32-2-steward-deploy-profile-adapters-are-plugins.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-33-2: Follow-up review still recommended for story 33.2
+
+- source_spec: `planning-artifacts/specs/spec-33-2-first-portal-slice-provision-inventory.md`
+  summary: Story 33.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 33.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-33-2-first-portal-slice-provision-inventory.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-39-4: Follow-up review still recommended for story 39.4
+
+- source_spec: `planning-artifacts/specs/spec-39-4-optional-pixi-feature-bundle-suite-cap-4.md`
+  summary: Story 39.4 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-39-4-optional-pixi-feature-bundle-suite-cap-4.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
+  status: closed
+
+### DW-FRR-48-2: Follow-up review still recommended for story 48.2
+
+- source_spec: `planning-artifacts/specs/spec-48-2-r-18-sizing-rewrite.md`
+  summary: Story 48.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 48.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-2-r-18-sizing-rewrite.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-48-6: Follow-up review still recommended for story 48.6
+
+- source_spec: `planning-artifacts/specs/spec-48-6-r-22-live-browser-streaming-or-the-pillar-deleted.md`
+  summary: Story 48.6 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 48.6 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-6-r-22-live-browser-streaming-or-the-pillar-deleted.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open
+
+### DW-FRR-48-9: Follow-up review still recommended for story 48.9
+
+- source_spec: `planning-artifacts/specs/spec-48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept.md`
+  summary: Story 48.9 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 48.9 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-48-9-oidc-default-profile-keycloak-in-cluster-byo-seam-kept.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open

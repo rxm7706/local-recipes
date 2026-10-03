@@ -686,3 +686,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   fix: pass `refs/remotes/origin/main` (after confirming the binary accepts a full ref), through warden's chain; steward's task likewise (a `pixi.toml` change regenerates `environment.yaml`).
   status: closed
   resolved: 2026-09-27 (warden Story 13.1, spec-pyforge-warden CAP-23; steward Story 70.1, pyforge-steward:CAP-158) — the advisory's `_DEFAULT_BASE_REF`, steward's `tea-test-review` task and marshal's review lens (the task's one documented caller, whose `--base` replaces the task's) all pass `refs/remotes/origin/main`. Verified against the installed TEA 1.27.2: it diffs `<base>...HEAD` and rejects only an empty base or one starting with `-`.
+
+### DW-FRR-10-2: Follow-up review still recommended for story 10.2
+
+- source_spec: `planning-artifacts/specs/spec-10-2-first-portal-slice-start-get-one-audit.md`
+  summary: Story 10.2 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 10.2 landed on origin/main (Merge <slug>/<key> into main); Story 66.2 backfill carried the recommended follow-up review.
+  location: _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-10-2-first-portal-slice-start-get-one-audit.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-03 — Story 66.2 backfill
+  status: open

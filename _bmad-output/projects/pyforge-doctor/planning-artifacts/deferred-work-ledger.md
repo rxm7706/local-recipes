@@ -84,6 +84,7 @@ Durability first; curation is owned follow-up work.
 ### DW-FU-6-4: Follow-up review still recommended for 6-4-the-ledger-verdicts-come-home after the damping cap was spent
 
 - source_spec: `spec-6-4-the-ledger-verdicts-come-home.md`
+  origin: review-budget-followup
   summary: Follow-up review still recommended for 6-4-the-ledger-verdicts-come-home after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260808-210255-c88b; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-1`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
@@ -99,6 +100,7 @@ Durability first; curation is owned follow-up work.
 ### DW-FU-6-5: Follow-up review still recommended for 6-5-the-board-verdicts-come-home after the damping cap was spent
 
 - source_spec: `spec-6-5-the-board-verdicts-come-home.md`
+  origin: review-budget-followup
   summary: Follow-up review still recommended for 6-5-the-board-verdicts-come-home after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260808-210255-c88b; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-2` there) under the ledger's `DW-FU-<story>` convention, so the next damped story cannot collide with a generic `DW-2`. This promotion is the manual act Marshal FR-175 / Story 4.13 exists to make an obligation of the story itself.
@@ -114,6 +116,7 @@ Durability first; curation is owned follow-up work.
 ### DW-FU-6-6: Follow-up review still recommended for 6-6-the-chain-verdicts-come-home after the damping cap was spent
 
 - source_spec: `spec-6-6-the-chain-verdicts-come-home.md`
+  origin: review-budget-followup
   summary: Follow-up review still recommended for 6-6-the-chain-verdicts-come-home after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260808-210255-c88b; this entry preserves the lingering recommendation for a deliberate later review.
   promoted: 2026-08-09 — promoted from Tier-3 (id `DW-3` there) under the ledger's
@@ -132,6 +135,7 @@ Durability first; curation is owned follow-up work.
 ### DW-FU-6-8: Follow-up review still recommended for 6-8-bmad_drift-comes-home-without-breaking-the-board after the damping cap was spent
 
 - source_spec: `spec-6-8-bmad-drift-comes-home-without-breaking-the-board.md`
+  origin: review-budget-followup
   summary: Follow-up review still recommended for 6-8-bmad_drift-comes-home-without-breaking-the-board after the damping cap was spent
   evidence: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the
     story finalized (status: done, verify green) while the review pass still recommended an
