@@ -36,13 +36,25 @@ def test_verification_sets_refuses_empty_pypi_universe():
         )
 
 
-def test_verification_sets_refuses_sub_floor_cf_or_pm():
-    with pytest.raises(HollowVerificationSetError, match="hollow_cf_or_pm"):
+def test_verification_sets_refuses_sub_floor_core_packages():
+    with pytest.raises(HollowVerificationSetError, match="hollow_core_packages_enumerated"):
         verification_sets(
             pd.DataFrame([{"conda_name": "only-one"}]),
             pd.DataFrame([{"pypi_name": "only-one"}]),
             pd.DataFrame(columns=["pypi_name"]),
             {"verification_sets": {"cf_or_pm_floor": 2, "pypi_universe_floor": 0}},
+        )
+
+
+def test_verification_sets_refuses_empty_core_despite_large_mapping():
+    """Parselmouth mapping names must not satisfy the core conda-forge floor."""
+    mapping = pd.DataFrame([{"pypi_name": f"p{i}"} for i in range(30_000)])
+    with pytest.raises(HollowVerificationSetError, match="hollow_core_packages_enumerated"):
+        verification_sets(
+            pd.DataFrame(columns=["conda_name"]),
+            pd.DataFrame([{"pypi_name": "widget"}]),
+            mapping,
+            {},
         )
 
 

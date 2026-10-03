@@ -1176,7 +1176,15 @@ def _export_priority_merge_warnings(inventory_priority_assignments: pd.DataFrame
     if inventory_priority_assignments is None or getattr(inventory_priority_assignments, "empty", True):
         return
     cols = set(getattr(inventory_priority_assignments, "columns", []))
-    for col in ("P", "Rank", "Score", "Work"):
+    for col in (
+        "P",
+        "Rank",
+        "Score",
+        "Work",
+        "risk_level",
+        "jfrog_latest_vuln_count",
+        "vuln_status",
+    ):
         if col not in cols:
             logger.warning("identity_complete_export: ranking input missing column %s", col)
     if "core_python_package_name" not in cols:

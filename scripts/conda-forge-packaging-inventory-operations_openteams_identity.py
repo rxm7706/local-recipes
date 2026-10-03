@@ -237,18 +237,27 @@ def _run_gh(
     expect_output: bool = True,
 ) -> str:
     """Run one ``gh`` invocation with pacing and bounded backoff on rate limits."""
-    runner = gh_runner if gh_runner is not None else subprocess.check_output
-    call_runner = gh_call_runner if gh_call_runner is not None else subprocess.check_call
     delay = _GH_BACKOFF_BASE
     last_exc: BaseException | None = None
     for attempt in range(_GH_MAX_RETRIES + 1):
         try:
             time.sleep(_GH_PACE_SECONDS)
+            if gh_runner is not None and expect_output:
+                return gh_runner(cmd, text=True).strip()
+            if gh_call_runner is not None and not expect_output:
+                gh_call_runner(cmd)
+                return ""
+            proc = subprocess.run(cmd, text=True, capture_output=True, check=True)
             if expect_output:
-                return runner(cmd, text=True).strip()
-            call_runner(cmd)
+                return (proc.stdout or "").strip()
             return ""
-        except (subprocess.CalledProcessError, OSError) as exc:
+        except subprocess.CalledProcessError as exc:
+            last_exc = exc
+            if attempt >= _GH_MAX_RETRIES or not _gh_secondary_rate_limit(exc):
+                raise
+            time.sleep(delay)
+            delay *= _GH_BACKOFF_BASE
+        except OSError as exc:
             last_exc = exc
             if attempt >= _GH_MAX_RETRIES or not _gh_secondary_rate_limit(exc):
                 raise
@@ -345,10 +354,10 @@ def create_missing_issues(
             )
         except (subprocess.CalledProcessError, OSError) as exc:
             print(
-                f"gh project item-add failed for {name} ({url}): {exc}",
+                f"gh project item-add failed for {name} (issue filed at {url}): {exc}",
                 file=sys.stderr,
             )
-            failed.append((name, title))
+            failed.append((name, f"filed-but-not-added: {url}"))
             continue
         row["OpenTeams_Issue_URL"] = url
         board[pep503_name(name)] = url
@@ -543,8 +552,16 @@ def identity_complete_export_parquet_path() -> Path | None:
 def _stringify_export_cell(value: object) -> str:
     if value is None:
         return ""
-    if isinstance(value, float) and pd.isna(value):
-        return ""
+    try:
+        if value is pd.NA or (isinstance(value, float) and pd.isna(value)):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
     if isinstance(value, (list, tuple)):
         return "; ".join(_stringify_export_cell(v) for v in value if v is not None)
     try:
@@ -783,7 +800,7 @@ def publish_gist_files(
 
 
 def publish_gist_from_export(
-    export_path: Path,
+    export_path: Path | None,
     gist_id_cli: str | None,
     tab: str = _DEFAULT_EXPORT_TAB_LABEL,
     ops_canvas: Path | None = None,
@@ -791,6 +808,12 @@ def publish_gist_from_export(
     skip_gist: bool = False,
 ) -> int:
     """Edit the pinned gist from ``identity_complete_export.parquet`` (Story 23.6)."""
+    if export_path is None:
+        print(
+            "identity_complete_export: refusing gist publish (export path unresolved)",
+            file=sys.stderr,
+        )
+        return 1
     if not export_path.is_file():
         print(
             f"identity_complete_export not found at {export_path} -- run "
@@ -838,7 +861,7 @@ def publish_gist_from_export(
         return 1
 
     records = [
-        {str(k): ("" if pd.isna(v) else str(v).strip()) for k, v in row.items()}
+        {str(k): _stringify_export_cell(v) for k, v in row.items()}
         for row in pd.read_parquet(export_path).to_dict(orient="records")
     ]
     overlay_live_local(records, REPO_ROOT / "recipes")
@@ -947,8 +970,8 @@ def main() -> int:
         default=None,
         help=(
             "Ops dashboard canvas output path (Priority/Issues/Builds/Census). "
-            "Default: the live identity-ops.canvas.tsx under the Cursor project "
-            "canvases dir. Override for offline tests."
+            "Default: resolved from PYFORGE_ATLAS_CANVAS_DIR or .env.local at write "
+            "time; unset skips the canvas write. Override for offline tests."
         ),
     )
     p.add_argument(
@@ -956,9 +979,9 @@ def main() -> int:
         type=Path,
         default=None,
         help=(
-            "Artifactory/workbook dashboard canvas output path. Default: the "
-            "live jfrog-workbook.canvas.tsx under the Cursor project canvases "
-            "dir. Override for offline tests."
+            "Artifactory/workbook dashboard canvas output path. Default: same "
+            "environment or local-env canvas directory as --ops-canvas; unset "
+            "skips the write. Override for offline tests."
         ),
     )
     args = p.parse_args()

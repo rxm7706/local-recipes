@@ -207,9 +207,35 @@ def _data_root_from_export(export_path: Path) -> Path:
     return export_path.parent.parent.parent
 
 
+def _stringify_export_cell(value: object) -> str:
+    if value is None:
+        return ""
+    try:
+        if value is pd.NA or (isinstance(value, float) and pd.isna(value)):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    if isinstance(value, (list, tuple)):
+        return "; ".join(_stringify_export_cell(v) for v in value if v is not None)
+    try:
+        import numpy as np
+
+        if isinstance(value, np.ndarray):
+            return "; ".join(_stringify_export_cell(v) for v in value.tolist())
+    except ImportError:
+        pass
+    return str(value).strip()
+
+
 def _records_from_frame(df: pd.DataFrame) -> list[dict[str, str]]:
     return [
-        {str(k): ("" if pd.isna(v) else str(v).strip()) for k, v in row.items()} for row in df.to_dict(orient="records")
+        {str(k): _stringify_export_cell(v) for k, v in row.items()}
+        for row in df.to_dict(orient="records")
     ]
 
 
@@ -459,7 +485,7 @@ def _render_identity_catalog(
 
     ts = str(rows[0].get("Verification_Timestamp_UTC") or "").strip() if rows else ""
     if not ts:
-        raise PyforgeError(
+        raise IdentityGistError(
             "identity_complete_export missing Verification_Timestamp_UTC; "
             "refusing to publish gist with a synthetic timestamp"
         )
@@ -594,7 +620,7 @@ def _render_dashboards(
     n = len(records)
     ts = str(records[0].get("Verification_Timestamp_UTC") or "").strip() if records else ""
     if not ts:
-        raise PyforgeError(
+        raise IdentityGistError(
             "identity_complete_export missing Verification_Timestamp_UTC; "
             "refusing dashboard companion with a synthetic timestamp"
         )

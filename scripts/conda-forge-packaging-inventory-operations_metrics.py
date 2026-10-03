@@ -90,14 +90,17 @@ def _read_parquet_with_deadline(
     import pandas as pd
 
     reader = read_fn if read_fn is not None else pd.read_parquet
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        future = pool.submit(reader, path)
-        try:
-            return future.result(timeout=deadline_seconds)
-        except FuturesTimeoutError as exc:
-            raise TimeoutError(
-                f"parquet read deadline exceeded ({deadline_seconds}s) for {path}"
-            ) from exc
+    pool = ThreadPoolExecutor(max_workers=1)
+    future = pool.submit(reader, path)
+    try:
+        return future.result(timeout=deadline_seconds)
+    except FuturesTimeoutError as exc:
+        pool.shutdown(wait=False, cancel_futures=True)
+        raise TimeoutError(
+            f"parquet read deadline exceeded ({deadline_seconds}s) for {path}"
+        ) from exc
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
 
 
 def load_atlas_exports(
@@ -326,7 +329,7 @@ def main() -> int:
     print("=== MASTER PROMPT V3.0 EXECUTION SUMMARY METRICS ===")
     print()
     print(f"Total final unique packages processed: {len(exports.verified_rows):,}")
-    print(f"Packages not on conda-forge: {not_on_cf_count:,}")
+    print(f"Count not on conda-forge: {not_on_cf_count:,}")
     print(f"AOSS-Free Mason queue rows: {len(exports.queue_rows):,}")
     if exports.verified_rows:
         print(

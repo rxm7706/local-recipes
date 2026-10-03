@@ -311,19 +311,22 @@ def test_load_atlas_exports_chains_keyerror(tmp_path: Path):
 
 
 def test_load_atlas_exports_parquet_deadline(tmp_path: Path, monkeypatch):
+    import time
+
     root = tmp_path / "root"
     _make_catalog_root(root)
     monkeypatch.setattr(metrics, "PARQUET_READ_DEADLINE_SECONDS", 0.01)
 
     def _slow(_path: Path):
-        import time
-
         time.sleep(0.2)
         return pd.DataFrame([_sample_verified_row("slow")])
 
+    started = time.monotonic()
     result = metrics.load_atlas_exports(root, read_parquet_fn=_slow, deadline_seconds=0.01)
+    elapsed = time.monotonic() - started
     assert result.failed is True
     assert any("deadline" in w.lower() for w in result.warnings)
+    assert elapsed < 0.15, f"deadline did not return promptly ({elapsed:.2f}s)"
 
 
 def test_metrics_help_documents_verification_floors():

@@ -734,6 +734,7 @@ def test_main_default_path_overlay_runs_before_csv_write(monkeypatch, tmp_path, 
     assert csv_rows[0]["Local_Build_Status"] == "success"
     assert "recipes/pkg-a" in csv_rows[0]["Local_Recipes_URL"]
     assert "pkg-a" in published["identity_md"]
+    assert "success" in published["identity_md"]
 
 
 def test_main_exits_nonzero_when_parquet_missing(monkeypatch, tmp_path, capsys):

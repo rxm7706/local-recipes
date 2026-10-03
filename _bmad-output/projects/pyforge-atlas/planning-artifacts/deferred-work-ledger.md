@@ -2835,6 +2835,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   closed: 2026-10-03
   closed_by: Story 27.1
   resolution: Story 27.1
+  verified: scripts/openteams_identity_dashboards.py:742 — imports `_CANVAS_PREFIX` from priority script
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
@@ -2868,7 +2869,7 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
     passes per Epic 16 / DW-H3.
   evidence: steward `spec-pyforge-unifying-strategy/SPEC.md` Open Questions 2026-08-25;
     `src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py`
-  status: closed
+  status: open
   verified: 2026-08-25 — `lane1-serves-dw-h3` answered **no**; DW-H3 still open; canopy MCP/board/DuckDB
     obligations unchanged.
 
@@ -2879,15 +2880,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
 - source_spec: cross-cutting (pyforge-unifying-strategy Grounding Q1–Q8; steward SCP operating-model, §6 revisited)
   summary: Estate OM + CAP-18: shared hook-spec in pyforge-core; Warden Epic 9 is the PR-gate retrofit; this station extracts one process hook spec (today's backend = default plugin).
   owner: station planning (this file) + steward (Canopy FRs) + warden (PR-gate hook specs)
-  status: closed
+  status: open
   recorded: 2026-08-24
   close_when: steward S-32.1 done; atlas S-18.1 done (Kedro hooks mapped to shared contract; no pipeline PR-gate); no competing CI verdict
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
-  verified: 2026-10-03 — closed — Story 27.1; verified: scripts/openteams_identity_dashboards.py:742
 
 ### DW-FU-19-2: Host chrome does not load an HTMX runtime, so hx-* poll attributes are markup-only.
 
