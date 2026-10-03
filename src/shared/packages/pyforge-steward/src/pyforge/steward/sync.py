@@ -46,6 +46,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import math
 import time
 import urllib.error
@@ -56,9 +57,14 @@ from typing import Callable, Mapping
 from urllib.parse import quote, urlparse
 
 import yaml
+from pyforge.core.flags import FlagConfigError, read_boolean
 
 from .interfaces import DutyResult
 from .keys import HostScopedCredential, http_bridge, repo_root, resolve_headers
+
+_logger = logging.getLogger(__name__)
+
+SYNC_GITHUB_ONLY_MARKER_FLAG = "pyforge.steward.sync_github_only_marker"
 
 _GITHUB_API_HOST = "api.github.com"
 _GITHUB_GRAPHQL_URL = f"https://{_GITHUB_API_HOST}/graphql"
@@ -103,6 +109,18 @@ class SyncConfigError(ValueError):
 
 
 @dataclass(frozen=True)
+class GitHubOnlyMarker:
+    """How an item on the synced board declares itself GitHub-only (Story 84.4).
+
+    Exactly one mode: a `label` on the underlying Issue/PR, or a Projects V2
+    custom field (`field_id` + `field_value`, TEXT or single-select)."""
+
+    label: str | None = None
+    field_id: str | None = None
+    field_value: str | None = None
+
+
+@dataclass(frozen=True)
 class SyncConfig:
     """The operator-declared, non-secret control-plane mapping (AD-2/AD-3).
 
@@ -121,6 +139,7 @@ class SyncConfig:
     field_overrides: dict[str, str] = field(default_factory=dict)
     user_mapping: dict[str, str] = field(default_factory=dict)
     status_mapping: dict[str, str] = field(default_factory=dict)
+    github_only_marker: GitHubOnlyMarker | None = None
 
 
 def default_config_path() -> Path:
@@ -243,6 +262,8 @@ def load_config(path: str | Path) -> SyncConfig:
                 f"(got {jira_status!r}: {github_status!r})"
             )
 
+    github_only_marker = _load_github_only_marker(document_path, document.get("github_only_marker"))
+
     return SyncConfig(
         github_project_id=github_values["project_id"],
         github_status_field_id=github_values["status_field_id"],
@@ -255,7 +276,80 @@ def load_config(path: str | Path) -> SyncConfig:
         field_overrides=dict(field_overrides),
         user_mapping=dict(user_mapping),
         status_mapping=dict(status_mapping),
+        github_only_marker=github_only_marker,
     )
+
+
+_GITHUB_ONLY_MARKER_KEYS = frozenset({"label", "field_id", "field_value"})
+
+
+def _load_github_only_marker(document_path: Path, section: object) -> GitHubOnlyMarker | None:
+    if section is None:
+        return None
+    if not isinstance(section, dict):
+        raise SyncConfigError(f"{document_path}: 'github_only_marker' must be a mapping")
+    unknown = set(section) - _GITHUB_ONLY_MARKER_KEYS
+    if unknown:
+        raise SyncConfigError(
+            f"{document_path}: 'github_only_marker' has unknown key(s) {sorted(unknown)!r} "
+            f"(only {sorted(_GITHUB_ONLY_MARKER_KEYS)!r} are recognized)"
+        )
+    label = section.get("label")
+    field_id = section.get("field_id")
+    field_value = section.get("field_value")
+    has_label = isinstance(label, str) and label.strip()
+    has_field = isinstance(field_id, str) and field_id.strip() and isinstance(field_value, str) and field_value.strip()
+    if has_label and has_field:
+        raise SyncConfigError(
+            f"{document_path}: 'github_only_marker' must declare either 'label' or 'field_id'+'field_value', not both"
+        )
+    if not has_label and not has_field:
+        if not section:
+            raise SyncConfigError(f"{document_path}: 'github_only_marker' must not be an empty mapping")
+        raise SyncConfigError(
+            f"{document_path}: 'github_only_marker' is present but declares no "
+            "non-empty label or field_id/field_value pair"
+        )
+    if has_label:
+        if not isinstance(label, str):
+            raise SyncConfigError(f"{document_path}: 'github_only_marker.label' must be a string")
+        return GitHubOnlyMarker(label=label.strip())
+    assert isinstance(field_id, str) and isinstance(field_value, str)
+    return GitHubOnlyMarker(field_id=field_id.strip(), field_value=field_value.strip())
+
+
+def _read_github_only_marker_flag_safe() -> bool:
+    try:
+        return read_boolean(SYNC_GITHUB_ONLY_MARKER_FLAG, default=False)
+    except FlagConfigError as exc:
+        _logger.warning(
+            "sync reconcile: %s flag unreadable (%s); treating GitHub-only marker as off",
+            SYNC_GITHUB_ONLY_MARKER_FLAG,
+            exc,
+        )
+        return False
+
+
+def _github_only_marker_feature_enabled(
+    config: SyncConfig,
+    *,
+    batch_flag_state: bool | None = None,
+) -> bool:
+    if config.github_only_marker is None:
+        return False
+    if batch_flag_state is not None:
+        return batch_flag_state
+    return _read_github_only_marker_flag_safe()
+
+
+def _item_carries_github_only_marker(gh: GitHubItemState, marker: GitHubOnlyMarker) -> bool:
+    if marker.label is not None:
+        return marker.label in gh.labels
+    assert marker.field_id is not None and marker.field_value is not None
+    text_val = gh.field_values.get(marker.field_id)
+    if text_val == marker.field_value:
+        return True
+    return gh.single_select_field_values.get(marker.field_id) == marker.field_value
 
 
 # ── Named failure modes (never swallowed -- every API/link failure surfaces
@@ -274,6 +368,14 @@ class SyncAPIError(SyncError):
 class SyncUnlinkedError(SyncError):
     """An item has no identity-link value recorded pointing at its
     counterpart on the other side."""
+
+
+class SyncGitHubOnlySkipped(SyncError):
+    """An unlinked item carries the configured GitHub-only marker (Story 84.4)."""
+
+    def __init__(self, item_id: str) -> None:
+        self.item_id = item_id
+        super().__init__(f"github-only skipped: {item_id}")
 
 
 class SyncUnmappedStatusError(SyncError):
@@ -494,16 +596,22 @@ query($itemId: ID!) {
             text
             field { ... on ProjectV2FieldCommon { id } }
           }
+          ... on ProjectV2ItemFieldSingleSelectValue {
+            name
+            field { ... on ProjectV2FieldCommon { id } }
+          }
         }
       }
       content {
         ... on Issue {
           number
+          labels(first: 50) { nodes { name } }
           assignees(first: 10) { nodes { login } }
           repository { owner { login } name }
         }
         ... on PullRequest {
           number
+          labels(first: 50) { nodes { name } }
           assignees(first: 10) { nodes { login } }
           repository { owner { login } name }
         }
@@ -607,31 +715,61 @@ class GitHubItemState:
     assignee: str | None = None
     content_ref: tuple[str, str, int] | None = None
     assignee_unknown: bool = False
+    labels: frozenset[str] = field(default_factory=frozenset)
+    field_values: dict[str, str] = field(default_factory=dict)
+    single_select_field_values: dict[str, str] = field(default_factory=dict)
 
 
-def _parse_field_values(node: dict[str, object]) -> dict[str, str]:
-    """Parse a `ProjectV2Item` node's `fieldValues.nodes` connection into a
-    flat `{field_id: text}` map.
+def _parse_text_field_values(node: dict[str, object]) -> dict[str, str]:
+    """Parse TEXT custom fields only — link, status, baseline, and other tracked TEXT fields.
 
-    Every field is read as `ProjectV2ItemFieldTextValue` -- this story's
-    tracked/link/baseline GitHub fields are plain TEXT fields, never
-    GitHub's native single-select Status field (there is no
-    select-option-ID resolution anywhere in this module; the raw string
-    value is propagated 1:1, matching the Boundaries & Constraints' "Never
-    build a general status-vocabulary translation table").
-
-    Factored out of `get_project_item`'s own inline loop (Story 8.4). No
-    longer called by `list_linked_github_items` (Story 8.5) -- that
-    function's bulk listing no longer reads any field value, only `id`/
-    `updatedAt` per node.
+    Single-select values are parsed separately (Story 84.4) so a native
+    single-select Status field never propagates through reconcile when the
+    GitHub-only marker flag is off.
     """
     field_values: dict[str, str] = {}
     for entry in (node.get("fieldValues") or {}).get("nodes") or []:
-        field_id = ((entry or {}).get("field") or {}).get("id")
-        text = (entry or {}).get("text")
-        if field_id is not None and text is not None:
-            field_values[field_id] = text
+        if not isinstance(entry, dict):
+            continue
+        field_id = (entry.get("field") or {}).get("id") if isinstance(entry.get("field"), dict) else None
+        text = entry.get("text")
+        if field_id is None or not isinstance(text, str):
+            continue
+        field_values[field_id] = text
     return field_values
+
+
+def _parse_single_select_field_values(node: dict[str, object]) -> dict[str, str]:
+    """Parse single-select custom fields for GitHub-only marker detection only."""
+    values: dict[str, str] = {}
+    for entry in (node.get("fieldValues") or {}).get("nodes") or []:
+        if not isinstance(entry, dict):
+            continue
+        field_id = (entry.get("field") or {}).get("id") if isinstance(entry.get("field"), dict) else None
+        name = entry.get("name")
+        if field_id is None or not isinstance(name, str):
+            continue
+        values[field_id] = name
+    return values
+
+
+def _parse_labels(node: dict[str, object]) -> frozenset[str]:
+    content = node.get("content")
+    if not isinstance(content, dict):
+        return frozenset()
+    labels = content.get("labels")
+    if not isinstance(labels, dict):
+        return frozenset()
+    nodes = labels.get("nodes")
+    if not isinstance(nodes, list):
+        return frozenset()
+    names: list[str] = []
+    for label_node in nodes:
+        if isinstance(label_node, dict):
+            name = label_node.get("name")
+            if isinstance(name, str) and name:
+                names.append(name)
+    return frozenset(names)
 
 
 def _parse_content(
@@ -734,7 +872,8 @@ def get_project_item(
     if node is None:
         raise SyncAPIError(f"GitHub project item {item_id}: not found")
 
-    field_values = _parse_field_values(node)
+    field_values = _parse_text_field_values(node)
+    single_select_field_values = _parse_single_select_field_values(node)
     assignee, content_ref, assignee_unknown = _parse_content(node)
 
     baseline_raw = field_values.get(config.github_baseline_field_id)
@@ -746,6 +885,9 @@ def get_project_item(
         assignee=assignee,
         content_ref=content_ref,
         assignee_unknown=assignee_unknown,
+        labels=_parse_labels(node),
+        field_values=field_values,
+        single_select_field_values=single_select_field_values,
     )
 
 
@@ -1118,6 +1260,7 @@ def _read_both_sides(
     github_credential: HostScopedCredential,
     jira_credential: HostScopedCredential,
     transport: TransportFn,
+    github_only_batch_flag: bool | None = None,
 ) -> tuple[GitHubItemState, JiraIssueState]:
     """Resolve whichever identifier wasn't given via the other side's link
     field, then read both.
@@ -1150,6 +1293,10 @@ def _read_both_sides(
     elif github_item_id:
         gh = get_project_item(github_item_id, config=config, credential=github_credential, transport=transport)
         if not gh.link:
+            if _github_only_marker_feature_enabled(
+                config, batch_flag_state=github_only_batch_flag
+            ) and _item_carries_github_only_marker(gh, config.github_only_marker):
+                raise SyncGitHubOnlySkipped(github_item_id)
             raise SyncUnlinkedError(f"unlinked: github item {github_item_id} has no linked jira issue")
         _validate_jira_project(gh.link, config)
         jira = get_jira_issue(gh.link, config=config, credential=jira_credential, transport=transport)
@@ -1190,6 +1337,7 @@ def reconcile(
     config: SyncConfig,
     dry_run: bool = False,
     transport: TransportFn | None = None,
+    github_only_batch_flag: bool | None = None,
 ) -> DutyResult:
     """Re-read both linked items' current state and converge the divergent
     side. See this module's own docstring and the story's Design Notes
@@ -1218,7 +1366,12 @@ def reconcile(
             github_credential=github_credential,
             jira_credential=jira_credential,
             transport=transport,
+            github_only_batch_flag=github_only_batch_flag,
         )
+    except SyncGitHubOnlySkipped as exc:
+        summary = f"sync reconcile: skipped github-only unlinked item {exc.item_id}"
+        _logger.info("%s", summary)
+        return DutyResult(ok=True, summary=summary, details={"github_only_skipped": exc.item_id})
     except SyncError as exc:
         return DutyResult(ok=False, summary=f"sync reconcile: {exc}")
 
@@ -1808,11 +1961,19 @@ def reconcile_schedule_batch(
             summary=f"sync reconcile --schedule: failed enumerating candidates: {exc}",
         )
 
+    batch_github_only_flag = _read_github_only_marker_flag_safe() if config.github_only_marker is not None else None
+
     entries: list[dict[str, object]] = []
     for candidate in candidates:
         github_item_id = candidate["github_item_id"]
         try:
-            result = reconcile(github_item_id=github_item_id, config=config, dry_run=dry_run, transport=transport)
+            result = reconcile(
+                github_item_id=github_item_id,
+                config=config,
+                dry_run=dry_run,
+                transport=transport,
+                github_only_batch_flag=batch_github_only_flag,
+            )
         except (OSError, urllib.error.URLError) as exc:
             result = DutyResult(ok=False, summary=f"sync reconcile: network error: {exc}")
         entries.append(
@@ -1825,9 +1986,17 @@ def reconcile_schedule_batch(
         )
 
     failed = [entry for entry in entries if not entry["ok"]]
+    skipped_github_only = [
+        str(entry["github_item_id"])
+        for entry in entries
+        if entry["ok"] and "skipped github-only" in str(entry["summary"])
+    ]
     ok_count = len(entries) - len(failed)
     candidate_word = "candidate" if len(entries) == 1 else "candidates"
     summary = f"sync reconcile --schedule: {len(entries)} {candidate_word}, {ok_count} ok, {len(failed)} failed"
+    if skipped_github_only:
+        skip_word = "skip" if len(skipped_github_only) == 1 else "skips"
+        summary += f", {len(skipped_github_only)} {skip_word} (github-only): {', '.join(skipped_github_only)}"
     # DW-8-4-1: the CLI prints only the summary, so each failed candidate is
     # named here (`<github_item_id>: <summary>`) -- `details["candidates"]` is unchanged.
     for entry in failed:
