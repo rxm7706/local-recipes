@@ -315,14 +315,17 @@ def _opaque_dw_blocks(text: str) -> tuple[str, list[str]]:
     return preamble, blocks
 
 
-def _suffix_from_first_block(full: str, blocks: list[str], index: int) -> str:
-    """Return ``full`` from the start of ``blocks[index]`` through EOF (empty when none)."""
-    if index >= len(blocks):
+def _append_tail_after_shared_blocks(full: str, blocks: list[str], shared_count: int) -> str:
+    """Return ``full`` from just after the last shared block through EOF (separators included)."""
+    if shared_count >= len(blocks):
         return ""
-    pos = full.find(blocks[index])
+    if shared_count == 0:
+        return full
+    last_shared = blocks[shared_count - 1]
+    pos = full.find(last_shared)
     if pos < 0:
         return ""
-    return full[pos:]
+    return full[pos + len(last_shared) :]
 
 
 def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
@@ -360,29 +363,20 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
 
     result = base.rstrip("\n")
     if main_new:
-        main_tail = _suffix_from_first_block(main, main_blocks, base_count)
-        if not main_tail:
+        main_tail = _append_tail_after_shared_blocks(main, main_blocks, base_count)
+        if not main_tail.strip():
             return None
         result += main_tail.rstrip("\n")
     elif branch_new:
-        branch_tail = _suffix_from_first_block(branch, branch_blocks, base_count)
-        if not branch_tail:
+        branch_tail = _append_tail_after_shared_blocks(branch, branch_blocks, base_count)
+        if not branch_tail.strip():
             return None
         result += branch_tail.rstrip("\n")
     if branch_only and main_new:
-        cursor = 0
-        if base_count:
-            last_shared = branch_blocks[base_count - 1]
-            pos = branch.find(last_shared)
-            cursor = pos + len(last_shared) if pos >= 0 else 0
-        extra = ""
-        for block in branch_only:
-            pos = branch.find(block, cursor)
-            if pos < 0:
-                return None
-            extra += branch[cursor:pos] + block
-            cursor = pos + len(block)
-        result += extra.rstrip("\n")
+        branch_tail = _append_tail_after_shared_blocks(branch, branch_blocks, base_count)
+        if not branch_tail.strip():
+            return None
+        result += branch_tail.rstrip("\n")
 
     if not result.endswith("\n"):
         result += "\n"

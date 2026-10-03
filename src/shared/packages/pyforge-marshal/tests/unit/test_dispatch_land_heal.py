@@ -9,6 +9,7 @@ import pytest
 
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core.chain_regen import render_ledger_statuses
+from pyforge.marshal.core import dispatch_landing as _dispatch_landing
 from pyforge.marshal.core.dispatch_landing import (
     is_deferred_work_path,
     is_mechanical_conflict_path,
@@ -1265,6 +1266,50 @@ def test_union_deferred_work_texts_empty_base() -> None:
     assert result is not None
     assert "### DW-1: Main entry" in result
     assert "### DW-2: Branch entry" in result
+
+
+def _dw_block_count(text: str) -> int:
+    return len(_dispatch_landing._opaque_dw_blocks(text)[1])
+
+
+def test_union_deferred_work_texts_live_marshal_ledger_mixed_formats() -> None:
+    """AC 2026-10-03: union on a copy of the real ledger preserves every base block and both appends."""
+    repo_root = Path(__file__).resolve().parents[6]
+    ledger_path = repo_root / "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    base = ledger_path.read_text(encoding="utf-8")
+    base_count = _dw_block_count(base)
+
+    main_append = (
+        "\n\n### DW-TEST-MAIN-83-3: Story 83.3 union probe (main)\n"
+        "origin: test\nstatus: open\n"
+    )
+    branch_append = (
+        "\n\n### DW-TEST-BRANCH-83-3: Story 83.3 union probe (branch)\n"
+        "- source_spec: `spec-83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries.md`\n"
+        "  status: open\n"
+    )
+    main = base.rstrip("\n") + main_append
+    branch = base.rstrip("\n") + branch_append
+
+    result = union_deferred_work_texts(base, main, branch)
+
+    assert result is not None
+    assert result.startswith(base.rstrip("\n"))
+    assert _dw_block_count(result) == base_count + 2
+    assert "DW-TEST-MAIN-83-3" in result
+    assert "DW-TEST-BRANCH-83-3" in result
+
+
+def test_mutation_union_deferred_work_texts_stub_none_refuses_append() -> None:
+    """Mutation partner: a union that always returns None breaks the live-ledger append proof."""
+    base = _deferred_work_text("### DW-1: Base entry\norigin: test\nstatus: open")
+    main = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-2: Main entry\norigin: main\nstatus: open"
+    )
+    branch = _deferred_work_text(
+        "### DW-1: Base entry\norigin: test\nstatus: open", "### DW-3: Branch entry\norigin: branch\nstatus: open"
+    )
+    assert union_deferred_work_texts(base, main, branch) is not None
 
 
 def test_unknown_conflict_paths_filters_deferred_work() -> None:
