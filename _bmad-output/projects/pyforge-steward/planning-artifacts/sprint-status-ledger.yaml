@@ -327,7 +327,7 @@ development_status:
   84-1-an-audit-purge-records-itself-and-the-audit-table-is-append-only-by-privilege: done
   84-2-an-audit-read-records-its-scope-and-the-perimeter-refuses-an-over-long-identity: done
   84-3-trusted-ingress-addresses-are-ip-networks: done
-  84-4-sync-skips-a-board-item-marked-github-only: backlog
+  84-4-sync-skips-a-board-item-marked-github-only: done
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
