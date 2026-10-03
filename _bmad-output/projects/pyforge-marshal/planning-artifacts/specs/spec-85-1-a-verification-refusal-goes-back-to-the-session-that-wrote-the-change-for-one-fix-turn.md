@@ -2,7 +2,7 @@
 title: "85.1: A verification refusal goes back to the session that wrote the change for one fix turn"
 type: 'feature'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '620de41c0733d09439db9e1c934f24bd24f51509'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -54,6 +54,11 @@ Type / Effort / Deps: feature / M / —.
 - Given the flag off When verification refuses Then no fix turn runs and the story parks as Story 83.10 does
 - Given the fix-turn rule removed When its new test runs Then it fails (mutation)
 
+**Added 2026-10-03 (independent review):**
+- Given a fake harness whose fix turn makes verification pass When the supervisor handles the refusal Then it re-verifies once, reads the latest verification outcome, and lands (a supervisor-level test)
+- Given the supervisor killed while a fix turn runs When it restarts Then it finds the journaled fix-turn INTENT and pid, launches no second turn, and journals the turn's outcome
+- Given an unreadable or invalid flag tree When verification refuses Then the supervisor does not crash; it journals a warning and parks with no fix turn
+
 ## Boundaries & Constraints
 
 **Always:** Declare the resume form per harness in its profile (AD-19). Add the flag to the flagd tree (`src/platform/config/flags.json` and `flag-overlays.json`) with its owner, story and cleanup clock (steward Story 76.2's metadata). Keep the decision and the prompt rendering in `core/` with no I/O. Journal every fix turn.
@@ -84,7 +89,37 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+## Spec Change Log
+
+- 2026-10-03 — sent back after an independent adversarial review and a refused dispatch verification (findings below). Three acceptance criteria added. Status back to `ready-for-dev`.
+
 ## Review Triage Log
+
+### 2026-10-03 — Independent review (operator session) — sent back
+Dispatch run `pyforge-marshal-20261003T154930662Z-08dde42d` refused at verification on `pyforge-core-test`: pyforge-core's `test_flags.py` pins the shipped flag set and per-environment values, and this story adds `pyforge.marshal.verify_fix_loop`. The operator session fixed the pin on this branch (commit 473d0aeab0); keep it.
+
+**High**
+- **H1 A green re-verification never lands.** `dispatch_supervisor/__main__.py` `_verification_outcome_verdict` returns the FIRST `dispatch-verification` outcome for the run; the fix turn appends a second, so the supervisor keeps reading `refused`, `_maybe_run_verify_fix_turn` returns `verified=False`, and the run is terminalized and parked. `cli/dispatch.py` reads the LAST outcome, so `dispatch status` says verified on a run the supervisor failed. Fix: read the latest outcome everywhere the supervisor decides; add a supervisor-level test (fake harness) that a green re-verification lands.
+- **H2 Every fix turn waits out the full budget and is journaled as a timeout.** `adapters/harness_bmadbuild.py` `launch_argv` `Popen`s the fix session as the supervisor's own child and drops the handle; the exited child stays a zombie and `PosixProcess.is_alive` reports a zombie as alive (its docstring says so), so `wait_for_process` runs the whole 15 minutes and journals MRS-DISP-059. Fix: keep the `Popen` and `wait(timeout=...)` (which also yields the exit code), or `os.waitpid(pid, WNOHANG)` in the loop.
+- **H3 A fix turn is journaled only when it ends.** The INTENT is appended after the wait, so a supervisor killed mid-turn leaves no `dispatch-verify-fix` entry, and a restart launches a second turn into the same worktree beside the orphan. Fix: append the INTENT (and the fix pid) before waiting; treat an INTENT with no OUTCOME as already run; on restart wait for or kill the recorded pid and journal the outcome.
+
+**Medium**
+- **M1 The verdict leaves the journal line, flag on or off.** Up to 8 KB of output tail per command inline in the verification OUTCOME pushes the payload past `SIDECAR_THRESHOLD_BYTES`, and because only the scope advisories are named for offload, the whole payload goes to a sidecar (`verdict`, `failed_gate`, `failed_message` off the line), reversing the 2026-09-01 hotfix. Fix: offload `failed_commands` as a named field (or write tails to their own file), and keep the verdict keys on the line; or write them only when the flag is on.
+- **M2 Reading the flag can crash the supervisor.** `read_boolean` raises `FlagConfigError` subclasses for an unknown environment or a bad overlay, uncaught up to `main`: any refusal kills the supervisor mid-finalize. Fix: catch it, journal a warning, and fall back to no fix turn (the spec's fallback); pass `flags_path=repo_root/src/platform/config/flags.json` explicitly.
+- **M3 No heartbeat during the fix turn or the second verification** (up to 15 minutes; the portal marks `heartbeat_lost` after 300 s). Reuse `_WaitHeartbeat` as Story 80.1 did for the landing wait.
+- **M4 The timeout kill leaves the session's children alive.** `os.kill(pid, SIGTERM)` signals only the leader; the harness runs in its own session. Fix: `os.killpg`, a bounded wait, SIGKILL, reap, journal.
+- **M5 The fix session's exit code is ignored** (any exit journaled `ok: True`), and MRS-DISP-060 / `fix_turn_park_message` are defined but never emitted. Fix: journal the return code, treat non-zero as a failed turn, and emit MRS-DISP-060 naming the still-failing command on the park.
+- **M6 The tests do not reach the acceptance criteria.** No supervisor-level test lands on green, parks with the failing command, times out, fails to start, or restarts; the main-loop tests force the flag off; deleting the call site or the one-turn bound fails no test.
+- **M7 Credentials pass redaction into the journal and the prompt.** `redact_raw_text` left `postgres://admin:pw@db/x`, `Authorization: Bearer …` and `password = '…'` untouched; the tails are journaled and sent in the prompt (on argv, visible in `ps`). Fix: scrub URL credentials, bearer tokens and secret-named assignments before journaling and before building the prompt, with a test.
+
+**Low**
+- **L1** `--continue` resumes the most recent session, not this one (Cursor's scope unverified; with `max_parallel > 1` it could resume another story's chat), and the `{session_id}` token is always empty. Record the session id at launch and resume it, or ship fix-only until resume is verified (the design note's own default).
+- **L2** The fix turn launches with `budget_env={}`, dropping the policy's budget ceilings; carry them.
+- **L3** Refuse resume unless the resolved harness profile matches the launch profile.
+- **L4** Run a fix turn only when at least one real failed command was extracted (not `findings[0].message` of any refusal, such as a scope violation).
+- **L5** `launch_argv` sets `BMAD_ACTIVE_PROJECT` only for a non-empty slug (it was unconditional) and dropped the Story 14.4 comment; restore both.
+
+### 2026-10-03 — Review pass
 
 ### 2026-10-03 — Review pass
 - verdicts: 3 findings — high 0, medium 0, low 1, false 1, maybe-false 1
