@@ -145,3 +145,19 @@ Independent follow-up reviews (AGENTS.md guideline 8) read each cited story's la
 - **Story 12.3 (skf structural diff audit)** — fixed export dedup in `skf-structural-diff.py` (see Spec Change Log); tests in `tests/scripts/test_skf_structural_diff.py`.
 - **Story 12.7 (compiled package retired)** — dead equivalence-test carve-outs removed from mason meta tests (DW-12-7-3); no further live package surface.
 - **Story 12.8 (re-scope checkpoint / clause (d))** — campaign closed at `campaign-state.yaml:80`; clause (d) status matching hardened in `cfe_rebuild_guard_check.py` (casefold/strip); no separate `re_scope_gate_2` enforcement required post–Story 15.1.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Closed 30 mason deferred-work rows across the pyforge-mason package, `scripts/cfe_rebuild_guard_check.py`, and installer-owned SKF audit scripts; eight follow-up reviews recorded with no additional defects.
+
+Files changed (commit `dad089fe03`): mason `cli.py`, `errors.py`, `engines/condalock.py`, meta/unit tests, `cfe_rebuild_guard_check.py` and its test suite, `skf-structural-diff.py`, `skf-provenance-gap-dispatch.py`, `skill-brief.v1.json`, `deferred-work-ledger.md`, story spec and memlogs.
+
+Review findings: follow-up reviews triaged in Review Triage Log above; no patch/defer items from a formal multi-layer review pass in this Cursor session (implementation subagent carried the build).
+
+Follow-up review recommendation: false
+
+Verification: `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1594 passed, 3 deselected; `pixi run --frozen -e pyforge-guild lint-types` — exit 0; `python scripts/spec_surface_reconcile.py` — OK (no `--write-baseline`).
+
+Residual risks: SKF script edits are local patches until re-applied after `bmad-method install --action update` (documented in Spec Change Log).
