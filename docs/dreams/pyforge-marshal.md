@@ -946,6 +946,14 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03** — **Found: a session halts on the status a story is minted with.** Story specs are minted at
+  `status: 'backlog'` to match their ledger row, and bmad-build-auto does not recognize `backlog`. Claude sessions fell
+  through to planning; a Cursor session for 83.5 halted before any work and set the spec `blocked`.
+  **What it looks like when fixed:** dispatch hands the session `ready-for-dev` in the worktree copy of a `backlog`
+  spec, journaled; the spec on `main` and the ledger are untouched. **Constraints:** a `fix` story, no CAP and no flag;
+  bmad-build-auto is installer-owned and stays unedited. Same day (operator ruling): marshal dispatches on Cursor with
+  `composer-2.5-fast`, after the Epic 83 campaign landed 1 of 5 stories with the `sonnet` id passed straight through.
+  Owner `spec-pyforge-marshal`. → Story 83.8, specced 2026-10-03.
 - **2026-10-02 (night, later)** — **Wanted: refresh every harness's model list from its own live source.** The model
   ids in marshal's policies have been refreshed by hand. On 2026-10-02 Cursor no longer listed `grok-4.6`, which four
   station tier maps named, and listed a new `grok-4.7-high`; nothing in marshal could say so. Each harness exposes its

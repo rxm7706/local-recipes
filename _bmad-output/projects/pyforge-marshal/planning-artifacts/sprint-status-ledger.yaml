@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 541
+# stories: 542
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -384,6 +384,7 @@ development_status:
   83-5-a-campaign-supervisor-keeps-ticking-through-fleet-lock-contention: backlog
   83-6-dispatch-resyncs-a-stale-codegraph-index-before-it-launches-a-session: backlog
   83-7-a-re-dispatch-after-a-refused-landing-lands-the-existing-branch-without-a-new-session: backlog
+  83-8-dispatch-hands-a-session-a-story-status-bmad-build-auto-recognizes: backlog
   84-1-an-operator-run-refresh-reads-every-harness-s-live-model-list-and-reports-drift: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
