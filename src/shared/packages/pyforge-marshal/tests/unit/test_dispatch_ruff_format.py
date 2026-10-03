@@ -98,9 +98,7 @@ def test_apply_skips_when_already_formatted(tmp_path: Path) -> None:
     assert not vcs.commits
 
 
-def test_verification_journals_ruff_format_when_paths_change(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_verification_journals_ruff_format_when_paths_change(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import importlib
 
     loop_tests = importlib.import_module("test_dispatch_supervisor_main_loop")

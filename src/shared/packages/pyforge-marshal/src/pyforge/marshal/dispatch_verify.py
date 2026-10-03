@@ -17,17 +17,17 @@ from pyforge.core.process import ProcessError, ProcessPort
 from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
+from .core.commit_vcs import CommittingVcs
+from .core.dispatch_ruff_format import (
+    DispatchRuffFormatResult,
+    apply_dispatch_ruff_format_before_verify,
+)
 from .core.dispatch_verification import reclassify_pre_existing_gate_findings
 from .core.identity import StoryKey, render_feed_key
 from .core.model import Envelope, Finding, Severity, Status, build_envelope, status_for
 from .core.policy import EffectivePolicy
 from .core.refs import ORIGIN_MAIN
 from .core.spec_surface import SurfaceParseError, parse_declared_surface
-from .core.commit_vcs import CommittingVcs
-from .core.dispatch_ruff_format import (
-    DispatchRuffFormatResult,
-    apply_dispatch_ruff_format_before_verify,
-)
 from .core.verdict import compute_verdict
 from .ports.vcs import VcsPort
 
