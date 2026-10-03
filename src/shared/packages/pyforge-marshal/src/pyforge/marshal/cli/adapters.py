@@ -105,7 +105,7 @@ from ..core.conformance import (
     render_matrix_markdown,
 )
 from ..core.egress import to_redacted
-from ..core.harness_profile import load_profiles
+from ..core.harness_profile import HarnessProfile, load_profiles
 from ..core.model import Finding, Severity, build_envelope
 from ..core.model_list_refresh import (
     HarnessListResult,
@@ -1966,7 +1966,7 @@ def _scan_text_for_profile_secrets(text: str, profiles: Mapping[str, object]) ->
             ensure_no_secret_in_text(text, secret)
 
 
-def _gather_declared_model_refs(root: Path, profiles: Mapping[str, object]) -> list:
+def _gather_declared_model_refs(root: Path, profiles: Mapping[str, HarnessProfile]) -> list:
     from ..core.model_list_refresh import DeclaredModelRef
 
     refs: list[DeclaredModelRef] = []
