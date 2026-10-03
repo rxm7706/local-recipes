@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import threading
 import webbrowser
-from collections.abc import Callable, Mapping
+from collections.abc import Callable
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 from pyforge.core.client import (

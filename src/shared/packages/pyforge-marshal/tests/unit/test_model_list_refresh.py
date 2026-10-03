@@ -11,8 +11,8 @@ from pyforge.marshal.core.harness_profile import HarnessProfile, ModelListSource
 from pyforge.marshal.core.model_list_refresh import (
     DeclaredModelRef,
     HarnessListResult,
+    SnapshotDiff,
     anthropic_models_page_url,
-    append_query_params,
     collect_catalog_refs,
     collect_profile_map_refs,
     collect_tier_map_refs,
@@ -26,7 +26,6 @@ from pyforge.marshal.core.model_list_refresh import (
     parse_gemini_models_page,
     parse_snapshot_payload,
     render_report_text,
-    SnapshotDiff,
     unchecked_catalog_providers,
 )
 from pyforge.marshal.ports.model_list_fetch import CommandRunResult, HttpGetResult, ModelListFetchPort
