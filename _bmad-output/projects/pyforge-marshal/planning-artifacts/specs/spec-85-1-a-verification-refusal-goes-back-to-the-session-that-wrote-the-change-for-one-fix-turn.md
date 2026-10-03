@@ -2,14 +2,14 @@
 title: "85.1: A verification refusal goes back to the session that wrote the change for one fix turn"
 type: 'feature'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: '116baedaa38bf2c88ca2bdb8cbb448cd5f82fc1e'
 followup_review_recommended: false
 review_loop_iteration: 0
 flag:
   key: pyforge.marshal.verify_fix_loop
   provider: openfeature-file
-  default: {production: off, staging: on, dev: on}
+  default: {production: off, staging: off, dev: off}
   scope: global
   fallback: "a verification refusal parks the story for the operator (Story 83.10), with no fix turn"
   cleanup: 90 days after ON in every environment (Q4)
@@ -45,6 +45,15 @@ Type / Effort / Deps: feature / M / —.
 - `spec-pyforge-marshal` CAP-286 (FR-233). Lands on AD-19 (how a harness resumes a session is profile data; no harness-name branch), AD-4 (the decision to run a fix turn, and the prompt built from the failure, are pure `core/` functions) and AD-8 (a fix turn that cannot run, times out or fails re-verification is a named refusal, never a pass). Flagged: `pyforge.marshal.verify_fix_loop`, OFF in production, ON in staging and dev.
 
 ## Acceptance Criteria
+
+**Narrowed 2026-10-03 (operator split ruling; epics.md Story 85.1):** 85.1 lands the fix-turn machinery dormant and is accepted on these criteria only. The criteria after this block describe CAP-286 as a whole; Story 85.2 makes the turn work end to end and Story 85.3 makes it safe and switches it on in dev and staging.
+- Given `src/platform/config/flags.json` and `flag-overlays.json` When the flag is read in dev, staging and production Then it is OFF in every environment, and pyforge-core `tests/unit/test_flags.py` and `src/platform/tests/test_openfeature_file_flags.py` pin exactly that
+- Given the flag off and a finished session refused at dispatch verification When dispatch handles the refusal Then it behaves exactly as `main` does (Story 83.10): no fix turn, and the verification OUTCOME keeps `verdict`, `failed_gate` and `failed_message` on the journal line (no output tail inline; any tail is offloaded as a named field or written only when the flag is on)
+- Given an unreadable or invalid flag tree, or an unknown environment When verification refuses Then the supervisor does not crash: it journals a warning and parks with no fix turn
+- Given this branch When `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` runs Then it exits 0
+- Given `launch_argv` When it builds the launch Then `BMAD_ACTIVE_PROJECT` is set as on `main` (unconditionally) with the Story 14.4 comment restored
+
+**CAP-286 as a whole (Stories 85.2 and 85.3):**
 
 - Given the flag on and a finished session refused at dispatch verification When dispatch handles the refusal Then it runs exactly one fix turn in the story worktree, re-verifies once, and lands on green
 - Given the fix turn's re-verification still refuses When dispatch handles it Then it parks the story for the operator with a finding naming the still-failing command and runs no second turn
@@ -92,8 +101,18 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 ## Spec Change Log
 
 - 2026-10-03 — sent back after an independent adversarial review and a refused dispatch verification (findings below). Three acceptance criteria added. Status back to `ready-for-dev`.
+- 2026-10-03 (night) — split by operator ruling: 85.1 lands the machinery dormant (flag OFF in every environment, behaviour with the flag off identical to `main`, coverage gate green); 85.2 and 85.3 carry the rest (merged on main, PR #1790). Narrowed criteria added at the head of the Acceptance Criteria; `flag.default` is OFF everywhere. Status back to `ready-for-dev`.
 
 ## Review Triage Log
+
+### 2026-10-03 (night) — Narrowed send-back after the split (operator session)
+Do only what the narrowed criteria ask; do not attempt H1-H3, M3-M7 or L1-L4 of the review below (they belong to Stories 85.2 and 85.3).
+- Turn the flag OFF in dev and staging in `src/platform/config/flag-overlays.json` (production stays off); make pyforge-core `tests/unit/test_flags.py` `per_environment` read `{"dev": False, "staging": False, "production": False}` (or drop the entry if every environment matches the default) and pin the same in `src/platform/tests/test_openfeature_file_flags.py`.
+- M1 for the flag-off path: the verification OUTCOME keeps its verdict keys on the journal line; offload `failed_commands` as a named sidecar field, or record tails only when the flag is on. Add a test that a flag-off refusal's OUTCOME line equals main's shape.
+- M2: catch the flag read's `FlagConfigError`, journal a warning and fall back to no fix turn; pass `flags_path` explicitly; a test with an unknown environment and one with a broken overlay.
+- L5: restore `BMAD_ACTIVE_PROJECT` unconditionally in `launch_argv` and the Story 14.4 comment.
+- The marshal coverage gate must exit 0 (`pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate`): cover the new modules or keep untested code out of this story.
+- Prove with a test that, with the flag off, no fix-turn code path runs (the supervisor never launches a fix session).
 
 ### 2026-10-03 — Independent review (operator session) — sent back
 Dispatch run `pyforge-marshal-20261003T154930662Z-08dde42d` refused at verification on `pyforge-core-test`: pyforge-core's `test_flags.py` pins the shipped flag set and per-environment values, and this story adds `pyforge.marshal.verify_fix_loop`. The operator session fixed the pin on this branch (commit 473d0aeab0); keep it.
