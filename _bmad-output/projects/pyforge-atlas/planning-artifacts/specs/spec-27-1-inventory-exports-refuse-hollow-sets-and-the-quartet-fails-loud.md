@@ -2,10 +2,9 @@
 title: "27.1: The inventory exports refuse a hollow verification set, and the quartet scripts fail loud"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'ready-for-dev'
 baseline_revision: 9cb346f1dfac7dddeeba6042618e9521471b78dd
 review_loop_iteration: 1
-review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -106,8 +105,27 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 ## Spec Change Log
 
 - 2026-10-03 — sent back after an independent landing review (findings in the Review Triage Log). Status back to `ready-for-dev`.
+- 2026-10-03 (night) — sent back a third time after the second landing review (Review Triage Log); the operator removed the duplicate `review_loop_iteration` key. Status back to `ready-for-dev`.
 
 ## Review Triage Log
+
+
+### 2026-10-03 (night) — Second landing review (independent reviewer, operator session) — sent back
+Keep: the core floor on `core_packages_enumerated` after `norm_pkg` (with a default-floor test), the captured `gh` stderr, AC 3(a)'s refusal, `pd.NA`/`NaT` as `""`, the two restored assertions, the NFR-3 deferral row, `HollowVerificationSetError` under `PyforgeError`, and the ledger scope (only the 25 rows; DW-CANOPY / DW-OM identical to main). Fix the TEST SAFETY items first: until they land, never run `kedro-test` from the primary checkout.
+- `high` **`test_derived_artifacts_e2e.py` (about :47-56) writes fixture Parquet into atlas's real `data/` tree**, depends on test order (alone it fails `KeyError: 'bigquery_adc'`; it passes only because an orchestration conftest seeds `conf/local/credentials.yml` first) and runs one node, not the pipeline. Run the session against a `tmp_path` project copy (or a `DataCatalog` rooted in `tmp_path` driven by a runner), seed stub credentials inside the test, and run the whole inventory and export slice; otherwise reopen DW-FU-23-5 with a `deferred:` entry naming it. Add a guard test that the real `data/` tree is unchanged after the suite.
+- `high` **Six handoff tests patch `check_output`/`check_call`, but `_run_gh` now calls `subprocess.run`, so two tests ran the real `gh issue create --repo OpenTeams-WFT-CDO/...`** (`test_gh_binary_vanishing_mid_run_is_caught_not_fatal`, `test_project_item_add_failure_does_not_mark_row_as_tracked`). Patch `subprocess.run` in all six (`tests/packaging/test_openteams_handoffs.py`, about 92-114, 174-177, 231-237, 248-257, 263-290); fail only the `project` call in the item-add test and assert `("some-pkg", "filed-but-not-added: <url>")`; add an autouse fixture that raises if `gh` is ever invoked unpatched. Never call the live GitHub API.
+- `high` **DW-FU-17-1 still closes without the snapshot**: `scripts/tests/test_inventory_from_scratch_fixture.py` (about :106) runs the nodes then `main()` but only checks the CSV exists. Commit a CSV snapshot (or its sha256) and compare it, as for the Markdown; otherwise reopen the row with a `deferred:` entry.
+- `medium` **Mutant-killing tests still missing** (M3 `_export_priority_merge_warnings` call removed, M4 `?` bucket / unknown recipe types reverted, M5 synthetic gist timestamp all survive; coverage shows `identity_gist.py` about 212-231, 485, 620 and `nodes.py` about 1189-1202 never run). Add tests for `resolve_canvas_dir` and the unset-skip message (DW-FU-17-2-2), the reader's absent-ranking and duplicate warnings, the gist/CSV/tab timestamp comparison (DW-FU-21-7), AC 3(b) (a blank timestamp raises `IdentityGistError` and the script exits 1) and AC 3(c) (a list-valued cell through the gist renderer).
+- `medium` **The stderr capture has no test**: replacing `capture_output=True` with `stdout=PIPE` (`identity.py`, about :250) passes all handoff tests because the fakes ignore kwargs. Have the fake assert `capture_output` (or `stderr=PIPE`), or test with a fake `gh` executable on PATH that prints the rate-limit text only to stderr and exits 1.
+- `medium` **Re-cite every `verified:` line at HEAD** (fourteen are wrong). Re-read each fix's line after your last edit; the previous pass's list: DW-FU-21-7 (the `identity_gist.py` refusal), DW-FU-21-7-2, -7-6, -7-8, -7-4, DW-FU-21-3-3 (the argparse in `metrics.py`), -3-4, -3-5, -3-9 (`main`), -3-2, -3-7 and -3-12, -3-8, DW-FU-23-5, DW-FU-17-1.
+- `medium` **The floor documentation is wrong**: the `metrics.py` help epilog (about 248-255) and `replay.md` (about 62-65) say the floor applies to "the conda-forge union set"; it now applies to `core_packages_enumerated`. The param key `cf_or_pm_floor` now controls the core floor: rename it (e.g. `core_packages_floor`) with every test, or document the alias.
+- `medium` **The prompt-sync contract still drifts**: the actuator overwrites the tracked prompt doc (`metrics.py`, about 323-324) without printing "Wrote revised prompt:", and its other output lines changed (about 333-342). Restore the revised-prompt line and update `replay.md` (about 173-185) and `prompt.md` (about 205-217, "exact shape") in the same commit.
+- `low` The Parquet deadline bounds the call, not the process (`concurrent.futures` joins workers at exit); use a daemon thread in `metrics.py` (about 84-104).
+- `low` `identity.py` help (about :973) names `PYFORGE_ATLAS_CANVAS_DIR` / `.env.local`; the real names are `PYFORGE_INVENTORY_CANVAS_DIR` in `conf/conda-forge-packaging-inventory-operations.local.env`.
+- `low` DW-FU-21-7-5 is partial (the warning list omits `Priority_Bucket_Description`, `Priority_Source`, `Priority_Reason` and the six JFROG columns); DW-FU-21-7-7: two rows with exactly the same raw name never warn because a set dedupes them; count rows per key (also in the `identity.py` reader).
+- `low` Label filed-but-not-added issues separately from "Could not file" in `identity.py` `main`.
+- `low` `_stringify_export_cell` exists twice (`identity.py` and `identity_gist.py`); give it one home in `identity_export_contract.py`. `openteams_identity_dashboards.py` (about 733-749) has a mid-module `import` and a `def` with no blank-line separation.
+- `low` No CI lane runs `scripts/tests/` or `tests/packaging/test_openteams_handoffs.py`; move the from-scratch proof under `pyforge-atlas/tests/` (preferred) so the station suite gates it.
 
 ### 2026-10-03 — Landing review (independent reviewer, operator session) — sent back
 Keep: the floor refusal (removing it fails four tests), the corrupt-Parquet catch, the rate-limit text detector, `identity_export_contract` and the canvas path resolution. All gates exit 0. The two rejects and the defer in the review pass below are overturned where a finding here names them.
