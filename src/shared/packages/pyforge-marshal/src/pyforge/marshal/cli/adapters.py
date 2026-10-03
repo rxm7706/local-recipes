@@ -2031,9 +2031,7 @@ def _gather_declared_model_refs(root: Path, profiles: Mapping[str, HarnessProfil
         if overlay_path.is_file():
             profile_path = str(overlay_path.relative_to(root))
         else:
-            profile_path = (
-                f"src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/{name}.toml"
-            )
+            profile_path = f"src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/{name}.toml"
         refs.extend(
             collect_profile_map_refs(
                 harness=name,
