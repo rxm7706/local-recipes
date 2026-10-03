@@ -133,6 +133,34 @@ DECK_POSTER = """<!DOCTYPE html>
 </html>
 """
 
+# Unifying-strategy-style act vocabulary (``.act-num`` / ``.act-title``).
+ACT_VOCAB_POSTER = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Strategy — Infographic</title>
+<style>
+  body { margin: 0; background: #eee; }
+  .act { background: #201e1d; color: #f3f2f2; }
+</style>
+</head>
+<body>
+<div class="act">
+  <span class="act-num">ACT I</span>
+  <span class="act-title">Opening</span>
+</div>
+<section class="sec">
+  <div class="sechead"><span class="num">01</span><h2>First section</h2></div>
+  <p>Some content.</p>
+</section>
+<section class="sec">
+  <div class="sechead"><span class="num">02</span><h2>Second section</h2></div>
+  <p>More content.</p>
+</section>
+</body>
+</html>
+"""
+
 # Carries real masthead content before the first act, a non-numbered mid-deck
 # banner (no .num, no class="sec" -- the "doctrine band" shape) BETWEEN two
 # real sections, and a closing band after the last section -- exercises the
@@ -1523,6 +1551,41 @@ def test_head_and_deck_together_both_get_stamped(root):
 
     assert stamps.read_stamp(_head_path(root)) is not None
     assert stamps.read_stamp(_deck_path_for(root, "pyforge-alpha", "Alpha")) is not None
+
+
+def test_deck_trio_derives_poster_with_act_num_and_act_title_vocabulary(root):
+    _write(
+        root / "presentations/pyforge-unifying-strategy/project/Strategy Infographic standalone.html",
+        ACT_VOCAB_POSTER,
+    )
+    deck_trio.main(["pyforge-unifying-strategy", "--deck"])
+    deck_path = _deck_path_for(root, "pyforge-unifying-strategy", "Strategy")
+    assert deck_path.is_file()
+    text = deck_path.read_text(encoding="utf-8")
+    assert "ACT I" in text
+    assert "Opening" in text
+
+
+def test_unchanged_derive_writes_stamp_when_sidecar_is_missing(root, monkeypatch):
+    _write(root / "presentations/pyforge-alpha/project/Alpha Infographic standalone.html", POSTER)
+    head_path = _head_path(root)
+    deck_trio.main(["pyforge-alpha", "--head"])
+    assert head_path.is_file()
+    stamp_path = head_path.with_name(head_path.name + ".stamp.json")
+    stamp_path.unlink()
+
+    calls: list[Path] = []
+    real_write_stamp = stamps.write_stamp
+
+    def _spy(artifact_path, **kwargs):
+        calls.append(artifact_path)
+        return real_write_stamp(artifact_path, **kwargs)
+
+    monkeypatch.setattr(deck_trio.stamps, "write_stamp", _spy)
+    deck_trio.main(["pyforge-alpha", "--head"])
+
+    assert calls == [head_path]
+    assert stamps.read_stamp(head_path) is not None
 
 
 def test_second_unchanged_run_does_not_refresh_the_stamp(root, monkeypatch):

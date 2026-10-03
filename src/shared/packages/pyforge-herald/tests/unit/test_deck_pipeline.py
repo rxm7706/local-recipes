@@ -1780,7 +1780,6 @@ def test_readback_matches_pushed_html_tolerates_crlf_normalization():
 
     expected = b"<html>v1</html>"
     actual = b"<html>v1</html>\r\n"
-    content_hash = hashlib.sha256(expected).hexdigest()
     assert actual != expected
     assert _readback_matches_pushed_body(expected, actual, path="deck.html")
 
@@ -1790,7 +1789,6 @@ def test_readback_refuses_non_utf8_html_bytes():
 
     expected = b"<html>v1</html>"
     actual = b"\xff\xfe"
-    content_hash = hashlib.sha256(expected).hexdigest()
     assert not _readback_matches_pushed_body(expected, actual, path="deck.html")
 
 
