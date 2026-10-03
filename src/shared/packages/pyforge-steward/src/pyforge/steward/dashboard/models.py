@@ -80,6 +80,14 @@ class AuditEntry(models.Model):
     target = models.CharField(max_length=255, blank=True, default="")
     row_count = models.PositiveIntegerField()
     occurred_at = models.DateTimeField(db_index=True)
+    scope = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            "For AUDIT_READ rows: the validated filter lookups that scoped "
+            "the read, as sorted string keys to string values (Story 84.2)."
+        ),
+    )
 
     class Meta:
         ordering = ["-occurred_at", "-id"]

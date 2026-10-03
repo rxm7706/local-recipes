@@ -282,36 +282,38 @@ def test_query_audit_entries_returns_prior_rows_and_records_its_own_read():
     record_audit_entry("alice", "east", AuditAction.FILTER, 4)
     record_audit_entry("bob", "west", AuditAction.NAVIGATE, 0)
 
-    rows = query_audit_entries(reader_actor="bob", reader_role="auditor")
+    rows = query_audit_entries(reader_actor="bob", reader_role="east")
 
     assert isinstance(rows, list)
-    assert len(rows) == 3
-    assert {row.actor for row in rows} == {"alice", "bob"}
+    assert len(rows) == 2
+    assert {row.actor for row in rows} == {"alice"}
 
     all_rows = list(AuditEntry.objects.all())
     assert len(all_rows) == 4, "reading the trail must itself be recorded as a 4th entry (AD-7)"
     read_entry = AuditEntry.objects.get(action=AuditAction.AUDIT_READ)
     assert read_entry.actor == "bob"
-    assert read_entry.role == "auditor"
+    assert read_entry.role == "east"
     assert read_entry.target == "audit_trail"
-    assert read_entry.row_count == 3
+    assert read_entry.row_count == 2
+    assert read_entry.scope == {}
 
 
 def test_query_audit_entries_applies_keyword_filters():
     record_audit_entry("alice", "east", AuditAction.LOAD, 10)
     record_audit_entry("bob", "west", AuditAction.LOAD, 5)
 
-    rows = query_audit_entries(reader_actor="carol", reader_role=None, actor="alice")
+    rows = query_audit_entries(reader_actor="carol", reader_role="east", actor="alice")
 
-    assert len(rows) == 1
+    assert len(rows) == 2
     assert rows[0].actor == "alice"
 
     # The read of the filtered subset is still recorded with the FULL
-    # returned count (1), not the trail's total row count.
+    # returned count (2), not the trail's total row count.
     read_entry = AuditEntry.objects.get(action=AuditAction.AUDIT_READ)
-    assert read_entry.row_count == 1
+    assert read_entry.row_count == 2
     assert read_entry.actor == "carol"
-    assert read_entry.role is None
+    assert read_entry.role == "east"
+    assert read_entry.scope == {"actor": "alice"}
 
 
 def test_query_audit_entries_on_an_empty_trail_still_records_a_zero_row_read():
@@ -530,7 +532,7 @@ def test_query_audit_entries_returns_rows_most_recent_first():
     middle = record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now - dt.timedelta(days=1))
     newest = record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=now)
 
-    rows = query_audit_entries(reader_actor="bob", reader_role="auditor")
+    rows = query_audit_entries(reader_actor="bob", reader_role="east")
 
     assert [row.pk for row in rows] == [newest.pk, middle.pk, oldest.pk]
 
@@ -608,7 +610,7 @@ def test_a_failed_read_leaves_no_partial_state_behind():
     record_audit_entry("alice", "east", AuditAction.LOAD, 3)
 
     with pytest.raises(FieldError):
-        query_audit_entries(reader_actor="mallory", reader_role=None, actro="alice")
+        query_audit_entries(reader_actor="mallory", reader_role="east", actro="alice")
 
     assert AuditEntry.objects.count() == 1
     assert not AuditEntry.objects.filter(actor="mallory").exists()
@@ -839,7 +841,7 @@ def test_query_audit_entries_rejects_a_naive_datetime_filter_under_use_tz_true()
     with pytest.raises(ValueError, match="occurred_at__gte"):
         query_audit_entries(
             reader_actor="bob",
-            reader_role="auditor",
+            reader_role="east",
             occurred_at__gte=dt.datetime(2026, 1, 1),
         )
     # Refused before anything ran: no AUDIT_READ row, original row intact.
@@ -916,7 +918,7 @@ def test_a_filter_the_write_path_refuses_is_refused_on_the_read_path_too(bad_val
     record_audit_entry("alice", "east", AuditAction.LOAD, 1)
 
     with pytest.raises((TypeError, ValueError), match="occurred_at__gte"):
-        query_audit_entries(reader_actor="bob", reader_role="auditor", occurred_at__gte=bad_value)
+        query_audit_entries(reader_actor="bob", reader_role="east", occurred_at__gte=bad_value)
     # Refused before anything ran: no AUDIT_READ row, original row intact.
     assert AuditEntry.objects.count() == 1
 
@@ -933,8 +935,8 @@ def test_a_date_part_lookup_still_accepts_a_date():
     record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=stamped)
 
     local_date = timezone.localtime(stamped).date()
-    assert len(query_audit_entries(reader_actor="bob", reader_role=None, occurred_at__date=local_date)) == 1
-    assert len(query_audit_entries(reader_actor="bob", reader_role=None, occurred_at__year=local_date.year)) >= 1
+    assert len(query_audit_entries(reader_actor="bob", reader_role="east", occurred_at__date=local_date)) == 1
+    assert len(query_audit_entries(reader_actor="bob", reader_role="east", occurred_at__year=local_date.year)) >= 1
 
 
 @pytest.mark.parametrize("container", [set, frozenset, iter, list, tuple])
@@ -964,7 +966,7 @@ def test_a_generator_filter_is_materialized_rather_than_consumed():
     stamped = timezone.now()
     record_audit_entry("alice", "east", AuditAction.LOAD, 1, occurred_at=stamped)
 
-    rows = query_audit_entries(reader_actor="bob", reader_role=None, occurred_at__in=(t for t in [stamped]))
+    rows = query_audit_entries(reader_actor="bob", reader_role="east", occurred_at__in=(t for t in [stamped]))
     assert len(rows) == 1
 
 
@@ -998,7 +1000,7 @@ def test_an_over_long_filter_value_is_still_a_legitimate_query():
     AUDIT_READ row correctly records `row_count=0`).
     """
     cap = AuditEntry._meta.get_field("actor").max_length
-    rows = query_audit_entries(reader_actor="bob", reader_role=None, actor="x" * (cap + 45))
+    rows = query_audit_entries(reader_actor="bob", reader_role="east", actor="x" * (cap + 45))
     assert rows == []
     assert AuditEntry.objects.filter(action=AuditAction.AUDIT_READ).count() == 1
 

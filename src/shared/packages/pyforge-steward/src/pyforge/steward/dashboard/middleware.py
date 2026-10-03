@@ -62,7 +62,7 @@ from __future__ import annotations
 
 from typing import Any, Awaitable, Callable
 
-from .declarations import TrustedIngress
+from .declarations import AUDIT_IDENTITY_MAX_LENGTH, TrustedIngress
 
 Scope = dict[str, Any]
 Receive = Callable[[], Awaitable[dict[str, Any]]]
@@ -122,6 +122,15 @@ class AmbiguousIdentityHeaderError(UntrustedIngressError):
     A subclass so `except UntrustedIngressError` still catches it: both are
     the same refusal on the same refuse-the-start path, and both mean the
     declared header cannot be trusted to say who the caller is.
+    """
+
+
+class OverLongIdentityError(UntrustedIngressError):
+    """Story 84.2: identity or role exceeds `AUDIT_IDENTITY_MAX_LENGTH`.
+
+    Refused before the response starts so an over-long value never reaches
+    `record_audit_entry` (which would raise on the request path) and so the
+    attempt is not silently truncated.
     """
 
 
@@ -218,6 +227,14 @@ class DashboardIdentityMiddleware:
             )
 
         identity = identities[0]
+        if len(identity) > AUDIT_IDENTITY_MAX_LENGTH:
+            raise OverLongIdentityError(
+                f"identity header {self.ingress.identity_header!r} value exceeds "
+                f"the {AUDIT_IDENTITY_MAX_LENGTH}-character audit field cap "
+                f"(got {len(identity)} characters) — refused rather than "
+                f"truncated, so the dashboard never admits an identity the "
+                f"audit trail cannot store"
+            )
         if not identity.strip():
             # Header present but carrying no identity. CAP-1 degrades to a
             # known-unprivileged identity, which is the no-identity-set state
@@ -244,5 +261,13 @@ class DashboardIdentityMiddleware:
         # empty and a whitespace-only role name, so the middleware would
         # otherwise manufacture a role an adopter is not allowed to declare.
         role = roles[0] if roles else ""
+        if role.strip() and len(role) > AUDIT_IDENTITY_MAX_LENGTH:
+            raise OverLongIdentityError(
+                f"role header {self.ingress.role_header!r} value exceeds "
+                f"the {AUDIT_IDENTITY_MAX_LENGTH}-character audit field cap "
+                f"(got {len(role)} characters) — refused rather than "
+                f"truncated, so the dashboard never admits a role the audit "
+                f"trail cannot store"
+            )
         scope["dashboard_role"] = role if role.strip() else None
         await self.app(scope, receive, send)
