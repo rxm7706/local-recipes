@@ -2,7 +2,7 @@
 title: '83.4: A serial campaign holds the next overlapping story while a refused story is unlanded'
 type: 'fix'
 created: '2026-10-02'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -50,6 +50,30 @@ Ledger key: `83-4-a-serial-campaign-holds-the-next-overlapping-story-while-a-ref
 Ledger status at mint: `backlog`.
 Deps: —.
 Minted 2026-10-02 at the operator's request to chain the defects found landing Phase 2.
+
+## Code Map
+
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` -- `station_in_flight_conflict` function (line ~1681): core logic checking which stories block new dispatches
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py` -- `build_wave_batch` function (line ~1132): wave planning with surface overlap detection
+- `tests/unit/test_wave_scheduler.py` -- unit tests for wave surface overlap behavior
+- `tests/unit/test_dispatch_fleet.py` -- integration tests for fleet dispatch cycles
+
+## Tasks & Acceptance
+
+**Execution:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` -- extend `station_in_flight_conflict` to check non-LIVE stories with open PRs for surface conflicts -- ensures refused stories block overlapping dispatches
+- `tests/unit/test_dispatch_station_guard.py` -- add test for refused story blocking overlapping dispatch -- validates fix behavior with mutation test
+- `tests/unit/test_wave_scheduler.py` -- add test for wave planning with refused in-flight story -- ensures wave logic respects refused story surfaces
+
+**Acceptance Criteria:**
+- Given finished story refused at landing with PR open, when next cycle plans wave, then overlapping story held with finding naming refused story
+- Given story with disjoint surfaces, when cycle plans, then it dispatches normally  
+- Given refused story lands or PR closes, when next cycle plans, then hold released
+- Given hold removed, when new test runs, then it fails (mutation test)
+
+## Spec Change Log
+
+## Review Triage Log
 
 ## Verification
 
