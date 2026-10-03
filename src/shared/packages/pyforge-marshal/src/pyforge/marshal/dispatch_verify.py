@@ -23,6 +23,11 @@ from .core.model import Envelope, Finding, Severity, Status, build_envelope, sta
 from .core.policy import EffectivePolicy
 from .core.refs import ORIGIN_MAIN
 from .core.spec_surface import SurfaceParseError, parse_declared_surface
+from .core.commit_vcs import CommittingVcs
+from .core.dispatch_ruff_format import (
+    DispatchRuffFormatResult,
+    apply_dispatch_ruff_format_before_verify,
+)
 from .core.verdict import compute_verdict
 from .ports.vcs import VcsPort
 
@@ -416,4 +421,20 @@ def evaluate_dispatch_verification(
         verdict=verdict_value,
         data=data,
         findings=tuple(findings),
+    )
+
+
+def run_dispatch_ruff_format_before_verify(
+    *,
+    worktree: Path,
+    repo_root: Path,
+    vcs: CommittingVcs,
+    process: ProcessPort,
+) -> DispatchRuffFormatResult:
+    """Story 83.9 entry: format only the story's changed ``.py`` files before verify."""
+    return apply_dispatch_ruff_format_before_verify(
+        worktree=worktree,
+        repo_root=repo_root,
+        vcs=vcs,
+        process=process,
     )

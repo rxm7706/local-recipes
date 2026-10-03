@@ -130,7 +130,7 @@ from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_
 from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
-from ..dispatch_verify import evaluate_dispatch_verification
+from ..dispatch_verify import evaluate_dispatch_verification, run_dispatch_ruff_format_before_verify
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -1025,6 +1025,13 @@ def _verification_verdict_for_cap4(
     vcs: VcsPort,
 ) -> DispatchVerificationVerdict:
     """Independent verify only — never a harness self-report (CAP-3)."""
+    if callable(getattr(vcs, "commit_paths", None)):
+        run_dispatch_ruff_format_before_verify(
+            worktree=worktree,
+            repo_root=repo_root,
+            vcs=vcs,  # CommittingVcs duck type
+            process=process,
+        )
     try:
         envelope = evaluate_dispatch_verification(
             project_slug=slug,
