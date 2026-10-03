@@ -144,11 +144,12 @@ class AccessDeclaration:
 class TrustedIngress:
     """AD-4: the trusted ingress and the identity/role header names.
 
-    ``addresses`` is the declared set of peer addresses the proxy connects
-    from, matched against whatever the ASGI server reports as
-    ``scope["client"]``; an identity header arriving on a connection from
-    outside this set is what `middleware.py`'s `DashboardIdentityMiddleware`
-    refuses. Note that ``scope["client"]`` is the *server's* claim about the
+    ``addresses`` is the declared set of IP networks (CIDR or bare host —
+    each parsed with ``ipaddress.ip_network`` at construction; hostnames are
+    rejected) the proxy may connect from, matched by network membership
+    against whatever the ASGI server reports as ``scope["client"]``; an
+    identity header arriving on a connection from outside these networks is
+    what `middleware.py`'s `DashboardIdentityMiddleware` refuses. Note that ``scope["client"]`` is the *server's* claim about the
     peer, not necessarily the TCP peer — see `middleware.py`'s module
     docstring for the deployment precondition that claim depends on.
     ``identity_header``/``role_header`` name the proxy headers that carry
