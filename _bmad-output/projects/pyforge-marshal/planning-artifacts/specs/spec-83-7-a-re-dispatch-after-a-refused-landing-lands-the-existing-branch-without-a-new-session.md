@@ -2,7 +2,7 @@
 title: '83.7: A re-dispatch after a refused landing lands the existing branch without a new session'
 type: 'fix'
 created: '2026-10-02'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '1e75e5281378fbef48bc08e395d14d437c69311b'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -81,6 +81,10 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 - Dispatch run `pyforge-marshal-20261003T033616311Z-73036a43` failed verification on the operator's launch environment (`python` not on PATH; not this story's code).
 - `high` `patch` `should_take_harness_done_land_only` returns True whenever the latest run journaled a refused `dispatch-land`, whatever the worktree spec says. A story the operator sends back after a refused landing (status reset to `ready-for-dev` because review found a defect) would then take land-only: re-verify, and merge the known-bad branch if verification passes. On 2026-10-03 landing review found a defect verification cannot see (83.3's deferred-work union deleting 275 of 484 live entries); had that branch been refused at landing instead of at verification, this rule would have merged it. Apply the refused-landing rule only while the spec reads `in-progress` or `in-review`; `ready-for-dev` and `draft` always launch a session. Keep the shared rule in `core/dispatch_harness_done.py` so `cli/dispatch.py` and `cli/drain_plan.py` agree.
 
+### 2026-10-03 — Review pass (send-back guard)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (self-review against AC including send-back criteria; implementation matches intent)
+
 ### 2026-10-02 — Review pass
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
 - findings: (self-review against AC; no subagent layers — implementation matches intent)
@@ -89,16 +93,14 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 Status: done
 
-**Summary:** Extended the single-story dispatch land-only gate (Story 29.2) so a latest run whose journal records a refused `dispatch-land` outcome takes CAP-4 re-verify/merge without launching `bmad-build-auto`, even when the worktree spec still reads `in-progress`.
+**Summary:** Extended the single-story dispatch land-only gate (Story 29.2) so a latest run whose journal records a refused `dispatch-land` outcome takes CAP-4 re-verify/merge without launching `bmad-build-auto` while the worktree spec reads `in-progress` or `in-review`. After an operator send-back to `ready-for-dev` or `draft`, re-dispatch always launches a session.
 
 **Files changed:**
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py` — `should_take_harness_done_land_only`
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — read refused landing verdict from journal; gate dispatch_once
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/drain_plan.py` — same land-only predicate for `--plan`
-- Unit tests in `test_dispatch_harness_done.py`, `test_dispatch.py`, `test_dispatch_survival.py`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_harness_done.py` — `_REFUSED_LANDING_LAND_ONLY_STATUSES`; `should_take_harness_done_land_only` send-back guard
+- Unit tests in `test_dispatch_harness_done.py`, `test_dispatch.py`
 
-**Review:** No patch/defer/intent_gap items.
+**Review:** Self-review against AC after 2026-10-03 landing-review send-back criteria; 0 patch/defer/intent_gap items.
 
-**Verification:** `pyforge-marshal-test` 10832 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK (pixi pyforge-guild).
+**Verification:** `pyforge-marshal-test` 10837 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
 
 **Follow-up review recommended:** false
