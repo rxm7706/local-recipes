@@ -97,17 +97,24 @@ Keep: the derivation for the eight stations (each in its own environment, once p
 
 Status: done
 
-**Summary:** Dispatch verification now derives `pixi run --frozen -e pyforge-<station> pyforge-<station>-coverage-gate` for each station whose `src/shared/packages/pyforge-<station>/src/` appears in the story diff (excluding pyforge-core), folded into `_verify_commands_with_surface_guard` after the Story 83.2 whole-tree commands. Changed files are resolved once before commands run; coverage-gate failures stay MRS-GATE-001 (not pre-existing). Merge-tree preview passes `repo_root` and `vcs` so the same derivation applies there.
+**Summary:** Addressed landing-review send-back (2026-10-03): coverage gates derive only for the eight `scripts/coverage_gate.py` stations (testing-kit excluded); merge-tree preview builds a two-parent synthetic commit (`origin/main` + head) so `origin/main...HEAD` matches the story diff; preview falls back to the dispatch worktree’s changed files when preview resolution fails (WARN + gates, or ERROR when no fallback). Coverage-gate stderr with out-of-blast-radius `.py` paths stays MRS-GATE-001 via reclassifier exclusion.
 
 **Files changed:**
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — derivation, early changed-files resolution, reclassifier exclusion
-- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` — merge-tree preview passes vcs/repo_root
-- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` — Story 83.12 AC and mutation tests
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — surface reconcile
-- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — co-governor reconcile
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/ports/vcs.py`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/drain_plan.py`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py`
+- `src/shared/packages/pyforge-marshal/tests/meta/test_local_branch_refs_are_full_refnames.py`
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md`
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md`
 
-**Review:** 0 patches; 4 findings rejected as false after verification.
+**Review:** Landing-review findings patched (high/medium from 2026-10-03 triage log).
 
-**Verification:** `pyforge-marshal-test` 11054 passed; `pyforge-deps-test` 130 passed; `pixi run --frozen -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py --spec pyforge-marshal/spec-pyforge-marshal --spec pyforge-marshal/spec-pyforge-core` OK.
+**Verification:** `pyforge-marshal-test` 11060 passed; `pyforge-deps-test` 130 passed; `pixi run --frozen -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
 
-**Residual risk:** Scribe (or any station) coverage gate still needs Postgres locally (`scribe-pg-up`); a red gate names the command and requires operator action before re-dispatch (per design notes).
+**Residual risk:** Scribe coverage gate still needs Postgres locally (`scribe-pg-up`); operator action before re-dispatch when red (design notes).
