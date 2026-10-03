@@ -5668,7 +5668,7 @@ def _check_project_due_for_verification(
             since = _authored_date(target, tracked_path, entry_id, cache) if paths else None
             _attach_churn_skip(target, item, paths, since, cache)
             if item.get("skip_reason") != "no-churn":
-                _attach_mechanical_verdict(target, item, symbol)
+                _attach_mechanical_verdict(target, item, symbol, paths)
             findings.append(item)
             continue
         days_stale = (today - parsed).days
@@ -5684,7 +5684,7 @@ def _check_project_due_for_verification(
             }
             _attach_churn_skip(target, item, paths, parsed, cache)
             if item.get("skip_reason") != "no-churn":
-                _attach_mechanical_verdict(target, item, symbol)
+                _attach_mechanical_verdict(target, item, symbol, paths)
             findings.append(item)
 
 
