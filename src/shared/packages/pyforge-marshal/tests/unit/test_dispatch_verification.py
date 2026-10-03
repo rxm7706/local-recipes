@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from pyforge.core.egress import Redacted
 from pyforge.core.process import ProcessResult
+from pyforge.marshal.core.egress import Redacted
 
 from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from pyforge.marshal.core import gate, policy
