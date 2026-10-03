@@ -205,7 +205,10 @@ def test_check_passes_on_a_green_fixture(build_mod, tmp_path: Path, capsys):
     "mutator,needle",
     [
         (lambda od, r: (od / "index.html").unlink(), "missing output: index.html"),
-        (lambda od, r: (od / "dossier/index.html").write_text("tiny", encoding="utf-8"), "suspiciously small: dossier/index.html"),
+        (
+            lambda od, r: (od / "dossier/index.html").write_text("tiny", encoding="utf-8"),
+            "suspiciously small: dossier/index.html",
+        ),
         (
             lambda od, r: (od / "artifact/dossier.html").write_text("<html><body>x</body></html>", encoding="utf-8"),
             "artifact build must not contain",
