@@ -2,10 +2,10 @@
 title: '83.4: A serial campaign holds the next overlapping story while a refused story is unlanded'
 type: 'fix'
 created: '2026-10-02'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
-baseline_revision: '1e9c06c17e3b4a846f961aac32c5c1931f91991d'
+baseline_revision: '13c6776fcebc99f0c825e10fba72c031c30bc18d'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -83,6 +83,15 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Review Triage Log
 
+### 2026-10-03 (evening) — Landing review (operator session) — landed by hand
+- #1764 was merged before this session's work existed, so `main` carried the second session's hold (any verification refusal, every story). The supervisor read the story as merged on `main` and stopped; the session finished unsupervised. The operator session reworded its commit subject (`Story 83.4:` is a landing-evidence grammar) and landed it through a new PR.
+- The second send-back's findings are fixed: the hold keys on a refused landing with an unmerged branch, scopes to overlapping surfaces, and refused stories never hold each other. On the live run history neither marshal (364 runs) nor steward (130 runs) has a holding story.
+- `medium` `patch` (applied by the operator session) The scan gathered git facts for every run, twice (once in `_refused_landing_open_pr_story_keys`, once in the loop): about 50 s per pass on marshal's 364 runs, added to every dispatch preflight. Only a run whose `landing_verdict` is `refused` now pays for the verdict and git facts, and the loop reuses the scanned set: 8.1 s for marshal, 1.6 s for steward.
+
+### 2026-10-03 — Review pass (bmad-build-auto, landing-refused fix)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — diff matches all acceptance criteria after operator send-back)
+
 ### 2026-10-03 — Review pass (bmad-build-auto)
 - verdicts: 3 findings — high 0, medium 0, low 0, false 3, maybe-false 0
 - findings:
@@ -101,11 +110,11 @@ Minted 2026-10-02 at the operator's request to chain the defects found landing P
 
 ## Auto Run Result
 
-- Summary: `station_in_flight_conflict` applies MRS-DISP-011 only when the blocking journal is LIVE; refused-at-landing with open PR still blocks other overlapping stories but allows same-story re-dispatch.
-- Files changed: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (guard fix); `spec-pyforge-marshal/.memlog.md` (surface reconcile).
-- Review: 0 patches, 0 deferred; 3 false positives rejected.
+- Summary: `station_in_flight_conflict` holds overlapping stories only for a **landing** refused with an open PR (not verification refusal). Serial stations no longer blanket `MRS-DISP-021` on refused landing; overlap uses `MRS-DISP-034`. Refused landing stories never hold each other; same-story re-dispatch stays allowed (`MRS-DISP-011` remains LIVE-only).
+- Files changed: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (83.4 guard helpers and conflict walk); `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_station_guard.py` (landing-refused fixtures and AC tests); `spec-pyforge-marshal/.memlog.md` (surface reconcile).
+- Review: 0 patches, 0 deferred; 0 new findings on pass (implementation matches send-back AC).
 - Follow-up review recommended: `false`
-- Verification: `pyforge-marshal-test` 10830 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
+- Verification: `pyforge-marshal-test` 10920 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK.
 
 ## Verification
 

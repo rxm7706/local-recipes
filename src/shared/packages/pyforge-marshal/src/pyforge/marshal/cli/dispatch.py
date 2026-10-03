@@ -1782,6 +1782,86 @@ def station_finalize_pending_story(
     return on_backlog, evidence
 
 
+def _dispatch_git_facts_for_journal(
+    *,
+    vcs: VcsPort,
+    fs: FsPort,
+    repo_root: Path,
+    slug: str,
+    journal: dispatch_core.DispatchJournalFacts,
+    effective_policy: policy.EffectivePolicy,
+) -> DispatchGitFacts | None:
+    if journal.baseline_head_sha is None or journal.worktree_path is None:
+        return None
+    try:
+        return gather_dispatch_git_facts(
+            vcs,
+            fs=fs,
+            repo_root=repo_root,
+            worktree=Path(journal.worktree_path),
+            story_key=journal.story_key,
+            project_slug=slug,
+            baseline_head_sha=journal.baseline_head_sha,
+            merge_subject_template=effective_policy.merge_subject_template.value,
+            followup_review=journal.followup_review,
+        )
+    except VcsCommandError, ValueError:
+        return None
+
+
+def _refused_landing_open_pr(
+    journal: dispatch_core.DispatchJournalFacts,
+    git_facts: DispatchGitFacts | None,
+) -> bool:
+    """Story 83.4: landing refused with an unmerged branch (open PR)."""
+    if journal.landing_verdict != "refused":
+        return False
+    if git_facts is None:
+        return False
+    return not git_facts.branch_merged and not git_facts.story_merged_on_main
+
+
+def _refused_landing_open_pr_story_keys(
+    *,
+    fs: FsPort,
+    vcs: VcsPort,
+    process: ProcessPort,
+    repo_root: Path,
+    slug: str,
+    effective_policy: policy.EffectivePolicy,
+) -> frozenset[str]:
+    keys: set[str] = set()
+    for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
+        journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+        # The journal read is cheap; the session verdict and git facts below are not (they shell out), so only a
+        # run whose landing was refused pays for them (landing review: ~50 s over 364 marshal runs otherwise).
+        if journal.story_key is None or journal.landing_verdict != "refused":
+            continue
+        verdict = resolve_dispatch_session_verdict(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            journal=journal,
+            effective_policy=effective_policy,
+            run_dir=run_dir,
+        )
+        if verdict == DispatchSessionVerdict.LIVE:
+            continue
+        git_facts = _dispatch_git_facts_for_journal(
+            vcs=vcs,
+            fs=fs,
+            repo_root=repo_root,
+            slug=slug,
+            journal=journal,
+            effective_policy=effective_policy,
+        )
+        if _refused_landing_open_pr(journal, git_facts):
+            keys.add(journal.story_key)
+    return frozenset(keys)
+
+
 def station_in_flight_conflict(
     *,
     fs: FsPort,
@@ -1817,6 +1897,15 @@ def station_in_flight_conflict(
         except ValueError:
             candidate_surface = None
     graph = dict(deps_graph or {})
+    refused_landing_open = _refused_landing_open_pr_story_keys(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        repo_root=repo_root,
+        slug=slug,
+        effective_policy=effective_policy,
+    )
+    candidate_refused_landing_open = feed_story in refused_landing_open
     for run_dir in reversed(iter_dispatch_run_dirs(repo_root, slug)):
         journal = gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
         if journal.story_key is None:
@@ -1831,37 +1920,14 @@ def station_in_flight_conflict(
             effective_policy=effective_policy,
             run_dir=run_dir,
         )
-        # Story 83.4: Also consider refused stories with open PRs as blocking
-        is_blocking_story = False
-
-        if verdict == DispatchSessionVerdict.LIVE:
-            is_blocking_story = True
-        elif journal.verification_verdict == "refused":
-            # For refused stories, check if the PR is still open (branch not merged)
-            try:
-                if journal.baseline_head_sha is not None and journal.worktree_path is not None:
-                    git_facts = gather_dispatch_git_facts(
-                        vcs,
-                        fs=fs,
-                        repo_root=repo_root,
-                        worktree=Path(journal.worktree_path),
-                        story_key=journal.story_key,
-                        project_slug=slug,
-                        baseline_head_sha=journal.baseline_head_sha,
-                        merge_subject_template=effective_policy.merge_subject_template.value,
-                        followup_review=journal.followup_review,
-                    )
-                    # If branch is not merged, the PR is still open and should block
-                    if not git_facts.branch_merged and not git_facts.story_merged_on_main:
-                        is_blocking_story = True
-            except VcsCommandError, ValueError:
-                # If we can't gather git facts, err on the side of caution and don't block
-                pass
-
-        if not is_blocking_story:
+        is_live = verdict == DispatchSessionVerdict.LIVE
+        # Reuse the scan above rather than gathering git facts again for every run.
+        is_refused_landing_open = (
+            not is_live and journal.landing_verdict == "refused" and journal.story_key in refused_landing_open
+        )
+        if not is_live and not is_refused_landing_open:
             continue
-        # Story 83.4: Generate appropriate evidence for blocking stories
-        if verdict == DispatchSessionVerdict.LIVE:
+        if is_live:
             evidence = _live_dispatch_evidence(
                 journal=journal,
                 verdict=verdict,
@@ -1874,22 +1940,24 @@ def station_in_flight_conflict(
                 harness_reported_failure=harness_reported_failure,
             )
         else:
-            # For refused stories that are blocking, generate evidence about the open PR
-            story_key = journal.story_key or "unknown"
-            evidence = f"story {story_key!r} finished but was refused at landing with open PR"
+            blocked_story_key = journal.story_key or "unknown"
+            evidence = f"story {blocked_story_key!r} finished but was refused at landing with open PR"
         in_flight = journal.story_key
         if in_flight == feed_story:
             # CAP-2: only a LIVE session refuses redispatch of the same story.
             # Story 83.4: refused+open-PR occupies surfaces for *other* stories;
             # the operator re-dispatches the refused story to land fixes.
-            if verdict == DispatchSessionVerdict.LIVE:
+            if is_live:
                 return DispatchPreflightConflict(
                     code="MRS-DISP-011",
                     message=f"refusing redispatch: {evidence}",
                     in_flight_story_key=in_flight,
                 )
             continue
-        if not parallel_dispatch:
+        if is_refused_landing_open and candidate_refused_landing_open:
+            # Story 83.4: refused stories never hold each other (only LIVE holds refused).
+            continue
+        if not parallel_dispatch and is_live:
             return DispatchPreflightConflict(
                 code="MRS-DISP-021",
                 message=(f"refusing dispatch: station {slug!r} already has in-flight story {in_flight!r} ({evidence})"),

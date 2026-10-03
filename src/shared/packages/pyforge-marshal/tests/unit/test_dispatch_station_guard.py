@@ -202,6 +202,63 @@ def _seed_live_dispatch_journal(
     return run_dir
 
 
+def _append_journal_lines(fs: FakeFs, journal_path: Path, *lines: str) -> None:
+    extra = "".join(line + "\n" for line in lines)
+    with journal_path.open("a", encoding="utf-8") as fh:
+        fh.write(extra)
+    fs.files[journal_path] = fs.files[journal_path] + extra
+
+
+def _append_verified_session(journal_path: Path, fs: FakeFs, *, run_id: str) -> None:
+    verification_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-10-02T00:00:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.INTENT,
+            payload={"verdict": "verified"},
+        )
+    ).line
+    verification_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 3),
+            ts="2026-10-02T00:00:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 2),
+            payload={"verdict": "verified", "ok": True},
+        )
+    ).line
+    _append_journal_lines(fs, journal_path, verification_intent, verification_outcome)
+
+
+def _append_landing_refused(journal_path: Path, fs: FakeFs, *, run_id: str) -> None:
+    land_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 4),
+            ts="2026-10-02T00:01:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAND,
+            phase=Phase.INTENT,
+            payload={},
+        )
+    ).line
+    land_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 5),
+            ts="2026-10-02T00:01:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAND,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 4),
+            payload={"ok": False, "verdict": "refused"},
+        )
+    ).line
+    _append_journal_lines(fs, journal_path, land_intent, land_outcome)
+
+
 def test_declared_globs_overlap_detects_shared_prefix() -> None:
     assert dispatch_core.declared_globs_overlap("src/pkg/**", "src/pkg/foo.py")
     assert not dispatch_core.declared_globs_overlap("src/a/**", "src/b/**")
@@ -706,36 +763,10 @@ def test_refused_story_with_open_pr_blocks_overlapping_dispatch(tmp_path: Path) 
         encoding="utf-8",
     )
 
-    # Seed a refused dispatch journal (similar to the redispatch test pattern)
     run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-refused", story_key="82.4")
     journal_path = run_dir / "journal.jsonl"
-
-    # Add verification refusal to journal
-    verification_intent = prepare_for_write(
-        build_entry(
-            id=JournalEntryId("w", 2),
-            ts="2026-10-02T00:00:00.000Z",
-            run_id="run-refused",
-            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-            phase=Phase.INTENT,
-            payload={"verdict": "refused"},
-        )
-    ).line
-    verification_outcome = prepare_for_write(
-        build_entry(
-            id=JournalEntryId("w", 3),
-            ts="2026-10-02T00:00:00.000Z",
-            run_id="run-refused",
-            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-            phase=Phase.OUTCOME,
-            intent_id=JournalEntryId("w", 2),
-            payload={"verdict": "refused", "failed_gate": "MRS-GATE-001"},
-        )
-    ).line
-
-    with journal_path.open("a", encoding="utf-8") as fh:
-        fh.write(verification_intent + "\n" + verification_outcome + "\n")
-    fs.files[journal_path] = fs.files[journal_path] + verification_intent + "\n" + verification_outcome + "\n"
+    _append_verified_session(journal_path, fs, run_id="run-refused")
+    _append_landing_refused(journal_path, fs, run_id="run-refused")
 
     class RefusedVcs(FakeVcs):
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
@@ -791,36 +822,10 @@ def test_refused_story_with_closed_pr_allows_overlapping_dispatch(tmp_path: Path
         encoding="utf-8",
     )
 
-    # Seed a refused dispatch journal
     run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-refused-closed", story_key="82.4")
     journal_path = run_dir / "journal.jsonl"
-
-    # Add verification refusal to journal
-    verification_intent = prepare_for_write(
-        build_entry(
-            id=JournalEntryId("w", 2),
-            ts="2026-10-02T00:00:00.000Z",
-            run_id="run-refused-closed",
-            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-            phase=Phase.INTENT,
-            payload={"verdict": "refused"},
-        )
-    ).line
-    verification_outcome = prepare_for_write(
-        build_entry(
-            id=JournalEntryId("w", 3),
-            ts="2026-10-02T00:00:00.000Z",
-            run_id="run-refused-closed",
-            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-            phase=Phase.OUTCOME,
-            intent_id=JournalEntryId("w", 2),
-            payload={"verdict": "refused", "failed_gate": "MRS-GATE-001"},
-        )
-    ).line
-
-    with journal_path.open("a", encoding="utf-8") as fh:
-        fh.write(verification_intent + "\n" + verification_outcome + "\n")
-    fs.files[journal_path] = fs.files[journal_path] + verification_intent + "\n" + verification_outcome + "\n"
+    _append_verified_session(journal_path, fs, run_id="run-refused-closed")
+    _append_landing_refused(journal_path, fs, run_id="run-refused-closed")
 
     class RefusedClosedPRVcs(FakeVcs):
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
@@ -882,36 +887,10 @@ def test_refused_story_with_disjoint_surfaces_allows_dispatch(tmp_path: Path) ->
         encoding="utf-8",
     )
 
-    # Seed a refused dispatch journal
     run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-refused-disjoint", story_key="82.4")
     journal_path = run_dir / "journal.jsonl"
-
-    # Add verification refusal to journal
-    verification_intent = prepare_for_write(
-        build_entry(
-            id=JournalEntryId("w", 2),
-            ts="2026-10-02T00:00:00.000Z",
-            run_id="run-refused-disjoint",
-            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-            phase=Phase.INTENT,
-            payload={"verdict": "refused"},
-        )
-    ).line
-    verification_outcome = prepare_for_write(
-        build_entry(
-            id=JournalEntryId("w", 3),
-            ts="2026-10-02T00:00:00.000Z",
-            run_id="run-refused-disjoint",
-            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-            phase=Phase.OUTCOME,
-            intent_id=JournalEntryId("w", 2),
-            payload={"verdict": "refused", "failed_gate": "MRS-GATE-001"},
-        )
-    ).line
-
-    with journal_path.open("a", encoding="utf-8") as fh:
-        fh.write(verification_intent + "\n" + verification_outcome + "\n")
-    fs.files[journal_path] = fs.files[journal_path] + verification_intent + "\n" + verification_outcome + "\n"
+    _append_verified_session(journal_path, fs, run_id="run-refused-disjoint")
+    _append_landing_refused(journal_path, fs, run_id="run-refused-disjoint")
 
     class RefusedDisjointVcs(FakeVcs):
         def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
@@ -939,4 +918,165 @@ def test_refused_story_with_disjoint_surfaces_allows_dispatch(tmp_path: Path) ->
         parallel_dispatch=True,
     )
     # Should allow dispatch since surfaces are disjoint
+    assert conflict is None
+
+
+def test_verification_refused_without_landing_does_not_block_overlapping_dispatch(
+    tmp_path: Path,
+) -> None:
+    """Story 83.4: verification refusal alone (no PR) must not surface-hold others."""
+    from pyforge.marshal.cli.dispatch import _compose_policy
+
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
+    specs.mkdir(parents=True)
+    cand_spec = specs / "spec-82-8-candidate.md"
+    cand_spec.write_text(
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        encoding="utf-8",
+    )
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-verif-only", story_key="82.4")
+    journal_path = run_dir / "journal.jsonl"
+    verification_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-10-02T00:00:00.000Z",
+            run_id="run-verif-only",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.INTENT,
+            payload={"verdict": "refused"},
+        )
+    ).line
+    verification_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 3),
+            ts="2026-10-02T00:00:00.000Z",
+            run_id="run-verif-only",
+            kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 2),
+            payload={"verdict": "refused", "failed_gate": "MRS-GATE-001"},
+        )
+    ).line
+    _append_journal_lines(fs, journal_path, verification_intent, verification_outcome)
+
+    class OpenBranchVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/shared/packages/pyforge-marshal/cli/dispatch.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "bbb222"
+
+    conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=OpenBranchVcs(tmp_path),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        story_key="82-8-candidate",
+        effective_policy=_compose_policy(slug),
+        candidate_spec_text=cand_spec.read_text(encoding="utf-8"),
+        parallel_dispatch=True,
+    )
+    assert conflict is None
+
+
+def test_serial_station_refused_landing_disjoint_does_not_mrs_disp_021(tmp_path: Path) -> None:
+    """Story 83.4: serial mode must not blanket-hold unrelated surfaces for refused landing."""
+    from pyforge.marshal.cli.dispatch import _compose_policy
+
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
+    specs.mkdir(parents=True)
+    (specs / "spec-82-4-refused.md").write_text(
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        encoding="utf-8",
+    )
+    cand_spec = specs / "spec-82-9-candidate.md"
+    cand_spec.write_text(
+        '---\nsurface: ["src/shared/packages/pyforge-doctor/**"]\n---\n',
+        encoding="utf-8",
+    )
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-serial-disjoint", story_key="82.4")
+    journal_path = run_dir / "journal.jsonl"
+    _append_verified_session(journal_path, fs, run_id="run-serial-disjoint")
+    _append_landing_refused(journal_path, fs, run_id="run-serial-disjoint")
+
+    class RefusedDisjointVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/shared/packages/pyforge-marshal/cli/dispatch.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "bbb222"
+
+    conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=RefusedDisjointVcs(tmp_path),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        story_key="82-9-candidate",
+        effective_policy=_compose_policy(slug),
+        candidate_spec_text=cand_spec.read_text(encoding="utf-8"),
+        parallel_dispatch=False,
+    )
+    assert conflict is None
+
+
+def test_two_refused_landing_open_pr_stories_do_not_hold_each_other(tmp_path: Path) -> None:
+    """Story 83.4: refused stories never block each other's re-dispatch."""
+    from pyforge.marshal.cli.dispatch import _compose_policy
+
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
+    specs.mkdir(parents=True)
+    shared_surface = '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n'
+    (specs / "spec-82-4-refused.md").write_text(shared_surface, encoding="utf-8")
+    (specs / "spec-82-5-refused.md").write_text(shared_surface, encoding="utf-8")
+
+    for run_id, story in (("run-a", "82.4"), ("run-b", "82.5")):
+        run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id=run_id, story_key=story)
+        journal_path = run_dir / "journal.jsonl"
+        _append_verified_session(journal_path, fs, run_id=run_id)
+        _append_landing_refused(journal_path, fs, run_id=run_id)
+
+    class OpenBranchVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/shared/packages/pyforge-marshal/cli/dispatch.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "bbb222"
+
+    conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=OpenBranchVcs(tmp_path),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        story_key="82.5",
+        effective_policy=_compose_policy(slug),
+        candidate_spec_text=shared_surface,
+        parallel_dispatch=True,
+    )
     assert conflict is None
