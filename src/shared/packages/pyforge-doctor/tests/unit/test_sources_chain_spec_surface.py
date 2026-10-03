@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 from functools import lru_cache
 from pathlib import Path
@@ -1685,3 +1686,27 @@ def test_stamp_script_glob_to_re_matches_chain(pattern: str, path: str) -> None:
     assert bool(script_hit) == bool(chain_hit)
     if script_hit and chain_hit:
         assert script_hit.group(0) == chain_hit.group(0)
+
+
+def test_stamp_script_tracked_files_reads_non_ascii_paths_literally(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DW-FU-6-6-4: the stamp script's ``tracked_files()`` matches chain's read."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "diátaxis.md").write_text("x\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "diátaxis.md"], check=True)
+    subprocess.run(
+        ["git", "-C", str(repo), "commit", "-m", "add", "--date", "2026-01-01T00:00:00+00:00"],
+        check=True,
+        env={**os.environ, "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00", "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00"},
+    )
+
+    script = _stamp_script_module()
+    monkeypatch.setattr(script, "REPO_ROOT", repo, raising=False)
+
+    script_paths = set(script.tracked_files())
+    chain_paths = set(chain._tracked_files(repo) or [])
+
+    assert "diátaxis.md" in script_paths
+    assert script_paths == chain_paths

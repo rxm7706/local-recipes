@@ -2939,7 +2939,7 @@ cmd = "pytest src/shared/packages/pyforge-doctor/tests -q"
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-aggregate-scripts-test]
 description = "Story 39.1 (spec-pyforge-doctor; follows Story 38.5): tests/scripts/test_detectors_doctor_sources.py where Doctor's run-deps (jsonschema, pyyaml) are installed. Its aggregate tests load Doctor's dispatch table and skip under pyforge-doctor-scripts-test (pyforge-ci, stdlib-only by design), so this is where they run. The Detectors scripts-suite job and pr-preflight call this task verbatim."
-cmd = "python -m pytest tests/scripts/test_detectors_doctor_sources.py -q"
+cmd = "python -m pytest tests/scripts/test_detectors_doctor_sources.py tests/scripts/test_apply_verification_verdicts.py -q"
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-coverage-gate]
 description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (doctor)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in doctor's own env, against the 80% unit floor. Distinct from pyforge-doctor-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."

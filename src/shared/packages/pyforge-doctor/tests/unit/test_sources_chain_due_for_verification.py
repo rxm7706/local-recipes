@@ -2444,6 +2444,22 @@ def test_a_comment_mentioning_a_symbol_is_not_a_call_site(tmp_path: Path) -> Non
     assert result == (0, True), result
 
 
+def test_a_star_unpacked_call_is_counted_as_a_call_site(tmp_path: Path) -> None:
+    """Story 41.1: `_PROSE_LINE_RE` must not treat `*callee(),` as a block-comment line."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target,
+        "src/shared/packages/pyforge-alpha/src/alpha.py",
+        "def callee():\n    ...\n\n\ndef caller():\n    *callee(),\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+
+    result = chain._call_site_count(target, "callee", ["src/shared/packages/pyforge-alpha/src/alpha.py"])
+
+    assert result is not None and result[0] == 1, result
+
+
 def test_a_matched_path_containing_a_colon_is_still_parsed(tmp_path: Path) -> None:
     """DW-FU-11-3-3: the two chained `partition(":")` calls this used to do
     mis-split any matched path that itself contains a colon -- one tracked

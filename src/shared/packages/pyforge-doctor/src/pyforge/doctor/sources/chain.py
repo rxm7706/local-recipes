@@ -5382,7 +5382,7 @@ _DECLARATION_RE_TEMPLATE = r"^\s*(?:async\s+def|def|class)\s+{}\b"
 #: continues a triple-quoted string. Deliberately a LINE-shape test, not a
 #: language parse: a trailing comment after real code (`foo()  # see _bar`)
 #: still counts, because the line does contain a call.
-_PROSE_LINE_RE = re.compile(r"^\s*(?:#|//|\*|\"\"\"|'''|<!--|--\s)")
+_PROSE_LINE_RE = re.compile(r"^\s*(?:#|//|\*(?=\s|/|$)|\"\"\"|'''|<!--|--\s)")
 
 
 def _symbol_search_scope(cited_paths: list[str]) -> list[str]:

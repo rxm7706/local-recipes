@@ -522,7 +522,11 @@ def _stamp_baseline(spec_names: list[str] | None, current: dict[str, dict],
             # `_bmad-output/projects/` tree, or an unreadable specs dir -- and
             # the write would have wiped the baseline to `{}` at exit 0,
             # turning every governed file in the fleet into `no-baseline`.
-            if not current and _read_baseline():
+            # Read the committed baseline first so a corrupt file refuses
+            # before any write (Story 41.1 landing review), not only on the
+            # zero-spec path.
+            prior = _read_baseline()
+            if not current and prior:
                 raise StampAborted(
                     "refusing to stamp: discovery found zero Specs, but the "
                     f"committed {BASELINE.relative_to(REPO_ROOT)} is not empty — "
