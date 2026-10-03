@@ -38,7 +38,9 @@ gate_mode = "none"
 # dispatches earlier that day only happened because two prior cursor
 # failures tripped the transient-exclusion. Flip both this line and the
 # tier map together when Cursor comes back.
-harness_preference = ["claude"]
+# 2026-10-03 (operator ruling): cursor-only, on composer-2.5-fast, the setup marshal (#1757) and steward (#1770)
+# run. Flip the harness line and the tier map together.
+harness_preference = ["cursor"]
 
 
 # merge_subject_template: no override -- the repo default
@@ -388,6 +390,28 @@ verify_commands = [
   "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"35" = [  # Phase 4+5 of the deferral burn-down: herald's open medium and low deferrals (fix, no CAP), added 2026-10-03.
+  # The default surface, restated because a declared entry replaces it outright, plus what Story 35.1's rows
+  # reach outside the package: the docs site, the deck scripts and their tests, the posters and READMEs,
+  # a detectors pin test, the persona skill, the herald ledger, and every Spec memlog.
+  "src/shared/packages/pyforge-herald/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-herald/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "docsite/**",
+  "scripts/deck_trio.py",
+  "scripts/deck_facts.py",
+  "scripts/detectors.py",
+  "tests/scripts/**",
+  "presentations/**",
+  ".claude/skills/bmad-agent-herald/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 
 # model_tier_map (FR-51, Story 33.6): difficulty class -> {stage: model}.
 # Must stay LAST in this file (TOML table scoping).
@@ -408,14 +432,16 @@ verify_commands = [
 # `cursor --model` either. The 2026-09-13 Cursor Ultra ladder
 # (composer-2.5-fast / grok-4.6 / composer-2.5) is in git history for the
 # week Cursor usage returns.
+# 2026-10-03 (operator ruling, see harness_preference above): Cursor on composer-2.5-fast for dev and review in the
+# heavy and medium tiers (an undeclared difficulty resolves to medium on dispatch); easy keeps composer-2.5.
 [model_tier_map.heavy]
-dev = { harness = "claude", model = "sonnet" }
-review = { harness = "claude", model = "opus" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.medium]
-dev = { harness = "claude", model = "sonnet" }
-review = { harness = "claude", model = "opus" }
+dev = { harness = "cursor", model = "composer-2.5-fast" }
+review = { harness = "cursor", model = "composer-2.5-fast" }
 
 [model_tier_map.easy]
-dev = { harness = "claude", model = "sonnet" }
+dev = { harness = "cursor", model = "composer-2.5" }
 
