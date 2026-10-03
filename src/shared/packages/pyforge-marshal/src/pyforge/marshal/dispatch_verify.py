@@ -362,8 +362,11 @@ def evaluate_dispatch_verification(
         # can never match the story's repo-relative changed files: "outside the
         # story's blast radius" is meaningless here, and a red `lint-types` must
         # refuse the landing (spec-79-2 AC2), never downgrade to MRS-GATE-014.
+        # Story 83.2: the same reasoning applies to the derived whole-tree check
+        # commands -- they read the whole tree and their failures must refuse.
+        derived_commands = {_LINT_TYPES_COMMAND, _PYFORGE_CORE_TEST_COMMAND, _DEFERRED_WORK_CHECK_COMMAND}
         reclassifiable_reports = tuple(
-            report for report in command_reports if report.get("command") != _LINT_TYPES_COMMAND
+            report for report in command_reports if report.get("command") not in derived_commands
         )
         findings = list(
             reclassify_pre_existing_gate_findings(
