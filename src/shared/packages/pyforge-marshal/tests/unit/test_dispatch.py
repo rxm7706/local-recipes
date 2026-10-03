@@ -1751,7 +1751,6 @@ def test_launch_without_the_backlog_rewrite_leaves_the_worktree_spec_at_backlog(
         story=story,
         fs=fs,
         vcs=FakeVcs(tmp_path),
-        build_harness=harness,
         build_harness=FakeBuildHarness(),
         process=FakeProcess(),
     )
