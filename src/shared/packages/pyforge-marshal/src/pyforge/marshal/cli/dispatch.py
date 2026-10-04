@@ -5125,33 +5125,46 @@ def execute_fleet_cycle(
         parallel_cap = cycle.parallel_cap
         stories_to_dispatch = cycle.stories_to_dispatch
         wave_detail: str | None = None
+        if cycle.live_stories:
+            if parallel_cap <= 1:
+                in_flight_detail = (
+                    f"dispatch in flight: {', '.join(cycle.live_stories)} "
+                    "(waiting for terminal outcome before next launch)"
+                )
+                in_flight_message = (
+                    f"station {slug!r}: no dispatch this cycle -- "
+                    f"waiting on in-flight dispatch session(s) "
+                    f"{', '.join(cycle.live_stories)!r}"
+                )
+            else:
+                in_flight_detail = (
+                    f"wave in flight: {', '.join(cycle.live_stories)} "
+                    "(waiting for terminal outcomes before next batch)"
+                )
+                in_flight_message = (
+                    f"station {slug!r}: no dispatch this cycle -- "
+                    f"waiting on in-flight wave member(s) "
+                    f"{', '.join(cycle.live_stories)!r}"
+                )
+            results.append(
+                dispatch_fleet.StationCycleResult(
+                    slug=slug,
+                    status=dispatch_fleet.StationCycleStatus.IN_FLIGHT,
+                    remaining=len(backlog),
+                    story=cycle.live_stories[0],
+                    detail=in_flight_detail,
+                    skipped=plan.skipped,
+                )
+            )
+            findings.append(
+                Finding(
+                    code="MRS-DRAIN-006",
+                    severity=Severity.WARN,
+                    message=in_flight_message,
+                )
+            )
+            continue
         if parallel_cap > 1:
-            if cycle.live_stories:
-                results.append(
-                    dispatch_fleet.StationCycleResult(
-                        slug=slug,
-                        status=dispatch_fleet.StationCycleStatus.IN_FLIGHT,
-                        remaining=len(backlog),
-                        story=cycle.live_stories[0],
-                        detail=(
-                            f"wave in flight: {', '.join(cycle.live_stories)} "
-                            "(waiting for terminal outcomes before next batch)"
-                        ),
-                        skipped=plan.skipped,
-                    )
-                )
-                findings.append(
-                    Finding(
-                        code="MRS-DRAIN-006",
-                        severity=Severity.WARN,
-                        message=(
-                            f"station {slug!r}: no dispatch this cycle -- "
-                            f"waiting on in-flight wave member(s) "
-                            f"{', '.join(cycle.live_stories)!r}"
-                        ),
-                    )
-                )
-                continue
             wave = cycle.wave
             assert wave is not None
             if wave.members:
