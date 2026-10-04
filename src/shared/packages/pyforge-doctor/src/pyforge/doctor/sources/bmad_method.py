@@ -1120,9 +1120,7 @@ def _channel_and_recipe_drift_findings(
     return tuple(findings)
 
 
-def _suite_floor_findings(
-    pixi_data: dict, installed: dict[str, tuple[tuple[int, int, int], str]]
-) -> list[Finding]:
+def _suite_floor_findings(pixi_data: dict, installed: dict[str, tuple[tuple[int, int, int], str]]) -> list[Finding]:
     """Offline CAP-1 analog for the suite (DW-FU-14-1-2): one WARN per
     installed suite package behind its own ``pixi.toml`` floor -- provable
     with zero network. A package with no readable floor is skipped."""

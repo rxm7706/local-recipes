@@ -1350,10 +1350,7 @@ def test_gather_host_scoped_ternary_is_suppressed(tmp_path: Path):
     assert (
         _flagged_vars(
             tmp_path,
-            "import os\n"
-            "\n"
-            "def handler(host):\n"
-            '    headers["X"] = os.environ.get("Y") if host == "safe" else None\n',
+            'import os\n\ndef handler(host):\n    headers["X"] = os.environ.get("Y") if host == "safe" else None\n',
         )
         == []
     )
@@ -1362,10 +1359,7 @@ def test_gather_host_scoped_ternary_is_suppressed(tmp_path: Path):
 def test_gather_inverted_host_ternary_is_flagged(tmp_path: Path):
     assert _flagged_vars(
         tmp_path,
-        "import os\n"
-        "\n"
-        "def handler(host):\n"
-        '    headers["X"] = None if host == "safe" else os.environ.get("Y")\n',
+        'import os\n\ndef handler(host):\n    headers["X"] = None if host == "safe" else os.environ.get("Y")\n',
     ) == ["Y"]
 
 
@@ -1442,10 +1436,7 @@ def test_gather_returned_dict_with_no_header_key_is_not_flagged(tmp_path: Path):
     assert (
         _flagged_vars(
             tmp_path,
-            "import os\n"
-            "\n"
-            "def config():\n"
-            '    return {"success": True, "home": os.environ.get("HOME")}\n',
+            'import os\n\ndef config():\n    return {"success": True, "home": os.environ.get("HOME")}\n',
         )
         == []
     )

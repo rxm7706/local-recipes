@@ -37,9 +37,7 @@ def test_package_builds_share_one_hatchling_floor():
     pyproject = _pyproject_spec()
     package_pixi = _load(_PACKAGE_DIR / "pixi.toml")["package"]["host-dependencies"]["hatchling"]
     assert pyproject.startswith(">="), f"pyproject.toml leaves hatchling without a floor: {pyproject!r}"
-    assert package_pixi == pyproject, (
-        f"package pixi.toml hatchling {package_pixi!r} != pyproject.toml {pyproject!r}"
-    )
+    assert package_pixi == pyproject, f"package pixi.toml hatchling {package_pixi!r} != pyproject.toml {pyproject!r}"
 
 
 def test_root_feature_matches_the_package_floor():

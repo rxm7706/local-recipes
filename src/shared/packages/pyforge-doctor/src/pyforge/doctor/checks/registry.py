@@ -149,8 +149,6 @@ def gather_one(category: str, name: str, target: Path) -> tuple[Finding, ...]:
     elif category == "env":
         findings = env_hygiene.gather(target)
     else:
-        raise ValueError(
-            f"unsupported check category: {category!r} (categories with a wired gather: 'engines', 'env')"
-        )
+        raise ValueError(f"unsupported check category: {category!r} (categories with a wired gather: 'engines', 'env')")
     wanted = {name, SENTINEL_CHECK_NAMES[category]}
     return tuple(finding for finding in findings if finding.check in wanted)

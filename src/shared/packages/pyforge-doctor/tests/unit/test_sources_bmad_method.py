@@ -3104,9 +3104,7 @@ def test_next_page_url_refuses_a_non_github_link() -> None:
         (_PIXI_SUITE_PRE_UPDATE, _MANIFEST_610),
     ],
 )
-def test_gather_never_emits_a_fail(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pixi: str, manifest: str
-) -> None:
+def test_gather_never_emits_a_fail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pixi: str, manifest: str) -> None:
     # fleet_picture.py renders whatever this source returns; a FAIL here would
     # make the sources CLI exit 2 and the two surfaces disagree.
     _write_pixi(tmp_path, pixi)
