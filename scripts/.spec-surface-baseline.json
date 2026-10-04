@@ -3797,7 +3797,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_station_port.py": "6fa706511e8f120dfefa81ee422a9ac28f28e8c1",
    "src/shared/packages/pyforge-core/tests/unit/test_verdict.py": "fe7f212927fc9a6f014d4255fa349c61fb2fa2d7",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "b29bad6a241998221cde61b05bdc36017d9a07c9",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "1d34c95dee122abab538d6681c8beba04aab905b",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "d45eb6925f8118e33d2a7cc72865d6ef77b468f1",
    "src/shared/packages/pyforge-marshal/.gitignore": "63c59419f6a5a17602e6cecfe6d44e3d491c3c63",
    "src/shared/packages/pyforge-marshal/README.md": "b81bf9fefb27c2edfe34d83e1bec222aacb8c822",
    "src/shared/packages/pyforge-marshal/docs/adoption-guide.md": "ca47659eef828079fde3d4591056df30d76a065c",
@@ -4224,7 +4224,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "89f06f4e6b371d4641844b6748e8037465035ccf"
+  "memlog": "8ecf96984d0aa32165ea4deb669e871ea32d0dbb"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
