@@ -2,7 +2,7 @@
 title: "84.2: The model-list refresh tests can fail, and a partial listing is never complete"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -67,3 +67,4 @@ Minted 2026-10-03 at the operator's request.
 
 - No review has run yet.
 - 2026-10-04 — Build complete on branch `land/pyforge-marshal-84-2` (hand-built); ready for an independent review. Two readings for the reviewer to judge: (1) AC 4 — `adapters/model_list_live.py` is the one module besides `cli/adapters.py` allowed to import `model_list_http`, because it wraps that transport (the seam is the pair); every other importer of either module reds the meta-test. (2) AC 3 — on a new day an unavailable harness is written `status: unavailable` with `ids: []` and its last ok ids under `last_ok: {date, ids}`; a same-day re-run still keeps that day's earlier ok block as `ok`.
+- 2026-10-04, landing: merged by the operator as #1817 (521aede9dd) with GitHub's default merge subject, so the landing finalize promoted the ledger row but not this spec; status set to done by hand (housekeeping).

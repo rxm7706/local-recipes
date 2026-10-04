@@ -2,7 +2,7 @@
 title: "83.16: Dispatch finalize commits paths with spaces"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -75,3 +75,4 @@ Minted 2026-10-03 at the operator's request.
   - LOW-1: under `status.renames=false` / `diff.renames=false`, `changed_files` names both sides of a `git mv` (`A new`, `D old`) while `commit_paths`' pinned read sees one `R new\0old` record. The named original then went to `git add` and failed (fail-closed, never a false ok). `_commit_status_facts` now treats a named rename original as a staged deletion. Test: `test_the_finalize_path_commits_a_rename_under_an_operators_renames_off_config`, driven `changed_files` → `commit_paths` the way the finalize does; removing the rule fails it.
   - LOW-2: two parts of the fix had no test. N9: a rename original reaches `git commit --` as a literal pathspec (`:(top,literal)`); test `test_commit_paths_names_a_renames_awkward_original_literally` (a `:`-prefixed name and glob characters). N10: an absolute destination is made repo-relative; test `test_commit_paths_pairs_a_rename_named_by_an_absolute_path`. Each test fails with its mutant.
   - Information only: the named paths themselves still reach `git add` / `git commit` without literal magic, so a path that begins with `:` would fail. This predates 83.16; candidate follow-up: `--literal-pathspecs`.
+- 2026-10-04, landing: merged by the operator as #1815 (58f290f64e) with GitHub's default merge subject, so the landing finalize promoted the ledger row but not this spec; status set to done by hand (housekeeping).
