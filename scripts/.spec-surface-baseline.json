@@ -6592,6 +6592,7 @@
    "src/shared/packages/pyforge-atlas/tests/integration/wasm/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-atlas/tests/integration/wasm/test_wasm_smoke.py": "fb8951471904a22392ffec479fc5154db4c87c55",
    "src/shared/packages/pyforge-atlas/tests/meta/test_cli_tool_parity.py": "d35641d10c125a264f9afdf361af1f90c0dff3b9",
+   "src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py": "20bcd559f7e48c6d1e1862f33f2dcf30bd0f1767",
    "src/shared/packages/pyforge-atlas/tests/meta/test_portal_inventory_row.py": "22877480b132463da3b74108d14d15c9f7fd7076",
    "src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py": "0e2a68082673b503c54fe0269a732de65ae7a5b0",
    "src/shared/packages/pyforge-atlas/tests/tools/test_live_artifactory_transport.py": "e5dd22635bbaf3ae6f071ad2554e3fda30ff9b54",
@@ -6899,7 +6900,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "b0e800b9ceef847bd68c884b1f403539977218e8"
   },
-  "memlog": "d8b4a9283cbbe84f7c1bdf216eb696ebc368c36e"
+  "memlog": "c1c56f30430dafe0d4166038aa9febd5c7a9a098"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
