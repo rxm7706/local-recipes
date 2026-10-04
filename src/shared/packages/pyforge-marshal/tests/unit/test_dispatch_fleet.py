@@ -858,7 +858,7 @@ def test_every_station_busy_refuses_every_dispatch_naming_the_in_flight_story(
     assert len(relays) == len(_STATIONS)
     for finding in relays:
         assert finding.severity is Severity.WARN
-        assert "MRS-DISP-021" in finding.message
+        assert "in-flight dispatch session" in finding.message
         assert "9.9" in finding.message
     # A busy fleet is the normal state of a healthy campaign, never terminal.
     assert report.complete is False
@@ -881,7 +881,8 @@ def test_zombie_redispatch_of_the_same_story_is_refused_unchanged(
     )
     assert harness.dispatched == []
     relay = next(f for f in report.findings if f.code == "MRS-DRAIN-006")
-    assert "MRS-DISP-011" in relay.message
+    assert "in-flight dispatch session" in relay.message
+    assert "22.7" in relay.message
     assert _status_by_station(report)["pyforge-marshal"] is StationCycleStatus.IN_FLIGHT
 
 
@@ -2076,7 +2077,7 @@ def test_eight_station_campaign_replays_without_session_discipline(
     assert held_statuses["pyforge-steward"] is StationCycleStatus.IN_FLIGHT
     assert len(harness.dispatched) == 2
     relays = {f.message for f in held.findings if f.code == "MRS-DRAIN-006"}
-    assert any("MRS-DISP-011" in m for m in relays)
+    assert any("in-flight wave member" in m or "in-flight dispatch session" in m for m in relays)
     assert held.complete is False
 
     # --- Cycle 3: merge-through-finalize chains each station's next story --
@@ -4184,9 +4185,9 @@ def test_a_dead_supervisor_without_completion_still_blocks(tmp_path: Path, monke
 def test_a_still_live_session_is_not_finalize_pending(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Part A never pre-empts CAP-2's own liveness path.
 
-    A session still running is plain in-flight: ``MRS-DISP-011`` relayed
-    through ``MRS-DRAIN-006`` is the already-correct report, and clause (a)
-    is about the window AFTER the session exits.
+    A session still running is plain in-flight: ``MRS-DRAIN-006`` names the
+    live dispatch session (Story 86.4 reads liveness in the plan), and clause
+    (a) is about the window AFTER the session exits.
     """
     _init_git_repo(tmp_path)
     slug = "pyforge-herald"
@@ -4212,7 +4213,7 @@ def test_a_still_live_session_is_not_finalize_pending(tmp_path: Path, monkeypatc
     )
     assert harness.dispatched == []
     relays = {f.message for f in report.findings if f.code == "MRS-DRAIN-006"}
-    assert any("MRS-DISP-011" in message for message in relays)
+    assert any("in-flight dispatch session" in message for message in relays)
     assert not any("finalizing" in message for message in relays)
 
 

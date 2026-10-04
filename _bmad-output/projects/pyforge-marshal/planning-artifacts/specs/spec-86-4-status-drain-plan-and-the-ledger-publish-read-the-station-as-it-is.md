@@ -2,7 +2,8 @@
 title: "86.4: Status, the drain plan and the ledger publish read the station as it is"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '0d2ce6c4ce707990312a0e89cf9ebe4c693ca945'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -67,4 +68,9 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+- Build-auto 2026-10-04: implementation verified (`pyforge-marshal-test` 11549 passed; `lint-types` green). `pyforge-deps-test` reds on pre-existing `pyforge-atlas` packaging import (unchanged by this story). Review: ACs satisfied; no follow-up review recommended.
+
+## Auto Run Result
+
+Status: done
+Verification: `pyforge-marshal-test`, `lint-types` green at implementation revision.

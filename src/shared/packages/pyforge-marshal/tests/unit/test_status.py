@@ -4975,6 +4975,50 @@ class TestFailedPatches:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
+    def test_failed_patch_for_current_story_stays_listed_without_mrs_status_010(self, tmp_path, capsys, monkeypatch):
+        """Story 86.4 (DW-FU-4-14-8): no ``MRS-STATUS-010`` for the in-flight story's patch."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[
+                _outcome_line("acme-run1", pid=4242, harness_run_id="hrid-1"),
+                _supervisor_attach_line("acme-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        _seed_failed_patch(home, run_id="20260809-231524-abb9", story_dir=_REAL_STORY_DIR)
+        vcs = _FakeVcs(
+            worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+            commit_subjects_value=(),
+        )
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), "hrid-1"): _snapshot(
+                    finished=False,
+                    tasks=(_task(story_key="4.11", phase="dev-running"),),
+                )
+            }
+        )
+        process = _FakeProcess(alive_pids=frozenset({5252}))
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["current_story"] == "4.11"
+        assert len(row["failed_patches"]) == 1
+        assert row["failed_patches"][0]["story_key"] == "4.11"
+        assert "MRS-STATUS-010" not in [f["code"] for f in payload["findings"]]
+        assert exit_code == 0
+
     def test_git_read_failure_degrades_every_patch_and_warns_once(self, tmp_path, capsys, monkeypatch):
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None, "beta": None})
         home_a = tmp_path / "loop-homes" / "acme"
