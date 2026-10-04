@@ -2,10 +2,11 @@
 title: "41.6: Chain-completeness counts the one-chain fold's citation window again"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'd8bb280f2d26d9dc19260f371227827dac5dc81f'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 1
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md
@@ -130,4 +131,35 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (no actionable findings; blind-hunter floor N=2 for ~3 kB diff — regex and fixtures match spec boundaries)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended `_DECOMP_SECTION_OPEN_RE` so `## Fold provenance` sections (parentheses or em-dash suffix) count as INV-A decomposition prose again, restoring fold-provenance citations in station `epics.md` files.
+
+**Measured counts:** `spec-not-decomposed` on the six station Specs (`spec-pyforge-atlas`, `spec-pyforge-doctor`, `spec-pyforge-marshal`, `spec-pyforge-scribe`, `spec-pyforge-steward`, `spec-pyforge-warden`) — before fix: 6; after fix: 0.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py` — allowlist `## Fold provenance` in decomposition slice.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_completeness.py` — fold-provenance coverage, partial gap, em-dash, changelog exclusion fixtures.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board.py` — live-tree assertion for the six station Specs.
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` — surface reconcile (owning Spec).
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — surface reconcile (co-governor).
+
+**Review:** 0 patches, 0 deferred, 0 rejected.
+
+**followup_review_recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 3412 passed, 1 skipped.
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+- `pixi run --frozen -e pyforge-guild chain-completeness-check` — ok (no `spec-not-decomposed` on station Specs).
+- `python scripts/spec_surface_reconcile.py` — OK after memlog reconcile (no `--write-baseline`).
+
+**Governed paths named in memlogs:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_chain_completeness.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_sources_board.py` (both `spec-pyforge-doctor` and `spec-pyforge-core` memlogs).
+
+**Residual risk:** None identified; mutation AC is satisfied by tests pinning the new regex alternative.
