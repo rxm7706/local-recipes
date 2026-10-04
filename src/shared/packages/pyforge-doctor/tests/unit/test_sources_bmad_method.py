@@ -3035,9 +3035,7 @@ def test_offline_gather_issues_no_fetch_and_keeps_the_offline_checks(
     ]
 
 
-def test_offline_gather_keeps_manifest_and_unparseable_checks(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_offline_gather_keeps_manifest_and_unparseable_checks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     _write_pixi(
         tmp_path,
         '[feature.python.dependencies]\nbmad-method = ">=6.11.0"\n\n'
