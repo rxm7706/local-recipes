@@ -8,10 +8,12 @@ from __future__ import annotations
 import pytest
 
 from pyforge.marshal.core.identity import StoryKey, render_merge_subject
+from pyforge.marshal.core.model import Severity
 from pyforge.marshal.core.promotion import (
     PRE_DONE_SPEC_STATUSES,
     SPEC_STATUS_DONE,
     TERMINAL_SPEC_STATUSES,
+    PromotionPlan,
     SpecCandidate,
     classify_promotion_candidates,
     corroborated_merged_story_keys,
@@ -23,6 +25,8 @@ from pyforge.marshal.core.promotion import (
     merged_story_keys,
     read_spec_status,
     set_spec_status,
+    spec_full_key,
+    spec_title_slug,
 )
 
 _TEMPLATE = "Merge {key} into main"
@@ -826,11 +830,28 @@ def test_pre_done_and_terminal_spec_statuses_are_disjoint_and_pre_done_is_every_
 # --- classify_promotion_candidates -------------------------------------------
 
 
+def _classify(
+    *,
+    candidates: tuple[SpecCandidate, ...],
+    merged_keys: frozenset[StoryKey],
+    already_promoted: frozenset[StoryKey],
+) -> PromotionPlan:
+    """Story 83.20: every candidate's full key is a ledger row and no spec is tracked, so the orphan rules
+    pass and the tests below exercise exactly what they did before that story."""
+    return classify_promotion_candidates(
+        candidates=candidates,
+        merged_keys=merged_keys,
+        already_promoted=already_promoted,
+        ledger_keys=frozenset(spec_full_key(candidate.path) for candidate in candidates),
+        tracked_specs=(),
+    )
+
+
 def test_durable_candidate_with_valid_spec_is_promoted():
     key = StoryKey(1, 2)
     candidate = SpecCandidate(story_key=key, path="spec-1-2.md", text=_VALID_SPEC)
 
-    plan = classify_promotion_candidates(
+    plan = _classify(
         candidates=(candidate,),
         merged_keys=frozenset({key}),
         already_promoted=frozenset(),
@@ -844,7 +865,7 @@ def test_already_promoted_candidate_is_skipped_not_repromoted():
     key = StoryKey(3, 8)
     candidate = SpecCandidate(story_key=key, path="spec-3-8.md", text=_VALID_SPEC)
 
-    plan = classify_promotion_candidates(
+    plan = _classify(
         candidates=(candidate,),
         merged_keys=frozenset({key}),
         already_promoted=frozenset({key}),
@@ -857,7 +878,7 @@ def test_already_promoted_candidate_is_skipped_not_repromoted():
 def test_merged_story_with_no_matching_spec_is_a_gap():
     key = StoryKey(4, 1)
 
-    plan = classify_promotion_candidates(
+    plan = _classify(
         candidates=(),
         merged_keys=frozenset({key}),
         already_promoted=frozenset(),
@@ -873,7 +894,7 @@ def test_merged_story_with_invalid_spec_is_a_gap_never_promoted():
     key = StoryKey(2, 3)
     candidate = SpecCandidate(story_key=key, path="spec-2-3.md", text="")
 
-    plan = classify_promotion_candidates(
+    plan = _classify(
         candidates=(candidate,),
         merged_keys=frozenset({key}),
         already_promoted=frozenset(),
@@ -891,7 +912,7 @@ def test_not_yet_merged_story_produces_nothing_in_either_bucket():
     key = StoryKey(5, 1)
     candidate = SpecCandidate(story_key=key, path="spec-5-1.md", text=_VALID_SPEC)
 
-    plan = classify_promotion_candidates(
+    plan = _classify(
         candidates=(candidate,),
         merged_keys=frozenset(),
         already_promoted=frozenset(),
@@ -902,7 +923,7 @@ def test_not_yet_merged_story_produces_nothing_in_either_bucket():
 
 
 def test_zero_candidates_and_zero_merged_keys_is_a_clean_empty_plan():
-    plan = classify_promotion_candidates(candidates=(), merged_keys=frozenset(), already_promoted=frozenset())
+    plan = _classify(candidates=(), merged_keys=frozenset(), already_promoted=frozenset())
     assert plan.to_promote == ()
     assert plan.gaps == ()
 
@@ -914,7 +935,7 @@ def test_mixed_batch_promotes_valid_and_gaps_invalid_independently():
     good = SpecCandidate(story_key=good_key, path="spec-1-1.md", text=_VALID_SPEC)
     bad = SpecCandidate(story_key=bad_key, path="spec-1-2.md", text=None)
 
-    plan = classify_promotion_candidates(
+    plan = _classify(
         candidates=(good, bad),
         merged_keys=frozenset({good_key, bad_key, missing_key}),
         already_promoted=frozenset(),
@@ -932,7 +953,7 @@ def test_plan_order_is_deterministic_by_sorted_story_key():
     candidate_b = SpecCandidate(story_key=key_b, path="spec-2-1.md", text=_VALID_SPEC)
 
     # Deliberately supplied out of key order.
-    plan = classify_promotion_candidates(
+    plan = _classify(
         candidates=(candidate_b, candidate_a),
         merged_keys=frozenset({key_b, key_a}),
         already_promoted=frozenset(),
@@ -954,7 +975,7 @@ def test_missing_spec_keys_names_only_the_no_spec_at_all_case():
     invalid = SpecCandidate(story_key=invalid_key, path="spec-1-4.md", text=None)
     promoted = SpecCandidate(story_key=promoted_key, path="spec-1-5.md", text=_VALID_SPEC)
 
-    plan = classify_promotion_candidates(
+    plan = _classify(
         candidates=(invalid, promoted),
         merged_keys=frozenset({missing_key, invalid_key, promoted_key}),
         already_promoted=frozenset(),
@@ -966,7 +987,7 @@ def test_missing_spec_keys_names_only_the_no_spec_at_all_case():
 
 
 def test_missing_spec_keys_defaults_to_empty_for_a_clean_plan():
-    plan = classify_promotion_candidates(candidates=(), merged_keys=frozenset(), already_promoted=frozenset())
+    plan = _classify(candidates=(), merged_keys=frozenset(), already_promoted=frozenset())
     assert plan.missing_spec_keys == frozenset()
     assert plan.invalid_spec_keys == frozenset()
 
@@ -981,7 +1002,7 @@ def test_invalid_spec_keys_names_the_zero_byte_or_truncated_case():
     invalid_key = StoryKey(2, 9)
     invalid = SpecCandidate(story_key=invalid_key, path="spec-2-9.md", text="")
 
-    plan = classify_promotion_candidates(
+    plan = _classify(
         candidates=(invalid,),
         merged_keys=frozenset({invalid_key}),
         already_promoted=frozenset(),
@@ -990,3 +1011,211 @@ def test_invalid_spec_keys_names_the_zero_byte_or_truncated_case():
     assert plan.invalid_spec_keys == frozenset({invalid_key})
     assert plan.missing_spec_keys == frozenset()
     assert plan.to_promote == ()
+
+
+# --- Story 83.20: an orphan Tier-3 spec is never promoted ----------------------------------------
+#
+# 2026-10-03, atlas 27.1's finalize: three pre-rekey Tier-3 copies (`spec-13-5-…`, `spec-14-4-…`,
+# `spec-15-3-…`) read as merged through the OLD numbers' real bmad-loop landing subjects, and the rekey had
+# renamed their tracked twins (`spec-12-5-…-fr-68`, …) so no tracked spec sat under the old numbers. A
+# candidate is promoted only when (1) its full key is a ledger row and (2) no tracked spec carries its
+# title slug under another story key.
+
+_T3 = "_bmad-output/projects/pyforge-atlas/implementation-artifacts"
+_TRACKED = "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs"
+
+
+@pytest.mark.parametrize(
+    ("path", "full_key", "title"),
+    [
+        (
+            f"{_T3}/spec-13-5-downstream-handoff-to-mason.md",
+            "13-5-downstream-handoff-to-mason",
+            "downstream-handoff-to-mason",
+        ),
+        (
+            f"{_TRACKED}/spec-12-5-downstream-handoff-to-mason-fr-68.md",
+            "12-5-downstream-handoff-to-mason-fr-68",
+            "downstream-handoff-to-mason-fr-68",
+        ),
+        ("spec-13-5.md", "13-5", ""),
+        ("spec-6-1a-suffixed-title.md", "6-1a-suffixed-title", "suffixed-title"),
+        ("spec-6-1A-upper-suffix.md", "6-1A-upper-suffix", "upper-suffix"),
+        ("spec-13.5-dotted-key.md", "13.5-dotted-key", "dotted-key"),
+        ("spec-not-a-story.md", "not-a-story", ""),
+        ("spec-06-01-padded.md", "06-01-padded", ""),
+    ],
+)
+def test_spec_full_key_and_title_slug(path, full_key, title):
+    assert spec_full_key(path) == full_key
+    assert spec_title_slug(full_key) == title
+
+
+def _candidate(name: str, key: StoryKey, text: str | None = _VALID_SPEC) -> SpecCandidate:
+    return SpecCandidate(story_key=key, path=f"{_T3}/{name}", text=text)
+
+
+def test_a_merged_candidate_whose_full_key_is_no_ledger_row_is_an_orphan_never_promoted():
+    """AC 1 (rule 1 alone -- no tracked spec shares the title): the story number reads as merged, but the
+    file's full key is no ledger row, so it is a WARN naming the file and "no ledger row", never promoted."""
+    key = StoryKey(13, 5)
+    stale = _candidate("spec-13-5-downstream-handoff-to-mason.md", key)
+
+    plan = classify_promotion_candidates(
+        candidates=(stale,),
+        merged_keys=frozenset({key}),
+        already_promoted=frozenset(),
+        ledger_keys=frozenset({"12-5-downstream-handoff-to-mason-fr-68"}),
+        tracked_specs=(f"{_TRACKED}/spec-12-1-trending-ingest-fr-64.md",),
+    )
+
+    assert plan.to_promote == ()
+    assert plan.gaps == ()
+    [orphan] = plan.orphans
+    assert (orphan.code, orphan.severity) == ("MRS-DEPLOY-028", Severity.WARN)
+    assert orphan.path == stale.path
+    assert stale.path in orphan.message
+    assert "no ledger row" in orphan.message
+    assert "'13-5-downstream-handoff-to-mason'" in orphan.message
+    assert plan.orphan_keys == frozenset({key})
+
+
+def test_an_absent_ledger_reads_as_no_ledger_row_for_every_candidate():
+    """``ledger_keys=None`` (no readable ledger) fails closed: no key is a row, so nothing is promoted."""
+    key = StoryKey(4, 1)
+    candidate = _candidate("spec-4-1-x.md", key)
+
+    plan = classify_promotion_candidates(
+        candidates=(candidate,),
+        merged_keys=frozenset({key}),
+        already_promoted=frozenset(),
+        ledger_keys=None,
+        tracked_specs=(),
+    )
+
+    assert plan.to_promote == ()
+    [orphan] = plan.orphans
+    assert "no ledger row" in orphan.message
+    assert "absent or unreadable" in orphan.message
+
+
+def test_a_candidate_whose_title_slug_a_tracked_spec_carries_under_another_key_is_an_orphan_naming_both():
+    """AC 2 (rule 2 alone -- the candidate's full key IS a ledger row): a tracked spec with the same title
+    slug under another story key is the same story, so the candidate is a WARN naming both files."""
+    key = StoryKey(21, 1)
+    stale = _candidate("spec-21-1-relocate-atlas-data-defaults.md", key)
+    twin = f"{_TRACKED}/spec-20-1-relocate-atlas-data-defaults.md"
+
+    plan = classify_promotion_candidates(
+        candidates=(stale,),
+        merged_keys=frozenset({key}),
+        already_promoted=frozenset(),
+        ledger_keys=frozenset({"21-1-relocate-atlas-data-defaults", "20-1-relocate-atlas-data-defaults"}),
+        tracked_specs=(twin, f"{_TRACKED}/spec-21-2-another-story.md"),
+    )
+
+    assert plan.to_promote == ()
+    [orphan] = plan.orphans
+    assert orphan.code == "MRS-DEPLOY-028"
+    assert stale.path in orphan.message
+    assert twin in orphan.message
+    assert "no ledger row" not in orphan.message
+    assert plan.orphan_keys == frozenset({key})
+
+
+def test_a_tracked_spec_under_the_same_story_key_or_another_title_is_no_twin():
+    """Rule 2 needs the SAME title under a DIFFERENT story key: the same key with the same title (a broken
+    tracked copy that does not count as promoted) and another key with another title are no twin."""
+    key = StoryKey(7, 2)
+    candidate = _candidate("spec-7-2-shared-words.md", key)
+
+    plan = classify_promotion_candidates(
+        candidates=(candidate,),
+        merged_keys=frozenset({key}),
+        already_promoted=frozenset(),
+        ledger_keys=frozenset({"7-2-shared-words"}),
+        tracked_specs=(f"{_TRACKED}/spec-7-2-shared-words.md", f"{_TRACKED}/spec-3-1-shared-words-plus-more.md"),
+    )
+
+    assert plan.to_promote == (candidate,)
+    assert plan.orphans == ()
+
+
+def test_a_candidate_passing_both_rules_is_promoted_exactly_as_before():
+    """AC 4: a ledger-listed candidate with no twin is promoted as it was before Story 83.20 -- same
+    candidate object, no orphan, no gap -- whatever other rows and tracked specs the station carries."""
+    key = StoryKey(27, 1)
+    candidate = _candidate("spec-27-1-the-real-story.md", key)
+
+    plan = classify_promotion_candidates(
+        candidates=(candidate,),
+        merged_keys=frozenset({key}),
+        already_promoted=frozenset(),
+        ledger_keys=frozenset({"27-1-the-real-story", "12-5-downstream-handoff-to-mason-fr-68"}),
+        tracked_specs=(f"{_TRACKED}/spec-12-5-downstream-handoff-to-mason-fr-68.md",),
+    )
+
+    assert plan.to_promote == (candidate,)
+    assert plan.gaps == ()
+    assert plan.orphans == ()
+    assert plan.orphan_keys == frozenset()
+
+
+def test_a_refused_candidate_never_shadows_an_eligible_sibling_of_the_same_key():
+    """Two Tier-3 files share story 13.5: the real one (its key is a row) and a pre-rekey leftover listed
+    AFTER it. The leftover used to win the key by coming last; now the real one is promoted and the
+    leftover is still reported."""
+    key = StoryKey(13, 5)
+    real = _candidate("spec-13-5-a-new-thing.md", key)
+    stale = _candidate("spec-13-5-zz-pre-rekey-leftover.md", key)
+
+    plan = classify_promotion_candidates(
+        candidates=(real, stale),
+        merged_keys=frozenset({key}),
+        already_promoted=frozenset(),
+        ledger_keys=frozenset({"13-5-a-new-thing"}),
+        tracked_specs=(),
+    )
+
+    assert plan.to_promote == (real,)
+    [orphan] = plan.orphans
+    assert stale.path in orphan.message
+    assert plan.orphan_keys == frozenset()
+
+
+def test_a_candidate_failing_both_rules_reports_one_finding_naming_every_reason():
+    key = StoryKey(14, 4)
+    stale = _candidate("spec-14-4-air-gap-asset-rewriting.md", key)
+    twin = f"{_TRACKED}/spec-13-4-air-gap-asset-rewriting.md"
+
+    plan = classify_promotion_candidates(
+        candidates=(stale,),
+        merged_keys=frozenset({key}),
+        already_promoted=frozenset(),
+        ledger_keys=frozenset({"13-4-air-gap-asset-rewriting"}),
+        tracked_specs=(twin,),
+    )
+
+    [orphan] = plan.orphans
+    assert "no ledger row" in orphan.message
+    assert twin in orphan.message
+
+
+def test_the_orphan_rules_judge_only_merged_not_yet_promoted_keys():
+    """A not-yet-merged story's Tier-3 file and an already-promoted story's leftover are judged exactly as
+    before -- silently skipped -- however orphaned they look."""
+    unmerged, promoted = StoryKey(9, 9), StoryKey(13, 1)
+    plan = classify_promotion_candidates(
+        candidates=(
+            _candidate("spec-9-9-not-merged.md", unmerged),
+            _candidate("spec-13-1-trending-ingest.md", promoted),
+        ),
+        merged_keys=frozenset({promoted}),
+        already_promoted=frozenset({promoted}),
+        ledger_keys=frozenset(),
+        tracked_specs=(),
+    )
+
+    assert plan.to_promote == ()
+    assert plan.gaps == ()
+    assert plan.orphans == ()

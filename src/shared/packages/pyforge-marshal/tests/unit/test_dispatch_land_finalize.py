@@ -1560,6 +1560,10 @@ def test_a_key_the_tier3_route_promoted_this_run_is_not_promoted_again_as_a_trac
     twin = tmp_path / "_bmad-output" / "projects" / _SLUG_79 / "implementation-artifacts" / _SPEC_NAME_79
     twin.parent.mkdir(parents=True)
     twin.write_text(_TRACKED_SPEC_79.replace("'backlog'", "'done'"), encoding="utf-8")
+    # Story 83.20: the Tier-3 twin is promoted only because its full key is a row of the primary's ledger.
+    ledger = tmp_path / "_bmad-output" / "projects" / _SLUG_79 / "planning-artifacts" / "sprint-status-ledger.yaml"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(_DONE_LEDGER_79, encoding="utf-8")
     feed = _write_feed_79(tmp_path)
     vcs = _Tier3Vcs(ledger_text=_DONE_LEDGER_79, spec_text=None)
     _stub_real_scan_finalize(monkeypatch, tmp_path, vcs)
@@ -3034,3 +3038,124 @@ def test_against_real_git_the_closure_is_published_onto_origin_mains_ledger(tmp_
     tip = _git_79(origin, "rev-parse", "main").strip()
     assert _finalize() == 0
     assert _git_79(origin, "rev-parse", "main").strip() == tip
+
+
+# -- Story 83.20: the atlas 27.1 finalize of 2026-10-03, replayed against real git ----------------------
+#
+# That finalize made local-main commit cb80aeac52 "marshal: promote 3 story spec(s) to tracked artifacts":
+# three pre-rekey Tier-3 leftovers whose stories had landed under their OLD numbers (bmad-loop merges, August)
+# and been promoted, then renamed by the 2026-09-17 rekey to new keys -- so the old numbers still read as
+# merged and had no tracked spec under them. The fixture rebuilds that history in a real repository.
+
+_ATLAS = "pyforge-atlas"
+_ATLAS_DIR = f"_bmad-output/projects/{_ATLAS}"
+_ATLAS_SPECS = f"{_ATLAS_DIR}/planning-artifacts/specs"
+_ATLAS_LEDGER = f"{_ATLAS_DIR}/planning-artifacts/sprint-status-ledger.yaml"
+_ATLAS_LANDED = "27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud"
+#: (pre-rekey key, rekeyed key, the OLD number's real bmad-loop landing subject on `main`)
+_ATLAS_REKEYED = (
+    (
+        "13-5-downstream-handoff-to-mason",
+        "12-5-downstream-handoff-to-mason-fr-68",
+        "Merge bmad-loop/20260809-184330-203b/13-5-downstream-handoff-to-mason into loop/pyforge-atlas (bmad-loop)",
+    ),
+    (
+        "14-4-air-gap-asset-rewriting",
+        "13-4-air-gap-asset-rewriting-cap-4",
+        "Merge bmad-loop/20260815-112701-4285/14-4-air-gap-asset-rewriting into loop/pyforge-atlas (bmad-loop)",
+    ),
+    (
+        "15-3-kedro-pipeline-surfacing",
+        "14-3-kedro-pipeline-surfacing-cap-4",
+        "Merge bmad-loop/20260815-112701-4285/15-3-kedro-pipeline-surfacing into loop/pyforge-atlas (bmad-loop)",
+    ),
+)
+
+
+def _atlas_spec(old_key: str, body: str = "the landed spec") -> str:
+    return f"---\ntitle: '{old_key}'\nstatus: 'done'\n---\n\n{body}\n"
+
+
+def _atlas_ledger(*keys: str) -> str:
+    return "development_status:\n" + "".join(f"  {key}: done\n" for key in keys)
+
+
+def test_against_real_git_the_atlas_finalize_promotes_no_pre_rekey_tier3_spec(tmp_path: Path, monkeypatch) -> None:
+    """AC 3: the three pre-rekey Tier-3 specs (two byte-identical to their rekeyed tracked twins, one older),
+    the twins and their ledger rows, and the OLD numbers' bmad-loop landing subjects that make 13.5 / 14.4 /
+    15.3 read as merged. The real finalize for 27.1 -- real scan, real promotion executor, real git -- makes
+    no commit at all, reports three `MRS-DEPLOY-028` orphan findings, and leaves every Tier-3 file as it was."""
+    from pyforge.marshal.core import promotion
+
+    origin = tmp_path / "origin.git"
+    origin.mkdir()
+    _git_79(origin, "init", "--bare", "-b", "main")
+    primary = tmp_path / "primary"
+    primary.mkdir()
+    _git_79(primary, "init", "-b", "main")
+    _configure_git_79(primary)
+    (primary / ".gitignore").write_text("_bmad-output/projects/*/implementation-artifacts/\n", encoding="utf-8")
+    specs = primary / _ATLAS_SPECS
+    specs.mkdir(parents=True)
+    # August: each story lands under its OLD number and its spec is promoted under that number.
+    for old_key, _new_key, landing in _ATLAS_REKEYED:
+        (specs / f"spec-{old_key}.md").write_text(_atlas_spec(old_key), encoding="utf-8")
+        _git_79(primary, "add", "-A")
+        _git_79(primary, "commit", "-m", landing)
+    (primary / _ATLAS_LEDGER).write_text(_atlas_ledger(*(old for old, _new, _s in _ATLAS_REKEYED)), encoding="utf-8")
+    _git_79(primary, "add", "-A")
+    _git_79(primary, "commit", "-m", "atlas ledger")
+    # 2026-09-17: the rekey renames the tracked specs and the ledger rows.
+    for old_key, new_key, _landing in _ATLAS_REKEYED:
+        _git_79(primary, "mv", f"{_ATLAS_SPECS}/spec-{old_key}.md", f"{_ATLAS_SPECS}/spec-{new_key}.md")
+    (primary / _ATLAS_LEDGER).write_text(_atlas_ledger(*(new for _old, new, _s in _ATLAS_REKEYED)), encoding="utf-8")
+    _git_79(primary, "add", "-A")
+    _git_79(primary, "commit", "-m", "land atlas fold: one chain -- rekey 2026-09-17")
+    # 2026-10-03: story 27.1 lands, its tracked spec done and its ledger row done.
+    (specs / f"spec-{_ATLAS_LANDED}.md").write_text(_atlas_spec(_ATLAS_LANDED), encoding="utf-8")
+    (primary / _ATLAS_LEDGER).write_text(
+        _atlas_ledger(*(new for _old, new, _s in _ATLAS_REKEYED), _ATLAS_LANDED), encoding="utf-8"
+    )
+    _git_79(primary, "add", "-A")
+    _git_79(primary, "commit", "-m", "Merge pyforge-atlas/27-1 into main")
+    _git_79(primary, "remote", "add", "origin", str(origin))
+    _git_79(primary, "push", "-u", "origin", "main")
+
+    # The Tier-3 leftovers: two byte-identical to their rekeyed twins, the third older than its twin.
+    tier3 = primary / _ATLAS_DIR / "implementation-artifacts"
+    tier3.mkdir(parents=True)
+    leftovers: dict[Path, str] = {}
+    for index, (old_key, _new_key, _landing) in enumerate(_ATLAS_REKEYED):
+        text = _atlas_spec(old_key) if index < 2 else _atlas_spec(old_key, "an older draft")
+        leftovers[tier3 / f"spec-{old_key}.md"] = text
+        (tier3 / f"spec-{old_key}.md").write_text(text, encoding="utf-8")
+    (tier3 / "sprint-status.yaml").write_text(f"development_status:\n  {_ATLAS_LANDED}: done\n", encoding="utf-8")
+
+    # The landing evidence that made the old numbers read as merged -- and no tracked spec under them.
+    subjects = tuple(_git_79(primary, "log", "--format=%s", "main").splitlines())
+    merged = promotion.merged_story_keys(subjects, "Merge {slug}/{key} into main", _ATLAS)
+    assert {normalize("13.5"), normalize("14.4"), normalize("15.3")} <= merged
+    assert not any((specs / f"spec-{old}.md").exists() for old, _new, _s in _ATLAS_REKEYED)
+
+    head_before = _git_79(primary, "rev-parse", "HEAD").strip()
+    origin_before = _git_79(origin, "rev-parse", "main").strip()
+    tracked_before = sorted(path.name for path in specs.iterdir())
+    _stub_real_scan_finalize(monkeypatch, primary, GitVcs())
+
+    assert finalize_dispatch_land(_ATLAS, "27.1") == 0
+
+    assert _git_79(primary, "rev-parse", "HEAD").strip() == head_before
+    assert _git_79(origin, "rev-parse", "main").strip() == origin_before
+    assert "marshal: promote" not in _git_79(primary, "log", "--format=%s", "--all")
+    assert _git_79(primary, "status", "--porcelain") == ""
+    assert sorted(path.name for path in specs.iterdir()) == tracked_before
+    findings = _read_finalize_resync_entry(primary, _ATLAS)["payload"]["findings"]
+    orphans = [finding for finding in findings if finding["code"] == "MRS-DEPLOY-028"]
+    assert len(orphans) == 3
+    for finding, (old_key, _new_key, _landing) in zip(orphans, _ATLAS_REKEYED, strict=True):
+        assert finding["severity"] == "warn"
+        assert f"spec-{old_key}.md" in finding["message"]
+        assert "no ledger row" in finding["message"]
+    assert [finding for finding in findings if finding["severity"] == "error"] == []
+    for path, text in leftovers.items():
+        assert path.read_text(encoding="utf-8") == text

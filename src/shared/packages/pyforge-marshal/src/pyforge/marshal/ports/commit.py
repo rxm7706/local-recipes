@@ -71,7 +71,16 @@ class CommitPort(Protocol):
         invocation. Raises ``VcsCommandError`` if ``paths`` is empty (a
         caller with nothing to promote must never reach this method) or on
         any git failure (an unwritable index, a path outside the working
-        tree, nothing to commit)."""
+        tree, nothing to commit).
+
+        One widening, never a sweep (Story 83.16 landing review): a named
+        path that is a rename's destination (``git mv``, or the
+        intent-to-add form) brings the rename's ORIGINAL path into the
+        commit -- its deletion only, never ``git add``ed -- since
+        ``changed_files`` reports a rename by its destination alone and a
+        commit without the original leaves that deletion behind. A named
+        path whose deletion is already staged is committed without a ``git
+        add``."""
         ...
 
     def merge_ref_resolving(

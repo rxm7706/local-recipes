@@ -335,15 +335,22 @@ class VcsPort(Protocol):
     def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
         """Story 2.3's frozen-surface scope check (AD-27): every repo-
         relative POSIX path ``worktree_path`` has touched relative to
-        ``base`` -- the UNION of (a) ``git diff --name-only
+        ``base`` -- the UNION of (a) ``git diff -M --name-status -z
         <base>...HEAD`` run against ``worktree_path`` (committed changes
         since the merge-base, three-dot per this port's own
         ``is_branch_merged`` merge-base convention -- run against
         ``worktree_path``, not ``repo_root``, since ``HEAD`` is per-
         worktree and ``base``/refs are shared across every worktree of one
-        repo) and (b) ``git status --porcelain`` in ``worktree_path``
+        repo) and (b) ``git status --porcelain -z`` in ``worktree_path``
         (uncommitted/untracked -- a story's changes are not necessarily
         committed yet at gate-evaluation time). Deduplicated, sorted.
+
+        Every path comes back literally, read from ``-z`` output (Story
+        83.16): never C-quoted or escaped, whatever spaces, quotes, tabs,
+        newlines, backslashes or non-ASCII characters it holds. A rename or
+        a copy reports only its DESTINATION -- a rename's original path is
+        not in the result, so a caller that commits these paths relies on
+        ``commit_paths`` to commit the original's deletion with it.
 
         Read-only. Raises ``VcsCommandError`` on any git failure (an
         unresolvable ``base``, ``worktree_path`` not inside a git
