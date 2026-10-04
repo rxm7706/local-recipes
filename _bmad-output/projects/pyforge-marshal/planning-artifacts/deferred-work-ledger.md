@@ -8911,3 +8911,14 @@ status: open
   severity: low
   promoted: 2026-10-04 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FRR-85-5: Follow-up review still recommended for story 85.5
+
+- source_spec: `planning-artifacts/specs/spec-85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification.md`
+  summary: Story 85.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 85.5 landed on origin/main with its tracked spec reading `status: done` and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-04 — dispatch-land finalize
+  status: open
