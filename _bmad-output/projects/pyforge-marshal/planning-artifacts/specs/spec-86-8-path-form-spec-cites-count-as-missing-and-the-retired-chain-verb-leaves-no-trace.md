@@ -2,10 +2,10 @@
 title: "86.8: Path-form spec cites count as missing, and the retired chain verb leaves no trace"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -85,3 +85,34 @@ Minted 2026-10-04 at the operator's request ("chain it Story 86.8 in Epic 86").
 ## Review Triage Log
 
 - No review has run yet.
+
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — AC verification and spec_surface_reconcile passed)
+
+## Auto Run Result
+
+Status: done
+
+Summary: `_spec_cites` now treats `specs/spec-…` path-form cites as real story-spec cites (missing when unresolved); atlas and steward epics links repaired; retired `marshal chain regenerate` removed from generated cheat sheet, dossier, and marshal infographics; dead mypy override removed; DW-FU-21-2 resolution amended.
+
+Files changed:
+- `chain_regen.py` — path-form cite detection (`_path_form_spec_cite`)
+- `test_chain_regen.py` — path-form and spec-template fixture tests
+- `pyproject.toml` — removed `pyforge.marshal.cli.chain` mypy override
+- `verdict.py` — comment names planning chain-regenerate
+- Atlas/steward/marshal `epics.md` — canonical spec paths
+- `deferred-work-ledger.md` — DW-FU-21-2 text
+- `docs/reference/station-cheat-sheet.md` — regenerated
+- `docs/map.yaml` — cheat-sheet stamp
+- `dossier.yml` + marshal infographics — verb retirement
+- Six co-governor `.memlog.md` surface reconcile entries
+
+Review: 0 patches; follow-up review not recommended.
+
+Verification:
+- `pyforge-marshal-test` — pass (linkage tests including live-tree)
+- `pyforge-deps-test` — pass
+- `lint-types` — pass (no unused mypy section)
+- `python3 scripts/docs_station_cli.py --check` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
