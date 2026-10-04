@@ -30,6 +30,8 @@ from test_dispatch_fleet import (
     _fu_spec,
     _fu_subject,
     _init_git_repo,
+    _seed_fleet,
+    _seed_live_dispatch_journal,
 )
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
@@ -1042,6 +1044,32 @@ def test_the_drainplan_codes_classify_at_the_promised_tiers(code: str, tier: ver
 # --------------------------------------------------------------------------
 # I/O matrix rows not covered above
 # --------------------------------------------------------------------------
+
+
+def test_serial_station_with_live_session_reads_would_dispatch_false(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 86.4 (DW-marshal-65-1-2): serial ``plan_station_cycle`` respects live sessions."""
+    slug = "pyforge-marshal"
+    story = "22-7-fleet"
+    _seed_fleet(tmp_path, stories={slug: [story]})
+    _write_spec(tmp_path, slug, story)
+    _seed_live_dispatch_journal(tmp_path, slug=slug, run_id="run-live", story_key="22.7")
+    code, envelope, _out = _plan(
+        tmp_path,
+        "--mode",
+        "drain_to_zero",
+        "--station",
+        slug,
+        ledgers={slug: ((story, "backlog"),)},
+        process=FakeProcess(alive=True),
+        capsys=capsys,
+    )
+    row = _station(envelope, slug)
+    assert row["would_dispatch"] is False
+    assert row["outcome"] == "in-flight"
+    assert "dispatch in flight" in str(row.get("detail"))
+    assert code == 0
 
 
 def test_a_clean_station_would_dispatch_and_exits_zero(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
