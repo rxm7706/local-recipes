@@ -29,23 +29,66 @@ FIX_TURN_REVERIFY_REFUSED_CODE = "MRS-DISP-060"
 _VERIFY_REFUSAL_GATE_PREFIX = "MRS-GATE-"
 
 # Story 85.1 (M7) + 85.3: scrub credential-shaped text before truncation (never after).
-_URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s]+)@")
-_BEARER_TOKEN = re.compile(r"(?i)(Authorization:\s*Bearer\s+)\S+")
-_BASIC_AUTH = re.compile(r"(?i)(Authorization:\s*Basic\s+)\S+")
-#: One key=value / key: value rule (85.3 landing review H3): a bare or quoted key NAMING a secret -- any
-#: identifier carrying password / passwd / secret / token / api key / access key (`DATABASE_PASSWORD`,
-#: `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`, JSON `"password"`, YAML `db_password`) -- then `=` or `:` (never
-#: `==` or `::`), then a quoted value (to its closing quote, escapes included) or a bare one (to the next
-#: whitespace; an unclosed opening quote is taken with it).
+#
+# Story 85.4: the scrub runs in the supervisor's thread on the full output of every failed command, so every rule
+# here is linear in the text -- no quantifier can match one character two ways, and a run of identifier or scheme
+# characters is tried from its first character only (the lookbehinds); `token_budget.py:42:5:` keeps its line and
+# column, and a value is never taken from the next line. `test_dispatch_verify_fix.py` times each rule on 100 KB
+# adversarial input.
+#: A terminal control sequence (an ANSI colour code): removed first, since `\x1b[32m` ends in a letter that would
+#: hide the start of every rule after it, and it carries nothing the fix needs (85.4 review LOW-3).
+_TERMINAL_CONTROL = re.compile(r"\x1b\[[0-?]*+[ -/]*+[@-~]")
+#: A URL's userinfo password (an empty user too), to its `@` (a `://` inside it included). The scheme is tried from
+#: the start of a run of scheme characters only; when no `@` follows the `:` before whitespace, the run is consumed
+#: unchanged (``password`` unset), so no later scheme in the same run rescans it -- none of them can reach an `@`.
+_URL_CREDENTIALS = re.compile(
+    r"(?i)(?<![a-z0-9+.-])(?P<userinfo>[a-z0-9+.-]++://[^:/@\s]*+):(?:(?P<password>[^@\s]++)@|[^@\s]*+)"
+)
+#: An `Authorization:` header's credentials, whatever the scheme (`Bearer`, `Basic`, `token`, ...).
+_AUTHORIZATION = re.compile(r"(?i)(Authorization:[ \t]*(?:[A-Za-z][A-Za-z0-9_-]*[ \t]+)?)\S+")
+#: A `Cookie:` or `Set-Cookie:` header's value, to the end of its line.
+_COOKIE = re.compile(r"(?i)(\bCookie:[ \t]*)[^\r\n]+")
+#: What a key or flag names a secret by (85.3 landing review H3).
+_SECRET_WORD = r"(?:password|passwd|secret|token|api[_-]?key|access[_-]?key)"
+#: A bare identifier carrying a secret word (`DATABASE_PASSWORD`, `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`,
+#: `db_password`), taken whole: never a `.`, so a file name such as `token_budget.py` is no key.
+_SECRET_IDENTIFIER = r"(?=[A-Za-z0-9_-]*?" + _SECRET_WORD + r")[A-Za-z0-9_-]++"
+#: A quoted key: a dotted name carrying a secret word (`"db.password"`, `'spring.datasource.password'`), or a
+#: credential header named whole (`"Authorization"`, `'cookie'`).
+_SECRET_QUOTED_KEY = (
+    r"(?P<kq>['\"])(?:(?=[A-Za-z0-9_.-]*?" + _SECRET_WORD + r")[A-Za-z0-9_.-]++"
+    r"|(?:proxy-)?authorization|(?:set-)?cookie)(?P=kq)"
+)
+#: A quoted value to its closing quote on the same line (escapes included), or a bare one to the next whitespace
+#: (an unclosed opening quote is taken with it).
+_SECRET_VALUE = r"(?:(?P<vq>['\"])(?:\\.|(?!(?P=vq))[^\\\n])*(?P=vq)|['\"]?[^\s'\"]+)"
+#: One key=value / key: value rule (85.3 landing review H3): a quoted key then `=` (never `==`) or any `:`, or a
+#: bare secret identifier then `=` or a `:` no digit or second `:` follows (never `bin/token:42:5:`); then the value,
+#: on the same line.
 _SECRET_KEY_VALUE = re.compile(
-    r"(?i)(?<![A-Za-z0-9_.-])"
-    r"(?P<key>(?P<kq>['\"]?)"
-    r"[A-Za-z0-9_.-]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_.-]*"
-    r"(?P=kq)\s*(?:=(?!=)|:(?!:))\s*)"
-    r"(?:(?P<vq>['\"])(?:\\.|(?!(?P=vq)).)*(?P=vq)|['\"]?[^\s'\"]+)"
+    r"(?i)(?<![A-Za-z0-9_-])(?P<key>"
+    r"(?:" + _SECRET_QUOTED_KEY + r"[ \t]*(?:=(?!=)|:)"
+    r"|" + _SECRET_IDENTIFIER + r"[ \t]*(?:=(?!=)|:(?![\d:])))"
+    r"[ \t]*)" + _SECRET_VALUE
+)
+#: A command-line flag naming a secret and its space-separated value (`--password hunter2`); a following flag is
+#: never taken as the value.
+_SECRET_FLAG_VALUE = re.compile(
+    r"(?i)(?<![A-Za-z0-9_-])(?P<key>--?" + _SECRET_IDENTIFIER + r"[ \t]+)(?!-)" + _SECRET_VALUE
 )
 _SK_ANT_KEY = re.compile(r"sk-ant-[A-Za-z0-9_-]+")
+#: A bare GitHub token of a real token's length -- `gh[pousr]_` and 36 or more characters, `github_pat_` and 20 or
+#: more, as `core/egress.py` -- so a module name such as `ghp_import` is no token (85.4 review LOW-5).
+_GITHUB_TOKEN = re.compile(
+    r"(?<![A-Za-z0-9_])(gh[pousr]_(?=[A-Za-z0-9]{36})|github_pat_(?=[A-Za-z0-9_]{20}))[A-Za-z0-9_]+"
+)
 _REDACTED = "***REDACTED***"
+
+
+def _redact_url_password(match: re.Match[str]) -> str:
+    if match.group("password") is None:
+        return match.group(0)
+    return f"{match.group('userinfo')}:{_REDACTED}@"
 
 
 def _redact_secret_value(match: re.Match[str]) -> str:
@@ -54,12 +97,15 @@ def _redact_secret_value(match: re.Match[str]) -> str:
 
 
 def scrub_fix_turn_exposure(text: str) -> str:
-    """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1/85.3)."""
-    scrubbed = _URL_CREDENTIALS.sub(rf"\1:{_REDACTED}@", text)
-    scrubbed = _BEARER_TOKEN.sub(rf"\1{_REDACTED}", scrubbed)
-    scrubbed = _BASIC_AUTH.sub(rf"\1{_REDACTED}", scrubbed)
+    """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1/85.3/85.4)."""
+    scrubbed = _TERMINAL_CONTROL.sub("", text)
+    scrubbed = _URL_CREDENTIALS.sub(_redact_url_password, scrubbed)
+    scrubbed = _AUTHORIZATION.sub(rf"\1{_REDACTED}", scrubbed)
+    scrubbed = _COOKIE.sub(rf"\1{_REDACTED}", scrubbed)
     scrubbed = _SECRET_KEY_VALUE.sub(_redact_secret_value, scrubbed)
+    scrubbed = _SECRET_FLAG_VALUE.sub(_redact_secret_value, scrubbed)
     scrubbed = _SK_ANT_KEY.sub(f"sk-ant-{_REDACTED}", scrubbed)
+    scrubbed = _GITHUB_TOKEN.sub(rf"\1{_REDACTED}", scrubbed)
     return scrubbed
 
 
