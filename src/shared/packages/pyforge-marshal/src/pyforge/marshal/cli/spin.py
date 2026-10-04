@@ -653,9 +653,7 @@ def _launch_version_journal_fields(harness: HarnessPort) -> dict[str, object]:
     }
 
 
-def _warn_spin_policy_compose_findings(
-    findings: list[Finding], policy_findings: list[Finding]
-) -> None:
+def _warn_spin_policy_compose_findings(findings: list[Finding], policy_findings: list[Finding]) -> None:
     if not policy_findings:
         return
     findings.append(

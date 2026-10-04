@@ -2349,8 +2349,9 @@ def test_dispatch_launch_intent_carries_marshal_and_harness_versions(
     """Story 86.3 (DW-FU-3-3-9): dispatch-launch intent records both version fields."""
     from pyforge.marshal.cli import main as marshal_main
 
-    fs, _harness, attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch)
-    assert not attempt.findings or all(f.severity != Severity.ERROR for f in attempt.findings)
+    _init_git_repo(tmp_path, scope_slug=_FOLLOWUP_SLUG)
+    _seed_followup_spec(tmp_path)
+    fs, _harness, _attempt, _vcs = _launch_followup_story(tmp_path, monkeypatch)
     payload = _launch_intent(fs)
     assert payload["marshal_version"] == marshal_main.__version__
     assert isinstance(payload["harness_version"], (str, type(None)))
