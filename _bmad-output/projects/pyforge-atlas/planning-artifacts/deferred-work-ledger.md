@@ -4810,5 +4810,5 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: medium
   promoted: 2026-10-04 — quarantine hotfix
   resolution: Story 27.5 pins each filter-declaring page's data source to the build-time frame `_declared_filter_bundle` already read so Vizro does not mark the filter `_dynamic` and hide its selector until clientside reload.
-  verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:502 — `_data_page` registers `build_frame` in `data_manager` when `_declared_filter_bundle` succeeds.
+  verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:500 — `_data_page` registers `build_frame` in `data_manager` when `_declared_filter_bundle` succeeds.
   status: closed
