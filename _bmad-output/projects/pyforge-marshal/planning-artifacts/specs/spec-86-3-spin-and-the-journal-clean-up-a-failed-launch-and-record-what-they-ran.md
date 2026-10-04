@@ -2,7 +2,8 @@
 title: "86.3: Spin and the journal clean up a failed launch and record what they ran"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '94c1d081d733795f6e8235d12f8644072e8c8455'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

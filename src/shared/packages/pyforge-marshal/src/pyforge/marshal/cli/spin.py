@@ -643,27 +643,67 @@ def _resolve_governing_difficulty(
     return governing, batching_report
 
 
+def _launch_version_journal_fields(harness: HarnessPort) -> dict[str, object]:
+    """FR-57 / Story 86.3: marshal and bmad-loop versions on launch intents."""
+    from .main import __version__ as marshal_version
+
+    return {
+        "marshal_version": marshal_version,
+        "harness_version": harness.harness_version(),
+    }
+
+
+def _warn_spin_policy_compose_findings(
+    findings: list[Finding], policy_findings: list[Finding]
+) -> None:
+    if not policy_findings:
+        return
+    findings.append(
+        Finding(
+            code="MRS-SPIN-008",
+            severity=Severity.WARN,
+            message=(
+                "the project policy layer produced "
+                f"{len(policy_findings)} finding(s) while composing the "
+                "supervisor's idle threshold (the launch itself is "
+                "unaffected; every key a finding below names kept its "
+                "composed default instead of the project's own value): "
+                + "; ".join(f"{finding.code}: {finding.message}" for finding in policy_findings)
+            ),
+        )
+    )
+
+
 def _compose_spin_policy(
     slug: str, *, flags: dict[str, object] | None = None
 ) -> tuple[policy.EffectivePolicy, list[Finding]]:
     """Story 22.8 / 33.3: fold repo defaults the same way dispatch does."""
     repo_defaults, _repo_finding = read_repo_policy_defaults()
     project_data: dict[str, object] = {}
+    read_findings: list[Finding] = []
     candidate = conventional_project_policy_path(slug)
     if candidate.is_file():
         try:
             project_data = dict(_read_project_policy(candidate))
-        except PolicyIOError:
+        except PolicyIOError as exc:
             project_data = {}
-        except Exception:  # noqa: BLE001 -- mirrors _spawn_supervisor_sidecar
+            read_findings.append(exc.finding)
+        except Exception as exc:  # noqa: BLE001 -- supplementary policy read
             project_data = {}
+            read_findings.append(
+                Finding(
+                    code="MRS-POLICY-004",
+                    severity=Severity.ERROR,
+                    message=str(exc),
+                )
+            )
     effective, findings = policy.compose(
         project_slug=slug,
         repo_defaults=repo_defaults,
         project=project_data,
         flags=dict(flags or {}),
     )
-    return effective, list(findings)
+    return effective, read_findings + list(findings)
 
 
 @dataclass(frozen=True)
@@ -798,7 +838,8 @@ def _resolve_model_tiering(
     if batching_report is not None:
         data["model_tier_batching"] = batching_report
 
-    effective_policy, _policy_findings = _compose_spin_policy(slug)
+    effective_policy, tier_policy_findings = _compose_spin_policy(slug)
+    _warn_spin_policy_compose_findings(findings, tier_policy_findings)
     tier_resolution = resolve_tier_launch(effective_policy, governing)
     data["resolved_models"] = dict(tier_resolution.resolved_models)
     if tier_resolution.serving_pools:
@@ -1295,21 +1336,7 @@ def _spawn_supervisor_sidecar(
     # text asserted, on every such launch, that the idle threshold had fallen
     # back to its default when it had not. A diagnostic that names the wrong
     # key sends the operator hunting a defect that is not there.
-    if policy_findings:
-        findings.append(
-            Finding(
-                code="MRS-SPIN-008",
-                severity=Severity.WARN,
-                message=(
-                    "the project policy layer produced "
-                    f"{len(policy_findings)} finding(s) while composing the "
-                    "supervisor's idle threshold (the launch itself is "
-                    "unaffected; every key a finding below names kept its "
-                    "composed default instead of the project's own value): "
-                    + "; ".join(f"{finding.code}: {finding.message}" for finding in policy_findings)
-                ),
-            )
-        )
+    _warn_spin_policy_compose_findings(findings, policy_findings)
     # Story 28.2 / 33.3: wire disposition is resolved before ``harness.spin``
     # (``_resolve_model_tiering`` writes the bmad-loop profile overlay when
     # the layer applies). Reuse that payload here when present; otherwise
@@ -1855,7 +1882,8 @@ def run_spin(
 
     # --- Story 34.1: refuse a second spin against a live loop home ----------
     guard_story_key = render_feed_key(preview[0]) if preview else "34.1"
-    effective_policy, _guard_policy_findings = _compose_spin_policy(slug)
+    effective_policy, guard_policy_findings = _compose_spin_policy(slug)
+    _warn_spin_policy_compose_findings(findings, guard_policy_findings)
     spin_conflict = spin_loop_home_in_flight_conflict(
         fs=fs,
         vcs=GitVcs(),
@@ -1915,6 +1943,7 @@ def run_spin(
         "story": args.story,
         "max_count": args.max_count,
         "preview": list(data["preview"]),
+        **_launch_version_journal_fields(harness),
     }
     if launch_limits is not None:
         intent_payload["limits"] = dict(launch_limits)
@@ -1931,6 +1960,10 @@ def run_spin(
     try:
         _append_entry(fs, run_dir, intent_entry, fsync=True)
     except FsError as exc:
+        try:
+            fs.remove_empty_dir(run_dir)
+        except FsError:
+            pass
         findings.append(
             Finding(
                 code="MRS-SPIN-003",
