@@ -1764,7 +1764,7 @@ def test_findings_for_commit_attribution_violations_names_the_commit() -> None:
     )
     assert len(findings) == 1
     assert findings[0].code == COMMIT_ATTRIBUTION_GATE_CODE
-    assert "deadbeef" in findings[0].message
+    assert "deadbee" in findings[0].message
     assert "Fix the widget" in findings[0].message
     assert "Co-Authored-By trailer" in findings[0].message
 

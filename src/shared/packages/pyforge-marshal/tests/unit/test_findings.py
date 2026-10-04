@@ -432,6 +432,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-GATE-017",
             # Story 83.2 (spec-83-2): pre-verification deferred-work intake.
             "MRS-GATE-018",
+            # Story 83.17 (spec-83-17): commit-attribution gate on the story branch.
+            "MRS-GATE-019",
             # Story 82.9: `marshal factory checkpoint`'s three precondition findings (Story 34.2 never registered them).
             "MRS-CHK-001",
             "MRS-CHK-002",
