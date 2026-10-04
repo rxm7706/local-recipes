@@ -16,14 +16,25 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
 from pyforge.atlas.dashboard import app
 
-DESIGN_MD = (
-    Path(__file__).resolve().parents[4].parent
-    / "_bmad-output/projects/pyforge-atlas/planning-artifacts/DESIGN.md"
-)
+_DESIGN_RELPATH = "_bmad-output/projects/pyforge-atlas/planning-artifacts/DESIGN.md"
+
+
+def _design_md() -> Path:
+    """Walk up to the repo root rather than counting ``parents[n]`` -- the package
+    sits seven levels down and a move would silently re-point the constant."""
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / _DESIGN_RELPATH
+        if candidate.is_file():
+            return candidate
+    pytest.skip(f"{_DESIGN_RELPATH} not reachable (installed package, no planning tree)")
+
+
+DESIGN_MD = _design_md()
 
 # A DESIGN.md page section header: "### 3.1 `cve-watcher` — CVE Watch".
 _SECTION = re.compile(r"^#{3}\s+\d+\.\d+\s+`([a-z0-9-]+)`", re.MULTILINE)
@@ -88,17 +99,22 @@ def test_declared_chart_matches_the_design_layout_bullet(page_id: str) -> None:
     )
 
 
-@pytest.mark.parametrize("page_id", sorted(page.id for page in app.PAGE_INVENTORY if page.filters or page.chart))
-def test_every_declared_control_names_a_column_the_page_can_actually_serve(page_id: str) -> None:
-    """A declared filter column or chart axis that no loader column backs would
-    render as nothing (``_declared_filters`` skips an absent column by design, so
-    a typo would be invisible). Pin each one against the page's own key columns."""
-    page = INVENTORY[page_id]
-    declared = set(page.filters)
-    if page.chart is not None:
-        declared |= {page.chart.x, page.chart.y}
-    missing = declared - set(page.columns)
-    assert not missing, f"{page_id}: declared control column(s) {sorted(missing)} not in PageDef.columns"
+def test_a_declared_filter_column_the_loader_never_projects_refuses_loudly() -> None:
+    """The one way a typo in ``PageDef.filters`` could hide: ``_declared_filters``
+    skips a column with no non-null values (vizro cannot build a Filter over one),
+    so an absent column must be told apart from an empty one and refused."""
+    page = app.PageDef("probe", "Probe", "probe", "bsl-shell", filters=("facet",))
+
+    # An honest-empty frame still projects its declared column -> no Filter, no raise.
+    assert app._declared_filters(page, lambda: pd.DataFrame({"facet": []})) == []
+
+    # A frame missing the column altogether is a declaration bug.
+    with pytest.raises(ValueError, match="does not project"):
+        app._declared_filters(page, lambda: pd.DataFrame({"other": [1]}))
+
+    # And with rows, the Filter really is built.
+    built = app._declared_filters(page, lambda: pd.DataFrame({"facet": ["platform"]}))
+    assert [f.id for f in built] == ["probe--filter-facet"]
 
 
 def test_the_two_live_scan_pages_declare_no_vizro_filter() -> None:

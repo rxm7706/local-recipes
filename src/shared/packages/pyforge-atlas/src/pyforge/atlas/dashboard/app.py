@@ -450,14 +450,24 @@ def _declared_filters(page: PageDef, loader: Callable[[], Any]) -> list[vm.Filte
     carries no rows. What DESIGN.md is compared against is the DECLARATION on
     ``PageDef``; this function decides only whether the declared control can be built
     against today's data.
+
+    A declared column the loader does NOT project is a typo, not an empty state, and
+    refuses loudly — an honest-empty frame still carries its declared columns.
     """
     if not page.filters:
         return []
     frame = loader()
+    absent = [column for column in page.filters if column not in frame.columns]
+    if absent:
+        msg = (
+            f"page {page.id!r} declares filter column(s) {absent} its loader does not "
+            f"project (projected: {sorted(frame.columns)})"
+        )
+        raise ValueError(msg)
     return [
         vm.Filter(id=f"{page.id}--filter-{column}", column=column)
         for column in page.filters
-        if column in frame.columns and bool(frame[column].notna().any())
+        if bool(frame[column].notna().any())
     ]
 
 
