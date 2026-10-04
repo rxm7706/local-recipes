@@ -352,17 +352,29 @@ def test_gather_one_env_matches_the_filtered_gather_result(tmp_path: Path):
         'import os\n\ndef handler():\n    if os.environ.get("X"):\n        headers["Y"] = os.environ["X"]\n',
     )
 
-    expected = next(f for f in gather(tmp_path) if f.check == CHECK_NAME)
+    expected = tuple(f for f in gather(tmp_path) if f.check == CHECK_NAME)
 
     assert gather_one("env", CHECK_NAME, tmp_path) == expected
+    assert len(expected) == 1
 
 
-def test_gather_one_env_returns_none_for_a_target_with_no_matches(
+def test_gather_one_env_returns_every_matching_file(tmp_path: Path):
+    # DW-FU-1-5 (a): a first-match filter surfaced only one of several files
+    # matching the same check name.
+    for name in ("a.py", "b.py", "c.py"):
+        _write(tmp_path, name, 'import os\n\ndef handler():\n    headers["Y"] = os.environ["X"]\n')
+
+    result = gather_one("env", CHECK_NAME, tmp_path)
+
+    assert sorted(Path(f.evidence["file"]).name for f in result) == ["a.py", "b.py", "c.py"]
+
+
+def test_gather_one_env_returns_empty_for_a_target_with_no_matches(
     tmp_path: Path,
 ):
     _write(tmp_path, "benign.py", "x = 1\n")
 
-    assert gather_one("env", CHECK_NAME, tmp_path) is None
+    assert gather_one("env", CHECK_NAME, tmp_path) == ()
 
 
 # --- discovery-walk pruning (Story 6.1) ----------------------------------
@@ -480,28 +492,32 @@ def test_gather_one_env_can_address_the_incomplete_sentinel_by_name(monkeypatch,
     )
     _write(tmp_path, "b.py", "y = 2\n")
 
-    sentinel = gather_one("env", SCAN_INCOMPLETE_CHECK_NAME, tmp_path)
+    (sentinel,) = gather_one("env", SCAN_INCOMPLETE_CHECK_NAME, tmp_path)
 
-    assert sentinel is not None
     assert "INCOMPLETE" in sentinel.message
-    # a_direct.py sorts first and is collected before the cap trips, so
-    # the real finding coexists with the sentinel -- and neither shadows
-    # the other under the name filter.
-    real = gather_one("env", CHECK_NAME, tmp_path)
-    assert real is not None
-    assert real.check == CHECK_NAME
-    assert "INCOMPLETE" not in real.message
+    # a_direct.py sorts first and is collected before the cap trips, so the
+    # real finding coexists with the sentinel. DW-FU-1-5 (b): a named lookup
+    # carries the incompleteness signal alongside it, never drops it.
+    named = gather_one("env", CHECK_NAME, tmp_path)
+    assert [f.check for f in named] == [CHECK_NAME, SCAN_INCOMPLETE_CHECK_NAME]
+    assert "INCOMPLETE" not in named[0].message
 
 
-def test_gather_on_a_single_file_target_returns_empty_tuple(tmp_path: Path):
-    # Review finding: after the onerror patch, a non-directory target fed
-    # os.walk's top-level scandir error into onerror, emitting a misleading
-    # "could not read some subdirectory" sentinel -- the established
-    # registry convention for a non-directory target is silent ().
+def test_gather_on_a_single_file_target_warns_not_a_directory(tmp_path: Path):
+    # DW-FU-1-5-3: a non-directory target used to return () -- "0 findings",
+    # exit 0, a false green. It now says nothing was scanned (and never the
+    # misleading "could not read some subdirectory" message os.walk's
+    # onerror would produce).
     file_target = tmp_path / "single.py"
     file_target.write_text('import os\nheaders["Y"] = os.environ["X"]\n', encoding="utf-8")
 
-    assert gather(file_target) == ()
+    (finding,) = gather(file_target)
+
+    assert finding.check == SCAN_INCOMPLETE_CHECK_NAME
+    assert finding.status is DoctorStatus.WARN
+    assert "not a directory" in finding.message
+    assert "subdirectory" not in finding.message
+    assert finding.evidence == {"target": str(file_target), "reason": "not-a-directory"}
 
 
 # --- discovery-walk git-ignore pruning (Story 38.4) ----------------------
@@ -746,8 +762,11 @@ def test_gather_completes_when_the_only_bulk_is_a_git_ignored_directory(monkeypa
     assert not any(f.check == SCAN_INCOMPLETE_CHECK_NAME for f in result)
 
 
-def test_gather_on_a_nonexistent_target_returns_empty_tuple(tmp_path: Path):
-    assert gather(tmp_path / "does-not-exist") == ()
+def test_gather_on_a_nonexistent_target_warns_not_a_directory(tmp_path: Path):
+    (finding,) = gather(tmp_path / "does-not-exist")
+
+    assert finding.check == SCAN_INCOMPLETE_CHECK_NAME
+    assert "not a directory" in finding.message
 
 
 # --- degrade-never-crash on pathological-but-parseable input --------------
