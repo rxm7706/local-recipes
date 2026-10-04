@@ -34,7 +34,6 @@ from .core.dispatch_ruff_format import (
 )
 from .core.dispatch_verification import (
     BranchCommitAttribution,
-    COMMIT_ATTRIBUTION_GATE_CODE,
     findings_for_commit_attribution_violations,
     reclassify_pre_existing_gate_findings,
 )
