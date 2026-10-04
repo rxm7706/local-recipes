@@ -159,6 +159,9 @@ class FakeVcs:
     def resolve_ref(self, _repo_root: Path, _ref: str) -> str:
         return self.worktree_head_sha(_repo_root)
 
+    def merge_base(self, _repo_root: Path, a: str, b: str) -> str:
+        return a
+
 
 class FakeBuildHarness:
     def __init__(self, *, present: bool = True, pid: int = 4242) -> None:

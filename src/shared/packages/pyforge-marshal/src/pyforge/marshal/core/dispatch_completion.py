@@ -9,7 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
+from ..ports.vcs import VcsPort
 from .dispatch_harness_done import FollowupReview
 
 
@@ -91,6 +93,19 @@ def narration_spec_path(spec_relative_path: str | None, *, followup_review: Foll
     harness that only rewrote its spec instead of doing the work). ``None`` makes both checks read a
     spec-only diff as progress."""
     return None if followup_review is not None else spec_relative_path
+
+
+def run_head_reached_ref(vcs: VcsPort, repo_root: Path, head_sha: str, ref: str) -> bool:
+    """True when ``head_sha`` is an ancestor of ``ref`` (inclusive) — the run's own head is on ``ref``.
+
+    Story 83.14: a corroborated merge subject on ``origin/main`` from an *earlier* branch tip must not
+    count as this run's merge while the session's current head is still ahead of ``origin/main``.
+    """
+    try:
+        return vcs.merge_base(repo_root, head_sha, ref) == head_sha
+    except Exception:
+        # ``merge_base`` raises ``VcsCommandError`` from the git adapter on unreadable refs.
+        return False
 
 
 def has_git_progress(git: DispatchGitFacts, *, spec_relative_path: str | None = None) -> bool:

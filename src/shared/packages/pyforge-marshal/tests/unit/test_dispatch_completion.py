@@ -12,6 +12,7 @@ import pytest
 from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters.fs_local import FsError
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli.dispatch import live_dispatch_conflict, run_dispatch
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import (
@@ -23,6 +24,7 @@ from pyforge.marshal.core.dispatch_completion import (
     judge_dispatch_completion,
     merge_subject_ref,
     narration_spec_path,
+    run_head_reached_ref,
     zombie_redispatch_evidence,
 )
 from pyforge.marshal.core.dispatch_harness_done import FollowupReview
@@ -57,6 +59,31 @@ def test_judge_live_when_session_process_alive() -> None:
     )
     verdict = judge_dispatch_completion(DispatchCompletionInput(session_alive=True, git=git))
     assert verdict == DispatchSessionVerdict.LIVE
+
+
+def test_run_head_reached_ref_true_when_merge_base_equals_head() -> None:
+    class _Vcs:
+        def merge_base(self, _repo_root: Path, a: str, b: str) -> str:
+            assert b == "refs/remotes/origin/main"
+            return a
+
+    assert run_head_reached_ref(_Vcs(), Path("/tmp"), "abc123", "refs/remotes/origin/main") is True
+
+
+def test_run_head_reached_ref_false_when_head_is_ahead_of_main() -> None:
+    class _Vcs:
+        def merge_base(self, _repo_root: Path, a: str, b: str) -> str:
+            return "older-than-head"
+
+    assert run_head_reached_ref(_Vcs(), Path("/tmp"), "abc123", "refs/remotes/origin/main") is False
+
+
+def test_run_head_reached_ref_fails_closed_on_vcs_error() -> None:
+    class _Vcs:
+        def merge_base(self, _repo_root: Path, a: str, b: str) -> str:
+            raise VcsCommandError("cannot read")
+
+    assert run_head_reached_ref(_Vcs(), Path("/tmp"), "abc123", "refs/remotes/origin/main") is False
 
 
 def test_judge_completed_when_story_merged_on_main() -> None:
