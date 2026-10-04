@@ -185,6 +185,11 @@ GROUNDED_PAGE_EVIDENCE = {
 }
 
 
+def _page_path(page_def) -> str:
+    """Vizro serves the FIRST page at ``/``, not at its own slug."""
+    return "/" if page_def is app.PAGE_INVENTORY[0] else f"/{page_def.id}"
+
+
 def test_every_grounded_page_renders_rows_on_the_fixture_data_root(dashboard_server):
     """DW-FU-20-5-4: the data-present pass. Against a data root materialized from
     the static fixture Parquet, every ``grounded-data`` page renders its rows in
