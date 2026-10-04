@@ -17,7 +17,8 @@ One untimed warm-up run, then five timed ones judged by their median
 pays for imports and an unwarmed filesystem cache, and a loaded host adds
 one-off spikes; under the old max-of-three either one failed the gate with
 the code unchanged (4.2s-10.5s measured on identical code). The budget
-itself is unchanged: a warm median over it is still a real regression.
+itself is unchanged: a warm median over it is still a real regression
+(measured 2026-10-04: warm-up plus five runs in 10.9s, about 1.8s a run).
 Not warden's 30-iteration convention -- each run costs real seconds.
 """
 
