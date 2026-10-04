@@ -775,7 +775,9 @@ def terminate_process_group(pid: int) -> None:
 
     Story 85.2: the pid now also comes off a journal a restarted supervisor reads, so a pid that is a process-group
     address (``<= 0``) or init is never signalled, and a session sharing this process's own group is signalled
-    alone -- ``killpg`` there would stop the supervisor itself."""
+    alone -- ``killpg`` there would stop the supervisor itself. Nor is a group id ``<= 1`` ever passed to
+    ``killpg``: 0 addresses this process's own group (a kernel thread reports pgid 0) and 1 is init's group, so
+    such a pid is signalled alone too."""
     if pid <= 1:
         return
     try:
@@ -787,7 +789,7 @@ def terminate_process_group(pid: int) -> None:
             pass
         return
     try:
-        if pgid == os.getpgrp():
+        if pgid <= 1 or pgid == os.getpgrp():
             os.kill(pid, signal.SIGTERM)
             return
         os.killpg(pgid, signal.SIGTERM)

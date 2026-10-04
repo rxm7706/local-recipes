@@ -704,21 +704,12 @@ def test_a_finished_fix_turn_with_a_still_red_reverify_never_launches_again(
 ) -> None:
     """Review H3: the supervisor was killed after the fix turn's OUTCOME but before its re-verify journaled; the
     next pass re-verifies, still red, and must not launch a second turn (the one-turn bound, both at the call
-    site and in ``decide_verify_fix_turn``)."""
+    site and in ``decide_verify_fix_turn``). Final landing review L1: that park still journals MRS-DISP-060,
+    naming the still-failing command and the turn's INTENT."""
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
+
     repo_root, worktree = _fix_ready_repo(tmp_path)
-    started = datetime(2026, 10, 3, 10, 0, tzinfo=timezone.utc)
-    intent_line = _fix_intent_lines(None, started_at=started)[0]
-    intent_id = JournalEntryId("dispatch-supervisor-1", 10)
-    outcome = build_entry(
-        id=JournalEntryId("dispatch-supervisor-1", 12),
-        ts=_ts(started + timedelta(minutes=5)),
-        run_id=loop._RUN_ID,
-        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
-        phase=Phase.OUTCOME,
-        intent_id=intent_id,
-        payload={"ok": True, "session_pid": 88100, "session_returncode": 0, "elapsed_s": 300.0},
-    )
-    lines = (*_journaled_refusal_with_failed_commands(), intent_line, prepare_for_write(outcome).line)
+    lines = _finished_fix_turn_lines(ok=True)
     events: list[tuple] = []
     vcs = _FixTurnVcs(events)
     launches = _fake_fix_session(monkeypatch, vcs)
@@ -729,6 +720,80 @@ def test_a_finished_fix_turn_with_a_still_red_reverify_never_launches_again(
 
     assert launches == [], "a second fix turn was launched for one refusal"
     assert [event for event in events if event[0] == "verify"] == [("verify", 1)]
+    parks = [
+        entry for entry in _verify_fix_entries(fs) if entry["payload"].get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+    ]
+    assert len(parks) == 1, "a red re-verify after a crash-recovered fix turn parks with MRS-DISP-060"
+    assert parks[0]["phase"] == "observation"
+    assert parks[0]["payload"]["failed_command"] == _COMMAND
+    assert parks[0]["payload"]["fix_intent_id"] == {"writer_id": "dispatch-supervisor-1", "counter": 10}
+    assert parks[0]["payload"]["finding"]["message"] == (
+        f"verification still refused after one fix turn ({_COMMAND!r}) — story parked for the operator "
+        "(Story 85.1 / 83.10)"
+    )
+    assert ok is True
+    assert _finalize_outcome(fs)["verified"] is False
+
+
+def _finished_fix_turn_lines(*, ok: bool, reverified_and_parked: bool = False) -> tuple[str, ...]:
+    """A refusal, then a fix turn whose OUTCOME a killed supervisor journaled (``ok`` as given); with
+    ``reverified_and_parked`` its still-red re-verify and MRS-DISP-060 were journaled too."""
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
+
+    started = datetime(2026, 10, 3, 10, 0, tzinfo=timezone.utc)
+    intent_line = _fix_intent_lines(None, started_at=started)[0]
+    intent_id = JournalEntryId("dispatch-supervisor-1", 10)
+    outcome = build_entry(
+        id=JournalEntryId("dispatch-supervisor-1", 12),
+        ts=_ts(started + timedelta(minutes=5)),
+        run_id=loop._RUN_ID,
+        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+        phase=Phase.OUTCOME,
+        intent_id=intent_id,
+        payload={"ok": ok, "session_pid": 88100, "session_returncode": 0 if ok else 1, "elapsed_s": 300.0},
+    )
+    lines = [*_journaled_refusal_with_failed_commands(), intent_line, prepare_for_write(outcome).line]
+    if reverified_and_parked:
+        refusal = json.loads(_journaled_refusal_with_failed_commands()[1])["payload"]
+        lines.extend(loop._outcome_pair(kind=dispatch_core.KIND_DISPATCH_VERIFICATION, payload=refusal, counter=20))
+        park = build_entry(
+            id=JournalEntryId("dispatch-supervisor-1", 13),
+            ts=_ts(started + timedelta(minutes=6)),
+            run_id=loop._RUN_ID,
+            kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+            phase=Phase.OBSERVATION,
+            payload={"ok": False, "code": FIX_TURN_REVERIFY_REFUSED_CODE, "fix_intent_id": fix_intent_ref(intent_id)},
+        )
+        lines.append(prepare_for_write(park).line)
+    return tuple(lines)
+
+
+@pytest.mark.parametrize("case", ["already-parked", "turn-failed"])
+def test_mrs_disp_060_is_journaled_once_and_only_for_a_turn_that_finished(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+) -> None:
+    """Final landing review L1, the edges: a park already journaled for the turn's INTENT is never repeated on a later
+    pass, and a turn whose session failed (``ok: false``) is not re-verified and owes no MRS-DISP-060."""
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    if case == "already-parked":
+        lines = _finished_fix_turn_lines(ok=True, reverified_and_parked=True)
+    else:
+        lines = _finished_fix_turn_lines(ok=False)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL))
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, journal_lines=lines, vcs=vcs)
+
+    assert launches == []
+    assert [event for event in events if event[0] == "verify"] == []
+    assert [
+        entry for entry in _verify_fix_entries(fs) if entry["payload"].get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+    ] == []
     assert ok is True
     assert _finalize_outcome(fs)["verified"] is False
 
@@ -985,6 +1050,40 @@ def test_a_restart_with_an_intent_but_no_recorded_pid_closes_it_and_launches_not
     assert supervisor_main.verify_fix_turn_in_flight(folded, loop._RUN_ID) is False
     assert ok is True
     assert _finalize_outcome(fs)["verified"] is False
+
+
+def test_a_restarted_turn_whose_edits_cannot_be_committed_parks_with_a_failed_commit_step(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Final landing review L4: the pending-INTENT branch of finalize reports a failed commit the way the finalize
+    commit step does -- ``ok: false, failed_step: commit`` -- and returns False; it never re-verifies or lands. The
+    session already exited (``loop._finalize``'s process port reads every pid dead), so the turn is settled at once."""
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    launches: list[int] = []
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", lambda *_a, **_k: launches.append(1))
+    events: list[tuple] = []
+    _scripted_verification(monkeypatch, events, loop._clean_envelope())
+    lines = (
+        *_journaled_refusal_with_failed_commands(),
+        *_fix_intent_lines(88004, started_at=datetime.now(timezone.utc) - timedelta(seconds=5)),
+    )
+    vcs = _FixTurnVcs(events, dirty=True, commit_paths_raises=True)
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, journal_lines=lines, vcs=vcs)
+
+    assert ok is False
+    assert launches == []
+    assert [event for event in events if event[0] == "verify"] == []
+    assert vcs.pushes == []
+    fix_outcomes = [entry["payload"] for entry in _verify_fix_entries(fs) if entry["phase"] == "outcome"]
+    assert len(fix_outcomes) == 1
+    assert (fix_outcomes[0]["ok"], fix_outcomes[0]["session_returncode"]) == (True, None)
+    refusals = [entry["payload"] for entry in _verify_fix_entries(fs) if entry["payload"].get("step") == "commit"]
+    assert len(refusals) == 1 and refusals[0]["ok"] is False
+    outcome = _finalize_outcome(fs)
+    assert (outcome["ok"], outcome["verified"], outcome["failed_step"]) == (False, False, "commit")
+    assert "git commit failed" in outcome["failed_message"]
 
 
 def test_a_restart_resumes_with_the_budget_left_from_the_intents_utc_timestamp(

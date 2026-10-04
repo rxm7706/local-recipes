@@ -422,6 +422,19 @@ def test_terminate_process_group_signals_only_the_pid_when_it_shares_this_proces
     assert calls == [("kill", 4242, signal.SIGTERM)]
 
 
+def test_terminate_process_group_never_passes_a_group_id_of_this_group_or_init_to_killpg(monkeypatch):
+    """Final landing review nit: ``killpg(0)`` addresses this process's own group (a kernel thread reports pgid 0)
+    and ``killpg(1)`` init's group -- a pid in either is signalled alone, never its group."""
+    calls: list[tuple[str, int, int]] = []
+    monkeypatch.setattr(os, "getpgrp", lambda: 7777)
+    monkeypatch.setattr(os, "killpg", lambda pgid, sig: calls.append(("killpg", pgid, sig)))
+    monkeypatch.setattr(os, "kill", lambda pid, sig: calls.append(("kill", pid, sig)))
+    for pgid in (0, 1):
+        monkeypatch.setattr(os, "getpgid", lambda _pid, pgid=pgid: pgid)
+        terminate_process_group(4242)
+    assert calls == [("kill", 4242, signal.SIGTERM), ("kill", 4242, signal.SIGTERM)]
+
+
 def test_terminate_process_group_signals_process_group(monkeypatch):
     calls: list[tuple[int, int]] = []
 
@@ -512,12 +525,15 @@ def test_in_flight_verify_fix_turn_reads_the_open_intent_and_its_journaled_pid()
     folded = fold(
         _fix_lines(
             _fix_entry(1, Phase.INTENT, {"launch_mode": "fix_only"}),
-            # an observation naming another INTENT, a bool and a group-address pid are never this turn's pid
-            _fix_entry(2, Phase.OBSERVATION, {"session_pid": 111, "fix_intent_id": {"writer_id": "x", "counter": 9}}),
-            _fix_entry(3, Phase.OBSERVATION, {"session_pid": True, "fix_intent_id": ref}),
-            _fix_entry(4, Phase.OBSERVATION, {"session_pid": -5, "fix_intent_id": ref}),
-            _fix_entry(5, Phase.OBSERVATION, {"session_pid": 4242, "fix_intent_id": ref}),
-            _fix_entry(6, Phase.OBSERVATION, {"session_pid": 999, "fix_intent_id": ref}, run_id="run-2"),
+            _fix_entry(2, Phase.OBSERVATION, {"session_pid": 4242, "fix_intent_id": ref}),
+            # Every decoy sits AFTER the real pid, where the reader's reverse scan meets it first (review L2/L3): an
+            # observation naming another INTENT, a bool, a group-address pid, pid 0, and another run's pid are never
+            # this turn's pid.
+            _fix_entry(3, Phase.OBSERVATION, {"session_pid": 111, "fix_intent_id": {"writer_id": "x", "counter": 9}}),
+            _fix_entry(4, Phase.OBSERVATION, {"session_pid": True, "fix_intent_id": ref}),
+            _fix_entry(5, Phase.OBSERVATION, {"session_pid": -5, "fix_intent_id": ref}),
+            _fix_entry(6, Phase.OBSERVATION, {"session_pid": 0, "fix_intent_id": ref}),
+            _fix_entry(7, Phase.OBSERVATION, {"session_pid": 999, "fix_intent_id": ref}, run_id="run-2"),
         )
     )
     in_flight = in_flight_verify_fix_turn(folded, "run-1")

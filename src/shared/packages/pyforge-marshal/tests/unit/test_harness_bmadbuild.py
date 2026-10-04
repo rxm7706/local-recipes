@@ -696,7 +696,9 @@ def test_dispatch_child_survives_via_new_session(tmp_path: Path, bare_path: Path
     returned pid IS the session process (no CLI self-backgrounding
     double-detach), so the dispatch supervisor's liveness probe is
     meaningful."""
-    _write_script(bare_path, "sleeper", "sleep 5")
+    # An absolute path: ``bare_path`` holds only ``bin/`` under tmp, so a bare ``sleep`` is "not found" there and
+    # the shell exits at once (final landing review L5) -- the probe below then met an exited, unreaped child.
+    _write_script(bare_path, "sleeper", "exec /bin/sleep 5")
     _write_overlay(
         tmp_path,
         "sleeper",
@@ -731,7 +733,23 @@ def test_dispatch_child_survives_via_new_session(tmp_path: Path, bare_path: Path
             f"(reaped before the liveness check) -- dispatch log:\n{log_text}"
         )
     assert os.getsid(result.pid) != os.getsid(0)
+    # The first probe can win the race against a session that exits at once, and ``kill(pid, 0)`` also succeeds on
+    # an exited child this process never reaped -- so where ``/proc`` exists, the session must still be running
+    # (neither gone nor a zombie) a moment later.
+    if Path("/proc/self/stat").exists():
+        time.sleep(0.5)
+        log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else "<no log file>"
+        assert _session_running(result.pid), f"dispatched pid {result.pid} exited at once -- dispatch log:\n{log_text}"
     os.kill(result.pid, 15)
+
+
+def _session_running(pid: int) -> bool:
+    """Whether ``/proc`` shows ``pid`` running -- present and not a zombie awaiting its parent's reap."""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return stat[stat.rfind(")") + 2] != "Z"
 
 
 # --- Story 85.1: launch_argv pins the project unconditionally ----------------

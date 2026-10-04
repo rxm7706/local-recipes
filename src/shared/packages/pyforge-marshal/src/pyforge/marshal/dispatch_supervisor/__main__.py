@@ -493,11 +493,27 @@ def _landing_succeeded(folded, run_id: str) -> bool:
     return landing_journal_indicates_complete(_landing_outcome_verdict(folded, run_id))
 
 
-def _verify_fix_turn_completed(folded, run_id: str) -> bool:
+def _completed_verify_fix_outcome(folded, run_id: str):
+    """The run's first fix-turn OUTCOME when it reads ``ok`` -- the turn's session finished -- else ``None``."""
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX):
         if entry.run_id == run_id and entry.phase == Phase.OUTCOME:
-            return bool(entry.payload.get("ok"))
-    return False
+            return entry if entry.payload.get("ok") else None
+    return None
+
+
+def _verify_fix_turn_completed(folded, run_id: str) -> bool:
+    return _completed_verify_fix_outcome(folded, run_id) is not None
+
+
+def _fix_turn_park_journaled(folded, run_id: str, fix_intent_id: dict[str, object] | None) -> bool:
+    """Whether MRS-DISP-060 is already journaled for the fix-turn INTENT ``fix_intent_id`` names (Story 85.2)."""
+    return any(
+        entry.run_id == run_id
+        and entry.phase == Phase.OBSERVATION
+        and entry.payload.get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+        and entry.payload.get("fix_intent_id") == fix_intent_id
+        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX)
+    )
 
 
 def _verify_fix_turn_journaled(folded, run_id: str) -> bool:
@@ -998,6 +1014,46 @@ class _FixTurnResult:
     failed_message: str | None = None
 
 
+def _journal_fix_turn_park(
+    *,
+    fs: FsPort,
+    run_dir: Path,
+    run_id: str,
+    writer_id: str,
+    counter: int,
+    folded,
+    fix_intent_id: dict[str, object] | None,
+) -> int:
+    """Journal MRS-DISP-060 -- verification still refused after the one fix turn, the story parked -- naming the
+    still-failing command and the fix-turn INTENT it belongs to (Story 85.2 AC2). Returns the next counter."""
+    failed_after = _failed_commands_from_verification_journal(folded, run_id, fs=fs, run_dir=run_dir)
+    failed_command = str(failed_after[0]["command"]) if failed_after and failed_after[0].get("command") else None
+    finding = Finding(
+        code=FIX_TURN_REVERIFY_REFUSED_CODE,
+        severity=Severity.ERROR,
+        message=fix_turn_park_message(failed_command=failed_command),
+    )
+    entry = build_entry(
+        id=JournalEntryId(writer_id, counter),
+        ts=_format_entry_ts(_now_utc()),
+        run_id=run_id,
+        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+        phase=Phase.OBSERVATION,
+        payload={
+            "ok": False,
+            "code": FIX_TURN_REVERIFY_REFUSED_CODE,
+            "failed_command": failed_command,
+            "finding": finding.to_json_dict(),
+            "fix_intent_id": fix_intent_id,
+        },
+    )
+    try:
+        _append_entry(fs, run_dir, entry, fsync=True)
+    except FsError:
+        pass
+    return counter + 1
+
+
 def _maybe_run_verify_fix_turn(
     *,
     fs: FsPort,
@@ -1117,6 +1173,23 @@ def _maybe_run_verify_fix_turn(
             has_failed_commands=bool(failed_cmds),
         )
         if not decision.run:
+            # Final landing review L1: a supervisor killed after the turn's ok OUTCOME but before its re-verify was
+            # journaled leaves the re-verify to this pass's normal finalize. When that reads refused, the park is
+            # still owed its MRS-DISP-060 -- once per INTENT, never a second turn. Only a turn the flag let run
+            # can have that OUTCOME, so a run that never had the flag on never reaches this.
+            completed = _completed_verify_fix_outcome(folded, run_id)
+            if completed is not None and v_outcome == DispatchVerificationVerdict.REFUSED.value:
+                owed_ref = fix_intent_ref(completed.intent_id) if completed.intent_id is not None else None
+                if not _fix_turn_park_journaled(folded, run_id, owed_ref):
+                    counter = _journal_fix_turn_park(
+                        fs=fs,
+                        run_dir=run_dir,
+                        run_id=run_id,
+                        writer_id=writer_id,
+                        counter=counter,
+                        folded=folded,
+                        fix_intent_id=owed_ref,
+                    )
             return _FixTurnResult(counter=counter, verified=False, folded=folded)
 
         effective = compose_dispatch_policy(slug, repo_root)
@@ -1289,22 +1362,14 @@ def _maybe_run_verify_fix_turn(
     v_after = _verification_outcome_verdict(folded, run_id)
     verified = v_after == DispatchVerificationVerdict.VERIFIED.value
     if not verified:
-        failed_after = _failed_commands_from_verification_journal(folded, run_id, fs=fs, run_dir=run_dir)
-        failed_command = str(failed_after[0]["command"]) if failed_after and failed_after[0].get("command") else None
-        finding = Finding(
-            code=FIX_TURN_REVERIFY_REFUSED_CODE,
-            severity=Severity.ERROR,
-            message=fix_turn_park_message(failed_command=failed_command),
-        )
-        _journal_fix(
-            Phase.OBSERVATION,
-            {
-                "ok": False,
-                "code": FIX_TURN_REVERIFY_REFUSED_CODE,
-                "failed_command": failed_command,
-                "finding": finding.to_json_dict(),
-                "fix_intent_id": fix_intent_ref(intent_entry.id),
-            },
+        counter = _journal_fix_turn_park(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            folded=folded,
+            fix_intent_id=fix_intent_ref(intent_entry.id),
         )
     return _FixTurnResult(counter=counter, verified=verified, folded=folded, committed=committed)
 
