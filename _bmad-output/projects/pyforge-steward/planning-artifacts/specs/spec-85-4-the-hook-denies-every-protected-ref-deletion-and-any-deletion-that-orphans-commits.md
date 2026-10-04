@@ -2,7 +2,7 @@
 title: "85.4: The hook denies every protected-ref deletion and any deletion that orphans commits"
 type: 'feature'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'e5c5ebab6e29d9d70d44376fcc79cff8072ca09d'
 flag-exempt: detector-or-gate   # a session guardrail; a gated guardrail allows silently
 review_loop_iteration: 0
@@ -89,7 +89,7 @@ Minted 2026-10-04 under the operator's governance rulings of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- **2026-10-04:** Story 85.4 implemented — widened `protected-ref-deletion`, added `unreachable-ref-deletion`, roster + AGENTS.md + hook tests.
 
 ## Review Triage Log
 
