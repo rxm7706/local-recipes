@@ -1653,6 +1653,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # 002 phase failure (ERROR); 003 done-key regression refuse (ERROR);
         # 004 orphan candidate reported, not deleted (WARN).
         # Story 21.2: 005 skill blocked mid-chain (ERROR; planning verb halt).
+        # Story 86.5 retired `marshal chain regenerate`: `planning
+        # chain-regenerate` emits 001, 002 and 005; 003 and 004 are emitted by
+        # nothing now and stay registered (codes are never reused).
         "MRS-CHAIN-001",
         "MRS-CHAIN-002",
         "MRS-CHAIN-003",
