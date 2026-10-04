@@ -35,6 +35,10 @@ on:
       - 'src/shared/packages/pyforge-warden/**'
       - 'src/shared/packages/pyforge-core/**'
       - 'src/shared/packages/pyforge-testing-kit/**'
+      - 'scripts/conda-forge-packaging-inventory-operations_*.py'
+      - 'scripts/openteams_identity_dashboards.py'
+      - 'scripts/tests/**'
+      - 'tests/packaging/test_openteams_handoffs.py'
       - 'pixi.toml'
       - 'pixi.lock'
       - 'Containerfile'
@@ -55,6 +59,10 @@ on:
       - 'src/shared/packages/pyforge-warden/**'
       - 'src/shared/packages/pyforge-core/**'
       - 'src/shared/packages/pyforge-testing-kit/**'
+      - 'scripts/conda-forge-packaging-inventory-operations_*.py'
+      - 'scripts/openteams_identity_dashboards.py'
+      - 'scripts/tests/**'
+      - 'tests/packaging/test_openteams_handoffs.py'
       - 'pixi.toml'
       - 'pixi.lock'
       - 'Containerfile'
@@ -119,9 +127,16 @@ jobs:
           # sole-ownership meta-tests scan every sibling station's src tree, so
           # a station-only diff can introduce a violation just as easily as a
           # core edit can.
+          # Story 27.1: atlas's job runs pyforge-atlas-test, which also runs the inventory
+          # quartet's tests (tests/packaging/test_openteams_handoffs.py, scripts/tests/), so the
+          # quartet scripts and those tests flip atlas too. The pathspecs stay quoted so git,
+          # not the shell, matches the glob -- a deleted quartet script still counts.
+          ATLAS_EXTRA=(scripts/tests tests/packaging/test_openteams_handoffs.py scripts/openteams_identity_dashboards.py 'scripts/conda-forge-packaging-inventory-operations_*.py')
           CORE_CHANGED="$SHARED_CHANGED"
           for s in atlas doctor herald marshal mason scribe steward warden; do
-            if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "src/shared/packages/pyforge-$s" 2>/dev/null; then
+            extra=()
+            if [ "$s" = "atlas" ]; then extra=("${ATLAS_EXTRA[@]}"); fi
+            if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "src/shared/packages/pyforge-$s" "${extra[@]}" 2>/dev/null; then
               echo "$s=true" >> "$GITHUB_OUTPUT"
               CORE_CHANGED=true
             else
