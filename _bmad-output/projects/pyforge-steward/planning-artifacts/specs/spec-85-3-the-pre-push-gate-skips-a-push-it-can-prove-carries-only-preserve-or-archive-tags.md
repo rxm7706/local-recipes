@@ -2,10 +2,12 @@
 title: "85.3: The pre-push gate skips a push it can prove carries only preserve or archive tags"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '7722e81e77cf7813d425b2f901633458f6414809'
 flag-exempt: detector-or-gate   # the pre-push preflight is a gate; a gated gate reports a silent green
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -74,8 +76,35 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-04: Implemented CAP-165 tag-only skip in `scripts/pre_push_preflight.sh` with `PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF=1` for the pre-commit form; tests in `tests/scripts/test_lint_types_gate.py`.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 0, false 1, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Heredoc in `_stdin_is_tag_only_preserve_archive` might mishandle trailing content — verified: tab-separated git stdin lines parse correctly in throwaway-repo tests covering one and two tags.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** The pre-push hook now skips `pr-preflight` for pushes proved tag-only under `refs/tags/preserve/` or `refs/tags/archive/`, with a journaled line naming refs and shas. Bare-git form inspects every stdin line; pre-commit form requires `PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF=1` from the pushing tool (contract for `pyforge.core.preserve_refs`, Story 87.15).
+
+**Files changed:**
+- `scripts/pre_push_preflight.sh` — preserve/archive tag-only skip, proof env var, nested-tag ref matching via grep
+- `tests/scripts/test_lint_types_gate.py` — AC coverage and hook script pins
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` — surface reconcile (CAP-156 / CAP-165)
+
+**Review:** One blind-hunter-style note rejected as false after test verification. No patches or deferrals.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0 (2028 passed, 2 skipped)
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_lint_types_gate.py -q` — 27 passed
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — 1176 passed, 11 skipped
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+
+**Residual risks:** Story 87.15 must set `PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF=1` when pushing preserve tags through pre-commit; until then, pre-commit-form tag pushes still run the preflight (by design).
