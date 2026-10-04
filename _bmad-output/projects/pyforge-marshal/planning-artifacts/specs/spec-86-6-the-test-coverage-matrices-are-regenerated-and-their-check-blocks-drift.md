@@ -2,7 +2,8 @@
 title: "86.6: The test-coverage matrices are regenerated and their check blocks drift"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: '7e8113feae7cbf190e14621c85cae7cf60f0f68d'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -66,4 +67,31 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (orchestrator pass — implementation matches intent; no adversarial layer findings recorded)
+
+## Auto Run Result
+
+Summary: Regenerated eight station Story Coverage Matrices (idempotent with HEAD), moved `tea-playwright-all` / `tea-playwright-check` from `local-recipes` to `pyforge-guild`, added `scripts/tea_playwright_check.py` as a repo-scope detector discovered by `detectors-ci`, closed `DW-FU-19-4`, and reconciled spec surfaces via memlog entries (no `--write-baseline`).
+
+Files changed:
+- `scripts/tea_playwright_check.py` — CAP-5 detector wrapper (`DETECTOR = {"scope": "repo"}`)
+- `tests/scripts/test_tea_playwright_check.py` — registry and live-check tests
+- `pixi.toml` — guild tasks for tea-playwright; check invokes the wrapper
+- `environment.yaml` — re-exported after pixi.toml change
+- `docs/how-to/pixi-tasks.md`, `docs/map.yaml`, `docs/reference/detectors.md` — regenerated
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md` — `DW-FU-19-4` resolved
+- Spec memlogs / `spec-pyforge-marshal/SPEC.md` surface for the new script paths
+
+Review: 0 patch / defer / intent_gap items.
+
+Verification:
+- `python scripts/spec_surface_reconcile.py` — exit 0
+- `pixi run -e pyforge-guild tea-playwright-check` — exit 0 (8 stations)
+- `pixi run -e pyforge-guild pytest tests/scripts/test_tea_playwright_check.py` — 4 passed
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11549 passed
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 1 failed (`test_every_hard_import_is_a_declared_dependency[pyforge-atlas]`, pre-existing on branch; not introduced by this diff)
+
+Residual risk: New epic stories still require operators to run `tea-playwright-all` before merge or CI will red on the next matrix drift (by design).
