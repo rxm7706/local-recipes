@@ -26,7 +26,7 @@ declared_low_risk: false
 - **The sibling has the same gap.** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py` (`MARSHAL_DURABILITY`, working tree against `HEAD`, around :510) would flag the same reopen before the commit.
 - **Epic keys still need guarding.** On 2026-10-03, three landing promotions on `main` (`1be676d263`, `fd328844d6`, `cc137c9faa`) dropped `epic-66`, `epic-35` and `epic-17` from `done` to `backlog` while every story in them stayed `done`. Main's Detectors went red on each push. Those were bad roll-ups, and the guard was right.
 
-**Approach:** in both sources, an `epic-N` key that leaves `done` is not a regression when the newer side holds a story of epic N that is absent from the older side and is not `done`. That is a story just added to the epic. In every other case the epic key is still judged as today: a bad roll-up with no new story, a deleted epic key, or an epic going non-done because one of its own `done` stories regressed. A story key that leaves `done` is still always a regression. Keep the predicate in one place and have both sources use it. Correct the finding text so it no longer calls every key a story key.
+**Approach:** in both sources, an `epic-N` key that leaves `done` is not a regression when the newer side holds a story of epic N that is absent from the older side and is not `done`. That is a story just added to the epic. The newer side must also read the epic `in-progress`, the only value the roll-up writes for that reopen. In every other case the epic key is still judged as today: a bad roll-up with no new story, a deleted epic key, or an epic going non-done because one of its own `done` stories regressed. A story key that leaves `done` is still always a regression. Keep the predicate in one place and have both sources use it. Correct the finding text so it no longer calls every key a story key.
 
 Ledger key: `41-5-a-new-story-reopens-its-done-epic-without-reading-as-a-ledger-regression`.
 Type / Effort / Deps: fix / S / —.
@@ -83,4 +83,20 @@ Type / Effort / Deps: fix / S / —.
   - `spec-surface-check`: rc 0, after memlog reconciles and scoped stamps of `spec-pyforge-doctor`, `spec-pyforge-core` and `spec-pyforge-marshal`.
   - `ledger-regression-check` on the branch that reopens marshal `epic-85`: rc 0, where it was rc 2 before the change.
   - Mutation: removing the rule from `_check`, removing it from `marshal.gather`, or dropping the not-done clause each fails a test.
-  - An independent review is pending.
+  - An independent review ran next; see the entry below.
+
+### 2026-10-04 — Independent review (adversarial, on 0c52d32115); verdict SEND BACK; fixed on the branch
+- verdicts: 4 findings — high 1, medium 1, low 2, false 0. Mutants: 8 of 10 killed; the two survivors showed the test gaps in findings 1 and 4. All three 2026-10-03 bad roll-ups replay as `done-key-regressed`.
+- findings:
+  - `[high]` `[fix]` `sources/marshal.py`: `after.get(k) not in TERMINAL` is also true for a deleted key, so `MARSHAL_DURABILITY` excused a deleted `epic-N` beside a new story. That breaks this spec's Never list. Fixed: the shared predicate excuses an epic only when `after` reads it `in-progress`, and a deleted key reads `None`. Test: `test_durability_still_reports_a_deleted_epic_key_beside_a_new_story`.
+  - `[medium]` `[fix]` The predicate ignored the epic's new value, so `done -> backlog` (the 2026-10-03 bad-roll-up value) or `done -> blocked` beside a new story was excused. The roll-up writes only `in-progress` for this reopen. Fixed by the same `in-progress` requirement. Test: `test_a_reopen_to_a_value_the_roll_up_never_writes_is_still_a_regression` (backlog, blocked).
+  - `[low]` `[fix]` A re-key line `X -> Y` whose `X` survives at head dropped `X` from the remapped base, so `X` looked new and reopened its epic. Fixed in two places:
+    - the predicate receives every base key under both its own name and its re-keyed one;
+    - such a line is now `rekey-map-dangling` (`X still in HEAD`), so the story's own regression, hidden by the remap since Story 25.3, is no longer silent.
+    Test: `test_a_re_key_line_whose_old_key_survives_neither_hides_the_story_nor_reopens_the_epic`.
+  - `[low]` `[fix]` The `not in before` clause was unpinned. Test: `test_an_epic_reopened_by_its_own_story_regressing_reports_both_keys` (keys `9-2-second`, `epic-9`).
+- re-verification after the fixes:
+  - `pyforge-doctor-test`: 3271 passed.
+  - `lint-types`: rc 0.
+  - Mutants: dropping the `in-progress` clause, the `not in before` clause, the base-key union, or the surviving-old-key dangling rule each fails a test.
+  - Replaying `1be676d263`, `fd328844d6` and `cc137c9faa` still reports `done-key-regressed`, naming `epic-66`, `epic-35` and `epic-17`.
