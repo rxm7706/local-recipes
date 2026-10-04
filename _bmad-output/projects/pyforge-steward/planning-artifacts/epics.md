@@ -4301,7 +4301,7 @@ record; stdout carries payload only.
 
 ### Story 65.1: Reusable, pluggable, feature-flagged estate sprint ledger query module & BMAD skill
 
-**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-146, CAP-147, CAP-148, CAP-149 (folded from spec-sprint-ledger-query-module 2026-09-19) • partially realizes CAP-140 (Story 61.2 remains the story of record)
+**Type:** feature • **Effort:** L • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-146, CAP-147, CAP-148, CAP-149 (folded from `specs/spec-65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill.md` 2026-09-19) • partially realizes CAP-140 (Story 61.2 remains the story of record)
 **Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/sprint_ledger_query.py`, `.../steward/dashboard/models.py` (`WorkPassport`), `.../steward/dashboard/admin.py`, `.../steward/dashboard/views_htmx.py`, `.../steward/dashboard/passport_sync.py`, `.../steward/dashboard/migrations/0002_workpassport.py`, `.../steward/cli.py` (`ledger-query` duty), `.../steward/data/sprint-ledger-query.schema.json`, tests (`test_sprint_ledger_query.py`, `test_dashboard_admin_and_htmx.py`, `test_cli.py`, `test_restore_duty.py`, `tests/meta/test_invariants.py`), `pixi.toml` (two tasks), `.claude/skills/bmad-sprint-ledger-query/SKILL.md`, `AGENTS.md` (pre-PR checklist). Surface paths corrected at review 2026-09-19 (the mint named `steward/models.py` etc. at paths that do not exist).
 **Given** estate sprint ledgers are scattered across stations and lack pluggable querying, Work Passport UUID identity, and multi-system output formatters
 **When** this story lands

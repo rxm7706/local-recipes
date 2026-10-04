@@ -401,13 +401,15 @@ def _wired_resolution(
 
 
 def _await_file(path: Path, *, tries: int = 200, containing: str | None = None) -> str:
-    """``path``'s text once it exists -- and, with ``containing``, once it carries that text. The launcher creates
-    the session log before the child runs, so a log read as soon as it exists can still be empty under load."""
+    """``path``'s text once it exists with content -- and, with ``containing``, once it carries that text. The
+    launcher creates the session log before the detached child runs, so a log read as soon as it exists can still
+    be empty, or not yet hold the line a test waits for, under load (seen under CI load on the wrapped fallback-dir
+    reachability test)."""
     for _ in range(tries):
         if path.is_file():
             time.sleep(0.05)
             text = path.read_text(encoding="utf-8")
-            if containing is None or containing in text:
+            if text and (containing is None or containing in text):
                 return text
             continue
         time.sleep(0.05)
