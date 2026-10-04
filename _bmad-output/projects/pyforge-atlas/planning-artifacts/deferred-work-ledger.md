@@ -4346,3 +4346,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-10-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-FRR-27-1: Follow-up review still recommended for story 27.1
+
+- source_spec: `planning-artifacts/specs/spec-27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud.md`
+  summary: Story 27.1 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 27.1 landed on origin/main with its tracked spec reading `status: done` and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation.
+  location: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-04 — dispatch-land finalize
+  status: open
