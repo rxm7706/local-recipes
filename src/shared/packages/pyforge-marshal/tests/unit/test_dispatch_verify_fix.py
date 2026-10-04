@@ -250,6 +250,8 @@ def test_the_fix_turn_prompt_redacts_before_truncating():
 
 #: The shapes the 85.3 post-landing delta review found leaking (LOW-3), and the dotted keys the same rule must
 #: keep redacting now that a key never carries a `.`: ``(case id, raw text, the secret that must not survive)``.
+_GH_TAIL = "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8"  # 36 characters, a real GitHub token's length
+
 _LEAKING_SHAPES_85_4 = [
     ("flag-space", "mysql --password hunter2 -h db", "hunter2"),
     ("flag-space-quoted", "cli --api-key 'k3y s3cret' run", "k3y s3cret"),
@@ -257,14 +259,46 @@ _LEAKING_SHAPES_85_4 = [
     ("authorization-token", "Authorization: token ghp_x", "ghp_x"),
     ("authorization-token-not-github", "Authorization: token tok123", "tok123"),
     ("proxy-authorization-any-scheme", "Proxy-Authorization: Negotiate YIIabc", "YIIabc"),
-    ("bare-ghp", "remote: using ghp_abcDEF123456 for push", "abcDEF123456"),
-    ("bare-github-pat", "github_pat_11ABCDEF_xyz in the log", "11ABCDEF_xyz"),
+    # 85.4 review R07/R08: a JWT's dotted tail, and credentials with no scheme word.
+    ("authorization-jwt", "Authorization: Bearer eyJhbGciOi.eyJzdWIi.c2lnbmF0dXJl", "eyJzdWIi"),
+    ("authorization-no-scheme", "Authorization: rawtoken123", "rawtoken123"),
+    ("bare-ghp", f"remote: using ghp_{_GH_TAIL} for push", _GH_TAIL),
+    ("bare-github-pat", "github_pat_11ABCDEFGH0123456789_xyz in the log", "11ABCDEFGH0123456789_xyz"),
+    # 85.4 review R11: every GitHub token prefix, not only ghp_.
+    ("bare-gho", f"gho_{_GH_TAIL}", _GH_TAIL),
+    ("bare-ghu", f"ghu_{_GH_TAIL}", _GH_TAIL),
+    ("bare-ghs", f"ghs_{_GH_TAIL}", _GH_TAIL),
+    ("bare-ghr", f"ghr_{_GH_TAIL}", _GH_TAIL),
     ("url-empty-user", "postgres://:pw@host/db", "pw@"),
+    ("url-password-with-scheme", "https://u:ab://cd@host", "cd@"),
+    ("url-digit-before-scheme", "1https://u:pw000@host", "pw000"),
     ("cookie", "Cookie: sessionid=abc", "abc"),
     ("set-cookie", "Set-Cookie: sessionid=abc; Path=/", "abc"),
+    # 85.4 review R09: the second cookie pair, past whitespace.
+    ("cookie-second-pair", "Cookie: a=b; session=s3cookie", "s3cookie"),
     ("json-compact", '{"password":"cmpsecret"}', "cmpsecret"),
     ("dotted-key", "spring.datasource.password=dotsecret", "dotsecret"),
     ("dotted-attribute", "config.api_key = 'attrsecret'", "attrsecret"),
+    # 85.4 review MEDIUM: a quoted key that carries a `.` (85.3 redacted every one of these).
+    ("quoted-dotted-json", '{"db.password": "hunter2"}', "hunter2"),
+    ("quoted-dotted-python", "{'spring.datasource.password': 'x9dot'}", "x9dot"),
+    ("quoted-dotted-secret", '"app.secret": "v1dot"', "v1dot"),
+    ("quoted-dotted-compact", '"auth.token":"v2dot"', "v2dot"),
+    ("quoted-dotted-equals", '"secrets.api_key" = "v3dot"', "v3dot"),
+    ("quoted-dotted-equals-compact", '"client.secret"="v4dot"', "v4dot"),
+    # 85.4 review LOW-2: a `:` with no space after it is still a separator unless a digit follows a bare key.
+    ("json-colon-number", '{"password":12345}', "12345"),
+    ("bare-colon-no-space", "password:nospace", "nospace"),
+    ("bare-colon-slash-value", "aws_secret_access_key:abc/def", "abc/def"),
+    ("bare-colon-env", "GITHUB_TOKEN:ghp_x1", "ghp_x1"),
+    # 85.4 review LOW-3: a colour code before a credential.
+    ("ansi-url", "\x1b[32mpostgres://admin:ansipw@db/x\x1b[0m", "ansipw"),
+    ("ansi-flag", "\x1b[0m--password ansiflag", "ansiflag"),
+    ("ansi-cookie", "\x1b[36mCookie: s=ansicook\x1b[0m", "ansicook"),
+    # A credential header written as a quoted key (Python and JSON dicts).
+    ("quoted-authorization-python", "{'authorization': 'Bearer hdrtok1'}", "hdrtok1"),
+    ("quoted-authorization-json", '"Authorization": "Bearer hdrtok2"', "hdrtok2"),
+    ("quoted-cookie-json", '{"Cookie": "sid=hdrtok3"}', "hdrtok3"),
 ]
 
 
@@ -292,6 +326,40 @@ def test_a_compiler_location_keeps_its_line_and_column(line: str):
     """LOW-2: a file named for a secret is no key (a key never carries a `.`), and `:` followed by a digit is no
     separator."""
     assert scrub_fix_turn_exposure(line) == line
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "ModuleNotFoundError: No module named 'ghp_import'",
+        "cli --no-token-check --verbose",
+        '"tough-cookie": "^5.0.0", "azure-mgmt-authorization": "4.0.0"',
+    ],
+)
+def test_ordinary_output_that_only_looks_like_a_credential_is_kept(line: str):
+    """85.4 review: a short `ghp_` name is no token (LOW-5), a flag after a secret-named flag is no value (R10), and a
+    quoted key is a credential header only when it is named whole."""
+    assert scrub_fix_turn_exposure(line) == line
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "27 |     except TokenError:\n   |     ^^^^^^ E722 Do not use bare `except`",
+        "    if token:\n>       assert budget.spent < budget.limit",
+        "password:\nnext line",
+    ],
+    ids=["ruff-full-format", "pytest-failure-arrow", "bare-key-at-line-end"],
+)
+def test_a_value_is_never_taken_from_the_next_line(text: str):
+    """85.4 review LOW-4: whitespace after a separator never crosses a newline, so the next line's gutter or arrow
+    survives."""
+    assert scrub_fix_turn_exposure(text) == text
+
+
+def test_the_scrub_removes_terminal_colour_codes():
+    """LOW-3: colour codes go first -- a code ends in a letter, which would hide the start of every rule after it."""
+    assert scrub_fix_turn_exposure("\x1b[1;31mE501\x1b[0m line too long\x1b[K") == "E501 line too long"
 
 
 def test_an_unclosed_quoted_value_never_takes_the_next_line():
@@ -348,6 +416,10 @@ _ADVERSARIAL_100KB = [
     ("authorization-word-run", "Authorization: " + "a" * 100_000),
     ("cookie-pairs", "Cookie: " + "a=b; " * 20_000),
     ("github-prefix-run", "ghp_" * 25_000),
+    ("url-password-scheme-run", "a://u:" + "p://" * 25_000),
+    ("quoted-dotted-keyword-run", '"' + "token." * 16_667),
+    ("quoted-header-run", "'cookie" * 14_286),
+    ("colour-code-run", "\x1b[3" * 33_334),
 ]
 
 

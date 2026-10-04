@@ -1614,9 +1614,10 @@ _WAIT_POLLS = 150
 
 def _fix_turn_waited_on_a_stepped_clock(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> tuple[list[dict], list[float]]:
+) -> tuple[list[dict], list[float], list[float]]:
     """Run one fix turn whose wait polls ``_WAIT_POLLS`` times, one second apart on a fake clock. Returns the journal
-    entries written during the wait and the fake-clock times of the run-publisher heartbeat calls made during it."""
+    entries written during the wait, and the fake-clock times of the journal heartbeats and of the run-publisher
+    heartbeat calls made during it."""
     from pyforge.marshal.dispatch_verify import ProcessWaitResult
 
     clock = _SteppedClock()
@@ -1628,17 +1629,26 @@ def _fix_turn_waited_on_a_stepped_clock(
     _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
     fs = loop.FakeFs()
     publisher_calls: list[float] = []
+    heartbeat_times: list[float] = []
     window: dict[str, int] = {}
+    journal_heartbeat = supervisor_main._journal_heartbeat
+
+    def _recorded_journal_heartbeat(**kwargs: object) -> int:
+        heartbeat_times.append(clock.now)
+        return journal_heartbeat(**kwargs)
 
     def _wait(*_a: object, on_poll=None, **_k: object) -> ProcessWaitResult:
         window["journal"], window["publisher"] = len(fs.appended), len(publisher_calls)
+        window["heartbeat"] = len(heartbeat_times)
         for _ in range(_WAIT_POLLS):
             on_poll()
             clock.sleep(1.0)
         window["journal_end"], window["publisher_end"] = len(fs.appended), len(publisher_calls)
+        window["heartbeat_end"] = len(heartbeat_times)
         return ProcessWaitResult(exited=True, returncode=0)
 
     monkeypatch.setattr(supervisor_main, "wait_for_process", _wait)
+    monkeypatch.setattr(supervisor_main, "_journal_heartbeat", _recorded_journal_heartbeat)
 
     _finalize_with(
         fs,
@@ -1651,13 +1661,17 @@ def _fix_turn_waited_on_a_stepped_clock(
     )
 
     written = [json.loads(line) for _path, line, _fsync in fs.appended[window["journal"] : window["journal_end"]]]
-    return written, publisher_calls[window["publisher"] : window["publisher_end"]]
+    return (
+        written,
+        heartbeat_times[window["heartbeat"] : window["heartbeat_end"]],
+        publisher_calls[window["publisher"] : window["publisher_end"]],
+    )
 
 
 def test_the_fix_wait_journals_at_most_one_heartbeat_per_tick(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """85.3 delta review LOW-4 (85.3 AC5): the wait polls every second, but its journal heartbeat keeps the tick
     rate -- at 0, 60 and 120 s of a 150 s wait, never once per poll."""
-    written, _publisher_calls = _fix_turn_waited_on_a_stepped_clock(tmp_path, monkeypatch)
+    written, heartbeat_times, _publisher_calls = _fix_turn_waited_on_a_stepped_clock(tmp_path, monkeypatch)
 
     heartbeats = [
         entry
@@ -1667,6 +1681,8 @@ def test_the_fix_wait_journals_at_most_one_heartbeat_per_tick(tmp_path: Path, mo
     assert supervisor_main._TICK_SECONDS == 60
     assert len(heartbeats) == len(range(0, _WAIT_POLLS, supervisor_main._TICK_SECONDS)) == 3
     assert all(entry["payload"]["session_alive"] is False for entry in heartbeats)
+    # The first poll journals at once, then one heartbeat each time a full tick has passed (85.4 review: H01, H02).
+    assert heartbeat_times == [1_000.0, 1_060.0, 1_120.0]
 
 
 def test_the_fix_turn_wraps_the_publisher_heartbeat_in_its_throttle(
@@ -1674,7 +1690,7 @@ def test_the_fix_turn_wraps_the_publisher_heartbeat_in_its_throttle(
 ) -> None:
     """85.3 delta review X11: ``_maybe_run_verify_fix_turn`` hands the wait a throttled publisher heartbeat -- one
     call per 30 s of a 150 s wait, never one per poll."""
-    _written, publisher_calls = _fix_turn_waited_on_a_stepped_clock(tmp_path, monkeypatch)
+    _written, _heartbeat_times, publisher_calls = _fix_turn_waited_on_a_stepped_clock(tmp_path, monkeypatch)
 
     assert supervisor_main._FIX_TURN_PUBLISH_INTERVAL_S == 30.0
     assert publisher_calls == [1_000.0, 1_030.0, 1_060.0, 1_090.0, 1_120.0]
