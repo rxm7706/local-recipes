@@ -6,8 +6,9 @@ them at render time, not at build — so the dashboard OBJECT builds fully offli
 server and no migrated data present (the ``dashboard-dryrun`` gate builds the object + asserts
 structure, exactly like the C1 ``dagster-dryrun`` / C2 ``viz-loadable`` gates; it never
 ``.run()``s a server). The one exception is a page that DECLARES filters: Vizro's own
-``Filter.pre_build`` loads a target's data to choose the selector, so ``_declared_filters``
-asks the loader for that page up front rather than hiding a second, hidden read behind it.
+``Filter.pre_build`` loads a target's data to choose the selector, so ``_declared_filter_bundle``
+asks the loader for that page up front, and ``_data_page`` pins the same frame in
+``data_manager`` so Vizro does not mark the filter ``_dynamic`` (Story 27.5).
 
 Every data function routes through ``dashboard.data`` (the AD-8 BSL seam) or
 ``dashboard.factory_status``; no metric is computed here.
