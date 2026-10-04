@@ -2,7 +2,8 @@
 title: "41.4: The check CLI, the env and engines checks, the score and the bmad-method source report every degradation they meet"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 30a18afa3a
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
