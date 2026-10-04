@@ -2035,6 +2035,58 @@ def _seed_refused_dispatch_land_run(
     )
 
 
+def _seed_held_for_review_dispatch_land_run(
+    repo: Path,
+    slug: str,
+    *,
+    run_id: str,
+    story_key: str,
+    pr_number: int = 1796,
+) -> None:
+    from pyforge.marshal.core.identity import render_feed_key
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+
+    feed = render_feed_key(dispatch_core.normalize(story_key))
+    run_dir = dispatch_core.dispatch_run_dir(repo, slug, run_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    land_intent_id = JournalEntryId("w", 1)
+    entries = (
+        build_entry(
+            id=JournalEntryId("w", 0),
+            ts="2026-10-02T12:00:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+            phase=Phase.INTENT,
+            payload={"story_key": feed, "harness_profile": "claude"},
+        ),
+        build_entry(
+            id=land_intent_id,
+            ts="2026-10-02T12:00:00.500Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAND,
+            phase=Phase.INTENT,
+            payload={},
+        ),
+        build_entry(
+            id=JournalEntryId("w", 2),
+            ts="2026-10-02T12:00:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAND,
+            phase=Phase.OUTCOME,
+            intent_id=land_intent_id,
+            payload={
+                "verdict": "held-for-review",
+                "ok": True,
+                "pr_number": pr_number,
+            },
+        ),
+    )
+    (run_dir / "journal.jsonl").write_text(
+        "".join(prepare_for_write(entry).line.rstrip("\n") + "\n" for entry in entries),
+        encoding="utf-8",
+    )
+
+
 def test_in_progress_spec_with_refused_landing_journal_is_land_only(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2069,6 +2121,43 @@ def test_in_progress_spec_with_refused_landing_journal_is_land_only(
     assert harness.calls == []
     assert attempt.data["harness_done_land_only"] is True
     assert attempt.data["land_verdict"] == "landed"
+
+
+def test_in_progress_spec_with_held_landing_journal_is_land_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.18: held-for-review dispatch-land → CAP-4 only, no MRS-DISP-040."""
+    from pyforge.marshal.cli import dispatch as dispatch_module
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "83-18-redispatch"
+    _write_worktree_spec(tmp_path, slug, story, _IN_PROGRESS_SPEC)
+    _seed_held_for_review_dispatch_land_run(
+        tmp_path,
+        slug,
+        run_id="pyforge-marshal-20261003T120000000Z-heldbeef",
+        story_key=story,
+    )
+    monkeypatch.setattr(
+        dispatch_module,
+        "_attempt_harness_done_cap4",
+        lambda **_kwargs: (DispatchLandingVerdict.HELD_FOR_REVIEW, "PR #1796", None),
+    )
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug=slug,
+        story=story,
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    assert harness.calls == []
+    assert attempt.data["harness_done_land_only"] is True
+    assert attempt.data["land_verdict"] == "held-for-review"
+    assert not any(f.code == "MRS-DISP-040" for f in attempt.findings)
 
 
 def test_in_progress_spec_without_landing_journal_still_launches(
