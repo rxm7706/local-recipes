@@ -2,7 +2,7 @@
 title: "83.19: Dispatch never commits the CFE surface outside a sanctioned retro"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 baseline_revision: '325ca80bfb'
 review_loop_iteration: 0
 followup_review_recommended: false
