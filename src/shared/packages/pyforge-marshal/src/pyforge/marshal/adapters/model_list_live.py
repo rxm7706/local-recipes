@@ -111,6 +111,29 @@ def _http_unavailable(harness: str, result: HttpGetResult) -> HarnessListResult:
     return HarnessListResult(harness=harness, status="unavailable", live_ids=frozenset(), reason=reason)
 
 
+def _unavailable(harness: str, reason: str) -> HarnessListResult:
+    return HarnessListResult(harness=harness, status="unavailable", live_ids=frozenset(), reason=reason)
+
+
+def _decode_page(harness: str, result: HttpGetResult, list_key: str) -> dict[str, object] | HarnessListResult:
+    """One 200 page's JSON object, or the harness's ``unavailable`` result.
+
+    Every page -- the first and every later one -- must carry ``list_key``
+    as a list. A page where it is missing or null (an error body has
+    neither) is ``unexpected page shape``, never the end of a complete
+    listing (Story 84.2).
+    """
+    try:
+        payload = json.loads(result.body.decode("utf-8"))
+    except UnicodeDecodeError, json.JSONDecodeError:
+        return _unavailable(harness, "invalid JSON response")
+    if not isinstance(payload, dict):
+        return _unavailable(harness, "invalid JSON shape")
+    if not isinstance(payload.get(list_key), list):
+        return _unavailable(harness, "unexpected page shape")
+    return payload
+
+
 def _ok_or_empty(harness: str, ids: frozenset[str]) -> HarnessListResult:
     if not ids:
         return HarnessListResult(
@@ -133,9 +156,7 @@ def fetch_live_ids_for_profile(
     source = profile.model_list
     harness = profile.name
     if source is None or not source.has_source():
-        return HarnessListResult(
-            harness=harness, status="unavailable", live_ids=frozenset(), reason="no source declared"
-        )
+        return _unavailable(harness, "no source declared")
 
     environment = env if env is not None else os.environ
 
@@ -146,44 +167,19 @@ def fetch_live_ids_for_profile(
             fallback_bin_dirs=profile.fallback_bin_dirs,
         )
         if run.exit_code == 127:
-            return HarnessListResult(
-                harness=harness,
-                status="unavailable",
-                live_ids=frozenset(),
-                reason="binary not found: " + repr(source.command[0]),
-            )
+            return _unavailable(harness, "binary not found: " + repr(source.command[0]))
         if run.exit_code == 124:
-            return HarnessListResult(
-                harness=harness,
-                status="unavailable",
-                live_ids=frozenset(),
-                reason="command timed out",
-            )
+            return _unavailable(harness, "command timed out")
         if run.exit_code != 0:
-            return HarnessListResult(
-                harness=harness,
-                status="unavailable",
-                live_ids=frozenset(),
-                reason=f"command failed with exit {run.exit_code}",
-            )
+            return _unavailable(harness, f"command failed with exit {run.exit_code}")
         return _ok_or_empty(harness, parse_command_model_lines(run.stdout))
 
     if source.url:
         headers, secret, header_err = _build_auth_headers(source, environment)
         if header_err:
-            return HarnessListResult(
-                harness=harness,
-                status="unavailable",
-                live_ids=frozenset(),
-                reason=header_err,
-            )
+            return _unavailable(harness, header_err)
         if source.credential_env and secret is None:
-            return HarnessListResult(
-                harness=harness,
-                status="unavailable",
-                live_ids=frozenset(),
-                reason="credential env " + repr(source.credential_env) + " unset",
-            )
+            return _unavailable(harness, "credential env " + repr(source.credential_env) + " unset")
         ids: set[str] = set()
         if source.pagination == "anthropic":
             after_id: str | None = None
@@ -191,137 +187,50 @@ def fetch_live_ids_for_profile(
                 try:
                     url = anthropic_models_page_url(source.url, after_id)
                 except ValueError:
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="invalid model list URL",
-                    )
+                    return _unavailable(harness, "invalid model list URL")
                 result = fetch.http_get(url, headers, timeout_s=timeout_s)
                 if result.status_code != 200:
                     return _http_unavailable(harness, result)
-                try:
-                    payload = json.loads(result.body.decode("utf-8"))
-                except UnicodeDecodeError, json.JSONDecodeError:
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="invalid JSON response",
-                    )
-                if not isinstance(payload, dict):
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="invalid JSON shape",
-                    )
-                data_field = payload.get("data")
-                if data_field is not None and not isinstance(data_field, list):
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="unexpected page shape",
-                    )
+                payload = _decode_page(harness, result, "data")
+                if isinstance(payload, HarnessListResult):
+                    return payload
                 page_ids, has_more, next_after = parse_anthropic_models_page(payload)
                 if has_more and not page_ids:
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="unexpected page shape",
-                    )
+                    return _unavailable(harness, "unexpected page shape")
                 ids.update(page_ids)
                 if not has_more:
                     break
                 if not next_after or next_after == after_id:
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="pagination cursor did not advance",
-                    )
+                    return _unavailable(harness, "pagination cursor did not advance")
                 after_id = next_after
             else:
-                return HarnessListResult(
-                    harness=harness,
-                    status="unavailable",
-                    live_ids=frozenset(),
-                    reason="pagination exceeded page limit",
-                )
+                return _unavailable(harness, "pagination exceeded page limit")
         elif source.pagination == "gemini":
             page_token: str | None = None
             for _page in range(_MAX_HTTP_PAGES):
                 try:
                     url = gemini_models_page_url(source.url, page_token)
                 except ValueError:
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="invalid model list URL",
-                    )
+                    return _unavailable(harness, "invalid model list URL")
                 result = fetch.http_get(url, headers, timeout_s=timeout_s)
                 if result.status_code != 200:
                     return _http_unavailable(harness, result)
-                try:
-                    payload = json.loads(result.body.decode("utf-8"))
-                except UnicodeDecodeError, json.JSONDecodeError:
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="invalid JSON response",
-                    )
-                if not isinstance(payload, dict):
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="invalid JSON shape",
-                    )
-                models_field = payload.get("models")
-                if models_field is not None and not isinstance(models_field, list):
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="unexpected page shape",
-                    )
+                payload = _decode_page(harness, result, "models")
+                if isinstance(payload, HarnessListResult):
+                    return payload
                 page_ids, next_token = parse_gemini_models_page(payload)
                 if next_token and not page_ids:
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="unexpected page shape",
-                    )
+                    return _unavailable(harness, "unexpected page shape")
                 ids.update(page_ids)
                 if not next_token:
                     break
                 if next_token == page_token:
-                    return HarnessListResult(
-                        harness=harness,
-                        status="unavailable",
-                        live_ids=frozenset(),
-                        reason="pagination cursor did not advance",
-                    )
+                    return _unavailable(harness, "pagination cursor did not advance")
                 page_token = next_token
             else:
-                return HarnessListResult(
-                    harness=harness,
-                    status="unavailable",
-                    live_ids=frozenset(),
-                    reason="pagination exceeded page limit",
-                )
+                return _unavailable(harness, "pagination exceeded page limit")
         else:
-            return HarnessListResult(
-                harness=harness,
-                status="unavailable",
-                live_ids=frozenset(),
-                reason="HTTP source missing pagination kind",
-            )
+            return _unavailable(harness, "HTTP source missing pagination kind")
         return _ok_or_empty(harness, frozenset(ids))
 
-    return HarnessListResult(harness=harness, status="unavailable", live_ids=frozenset(), reason="no source declared")
+    return _unavailable(harness, "no source declared")

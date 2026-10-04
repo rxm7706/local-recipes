@@ -6,6 +6,7 @@ import http.client
 import json
 from unittest.mock import MagicMock
 
+import pytest
 from pyforge.core.process import ProcessError
 
 from pyforge.marshal.adapters.model_list_http import http_get_for_model_list
@@ -260,3 +261,121 @@ def test_http_http_exception(monkeypatch):
     )
     result = http_get_for_model_list("https://example.com/v1/models", {}, timeout_s=1.0)
     assert result.body == b"network error"
+
+
+class _PagedFetch:
+    """Serves scripted 200 pages in order and records each URL."""
+
+    def __init__(self, pages: list[object]) -> None:
+        self.pages = list(pages)
+        self.urls: list[str] = []
+
+    def run_command(self, *a, **k):
+        raise AssertionError("not used")
+
+    def http_get(self, url, headers, *, timeout_s=60.0):
+        del headers, timeout_s
+        self.urls.append(url)
+        page = self.pages.pop(0)
+        body = page if isinstance(page, bytes) else json.dumps(page).encode()
+        return HttpGetResult(status_code=200, body=body)
+
+
+def _paged_profile(pagination: str) -> HarnessProfile:
+    return HarnessProfile(
+        name="paged",
+        binary="paged",
+        argv=("{prompt}",),
+        model_list=ModelListSource(
+            catalog_provider="anthropic",
+            url="https://models.invalid/v1/models",
+            credential_env="PAGED_KEY",
+            credential_header="x-api-key",
+            pagination=pagination,
+        ),
+    )
+
+
+_ANTHROPIC_PAGE_1 = {"data": [{"id": "m1"}], "has_more": True, "last_id": "m1"}
+_GEMINI_PAGE_1 = {
+    "models": [{"name": "models/g1", "supportedGenerationMethods": ["generateContent"]}],
+    "nextPageToken": "t1",
+}
+
+
+@pytest.mark.parametrize(
+    "later_page",
+    [
+        {"has_more": False},
+        {"data": None, "has_more": False},
+        {"type": "error", "error": {"type": "overloaded_error", "message": "Overloaded"}},
+    ],
+    ids=["data-missing", "data-null", "error-body"],
+)
+def test_anthropic_later_page_without_list_is_unavailable_never_page_one(later_page):
+    """Story 84.2: page 2 without a ``data`` list never ends an ok listing of page 1's ids."""
+    fetch = _PagedFetch([_ANTHROPIC_PAGE_1, later_page])
+    result = fetch_live_ids_for_profile(_paged_profile("anthropic"), fetch, env={"PAGED_KEY": "k"})
+    assert len(fetch.urls) == 2
+    assert result.status == "unavailable"
+    assert result.reason == "unexpected page shape"
+    assert result.live_ids == frozenset()
+
+
+@pytest.mark.parametrize(
+    "later_page",
+    [
+        {},
+        {"models": None},
+        {"error": {"code": 500, "message": "Internal error encountered.", "status": "INTERNAL"}},
+    ],
+    ids=["models-missing", "models-null", "error-body"],
+)
+def test_gemini_later_page_without_list_is_unavailable_never_page_one(later_page):
+    """Story 84.2: page 2 without a ``models`` list never ends an ok listing of page 1's ids."""
+    fetch = _PagedFetch([_GEMINI_PAGE_1, later_page])
+    result = fetch_live_ids_for_profile(_paged_profile("gemini"), fetch, env={"PAGED_KEY": "k"})
+    assert len(fetch.urls) == 2
+    assert result.status == "unavailable"
+    assert result.reason == "unexpected page shape"
+    assert result.live_ids == frozenset()
+
+
+@pytest.mark.parametrize(
+    ("pagination", "page"),
+    [
+        ("anthropic", {"type": "error", "error": {"type": "authentication_error", "message": "x"}}),
+        ("gemini", {"error": {"code": 403, "message": "x", "status": "PERMISSION_DENIED"}}),
+    ],
+)
+def test_first_page_error_body_is_unexpected_shape(pagination, page):
+    result = fetch_live_ids_for_profile(_paged_profile(pagination), _PagedFetch([page]), env={"PAGED_KEY": "k"})
+    assert result.status == "unavailable"
+    assert result.reason == "unexpected page shape"
+
+
+@pytest.mark.parametrize(
+    ("body", "reason"),
+    [(b"\xff\xfe", "invalid JSON response"), (b"not json", "invalid JSON response"), (b"[1, 2]", "invalid JSON shape")],
+)
+def test_undecodable_page_is_unavailable(body, reason):
+    result = fetch_live_ids_for_profile(_paged_profile("anthropic"), _PagedFetch([body]), env={"PAGED_KEY": "k"})
+    assert result.status == "unavailable"
+    assert result.reason == reason
+
+
+def test_well_formed_pages_still_list_every_id():
+    anthropic = fetch_live_ids_for_profile(
+        _paged_profile("anthropic"),
+        _PagedFetch([_ANTHROPIC_PAGE_1, {"data": [{"id": "m2"}], "has_more": False}]),
+        env={"PAGED_KEY": "k"},
+    )
+    gemini = fetch_live_ids_for_profile(
+        _paged_profile("gemini"),
+        _PagedFetch(
+            [_GEMINI_PAGE_1, {"models": [{"name": "models/g2", "supportedGenerationMethods": ["generateContent"]}]}]
+        ),
+        env={"PAGED_KEY": "k"},
+    )
+    assert (anthropic.status, anthropic.live_ids) == ("ok", frozenset({"m1", "m2"}))
+    assert (gemini.status, gemini.live_ids) == ("ok", frozenset({"g1", "g2"}))
