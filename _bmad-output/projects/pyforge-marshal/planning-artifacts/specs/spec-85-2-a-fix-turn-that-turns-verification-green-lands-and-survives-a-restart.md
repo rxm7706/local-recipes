@@ -128,6 +128,16 @@ Minted 2026-10-03 at the operator's request (split 85.1, keep Cursor).
 - mutation (the reviewer's mutants, imported verbatim from its harness, run from a wrapper against scratch copies): MP, MP2 and R1 now killed; all 44 mutants killed — the reviewer's 40 (four re-expressed where the fix moved their text: MB3, MG, MK, T2) and five for the fix itself (060 not owed, repeated, owed for a failed turn, naming no INTENT; `killpg` of a group `<= 1`); the unmutated baseline passes. The reviewer's probes: all twelve pass, `test_p4` included.
 - residual risks, carried to Story 85.3 (its Intent and acceptance criteria): an open INTENT left when no supervisor is alive reads FAILED and resume refuses MRS-DISP-023, so the story parks and the turn's edits are never re-verified; the timeout stop is SIGTERM-only to the group (85.3's existing criterion); the tick loop's liveness check on the original session (`dispatch_supervisor/__main__.py`, the tick loop) has no start-time check, so a reused pid could let the idle checkpoint commit a running fix session's tree.
 
+### 2026-10-04 — Delta review of the lows fix (independent reviewer); verdict LAND; lows fixed by the operator
+- verdicts: 5 findings — high 0, medium 0, low 5, false 0. All fixed on the branch; none deferred. The flag stays OFF everywhere.
+- findings:
+  - `[low]` `[fix]` L1 The L1 tests passed a dedupe that ignored `fix_intent_id` and an emit that did not advance the journal counter (duplicate entry ids). Fixed: a test where an MRS-DISP-060 naming another INTENT must not stand in for this turn's (one 060 naming INTENT 10, no verify, no launch), and every finished-turn test asserts each journal entry id is unique. The surviving `REFUSED`-guard mutant is unreachable (a verified run never reaches that branch) and stays unpinned.
+  - `[low]` `[fix]` L2 With the flag off, the owed MRS-DISP-060 names no command (the flag-off verification OUTCOME has no `failed_commands`). Fixed: a comment at `_journal_fix_turn_park` says so.
+  - `[low]` `[fix]` L3 Story 85.3's new acceptance criterion named a trigger that never happens ("the supervisor next runs") and no flag condition. Fixed: "Given the flag on … When the operator resumes the run Then resume does not refuse MRS-DISP-023 …".
+  - `[low]` `[fix]` L4 Story 85.3's Problem paragraph still said the timeout kill signals the leader only. Fixed: it signals the session's process group (since this story), still with no bounded wait, SIGKILL or reap.
+  - `[low]` `[fix]` L5 The sleeper hard-coded `/bin/sleep` and the liveness check skipped where `/proc` is absent. Fixed: a `sys.executable` sleeper, and a non-blocking `waitpid` fallback (this test process is the session's Popen parent).
+- mutation: the reviewer's dedupe-any-INTENT and counter-not-advanced mutants now fail the new tests; the bare-`sleep` sleeper fails with "exited at once".
+
 ## Auto Run Result
 
 Summary: Wired the verify-fix turn so sidecar-offloaded failed commands resolve, INTENT is journaled before harness launch with a pid observation, WIP commits before re-verify, latest verification outcome wins, MRS-DISP-060 fires on a second refusal, and a supervisor restart resumes the journaled turn within the remaining wall-clock budget. Dispatch status reads LIVE while the fix-turn session is alive.

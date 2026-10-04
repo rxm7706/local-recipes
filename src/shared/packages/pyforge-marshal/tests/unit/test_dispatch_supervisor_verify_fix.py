@@ -733,11 +733,22 @@ def test_a_finished_fix_turn_with_a_still_red_reverify_never_launches_again(
     )
     assert ok is True
     assert _finalize_outcome(fs)["verified"] is False
+    _assert_journal_ids_unique(lines, fs)
 
 
-def _finished_fix_turn_lines(*, ok: bool, reverified_and_parked: bool = False) -> tuple[str, ...]:
+def _assert_journal_ids_unique(lines: tuple[str, ...], fs: loop.FakeFs) -> None:
+    """Every entry id -- the seeded journal's and each one this pass appended -- names one entry only."""
+    ids = [json.dumps(json.loads(line)["id"], sort_keys=True) for line in lines]
+    ids += [json.dumps(entry["id"], sort_keys=True) for entry in _entries(fs)]
+    assert len(ids) == len(set(ids)), f"duplicate journal entry ids: {sorted(ids)}"
+
+
+def _finished_fix_turn_lines(
+    *, ok: bool, reverified_and_parked: bool = False, park_intent_counter: int = 10
+) -> tuple[str, ...]:
     """A refusal, then a fix turn whose OUTCOME a killed supervisor journaled (``ok`` as given); with
-    ``reverified_and_parked`` its still-red re-verify and MRS-DISP-060 were journaled too."""
+    ``reverified_and_parked`` its still-red re-verify and an MRS-DISP-060 were journaled too, the 060 naming the
+    INTENT at ``park_intent_counter`` (this turn's is 10)."""
     from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
 
     started = datetime(2026, 10, 3, 10, 0, tzinfo=timezone.utc)
@@ -762,7 +773,11 @@ def _finished_fix_turn_lines(*, ok: bool, reverified_and_parked: bool = False) -
             run_id=loop._RUN_ID,
             kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
             phase=Phase.OBSERVATION,
-            payload={"ok": False, "code": FIX_TURN_REVERIFY_REFUSED_CODE, "fix_intent_id": fix_intent_ref(intent_id)},
+            payload={
+                "ok": False,
+                "code": FIX_TURN_REVERIFY_REFUSED_CODE,
+                "fix_intent_id": fix_intent_ref(JournalEntryId("dispatch-supervisor-1", park_intent_counter)),
+            },
         )
         lines.append(prepare_for_write(park).line)
     return tuple(lines)
@@ -796,6 +811,35 @@ def test_mrs_disp_060_is_journaled_once_and_only_for_a_turn_that_finished(
     ] == []
     assert ok is True
     assert _finalize_outcome(fs)["verified"] is False
+    _assert_journal_ids_unique(lines, fs)
+
+
+def test_a_park_journaled_for_another_intent_does_not_stand_in_for_this_turns_mrs_disp_060(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Delta review L1: the once-per-INTENT dedupe matches on the turn's own INTENT. An MRS-DISP-060 naming another
+    INTENT leaves this turn's park owed -- journaled once, naming INTENT 10, with no second verify or launch."""
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    lines = _finished_fix_turn_lines(ok=True, reverified_and_parked=True, park_intent_counter=99)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL))
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, journal_lines=lines, vcs=vcs)
+
+    assert launches == []
+    assert [event for event in events if event[0] == "verify"] == []
+    parks = [
+        entry for entry in _verify_fix_entries(fs) if entry["payload"].get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+    ]
+    assert len(parks) == 1
+    assert parks[0]["payload"]["fix_intent_id"] == {"writer_id": "dispatch-supervisor-1", "counter": 10}
+    assert ok is True
+    _assert_journal_ids_unique(lines, fs)
 
 
 # --------------------------------------------------------------------------

@@ -1027,6 +1027,8 @@ def _journal_fix_turn_park(
     """Journal MRS-DISP-060 -- verification still refused after the one fix turn, the story parked -- naming the
     still-failing command and the fix-turn INTENT it belongs to (Story 85.2 AC2). Returns the next counter."""
     failed_after = _failed_commands_from_verification_journal(folded, run_id, fs=fs, run_dir=run_dir)
+    # A verification OUTCOME written with the flag off keeps main's five keys and carries no failed_commands, so a
+    # park owed after a flag flip names no command (failed_command None); the message still says the story parked.
     failed_command = str(failed_after[0]["command"]) if failed_after and failed_after[0].get("command") else None
     finding = Finding(
         code=FIX_TURN_REVERIFY_REFUSED_CODE,
