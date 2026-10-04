@@ -3202,7 +3202,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_push.py": "1611c1f3d3f99d0b030ef7d3169e5b750a84c1bd",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_re_preflight.py": "fdff2e9cfbff346d5adf24687f0ba12688309c41",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py": "15dd3113e3969a42760a31d89c1353b17fd0de04",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_ruff_format.py": "f6d3b3c5e7b2fe3110bf0e7a2434f258e0cadb8c",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_ruff_format.py": "b38c294435844239617b140abe15ddf1db28a303",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_finalize.py": "4fd1f54c194a30038959c11249ca549ee43fb2c0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_state.py": "fb762326ea4f672020551f017f051cb3240b20a3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_survival.py": "5d71c5dc368fa15265af1ba182f2e665dce76341",
@@ -3486,7 +3486,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7841247dfd900ae288c19463e38af1276d4d9e81",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "1aca84cf8730717002cebef7094c441181050126"
+  "memlog": "2b66e7aa8131ab3ff6dbdf0c0520863b47ce6d2b"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3879,7 +3879,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_push.py": "1611c1f3d3f99d0b030ef7d3169e5b750a84c1bd",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_re_preflight.py": "fdff2e9cfbff346d5adf24687f0ba12688309c41",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_retry.py": "15dd3113e3969a42760a31d89c1353b17fd0de04",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_ruff_format.py": "f6d3b3c5e7b2fe3110bf0e7a2434f258e0cadb8c",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_ruff_format.py": "b38c294435844239617b140abe15ddf1db28a303",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_finalize.py": "4fd1f54c194a30038959c11249ca549ee43fb2c0",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_supervisor_state.py": "fb762326ea4f672020551f017f051cb3240b20a3",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_survival.py": "5d71c5dc368fa15265af1ba182f2e665dce76341",
@@ -4110,7 +4110,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_push.py": "0c7c310bf3913d1362b16fce614fdd1beaea99eb",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_re_preflight.py": "921822394dc24ec720cf4e68e1b6fa0fffe4bd77",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_retry_83_10.py": "6030c4dfc2a7cce9b259231b3b546a8aa6fc006c",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py": "2887cec0f04897ead6ac2f851231fd36735ec409",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py": "c213ddd0ad5cb920b5593ce6e5dc93e95b205492",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_station_guard.py": "5d47b0c1c03add9631abdec623a8b3873cb97d87",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_stop_retry.py": "70fd484996e89e2179650051b4dd2d7ee7cd11ea",
    "src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_structure_graph.py": "0a0d48a98a3c0b6b6362d8ecf40cd1233eb4dd61",
@@ -4248,7 +4248,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "a3b0a9e908ec84b0338bba50081062563ac93418"
+  "memlog": "f8f7cc1a2aff28583a8ed80acd018d617ffd9bf6"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
