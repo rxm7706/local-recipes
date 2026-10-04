@@ -2,7 +2,7 @@
 title: "41.5: A new story reopens its done epic without reading as a ledger regression"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
