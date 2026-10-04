@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -79,6 +80,7 @@ from ..core.dispatch_verify_fix import (
     in_flight_verify_fix_turn,
     pending_verify_fix_intent,
     scrub_fix_turn_exposure,
+    scrub_then_tail_bytes,
 )
 from ..core.egress import redact_raw_text, to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
@@ -108,7 +110,9 @@ from ..core.worktree_checkpoint import (
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_verify import (
     ProcessWaitResult,
+    TerminateProcessGroupResult,
     compose_dispatch_policy,
+    dispatch_session_alive,
     evaluate_dispatch_verification,
     fix_session_alive,
     resolve_spec_text_for_story,
@@ -953,10 +957,13 @@ def _promote_blocked_twin(
     return counter
 
 
-def _launch_context_from_folded(folded, run_id: str) -> tuple[str | None, str | None, dict[str, object] | None]:
+def _launch_context_from_folded(
+    folded, run_id: str
+) -> tuple[str | None, str | None, dict[str, object] | None, str | None]:
     profile_name: str | None = None
     model: str | None = None
     wire_layer: dict[str, object] | None = None
+    harness_session_id: str | None = None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
         if entry.run_id != run_id:
             continue
@@ -970,7 +977,10 @@ def _launch_context_from_folded(folded, run_id: str) -> tuple[str | None, str | 
         elif entry.phase == Phase.OUTCOME:
             raw_profile = entry.payload.get("harness_profile")
             profile_name = raw_profile if isinstance(raw_profile, str) else None
-    return profile_name, model, wire_layer
+            raw_hsid = entry.payload.get("harness_session_id")
+            if isinstance(raw_hsid, str) and raw_hsid.strip():
+                harness_session_id = raw_hsid.strip()
+    return profile_name, model, wire_layer, harness_session_id
 
 
 def _journal_sidecars(*, fs: FsPort, run_dir: Path) -> dict[str, str | None]:
@@ -1072,6 +1082,7 @@ def _maybe_run_verify_fix_turn(
     git_facts: DispatchGitFacts,
     folded,
     session_alive: bool,
+    publish_heartbeat: Callable[[], None] | None = None,
 ) -> _FixTurnResult:
     """Run at most one fix turn; re-verify once.
 
@@ -1134,7 +1145,7 @@ def _maybe_run_verify_fix_turn(
         if not flag_enabled:
             stopped = fix_session_alive(process, fix_pid, launched_at=started_at)
             if stopped:
-                terminate_process_group(fix_pid)
+                terminate_process_group(fix_pid, process=process)
             _journal_fix(
                 Phase.OUTCOME,
                 {
@@ -1197,7 +1208,7 @@ def _maybe_run_verify_fix_turn(
         effective = compose_dispatch_policy(slug, repo_root)
         fix_policy = resolve_verify_fix_settings(effective)
         budget_env = dispatch_core.build_budget_env(effective)
-        profile_name, model, wire_layer = _launch_context_from_folded(folded, run_id)
+        profile_name, model, wire_layer, harness_session_id = _launch_context_from_folded(folded, run_id)
         preference: tuple[str, ...] = tuple(effective.harness_preference.value)
         if profile_name and profile_name in preference:
             preference = (profile_name, *(p for p in preference if p != profile_name))
@@ -1205,7 +1216,10 @@ def _maybe_run_verify_fix_turn(
         resolution = harness.binary_present(preference, repo_root=repo_root)
         prompt = build_verify_fix_prompt(failed_cmds, output_tail_bytes=fix_policy.output_tail_bytes)
         launch_mode = choose_verify_fix_launch_mode(
-            resume_argv=resolution.spec.resume_argv if resolution.spec else None
+            resume_argv=resolution.spec.resume_argv if resolution.spec else None,
+            harness_session_id=harness_session_id,
+            launch_profile=profile_name,
+            resolved_profile=resolution.profile,
         )
         fix_log = run_dir / "verify-fix.log"
         started_at = _now_utc()
@@ -1252,6 +1266,8 @@ def _maybe_run_verify_fix_turn(
                 launch_mode=launch_mode.value,
                 project_slug=slug,
                 budget_env=budget_env,
+                harness_session_id=harness_session_id or "",
+                run_dir=run_dir,
             )
             launched_pid = launch.pid
         except BuildHarnessError as exc:
@@ -1287,6 +1303,8 @@ def _maybe_run_verify_fix_turn(
             session_alive=False,
             git_facts=git_facts,
         )
+        if publish_heartbeat is not None:
+            publish_heartbeat()
 
     wait_result: ProcessWaitResult = wait_for_process(
         process,
@@ -1297,7 +1315,19 @@ def _maybe_run_verify_fix_turn(
     )
     elapsed = (_now_utc() - started_at).total_seconds()
     if not wait_result.exited:
-        terminate_process_group(fix_pid)
+        stop_result: TerminateProcessGroupResult = terminate_process_group(fix_pid, process=process)
+        _journal_fix(
+            Phase.OBSERVATION,
+            {
+                "ok": True,
+                "step": "terminate_process_group",
+                "session_pid": fix_pid,
+                "signalled_term": stop_result.signalled_term,
+                "signalled_kill": stop_result.signalled_kill,
+                "reaped": stop_result.reaped,
+                "returncode": stop_result.returncode,
+            },
+        )
         _journal_fix(
             Phase.OUTCOME,
             {"ok": False, "code": FIX_TURN_TIMEOUT_CODE, "session_pid": fix_pid, "elapsed_s": elapsed},
@@ -1345,6 +1375,9 @@ def _maybe_run_verify_fix_turn(
             failed_message=commit_refusal,
         )
 
+    if publish_heartbeat is not None:
+        publish_heartbeat()
+
     counter = _run_and_journal_verification(
         fs=fs,
         vcs=vcs,
@@ -1357,7 +1390,10 @@ def _maybe_run_verify_fix_turn(
         slug=slug,
         story_key=story_key,
         worktree=worktree,
+        on_progress=publish_heartbeat,
     )
+    if publish_heartbeat is not None:
+        publish_heartbeat()
     text = fs.read_text(run_dir / _JOURNAL_FILENAME)
     if text is not None:
         folded = _fold_dispatch_journal(fs, run_dir, text)
@@ -1399,6 +1435,7 @@ def _run_supervisor_finalize_sequence(
     merge_subject_template: str,
     folded,
     followup_review: FollowupReview | None = None,
+    publish_heartbeat: Callable[[], None] | None = None,
 ) -> tuple[int, bool]:
     """Commit, push, and verify harness-leftover work (Story 28.24).
 
@@ -1424,6 +1461,7 @@ def _run_supervisor_finalize_sequence(
             git_facts=git_facts,
             folded=folded,
             session_alive=False,
+            publish_heartbeat=publish_heartbeat,
         )
         counter = _journal_finalize_attempt(
             fs=fs,
@@ -1620,6 +1658,7 @@ def _run_supervisor_finalize_sequence(
             git_facts=git_facts,
             folded=folded,
             session_alive=False,
+            publish_heartbeat=publish_heartbeat,
         )
         counter, verified, folded = fix.counter, fix.verified, fix.folded
         fix_committed, fix_failed_step, fix_failed_message = fix.committed, fix.failed_step, fix.failed_message
@@ -2052,6 +2091,7 @@ def _run_and_journal_verification(
     slug: str,
     story_key: str,
     worktree: Path,
+    on_progress: Callable[[], None] | None = None,
 ) -> int:
     """Run independent gate verification and journal the outcome (Story 22.3)."""
     if callable(getattr(vcs, "commit_paths", None)):
@@ -2073,17 +2113,35 @@ def _run_and_journal_verification(
         return counter
     story_key_obj = resolution.resolved[0]
     spec_text = resolve_spec_text_for_story(repo_root, slug, story_key_obj)
-    envelope = evaluate_dispatch_verification(
-        project_slug=slug,
-        story_key=story_key_obj,
-        worktree=worktree,
-        repo_root=repo_root,
-        effective=effective,
-        spec_text=spec_text,
-        process=process,
-        vcs=vcs,
-        committing_vcs=vcs,
-    )
+    progress_stop: threading.Event | None = None
+    progress_thread: threading.Thread | None = None
+    if on_progress is not None:
+        progress_stop = threading.Event()
+
+        def _verification_progress() -> None:
+            assert progress_stop is not None
+            while not progress_stop.wait(30.0):
+                on_progress()
+
+        progress_thread = threading.Thread(target=_verification_progress, daemon=True)
+        progress_thread.start()
+    try:
+        envelope = evaluate_dispatch_verification(
+            project_slug=slug,
+            story_key=story_key_obj,
+            worktree=worktree,
+            repo_root=repo_root,
+            effective=effective,
+            spec_text=spec_text,
+            process=process,
+            vcs=vcs,
+            committing_vcs=vcs,
+        )
+    finally:
+        if progress_stop is not None:
+            progress_stop.set()
+        if progress_thread is not None:
+            progress_thread.join(timeout=1.0)
     verification_verdict = judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
     failed = primary_gate_failure(envelope.findings)
     # Story 85.1 (spec-pyforge-marshal:CAP-286, dormant): the failed commands
@@ -2101,9 +2159,10 @@ def _run_and_journal_verification(
         fix_settings = resolve_verify_fix_settings(effective)
         for item in extract_failed_verify_commands(reports_tuple, envelope.findings):
             combined = "\n".join(part for part in (item.stdout, item.stderr) if part.strip())
-            encoded = combined.encode("utf-8", errors="replace")
-            tail = encoded[-fix_settings.output_tail_bytes :].decode("utf-8", errors="replace")
-            redacted_tail = scrub_fix_turn_exposure(redact_raw_text(tail) or "")
+            redacted_tail = scrub_then_tail_bytes(
+                redact_raw_text(combined) or "",
+                max_bytes=fix_settings.output_tail_bytes,
+            )
             failed_commands_payload.append(
                 {
                     "command": item.command,
@@ -2306,6 +2365,14 @@ def run_dispatch_supervisor(
     # Story 73.1 (CAP-281): a follow-up review run's spec-only diff is its record, so every narration
     # read below takes the path through `narration_spec_path` (None for that run, the spec path otherwise).
     narration_path = narration_spec_path(spec_relative_path, followup_review=followup_review)
+    session_launched_at: datetime | None = None
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
+        if entry.run_id == run_id and entry.phase == Phase.INTENT:
+            try:
+                session_launched_at = datetime.fromisoformat(entry.ts.replace("Z", "+00:00"))
+            except ValueError:
+                session_launched_at = None
+            break
 
     while True:
         tick_count += 1
@@ -2330,7 +2397,7 @@ def run_dispatch_supervisor(
             time.sleep(_TICK_SECONDS)
             continue
 
-        session_alive = process.is_alive(session_pid)
+        session_alive = dispatch_session_alive(process, session_pid, launched_at=session_launched_at)
         session_log = fs.read_text(run_dir / _SESSION_LOG_FILENAME)
         if session_alive:
             current_log = session_log
@@ -2389,6 +2456,7 @@ def run_dispatch_supervisor(
                 merge_subject_template=merge_subject_template,
                 folded=folded,
                 followup_review=followup_review,
+                publish_heartbeat=_publish_heartbeat,
             )
             text = fs.read_text(journal_path)
             if text is not None:

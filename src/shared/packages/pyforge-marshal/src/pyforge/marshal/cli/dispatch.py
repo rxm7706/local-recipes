@@ -37,6 +37,7 @@ import re
 import secrets
 import sys
 import time
+import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
@@ -1337,6 +1338,8 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     model: str | None = None
     worktree_path: str | None = None
     launched_at: datetime | None = None
+    harness_session_id: str | None = None
+    launch_harness_profile: str | None = None
     baseline_head_sha: str | None = None
     followup_review: FollowupReview | None = None
     supervisor_pid: int | None = None
@@ -1369,6 +1372,12 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
                 session_pid = pid_val
             elif isinstance(pid_val, str) and pid_val.isdigit():
                 session_pid = int(pid_val)
+            raw_hsid = entry.payload.get("harness_session_id")
+            if isinstance(raw_hsid, str) and raw_hsid.strip():
+                harness_session_id = raw_hsid.strip()
+            raw_launch_profile = entry.payload.get("harness_profile")
+            if isinstance(raw_launch_profile, str):
+                launch_harness_profile = raw_launch_profile
             sup_val = entry.payload.get("supervisor_pid")
             if isinstance(sup_val, int):
                 supervisor_pid = sup_val
@@ -1443,6 +1452,14 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         baseline_revision = baseline_head_sha
     if story_started_at is None and launched_at is not None:
         story_started_at = _format_entry_ts(launched_at)
+    if harness_session_id is None and launch_harness_profile == "cursor":
+        from ..core.harness_session import parse_harness_session_id_from_log
+
+        session_log = fs.read_text(run_dir / _LOG_FILENAME)
+        harness_session_id = parse_harness_session_id_from_log(
+            profile="cursor",
+            log_text=session_log,
+        )
     # Story 85.2 (CAP-286): a verification fix turn still in flight, so every reader of these facts -- `dispatch
     # status`, the in-flight guard, `marshal status` -- can read it LIVE (`resolve_dispatch_session_verdict`).
     in_flight_fix = in_flight_verify_fix_turn(folded, run_id)
@@ -1470,6 +1487,8 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         preserve_ref=preserve_ref,
         verify_fix_session_pid=in_flight_fix.session_pid if in_flight_fix is not None else None,
         verify_fix_started_at=in_flight_fix.started_at if in_flight_fix is not None else None,
+        harness_session_id=harness_session_id,
+        launch_harness_profile=launch_harness_profile,
     )
 
 
@@ -3126,6 +3145,7 @@ def dispatch_once(
 
     log_path = run_dir / _LOG_FILENAME
     data["log"] = str(log_path)
+    harness_session_id = str(uuid.uuid4())
     try:
         launch = build_harness.dispatch(
             worktree,
@@ -3140,6 +3160,7 @@ def dispatch_once(
             # never the whole `[context]` payload. The launch seam has no
             # business reading a layer it does not implement.
             wire_layer=context_payload[harness_profile.WIRE_LAYER_NAME],
+            harness_session_id=harness_session_id,
         )
     except BuildHarnessError as exc:
         findings.append(
@@ -3209,6 +3230,7 @@ def dispatch_once(
             "model": launch.model,
             "budget_env": dict(launch.budget_env),
             "harness_profile": launch.profile,
+            "harness_session_id": harness_session_id,
             # A fresh dict per call (never the one already in `data`), so
             # the journal payload and the echoed envelope can never alias.
             "wire": wire.journal_payload(),

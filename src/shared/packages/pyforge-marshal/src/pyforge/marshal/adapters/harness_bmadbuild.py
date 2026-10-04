@@ -45,6 +45,7 @@ from pathlib import Path
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError
 
+from ..core.dispatch_verify_fix import VERIFY_FIX_PROMPT_FILENAME
 from ..core.harness_profile import HarnessProfile, WireWrap, load_profiles, wire_port_for_worktree
 from ..core.harness_profile import render_dispatch_argv as _render_dispatch_argv
 from ..core.harness_profile import render_verify_fix_argv as _render_verify_fix_argv
@@ -226,6 +227,8 @@ class BmadBuildHarness:
         launch_mode: str,
         project_slug: str,
         budget_env: Mapping[str, str] | None = None,
+        harness_session_id: str = "",
+        run_dir: Path | None = None,
     ) -> DispatchLaunchResult:
         """Launch one fix-only or resume session (Story 85.1, not bmad-build-auto)."""
         if not resolution or resolution.spec is None or resolution.binary_path is None:
@@ -249,6 +252,12 @@ class BmadBuildHarness:
                     ),
                     aggressiveness=wire.aggressiveness,
                 )
+        prompt_dir = run_dir if run_dir is not None else log_path.parent
+        prompt_path = prompt_dir / VERIFY_FIX_PROMPT_FILENAME
+        try:
+            prompt_path.write_text(prompt, encoding="utf-8")
+        except OSError as exc:
+            raise BuildHarnessError(f"cannot write fix-turn prompt file {prompt_path!r}: {exc}") from exc
         argv, rendered_model, model_omitted_reason = _render_verify_fix_argv(
             profile,
             mode=launch_mode,
@@ -258,6 +267,8 @@ class BmadBuildHarness:
             model=model,
             wire=wire,
             wire_port=wire_port_for_worktree(worktree),
+            session_id=harness_session_id,
+            prompt_file=str(prompt_path.resolve()),
         )
         pid, command = self.launch_argv(
             argv,
@@ -346,6 +357,7 @@ class BmadBuildHarness:
         budget_env: Mapping[str, str],
         log_path: Path,
         wire_layer: Mapping[str, object] | None = None,
+        harness_session_id: str = "",
     ) -> DispatchLaunchResult:
         if not resolution or resolution.spec is None or resolution.binary_path is None:
             raise BuildHarnessError(
@@ -407,6 +419,7 @@ class BmadBuildHarness:
             model=model,
             wire=wire,
             wire_port=wire_port_for_worktree(worktree),
+            session_id=harness_session_id,
         )
         pid, command = self.launch_argv(
             argv,

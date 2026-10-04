@@ -19,6 +19,7 @@ from .model import Finding, Severity, Status, status_for
 from .verdict import classify
 
 VERIFY_FIX_LOOP_FLAG_KEY = "pyforge.marshal.verify_fix_loop"
+VERIFY_FIX_PROMPT_FILENAME = "verify-fix-prompt.txt"
 
 # Finding codes (Story 85.1)
 FIX_TURN_START_FAILED_CODE = "MRS-DISP-058"
