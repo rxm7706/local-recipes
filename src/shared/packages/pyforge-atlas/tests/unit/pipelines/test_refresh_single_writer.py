@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from pyforge.atlas.pipelines.core import create_pipeline as core_create
 from pyforge.atlas.pipelines.pypi_intelligence import create_pipeline as pypi_create
-from pyforge.atlas.pipelines.vcs_health import create_pipeline as vcs_create
 from pyforge.atlas.pipelines.upstream_discovery import create_pipeline as upstream_create
+from pyforge.atlas.pipelines.vcs_health import create_pipeline as vcs_create
 from pyforge.atlas.pipelines.vulnerability import create_pipeline as vuln_create
 
 # store -> the ONE node allowed to write it (its § 3.4 refresh asset).

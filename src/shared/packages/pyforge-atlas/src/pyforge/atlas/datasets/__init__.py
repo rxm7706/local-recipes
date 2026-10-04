@@ -24,8 +24,6 @@ from .basilisk import (
     chunk_queries,
     parse_basilisk_packages_response,
 )
-from .degraded_json import DegradedJsonSeedDataset
-from .degrading_parquet import DegradingParquetDataset
 from .core_sources import (
     CfGraphTarballDataset,
     CondaChanneldataDataset,
@@ -41,6 +39,8 @@ from .core_sources import (
     parse_pypi_simple_index,
     repodata_json_to_rows,
 )
+from .degraded_json import DegradedJsonSeedDataset
+from .degrading_parquet import DegradingParquetDataset
 from .identity_sources import (
     LocalRecipesOverlayDataset,
     OpenTeamsBoardDataset,

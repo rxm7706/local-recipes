@@ -52,8 +52,9 @@ from .refresh import (
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
     MappingCacheDataset,
     RefreshRequest,
+    _ParquetRefreshStore,
+    retry_backoff_seconds,
 )
-from .refresh import _ParquetRefreshStore, retry_backoff_seconds
 
 logger = logging.getLogger(__name__)
 

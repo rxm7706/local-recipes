@@ -35,14 +35,12 @@ import re
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
 import pandas as pd
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
-from pyforge.core.atomic_write import atomic_write
 
 from .rate_limit import DEFAULT_RPS, RateLimitedScheduler
 from .refresh import (

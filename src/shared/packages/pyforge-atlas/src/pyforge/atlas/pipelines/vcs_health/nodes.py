@@ -20,7 +20,7 @@ from typing import Any
 import pandas as pd
 
 from pyforge.atlas.datasets.migration_status import BLOCKER_BUCKETS
-from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS, RefreshRequest, clamp_ttl_cadence
+from pyforge.atlas.datasets.refresh import RefreshRequest, clamp_ttl_cadence
 
 from .vcs_refresh_identifiers import batches_from_identity
 

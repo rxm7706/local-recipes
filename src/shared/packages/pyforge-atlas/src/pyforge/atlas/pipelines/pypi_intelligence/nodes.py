@@ -23,9 +23,9 @@ import time
 
 import pandas as pd
 
-logger = logging.getLogger(__name__)
+from pyforge.atlas.datasets.refresh import RefreshRequest
 
-from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS, RefreshRequest
+logger = logging.getLogger(__name__)
 
 # The mapping provenance tiers that must NEVER be clobbered by a later, weaker match
 # (Phase C/C.5 no-clobber rule; the g10_spelling tier MUST survive as a valid

@@ -9,9 +9,9 @@ from typing import Any
 
 from kedro.io import AbstractDataset
 from kedro_datasets.json import JSONDataset
+from pyforge.core.atomic_write import atomic_write
 
 from .refresh import StalenessMarker
-from pyforge.core.atomic_write import atomic_write
 
 logger = logging.getLogger(__name__)
 
