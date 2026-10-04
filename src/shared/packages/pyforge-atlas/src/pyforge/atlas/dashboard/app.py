@@ -5,7 +5,9 @@ each page's data function in Vizro's ``data_manager``. Data functions are LAZY �
 them at render time, not at build — so the dashboard OBJECT builds fully offline with no
 server and no migrated data present (the ``dashboard-dryrun`` gate builds the object + asserts
 structure, exactly like the C1 ``dagster-dryrun`` / C2 ``viz-loadable`` gates; it never
-``.run()``s a server).
+``.run()``s a server). The one exception is a page that DECLARES filters: Vizro's own
+``Filter.pre_build`` loads a target's data to choose the selector, so ``_declared_filters``
+asks the loader for that page up front rather than hiding a second, hidden read behind it.
 
 Every data function routes through ``dashboard.data`` (the AD-8 BSL seam) or
 ``dashboard.factory_status``; no metric is computed here.
@@ -13,21 +15,29 @@ Every data function routes through ``dashboard.data`` (the AD-8 BSL seam) or
 Page set (the full 34-page inventory, Story 20.5 / CAP-7 closing DW-D2-1):
   * GROUNDED data pages — feedstock-health, my-feedstocks, estate-cache
     (BSL over a migrated dataset or the CAP-19 estate Parquet).
-  * BSL-WIRED SHELL pages — staleness-report, query-atlas, detail-cf-atlas, adoption-stage
-    (wired to build_packages_model; render empty until the composed packages store lands).
+  * BSL-WIRED pages over the composed ``semantic_packages`` store — staleness-report,
+    query-atlas, detail-cf-atlas, adoption-stage. The store is materialized by the
+    ``semantic_packages`` pipeline (Story 20.3); a checkout that has not run it yet gets
+    the honest-empty result ``_bsl_query_or_empty`` returns, never a fabricated row.
   * NO-BSL-MODEL SHELL pages — behind-upstream, whodepends (no D1 BSL model exists yet; a
     Card states the gap — no data function, no fabrication).
-  * BSL-WIRED SHELL pages (Story 20.5, unmigrated datasets) — the 12 remaining atlas-CLI /
-    cyclonedx-suite / seed-gap-suggester pages routed through a brand-new per-page BSL
-    model (``semantic/models.py``); each degrades honestly to empty until its own Kedro
-    pipeline materializes the backing Parquet (the DW-D2-2 lifecycle, generalized).
+  * BSL-WIRED pages over their own per-page model (Story 20.5) — the remaining atlas-CLI /
+    cyclonedx-suite / seed-gap-suggester pages, each routed through a model in
+    ``semantic/models.py``. Each page's ``note`` names the pipeline that has still to
+    produce its backing Parquet; until it does, the page renders the honest-empty state.
   * REPORT-ARTIFACT pages — export-purls, inventory-match, add-handoff, library-futures
     (FR-9: a write-path or per-invocation CLI; the dashboard surfaces the LATEST cached
     run only, never triggers one).
   * LIVE-SCAN-ARTIFACT pages — scan-project, env-inspect (per-invocation, user-supplied
-    input; the dashboard reads the latest cached invocation the same honest way — an
-    in-dashboard submit control is forward-looking work, not wired here).
+    input). These two DO submit a new scan from the dashboard: a path input plus a Run
+    button whose action goes through ``dashboard.scan_submit``, which runs the CLI over
+    ``pyforge.core.process`` and refreshes the cached Parquet the page reads.
   * factory-status — the fully-specified BMAD-artifact-state page (AD-17 build stamp).
+
+Each ``PageDef`` also declares the controls DESIGN.md § 3–5 specifies for that page — the
+filter columns and the one chart — and ``_data_page`` renders them;
+``tests/integration/dashboard/test_dashboard_controls.py`` compares the declarations
+against DESIGN.md's own per-page Layout bullets.
 
 The 19-page spine (BSL models, layouts, personas, journeys) is
 ``_bmad-output/projects/pyforge-atlas/planning-artifacts/{DESIGN,EXPERIENCE}.md`` (Story
@@ -37,19 +47,30 @@ The 19-page spine (BSL models, layouts, personas, journeys) is
 from __future__ import annotations
 
 import time
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
 
 import vizro.models as vm
+import vizro.plotly.express as px
+from dash import html, no_update
 from vizro import Vizro
-from vizro.managers import data_manager
+from vizro.managers import data_manager, model_manager
+from vizro.models.types import capture
 from vizro.tables import dash_ag_grid
 
 from .. import provenance as _provenance
 from ..provenance import ProvenanceInfo
 from . import data as _data
 from . import factory_status as _fs
+from . import scan_submit as _scan
+
+# `UserInput` is Vizro 0.1.60's text-entry component but is not in the default
+# `Page.components` union (it is a form component). `add_type` is Vizro's own
+# documented way to widen that union — the two live-scan pages need a free-text
+# path field, which no selector in `SelectorType` provides.
+vm.Page.add_type("components", vm.UserInput)
 
 # The D2 AC's live-confirmed-first consumer set (order preserved for determinism).
 LIVE_CONSUMER_CLIS = (
@@ -64,6 +85,19 @@ LIVE_CONSUMER_CLIS = (
 
 
 @dataclass(frozen=True)
+class ChartDef:
+    """The one ``vm.Graph`` a page's DESIGN.md § 3–5 Layout bullet names.
+
+    ``x``/``y`` are columns of that page's own BSL loader, so a chart can never
+    be declared over a column the page does not actually project.
+    """
+
+    kind: str  # the vizro.plotly.express function name, e.g. "bar"
+    x: str
+    y: str
+
+
+@dataclass(frozen=True)
 class PageDef:
     """Static description of a built page (introspected by the dashboard-dryrun gate)."""
 
@@ -74,9 +108,14 @@ class PageDef:
     # | "live-scan-artifact" — the latter two added by Story 20.5 (DESIGN.md § 1):
     # report-artifact reads the LATEST cached run of a write-path/per-invocation CLI
     # (the dashboard never triggers one); live-scan-artifact is per-invocation,
-    # user-supplied input (the dashboard would submit a NEW scan, not yet wired here).
+    # user-supplied input, and the dashboard DOES submit a new scan (Story 27.3).
     kind: str
     note: str = ""
+    # The controls DESIGN.md specifies for this page (Story 27.3, DW-FU-20-5).
+    # `filters` are loader column names, one `vm.Filter` each; `chart` is the one
+    # `vm.Graph`. A page DESIGN.md gives no Filter/Graph bullet declares neither.
+    filters: tuple[str, ...] = ()
+    chart: ChartDef | None = None
 
 
 PAGE_INVENTORY: tuple[PageDef, ...] = (
@@ -88,24 +127,27 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "Staleness Report",
         "staleness-report",
         "bsl-shell",
-        note="Wired to build_packages_model.staleness_age_days; renders empty until the "
-        "composed packages store lands (latest_conda_upload is not yet migrated — DW-D2).",
+        note="Wired to build_packages_model.staleness_age_days over the composed "
+        "semantic_packages store (`kedro run --pipeline semantic_packages`). "
+        "latest_conda_upload is declared NULL by that pipeline's node — it has no "
+        "migrated input — so the staleness age is null wherever that is the only source.",
     ),
     PageDef(
         "query-atlas",
         "Query Atlas",
         "query-atlas",
         "bsl-shell",
-        note="Wired to build_packages_model (is_actionable + adoption stage + downloads); "
-        "renders empty until the composed packages store lands (DW-D2).",
+        note="Wired to build_packages_model (is_actionable + adoption stage + downloads) "
+        "over the composed semantic_packages store (`kedro run --pipeline "
+        "semantic_packages`).",
     ),
     PageDef(
         "detail-cf-atlas",
         "Package Detail",
         "detail-cf-atlas",
         "bsl-shell",
-        note="Wired to build_packages_model (full per-package metric row); renders empty "
-        "until the composed packages store lands (DW-D2).",
+        note="Wired to build_packages_model (full per-package metric row) over the "
+        "composed semantic_packages store (`kedro run --pipeline semantic_packages`).",
     ),
     PageDef(
         "behind-upstream",
@@ -132,7 +174,10 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "cve-watcher",
         "bsl-shell",
         note="Wired to build_vuln_history_model; renders empty until the vuln_history "
-        "snapshot-diff dataset materializes.",
+        "snapshot-diff dataset materializes. DESIGN.md § 3.1 also names a maintainer "
+        "filter; the loader projects no maintainer column, so only severity and "
+        "since-days are declared here.",
+        filters=("severity", "since_days"),
     ),
     PageDef(
         "version-downloads",
@@ -141,6 +186,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="Wired to build_version_downloads_model; renders empty until the "
         "per-version download-history dataset materializes.",
+        chart=ChartDef("bar", x="version", y="downloads"),
     ),
     PageDef(
         "release-cadence",
@@ -149,7 +195,10 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="Wired to build_release_cadence_model.trend_label (release_cadence.py's "
         "own accelerating/stable/decelerating/silent classifier, ported verbatim); "
-        "renders empty until the rolling-window dataset materializes.",
+        "renders empty until the rolling-window dataset materializes. DESIGN.md § 3.3's "
+        "bar-per-window chart needs a long `window` dimension the model does not "
+        "project — it has one measure per window — so the 90-day window is charted.",
+        chart=ChartDef("bar", x="conda_name", y="release_count_90d"),
     ),
     PageDef(
         "find-alternative",
@@ -158,6 +207,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="Wired to build_alternative_candidates_model; renders empty until the "
         "Phase E/J similarity dataset materializes.",
+        filters=("archived_name",),
     ),
     PageDef(
         "adoption-stage",
@@ -166,16 +216,17 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="The portfolio-wide lifecycle VIEW; re-uses build_packages_model.adoption_stage "
         "(no new model) over the same composed semantic_packages store as detail-cf-atlas.",
+        chart=ChartDef("bar", x="adoption_stage", y="package_count"),
     ),
     PageDef(
         "scan-project",
         "Scan Project",
         "scan-project",
         "live-scan-artifact",
-        note="Wired to build_scan_result_model over the latest cached per-invocation scan; "
-        "an in-dashboard submit control (triggering a NEW scan) is forward-looking work, "
-        "not wired here — the page reads the last result the same honest way every other "
-        "shell page does.",
+        note="Wired to build_scan_result_model over the latest cached per-invocation scan. "
+        "The page submits a new scan itself: enter a project path and press Run, and "
+        "dashboard.scan_submit runs the scan-project CLI through pyforge.core.process, "
+        "rewrites this page's cached Parquet, and the grid re-renders from it.",
     ),
     PageDef(
         "env-inspect",
@@ -183,8 +234,9 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "env-inspect",
         "live-scan-artifact",
         note="Wired to build_env_inspect_model over the latest cached per-invocation "
-        "rollup; same per-invocation shape and forward-looking submit-control note as "
-        "scan-project.",
+        "rollup. Same submit path as scan-project: a conda/pixi env prefix path goes to "
+        "the env-inspect CLI's --licenses and --security modes through "
+        "pyforge.core.process, and this page's cached Parquet is rewritten from both.",
     ),
     PageDef(
         "distribution-breakdown",
@@ -196,6 +248,8 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "facet's --policy-check bump-safety classifier (pyver_breakdown.py's own "
         "policy_check_status, ported verbatim) rides along. Renders empty until the "
         "per-facet download-breakdown dataset materializes.",
+        filters=("facet",),
+        chart=ChartDef("bar", x="bucket", y="downloads_90d"),
     ),
     # Cyclonedx-suite pages (7, DESIGN.md § 4)
     PageDef(
@@ -222,6 +276,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         note="A SUMMARY over the ~856k-component BOM (build_universe_sbom_summary_model), "
         "never a full-table browse; renders empty until the universe-BOM summary "
         "dataset materializes.",
+        filters=("slice",),
     ),
     PageDef(
         "inventory-match",
@@ -379,15 +434,133 @@ def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInf
     return vm.Card(id=f"{page.id}--about", text="\n".join(lines))
 
 
+def _declared_chart(page: PageDef, key: str) -> vm.Graph | None:
+    """The one ``vm.Graph`` this page's ``PageDef`` declares, over the same data key."""
+    if page.chart is None:
+        return None
+    figure = getattr(px, page.chart.kind)
+    return vm.Graph(id=f"{page.id}--chart", figure=figure(key, x=page.chart.x, y=page.chart.y))
+
+
+def _declared_filters(page: PageDef, loader: Callable[[], Any]) -> list[vm.Filter]:
+    """One ``vm.Filter`` per declared column — but only once the page's data has rows.
+
+    Vizro's ``Filter.pre_build`` refuses a column that "does not contain anything"
+    (``vizro/models/_controls/filter.py`` carries its own ``TODO: Enable empty
+    data_frame handling``), so an honest-empty page carries no Filter, exactly as it
+    carries no rows. What DESIGN.md is compared against is the DECLARATION on
+    ``PageDef``; this function decides only whether the declared control can be built
+    against today's data.
+
+    A declared column the loader does NOT project is a typo, not an empty state, and
+    refuses loudly — an honest-empty frame still carries its declared columns.
+
+    Building the dashboard must not depend on the data root being READABLE (it is
+    offline-buildable against any root, including none), so a loader that raises
+    yields no control here and the page's own read path surfaces the error where it
+    belongs — in the page, at read time.
+    """
+    if not page.filters:
+        return []
+    try:
+        frame = loader()
+    except Exception as exc:  # noqa: BLE001 — any read failure is the page's to report
+        warnings.warn(
+            f"page {page.id!r} declares filters but its data could not be read "
+            f"at build time ({type(exc).__name__}: {exc}); rendering no filter",
+            stacklevel=2,
+        )
+        return []
+    absent = [column for column in page.filters if column not in frame.columns]
+    if absent:
+        msg = (
+            f"page {page.id!r} declares filter column(s) {absent} its loader does not "
+            f"project (projected: {sorted(frame.columns)})"
+        )
+        raise ValueError(msg)
+    return [
+        vm.Filter(id=f"{page.id}--filter-{column}", column=column)
+        for column in page.filters
+        if bool(frame[column].notna().any())
+    ]
+
+
 def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool, provenance: ProvenanceInfo) -> vm.Page:
-    """A page = a legibility Card + an AgGrid fed by a lazily-registered BSL data function."""
+    """A page = a legibility Card + an AgGrid fed by a lazily-registered BSL data
+    function, plus whatever filter/chart controls the ``PageDef`` declares."""
+    key = f"data::{page.id}"
+    data_manager[key] = loader
+    components: list[Any] = [
+        _legibility_card(page, grounded=grounded, provenance=provenance),
+        vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key)),
+    ]
+    chart = _declared_chart(page, key)
+    if chart is not None:
+        components.append(chart)
+    return vm.Page(
+        id=page.id,
+        title=page.title,
+        components=components,
+        controls=_declared_filters(page, loader),
+    )
+
+
+def _scan_action(page: PageDef, data_root: Path) -> vm.Action:
+    """The live-scan pages' submit action (DESIGN.md § 3.6/3.7; DW-FU-20-5-2).
+
+    ``page_id``/``data_root`` are closed over rather than passed as action
+    arguments: Vizro reads every argument of a captured action as a runtime
+    reference, and a static one would put the action on its deprecated legacy
+    path. The one runtime argument is the path field's value.
+    """
+    page_id = page.id
+    grid_id = f"{page.id}--grid"
+
+    @capture("action")
+    def run_scan(path_value: str | None) -> tuple[str, Any]:
+        submission = _scan.submit_scan(page_id, path_value, data_root=data_root)
+        if submission.frame is None:
+            return f"**{submission.status}** — {submission.message}", no_update
+        return (
+            f"**{submission.status}** — {submission.message}",
+            model_manager[grid_id](data_frame=submission.frame),
+        )
+
+    return vm.Action(
+        id=f"{page.id}--submit-action",
+        function=run_scan(f"{page.id}--path.value"),
+        outputs=[f"{page.id}--status.text", f"{grid_id}.children"],
+    )
+
+
+def _scan_page(
+    page: PageDef,
+    loader: Callable[[], Any],
+    *,
+    provenance: ProvenanceInfo,
+    data_root: Path,
+) -> vm.Page:
+    """A live-scan page: the shared Card + grid, plus a path field and a Run button.
+
+    The button's action is the ONLY place the dashboard starts a process, and it
+    goes through ``dashboard.scan_submit`` (``pyforge.core.process``, AD-4). The
+    action writes the page's own cached Parquet and hands the refreshed frame
+    straight back to this page's grid, so the result is on screen without a reload.
+    """
     key = f"data::{page.id}"
     data_manager[key] = loader
     return vm.Page(
         id=page.id,
         title=page.title,
         components=[
-            _legibility_card(page, grounded=grounded, provenance=provenance),
+            _legibility_card(page, grounded=False, provenance=provenance),
+            vm.UserInput(
+                id=f"{page.id}--path",
+                title="Path to scan",
+                placeholder="/path/to/project" if page.id == "scan-project" else "/path/to/env/prefix",
+            ),
+            vm.Button(id=f"{page.id}--submit", text="Run scan", actions=[_scan_action(page, data_root)]),
+            vm.Text(id=f"{page.id}--status", text="No scan submitted yet in this session."),
             vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key)),
         ],
     )
@@ -537,6 +710,36 @@ def _factory_page(
     )
 
 
+class LandmarkDashboard(vm.Dashboard):
+    """``vm.Dashboard`` with the two ARIA landmarks its shipped layout lacks.
+
+    Vizro 0.1.60 builds the page select into a ``<div id="nav-control-panel">``
+    and the page content into a ``<div id="right-side">``: a browser agent (or a
+    screen reader) gets no ``navigation`` and no ``main`` landmark to jump to.
+    This subclass re-tags exactly those two containers after
+    ``_arrange_page`` has assembled them — nothing is reordered, no Vizro
+    component template is patched, and a Vizro release that adds its own
+    landmarks would simply make this a no-op rename.
+
+    ``tests/integration/dashboard/test_dashboard_e2e.py`` asserts both landmarks
+    against the rendered DOM (DW-FU-20-5-3).
+    """
+
+    def _arrange_page(self, outer_page: Any) -> Any:
+        layout = super()._arrange_page(outer_page=outer_page)
+        layout["right-side"].role = "main"
+        nav_control_panel = layout["nav-control-panel"]
+        nav_control_panel.children = [
+            html.Nav(
+                id="pyforge-nav",
+                role="navigation",
+                children=nav_control_panel.children,
+                **{"aria-label": "Dashboard pages"},
+            )
+        ]
+        return layout
+
+
 def build_dashboard(
     *,
     build_stamp: str | None = None,
@@ -563,9 +766,11 @@ def build_dashboard(
 
     # AD-17 (Story I4): each grounded/bsl-shell page's provenance is THAT page's own
     # backing Parquet file's mtime (resolve_for_file degrades to "unavailable" + a
-    # reason when the file is absent — the composed store's real, honest state
-    # today for the 3 packages-backed shells, DW-D2). The 2 no-bsl-shell pages have
-    # no backing file at all — a hardcoded "unavailable", never a fabricated stamp.
+    # reason when the file is absent, which is what a checkout that has not run the
+    # producing pipeline gets). The 2 no-bsl-shell pages have no backing file at all
+    # — a hardcoded "unavailable", never a fabricated stamp.
+    # One page, one constant: tests/integration/dashboard/test_dashboard_provenance.py
+    # pins each page to the Parquet constant its own loader reads (DW-FU-20-5-7).
     feedstock_health_provenance = _provenance.resolve_for_file(root / _data.FEEDSTOCK_HEALTH_PARQUET)
     my_feedstocks_provenance = _provenance.resolve_for_file(root / _data.PACKAGE_MAINTAINERS_PARQUET)
     estate_cache_provenance = _provenance.resolve_for_file(root / _data.ESTATE_CACHE_PARQUET)
@@ -683,17 +888,17 @@ def build_dashboard(
             grounded=False,
             provenance=packages_provenance,
         ),
-        _data_page(
+        _scan_page(
             by_id["scan-project"],
             lambda: _data.load_scan_project(root / _data.SCAN_RESULT_LATEST_PARQUET),
-            grounded=False,
             provenance=scan_project_provenance,
+            data_root=root,
         ),
-        _data_page(
+        _scan_page(
             by_id["env-inspect"],
             lambda: _data.load_env_inspect(root / _data.ENV_INSPECT_LATEST_PARQUET),
-            grounded=False,
             provenance=env_inspect_provenance,
+            data_root=root,
         ),
         _data_page(
             by_id["distribution-breakdown"],
@@ -811,4 +1016,4 @@ def build_dashboard(
             specs_dir=specs_dir,
         ),
     ]
-    return vm.Dashboard(id=DASHBOARD_ID, title=DASHBOARD_TITLE, pages=pages)
+    return LandmarkDashboard(id=DASHBOARD_ID, title=DASHBOARD_TITLE, pages=pages)

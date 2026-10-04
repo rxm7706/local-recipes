@@ -762,7 +762,9 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # Story 68.1 (CAP-277): MRS-LAND-011 also names a second triggering shape, same
 # WARN tier (AD-31: same code, several triggering shapes) -- the dispatch
 # supervisor's blocked-spec-twin publish onto origin/main that could not land
-# (`_promote_blocked_twin`), journaled as a WARN observation.
+# (`_promote_blocked_twin`), journaled as a WARN observation. Story 83.21: a
+# third shape, same tier -- the sync's `apply_epic_rollups` could not be loaded,
+# so the promotion wrote no epic row it did not compute.
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to cli/status.py's own MRS-STATUS-* area, both WARN.
 # MRS-STATUS-010: a failed-story patch found via a bare Path.glob over
@@ -1040,7 +1042,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-REFRESH-005": Verdict.WARN,
     "MRS-REFRESH-006": Verdict.WARN,
     "MRS-REFRESH-007": Verdict.WARN,
-    # Story 17.4 (chain regenerate, FR-148/149/151):
+    # Story 17.4 / 86.5 (planning chain-regenerate; retired ``marshal chain regenerate``):
     # 001 missing planning tree → UNEVALUABLE; 002 phase fail ERROR;
     # 003 done-key refuse ERROR; 004 orphan report WARN.
     "MRS-CHAIN-001": Verdict.UNEVALUABLE,
@@ -1295,6 +1297,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # Story 83.2 (spec-83-2): pre-verification deferred-work intake refused or
     # could not run -- GATE_FAILED, same rung as MRS-GATE-001.
     "MRS-GATE-018": Verdict.GATE_FAILED,
+    # Story 83.17 (spec-83-17): a commit on the story branch carries an
+    # AI-attribution trailer the commit-msg hook refuses -- GATE_FAILED.
+    "MRS-GATE-019": Verdict.GATE_FAILED,
     # Story 82.9 (found registering the touched-module coverage of `cli/checkpoint.py`):
     # `marshal factory checkpoint`'s three precondition failures -- no dispatch worktree in
     # the journal (001), not inside a git repository (002), no loop home (003). ERROR, the

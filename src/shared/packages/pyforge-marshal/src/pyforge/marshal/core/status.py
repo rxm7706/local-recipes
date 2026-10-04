@@ -2062,10 +2062,29 @@ def render_ledger_advancements(ledger_text: str, raw_keys: frozenset[str]) -> tu
     already-read file content; the caller is responsible for writing the
     result back (``FsPort.write_text_atomic``) and committing it
     (``CommitPort.commit_paths``) -- this function only computes the new
-    text."""
-    if not raw_keys:
+    text.
+
+    Story 83.21: the line rewrite itself is ``render_ledger_status_rewrites``,
+    called here with ``done`` for every key -- one rewrite, two callers."""
+    return render_ledger_status_rewrites(ledger_text, dict.fromkeys(raw_keys, _LEDGER_DONE_STATUS))
+
+
+def render_ledger_status_rewrites(ledger_text: str, rewrites: Mapping[str, str]) -> tuple[str, frozenset[str]]:
+    """``render_ledger_advancements``'s targeted line rewrite, to any status:
+    every ``rewrites`` key's FIRST matching line takes that key's status
+    token, with indentation, the key text, the whitespace after the colon,
+    any trailer (a ``# comment``) and every line ending kept byte-for-byte;
+    every other line is untouched. Matching is EXACT on the whole pre-colon
+    segment, as there. Returns ``(new_text, matched_raw_keys)``; a key with
+    no matching line is left unmatched, never invented.
+
+    Story 83.21: ``cli/land.py``'s ledger promotion writes the epic roll-ups
+    ``scripts/promote_sprint_status.py::apply_epic_rollups`` computes through
+    this, so an epic row moves to ``in-progress`` or ``backlog`` as well as to
+    ``done``. Pure, like ``render_ledger_advancements``."""
+    if not rewrites:
         return ledger_text, frozenset()
-    remaining = set(raw_keys)
+    remaining = dict(rewrites)
     matched: set[str] = set()
     # Alternating [content, separator, content, separator, ..., content] --
     # only the CONTENT elements (even indices) are ever rewritten; every
@@ -2087,7 +2106,6 @@ def render_ledger_advancements(ledger_text: str, raw_keys: frozenset[str]) -> tu
         while status_end < len(rest_stripped) and not rest_stripped[status_end].isspace():
             status_end += 1
         trailer = rest_stripped[status_end:]
-        parts[i] = f"{indent}{key_part}:{leading_ws}{_LEDGER_DONE_STATUS}{trailer}"
-        remaining.discard(key_part)
+        parts[i] = f"{indent}{key_part}:{leading_ws}{remaining.pop(key_part)}{trailer}"
         matched.add(key_part)
     return "".join(parts), frozenset(matched)

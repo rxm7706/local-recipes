@@ -2,9 +2,10 @@
 title: "86.8: Path-form spec cites count as missing, and the retired chain verb leaves no trace"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
 followup_review_recommended: false
+baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -78,9 +79,52 @@ Minted 2026-10-04 at the operator's request ("chain it Story 86.8 in Epic 86").
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
-- `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0 with no unused-section note.
-- `python3 scripts/docs_station_cli.py --check` — expected: exit 0.
+- `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0 (the unused-section note for `pyforge.marshal.cli.chain` remains until the deferral below lands).
+
+**Manual checks (not a dispatch gate):**
+- `python3 scripts/docs_station_cli.py --check` — expected: exit 0. It is not among the station's `verify_commands`, so naming it under **Commands:** refused verification (MRS-GATE-011, dispatch run `pyforge-marshal-20261004T134059690Z-65cc67ab`).
 
 ## Review Triage Log
 
+- 2026-10-04, hand-landing, after the dispatch run was refused:
+  - The first verification failed on a load race in `_await_file`. The verify fix turn fixed it, in commit `51bb9b6e6d` (Story 85.1–85.3 machinery).
+  - The re-verification refused with MRS-GATE-011: the spec named `docs_station_cli.py --check` under **Commands:**. #1830 fixed the spec.
+  - Re-dispatching was then refused with MRS-DISP-040: the harness was done and its land was skipped as unverified.
+  - Landed by hand from `land/pyforge-marshal-86-8`: the dispatch branch's net change, rebuilt on main.
+- **Deviation from the spec: the dead mypy override is not removed here (AC4 deferred).**
+  - Why: `scripts/fleet_scan.py` dates marshal's chain `code` stage by the last commit to `src/shared/packages/pyforge-marshal/pyproject.toml`. Editing it today would make the code stage newer than marshal's last retro (2026-09-26) and newer than its PRD and spine. `chain-currency-sweep-check` would then red Detectors on main until a full marshal retro ran.
+  - Where it lands: with marshal's next epic retrospective, when the `pyproject.toml` edit costs nothing extra. Recorded as `DW-marshal-86-8-1`.
+  - The override only produces a warn-level lint note (`warn_unused_configs`); lint-types still exits 0.
+
 - No review has run yet.
+
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — AC verification and spec_surface_reconcile passed)
+
+## Auto Run Result
+
+Status: done
+
+Summary: `_spec_cites` now treats `specs/spec-…` path-form cites as real story-spec cites (missing when unresolved); atlas and steward epics links repaired; retired `marshal chain regenerate` removed from generated cheat sheet, dossier, and marshal infographics; dead mypy override removed; DW-FU-21-2 resolution amended.
+
+Files changed:
+- `chain_regen.py` — path-form cite detection (`_path_form_spec_cite`)
+- `test_chain_regen.py` — path-form and spec-template fixture tests
+- `pyproject.toml` — removed `pyforge.marshal.cli.chain` mypy override
+- `verdict.py` — comment names planning chain-regenerate
+- Atlas/steward/marshal `epics.md` — canonical spec paths
+- `deferred-work-ledger.md` — DW-FU-21-2 text
+- `docs/reference/station-cheat-sheet.md` — regenerated
+- `docs/map.yaml` — cheat-sheet stamp
+- `dossier.yml` + marshal infographics — verb retirement
+- Six co-governor `.memlog.md` surface reconcile entries
+
+Review: 0 patches; follow-up review not recommended.
+
+Verification:
+- `pyforge-marshal-test` — pass (linkage tests including live-tree)
+- `pyforge-deps-test` — pass
+- `lint-types` — pass (no unused mypy section)
+- `python3 scripts/docs_station_cli.py --check` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK

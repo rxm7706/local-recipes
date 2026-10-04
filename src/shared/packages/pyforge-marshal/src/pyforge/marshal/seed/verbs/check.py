@@ -170,13 +170,34 @@ zero findings, which is what keeps every pre-28.3 caller byte-identical, and
 conformant repo's `marshal seed check` red -- the spec's "never blocks a
 run" constraint, enforced in `detect/kit.py`'s own severity table.
 
+**Story 70.1: the paths the manifest means (CAP-279, AD-55).** `run_check`
+gains two keyword-only inputs, both resolved by `cli/seed.py` at the CLI
+boundary, never here. `slug`: a non-empty slug renders every `{{ slug }}`
+entry through `model.manifest.render_slug_paths` -- the one renderer `seed
+init` also calls -- before `classify`/`build_plan`, so each templated entry is
+classified, planned and reported at the path it renders to; with no slug each
+templated entry is left out of classification and planning and yields one
+INFO ``slug-unresolved`` finding, never a HARD ``artifact-missing`` at a path
+no repository can hold. `in_loop_home`: an absent entry whose manifest entry
+says `required_in: loop-home` yields no finding when the target is known NOT
+to be a loop home (`False`); `True` or `None` (the branch could not be read)
+judges it as before, so an unreadable target never passes on the scope. And an
+``unclassified-deferred`` entry never yields ``artifact-missing``: the class
+has no contract (`model/artifact.py` leaves it out of `CLASS_BEHAVIOR`), so
+there is nothing it can be missing against -- its `ABSENT` classification is
+skipped the way a `referenced` entry's is. A slug that renders a path the
+manifest refuses (a `..` segment, a second owner of one path) is the one
+exception `run_check` lets through: `render_slug_paths`'s `ManifestError`,
+which `cli/seed.py` reports as a usage error naming the slug.
+
 **Import surface.** `detect.findings`/`detect.hashes`/`detect.inventory`/
 `detect.kit`/`detect.optout` (the finding vocabulary and every detect
 primitive this module composes), `plan.build.build_plan` (never `write_plan`, and never
 `plan.build.write_plan`'s sibling `default_plan_path`/`load_plan` -- this
 module persists nothing and reads no `plan.json`), `model.manifest`
 (`AppliesTo` -- Story 10.7's own addition, for the `applies_to`-vs-`state.
-mode` gate above -- `ArtifactClass`, `Manifest`), `regions.parse`/`regions.markers` (parsing a
+mode` gate above -- `ArtifactClass`, `Manifest`, `ManifestEntry`, and Story 70.1's
+`RequiredIn`/`render_slug_paths`), `regions.parse`/`regions.markers` (parsing a
 present hybrid file's spans for the region-hash check, the identical
 exception triple every sibling degrade-rather-than-guess call site in this
 package already catches), `state` (`read_state`, `SeedState`, `state_path`)
@@ -202,7 +223,7 @@ from ..detect.kit import KitCheck, kit_checks, kit_findings
 from ..detect.optout import classify_regions, region_findings
 from ..detect.referenced_deps import referenced_dep_findings
 from ..errors import StateInvalid
-from ..model.manifest import AppliesTo, ArtifactClass, Manifest
+from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry, RequiredIn, render_slug_paths
 from ..plan.build import build_plan
 from ..regions.markers import MarkerError
 from ..regions.parse import RegionParseError, parse_regions
@@ -329,6 +350,21 @@ def _model_version_status(manifest: Manifest, state: SeedState | None) -> tuple[
     return ModelVersionStatus.AHEAD, state_version
 
 
+def _judged_manifest(manifest: Manifest, slug: str | None) -> tuple[Manifest, tuple[ManifestEntry, ...]]:
+    """`(the manifest to classify and plan, the templated entries left out of it)`
+    (Story 70.1). A non-empty `slug` renders every templated entry through
+    `render_slug_paths` and leaves nothing out; with no slug, every entry whose
+    path still carries the placeholder is left out -- classifying it would
+    look for a file named after the placeholder itself."""
+    if slug:
+        return render_slug_paths(manifest, slug), ()
+    unresolved = tuple(entry for entry in manifest.entries if entry.is_slug_templated)
+    if not unresolved:
+        return manifest, ()
+    kept = tuple(entry for entry in manifest.entries if not entry.is_slug_templated)
+    return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=kept), unresolved
+
+
 def run_check(
     repo_root: Path,
     manifest: Manifest,
@@ -336,6 +372,8 @@ def run_check(
     strict: bool = False,
     context_layers: Mapping[str, Mapping[str, Any]] | None = None,
     process: PosixProcess | None = None,
+    slug: str | None = None,
+    in_loop_home: bool | None = None,
 ) -> CheckReport:
     """Compose Epic 9's detect/plan primitives into one `CheckReport`
     against `repo_root`, writing nothing (no `.marshal/` creation, no
@@ -372,7 +410,15 @@ def run_check(
     missing". `process` is the same injectable `PosixProcess` the kit's own
     freshness probe takes, threaded rather than left to default so a caller
     that has one (a test, or `run_kit`) is not silently forced back onto a
-    real `git log` subprocess."""
+    real `git log` subprocess.
+
+    `slug` and `in_loop_home` (Story 70.1) are the project and the loop-home
+    answer `cli/seed.py` resolved for the target (module docstring). `None`
+    for either keeps the pre-70.1 reading of everything that does not depend
+    on it: no slug leaves templated entries unjudged with an INFO finding
+    each, and `in_loop_home=None` judges a `loop-home` entry as everywhere
+    else. Raises `ManifestError` only when `slug` renders a path the manifest
+    refuses."""
     findings: list[Finding] = []
 
     state: SeedState | None
@@ -382,6 +428,21 @@ def run_check(
         relative_state_path = state_path(repo_root).relative_to(repo_root).as_posix()
         findings.append(Finding.new(Severity.HARD, FindingType.STATE_INVALID, relative_state_path, exc.message))
         state = None
+
+    # Story 70.1: judge the paths the manifest means. Rendered before anything
+    # reads `manifest` below, so `classify`, `build_plan`, the finding loop and
+    # `referenced_dep_findings` all see one manifest.
+    manifest, unresolved = _judged_manifest(manifest, slug)
+    for entry in unresolved:
+        findings.append(
+            Finding.new(
+                Severity.INFO,
+                FindingType.SLUG_UNRESOLVED,
+                entry.path,
+                f"{entry.path}: {entry.id!r} is templated on the project slug and no project resolved,"
+                " so it was not checked",
+            )
+        )
 
     inventory = classify(manifest, repo_root)
     opted_out = frozenset(state.opted_out) if state is not None else frozenset()
@@ -395,6 +456,10 @@ def run_check(
         entry = entries_by_id[classification.entry_id]
 
         if classification.state is ArtifactState.ABSENT:
+            if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED:
+                # Story 70.1: no class contract, so nothing to be missing
+                # against -- skipped the way a `referenced` entry is below.
+                continue
             # Gated by `plan.actions`, never by the classification alone --
             # see the module docstring's `build_plan` paragraph for the real
             # correctness gap ("fully opted out") this closes -- AND by
@@ -405,7 +470,11 @@ def run_check(
             applies_to_other_mode = (
                 state is not None and entry.applies_to is not AppliesTo.BOTH and entry.applies_to.value != state.mode
             )
-            if classification.entry_id in actioned_ids and not applies_to_other_mode:
+            # Story 70.1: an entry owed in loop homes only is not owed by a
+            # target known not to be one. `None` (the branch could not be
+            # read) never passes on the scope.
+            owed_elsewhere = entry.required_in is RequiredIn.LOOP_HOME and in_loop_home is False
+            if classification.entry_id in actioned_ids and not applies_to_other_mode and not owed_elsewhere:
                 findings.append(
                     Finding.new(
                         Severity.HARD,

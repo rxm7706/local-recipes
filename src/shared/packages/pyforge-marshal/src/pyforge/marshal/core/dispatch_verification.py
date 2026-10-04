@@ -17,6 +17,14 @@ from .verdict import classify, compute_verdict
 
 PRE_EXISTING_GATE_CODE = "MRS-GATE-014"
 
+# Story 83.17 (spec-83-17): a story branch must not carry AI-attribution
+# commit trailers the ``commit-msg`` hook refuses -- dispatch verification
+# runs the same rule over ``base...HEAD`` before push or land.
+COMMIT_ATTRIBUTION_GATE_CODE = "MRS-GATE-019"
+
+CommitAttributionHit = tuple[int, str, str]
+BranchCommitAttribution = tuple[str, str, tuple[CommitAttributionHit, ...]]
+
 # Pytest / pixi-task output shapes seen in repo-global verify commands.
 _FAILURE_PATH_PATTERNS: tuple[re.Pattern[str], ...] = (
     re.compile(r"ERROR collecting (\S+\.py)"),
@@ -221,3 +229,34 @@ def reclassify_pre_existing_gate_findings(
 
 def is_pre_existing_gate_code(code: str) -> bool:
     return code == PRE_EXISTING_GATE_CODE and status_for(classify(code)) is Status.OK
+
+
+def findings_for_commit_attribution_violations(
+    commits: tuple[BranchCommitAttribution, ...],
+) -> tuple[Finding, ...]:
+    """Build gate findings for commits whose bodies fail ``commit_msg_hook``'s rule.
+
+    Each ``commits`` entry is ``(full_sha, subject, hits)`` where ``hits`` is the
+    return value of ``commit_msg_hook.offending_lines`` for that commit's body."""
+    findings: list[Finding] = []
+    for full_sha, subject, hits in commits:
+        if not hits:
+            continue
+        short_sha = full_sha[:7] if len(full_sha) >= 7 else full_sha
+        detail_parts = [f"{name} (line {line_no})" for line_no, name, _ in hits[:3]]
+        if len(hits) > 3:
+            detail_parts.append("...")
+        detail = "; ".join(detail_parts)
+        subject_bit = f" {subject!r}" if subject else ""
+        findings.append(
+            Finding(
+                code=COMMIT_ATTRIBUTION_GATE_CODE,
+                severity=Severity.ERROR,
+                message=(
+                    f"commit {short_sha}{subject_bit} carries an AI-attribution trailer "
+                    f"the commit-msg hook refuses ({detail}); rewrite the commit message "
+                    f"before landing (git rebase -i / commit --amend on the story branch)"
+                ),
+            )
+        )
+    return tuple(findings)

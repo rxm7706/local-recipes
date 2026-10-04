@@ -17,12 +17,15 @@ through the SAME code the pipeline uses.
 
 from __future__ import annotations
 
+import logging
 import re
 import time
 
 import pandas as pd
 
-from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS, RefreshRequest
+from pyforge.atlas.datasets.refresh import RefreshRequest
+
+logger = logging.getLogger(__name__)
 
 # The mapping provenance tiers that must NEVER be clobbered by a later, weaker match
 # (Phase C/C.5 no-clobber rule; the g10_spelling tier MUST survive as a valid
@@ -107,6 +110,7 @@ def map_pypi_conda(
 def match_source_urls(
     pypi_conda_mapping_base: pd.DataFrame,
     pypi_json_raw: pd.DataFrame,
+    core_packages_enumerated: pd.DataFrame,
 ) -> pd.DataFrame:
     # legacy: Phase C.5  (phase_c5_source_url_match CFA:1802)
     """Extend the Phase C mapping with source-URL-derived matches, honouring the
@@ -132,6 +136,15 @@ def match_source_urls(
         else set(base.get("pypi_name", pd.Series(dtype=object)))
     )
 
+    allowed_conda: set[str] = set()
+    if (
+        core_packages_enumerated is not None
+        and not core_packages_enumerated.empty
+        and "conda_name" in core_packages_enumerated.columns
+    ):
+        allowed_conda = {
+            str(n) for n in core_packages_enumerated["conda_name"] if isinstance(n, str) and n and not _is_missing(n)
+        }
     cand = pypi_json_raw
     new_rows = []
     if cand is not None and not cand.empty and {"pypi_name", "conda_name"} <= set(cand.columns):
@@ -141,6 +154,8 @@ def match_source_urls(
             # skip missing OR non-string conda_name (a list/array cell is malformed —
             # scalar-safe: no pd.isna-on-array ValueError, no unhashable-key crash).
             if _is_missing(conda_name) or not isinstance(conda_name, str):
+                continue
+            if allowed_conda and conda_name not in allowed_conda:
                 continue
             new_rows.append((pypi_name, conda_name, "recipe_source_url"))
     extra = pd.DataFrame(new_rows, columns=cols)
@@ -755,16 +770,10 @@ def export_pypi_conda_map(pypi_conda_mapping: pd.DataFrame) -> dict:
 
 
 def _ttl_cadence(ttls: dict, key: str) -> int:
-    """Read a cadence (seconds) from ``params:ttls``; a missing / null / non-numeric
-    value falls back to the WEEKLY default rather than crashing the node. (A local
-    copy of ``pipelines/vcs_health/nodes.py``'s identical helper — kept
-    import-independent between the two pipelines, matching this module's existing
-    self-containment.)"""
-    raw = (ttls or {}).get(key)
-    try:
-        return int(raw)
-    except TypeError, ValueError:
-        return WEEKLY_SECONDS
+    """Read a cadence (seconds) from ``params:ttls``; clamp zero/negative (Story 27.2)."""
+    from pyforge.atlas.datasets.refresh import clamp_ttl_cadence
+
+    return clamp_ttl_cadence((ttls or {}).get(key), key=key, log=logger)
 
 
 def refresh_pypi_json_store(ttls: dict) -> RefreshRequest:

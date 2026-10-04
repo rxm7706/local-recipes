@@ -148,6 +148,97 @@ def test_sbom_intake_dataset_is_read_only(tmp_path):
         ds.save({})
 
 
+def test_sbom_intake_loads_pixi_and_pyproject_manifests(tmp_path):
+    pixi = tmp_path / "pixi.toml"
+    pixi.write_text('[dependencies]\nnumpy = "1.26"\n[pypi-dependencies]\nrich = "13"\n', encoding="utf-8")
+    pixi_out = SbomIntakeDataset(filepath=str(pixi)).load()
+    assert pixi_out["format"] == "pixi"
+    names = {d["name"] for d in pixi_out["deps"]}
+    assert names >= {"numpy", "rich"}
+
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text('dependencies = ["flask==3.0.0"]\n', encoding="utf-8")
+    py_out = SbomIntakeDataset(filepath=str(pyproject)).load()
+    assert py_out["format"] == "pyproject"
+    assert any(d["name"] == "flask" for d in py_out["deps"])
+
+
+def test_sbom_intake_loads_cyclonedx_json_file(tmp_path):
+    doc = {
+        "bomFormat": "CycloneDX",
+        "components": [{"name": "lib", "version": "1.0", "purl": "pkg:conda/lib@1.0"}],
+    }
+    path = tmp_path / "sbom.cdx.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    out = SbomIntakeDataset(filepath=str(path)).load()
+    assert out["format"] == "cyclonedx"
+    assert out["passthrough"] is True
+    assert out["deps"][0]["purl"].startswith("pkg:conda/")
+
+
+def test_sbom_intake_loads_conda_and_pip_list_files(tmp_path):
+    conda_path = tmp_path / "conda-list.txt"
+    conda_path.write_text("numpy 1.0 py311_0 conda-forge\n", encoding="utf-8")
+    conda_out = SbomIntakeDataset(filepath=str(conda_path)).load()
+    assert conda_out["format"] == "conda-list"
+    assert conda_out["deps"][0]["ecosystem"] == "conda"
+
+    pip_path = tmp_path / "pip-list.txt"
+    pip_path.write_text('[{"name": "flask", "version": "3.0.0"}]', encoding="utf-8")
+    pip_out = SbomIntakeDataset(filepath=str(pip_path)).load()
+    assert pip_out["format"] == "pip-list"
+    assert pip_out["deps"][0]["name"] == "flask"
+
+
+def test_sbom_intake_malformed_cyclonedx_returns_empty_deps(tmp_path):
+    path = tmp_path / "broken.cdx.json"
+    path.write_text("{not-json", encoding="utf-8")
+    out = SbomIntakeDataset(filepath=str(path)).load()
+    assert out["format"] == "cyclonedx"
+    assert out["deps"] == []
+    assert out["passthrough"] is True
+
+
+def test_parse_intake_unknown_filename_falls_back_to_pip_list_heuristic():
+    out = parse_intake("Package Version\nnumpy 1.0\n", filename="unknown-manifest.txt")
+    assert out["passthrough"] is False
+    assert any(d["name"] == "numpy" for d in out["deps"])
+
+
+def test_sbom_intake_loads_spdx_json_file(tmp_path):
+    doc = {
+        "SPDXID": "SPDXRef-DOCUMENT",
+        "packages": [
+            {
+                "name": "pkg",
+                "versionInfo": "2.0",
+                "externalRefs": [{"referenceType": "purl", "referenceLocator": "pkg:pypi/pkg"}],
+            }
+        ],
+    }
+    path = tmp_path / "sbom.spdx.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    out = SbomIntakeDataset(filepath=str(path)).load()
+    assert out["format"] == "spdx"
+    assert out["deps"][0]["name"] == "pkg"
+
+
+def test_sbom_intake_dataset_loads_requirements_file(tmp_path):
+    manifest = tmp_path / "requirements.txt"
+    manifest.write_text("numpy==1.0\n", encoding="utf-8")
+    ds = SbomIntakeDataset(filepath=str(manifest))
+    out = ds.load()
+    assert out["format"] == "requirements"
+    names = {d["name"] for d in out["deps"]}
+    assert "numpy" in names
+
+
+def test_sbom_intake_save_is_read_only(tmp_path):
+    ds = SbomIntakeDataset(filepath=str(tmp_path / "x.txt"))
+    with pytest.raises(DatasetError, match="read-only"):
+        ds.save({})
+
+
 def test_sbom_intake_dataset_constructs_offline_without_touching_the_file():
     # DataCatalog.from_config instantiation must not do IO (the file may not exist).
     ds = SbomIntakeDataset(filepath="/nonexistent/intake.json")

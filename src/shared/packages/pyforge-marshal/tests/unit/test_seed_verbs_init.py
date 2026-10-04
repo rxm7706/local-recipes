@@ -429,6 +429,24 @@ def test_manifest_for_init_refuses_a_slug_that_renders_a_non_repo_relative_path_
     assert excinfo.value.remedy.strip()
 
 
+def test_manifest_for_init_refuses_a_slug_that_renders_two_owners_of_one_path_as_a_usage_error():
+    """Story 70.1 (Story 86.1's note): the renderer re-runs the one-owner rule
+    on the rendered paths, so a slug that renders a templated entry onto a
+    literal one is refused -- a ``UsageError`` naming the slug and both ids,
+    not a plan with two writers for one file."""
+    manifest = _manifest(
+        _copied_managed("literal-doc", "docs/demo.md"),
+        _copied_seeded("templated-doc", "docs/{{ slug }}.md"),
+    )
+
+    with pytest.raises(UsageError, match="--slug 'demo'") as excinfo:
+        _manifest_for_init(manifest, "demo")
+
+    assert "templated-doc: path 'docs/demo.md' is also declared by 'literal-doc'" in excinfo.value.message
+    assert excinfo.value.exit_code == 2
+    assert {entry.path for entry in _manifest_for_init(manifest, "other").entries} == {"docs/demo.md", "docs/other.md"}
+
+
 def test_a_bad_slug_is_refused_before_the_target_is_created_or_git_initialised(fresh_target):
     """``_manifest_for_init`` reads only the manifest and the slug, so it runs
     BEFORE the bootstrap: a ``--slug`` usage error leaves the target exactly as
@@ -529,12 +547,10 @@ def test_empty_plan_apply_writes_no_state(tmp_path):
 def test_check_on_the_freshly_inited_repo_is_green(fresh_target):
     """The spec's own I/O matrix row: `marshal seed check` immediately after
     `init` reports zero findings, and `specs-dir-legacy`-shaped adopt-only
-    entries are NOT flagged missing (this story's own `check.py` fix). No
-    ``{{ slug }}``-templated entry is included in the manifest passed to
-    `check` here -- `run_check` has no way to resolve the placeholder at
-    all (a confirmed, pre-existing, out-of-scope gap; see `verbs/init.py`'s
-    own module docstring) -- so this test proves the fix on entries `check`
-    CAN actually verify, which is exactly this story's own AC."""
+    entries are NOT flagged missing (this story's own `check.py` fix). The
+    ``{{ slug }}``-templated case -- `check` judging a templated entry at the
+    path `init` rendered it to -- is Story 70.1's, pinned by the PRD-J1 test
+    and the full-packaged-manifest test below."""
     manifest = _manifest(
         _copied_managed("whole", "WHOLE.md"),
         _hybrid("hybrid", "HYBRID.md", "tiers"),
@@ -791,14 +807,12 @@ def test_prd_j1_init_into_a_directory_that_is_not_yet_a_git_repo_at_all(fresh_ta
     the only Dream written; (3) ``_bmad-output/PROJECTS.md`` carries the
     project's first row; (4) ``marshal seed check`` on the result is green.
 
-    (4) is checked against a manifest EXCLUDING the ``{{ slug }}``-templated
-    ``starter-dream``/``project-config`` entries -- `run_check` has no way
-    to resolve the placeholder at all (a confirmed, pre-existing, out-of-
-    scope gap named in `verbs/init.py`'s own module docstring), so a literal
-    "zero findings" claim against a manifest that still includes them would
-    be unachievable through no fault of this story's own code. (2) is
-    verified directly against the filesystem instead, which is what `init`
-    itself is responsible for and does control."""
+    (4) checks the FULL manifest ``init`` ran with, the ``{{ slug }}``-
+    templated ``starter-dream`` included, with the init slug (Story 70.1:
+    ``run_check`` renders a templated entry through the same
+    ``render_slug_paths`` ``init`` does). Before that story ``check`` could
+    not resolve the placeholder, and this test checked a manifest excluding
+    the templated entry; that exclusion is retired."""
 
     def _prd_j1_commit(manifest: Manifest, repo_root: Path):
         entries_by_id = {entry.id: entry for entry in manifest.entries}
@@ -869,10 +883,9 @@ def test_prd_j1_init_into_a_directory_that_is_not_yet_a_git_repo_at_all(fresh_ta
 
     _commit_all(fresh_target)
 
-    # (4) check is green, over the entries check can actually verify (see
-    # this test's own docstring for the {{ slug }} caveat).
-    check_manifest = _manifest(_copied_managed("whole", "WHOLE.md", applies_to=AppliesTo.BOTH))
-    report = run_check(fresh_target, check_manifest)
+    # (4) check is green over the full manifest init ran with, judged at the
+    # init slug -- the templated `starter-dream` at `docs/dreams/pyforge-scribe.md`.
+    report = run_check(fresh_target, manifest, slug="pyforge-scribe")
     assert report.findings == ()
     assert report.failing is False
 
@@ -1023,3 +1036,48 @@ def test_run_init_end_to_end_against_the_real_packaged_manifest(tmp_path, real_m
     assert "specs-readme" in applied_ids
     assert (tmp_path / "docs" / "dreams" / "README.md").is_file()
     assert (tmp_path / "_bmad-output" / "projects" / "test" / "planning-artifacts" / "specs" / "README.md").is_file()
+
+
+def test_check_with_the_init_slug_judges_every_templated_entry_init_wrote_against_the_full_packaged_manifest(
+    tmp_path, real_manifest
+):
+    """Story 70.1 AC: ``seed init --slug demo`` into a fresh directory, then
+    ``run_check`` with ``slug="demo"`` against the FULL packaged manifest --
+    the five templated entries are conformant: no finding names any of their
+    rendered paths, and no finding's path carries ``{{``.
+
+    ``init`` runs over the packaged manifest minus its directory entries, as
+    ``test_run_init_end_to_end_against_the_real_packaged_manifest`` above
+    does: a directory entry that ``commit`` really creates as a directory
+    makes ``adopt._managed_artifact_after_apply`` read it as a file
+    (``IsADirectoryError``, found building this test) -- the same file-shaped
+    handling of a directory entry ``DW-marshal-86-1`` tracks for the commit
+    dispatchers, not this story's. Of the two templated
+    directories, ``_bmad-output/projects/demo/`` already exists beneath the
+    files ``init`` wrote; ``presentations/demo/`` is laid by hand, the
+    create-if-missing step ``init`` would take."""
+    target = tmp_path / "fresh"
+    without_directories = Manifest(
+        model_version=real_manifest.model_version,
+        never_write=real_manifest.never_write,
+        entries=tuple(entry for entry in real_manifest.entries if not entry.is_directory),
+    )
+    run_init(target, without_directories, slug="demo", commit=_fake_commit(without_directories, target))
+    (target / "presentations" / "demo").mkdir(parents=True)
+    _commit_all(target)
+
+    report = run_check(target, real_manifest, slug="demo")
+
+    templated = [entry for entry in real_manifest.entries if entry.is_slug_templated]
+    assert {entry.id for entry in templated} == {
+        "starter-dream",
+        "project-config",
+        "specs-readme",
+        "deck-scaffolding",
+        "project-subtree",
+    }
+    rendered_paths = {entry.path.replace("{{ slug }}", "demo") for entry in templated}
+    assert not [finding for finding in report.findings if finding.path in rendered_paths]
+    assert not [finding.path for finding in report.findings if "{{" in finding.path]
+    for rendered in rendered_paths:
+        assert (target / rendered).exists(), rendered

@@ -61,6 +61,12 @@ _CREDENTIALS_STUB = """\
 # need that path.
 github_token: {}
 bigquery_adc: {}
+gitlab_token: {}
+codeberg_token: {}
+npm_token: {}
+crates_token: {}
+rubygems_token: {}
+nuget_token: {}
 """
 
 
@@ -92,12 +98,23 @@ def _ensure_credentials_stub() -> Path | None:
     return creds_path
 
 
+_FETCHER_LESS_DISCOVERY_STORES = (
+    "discovery_basilisk_packages_raw",
+    "discovery_aoss_premium_python_raw",
+    "discovery_anaconda_dist_2026x_raw",
+)
+
+
 def main() -> int:
     data_root = _resolve_data_root()
     created_dirs = _ensure_store_dirs(data_root)
     stub_path = _ensure_credentials_stub()
 
     print(f"pyforge-atlas-bootstrap: data root = {data_root}")
+    print(
+        "pyforge-atlas-bootstrap: fetcher-less discovery stores (expected stale on "
+        "unattended bootstrap — no live refresher wired): " + ", ".join(_FETCHER_LESS_DISCOVERY_STORES)
+    )
     if created_dirs:
         print("pyforge-atlas-bootstrap: created " + ", ".join(str(p) for p in created_dirs))
     else:

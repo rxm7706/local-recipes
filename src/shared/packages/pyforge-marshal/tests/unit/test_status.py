@@ -1834,6 +1834,24 @@ class TestRenderLedgerAdvancements:
         assert matched == frozenset({"5-9-x"})
 
 
+class TestRenderLedgerStatusRewrites:
+    """Story 83.21: the same line rewrite, to any status per key -- the epic roll-up writes `in-progress`
+    and `backlog` as well as `done`."""
+
+    def test_each_key_takes_its_own_status_and_every_other_byte_stays(self):
+        text = "# header\ndevelopment_status:\r\n  9-1-a: done\r\n  epic-9: backlog  # stale\r\n  epic-10: done\r\n"
+        result, matched = status.render_ledger_status_rewrites(text, {"epic-9": "in-progress", "epic-10": "backlog"})
+        assert result == (
+            "# header\ndevelopment_status:\r\n  9-1-a: done\r\n  epic-9: in-progress  # stale\r\n  epic-10: backlog\r\n"
+        )
+        assert matched == frozenset({"epic-9", "epic-10"})
+
+    def test_no_rewrites_and_an_unmatched_key_leave_the_text_unchanged(self):
+        text = "development_status:\n  epic-9: backlog\n"
+        assert status.render_ledger_status_rewrites(text, {}) == (text, frozenset())
+        assert status.render_ledger_status_rewrites(text, {"epic-99": "done"}) == (text, frozenset())
+
+
 # =============================================================================
 # Story 5.1: `cli/status.py`'s ``run_status`` -- I/O matrix, fake VcsPort/
 # HarnessPort/ProcessPort/ClockPort doubles (mirrors ``test_retire.py``'s

@@ -13,10 +13,13 @@ edge between them points the other way: atlas optionally imports warden's
 (consumed at the Wave-F F4 gate node). No `warden -> atlas` import exists; both
 tools stay independently installable.
 
-**Status:** all 46 stories shipped (12 epics) — 8 Kedro pipelines live
-(core, derived_artifacts, pypi_intelligence, seed_gaps, universal_sbom,
-upstream_discovery, vcs_health, vulnerability), plus the MCP read surface
-and the trending-candidates engine.
+**Status:** 11 Kedro pipelines live (`artifactory_downloads`, `core`,
+`derived_artifacts`, `pypi_intelligence`, `query_plane_cache`, `seed_gaps`,
+`semantic_packages`, `universal_sbom`, `upstream_discovery`, `vcs_health`,
+`vulnerability`), plus the MCP read surface, the Vizro dashboard and the
+trending-candidates engine. That list is the one `find_pipelines()` discovers
+and `tests/unit/test_pipeline_inventory.py` reds when the two drift (it carried
+8 names for three pipelines' worth of drift — Story 27.3, DW-FU-20-3-2).
 
 ## Develop
 
@@ -99,6 +102,13 @@ already degrade to an offline no-op by default, so the stub only matters
 for getting PAST catalog construction, never for a real fetch. A real
 operator's own `credentials.yml` (with real tokens) is left untouched.
 
+**Fetcher-less discovery stores (Story 27.2):** `discovery_basilisk_packages_raw`,
+`discovery_aoss_premium_python_raw`, and `discovery_anaconda_dist_2026x_raw` have
+no live refresher on an unattended bootstrap — their refresh-trigger nodes fire,
+but the dataset classes degrade to last-good/empty plus a stale marker (AD-13).
+`tools/bootstrap.py` prints them in the pre-run summary as *expected stale*; populate
+them only on an attended run with a wired fetcher.
+
 **Operator env block (Story 21.8: extended past the CAP-1 subset to cover
 every variable touched by the full bootstrap + `--live-catalog` chain,
 21.1–21.7):**
@@ -107,7 +117,8 @@ every variable touched by the full bootstrap + `--live-catalog` chain,
 |---|---|---|
 | `PYFORGE_ATLAS_DATA_ROOT` | No (defaults to the member `data/`) | Overrides `data_root` — every store/output path resolves under it; also the argument you point `--live-catalog` (below) at once the bootstrap completes |
 | `PYFORGE_ATLAS_SEED_ROOT` | No (defaults to the repo-root-relative `.claude/skills/conda-forge-expert/data`, resolved as a member-dir-relative escape — DW-FU-21-2, fixed by Story 21.8) | Overrides where the `seed_gaps` pipeline reads its three git-tracked seeds (`lts-registry.yaml`, `cwe_categories_seed.json`, `spdx.schema.json`); only needed if you relocate that shared skill-data directory |
-| `PYFORGE_ATLAS_LOCAL_RECIPES_DIR` | No (defaults to `recipes`, Story 21.6) | Overrides the live `recipes/` tree `discovery_local_recipes_raw` scans for the identity join's `Local_Recipes_URL` / `Local_Build_Status` overlay. **Known gap:** like `seed_root` before Story 21.8's fix, this default is repo-root-relative but resolves against the Kedro member dir when the literal `pyforge-atlas-bootstrap` task runs — the identity join's local-recipes overlay is silently empty on a default bootstrap unless you set this to an absolute path (or a correctly escaped relative one). Not fixed by this story (Story 21.6 territory, and it does not block the bootstrap's exit code — `LocalRecipesOverlayDataset` degrades to an empty frame rather than raising); tracked as a residual finding for a future story. |
+| `PYFORGE_ATLAS_LOCAL_RECIPES_DIR` | No (defaults to `../../../../recipes`, Story 27.2 / DW-FU-21-8) | Overrides the live `recipes/` tree `discovery_local_recipes_raw` scans for the identity join's `Local_Recipes_URL` / `Local_Build_Status` overlay. The default is member-dir-relative (same Kedro `project_path` anchor as `seed_root`) so a default `pyforge-atlas-bootstrap` run scans the real repo `recipes/` tree. |
+| `PYFORGE_ATLAS_LOCAL_RECIPES_REPO_SLUG` | No (defaults to `rxm7706/local-recipes`, Story 27.2 / DW-FU-21-6-3) | GitHub tree URL slug for `Local_Recipes_URL` when the scanned directory name is used in the link template. |
 | `GITHUB_TOKEN` / `GH_TOKEN` (via `credentials.yml`'s `github_token`) | No | Reused by every GitHub-authenticated entry (Story 21.6 CAP-3): the default `vcs_health` run's refresh-trigger node hands `GitHubRequestDataset` an empty repo-identifier batch, so `save()` makes zero network calls without it (Story 21.2); `openteams_project_1_board_raw` and `discovery_staged_recipes_prs_raw` (the identity join's board + staged-PR overlays) share the same credential and likewise degrade to empty/last-good rather than raising |
 | `GOOGLE_APPLICATION_CREDENTIALS` (via `credentials.yml`'s `bigquery_adc`) | No | Only consulted when `PHASE_P_ENABLED=1`; the default `pypi_intelligence` run returns an empty BigQuery-downloads frame without it |
 | `--live-catalog PATH` (CLI flag, not an env var) | N/A | Passed to `scripts/conda-forge-packaging-inventory-operations_metrics.py` (Story 21.3) — point it at the SAME `PYFORGE_ATLAS_DATA_ROOT` a bootstrap run populated to read Tier 0–2 verification fields from Parquet instead of live HTTP/the legacy workbook; add `--live-catalog-only` to fail loudly (non-zero exit) instead of degrading when a required dataset is missing/stale |

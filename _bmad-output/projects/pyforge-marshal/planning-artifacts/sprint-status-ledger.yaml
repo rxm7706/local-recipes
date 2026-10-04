@@ -341,7 +341,7 @@ development_status:
   7-4-manifest-schema-loader-and-model-version-ranges: done
   7-5-the-v1-extraction-manifest-the-model-as-data: done
   7-6-spike-0-copier-api-fit-critical-gate: done
-  70-1-seed-check-judges-the-paths-the-manifest-means-never-its-placeholders: backlog
+  70-1-seed-check-judges-the-paths-the-manifest-means-never-its-placeholders: done
   71-1-the-front-door-names-the-environment-a-roster-station-runs-in: backlog
   72-1-the-dispatch-supervisor-reads-merge-facts-from-origin-main: done
   73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch: done
@@ -383,14 +383,14 @@ development_status:
   83-12-dispatch-verification-runs-the-coverage-gate-of-every-station-the-story-touches: done
   83-13-the-landing-heal-keeps-the-team-memory-index-s-blank-lines: done
   83-14-a-manual-merge-mid-dispatch-never-strands-the-session-s-fixes: backlog
-  83-15-dispatch-applies-ruff-s-safe-fixes-before-it-verifies: backlog
+  83-15-dispatch-applies-ruff-s-safe-fixes-before-it-verifies: done
   83-16-dispatch-finalize-commits-paths-with-spaces: done
-  83-17-dispatch-refuses-a-commit-that-carries-an-attribution-trailer: backlog
+  83-17-dispatch-refuses-a-commit-that-carries-an-attribution-trailer: done
   83-18-a-re-dispatched-send-back-waits-for-its-landing-review: backlog
   83-19-dispatch-never-commits-the-cfe-surface-outside-a-sanctioned-retro: backlog
   83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree: done
   83-20-landing-finalize-never-promotes-a-tier-3-spec-the-ledger-does-not-list: done
-  83-21-landing-finalize-writes-the-epic-roll-ups-the-sync-writes: backlog
+  83-21-landing-finalize-writes-the-epic-roll-ups-the-sync-writes: done
   83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries: done
   83-4-a-serial-campaign-holds-the-next-overlapping-story-while-a-refused-story-is-unlanded: done
   83-5-a-campaign-supervisor-keeps-ticking-through-fleet-lock-contention: done
@@ -403,15 +403,15 @@ development_status:
   85-1-a-verification-refusal-goes-back-to-the-session-that-wrote-the-change-for-one-fix-turn: done
   85-2-a-fix-turn-that-turns-verification-green-lands-and-survives-a-restart: done
   85-3-the-fix-turn-is-safe-to-switch-on-in-dev-and-staging: done
-  85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: backlog
+  85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
-  86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: backlog
+  86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done
   86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is: backlog
   86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: done
   86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: backlog
   86-7-the-session-close-docs-name-the-context-advisory-and-the-retired-id-guard-scans-the-planning-docs: backlog
-  86-8-path-form-spec-cites-count-as-missing-and-the-retired-chain-verb-leaves-no-trace: backlog
+  86-8-path-form-spec-cites-count-as-missing-and-the-retired-chain-verb-leaves-no-trace: done
   87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
@@ -549,7 +549,7 @@ development_status:
   epic-69-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
-  epic-70: backlog
+  epic-70: done
   epic-70-retrospective: optional
   epic-71: backlog
   epic-71-retrospective: optional
@@ -581,7 +581,7 @@ development_status:
   epic-83-retrospective: optional
   epic-84: done
   epic-84-retrospective: optional
-  epic-85: in-progress
+  epic-85: done
   epic-85-retrospective: optional
   epic-86: in-progress
   epic-86-retrospective: optional

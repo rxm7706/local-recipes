@@ -59,8 +59,8 @@ class Severity(StrEnum):
 class FindingType(StrEnum):
     """The closed conformance-problem vocabulary every later detect/plan
     story emits against -- the 12 members the epics AC names plus Story
-    28.3's three token-economy-kit members and Story 82.11's
-    ``target-escapes-repo``, kebab-case wire values matching
+    28.3's three token-economy-kit members, Story 82.11's
+    ``target-escapes-repo`` and Story 70.1's ``slug-unresolved``, kebab-case wire values matching
     this package's existing `ArtifactClass` convention
     (`model/manifest.py`).
 
@@ -74,7 +74,12 @@ class FindingType(StrEnum):
     is "an unavailable instrument disables its layer with a named finding,
     never blocks a run"; borrowing a HARD type would have made a missing
     optional instrument fail `marshal seed check`, which is exactly the
-    outcome that constraint forbids."""
+    outcome that constraint forbids.
+
+    ``SLUG_UNRESOLVED`` (Story 70.1, CAP-279) names a ``{{ slug }}``-templated
+    entry ``seed check`` left unjudged because no project resolved: there is
+    no path to look at, so it is neither present nor missing, and it is never
+    HARD -- the check cannot tell whether the repository is short anything."""
 
     ARTIFACT_MISSING = "artifact-missing"
     MANAGED_FILE_MODIFIED = "managed-file-modified"
@@ -92,6 +97,7 @@ class FindingType(StrEnum):
     KIT_ITEM_STALE = "kit-item-stale"
     KIT_INSTRUMENT_UNAVAILABLE = "kit-instrument-unavailable"
     TARGET_ESCAPES_REPO = "target-escapes-repo"
+    SLUG_UNRESOLVED = "slug-unresolved"
 
 
 # Read-only, and with NO module-level mutable name behind it -- same reason
@@ -162,6 +168,11 @@ REMEDIES: Mapping[FindingType, str] = MappingProxyType(
             "Fix the manifest entry's path, or the in-repo symlink it resolves "
             "through, so it stays inside the repository; every other artifact "
             "is applied regardless."
+        ),
+        FindingType.SLUG_UNRESOLVED: (
+            "Pass `--project <slug>` (or set `BMAD_ACTIVE_PROJECT`, or the target's "
+            "`_bmad/custom/.active-project` marker) so the entry is checked at the "
+            "path it renders to."
         ),
     }
 )

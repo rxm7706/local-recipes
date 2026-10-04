@@ -238,12 +238,16 @@ artifacts:
     class: generated-derived
     path: ".bmad-loop/policy.toml"
     applies_to: both
+    required_in: loop-home
     rationale: >-
       rendered whole from the canonical EffectivePolicy on every
       `marshal config --write-harness-policy` run (Story 1.10, AD-12/AD-35) --
       review found this manifest's first draft classified it copied-seeded,
       contradicting the already-shipped, gitignored, never-hand-edited
-      behavior this exact path has in this repo today.
+      behavior this exact path has in this repo today. Required in loop homes
+      only (Story 70.1, operator ruling 2026-09-28): every writer renders it
+      into a loop home (`~/.bmad-loops/<slug>`, branch `loop/<slug>`), and a
+      primary checkout never holds one.
   - id: cursor-rules
     class: generated-derived
     path: ".cursor/rules/specs.mdc"

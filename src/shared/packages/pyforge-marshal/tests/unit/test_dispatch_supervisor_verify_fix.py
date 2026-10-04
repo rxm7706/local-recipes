@@ -1546,6 +1546,156 @@ def test_the_reverification_heartbeats_from_a_progress_thread_while_it_runs(
     assert len(beats) == settled, "the progress thread outlived the verification"
 
 
+def test_the_reverification_returns_only_after_an_in_flight_progress_heartbeat_finishes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """85.3 delta review X12: the progress thread is joined once stopped, so a heartbeat it has in flight when the
+    verification ends finishes before the supervisor's next publisher call can start."""
+    import threading
+
+    repo_root = loop._repo(tmp_path)
+    worktree = loop._worktree(repo_root)
+    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
+    monkeypatch.setattr(supervisor_main, "_FIX_TURN_PUBLISH_INTERVAL_S", 0.01)
+    in_flight = threading.Event()
+    returned = threading.Event()
+    finished_after_return: list[bool] = []
+
+    def _slow_heartbeat() -> None:
+        if in_flight.is_set():
+            return
+        in_flight.set()
+        # Nothing sets ``returned`` before the verification returns, so with the join this waits the full second
+        # and records False; without it the verification returns at once and this records True (or nothing yet).
+        returned.wait(1.0)
+        finished_after_return.append(returned.is_set())
+
+    def _verification_once_a_heartbeat_is_in_flight(**_k: object):
+        assert in_flight.wait(30.0), "the progress thread never called on_progress"
+        return loop._clean_envelope()
+
+    monkeypatch.setattr(supervisor_main, "evaluate_dispatch_verification", _verification_once_a_heartbeat_is_in_flight)
+
+    supervisor_main._run_and_journal_verification(
+        fs=loop.FakeFs(),
+        vcs=loop.FakeVcs(),
+        process=loop.FakeProcess(),
+        run_dir=loop._run_dir(repo_root),
+        run_id=loop._RUN_ID,
+        writer_id="dispatch-supervisor-1",
+        counter=0,
+        repo_root=repo_root,
+        slug=loop._SLUG,
+        story_key=loop._STORY_KEY,
+        worktree=worktree,
+        on_progress=_slow_heartbeat,
+    )
+    returned.set()
+
+    assert finished_after_return == [False]
+
+
+class _SteppedClock:
+    """``time`` stand-in for the fix wait: ``sleep`` only advances ``monotonic``."""
+
+    def __init__(self) -> None:
+        self.now = 1_000.0
+
+    def monotonic(self) -> float:
+        return self.now
+
+    def sleep(self, seconds: float) -> None:
+        self.now += seconds
+
+
+#: A fix turn waited on for 150 one-second polls, as ``wait_for_process`` polls.
+_WAIT_POLLS = 150
+
+
+def _fix_turn_waited_on_a_stepped_clock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[list[dict], list[float], list[float]]:
+    """Run one fix turn whose wait polls ``_WAIT_POLLS`` times, one second apart on a fake clock. Returns the journal
+    entries written during the wait, and the fake-clock times of the journal heartbeats and of the run-publisher
+    heartbeat calls made during it."""
+    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+
+    clock = _SteppedClock()
+    monkeypatch.setattr(supervisor_main, "time", clock)
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+    publisher_calls: list[float] = []
+    heartbeat_times: list[float] = []
+    window: dict[str, int] = {}
+    journal_heartbeat = supervisor_main._journal_heartbeat
+
+    def _recorded_journal_heartbeat(**kwargs: object) -> int:
+        heartbeat_times.append(clock.now)
+        return journal_heartbeat(**kwargs)
+
+    def _wait(*_a: object, on_poll=None, **_k: object) -> ProcessWaitResult:
+        window["journal"], window["publisher"] = len(fs.appended), len(publisher_calls)
+        window["heartbeat"] = len(heartbeat_times)
+        for _ in range(_WAIT_POLLS):
+            on_poll()
+            clock.sleep(1.0)
+        window["journal_end"], window["publisher_end"] = len(fs.appended), len(publisher_calls)
+        window["heartbeat_end"] = len(heartbeat_times)
+        return ProcessWaitResult(exited=True, returncode=0)
+
+    monkeypatch.setattr(supervisor_main, "wait_for_process", _wait)
+    monkeypatch.setattr(supervisor_main, "_journal_heartbeat", _recorded_journal_heartbeat)
+
+    _finalize_with(
+        fs,
+        vcs,
+        repo_root,
+        worktree,
+        process=loop.FakeProcess(),
+        journal_lines=(),
+        publish_heartbeat=lambda: publisher_calls.append(clock.now),
+    )
+
+    written = [json.loads(line) for _path, line, _fsync in fs.appended[window["journal"] : window["journal_end"]]]
+    return (
+        written,
+        heartbeat_times[window["heartbeat"] : window["heartbeat_end"]],
+        publisher_calls[window["publisher"] : window["publisher_end"]],
+    )
+
+
+def test_the_fix_wait_journals_at_most_one_heartbeat_per_tick(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """85.3 delta review LOW-4 (85.3 AC5): the wait polls every second, but its journal heartbeat keeps the tick
+    rate -- at 0, 60 and 120 s of a 150 s wait, never once per poll."""
+    written, heartbeat_times, _publisher_calls = _fix_turn_waited_on_a_stepped_clock(tmp_path, monkeypatch)
+
+    heartbeats = [
+        entry
+        for entry in written
+        if entry.get("kind") == dispatch_core.KIND_DISPATCH_SUPERVISOR_ATTACH and entry["payload"].get("heartbeat")
+    ]
+    assert supervisor_main._TICK_SECONDS == 60
+    assert len(heartbeats) == len(range(0, _WAIT_POLLS, supervisor_main._TICK_SECONDS)) == 3
+    assert all(entry["payload"]["session_alive"] is False for entry in heartbeats)
+    # The first poll journals at once, then one heartbeat each time a full tick has passed (85.4 review: H01, H02).
+    assert heartbeat_times == [1_000.0, 1_060.0, 1_120.0]
+
+
+def test_the_fix_turn_wraps_the_publisher_heartbeat_in_its_throttle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """85.3 delta review X11: ``_maybe_run_verify_fix_turn`` hands the wait a throttled publisher heartbeat -- one
+    call per 30 s of a 150 s wait, never one per poll."""
+    _written, _heartbeat_times, publisher_calls = _fix_turn_waited_on_a_stepped_clock(tmp_path, monkeypatch)
+
+    assert supervisor_main._FIX_TURN_PUBLISH_INTERVAL_S == 30.0
+    assert publisher_calls == [1_000.0, 1_030.0, 1_060.0, 1_090.0, 1_120.0]
+
+
 def test_the_journaled_output_tail_is_redacted_before_it_is_cut(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

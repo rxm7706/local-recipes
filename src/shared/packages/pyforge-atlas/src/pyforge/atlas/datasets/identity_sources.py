@@ -56,6 +56,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import time
 from pathlib import Path
@@ -653,13 +654,22 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
                 len(open_numbers),
             )
         for number in open_numbers[:_STAGED_PR_OPEN_FILES_FANOUT_LIMIT]:
-            files_url = f"{base}/repos/conda-forge/staged-recipes/pulls/{number}/files?per_page=100"
-            try:
-                payload = self._fetcher(files_url)
-            except Exception as exc:
-                logger.warning("staged-recipes PR #%s files fetch failed: %s", number, exc)
-                continue
-            paths = parse_pr_files_response(payload)
+            paths: list[str] = []
+            page = 1
+            while True:
+                files_url = f"{base}/repos/conda-forge/staged-recipes/pulls/{number}/files?per_page=100&page={page}"
+                try:
+                    payload = self._fetcher(files_url)
+                except Exception as exc:
+                    logger.warning("staged-recipes PR #%s files fetch failed: %s", number, exc)
+                    break
+                batch = parse_pr_files_response(payload)
+                if not batch:
+                    break
+                paths.extend(batch)
+                if len(batch) < 100:
+                    break
+                page += 1
             if paths:
                 file_paths = _join_list(paths)
                 for row in rows:
@@ -711,11 +721,15 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
 
 _LOCAL_RECIPES_COLUMNS: tuple[str, ...] = ("dir_name", "names", "url", "build_status")
 
+
 # Hardcoded to THIS repo's own local-recipes tree (mirrors the legacy script's
 # own LOCAL_RECIPES_URL / ISSUE_CREATE_REPO / PROJECT_OWNER constants, all of
 # which are similarly this-repo-specific — this story ports the legacy
 # semantics exactly, not a generalized multi-repo overlay).
-_LOCAL_RECIPES_TREE_URL_TEMPLATE = "https://github.com/rxm7706/local-recipes/tree/main/recipes/{dir}"
+def _local_recipes_tree_url_template() -> str:
+    slug = os.environ.get("PYFORGE_ATLAS_LOCAL_RECIPES_REPO_SLUG", "rxm7706/local-recipes")
+    return f"https://github.com/{slug}/tree/main/recipes/{{dir}}"
+
 
 # Mirrors the legacy script's CFE_BUILD_STATUS_RE / RECIPE_NAME_RE / TITLE_STOP
 # verbatim.
@@ -791,7 +805,7 @@ def parse_recipe_dir(dir_name: str, files: dict[str, str]) -> dict:
     return {
         "dir_name": dir_name,
         "names": _join_list(sorted(names)),
-        "url": _LOCAL_RECIPES_TREE_URL_TEMPLATE.format(dir=dir_name),
+        "url": _local_recipes_tree_url_template().format(dir=dir_name),
         "build_status": build_status,
     }
 

@@ -400,12 +400,21 @@ def _wired_resolution(
     return BmadBuildHarness().binary_present(("fakecli",), repo_root=tmp_path)
 
 
-def _await_file(path: Path, *, tries: int = 200) -> str:
+def _await_file(path: Path, *, tries: int = 200, containing: str | None = None) -> str:
+    """``path``'s text once it exists with content -- and, with ``containing``, once it carries that text. The
+    launcher creates the session log before the detached child runs, so a log read as soon as it exists can still
+    be empty, or not yet hold the line a test waits for, under load (seen under CI load on the wrapped fallback-dir
+    reachability test)."""
     for _ in range(tries):
         if path.is_file():
             time.sleep(0.05)
-            return path.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8")
+            if text and (containing is None or containing in text):
+                return text
+            continue
         time.sleep(0.05)
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
     raise AssertionError(f"{path} never appeared")
 
 
@@ -487,7 +496,7 @@ def test_dispatch_wraps_the_launch_and_scopes_the_store_to_the_worktree(tmp_path
     # ...without the wrapper's env displacing marshal's per-invocation pin
     assert "PROJ=pyforge-marshal" in seen_env
     # and the wrapped CLI actually ran underneath it
-    assert "session output" in _await_file(tmp_path / "session.log")
+    assert "session output" in _await_file(tmp_path / "session.log", containing="session output")
 
 
 def test_dispatch_ccr_store_round_trip_is_byte_exact(tmp_path: Path, bare_path: Path) -> None:
@@ -688,7 +697,8 @@ def test_wrapped_launch_keeps_a_fallback_dir_cli_reachable(tmp_path: Path, bare_
         log_path=tmp_path / "session.log",
         wire_layer=_WIRE_ON,
     )
-    assert "session output from the fallback dir" in _await_file(tmp_path / "session.log")
+    expected = "session output from the fallback dir"
+    assert expected in _await_file(tmp_path / "session.log", containing=expected)
 
 
 def test_dispatch_child_survives_via_new_session(tmp_path: Path, bare_path: Path) -> None:

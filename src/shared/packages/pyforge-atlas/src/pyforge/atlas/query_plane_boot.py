@@ -203,6 +203,7 @@ def boot_query_plane(
             executable = SERVER_EXECUTABLE
             chosen_launcher = launcher
         argv = _server_argv(executable, Path(path))
+        endpoint = f"http://{host}:{port}/"
 
         # Yield the DuckDB file lock to the server process, KEEPING the plane
         # writer filelock (Story 20.1 chosen handling, recorded in the story
@@ -215,8 +216,10 @@ def boot_query_plane(
         # whole lifetime: SecondWriterRefused still guards the plane against
         # any other pyforge writer, and the server is the plane's sole DuckDB
         # holder while the HTTP face lives. In-process re-close on
-        # `library.close()` is a no-op (verified).
-        library._con.close()  # noqa: SLF001 — deliberate: yield the DB, keep the lock
+        # `library.close()` is a no-op (verified). `yield_connection` records
+        # the face so a later `boot.library.<query>` raises ConnectionYielded
+        # naming this endpoint, not duckdb's bare closed-connection error.
+        library.yield_connection(to=f"the query plane's HTTP/Arrow face at {endpoint}")
         notices.append(
             {
                 "event": "library-face-yielded",
@@ -238,7 +241,6 @@ def boot_query_plane(
         library.close()
         raise
 
-    endpoint = f"http://{host}:{port}/"
     notices.append(
         {
             "event": "http-face-raised",

@@ -61,9 +61,11 @@ segment, which is a PRE-EXISTING gap in ``detect.inventory``/``plan.build``
 that must close it. Five packaged manifest entries carry ``{{ slug }}``
 today (``starter-dream``, ``project-config``, ``specs-readme``,
 ``deck-scaffolding``, ``project-subtree``), but the substitution is applied
-GENERALLY, over every filtered entry's ``.path`` (``str.replace`` is a no-op
-where the placeholder is absent), so a future manifest addition needs no
-code change here.
+GENERALLY, over every filtered entry's ``.path``, so a future manifest
+addition needs no code change here. The substitution itself is
+``model.manifest.render_slug_paths`` (Story 70.1) -- the one renderer
+``seed check`` also calls, so the two verbs judge a templated entry at the
+same path; it also re-runs the one-owner rule on the rendered paths.
 
 **``--slug`` resolution and where it flows.** Defaults to ``path``'s
 resolved directory basename when omitted (FR-73). Used both for the path
@@ -137,39 +139,15 @@ if a future manifest ever does), ``skips``/``migrations_applied``/
 story's own Never bullet) and there is no prior migration or opt-out
 history to inherit.
 
-**A confirmed, out-of-scope gap this story surfaces but does not close:
-``verbs/check.py`` cannot verify a ``{{ slug }}``-templated entry.** Found
-by direct execution while developing this story's own tests, named here
-rather than silently worked around. ``run_check`` (Story 10.5, unmodified by
-this story except its one narrow ``applies_to`` fix -- see ``verbs/check.py``'s
-own module docstring) has no ``slug`` parameter and performs no path
-substitution at all: it checks the manifest's RAW ``entry.path`` directly
-against the filesystem (`detect.inventory.classify`'s own "an entry's own
-declared path is always checked DIRECTLY" contract). For a
-``starter-dream``-shaped entry, that RAW path is the literal string
-``"docs/dreams/{{ slug }}.md"`` -- a file that can never exist on disk under
-that literal name, since `_manifest_for_init` (above) is the ONLY thing in
-this package that ever resolves the placeholder, and it resolves it into a
-DIFFERENT `Manifest` object this verb builds and discards, never the one a
-later `marshal seed check` invocation loads fresh from the packaged
-manifest. So `check` reports EVERY ``{{ slug }}``-templated entry
-`ARTIFACT_MISSING` unconditionally, on every repo, forever -- whether or not
-`init` (or `adopt`) has ever run, and regardless of this story's own
-`applies_to`-vs-`state.mode` fix (which only ever SUPPRESSES a finding, and
-does not apply here: `starter-dream`'s own `applies_to: init` DOES match a
-freshly `init`'d repo's `state.mode == "init"`). This is a genuinely
-different gap from the one `_manifest_for_init` closes (that one is about
-`classify`/`build_plan` treating the placeholder as literal for a MUTATING
-verb's own run; this one is about a READ-ONLY verb with no slug input at
-all), it predates this story (any `check` call against any repo carrying a
-``{{ slug }}``-templated manifest entry already exhibits it, independent of
-`init`), and closing it would mean giving `check` a `--slug`/`slug=`
-parameter -- a real, but out-of-scope, follow-on for a future story. This
-story's own tests that assert `check` comes back green after a real `init`
-run therefore check against a manifest EXCLUDING the ``{{ slug }}``-templated
-entries, and separately assert (by reading the filesystem directly) that
-`init` materialized them correctly -- see ``tests/unit/test_seed_verbs_
-init.py``'s own PRD-J1 test for the concrete shape of that split.
+**``check`` judges a templated entry at its rendered path (Story 70.1).**
+This story found that ``verbs/check.py`` could not verify a
+``{{ slug }}``-templated entry -- it classified the literal placeholder path
+-- and left the gap for a later story. Story 70.1 closed it: ``run_check``
+takes the project slug ``cli/seed.py`` resolves and renders through the same
+``render_slug_paths`` this module calls, so ``check`` on a freshly ``init``'d
+repo, with that repo's slug, judges every templated entry at the path
+``init`` wrote (``tests/unit/test_seed_verbs_init.py``'s PRD-J1 test checks
+the full manifest with the init slug).
 
 **Consuming Story 10.8's ``exempt=`` fix (this story's own follow-up work,
 resolving the collision this story itself was originally blocked on).**
@@ -198,7 +176,8 @@ write``, ``writable_exemptions``), ``plan.build`` (``build_plan``, ``write_plan`
 ``verbs.preconditions`` (``check_preconditions``), ``state`` (``SeedState``,
 ``ManagedArtifact`` via ``adopt``'s own helper, ``LegacyArtifact``,
 ``write_state``, ``utc_timestamp``, ``seed_model_version``), ``model.manifest``
-(``AppliesTo``, ``Manifest``, ``ManifestEntry``), ``errors`` (``PreconditionFailure``,
+(``AppliesTo``, ``Manifest``, ``ManifestEntry``, ``ManifestError``, ``render_slug_paths``),
+``errors`` (``PreconditionFailure``,
 for the git-bootstrap failure path; ``UsageError``, for FR-78's own refusal),
 ``fs`` (the MODULE, matching ``adopt.py``'s own convention), and
 ``pyforge.core.process`` (``PosixProcess``/``ProcessError`` -- the git-init
@@ -223,7 +202,7 @@ from ..detect.inventory import (
     writable_exemptions,
 )
 from ..errors import PreconditionFailure, UsageError
-from ..model.manifest import AppliesTo, Manifest, ManifestEntry
+from ..model.manifest import AppliesTo, Manifest, ManifestEntry, ManifestError, render_slug_paths
 from ..plan.build import build_plan, default_plan_path, write_plan
 from ..plan.types import Plan
 from ..state import (
@@ -372,33 +351,33 @@ def _manifest_for_init(manifest: Manifest, slug: str) -> Manifest:
     (e.g. ``specs-dir-legacy``, "a fresh init never creates it") has no
     reason to ever reach ``classify``/``build_plan`` here.
 
-    RESOLVE: every entry's ``.path`` has the literal string ``"{{ slug }}"``
-    substituted with ``slug``, via ``dataclasses.replace`` -- BEFORE the
-    manifest ever reaches ``classify``/``build_plan``, which both treat the
-    placeholder as an ordinary, literal path segment (a pre-existing gap in
+    RESOLVE: ``model.manifest.render_slug_paths`` (Story 70.1, the one
+    renderer ``seed check`` shares) substitutes ``slug`` for every
+    ``{{ slug }}`` in the filtered entries' paths -- BEFORE the manifest ever
+    reaches ``classify``/``build_plan``, which both treat the placeholder as
+    an ordinary, literal path segment (a pre-existing gap in
     ``detect.inventory``/``plan.build``, confirmed by reading ``verbs/
     adopt.py``'s own module docstring, which names ``init`` -- this story --
-    as the one that closes it). ``str.replace`` is a no-op for any entry
-    whose path carries no placeholder, so this runs unconditionally over
-    every filtered entry rather than a hardcoded list of the five entries
-    that carry one in the packaged manifest today -- a future manifest
-    addition needs no code change here."""
+    as the one that closes it). An entry with no placeholder is returned
+    unchanged, so a future manifest addition needs no code change here."""
+    filtered = Manifest(
+        model_version=manifest.model_version,
+        never_write=manifest.never_write,
+        entries=tuple(entry for entry in manifest.entries if entry.applies_to in (AppliesTo.INIT, AppliesTo.BOTH)),
+    )
     try:
-        entries = tuple(
-            dataclasses.replace(entry, path=entry.path.replace("{{ slug }}", slug))
-            for entry in manifest.entries
-            if entry.applies_to in (AppliesTo.INIT, AppliesTo.BOTH)
-        )
-    except ValueError as exc:
-        # `dataclasses.replace` re-runs `ManifestEntry.__post_init__`, which
-        # (Story 82.11, DW-FU-7-4) refuses an absolute path or a `..` segment.
-        # The slug is the one caller-supplied string spliced into a path, so
-        # that refusal is the operator's flag, not an internal failure.
+        return render_slug_paths(filtered, slug)
+    except ManifestError as exc:
+        # The renderer re-runs `ManifestEntry.__post_init__` (Story 82.11, DW-FU-7-4: no absolute path,
+        # no `..`) and the one-owner rule on each rendered path. The slug is the one caller-supplied
+        # string spliced into a path, so either refusal is the operator's flag, not an internal failure.
         raise UsageError(
-            f"--slug {slug!r} renders a manifest path that is not repo-relative: {exc}",
-            remedy="pass a --slug that is a plain name -- it must not contain a '..' segment",
+            f"--slug {slug!r} renders a manifest path the seed refuses: {exc}",
+            remedy=(
+                "pass a --slug that is a plain name -- it must not contain a '..' segment,"
+                " and must not render one entry's path onto another's"
+            ),
         ) from exc
-    return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=entries)
 
 
 def _build_state_after_init(
