@@ -113,8 +113,7 @@ def main() -> int:
     print(f"pyforge-atlas-bootstrap: data root = {data_root}")
     print(
         "pyforge-atlas-bootstrap: fetcher-less discovery stores (expected stale on "
-        "unattended bootstrap — no live refresher wired): "
-        + ", ".join(_FETCHER_LESS_DISCOVERY_STORES)
+        "unattended bootstrap — no live refresher wired): " + ", ".join(_FETCHER_LESS_DISCOVERY_STORES)
     )
     if created_dirs:
         print("pyforge-atlas-bootstrap: created " + ", ".join(str(p) for p in created_dirs))

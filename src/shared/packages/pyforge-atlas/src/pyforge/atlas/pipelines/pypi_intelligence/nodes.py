@@ -143,9 +143,7 @@ def match_source_urls(
         and "conda_name" in core_packages_enumerated.columns
     ):
         allowed_conda = {
-            str(n)
-            for n in core_packages_enumerated["conda_name"]
-            if isinstance(n, str) and n and not _is_missing(n)
+            str(n) for n in core_packages_enumerated["conda_name"] if isinstance(n, str) and n and not _is_missing(n)
         }
     cand = pypi_json_raw
     new_rows = []

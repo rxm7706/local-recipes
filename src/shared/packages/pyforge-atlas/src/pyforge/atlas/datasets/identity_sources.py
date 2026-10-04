@@ -657,10 +657,7 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
             paths: list[str] = []
             page = 1
             while True:
-                files_url = (
-                    f"{base}/repos/conda-forge/staged-recipes/pulls/{number}/files"
-                    f"?per_page=100&page={page}"
-                )
+                files_url = f"{base}/repos/conda-forge/staged-recipes/pulls/{number}/files?per_page=100&page={page}"
                 try:
                     payload = self._fetcher(files_url)
                 except Exception as exc:
@@ -724,6 +721,7 @@ class StagedRecipesPRDataset(ExternalRefreshDataset):
 
 _LOCAL_RECIPES_COLUMNS: tuple[str, ...] = ("dir_name", "names", "url", "build_status")
 
+
 # Hardcoded to THIS repo's own local-recipes tree (mirrors the legacy script's
 # own LOCAL_RECIPES_URL / ISSUE_CREATE_REPO / PROJECT_OWNER constants, all of
 # which are similarly this-repo-specific — this story ports the legacy
@@ -731,6 +729,7 @@ _LOCAL_RECIPES_COLUMNS: tuple[str, ...] = ("dir_name", "names", "url", "build_st
 def _local_recipes_tree_url_template() -> str:
     slug = os.environ.get("PYFORGE_ATLAS_LOCAL_RECIPES_REPO_SLUG", "rxm7706/local-recipes")
     return f"https://github.com/{slug}/tree/main/recipes/{{dir}}"
+
 
 # Mirrors the legacy script's CFE_BUILD_STATUS_RE / RECIPE_NAME_RE / TITLE_STOP
 # verbatim.

@@ -714,7 +714,7 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         if offset_path.is_file():
             try:
                 offset = int(offset_path.read_text(encoding="utf-8").strip() or "0")
-            except (OSError, ValueError):
+            except OSError, ValueError:
                 offset = 0
         if offset >= len(names):
             offset = 0

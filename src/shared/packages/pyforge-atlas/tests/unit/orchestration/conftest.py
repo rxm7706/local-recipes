@@ -84,11 +84,7 @@ def _seed_stub_credentials() -> None:
     LOCAL_CREDENTIALS.parent.mkdir(parents=True, exist_ok=True)
     if LOCAL_CREDENTIALS.exists():
         text = LOCAL_CREDENTIALS.read_text(encoding="utf-8")
-        present = {
-            m.group(1)
-            for line in text.splitlines()
-            if (m := re.match(r"^([A-Za-z_][A-Za-z0-9_]*):", line))
-        }
+        present = {m.group(1) for line in text.splitlines() if (m := re.match(r"^([A-Za-z_][A-Za-z0-9_]*):", line))}
         missing = [k for k in keys if k not in present]
         if not missing:
             return
