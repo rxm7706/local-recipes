@@ -3296,7 +3296,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/artifact.py": "a37e15c39b740ba87a1fd3584526ec21f6b28be8",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/kit.py": "9ff619e776ac9931ba4ce7dcc70fa06dc1fa8d1c",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/manifest.py": "0a8ab6403c572b5d3a118920ac4717b3e7323334",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/manifest.py": "8328b5b5fc1c794d8752629cfb691da4efed0676",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/version.py": "75a88025d8ad2fcfc75abb1438e42d98b41835f7",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/plan/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/plan/build.py": "85fb1c6cf1a84fbff9438798bbcdf2551e702742",
@@ -3478,7 +3478,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7841247dfd900ae288c19463e38af1276d4d9e81",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "c4b3f243090ce9b8ad5217e091d7b369fe064e47"
+  "memlog": "1fc9eff05c5652cbaeb580d66a610ed091bbd125"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
@@ -3961,7 +3961,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/artifact.py": "a37e15c39b740ba87a1fd3584526ec21f6b28be8",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/kit.py": "9ff619e776ac9931ba4ce7dcc70fa06dc1fa8d1c",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/manifest.py": "0a8ab6403c572b5d3a118920ac4717b3e7323334",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/manifest.py": "8328b5b5fc1c794d8752629cfb691da4efed0676",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/version.py": "75a88025d8ad2fcfc75abb1438e42d98b41835f7",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/plan/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/plan/build.py": "85fb1c6cf1a84fbff9438798bbcdf2551e702742",
@@ -4194,7 +4194,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_kit.py": "6d4a72ebf58f036fb9f652980ab2aa98c8e3ea73",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_migrate_registry.py": "d6dbe6e843209746a775d0b8b3745cabddfa4b24",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_artifact.py": "446e2341e5d864a40d23f383a8300dd6157b5f39",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_manifest.py": "d133a054f660947dfa63b39142bb14125c7bbb79",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_manifest.py": "75c4f336493465a04d9680415cfc631688e24edc",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_version.py": "f9cfe6c29d4b0d575b29d88a864eb2687bd850f4",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_plan_build.py": "edb93a259ffd573114a400dd7cab18d426045a26",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_plan_types.py": "3363fd24d16d078be47ae77f370677ba95c399d9",
@@ -4238,7 +4238,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "8365ab9b0304ef326802635fe5652e1a24239907"
+  "memlog": "afb5c4e1c3c3dda1525f80c0c731e9b853e17578"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
