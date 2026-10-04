@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-10-03'   # RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: '2026-10-04'   # RE-STAMPED 2026-10-04: prd->arch cascade for FR-38 / CAP-165 (Epic 85, preserved-work refs); lands on AD-1, AD-8 and canopy:AD-11 as written, no AD amended. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> spine) for FR-35 / CAP-162 (Epic 73). No AD added, amended or removed; lands on AD-1 and AD-8. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> spine) for FR-33 / CAP-160 and FR-34 / CAP-161 (Epic 72). No AD added, amended or removed; lands on canopy:AD-14, canopy:AD-17 and AD-5; the CAP-15 row's mason note updated in place. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2251,3 +2251,24 @@ grants; the ingress change is parsing in the existing middleware. No port, adapt
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
 
+
+## Currency reconciliation — 2026-10-04
+
+*`prd→arch` cascade for FR-38 / CAP-165 (Epic 85): the protected refs are declared once, the live rulesets are proven
+to match, and no session deletes what would orphan commits.* Checked against every AD. FR-38 lands on three as written:
+
+- **AD-1 (wrap, never reimplement).** The ruleset parity check wraps `gh api` and the hook's reachability guard wraps
+  `git merge-base --is-ancestor` and `git for-each-ref --contains`; neither re-implements git. The protected list stays
+  one declared source (the roster), and the rendered ruleset document is derived from it, never hand-kept. `workspace
+  clean` writes its preserve tag through `pyforge.core.preserve_refs` (the kernel seam marshal's AD-81 names) and never
+  imports `pyforge.marshal`.
+- **AD-8 (exit-code sole ownership).** The parity detector's `main()` owns its exit code — 0 match, 1 drift, 2 could not
+  observe (unauthenticated, rate-limited, an API error) — and is never green on a failed read. A hook denial is the
+  hook's own verdict, journaled with the reason that names the sanctioned form.
+- **canopy:AD-11 (one flag tree).** `pyforge.steward.workspace_preserve_tag` lives in the one tree with per-environment
+  values and metadata like every other flag.
+
+The pre-push gate (CAP-154, CAP-156) keeps its boundary: the new skip is one more journaled case inside
+`scripts/pre_push_preflight.sh`. No port or adapter boundary moves; `src/platform/` still imports no `pyforge.*`.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

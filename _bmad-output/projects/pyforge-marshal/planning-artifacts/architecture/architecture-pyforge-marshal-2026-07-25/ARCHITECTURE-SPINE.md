@@ -7,7 +7,7 @@ paradigm: hexagonal (ports & adapters) around a pure decision core, with an out-
 scope: The `marshal` CLI — loop-home provisioning, run supervision, gate evaluation, landing, fleet status, adapter portability, policy composition, the seed installer, dispatch, and the station's estate faces. Governs everything built from PRD FR-1..FR-191 / NFR-1..NFR-14 (epics.md additionally cites FR-192..FR-195 — registered in the PRD's § 18, architectural record in Part IV).
 status: final
 created: 2026-07-25
-updated: "2026-10-03"   # AMENDED 2026-10-03 (Phase 3): AD-4 dependency direction (core -> ports, DW-FU-2-1-11) and AD-30 payload wording (DW-FU-3-1-3), operator rulings. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for FR-233 / CAP-286 (Epic 85); lands on AD-4, AD-8 and AD-19 as written, no AD amended. Earlier: RE-STAMPED 2026-10-02: prd->arch cascade for FR-232 / CAP-285 (Epic 84); lands on AD-4, AD-19, AD-20 and AD-34 as written, no AD amended. Earlier: RE-STAMPED 2026-10-01: prd->arch cascade for FR-231 / CAP-284 (Epic 80). Earlier: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD -> arch) for FR-230 / CAP-283 (Epic 78); lands on AD-4 as written, no AD amended. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD -> arch) for FR-229 / CAP-282 (Epic 77); lands on AD-75, AD-20 and AD-21 as written, no AD amended. Earlier 2026-09-28: RE-STAMPED (night): chain-currency cascade (prd -> arch) for Epic 74 (spec-feature-flag-governance CAP-3, CAP-4, CAP-6; no FR). No AD amended; lands on AD-4/AD-5/AD-8/AD-15. See section Currency reconciliation -- 2026-09-28 (night). Earlier: AMENDED (evening, cont. 6): operator rulings on FR-225 / CAP-279 (AD-55 amended in place: the manifest entry's optional required_in, loop-home), FR-227 / CAP-280 widened (lands on AD-29/AD-33) and FR-228 / CAP-281's per-campaign cap (lands on AD-4/AD-5/AD-29/AD-33). See § Currency reconciliation -- 2026-09-28 (operator rulings). Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281 (Epic 73). No AD amended; lands on AD-4/AD-5/AD-9/AD-29/AD-42/AD-75. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280 (Epic 72). No AD amended; lands on AD-9/AD-29/AD-33. Earlier: RE-STAMPED (evening, cont. 3): FR-211 / CAP-265 re-scoped to the hand ledger sync (Story 54.1). No AD amended; lands on AD-33/AD-42. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended; lands on AD-66/AD-68. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279 (Epic 70). No AD amended; lands on AD-54/AD-55/AD-60. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
+updated: "2026-10-04"   # AMENDED 2026-10-04: prd->arch cascade for FR-234 / CAP-287 (Epic 87, preserved-work refs); AD-81 added; AD-47 and AD-48 amended in place; one-line amendments to AD-11, AD-29, AD-40 and AD-74. Earlier: AMENDED 2026-10-03 (Phase 3): AD-4 dependency direction (core -> ports, DW-FU-2-1-11) and AD-30 payload wording (DW-FU-3-1-3), operator rulings. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for FR-233 / CAP-286 (Epic 85); lands on AD-4, AD-8 and AD-19 as written, no AD amended. Earlier: RE-STAMPED 2026-10-02: prd->arch cascade for FR-232 / CAP-285 (Epic 84); lands on AD-4, AD-19, AD-20 and AD-34 as written, no AD amended. Earlier: RE-STAMPED 2026-10-01: prd->arch cascade for FR-231 / CAP-284 (Epic 80). Earlier: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD -> arch) for FR-230 / CAP-283 (Epic 78); lands on AD-4 as written, no AD amended. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD -> arch) for FR-229 / CAP-282 (Epic 77); lands on AD-75, AD-20 and AD-21 as written, no AD amended. Earlier 2026-09-28: RE-STAMPED (night): chain-currency cascade (prd -> arch) for Epic 74 (spec-feature-flag-governance CAP-3, CAP-4, CAP-6; no FR). No AD amended; lands on AD-4/AD-5/AD-8/AD-15. See section Currency reconciliation -- 2026-09-28 (night). Earlier: AMENDED (evening, cont. 6): operator rulings on FR-225 / CAP-279 (AD-55 amended in place: the manifest entry's optional required_in, loop-home), FR-227 / CAP-280 widened (lands on AD-29/AD-33) and FR-228 / CAP-281's per-campaign cap (lands on AD-4/AD-5/AD-29/AD-33). See § Currency reconciliation -- 2026-09-28 (operator rulings). Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281 (Epic 73). No AD amended; lands on AD-4/AD-5/AD-9/AD-29/AD-42/AD-75. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280 (Epic 72). No AD amended; lands on AD-9/AD-29/AD-33. Earlier: RE-STAMPED (evening, cont. 3): FR-211 / CAP-265 re-scoped to the hand ledger sync (Story 54.1). No AD amended; lands on AD-33/AD-42. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended; lands on AD-66/AD-68. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279 (Epic 70). No AD amended; lands on AD-54/AD-55/AD-60. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278 (Epic 69). No AD amended; lands on AD-8. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277 (Epic 68). No AD amended; lands on AD-5/AD-6/AD-15/AD-29/AD-33. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended; FR-221 lands on AD-4/AD-5/AD-29/AD-42, FR-222 on AD-5/AD-9/AD-33. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274 (Epic 65). No AD amended; lands on AD-4/AD-8/AD-15/AD-49. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273 (Epic 64). No AD amended; lands on AD-11/AD-75. Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272 (Epic 62). No AD amended. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271 (Epic 61). No AD amended. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270 (Epic 60). No AD amended. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269 (Epic 59). No AD amended. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268 (Epic 58). No AD amended. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57); FR-212 / CAP-266 (Epic 56), lands on AD-4/AD-5/AD-33. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (prd -> spine, behind-code) after the 2026-09-26 PRD re-stamp; Stack table row bmad-loop >=0.11.0,<0.13 corrected in place; no AD change. Prior 2026-09-24
 # 2026-09-19  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-201..FR-210 / CAP-249..256 + spec-pyforge-core CAP-8..9 (Epics 51, 52). No AD amended; ten FRs land on existing decisions (as-built check below).
@@ -160,6 +160,8 @@ graph TD
 - **Rule:** Marshal writes only to (a) the loop home, (b) the canonical Tier-3 store reached through the home's backlink, (c) explicitly-named promotion targets under the active project's tracked planning artifacts — **the real path `_bmad-output/projects/<slug>/planning-artifacts/…`, never the gitignored `_bmad-output/planning-artifacts/…` symlink** — and (d) the single declared machine-scoped path for host-and-adapter facts (AD-37).
 
   **The promotion target is the real path, named (F-26, amended 2026-07-30).** In a loop home there are two paths that both look like "the tracked specs archive": the gitignored **symlink** `_bmad-output/planning-artifacts/specs/` and the real `_bmad-output/projects/<slug>/planning-artifacts/specs/`. Writing through the symlink and then running `git add` on that path fails (`pathspec … is beyond a symbolic link`) or no-ops on the ignore rule — **promotion silently produces nothing, and AD-29's reachability predicate then correctly reports the spec unpromoted forever.** This repository has a documented near-miss on exactly this pair. Marshal resolves the real path itself and never writes a promotion through the symlink. It never writes outside those four, never checks out `main` in a second tree, and never edits another project's artifacts or any shared repo-level file. Active-project marker and planning symlinks are per-home and must always agree; disagreement is a blocking finding.
+
+  **Preserved-work refs are a declared write target (amended 2026-10-04, AD-81).** Beside the four targets above, Marshal writes annotated tags under `refs/tags/preserve/` and `refs/tags/archive/` in the shared repository, and pushes them to `origin` one refspec per tag through AD-81's content gate. It writes no other ref outside the loop home's own branches.
 
 ### AD-12 — Canonical versus derived, declared not inferred
 
@@ -322,6 +324,8 @@ graph TD
 
   **Durability must not require the network (F-14, amended 2026-07-30).** The earlier predicate named only "pushed to the remote, or merged to the integration branch", and C-4 forbids the second `main` checkout that would make the local merge possible — so in practice the only route was a **network push**, which NFR-2's offline exception list ("PR creation, the agent's own model calls") does not enumerate. Three consequences followed: NFR-2's list was factually incomplete; an offline operator could not complete **SM-3**; and worst, because the teardown predicate is reachability computed *at teardown time*, computing it against a remote needs a fetch — so **an offline operator's every teardown refuses and must be forced with story keys named as abandoned.** That is precisely how a destructive-refusal gate gets trained away. Admitting a declared durable local ref keeps NFR-2 intact, keeps SM-3 reachable offline, and keeps the refusal meaningful: it now fires only on work that is genuinely unreachable, not on work that is merely unpushed.
 
+  **The declared durable local ref is `refs/tags/preserve/` (amended 2026-10-04, AD-81, review B2).** The third route was unimplemented (`cli/deploy.py` said no code named a mechanism for it). It is now any annotated tag under `refs/tags/preserve/` (or `refs/tags/archive/`): refs are shared across worktrees, survive the loop home, and no marshal deleter touches `refs/tags/**`. The same predicate governs every working copy AD-81 names, not only spec promotions: an unpushed preserve is debt, never a refusal.
+
 ### AD-30 — One serialized append protocol
 
 - **Binds:** FR-18, NFR-8, AD-5, AD-6
@@ -431,7 +435,7 @@ shipped stories, not all strictly independent of later epics' groundwork).
 
 - **Binds:** FR-59, FR-60, CAP-9; extends AD-7 (exit domain), AD-8 (refusal shape), FR-8's teardown semantics
 - **Prevents:** the last mile remaining the one stage with no supervisor, no journal, and no verdict — and landing rules living as memorized habits (the five-PRs-hand-driven session; #170 merging a real detector break).
-- **Rule:** landing rules (required checks, merge strategy, labels, branch retirement, resync, repo-specific triggers) are **policy keys** composed with per-key provenance like every governed value. `marshal land` executes them idempotently and re-entrantly — a half-landed story converges on re-run — and refuses exactly as teardown does: named findings in the common envelope, no merge on a red required check, no silent force. Every landing appends a journal verdict (checks required/passed, what merged, under whose authority). The engine keeps dev/verify/review/commit; landing wraps *around* it.
+- **Rule:** landing rules (required checks, merge strategy, labels, branch retirement, resync, repo-specific triggers) are **policy keys** composed with per-key provenance like every governed value. `marshal land` executes them idempotently and re-entrantly — a half-landed story converges on re-run — and refuses exactly as teardown does: named findings in the common envelope, no merge on a red required check, no silent force. Every landing appends a journal verdict (checks required/passed, what merged, under whose authority). The engine keeps dev/verify/review/commit; landing wraps *around* it. *(Amended 2026-10-04:)* landing never deletes an operational branch (`loop/*`), and a journaled `branch_retired` is a post-merge remote fact, never the request; see AD-47 as amended.
 
 ### AD-41 — Marshal sequences on verdicts it never authors
 
@@ -475,15 +479,15 @@ shipped stories, not all strictly independent of later epics' groundwork).
 
 ### AD-47 — Branch retirement is proof-gated, not schedule-gated
 
-- **Binds:** FR-63; extends AD-27 (allowlist narrows only), FR-8's teardown refusal semantics
-- **Prevents:** a retirement sweep silently deleting a branch on a heuristic diff — three-dot mismeasures squash-merges, two-dot mismeasures branches the base has since moved past, both tried and both wrong in the Dream's own authoring session.
-- **Rule:** a branch retires only when three independently-provable facts hold: content reachable in the integration branch **by patch-id**, its run concluded, its story `done` with a recorded merge sha. `loop/*` and `rescue/*` are **structural** exclusions, never policy-configurable — `rescue/*` tags are the only reachability for commits `git gc` would otherwise collect. Dry-run by default; a proposed retirement with unproven evidence is refused, never defaulted to delete. Shares its evidence machinery with FR-61's opposite question (what must be saved) but is a distinct sweep from FR-59's per-landing retirement (AD-40) — the two must never disagree on a branch's fate.
+- **Binds:** FR-63, and **[2026-10-04]** FR-59 and FR-234 / AD-81; extends AD-27 (allowlist narrows only), FR-8's teardown refusal semantics
+- **Prevents:** a retirement sweep silently deleting a branch on a heuristic diff — three-dot mismeasures squash-merges, two-dot mismeasures branches the base has since moved past, both tried and both wrong in the Dream's own authoring session. **[2026-10-04]** Also a retirement that removes reachability (8 of the 30 branches retired on 2026-10-04 left commits reachable from nothing), and two retirement paths disagreeing about an operational branch.
+- **Rule:** a branch retires only when three independently-provable facts hold: content reachable in the integration branch **by patch-id**, its run concluded, its story `done` with a recorded merge sha. **[2026-10-04]** When deleting the branch would make commits unreachable — its tip is not an ancestor of `refs/remotes/origin/main` and no other durable ref contains it — retirement first writes an annotated `refs/tags/archive/heads/<branch>` twin (AD-81), then deletes; a squash-proven branch therefore gets a twin and an ancestor branch does not. One criterion serves this sweep, the sweeper's `--retire` and FR-59's landing. `loop/*` is a **structural** exclusion, never policy-configurable; **[2026-10-04]** so is all of `refs/tags/**` (tags are never candidates, which subsumes the old "`rescue/*` tags" clause: those tags are still the only reachability for many commits `git gc` would otherwise collect), and so is every entry of the declared protected list (AD-81's union with the code floor). Dry-run by default; a proposed retirement with unproven evidence is refused, never defaulted to delete. Shares its evidence machinery with FR-61's opposite question (what must be saved) but is a distinct sweep from FR-59's per-landing retirement (AD-40) — the two must never disagree on a branch's fate. **[2026-10-04]** The structural exclusion binds FR-59 too: a landing never deletes a `loop/*` head, and only `marshal teardown` removes one, under AD-81's preserve precondition, so the two paths cannot disagree on a station branch.
 
 ### AD-48 — Durability is a first-class fleet-status dimension
 
-- **Binds:** FR-62; extends AD-38 (a resolved feed reports its own completeness), AD-39 (envelope field relationships)
-- **Prevents:** "is the fleet's work saved?" ever again requiring a command outside `marshal status`.
-- **Rule:** the fleet-status envelope carries an unpushed-work finding per row, **read from** the same evidence the unpushed-work detector already computes, never re-implemented against git directly. A row with unpushed content is never reported clean — the same refusal `marshal status` already applies to an unowned Dream row.
+- **Binds:** FR-62, and **[2026-10-04]** FR-234 / AD-81; extends AD-38 (a resolved feed reports its own completeness), AD-39 (envelope field relationships)
+- **Prevents:** "is the fleet's work saved?" ever again requiring a command outside `marshal status`. **[2026-10-04]** Also a status that reads clean because its detector could not look.
+- **Rule:** the fleet-status envelope carries an unpushed-work finding per row, **read from** the same evidence the unpushed-work detector already computes, never re-implemented against git directly. **[2026-10-04]** It also carries a per-row **preserve-debt** finding — local-only `preserve/` tags, unpromoted engine scratch refs, and patches or tarballs with no tag — each a registered finding code (AD-15). An unpushed ref that matches no row is reported fleet-wide, never discarded. A detector that cannot observe is could-not-observe in the envelope, never zero findings. A row with unpushed content **[2026-10-04]** or preserve debt is never reported clean — the same refusal `marshal status` already applies to an unowned Dream row.
 
 ### 2026-08-01 amendment — AD-49 (fidelity-enforcement, Marshal-only slice)
 
@@ -1443,6 +1447,8 @@ the invariant.
   caller asked for (FR-190, closing the `bmad-switch` scope hole); the upstream filing is
   gated and recorded on the FR-58 register (20.3). Work an upstream defect touched is
   recoverable by construction, and the recovery is visible, not archaeological.
+  *(Amended 2026-10-04:)* since AD-81 the preserve step means a `refs/tags/preserve/` tag; the
+  patch file and the engine's `attempt-preserve/*` scratch ref are conveniences, not the record.
 
 ### AD-75 — Dispatch is a governed verb, not a session's discipline
 
@@ -1531,6 +1537,69 @@ the invariant.
   backlog stays Marshal's. The host never imports `pyforge.*` source; the ledger contract
   (AD-71) is unchanged; and — recorded verbatim from the strategy — *never: Marshal stores
   SLAs*.
+
+### AD-81 — Preserved work is an annotated tag; a name is not durability
+
+*Added 2026-10-04 (FR-234, Epic 87), after the preserved-work-refs research and its independent review; operator
+ruling of the same day.*
+
+- **Binds:** FR-234 / CAP-287, with steward's FR-38 / CAP-165 as co-governor; extends AD-29 (durability is
+  reachability — this AD names its declared durable local ref), AD-46 (stage-bound push), AD-47 (retirement), AD-48
+  (durability in status) and AD-74 (detect → preserve → defer-loud); declares a write target beside AD-11's four;
+  mirrors the shape of `spec-one-chain-per-station` CAP-11's `archive/<original path>` for refs.
+- **Prevents:** a "preserved" commit that exists only on one disk, or only under a name; a preserve under a prefix
+  whose owner prunes it; a retirement or cleanup that leaves commits reachable from nothing; a printed remedy that
+  mints unreviewed tags into a public, append-only namespace; the 2026-10-04 shape — 464 branches deleted in one hour,
+  98 tips orphaned, 83 of them under no protected name.
+- **Rule:**
+  - **The record.** Work outlives its working copy only as a commit reachable from an annotated tag
+    `refs/tags/preserve/<project-slug>/<N.M>/<producer>-<sha8>` (or `refs/tags/preserve/unbound/<producer>-<sha8>`).
+    The name carries no date: the tagger date is in the tag object, and a tag is not a date (AGENTS.md § Dates). A
+    working copy is a branch, worktree, run directory, patch file or tarball.
+  - **One module.** `pyforge.core.preserve_refs` (stdlib-only, importable by path) renders and parses every preserve
+    and archive name, writes the snapshot and the tag, runs the content gate and pushes. Every consumer imports it,
+    as with AD-73; marshal owns the verb. The producer vocabulary is closed (`bmad-loop`, `intent-gap`, `dispatch`,
+    `build`, `sweep`, `workspace`, `dangling`, `hand`), and the trailers carry provenance, `machine|human` included.
+  - **The durability predicate, three cases.** (a) Removing a local working copy needs its unique content reachable
+    from a `refs/tags/preserve/` or `refs/tags/archive/` tag; a **local** tag suffices, because refs are shared across
+    worktrees and survive the loop home, so `refs/tags/preserve/` is AD-29's declared durable local ref. (b) An
+    unpushed preserve is preserve debt, reported per AD-48, never a refusal. (c) Deleting a ref on `origin` needs the
+    content on `origin`: an ancestor of `refs/remotes/origin/main`, or a tag `git ls-remote` lists. Content is
+    **unique** when deleting would make commits unreachable — the tip is not an ancestor of `refs/remotes/origin/main`
+    and no other durable ref contains it. Patch-id and tree equivalence decide whether content *landed*, never whether
+    its bytes may go.
+  - **The gate before origin.** No preserve or archive tag reaches `origin` without the content gate: it refuses a
+    commit descending from a purge-listed sha or carrying a purge-listed path (a tracked governance list), a blob the
+    secret scan flags, and a file over the size cap; a refused tag stays local and is reported. Content that was only
+    ever local reaches `origin` only after the operator reviews it row by row. A push names one refspec per tag, never
+    `--tags`, and steward's pre-push gate skips only a push it can prove is tag-only (steward CAP-156 as amended).
+  - **Volume.** A preserve for a story whose tree equals an existing preserve's tree is a no-op; per-run and per-story
+    caps keep a runaway producer's tags local with a HARD finding.
+  - **Append-only, with derived retirement.** `preserve/` tags are never moved or deleted. A preserve retires by derived
+    state: `landed` when its commit is an ancestor of `origin/main`, `retired` when the tracked retirement ledger lists
+    it. A branch retires by an annotated `refs/tags/archive/heads/<branch>` twin (`Archive-From`, `Archive-Reason`,
+    `Archive-Evidence`), written only when deleting the branch would orphan commits; the branch is deleted after the
+    twin exists where the deletion happens (locally, or on `origin` by `ls-remote`). The legacy 45 `archive/*` and 698
+    `rescue/*` tags are frozen as they are.
+  - **Purge.** Deleting a `preserve/` or `archive/` tag is a purge: an operator act by explicit name, after a manifest
+    is committed, needing a deliberate ruleset change. Its secret-incident fast path (a temporary ruleset edit, the
+    delete, a GitHub cache purge request) is never slowed by that weight.
+  - **Upstream scratch.** `attempt-preserve/*` and `refs/attempt-preserve-dirty/*` keep bmad-loop's names (AD-2).
+    Marshal promotes them on the journaled event and by a reconcile scan (AD-21), resolves each target with
+    `git rev-parse` of the ref, never from a journal line (AD-9), renders `preserve_keep = 0`, never pushes them, and
+    retires local scratch only once its preserve exists.
+  - **One list, a code floor.** The protected list is declared once, in steward's roster, as full refnames with a kind
+    and a scope. Each consumer unions it with its own code floor (marshal's: `refs/heads/main`, `refs/heads/loop/` and
+    all of `refs/tags/`), so the roster can only add (AD-27, AD-47). Marshal's in-code deleters receive the list through
+    the policy layer with provenance (AD-10, AD-16), never by opening the roster; the repo's scripts and the session
+    hook read the roster directly.
+  - **The enforcement ceiling.** The server ruleset cannot tell an agent from the operator (AD-27's trust model: agents
+    hold the operator's credentials), so it protects only the declared prefixes, with no bypass actor. Every other
+    branch and tag deletion is guarded by the session hook's reachability denial and by the guarded tools; harnesses
+    with no hook deny surface (Gemini CLI, Copilot CLI, Devin) and cloud agents are guarded by the rulesets alone. That
+    is the realistic ceiling, stated rather than hidden.
+  - **"On origin" is a remote fact.** A reader takes a ref to be on `origin` from `git ls-remote` or an explicit fetch
+    refspec, never from local tag presence: a plain fetch does not follow a tag that points off the fetched branches.
 
 ### Coverage-map extension (FR-164..FR-195)
 
@@ -2107,3 +2176,30 @@ change for one fix turn.* Checked against every AD:
 Epic 86 (Stories 86.1-86.7) carries the other marshal rulings; each lands on its module's existing ADs.
 
 **Content changed:** the two amendments and this section. `updated:` bumped. No AD added or removed.
+
+## Currency reconciliation — 2026-10-04
+
+*`prd→arch` cascade for FR-234 / CAP-287 (Epic 87): preserved work is an annotated tag in every mode, and nothing
+removes a working copy it does not hold.* Checked against every AD. This one adds and amends decisions:
+
+- **AD-81 added** (Part IV): the record, one grammar module in `pyforge.core`, the three-case durability predicate
+  (review B2: a local tag suffices; unpushed is debt; origin deletion needs the tag on origin), the content gate before
+  origin (review B1), volume caps (M7), derived retirement and `archive/heads/` twins only when deletion would orphan
+  commits (M5, minor 3, minor 15), the purge and its secret-incident fast path, upstream scratch promotion (minor 7),
+  one list unioned with a code floor (M3), the enforcement ceiling (B3), and "on origin" as a remote fact (minor 2).
+- **AD-47 amended in place** (M5): one orphan criterion for this sweep, the sweeper's `--retire` and FR-59's landing;
+  every tag and every declared protected ref excluded structurally; a landing never deletes a `loop/*` head.
+- **AD-48 amended in place:** preserve debt per row with registered codes (AD-15), unmatched unpushed refs reported
+  fleet-wide, could-not-observe never zero findings.
+- **One-line amendments:** AD-11 (refs under `refs/tags/preserve/` and `refs/tags/archive/` are a declared write
+  target, review minor 9), AD-29 (its declared durable local ref is `refs/tags/preserve/`, review B2), AD-40 (landing
+  never deletes `loop/*`) and AD-74 (the preserve step means AD-81's tag).
+- **Held as written:** AD-2 (no bmad-loop change; promotion and the rendered `preserve_keep` are the adaptation),
+  AD-3 (only the harness seam reads bmad-loop's policy), AD-4 (grammar, gate and state derivation are pure functions;
+  git I/O stays behind the VCS port or, for the stdlib scripts, in the core module's own process calls), AD-9 (targets
+  resolved from git, never from a journal line), AD-21 (promotion reconciles, then acts), AD-24 and AD-73 (tags never
+  appear in merge subjects; `landing_evidence` enumerates no refs), AD-27 (the list only narrows), AD-59 (legacy tags
+  frozen, not migrated) and AD-78 (`preserve_keep = 0` pinned against the installed package).
+
+**Content changed:** AD-81 added; AD-47 and AD-48 amended in place; dated one-line amendments to AD-11, AD-29, AD-40
+and AD-74; this section. `updated:` bumped. No AD removed or renumbered.

@@ -2,7 +2,8 @@
 title: Marshal — graduated autonomy on the factory floor
 status: draft
 created: 2026-07-25
-updated: 2026-08-26  # currency reconciliation — the 2026-08-08 research triad (domain/market/technical refresh + technical-pyforge-unification) folded in; shipped state re-grounded at 165/165 stories, Epics 1-27; harness era corrected to bmad-loop >=0.11.0,<0.12. See "Currency reconciliation - 2026-08-26" at the end of this file.
+updated: 2026-10-04  # currency reconciliation — the preserved-work-refs research (2026-10-04) and its review folded in; durability of saved work joins the problem and success criteria. See "Currency reconciliation — 2026-10-04".
+# 2026-08-26  # currency reconciliation — the 2026-08-08 research triad (domain/market/technical refresh + technical-pyforge-unification) folded in; shipped state re-grounded at 165/165 stories, Epics 1-27; harness era corrected to bmad-loop >=0.11.0,<0.12. See "Currency reconciliation - 2026-08-26" at the end of this file.
 # 2026-08-02  # genesis-installer brief consolidated in as a Satellite section (explicit user override); competitive re-framing + Epic-1 shipped facts + Q3 resolution (see JSON block)
 project: pyforge-marshal
 dist: pyforge-marshal
@@ -607,3 +608,28 @@ Unifying Strategy pack. Concrete deltas:
 6. **Still open, unchanged.** Q2 (AGENTS.md family ownership — CAP-6 ships detection
    only until settled), Q4 (fleet-level budgets), Q5 (OTel `gen_ai.*`), Q6 (ACP trigger,
    pressure rising). The counter-metrics stand.
+
+## Currency reconciliation — 2026-10-04
+
+The research `preserved-work-refs-2026-10-04.md` (with its drafts and an independent review,
+`preserved-work-refs-2026-10-04-review.md`) post-dates this brief's last update (2026-08-26). It changes the
+brief in one place: the durable-journal promise ("every run visible in a durable journal") had a blind side,
+the *work* itself.
+
+1. **Problem, extended.** Saved work had nine names and no definition. Every protection was a name list
+   while survival depended on reachability: on 2026-10-04 a hand-rolled cleanup deleted 464 branches in an
+   hour and left 98 tips reachable from nothing, 83 of them under no protected name. The upstream engine
+   prunes the prefix this repo parked durable work under, and a detector's printed remedy minted 682 public
+   tags without review, 23 of which re-preserved purged history.
+2. **Solution, extended.** One rule in every mode Marshal runs (spin, dispatch on every harness, drain, bare
+   bmad-loop under its rendered policy, the build skills, hand rebuilds): work outlives its working copy only
+   as a commit reachable from an annotated `preserve/` tag, written by one grammar module in `pyforge.core`,
+   pushed only through a content gate, and never deleted; retirement keeps reachability. Steward co-governs
+   the declared protected list, the rulesets' parity check and the session hook's reachability guard.
+3. **Success criteria, extended.** "Is the fleet's work saved?" is answered by reachability in
+   `marshal status`, including preserve debt, never by a name. No tool, skill or hand path the factory
+   documents removes a working copy whose unique content no preserve holds.
+4. **Unchanged.** Wrap-never-absorb holds: bmad-loop's names stay, and Marshal adapts by promotion and the
+   `preserve_keep` knob it already renders. An upstream change remains an operator-only ask.
+
+Decomposed as `spec-pyforge-marshal` CAP-287 → PRD FR-234 → spine AD-81 → Epic 87.

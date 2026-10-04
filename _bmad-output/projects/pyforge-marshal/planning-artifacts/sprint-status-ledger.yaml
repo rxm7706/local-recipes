@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 575
+# stories: 590
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -406,13 +406,28 @@ development_status:
   85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
-  86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: backlog
+  86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done
   86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is: backlog
   86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: done
   86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: backlog
   86-7-the-session-close-docs-name-the-context-advisory-and-the-retired-id-guard-scans-the-planning-docs: backlog
   86-8-path-form-spec-cites-count-as-missing-and-the-retired-chain-verb-leaves-no-trace: done
   87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: backlog
+  87-10-merged-check-objects-never-enter-the-object-store: backlog
+  87-11-the-build-skills-and-recovery-recipes-preserve-before-they-revert-or-rebuild: backlog
+  87-12-legacy-refs-are-promoted-and-attempt-preserve-leaves-the-protected-list: backlog
+  87-13-nothing-in-a-loop-home-prunes-a-preserve-or-rewrites-a-station-branch: backlog
+  87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories: backlog
+  87-15-a-preserve-reaches-origin-only-through-the-content-gate: backlog
+  87-16-the-orphaned-tips-are-re-preserved-as-local-archive-tags: backlog
+  87-2-the-unpushed-work-detector-fails-closed-and-never-prints-a-tag-minting-remedy: backlog
+  87-3-preserved-work-has-one-grammar-and-one-verb: backlog
+  87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it: backlog
+  87-5-dispatch-and-drain-preserve-a-stopped-storys-work-as-a-tag-on-origin: backlog
+  87-6-land-retire-and-the-station-branch-never-fight-the-protected-list: backlog
+  87-7-teardown-refuses-to-remove-a-loop-home-that-holds-unpreserved-work: backlog
+  87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: backlog
+  87-9-every-preserve-reader-sees-preserve-tags-and-origin: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done

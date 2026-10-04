@@ -791,6 +791,30 @@ verify_commands = [
   "docs/reference/environments.md",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"85" = [  # the protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward
+  # CAP-165; Story 85.1's hook fix), added 2026-10-04. The default surface, restated because a declared entry replaces it
+  # outright, plus: the session hook and the roster (85.1, 85.4), the rendered ruleset document (85.2), the repo scripts
+  # and their tests (the parity detector, the pre-push hook), AGENTS.md (the guardrails section), the flagd tree (85.5's
+  # flag), the generated detector reference docs, and every Spec memlog.
+  "src/shared/packages/pyforge-steward/**",
+  "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-steward/implementation-artifacts/**",
+  ".gitignore",
+  "scripts/.spec-surface-baseline.json",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  ".claude/hooks/pre-shell.py",
+  "docs/governance/guild-roster.json",
+  "docs/governance/rulesets/**",
+  "scripts/**",
+  "tests/scripts/**",
+  "AGENTS.md",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "docs/reference/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "84" = [  # Phase 3 of the deferral burn-down: steward's ruled fixes, added 2026-10-03.
   # The default surface, restated because a declared entry replaces it outright, plus the flagd tree (84.4's flag),
   # the platform deploy files (84.1's grants), the steward ledger rows each story closes, and every Spec memlog.
