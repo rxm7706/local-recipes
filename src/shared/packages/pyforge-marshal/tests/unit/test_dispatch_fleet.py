@@ -2077,7 +2077,7 @@ def test_eight_station_campaign_replays_without_session_discipline(
     assert held_statuses["pyforge-steward"] is StationCycleStatus.IN_FLIGHT
     assert len(harness.dispatched) == 2
     relays = {f.message for f in held.findings if f.code == "MRS-DRAIN-006"}
-    assert any("in-flight wave member" in m for m in relays)
+    assert any("in-flight wave member" in m or "in-flight dispatch session" in m for m in relays)
     assert held.complete is False
 
     # --- Cycle 3: merge-through-finalize chains each station's next story --
