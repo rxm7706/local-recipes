@@ -41,19 +41,21 @@ authcheck_ok_pattern = "\"loggedIn\":\\s*true"
 verified = true
 notes = "Verified 2026-08-27: authenticated (claude.ai), smoke-tested -p invocation shape."
 
-# Story 85.1 (CAP-286): verification fix turn — continue the same conversation in the worktree cwd.
+# Story 85.1 (CAP-286): verification fix turn. Story 85.3: resume the session the launch pinned with
+# `--session-id` (`--resume <id>` alone -- claude 2.1.284 refuses `--session-id` beside `--resume` unless
+# `--fork-session`), and read the prompt from stdin (`{prompt_stdin}`: the launch feeds the 0600 prompt file),
+# never argv. Verified live 2026-10-04 on claude 2.1.284: `claude -p --resume <id> < prompt` continued the pinned
+# session and answered from it; `--session-id <id> --resume <id>` exited 1 with that refusal.
 resume_argv = [
   "-p",
   "--permission-mode",
   "bypassPermissions",
   "--settings",
   '{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}',
-  "--session-id",
-  "{session_id}",
   "--resume",
   "{session_id}",
   "{model_args}",
-  "{prompt_file}",
+  "{prompt_stdin}",
 ]
 fix_only_argv = [
   "-p",
@@ -62,7 +64,7 @@ fix_only_argv = [
   "--settings",
   '{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}',
   "{model_args}",
-  "{prompt_file}",
+  "{prompt_stdin}",
 ]
 # Story 84.1 (CAP-285): Anthropic models API (no listing subcommand on the CLI).
 [model_list]

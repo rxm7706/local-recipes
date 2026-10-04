@@ -136,9 +136,6 @@ class DispatchJournalFacts:
     # when no turn is open, or when the turn never recorded a pid.
     verify_fix_session_pid: int | None = None
     verify_fix_started_at: datetime | None = None
-    # Story 85.3: harness-native session id recorded at dispatch launch (Claude --session-id, Cursor JSON log).
-    harness_session_id: str | None = None
-    launch_harness_profile: str | None = None
 
 
 #: Story 83.1: how far a process's start time may sit from its journaled launch before the pid is judged reused.

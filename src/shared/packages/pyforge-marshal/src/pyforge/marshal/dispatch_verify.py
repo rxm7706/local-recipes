@@ -733,12 +733,9 @@ def _is_zombie(pid: int) -> bool:
 
 
 def dispatch_session_alive(process: ProcessPort, pid: int, *, launched_at: datetime | None) -> bool:
-    """Story 83.1/85.3: original dispatch session liveness with pid-reuse guard."""
-    if not process.is_alive(pid) or _is_zombie(pid):
-        return False
-    if launched_at is None:
-        return True
-    return dispatch_core.pid_start_matches_launch(process.process_start_time(pid), launched_at)
+    """Story 83.1/85.3: the original dispatch session's liveness, with the same zombie and pid-reuse guards as a
+    fix session's -- the tick loop and every CLI reader judge it by this one check."""
+    return fix_session_alive(process, pid, launched_at=launched_at)
 
 
 def fix_session_alive(process: ProcessPort, pid: int, *, launched_at: datetime | None) -> bool:
@@ -792,42 +789,68 @@ def wait_for_process(
         time.sleep(poll_s)
 
 
-def _signal_session_stop(pid: int, sig: int) -> bool:
-    """Send ``sig`` to ``pid``'s process group, or to ``pid`` alone when group signal is unsafe."""
-    if pid <= 1:
-        return False
+def _session_group(pid: int) -> int | None:
+    """``pid``'s process group when signalling the whole group is safe, else ``None``: never a group id ``<= 1``
+    (0 addresses this process's own group -- a kernel thread reports pgid 0 -- and 1 is init's) and never this
+    process's own group, which would stop the supervisor itself (Story 85.2)."""
     try:
         pgid = os.getpgid(pid)
     except OSError:
+        return None
+    if pgid <= 1 or pgid == os.getpgrp():
+        return None
+    return pgid
+
+
+def _signal_session_stop(pid: int, pgid: int | None, sig: int) -> bool:
+    """Send ``sig`` to the session's group ``pgid``, or to ``pid`` alone when there is no safe group."""
+    if pgid is not None:
         try:
-            os.kill(pid, sig)
-        except OSError:
-            return False
-        return True
-    try:
-        if pgid <= 1 or pgid == os.getpgrp():
-            os.kill(pid, sig)
+            os.killpg(pgid, sig)
             return True
-        os.killpg(pgid, sig)
+        except OSError:
+            pass
+    try:
+        os.kill(pid, sig)
+    except OSError:
+        return False
+    return True
+
+
+def _group_has_members(pgid: int) -> bool:
+    try:
+        os.killpg(pgid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
         return True
     except OSError:
-        try:
-            os.kill(pid, sig)
-        except OSError:
-            return False
-        return True
+        return False
+    return True
 
 
 def _try_reap_pid(pid: int) -> tuple[bool, int | None]:
     try:
         reaped, status = os.waitpid(pid, os.WNOHANG)
-    except ChildProcessError:
-        return False, None
     except OSError:
         return False, None
     if reaped == pid:
         return True, os.waitstatus_to_exitcode(status)
     return False, None
+
+
+def _wait_leader_exit(pid: int, proc: ProcessPort, *, deadline: float, poll_s: float) -> tuple[bool, bool, int | None]:
+    """Wait until the leader is reaped (our child) or gone, or ``deadline`` passes: ``(exited, reaped, code)``."""
+    while True:
+        reaped, code = _try_reap_pid(pid)
+        if reaped:
+            return True, True, code
+        if not proc.is_alive(pid) or _is_zombie(pid):
+            reaped, code = _try_reap_pid(pid)
+            return True, reaped, code
+        if time.monotonic() >= deadline:
+            return False, False, None
+        time.sleep(poll_s)
 
 
 def terminate_process_group(
@@ -836,73 +859,33 @@ def terminate_process_group(
     grace_s: float = TERMINATE_GRACE_SECONDS,
     process: ProcessPort | None = None,
 ) -> TerminateProcessGroupResult:
-    """Signal the session leader's process group, wait, SIGKILL, and reap (Story 85.1/85.3).
+    """Stop a fix session's process group: SIGTERM, a bounded wait, SIGKILL, and reap (Story 85.1/85.3).
 
-    Story 85.2: the pid now also comes off a journal a restarted supervisor reads, so a pid that is a process-group
-    address (``<= 0``) or init is never signalled, and a session sharing this process's own group is signalled
-    alone -- ``killpg`` there would stop the supervisor itself. Nor is a group id ``<= 1`` ever passed to
-    ``killpg``: 0 addresses this process's own group (a kernel thread reports pgid 0) and 1 is init's group, so
-    such a pid is signalled alone too."""
+    Story 85.2: the pid also comes off a journal a restarted supervisor reads, so a pid that is a process-group
+    address (``<= 0``) or init is never signalled, and a session whose group is unsafe to signal
+    (``_session_group``) is signalled alone. Story 85.3 (landing review M1): the group id is read BEFORE the
+    SIGTERM, so once the leader has exited -- it may obey SIGTERM while a child ignores it -- any member left in
+    that group is still found (``killpg(pgid, 0)``) and SIGKILLed."""
     if pid <= 1:
         return TerminateProcessGroupResult(signalled_term=False, signalled_kill=False, reaped=False, returncode=None)
-    signalled_term = _signal_session_stop(pid, signal.SIGTERM)
-    deadline = time.monotonic() + grace_s
     proc = process if process is not None else PosixProcess()
-    reaped, code = _try_reap_pid(pid)
-    if reaped:
-        return TerminateProcessGroupResult(
-            signalled_term=signalled_term,
-            signalled_kill=False,
-            reaped=True,
-            returncode=code,
-        )
-    if not proc.is_alive(pid) or _is_zombie(pid):
-        reaped, code = _try_reap_pid(pid)
-        return TerminateProcessGroupResult(
-            signalled_term=signalled_term,
-            signalled_kill=False,
-            reaped=reaped,
-            returncode=code,
-        )
-    while time.monotonic() < deadline:
-        reaped, code = _try_reap_pid(pid)
-        if reaped:
-            return TerminateProcessGroupResult(
-                signalled_term=signalled_term,
-                signalled_kill=False,
-                reaped=True,
-                returncode=code,
-            )
-        if not proc.is_alive(pid) or _is_zombie(pid):
-            reaped, code = _try_reap_pid(pid)
-            return TerminateProcessGroupResult(
-                signalled_term=signalled_term,
-                signalled_kill=False,
-                reaped=reaped,
-                returncode=code,
-            )
-        time.sleep(0.05)
-    signalled_kill = _signal_session_stop(pid, signal.SIGKILL)
-    kill_deadline = time.monotonic() + grace_s
-    while time.monotonic() < kill_deadline:
-        reaped, code = _try_reap_pid(pid)
-        if reaped:
-            return TerminateProcessGroupResult(
-                signalled_term=signalled_term,
-                signalled_kill=signalled_kill,
-                reaped=True,
-                returncode=code,
-            )
-        if not proc.is_alive(pid) or _is_zombie(pid):
-            reaped, code = _try_reap_pid(pid)
-            return TerminateProcessGroupResult(
-                signalled_term=signalled_term,
-                signalled_kill=signalled_kill,
-                reaped=reaped,
-                returncode=code,
-            )
-        time.sleep(0.1)
-    reaped, code = _try_reap_pid(pid)
+    pgid = _session_group(pid)
+    signalled_term = _signal_session_stop(pid, pgid, signal.SIGTERM)
+    exited, reaped, code = _wait_leader_exit(pid, proc, deadline=time.monotonic() + grace_s, poll_s=0.05)
+    signalled_kill = False
+    if not exited:
+        signalled_kill = _signal_session_stop(pid, pgid, signal.SIGKILL)
+        exited, reaped, code = _wait_leader_exit(pid, proc, deadline=time.monotonic() + grace_s, poll_s=0.1)
+    if not reaped:
+        reaped, late_code = _try_reap_pid(pid)
+        code = late_code if reaped else code
+    if pgid is not None and _group_has_members(pgid):
+        # The leader is gone but its group is not: a member that ignored SIGTERM outlives it.
+        try:
+            os.killpg(pgid, signal.SIGKILL)
+            signalled_kill = True
+        except OSError:
+            pass
     return TerminateProcessGroupResult(
         signalled_term=signalled_term,
         signalled_kill=signalled_kill,

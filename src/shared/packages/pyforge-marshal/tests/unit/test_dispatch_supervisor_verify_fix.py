@@ -514,6 +514,7 @@ def _finalize_with(
     *,
     process: object,
     journal_lines: tuple[str, ...],
+    publish_heartbeat=None,
 ):
     """``loop._finalize`` with the process port chosen by the test -- a real one for a real detached session."""
     run_dir = loop._run_dir(repo_root)
@@ -535,6 +536,7 @@ def _finalize_with(
         session_log="implementation done",
         merge_subject_template=loop._TEMPLATE,
         folded=folded,
+        publish_heartbeat=publish_heartbeat,
     )
 
 
@@ -1233,11 +1235,12 @@ _FIX_STARTED = datetime(2026, 10, 3, 10, 0, tzinfo=timezone.utc)
         ("reused", True, _FIX_STARTED - timedelta(hours=6), True),
     ],
 )
-def test_a_fix_turn_in_flight_reads_live_only_while_its_own_session_runs(
+def test_an_open_fix_turn_reads_live_to_every_reader_until_a_supervisor_settles_it(
     tmp_path: Path, case: str, alive: bool, started: datetime, live: bool
 ) -> None:
-    """Review M2 + Story 85.3: an open fix-turn INTENT reads LIVE while its session runs, and after it exits so
-    the operator can resume the supervisor and settle the turn."""
+    """Review M2 + Story 85.3: an open fix-turn INTENT reads LIVE to `dispatch status` and the in-flight guard
+    while its session runs, and after it exited (or its pid was reused) -- only a supervisor settles the turn, so
+    resume re-spawns one and no second dispatch takes the story meanwhile."""
     from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
 
     repo_root = loop._repo(tmp_path)
@@ -1248,8 +1251,7 @@ def test_a_fix_turn_in_flight_reads_live_only_while_its_own_session_runs(
 
     assert (journal.verify_fix_session_pid, journal.verify_fix_started_at) == (77123, _FIX_STARTED)
     assert (verdict is DispatchSessionVerdict.LIVE) is live, case
-    if case == "live":
-        assert bool(guard) is live, case
+    assert bool(guard) is live, case
 
 
 def test_a_closed_fix_turn_is_no_longer_in_flight(tmp_path: Path) -> None:
@@ -1321,3 +1323,403 @@ def test_without_sidecar_resolver_the_long_tail_fix_turn_never_launches(
     _finalize(fs, repo_root, worktree)
 
     assert calls == []
+
+
+# --------------------------------------------------------------------------
+# Story 85.3 landing review — the session a fix turn resumes, the publisher heartbeat, redaction at the journal,
+# resume after a dead supervisor, `marshal status`, and the tick loop's start-time check
+# --------------------------------------------------------------------------
+
+
+def _launch_outcome(*, profile: str = "claude", session_id: str | None = "sid-85-3") -> str:
+    payload: dict[str, object] = {"ok": True, "session_pid": loop._SESSION_PID, "harness_profile": profile}
+    if session_id is not None:
+        payload["harness_session_id"] = session_id
+    return loop._line(
+        kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+        phase=Phase.OUTCOME,
+        payload=payload,
+        counter=1,
+        intent_id=JournalEntryId("dispatch-launcher-1", 0),
+    )
+
+
+class _ResumableSpec:
+    resume_argv = ("--resume", "{session_id}", "{prompt_stdin}")
+
+
+class _Resolved:
+    def __init__(self, profile: str) -> None:
+        self.profile = profile
+        self.spec = _ResumableSpec()
+        self.binary_path = f"/bin/{profile}"
+
+
+def _record_fix_launches(monkeypatch: pytest.MonkeyPatch, vcs: _FixTurnVcs, *, resolved: str) -> list[dict]:
+    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+
+    launches: list[dict] = []
+
+    def _launch(*_a: object, **kwargs: object) -> _Launch:
+        launches.append(kwargs)
+        vcs.dirty = True
+        return _Launch(88001)
+
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "binary_present", lambda *_a, **_k: _Resolved(resolved))
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", _launch)
+    monkeypatch.setattr(supervisor_main, "wait_for_process", lambda *_a, **_k: ProcessWaitResult(True, 0))
+    return launches
+
+
+@pytest.mark.parametrize(
+    ("resolved", "session_id", "mode", "passed_id"),
+    [
+        ("claude", "sid-85-3", "resume", "sid-85-3"),
+        ("cursor", "sid-85-3", "fix_only", "sid-85-3"),
+        ("claude", None, "fix_only", ""),
+    ],
+    ids=["same-profile-resumes", "other-profile-fix-only", "no-recorded-id-fix-only"],
+)
+def test_a_fix_turn_resumes_the_recorded_session_only_with_the_launch_profiles_own_harness(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, resolved: str, session_id: str | None, mode: str, passed_id: str
+) -> None:
+    """AC6 / review M2 (mutants M13, M18): the launch journaled a session id under `claude`; the fix turn resumes
+    it only when the resolved harness is that same profile, and is fix-only otherwise."""
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _record_fix_launches(monkeypatch, vcs, resolved=resolved)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+
+    _finalize_with(
+        fs,
+        vcs,
+        repo_root,
+        worktree,
+        process=loop.FakeProcess(),
+        journal_lines=(_launch_outcome(session_id=session_id),),
+    )
+
+    assert len(launches) == 1
+    assert launches[0]["launch_mode"] == mode
+    assert launches[0]["harness_session_id"] == passed_id
+    intent = next(entry for entry in _verify_fix_entries(fs) if entry["phase"] == "intent")
+    assert intent["payload"]["launch_mode"] == mode
+
+
+def _publisher_events(events: list[tuple]):
+    return lambda: events.append(("publish",))
+
+
+def test_the_publisher_heartbeat_runs_during_a_new_fix_turns_wait(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC5 / review M2 (mutant M14): the run publisher's heartbeat is called while the fix session is waited on."""
+    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+
+    def _wait(*_a: object, on_poll=None, **_k: object) -> ProcessWaitResult:
+        events.append(("wait-start",))
+        on_poll()
+        events.append(("wait-end",))
+        return ProcessWaitResult(exited=True, returncode=0)
+
+    monkeypatch.setattr(supervisor_main, "wait_for_process", _wait)
+    fs = loop.FakeFs()
+
+    _finalize_with(
+        fs,
+        vcs,
+        repo_root,
+        worktree,
+        process=loop.FakeProcess(),
+        journal_lines=(),
+        publish_heartbeat=_publisher_events(events),
+    )
+
+    start, end = events.index(("wait-start",)), events.index(("wait-end",))
+    assert ("publish",) in events[start:end]
+
+
+def test_the_publisher_heartbeat_runs_while_a_restarted_supervisor_settles_an_in_flight_turn(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC5 / review M2 (mutant M19): finalize hands the heartbeat to the turn it settles after a restart."""
+    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    _scripted_verification(monkeypatch, events, loop._clean_envelope())
+
+    def _wait(*_a: object, on_poll=None, **_k: object) -> ProcessWaitResult:
+        events.append(("wait-start",))
+        on_poll()
+        events.append(("wait-end",))
+        return ProcessWaitResult(exited=True, returncode=None)
+
+    monkeypatch.setattr(supervisor_main, "wait_for_process", _wait)
+    fs = loop.FakeFs()
+
+    _finalize_with(
+        fs,
+        vcs,
+        repo_root,
+        worktree,
+        process=loop.FakeProcess(),
+        journal_lines=(*_journaled_refusal_with_failed_commands(), *_fix_intent_lines(77123, started_at=_now())),
+        publish_heartbeat=_publisher_events(events),
+    )
+
+    start, end = events.index(("wait-start",)), events.index(("wait-end",))
+    assert ("publish",) in events[start:end]
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def test_the_fix_turn_publisher_heartbeat_is_throttled_and_never_overlaps(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review LOW: one publisher call per interval at most, made under one lock."""
+    clock = {"now": 100.0}
+    monkeypatch.setattr(supervisor_main.time, "monotonic", lambda: clock["now"])
+    calls: list[float] = []
+    beat = supervisor_main._FixTurnPublisherHeartbeat(lambda: calls.append(clock["now"]))
+
+    for step in (0.0, 1.0, 29.0, 30.5, 31.0, 61.0):
+        clock["now"] = 100.0 + step
+        beat()
+
+    assert calls == [100.0, 130.5, 161.0]
+    assert supervisor_main._FIX_TURN_PUBLISH_INTERVAL_S == 30.0
+    assert beat._lock.acquire(blocking=False)
+    beat._lock.release()
+
+
+def test_the_reverification_heartbeats_from_a_progress_thread_while_it_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC5 / review M2 (mutant M15): a long re-verification calls ``on_progress`` while it runs -- asserted on the
+    calls themselves -- and the thread is done before the verification returns."""
+    import threading
+
+    repo_root = loop._repo(tmp_path)
+    worktree = loop._worktree(repo_root)
+    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
+    monkeypatch.setattr(supervisor_main, "_FIX_TURN_PUBLISH_INTERVAL_S", 0.01)
+    beats: list[str] = []
+
+    def _slow_verification(**_k: object):
+        deadline = time.monotonic() + 5.0
+        while len(beats) < 3 and time.monotonic() < deadline:
+            time.sleep(0.01)
+        return loop._clean_envelope()
+
+    monkeypatch.setattr(supervisor_main, "evaluate_dispatch_verification", _slow_verification)
+    before = threading.active_count()
+
+    supervisor_main._run_and_journal_verification(
+        fs=loop.FakeFs(),
+        vcs=loop.FakeVcs(),
+        process=loop.FakeProcess(),
+        run_dir=loop._run_dir(repo_root),
+        run_id=loop._RUN_ID,
+        writer_id="dispatch-supervisor-1",
+        counter=0,
+        repo_root=repo_root,
+        slug=loop._SLUG,
+        story_key=loop._STORY_KEY,
+        worktree=worktree,
+        on_progress=lambda: beats.append("beat"),
+    )
+
+    assert len(beats) >= 3
+    assert threading.active_count() == before
+    settled = len(beats)
+    time.sleep(0.05)
+    assert len(beats) == settled, "the progress thread outlived the verification"
+
+
+def test_the_journaled_output_tail_is_redacted_before_it_is_cut(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC1 / review M2 (mutant M02): the verification OUTCOME's ``output_tail`` -- cut at the policy's byte bound
+    inside a URL credential -- carries no fragment of it."""
+    from pyforge.marshal.core.dispatch_verify_fix import tail_bytes
+    from pyforge.marshal.core.policy import DEFAULT_POLICY
+
+    bound = int(DEFAULT_POLICY["dispatch"]["verify_fix_output_tail_bytes"])
+    after_cut = "persecretpw@db/x\n"
+    raw = "x" * 300 + " postgres://admin:supersecretpw@db/x\n" + "y" * (bound - len(after_cut))
+    assert tail_bytes(raw, max_bytes=bound).startswith("persecretpw"), "the cut must fall inside the credential"
+    repo_root = loop._repo(tmp_path)
+    _seed_flag(repo_root, on=True)
+    worktree = loop._worktree(repo_root)
+    monkeypatch.setattr(supervisor_main, "evaluate_dispatch_verification", lambda **_k: _refused_with_output(raw))
+    fs = loop.FakeFs()
+
+    loop._verify(fs, repo_root, worktree)
+
+    written = [line for _path, line, _fsync in fs.appended] + [str(text) for text in fs.files.values()]
+    assert any("output_tail" in text for text in written)
+    assert not any("secretpw" in text for text in written)
+
+
+class _ResumeVcs(loop.FakeVcs):
+    def __init__(self, repo_root: Path, **kwargs: object) -> None:
+        super().__init__(**kwargs)
+        self._repo_root = repo_root
+
+    def repo_common_root(self, _cwd: Path) -> Path:
+        return self._repo_root
+
+
+class _AllDead:
+    """No pid is alive -- the story session, its supervisor and the fix session all exited."""
+
+    def __init__(self) -> None:
+        self.spawned: list[list[str]] = []
+
+    def is_alive(self, _pid: int) -> bool:
+        return False
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return None
+
+    def spawn_detached(self, argv, *, cwd: Path, log_path: Path) -> int:
+        self.spawned.append(list(argv))
+        return 9001
+
+
+def _dead_supervisor_run(repo_root: Path, worktree: Path) -> Path:
+    from pyforge.marshal.core.journal import JournalEntryId as _Id
+
+    launch = build_entry(
+        id=_Id("dispatch-launcher-1", 0),
+        ts="2026-10-03T09:00:00.000Z",
+        run_id=loop._RUN_ID,
+        kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+        phase=Phase.INTENT,
+        payload={"story_key": loop._STORY_KEY, "worktree_path": str(worktree), "baseline_head_sha": loop._BASELINE},
+    )
+    outcome = build_entry(
+        id=_Id("dispatch-launcher-1", 1),
+        ts="2026-10-03T09:00:01.000Z",
+        run_id=loop._RUN_ID,
+        kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+        phase=Phase.OUTCOME,
+        intent_id=launch.id,
+        payload={"ok": True, "session_pid": loop._SESSION_PID, "supervisor_pid": 99},
+    )
+    run_dir = loop._run_dir(repo_root)
+    loop._seed_journal(
+        run_dir,
+        (
+            prepare_for_write(launch).line,
+            prepare_for_write(outcome).line,
+            *_fix_intent_lines(77123, started_at=_FIX_STARTED),
+        ),
+    )
+    return run_dir
+
+
+def test_resume_respawns_the_supervisor_for_a_fix_turn_whose_session_exited_unsupervised(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AC3 / review M2: the fix session exited while no supervisor was alive. `dispatch resume` does not refuse
+    MRS-DISP-023 -- it re-spawns the supervisor, which settles the open INTENT (commit + re-verify)."""
+    import argparse
+
+    from pyforge.marshal.adapters.fs_local import LocalFs
+    from pyforge.marshal.cli import dispatch as cli
+    from pyforge.marshal.core.verdict import EXIT_OK
+
+    repo_root = loop._repo(tmp_path)
+    worktree = loop._worktree(repo_root)
+    _dead_supervisor_run(repo_root, worktree)
+    process = _AllDead()
+
+    code = cli.run_dispatch_resume(
+        argparse.Namespace(slug=loop._SLUG, format="json"),
+        fs=LocalFs(),
+        vcs=_ResumeVcs(repo_root),
+        process=process,
+    )
+
+    payload = json.loads(capsys.readouterr().out)
+    assert code == EXIT_OK, payload
+    assert not [f for f in payload["findings"] if f["code"] == "MRS-DISP-023"]
+    assert payload["data"]["completion_verdict"] == "live"
+    assert len(process.spawned) == 1
+    assert "pyforge.marshal.dispatch_supervisor" in process.spawned[0]
+
+
+def test_marshal_status_and_dispatch_status_agree_on_an_open_fix_turn(tmp_path: Path) -> None:
+    """Review M3: `marshal status` resolves the run without a run dir; it reads the open INTENT LIVE all the same."""
+    from pyforge.marshal.adapters.fs_local import LocalFs
+    from pyforge.marshal.cli import status as status_cli
+    from pyforge.marshal.core import status as status_core
+    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
+
+    class _Clock:
+        def now(self) -> datetime:
+            return _FIX_STARTED + timedelta(minutes=5)
+
+    repo_root = loop._repo(tmp_path)
+    worktree = loop._worktree(repo_root)
+    run_dir = _cli_run(repo_root, worktree, _fix_intent_lines(77123, started_at=_FIX_STARTED))
+    process = _ProcessAt(77123, alive=False, started=None)
+
+    _journal, verdict, guard = _cli_verdict(repo_root, run_dir, process)
+    facts = status_cli._merge_dispatch_overlay(
+        fs=LocalFs(),
+        process=process,
+        clock=_Clock(),
+        vcs=loop.FakeVcs(),
+        repo_root=repo_root,
+        slug=loop._SLUG,
+        facts=status_core.FleetHomeFacts(slug=loop._SLUG, branch=f"loop/{loop._SLUG}", has_run=False),
+    )
+
+    assert verdict is DispatchSessionVerdict.LIVE
+    assert facts.dispatch_completion_verdict == DispatchSessionVerdict.LIVE.value
+    assert guard == (loop._STORY_KEY,)
+
+
+class _ReusedSessionPid(loop.FakeProcess):
+    """The story session's pid is alive -- but its process started hours before the launch: a reused pid."""
+
+    def __init__(self) -> None:
+        super().__init__(alive=True)
+
+    def process_start_time(self, _pid: int) -> float | None:
+        return datetime(2026, 9, 20, 4, 0, tzinfo=timezone.utc).timestamp()
+
+
+def test_the_tick_loop_reads_a_reused_session_pid_as_dead(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AC4 / review M2 (mutant M11): a reused pid is not the session -- the loop finalizes and lands instead of
+    checkpointing a tree it believes is still being edited."""
+    monkeypatch.setattr(supervisor_main, "time", loop._FakeClock(mono_step=float(supervisor_main._TICK_SECONDS)))
+    repo_root = loop._repo(tmp_path)
+    _seed_flag(repo_root, on=False)
+    run_dir = loop._run_dir(repo_root)
+    worktree = loop._worktree(repo_root)
+    loop._seed_journal(run_dir, (loop._launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
+    loop._patch_verification(monkeypatch, loop._clean_envelope)
+    land_calls = loop._patch_landing(monkeypatch)
+    branch = dispatch_core.dispatch_worktree_branch(loop._SLUG, loop._STORY_KEY)
+    vcs = loop.FakeVcs(branches=frozenset({branch}), head_sha=loop._MOVED, dirty=True)
+
+    code = loop._run(repo_root, fs=loop.FakeFs(), vcs=vcs, process=_ReusedSessionPid(), publisher=loop.FakePublisher())
+
+    assert code == 0
+    assert len(land_calls) == 1
+    assert not any("auto-checkpoint" in message for _root, _paths, message in vcs.commits)

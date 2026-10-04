@@ -131,6 +131,10 @@ _BLOCKED_TWIN_PUBLISH_KIND = "dispatch-blocked-twin-publish"
 _SESSION_LOG_FILENAME = "session.log"
 _TICK_SECONDS = 60
 _FETCH_EVERY_N_TICKS = 5
+#: Story 85.3: how often a fix turn calls the run publisher's heartbeat at most (the portal marks a run
+#: `heartbeat_lost` after 300 s), and how often the progress thread does during the turn's re-verification. The
+#: journal heartbeat keeps the tick rate.
+_FIX_TURN_PUBLISH_INTERVAL_S = 30.0
 _BASE_REF = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
 
 
@@ -1007,6 +1011,27 @@ def _failed_commands_from_verification_journal(
     return ()
 
 
+class _FixTurnPublisherHeartbeat:
+    """The run publisher's heartbeat during a fix turn (Story 85.3): at most one call per ``interval_s`` -- the
+    wait polls every second, the publisher needs one call well inside the portal's 300 s -- and every call, from
+    the supervisor's thread or the re-verification's progress thread, made under one lock, so two publisher calls
+    never overlap."""
+
+    def __init__(self, publish: Callable[[], None], *, interval_s: float | None = None) -> None:
+        self._publish = publish
+        self._interval_s = _FIX_TURN_PUBLISH_INTERVAL_S if interval_s is None else interval_s
+        self._lock = threading.Lock()
+        self._last: float | None = None
+
+    def __call__(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            if self._last is not None and now - self._last < self._interval_s:
+                return
+            self._last = now
+            self._publish()
+
+
 @dataclass(frozen=True)
 class _FixTurnResult:
     """What one pass of ``_maybe_run_verify_fix_turn`` did (Story 85.2).
@@ -1090,6 +1115,8 @@ def _maybe_run_verify_fix_turn(
     INTENT's UTC timestamp) and stopped once that is spent; with the flag off it is only stopped, journaled and
     parked -- never committed, re-verified or landed. An INTENT that never recorded a pid is closed."""
     v_outcome = _verification_outcome_verdict(folded, run_id)
+    if publish_heartbeat is not None:
+        publish_heartbeat = _FixTurnPublisherHeartbeat(publish_heartbeat)
     flag_enabled, flag_warning = verify_fix_loop_enabled(repo_root=repo_root)
     if flag_warning is not None:
         warn_entry = build_entry(
@@ -1218,7 +1245,7 @@ def _maybe_run_verify_fix_turn(
             resume_argv=resolution.spec.resume_argv if resolution.spec else None,
             harness_session_id=harness_session_id,
             launch_profile=profile_name,
-            resolved_profile=getattr(resolution, "profile", None),
+            resolved_profile=resolution.profile,
         )
         fix_log = run_dir / "verify-fix.log"
         started_at = _now_utc()
@@ -2112,15 +2139,16 @@ def _run_and_journal_verification(
         return counter
     story_key_obj = resolution.resolved[0]
     spec_text = resolve_spec_text_for_story(repo_root, slug, story_key_obj)
-    progress_stop: threading.Event | None = None
+    # Story 85.3: a fix turn's re-verification can outlast the portal's 300 s, so ``on_progress`` (the turn's
+    # throttled, lock-serialized publisher heartbeat) is called from a progress thread while it runs.
+    progress_stop = threading.Event()
     progress_thread: threading.Thread | None = None
     if on_progress is not None:
-        progress_stop = threading.Event()
+        progress = on_progress
 
         def _verification_progress() -> None:
-            assert progress_stop is not None
-            while not progress_stop.wait(30.0):
-                on_progress()
+            while not progress_stop.wait(_FIX_TURN_PUBLISH_INTERVAL_S):
+                progress()
 
         progress_thread = threading.Thread(target=_verification_progress, daemon=True)
         progress_thread.start()
@@ -2137,10 +2165,11 @@ def _run_and_journal_verification(
             committing_vcs=vcs,
         )
     finally:
-        if progress_stop is not None:
-            progress_stop.set()
-        if progress_thread is not None:
-            progress_thread.join(timeout=1.0)
+        progress_stop.set()
+        if progress_thread is not None and progress_thread.is_alive():
+            # The stop event ends the loop at once; the join only waits out a heartbeat already in flight, so no
+            # publisher call of this thread can overlap the supervisor's next one.
+            progress_thread.join()
     verification_verdict = judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
     failed = primary_gate_failure(envelope.findings)
     # Story 85.1 (spec-pyforge-marshal:CAP-286, dormant): the failed commands

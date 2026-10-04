@@ -20,18 +20,8 @@ authcheck_ok_pattern = "Logged in as"
 verified = true
 notes = "Overlay 2026-09-02: packaged shape plus --force so drain sessions do not wait on Smart Mode."
 
-# Story 85.3: fix turn uses prompt file on disk, not argv text.
-resume_argv = [
-  "-p",
-  "--trust",
-  "--force",
-  "--workspace",
-  "{worktree}",
-  "--resume",
-  "{session_id}",
-  "{model_args}",
-  "{prompt_file}",
-]
+# Story 85.3: fix-only, prompt on stdin (`{prompt_stdin}`), never argv -- the packaged profile's shape plus
+# `--force`. No `resume_argv`: the launch records no Cursor session id to resume (see the packaged profile).
 fix_only_argv = [
   "-p",
   "--trust",
@@ -39,5 +29,5 @@ fix_only_argv = [
   "--workspace",
   "{worktree}",
   "{model_args}",
-  "{prompt_file}",
+  "{prompt_stdin}",
 ]

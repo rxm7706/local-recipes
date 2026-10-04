@@ -135,7 +135,12 @@ OVERLAY_RELPATH = "_bmad-output/harness-profiles"
 #: is required exactly once; ``{model_args}`` must be a WHOLE token (it
 #: expands to zero or more tokens, which no substring position could).
 _PROMPT_TOKEN = "{prompt}"
+#: Story 85.3: a fix turn's prompt never travels on argv. A fix template (``resume_argv`` / ``fix_only_argv``)
+#: declares how it reaches the CLI instead: ``{prompt_stdin}`` -- a whole token that renders to nothing, the
+#: launch feeding the 0600 prompt file on stdin -- or ``{prompt_file}``, the prompt file's absolute path (for a
+#: CLI that reads no stdin, inside a fixed instruction naming the file).
 _PROMPT_FILE_TOKEN = "{prompt_file}"
+_PROMPT_STDIN_TOKEN = "{prompt_stdin}"
 _MODEL_ARGS_TOKEN = "{model_args}"
 _WORKTREE_TOKEN = "{worktree}"
 _WIRE_PORT_TOKEN = "{wire_port}"
@@ -532,6 +537,8 @@ def parse_wrapper(data: Mapping[str, object], *, source: str) -> HarnessWrapper:
     for token in argv:
         for placeholder in (
             _PROMPT_TOKEN,
+            _PROMPT_FILE_TOKEN,
+            _PROMPT_STDIN_TOKEN,
             _MODEL_ARGS_TOKEN,
             _WORKTREE_TOKEN,
             _MODEL_TOKEN,
@@ -607,6 +614,11 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
         raise HarnessProfileError(f"{source}: 'argv' must be a non-empty list")
     if argv.count(_PROMPT_TOKEN) != 1:
         raise HarnessProfileError(f"{source}: 'argv' must contain the {_PROMPT_TOKEN!r} token exactly once")
+    for fix_form in (_PROMPT_FILE_TOKEN, _PROMPT_STDIN_TOKEN):
+        if any(fix_form in token for token in argv):
+            raise HarnessProfileError(
+                f"{source}: 'argv' must not carry {fix_form!r} -- a fix-turn template's form only"
+            )
     if argv.count(_MODEL_ARGS_TOKEN) > 1:
         raise HarnessProfileError(f"{source}: 'argv' may contain the {_MODEL_ARGS_TOKEN!r} token at most once")
     for token in argv:
@@ -672,14 +684,22 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
     for label, template in (("resume_argv", resume_argv), ("fix_only_argv", fix_only_argv)):
         if not template:
             continue
-        prompt_tokens = template.count(_PROMPT_TOKEN) + template.count(_PROMPT_FILE_TOKEN)
-        if prompt_tokens != 1:
+        if any(_PROMPT_TOKEN in token for token in template):
             raise HarnessProfileError(
-                f"{source}: {label!r} must contain {_PROMPT_TOKEN!r} or {_PROMPT_FILE_TOKEN!r} "
-                "exactly once when declared"
+                f"{source}: {label!r} must not carry {_PROMPT_TOKEN!r} -- a fix turn's prompt never travels on argv; "
+                f"declare {_PROMPT_STDIN_TOKEN!r} or {_PROMPT_FILE_TOKEN!r} (Story 85.3)"
             )
-        if _PROMPT_TOKEN in template and _PROMPT_FILE_TOKEN in template:
-            raise HarnessProfileError(f"{source}: {label!r} must not mix {_PROMPT_TOKEN!r} and {_PROMPT_FILE_TOKEN!r}")
+        for token in template:
+            if _PROMPT_STDIN_TOKEN in token and token != _PROMPT_STDIN_TOKEN:
+                raise HarnessProfileError(
+                    f"{source}: {_PROMPT_STDIN_TOKEN!r} must be a whole {label!r} token, found embedded in {token!r}"
+                )
+        forms = sum(token.count(_PROMPT_STDIN_TOKEN) + token.count(_PROMPT_FILE_TOKEN) for token in template)
+        if forms != 1:
+            raise HarnessProfileError(
+                f"{source}: {label!r} must declare its prompt form exactly once -- {_PROMPT_STDIN_TOKEN!r} or "
+                f"{_PROMPT_FILE_TOKEN!r}"
+            )
 
     return HarnessProfile(
         name=name,
@@ -960,6 +980,8 @@ def _render_profile_argv_template(
     else:
         argv = [binary_path]
     for token in template:
+        if token == _PROMPT_STDIN_TOKEN:
+            continue
         if token == _MODEL_ARGS_TOKEN:
             if rendered_model is None:
                 continue
@@ -969,29 +991,42 @@ def _render_profile_argv_template(
     return tuple(argv), rendered_model, omitted_reason
 
 
+def _verify_fix_template(profile: HarnessProfile, *, mode: str) -> tuple[str, ...]:
+    if mode == "resume" and profile.resume_argv:
+        return profile.resume_argv
+    if profile.fix_only_argv:
+        return profile.fix_only_argv
+    raise HarnessProfileError(
+        f"harness profile {profile.name!r} declares no fix-turn template with a stdin or file prompt form "
+        "(`fix_only_argv`), so no fix turn can launch without putting the prompt on argv (Story 85.3)"
+    )
+
+
+def verify_fix_prompt_on_stdin(profile: HarnessProfile, *, mode: str) -> bool:
+    """Whether the fix template ``mode`` selects takes its prompt on stdin (``{prompt_stdin}``) rather than as a
+    file path (``{prompt_file}``). Raises ``HarnessProfileError`` naming the profile when it declares no fix
+    template -- the launch template's ``{prompt}`` is argv, which a fix turn never uses (Story 85.3)."""
+    return _PROMPT_STDIN_TOKEN in _verify_fix_template(profile, mode=mode)
+
+
 def render_verify_fix_argv(
     profile: HarnessProfile,
     *,
     mode: str,
     binary_path: str,
     worktree: Path,
-    prompt: str,
     model: str | None,
     wire: WireWrap | None = None,
     wire_port: int | None = None,
     session_id: str = "",
     prompt_file: str = "",
 ) -> tuple[tuple[str, ...], str | None, str | None]:
-    """Render argv for a verification fix turn (Story 85.1, AD-19)."""
-    if mode == "resume" and profile.resume_argv:
-        template = profile.resume_argv
-    elif profile.fix_only_argv:
-        template = profile.fix_only_argv
-    else:
-        template = profile.argv
+    """Render argv for a verification fix turn (Story 85.1, AD-19). The prompt is never an input here: it
+    reaches the CLI on stdin or through ``prompt_file`` (Story 85.3), so it cannot land on argv. Raises
+    ``HarnessProfileError`` naming the profile when it declares no fix template."""
     return _render_profile_argv_template(
         profile,
-        template,
+        _verify_fix_template(profile, mode=mode),
         binary_path=binary_path,
         worktree=worktree,
         prompt="",

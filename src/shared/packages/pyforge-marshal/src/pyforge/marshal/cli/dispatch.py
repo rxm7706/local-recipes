@@ -102,7 +102,7 @@ from ..core.dispatch_verification import (
     DispatchVerificationVerdict,
     judge_dispatch_verification,
 )
-from ..core.dispatch_verify_fix import in_flight_verify_fix_turn, pending_verify_fix_intent
+from ..core.dispatch_verify_fix import in_flight_verify_fix_turn
 from ..core.identity import (
     MalformedStoryKeyError,
     StoryKey,
@@ -136,7 +136,7 @@ from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_
 from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
-from ..dispatch_verify import evaluate_dispatch_verification, fix_session_alive, run_dispatch_ruff_format_before_verify
+from ..dispatch_verify import evaluate_dispatch_verification, run_dispatch_ruff_format_before_verify
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -1338,8 +1338,6 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     model: str | None = None
     worktree_path: str | None = None
     launched_at: datetime | None = None
-    harness_session_id: str | None = None
-    launch_harness_profile: str | None = None
     baseline_head_sha: str | None = None
     followup_review: FollowupReview | None = None
     supervisor_pid: int | None = None
@@ -1372,12 +1370,6 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
                 session_pid = pid_val
             elif isinstance(pid_val, str) and pid_val.isdigit():
                 session_pid = int(pid_val)
-            raw_hsid = entry.payload.get("harness_session_id")
-            if isinstance(raw_hsid, str) and raw_hsid.strip():
-                harness_session_id = raw_hsid.strip()
-            raw_launch_profile = entry.payload.get("harness_profile")
-            if isinstance(raw_launch_profile, str):
-                launch_harness_profile = raw_launch_profile
             sup_val = entry.payload.get("supervisor_pid")
             if isinstance(sup_val, int):
                 supervisor_pid = sup_val
@@ -1452,14 +1444,6 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         baseline_revision = baseline_head_sha
     if story_started_at is None and launched_at is not None:
         story_started_at = _format_entry_ts(launched_at)
-    if harness_session_id is None and launch_harness_profile == "cursor":
-        from ..core.harness_session import parse_harness_session_id_from_log
-
-        session_log = fs.read_text(run_dir / _LOG_FILENAME)
-        harness_session_id = parse_harness_session_id_from_log(
-            profile="cursor",
-            log_text=session_log,
-        )
     # Story 85.2 (CAP-286): a verification fix turn still in flight, so every reader of these facts -- `dispatch
     # status`, the in-flight guard, `marshal status` -- can read it LIVE (`resolve_dispatch_session_verdict`).
     in_flight_fix = in_flight_verify_fix_turn(folded, run_id)
@@ -1487,8 +1471,6 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         preserve_ref=preserve_ref,
         verify_fix_session_pid=in_flight_fix.session_pid if in_flight_fix is not None else None,
         verify_fix_started_at=in_flight_fix.started_at if in_flight_fix is not None else None,
-        harness_session_id=harness_session_id,
-        launch_harness_profile=launch_harness_profile,
     )
 
 
@@ -1532,22 +1514,13 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
-    # Story 85.2/85.3 (CAP-286): an open fix-turn INTENT reads LIVE -- while its session runs, or after it exited
-    # so the operator can resume the supervisor and settle the turn (commit + re-verify).
-    if journal.verify_fix_session_pid is not None and fix_session_alive(
-        process, journal.verify_fix_session_pid, launched_at=journal.verify_fix_started_at
-    ):
+    # Story 85.2/85.3 (CAP-286): an open fix-turn INTENT is LIVE work to every reader -- `dispatch status`,
+    # `marshal status`, the in-flight guard, resume -- while its session runs and after it exited: only a
+    # supervisor settles the turn (commit + re-verify, or stop and park), so resume must re-spawn one rather than
+    # refuse MRS-DISP-023, and no second dispatch may take the story meanwhile. Keyed on the journal facts alone
+    # (`verify_fix_started_at` is set exactly while an INTENT is open), so every caller reads it the same way.
+    if journal.verify_fix_started_at is not None:
         return DispatchSessionVerdict.LIVE
-    if run_dir is not None:
-        journal_text = fs.read_text(run_dir / _JOURNAL_FILENAME)
-        if journal_text is not None:
-            sidecars = sidecar_texts_for_lines(
-                journal_text.splitlines(),
-                read_sidecar=lambda ref: fs.read_text(run_dir / ref),
-            )
-            folded_run = fold(journal_text.splitlines(), sidecars=sidecars)
-            if pending_verify_fix_intent(folded_run, run_dir.name) is not None:
-                return DispatchSessionVerdict.LIVE
     session_alive = _is_dispatch_session_alive(process, journal)
     if journal.baseline_head_sha is None:
         return DispatchSessionVerdict.LIVE if session_alive else None
@@ -3145,6 +3118,8 @@ def dispatch_once(
 
     log_path = run_dir / _LOG_FILENAME
     data["log"] = str(log_path)
+    # Story 85.3: a harness-native session id the profile's launch argv may pin (`{session_id}`, Claude's
+    # `--session-id`); it is journaled -- and a fix turn may resume it -- only when the launch really carried it.
     harness_session_id = str(uuid.uuid4())
     try:
         launch = build_harness.dispatch(
@@ -3217,6 +3192,11 @@ def dispatch_once(
                 message=wire.reason,
             )
         )
+    launch_session_id = (
+        {"harness_session_id": harness_session_id}
+        if any(harness_session_id in token for token in launch.command)
+        else {}
+    )
     outcome_entry = build_entry(
         id=JournalEntryId(writer_id, 1),
         ts=_format_entry_ts(_now_utc()),
@@ -3230,7 +3210,7 @@ def dispatch_once(
             "model": launch.model,
             "budget_env": dict(launch.budget_env),
             "harness_profile": launch.profile,
-            "harness_session_id": harness_session_id,
+            **launch_session_id,
             # A fresh dict per call (never the one already in `data`), so
             # the journal payload and the echoed envelope can never alias.
             "wire": wire.journal_payload(),

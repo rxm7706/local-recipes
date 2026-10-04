@@ -42,24 +42,18 @@ authcheck_ok_pattern = "Logged in as"
 verified = true
 notes = "Verified 2026-08-27: authenticated, smoke-tested --trust -p shape; binary corrected cursor->cursor-agent."
 
-# Story 85.1 (CAP-286): verification fix turn — resume prior session in the same workspace.
-resume_argv = [
-  "-p",
-  "--trust",
-  "--workspace",
-  "{worktree}",
-  "--resume",
-  "{session_id}",
-  "{model_args}",
-  "{prompt_file}",
-]
+# Story 85.1 (CAP-286): verification fix turn. Story 85.3: fix-only, prompt on stdin (`{prompt_stdin}`: the
+# launch feeds the 0600 prompt file), never argv -- verified live 2026-10-04 on cursor-agent 2026.10.01:
+# `cursor-agent -p --trust --workspace <dir> < prompt` reads the prompt from stdin. No `resume_argv`: the CLI
+# can resume a chat (`--resume <chatId>` with a stdin prompt also verified that day), but it has no flag to pin
+# the id at launch and the text-mode launch never prints it, so no session id is recorded to resume.
 fix_only_argv = [
   "-p",
   "--trust",
   "--workspace",
   "{worktree}",
   "{model_args}",
-  "{prompt_file}",
+  "{prompt_stdin}",
 ]
 # Story 84.1 (CAP-285): live model-list source for operator-run refresh.
 [model_list]

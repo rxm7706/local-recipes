@@ -32,21 +32,34 @@ _VERIFY_REFUSAL_GATE_PREFIX = "MRS-GATE-"
 _URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s]+)@")
 _BEARER_TOKEN = re.compile(r"(?i)(Authorization:\s*Bearer\s+)\S+")
 _BASIC_AUTH = re.compile(r"(?i)(Authorization:\s*Basic\s+)\S+")
-_SECRET_ASSIGNMENT = re.compile(
-    r"(?i)((?:\b(?:password|passwd|secret|api[_-]?key|token)\s*=|(?:DATABASE_PASSWORD|AWS_SECRET_ACCESS_KEY)=)\s*['\"]?)[^'\"\s]+(['\"]?)"
+#: One key=value / key: value rule (85.3 landing review H3): a bare or quoted key NAMING a secret -- any
+#: identifier carrying password / passwd / secret / token / api key / access key (`DATABASE_PASSWORD`,
+#: `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`, JSON `"password"`, YAML `db_password`) -- then `=` or `:` (never
+#: `==` or `::`), then a quoted value (to its closing quote, escapes included) or a bare one (to the next
+#: whitespace; an unclosed opening quote is taken with it).
+_SECRET_KEY_VALUE = re.compile(
+    r"(?i)(?<![A-Za-z0-9_.-])"
+    r"(?P<key>(?P<kq>['\"]?)"
+    r"[A-Za-z0-9_.-]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_.-]*"
+    r"(?P=kq)\s*(?:=(?!=)|:(?!:))\s*)"
+    r"(?:(?P<vq>['\"])(?:\\.|(?!(?P=vq)).)*(?P=vq)|['\"]?[^\s'\"]+)"
 )
-_YAML_JSON_PASSWORD = re.compile(r"(?i)(^\s*password\s*:\s*)\S+", re.MULTILINE)
-_SK_ANT_KEY = re.compile(r"\bsk-ant-[A-Za-z0-9_-]{8,}\b")
+_SK_ANT_KEY = re.compile(r"sk-ant-[A-Za-z0-9_-]+")
+_REDACTED = "***REDACTED***"
+
+
+def _redact_secret_value(match: re.Match[str]) -> str:
+    quote = match.group("vq") or ""
+    return f"{match.group('key')}{quote}{_REDACTED}{quote}"
 
 
 def scrub_fix_turn_exposure(text: str) -> str:
     """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1/85.3)."""
-    scrubbed = _URL_CREDENTIALS.sub(r"\1:***REDACTED***@", text)
-    scrubbed = _BEARER_TOKEN.sub(r"\1***REDACTED***", scrubbed)
-    scrubbed = _BASIC_AUTH.sub(r"\1***REDACTED***", scrubbed)
-    scrubbed = _SECRET_ASSIGNMENT.sub(r"\1***REDACTED***\2", scrubbed)
-    scrubbed = _YAML_JSON_PASSWORD.sub(r"\1***REDACTED***", scrubbed)
-    scrubbed = _SK_ANT_KEY.sub("sk-ant-***REDACTED***", scrubbed)
+    scrubbed = _URL_CREDENTIALS.sub(rf"\1:{_REDACTED}@", text)
+    scrubbed = _BEARER_TOKEN.sub(rf"\1{_REDACTED}", scrubbed)
+    scrubbed = _BASIC_AUTH.sub(rf"\1{_REDACTED}", scrubbed)
+    scrubbed = _SECRET_KEY_VALUE.sub(_redact_secret_value, scrubbed)
+    scrubbed = _SK_ANT_KEY.sub(f"sk-ant-{_REDACTED}", scrubbed)
     return scrubbed
 
 

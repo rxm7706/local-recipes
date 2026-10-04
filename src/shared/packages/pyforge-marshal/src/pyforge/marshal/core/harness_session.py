@@ -8,10 +8,7 @@ terminal story failures.
 
 from __future__ import annotations
 
-import re
 from enum import StrEnum
-
-_CURSOR_SESSION_ID_RE = re.compile(r'"session_id"\s*:\s*"([^"]+)"')
 
 
 class HarnessSessionOutcome(StrEnum):
@@ -82,14 +79,6 @@ def classify_session_log(log_text: str | None) -> HarnessSessionOutcome:
     if any(marker in lowered for marker in _BACKGROUND_TASK_CEILING_MARKERS):
         return HarnessSessionOutcome.BACKGROUND_TASK_CEILING
     return HarnessSessionOutcome.UNKNOWN
-
-
-def parse_harness_session_id_from_log(*, profile: str, log_text: str | None) -> str | None:
-    """Best-effort harness session id from a dispatch log (Story 85.3, Cursor JSON print mode)."""
-    if not log_text or profile != "cursor":
-        return None
-    matches = _CURSOR_SESSION_ID_RE.findall(log_text)
-    return matches[-1] if matches else None
 
 
 def is_transient_harness_session_outcome(outcome: HarnessSessionOutcome) -> bool:
