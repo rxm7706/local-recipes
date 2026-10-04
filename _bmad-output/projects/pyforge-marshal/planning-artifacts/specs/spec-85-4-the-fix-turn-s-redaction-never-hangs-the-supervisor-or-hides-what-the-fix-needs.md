@@ -2,7 +2,7 @@
 title: "85.4: The fix turn's redaction never hangs the supervisor or hides what the fix needs"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 1
 followup_review_recommended: false
 context:
