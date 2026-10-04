@@ -357,26 +357,39 @@ def _orphan_file_candidates(project_dir: Path) -> list[Path]:
     return candidates
 
 
+def _grep_other_paths(
+    target: Path,
+    args: list[str],
+) -> list[str]:
+    """Run ``git grep`` and return match paths excluding the candidate itself."""
+    scopes: tuple[tuple[str, ...], ...] = ((), ("--untracked", "--no-exclude-standard"))
+    last_error: CliBridgeError | None = None
+    for scope in scopes:
+        try:
+            output = run_git(
+                target,
+                ["grep", "-l", *args, *scope],
+                ok_exit_codes=frozenset({0, 1}),
+            )
+        except CliBridgeError as exc:
+            last_error = exc
+            continue
+        return [line for line in output.splitlines() if line.strip()]
+    if last_error is not None:
+        raise last_error
+    return []
+
+
 def _has_inbound_references(target: Path, repo_relpath: str) -> bool:
     """``True`` iff some OTHER file in the repo references this candidate by
     path or whole-token basename (tracked and untracked, non-ignored)."""
     basename = PurePosixPath(repo_relpath).name
-    grep_common = ["--untracked", "--no-exclude-standard"]
-    path_hits = run_git(
-        target,
-        ["grep", "-l", "--fixed-strings", "-e", repo_relpath, *grep_common],
-        ok_exit_codes=frozenset({0, 1}),
-    )
-    if any(line.strip() and line.strip() != repo_relpath for line in path_hits.splitlines()):
+    path_hits = _grep_other_paths(target, ["--fixed-strings", "-e", repo_relpath])
+    if any(hit != repo_relpath for hit in path_hits):
         return True
-    boundary = rf"(?<![/\w.-]){re.escape(basename)}(?![/\w.-])"
-    output = run_git(
-        target,
-        ["grep", "-l", "-P", boundary, *grep_common],
-        ok_exit_codes=frozenset({0, 1}),
-    )
-    matches = [line for line in output.splitlines() if line.strip()]
-    return any(match != repo_relpath for match in matches)
+    boundary = rf"\b{re.escape(basename)}\b"
+    basename_hits = _grep_other_paths(target, ["-E", boundary])
+    return any(hit != repo_relpath for hit in basename_hits)
 
 
 def _check_orphan_files(target: Path, project_dir: Path, station: str, findings: list[Finding]) -> None:

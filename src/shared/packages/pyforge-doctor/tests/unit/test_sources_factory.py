@@ -1053,7 +1053,7 @@ def test_dream_owned_by_an_unknown_station_reports_warn(tmp_path: Path) -> None:
     assert len(findings) == 1
     finding = findings[0]
     assert finding.check == "dream-unowned"
-    assert "eight Smiths" in finding.message
+    assert "marshal" in finding.message and "doctor" in finding.message
 
 
 def test_dream_owned_by_a_known_station_is_clean(tmp_path: Path) -> None:

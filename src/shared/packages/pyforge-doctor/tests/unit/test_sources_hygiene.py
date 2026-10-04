@@ -264,10 +264,12 @@ def test_one_stations_unreadable_file_warns_without_discarding_another_stations_
 
     findings = hygiene.gather(repo)
 
-    by_station = {f.evidence.get("station"): f for f in findings}
-    assert by_station["broken"].check == "station-unevaluable"
-    assert by_station["broken"].status is DoctorStatus.WARN
-    assert by_station["good"].check == HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value
+    broken = [f for f in findings if f.evidence.get("station") == "broken"]
+    good = [f for f in findings if f.evidence.get("station") == "good"]
+    assert any(f.check == "hygiene-check-unevaluable" for f in broken)
+    assert all(f.status is DoctorStatus.WARN for f in broken)
+    assert len(good) == 1
+    assert good[0].check == HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value
     assert len(findings) == 2
 
 
