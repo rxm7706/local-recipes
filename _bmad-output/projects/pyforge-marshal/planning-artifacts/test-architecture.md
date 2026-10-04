@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: e94788cfdc8d19e1
-story_count: 424
+source_fingerprint: 67d7fecc4995672e
+story_count: 425
 test_file_count: 238
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 424
+- **Stories parsed:** 425
 - **Epics parsed:** 85
 - **Test files inventoried:** 238 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `e94788cfdc8d19e1`
+- **Source fingerprint:** `67d7fecc4995672e`
 
 ## Risk Assessment
 
@@ -498,6 +498,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 19.2 | The shared test-support kit | none observed |
 | 19.3 | Coverage gates that name the module | none observed |
 | 19.4 | Test architecture stays current as stories land | none observed |
+| 19.5 | The testing kit's own suite runs in CI | none observed |
 | 20.1 | Baseline-drift detector at the seam | none observed |
 | 20.2 | Baseline-drift defers get loud | none observed |
 | 20.3 | The gated upstream filing | none observed |

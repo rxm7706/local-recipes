@@ -1043,6 +1043,14 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   **What it looks like when fixed:** a path-form cite that resolves nowhere is counted missing and named; the
   stale links are repaired; no live doc describes the retired verb. **Constraints:** a fix story, no CAP, no flag.
   Owner `spec-pyforge-marshal`. → Story 86.8, specced 2026-10-04.
+- **2026-10-04 (testing kit CI)** — **Found: the testing kit's own suite runs nowhere.** `pyforge-testing-kit` is the
+  seam every station's meta tests import, but no workflow runs `pyforge-testing-kit-test`, and the local
+  `pyforge-station-tests` twin skips it too. The kit is only a trigger for the station jobs. Its suite is already red:
+  steward Story 76.2 added flagd `metadata` to the platform flag tree, and the kit's shape check has failed since,
+  unseen. **What it looks like when fixed:** a `testing-kit-test` job runs the kit's pixi task whenever the kit, the
+  shared surface or an input its suite reads changes; the local twin runs it; the suite is green. **Constraints:** a
+  fix story under `spec-pyforge-testing-charter` CAP-3, no new CAP, no flag. It goes into Epic 19 and reopens it.
+  → Story 19.5, specced 2026-10-04.
 - **2026-10-04 (later)** — **Found: the sweeper stops at local branches, so remote cleanup is hand-rolled.** A
   hand-rolled cleanup deleted the eight loop homes, the `loop/*` branches and 41 `attempt-preserve/*` branches, all of
   which `scripts/worktree_sweep.py` would have kept. All were restored from GitHub's activity log, except the loop homes'

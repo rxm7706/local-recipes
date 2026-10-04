@@ -122,7 +122,9 @@ def test_flagd_tree_has_the_platform_trees_shape(tmp_path: Path) -> None:
 
     platform = json.loads((_REPO_ROOT / "src/platform/config/flags.json").read_text(encoding="utf-8"))
     assert platform["flags"], "the platform tree carries no flag to compare the written shape against"
-    assert set(entry) == set(next(iter(platform["flags"].values())))
+    # The platform flags also carry flagd `metadata` (steward Story 76.2's clock fields). Only a composed tree reads
+    # it (`pyforge.core.flags.compose`, with a `flag-overlays.json` beside the tree), and a kit tree has no overlays.
+    assert set(entry) == set(next(iter(platform["flags"].values()))) - {"metadata"}
     assert set(json.loads(path.read_text(encoding="utf-8"))) == set(platform)
 
 
