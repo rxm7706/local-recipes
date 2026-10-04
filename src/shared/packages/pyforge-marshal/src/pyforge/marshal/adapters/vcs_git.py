@@ -210,6 +210,55 @@ def _iter_worktree_blocks(stdout: str) -> Iterator[dict[str, str]]:
             yield lines
 
 
+def _name_status_z_paths(stdout: str) -> set[str]:
+    """Story 83.16: the live paths of ``git diff --name-status -z`` output.
+
+    ``-z`` NUL-terminates every field and never quotes a path, so a path carrying a space, a quote, a
+    tab, a newline, a backslash or a non-ASCII character arrives literally. A record is its status
+    field, then one path -- or, for a rename (``R<score>``) or copy (``C<score>``), the source and then
+    the destination, of which only the destination is live. A record cut short refuses rather than
+    dropping a path a scope check would then never see."""
+    fields = stdout.split("\0")
+    paths: set[str] = set()
+    index = 0
+    while index < len(fields):
+        status = fields[index]
+        if not status:
+            index += 1
+            continue
+        width = 3 if status[0] in "RC" else 2
+        if index + width > len(fields) or not fields[index + width - 1]:
+            raise VcsCommandError(f"unparseable 'git diff --name-status -z' record: {status!r} without its path")
+        paths.add(fields[index + width - 1])
+        index += width
+    return paths
+
+
+def _porcelain_z_paths(stdout: str) -> set[str]:
+    """Story 83.16: the live paths of ``git status --porcelain -z`` (v1) output.
+
+    Each record is ``XY PATH``, NUL-terminated and never quoted -- unlike the line format, which wraps a
+    path holding a space or other special byte in C-style quotes (the 2026-10-03 herald 35.1 finalize
+    handed that quoted string to ``git add`` and stopped). A rename or copy (``R``/``C`` in either status
+    column) is followed by one more field, its ORIGINAL path: only the new path is live, so the original
+    is consumed and dropped."""
+    fields = stdout.split("\0")
+    paths: set[str] = set()
+    index = 0
+    while index < len(fields):
+        record = fields[index]
+        index += 1
+        if not record:
+            continue
+        if len(record) < 4 or record[2] != " ":
+            raise VcsCommandError(f"unparseable 'git status --porcelain -z' record: {record!r}")
+        status, path = record[:2], record[3:]
+        if "R" in status or "C" in status:
+            index += 1
+        paths.add(path)
+    return paths
+
+
 def _require_redacted(value: object, name: str) -> Redacted:
     """``value`` as a ``Redacted``, or ``TypeError`` (Story 82.9, AD-34): the
     runtime half of ``CommitPort``'s "no bare ``str`` message" guarantee --
@@ -719,23 +768,24 @@ class GitVcs:
         for provenance) but is not itself used to run either git
         invocation below.
 
-        ``-c core.quotePath=false`` on BOTH invocations (review finding,
-        Blind Hunter + Edge Case Hunter, independently): git's own default
-        (``core.quotePath=true``) C-escapes/quotes any path containing a
-        non-ASCII or otherwise "unusual" byte (e.g. ``"caf\\303\\251.txt"``
-        for ``café.txt``) instead of emitting the literal UTF-8 path. Such a
-        path would never match its own glob in ``compute_effective_surface``
-        /``check_scope``, silently defeating scope/frozen-path checking for
-        it -- pinned explicitly, mirroring ``is_branch_merged``'s/
-        ``has_uncommitted_changes``'s own explicit-config-pin discipline
-        rather than depending on the operator's config."""
+        Every path comes back literally (Story 83.16): BOTH invocations run
+        with ``-z``, which NUL-terminates each field and never quotes a path.
+        Without it git C-quotes any path holding a space, a double quote, a
+        tab, a newline or a backslash (``"docs/a b.md"`` -- the status line
+        format quotes a space even under ``core.quotePath=false``) and, under
+        its default ``core.quotePath=true``, every non-ASCII path too. A
+        quoted path never matches its own glob in ``compute_effective_surface``
+        /``check_scope``, and handed to ``git add`` it is a pathspec git
+        refuses -- herald Story 35.1's supervisor finalize stopped on exactly
+        that on 2026-10-03, every change uncommitted. ``-z`` replaces the
+        ``core.quotePath=false`` pin this method carried before (the
+        non-ASCII half of the same defect); porcelain text is never
+        unquoted by hand."""
         diff_result = _run(
             [
                 "git",
                 "-C",
                 str(worktree_path),
-                "-c",
-                "core.quotePath=false",
                 "diff",
                 # -M: rename detection (review finding, Edge Case Hunter).
                 # Without it, a committed rename shows up as BOTH the old
@@ -747,6 +797,7 @@ class GitVcs:
                 # detected and only its NEW path kept.
                 "-M",
                 "--name-status",
+                "-z",
                 f"{base}...HEAD",
             ]
         )
@@ -754,20 +805,7 @@ class GitVcs:
             raise VcsCommandError(
                 f"git diff --name-status -M {base}...HEAD failed in {worktree_path}: {diff_result.stderr.strip()}"
             )
-        committed: set[str] = set()
-        for line in diff_result.stdout.splitlines():
-            if not line.strip():
-                continue
-            fields = line.split("\t")
-            status = fields[0]
-            if status.startswith("R") or status.startswith("C"):
-                # "R100\told\tnew" (rename) / "C100\told\tnew" (copy) --
-                # only the NEW path is currently live.
-                if len(fields) < 3:
-                    continue
-                committed.add(fields[-1])
-            elif len(fields) >= 2:
-                committed.add(fields[1])
+        committed = _name_status_z_paths(diff_result.stdout)
 
         # -c status.showUntrackedFiles=normal: same explicit-config-pin
         # discipline as has_uncommitted_changes above -- an operator's own
@@ -789,26 +827,15 @@ class GitVcs:
                 str(worktree_path),
                 "-c",
                 "status.showUntrackedFiles=normal",
-                "-c",
-                "core.quotePath=false",
                 "status",
                 "--porcelain",
+                "-z",
                 "--untracked-files=all",
             ]
         )
         if status_result.returncode != 0:
             raise VcsCommandError(f"git status --porcelain failed in {worktree_path}: {status_result.stderr.strip()}")
-        dirty: set[str] = set()
-        for line in status_result.stdout.splitlines():
-            if not line.strip():
-                continue
-            # Porcelain v1 short format: a fixed 2-char status code, one
-            # space, then the path -- a rename/copy carries
-            # "OLD -> NEW", of which only NEW is a currently-live path.
-            entry = line[3:]
-            if " -> " in entry:
-                entry = entry.split(" -> ", 1)[1]
-            dirty.add(entry)
+        dirty = _porcelain_z_paths(status_result.stdout)
 
         return tuple(sorted(committed | dirty))
 

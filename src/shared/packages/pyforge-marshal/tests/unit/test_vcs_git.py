@@ -1129,7 +1129,7 @@ def test_changed_files_a_rename_reports_only_the_new_path(vcs, repo, tmp_path):
 
 def test_changed_files_a_committed_rename_reports_only_the_new_path(vcs, repo, tmp_path):
     """Review finding (Edge Case Hunter): unlike the uncommitted-rename case
-    above (already handled by the porcelain branch's own " -> " parsing), a
+    above (already handled by the porcelain branch's own rename record), a
     COMMITTED rename is reported by `git diff`, which without rename
     detection (`-M`) shows BOTH the old (now-nonexistent) and new paths as
     separate changed entries."""
@@ -1207,6 +1207,120 @@ def test_changed_files_returns_a_sorted_tuple(vcs, repo, tmp_path):
     result = vcs.changed_files(repo, home, base="main")
     assert result == tuple(sorted(result))
     assert result == ("a.txt", "z.txt")
+
+
+# --- changed_files returns literal paths (Story 83.16) -------------------------
+#
+# Without `-z`, `git status --porcelain` wraps a path holding a space (or a quote, a tab, a newline,
+# a backslash) in C-style quotes, and `git diff --name-status` does the same for every one of those
+# but the space. The 2026-10-03 herald 35.1 finalize handed `"presentations/.../PyForge Atlas -
+# Infographic Deck.dc.html"` -- quotes included -- to `git add`, which refused it.
+
+_HERALD_DECK = "presentations/pyforge-atlas/project/PyForge Atlas - Infographic Deck.dc.html"
+
+
+def test_changed_files_untracked_and_modified_paths_with_spaces_come_back_literal(vcs, repo, tmp_path):
+    (repo / "docs").mkdir()
+    (repo / "docs" / "a b.md").write_text("one\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced tracked file")
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "docs" / "a b.md").write_text("modified\n", encoding="utf-8")
+    deck = home / _HERALD_DECK
+    deck.parent.mkdir(parents=True)
+    deck.write_text("<html></html>\n", encoding="utf-8")
+    (home / "docs" / "résumé notes.md").write_text("non-ascii\n", encoding="utf-8")
+
+    result = vcs.changed_files(repo, home, base="main")
+
+    assert result == tuple(sorted(("docs/a b.md", "docs/résumé notes.md", _HERALD_DECK)))
+    assert not any(path.startswith('"') or path.endswith('"') for path in result)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "a b.md",
+        'say "hi".md',
+        "tab\there.md",
+        "new\nline.md",
+        "back\\slash.md",
+        "café.md",
+        "日本語 ファイル.md",
+    ],
+    ids=["space", "double-quote", "tab", "newline", "backslash", "non-ascii", "non-ascii-and-space"],
+)
+def test_changed_files_returns_an_awkward_path_literally_from_the_diff_and_the_status(vcs, repo, tmp_path, name):
+    """One committed copy (read from `git diff --name-status`) and one untracked copy (read from
+    `git status --porcelain`): both come back byte-for-byte, never quoted or escaped."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "committed").mkdir()
+    (home / "committed" / name).write_text("c\n", encoding="utf-8")
+    _git(home, "add", "-A")
+    _git(home, "commit", "-m", "commit an awkward path")
+    (home / "dirty").mkdir()
+    (home / "dirty" / name).write_text("d\n", encoding="utf-8")
+
+    assert vcs.changed_files(repo, home, base="main") == (f"committed/{name}", f"dirty/{name}")
+
+
+@pytest.mark.parametrize("committed", [False, True], ids=["staged-rename", "committed-rename"])
+def test_changed_files_a_rename_of_a_spaced_path_reports_only_the_new_path(vcs, repo, tmp_path, committed):
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    _git(home, "mv", "old name.md", "new name.md")
+    if committed:
+        _git(home, "commit", "-m", "rename the spaced file")
+
+    assert vcs.changed_files(repo, home, base="main") == ("new name.md",)
+
+
+def test_changed_files_output_commits_every_awkward_path(vcs, repo, tmp_path):
+    """The supervisor finalize's own commit step at the adapter: `changed_files` against `HEAD`, each path
+    handed to `commit_paths`, leaves the worktree clean with every path committed."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    deck = home / _HERALD_DECK
+    deck.parent.mkdir(parents=True)
+    deck.write_text("<html></html>\n", encoding="utf-8")
+    (home / 'say "hi" café.md').write_text("q\n", encoding="utf-8")
+    (home / "README.md").write_text("modified\n", encoding="utf-8")
+
+    changed = vcs.changed_files(repo, home, base="HEAD")
+    vcs.commit_paths(home, tuple(Path(path) for path in changed), to_redacted_text("marshal: supervisor finalize"))
+
+    assert _git(home, "status", "--porcelain").stdout == ""
+    committed = _git(home, "show", "-z", "--name-only", "--format=", "HEAD").stdout.split("\0")
+    assert sorted(path for path in committed if path) == sorted(("README.md", 'say "hi" café.md', _HERALD_DECK))
+
+
+def test_name_status_z_paths_keeps_only_the_destination_of_a_rename_or_copy():
+    stdout = "M\0a b.md\0R087\0old name.md\0new name.md\0C075\0src x.md\0dst x.md\0D\0gone.md\0"
+
+    assert vcs_git_module._name_status_z_paths(stdout) == {"a b.md", "new name.md", "dst x.md", "gone.md"}
+
+
+@pytest.mark.parametrize("stdout", ["M\0", "M\0\0", "R100\0old.md\0"], ids=["no-path", "empty-path", "rename-cut"])
+def test_name_status_z_paths_refuses_a_record_cut_short(stdout):
+    with pytest.raises(VcsCommandError, match="unparseable 'git diff --name-status -z' record"):
+        vcs_git_module._name_status_z_paths(stdout)
+
+
+def test_porcelain_z_paths_drops_the_original_path_of_a_rename_or_copy():
+    stdout = "?? a b.md\0R  new name.md\0old name.md\0C  dst x.md\0src x.md\0 M tab\there.md\0"
+
+    assert vcs_git_module._porcelain_z_paths(stdout) == {"a b.md", "new name.md", "dst x.md", "tab\there.md"}
+
+
+@pytest.mark.parametrize("stdout", ["??\0", "?? \0", "??x.md\0"], ids=["no-path", "empty-path", "no-separator"])
+def test_porcelain_z_paths_refuses_a_malformed_record(stdout):
+    with pytest.raises(VcsCommandError, match="unparseable 'git status --porcelain -z' record"):
+        vcs_git_module._porcelain_z_paths(stdout)
 
 
 # --- commit_subjects/commit_paths (Story 4.1, AD-29/AD-33) -----------------

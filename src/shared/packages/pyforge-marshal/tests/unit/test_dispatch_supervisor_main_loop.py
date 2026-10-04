@@ -1926,6 +1926,74 @@ def test_finalize_sequence_survives_a_git_fact_regather_failure(tmp_path: Path) 
     assert ok is False
 
 
+class _RealGitWorktreeVcs(FakeVcs):
+    """``FakeVcs`` whose worktree reads and commits are real git (Story 83.16): ``has_uncommitted_changes``,
+    ``changed_files`` and ``commit_paths`` go through ``GitVcs``; push, merge reads and the rest stay faked."""
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._git = GitVcs()
+
+    def has_uncommitted_changes(self, worktree_path: Path) -> bool:
+        return self._git.has_uncommitted_changes(worktree_path)
+
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
+        return self._git.changed_files(repo_root, worktree_path, base=base)
+
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        self.commits.append((repo_root, tuple(paths), message.text))
+        return self._git.commit_paths(repo_root, paths, message)
+
+
+def test_finalize_sequence_commits_paths_with_spaces_and_non_ascii_against_real_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.16: herald 35.1's finalize (2026-10-03) handed ``git add`` the C-quoted porcelain form of a
+    ``presentations/*/project/`` path and stopped with every change uncommitted. A session's spaced and
+    non-ASCII files are committed and the attempt journals ok."""
+    remote, repo_root = tmp_path / "remote.git", tmp_path / "repo"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True)
+    subprocess.run(["git", "clone", "-q", str(remote), str(repo_root)], check=True, capture_output=True)
+    _git(repo_root, "config", "user.email", "t@example.com")
+    _git(repo_root, "config", "user.name", "T")
+    (repo_root / "docs").mkdir()
+    (repo_root / "docs" / "a b.md").write_text("base\n", encoding="utf-8")
+    _git(repo_root, "add", "-A")
+    _git(repo_root, "commit", "-qm", "base")
+    _git(repo_root, "push", "-q", "origin", "main")
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    worktree = dispatch_core.dispatch_worktree_path(repo_root, _SLUG, _STORY_KEY)
+    worktree.parent.mkdir(parents=True, exist_ok=True)
+    _git(repo_root, "worktree", "add", "-q", "-b", branch, str(worktree), "main")
+    _git(worktree, "config", "user.email", "t@example.com")
+    _git(worktree, "config", "user.name", "T")
+    spec = _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    deck = "presentations/pyforge-atlas/project/PyForge Atlas - Infographic Deck.dc.html"
+    (worktree / deck).parent.mkdir(parents=True)
+    (worktree / deck).write_text("<html></html>\n", encoding="utf-8")
+    (worktree / "docs" / "café menu.md").write_text("non-ascii\n", encoding="utf-8")
+    (worktree / "docs" / "a b.md").write_text("modified\n", encoding="utf-8")
+    _patch_verification(monkeypatch, _clean_envelope)
+    vcs = _RealGitWorktreeVcs(branches=frozenset({branch}), head_sha=_MOVED)
+    fs = FakeFs()
+
+    _counter, ok = _finalize(fs, vcs, repo_root, worktree)
+
+    assert ok is True
+    record = fs.appended[-1][1]
+    assert '"committed": true' in record
+    assert '"ok": true' in record
+    assert "failed_step" not in record
+    assert _git(worktree, "status", "--porcelain") == ""
+    committed = subprocess.run(
+        ["git", "-C", str(worktree), "show", "-z", "--name-only", "--format=", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.split("\0")
+    assert sorted(path for path in committed if path) == sorted(("docs/a b.md", "docs/café menu.md", deck, spec))
+
+
 # ==========================================================================
 # run_dispatch_supervisor -- the tick loop
 # ==========================================================================

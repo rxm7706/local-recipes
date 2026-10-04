@@ -2,7 +2,7 @@
 title: "83.16: Dispatch finalize commits paths with spaces"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -62,4 +62,4 @@ Minted 2026-10-03 at the operator's request.
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-04 build: ready for an independent review. `GitVcs.changed_files` reads `git diff --name-status -z` and `git status --porcelain -z` and parses the NUL-separated fields (`_name_status_z_paths`, `_porcelain_z_paths`); the `core.quotePath=false` pin it replaces is gone. Mutation checks (scratch copy): reverting `vcs_git.py` to `origin/main` fails 18 of the new tests, the finalize test with git's own `pathspec '"presentations/..."' did not match any files`; dropping `-z` from the status call alone fails 20, from the diff call alone 14; keeping a rename's original path fails 3; keeping a committed rename's source fails 3.
