@@ -2,10 +2,10 @@
 title: "85.5: The verify fix turn's edits get the spec-surface reconcile before re-verification"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
 baseline_revision: '0b58f2fb95bf8009935f4c152409adc169f71233'
-review_loop_iteration: 0
-followup_review_recommended: false
+review_loop_iteration: 1
+followup_review_recommended: true
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -14,7 +14,28 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py
   - scripts/spec_surface_reconcile.py
-deferred: []
+deferred:
+  - summary: >-
+      End-to-end real-git fixture proving memlog/stamp before re-verify passes the surface guard (AC1).
+    evidence: |-
+      Story 85.5 tests stub _reconcile_spec_surface_drift; no test runs scripts/spec_surface_reconcile.py on a branch after an unstubbed reconcile.
+    location: >-
+      src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py
+    severity: medium
+  - summary: >-
+      Resumed fix-turn intents without worktree_head_before_turn skip pre-reverify reconcile.
+    evidence: |-
+      _maybe_run_verify_fix_turn only reconciles when head_before_turn is not None; in-flight journals predating 85.5 omit the field.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1523
+    severity: medium
+  - summary: >-
+      No test that dispatch land reconcile is idempotent after fix-turn reconcile (AC5).
+    evidence: |-
+      No test chains fix-turn reconcile then execute_dispatch_land _reconcile_spec_surface_drift for the same paths.
+    location: >-
+      src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py
+    severity: low
 declared_low_risk: false
 ---
 
@@ -88,4 +109,31 @@ Type / Effort / Deps: fix / S / S-85.4.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 12 findings — high 1, medium 4, low 2, false 3, maybe-false 2
+- findings:
+  - `[high]` `[patch]` `foreign_drift_refuses=False` returned before reconciling own overlap paths when foreign drift coexisted — fixed overlap_paths assignment and removed early return; added `test_reconcile_spec_surface_drift_reconciles_own_paths_when_foreign_drift_refuses_is_false`.
+  - `[medium]` `[patch]` Golden tick-loop test did not assert reconcile between commit and second verify — stub now records `reconcile` in event order.
+  - `[medium]` `[defer]` No real-git AC1 harness — deferred with location in verify_fix tests.
+  - `[medium]` `[defer]` Resume without `worktree_head_before_turn` skips reconcile — deferred.
+  - `[medium]` `[reject]` Journal-before-act boundary vs Story 85.2 — existing fix-turn steps use post-step OBSERVATION; reconcile matches that pattern.
+  - `[low]` `[defer]` Land idempotence test missing — deferred.
+  - `[low]` `[reject]` Docstring on `_reconcile_spec_surface_drift` not updated for new kwargs — cosmetic; land defaults unchanged.
+  - `[false]` VcsCommandError at fix-turn launch uncaught — launch path already records head via existing error handling in turn flow.
+  - `[false]` Whitespace-only `worktree_head_before_turn` — `_fix_turn_head_before` treats non-sha empty as None consistently with skip semantics.
+  - `[false]` Story spec frontmatter vs empty triage log — resolved by this review pass.
+  - `[maybe-false]` `[defer]` Mutation tests if reconcile hook removed — partially covered by scoped-path test; full removal still stubbed in integration test.
+  - `[maybe-false]` `[patch]` Landing tests for `push_when_done`/`own_changed_paths` — foreign+own case added; push_when_done covered by same test (`vcs.pushed == []`).
+
+## Auto Run Result
+
+- Summary: Fix turns now run `_reconcile_fix_turn_spec_surface` after `_commit_pre_verify_wip` and before re-verification, calling shared `_reconcile_spec_surface_drift` with turn-local paths, no push, and foreign drift non-fatal. Review fixed mixed own/foreign reconcile in `dispatch_land.py`.
+- Files changed:
+  - `dispatch_land.py` — parameterized reconcile; own/foreign split for fix-turn mode.
+  - `dispatch_supervisor/__main__.py` — record pre-turn HEAD, reconcile helper, wire into fix-turn finalize.
+  - `test_dispatch_supervisor_verify_fix.py` — Story 85.5 scenarios and tick-loop reconcile ordering.
+  - `test_dispatch_landing.py` — `foreign_drift_refuses=False` with mixed drift.
+- Review: 2 patches applied (high foreign/own loop, medium event order); 3 deferred; 3 rejected false/low; follow-up recommended for AC1 real-git gap.
+- Verification: `pyforge-marshal-test` 11580 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.
+- Residual risk: in-flight intents without `worktree_head_before_turn`; stub-heavy tests vs real memlog/stamp chain.
+- Follow-up: real-git fixture for AC1 surface-guard proof after reconcile commit.
