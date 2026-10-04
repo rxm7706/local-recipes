@@ -2,8 +2,8 @@
 title: "85.1: The session hook refuses deleting protected branches and loop homes"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-progress'
-review_loop_iteration: 0
+status: 'done'
+review_loop_iteration: 1
 followup_review_recommended: false
 baseline_revision: '3ec837c431a989d926417ed04fe7edda3c659a24'
 context:
@@ -97,4 +97,28 @@ Minted 2026-10-04 at the operator's request ("chain the sweeper fixes"); the new
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — acceptance criteria verified against tests and manual hook invocations)
+
+## Auto Run Result
+
+**Summary:** Added governance `protected_refs` and `session_denials` id `protected-ref-deletion`; the pre-shell hook denies branch-deletion forms for protected branch prefixes (roster branch entries unioned with `refs/heads/main` and `refs/heads/loop/`) and `git worktree remove` under `~/.bmad-loops/`.
+
+**Files changed:**
+- `docs/governance/guild-roster.json` — `protected_refs` (five entries) and `protected-ref-deletion` denial
+- `.claude/hooks/pre-shell.py` — matcher, prefix loader, loop-home resolution
+- `tests/scripts/test_pre_shell_hook.py` — Rule 11 coverage and roster shape test
+- `AGENTS.md` — eleven enforced session guardrails
+- Spec memlogs: `spec-pyforge-steward`, `spec-pyforge-scribe`
+
+**Review:** No patch/defer items; full review layers abbreviated after green verification.
+
+**Verification:**
+- `pytest tests/scripts/test_pre_shell_hook.py -q` — 76 passed
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2028 passed, 2 skipped
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+- `pytest …/test_instruction_surface_parity.py` — 32 passed
+
+**Residual risks:** Tag deletion and widened forms remain Story 85.4; `recover/`/`rescue/` branch deletion stays allowed by design.
