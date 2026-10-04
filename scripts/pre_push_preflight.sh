@@ -69,7 +69,7 @@ _is_preserve_or_archive_tag() {
 }
 
 _nonzero_sha() {
-  [ -n "$1" ] && ! printf '%s\n' "$1" | grep -qvE '^0+$'
+  [ -n "$1" ] && printf '%s\n' "$1" | grep -qvE '^0+$'
 }
 
 # Bare-git form: every stdin line must name a preserve/archive tag with a non-zero local sha.
