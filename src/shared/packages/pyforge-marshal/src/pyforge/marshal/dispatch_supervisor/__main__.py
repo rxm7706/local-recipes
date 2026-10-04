@@ -33,6 +33,7 @@ from ..core.dispatch_completion import (
     run_head_reached_ref,
 )
 from ..core.dispatch_harness_done import (
+    HOLD_LANDING_PAYLOAD_KEY,
     FollowupReview,
     has_auto_run_result,
     parse_baseline_revision,
@@ -231,6 +232,14 @@ def _launch_story_started_ts(folded, run_id: str) -> str | None:
         if entry.run_id == run_id and entry.phase == Phase.INTENT:
             return entry.ts
     return None
+
+
+def _hold_landing_from_launch(folded, run_id: str) -> bool:
+    """Story 83.18: ``--hold-landing`` journaled on the launch INTENT."""
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_LAUNCH):
+        if entry.run_id == run_id and entry.phase == Phase.INTENT:
+            return entry.payload.get(HOLD_LANDING_PAYLOAD_KEY) is True
+    return False
 
 
 def _followup_review_from_launch(folded, run_id: str) -> FollowupReview | None:
@@ -1788,6 +1797,8 @@ def _run_and_journal_landing(
     merge_subject_template: str,
     wait_heartbeat: _WaitHeartbeat | None = None,
     followup_review: FollowupReview | None = None,
+    hold_landing_cli: bool = False,
+    story_spec_text: str | None = None,
 ) -> int:
     """Land a verified dispatch via Epic 4 machinery and journal (Story 22.4).
 
@@ -1830,6 +1841,8 @@ def _run_and_journal_landing(
         fs=fs,
         vcs=vcs,
         process=process,
+        hold_landing_cli=hold_landing_cli,
+        story_spec_text=story_spec_text,
         **followup_kwargs,
     )
     intent_entry = build_entry(
@@ -1849,7 +1862,8 @@ def _run_and_journal_landing(
     counter += 1
     outcome_payload: dict[str, object] = {
         "verdict": landing_result.verdict.value,
-        "ok": landing_result.verdict == DispatchLandingVerdict.LANDED,
+        "ok": landing_result.verdict
+        in {DispatchLandingVerdict.LANDED, DispatchLandingVerdict.HELD_FOR_REVIEW},
         "envelope_verdict": envelope.verdict.value,
         "pr_number": landing_result.pr_number,
         "merge_sha": landing_result.merge_sha,
@@ -1911,6 +1925,7 @@ def _land_or_journal_block(
     session_alive: bool = False,
     publish_heartbeat: Callable[[], None] | None = None,
     followup_review: FollowupReview | None = None,
+    folded=None,
 ) -> int:
     """Land, unless the worktree spec is blocked/narration-only (Story 51.4,
     spec-pyforge-marshal CAP-252 -- defense in depth).
@@ -1948,6 +1963,14 @@ def _land_or_journal_block(
             worktree=worktree,
             reason=block_reason,
         )
+    hold_landing_cli = _hold_landing_from_launch(folded, run_id) if folded is not None else False
+    spec_text: str | None = None
+    spec_path = dispatch_core.resolve_story_spec_path(worktree, slug, story_key)
+    if spec_path is not None:
+        try:
+            spec_text = spec_path.read_text(encoding="utf-8")
+        except OSError:
+            spec_text = None
     return _run_and_journal_landing(
         fs=fs,
         vcs=vcs,
@@ -1968,6 +1991,8 @@ def _land_or_journal_block(
             publish=publish_heartbeat,
         ),
         followup_review=followup_review,
+        hold_landing_cli=hold_landing_cli,
+        story_spec_text=spec_text,
     )
 
 
@@ -2577,6 +2602,7 @@ def run_dispatch_supervisor(
                         session_alive=session_alive,
                         publish_heartbeat=_publish_heartbeat,
                         followup_review=followup_review,
+                        folded=folded,
                     )
                     # Story 72.1 (CAP-280): fetch `origin main` so the re-gather
                     # reads the supervisor's own land, never a stale remote-tracking ref.
@@ -2656,6 +2682,7 @@ def run_dispatch_supervisor(
                 session_alive=session_alive,
                 publish_heartbeat=_publish_heartbeat,
                 followup_review=followup_review,
+                folded=folded,
             )
             # Story 72.1 (CAP-280): fetch `origin main` so the re-gather reads
             # the supervisor's own land, never a stale remote-tracking ref.

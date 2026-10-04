@@ -185,17 +185,45 @@ _GREEN_RUNS = (
 
 
 class FakeForge:
+    def __init__(self) -> None:
+        self.create_draft: bool = False
+        self.pr_is_draft: bool = False
+
     def find_open_pr(self, repo, head_branch):
         return None
 
     def check_runs(self, repo, ref):
         return _GREEN_RUNS
 
-    def create_pr(self, repo, base, head_branch, title, body):
-        return PrInfo(number=42, url="https://example/pr/42", state="open", base="main")
+    def create_pr(self, repo, base, head_branch, title, body, *, draft: bool = False):
+        self.create_draft = draft
+        self.pr_is_draft = draft
+        return PrInfo(
+            number=42,
+            url="https://example/pr/42",
+            state="open",
+            base="main",
+            is_draft=draft,
+        )
 
     def update_pr(self, repo, number, title, body):
-        return PrInfo(number=number, url="https://example/pr/42", state="open", base="main")
+        return PrInfo(
+            number=number,
+            url="https://example/pr/42",
+            state="open",
+            base="main",
+            is_draft=self.pr_is_draft,
+        )
+
+    def set_pr_draft(self, repo, number, *, draft: bool):
+        self.pr_is_draft = draft
+        return PrInfo(
+            number=number,
+            url="https://example/pr/42",
+            state="open",
+            base="main",
+            is_draft=draft,
+        )
 
     def add_labels(self, repo, number, labels):
         return None
@@ -1666,11 +1694,12 @@ def test_execute_dispatch_land_skips_when_already_on_main(tmp_path: Path) -> Non
 
 class _CreatePrSpyForge(FakeForge):
     def __init__(self) -> None:
+        super().__init__()
         self.created: list[str] = []
 
-    def create_pr(self, repo, base, head_branch, title, body):
+    def create_pr(self, repo, base, head_branch, title, body, *, draft: bool = False):
         self.created.append(head_branch)
-        return super().create_pr(repo, base, head_branch, title, body)
+        return super().create_pr(repo, base, head_branch, title, body, draft=draft)
 
 
 def _land_example(tmp_path: Path, vcs: FakeVcs, forge: FakeForge | None = None):
@@ -3387,3 +3416,109 @@ def test_mutation_without_the_heals_wait_a_red_union_head_lands(tmp_path: Path, 
     assert result.verdict == DispatchLandingVerdict.LANDED
     assert forge.merged_heads == ["abc123", "healed222"]
     assert "MRS-DISP-056" not in _codes(envelope)
+
+
+def _seed_hold_spec(worktree: Path, *, landing_review: str = "required") -> None:
+    spec_dir = (
+        worktree
+        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-83-18-hold"
+    )
+    spec_dir.mkdir(parents=True)
+    (spec_dir / "spec-83-18-hold.md").write_text(
+        f"---\nlanding_review: {landing_review}\nstatus: in-progress\n---\n\nbody\n",
+        encoding="utf-8",
+    )
+
+
+def test_execute_dispatch_land_holds_with_draft_pr_when_landing_review_required(tmp_path: Path) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    _seed_hold_spec(worktree)
+    forge = FakeForge()
+    process = FakeProcess()
+
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="83-18-hold",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=forge,
+        process=process,
+    )
+
+    assert result.verdict == DispatchLandingVerdict.HELD_FOR_REVIEW
+    assert result.pr_number == 42
+    assert forge.create_draft is True
+    assert envelope.data.get("held_for_review") is True
+    assert status_for(envelope.verdict) is Status.OK
+    assert not landing_was_refused(tuple(f.to_json_dict() for f in envelope.findings))
+    assert not any(f.code == "MRS-DISP-020" for f in envelope.findings)
+
+
+def test_execute_dispatch_land_holds_when_hold_landing_cli_set(tmp_path: Path) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    forge = FakeForge()
+
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-4-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=forge,
+        process=FakeProcess(),
+        hold_landing_cli=True,
+    )
+
+    assert result.verdict == DispatchLandingVerdict.HELD_FOR_REVIEW
+    assert forge.create_draft is True
+    assert status_for(envelope.verdict) is Status.OK
+
+
+def test_execute_dispatch_land_merges_after_landing_review_passed(tmp_path: Path) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    _seed_hold_spec(worktree, landing_review="passed")
+    forge = FakeForge()
+
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="83-18-hold",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=forge,
+        process=FakeProcess(),
+    )
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert forge.create_draft is False
+
+
+def test_mutation_without_hold_path_merges_when_landing_review_required(tmp_path: Path, monkeypatch) -> None:
+    """Mutation guard (Story 83.18): hold rule removed → landing merges."""
+    from pyforge.marshal.core import dispatch_harness_done as harness_done
+
+    monkeypatch.setattr(harness_done, "resolve_hold_dispatch_landing", lambda **kwargs: False)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    _seed_hold_spec(worktree)
+    forge = FakeForge()
+
+    result, _ = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="83-18-hold",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=FakeVcs(merged=False),
+        forge=forge,
+        process=FakeProcess(),
+    )
+
+    assert result.verdict == DispatchLandingVerdict.LANDED

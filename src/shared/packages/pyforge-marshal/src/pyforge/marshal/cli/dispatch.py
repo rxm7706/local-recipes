@@ -79,6 +79,7 @@ from ..core.dispatch_harness_done import (
     land_fail_operator_message,
     parse_blocking_condition,
     parse_spec_status,
+    HOLD_LANDING_PAYLOAD_KEY,
     should_take_harness_done_land_only,
     should_take_verification_refusal_land_only,
 )
@@ -273,6 +274,14 @@ def add_factory_dispatch_subparser(factory_subparsers: argparse._SubParsersActio
             "Ordered session-harness preference for this invocation only "
             "(comma-separated profile names, e.g. cursor,claude). Overrides "
             "project/repo defaults without editing marshal-policy.toml."
+        ),
+    )
+    parser.add_argument(
+        "--hold-landing",
+        action="store_true",
+        help=(
+            "After verification passes, open the PR as a draft and journal "
+            "held-for-review instead of merging (Story 83.18)."
         ),
     )
     parser.set_defaults(handler=run_dispatch)
@@ -1067,6 +1076,8 @@ def _attempt_harness_done_cap4(
     vcs: CommittingVcs,
     process: ProcessPort,
     followup_review: FollowupReview | None = None,
+    hold_landing_cli: bool = False,
+    story_spec_text: str | None = None,
 ) -> tuple[DispatchLandingVerdict, str, object]:
     """Compose with the existing CAP-4 land path — never a second lander.
 
@@ -1094,6 +1105,8 @@ def _attempt_harness_done_cap4(
         fs=fs,
         vcs=vcs,
         process=process,
+        hold_landing_cli=hold_landing_cli,
+        story_spec_text=story_spec_text,
         **_followup_review_kwargs(followup_review),
     )
     named = envelope.data.get("pr_url")
@@ -1391,7 +1404,10 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
             if isinstance(verdict_val, str):
                 # Story 83.7: refused outcomes carry ``ok: false`` but still
                 # record ``verdict: refused`` for the land-only re-dispatch gate.
-                if entry.payload.get("ok") or verdict_val == DispatchLandingVerdict.REFUSED.value:
+                if entry.payload.get("ok") or verdict_val in {
+                    DispatchLandingVerdict.REFUSED.value,
+                    DispatchLandingVerdict.HELD_FOR_REVIEW.value,
+                }:
                     landing_verdict = verdict_val
             # Story 53.2 review (I1): read regardless of `ok` -- a refused
             # landing (MRS-DISP-048) is exactly the case this must surface.
@@ -2456,6 +2472,7 @@ def run_dispatch(
         build_harness=build_harness,
         process=process,
         policy_flags=policy_flags or None,
+        hold_landing=getattr(args, "hold_landing", False),
     )
     return _emit(args, dict(attempt.data), list(attempt.findings))
 
@@ -2470,6 +2487,7 @@ def dispatch_once(
     process: ProcessPort | None = None,
     policy_flags: dict[str, object] | None = None,
     parallel_dispatch: bool = False,
+    hold_landing: bool = False,
 ) -> DispatchAttempt:
     """Launch exactly one governed story session and report data + findings.
 
@@ -2989,6 +3007,8 @@ def dispatch_once(
             fs=fs,
             vcs=vcs,
             process=process,
+            hold_landing_cli=hold_landing,
+            story_spec_text=live_spec_text,
             # Story 73.1 (CAP-281): a story whose latest run was a follow-up review lands as one.
             **_followup_review_kwargs(_latest_story_followup_review(fs, repo_root, slug, render_feed_key(story_key))),
         )
@@ -3001,6 +3021,7 @@ def dispatch_once(
         if land_verdict in {
             DispatchLandingVerdict.LANDED,
             DispatchLandingVerdict.ALREADY_LANDED,
+            DispatchLandingVerdict.HELD_FOR_REVIEW,
         }:
             return _done()
         findings.append(
@@ -3103,6 +3124,7 @@ def dispatch_once(
             ),
             **(followup_review.to_intent_payload() if followup_review is not None else {}),
             **({"spec_status_rewrite": spec_status_rewrite} if spec_status_rewrite is not None else {}),
+            **({HOLD_LANDING_PAYLOAD_KEY: True} if hold_landing else {}),
         },
     )
     try:

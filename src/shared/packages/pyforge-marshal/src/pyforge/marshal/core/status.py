@@ -1227,6 +1227,8 @@ def _merge_dispatch_row_fields(row: dict[str, object], facts: FleetHomeFacts) ->
         patched["dispatch_verification_scope_advisories"] = list(facts.dispatch_verification_scope_advisories)
     if facts.dispatch_landing_findings:
         patched["dispatch_landing_findings"] = list(facts.dispatch_landing_findings)
+    if facts.dispatch_landing_verdict is not None:
+        patched["dispatch_landing_verdict"] = facts.dispatch_landing_verdict
     if facts.dispatch_landing_superseded:
         patched["dispatch_landing_superseded"] = True
     patched["dispatch_supervisor_alive"] = facts.dispatch_supervisor_alive

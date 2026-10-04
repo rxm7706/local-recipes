@@ -996,7 +996,7 @@ def execute_dispatch_land(
 
     git_repo_root = dispatch_core.canonical_repo_root(repo_root)
     if story_spec_text is None:
-        spec_path = dispatch_core.resolve_story_spec_path(git_repo_root, project_slug, feed_story)
+        spec_path = dispatch_core.resolve_story_spec_path(worktree, project_slug, feed_story)
         if spec_path is not None:
             try:
                 story_spec_text = spec_path.read_text(encoding="utf-8")
