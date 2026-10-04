@@ -547,7 +547,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
                 status=DoctorStatus.FAIL,
                 message=(
                     f"{total_lost} completion(s) lost across "
-                    f"{sum(1 for f in findings if f.check == 'ledger-regression')} ledger(s)"
+                    f"{sum(1 for f in findings if f.check == 'marshal-durability-regression')} ledger(s)"
                 ),
                 evidence={"lost": total_lost, "ledgers": len(ledgers)},
             )

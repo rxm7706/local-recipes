@@ -416,10 +416,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
             before = {mapping.get(k, k): v for k, v in before.items()}
             before_keys |= set(before)
 
-        surviving_done_by_tail: dict[str, set[str]] = {}
-        for k, v in after.items():
-            if v in TERMINAL:
-                surviving_done_by_tail.setdefault(_tail(k), set()).add(k)
+        surviving_tails = {_tail(k) for k, v in after.items() if v in TERMINAL}
         lost = []
         for key, old in sorted(before.items()):
             if old not in TERMINAL:
@@ -427,24 +424,33 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
             new = after.get(key)
             if new is None:
                 tail = _tail(key)
-                survivors = surviving_done_by_tail.get(tail, set())
-                if survivors and any(s in before for s in survivors):
-                    continue  # rename continuity — survivor existed at base (DW-FU-6-4-5)
-                moved_elsewhere = any(
-                    other_path != path and statuses.get(key) in TERMINAL
-                    for other_path, statuses in head_status_by_path.items()
-                )
-                if moved_elsewhere:
-                    findings.append(
-                        {
-                            "kind": "ledger-key-moved",
-                            "project": project,
-                            "path": path,
-                            "detail": f"story key {key!r} moved to another project's ledger — not a regression",
-                            "keys": [key],
-                        }
+                if tail in surviving_tails:
+                    moved_elsewhere = any(
+                        other_path != path and statuses.get(key) in TERMINAL
+                        for other_path, statuses in head_status_by_path.items()
                     )
-                    continue
+                    if moved_elsewhere:
+                        findings.append(
+                            {
+                                "kind": "ledger-key-moved",
+                                "project": project,
+                                "path": path,
+                                "detail": (
+                                    f"story key {key!r} moved to another project's ledger — not a regression"
+                                ),
+                                "keys": [key],
+                            }
+                        )
+                        continue
+                    survivors = {k for k, v in after.items() if v in TERMINAL and _tail(k) == tail}
+                    base_same_tail = {k for k, v in before.items() if v in TERMINAL and _tail(k) == tail}
+                    # DW-FU-6-4-5: a coincidentally new `done` key with the same
+                    # tail must not mask a deletion unless this is the one-key
+                    # rename case (exactly one done key on each side, same tail).
+                    if any(s in before for s in survivors) or (
+                        len(survivors) == 1 and base_same_tail == {key}
+                    ):
+                        continue  # renamed, still done — continuity, not regression
                 lost.append((key, old, "<absent>"))
             elif new not in TERMINAL and not epic_reopened_by_new_story(key, before_keys, after):
                 lost.append((key, old, new))
