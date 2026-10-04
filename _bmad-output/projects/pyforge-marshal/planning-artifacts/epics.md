@@ -9001,9 +9001,9 @@ Minted 2026-10-03 from the operator's Phase 3 rulings on the deferral burn-down 
 **Type:** fix • **Effort:** S • **Deps:** — • **Closes:** 86.5's post-landing review (MEDIUM-1, LOW-1, LOW-2); amends DW-FU-21-2 •
 **Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/chain_regen.py`, `src/shared/packages/pyforge-marshal/pyproject.toml`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/verdict.py`, `docs/reference/station-cheat-sheet.md`, `docsite/content/dossier.yml`, the marshal infographics, the atlas and steward `epics.md` cites, the marshal deferred-work ledger; their tests
 **Spec:** `planning-artifacts/specs/spec-86-8-path-form-spec-cites-count-as-missing-and-the-retired-chain-verb-leaves-no-trace.md`
-**Given** an `epics.md` citing `specs/spec-a1-old-name.md` that resolves nowhere
+**Given** a path-form story-spec cite in `epics.md` that resolves nowhere (story spec AC1)
 **When** the code-linkage verify runs
-**Then** it counts and names that cite missing, while `spec-template` prose stays uncounted
+**Then** it counts and names that cite missing, while bare `spec-template` prose stays uncounted
 **And** the 26 stale atlas links and the steward cite are repaired; no unused mypy section; `docs_station_cli.py --check` exits 0; DW-FU-21-2's resolution is amended; removing the path rule fails its test (mutation)
 
 ## Epic 87: Branch and worktree cleanup never destroys protected state
