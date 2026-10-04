@@ -824,7 +824,9 @@ def _fetch_latest_github_release(*, owner_repo: str, timeout: float | None = Non
     ``_parse_release_triple`` already documents). Any OTHER failure -- a
     non-404 HTTPError, a network/timeout error, a malformed JSON body, or
     a missing/unparseable tag/release name -- returns ``None`` immediately
-    WITHOUT trying ``/tags`` (Boundaries).
+    WITHOUT trying ``/tags`` (Boundaries). ``/tags`` is paginated: every
+    ``Link: rel="next"`` page is followed while the deadline allows
+    (``_next_page_url``, DW-FU-15-1).
 
     Both endpoints' tag/release names are stripped of one optional
     leading ``v``/``V`` (``_strip_leading_v``) before parsing with the
@@ -852,14 +854,25 @@ def _fetch_latest_github_release(*, owner_repo: str, timeout: float | None = Non
     except _GITHUB_FETCH_FAIL_TYPES:
         return None
 
-    remaining = deadline - time.monotonic()
-    if remaining <= 0:
-        return None
-    tags_url = _GITHUB_TAGS_URL.format(owner_repo=owner_repo)
-    try:
-        with urllib.request.urlopen(tags_url, timeout=remaining) as response:
-            entries = json.loads(response.read())
-        parsed: list[tuple[int, int, int]] = []
+    parsed: list[tuple[int, int, int]] = []
+    url: str | None = _GITHUB_TAGS_URL.format(owner_repo=owner_repo)
+    for page in range(_GITHUB_TAGS_MAX_PAGES):
+        remaining = deadline - time.monotonic()
+        if url is None or remaining <= 0:
+            break
+        try:
+            with urllib.request.urlopen(url, timeout=remaining) as response:
+                entries = json.loads(response.read())
+                url = _next_page_url(getattr(response, "headers", None))
+            if not isinstance(entries, list):
+                raise TypeError("tags body is not a list")
+        except _GITHUB_FETCH_FAIL_TYPES:
+            if page == 0:
+                return None
+            # A later page failing keeps what the earlier pages found: a
+            # lower max only ever biases this warn-only signal against
+            # false warns.
+            break
         for entry in entries:
             try:
                 triple = _parse_release_triple(_strip_leading_v(str(entry["name"])))
@@ -871,9 +884,29 @@ def _fetch_latest_github_release(*, owner_repo: str, timeout: float | None = Non
                 continue
             if triple is not None:
                 parsed.append(triple)
-        return max(parsed) if parsed else None
-    except _GITHUB_FETCH_FAIL_TYPES:
+    return max(parsed) if parsed else None
+
+
+#: Upper bound on ``/tags`` pages followed (GitHub serves 30 tags a page);
+#: the shared deadline usually stops the walk first.
+_GITHUB_TAGS_MAX_PAGES = 10
+
+_LINK_NEXT_RE = re.compile(r'<([^>]+)>\s*;\s*rel="next"')
+
+
+def _next_page_url(headers: object) -> str | None:
+    """The ``rel="next"`` URL from a GitHub ``Link`` response header, or
+    ``None`` on the last page (DW-FU-15-1: the newest tag can sit past the
+    first page, which sorts tags by name, not by version)."""
+    get = getattr(headers, "get", None)
+    link = get("Link") if callable(get) else None
+    if not isinstance(link, str):
         return None
+    match = _LINK_NEXT_RE.search(link)
+    if match is None:
+        return None
+    next_url = match.group(1)
+    return next_url if next_url.startswith("https://api.github.com/") else None
 
 
 def _fetch_default_branch_head_sha(*, owner_repo: str, timeout: float | None = None) -> str | None:
@@ -1077,7 +1110,40 @@ def _channel_and_recipe_drift_findings(
     return tuple(findings)
 
 
-def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]:
+def _suite_floor_findings(
+    pixi_data: dict, installed: dict[str, tuple[tuple[int, int, int], str]]
+) -> list[Finding]:
+    """Offline CAP-1 analog for the suite (DW-FU-14-1-2): one WARN per
+    installed suite package behind its own ``pixi.toml`` floor -- provable
+    with zero network. A package with no readable floor is skipped."""
+    findings: list[Finding] = []
+    for name in sorted(installed):
+        floors, _unparseable = _declared_floor_entries(pixi_data, name)
+        if not floors:
+            continue
+        floor, table = max(floors)
+        triple, installed_text = installed[name]
+        if triple >= floor:
+            continue
+        floor_text = ".".join(str(part) for part in floor)
+        findings.append(
+            Finding(
+                source=Source.BMAD_METHOD_VERSION_DRIFT,
+                check="bmad-suite-floor-drift",
+                status=DoctorStatus.WARN,
+                message=f"installed {name} {installed_text} is behind pixi.toml's declared floor >={floor_text}",
+                evidence={
+                    "package": name,
+                    "installed": installed_text,
+                    "declared_floor": f">={floor_text}",
+                    "declared_floor_table": table,
+                },
+            )
+        )
+    return findings
+
+
+def _gather_suite_findings(target: Path, pixi_data: dict, *, offline: bool = False) -> tuple[Finding, ...]:
     """CAP-4 (Story 14.1): compare every INSTALLED bmad-suite package
     against its latest npm release, through the same generalized
     ``_fetch_latest_upstream_version`` seam CAP-2 uses. One WARN Finding
@@ -1113,16 +1179,23 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
     hand the WHOLE gather to ``degrade_on_exception``, collapsing CAP-1/
     CAP-2's already-computed Findings into one generic WARN -- so the
     ``except Exception`` below is what makes "CAP-1/CAP-2 outcomes are
-    untouched" a structural guarantee, not a hope."""
+    untouched" a structural guarantee, not a hope.
+
+    Story 41.4: an installed package behind its own ``pixi.toml`` floor is a
+    ``bmad-suite-floor-drift`` WARN, computed offline (DW-FU-14-1-2);
+    ``offline=True`` stops there, issuing no fetch at all (DW-FU-10-3-2).
+    A package that is NOT installed still gets Story 15.2's channel and
+    recipe checks whenever it has a tracked recipe (DW-FU-15-2: on a fresh
+    clone/CI those checks used to never fire); only the installed-vs-upstream
+    comparison and the commit-pinned probe need an install."""
     try:
         packages = _suite_packages(pixi_data, target)
         if not packages:
             return ()
         installed = _installed_suite_versions(target, packages)
-        if not installed:
-            # No runtime state at all => no fetches issued (I/O matrix:
-            # fresh clone/CI).
-            return ()
+        floor_findings = _suite_floor_findings(pixi_data, installed)
+        if offline:
+            return tuple(floor_findings)
 
         deadline = time.monotonic() + _SUITE_FETCH_TOTAL_BUDGET_SECONDS
         warn_findings: list[Finding] = []
@@ -1136,12 +1209,14 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
         # `if warn_findings:` branch and silently dropping the
         # `bmad-suite-upstream-drift` OK/summary Finding that should still
         # fire for the clean packages.
-        extra_findings: list[Finding] = []
+        extra_findings: list[Finding] = list(floor_findings)
         checked = 0
         for name in packages:
             versions = installed.get(name)
-            if versions is None:
-                continue  # pinned but not installed anywhere: nothing to compare
+            if versions is None and _recipe_version(target, name) is None:
+                # Neither an install to compare nor a recipe to check: no
+                # fetch can produce a finding (I/O matrix: fresh clone/CI).
+                continue
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break  # shared budget exhausted: skip the rest (fail-open)
@@ -1153,6 +1228,8 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
             source_kind = _source_kind(target, name)
 
             if source_kind == _SOURCE_KIND_GITHUB_COMMIT:
+                if versions is None:
+                    continue
                 # Commit-pinned probe: compare the recipe's own tracked
                 # context.commit against the GitHub repo's default-branch
                 # HEAD sha -- entirely fail-open, exactly like every other
@@ -1210,7 +1287,6 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
             )
             if latest is None:
                 continue  # per-package fail-open (404, outage, garbage body)
-            checked += 1
 
             # Story 15.2: channel-vs-recipe and recipe-vs-upstream drift,
             # reusing this iteration's own already-resolved `latest` --
@@ -1229,6 +1305,9 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
                     )
                 )
 
+            if versions is None:
+                continue
+            checked += 1
             triple, installed_text = versions
             if triple < latest:
                 latest_text = ".".join(str(part) for part in latest)
@@ -1279,7 +1358,7 @@ def _gather_suite_findings(target: Path, pixi_data: dict) -> tuple[Finding, ...]
         return ()
 
 
-def gather(target: Path) -> tuple[Finding, ...]:
+def gather(target: Path, *, offline: bool = False) -> tuple[Finding, ...]:
     """Compare ``pixi.toml``'s max declared ``bmad-method`` floor against
     ``_bmad/_config/manifest.yaml``'s installed version (CAP-1) and,
     separately, that same installed version against the latest release
@@ -1301,19 +1380,72 @@ def gather(target: Path) -> tuple[Finding, ...]:
     OVERALL when something genuinely unexpected happens on the success
     path, by converting any such exception into one WARN instead.
 
+    ``offline=True`` keeps every check that needs no network (CAP-1, the
+    manifest-divergence and unreadable-floor WARNs, the suite floor check)
+    and issues no fetch at all -- the mode a ``--scope repo`` run uses, so a
+    repo-scope run never reaches the network (DW-FU-10-3-2).
+
     Read-only: never runs ``npx bmad-method install``, never writes to
     ``_bmad/**`` (Boundaries).
     """
     return degrade_on_exception(
         Source.BMAD_METHOD_VERSION_DRIFT,
         "bmad-method-version-drift",
-        lambda: _gather(target),
+        lambda: _gather(target, offline=offline),
     )
 
 
-def _gather(target: Path) -> tuple[Finding, ...]:
+def _manifest_divergence_findings(manifest_data: object, installed_text: str) -> tuple[Finding, ...]:
+    """One WARN when a built-in module's own ``version`` in
+    ``manifest.yaml``'s ``modules`` list disagrees with
+    ``installation.version`` -- an interrupted upgrade rewrites one and not
+    the other (DW-FU-10-1-7). Custom-source modules version independently
+    (``skf``: ``main``) and are skipped. Fail-open: a malformed ``modules``
+    list adds nothing."""
+    modules = manifest_data.get("modules") if isinstance(manifest_data, dict) else None
+    if not isinstance(modules, list):
+        return ()
+    diverged: dict[str, str] = {}
+    for module in modules:
+        if not isinstance(module, dict) or module.get("source", "built-in") != "built-in":
+            continue
+        name, version = module.get("name"), module.get("version")
+        if isinstance(name, str) and version is not None and str(version).strip() != installed_text:
+            diverged[name] = str(version).strip()
+    if not diverged:
+        return ()
+    listed = ", ".join(f"{name} {version}" for name, version in sorted(diverged.items()))
+    return (
+        Finding(
+            source=Source.BMAD_METHOD_VERSION_DRIFT,
+            check="bmad-method-manifest-divergence",
+            status=DoctorStatus.WARN,
+            message=f"manifest.yaml installation.version is {installed_text} but built-in module(s) record {listed}",
+            evidence={"installed": installed_text, "modules": dict(sorted(diverged.items()))},
+        ),
+    )
+
+
+def _floor_unparseable_findings(unparseable: list[tuple[str, str]]) -> tuple[Finding, ...]:
+    """One WARN per declared ``bmad-method`` constraint with no readable
+    floor, beside a table that had one (DW-FU-10-1-4)."""
+    return tuple(
+        Finding(
+            source=Source.BMAD_METHOD_VERSION_DRIFT,
+            check="bmad-method-floor-unparseable",
+            status=DoctorStatus.WARN,
+            message=f"pixi.toml [{table}] declares {DEPENDENCY_NAME} {constraint}, which carries no readable >=X.Y.Z floor",
+            evidence={"table": table, "constraint": constraint},
+        )
+        for table, constraint in unparseable
+    )
+
+
+def _gather(target: Path, *, offline: bool = False) -> tuple[Finding, ...]:
     pixi_data = tomllib.loads((target / "pixi.toml").read_text(encoding="utf-8"))
     declared = max(_declared_floors(pixi_data))
+    floor_entries, unparseable = _declared_floor_entries(pixi_data)
+    declared_table = next(table for floor, table in floor_entries if floor == declared)
 
     manifest_path = target / "_bmad" / "_config" / "manifest.yaml"
     manifest_data = yaml.safe_load(manifest_path.read_text(encoding="utf-8"))
@@ -1324,6 +1456,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     evidence = {
         "installed": installed_text,
         "declared_floor": f">={declared_text}",
+        "declared_floor_table": declared_table,
     }
 
     if installed < declared:
@@ -1348,7 +1481,13 @@ def _gather(target: Path) -> tuple[Finding, ...]:
     # returns. Placed after CAP-1's parse so broken CAP-1 inputs (missing
     # pixi.toml/manifest.yaml) still degrade through the outer net before
     # the suite pass is ever reached, exactly as before CAP-4 existed.
-    suite_findings = _gather_suite_findings(target, pixi_data)
+    suite_findings = _gather_suite_findings(target, pixi_data, offline=offline)
+    offline_findings = (
+        *_floor_unparseable_findings(unparseable),
+        *_manifest_divergence_findings(manifest_data, installed_text),
+    )
+    if offline:
+        return (drift_finding, *offline_findings, *suite_findings)
 
     latest_upstream = _fetch_latest_upstream_version()
     registry_upstream = _resolve_upstream_latest(DEPENDENCY_NAME, target)
@@ -1360,7 +1499,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 DEPENDENCY_NAME,
                 registry_upstream,
             )
-        return (drift_finding, *suite_findings, *channel_recipe_findings)
+        return (drift_finding, *offline_findings, *suite_findings, *channel_recipe_findings)
 
     # Story 15.2/19.1: channel-vs-recipe and recipe-vs-upstream drift for the
     # CORE package, using registry-aware upstream when available -- never a
@@ -1393,4 +1532,4 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             evidence=upstream_evidence,
         )
 
-    return (drift_finding, upstream_finding, *channel_recipe_findings, *suite_findings)
+    return (drift_finding, upstream_finding, *offline_findings, *channel_recipe_findings, *suite_findings)

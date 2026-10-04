@@ -143,7 +143,11 @@ def test_installed_behind_declared_floor_reports_one_warn_naming_both_versions(
     assert finding.status is DoctorStatus.WARN
     assert "6.10.0" in finding.message
     assert "6.11.0" in finding.message
-    assert finding.evidence == {"installed": "6.10.0", "declared_floor": ">=6.11.0"}
+    assert finding.evidence == {
+        "installed": "6.10.0",
+        "declared_floor": ">=6.11.0",
+        "declared_floor_table": "feature.python.dependencies",
+    }
 
 
 # --- Agreement ----------------------------------------------------------------
@@ -313,7 +317,7 @@ def test_gather_never_raises_on_a_completely_empty_target_directory(
 
 
 def test_gather_degrades_on_unexpected_exception(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    def _boom(target: Path):
+    def _boom(target: Path, **_kwargs: object):
         raise RuntimeError("kaboom")
 
     monkeypatch.setattr(bmad_method, "_gather", _boom)
@@ -752,11 +756,15 @@ def test_2026_08_21_pre_update_fixture_names_bmad_loop_and_tea(tmp_path: Path, m
 
     findings = bmad_method.gather(tmp_path)
 
+    # Both installs also sit behind their own pixi.toml floors -- the
+    # offline suite-floor WARNs (DW-FU-14-1-2) ride after the upstream ones.
     assert [f.check for f in findings] == [
         "bmad-method-version-drift",
         "bmad-method-upstream-drift",
         "bmad-suite-upstream-drift",
         "bmad-suite-upstream-drift",
+        "bmad-suite-floor-drift",
+        "bmad-suite-floor-drift",
     ]
     loop_finding, tea_finding = findings[2], findings[3]
     assert loop_finding.source is Source.BMAD_METHOD_VERSION_DRIFT
@@ -868,14 +876,21 @@ def test_every_fetch_failing_is_byte_identical_to_cap1_only(tmp_path: Path, monk
     findings = bmad_method.gather(tmp_path)
 
     # Full-equality assertion (review finding: len/check/status alone was
-    # weaker than this test's own "byte-identical" name).
-    assert len(findings) == 1
-    finding = findings[0]
+    # weaker than this test's own "byte-identical" name). No network-backed
+    # Finding survives; only the offline ones do -- CAP-1, plus the two
+    # installs behind their own pixi.toml floors (DW-FU-14-1-2).
+    finding, *floor_findings = findings
     assert finding.source is Source.BMAD_METHOD_VERSION_DRIFT
     assert finding.check == "bmad-method-version-drift"
     assert finding.status is DoctorStatus.OK
     assert finding.message == ("installed bmad-method 6.11.0 meets pixi.toml's declared floor >=6.11.0")
-    assert finding.evidence == {"installed": "6.11.0", "declared_floor": ">=6.11.0"}
+    assert finding.evidence == {
+        "installed": "6.11.0",
+        "declared_floor": ">=6.11.0",
+        "declared_floor_table": "feature.python.dependencies",
+    }
+    assert [f.evidence["package"] for f in floor_findings] == ["bmad-loop", _TEA]
+    assert {f.check for f in floor_findings} == {"bmad-suite-floor-drift"}
 
 
 def test_one_package_missing_from_npm_is_skipped_others_compared(
@@ -911,6 +926,7 @@ def test_suite_pass_still_runs_when_cap2_core_fetch_fails(tmp_path: Path, monkey
     assert [f.check for f in findings] == [
         "bmad-method-version-drift",
         "bmad-suite-upstream-drift",
+        "bmad-suite-floor-drift",
     ]
     assert findings[1].status is DoctorStatus.WARN
 
@@ -1761,6 +1777,7 @@ def test_github_not_queried_when_no_recipe_yaml_mapping_exists(tmp_path: Path, m
     assert [f.check for f in findings] == [
         "bmad-method-version-drift",
         "bmad-method-upstream-drift",
+        "bmad-suite-floor-drift",
     ]
 
 
@@ -2185,10 +2202,12 @@ def test_suite_package_with_unresolved_upstream_skips_both_new_findings(
 
     assert not [f for f in findings if f.check in ("bmad-channel-drift", "bmad-recipe-upstream-drift")]
     # bmad-loop is never "checked" either -- no suite-upstream-drift
-    # Finding at all, matching the pre-15.2 "unresolved" shape.
+    # Finding at all, matching the pre-15.2 "unresolved" shape; only the
+    # offline floor check (DW-FU-14-1-2) speaks for it.
     assert [f.check for f in findings] == [
         "bmad-method-version-drift",
         "bmad-method-upstream-drift",
+        "bmad-suite-floor-drift",
     ]
 
 
@@ -2216,6 +2235,7 @@ def test_channel_fetch_offline_degrades_silently_rest_of_gather_unaffected(
         "bmad-method-version-drift",
         "bmad-method-upstream-drift",
         "bmad-suite-upstream-drift",
+        "bmad-suite-floor-drift",
     ]
     assert findings[2].status is DoctorStatus.WARN
 
