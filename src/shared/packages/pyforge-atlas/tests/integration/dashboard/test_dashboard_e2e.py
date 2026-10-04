@@ -12,10 +12,8 @@ from pathlib import Path
 
 import pytest
 from playwright.sync_api import expect, sync_playwright
-from vizro import Vizro
 
 from pyforge.atlas.dashboard import app
-from pyforge.atlas.dashboard.app import build_dashboard
 
 
 def get_free_port() -> int:
@@ -50,6 +48,10 @@ def run_vizro_server(
     port: int, data_root: str, stamp: str, now: int, sprint_path: str, epics_path: str, specs_dir: str
 ) -> None:
     """Target function for background server process."""
+    from vizro import Vizro
+
+    from pyforge.atlas.dashboard.app import build_dashboard
+
     os.environ["PORT"] = str(port)
     dashboard = build_dashboard(
         build_stamp=stamp,
@@ -94,7 +96,10 @@ def dashboard_server(bmad_fixture, tmp_path_factory):
     now = 1_700_000_000
     stamp = "2026-07-18T12:00:00Z"
 
-    proc = multiprocessing.Process(
+    # Spawn, not fork: pytest's parent process may have already touched Vizro's
+    # global managers; inheriting that state in a forked server left filter controls
+    # hidden even after Story 27.5 pinned static page data (DW-atlas-27-3-1).
+    proc = multiprocessing.get_context("spawn").Process(
         target=run_vizro_server,
         args=(port, str(data_root), stamp, now, sprint_path, epics_path, specs_dir),
     )
@@ -213,13 +218,6 @@ def test_every_grounded_page_renders_rows_on_the_fixture_data_root(dashboard_ser
             browser.close()
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason=(
-        "DW-atlas-27-3-1: the distribution-breakdown facet filter's container intermittently renders empty "
-        "(0x0, no control) while the chart renders; quarantined until atlas Story 27.5 fixes the filter build"
-    ),
-)
 def test_declared_controls_render_against_real_rows(dashboard_server):
     """DW-FU-20-5: a page whose ``PageDef`` declares a filter and a chart really
     builds both once its backing Parquet has rows. ``distribution-breakdown``
@@ -230,18 +228,24 @@ def test_declared_controls_render_against_real_rows(dashboard_server):
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+        # Vizro's filter controls live in the collapsible left nav; Playwright's default
+        # 1280×720 viewport leaves that panel with no layout box (DW-atlas-27-3-1).
+        context = browser.new_context(viewport={"width": 1920, "height": 1080})
+        page = context.new_page()
         try:
             page.goto(f"{dashboard_server}{_page_path(page_def)}")
             # The filter and chart render after the page's data callback. A loaded CI runner took longer than
             # Playwright's 5 s default twice on 2026-10-04 (#1836, #1838), so wait for the network to settle and
             # allow 15 s.
             page.wait_for_load_state("networkidle")
-            expect(page.locator("#distribution-breakdown--filter-facet")).to_be_visible(timeout=15_000)
+            facet_filter = page.locator("#distribution-breakdown--filter-facet")
+            expect(facet_filter).to_be_visible(timeout=15_000)
+            expect(facet_filter.locator("button.dash-dropdown")).to_be_visible(timeout=15_000)
             expect(page.locator("#distribution-breakdown--chart")).to_be_visible(timeout=15_000)
             grid = page.locator("#distribution-breakdown--grid")
             expect(grid).to_contain_text("linux-64")
         finally:
+            context.close()
             browser.close()
 
 
