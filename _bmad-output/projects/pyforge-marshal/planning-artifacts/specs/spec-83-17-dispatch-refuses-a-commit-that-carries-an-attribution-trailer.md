@@ -2,7 +2,7 @@
 title: "83.17: Dispatch refuses a commit that carries an attribution trailer"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 baseline_revision: '441c4f2909f488ff65f3d1663d2ae6e9d122c4e3'
 review_loop_iteration: 0
 followup_review_recommended: false
