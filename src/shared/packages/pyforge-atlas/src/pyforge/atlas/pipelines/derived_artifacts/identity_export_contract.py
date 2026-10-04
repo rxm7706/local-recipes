@@ -8,7 +8,6 @@ cell-to-text rule both readers of the export Parquet use.
 
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
 
 IDENTITY_COMPLETE_EXPORT_COLUMNS: tuple[str, ...] = (
@@ -203,7 +202,9 @@ def stringify_export_cell(value: object) -> str:
     crashing ``pd.isna``."""
     if value is None:
         return ""
-    if isinstance(value, np.ndarray):
+    # A numpy array (what a Parquet round-trip yields for a list cell) is matched by shape, not by type:
+    # numpy is not a declared dependency of this package (tests/packaging/test_dependency_completeness.py).
+    if not isinstance(value, (str, bytes)) and hasattr(value, "tolist") and getattr(value, "ndim", 0) >= 1:
         value = value.tolist()
     if isinstance(value, (list, tuple)):
         return "; ".join(text for text in (stringify_export_cell(v) for v in value) if text)
