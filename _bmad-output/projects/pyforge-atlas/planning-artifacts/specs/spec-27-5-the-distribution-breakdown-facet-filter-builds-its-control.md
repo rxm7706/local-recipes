@@ -2,7 +2,8 @@
 title: "27.5: The distribution-breakdown facet filter builds its control"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '3ec837c431a989d926417ed04fe7edda3c659a24'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

@@ -213,13 +213,6 @@ def test_every_grounded_page_renders_rows_on_the_fixture_data_root(dashboard_ser
             browser.close()
 
 
-@pytest.mark.xfail(
-    strict=False,
-    reason=(
-        "DW-atlas-27-3-1: the distribution-breakdown facet filter's container intermittently renders empty "
-        "(0x0, no control) while the chart renders; quarantined until atlas Story 27.5 fixes the filter build"
-    ),
-)
 def test_declared_controls_render_against_real_rows(dashboard_server):
     """DW-FU-20-5: a page whose ``PageDef`` declares a filter and a chart really
     builds both once its backing Parquet has rows. ``distribution-breakdown``
