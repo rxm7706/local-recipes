@@ -23,6 +23,7 @@ from ..core import dispatch as dispatch_core
 from ..core import gate as gate_core
 from ..core import promotion as promotion_core
 from ..core.commit_vcs import CommittingVcs
+from ..core.dispatch_cfe_commit import paths_excluding_cfe
 from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
@@ -104,7 +105,6 @@ from ..core.policy import resolve_verify_fix_settings
 from ..core.publish import dispatch_complete_result, shape_dispatch_publish
 from ..core.refs import ORIGIN_MAIN
 from ..core.supervise import resolve_terminal_session_verdict
-from ..core.dispatch_cfe_commit import paths_excluding_cfe
 from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
     should_checkpoint_on_idle,

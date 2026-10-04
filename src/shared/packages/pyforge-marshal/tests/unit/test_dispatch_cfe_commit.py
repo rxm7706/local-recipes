@@ -36,9 +36,7 @@ def _init_repo(tmp_path: Path) -> Path:
     cfe_dir = repo / ".claude" / "skills" / "conda-forge-expert" / "tests" / "meta"
     cfe_dir.mkdir(parents=True)
     (cfe_dir / "test_example.py").write_text("def test_ok():\n    assert True\n", encoding="utf-8")
-    (repo / ".claude" / "skills" / "conda-forge-expert" / "CHANGELOG.md").write_text(
-        "# Changelog\n", encoding="utf-8"
-    )
+    (repo / ".claude" / "skills" / "conda-forge-expert" / "CHANGELOG.md").write_text("# Changelog\n", encoding="utf-8")
     _git(repo, "add", ".")
     _git(repo, "commit", "-m", "initial")
     _git(repo, "branch", "story")
@@ -117,7 +115,9 @@ def test_unsanctioned_commits_finding_for_wip_checkpoint(vcs: GitVcs, repo: Path
     assert findings[0].code == CFE_COMMIT_GATE_CODE
 
 
-def test_mutation_checkpoint_without_cfe_filter_commits_cfe(vcs: GitVcs, repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_mutation_checkpoint_without_cfe_filter_commits_cfe(
+    vcs: GitVcs, repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Removing the CFE filter must put CFE paths in a wip: commit (mutation guard)."""
     import pyforge.marshal.core.worktree_checkpoint as wc
 

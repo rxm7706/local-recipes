@@ -2,6 +2,7 @@
 
 Mirrors ``scripts/mason_cfe_surface_check.py``'s surface definition — one owner
 for path classification, not a second copy in marshal."""
+
 from __future__ import annotations
 
 CFE_CHANGELOG_PATH = ".claude/skills/conda-forge-expert/CHANGELOG.md"
