@@ -145,6 +145,7 @@ precedent for ``spec_surface_check.py``'s ``--write-baseline``.
 
 from __future__ import annotations
 
+import contextvars
 import fnmatch
 import importlib.util
 import json
@@ -152,6 +153,8 @@ import os
 import re
 import stat
 import sys
+from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
@@ -165,6 +168,56 @@ __all__ = ("gather", "ground_truth")
 Ver = tuple[int, int, int]
 
 HARD, DRIFT, INFO = "HARD", "DRIFT", "INFO"
+
+
+@dataclass(frozen=True)
+class _GatherState:
+    gt: dict
+    live: Ver | None
+    live_error: str | None
+
+
+_gather_state: contextvars.ContextVar[_GatherState | None] = contextvars.ContextVar("_gather_state", default=None)
+
+
+def _gather_ground_truth(target: Path) -> dict:
+    st = _gather_state.get()
+    if st is not None:
+        return st.gt
+    return _ground_truth(target)
+
+
+def _gather_live_version(target: Path) -> Ver:
+    st = _gather_state.get()
+    if st is not None:
+        if st.live_error is not None:
+            raise ValueError(st.live_error)
+        if st.live is not None:
+            return st.live
+    return _live_version(target)
+
+
+def _ground_truth_for_gather(target: Path) -> _GatherState:
+    gt: dict = {}
+    for key, fn in (
+        ("skill_version", lambda: _skill_version(target)),
+        ("schema_version", lambda: _schema_version(target)),
+        ("mcp_tools", lambda: _mcp_tool_count(target)),
+        ("atlas_phases", lambda: _phase_count(target)),
+        ("gotcha_max", lambda: _gotcha_max(target)),
+        ("pixi_envs", lambda: _env_count(target)),
+    ):
+        try:
+            gt[key] = fn()
+        except OSError:
+            gt[key] = None
+    live: Ver | None = None
+    live_error: str | None = None
+    try:
+        live = _live_version(target)
+    except (ValueError, OSError) as exc:
+        live_error = str(exc)
+    return _GatherState(gt=gt, live=live, live_error=live_error)
 
 _SEVERITY_TO_STATUS: dict[str, DoctorStatus] = {
     HARD: DoctorStatus.FAIL,
@@ -607,7 +660,7 @@ def _git_tracked(target: Path, relpath: str) -> list[str] | None:
 
 
 def _fingerprint(target: Path) -> dict:
-    gt = _ground_truth(target)
+    gt = _gather_ground_truth(target)
     fp = {k: gt[k] for k in FINGERPRINT_KEYS if k in gt}
     fp["phase_ids"] = _phase_ids(target)
     fp["git_head"] = _git_head(target)
@@ -722,7 +775,7 @@ def check_pins(target: Path) -> list[Finding]:
     proj = _proj(target)
     out: list[Finding] = []
     try:
-        live: Ver | None = _live_version(target)
+        live: Ver | None = _gather_live_version(target)
     except (ValueError, OSError) as exc:
         live = None
         out.append(_unevaluable("check_pins", str(exc), target))
@@ -782,23 +835,47 @@ def check_archive_hygiene(target: Path) -> list[Finding]:
     try:
         impl = _impl(target)
         if _is_dir(impl):
-            for p in _listdir_match(impl, "retro-*.md"):
-                out.append(
-                    _finding(
-                        HARD,
-                        "archive-misplaced",
-                        f"implementation-artifacts/{p.name}",
-                        "retro belongs in retros/",
-                        fixable=True,
+            retros_dir = impl / "retros"
+            for p in _walk(impl):
+                if not _is_file(p):
+                    continue
+                rel = _rel(p, target)
+                if p.suffix in STRAY_SUFFIXES:
+                    out.append(
+                        _finding(
+                            HARD,
+                            "stray-file",
+                            rel,
+                            "throwaway artifact (already in git history) — remove",
+                            fixable=True,
+                        )
                     )
-                )
-            for p in _listdir(impl):
+                    continue
+                if p.name.startswith("retro-") and p.suffix == ".md":
+                    try:
+                        p.relative_to(retros_dir)
+                    except ValueError:
+                        out.append(
+                            _finding(
+                                HARD,
+                                "archive-misplaced",
+                                rel,
+                                "retro belongs in retros/",
+                                fixable=True,
+                            )
+                        )
+    except OSError as exc:
+        out.append(_unevaluable("check_archive_hygiene", f"{exc.__class__.__name__}: {exc}", target))
+    try:
+        plan = _plan(target)
+        if _is_dir(plan):
+            for p in _walk(plan):
                 if _is_file(p) and p.suffix in STRAY_SUFFIXES:
                     out.append(
                         _finding(
                             HARD,
                             "stray-file",
-                            f"implementation-artifacts/{p.name}",
+                            _rel(p, target),
                             "throwaway artifact (already in git history) — remove",
                             fixable=True,
                         )
@@ -862,7 +939,7 @@ def check_deferred_work(target: Path) -> list[Finding]:
                 "no 'Last reconciled: ... vX.Y.Z' stamp — cannot tell if it is current",
             )
         ]
-    live = _live_version(target)
+    live = _gather_live_version(target)
     pin = (int(m.group(1)), int(m.group(2)), int(m.group(3)))
     if (pin[0], pin[1]) < (live[0], live[1]):
         return [
@@ -877,15 +954,25 @@ def check_deferred_work(target: Path) -> list[Finding]:
 
 
 def check_counts(target: Path) -> list[Finding]:
-    gt = _ground_truth(target)
+    gt = _gather_ground_truth(target)
     proj = _proj(target)
     out: list[Finding] = []
     probes = [
-        (r"schema v(\d+)\b", gt["schema_version"], "schema"),
-        (r"(\d+)\s+MCP tools", gt["mcp_tools"], "MCP tools"),
-        (r"G1[–-]G(\d+)", gt["gotcha_max"], "gotcha range"),
-        (r"(\d+)\s+pixi envs", gt["pixi_envs"], "pixi envs"),
+        (r"schema v(\d+)\b", gt.get("schema_version"), "schema"),
+        (r"(\d+)\s+MCP tools", gt.get("mcp_tools"), "MCP tools"),
+        (r"G1[–-]G(\d+)", gt.get("gotcha_max"), "gotcha range"),
+        (r"(\d+)\s+pixi envs", gt.get("pixi_envs"), "pixi envs"),
     ]
+    for pat, live_val, label in probes:
+        if live_val is None:
+            out.append(
+                _finding(
+                    INFO,
+                    "count-source-unreadable",
+                    label,
+                    f"live {label} count could not be read from the factory ground-truth sources",
+                )
+            )
     for rel, cat in TRACKED:
         if cat != "living":
             continue
@@ -1291,10 +1378,12 @@ def check_coverage(target: Path) -> list[Finding]:
     proj = _proj(target)
     if not _is_dir(proj):
         return findings
+    buckets: Counter[str] = Counter()
     for path in sorted(_walk(proj)):
         if not _is_file(path):
             continue
         cls = classify(path, target)
+        buckets[cls] += 1
         if cls == "ignored":
             continue
         if cls == "UNKNOWN" and path.suffix not in STRAY_SUFFIXES:
@@ -1303,6 +1392,15 @@ def check_coverage(target: Path) -> list[Finding]:
                     HARD, "uncovered", _rel(path, target), "not covered by drift-check — add a classification rule"
                 )
             )
+    findings.append(
+        Finding(
+            source=Source.BMAD_DRIFT,
+            check="coverage-summary",
+            status=DoctorStatus.OK,
+            message="classification bucket counts for the project tree",
+            evidence={"subject": PROJ_REL, "classification": dict(sorted(buckets.items()))},
+        )
+    )
     return findings
 
 
@@ -1476,8 +1574,14 @@ def check_dream_owners(target: Path) -> list[Finding]:
                 )
             )
         elif owner not in stations and owner != "guild":
+            station_names = ", ".join(stations)
             out.append(
-                _finding(DRIFT, "dream-unowned", _rel(f, target), f"owner {owner!r} is not one of the eight Smiths")
+                _finding(
+                    DRIFT,
+                    "dream-unowned",
+                    _rel(f, target),
+                    f"owner {owner!r} is not one of {station_names}",
+                )
             )
     return out
 
@@ -1590,31 +1694,41 @@ def _gather(target: Path) -> tuple[Finding, ...]:
             ),
         )
 
+    gather_state = _ground_truth_for_gather(target)
+    token = _gather_state.set(gather_state)
     findings: list[Finding] = []
-    for name in _CHECK_NAMES:
-        try:
-            fn = globals()[name]
-            findings.extend(fn(target))
-        except Exception as exc:  # noqa: BLE001 -- the per-check isolation
-            # boundary itself: one check's malformed input -- or, degenerately,
-            # a future edit desyncing _CHECK_NAMES from an actual function
-            # name (KeyError) -- must not discard the other checks' already-
-            # computed findings. The lookup lives INSIDE this try on purpose:
-            # review pass (Story 6.8) found it outside, where a KeyError would
-            # have escaped this loop entirely and been caught only by
-            # gather()'s own outer degrade_on_exception, discarding every
-            # finding already accumulated from checks that ran successfully
-            # earlier in this same pass.
-            findings.append(_unevaluable(name, f"{exc.__class__.__name__}: {exc}", target))
+    try:
+        for name in _CHECK_NAMES:
+            try:
+                fn = globals()[name]
+                findings.extend(fn(target))
+            except Exception as exc:  # noqa: BLE001 -- the per-check isolation
+                # boundary itself: one check's malformed input -- or, degenerately,
+                # a future edit desyncing _CHECK_NAMES from an actual function
+                # name (KeyError) -- must not discard the other checks' already-
+                # computed findings. The lookup lives INSIDE this try on purpose:
+                # review pass (Story 6.8) found it outside, where a KeyError would
+                # have escaped this loop entirely and been caught only by
+                # gather()'s own outer degrade_on_exception, discarding every
+                # finding already accumulated from checks that ran successfully
+                # earlier in this same pass.
+                findings.append(_unevaluable(name, f"{exc.__class__.__name__}: {exc}", target))
+    finally:
+        _gather_state.reset(token)
 
-    if not findings:
+    summaries = [f for f in findings if f.check == "coverage-summary"]
+    substantive = [f for f in findings if f.check != "coverage-summary"]
+    if not substantive:
+        evidence: dict = {"target": str(target)}
+        if summaries:
+            evidence["classification"] = summaries[-1].evidence.get("classification", {})
         return (
             Finding(
                 source=Source.BMAD_DRIFT,
                 check="bmad-drift",
                 status=DoctorStatus.OK,
                 message=(f"all tracked BMAD project docs under {PROJ_REL}/ are in sync with the live factory"),
-                evidence={"target": str(target)},
+                evidence=evidence,
             ),
         )
     return tuple(findings)
