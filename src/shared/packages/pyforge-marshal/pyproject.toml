@@ -35,6 +35,8 @@ dependencies = [
     "jsonschema>=4.25",
     "bmad-loop>=0.11.0,<0.13",
     "pyforge-core",
+    # Story 83.19: CFE surface path owner shared with branch_diff_guard (dispatch verify + commits).
+    "pyforge-testing-kit",
     # Story 10.1: Genesis's template engine (architecture Stack table,
     # AD-52). Imported nowhere but seed/engine/copier.py (P-02, proven by
     # tests/meta/test_p02_copier_sole_ownership.py).

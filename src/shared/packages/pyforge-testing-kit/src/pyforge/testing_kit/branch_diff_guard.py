@@ -194,7 +194,7 @@ _RETRO_SUBJECT = re.compile(r"^retro(\([^)]*\))?:")
 def unsanctioned_commits(
     root: Path,
     *,
-    pathspec: str,
+    pathspec: str | tuple[str, ...],
     changelog_path: str,
     base: str = ORIGIN_MAIN,
 ) -> list[str]:

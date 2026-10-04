@@ -104,6 +104,7 @@ from ..core.policy import resolve_verify_fix_settings
 from ..core.publish import dispatch_complete_result, shape_dispatch_publish
 from ..core.refs import ORIGIN_MAIN
 from ..core.supervise import resolve_terminal_session_verdict
+from ..core.dispatch_cfe_commit import paths_excluding_cfe
 from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
     should_checkpoint_on_idle,
@@ -864,7 +865,8 @@ def _commit_and_journal_blocked_halt(
     except VcsCommandError:
         return counter, False
     patch_paths = _attempted_change_patch_paths(worktree)
-    paths_to_commit = tuple(Path(path) for path in changed) + tuple(p.relative_to(worktree) for p in patch_paths)
+    rel_patch = tuple(p.relative_to(worktree).as_posix() for p in patch_paths)
+    paths_to_commit = paths_excluding_cfe(changed) + paths_excluding_cfe(rel_patch)
     if not paths_to_commit:
         return counter, False
     try:
@@ -1538,10 +1540,11 @@ def _run_supervisor_finalize_sequence(
     try:
         if vcs.has_uncommitted_changes(worktree):
             changed = vcs.changed_files(repo_root, worktree, base="HEAD")
-            if changed:
+            to_commit = paths_excluding_cfe(changed) if changed else ()
+            if to_commit:
                 vcs.commit_paths(
                     worktree,
-                    tuple(Path(path) for path in changed),
+                    to_commit,
                     to_redacted_text("marshal: supervisor finalize (Story 28.24)"),
                 )
                 committed = True

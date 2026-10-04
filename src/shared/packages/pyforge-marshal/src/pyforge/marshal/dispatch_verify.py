@@ -28,6 +28,10 @@ from .adapters.vcs_git import VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
 from .core.commit_vcs import CommittingVcs
+from .core.dispatch_cfe_commit import (
+    commit_pending_cfe_retro,
+    findings_for_unsanctioned_cfe_commits,
+)
 from .core.dispatch_ruff_format import (
     DispatchRuffFormatResult,
     apply_dispatch_ruff_format_before_verify,
@@ -608,6 +612,30 @@ def evaluate_dispatch_verification(
         )
         if intake_finding is not None:
             findings.append(intake_finding)
+
+        try:
+            dirty_paths = vcs.changed_files(repo_root, worktree, base="HEAD")
+        except Exception as exc:
+            findings.append(
+                Finding(
+                    code="MRS-GATE-009",
+                    severity=Severity.ERROR,
+                    message=f"dispatch CFE retro commit could not read dirty paths: {exc}",
+                )
+            )
+            dirty_paths = ()
+        if dirty_paths:
+            cfe_retro = commit_pending_cfe_retro(
+                committing_vcs,
+                worktree=worktree,
+                changed_paths=dirty_paths,
+            )
+            data["cfe_retro_commit"] = {"committed": cfe_retro.committed}
+            if cfe_retro.finding is not None:
+                findings.append(cfe_retro.finding)
+
+    findings.extend(findings_for_unsanctioned_cfe_commits(worktree, base=_SCOPE_BASE))
+    data["cfe_unsanctioned_commits_check"] = {"checked": True}
 
     attribution_findings, attribution_report = check_branch_commit_attribution(
         worktree=worktree,
