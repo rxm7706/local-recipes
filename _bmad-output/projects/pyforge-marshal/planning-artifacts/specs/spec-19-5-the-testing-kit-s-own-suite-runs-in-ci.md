@@ -81,8 +81,18 @@ Type / Effort / Deps: fix / S / —.
 ## Review Triage Log
 
 ### 2026-10-04 — Build (hand-built in `chain-marshal-19-5`); ready for an independent review
-- No review has run yet.
 - Measured after the build: the kit suite gives 80 passed (69 + the fixed shape test + 10 meta tests); `pyforge-core-test` gives 2221 passed; steward's `test_workflow_path_filters_match.py` passes.
 - Where the build goes past the Approach, and why:
   - The workflow comment names the meta test without its directory. `pyforge-core`'s lane test reads every line up to the next job header as part of `core-test`'s block, and it refuses a `tests/meta` path there as an enumerated file list.
+  - The two new triggers also fire the `guild-container` job (gated only on the `PAUSE_CONTAINER_BUILDS` variable, `true` today). Accepted: the image `COPY`s the whole checkout (`Containerfile` :79), so django-pyforge and the platform flag tree are image inputs too, the same as every station path that already triggers it.
+  - `docs/dreams/pyforge-unifying-strategy.md`'s measured env matrix is refreshed (`scripts/pixi_env_matrix.py --update --dream …`). It was older than `pixi.lock` (bmad-drift `pixi-env-matrix-stale`); `pixi.lock` itself is unchanged.
+  - The scoped testing-charter stamp also took in seven kit hashes this story did not touch (`README.md`, `pyproject.toml`, the package `pixi.toml`, `__init__.py`, `branch_diff_guard.py`, `cli_runner.py`, `test_branch_diff_guard.py`). Their memlog entries (2026-09-29/30, Story 74.1) already name them; 74.1's stamp was skipped.
+  - Marshal 83.19 (#1860) landed the same `test_flags.py` fix first; the merge from `main` takes its wording.
   - `environment.yaml` is regenerated, as the `pixi.toml` rule requires. On `main` it was invalid YAML: its first line was a pixi `WARN` about `PIXI_PROJECT_MANIFEST`, captured by Story 86.6's Cursor session (`0b4a9112b3`, a `wip:` auto-checkpoint). The clean export drops only that line.
+
+### 2026-10-04 — Independent review (against this spec): no HIGH, two MEDIUM, three LOW; all fixed in the branch
+- MEDIUM 1, the new triggers fire `guild-container`: recorded above as an accepted cost (the image copies the whole checkout).
+- MEDIUM 2, the meta test missed four mutations (a neutered `TESTING_KIT_CHANGED=true`, an extra `pytest` step, another job `needs:` the kit job, a dropped `pixi.toml` trigger): each detector now catches its mutation, with a test per mutation, and `INPUTS` names the shared-surface triggers.
+- LOW 3, stale comments in the workflow (the job count, the shared-surface fan-out, the django-* trigger note): reworded.
+- LOW 4, the job comment sat above the header and so inside `core-test`'s block: moved under the header, which restores the meta test's full path.
+- LOW 5, the env-matrix refresh and the stamp catch-up were unrecorded: recorded above; the leg mutation test pins its message.

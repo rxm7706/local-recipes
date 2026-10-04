@@ -27,9 +27,13 @@ TASK = "pyforge-testing-kit-test"
 ENV = "pyforge-testing-kit"
 GATE = "needs.changes.outputs.testing_kit"
 RUN = f"pixi run --frozen -e {ENV} {TASK}"
-# Every input the suite reads: the kit, pyforge-core and django-pyforge (both on its
-# PYTHONPATH), and the platform flag tree (test_flags.py's shape check).
+# Every input that can change the suite's verdict: the shared surface (pixi.toml, pixi.lock,
+# this workflow), the kit, pyforge-core and django-pyforge (both on its PYTHONPATH), and the
+# platform flag tree (test_flags.py's shape check).
 INPUTS = (
+    "pixi.toml",
+    "pixi.lock",
+    ".github/workflows/pyforge-station-tests.yml",
     "src/shared/packages/pyforge-testing-kit/**",
     "src/shared/packages/pyforge-core/**",
     "src/shared/packages/django-pyforge/**",
@@ -44,6 +48,9 @@ _RUN_LINE = re.compile(r"^\s+-\s+run:\s*(.+?)\s*$", re.MULTILINE)
 _OUTPUT = re.compile(r"^\s+testing_kit:\s*\$\{\{\s*steps\.filter\.outputs\.testing_kit\s*\}\}\s*$", re.MULTILINE)
 _SEED = re.compile(r'^\s*TESTING_KIT_CHANGED="\$SHARED_CHANGED"\s*$', re.MULTILINE)
 _ECHO = re.compile(r'^\s*echo "testing_kit=\$TESTING_KIT_CHANGED" >> "\$GITHUB_OUTPUT"\s*$', re.MULTILINE)
+_SET = re.compile(r"^\s*TESTING_KIT_CHANGED=true\s*$", re.MULTILINE)
+_NEEDS = re.compile(r"^\s+needs:\s*(.+?)\s*$", re.MULTILINE)
+_ENUMERATED = re.compile(r"tests/(?:meta|unit|integration|conformance)\b")
 
 
 def _blocks(text: str) -> dict[str, str]:
@@ -76,8 +83,14 @@ def job_problems(workflow_text: str) -> list[str]:
         problems.append(f"`{JOB}` does not need `changes`")
     if not re.search(rf"^\s+if:\s*{re.escape(GATE)} == 'true'\s*$", block, re.MULTILINE):
         problems.append(f"`{JOB}` is not gated on `{GATE}`")
-    if RUN not in _RUN_LINE.findall(block):
+    runs = _RUN_LINE.findall(block)
+    if RUN not in runs:
         problems.append(f"`{JOB}` does not run exactly `{RUN}`")
+    if any("pytest" in r or _ENUMERATED.search(r) for r in runs):
+        problems.append(f"`{JOB}` invokes pytest or a tests/ sub-path directly instead of the pixi task")
+    for name, other in _jobs(workflow_text).items():
+        if name != JOB and any(JOB in n for n in _NEEDS.findall(other)):
+            problems.append(f"`{name}` needs `{JOB}` -- it is a peer of the other jobs, not a gate on them")
     return problems
 
 
@@ -97,6 +110,8 @@ def gate_problems(workflow_text: str) -> list[str]:
         for path in EXTRA_GATE_PATHS:
             if path not in between:
                 problems.append(f"`{path}` does not flip TESTING_KIT_CHANGED")
+        if _SET.search(between) is None:
+            problems.append("nothing between the seed and the echo sets `TESTING_KIT_CHANGED=true`")
     return problems
 
 
@@ -167,7 +182,10 @@ def test_detector_fires_when_the_job_runs_pytest_directly() -> None:
     mutated = _workflow_text().replace(
         f"      - run: {RUN}\n", "      - run: pytest src/shared/packages/pyforge-testing-kit/tests\n"
     )
-    assert job_problems(mutated) == [f"`{JOB}` does not run exactly `{RUN}`"]
+    assert job_problems(mutated) == [
+        f"`{JOB}` does not run exactly `{RUN}`",
+        f"`{JOB}` invokes pytest or a tests/ sub-path directly instead of the pixi task",
+    ]
 
 
 def test_detector_fires_when_the_gate_output_is_dropped() -> None:
@@ -192,4 +210,42 @@ def test_detector_fires_when_the_local_leg_is_removed() -> None:
     data = _pixi_data()
     legs = data["feature"]["guild-tasks"]["tasks"]["pyforge-station-tests"]["depends-on"]
     legs.remove({"task": TASK, "environment": ENV})
-    assert len(leg_problems(data)) == 1
+    assert leg_problems(data) == [f"pyforge-station-tests has no {{task = {TASK!r}, environment = {ENV!r}}} leg"]
+
+
+def test_detector_fires_when_the_gate_is_neutered() -> None:
+    mutated = _workflow_text().replace(
+        "            TESTING_KIT_CHANGED=true\n", "            TESTING_KIT_CHANGED=false\n"
+    )
+    assert gate_problems(mutated) == ["nothing between the seed and the echo sets `TESTING_KIT_CHANGED=true`"]
+
+
+def test_detector_fires_when_the_if_line_changes() -> None:
+    mutated = _workflow_text().replace(f"    if: {GATE} == 'true'\n", "    if: needs.changes.outputs.core == 'true'\n")
+    assert job_problems(mutated) == [f"`{JOB}` is not gated on `{GATE}`"]
+
+
+def test_detector_fires_on_an_extra_pytest_step() -> None:
+    mutated = _workflow_text().replace(
+        f"      - run: {RUN}\n",
+        f"      - run: {RUN}\n      - run: pytest src/shared/packages/pyforge-testing-kit/tests\n",
+    )
+    assert job_problems(mutated) == [f"`{JOB}` invokes pytest or a tests/ sub-path directly instead of the pixi task"]
+
+
+def test_detector_fires_when_another_job_needs_the_kit_job() -> None:
+    text = _workflow_text()
+    head = "  atlas-test:\n    needs: changes\n"
+    mutated = text.replace(head, "  atlas-test:\n    needs: [changes, testing-kit-test]\n")
+    assert mutated != text, "mutation premise: atlas-test needs only changes"
+    assert job_problems(mutated) == [
+        f"`atlas-test` needs `{JOB}` -- it is a peer of the other jobs, not a gate on them"
+    ]
+
+
+def test_detector_fires_when_a_shared_surface_trigger_is_dropped() -> None:
+    mutated = _workflow_text().replace("      - 'pixi.toml'\n", "")
+    assert trigger_problems(mutated) == [
+        "`pixi.toml` is not an on.pull_request.paths trigger",
+        "`pixi.toml` is not an on.push.paths trigger",
+    ]

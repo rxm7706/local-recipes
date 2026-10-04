@@ -20,7 +20,9 @@ name: PyForge station tests
 # a ninth, NON-station job beside them: `core-test` (pyforge-core's own suite,
 # sole-ownership meta-tests included), gated differently from the eight -- it
 # runs whenever the shared surface OR any single station changed, because
-# those meta-tests scan every station's tree.
+# those meta-tests scan every station's tree. Story 19.5 added a tenth:
+# `testing-kit-test` (the testing kit's own suite), gated on the shared
+# surface OR the two non-station inputs its tests read.
 
 on:
   pull_request:
@@ -117,8 +119,8 @@ jobs:
           fi
           # pyforge-core / pyforge-testing-kit / pixi.toml / pixi.lock changes
           # are shared surface -- any of them re-runs every station (and
-          # core-test), since all eight depend on pyforge-core and pixi.lock
-          # pins every env at once.
+          # core-test and testing-kit-test), since all eight depend on
+          # pyforge-core and pixi.lock pins every env at once.
           SHARED_CHANGED=false
           if ! git diff --quiet "$BASE"...HEAD -- \
               src/shared/packages/pyforge-core \
@@ -170,8 +172,9 @@ jobs:
   # the pixi TASK (the whole `tests/` tree, meta included), never a file list
   # -- enumeration is how the meta-tests were lost. A peer of the station
   # jobs, gated on `core` (shared surface OR any station), not a gate on them.
-  # The `django-*` packages are deliberately neither path triggers nor `core`
-  # inputs: the sole-ownership scan (pyforge-core's
+  # The `django-*` packages are deliberately not `core` inputs (django-pyforge
+  # is a path trigger since Story 19.5, for testing-kit-test only): the
+  # sole-ownership scan (pyforge-core's
   # `tests/meta/conftest.py::sibling_station_dirs`) covers `pyforge-*`
   # directories only, so a django-* edit cannot change this job's verdict.
   # Pinned by pyforge-core's `tests/meta/test_conformance_lane_wired.py`.
@@ -188,17 +191,16 @@ jobs:
           cache: true
       - run: pixi run --frozen -e pyforge-core pyforge-core-test
 
-  # Story 19.5 (spec-pyforge-testing-charter CAP-3): until this job, NO workflow
-  # invoked the `pyforge-testing-kit-test` pixi task -- the kit appeared above
-  # only as a shared-surface TRIGGER for the station jobs and core-test, and the
-  # local `pyforge-station-tests` aggregate skipped it too. Its suite went red
-  # unseen when steward Story 76.2 gave src/platform/config/flags.json flagd
-  # `metadata`. A peer of core-test, gated on `testing_kit`: the shared surface
-  # OR one of the two other inputs its tests read (django-pyforge and the
-  # platform flag tree). Pinned by the kit's meta test
-  # `test_testing_kit_lane_wired.py` (named without its directory: pyforge-core's
-  # lane test reads this comment as part of core-test's block).
   testing-kit-test:
+    # Story 19.5 (spec-pyforge-testing-charter CAP-3): until this job, NO
+    # workflow invoked the `pyforge-testing-kit-test` pixi task -- the kit
+    # appeared above only as a shared-surface TRIGGER for the station jobs and
+    # core-test, and the local `pyforge-station-tests` aggregate skipped it too.
+    # Its suite went red unseen when steward Story 76.2 gave
+    # src/platform/config/flags.json flagd `metadata`. A peer of core-test,
+    # gated on `testing_kit`: the shared surface OR one of the two other inputs
+    # its tests read (django-pyforge and the platform flag tree). Pinned by the
+    # kit's `tests/meta/test_testing_kit_lane_wired.py`.
     needs: changes
     if: needs.changes.outputs.testing_kit == 'true'
     runs-on: ubuntu-latest
