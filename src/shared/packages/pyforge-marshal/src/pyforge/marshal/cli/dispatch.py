@@ -1394,24 +1394,26 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
             # Story 53.2 review (I1): read regardless of `ok` -- a refused
             # landing (MRS-DISP-048) is exactly the case this must surface.
             landing_findings = resolve_land_findings_from_payload(entry.payload, sidecars=sidecars)
-    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
-        if entry.phase == Phase.OUTCOME:
-            vval = entry.payload.get("verdict")
-            if isinstance(vval, str):
-                verification_verdict = vval
-            gate_val = entry.payload.get("failed_gate")
-            if isinstance(gate_val, str):
-                verification_failed_gate = gate_val
-            msg_val = entry.payload.get("failed_message")
-            if isinstance(msg_val, str):
-                verification_failed_message = msg_val
-            # Story 28.15 (CAP-17): best-effort, matching every other
-            # journal-payload read in this function -- a malformed/missing
-            # entry degrades to the empty tuple rather than raising, never
-            # a fabricated advisory.
-            verification_scope_advisories = resolve_scope_violation_advisories_from_payload(
-                entry.payload, sidecars=sidecars
-            )
+    for entry in reversed(folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION)):
+        if entry.phase != Phase.OUTCOME:
+            continue
+        vval = entry.payload.get("verdict")
+        if isinstance(vval, str):
+            verification_verdict = vval
+        gate_val = entry.payload.get("failed_gate")
+        if isinstance(gate_val, str):
+            verification_failed_gate = gate_val
+        msg_val = entry.payload.get("failed_message")
+        if isinstance(msg_val, str):
+            verification_failed_message = msg_val
+        # Story 28.15 (CAP-17): best-effort, matching every other
+        # journal-payload read in this function -- a malformed/missing
+        # entry degrades to the empty tuple rather than raising, never
+        # a fabricated advisory.
+        verification_scope_advisories = resolve_scope_violation_advisories_from_payload(
+            entry.payload, sidecars=sidecars
+        )
+        break
     story_started_at: str | None = None
     story_ended_at: str | None = None
     baseline_revision: str | None = None
@@ -1527,11 +1529,32 @@ def resolve_dispatch_session_verdict(
     }:
         return DispatchSessionVerdict(journal.completion_verdict)
     from ..core.dispatch_supervisor_state import landing_journal_indicates_complete
+    from ..dispatch_supervisor import __main__ as supervisor_main
 
     if landing_journal_indicates_complete(journal.landing_verdict):
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
+    if run_dir is not None:
+        journal_text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+        if journal_text is not None:
+            folded = supervisor_main._fold_dispatch_journal(fs, run_dir, journal_text)
+            pending_fix = supervisor_main._pending_verify_fix_intent(folded, run_dir.name)
+            if pending_fix is not None:
+                fix_pid = pending_fix.payload.get("session_pid")
+                if not isinstance(fix_pid, int):
+                    for fix_entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX):
+                        if (
+                            fix_entry.run_id == run_dir.name
+                            and fix_entry.intent_id == pending_fix.id
+                            and fix_entry.phase is Phase.OBSERVATION
+                        ):
+                            obs_pid = fix_entry.payload.get("session_pid")
+                            if isinstance(obs_pid, int):
+                                fix_pid = obs_pid
+                                break
+                if isinstance(fix_pid, int) and process.is_alive(fix_pid):
+                    return DispatchSessionVerdict.LIVE
     session_alive = _is_dispatch_session_alive(process, journal)
     if journal.baseline_head_sha is None:
         return DispatchSessionVerdict.LIVE if session_alive else None
