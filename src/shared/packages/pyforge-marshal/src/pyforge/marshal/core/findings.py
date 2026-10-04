@@ -1340,6 +1340,9 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # supervisor's `_promote_blocked_twin` publish of a blocked story-spec twin onto
 # `origin/main` that could not land, journaled as a `dispatch-blocked-twin-publish`
 # observation naming the story and the error.
+# Story 83.21 gives it a third, same WARN tier: the promotion could not load the
+# sync's own `apply_epic_rollups`, so it published no epic row it did not compute
+# (the twin keeps its own `epic-N` rows and the Tier-3 feed is not synced).
 #
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to `cli/status.py`'s own `MRS-STATUS-*` area, both sourced from a

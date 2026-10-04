@@ -2,7 +2,7 @@
 title: "83.21: Landing finalize writes the epic roll-ups the sync writes"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -75,4 +75,4 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-04: build complete (hand-built on `land/pyforge-marshal-83-21`), ready for an independent review. No review has run yet.
