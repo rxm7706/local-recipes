@@ -60,7 +60,7 @@ def test_named_pipeline_is_registered() -> None:
 def test_catalog_declares_the_composed_dataset() -> None:
     text = CATALOG_YML.read_text(encoding="utf-8")
     assert "semantic_packages:" in text
-    assert "data/primary/semantic_packages/semantic_packages.parquet" in text
+    assert "${globals:paths.data_root}/primary/semantic_packages/semantic_packages.parquet" in text
 
 
 def test_kedro_run_composes_and_writes_the_parquet(tmp_path: Path) -> None:

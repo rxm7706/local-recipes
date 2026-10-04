@@ -43,7 +43,7 @@ def test_match_source_urls_skips_malformed_list_conda_name():
     # a list-valued conda_name is malformed: it must NOT crash pd.isna (ambiguous truth)
     # and must be SKIPPED (not appended as an invalid mapping).
     cand = pd.DataFrame({"pypi_name": ["b", "c"], "conda_name": [["not", "scalar"], "c-conda"]})
-    out = match_source_urls(base, cand)
+    out = match_source_urls(base, cand, pd.DataFrame(columns=["conda_name"]))
     assert "b" not in set(out["pypi_name"])  # malformed list cell skipped
     assert "c" in set(out["pypi_name"])  # valid string candidate added, no crash
 

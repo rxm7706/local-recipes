@@ -24,6 +24,8 @@ from .basilisk import (
     chunk_queries,
     parse_basilisk_packages_response,
 )
+from .degraded_json import DegradedJsonSeedDataset
+from .degrading_parquet import DegradingParquetDataset
 from .core_sources import (
     CfGraphTarballDataset,
     CondaChanneldataDataset,
@@ -141,6 +143,8 @@ from .vulnerability_feeds import (
 )
 
 __all__ = [
+    "DegradedJsonSeedDataset",
+    "DegradingParquetDataset",
     "IncrementalParquetDataset",
     "AnacondaDownloadsDataset",
     "GitHubRequestDataset",

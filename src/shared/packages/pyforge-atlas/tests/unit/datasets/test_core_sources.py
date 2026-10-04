@@ -191,8 +191,8 @@ def test_cross_channel_falls_back_to_second_subdir_when_first_fails(monkeypatch)
     def fake_fetch(url, *, load_args, credentials, metadata):
         attempted.append(url)
         if "/selfexplainml/linux-64/repodata.json" in url:
-            return _repodata("piml", "gaminet")
-        return None  # noarch (both filenames, both mirrors) unavailable
+            return _repodata("piml", "gaminet"), False
+        return None, False  # noarch (both filenames, both mirrors) unavailable
 
     monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch", "linux-64")),))
@@ -207,7 +207,7 @@ def test_cross_channel_falls_back_to_second_subdir_when_first_fails(monkeypatch)
 
 
 def test_cross_channel_every_subdir_failing_is_skipped_never_raises(monkeypatch):
-    monkeypatch.setattr(CS, "_fetch_repodata_at_url", lambda url, **kw: None)
+    monkeypatch.setattr(CS, "_fetch_repodata_at_url", lambda url, **kw: (None, False))
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch", "linux-64")),))
     out = CS.CrossChannelRepodataDataset(url="ignored").load()  # never raises
     assert out.empty
@@ -219,7 +219,7 @@ def test_cross_channel_first_subdir_success_short_circuits(monkeypatch):
 
     def fake_fetch(url, **kw):
         attempted.append(url)
-        return _repodata("torch") if "/noarch/current_repodata.json" in url else None
+        return (_repodata("torch"), False) if "/noarch/current_repodata.json" in url else (None, False)
 
     monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("pytorch", "pytorch", ("noarch", "linux-64")),))
@@ -263,10 +263,10 @@ def test_cross_channel_empty_index_on_first_subdir_falls_through_to_second(monke
     def fake_fetch(url, **kw):
         attempted.append(url)
         if "/noarch/" in url:
-            return {"packages": {}, "packages.conda": {}}  # valid, empty
+            return {"packages": {}, "packages.conda": {}}, False  # valid, empty
         if "/linux-64/" in url:
-            return _repodata("piml")
-        return None
+            return _repodata("piml"), False
+        return None, False
 
     monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch", "linux-64")),))
@@ -292,7 +292,7 @@ def test_cross_channel_repodata_filename_fallback_current_then_repodata(monkeypa
 
     def fake_fetch(url, **kw):
         attempted.append(url)
-        return _repodata("piml") if url.endswith("/noarch/repodata.json") else None
+        return (_repodata("piml"), False) if url.endswith("/noarch/repodata.json") else (None, False)
 
     monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch",)),))

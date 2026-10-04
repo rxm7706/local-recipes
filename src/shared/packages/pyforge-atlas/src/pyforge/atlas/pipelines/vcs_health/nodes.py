@@ -20,7 +20,9 @@ from typing import Any
 import pandas as pd
 
 from pyforge.atlas.datasets.migration_status import BLOCKER_BUCKETS
-from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS, RefreshRequest
+from pyforge.atlas.datasets.refresh import WEEKLY_SECONDS, RefreshRequest, clamp_ttl_cadence
+
+from .vcs_refresh_identifiers import batches_from_identity
 
 # ms-vs-seconds magnitude split (mirrors core.nodes._MS_THRESHOLD +
 # IncrementalParquetDataset._MS_EPOCH_THRESHOLD — "convert once, at the boundary",
@@ -88,64 +90,44 @@ def _as_bool_series(col: pd.Series) -> pd.Series:
 
 
 def _ttl_cadence(ttls: dict, key: str) -> int:
-    """Read a cadence (seconds) from ``params:ttls``; a missing / null / non-numeric
-    value falls back to the WEEKLY default rather than crashing the node."""
-    raw = (ttls or {}).get(key)
-    try:
-        return int(raw)
-    except TypeError, ValueError:
-        return WEEKLY_SECONDS
+    """Read a cadence (seconds) from ``params:ttls``; clamp zero/negative (Story 27.2)."""
+    import logging
+
+    return clamp_ttl_cadence((ttls or {}).get(key), key=key, log=logging.getLogger(__name__))
 
 
-def refresh_vcs_github_store(ttls: dict):
-    # Story 21.2: single writer of vcs_github_api_raw (GitHubRequestDataset).
-    # The RefreshRequest carries no identifier list, so GitHubRequestDataset.save()
-    # fetches an EMPTY batch (zero network calls, review fix #2) — a deliberate
-    # Story 21.2 scope boundary, not an oversight: real repo-identifier wiring is
-    # deferred to Story 21.6 (upstream_discovery identity join).
-    """External-refresh trigger for the GitHub batched-GraphQL store. PURE: emits the
-    ``RefreshRequest`` ``GitHubRequestDataset.save()`` honors (cadence/force), which
-    invokes the dataset-owned ``fetch_repo_health()`` for the actual IO. Cadence ==
-    the Phase K TTL (``vcs_upstream_versions``, weekly)."""
+def refresh_vcs_github_store(ttls: dict, identity_packages_primary: pd.DataFrame):
+    """External-refresh trigger for the GitHub batched-GraphQL store."""
+    batches = batches_from_identity(identity_packages_primary)
     return RefreshRequest(
         store="vcs_github_api_raw",
         cadence_seconds=_ttl_cadence(ttls, "vcs_upstream_versions"),
+        github_repos=batches["github_repos"],
     )
 
 
-def refresh_vcs_host_stores(ttls: dict):
-    # Story 21.2: single writer of vcs_gitlab_api_raw + vcs_codeberg_api_raw
-    # (VcsHostSeedDataset, one instance per host).
-    # Each RefreshRequest carries no identifier list, so VcsHostSeedDataset.save()
-    # fetches an EMPTY batch — a deliberate Story 21.2 scope boundary, not an
-    # oversight: real repo-identifier wiring is deferred to Story 21.6
-    # (upstream_discovery identity join).
-    """External-refresh trigger for the GitLab + Codeberg last-good stores. PURE:
-    emits one ``RefreshRequest`` per host; each ``VcsHostSeedDataset.save()`` honors
-    its own cadence/force and invokes the dataset-owned ``load_many()`` for the
-    actual IO. Cadence == the Phase K TTL (``vcs_upstream_versions``, weekly)."""
+def refresh_vcs_host_stores(ttls: dict, identity_packages_primary: pd.DataFrame):
+    """External-refresh trigger for the GitLab + Codeberg last-good stores."""
+    batches = batches_from_identity(identity_packages_primary)
     cadence = _ttl_cadence(ttls, "vcs_upstream_versions")
     return (
-        RefreshRequest(store="vcs_gitlab_api_raw", cadence_seconds=cadence),
-        RefreshRequest(store="vcs_codeberg_api_raw", cadence_seconds=cadence),
+        RefreshRequest(store="vcs_gitlab_api_raw", cadence_seconds=cadence, vcs_pairs=batches["gitlab"]),
+        RefreshRequest(store="vcs_codeberg_api_raw", cadence_seconds=cadence, vcs_pairs=batches["codeberg"]),
     )
 
 
-def refresh_vcs_registry_stores(ttls: dict):
-    # Story 21.2: single writer of the 8 vcs_registry_*_raw entries
-    # (RegistryUpstreamDataset, one instance per registry).
-    # Each RefreshRequest carries no identifier list, so RegistryUpstreamDataset.
-    # save() fetches an EMPTY batch — a deliberate Story 21.2 scope boundary, not an
-    # oversight: real package-identifier wiring is deferred to Story 21.6
-    # (upstream_discovery identity join).
-    """External-refresh trigger for the 8 cross-ecosystem registry last-good stores.
-    PURE: emits one ``RefreshRequest`` per registry; each
-    ``RegistryUpstreamDataset.save()`` honors its own cadence/force and invokes the
-    dataset-owned ``load_many()`` for the actual IO. Cadence == the Phase L TTL
-    (``vcs_registry_versions``, weekly)."""
+def refresh_vcs_registry_stores(ttls: dict, identity_packages_primary: pd.DataFrame):
+    """External-refresh trigger for the 8 cross-ecosystem registry last-good stores."""
+    batches = batches_from_identity(identity_packages_primary)
     cadence = _ttl_cadence(ttls, "vcs_registry_versions")
+    reg = batches["registries"]
     return tuple(
-        RefreshRequest(store=f"vcs_registry_{registry}_raw", cadence_seconds=cadence) for registry in _REGISTRY_INPUTS
+        RefreshRequest(
+            store=f"vcs_registry_{registry}_raw",
+            cadence_seconds=cadence,
+            vcs_pairs=reg.get(registry, ()),
+        )
+        for registry in _REGISTRY_INPUTS
     )
 
 

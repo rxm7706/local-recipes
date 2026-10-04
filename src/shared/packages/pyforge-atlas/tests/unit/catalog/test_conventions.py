@@ -36,6 +36,18 @@ def test_every_entry_carries_a_layer_tag(catalog_config):
     assert not bad, f"missing/invalid metadata.layer: {bad}"
 
 
+def test_no_literal_data_filepath_without_data_root(catalog_raw_text):
+    """Story 27.2 (DW-FU-21-8-2): persisted paths must not hard-code ``data/``."""
+    bad = []
+    for line in catalog_raw_text.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("filepath:") and "filepath: data/" in stripped:
+            bad.append(stripped)
+        if stripped.startswith("filepath:") and stripped == "filepath: data/":
+            bad.append(stripped)
+    assert not bad, f"literal data/ filepaths remain: {bad[:5]}… ({len(bad)} total)"
+
+
 def test_output_filepaths_follow_data_layer_name_convention(catalog_config):
     """Persisted outputs live under data/<layer>/<dataset_name>/ — nodes
     never choose physical layout (spine Parquet-layout row). External raw
@@ -55,12 +67,19 @@ def test_output_filepaths_follow_data_layer_name_convention(catalog_config):
                 bad[name] = "output entry with no filepath/path"
             continue
         path = str(path)
-        if path.startswith("data/stores/"):
+        root = "${globals:paths.data_root}"
+        if "/stores/" in path or path.endswith("/stores/vdb") or path.endswith("/stores/osv"):
             continue
-        is_local_data = path.startswith("data/")
+        is_local_data = path.startswith(f"{root}/") or path.startswith("data/")
         if layer in OUTPUT_LAYERS or is_local_data:
-            prefix = f"data/{layer}/{name}"
-            if not (path == prefix or path.startswith(prefix + "/")):
+            prefix = f"{root}/{layer}/{name}"
+            legacy_prefix = f"data/{layer}/{name}"
+            if not (
+                path == prefix
+                or path.startswith(prefix + "/")
+                or path == legacy_prefix
+                or path.startswith(legacy_prefix + "/")
+            ):
                 bad[name] = path
     assert not bad, f"filepath convention violations: {bad}"
 

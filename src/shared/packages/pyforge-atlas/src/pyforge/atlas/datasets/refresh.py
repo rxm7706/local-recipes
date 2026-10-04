@@ -58,7 +58,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -131,12 +131,17 @@ class RefreshRequest:
     consumes it — honoring ``force`` and using ``cadence_seconds`` for the freshness (TTL)
     check — and invokes its OWN injected refresher (the IO). Keeping the node's output a
     small declarative trigger (never the fetched bytes) is what keeps the node pure.
+
+    Story 27.2: optional ``vcs_pairs`` / ``github_repos`` carry identifier batches from
+    the identity join (never raw fetch payloads).
     """
 
     store: str
     cadence_seconds: int = WEEKLY_SECONDS
     force: bool = False
     resource: RequiredResource | None = None
+    vcs_pairs: tuple[tuple[str, str], ...] = ()
+    github_repos: tuple[tuple[str, str], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -144,6 +149,8 @@ class RefreshRequest:
             "cadence_seconds": self.cadence_seconds,
             "force": self.force,
             "resource": self.resource.to_dict() if self.resource else None,
+            "vcs_pairs": list(self.vcs_pairs),
+            "github_repos": list(self.github_repos),
         }
 
 
@@ -650,3 +657,178 @@ class MappingCacheDataset(ExternalRefreshDataset):
             self._mark_stale("mapping cache unreadable", only_if_absent=True)
             return {}
         return data if isinstance(data, dict) else {}
+
+
+# Minimum cadence when params:ttls carries zero or negative (Story 27.2, DW-FU-21-2-3).
+_MIN_TTL_CADENCE_SECONDS = 60
+
+_RETRY_BACKOFF_STEP_SECONDS = 0.05
+_RETRY_BACKOFF_CAP_SECONDS = 0.5
+
+
+def retry_backoff_seconds(attempt: int) -> float:
+    return min(_RETRY_BACKOFF_STEP_SECONDS * attempt, _RETRY_BACKOFF_CAP_SECONDS)
+
+
+def clamp_ttl_cadence(raw: Any, *, key: str, log: logging.Logger | None = None) -> int:
+    """Read a cadence from ``params:ttls``; clamp zero/negative to a floor."""
+    try:
+        value = int(raw)
+    except TypeError, ValueError:
+        return WEEKLY_SECONDS
+    if value <= 0:
+        if log is not None:
+            log.warning(
+                "params:ttls.%s=%r is non-positive; clamping to %ss",
+                key,
+                raw,
+                _MIN_TTL_CADENCE_SECONDS,
+            )
+        return _MIN_TTL_CADENCE_SECONDS
+    return value
+
+
+def fetch_one_with_retry(
+    *,
+    acquire: Callable[[], None],
+    fetch: Callable[[], Any],
+    max_retries: int,
+    sleep: Callable[[float], None],
+) -> Any:
+    """Shared retry-with-backoff for VCS/registry seed fetches (DW-FU-21-2-5)."""
+    attempt = 0
+    while True:
+        acquire()
+        try:
+            return fetch()
+        except Exception:
+            attempt += 1
+            if attempt > max_retries:
+                raise
+            sleep(retry_backoff_seconds(attempt))
+
+
+class _ParquetRefreshStore:
+    """Shared last-good Parquet + staleness-marker persistence (AD-13).
+
+    Lives beside :class:`StalenessMarker` / :class:`RefreshRequest` (DW-FU-21-2-6).
+    """
+
+    STORE_FILENAME = "store.parquet"
+    STALENESS_FILENAME = ".staleness.json"
+    merge_on: tuple[str, ...] = ("conda_name",)
+
+    @property
+    def _store_path(self) -> Path:
+        return Path(self._filepath) / self.STORE_FILENAME
+
+    @property
+    def _staleness_path(self) -> Path:
+        return Path(self._filepath) / self.STALENESS_FILENAME
+
+    def _store_exists(self) -> bool:
+        return self._store_path.is_file()
+
+    def _store_mtime(self) -> float:
+        return self._store_path.stat().st_mtime
+
+    def _refresh_due(self, cadence_seconds: int, now: float | None = None) -> bool:
+        if not self._store_exists():
+            return True
+        try:
+            age = (time.time() if now is None else now) - self._store_mtime()
+        except OSError:
+            return True
+        return age >= cadence_seconds
+
+    @staticmethod
+    def _atomic_write(target: Path, write_fn: Callable[[Path], None]) -> None:
+        atomic_write(target, write_fn)
+
+    def _mark_stale(self, reason: str, *, only_if_absent: bool = False) -> StalenessMarker:
+        marker = StalenessMarker(stale=True, reason=reason, last_good_exists=self._store_exists())
+        if only_if_absent and self._staleness_path.is_file():
+            return marker
+        try:
+            self._atomic_write(
+                self._staleness_path,
+                lambda p: p.write_text(json.dumps(marker.to_dict(), indent=2), encoding="utf-8"),
+            )
+        except OSError as exc:
+            logger.warning("could not write staleness marker for %s: %s", self._filepath, exc)
+        return marker
+
+    def _clear_stale(self) -> None:
+        try:
+            self._staleness_path.unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    def staleness(self) -> StalenessMarker | None:
+        path = self._staleness_path
+        if not path.is_file():
+            return None
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except OSError, ValueError:
+            return None
+        if not isinstance(raw, dict):
+            return None
+        return StalenessMarker(
+            stale=bool(raw.get("stale", True)),
+            reason=str(raw.get("reason", "")),
+            marked_at=_safe_int(raw.get("marked_at", 0)),
+            last_good_exists=bool(raw.get("last_good_exists", False)),
+        )
+
+    def is_stale(self) -> bool:
+        marker = self.staleness()
+        return bool(marker and marker.stale)
+
+    def _read_store(self, columns: Sequence[str]) -> pd.DataFrame:
+        cols = list(columns)
+        if not self._store_exists():
+            self._mark_stale("store absent (never refreshed)", only_if_absent=True)
+            return pd.DataFrame(columns=cols)
+        try:
+            frame = pd.read_parquet(self._store_path)
+        except Exception as exc:
+            logger.warning("store %s unreadable, degrading to empty: %s", self._store_path, exc)
+            self._mark_stale("store unreadable", only_if_absent=True)
+            return pd.DataFrame(columns=cols)
+        for c in cols:
+            if c not in frame.columns:
+                frame[c] = pd.NA
+        return frame[cols].reset_index(drop=True)
+
+    def _persist(self, frame: pd.DataFrame) -> None:
+        """Merge batch rows onto the persisted store by ``merge_on`` (Story 27.2)."""
+        if frame is None or frame.empty:
+            self._mark_stale("fetch returned no data — keeping last-good")
+            return
+        keys = list(self.merge_on)
+        if not all(k in frame.columns for k in keys):
+            self._mark_stale("fetch batch missing merge keys — keeping last-good")
+            return
+        to_write = frame
+        if self._store_exists():
+            try:
+                existing = pd.read_parquet(self._store_path)
+                for c in frame.columns:
+                    if c not in existing.columns:
+                        existing[c] = pd.NA
+                batch = frame.copy()
+                for c in existing.columns:
+                    if c not in batch.columns:
+                        batch[c] = pd.NA
+                combined = pd.concat([existing, batch], ignore_index=True)
+                to_write = combined.drop_duplicates(subset=keys, keep="last")
+            except Exception as exc:
+                logger.warning("could not merge onto %s, writing batch only: %s", self._store_path, exc)
+        try:
+            self._atomic_write(self._store_path, lambda p: to_write.to_parquet(p, index=False))
+        except Exception as exc:
+            logger.warning("write of %s failed, keeping last-good: %s", self._store_path, exc)
+            self._mark_stale(f"write failed: {type(exc).__name__}: {exc}")
+            return
+        self._clear_stale()

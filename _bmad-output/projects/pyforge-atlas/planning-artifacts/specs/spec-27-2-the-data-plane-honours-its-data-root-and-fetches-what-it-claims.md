@@ -2,7 +2,8 @@
 title: "27.2: The data plane honours its data root, degrades offline and fetches what it claims"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

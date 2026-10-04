@@ -72,13 +72,29 @@ def _required_credential_keys() -> list[str]:
 
 
 def _seed_stub_credentials() -> None:
-    """Create a stub credentials file iff none exists. Never touches a real one."""
-    if LOCAL_CREDENTIALS.exists():
-        return
+    """Ensure every catalog ``credentials:`` key resolves offline.
+
+    Creates the gitignored stub when absent; when a stub already exists, appends
+    any newly credentialed catalog entries without overwriting existing keys (so
+    a real operator file is never read or replaced — only missing keys are added).
+    """
     keys = _required_credential_keys()
     if not keys:
         return
     LOCAL_CREDENTIALS.parent.mkdir(parents=True, exist_ok=True)
+    if LOCAL_CREDENTIALS.exists():
+        text = LOCAL_CREDENTIALS.read_text(encoding="utf-8")
+        present = {
+            m.group(1)
+            for line in text.splitlines()
+            if (m := re.match(r"^([A-Za-z_][A-Za-z0-9_]*):", line))
+        }
+        missing = [k for k in keys if k not in present]
+        if not missing:
+            return
+        append = "\n".join(f"{key}: {_STUB_PAIR}" for key in missing)
+        LOCAL_CREDENTIALS.write_text(text.rstrip() + "\n" + append + "\n", encoding="utf-8")
+        return
     body = "\n".join(f"{key}: {_STUB_PAIR}" for key in keys)
     LOCAL_CREDENTIALS.write_text(
         "# AUTO-GENERATED STUB — created by tests/orchestration/conftest.py because\n"

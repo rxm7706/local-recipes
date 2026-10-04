@@ -36,11 +36,13 @@ import logging
 import os
 import time
 from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
+from pyforge.core.atomic_write import atomic_write
 from pyforge.core.errors import PyforgeError
 
 from .basilisk import chunk_queries
@@ -51,7 +53,7 @@ from .refresh import (
     MappingCacheDataset,
     RefreshRequest,
 )
-from .vcs_sources import _ParquetRefreshStore, _retry_backoff_seconds
+from .refresh import _ParquetRefreshStore, retry_backoff_seconds
 
 logger = logging.getLogger(__name__)
 
@@ -314,6 +316,8 @@ class AnacondaDownloadsDataset(_RequestParameterizedAPIDataset):
 
 
 class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset):
+    merge_on = ("feedstock_name",)
+
     """Per-query GitHub GraphQL request-body source (Phases E.5 / K / N).
 
     Gap G-2: authored in B1 (E.5/K/N are ``vcs_health`` B1 phases), not B2. One
@@ -432,7 +436,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
                 attempt += 1
                 if attempt > self._max_retries:
                     return None, exc
-                self._sleep(_retry_backoff_seconds(attempt))
+                self._sleep(retry_backoff_seconds(attempt))
 
     def fetch_repo_health(
         self,
@@ -531,11 +535,7 @@ class GitHubRequestDataset(_ParquetRefreshStore, _RequestParameterizedAPIDataset
         if not data.force and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
-        # Story 21.2 scope: no production repo-identifier source is wired yet; an
-        # empty batch makes zero network calls and degrades cleanly to keep-last-good
-        # + mark stale (AD-13, review fix #2). Real identifier wiring is deferred to
-        # Story 21.6 (upstream_discovery identity join).
-        self.fetch_repo_health(())
+        self.fetch_repo_health(data.github_repos)
 
 
 class PyPIJsonRequestDataset(_RequestParameterizedAPIDataset):
@@ -708,10 +708,26 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         if not names:
             self._persist(empty)
             return empty
-        names = names[:limit]
-        payloads = self.load_many(names, fetcher=fetcher)
+        offset_path = Path(self._filepath) / ".fanout_offset"
+        offset = 0
+        if offset_path.is_file():
+            try:
+                offset = int(offset_path.read_text(encoding="utf-8").strip() or "0")
+            except (OSError, ValueError):
+                offset = 0
+        if offset >= len(names):
+            offset = 0
+        rotated = names[offset:] + names[:offset]
+        batch = rotated[:limit]
+        next_offset = (offset + len(batch)) % len(names) if names else 0
+        try:
+            offset_path.parent.mkdir(parents=True, exist_ok=True)
+            atomic_write(offset_path, lambda p: p.write_text(str(next_offset), encoding="utf-8"))
+        except OSError as exc:
+            logger.warning("could not persist pypi fan-out offset: %s", exc)
+        payloads = self.load_many(batch, fetcher=fetcher)
         rows: list[dict[str, Any]] = []
-        for name in names:
+        for name in batch:
             row = _payload_to_pypi_json_row(name, payloads.get(name))
             row["conda_name"] = mapping.get(name)
             rows.append(row)
