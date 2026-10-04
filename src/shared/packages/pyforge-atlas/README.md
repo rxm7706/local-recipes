@@ -13,10 +13,13 @@ edge between them points the other way: atlas optionally imports warden's
 (consumed at the Wave-F F4 gate node). No `warden -> atlas` import exists; both
 tools stay independently installable.
 
-**Status:** all 46 stories shipped (12 epics) — 8 Kedro pipelines live
-(core, derived_artifacts, pypi_intelligence, seed_gaps, universal_sbom,
-upstream_discovery, vcs_health, vulnerability), plus the MCP read surface
-and the trending-candidates engine.
+**Status:** 11 Kedro pipelines live (`artifactory_downloads`, `core`,
+`derived_artifacts`, `pypi_intelligence`, `query_plane_cache`, `seed_gaps`,
+`semantic_packages`, `universal_sbom`, `upstream_discovery`, `vcs_health`,
+`vulnerability`), plus the MCP read surface, the Vizro dashboard and the
+trending-candidates engine. That list is the one `find_pipelines()` discovers
+and `tests/unit/test_pipeline_inventory.py` reds when the two drift (it carried
+8 names for three pipelines' worth of drift — Story 27.3, DW-FU-20-3-2).
 
 ## Develop
 
