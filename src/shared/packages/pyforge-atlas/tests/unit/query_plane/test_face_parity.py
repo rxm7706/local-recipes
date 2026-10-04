@@ -311,9 +311,7 @@ def _run_face_parity(path: Path, queries: tuple[tuple[str, str], ...], *, stack_
             notice = next(n for n in boot.notices if n["event"] == "http-face-not-raised")
             return {name: _compare(rows, None, reason=notice["reason"]) for name, rows in library_results.items()}
         _wait_until_ready(boot.http.process, boot.http.endpoint)
-        return {
-            name: _compare(library_results[name], _http_rows(boot.http.endpoint, sql)) for name, sql in queries
-        }
+        return {name: _compare(library_results[name], _http_rows(boot.http.endpoint, sql)) for name, sql in queries}
     finally:
         _shutdown_boot(boot)
 

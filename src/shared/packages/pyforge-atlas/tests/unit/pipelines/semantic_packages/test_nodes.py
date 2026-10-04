@@ -123,13 +123,9 @@ def test_duplicate_keys_in_each_remaining_joined_input_do_not_fan_out_either():
     population = pd.DataFrame({"conda_name": ["a", "b"]})
     # a is attributed twice, to different feedstocks -- only one is archived, so a
     # fan-out would show up as both a duplicate row AND an ambiguous archived flag.
-    attribution = pd.DataFrame(
-        {"conda_name": ["a", "a", "b"], "feedstock_name": ["alpha", "beta", "beta"]}
-    )
+    attribution = pd.DataFrame({"conda_name": ["a", "a", "b"], "feedstock_name": ["alpha", "beta", "beta"]})
     # beta listed twice in the archived set (a stale duplicate row upstream).
-    archived = pd.DataFrame(
-        {"feedstock_name": ["beta", "beta"], "archived": pd.array([1, 1], dtype="Int64")}
-    )
+    archived = pd.DataFrame({"feedstock_name": ["beta", "beta"], "archived": pd.array([1, 1], dtype="Int64")})
     downloads = pd.DataFrame(
         {
             "conda_name": ["a", "a", "b"],

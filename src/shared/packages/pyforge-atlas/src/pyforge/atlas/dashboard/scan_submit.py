@@ -33,7 +33,6 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from . import data as _data

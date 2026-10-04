@@ -14,9 +14,9 @@ from typing import Any, Sequence
 
 import pandas as pd
 import pytest
+from pyforge.core.process import ProcessError, ProcessResult
 
 from pyforge.atlas.dashboard import scan_submit as ss
-from pyforge.core.process import ProcessError, ProcessResult
 
 
 @dataclass
@@ -129,9 +129,7 @@ def test_a_failed_submit_leaves_the_previous_cache_untouched(tmp_path) -> None:
 
 def test_scan_project_runs_its_one_invocation_and_writes_the_pages_parquet(tmp_path) -> None:
     process = FakeProcess(results=[_ok(SCAN_PROJECT_PAYLOAD)])
-    submission = ss.submit_scan(
-        "scan-project", str(tmp_path), data_root=tmp_path, process=process, repo_root=tmp_path
-    )
+    submission = ss.submit_scan("scan-project", str(tmp_path), data_root=tmp_path, process=process, repo_root=tmp_path)
 
     assert submission.status == "ok"
     assert process.calls == [["pixi", "run", "-e", "vuln-db", "scan-project", str(tmp_path), "--json"]]

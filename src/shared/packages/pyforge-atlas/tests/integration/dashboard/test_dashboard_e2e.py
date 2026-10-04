@@ -196,8 +196,7 @@ def test_every_grounded_page_renders_rows_on_the_fixture_data_root(dashboard_ser
     the browser -- not an empty grid, and not a page the suite never visited."""
     grounded = [p for p in app.PAGE_INVENTORY if p.kind == "grounded-data"]
     assert {p.id for p in grounded} == set(GROUNDED_PAGE_EVIDENCE), (
-        "a grounded page was added or removed without extending this gate: "
-        f"{sorted(p.id for p in grounded)}"
+        f"a grounded page was added or removed without extending this gate: {sorted(p.id for p in grounded)}"
     )
 
     with sync_playwright() as p:

@@ -129,8 +129,7 @@ def test_each_page_stamps_its_own_parquet_file(page_id: str, stamped_root) -> No
     _dashboard, mtimes = stamped_root
     expected = _iso(mtimes[PAGE_PARQUET_CONSTANT[page_id]])
     assert _stamp_of(page_id) == expected, (
-        f"{page_id} is stamped from the wrong file: expected the mtime of "
-        f"{PAGE_PARQUET_CONSTANT[page_id]}"
+        f"{page_id} is stamped from the wrong file: expected the mtime of {PAGE_PARQUET_CONSTANT[page_id]}"
     )
 
 
