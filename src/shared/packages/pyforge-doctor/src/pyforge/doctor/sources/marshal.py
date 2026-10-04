@@ -151,6 +151,35 @@ def _feed_key_to_ref(key: str) -> StoryKeyRef | None:
     )
 
 
+_ALIAS_ID_RE = re.compile(r"^([a-z]+\d+)-")
+
+
+def _alias_story_id(key: str) -> str | None:
+    """The ``a1`` of a legacy alias-form key (``a1-scaffold-the-kedro``), else ``None``.
+
+    Same prefix rule as ``sources/ledger.py``'s ``_ID_PREFIX_RE`` (Story 41.2 /
+    DW-FU-6-4-9): a key the numeric ``StoryKeyRef`` grammar cannot spell is still a
+    story id, so Route 3 evaluates it by this token instead of skipping it."""
+    match = _ALIAS_ID_RE.match(key)
+    return match.group(1) if match else None
+
+
+def _loose_alias_match(
+    subjects: tuple[tuple[str, str], ...] | list[tuple[str, str]],
+    *,
+    station: str,
+    alias_id: str,
+) -> bool:
+    """Does any subject name this station AND the alias id as their own tokens?
+
+    The alias twin of ``_loose_subject_key_match``: the same last-resort,
+    advisory-only co-occurrence test, with the legacy id (``a1``) standing where
+    the numeric ``<epic>.<seq>`` pair would."""
+    station_re = re.compile(rf"\b{re.escape(station)}\b", re.IGNORECASE)
+    alias_re = re.compile(rf"(?<![0-9A-Za-z]){re.escape(alias_id)}(?![0-9A-Za-z])", re.IGNORECASE)
+    return any(station_re.search(subject) and alias_re.search(subject) for _sha, subject in subjects)
+
+
 def _done_story_keys_from_feed(text: str) -> list[str]:
     """Every ``done`` story key once — same parser/terminal set as ``ledger``."""
     seen: set[str] = set()
@@ -793,6 +822,7 @@ def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple
 
             key_ref = _feed_key_to_ref(key)
             key_refs = tuple(r for r in (_feed_key_to_ref(a) for a in aliases) if r is not None)
+            alias_id = _alias_story_id(key) if key_ref is None else None
             project_slug = f"pyforge-{slug}"
 
             # Route 2: commit subjects on any ref, via shared landing-evidence
@@ -829,7 +859,7 @@ def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple
             # (replaces the private ``<slug>`` + ``story <e>.<s>`` subject
             # needle dialect). ``main`` by its full refname (Story 31.1): a
             # tag named ``main`` would otherwise stand in for the branch.
-            if key_ref is not None:
+            if key_refs or alias_id is not None:
                 if main_commits is None and not main_commits_unavailable:
                     raw = _git(
                         target,
@@ -879,6 +909,12 @@ def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple
                         )
                     )
                     for r in key_refs
+                ) or (
+                    alias_id is not None
+                    and any(
+                        pool is not None and _loose_alias_match(pool, station=slug, alias_id=alias_id)
+                        for pool in (all_ref_commits, main_commits)
+                    )
                 ):
                     continue  # station+key co-occurrence found
 
