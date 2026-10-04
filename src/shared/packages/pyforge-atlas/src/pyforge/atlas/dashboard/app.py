@@ -53,7 +53,7 @@ from typing import Any, Callable
 
 import vizro.models as vm
 import vizro.plotly.express as px
-from dash import no_update
+from dash import html, no_update
 from vizro import Vizro
 from vizro.managers import data_manager, model_manager
 from vizro.models.types import capture
@@ -433,15 +433,110 @@ def _legibility_card(page: PageDef, *, grounded: bool, provenance: ProvenanceInf
     return vm.Card(id=f"{page.id}--about", text="\n".join(lines))
 
 
+def _declared_chart(page: PageDef, key: str) -> vm.Graph | None:
+    """The one ``vm.Graph`` this page's ``PageDef`` declares, over the same data key."""
+    if page.chart is None:
+        return None
+    figure = getattr(px, page.chart.kind)
+    return vm.Graph(id=f"{page.id}--chart", figure=figure(key, x=page.chart.x, y=page.chart.y))
+
+
+def _declared_filters(page: PageDef, loader: Callable[[], Any]) -> list[vm.Filter]:
+    """One ``vm.Filter`` per declared column — but only once the page's data has rows.
+
+    Vizro's ``Filter.pre_build`` refuses a column that "does not contain anything"
+    (``vizro/models/_controls/filter.py`` carries its own ``TODO: Enable empty
+    data_frame handling``), so an honest-empty page carries no Filter, exactly as it
+    carries no rows. What DESIGN.md is compared against is the DECLARATION on
+    ``PageDef``; this function decides only whether the declared control can be built
+    against today's data.
+    """
+    if not page.filters:
+        return []
+    frame = loader()
+    return [
+        vm.Filter(id=f"{page.id}--filter-{column}", column=column)
+        for column in page.filters
+        if column in frame.columns and bool(frame[column].notna().any())
+    ]
+
+
 def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool, provenance: ProvenanceInfo) -> vm.Page:
-    """A page = a legibility Card + an AgGrid fed by a lazily-registered BSL data function."""
+    """A page = a legibility Card + an AgGrid fed by a lazily-registered BSL data
+    function, plus whatever filter/chart controls the ``PageDef`` declares."""
+    key = f"data::{page.id}"
+    data_manager[key] = loader
+    components: list[Any] = [
+        _legibility_card(page, grounded=grounded, provenance=provenance),
+        vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key)),
+    ]
+    chart = _declared_chart(page, key)
+    if chart is not None:
+        components.append(chart)
+    return vm.Page(
+        id=page.id,
+        title=page.title,
+        components=components,
+        controls=_declared_filters(page, loader),
+    )
+
+
+def _scan_action(page: PageDef, data_root: Path) -> vm.Action:
+    """The live-scan pages' submit action (DESIGN.md § 3.6/3.7; DW-FU-20-5-2).
+
+    ``page_id``/``data_root`` are closed over rather than passed as action
+    arguments: Vizro reads every argument of a captured action as a runtime
+    reference, and a static one would put the action on its deprecated legacy
+    path. The one runtime argument is the path field's value.
+    """
+    page_id = page.id
+    grid_id = f"{page.id}--grid"
+
+    @capture("action")
+    def run_scan(path_value: str | None) -> tuple[str, Any]:
+        submission = _scan.submit_scan(page_id, path_value, data_root=data_root)
+        if submission.frame is None:
+            return f"**{submission.status}** — {submission.message}", no_update
+        return (
+            f"**{submission.status}** — {submission.message}",
+            model_manager[grid_id](data_frame=submission.frame),
+        )
+
+    return vm.Action(
+        id=f"{page.id}--submit-action",
+        function=run_scan(f"{page.id}--path.value"),
+        outputs=[f"{page.id}--status.text", f"{grid_id}.children"],
+    )
+
+
+def _scan_page(
+    page: PageDef,
+    loader: Callable[[], Any],
+    *,
+    provenance: ProvenanceInfo,
+    data_root: Path,
+) -> vm.Page:
+    """A live-scan page: the shared Card + grid, plus a path field and a Run button.
+
+    The button's action is the ONLY place the dashboard starts a process, and it
+    goes through ``dashboard.scan_submit`` (``pyforge.core.process``, AD-4). The
+    action writes the page's own cached Parquet and hands the refreshed frame
+    straight back to this page's grid, so the result is on screen without a reload.
+    """
     key = f"data::{page.id}"
     data_manager[key] = loader
     return vm.Page(
         id=page.id,
         title=page.title,
         components=[
-            _legibility_card(page, grounded=grounded, provenance=provenance),
+            _legibility_card(page, grounded=False, provenance=provenance),
+            vm.UserInput(
+                id=f"{page.id}--path",
+                title="Path to scan",
+                placeholder="/path/to/project" if page.id == "scan-project" else "/path/to/env/prefix",
+            ),
+            vm.Button(id=f"{page.id}--submit", text="Run scan", actions=[_scan_action(page, data_root)]),
+            vm.Text(id=f"{page.id}--status", text="No scan submitted yet in this session."),
             vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key)),
         ],
     )
@@ -591,6 +686,36 @@ def _factory_page(
     )
 
 
+class LandmarkDashboard(vm.Dashboard):
+    """``vm.Dashboard`` with the two ARIA landmarks its shipped layout lacks.
+
+    Vizro 0.1.60 builds the page select into a ``<div id="nav-control-panel">``
+    and the page content into a ``<div id="right-side">``: a browser agent (or a
+    screen reader) gets no ``navigation`` and no ``main`` landmark to jump to.
+    This subclass re-tags exactly those two containers after
+    ``_arrange_page`` has assembled them — nothing is reordered, no Vizro
+    component template is patched, and a Vizro release that adds its own
+    landmarks would simply make this a no-op rename.
+
+    ``tests/integration/dashboard/test_dashboard_e2e.py`` asserts both landmarks
+    against the rendered DOM (DW-FU-20-5-3).
+    """
+
+    def _arrange_page(self, outer_page: Any) -> Any:
+        layout = super()._arrange_page(outer_page=outer_page)
+        layout["right-side"].role = "main"
+        nav_control_panel = layout["nav-control-panel"]
+        nav_control_panel.children = [
+            html.Nav(
+                id="pyforge-nav",
+                role="navigation",
+                children=nav_control_panel.children,
+                **{"aria-label": "Dashboard pages"},
+            )
+        ]
+        return layout
+
+
 def build_dashboard(
     *,
     build_stamp: str | None = None,
@@ -617,9 +742,11 @@ def build_dashboard(
 
     # AD-17 (Story I4): each grounded/bsl-shell page's provenance is THAT page's own
     # backing Parquet file's mtime (resolve_for_file degrades to "unavailable" + a
-    # reason when the file is absent — the composed store's real, honest state
-    # today for the 3 packages-backed shells, DW-D2). The 2 no-bsl-shell pages have
-    # no backing file at all — a hardcoded "unavailable", never a fabricated stamp.
+    # reason when the file is absent, which is what a checkout that has not run the
+    # producing pipeline gets). The 2 no-bsl-shell pages have no backing file at all
+    # — a hardcoded "unavailable", never a fabricated stamp.
+    # One page, one constant: tests/integration/dashboard/test_dashboard_provenance.py
+    # pins each page to the Parquet constant its own loader reads (DW-FU-20-5-7).
     feedstock_health_provenance = _provenance.resolve_for_file(root / _data.FEEDSTOCK_HEALTH_PARQUET)
     my_feedstocks_provenance = _provenance.resolve_for_file(root / _data.PACKAGE_MAINTAINERS_PARQUET)
     estate_cache_provenance = _provenance.resolve_for_file(root / _data.ESTATE_CACHE_PARQUET)
@@ -737,17 +864,17 @@ def build_dashboard(
             grounded=False,
             provenance=packages_provenance,
         ),
-        _data_page(
+        _scan_page(
             by_id["scan-project"],
             lambda: _data.load_scan_project(root / _data.SCAN_RESULT_LATEST_PARQUET),
-            grounded=False,
             provenance=scan_project_provenance,
+            data_root=root,
         ),
-        _data_page(
+        _scan_page(
             by_id["env-inspect"],
             lambda: _data.load_env_inspect(root / _data.ENV_INSPECT_LATEST_PARQUET),
-            grounded=False,
             provenance=env_inspect_provenance,
+            data_root=root,
         ),
         _data_page(
             by_id["distribution-breakdown"],
@@ -865,4 +992,4 @@ def build_dashboard(
             specs_dir=specs_dir,
         ),
     ]
-    return vm.Dashboard(id=DASHBOARD_ID, title=DASHBOARD_TITLE, pages=pages)
+    return LandmarkDashboard(id=DASHBOARD_ID, title=DASHBOARD_TITLE, pages=pages)
