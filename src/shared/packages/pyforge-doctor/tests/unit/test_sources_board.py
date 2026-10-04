@@ -65,11 +65,7 @@ def test_live_tree_no_spec_not_decomposed_on_station_specs() -> None:
     declared CAPs — no false ``spec-not-decomposed`` on the six station Specs."""
     repo_root = _require_repo_root()
     findings = board.gather_chain_completeness(repo_root)
-    bad = [
-        f
-        for f in findings
-        if f.check == "spec-not-decomposed" and f.evidence.get("subject") in _STATION_SPECS
-    ]
+    bad = [f for f in findings if f.check == "spec-not-decomposed" and f.evidence.get("subject") in _STATION_SPECS]
     assert not bad, "live tree still reports spec-not-decomposed on station Specs:\n  " + "\n  ".join(
         f"{f.evidence.get('project')}/{f.evidence.get('subject')}: {f.message}" for f in bad
     )
