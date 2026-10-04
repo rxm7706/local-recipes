@@ -2093,15 +2093,26 @@ def render_ledger_status_rewrites(ledger_text: str, rewrites: Mapping[str, str])
     # separator is carried through unmodified, whatever it is and however
     # it mixes with its neighbors.
     parts = _LEDGER_LINE_SPLIT.split(ledger_text)
+    in_block = False
     for i in range(0, len(parts), 2):
         content = parts[i]
-        stripped = content.lstrip(" ")
-        indent = content[: len(content) - len(stripped)]
-        colon_index = stripped.find(":")
-        key_part = stripped[:colon_index] if colon_index != -1 else None
+        stripped = content.strip()
+        if not in_block:
+            if stripped == "development_status:":
+                in_block = True
+            continue
+        if content and not content[0].isspace() and not stripped.startswith("#"):
+            in_block = False
+            continue
+        if stripped == "development_status:" or not stripped or stripped.startswith("#"):
+            continue
+        stripped_key_line = content.lstrip(" ")
+        indent = content[: len(content) - len(stripped_key_line)]
+        colon_index = stripped_key_line.find(":")
+        key_part = stripped_key_line[:colon_index] if colon_index != -1 else None
         if key_part is None or key_part not in remaining:
             continue
-        rest = stripped[colon_index + 1 :]
+        rest = stripped_key_line[colon_index + 1 :]
         rest_stripped = rest.lstrip(" ")
         leading_ws = rest[: len(rest) - len(rest_stripped)] or " "
         status_end = 0

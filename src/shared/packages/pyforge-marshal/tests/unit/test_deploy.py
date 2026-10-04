@@ -20,6 +20,7 @@ import pytest
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import deploy as deploy_module
+from pyforge.marshal.cli import land as land_module
 
 _VALID_SPEC = "---\ntitle: 'x'\nstatus: 'shipped'\n---\n\nbody\n"
 
@@ -3788,6 +3789,54 @@ def test_reconcile_completions_advances_and_promotes_a_not_loop_native_story(tmp
     assert "advance" in ledger_commit[1]
     spec_commit = next(c for c in vcs.commit_calls if c[0] == (dest,))
     assert "promote" in spec_commit[1]
+
+
+def test_reconcile_completions_rolls_epic_to_done_when_last_open_story_advances(tmp_path, capsys, monkeypatch):
+    """Story 83.22: reconcile-completions applies the sync's epic roll-up after advancing story rows."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(
+        tmp_path, "acme", _ledger_text(("epic-5", "in-progress"), ("5-9-title", "backlog"))
+    )
+    _write_tier3_feed(
+        tmp_path,
+        "acme",
+        "development_status:\n  epic-5: in-progress\n  5-9-title: backlog\n",
+    )
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    assert exit_code == 0
+    ledger_text = ledger_path.read_text(encoding="utf-8")
+    assert "5-9-title: done" in ledger_text
+    assert "epic-5: done" in ledger_text
+
+
+def test_reconcile_completions_missing_rollup_module_warns_without_writing_epic_rows(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(land_module, "_load_promote_sprint_status_module", lambda: None)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    ledger_path = _write_ledger(
+        tmp_path, "acme", _ledger_text(("epic-5", "in-progress"), ("5-9-title", "backlog"))
+    )
+    _write_tier3_feed(
+        tmp_path,
+        "acme",
+        "development_status:\n  epic-5: in-progress\n  5-9-title: backlog\n",
+    )
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    payload = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert "epic-5: in-progress" in ledger_path.read_text(encoding="utf-8")
+    assert any(f["code"] == "MRS-DEPLOY-028" for f in payload["findings"])
 
 
 def test_reconcile_completions_missing_ledger_row_reports_mrs_deploy_026(tmp_path, capsys, monkeypatch):
