@@ -2,7 +2,7 @@
 title: "86.3: Spin and the journal clean up a failed launch and record what they ran"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '94c1d081d733795f6e8235d12f8644072e8c8455'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -73,3 +73,9 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: done
+Verification: pyforge-marshal-test, pyforge-deps-test, lint-types green; spec_surface_reconcile OK.
+Note: Epic row closes fleet-drain writer as DW-FU-3-2; tracked ledger id is DW-FU-3-2-13 (DW-FU-3-2 remains the fold-collision entry).
