@@ -63,6 +63,7 @@ from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from ..refs import MAIN, ORIGIN_MAIN, display_ref
 from ..rekey import RekeyMap, parse_rekey
+from .feed_status import TERMINAL, parse_development_statuses
 
 __all__ = ("gather", "gather_direction")
 
@@ -87,8 +88,6 @@ _MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 #: revisions and becomes inert provenance, so a dangling old key (which by
 #: then no longer exists anywhere) can never fire forever.
 _REKEY_RE = re.compile(r"^_bmad-output/projects/([^/]+)/planning-artifacts/rekey-[^/]+\.md$")
-TERMINAL = frozenset({"done"})
-
 #: An ``epic-N`` row is not a story: the sync derives it from the epic's stories
 #: (``scripts/promote_sprint_status.py`` ``apply_epic_rollups``), so adding a story
 #: to a done epic rolls the epic to ``in-progress``. That reopen is not a regression
@@ -187,35 +186,14 @@ def _project_merge_subject_template(target: Path, project_slug: str) -> str:
 
 
 def _parse_statuses(text: str) -> dict[str, str]:
-    """``key: value`` pairs under ``development_status:``.
-
-    A deliberately tiny parser rather than PyYAML — same rationale as
-    ``sources/marshal.py``'s own ``_parse_statuses``: the file's shape is
-    fixed by its own generator, and this must keep working on a
-    partially-corrupt blob rather than raising.
-    """
-    out: dict[str, str] = {}
-    in_block = False
-    for raw in text.splitlines():
-        if raw.startswith("development_status:"):
-            in_block = True
-            continue
-        if not in_block:
-            continue
-        if raw and not raw.startswith((" ", "\t")):
-            break  # dedent ends the block
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        key, sep, value = line.partition(":")
-        if sep:
-            out[key.strip()] = value.strip()
-    return out
+    """Thin alias — shared parser lives in ``feed_status`` (Story 41.2)."""
+    return parse_development_statuses(text)
 
 
 def _rekey_paths(target: Path, rev: str) -> list[str]:
-    listing = _git(target, "ls-tree", "-r", "--name-only", rev) or ""
-    return sorted(p for p in listing.splitlines() if _REKEY_RE.match(p))
+    # NUL-split with quotePath off, like `_ledger_paths` (Story 41.2 / DW-FU-20-3).
+    listing = _git(target, "-c", "core.quotePath=false", "ls-tree", "-r", "-z", "--name-only", rev) or ""
+    return sorted(p for p in listing.split("\0") if _REKEY_RE.match(p))
 
 
 def _new_rekey_maps(target: Path, base: str, head: str) -> tuple[dict[str, dict[str, str]], list[dict]]:
@@ -261,11 +239,32 @@ def _new_rekey_maps(target: Path, base: str, head: str) -> tuple[dict[str, dict[
     return maps, problems
 
 
-def _ledger_paths(target: Path, rev: str) -> list[str]:
-    """Tracked ledger paths at ``rev`` — listed from git, not the working
-    tree, so a ledger deleted in the working tree is still compared."""
-    listing = _git(target, "ls-tree", "-r", "--name-only", rev) or ""
-    return sorted(p for p in listing.splitlines() if p.startswith(PROJECTS_PREFIX) and p.endswith(LEDGER_SUFFIX))
+def _ledger_paths(target: Path, rev: str) -> list[str] | None:
+    """Tracked ledger paths at ``rev``.
+
+    ``None`` means ``git ls-tree`` failed (distinct from an empty list).
+    NUL-split listing so quoted paths still match (Story 41.2 / DW-FU-6-4-18).
+    """
+    listing = _git(
+        target,
+        "-c",
+        "core.quotePath=false",
+        "ls-tree",
+        "-r",
+        "-z",
+        "--name-only",
+        rev,
+    )
+    if listing is None:
+        return None
+    return sorted(p for p in listing.split("\0") if p and p.startswith(PROJECTS_PREFIX) and p.endswith(LEDGER_SUFFIX))
+
+
+def _repo_top(target: Path) -> Path | None:
+    top = _git(target, "rev-parse", "--show-toplevel")
+    if top is None:
+        return None
+    return Path(top.strip()).resolve()
 
 
 def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
@@ -293,9 +292,36 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
     with a destructive ``git checkout`` remedy, for a ledger that is still
     there)."""
     findings: list[dict] = []
-    base_paths = set(_ledger_paths(target, base))
-    head_paths = set(_ledger_paths(target, head))
+    base_list = _ledger_paths(target, base)
+    head_list = _ledger_paths(target, head)
+    if base_list is None or head_list is None:
+        findings.append(
+            {
+                "kind": "ledger-inventory",
+                "warn": True,
+                "project": "(repo)",
+                "path": "",
+                "detail": (
+                    f"git ls-tree failed while listing tracked ledgers at "
+                    f"{display_ref(base) if base_list is None else head} — "
+                    f"ledger regression cannot be evaluated"
+                ),
+            }
+        )
+        return findings, 0
+    base_paths = set(base_list)
+    head_paths = set(head_list)
     rekey_maps, rekey_problems = _new_rekey_maps(target, base, head)
+    head_status_by_path: dict[str, dict[str, str]] = {}
+    for path in head_paths:
+        blob = _git(target, "show", f"{head}:{path}")
+        if blob is not None:
+            head_status_by_path[path] = _parse_statuses(blob)
+    base_status_by_path: dict[str, dict[str, str]] = {}
+    for path in base_paths:
+        blob = _git(target, "show", f"{base}:{path}")
+        if blob is not None:
+            base_status_by_path[path] = _parse_statuses(blob)
     findings.extend(rekey_problems)
     compared = 0
     for path in sorted(base_paths | head_paths):
@@ -399,8 +425,34 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                 continue
             new = after.get(key)
             if new is None:
-                if _tail(key) in surviving_tails:
-                    continue  # renamed, still done — continuity, not regression
+                # DW-FU-6-4-6: a `done` key that is `done` in ANOTHER ledger at head and was
+                # not `done` there at base moved projects; it is not gone.
+                moved_elsewhere = any(
+                    other_path != path
+                    and statuses.get(key) in TERMINAL
+                    and base_status_by_path.get(other_path, {}).get(key) not in TERMINAL
+                    for other_path, statuses in head_status_by_path.items()
+                )
+                if moved_elsewhere:
+                    findings.append(
+                        {
+                            "kind": "ledger-key-moved",
+                            "project": project,
+                            "path": path,
+                            "detail": (f"story key {key!r} moved to another project's ledger — not a regression"),
+                            "keys": [key],
+                        }
+                    )
+                    continue
+                tail = _tail(key)
+                if tail in surviving_tails:
+                    survivors = {k for k, v in after.items() if v in TERMINAL and _tail(k) == tail}
+                    base_same_tail = {k for k, v in before.items() if v in TERMINAL and _tail(k) == tail}
+                    # DW-FU-6-4-5: a coincidentally new `done` key with the same
+                    # tail must not mask a deletion unless this is the one-key
+                    # rename case (exactly one done key on each side, same tail).
+                    if any(s in before for s in survivors) or (len(survivors) == 1 and base_same_tail == {key}):
+                        continue  # renamed, still done — continuity, not regression
                 lost.append((key, old, "<absent>"))
             elif new not in TERMINAL and not epic_reopened_by_new_story(key, before_keys, after):
                 lost.append((key, old, new))
@@ -558,6 +610,47 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
         else:
             range_evidence["base_substituted"] = True
 
+    repo_top = _repo_top(target)
+    if repo_top is not None and target.resolve() != repo_top:
+        return (
+            Finding(
+                source=Source.LEDGER_REGRESSION,
+                check="ledger-regression",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"target {target!s} is not the repository root ({repo_top}) — "
+                    f"ledger regression cannot be evaluated from a subdirectory"
+                ),
+                evidence={**range_evidence, "target": str(target), "repo_top": str(repo_top)},
+            ),
+        )
+
+    base_invent = _ledger_paths(target, effective_base)
+    head_invent = _ledger_paths(target, head)
+    if base_invent is None or head_invent is None:
+        return (
+            Finding(
+                source=Source.LEDGER_REGRESSION,
+                check="ledger-inventory",
+                status=DoctorStatus.WARN,
+                message="git ls-tree failed while listing tracked ledgers — ledger regression cannot be evaluated",
+                evidence={**range_evidence, "target": str(target)},
+            ),
+        )
+    if not base_invent and not head_invent:
+        return (
+            Finding(
+                source=Source.LEDGER_REGRESSION,
+                check="ledger-inventory",
+                status=DoctorStatus.WARN,
+                message=(
+                    "no tracked sprint ledger found at either revision — "
+                    "ledger regression cannot be evaluated over an empty inventory"
+                ),
+                evidence={**range_evidence, "target": str(target), "ledgers": 0},
+            ),
+        )
+
     raw_findings, ledgers_compared = _check(target, effective_base, head)
     range_evidence["ledgers_compared"] = ledgers_compared
 
@@ -574,6 +667,22 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
 
     findings: list[Finding] = []
     for item in raw_findings:
+        if item.get("kind") == "ledger-key-moved":
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_REGRESSION,
+                    check="ledger-key-moved",
+                    status=DoctorStatus.OK,
+                    message=f"{item['project']}: {item['detail']}",
+                    evidence={
+                        "project": item["project"],
+                        "path": item["path"],
+                        "keys": item.get("keys", []),
+                        **range_evidence,
+                    },
+                )
+            )
+            continue
         # A ledger whose blob would not decode is a cannot-evaluate, not a
         # verdict: WARN, and NO `remedy` — the FAIL branch's remedy is a
         # `git checkout <base> -- <path>`, which would discard the head ledger

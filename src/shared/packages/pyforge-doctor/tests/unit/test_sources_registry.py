@@ -297,3 +297,64 @@ def test_a_real_degrade_on_exception_warn_grades_its_axis_incomplete() -> None:
     result = grade(degraded)
     assert result.grade is Grade.INCOMPLETE
     assert [axis.grade for axis in result.axis_scores] == [Grade.INCOMPLETE]
+
+
+# --- degrade_on_exception call sites (Story 41.2, DW-FU-10-1-5) ----------------------------------
+
+#: Every ``sources/`` module that calls ``degrade_on_exception`` -> how many times (AST ``Call`` nodes, so a
+#: mention in a docstring or comment never counts). A new wrapper, or a removed one, edits this table and the
+#: docstring list in ``sources/__init__.py`` together.
+_DEGRADE_CALL_SITES = {
+    "bmad_config": 1,
+    "bmad_method": 1,
+    "board": 3,
+    "capability_effect": 1,
+    "capability_ledger": 1,
+    "chain": 5,
+    "docs_currency": 1,
+    "docs_map_hygiene": 1,
+    "docs_shelf": 1,
+    "factory": 1,
+    "frozen_path": 1,
+    "general_docs_consistency": 1,
+    "live_proof_surfaces": 1,
+    "one_chain": 3,
+    "pixi_currency": 1,
+    "sibling_dreams": 1,
+    "status_body_consistency": 1,
+}
+
+
+def _degrade_call_counts() -> dict[str, int]:
+    import ast
+
+    sources_dir = Path(sources.__file__).parent
+    counts: dict[str, int] = {}
+    for path in sorted(sources_dir.glob("*.py")):
+        if path.name == "__init__.py":
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        n = sum(
+            1
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "degrade_on_exception"
+        )
+        if n:
+            counts[path.stem] = n
+    return counts
+
+
+def test_degrade_on_exception_call_sites():
+    assert _degrade_call_counts() == _DEGRADE_CALL_SITES
+
+
+def test_degrade_on_exception_docstring_lists_exactly_the_calling_modules():
+    doc = degrade_on_exception.__doc__ or ""
+    start = doc.index("cannot drift):")
+    listed_block = doc[start : doc.index("Any other source module")]
+    import re
+
+    listed = set(re.findall(r"``([a-z_]+)``", listed_block))
+    assert listed == set(_DEGRADE_CALL_SITES)
+    # the module docstring must not resurrect the retired "three existing dispatch calls" claim
+    assert "three existing" not in (sources.__doc__ or "")

@@ -49,14 +49,13 @@ Story 6.3 adds two consumers of this same ``REGISTRY``: ``scope_for`` is the
 one canonical per-source scope lookup — the CLI's ``doctor check --scope
 {repo,runtime,all}`` filter reads every category's scope through it, rather
 than a second hand-rolled scope list that would drift the moment a
-``SourceRegistration``'s ``scope`` changes. ``degrade_on_exception`` is a
-reusable "cannot evaluate here" wrapper for a future ``scope="runtime"``
-source's own gather (e.g. Story 6.5's ``dashboard_drift``, which reads tmux/
-``~/.bmad-loops`` state absent in CI) — see Story 6.3's OWN spec Design Notes
-(review finding: this used to point at Story 6.5, which is the source named
-in the example, not the story that wrote this rationale) for why it is
-deliberately NOT wired into today's three existing (``scope="repo"``)
-dispatch calls, whose own gather functions already promise never to raise.
+``SourceRegistration``'s ``scope`` changes. ``degrade_on_exception`` is the
+reusable "cannot evaluate here" wrapper (Story 6.3); it was written for a
+``scope="runtime"`` source's own gather (e.g. Story 6.5's ``dashboard_drift``,
+which reads tmux/``~/.bmad-loops`` state absent in CI) and has since become the
+outer net of most ``gather()`` entry points — the exact call sites are listed
+in its own docstring and pinned by ``test_sources_registry.py``, so this prose
+carries no count.
 """
 
 from __future__ import annotations
@@ -598,12 +597,17 @@ def degrade_on_exception(
     is that contract, generalized, for a caller that wraps its own raw
     host-state read with it.
 
-    Deliberately NOT wired into today's three existing (repo-scope)
-    dispatch calls in ``__main__.py`` — an exception escaping one of THOSE
-    today would be a real bug in a module that already promises never to
-    raise, and must keep propagating to ``main()``'s own top-level
-    exception net (exit 2), never get silently reclassified as WARN (see
-    the story spec's Design Notes).
+    Call sites (``gather()`` wrappers; ``test_degrade_on_exception_call_sites``
+    in ``tests/unit/test_sources_registry.py`` counts them by AST, so this list
+    cannot drift): ``bmad_config``, ``bmad_method``, ``board``,
+    ``capability_effect``, ``capability_ledger``, ``chain``, ``docs_currency``,
+    ``docs_map_hygiene``, ``docs_shelf``, ``factory``, ``frozen_path``,
+    ``general_docs_consistency``, ``live_proof_surfaces``, ``one_chain``,
+    ``pixi_currency``, ``sibling_dreams`` and ``status_body_consistency`` (all
+    in ``sources/``). Any other source module does not call it; an exception
+    escaping such a ``gather()`` is a real bug in a module that promises never
+    to raise, and keeps propagating to ``main()``'s top-level exception net
+    (exit 2), never silently reclassified as WARN.
 
     Catches ``Exception``, never ``BaseException`` — a ``KeyboardInterrupt``
     or ``SystemExit`` raised inside ``gather`` must still propagate

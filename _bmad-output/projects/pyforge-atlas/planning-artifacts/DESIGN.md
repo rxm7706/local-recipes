@@ -8,12 +8,13 @@ EMPATHIZE through TEST — recorded verbatim at
 `_bmad-output/projects/pyforge-atlas/planning-artifacts/design-thinking-atlas-19-pages-2026-08-28.md`,
 this document's authoring source.
 **Companion:** `EXPERIENCE.md` (behavioral spine — personas, journeys, interaction patterns).
-**Scope:** the 19 Vizro pages NOT yet in `dashboard/app.py::PAGE_INVENTORY`, so Story 20.5 has
-a technical target to port against.
+**Scope:** the 19 Vizro pages from the CIS spine — all 19 are now in
+`dashboard/app.py::PAGE_INVENTORY` as of Story 27.3; this document remains the design
+spec those pages port against.
 
-**Non-scope (per this story's Boundaries):** no page is implemented here; `PAGE_INVENTORY` is
-untouched; the query-plane code from Stories 20.1–20.3 is untouched. Everything below is a
-design SPEC, not code.
+**Non-scope (per this story's Boundaries):** this file does not implement pages or touch
+`dashboard/app.py`; Story 27.3 owns the ports. The query-plane code from Stories 20.1–20.3
+stays untouched here. Everything below remains a design SPEC, not executable code.
 
 ---
 
@@ -40,13 +41,13 @@ satisfy the AC" bar.
 - **7-CLI cyclonedx suite:** `export_purls`, `mapping_gap`, `universe_sbom`, `inventory_match`,
   `add_handoff`, `library_futures`, `recommend_2027`.
 
-**Already shipped (7 of the 28, matching `PAGE_INVENTORY` 1:1):** `detail-cf-atlas`,
-`staleness-report`, `feedstock-health`, `whodepends`, `behind-upstream`, `my-feedstocks`,
-`query-atlas`. (`PAGE_INVENTORY` also carries `estate-cache` — a CAP-19/Lane-3 page, unrelated
-to the 28-CLI migration — and `factory-status` — an observability page, explicitly not a CLI
-port per its own `PageDef.cli` docstring "the legacy read CLI this page ports (**or**
-`factory-status`)". Both count toward `PAGE_INVENTORY`'s length-9 for the epics.md subtraction,
-but neither is one of the 28 CLI questions, so neither reduces the CLI-question backlog.)
+**Already shipped against this spine (19 of the 19, plus the pre-spine CLI ports):** every
+page id declared in §§ 3–5 below is present in `PAGE_INVENTORY` today, alongside the seven
+pre-spine CLI ports (`detail-cf-atlas`, `staleness-report`, `feedstock-health`, `whodepends`,
+`behind-upstream`, `my-feedstocks`, `query-atlas`) and non-CLI dashboard pages (`estate-cache`,
+identity/bootstrap health pages, `factory-status`, …). **`PAGE_INVENTORY` length is
+`len(PAGE_INVENTORY)` at test time** — Story 27.4's planning gate reads the live tuple rather
+than a stale constant here.
 
 **Remaining CLI questions: 28 − 7 = 21.** To land the epics.md-mandated count of exactly 19
 pages without dropping a single question (the PARTIAL_PAGE_COVERAGE edge case is explicit:
@@ -393,4 +394,6 @@ their inputs/outputs are distinct artifacts, even though the shape repeats.
 | Seed-gap suggesters (§ 5) | 4 | 4 |
 | **Total** | **21** | **19** |
 
-Matches the AC exactly: 19 pages, zero of the 21 remaining CLI questions dropped.
+Matches the AC exactly: 19 pages, zero of the 21 remaining CLI questions dropped. As of Story
+27.3 every spine page id above is also a member of `PAGE_INVENTORY` (the gate in
+`tests/meta/test_planning_record.py` re-counts both sides).

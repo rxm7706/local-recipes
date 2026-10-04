@@ -1794,7 +1794,7 @@ the remaining 19 Vizro pages (adopting the DW-D2-1/2/3 residue, which had ledger
 no story home for dispatch).
 
 ### Story 19.1: One boot script raises both plane faces (CAP-5)
-**Effort:** M • **Deps:** — • **Status:** backlog
+**Effort:** M • **Deps:** — • **Status:** done
 **Given** the shipped CAP-19 engine (steward 34.1–34.5) **When** the single pixi-sourced boot
 script runs **Then** the in-process library face is available by default (AD-16 local-first;
 DuckDB stays a query face, never a fourth backing store) **And** the Mosaic `duckdb-server`
@@ -1804,7 +1804,7 @@ no second boot path exists (grep-verifiable: exactly one `duckdb-server` launch 
 (`query-plane-face` ruling, 2026-08-26).
 
 ### Story 19.2: Face parity is part of done (CAP-5)
-**Effort:** S • **Deps:** S-20.1 • **Status:** backlog
+**Effort:** S • **Deps:** S-20.1 • **Status:** done
 **Given** both faces up on fixture data **When** the parity gate runs an identical query set
 against the library face and the HTTP/Arrow face **Then** results agree row-for-row **And** a
 seeded divergence fails the gate (proven in-test) **And** filesystem-less consumers bind to
@@ -1813,7 +1813,7 @@ the face's definition of done per the `query-plane-face` ruling (2026-08-26); th
 offline-safe.
 
 ### Story 19.3: Named-pipeline derivation of the dashboard stores (CAP-6)
-**Effort:** M • **Deps:** — • **Status:** backlog
+**Effort:** M • **Deps:** — • **Status:** done
 **Given** the sealed seven pipelines' canonical outputs **When** the NAMED downstream plane
 pipeline runs (one `kedro run --pipeline <named>`) **Then** the composed semantic stores the
 grounded dashboard pages bind to (DW-D2-2's `semantic_packages` family plus the
@@ -1825,7 +1825,7 @@ per-call choice — canonical datasets direct, or the plane as the fast path **A
 story.
 
 ### Story 19.4: The CIS two-spine specs exist (CAP-7)
-**Effort:** M • **Deps:** — • **Status:** backlog
+**Effort:** M • **Deps:** — • **Status:** done
 **Given** DW-D2-1 — checked 2026-08-27: the CIS DESIGN/EXPERIENCE gap STILL BLOCKS (the
 `DESIGN.md` + `EXPERIENCE.md` spine specs were never produced; no evidence-update since the
 2026-07-30 verification) **When** the CIS Carson/Maya planning pass runs **Then** both spine
@@ -1834,7 +1834,7 @@ DW-D2-1's close cites them **And** until this story lands, S-20.5 must not expan
 set past the live-confirmed core.
 
 ### Story 19.5: Port the remaining nineteen Vizro pages (CAP-7)
-**Effort:** L • **Deps:** S-20.3, S-20.4 • **Status:** backlog
+**Effort:** L • **Deps:** S-20.3, S-20.4 • **Status:** done
 **Given** the two-spine specs (S-20.4 — this story is GATED: the DW-D2-1 CIS gap still blocks
 as of 2026-08-27) and the materialized stores (S-20.3) **When** the remaining 19 of 28 CLI
 pages port against the spines — BSL-routed, reading canonical datasets or the plane per the
@@ -1876,37 +1876,37 @@ is exactly the three Tier 0 verification sets; the package universe still comes 
 `--analysis-xlsx` until Story 23.8 — see the 2026-08-30 course-correction note below.)*
 
 ### Story 20.4: Tier 1 catalog sources (SelfExplainML, Anaconda, Basilisk, AOSS)
-**Type:** feature • **Effort:** L • **Deps:** S-21.3 • **Status:** backlog
+**Type:** feature • **Effort:** L • **Deps:** S-21.3 • **Status:** done
 **Given** bootstrap **When** Tier 1 datasets fetch **Then** all Tier 1 entries in
 `catalog-sources.md` are live in `catalog.yml` with smoke floors.
 
 ### Story 20.5: Tier 2 sources (about, curated orgs, Artifactory names)
-**Type:** feature • **Effort:** M • **Deps:** S-21.4 • **Status:** backlog
+**Type:** feature • **Effort:** M • **Deps:** S-21.4 • **Status:** done
 **Given** attended creds when live fetch enabled **When** Tier 2 runs **Then** CDO universe
 names come from catalog Parquet (telemetry deferred to Epic 23).
 
 ### Story 20.6: upstream_discovery identity join and export Parquet
-**Type:** feature • **Effort:** L • **Deps:** S-21.5 • **Status:** backlog
+**Type:** feature • **Effort:** L • **Deps:** S-21.5 • **Status:** done
 **Given** associator + board fixtures **When** Phase D runs **Then** `identity_export_parquet`
 matches today's join parity.
 
 ### Story 20.7: Quartet thin-out and gist wrapper
-**Type:** feature • **Effort:** M • **Deps:** S-21.6 • **Status:** backlog
+**Type:** feature • **Effort:** M • **Deps:** S-21.6 • **Status:** done
 **Given** identity export Parquet **When** `--gist-only` runs **Then** inventory scripts delegate
 join to Atlas; Epic 17 purl-associator constraint superseded with memlog.
 
 ### Story 20.8: End-to-end verification gate
-**Type:** feature • **Effort:** M • **Deps:** S-21.7 • **Status:** backlog
+**Type:** feature • **Effort:** M • **Deps:** S-21.7 • **Status:** done
 **Given** no legacy DB on Kedro path **When** full bootstrap + `--live-catalog` **Then**
 `parity-diff` and `bsl-metric-check` pass — Epic 21 success signal.
 
 ### Story 20.9: Vizro bootstrap health pages (optional, CAP-5)
-**Type:** feature • **Effort:** M • **Deps:** S-21.8 • **Status:** backlog • **Optional:** yes
+**Type:** feature • **Effort:** M • **Deps:** S-21.8 • **Status:** done • **Optional:** yes
 **Given** post-bootstrap Parquet **When** `dashboard-serve` **Then** three BSL health pages
 render non-empty tables.
 
 ### Story 20.10: Kedro-Viz CI path sync (optional, CAP-6)
-**Type:** chore • **Effort:** S • **Deps:** S-21.8 • **Status:** backlog • **Optional:** yes
+**Type:** chore • **Effort:** S • **Deps:** S-21.8 • **Status:** done • **Optional:** yes
 **Given** a catalog-only PR **When** merged to main **Then** `kedro-viz-publish.yml` republishes
 the static DAG export.
 
@@ -1919,30 +1919,30 @@ the three Cursor Canvas identity views; deferred from Epic 21 for scope, not cap
 **Renumbered 2026-08-29** from draft Epic 19.
 
 ### Story 21.1: Ranked export bridge (quartet → Vizro feed)
-**Type:** feature • **Effort:** S • **Deps:** S-21.8 • **Status:** backlog
+**Type:** feature • **Effort:** S • **Deps:** S-21.8 • **Status:** done
 **Given** `priority.py` on identity export **When** bridge runs **Then**
 `identity_ranked_export.parquet` feeds Vizro until Epic 23.5 supersedes.
 
 ### Story 21.2: Vizro `identity-catalog` page
-**Type:** feature • **Effort:** M • **Deps:** S-22.1 • **Status:** backlog • **Optional:** yes
+**Type:** feature • **Effort:** M • **Deps:** S-22.1 • **Status:** done • **Optional:** yes
 **Given** ranked export **When** page loads **Then** row counts match catalog canvas fixture.
 
 ### Story 21.3: Vizro `identity-ops` page
-**Type:** feature • **Effort:** M • **Deps:** S-22.1 • **Status:** backlog • **Optional:** yes
+**Type:** feature • **Effort:** M • **Deps:** S-22.1 • **Status:** done • **Optional:** yes
 **Given** ranked export **When** four panes render **Then** pane totals match ops canvas fixture.
 
 ### Story 21.4: Vizro `identity-workbook` page
-**Type:** feature • **Effort:** M • **Deps:** S-22.1 • **Status:** backlog • **Optional:** yes
+**Type:** feature • **Effort:** M • **Deps:** S-22.1 • **Status:** done • **Optional:** yes
 **Given** enterprise Parquet absent or present **When** page loads **Then** honest shell or full
 workbook parity respectively.
 
 ### Story 21.5: Canvas vs Vizro parity gate
-**Type:** feature • **Effort:** M • **Deps:** S-22.2, S-22.3 • **Status:** backlog • **Optional:** yes
+**Type:** feature • **Effort:** M • **Deps:** S-22.2, S-22.3 • **Status:** done • **Optional:** yes
 **Given** shared fixture **When** `dashboard-dryrun` parity test runs **Then** Vizro matches
 canvas DATA aggregates.
 
 ### Story 21.6: Canvas deprecation switch
-**Type:** chore • **Effort:** S • **Deps:** S-22.5 • **Status:** backlog • **Optional:** yes
+**Type:** chore • **Effort:** S • **Deps:** S-22.5 • **Status:** done • **Optional:** yes
 **Given** parity gate green **When** `INVENTORY_IDENTITY_UI=vizro|canvas|both` **Then** default
 `both` until operator opts into vizro-only.
 
@@ -1956,44 +1956,44 @@ canvas DATA aggregates.
 **Renumbered 2026-08-29** from draft Epic 20.
 
 ### Story 22.1: Tier 3 bulk OS indexes
-**Type:** feature • **Effort:** M • **Deps:** S-21.4 • **Status:** backlog
+**Type:** feature • **Effort:** M • **Deps:** S-21.4 • **Status:** done
 **Given** bootstrap **When** Tier 3 fetches run **Then** homebrew/nixpkgs/spack/debian/fedora
 BOOLs land on verification export.
 
 ### Story 22.2: Enterprise JFROG consumption Parquet
-**Type:** feature • **Effort:** L • **Deps:** S-21.5, Epic 15 • **Status:** backlog
+**Type:** feature • **Effort:** L • **Deps:** S-21.5, Epic 15 • **Status:** done
 **Given** mock or attended Artifactory transport **When** rollup runs **Then**
 `enterprise_jfrog_consumption.parquet` matches §1 column contract on fixture.
 
 ### Story 22.3: Priority rules in Kedro (`inventory_priority_assignments`)
-**Type:** feature • **Effort:** L • **Deps:** S-21.6, S-23.2 • **Status:** backlog
+**Type:** feature • **Effort:** L • **Deps:** S-21.6, S-23.2 • **Status:** done
 **Given** frozen priority fixture **When** Kedro node runs **Then** P/Score/Work parity vs
 `priority.py`.
 
 ### Story 22.4: Deliverable A + `Packaging_Candidate_Status`
-**Type:** feature • **Effort:** M • **Deps:** S-21.3, S-23.3, S-23.8 • **Status:** backlog
+**Type:** feature • **Effort:** M • **Deps:** S-21.3, S-23.3, S-23.8 • **Status:** done
 **Given** verification + priority Parquet **And** `inventory_universe` (S-23.8) as the row
 grain **When** derived export writes **Then** `inventory_verified_packages.parquet` has exact
 14-column order at the full-inventory grain (~38k rows), not the OpenTeams-universe grain.
 
 ### Story 22.5: `identity_complete_export.parquet` (canonical)
-**Type:** feature • **Effort:** L • **Deps:** S-23.3, S-23.4 • **Status:** backlog
+**Type:** feature • **Effort:** L • **Deps:** S-23.3, S-23.4 • **Status:** done
 **Given** identity + priority + enterprise joins **When** export materializes **Then** full
 GIST_SCHEMA + handoff columns; supersedes Story 22.1 bridge.
 
 ### Story 22.6: BSL gist aggregates (CAP-8d)
-**Type:** feature • **Effort:** M • **Deps:** S-23.5 • **Status:** backlog
+**Type:** feature • **Effort:** M • **Deps:** S-23.5 • **Status:** done
 **Given** complete export **When** BSL renders gist markdown **Then** parity vs today's gist
 files on fixture; `gh gist edit` is thin actuator only.
 
 ### Story 22.7: Zero-deferred E2E gate
-**Type:** feature • **Effort:** M • **Deps:** S-23.5, S-23.6, S-23.8, S-23.9 • **Status:** backlog
+**Type:** feature • **Effort:** M • **Deps:** S-23.5, S-23.6, S-23.8, S-23.9 • **Status:** done
 **Given** no workbook ingest — by the bootstrap **and** by the quartet (`openpyxl` absent
 from `scripts/`) **When** bootstrap + Vizro + gist **Then** quartet data logic retired; dream
 fully closed.
 
 ### Story 22.8: Workbook-free metrics universe (Kedro `inventory_universe` + `--analysis-xlsx` optional)
-**Type:** feature • **Effort:** L • **Deps:** S-21.4, S-21.5 • **Status:** backlog
+**Type:** feature • **Effort:** L • **Deps:** S-21.4, S-21.5 • **Status:** done
 **Given** Tier 0–2 Parquet + the OpenTeams board dataset **When** `derived_artifacts` runs
 **Then** `inventory_universe.parquet` holds one row per PEP-503 name with the workbook's
 provenance labels, `role`, and `openteams_universe_member` **And** `metrics.py --live-catalog`
@@ -2001,7 +2001,7 @@ without `--analysis-xlsx` produces CSV/MD identical to the workbook run on a fix
 `10kClosed`-only rows are the one reported delta). *(Minted 2026-08-30 course correction.)*
 
 ### Story 22.9: Quartet workbook retirement (thin actuators, no `openpyxl` in `scripts/`)
-**Type:** feature • **Effort:** L • **Deps:** S-23.4, S-23.5, S-23.6, S-23.8, S-22.1 • **Status:** backlog
+**Type:** feature • **Effort:** L • **Deps:** S-23.4, S-23.5, S-23.6, S-23.8, S-22.1 • **Status:** done
 **Given** the Atlas exports **When** the four quartet scripts run **Then** identity/priority/
 dashboards/metrics read only Parquet (`identity_complete_export`, `inventory_priority_assignments`,
 `enterprise_jfrog_consumption`, `inventory_verified_packages`), every workbook flag refuses with

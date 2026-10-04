@@ -3,10 +3,15 @@
 
 ``gather(axis)`` normalizes one of cf_atlas's Watch-axis signals into
 ``Finding`` tuples, one per underlying row (never re-aggregated -- mirrors
-``sources/warden.py``'s "never re-aggregated" rule). Three axes are wired:
+``sources/warden.py``'s "never re-aggregated" rule). Five axes are wired:
 
 * ``"staleness"`` (Story 2.1) -- ``staleness_report`` -> ``Source.STALENESS_REPORT``.
 * ``"cve"`` (Story 2.2) -- ``cve_watcher`` -> ``Source.CVE_WATCHER``.
+* ``"behind-upstream"`` (Story 41.2, DW-FU-6-2) -- ``behind_upstream`` (cf_atlas's
+  existing behind-upstream query, a bare JSON list of rows) ->
+  ``Source.BEHIND_UPSTREAM``, one WARN per feedstock whose latest conda
+  version lags its upstream-of-record. Opt-in only, like ``adoption``: never
+  added to ``monitor --fleet``'s default ``staleness,cve`` axis set.
 * ``"abandonment"`` (Story 2.2) -- a COMPOSITE of ``feedstock_health``
   (called twice, ``--filter stuck`` and ``--filter bad``) ->
   ``Source.FEEDSTOCK_HEALTH``, plus ``release_cadence`` (client-side
@@ -91,7 +96,7 @@ from typing import Any, Callable
 from ..cli_bridge import CliBridgeError, run_cli_json
 from ..models import DoctorStatus, Finding, Source
 
-_VALID_AXES = frozenset({"staleness", "cve", "abandonment", "adoption"})
+_VALID_AXES = frozenset({"staleness", "cve", "abandonment", "adoption", "behind-upstream"})
 
 # Public alias -- Story 2.3's CLI layer validates `--watch` axis names
 # against this without reaching into a leading-underscore module internal.
@@ -112,6 +117,7 @@ AXIS_SOURCES: dict[str, frozenset[Source]] = {
     "cve": frozenset({Source.CVE_WATCHER}),
     "abandonment": frozenset({Source.FEEDSTOCK_HEALTH, Source.RELEASE_CADENCE}),
     "adoption": frozenset({Source.ADOPTION}),
+    "behind-upstream": frozenset({Source.BEHIND_UPSTREAM}),
 }
 
 # Trend labels release_cadence's own `_classify` can emit that count as an
@@ -138,6 +144,7 @@ _CHECK_CVE = "atlas-cve"
 _CHECK_FEEDSTOCK_HEALTH = "atlas-feedstock-health"
 _CHECK_RELEASE_CADENCE = "atlas-release-cadence"
 _CHECK_ADOPTION_STAGE = "atlas-adoption-stage"
+_CHECK_BEHIND_UPSTREAM = "atlas-behind-upstream"
 _CHECK_VERSION_DOWNLOADS = "atlas-version-downloads"
 
 
@@ -209,6 +216,42 @@ def _normalize_staleness_rows(rows: list[Any]) -> tuple[Finding, ...]:
                 # failure -- the report is already filtered/sorted to
                 # stale-first by construction; there is no pass/fail
                 # threshold in the underlying data itself.
+                status=DoctorStatus.WARN,
+                message=message,
+                evidence=dict(row),
+            )
+        )
+    return tuple(findings)
+
+
+def _normalize_behind_upstream_rows(rows: list[Any]) -> tuple[Finding, ...]:
+    """One ``Finding`` per ``behind_upstream`` row, tagged
+    ``Source.BEHIND_UPSTREAM`` (Story 41.2). The tool already filters to
+    feedstocks whose upstream version is strictly newer (``lag_label`` is
+    ``major``/``minor``/``patch``/``unknown``, never ``current``), so every
+    row is a drift warning -- ``WARN``, mirroring staleness's reasoning that
+    a version lag has no pass/fail threshold in the underlying data. A
+    non-dict row degrades to its own FAIL ``Finding``."""
+    findings: list[Finding] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            findings.append(
+                _one_fail_finding(
+                    Source.BEHIND_UPSTREAM,
+                    f"behind_upstream returned a non-object row: {row!r}",
+                )
+            )
+            continue
+        name = _row_identifier(row)
+        message = (
+            f"{name}: latest_conda_version={row.get('latest_conda_version')!s} "
+            f"upstream_version={row.get('upstream_version')!s} "
+            f"upstream_source={row.get('upstream_source')!s} lag={row.get('lag_label')!s}"
+        )
+        findings.append(
+            Finding(
+                source=Source.BEHIND_UPSTREAM,
+                check=_CHECK_BEHIND_UPSTREAM,
                 status=DoctorStatus.WARN,
                 message=message,
                 evidence=dict(row),
@@ -620,6 +663,39 @@ def _gather_staleness(
     return _normalize_staleness_rows(rows)
 
 
+def _gather_behind_upstream(
+    *,
+    target: str | None,
+    server_script_path: Path,
+    cli_script_path: Path | None,
+    timeout: float,
+    mcp_caller: Callable[[str, dict[str, Any]], str] | None,
+    cli_runner: Callable[[Path, list[str]], Any] | None,
+) -> tuple[Finding, ...]:
+    mcp_arguments: dict[str, Any] = {}
+    if target is not None:
+        mcp_arguments["maintainer"] = target
+    cli_args = ["--json"]
+    if target is not None:
+        cli_args.extend(["--maintainer", target])
+
+    try:
+        rows = _fetch_rows(
+            tool_name="behind_upstream",
+            mcp_arguments=mcp_arguments,
+            cli_script_path=cli_script_path or _default_cli_script("behind_upstream.py"),
+            cli_args=cli_args,
+            server_script_path=server_script_path,
+            timeout=timeout,
+            mcp_caller=mcp_caller,
+            cli_runner=cli_runner,
+            extract_rows=_extract_list_rows,
+        )
+    except _FetchFailed as exc:
+        return (_one_fail_finding(Source.BEHIND_UPSTREAM, str(exc)),)
+    return _normalize_behind_upstream_rows(rows)
+
+
 def _gather_cve(
     *,
     target: str | None,
@@ -803,7 +879,7 @@ def gather(
     """Gather one atlas Watch axis's signal, MCP-first with CLI fallback.
 
     ``axis`` is validated against a small closed set (``{"staleness",
-    "cve", "abandonment", "adoption"}`` as of Story 4.3) -- an unrecognized axis raises
+    "cve", "abandonment", "adoption", "behind-upstream"}`` as of Story 41.2) -- an unrecognized axis raises
     ``ValueError`` at the call boundary (a programmer error, not a runtime
     degrade case). Every other failure degrades to a ``Finding`` (see
     module docstring); no other exception escapes.
@@ -817,7 +893,7 @@ def gather(
     unreachable path is the supported way to force the MCP path to fail and
     exercise CLI fallback (used by the live equivalence smoke test).
     ``cli_script_path`` is honored for the single-tool axes
-    (``"staleness"``/``"cve"``); the ``"abandonment"`` composite ignores it
+    (``"staleness"``/``"cve"``/``"behind-upstream"``); the ``"abandonment"`` composite ignores it
     (see :func:`_gather_abandonment`'s docstring). ``cve_severity`` (default
     ``"C"``, mirroring ``cve_watcher.py``'s own CLI default) scopes the
     ``"cve"`` axis to one severity band -- ``{"C", "H", "K", "T"}``, not
@@ -843,6 +919,15 @@ def gather(
         return _gather_cve(
             target=target,
             severity=cve_severity,
+            server_script_path=server_script_path,
+            cli_script_path=cli_script_path,
+            timeout=timeout,
+            mcp_caller=mcp_caller,
+            cli_runner=cli_runner,
+        )
+    if axis == "behind-upstream":
+        return _gather_behind_upstream(
+            target=target,
             server_script_path=server_script_path,
             cli_script_path=cli_script_path,
             timeout=timeout,

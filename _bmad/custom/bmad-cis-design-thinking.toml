@@ -1,0 +1,9 @@
+# Team override for bmad-cis-design-thinking — resolves upstream template placeholders
+# the packaged SKILL.md never loads (Story 27.4 / DW-FU-20-4-3). Never edit files under
+# `.claude/skills/bmad-cis-design-thinking/`; this file is the sanctioned override surface.
+
+[workflow]
+
+activation_steps_append = [
+  "After workflow Step 4 (Load Config), also read `{project-root}/_bmad/core/config.yaml` and resolve `project_name` from its top-level `project_name` key. When you first write `{default_output_file}` from `{template_file}`, substitute `{{project_name}}` in the title (and anywhere else that placeholder appears) with the resolved value so the session title is never a literal `{{project_name}}`.",
+]

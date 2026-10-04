@@ -5119,8 +5119,11 @@ status: open
   summary: A failed-story patch for the story a loop home is actively re-driving RIGHT NOW raises the same "verify before recovering or discarding this patch" WARN as a genuinely abandoned one, even though the row already carries the `current_story` fact needed to tell them apart -- the one population where the operator should do nothing.
   evidence: Review pass 3 (Blind Hunter). Confirmed by code inspection: the per-patch WARN is gated only on `done is False` and never consults `row["current_story"]` or `row["state"]`, both of which `build_fleet_row` has already computed from the same `facts`. Live at the time of review: `pyforge-marshal`'s own row showed `story=4-14-the-failed-story-safety-net-is-reported` while carrying three failed patches. Not fixed in this pass: the two candidate treatments each need a decision this story cannot make unilaterally -- SUPPRESSING the WARN would contradict the intent contract's own Always bullet ("Every `.bmad-loop/runs/*/failed/*/changes.patch` ... is reported on that home's own row"), while ANNOTATING it (an `in_flight: true` key) adds a field to the `failed_patches` entry shape that the contract enumerates, so it belongs to whoever next amends that shape. Consequence is mild in the meantime: the WARN's advice ("verify") is harmless for an in-flight story, merely noisy.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
   severity: medium
+  resolution: Story 86.4 (spec-86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is) — suppress the per-patch `MRS-STATUS-010` when `failed_patches[].story_key` equals the row's `current_story`; the patch stays listed.
+  verified: 2026-10-04 — `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py:2134` skips the WARN for the current story; `tests/unit/test_status.py::TestFailedPatches::test_failed_patch_for_current_story_stays_listed_without_mrs_status_010` pins it.
+
   verified: 2026-10-01 — NEEDS-DECISION — `cli/status.py`'s per-patch WARN loop (`for entry in row.get('failed_patches') or (): if entry.get('done') is False:`) still never reads `current_story` or `state` (`grep -n "current_story" cli/status.py` shows it used only in the text renderer's display line, never in the WARN-emission logic). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should a failed-story patch for the story a loop home is CURRENTLY re-driving be suppressed from the MRS-STATUS-010 WARN entirely (risks contradicting the story's own 'every changes.patch is reported' Always-bullet), or should the `failed_patches` entry schema grow an `in_flight` field instead (a shape change enumerated in the story's own intent contract)? This is a product/contract decision the implementing story's own boundaries say it cannot make unilaterally.
 
@@ -7708,7 +7711,10 @@ status: open
   origin: spec-deferred 177985a6b07e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 86.4 (spec-86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is) — bounded retry (3) on non-fast-forward in `commit_paths_onto_remote_tip`, recorded on CAP-277.
+  verified: 2026-10-04 — `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py:1573` retries via `_commit_paths_onto_remote_tip_once`; `tests/unit/test_vcs_git.py::test_commit_paths_onto_remote_tip_retries_a_push_rejected_as_non_fast_forward` pins one rejection then success.
+
   verified: 2026-10-01 — NEEDS-DECISION — adapters/vcs_git.py:1340-1470 commit_paths_onto_remote_tip fetches once (~:1377), builds one commit, pushes once (~:1462) and raises VcsCommandError on rejection; its callers (cli/land.py:1506, dispatch_land_finalize/__main__.py:134, dispatch_supervisor/__main__.py:797) each call it once with no retry. (2026-09-30 deferral burn-down triage)
   decision: Should the planning-artifacts publish retry a non-fast-forward rejection with a bounded re-fetch/rebuild (amending spec-pyforge-marshal CAP-277), given parallel drains finalize stations seconds apart and a lost race now REFUSES the landing via MRS-DISP-051?
 
@@ -7844,7 +7850,10 @@ status: open
   origin: spec-deferred 3696226d092d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 86.4 (spec-86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is) — serial `plan_station_cycle` reads live dispatch sessions; drain `--plan` reports `would_dispatch` false with an in-flight note.
+  verified: 2026-10-04 — `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:4803` reads `_live_dispatch_story_keys` when `parallel_cap <= 1`; `tests/unit/test_drain_plan.py::test_serial_station_with_live_session_reads_would_dispatch_false` pins the plan surface.
+
   verified: 2026-10-01 — NEEDS-DECISION — cli/dispatch.py:3890 plan_station_cycle's serial path returns the queue head with no liveness read; cli/drain_plan.py never calls station_in_flight_conflict (grep: no hit), so a busy serial station reads would_dispatch true. (2026-09-30 deferral burn-down triage)
   decision: How should 'factory drain --plan' report a serial station whose head is held only by a live in-flight session (MRS-DISP-011/021): would_dispatch false with an in-flight note, a WARN finding, or unchanged?
 

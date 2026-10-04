@@ -220,11 +220,56 @@ def test_every_doctor_source_task_name_is_a_dispatch_entry():
     """Every name in `_DOCTOR_SOURCE_TASKS` is a `DISPATCH` key -- the NAME half
     of the name -> pixi-task pairing (DW-FU-6-9-3) only. A name absent from
     `DISPATCH` reads `unknown` (KeyError in `_run_doctor_sources`), never green;
-    this fails it at test time. The pixi-task half is NOT checked here: it is
-    pinned for the `bmad-output-hygiene` row alone, by the test above."""
+    this fails it at test time. The pixi-task half is pinned for every row by
+    `test_every_doctor_source_task_is_a_pixi_task_running_its_own_source` below."""
     DISPATCH = _doctor_dispatch()
 
     assert {name for name, _task in detectors._DOCTOR_SOURCE_TASKS} <= set(DISPATCH)
+
+
+#: `_DOCTOR_SOURCE_TASKS` rows whose pixi task is declared in a feature other than `guild-tasks`, each with the
+#: feature it lives in. Pinned so the list can only shrink: `dashboard-layout-check` is the headless-Chrome check
+#: and stays in `local-recipes`; moving it regenerates the generated pixi-tasks reference.
+_TASK_OUTSIDE_GUILD_TASKS = {"dashboard-layout-check": "local-recipes"}
+
+
+def test_every_doctor_source_task_is_a_pixi_task_running_its_own_source():
+    """DW-FU-6-9-3: for EVERY `_DOCTOR_SOURCE_TASKS` entry the named pixi task exists in `pixi.toml` and its `cmd`
+    is exactly `python -m pyforge.doctor.sources <name>` -- a task that is missing, or that runs a different source,
+    reads green in the sweep while a human running the named task measures something else."""
+    import tomllib
+
+    manifest = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    features = manifest["feature"]
+    guild_tasks = features["guild-tasks"]["tasks"]
+
+    problems: list[str] = []
+    for name, task in detectors._DOCTOR_SOURCE_TASKS:
+        declared = guild_tasks.get(task)
+        if declared is None:
+            home = _TASK_OUTSIDE_GUILD_TASKS.get(task)
+            declared = features.get(home, {}).get("tasks", {}).get(task) if home else None
+            if declared is None:
+                problems.append(f"{name}: pixi task {task!r} is not declared in guild-tasks")
+                continue
+        cmd = declared.get("cmd") if isinstance(declared, dict) else declared
+        expected = f"python -m pyforge.doctor.sources {name}"
+        if cmd != expected:
+            problems.append(f"{name}: task {task!r} cmd is {cmd!r}, expected {expected!r}")
+    assert problems == []
+
+
+def test_a_task_outside_guild_tasks_is_pinned_and_not_also_in_guild_tasks():
+    import tomllib
+
+    manifest = tomllib.loads((REPO_ROOT / "pixi.toml").read_text(encoding="utf-8"))
+    guild_tasks = manifest["feature"]["guild-tasks"]["tasks"]
+    task_names = {task for _name, task in detectors._DOCTOR_SOURCE_TASKS}
+
+    for task, home in _TASK_OUTSIDE_GUILD_TASKS.items():
+        assert task in task_names
+        assert task not in guild_tasks, f"{task} moved into guild-tasks: drop it from _TASK_OUTSIDE_GUILD_TASKS"
+        assert task in manifest["feature"][home]["tasks"]
 
 
 def _hygiene_stub(status: str):

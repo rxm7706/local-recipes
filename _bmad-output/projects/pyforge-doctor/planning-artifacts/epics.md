@@ -1909,7 +1909,7 @@ a new Doctor source, this epic (not steward), no empty `vizro/` directory.
 **Then** no operational procedure is copied verbatim across an entry point and a
 quadrant file without one side being a pointer
 **And** SKILL.md files keep wielding notes that name CLI grammar only
-**Status:** backlog
+**Status:** done
 
 ### Story 23.2: Fold the getting-started and air-gap cluster; stub the binders
 
@@ -1925,7 +1925,7 @@ and the binders become stubs pointing at `docs/` plus `SYNC-RUNBOOK.md`
 **Then** there is one tutorial path, one air-gap how-to, and one air-gap explanation
 **And** `docs/reference/` redirect stubs are deleted after the pointer sweep
 **And** the planning tree still exists — `epics.md` is not moved
-**Status:** backlog
+**Status:** done
 
 ### Story 23.3: Sunset docs/specs/ by frontmatter status
 
@@ -1952,7 +1952,7 @@ specified or pitched Dream
 **Then** nothing a specified/realized/archived Dream already absorbed remains
 in intake
 **And** no gist dump gains Dream YAML
-**Status:** backlog
+**Status:** done
 
 ### Story 23.5: Archive citations for the five already-moved _bmad-output/ files
 
@@ -1963,7 +1963,7 @@ files that still cite `_bmad-output/DREAM-TRIAGE-2026-08-08.md` and siblings.
 citations still use the old root path
 **When** those citations are rewritten
 **Then** no live doc cites the old `_bmad-output/` root path for those five files
-**Status:** backlog
+**Status:** done
 
 ### Story 23.6: MAP names publish roots; do not mint an empty vizro/ tree
 
@@ -1975,7 +1975,7 @@ is a different product
 **Then** kedro-viz is not renamed
 **And** `docs/dashboard/vizro/` does not exist unless a later publish story
 created it
-**Status:** backlog
+**Status:** done
 
 ### Story 23.7: A new Doctor source flags leftover-shelf occupancy
 
@@ -1991,7 +1991,7 @@ MAP allow-list
 air-gap how-to outside the cluster, is a finding with a quoted path
 **And** a clean MAP fixture is silent
 **And** the finding is never a second PR gate
-**Status:** backlog
+**Status:** done
 
 ## Currency validation — 2026-09-14
 
@@ -2099,7 +2099,7 @@ a meta-test proves the contract fails on a planted reintroduction (a throwaway
 reintroducing the shape fails a test rather than waiting for a future audit
 **And** the contract's own docstring names Charter §5/§6 and this Spec as its reason, so a
 future maintainer does not read it as an arbitrary layering rule
-**Status:** backlog
+**Status:** done
 
 ### Story 24.3: The surfaces are reconciled so no file is governed twice or not at all
 
@@ -2120,7 +2120,7 @@ and no `drift` for any moved path
 both)
 **And** `git ls-files` shows every new path tracked before the stamp (the baseline reads
 `git ls-files`)
-**Status:** backlog
+**Status:** done
 
 ## Epic 25: One chain per station — the sprawl gate, the FR check, and a ledger that survives a rebase (spec-one-chain-per-station CAP-2, CAP-5, CAP-3(g))
 
@@ -2413,7 +2413,7 @@ the sibling's re-fires exactly that Dream naming both hashes; an archived Dream 
 with `archived` in the message; the request goes to `openteams-ai/mgmt-wf-python-modernization` directly
 **And** the unreachable and unauthenticated paths are unchanged (`sibling-dreams-unreachable`, warn, exit 0); no content
 from the sibling is written anywhere
-**Status:** backlog
+**Status:** done
 
 ## Epic 30: The documentation is right, and refreshing it is repeatable (spec-pyforge-doctor CAP-83, CAP-84)
 
@@ -2445,7 +2445,7 @@ generator for its own surface. **FRs covered:** FR-17 (minted 2026-09-19 on the 
 **When** this story lands
 **Then** `map.yaml` validates against a schema shipped in the doctor package; `MAP.md` equals its render (a byte diff is a finding); `docs-currency` reports OK on `main` and reds (warn) an authored page whose named source moved past `verified:`, a page whose backticked path / pixi task / CLI grammar no longer resolves, and a stray file inside a managed skill dir; the unmapped-page class is promoted from warn to fail
 **And** the promotion is recorded on the doctor memlog; `general-docs-consistency` and `governance-currency` keep their lanes
-**Status:** backlog
+**Status:** done
 
 ### Story 30.3: The reference pages are generated — pixi tasks, station CLIs, detectors, skills — and stamped
 **Type:** feature • **Effort:** M • **Deps:** S-30.2 • **FR/AD:** FR-17, spec-pyforge-doctor CAP-84
@@ -2455,7 +2455,7 @@ generator for its own surface. **FRs covered:** FR-17 (minted 2026-09-19 on the 
 **When** this story lands
 **Then** each generator is idempotent on an unchanged tree and rewrites its page + stamp on a changed one; editing `pixi.toml`'s tasks, a station CLI's grammar, a detector registration or a `SKILL.md` frontmatter without regenerating reds `detectors-ci`; a hand edit to a generated page is a finding
 **And** the pages agents should read (reference) are exact by construction; authored explanation stays for humans
-**Status:** backlog
+**Status:** done
 
 ## Epic 31: Doctor names the refs it judges by their full refname (spec-pyforge-doctor CAP-85)
 
@@ -2586,7 +2586,7 @@ missing field and each unknown value as its own reason
 **And** `docs/reference/story-spec-flag-block.md` states the block and the list as the Spec's CAP-1 does, `docs-currency`
 stays green with its `docs/map.yaml` row, and `station-verify-commands.md` points to it; `pixi run --frozen -e
 pyforge-doctor pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 34.2: The flag gate ships in scripts, outside every station, and runs in detectors-ci
 
@@ -2615,7 +2615,7 @@ exits 2 (unknown, never green)
 **And** no `pyforge.<station>` module defines or imports the gate, and the meta-test fails on a planted
 `pyforge.<station>.flag_gate` shim; the tree has zero FAIL at the landing SHA, so `detectors-ci` reports no new finding
 against `main`; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 34.3: The flag gate reads the tree metadata — per-environment defaults and the 90-day clock
 
@@ -2636,7 +2636,7 @@ per-environment `default` disagrees with the tree's value for that environment
 **And** a flag not yet ON everywhere is never red on the clock; the run date is injectable, so the 90-day boundary is tested
 on both sides; the metadata field names are the ones steward 76.2 lands, never guessed
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** blocked
+**Status:** backlog
 
 ### Story 34.4: Each station has a checked-in flag inventory of its runtime capabilities
 
@@ -2658,7 +2658,7 @@ Smith's retrofit stories (one flag per CAP, defaulting ON as a kill switch, Q6) 
 **And** a second run on the same tree is byte-identical; a planted CAP with a CLI verb and no flag reads `none`; the
 inventory reuses the CAP-to-code join rather than inventing a second one; `pixi run --frozen -e pyforge-doctor
 pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 34.5: The flag gate reds a landed flagged story whose test does not run both states
 
@@ -2677,7 +2677,7 @@ spec's `flag.key` through the kit's ON/OFF helper nor write two flagd trees for 
 `src/platform/tests/test_openfeature_file_flags.py`) — read statically, never by running the test
 **And** a spec still in backlog is never judged on this (its test does not exist yet), nor is an exempt one
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** blocked
+**Status:** done
 
 
 ## Epic 35: Capability-ledger's post-PIN check reads only live Specs (spec-pyforge-doctor CAP-87)
@@ -2705,7 +2705,7 @@ Spec loop reads the added `SPEC.md`'s frontmatter `status` with `_frontmatter` a
 HARD checks and the per-CAP post-PIN WARN are unchanged; on `main` the source reports OK and exits 0; restoring the
 status-blind loop makes the absorbed and draft tests fail (mutation); `pixi run --frozen -e pyforge-doctor
 pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 36: A fold is proven complete before its file moves, and the sibling check follows the archive (spec-one-chain-per-station CAP-11)
 
@@ -2743,7 +2743,7 @@ archived Dream whose owner cannot be read (missing or glued frontmatter)
 station (the migration's countdown), never a FAIL; baseline files are OK; on `main` today the source reports that WARN
 and exits 0; removing the paragraph comparison makes the incomplete-fold test fail (mutation); `pixi run --frozen -e
 pyforge-doctor pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 36.2: The sibling-drift check reads acknowledged Dreams under the archive
 **Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-one-chain-per-station CAP-11 (CHAIN-STANDARD §11: readers
@@ -2756,7 +2756,7 @@ reads `archive/docs/dreams/*.md`, with `docs/dreams/` read first), `tests/unit/t
 **Then** it reads that Dream's acknowledgement and reports exactly what it reported before the move
 **And** a Dream present in both places is read from `docs/dreams/`; on `main` today its output is unchanged; tests cover the
 moved Dream and the both-places case; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 37: The legacy intake-spec tier retires, and the intake inbox keeps only its README (spec-one-chain-per-station CAP-11)
 

@@ -687,8 +687,9 @@ def test_ok_finding_reports_how_many_ledgers_were_compared(tmp_path: Path) -> No
     _commit_all(empty, "still no ledgers")
 
     vacuous = ledger.gather(empty, base="origin/main", head="HEAD")[0]
-    assert vacuous.status is DoctorStatus.OK
-    assert vacuous.evidence["ledgers_compared"] == 0
+    assert vacuous.status is DoctorStatus.WARN
+    assert vacuous.check == "ledger-inventory"
+    assert vacuous.evidence["ledgers"] == 0
 
 
 # --- Story 25.3: the fold PR's re-key map ------------------------------------
@@ -1017,14 +1018,14 @@ def _durability_after(tmp_path: Path, working: dict[str, str]) -> tuple:
 def test_durability_accepts_a_new_story_reopening_its_done_epic(tmp_path: Path) -> None:
     findings = _durability_after(tmp_path, {**_DONE_EPIC, "epic-9": "in-progress", "9-3-new": "backlog"})
 
-    regressions = [f for f in findings if f.check == "ledger-regression"]
+    regressions = [f for f in findings if f.check == "marshal-durability-regression"]
     assert [f.status for f in regressions] == [DoctorStatus.OK]
 
 
 def test_durability_still_reports_a_done_epic_leaving_done_with_no_new_story(tmp_path: Path) -> None:
     findings = _durability_after(tmp_path, {**_DONE_EPIC, "epic-9": "backlog"})
 
-    regressions = [f for f in findings if f.check == "ledger-regression"]
+    regressions = [f for f in findings if f.check == "marshal-durability-regression"]
     assert len(regressions) == 1
     assert regressions[0].status is DoctorStatus.FAIL
     assert regressions[0].evidence["keys"] == ["epic-9"]
@@ -1035,7 +1036,7 @@ def test_durability_still_reports_a_deleted_epic_key_beside_a_new_story(tmp_path
 
     findings = _durability_after(tmp_path, working)
 
-    regressions = [f for f in findings if f.check == "ledger-regression"]
+    regressions = [f for f in findings if f.check == "marshal-durability-regression"]
     assert len(regressions) == 1
     assert regressions[0].status is DoctorStatus.FAIL
     assert regressions[0].evidence["keys"] == ["epic-9"]
