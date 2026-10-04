@@ -113,7 +113,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -132,7 +132,7 @@ from ..core.journal import Phase
 from ..core.landing import rule_applies
 from ..core.model import Finding, Severity, build_envelope
 from ..core.refs import local_branch_ref, remote_tracking_ref
-from ..core.status import is_run_live, render_ledger_advancements
+from ..core.status import is_run_live, render_ledger_advancements, render_ledger_status_rewrites
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.clock import ClockPort
 from ..ports.commit import VcsRef
@@ -1314,7 +1314,11 @@ def _load_promote_sprint_status_module() -> object | None:
     """Install-free load of ``scripts/promote_sprint_status.py`` (Story 15.2 /
     Story 5.9 precedent in ``cli/deploy.py::_load_promote_sprint_status``).
     Returns ``None`` when the script is missing -- land still advances
-    wave keys via ``render_ledger_advancements`` without the feed sync."""
+    wave keys via ``render_ledger_advancements`` without the feed sync.
+
+    Story 83.21: a script that raises while it loads is ``None`` too, never a
+    crash of a landing whose PR has already merged; ``_promote_sprint_ledger``
+    then names the missing roll-up in an ``MRS-LAND-011`` WARN."""
     import importlib.util
 
     checkout_root = Path(__file__).resolve().parents[8]
@@ -1325,8 +1329,35 @@ def _load_promote_sprint_status_module() -> object | None:
     if spec is None or spec.loader is None:
         return None
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except Exception:  # noqa: BLE001 -- an unloadable script degrades to no feed sync and no roll-up
+        return None
     return module
+
+
+def _sync_epic_rollup(promote_mod: object | None) -> Callable[[dict[str, str]], dict[str, str]] | None:
+    """Story 83.21: ``sprint-ledger-sync``'s own ``apply_epic_rollups`` from the
+    loaded ``scripts/promote_sprint_status.py``, or ``None`` when the module (or
+    that function) is unavailable. One roll-up: the sync's, never a second rule."""
+    rollup = getattr(promote_mod, "apply_epic_rollups", None) if promote_mod is not None else None
+    return rollup if callable(rollup) else None
+
+
+def _roll_up_epic_rows(ledger_text: str, rollup: Callable[[dict[str, str]], dict[str, str]]) -> str:
+    """Story 83.21: ``ledger_text`` with every row the sync's ``rollup`` changes
+    (its ``epic-N`` rows) rewritten to the value it computes from the text's
+    own final statuses -- what ``sprint-ledger-sync`` writes for the same
+    statuses. A targeted line rewrite (``render_ledger_status_rewrites``):
+    every other byte stays as it was. A status is read as its token, the text
+    before any ``#`` comment, the way the sync's own parser reads it."""
+    statuses = {
+        key: value.partition("#")[0].strip() for key, value in _parse_sprint_ledger_statuses(ledger_text).items()
+    }
+    rolled = rollup(dict(statuses))
+    changes = {key: value for key, value in rolled.items() if statuses.get(key) != value}
+    new_text, _matched = render_ledger_status_rewrites(ledger_text, changes)
+    return new_text
 
 
 def _land_feed_sync_refusal(
@@ -1384,6 +1415,16 @@ def _promote_sprint_ledger(
     2. Advance every ``wave_keys`` row that already exists in the twin to
        ``done`` via ``render_ledger_advancements`` (covers feed lag / a
        missing feed while the twin already carries the key).
+    3. Story 83.21: write the ``epic-N`` rows the published text carries
+       through the sync's own ``apply_epic_rollups``, over the FINAL statuses
+       (after steps 1 and 2) -- so the twin reads what ``sprint-ledger-sync``
+       writes for the same statuses, and a stale feed epic row never
+       overwrites the roll-up (doctor 41.5's landing ``b9869e5c6d`` moved
+       ``epic-41`` from ``in-progress`` to ``backlog``). Without that function
+       (the script missing, unloadable, or lacking it) the feed is not synced
+       at all, the twin keeps its own epic rows, and an ``MRS-LAND-011`` WARN
+       names the missing roll-up -- no epic row is written that was not
+       computed. A result that equals the twin is not published.
 
     Returns the raw ledger keys newly moved to ``done`` this run (empty
     when already converged). Lock contention / write / commit failures
@@ -1476,12 +1517,15 @@ def _promote_sprint_ledger(
             fresh_ledger = remote_text
 
         promote_mod = _load_promote_sprint_status_module()
+        # Story 83.21: the feed syncs only through the sync's own roll-up -- without it the feed's
+        # epic rows are uncomputed, and an uncomputed epic row never reaches the twin.
+        epic_rollup = _sync_epic_rollup(promote_mod)
         project_key = slug.removeprefix("pyforge-")
         src_rel = f"_bmad-output/projects/{slug}/implementation-artifacts/sprint-status.yaml"
         working = fresh_ledger
         feed_synced = False
 
-        if feed_text is not None and promote_mod is not None:
+        if feed_text is not None and promote_mod is not None and epic_rollup is not None:
             try:
                 gen = promote_mod._load_generate()
                 incoming = gen.parse_sprint_status(feed_path)
@@ -1520,6 +1564,27 @@ def _promote_sprint_ledger(
 
         new_text, matched = render_ledger_advancements(working, needed)
         if not matched and not feed_synced:
+            return ()
+
+        # Story 83.21: the epic rows published are the sync's roll-up of the FINAL statuses -- after
+        # the feed sync and after the advancements -- never the feed's own (possibly stale) epic rows.
+        if epic_rollup is not None:
+            new_text = _roll_up_epic_rows(new_text, epic_rollup)
+        else:
+            not_synced = "; the Tier-3 feed was not synced" if feed_text is not None else ""
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_011,
+                    severity=Severity.WARN,
+                    message=(
+                        f"scripts/promote_sprint_status.py's apply_epic_rollups could not be loaded, so no "
+                        f"epic roll-up was computed for {slug!r}: the published sprint ledger keeps its own "
+                        f"epic-N rows{not_synced}"
+                    ),
+                    path=str(ledger_path),
+                )
+            )
+        if new_text == fresh_ledger:
             return ()
 
         promoted_keys = tuple(sorted(matched))

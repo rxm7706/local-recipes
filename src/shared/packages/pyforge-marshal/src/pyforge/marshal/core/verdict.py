@@ -762,7 +762,9 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # Story 68.1 (CAP-277): MRS-LAND-011 also names a second triggering shape, same
 # WARN tier (AD-31: same code, several triggering shapes) -- the dispatch
 # supervisor's blocked-spec-twin publish onto origin/main that could not land
-# (`_promote_blocked_twin`), journaled as a WARN observation.
+# (`_promote_blocked_twin`), journaled as a WARN observation. Story 83.21: a
+# third shape, same tier -- the sync's `apply_epic_rollups` could not be loaded,
+# so the promotion wrote no epic row it did not compute.
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to cli/status.py's own MRS-STATUS-* area, both WARN.
 # MRS-STATUS-010: a failed-story patch found via a bare Path.glob over
