@@ -198,6 +198,16 @@ def compare_ruleset_maps(
             diffs.append(
                 f"{name}: ref_name include {got_inc!r} != declared {want_inc!r}"
             )
+        want_exc = want["conditions"]["ref_name"]["exclude"]
+        got_exc = got["conditions"]["ref_name"]["exclude"]
+        if want_exc != got_exc:
+            diffs.append(
+                f"{name}: ref_name exclude {got_exc!r} != declared {want_exc!r}"
+            )
+        if want.get("enforcement") != got.get("enforcement"):
+            diffs.append(
+                f"{name}: enforcement {got.get('enforcement')!r} != declared {want.get('enforcement')!r}"
+            )
         if want["rules"] != got["rules"]:
             diffs.append(
                 f"{name}: rules {got['rules']!r} != declared {want['rules']!r}"

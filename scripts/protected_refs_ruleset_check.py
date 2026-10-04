@@ -126,11 +126,11 @@ def run_check(
 
     ok, err = gh_has_authenticated_quota()
     if not ok:
-        return [err], 2
+        return diffs + [err], 2
 
     live_map, err = fetch_live_rulesets(repo)
     if live_map is None:
-        return [f"live ruleset fetch failed: {err}"], 2
+        return diffs + [f"live ruleset fetch failed: {err}"], 2
 
     diffs.extend(lib.compare_ruleset_maps(declared_map, live_map))
     return diffs, None

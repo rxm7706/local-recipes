@@ -157,6 +157,75 @@ def test_unauthenticated_rate_limit_exits_two() -> None:
     assert code == 2
 
 
+def test_unauthenticated_preserves_local_findings() -> None:
+    detector = _load_detector()
+    lib = _load_lib()
+    with mock.patch.object(
+        detector,
+        "check_document_freshness",
+        return_value=["document drift example"],
+    ):
+        with mock.patch.object(
+            detector,
+            "gh_has_authenticated_quota",
+            return_value=(False, "no authenticated quota"),
+        ):
+            diffs, override = detector.run_check(
+                roster=lib.load_roster(),
+                fixture_live=None,
+                repo="rxm7706/local-recipes",
+                skip_live=False,
+            )
+    assert override == 2
+    assert "document drift example" in diffs
+    assert any("no authenticated quota" in d for d in diffs)
+
+
+def test_enforcement_drift_exits_one() -> None:
+    doc = _matching_live_fixture()
+    for rs in doc["rulesets"]:
+        rs["enforcement"] = "disabled"
+    fixture_path = FIXTURES / "enforcement_disabled.json"
+    fixture_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(DETECTOR_PATH),
+            "--fixture",
+            str(fixture_path),
+            "--skip-live",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 1
+    assert "enforcement" in proc.stdout
+
+
+def test_exclude_drift_exits_one() -> None:
+    doc = _matching_live_fixture()
+    for rs in doc["rulesets"]:
+        if rs["name"] == "protected-refs-loop-branches":
+            rs["conditions"]["ref_name"]["exclude"] = ["refs/heads/loop/skip/**"]
+    fixture_path = FIXTURES / "exclude_drift.json"
+    fixture_path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(DETECTOR_PATH),
+            "--fixture",
+            str(fixture_path),
+            "--skip-live",
+        ],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 1
+    assert "ref_name exclude" in proc.stdout
+
+
 def test_api_error_exits_two() -> None:
     detector = _load_detector()
     with mock.patch.object(detector, "gh_has_authenticated_quota", return_value=(True, "")):
