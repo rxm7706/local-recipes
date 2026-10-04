@@ -2427,7 +2427,7 @@ def test_commit_paths_onto_remote_tip_retries_a_push_rejected_as_non_fast_forwar
     push_attempts = {"n": 0}
 
     def _run_with_one_push_rejection(cmd, timeout_s=None):
-        if len(cmd) >= 4 and cmd[2] == "push":
+        if "push" in cmd:
             push_attempts["n"] += 1
             if push_attempts["n"] == 1:
                 return subprocess.CompletedProcess(cmd, 1, "", " ! [rejected] (non-fast-forward)")

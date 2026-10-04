@@ -4972,6 +4972,8 @@ class TestFailedPatches:
         assert "4.11" in message
         # WARN tier only -- never this command's exit code (the story's own
         # Boundary).
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
 
     def test_failed_patch_for_current_story_stays_listed_without_mrs_status_010(
         self, tmp_path, capsys, monkeypatch
