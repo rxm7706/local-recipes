@@ -3,7 +3,7 @@
 
 (steward Story 63.3, spec-pyforge-steward CAP-5)
 
-WHAT THIS IS. A repo-level `PreToolUse` guard for the eleven AGENTS.md/CLAUDE.md
+WHAT THIS IS. A repo-level `PreToolUse` guard for the twelve AGENTS.md/CLAUDE.md
 session rules that were previously prose only. Registered on `Bash` and on
 `Edit`/`Write`/`NotebookEdit` in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` / `afterFileEdit` in `.cursor/hooks.json` (Cursor) --
@@ -12,7 +12,7 @@ harness's event(s) at this one script, and this script tells the two apart by
 the shape of the JSON on stdin (see `detect()`).
 
 Gemini CLI, GitHub Copilot CLI and Devin have no verified deny surface for
-this hook -- for them the eleven rules stay instruction-only, as written in
+this hook -- for them the twelve rules stay instruction-only, as written in
 AGENTS.md (see AGENTS.md's own "Session guardrails" section; do not assume
 this script runs there).
 
@@ -136,7 +136,7 @@ def build_context(harness: str, kind: str, payload: dict[str, Any]) -> Context:
 
 # --------------------------------------------------------------------------
 # Command tokenization -- heuristic, not a shell. Good enough to recognize
-# the eleven named forms; not a sandbox and not trying to be one.
+# the twelve named forms; not a sandbox and not trying to be one.
 # --------------------------------------------------------------------------
 
 
