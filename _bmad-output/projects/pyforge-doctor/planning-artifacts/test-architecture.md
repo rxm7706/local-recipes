@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 8d7b17077b7f1d2e
-story_count: 142
+source_fingerprint: 678be8decd00cf8c
+story_count: 143
 test_file_count: 93
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 142
+- **Stories parsed:** 143
 - **Epics parsed:** 41
 - **Test files inventoried:** 93 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8d7b17077b7f1d2e`
+- **Source fingerprint:** `678be8decd00cf8c`
 
 ## Risk Assessment
 
@@ -322,6 +322,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 41.3 | The board, factory, hygiene and status-body sources read frontmatter one way,... | none observed |
 | 41.4 | The check CLI, the env and engines checks, the score and the bmad-method sour... | none observed |
 | 41.5 | A new story reopens its done epic without reading as a ledger regression | none observed |
+| 41.6 | Chain-completeness counts the one-chain fold's citation window again | none observed |
 
 ## Quality Gates
 
