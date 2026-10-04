@@ -95,10 +95,16 @@ cmd = "echo resolve-name"
 """
 
 
-def _write_fixture_roster(dest: Path) -> None:
+def _write_fixture_roster(dest: Path, *, roster_override: Optional[dict[str, Any]] = None) -> None:
     real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
     dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.write_text(json.dumps({"session_denials": real["session_denials"]}), encoding="utf-8")
+    payload: dict[str, Any] = {
+        "session_denials": real["session_denials"],
+        "protected_refs": real.get("protected_refs", []),
+    }
+    if roster_override:
+        payload.update(roster_override)
+    dest.write_text(json.dumps(payload), encoding="utf-8")
 
 
 def _git(args: list[str], cwd: Path) -> None:
@@ -553,6 +559,122 @@ def test_notebook_edit_to_spec_md_denied(fake_repo: Path) -> None:
     reason = _claude_deny_reason(result)
     assert reason is not None
     assert "memlog.py" in reason
+
+
+# --------------------------------------------------------------------------
+# Rule 11: protected-ref-deletion
+# --------------------------------------------------------------------------
+
+
+def test_real_roster_protected_refs_shape() -> None:
+    data = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
+    assert "protected_ref_prefixes" not in data
+    refs = data["protected_refs"]
+    assert len(refs) == 5
+    by_ref = {entry["refname"]: entry for entry in refs}
+    assert by_ref["refs/heads/loop/"]["kind"] == "operational-branch"
+    assert by_ref["refs/heads/attempt-preserve/"]["kind"] == "legacy"
+    assert by_ref["refs/tags/preserve/"]["kind"] == "preserve-tag"
+    assert by_ref["refs/tags/archive/"]["kind"] == "archive-tag"
+    assert by_ref["refs/tags/rescue/"]["kind"] == "legacy"
+    for entry in refs:
+        assert entry["scope"] in ("origin", "local", "both")
+
+
+def test_protected_branch_prefixes_floor_when_roster_omits_loop(hook_module) -> None:
+    prefixes = hook_module.load_protected_branch_prefixes(REPO_ROOT)
+    assert "refs/heads/loop/" in prefixes
+    assert "refs/heads/main" in prefixes
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git push origin --delete loop/pyforge-marshal",
+        "git push origin -d loop/pyforge-marshal",
+        "git push origin :refs/heads/loop/pyforge-marshal",
+        "git push origin --delete attempt-preserve/run-1",
+        "git push origin --delete main",
+        "git branch -D attempt-preserve/run-1",
+        "gh api -X DELETE repos/o/r/git/refs/heads/loop/x",
+        "git -C /tmp/wt push origin --delete loop/pyforge-atlas",
+    ],
+)
+def test_protected_ref_deletion_denied(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    reason = _claude_deny_reason(result)
+    assert reason is not None
+    assert "worktree_sweep.py --retire" in reason
+
+
+def test_protected_ref_deletion_allows_recover_and_rescue_branches(fake_repo: Path) -> None:
+    for command in (
+        "git push origin --delete recover/x",
+        "git push origin --delete rescue/x",
+        "git branch -d feature/x",
+        "git push origin --delete feature/x",
+    ):
+        result = _run(_claude_bash(command, fake_repo), fake_repo)
+        assert result.returncode == 0
+        assert result.stdout.strip() == ""
+
+
+def test_worktree_remove_loop_home_denied(fake_repo: Path, tmp_path: Path) -> None:
+    loop_home = tmp_path / ".bmad-loops" / "pyforge-atlas"
+    loop_home.mkdir(parents=True)
+    command = f"git worktree remove --force {loop_home}"
+    result = _run(
+        _claude_bash(command, fake_repo),
+        fake_repo,
+        env_extra={"HOME": str(tmp_path)},
+    )
+    reason = _claude_deny_reason(result)
+    assert reason is not None
+    assert "operator" in reason.lower()
+
+
+def test_worktree_remove_symlink_to_loop_home_denied(fake_repo: Path, tmp_path: Path) -> None:
+    loop_home = tmp_path / ".bmad-loops" / "pyforge-scribe"
+    loop_home.mkdir(parents=True)
+    link = tmp_path / "loop-link"
+    link.symlink_to(loop_home)
+    command = f"git worktree remove --force {link}"
+    result = _run(
+        _claude_bash(command, fake_repo),
+        fake_repo,
+        env_extra={"HOME": str(tmp_path)},
+    )
+    assert _claude_deny_reason(result) is not None
+
+
+def test_worktree_remove_ordinary_worktree_allowed(fake_repo: Path, tmp_path: Path) -> None:
+    wt = tmp_path / "scratch-wt"
+    _git(["worktree", "add", "-q", "-b", "remove-me", str(wt)], fake_repo)
+    result = _run(_claude_bash(f"git worktree remove {wt}", fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert result.stdout.strip() == ""
+
+
+def test_protected_ref_deletion_floor_when_roster_omits_loop_prefix(
+    fake_repo: Path, tmp_path: Path
+) -> None:
+    real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
+    trimmed = [
+        entry
+        for entry in real["protected_refs"]
+        if entry["refname"] != "refs/heads/loop/"
+    ]
+    roster_path = fake_repo / "docs" / "governance" / "guild-roster.json"
+    _write_fixture_roster(roster_path, roster_override={"protected_refs": trimmed})
+    result = _run(
+        _claude_bash("git push origin --delete loop/pyforge-marshal", fake_repo),
+        fake_repo,
+    )
+    assert _claude_deny_reason(result) is not None
+
+
+def test_protected_ref_deletion_mutation_missing_matcher_fails_parity(hook_module) -> None:
+    assert "protected-ref-deletion" in hook_module.MATCHERS
 
 
 # --------------------------------------------------------------------------

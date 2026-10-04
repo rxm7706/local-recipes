@@ -267,7 +267,7 @@
     "script serves both harnesses (Claude Code's `PreToolUse` on `Bash` and on",
     "`Edit`/`Write`; Cursor's `beforeShellExecution` deny and `afterFileEdit`",
     "warn -- Cursor has no before-edit deny). Gemini CLI, GitHub Copilot CLI",
-    "and Devin have no verified deny surface for this hook; the ten rules stay",
+    "and Devin have no verified deny surface for this hook; the eleven rules stay",
     "instruction-only there, as written in AGENTS.md.",
     "",
     "Each entry's `id` MUST have exactly one matching callable in the script's",
@@ -282,6 +282,33 @@
     "above: adding, removing or reshaping a denial is a deliberate decision,",
     "never a drive-by code edit to pre-shell.py alone. The hook never denies",
     "anything not named here."
+  ],
+  "protected_refs": [
+    {
+      "refname": "refs/heads/loop/",
+      "kind": "operational-branch",
+      "scope": "both"
+    },
+    {
+      "refname": "refs/heads/attempt-preserve/",
+      "kind": "legacy",
+      "scope": "both"
+    },
+    {
+      "refname": "refs/tags/preserve/",
+      "kind": "preserve-tag",
+      "scope": "both"
+    },
+    {
+      "refname": "refs/tags/archive/",
+      "kind": "archive-tag",
+      "scope": "both"
+    },
+    {
+      "refname": "refs/tags/rescue/",
+      "kind": "legacy",
+      "scope": "both"
+    }
   ],
   "session_denials": [
     {
@@ -350,6 +377,12 @@
         "ledger": "Never hand-edit sprint-status-ledger.yaml (generated) -- write the Tier-3 feed, then `pixi run -e pyforge-guild sprint-ledger-sync -- --project <station>`.",
         "implementation_artifacts": "Never track anything under implementation-artifacts/ -- it is Tier 3 and gitignored; this path is already tracked, which is the bug to fix, not to perpetuate by editing it further."
       }
+    },
+    {
+      "id": "protected-ref-deletion",
+      "applies_to": "bash",
+      "trigger": "git push/branch/worktree or gh api DELETE that deletes a protected branch (refs/heads/main, refs/heads/loop/, refs/heads/attempt-preserve/, or another branch prefix declared in protected_refs) or removes a ~/.bmad-loops loop home",
+      "reason": "Protected branches and loop homes are not deleted from an agent session -- retire a branch with `python scripts/worktree_sweep.py --retire <branch>`, and remove a loop home only after an explicit operator decision."
     }
   ]
 }
