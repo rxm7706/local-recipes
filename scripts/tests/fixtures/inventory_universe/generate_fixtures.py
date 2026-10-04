@@ -283,6 +283,74 @@ def build_catalog() -> None:
     frame = pd.DataFrame(rows, columns=columns)
     _write_parquet(CATALOG_ROOT / "derived/inventory_universe/inventory_universe.parquet", frame)
 
+    ts = "2026-08-30T12:00:00Z"
+    verified_cols = [
+        "Repository_Source",
+        "Role",
+        "Package_Input_Name",
+        "Core_Python_Package_Name",
+        "PyPI_Verified",
+        "CondaForge_Verified",
+        "Priority_Bucket",
+        "Packaging_Candidate_Status",
+        "PyPI_PURL",
+        "PyPI_Package_URL",
+        "Conda-forge_PURL",
+        "Conda-Forge_Package_URL",
+        "Conda-Forge_FeedStock_URL",
+        "Verification_Timestamp_UTC",
+    ]
+    verified_rows = [
+        {
+            "Repository_Source": "tab:Conda-Forge",
+            "Role": "N/A",
+            "Package_Input_Name": WIDGET,
+            "Core_Python_Package_Name": WIDGET,
+            "PyPI_Verified": "Yes",
+            "CondaForge_Verified": "Yes",
+            "Priority_Bucket": "P9",
+            "Packaging_Candidate_Status": "Already Packaged",
+            "PyPI_PURL": f"pkg:pypi/{WIDGET}",
+            "PyPI_Package_URL": f"https://pypi.org/project/{WIDGET}/",
+            "Conda-forge_PURL": f"pkg:conda/{WIDGET}?channel=conda-forge",
+            "Conda-Forge_Package_URL": f"https://anaconda.org/conda-forge/{WIDGET}/",
+            "Conda-Forge_FeedStock_URL": f"https://github.com/conda-forge/{WIDGET}-feedstock",
+            "Verification_Timestamp_UTC": ts,
+        },
+        {
+            "Repository_Source": "tab:GAOSS-Free",
+            "Role": "N/A",
+            "Package_Input_Name": AOSS_FREE_PKG,
+            "Core_Python_Package_Name": AOSS_FREE_PKG,
+            "PyPI_Verified": "Yes",
+            "CondaForge_Verified": "No",
+            "Priority_Bucket": "P9",
+            "Packaging_Candidate_Status": "Low Priority Candidate",
+            "PyPI_PURL": f"pkg:pypi/{AOSS_FREE_PKG}",
+            "PyPI_Package_URL": f"https://pypi.org/project/{AOSS_FREE_PKG}/",
+            "Conda-forge_PURL": "N/A",
+            "Conda-Forge_Package_URL": "N/A",
+            "Conda-Forge_FeedStock_URL": "N/A",
+            "Verification_Timestamp_UTC": ts,
+        },
+    ]
+    _write_parquet(
+        CATALOG_ROOT / "derived/inventory_verified_packages/inventory_verified_packages.parquet",
+        pd.DataFrame(verified_rows, columns=verified_cols),
+    )
+    queue_cols = ["Package_Name", "Reason", "Verification_Timestamp_UTC"]
+    queue_rows = [
+        {
+            "Package_Name": AOSS_FREE_PKG,
+            "Reason": "On PyPI, not on conda-forge, not in CDO consumption (GAOSS-Free)",
+            "Verification_Timestamp_UTC": ts,
+        }
+    ]
+    _write_parquet(
+        CATALOG_ROOT / "derived/inventory_aoss_free_queue/inventory_aoss_free_queue.parquet",
+        pd.DataFrame(queue_rows, columns=queue_cols),
+    )
+
 
 def main() -> None:
     build_workbook()

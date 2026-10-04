@@ -47,6 +47,7 @@ from pyforge.core.process import PosixProcess, ProcessError
 
 from ..core.harness_profile import HarnessProfile, WireWrap, load_profiles, wire_port_for_worktree
 from ..core.harness_profile import render_dispatch_argv as _render_dispatch_argv
+from ..core.harness_profile import render_verify_fix_argv as _render_verify_fix_argv
 from ..core.harness_profile import resolve_wire_wrap as _resolve_wire_wrap
 from ..ports.build_harness import (
     DispatchLaunchResult,
@@ -137,6 +138,146 @@ def _authcheck_failure(profile: HarnessProfile, binary_path: str) -> str | None:
 class BmadBuildHarness:
     """``BuildHarnessPort``'s sole implementation (Story 22.1; profile-
     driven since Story 22.8)."""
+
+    def launch_argv(
+        self,
+        argv: Sequence[str],
+        *,
+        worktree: Path,
+        profile: HarnessProfile,
+        resolution: HarnessResolution,
+        log_path: Path,
+        wire: WireWrap,
+        budget_env: Mapping[str, str],
+        project_slug: str,
+    ) -> tuple[int, tuple[str, ...]]:
+        """Detach-launch an already-rendered argv; return ``(pid, command)``.
+
+        The one launcher behind both ``dispatch`` (the story session, Story
+        22.1) and ``dispatch_verify_fix`` (Story 85.1's fix turn): the child
+        env, the wire layer's PATH and the detached ``Popen`` live here once.
+        ``BMAD_ACTIVE_PROJECT`` is set unconditionally, as ``dispatch``
+        always set it -- an empty ``project_slug`` pins an empty project
+        rather than inheriting the operator shell's.
+        """
+        # Precedence, lowest to highest: the operator's environment, the
+        # profile's own declared vars, the wire layer's own vars (Story
+        # 28.2), marshal's per-invocation project pin, the policy budget
+        # env -- a profile or a wrapper may tune its CLI but never repoint
+        # the dispatched project or the budget ceilings.
+        child_env = {
+            **os.environ,
+            **dict(profile.env),
+            **dict(wire.env),
+            "BMAD_ACTIVE_PROJECT": project_slug,
+            **dict(budget_env),
+        }
+        if wire.applied and resolution.binary_path is not None:
+            # Wrapping replaces the resolved CLI path with the wrapper's
+            # prefix, and the wrapper then resolves the CLI itself off
+            # PATH. A CLI that only lives in a profile `fallback_bin_dirs`
+            # entry (the pixi-env case this repo runs on) would vanish at
+            # that point, so its own directory is prepended -- restoring
+            # exactly the reachability the unwrapped launch already had,
+            # and nothing more.
+            binary_dir = str(Path(resolution.binary_path).parent)
+            existing_path = child_env.get("PATH", "")
+            child_env["PATH"] = f"{binary_dir}{os.pathsep}{existing_path}" if existing_path else binary_dir
+        try:
+            log_file = open(log_path, "wb")  # noqa: SIM115
+        except (OSError, ValueError) as exc:
+            raise BuildHarnessError(f"cannot open dispatch log {str(log_path)!r}: {exc}") from exc
+        with log_file:
+            try:
+                # Story 14.4, CAP-6: stays raw subprocess, exempted
+                # file-level in test_process_sole_ownership.py -- needs a
+                # capability pyforge.core.process does NOT offer. Neither
+                # PosixProcess.run (waits synchronously, no file-redirected
+                # stdout) nor spawn_detached (no env= override -- inherits
+                # os.environ exactly, by design) supports a DETACHED launch
+                # with a per-invocation custom env (BMAD_ACTIVE_PROJECT +
+                # profile env + budget env). Mutating process-global
+                # os.environ as a workaround would race concurrent
+                # dispatches for different projects -- the exact class of
+                # bug the "never scripts/bmad-switch" convention exists to
+                # avoid.
+                process = subprocess.Popen(
+                    list(argv),
+                    cwd=worktree,
+                    start_new_session=True,
+                    stdin=subprocess.DEVNULL,
+                    stdout=log_file,
+                    stderr=log_file,
+                    env=child_env,
+                )
+            except (OSError, ValueError) as exc:
+                raise BuildHarnessError(f"cannot launch session harness {list(argv)!r}: {exc}") from exc
+        return process.pid, tuple(argv)
+
+    def dispatch_verify_fix(
+        self,
+        worktree: Path,
+        *,
+        resolution: HarnessResolution,
+        prompt: str,
+        model: str | None,
+        log_path: Path,
+        wire_layer: Mapping[str, object] | None = None,
+        launch_mode: str,
+        project_slug: str,
+        budget_env: Mapping[str, str] | None = None,
+    ) -> DispatchLaunchResult:
+        """Launch one fix-only or resume session (Story 85.1, not bmad-build-auto)."""
+        if not resolution or resolution.spec is None or resolution.binary_path is None:
+            raise BuildHarnessError("cannot launch verify fix turn: no resolved profile")
+        profile = resolution.spec
+        wire = _resolve_wire_wrap(
+            profile,
+            wire_layer=wire_layer,
+            home=worktree,
+            wrapper_binary_path=resolution.wrapper_binary_path,
+        )
+        if wire.applied and wire.store_dir is not None:
+            try:
+                Path(wire.store_dir).mkdir(parents=True, exist_ok=True)
+            except OSError as exc:
+                wire = WireWrap(
+                    applied=False,
+                    reason=(
+                        f"wire-compression store {wire.store_dir!r} could not be "
+                        f"created: {exc} -- the layer is off for this launch"
+                    ),
+                    aggressiveness=wire.aggressiveness,
+                )
+        argv, rendered_model, model_omitted_reason = _render_verify_fix_argv(
+            profile,
+            mode=launch_mode,
+            binary_path=resolution.binary_path,
+            worktree=worktree,
+            prompt=prompt,
+            model=model,
+            wire=wire,
+            wire_port=wire_port_for_worktree(worktree),
+        )
+        pid, command = self.launch_argv(
+            argv,
+            worktree=worktree,
+            profile=profile,
+            resolution=resolution,
+            log_path=log_path,
+            wire=wire,
+            budget_env=budget_env or {},
+            project_slug=project_slug,
+        )
+        return DispatchLaunchResult(
+            pid=pid,
+            command=command,
+            model=rendered_model,
+            budget_env=dict(budget_env or {}),
+            profile=profile.name,
+            model_omitted_reason=model_omitted_reason,
+            wire=wire,
+        )
 
     def binary_present(self, preference: Sequence[str] = (), repo_root: Path | None = None) -> HarnessResolution:
         profiles, profile_errors = load_profiles(repo_root)
@@ -267,62 +408,19 @@ class BmadBuildHarness:
             wire=wire,
             wire_port=wire_port_for_worktree(worktree),
         )
-
-        # Precedence, lowest to highest: the operator's environment, the
-        # profile's own declared vars, the wire layer's own vars (Story
-        # 28.2), marshal's per-invocation project pin, the policy budget
-        # env -- a profile or a wrapper may tune its CLI but never repoint
-        # the dispatched project or the budget ceilings.
-        child_env = {
-            **os.environ,
-            **dict(profile.env),
-            **dict(wire.env),
-            "BMAD_ACTIVE_PROJECT": project_slug,
-            **dict(budget_env),
-        }
-        if wire.applied:
-            # Wrapping replaces the resolved CLI path with the wrapper's
-            # prefix, and the wrapper then resolves the CLI itself off
-            # PATH. A CLI that only lives in a profile `fallback_bin_dirs`
-            # entry (the pixi-env case this repo runs on) would vanish at
-            # that point, so its own directory is prepended -- restoring
-            # exactly the reachability the unwrapped launch already had,
-            # and nothing more.
-            binary_dir = str(Path(resolution.binary_path).parent)
-            existing_path = child_env.get("PATH", "")
-            child_env["PATH"] = f"{binary_dir}{os.pathsep}{existing_path}" if existing_path else binary_dir
-        try:
-            log_file = open(log_path, "wb")  # noqa: SIM115
-        except (OSError, ValueError) as exc:
-            raise BuildHarnessError(f"cannot open dispatch log {str(log_path)!r}: {exc}") from exc
-        with log_file:
-            try:
-                # Story 14.4, CAP-6: stays raw subprocess, exempted
-                # file-level in test_process_sole_ownership.py -- needs a
-                # capability pyforge.core.process does NOT offer. Neither
-                # PosixProcess.run (waits synchronously, no file-redirected
-                # stdout) nor spawn_detached (no env= override -- inherits
-                # os.environ exactly, by design) supports a DETACHED launch
-                # with a per-invocation custom env (BMAD_ACTIVE_PROJECT +
-                # profile env + budget env). Mutating process-global
-                # os.environ as a workaround would race concurrent
-                # dispatches for different projects -- the exact class of
-                # bug the "never scripts/bmad-switch" convention exists to
-                # avoid.
-                process = subprocess.Popen(
-                    list(argv),
-                    cwd=worktree,
-                    start_new_session=True,
-                    stdin=subprocess.DEVNULL,
-                    stdout=log_file,
-                    stderr=log_file,
-                    env=child_env,
-                )
-            except (OSError, ValueError) as exc:
-                raise BuildHarnessError(f"cannot launch session harness {list(argv)!r}: {exc}") from exc
+        pid, command = self.launch_argv(
+            argv,
+            worktree=worktree,
+            profile=profile,
+            resolution=resolution,
+            log_path=log_path,
+            wire=wire,
+            budget_env=budget_env,
+            project_slug=project_slug,
+        )
         return DispatchLaunchResult(
-            pid=process.pid,
-            command=tuple(argv),
+            pid=pid,
+            command=command,
             model=rendered_model,
             budget_env=dict(budget_env),
             profile=profile.name,

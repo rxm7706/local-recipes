@@ -92,7 +92,42 @@ _RETIRED_WORKBOOK_MSG = (
     "PYFORGE_ATLAS_DATA_ROOT (and --ranked-export for Vizro)"
 )
 INVENTORY_IDENTITY_UI_ENV = "INVENTORY_IDENTITY_UI"
+INVENTORY_CANVAS_DIR_ENV = "PYFORGE_INVENTORY_CANVAS_DIR"
+LOCAL_ENV_PATH = REPO_ROOT / "conf/conda-forge-packaging-inventory-operations.local.env"
 _VALID_IDENTITY_UI_MODES = frozenset({"both", "canvas", "vizro"})
+
+
+def load_local_env(path: Path) -> dict[str, str]:
+    out: dict[str, str] = {}
+    if not path.is_file():
+        return out
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        out[key.strip()] = value.strip().strip("'").strip('"')
+    return out
+
+
+def resolve_canvas_dir() -> Path | None:
+    for candidate in (
+        os.environ.get(INVENTORY_CANVAS_DIR_ENV, "").strip(),
+        load_local_env(LOCAL_ENV_PATH).get(INVENTORY_CANVAS_DIR_ENV, "").strip(),
+    ):
+        if candidate:
+            return Path(candidate)
+    return None
+
+
+def default_ops_canvas_path() -> Path | None:
+    base = resolve_canvas_dir()
+    return None if base is None else base / "identity-ops.canvas.tsx"
+
+
+def default_workbook_canvas_path() -> Path | None:
+    base = resolve_canvas_dir()
+    return None if base is None else base / "jfrog-workbook.canvas.tsx"
 
 
 def _identity_ui_mode() -> str:
@@ -644,11 +679,10 @@ def main() -> int:
     parser.add_argument(
         "--canvas",
         type=Path,
-        default=Path(
-            "/home/rxm7706/.cursor/projects/home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/canvases/identity-2026-08-20.canvas.tsx"
-        ),
+        default=None,
         help=(
-            "Cursor catalog canvas output path. Set "
+            "Cursor catalog canvas output path (default: "
+            f"{INVENTORY_CANVAS_DIR_ENV} or {LOCAL_ENV_PATH.name}). Set "
             f"{INVENTORY_IDENTITY_UI_ENV}=vizro to skip canvas writes."
         ),
     )
@@ -688,12 +722,22 @@ def main() -> int:
         write_ranked_csv(args.ranked_csv, records)
         print("wrote", args.ranked_csv)
 
-    if args.canvas and _identity_ui_mode() != "vizro":
-        args.canvas.parent.mkdir(parents=True, exist_ok=True)
-        write_canvas(args.canvas, records, counts, args.canvas_tab_label)
-        print("wrote", args.canvas)
-    elif args.canvas:
+    canvas_path = args.canvas
+    if canvas_path is None:
+        base = resolve_canvas_dir()
+        canvas_path = (base / "identity-2026-08-20.canvas.tsx") if base else None
+    if canvas_path and _identity_ui_mode() != "vizro":
+        canvas_path.parent.mkdir(parents=True, exist_ok=True)
+        write_canvas(canvas_path, records, counts, args.canvas_tab_label)
+        print("wrote", canvas_path)
+    elif canvas_path and _identity_ui_mode() == "vizro":
         print(f"Skipped canvas write ({INVENTORY_IDENTITY_UI_ENV}=vizro)")
+    elif canvas_path is None and _identity_ui_mode() != "vizro":
+        print(
+            f"Skipped canvas write ({INVENTORY_CANVAS_DIR_ENV} unset — set env or "
+            f"{LOCAL_ENV_PATH.name} or pass --canvas)",
+            flush=True,
+        )
 
     return 0
 

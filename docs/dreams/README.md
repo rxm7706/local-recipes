@@ -159,11 +159,17 @@ for doctor's `capability-effect-check` and `status-body-consistency`, both minte
 new Dreams get a row on arrival; the 61 are a pre-existing backlog D2 owns, not a place to file
 new work.)* Re-derive rather than trust the
 literal: `ls docs/dreams/*.md | wc -l` for the total, and the per-status split from each file's
-own frontmatter. **Coverage is a known gap, not a convention:** `dreams-hygiene` reconciles only
-Dreams that have a row here (`chain.py:891`), so the 63 omitted files are invisible to it and
-nothing enforces the `status:` rule above across them — vessel: a doctor extension of
-`dreams-hygiene` to every Dream file plus a README-rule check (fleet readiness 2026-09-09, Class D
-D2). Rows are **not** added by hand to close that gap. The **frontmatter is the source of
+own frontmatter. **Reconciliation is file-driven, not row-driven.** It was row-driven until
+doctor Story 21.6: `dreams-hygiene` read this table and judged only the Dreams with a row here,
+so every omitted file was invisible to it. It now walks `docs/dreams/` itself, so a Dream is
+reconciled because the FILE exists — a Dream cannot escape the checks by being left out of this
+table, and this table is no longer load-bearing for them. Three of its warn-only classes come
+from that walk: `dream-readme-missing` (a Dream file with no row below — the omitted backlog,
+named rather than silent), `specified-spec-not-ready` (the `status:` rule stated above,
+enforced), and `kinship-wikilink-dead` (a `Kinship` wikilink that resolves to no file under
+`docs/dreams/`). All three WARN and none gates; `dreams-hygiene-check` runs them, and
+`detectors-ci` has since Story 41.1. Rows are still **not** added by hand to close the
+`dream-readme-missing` backlog. The **frontmatter is the source of
 truth**; this table is a
 curated map, and its Status column is now synced from frontmatter rather than hand-copied.
 *(Historical: 25 Dreams as of 2026-07-23 — 3 born Dream-first — the regenerable factory among

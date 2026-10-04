@@ -48,6 +48,22 @@ from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 from pyforge.marshal.ports.commit import VcsRef
 
 _SLUG = "pyforge-marshal"
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_flag_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 85.1: pin ``PYFORGE_ENVIRONMENT`` so an operator shell's value cannot leak in.
+
+    The supervisor reads ``pyforge.marshal.verify_fix_loop`` for real, from
+    ``<repo_root>/src/platform/config/flags.json``; the read is never stubbed here, so
+    the flag-off decision and the broken-tree warning stay reachable. A ``_repo`` tree
+    carries no flag tree, so the flag reads its default, off -- the shipped state in
+    every environment. ``test_dispatch_supervisor_verify_fix.py`` seeds flag trees and
+    drives both states and the broken-tree cases.
+    """
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+
+
 _STORY_KEY = "51.11"
 _RUN_ID = "run-53-3"
 _BASELINE = "c8277c03c117ff4779d54a2ff9d900f519415971"
@@ -1023,6 +1039,27 @@ def test_landing_predicates_are_empty_on_a_bare_launch(tmp_path: Path) -> None:
     assert supervisor_main._verification_already_journaled(folded, _RUN_ID) is False
     assert supervisor_main._dispatch_push_already_journaled(folded, _RUN_ID) is False
     assert supervisor_main._verification_outcome_verdict(folded, _RUN_ID) is None
+
+
+def test_verification_outcome_verdict_reads_the_latest_outcome(tmp_path: Path) -> None:
+    folded = _folded_from(
+        tmp_path,
+        (
+            _launch_line(),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                payload={"verdict": "refused", "ok": False},
+                counter=1,
+            ),
+            *_outcome_pair(
+                kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+                payload={"verdict": "verified", "ok": True},
+                counter=3,
+            ),
+        ),
+    )
+
+    assert supervisor_main._verification_outcome_verdict(folded, _RUN_ID) == "verified"
 
 
 def test_verification_outcome_verdict_reads_the_outcome_entry(tmp_path: Path) -> None:

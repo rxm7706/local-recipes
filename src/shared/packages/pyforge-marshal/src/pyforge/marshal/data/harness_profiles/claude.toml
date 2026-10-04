@@ -39,6 +39,26 @@ authcheck_ok_pattern = "\"loggedIn\":\\s*true"
 verified = true
 notes = "Verified 2026-08-27: authenticated (claude.ai), smoke-tested -p invocation shape."
 
+# Story 85.1 (CAP-286): verification fix turn — continue the same conversation in the worktree cwd.
+resume_argv = [
+  "-p",
+  "--permission-mode",
+  "bypassPermissions",
+  "--settings",
+  '{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}',
+  "--continue",
+  "{model_args}",
+  "{prompt}",
+]
+fix_only_argv = [
+  "-p",
+  "--permission-mode",
+  "bypassPermissions",
+  "--settings",
+  '{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}',
+  "{model_args}",
+  "{prompt}",
+]
 # Story 84.1 (CAP-285): Anthropic models API (no listing subcommand on the CLI).
 [model_list]
 catalog_provider = "anthropic"

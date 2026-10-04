@@ -1220,15 +1220,16 @@ status: open
     assert swallow_victim.id is None
     assert "spec-1-2-story-identity-merge" in swallow_victim.fields["source_spec"]
 
-    # Cross-check against the live (buggy) `_anonymous()` on this same
-    # fixture: it must NOT count the swallow victim's line as anonymous --
-    # reproducing the bug this story's Never clause leaves untouched, so the
-    # regression proof above is meaningful (not a no-op comparison).
-    anon_lines = chain._anonymous(path)
-    assert swallow_victim.start_line not in anon_lines, (
-        "fixture stopped reproducing _anonymous()'s swallow bug -- "
-        "the classify_tier3_entries assertions above no longer prove anything"
-    )
+    # DW-FU-8-1: `_anonymous()` agrees with `classify_tier3_entries` now.
+    # It used to disagree: a plain-keyed `### DW-n:` header never satisfied
+    # `_ANON_RE`, so its claim on "the next anonymous field block I see"
+    # stayed open across the blank line and swallowed this topically
+    # unrelated bullet, dropping it from the anonymous count -- a Tier-3
+    # entry that no `tier3-entry-unidentified` row ever named, and so an
+    # entry nothing ever asked anyone to give an id. A header's claim now
+    # closes at the blank line that ends its own field block, so both
+    # headerless bullets in this excerpt are counted.
+    assert chain._anonymous(path) == [swallow_victim.start_line, truncated_tail.start_line]
 
     assert truncated_tail.shape is chain.Tier3Shape.LEGACY_FLAT
     assert truncated_tail.id is None
@@ -2704,6 +2705,38 @@ def test_post_cutoff_bare_line_reports_one_fail_naming_the_entry(tmp_path: Path)
     assert _POST in finding.message
 
 
+def test_a_bare_line_above_the_first_entry_heading_is_judged_too(tmp_path: Path) -> None:
+    """Story 41.1 (found while implementing it). The citation walk used to start
+    at the FIRST ``DW-`` heading, so a bare post-cutoff line written into a
+    ledger's preamble was neither failed nor counted as grandfathered -- it
+    read as clean. It is now judged under a named pseudo-id."""
+    findings = _gather_verified(
+        tmp_path,
+        f"# Deferred work\n\nverified: {_POST} STANDS\n\n"
+        f"## DW-x-1\nstatus: open\nverified: {_POST} FIXED `chain.py:4344` reads it\n",
+    )
+
+    uncited = _uncited(findings)
+    assert len(uncited) == 1
+    assert uncited[0].evidence["id"] == "(before the first entry)"
+    assert uncited[0].evidence["uncited_lines"] == 1
+
+
+def test_a_pre_cutoff_line_above_the_first_heading_is_grandfathered_not_failed(
+    tmp_path: Path,
+) -> None:
+    """The preamble span obeys the SAME cutoff as an entry span: judging it
+    must not retro-fail the lines the burn-down grandfathered."""
+    findings = _gather_verified(
+        tmp_path,
+        f"# Deferred work\n\nverified: {_PRE} STANDS\n\n## DW-x-1\nstatus: open\n",
+    )
+
+    assert not _uncited(findings)
+    assert findings[0].status is DoctorStatus.OK
+    assert "1 pre-cutoff" in findings[0].message
+
+
 def test_pre_cutoff_bare_line_is_grandfathered_and_counted_on_the_ok_finding(tmp_path: Path) -> None:
     findings = _gather_verified(
         tmp_path,
@@ -2892,10 +2925,26 @@ def test_a_bare_post_cutoff_line_does_not_hide_another_findings_kind(tmp_path: P
         "FIXED `cmd` exited with code 1",
         "FIXED `cmd` exited with 1",
         "FIXED `cmd` exit_code 0",
+        # DW-doctor-38-1-2: shapes the ledgers already use. An
+        # extensionless path is still followable, and so is an anchor.
+        "STANDS .gitignore:3",
+        "STANDS Makefile:12",
+        "STANDS `docs/MAP:3`",
+        "STANDS chain.py::_glob_to_re",
+        "STANDS `scripts/detectors.py::_DOCTOR_SOURCE_TASKS`",
+        # Story 41.1: this repo has a root
+        # `Containerfile`, so a line citing it is followable.
+        "STANDS Containerfile:7",
+        # The `/` alternative's documented over-acceptance. Pinned as a
+        # KNOWN limit, not an aspiration: `docs/MAP:3` above and
+        # `Phase 2/3:1` here are the same shape to this grammar, and no
+        # live `verified:` line writes the prose form (measured 2026-10-03).
+        "STANDS Phase 2/3:1",
+        "STANDS and/or:1",
     ],
 )
 def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code(raw: str) -> None:
-    assert chain._verified_line_cites(raw), raw
+    assert chain.verified_line_cites(raw), raw
 
 
 @pytest.mark.parametrize(
@@ -2912,10 +2961,15 @@ def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code
         "FIXED `cmd` returned 0",
         "FIXED `cmd` returns 0",
         "FIXED `pytest -q` was run; see `notes` for the outcome and a long gap before the final exit 0",
+        # DW-doctor-38-1-2 stays NARROW: without an extension, a `/`, or
+        # a name on the closed extensionless list, nothing distinguishes
+        # a filename from an ordinary capitalised word.
+        "STANDS Note: 12 lines of it",
+        "STANDS see AD-23 and Epic 44",
     ],
 )
 def test_verified_line_cites_rejects_a_bare_verdict(raw: str) -> None:
-    assert not chain._verified_line_cites(raw), raw
+    assert not chain.verified_line_cites(raw), raw
 
 
 def test_the_live_tracked_ledgers_carry_no_uncited_post_cutoff_verified_line() -> None:
@@ -2929,3 +2983,42 @@ def test_the_live_tracked_ledgers_carry_no_uncited_post_cutoff_verified_line() -
     uncited = _uncited(chain.gather_deferred_work(_REPO_ROOT))
 
     assert not uncited, [(f.evidence["project"], f.evidence["id"]) for f in uncited]
+
+
+# === Story 41.1: baseline freshness is checked, not assumed ==================
+
+
+def test_a_stale_high_baseline_is_warned_about(tmp_path: Path) -> None:
+    """DW-7-3-1: the Tier-3-anonymous check is a POSITIONAL slice -- entries
+    beyond the stamped count are "new". That is only sound while the stamp
+    EQUALS the count it was taken from. A stamp left higher than the live
+    count grandfathers entries that are not there, and keeps grandfathering
+    the next few appended to the file -- new work nothing will ever name. So
+    freshness is checked on every run, and the WARN says how to re-stamp."""
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(tmp_path, "proj", "")
+    _write_baseline(tmp_path, {"proj": 5})
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    stale = [f for f in findings if f.check == "stale-deferred-work-baseline"]
+    assert len(stale) == 1, [f.check for f in findings]
+    assert stale[0].status is DoctorStatus.WARN
+    assert stale[0].evidence["stamped"] == 5
+    assert stale[0].evidence["live"] == 1
+    assert "deferred_work_baseline.py" in stale[0].message
+    assert "--project proj" in stale[0].message
+
+
+def test_a_baseline_matching_the_live_count_is_not_warned_about(tmp_path: Path) -> None:
+    """The WARN is one-directional and narrow: a stamp EQUAL to the live
+    count is exactly what a fresh stamp looks like, and a stamp BELOW it is
+    the ordinary case the slice exists to serve -- the entries past it are
+    the new ones, reported as `tier3-entry-unidentified`."""
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(tmp_path, "proj", "")
+    _write_baseline(tmp_path, {"proj": 1})
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert [f for f in findings if f.check == "stale-deferred-work-baseline"] == []

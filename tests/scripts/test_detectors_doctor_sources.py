@@ -182,6 +182,12 @@ def test_doctor_source_tasks_include_docs_shelf_occupancy():
     assert tasks["docs-shelf-occupancy"] == "docs-shelf-occupancy-check"
 
 
+def test_doctor_source_tasks_include_dreams_hygiene_beside_dream_chain():
+    """Story 41.1 / DW-FU-21-6-2: dreams-hygiene runs warn-only in detectors-ci
+    beside the other Doctor sources (CAP-43), not only via dream-chain --dreams."""
+    assert ("dreams-hygiene", "dreams-hygiene-check") in detectors._DOCTOR_SOURCE_TASKS
+
+
 def test_doctor_source_tasks_include_bmad_output_hygiene_and_a_matching_pixi_task():
     """Story 38.3 (DW-OPS-2026-10-01-1): the fleet hygiene sweep must be in the
     detectors sweep, backed by a declared `guild-tasks` pixi task that runs the

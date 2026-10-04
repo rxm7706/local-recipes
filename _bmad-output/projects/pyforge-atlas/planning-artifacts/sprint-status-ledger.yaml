@@ -84,7 +84,7 @@ development_status:
   25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser: blocked
   25-2-a-poll-cursor-sensor-refreshes-the-history-over-warden-s-fleet-inventory: backlog
   26-1-the-factory-status-frame-drops-its-docs-specs-rows: backlog
-  27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud: backlog
+  27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud: done
   27-2-the-data-plane-honours-its-data-root-and-fetches-what-it-claims: backlog
   27-3-the-read-surfaces-render-what-design-specifies-on-real-data: backlog
   27-4-the-planning-record-matches-the-tree-and-owed-reviews-run: backlog

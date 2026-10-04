@@ -65,6 +65,8 @@ KIND_DISPATCH_FINALIZE = "dispatch-finalize"
 #: the worktree spec is `blocked` or the entire diff is narration (the
 #: tracked spec file itself) with no code progress behind it.
 KIND_DISPATCH_BLOCKED = "dispatch-blocked"
+#: Story 85.1 (CAP-286): one bounded harness turn after verification refuses.
+KIND_DISPATCH_VERIFY_FIX = "dispatch-verify-fix"
 
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _WORKTREES_DIRNAME = ".worktrees"

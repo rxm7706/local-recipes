@@ -34,6 +34,7 @@ PURE nodes: pandas + stdlib only; no inline IO; ``dagster``/``kedro_mcp`` never 
 
 from __future__ import annotations
 
+import logging
 import math
 import re
 import time
@@ -43,6 +44,10 @@ from typing import Any
 import pandas as pd
 
 from ..universal_sbom.nodes import conda_purl
+from .identity_export_contract import IDENTITY_COMPLETE_EXPORT_COLUMNS
+from .inventory_verification import verification_sets
+
+logger = logging.getLogger(__name__)
 
 
 def build_universe_sbom(
@@ -904,19 +909,6 @@ def _names_from_column(df: pd.DataFrame | None, column: str) -> set[str]:
     return out
 
 
-def _verification_sets(
-    core_packages_enumerated: pd.DataFrame,
-    pypi_universe: pd.DataFrame,
-    pypi_conda_mapping: pd.DataFrame,
-) -> tuple[set[str], set[str], set[str]]:
-    """Mirror ``load_live_catalog()`` + ``cf_or_pm = cf_packages | parselmouth_pypi``."""
-    cf_packages = _names_from_column(core_packages_enumerated, "conda_name")
-    pypi_index = _names_from_column(pypi_universe, "pypi_name")
-    parselmouth_pypi = _names_from_column(pypi_conda_mapping, "pypi_name")
-    cf_or_pm = cf_packages | parselmouth_pypi
-    return cf_packages, pypi_index, cf_or_pm
-
-
 def primary_source(sources: set[str]) -> str:
     """Verbatim port of ``metrics.py::primary_source``."""
 
@@ -1011,7 +1003,7 @@ def build_inventory_verified_packages(
     Tier-0 sets; ``Priority_Bucket`` comes from Story 23.3's assignments (default P9).
     """
     timestamp = _verification_timestamp(parameters)
-    _, pypi_index, cf_or_pm = _verification_sets(core_packages_enumerated, pypi_universe, pypi_conda_mapping)
+    _, pypi_index, cf_or_pm = verification_sets(core_packages_enumerated, pypi_universe, pypi_conda_mapping, parameters)
     priority_map = _priority_map_from_assignments(inventory_priority_assignments)
     maint, co = _maint_co_from_universe(inventory_universe)
 
@@ -1093,7 +1085,7 @@ def build_inventory_aoss_free_queue(
 ) -> pd.DataFrame:
     """AOSS-Free Mason queue — supplementary artifact, never expands OpenTeams universe."""
     timestamp = _verification_timestamp(parameters)
-    _, pypi_index, cf_or_pm = _verification_sets(core_packages_enumerated, pypi_universe, pypi_conda_mapping)
+    _, pypi_index, cf_or_pm = verification_sets(core_packages_enumerated, pypi_universe, pypi_conda_mapping, parameters)
     aoss_free = _names_from_column(discovery_aoss_free_python_raw, "pypi_name")
     aoss_free_candidates = {pkg for pkg in aoss_free if pkg in pypi_index and pkg not in cf_or_pm}
     must_keep = _universe_membership_names(enterprise_jfrog_consumption, enterprise_conda_maintainers)
@@ -1116,71 +1108,7 @@ def build_inventory_aoss_free_queue(
 # Story 23.5 — identity_complete_export (four-way join over materialized Parquet)
 # ---------------------------------------------------------------------------
 
-_IDENTITY_COMPLETE_EXPORT_COLUMNS: tuple[str, ...] = (
-    "P",
-    "Rank",
-    "Score",
-    "Package",
-    "Work",
-    "Platforms",
-    "Apps",
-    "Downloads",
-    "Versions",
-    "Vuln",
-    "Core_Python_Package_Name",
-    "OpenTeams_Title",
-    "identity_source",
-    "associator_key",
-    "associator_status",
-    "primary_purl",
-    "primary_type",
-    "alternative_purls",
-    "cpes",
-    "conda_purl",
-    "source_repository_url",
-    "OpenTeams_Issue_URL",
-    "Conda-Forge_FeedStock_URL",
-    "Conda-Forge_Metadata_URL",
-    "Staged_Recipes_PR_URL",
-    "Local_Recipes_URL",
-    "Local_Build_Status",
-    "Verification_Timestamp_UTC",
-    "Priority_Bucket_Description",
-    "Priority_Source",
-    "Priority_Reason",
-    "JFROG_risk_level",
-    "JFROG_latest_vuln_count",
-    "internal_component_count",
-    "internal_lob_count",
-    "platform_env_count",
-    "internal_app_count",
-    "artifactory_downloads",
-    "artifactory_version_count",
-    "JFROG_vuln_status",
-    "OpenTeams_Cohort",
-    "OpenTeams_Batch",
-    "OpenTeams_Coverage",
-    "Repository_Source",
-    "Role",
-    "PyPI_Verified",
-    "CondaForge_Verified",
-    "Packaging_Candidate_Status",
-    "in_basilisk",
-    "in_aoss_free",
-    "in_aoss_premium",
-    "in_anaconda_main",
-    "in_anaconda_dist",
-    "in_selfexplainml",
-    "in_bioconda",
-    "in_pytorch",
-    "in_nvidia",
-    "in_robostack",
-    "in_homebrew",
-    "in_nixpkgs",
-    "in_spack",
-    "in_debian",
-    "in_fedora",
-)
+_IDENTITY_COMPLETE_EXPORT_COLUMNS = IDENTITY_COMPLETE_EXPORT_COLUMNS
 
 _CROSS_CHANNEL_TAB_COLUMNS: tuple[str, ...] = (
     "in_basilisk",
@@ -1241,6 +1169,72 @@ def _export_blank(value: Any) -> Any:
     if isinstance(value, str) and not value.strip():
         return pd.NA
     return value
+
+
+# The ranked-input and JFROG-consumption columns ``build_identity_complete_export``
+# copies onto the export: one absent from a non-empty input is a warning, never a
+# silent blank (Story 27.1, DW-FU-21-7-5).
+_EXPORT_RANKED_INPUT_COLUMNS: tuple[str, ...] = (
+    "P",
+    "Rank",
+    "Score",
+    "Work",
+    "Priority_Bucket_Description",
+    "Priority_Source",
+    "Priority_Reason",
+    "risk_level",
+    "jfrog_latest_vuln_count",
+    "vuln_status",
+)
+_EXPORT_JFROG_INPUT_COLUMNS: tuple[str, ...] = (
+    "platform_env_count",
+    "internal_app_count",
+    "artifactory_downloads",
+    "artifactory_version_count",
+    "internal_component_count",
+    "internal_lob_count",
+)
+
+
+def _export_missing_column_warnings(df: pd.DataFrame | None, label: str, columns: tuple[str, ...]) -> None:
+    if df is None or getattr(df, "empty", True):
+        return
+    present = set(getattr(df, "columns", []))
+    for col in columns:
+        if col not in present:
+            logger.warning("identity_complete_export: %s input missing column %s", label, col)
+
+
+def _export_priority_merge_warnings(
+    inventory_priority_assignments: pd.DataFrame | None,
+    enterprise_jfrog_consumption: pd.DataFrame | None = None,
+) -> None:
+    """Warn on absent ranking / JFROG columns and on ranked rows sharing a pep503 key
+    (Story 27.1, DW-FU-21-7-5 / DW-FU-21-7-7)."""
+    _export_missing_column_warnings(inventory_priority_assignments, "ranking", _EXPORT_RANKED_INPUT_COLUMNS)
+    _export_missing_column_warnings(enterprise_jfrog_consumption, "JFROG consumption", _EXPORT_JFROG_INPUT_COLUMNS)
+    if inventory_priority_assignments is None or getattr(inventory_priority_assignments, "empty", True):
+        return
+    if "core_python_package_name" not in set(getattr(inventory_priority_assignments, "columns", [])):
+        logger.warning(
+            "identity_complete_export: ranking input missing column core_python_package_name; no ranked row can join"
+        )
+        return
+    rows_by_key: dict[str, list[str]] = {}
+    for row in inventory_priority_assignments.itertuples(index=False):
+        raw = getattr(row, "core_python_package_name", None)
+        key = _priority_pep503(raw)
+        if not key:
+            continue
+        rows_by_key.setdefault(key, []).append(str(raw))
+    for key, names in rows_by_key.items():
+        if len(names) > 1:
+            logger.warning(
+                "identity_complete_export: duplicate ranked rows normalize to %s (%d rows, last wins): %s",
+                key,
+                len(names),
+                ", ".join(names),
+            )
 
 
 def _export_lookup_by_key(
@@ -1309,6 +1303,7 @@ def build_identity_complete_export(
     upstream Parquet degrades to blank/NULL columns (AD-13)."""
     _ = enterprise_conda_maintainers  # consumed indirectly via upstream stories; kept for contract parity
     timestamp = _export_timestamp(parameters)
+    _export_priority_merge_warnings(inventory_priority_assignments, enterprise_jfrog_consumption)
 
     if identity_packages_primary is None or getattr(identity_packages_primary, "empty", True):
         return pd.DataFrame(columns=list(_IDENTITY_COMPLETE_EXPORT_COLUMNS))

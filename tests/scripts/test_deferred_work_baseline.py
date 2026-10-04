@@ -269,3 +269,70 @@ def test_project_with_zero_anonymous_entries_is_stamped_with_count_zero(tmp_path
                    capture_output=True, text=True, cwd=repo, check=True)
     baseline = _baseline(repo)
     assert baseline["proj-beta"] == 0
+
+
+# === Story 41.1: a stale-high baseline entry must be lowerable ================
+
+
+def test_stale_high_entry_for_a_gone_tier3_file_can_be_zeroed(tmp_path: Path):
+    """DW-FU-7-2-2: ``--project`` used to be validated against "projects
+    whose Tier-3 file exists", which made the one entry that MOST needs
+    lowering unfixable. A stale-high count grandfathers that many anonymous
+    Tier-3 entries, so leaving it high silently exempts new ones from ever
+    being named -- and the only way to lower it, stamping the project, was
+    refused as an "unknown project" precisely BECAUSE the Tier-3 file was
+    gone. A slug the committed baseline already grandfathers is stampable,
+    and a missing Tier-3 file is a live count of zero."""
+    repo = _fixture_repo(tmp_path)
+    (repo / "scripts" / ".deferred-work-baseline.json").write_text(
+        json.dumps({"proj-alpha": 1, "proj-ghost": 42}), encoding="utf-8",
+    )
+    stamper = _patched_stamper(repo)
+
+    r = subprocess.run([sys.executable, str(stamper), "--write-baseline",
+                        "--project", "proj-ghost"],
+                       capture_output=True, text=True, cwd=repo)
+
+    assert r.returncode == 0, r.stderr
+    baseline = _baseline(repo)
+    assert baseline["proj-ghost"] == 0
+    # Still a MERGE, never a rewrite: the unnamed project is untouched.
+    assert baseline["proj-alpha"] == 1
+
+
+def test_project_dir_present_but_tier3_file_gone_stamps_zero(tmp_path: Path):
+    """DW-FU-7-2-2, the other half of the union: a project DIRECTORY is
+    tracked while its Tier-3 ``deferred-work.md`` is gitignored, so the file
+    is routinely absent in a fresh clone or a worktree while the project
+    plainly exists. Naming it is not a typo, and its live count is zero."""
+    repo = _fixture_repo(tmp_path)
+    (repo / "_bmad-output" / "projects" / "proj-gamma").mkdir(parents=True)
+    stamper = _patched_stamper(repo)
+
+    r = subprocess.run([sys.executable, str(stamper), "--write-baseline",
+                        "--project", "proj-gamma"],
+                       capture_output=True, text=True, cwd=repo)
+
+    assert r.returncode == 0, r.stderr
+    assert _baseline(repo)["proj-gamma"] == 0
+
+
+def test_a_slug_in_neither_place_is_still_unknown(tmp_path: Path):
+    """The widening stays NARROW: a genuine typo -- a slug that is neither a
+    directory on disk nor a key in the committed baseline -- is still
+    refused, and the known set it names now includes both sources."""
+    repo = _fixture_repo(tmp_path)
+    (repo / "scripts" / ".deferred-work-baseline.json").write_text(
+        json.dumps({"proj-ghost": 42}), encoding="utf-8",
+    )
+    before = (repo / "scripts" / ".deferred-work-baseline.json").read_text()
+    stamper = _patched_stamper(repo)
+
+    r = subprocess.run([sys.executable, str(stamper), "--write-baseline",
+                        "--project", "proj-nope"],
+                       capture_output=True, text=True, cwd=repo)
+
+    assert r.returncode == 2
+    assert "unknown project" in r.stderr
+    assert "proj-ghost" in r.stderr and "proj-alpha" in r.stderr
+    assert (repo / "scripts" / ".deferred-work-baseline.json").read_text() == before

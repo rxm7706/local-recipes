@@ -95,6 +95,11 @@ _EXPECTED_DISPATCH = {
     # Story 38.3 (spec-pyforge-doctor CAP-42 / CAP-43; DW-OPS-2026-10-01-1) --
     # the fleet hygiene sweep, registered since Story 9.2, dispatched here.
     "bmad-output-hygiene": hygiene.gather,
+    # Story 41.1 (spec-pyforge-doctor CAP-43; DW-FU-21-6-2) -- Dream-tier
+    # hygiene, until now reachable only as `dream-chain --dreams`, which is
+    # why `scripts/detectors.py` (which threads DISPATCH names, not flags)
+    # could never run it.
+    "dreams-hygiene": chain.gather_dreams_hygiene,
 }
 
 

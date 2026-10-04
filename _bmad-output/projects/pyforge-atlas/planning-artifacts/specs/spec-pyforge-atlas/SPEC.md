@@ -41,6 +41,12 @@ surface:
   - scripts/tests/fixtures/inventory_universe/catalog/intermediate/pypi_universe/pypi_universe.parquet
   - scripts/tests/fixtures/inventory_universe/catalog/primary/pypi_conda_mapping/pypi_conda_mapping.parquet
   - scripts/tests/fixtures/inventory_universe/catalog/raw/openteams_project_1_board_raw/openteams_project_1_board.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/derived/inventory_verified_packages/inventory_verified_packages.parquet
+  - scripts/tests/fixtures/inventory_universe/catalog/derived/inventory_aoss_free_queue/inventory_aoss_free_queue.parquet
+  - scripts/tests/fixtures/inventory_universe/expected_report.md.sha256
+  - scripts/tests/fixtures/inventory_universe/expected_report.csv.sha256
+  - scripts/tests/test_inventory_from_scratch_fixture.py
+  - src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_derived_artifacts_e2e.py
   - scripts/tests/test_quartet_no_xlsx_surface.py
   - scripts/conda-forge-packaging-inventory-operations_openteams_identity.py
   - scripts/conda-forge-packaging-inventory-operations_priority.py
