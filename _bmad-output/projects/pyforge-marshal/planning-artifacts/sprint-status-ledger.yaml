@@ -401,7 +401,7 @@ development_status:
   84-2-the-model-list-refresh-tests-can-fail-and-a-partial-listing-is-never-complete: backlog
   85-1-a-verification-refusal-goes-back-to-the-session-that-wrote-the-change-for-one-fix-turn: done
   85-2-a-fix-turn-that-turns-verification-green-lands-and-survives-a-restart: done
-  85-3-the-fix-turn-is-safe-to-switch-on-in-dev-and-staging: backlog
+  85-3-the-fix-turn-is-safe-to-switch-on-in-dev-and-staging: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: backlog
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: backlog
