@@ -6,8 +6,9 @@ them at render time, not at build — so the dashboard OBJECT builds fully offli
 server and no migrated data present (the ``dashboard-dryrun`` gate builds the object + asserts
 structure, exactly like the C1 ``dagster-dryrun`` / C2 ``viz-loadable`` gates; it never
 ``.run()``s a server). The one exception is a page that DECLARES filters: Vizro's own
-``Filter.pre_build`` loads a target's data to choose the selector, so ``_declared_filters``
-asks the loader for that page up front rather than hiding a second, hidden read behind it.
+``Filter.pre_build`` loads a target's data to choose the selector, so ``_declared_filter_bundle``
+asks the loader for that page up front, and ``_data_page`` pins the same frame in
+``data_manager`` so Vizro does not mark the filter ``_dynamic`` (Story 27.5).
 
 Every data function routes through ``dashboard.data`` (the AD-8 BSL seam) or
 ``dashboard.factory_status``; no metric is computed here.
@@ -54,7 +55,6 @@ from typing import Any, Callable
 
 import vizro.models as vm
 import vizro.plotly.express as px
-from dash import html, no_update
 from vizro import Vizro
 from vizro.managers import data_manager, model_manager
 from vizro.models.types import capture
@@ -442,8 +442,13 @@ def _declared_chart(page: PageDef, key: str) -> vm.Graph | None:
     return vm.Graph(id=f"{page.id}--chart", figure=figure(key, x=page.chart.x, y=page.chart.y))
 
 
-def _declared_filters(page: PageDef, loader: Callable[[], Any]) -> list[vm.Filter]:
+def _declared_filter_bundle(page: PageDef, loader: Callable[[], Any]) -> tuple[Any | None, list[vm.Filter]]:
     """One ``vm.Filter`` per declared column — but only once the page's data has rows.
+
+    Returns ``(build_time_frame, filters)``. ``build_time_frame`` is the loader's
+    successful read (including honest-empty frames); it is ``None`` only when the
+    loader raised so ``_data_page`` can keep a dynamic data source for read-time
+    errors.
 
     Vizro's ``Filter.pre_build`` refuses a column that "does not contain anything"
     (``vizro/models/_controls/filter.py`` carries its own ``TODO: Enable empty
@@ -461,7 +466,7 @@ def _declared_filters(page: PageDef, loader: Callable[[], Any]) -> list[vm.Filte
     belongs — in the page, at read time.
     """
     if not page.filters:
-        return []
+        return None, []
     try:
         frame = loader()
     except Exception as exc:  # noqa: BLE001 — any read failure is the page's to report
@@ -470,7 +475,7 @@ def _declared_filters(page: PageDef, loader: Callable[[], Any]) -> list[vm.Filte
             f"at build time ({type(exc).__name__}: {exc}); rendering no filter",
             stacklevel=2,
         )
-        return []
+        return None, []
     absent = [column for column in page.filters if column not in frame.columns]
     if absent:
         msg = (
@@ -478,18 +483,33 @@ def _declared_filters(page: PageDef, loader: Callable[[], Any]) -> list[vm.Filte
             f"project (projected: {sorted(frame.columns)})"
         )
         raise ValueError(msg)
-    return [
+    filters = [
         vm.Filter(id=f"{page.id}--filter-{column}", column=column)
         for column in page.filters
         if bool(frame[column].notna().any())
     ]
+    return frame, filters
+
+
+def _declared_filters(page: PageDef, loader: Callable[[], Any]) -> list[vm.Filter]:
+    """``_declared_filter_bundle`` without the build-time frame (tests and call sites)."""
+    _, filters = _declared_filter_bundle(page, loader)
+    return filters
 
 
 def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool, provenance: ProvenanceInfo) -> vm.Page:
     """A page = a legibility Card + an AgGrid fed by a lazily-registered BSL data
     function, plus whatever filter/chart controls the ``PageDef`` declares."""
     key = f"data::{page.id}"
-    data_manager[key] = loader
+    build_frame, controls = _declared_filter_bundle(page, loader)
+    if build_frame is not None:
+        # Vizro marks filters on dynamic data sources as _dynamic; the selector is
+        # built invisible and relies on a clientside reload that e2e caught as an
+        # empty/hidden #…--filter-* container (Story 27.5 / DW-atlas-27-3-1). Pin
+        # the same frame _declared_filter_bundle already read at build time.
+        data_manager[key] = build_frame
+    else:
+        data_manager[key] = loader
     components: list[Any] = [
         _legibility_card(page, grounded=grounded, provenance=provenance),
         vm.AgGrid(id=f"{page.id}--grid", figure=dash_ag_grid(key)),
@@ -501,7 +521,7 @@ def _data_page(page: PageDef, loader: Callable[[], Any], *, grounded: bool, prov
         id=page.id,
         title=page.title,
         components=components,
-        controls=_declared_filters(page, loader),
+        controls=controls,
     )
 
 
@@ -518,6 +538,10 @@ def _scan_action(page: PageDef, data_root: Path) -> vm.Action:
 
     @capture("action")
     def run_scan(path_value: str | None) -> tuple[str, Any]:
+        # `dash` reaches atlas only through vizro (a declared dependency), so it is imported where it is
+        # used, never at module level (tests/packaging/test_dependency_completeness.py, AUD-ATLAS-010).
+        from dash import no_update
+
         submission = _scan.submit_scan(page_id, path_value, data_root=data_root)
         if submission.frame is None:
             return f"**{submission.status}** — {submission.message}", no_update
@@ -726,6 +750,8 @@ class LandmarkDashboard(vm.Dashboard):
     """
 
     def _arrange_page(self, outer_page: Any) -> Any:
+        from dash import html  # through vizro; never a module-level import (AUD-ATLAS-010)
+
         layout = super()._arrange_page(outer_page=outer_page)
         layout["right-side"].role = "main"
         nav_control_panel = layout["nav-control-panel"]

@@ -23,9 +23,8 @@ PyForge operates as an Agentic Software Development Life Cycle (SDLC) driven ent
 3. **Execution:** Autonomous agents execute the Stories to generate implementation artifacts and source code.
 4. **Verification:** Independent stations gate quality and compliance. Agents cannot judge their own work.
 
-:::note[Governed Execution]
-Because code is mechanically generated and governed by Specs, you should never hand-edit a `SPEC.md` or a `sprint-status-ledger.yaml`. They are managed via `bmad-spec` and `pixi run -e pyforge-guild sprint-ledger-sync`. For operational instructions on running these commands, see [One-Chain Station Ops](../how-to/one-chain-station-ops.md).
-:::
+> [!NOTE]
+> **Governed Execution:** Because code is mechanically generated and governed by Specs, you should never hand-edit a `SPEC.md` or a `sprint-status-ledger.yaml`. They are managed via `bmad-spec` and `pixi run -e pyforge-guild sprint-ledger-sync`. For operational instructions on running these commands, see [One-Chain Station Ops](../how-to/one-chain-station-ops.md).
 
 ## The Eight Stations of the PyForge Guild
 

@@ -1,4 +1,5 @@
----title: A ticket moves once, both boards know
+---
+title: A ticket moves once, both boards know
 type: dream
 owner: steward
 status: archived

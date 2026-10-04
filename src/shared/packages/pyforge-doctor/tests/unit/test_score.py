@@ -223,3 +223,64 @@ def test_grade_result_to_json_dict_shape():
         "axis_scores": [],
         "reason": "no findings gathered",
     }
+
+
+# --- cannot-evaluate marker (DW-doctor-40-1) -------------------------------
+
+
+def test_a_warn_marked_unevaluable_makes_its_axis_incomplete():
+    findings = (
+        _finding(Source.LEDGER_REGRESSION, check="ledger-regression", status=DoctorStatus.OK),
+        _finding(
+            Source.LEDGER_REGRESSION,
+            check="ledger-regression",
+            status=DoctorStatus.WARN,
+            evidence={"base": "origin/main", "head": "nope", "target": "/x", "unevaluable": True},
+        ),
+    )
+    result = grade(findings)
+    assert result.grade is Grade.INCOMPLETE
+    assert result.axis_scores[0].grade is Grade.INCOMPLETE
+
+
+def test_the_marker_must_be_true_not_merely_present():
+    result = grade(
+        (_finding(Source.CHAIN_LAYERS_AUDIT, status=DoctorStatus.WARN, evidence={"unevaluable": "no"}),),
+    )
+    assert result.grade is Grade.C
+
+
+def test_real_cannot_evaluate_emitters_grade_incomplete(tmp_path):
+    from pyforge.doctor.sources import factory, ledger
+
+    for finding in (
+        factory._unevaluable("check_pins", "boom", tmp_path),
+        *ledger.gather(tmp_path, base="no-such-base", head="HEAD"),
+    ):
+        assert grade((finding,)).grade is Grade.INCOMPLETE, finding
+
+
+# --- per-check axes for independent capabilities (DW-FU-10-2) --------------
+
+
+def test_bmad_method_cap1_ok_does_not_dilute_a_cap2_warn():
+    findings = (
+        _finding(Source.BMAD_METHOD_VERSION_DRIFT, check="bmad-method-version-drift", status=DoctorStatus.OK),
+        _finding(Source.BMAD_METHOD_VERSION_DRIFT, check="bmad-method-upstream-drift", status=DoctorStatus.WARN),
+    )
+    result = grade(findings)
+    axes = {axis.axis: axis.grade for axis in result.axis_scores}
+    assert axes == {
+        "bmad-method-version-drift/bmad-method-upstream-drift": Grade.C,
+        "bmad-method-version-drift/bmad-method-version-drift": Grade.A,
+    }
+    assert result.grade is Grade.C
+
+
+def test_other_sources_still_grade_one_axis_per_source():
+    findings = (
+        _finding(Source.CVE_WATCHER, check="pkg-a", status=DoctorStatus.OK),
+        _finding(Source.CVE_WATCHER, check="pkg-b", status=DoctorStatus.WARN),
+    )
+    result = grade(findings)
+    assert [(axis.axis, axis.grade) for axis in result.axis_scores] == [("cve-watcher", Grade.B)]

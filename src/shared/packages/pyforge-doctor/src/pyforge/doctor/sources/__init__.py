@@ -359,6 +359,10 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # gather() once more: manifest-driven watched set (union with pixi
     # pins) and registry-aware ``_resolve_upstream_latest`` per member --
     # still this one Source, still warn-only, zero wiring changes here.
+    # Story 41.4 (DW-FU-10-3-2) settles the "repo" tension above:
+    # `gather(target, offline=True)` keeps every no-network check and issues
+    # no fetch, and `doctor check --bmad-core --scope repo` runs that way, so
+    # a repo-scope run of this Source never reaches the network.
     SourceRegistration(
         source=Source.BACKLOG_INTAKE,
         scope="repo",

@@ -2,7 +2,8 @@
 title: "27.5: The distribution-breakdown facet filter builds its control"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '3ec837c431a989d926417ed04fe7edda3c659a24'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -89,4 +90,20 @@ Type / Effort / Deps: fix / S / S-27.3.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
+
+## Auto Run Result
+
+- Summary: Filter-declaring data pages pin the build-time frame in `data_manager` so Vizro builds a non-`_dynamic` facet selector; e2e removes quarantine and asserts the dropdown at desktop viewport.
+- Files changed:
+  - `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py` — `_declared_filter_bundle` + static `data_manager` registration in `_data_page`
+  - `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_controls.py` — non-browser `_dynamic` gate
+  - `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py` — xfail removed, spawn server, 1920×1080 viewport, selector assertion
+  - `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md` — closed `DW-atlas-27-3-1`
+  - `spec-pyforge-atlas/.memlog.md` — surface reconcile entry
+- Review: 0 patch / 0 defer / 0 reject
+- Follow-up review recommended: false
+- Verification: `kedro-test` pass; `kedro-catalog-check` pass; `lint-types` pass; `python scripts/spec_surface_reconcile.py` exit 0
+- Residual risk: filter-declaring pages serve the build-time snapshot until the dashboard process restarts (unchanged server lifecycle)

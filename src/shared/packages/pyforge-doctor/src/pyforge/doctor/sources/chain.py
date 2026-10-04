@@ -201,6 +201,57 @@ def _split_fenced_block(lines: list[str]) -> tuple[list[str], list[str], bool] |
     return lines[1:], [], False
 
 
+def _frontmatter_parse_text(text: str) -> tuple[dict, bool]:
+    """Parse frontmatter from already-read document text (CAP-81 / Story 41.3).
+
+    Same verdict contract as ``_frontmatter_parse``; see that function's
+    docstring for the full rule set.
+    """
+    lines = _fenced_lines(text)
+    split = _split_fenced_block(lines)
+    if split is None:
+        if lines and lines[0].strip().startswith(_FENCE):
+            return {}, True
+        return {}, False
+
+    block, _body, closed = split
+    if not closed:
+        return {}, True
+
+    try:
+        data = yaml.safe_load("\n".join(block) + "\n")
+    except Exception:
+        return {}, True
+
+    if data is None:
+        return {}, False
+    if not isinstance(data, dict):
+        return {}, True
+    return data, False
+
+
+def _frontmatter_refusal_cause(text: str) -> str | None:
+    """When ``_frontmatter_parse_text`` would return ``unparseable=True``, name why."""
+    lines = _fenced_lines(text)
+    split = _split_fenced_block(lines)
+    if split is None:
+        if lines and lines[0].strip().startswith(_FENCE):
+            if lines[0].strip() != _FENCE:
+                return "glued-opener"
+            return "unbounded-opener"
+        return None
+    _block, _body, closed = split
+    if not closed:
+        return "unbounded-opener"
+    try:
+        data = yaml.safe_load("\n".join(_block) + "\n")
+    except Exception:
+        return "non-mapping"
+    if data is not None and not isinstance(data, dict):
+        return "non-mapping"
+    return None
+
+
 def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
     """Parse a ``---``-fenced YAML frontmatter block.
 
@@ -247,31 +298,7 @@ def _frontmatter_parse(path: Path) -> tuple[dict, bool]:
         text = path.read_text(encoding="utf-8")
     except Exception:
         return {}, True
-
-    lines = _fenced_lines(text)
-    split = _split_fenced_block(lines)
-    if split is None:
-        if lines and lines[0].strip().startswith(_FENCE):
-            return {}, True
-        return {}, False
-
-    block, _body, closed = split
-    if not closed:
-        return {}, True
-
-    try:
-        # Trailing "\n": the old `parts[1]` slice ended at the newline before
-        # the closing fence, so a `|` block scalar that is the LAST key kept
-        # its final line break -- keep that value byte-identical.
-        data = yaml.safe_load("\n".join(block) + "\n")
-    except Exception:
-        return {}, True
-
-    if data is None:
-        return {}, False
-    if not isinstance(data, dict):
-        return {}, True
-    return data, False
+    return _frontmatter_parse_text(text)
 
 
 def _frontmatter(path: Path) -> dict:
@@ -287,19 +314,35 @@ def _unparseable_frontmatter_item(
     subject: str,
     path: Path,
     project: str = "",
+    text: str | None = None,
 ) -> dict:
     """One WARN finding naming frontmatter that cannot be parsed as a mapping."""
     where = f"{project}: " if project else ""
+    cause = None
+    if text is not None:
+        cause = _frontmatter_refusal_cause(text)
+    elif path.is_file():
+        try:
+            cause = _frontmatter_refusal_cause(path.read_text(encoding="utf-8"))
+        except Exception:
+            cause = None
+    remedies = {
+        "glued-opener": ("split the opener: put `---` alone on line 1, then `title:` (or the first key) on line 2"),
+        "unbounded-opener": ("close the frontmatter block with a column-0 `---` line before the body"),
+        "non-mapping": ("make the fenced YAML block a mapping (key: value pairs), then re-check"),
+    }
+    remedy = remedies.get(cause or "", "fix the --- fenced YAML frontmatter block, then re-check")
+    cause_note = f" ({cause})" if cause else ""
     return {
         "inv": inv,
         "kind": "unparseable-frontmatter",
         "subject": subject,
         "owner": "",
         "status": where + path.name,
-        "remedy": "fix the --- fenced YAML frontmatter block, then re-check",
+        "remedy": remedy,
         "detail": (
             f"{where}{subject}: frontmatter in {path.name} could not be parsed "
-            f"as a mapping — treating it as absent would hide a real chain link"
+            f"as a mapping{cause_note} — treating it as absent would hide a real chain link"
         ),
         "warn": True,
     }
@@ -444,13 +487,25 @@ def _collect_dreams(target: Path, findings: list[dict]) -> dict[str, dict]:
     for p in entries:
         if p.suffix != ".md" or p.name == "README.md":
             continue
-        fm, unparseable = _frontmatter_parse(p)
+        try:
+            dream_text = p.read_text(encoding="utf-8")
+        except Exception:
+            findings.append(
+                _unparseable_frontmatter_item(
+                    inv="INV-1",
+                    subject=p.stem,
+                    path=p,
+                )
+            )
+            continue
+        fm, unparseable = _frontmatter_parse_text(dream_text)
         if unparseable:
             findings.append(
                 _unparseable_frontmatter_item(
                     inv="INV-1",
                     subject=p.stem,
                     path=p,
+                    text=dream_text,
                 )
             )
             continue

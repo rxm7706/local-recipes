@@ -23,11 +23,26 @@ __all__ = (
     "gather",
     "find_bmad_output_root_leftovers",
     "find_extra_airgap_docs",
+    "find_stale_archive_root_citations",
 )
 
 _CHECK_BMAD_OUTPUT_ROOT = "docs-shelf-bmad-output-root"
 _CHECK_AIRGAP_CLUSTER = "docs-shelf-airgap-cluster"
+_CHECK_STALE_ARCHIVE_CITATION = "docs-shelf-stale-archive-citation"
 _CHECK_CLEAN = "docs-shelf-occupancy"
+
+# Story 23.5 archived these from `_bmad-output/` root; live docs must cite
+# `archive/_bmad-output/…`, never the pre-archive root path.
+_ARCHIVED_ROOT_FILENAMES = (
+    "CHARTER-ALIGNMENT-PLAN.md",
+    "DREAM-TRIAGE-2026-08-08.md",
+    "FLEET-READINESS-2026-08-08.md",
+    "FLEET-RUN-2026-07-30.md",
+    "POLICY_COMPOSITION_README.md",
+)
+_STALE_ARCHIVE_CITATION_RE = re.compile(
+    r"(?<!archive/)_bmad-output/(?:" + "|".join(re.escape(name) for name in _ARCHIVED_ROOT_FILENAMES) + r")"
+)
 
 # `_bmad-output/` root allow-list. docs/MAP.md's "Outside this map" table
 # names `_bmad-output/projects/*/{planning,implementation}-artifacts/` as the
@@ -131,10 +146,37 @@ def find_extra_airgap_docs(target: Path) -> tuple[Finding, ...]:
     return tuple(findings)
 
 
+def find_stale_archive_root_citations(target: Path) -> tuple[Finding, ...]:
+    """WARN on live docs that still cite the pre-archive `_bmad-output/` root."""
+    findings: list[Finding] = []
+    docs_root = target / "docs"
+    if not docs_root.is_dir():
+        return ()
+    for path in sorted(docs_root.rglob("*.md")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if not _STALE_ARCHIVE_CITATION_RE.search(text):
+            continue
+        rel = path.relative_to(target).as_posix()
+        findings.append(
+            Finding(
+                source=Source.DOCS_SHELF_OCCUPANCY,
+                check=_CHECK_STALE_ARCHIVE_CITATION,
+                status=DoctorStatus.WARN,
+                message=(f"{rel} cites a pre-archive `_bmad-output/` root path — use archive/_bmad-output/…"),
+                evidence={"path": rel},
+            )
+        )
+    return tuple(findings)
+
+
 def _gather_all(target: Path) -> tuple[Finding, ...]:
     findings: list[Finding] = []
     findings.extend(find_bmad_output_root_leftovers(target))
     findings.extend(find_extra_airgap_docs(target))
+    findings.extend(find_stale_archive_root_citations(target))
     if findings:
         return tuple(findings)
     return (
