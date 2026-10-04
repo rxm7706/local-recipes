@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 8612fe7e0f4719af
-story_count: 102
-test_file_count: 143
+source_fingerprint: dfb62ae6ae89fdce
+story_count: 103
+test_file_count: 144
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 102
+- **Stories parsed:** 103
 - **Epics parsed:** 27
-- **Test files inventoried:** 143 under `src/shared/packages/pyforge-atlas/tests/`
+- **Test files inventoried:** 144 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8612fe7e0f4719af`
+- **Source fingerprint:** `dfb62ae6ae89fdce`
 
 ## Risk Assessment
 
@@ -82,6 +82,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/integration/publish/test_emit_range.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/wasm/test_wasm_smoke.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_cli_tool_parity.py` | meta | none observed |
+| `src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_portal_inventory_row.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/tools/test_live_artifactory_transport.py` | unit | none observed |
@@ -319,6 +320,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 27.2 | The data plane honours its data root, degrades offline and fetches what it cl... | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_story_27_2_degraded_datasets.py` |
 | 27.3 | The read surfaces render what DESIGN.md specifies, and prove it on fixture data | none observed |
 | 27.4 | The planning record matches the tree and the cross-station seams hold | none observed |
+| 27.5 | The distribution-breakdown facet filter builds its control | none observed |
 
 ## Quality Gates
 

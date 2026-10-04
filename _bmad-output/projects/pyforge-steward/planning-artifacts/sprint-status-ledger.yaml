@@ -329,8 +329,8 @@ development_status:
   84-3-trusted-ingress-addresses-are-ip-networks: done
   84-4-sync-skips-a-board-item-marked-github-only: done
   84-5-the-github-only-marker-tests-can-fail-and-config-refuses-half-declarations: done
-  85-1-the-session-hook-refuses-deleting-protected-branches-and-loop-homes: backlog
-  85-2-the-protected-ref-list-is-declared-once-and-the-live-rulesets-are-proven-to-match-it: backlog
+  85-1-the-session-hook-refuses-deleting-protected-branches-and-loop-homes: done
+  85-2-the-protected-ref-list-is-declared-once-and-the-live-rulesets-are-proven-to-match-it: done
   85-3-the-pre-push-gate-skips-a-push-it-can-prove-carries-only-preserve-or-archive-tags: backlog
   85-4-the-hook-denies-every-protected-ref-deletion-and-any-deletion-that-orphans-commits: backlog
   85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree: blocked
@@ -507,7 +507,7 @@ development_status:
   epic-83-retrospective: optional
   epic-84: done
   epic-84-retrospective: optional
-  epic-85: backlog
+  epic-85: in-progress
   epic-85-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional

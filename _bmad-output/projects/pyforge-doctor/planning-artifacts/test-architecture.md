@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 46a35bf9d711af49
+source_fingerprint: 8d7b17077b7f1d2e
 story_count: 142
-test_file_count: 89
+test_file_count: 93
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-doctor`
 - **Stories parsed:** 142
 - **Epics parsed:** 41
-- **Test files inventoried:** 89 under `src/shared/packages/pyforge-doctor/tests/`
+- **Test files inventoried:** 93 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `46a35bf9d711af49`
+- **Source fingerprint:** `8d7b17077b7f1d2e`
 
 ## Risk Assessment
 
@@ -86,7 +86,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/meta/test_cli_bridge_sole_subprocess.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_env_hygiene_no_execution.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_epics_status_tracks_the_ledger.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_hatchling_floor_agrees.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_no_warden_import.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_portal_fleet_pulse.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_preflight_mirrors_scripts_suite.py` | meta | none observed |
@@ -110,6 +112,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_cli_diagnose.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_cli_monitor.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_detector_incident_log.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_feed_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_flag_kill_switch.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_fleet_scan_currency_feeds.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_fleet_scan_pitch_roster.py` | unit | none observed |
@@ -153,6 +156,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_frozen_path.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_general_docs_consistency.py` | unit | none observed |
+| `src/shared/packages/pyforge-doctor/tests/unit/test_sources_honest_reads_41_2.py` | unit | 41.2 |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py` | unit | none observed |
 | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_direction.py` | unit | none observed |
@@ -314,7 +318,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 39.1 | `pr-preflight` runs the detector-aggregate tests where Doctor's run-deps are ... | none observed |
 | 40.1 | Doctor executes no code from the judged tree, and an unresolved head or a fai... | none observed |
 | 41.1 | The chain sources measure what they claim: spec-surface, dream-chain, the def... | none observed |
-| 41.2 | The ledger, story-status and capability-effect sources degrade honestly, the ... | none observed |
+| 41.2 | The ledger, story-status and capability-effect sources degrade honestly, the ... | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_honest_reads_41_2.py` |
 | 41.3 | The board, factory, hygiene and status-body sources read frontmatter one way,... | none observed |
 | 41.4 | The check CLI, the env and engines checks, the score and the bmad-method sour... | none observed |
 | 41.5 | A new story reopens its done epic without reading as a ledger regression | none observed |

@@ -2,7 +2,8 @@
 title: "85.2: The protected-ref list is declared once and the live rulesets are proven to match it"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '2c22d23a06766dbc5c592ae81e046c6d062fa909'
 flag-exempt: detector-or-gate   # a parity detector; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -15,7 +16,14 @@ context:
   - docs/governance/guild-roster.json
   - scripts/detectors.py
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml
-deferred: []
+deferred:
+  - summary: >-
+      Add a mocked successful gh ruleset list/detail test so fetch/normalize regressions fail in CI without calling GitHub.
+    evidence: |-
+      Live parity is operator-gated; only API failure is mocked today. A break in fetch_live_rulesets could pass fixture tests until an authenticated run.
+    location: >-
+      scripts/protected_refs_ruleset_check.py:63
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 
@@ -88,8 +96,49 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- No intent-contract change. Review pass 2026-10-04 tightened comparator and exit-2 reporting (see triage log patches).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 28 findings — high 0, medium 6, low 8, false 10, maybe-false 4
+- findings:
+  - `[medium]` `[patch]` Live `enforcement` drift was not compared — added enforcement check in `compare_ruleset_maps` plus `test_enforcement_drift_exits_one`.
+  - `[medium]` `[patch]` Live `ref_name.exclude` drift was not compared — added exclude check plus `test_exclude_drift_exits_one`.
+  - `[medium]` `[patch]` Unauthenticated runs discarded document/marshal findings — `run_check` now returns accumulated diffs plus auth error on exit 2; `test_unauthenticated_preserves_local_findings`.
+  - `[medium]` `[patch]` `environment.yaml` committed with pixi WARN prefix — regenerated via clean `pixi project export` without `PIXI_PROJECT_MANIFEST`.
+  - `[medium]` `[reject]` Marshal policy omits per-entry `rules` — intentional; drift AC covers refname parity only, not rule arrays on policy tables.
+  - `[medium]` `[defer]` No mocked successful `fetch_live_rulesets` test — operator-gated live AC; severity medium (unverified live integration shape).
+  - `[low]` `[reject]` Restrict-creation ruleset hardcoded — matches review minor 3; roster has no branch rows for those prefixes.
+  - `[low]` `[reject]` Tag `rules` arrays not rendered per-entry — all tag entries share TAG_RULES today; equivalent to roster.
+  - `[low]` `[reject]` `scope` field unused in render/compare — out of story AC surface; future work if scope→ruleset mapping is needed.
+  - `[low]` `[reject]` Runtime detector excluded from `detectors-ci` — spec and pixi task description require runtime scope.
+  - `[low]` `[reject]` Tests rewrite fixture JSON in-tree — accepted pattern for this scripts suite; subprocess tests need stable paths.
+  - `[low]` `[reject]` `--write-document` no-op branch after write — documents skip-live coupling; no behavior bug.
+  - `[low]` `[reject]` `BRANCH_RULES_BY_KIND` unused tag keys — defensive map; no mis-render today.
+  - `[low]` `[reject]` Story ledger not synced in diff — harness write-back; operator syncs ledger on land.
+  - `[false]` `[reject]` `pixi.lock` missing from diff — lock already up-to-date at export time (`pixi lock` reported unchanged).
+  - `[false]` `[reject]` `compare_ruleset_maps` ignores enforcement — fixed in patch (was true at review time).
+  - `[false]` `[reject]` Auth path hides drift — fixed in patch.
+  - `[false]` `[reject]` Memlog without baseline stamp — reconcile guard passed without `--write-baseline`; memlog + SPEC surface updated.
+  - `[false]` `[reject]` SPEC surface under-lists paths — `docs/governance/**` allowlisted; scripts on steward SPEC surface.
+  - `[false]` `[reject]` Marshal tag entries optional in compare — by design per AC wording (branch omission only).
+  - `[false]` `[reject]` Duplicate ruleset names handling — edge case; GitHub API contract not shown broken in diff.
+  - `[false]` `[reject]` Extra non-prefix rulesets — only `protected-refs-*` extras reported; intentional.
+  - `[false]` `[reject]` `detectors.py` not edited — discovery is filesystem-based; detector registered at runtime.
+  - `[false]` `[reject]` Marshal subprocess exit 1 not tested for policy drift — `compare_marshal_policy_to_roster` unit test covers drift signal; fixture path uses same function in `run_check`.
+  - `[maybe-false]` `[reject]` Roster missing `protected_refs` KeyError — roster validated in production path via `load_roster()` and tests use real file.
+  - `[maybe-false]` `[reject]` Invalid fixture JSON crashes — fixture path only used in tests with generated JSON.
+  - `[maybe-false]` `[reject]` rate_limit int parse — gh returns numeric limits; would settle with malformed mock only.
+  - `[maybe-false]` `[reject]` Tag rule tuple grouping — not required while all tags share rules.
+
+## Auto Run Result
+
+- **Summary:** Story 85.2 (CAP-165) adds roster `rules` on each `protected_refs` entry, renders `docs/governance/rulesets/protected-refs.json`, ships runtime detector `protected_refs_ruleset_check.py` with marshal-policy parity and authenticated live compare (fixtures in CI), plus pixi task and docs regeneration. Review patches compare `enforcement` and `exclude`, preserve local findings on exit 2, and clean `environment.yaml`.
+- **Files changed:** `docs/governance/guild-roster.json`; `docs/governance/rulesets/protected-refs.json`; `scripts/_protected_refs_ruleset_lib.py`; `scripts/protected_refs_ruleset_check.py`; `tests/scripts/test_protected_refs_ruleset_check.py`; `tests/scripts/test_pre_shell_hook.py`; `tests/scripts/fixtures/protected_refs_ruleset/*`; `pixi.toml`; `environment.yaml`; `docs/reference/detectors.md`; `docs/map.yaml`; `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml`; spec memlogs and steward `SPEC.md` surface; story spec metadata.
+- **Review:** 4 patches applied (3 medium comparator/auth/export fixes + tests). 1 defer (mocked live `gh` fetch). Remaining findings rejected as false, out of scope, or intentional by spec.
+- **Follow-up review recommended:** `true` — three medium-severity patches landed in one pass (enforcement, exclude, auth reporting); live GitHub rulesets still operator-gated and unmocked fetch path remains unverified in CI.
+- **Verification:** `spec_surface_reconcile.py` exit 0; pytest protected_refs + pre_shell shape 14 passed; `pyforge-doctor-scripts-test` 1169 passed; `lint-types` exit 0; `pyforge-steward-test` 2028 passed (prior checkpoint). `detectors-ci` exit 1 without NEW cap-citation — failures are pre-existing `pixi_version_check` import path in this worktree invocation and `ledger-direction` landed-but-unpromoted atlas row, not introduced by this story.
+- **Residual risks:** Live repo rulesets still mismatch declared document until operator applies GitHub settings; authenticated live run will exit 1 until then. Runtime detector is not in `detectors-ci`.
+
+- 2026-10-04, landing fix: the dispatch session also declared `[[protected_refs]]` in marshal's `marshal-policy.toml`, with a parity check against the roster. That duplicated the list this story declares once, in `docs/governance/guild-roster.json`. It also broke marshal's strict policy loader, which refuses unknown top-level keys: four `marshal-test` failures on #1849 (`test_harness_policy_render`, `test_spin` tier map, and two `test_status_landing_superseded`). Fixed by removing the marshal-policy copy, `load_marshal_policy_refnames`, `compare_marshal_policy_to_roster` and its caller. `test_the_protected_ref_list_is_declared_once_in_the_roster` now pins it. Marshal reads the roster union through its own Story 87.1.

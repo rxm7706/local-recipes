@@ -41,12 +41,13 @@ def _load_fleet_picture():
 
 
 class _FakeCompletedProcess:
-    def __init__(self, stdout: str):
+    def __init__(self, stdout: str, returncode: int = 0, stderr: str = ""):
         self.stdout = stdout
-        self.returncode = 0
+        self.returncode = returncode
+        self.stderr = stderr
 
 
-def _fake_run(findings: list[dict]):
+def _fake_run(findings: list[dict], returncode: int = 0):
     """Build a `subprocess.run` stand-in returning `findings` as the
     `--json` stdout a real `python -m pyforge.doctor.sources
     bmad-method-version-drift --json` invocation would print."""
@@ -55,7 +56,10 @@ def _fake_run(findings: list[dict]):
         assert cmd[0] == sys.executable
         assert cmd[1:4] == ["-m", "pyforge.doctor.sources", "bmad-method-version-drift"]
         assert "--json" in cmd
-        return _FakeCompletedProcess(json.dumps(findings))
+        # DW-FU-10-3: exit 2 still carries findings; `check=True` would
+        # turn it into "could not check".
+        assert not kwargs.get("check")
+        return _FakeCompletedProcess(json.dumps(findings), returncode)
 
     return _run
 
@@ -136,18 +140,51 @@ def test_no_drift_empty_findings_returns_empty(monkeypatch):
 
 def test_subprocess_failure_raises_the_caller_degrades(monkeypatch):
     """`bmad_core_drift_findings()` itself does NOT catch a subprocess
-    failure -- it raises (`check=True` -> `CalledProcessError`). Degrading
-    to a "could not check" watch line is `main()`'s own job, matching the
-    documented Boundaries."""
+    failure -- it raises. Degrading to a "could not check" watch line is
+    `main()`'s own job, matching the documented Boundaries."""
     mod = _load_fleet_picture()
 
     def _boom(cmd, **kwargs):
-        raise subprocess.CalledProcessError(2, cmd)
+        raise subprocess.TimeoutExpired(cmd, 30)
 
     monkeypatch.setattr(mod.subprocess, "run", _boom)
 
-    with pytest.raises(subprocess.CalledProcessError):
+    with pytest.raises(subprocess.TimeoutExpired):
         mod.bmad_core_drift_findings()
+
+
+def test_a_crash_exit_raises_the_caller_degrades(monkeypatch):
+    mod = _load_fleet_picture()
+    monkeypatch.setattr(
+        mod.subprocess, "run",
+        lambda cmd, **kwargs: _FakeCompletedProcess("", returncode=1, stderr="Traceback ..."),
+    )
+
+    with pytest.raises(RuntimeError, match="exited 1"):
+        mod.bmad_core_drift_findings()
+
+
+def test_a_fail_finding_at_exit_2_is_returned_not_collapsed(monkeypatch):
+    """DW-FU-10-3: should the source ever break its never-fail promise,
+    the FAIL reaches the ATTENTION block as itself -- the same finding
+    `doctor check --bmad-core` renders -- not as "could not check"."""
+    mod = _load_fleet_picture()
+    monkeypatch.setattr(
+        mod.subprocess, "run",
+        _fake_run(
+            [
+                {"source": "bmad-method-version-drift", "check": "bmad-method-version-drift",
+                 "status": "fail", "message": "a broken promise", "evidence": {}},
+                {"source": "bmad-method-version-drift", "check": "bmad-method-upstream-drift",
+                 "status": "ok", "message": "current", "evidence": {}},
+            ],
+            returncode=2,
+        ),
+    )
+
+    result = mod.bmad_core_drift_findings()
+
+    assert [(f["check"], f["status"]) for f in result] == [("bmad-method-version-drift", "fail")]
 
 
 def test_malformed_json_raises(monkeypatch):

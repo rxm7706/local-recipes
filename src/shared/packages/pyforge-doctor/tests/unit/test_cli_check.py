@@ -18,6 +18,7 @@ from importlib import resources
 from pathlib import Path
 
 import jsonschema
+import pytest
 from pyforge.warden import engines as engines_mod
 from pyforge.warden.engines import DoctorCheck
 
@@ -175,7 +176,7 @@ def test_bmad_core_findings_reach_both_renders(monkeypatch, tmp_path: Path, caps
     _forbid_warden_gather(monkeypatch)
     monkeypatch.setattr(
         "pyforge.doctor.__main__.bmad_method.gather",
-        lambda target: (
+        lambda target, **_kwargs: (
             Finding(
                 source=Source.BMAD_METHOD_VERSION_DRIFT,
                 check="bmad-method-version-drift",
@@ -203,7 +204,7 @@ def test_bmad_core_warn_never_drives_the_exit_code(monkeypatch, tmp_path: Path, 
     _forbid_warden_gather(monkeypatch)
     monkeypatch.setattr(
         "pyforge.doctor.__main__.bmad_method.gather",
-        lambda target: (
+        lambda target, **_kwargs: (
             Finding(
                 source=Source.BMAD_METHOD_VERSION_DRIFT,
                 check="bmad-method-version-drift",
@@ -226,7 +227,7 @@ def test_default_run_never_calls_bmad_core_gather(monkeypatch, tmp_path: Path, c
     default run never even calls it."""
     _stub_healthy_warden(monkeypatch)
 
-    def _forbid_bmad_core(target):
+    def _forbid_bmad_core(target, **_kwargs):
         raise _ForbiddenGatherError("must never gather the 'bmad-core' category in the default run")
 
     monkeypatch.setattr("pyforge.doctor.__main__.bmad_method.gather", _forbid_bmad_core)
@@ -257,7 +258,7 @@ def test_explicit_bmad_core_flag_excludes_the_default_trio(monkeypatch, tmp_path
     monkeypatch.setattr("pyforge.doctor.__main__.marshal_source.gather", _forbid_durability)
     monkeypatch.setattr(
         "pyforge.doctor.__main__.bmad_method.gather",
-        lambda target: (
+        lambda target, **_kwargs: (
             Finding(
                 source=Source.BMAD_METHOD_VERSION_DRIFT,
                 check="bmad-method-version-drift",
@@ -288,7 +289,7 @@ def test_bmad_core_flag_matching_scope_repo_runs_fine(monkeypatch, tmp_path: Pat
     _forbid_warden_gather(monkeypatch)
     monkeypatch.setattr(
         "pyforge.doctor.__main__.bmad_method.gather",
-        lambda target: (
+        lambda target, **_kwargs: (
             Finding(
                 source=Source.BMAD_METHOD_VERSION_DRIFT,
                 check="bmad-method-version-drift",
@@ -305,6 +306,21 @@ def test_bmad_core_flag_matching_scope_repo_runs_fine(monkeypatch, tmp_path: Pat
     document = json.loads(captured.out)
     assert exit_code == 0
     assert [f["source"] for f in document["findings"]] == ["bmad-method-version-drift"]
+
+
+@pytest.mark.parametrize(("scope", "offline"), [("repo", True), ("all", False)])
+def test_bmad_core_runs_offline_exactly_under_scope_repo(monkeypatch, tmp_path: Path, scope: str, offline: bool):
+    # DW-FU-10-3-2: `--scope repo` must never reach the network.
+    seen: list[bool] = []
+
+    def _gather(target, *, offline=False):
+        seen.append(offline)
+        return ()
+
+    monkeypatch.setattr("pyforge.doctor.__main__.bmad_method.gather", _gather)
+
+    assert main(["check", str(tmp_path), "--bmad-core", "--scope", scope, "--json"]) == 0
+    assert seen == [offline]
 
 
 # --- sibling-dreams category (Story 16.1 / CAP-1) -----------------------------
@@ -436,6 +452,8 @@ def test_degraded_engines_category_named_check_renders_one_synthetic_fail(monkey
     # Never a bare "not found" -- names the degradation and hints a re-run.
     assert "degrad" in finding["message"].lower()
     assert "not found" not in finding["message"].lower()
+    # DW-FU-1-5-4: the synthetic FAIL quotes warden's own specific reason.
+    assert "simulated warden self-check crash" in finding["message"]
 
 
 def test_degraded_whole_engines_category_emits_schema_valid_sentinel_json(monkeypatch, tmp_path: Path, capsys):
@@ -841,3 +859,28 @@ def test_text_output_neutralizes_embedded_newlines_in_messages(capsys):
     assert len(body_lines) == 2
     assert "1 finding(s)" in body_lines[0]
     assert "\\n" in body_lines[1]
+
+
+def test_named_env_check_carries_the_incomplete_scan_sentinel(monkeypatch, tmp_path: Path, capsys):
+    # DW-FU-1-5 (b): `--env NAME` dropped the incomplete-scan signal, so a
+    # partial scan read as clean.
+    monkeypatch.setattr(env_hygiene, "_DISCOVERY_ENTRY_CAP", 1)
+    for name in ("a.py", "b.py"):
+        (tmp_path / name).write_text("x = 1\n", encoding="utf-8")
+
+    exit_code = main(["check", str(tmp_path), "--env", "unconditional-credential-injection", "--json"])
+
+    document = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert [f["check"] for f in document["findings"]] == ["env-hygiene"]
+    assert "INCOMPLETE" in document["findings"][0]["message"]
+
+
+def test_env_check_on_a_non_directory_target_is_not_a_silent_green(tmp_path: Path, capsys):
+    # DW-FU-1-5-3: a typo'd path printed "0 finding(s)" and exited 0.
+    exit_code = main(["check", str(tmp_path / "typo"), "--env", "--json"])
+
+    document = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert [f["check"] for f in document["findings"]] == ["env-hygiene"]
+    assert "not a directory" in document["findings"][0]["message"]

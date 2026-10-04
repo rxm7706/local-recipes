@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 1957ba041ade2cc3
-story_count: 405
+source_fingerprint: e94788cfdc8d19e1
+story_count: 424
 test_file_count: 238
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 405
+- **Stories parsed:** 424
 - **Epics parsed:** 85
 - **Test files inventoried:** 238 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `1957ba041ade2cc3`
+- **Source fingerprint:** `e94788cfdc8d19e1`
 
 ## Risk Assessment
 
@@ -106,7 +106,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 83: Phase 2 landing defects: dispatch liveness, whole-tree checks, the landing heal and campaign holds
 - Epic 84: Every harness's model list refreshes from its own live source (spec-pyforge-marshal CAP-285)
 - Epic 85: A verification refusal goes back to the session that wrote the change (spec-pyforge-marshal CAP-286)
-- Epic 87: Branch and worktree cleanup never destroys protected state
+- Epic 87: Preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287)
 
 ### Low-risk epics
 
@@ -708,6 +708,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 68.1 | A landing's ledger promotion reaches origin/main, and a failed one is never s... | none observed |
 | 69.1 | The switch script runs where it is documented to run | none observed |
 | 70.1 | Seed check judges the paths the manifest means, never its placeholders | none observed |
+| 70.2 | Seed check honours recorded skips, and every verb records directory entries | none observed |
 | 71.1 | The front door names the environment a roster station runs in | none observed |
 | 72.1 | The dispatch supervisor reads merge facts from origin/main | none observed |
 | 73.1 | A follow-up review run is judged and landed by its own branch | none observed |
@@ -759,12 +760,15 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 83.19 | Dispatch never commits the CFE surface outside a sanctioned retro | none observed |
 | 83.20 | Landing finalize never promotes a Tier-3 spec the ledger does not list | none observed |
 | 83.21 | Landing finalize writes the epic roll-ups the sync writes | none observed |
+| 83.22 | The landing's ledger guard judges the twin it overwrites | none observed |
+| 83.23 | Dispatch verification runs the cross-station meta-tests that read the story's... | none observed |
 | 84.1 | An operator-run refresh reads every harness's live model list and reports drift | none observed |
 | 84.2 | The model-list refresh tests can fail, and a partial listing is never complete | none observed |
 | 85.1 | A verification refusal goes back to the session that wrote the change for one... | none observed |
 | 85.2 | A fix turn that turns verification green lands, and survives a supervisor res... | none observed |
 | 85.3 | The fix turn is safe to switch on in dev and staging | none observed |
 | 85.4 | The fix turn's redaction never hangs the supervisor or hides what the fix needs | none observed |
+| 85.5 | The verify fix turn's edits get the spec-surface reconcile before re-verifica... | none observed |
 | 86.1 | Seed honours recorded skips, refuses shared manifest paths, and pins director... | none observed |
 | 86.2 | local-recipes is genesis-adopted so the seed-adopt oracle goes green | none observed |
 | 86.3 | Spin and the journal clean up a failed launch and record what they ran | none observed |
@@ -774,6 +778,21 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 86.7 | The session-close docs name the context advisory and the retired-id guard sca... | none observed |
 | 86.8 | Path-form spec cites count as missing, and the retired chain verb leaves no t... | none observed |
 | 87.1 | The sweeper reaches remote branches and never deletes a protected ref | none observed |
+| 87.2 | The unpushed-work detector fails closed and never prints a tag-minting remedy | none observed |
+| 87.3 | Preserved work has one grammar and one verb | none observed |
+| 87.4 | Spin parks every attempt as a preserve tag before bmad-loop can prune it | none observed |
+| 87.5 | Dispatch and drain preserve a stopped story's work as a tag on origin | none observed |
+| 87.6 | Land, retire and the station branch never fight the protected list | none observed |
+| 87.7 | Teardown refuses to remove a loop home that holds unpreserved work | none observed |
+| 87.8 | The sweeper preserves to tags and retires promoted engine scratch | none observed |
+| 87.9 | Every preserve reader sees preserve tags and origin | none observed |
+| 87.10 | Merged-check objects never enter the object store | none observed |
+| 87.11 | The build skills and recovery recipes preserve before they revert or rebuild | none observed |
+| 87.12 | Legacy refs are promoted and attempt-preserve leaves the protected list | none observed |
+| 87.13 | Nothing in a loop home prunes a preserve or rewrites a station branch | none observed |
+| 87.14 | The sweeper reports stale-locked agent worktrees and orphan directories | none observed |
+| 87.15 | A preserve reaches origin only through the content gate | none observed |
+| 87.16 | The orphaned tips are re-preserved as local archive tags | none observed |
 
 ## Quality Gates
 

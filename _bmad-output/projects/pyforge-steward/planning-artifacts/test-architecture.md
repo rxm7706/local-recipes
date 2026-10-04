@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 8cc317153b03f2a2
-story_count: 323
+source_fingerprint: c9982304aa6f2bae
+story_count: 327
 test_file_count: 96
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 323
+- **Stories parsed:** 327
 - **Epics parsed:** 85
 - **Test files inventoried:** 96 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8cc317153b03f2a2`
+- **Source fingerprint:** `c9982304aa6f2bae`
 
 ## Risk Assessment
 
@@ -112,7 +112,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 82: The session check's kit remedy applies the kit
 - Epic 83: Phase 2 of the deferral burn-down: steward's high deferrals
 - Epic 84: Phase 3 of the deferral burn-down: steward's ruled fixes
-- Epic 85: The session guardrails refuse deleting protected branches and loop homes
+- Epic 85: The protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward CAP-165)
 
 ### Low-risk epics
 
@@ -550,6 +550,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 84.4 | Sync skips a board item marked GitHub-only | none observed |
 | 84.5 | The GitHub-only marker tests can fail, and config refuses half declarations | none observed |
 | 85.1 | The session hook refuses deleting protected branches and loop homes | none observed |
+| 85.2 | The protected-ref list is declared once and the live rulesets are proven to m... | none observed |
+| 85.3 | The pre-push gate skips a push it can prove carries only preserve or archive ... | none observed |
+| 85.4 | The hook denies every protected-ref deletion and any deletion that orphans co... | none observed |
+| 85.5 | Workspace clean parks unlanded commits as a preserve tag before removing the ... | none observed |
 
 ## Quality Gates
 

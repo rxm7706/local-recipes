@@ -47,6 +47,8 @@ surface:
   - scripts/precommit_config_check.py
   - scripts/commit_msg_hook.py
   - scripts/pre_push_preflight.sh
+  - scripts/_protected_refs_ruleset_lib.py
+  - scripts/protected_refs_ruleset_check.py
   - .pre-commit-config.yaml
   - .github/workflows/lint-types.yml
   - scripts/llms_full_check.py

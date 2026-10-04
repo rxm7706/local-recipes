@@ -647,6 +647,7 @@ def test_rekey_map_is_classified_and_not_flagged_uncovered(tmp_path: Path) -> No
     assert findings[0].check == "bmad-drift"
     assert findings[0].status is DoctorStatus.OK
     assert factory.classify(Path("planning-artifacts/rekey-2026-09-16.md"), repo) == "tracked:plan"
+    assert factory.classify(Path("planning-artifacts/spike-0-copier-api-fit-report.md"), repo) == "archive:spike-report"
     # Undated or mis-dated names are NOT the shape (AGENTS.md § Dates: YYYY-MM-DD only).
     assert factory.classify(Path("planning-artifacts/rekey.md"), repo) != "tracked:plan"
 
@@ -857,6 +858,7 @@ def test_docs_specs_nonmd_reports_warn(tmp_path: Path) -> None:
     docs_specs = repo / "docs" / "specs"
     docs_specs.mkdir(parents=True, exist_ok=True)
     (docs_specs / "foo.txt").write_text("x\n", encoding="utf-8")
+    (repo / "CLAUDE.md").write_text("# Project\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -897,7 +899,7 @@ def test_tier_alignment_degrades_to_warn_when_git_is_unavailable(
     unevaluable = by_check["bmad-drift-unevaluable"]
     assert unevaluable.status is DoctorStatus.WARN
     assert "check_tier_alignment" in unevaluable.message
-    assert unevaluable.evidence == {"check": "check_tier_alignment", "target": str(repo)}
+    assert unevaluable.evidence == {"check": "check_tier_alignment", "target": str(repo), "unevaluable": True}
 
 
 # --------------------------------------------------------------------- spec index
@@ -909,6 +911,7 @@ def test_spec_unindexed_reports_warn(tmp_path: Path) -> None:
     docs_specs = repo / "docs" / "specs"
     docs_specs.mkdir(parents=True, exist_ok=True)
     (docs_specs / "bar.md").write_text("x\n", encoding="utf-8")
+    (repo / "CLAUDE.md").write_text("# Project\n\nNo intake index here.\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -1047,7 +1050,7 @@ def test_dream_owned_by_an_unknown_station_reports_warn(tmp_path: Path) -> None:
     assert len(findings) == 1
     finding = findings[0]
     assert finding.check == "dream-unowned"
-    assert "eight Smiths" in finding.message
+    assert "marshal" in finding.message and "doctor" in finding.message
 
 
 def test_dream_owned_by_a_known_station_is_clean(tmp_path: Path) -> None:
@@ -1135,7 +1138,7 @@ def test_one_check_raising_does_not_discard_the_others_real_findings(
     unevaluable = [f for f in findings if f.check == "bmad-drift-unevaluable"]
     assert len(unevaluable) == 1
     assert unevaluable[0].status is DoctorStatus.WARN
-    assert unevaluable[0].evidence == {"check": "check_pins", "target": str(repo)}
+    assert unevaluable[0].evidence == {"check": "check_pins", "target": str(repo), "unevaluable": True}
     assert "check_pins" in unevaluable[0].message
     assert "RuntimeError" in unevaluable[0].message
     assert "simulated check_pins failure" in unevaluable[0].message
@@ -1401,7 +1404,8 @@ def test_every_unevaluable_finding_carries_the_same_evidence_keys(
         for f in findings:
             if f.check != "bmad-drift-unevaluable":
                 continue
-            assert sorted(f.evidence) == ["check", "target"], f.evidence
+            assert sorted(f.evidence) == ["check", "target", "unevaluable"], f.evidence
+            assert f.evidence["unevaluable"] is True
 
 
 @_needs_unprivileged

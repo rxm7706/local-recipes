@@ -4,7 +4,7 @@ Task-oriented guide for on-demand recipe CI workflows. These workflows run **on-
 
 ## Repo workflow inventory (README summary)
 
-The repo ships **19** workflow files under `.github/workflows/`. They fall into automatic PR gates, push/schedule maintenance, and on-demand recipe builds — verified against each file's `on:` block.
+The repo ships the workflow files under `.github/workflows/` (inventory and triggers in [GitHub workflows — inventory](../reference/github-workflows.md)). They fall into automatic PR gates, push/schedule maintenance, and on-demand recipe builds.
 
 ### Automatic PR gates
 

@@ -477,9 +477,15 @@ def bmad_core_drift_findings(
     ``bmad_loop_baseline_drift_check.py``); this script never imports
     ``pyforge.doctor`` directly.
 
+    Exit 0 (ok/warn) and exit 2 (a FAIL finding, which the source promises
+    never to emit) both carry the findings as JSON, so both are parsed and
+    every warn AND fail finding is returned -- a broken never-fail promise
+    then reads here as the same finding ``doctor check --bmad-core``
+    renders, not as "could not check" (Story 41.4, DW-FU-10-3).
+
     Unlike ``loop_home_staleness``/``running_stations``, this function does
-    NOT catch its own failures -- it raises on any (subprocess error,
-    non-zero exit, malformed JSON, ...). The caller in ``main()``'s
+    NOT catch its own failures -- it raises on any (subprocess error, any
+    other exit code, malformed JSON, ...). The caller in ``main()``'s
     ATTENTION block wraps the call in the same ``try/except Exception:
     watch.append(...)`` idiom every other ATTENTION probe there already
     uses, so degrading to one "could not check" line is the CALLER's job,
@@ -487,10 +493,15 @@ def bmad_core_drift_findings(
     result = subprocess.run(
         [sys.executable, "-m", "pyforge.doctor.sources",
          "bmad-method-version-drift", "--json"],
-        cwd=repo, capture_output=True, text=True, timeout=timeout, check=True,
+        cwd=repo, capture_output=True, text=True, timeout=timeout,
     )
+    if result.returncode not in (0, 2):
+        raise RuntimeError(
+            f"bmad-method-version-drift exited {result.returncode}: "
+            f"{(result.stderr or '').strip()[:200]}"
+        )
     findings = json.loads(result.stdout)
-    return [f for f in findings if f.get("status") == "warn"]
+    return [f for f in findings if f.get("status") in ("warn", "fail")]
 
 
 def sibling_dreams_drift_findings(

@@ -39,29 +39,26 @@ story spec's Design Notes -- do not re-litigate here):
   target was recognized; see ``_header_dict_literal_name``) is now covered
   too -- confirmed live against this repo's own ``gemini_server.py``
   (DW-FU-1-4's evidence) before being closed. A bare ``return {...}`` dict
-  literal with NO header-named variable at all (``dependency-checker.py``'s
-  ``return {"X-JFrog-Art-Api": api_key}``) is DELIBERATELY still not
-  tracked -- see ``_CredentialInjectionVisitor``'s own docstring for why
-  (entangled with DW-FU-1-4-2's still-open statement-flow-guard item (a),
-  live-confirmed to regress the golden fixture if chased here).
+  literal whose literal key names a header (``Authorization``, ``Cookie``,
+  any hyphenated token such as ``X-JFrog-Art-Api``) is checked as well
+  (story 41.4) -- possible once statement-flow guards (below) stopped the
+  early-return-guarded scripts that kept it out from false-positiving.
 * The assignment target must be an ``ast.Subscript`` on a bare
   ``ast.Name`` whose ``.id`` (case-insensitive) contains ``"header"`` --
   ``headers[...]``, ``request_headers[...]``, etc. An attribute-based
   target (``self.headers[...]``) does not match (out of v1 scope). A
   chained assignment (``headers["X"] = other["Y"] = value``) matches if
   ANY target is header-shaped (review finding).
-* Guard recognition is ``if``/``elif`` STATEMENTS ONLY -- a host check
-  expressed as a ternary (``ast.IfExp``) condition, a ``match``/``case``
-  dispatch, or any other expression-level conditional is not recognized as
-  suppressing a finding (review finding, scoped out rather than chased: a
-  narrower edge case than the false-positive/false-negative gaps above).
-  STATEMENT-FLOW guards are likewise not recognized: the early-return
-  idiom (``if host != safe: return`` followed by an unguarded
-  ``headers[...] = os.environ.get(...)``) still produces a WARN even
-  though it is correctly host-gated -- suppressing it would require
-  tracking which preceding sibling ``if`` bodies unconditionally
-  ``return``/``raise``, a statement-flow analysis beyond v1's
-  enclosing-guard model (review finding, logged in ``deferred-work.md``).
+* Guard recognition (story 41.4, DW-FU-1-4 (b) and DW-FU-1-4-2 (a)): an
+  enclosing ``if``/``elif`` test; a host-scoped GUARD CLAUSE earlier in the
+  same block (``if host != safe: return`` / ``if not is_host(url): raise``,
+  or a positive test whose ``else`` exits -- the rest of the block then runs
+  only for the allowed host); a ``match`` on a host-like subject (every
+  refutable ``case``) or a host-scoped ``case`` guard; and a host-scoped
+  ternary (``os.environ.get("Y") if host == "safe" else None`` -- only the
+  branch taken when the host does NOT match counts as a value). Exits are
+  ``return``/``raise``/``continue``/``break`` as a body's last statement; a
+  ``sys.exit()`` call is not recognized.
 * A finding is suppressed only when SOME enclosing ``if``/``elif`` test,
   anywhere up the assignment's ancestor chain WITHIN ITS OWN ENCLOSING
   FUNCTION, references a host-like name (``host``/``netloc``/``hostname``/
@@ -80,19 +77,19 @@ story spec's Design Notes -- do not re-litigate here):
   ``ast.Compare`` whose every op is ``!=``/``not in``/``is not``) the
   branches swap: ``if host != safe: headers[...] = os.environ.get(...)``
   is flagged (the TRUE branch is the "not this host" case) while the same
-  assignment in its ``else`` branch is suppressed (review finding: the
-  negated form was silently invisible). Negation expressed any other way
-  (``not host_ok(h)``, a ``BoolOp`` over negated compares) is NOT polarity-
-  resolved -- deciding it would require knowing whether the compared set
-  is an allowlist or a denylist, which is statically undecidable; those
-  tests conservatively suppress their TRUE branch (logged in
-  ``deferred-work.md``). A guard belonging to an outer function that
+  assignment in its ``else`` branch is suppressed. ``not X`` inverts ``X``'s
+  polarity and a ``BoolOp`` is negative when every host-referencing operand
+  is (DW-FU-1-4-2 (b)); a bare predicate (``host_ok(h)``) reads as holding
+  for the allowed host, so ``if not host_ok(h): headers[...] = ...`` is
+  flagged. A ``BoolOp`` mixing positive and negative host operands stays
+  undecidable and conservatively suppresses its TRUE branch (see
+  ``_host_test_is_positive``). A guard belonging to an outer function that
   merely contains a nested ``def`` does not count either -- see
   ``_CredentialInjectionVisitor``.
 * A ``target`` that is not a directory (a single file, a nonexistent
-  path) yields ``()`` -- the registry-wide ``gather(target: Path)``
-  directory convention (established Story 1.3 review), never a misleading
-  incomplete-scan sentinel.
+  path) yields one not-a-directory WARN under ``SCAN_INCOMPLETE_CHECK_NAME``
+  (DW-FU-1-5-3): an ``--env``-only run on a typo'd path used to print
+  ``0 finding(s)`` and exit 0, a false green.
 
 Every emitted ``Finding`` carries ``status=DoctorStatus.WARN`` (Design
 Decision, story spec): a hand-written pattern-match with no wrap-a-proven-
@@ -416,7 +413,12 @@ def _walk_value_positions(node: ast.AST) -> Iterator[ast.AST]:
     yield node
     if isinstance(node, ast.IfExp):
         yield from _skipped_test_walrus_values(iter((node.test,)))
-        for child in (node.body, node.orelse):
+        branches: tuple[ast.expr, ...] = (node.body, node.orelse)
+        if _references_host_like(node.test):
+            # A host-scoped ternary (DW-FU-1-4 (b)): the branch taken only
+            # when the host condition holds carries no unguarded value.
+            branches = (node.orelse,) if _host_test_is_positive(node.test) else (node.body,)
+        for child in branches:
             yield from _walk_value_positions(child)
         return
     if isinstance(node, ast.comprehension):
@@ -537,23 +539,78 @@ def _references_host_like(test: ast.expr) -> bool:
     return False
 
 
-def _is_pure_negation(test: ast.expr) -> bool:
-    """Whether ``test`` is an ``ast.Compare`` whose EVERY op is a negative
-    comparator (``!=``/``not in``/``is not``) -- the one negation shape
-    whose polarity is statically decidable: its TRUE branch is the "not
-    this host" case, so a host-referencing guard of this shape must not
-    suppress there (review finding: ``if host != safe: headers[...] =
-    os.environ.get(...)`` -- the exact inverse-condition leak -- was
-    silently suppressed). ``not x`` / ``BoolOp`` negation forms are
-    deliberately excluded: resolving them requires knowing whether the
-    compared set is an allowlist or a denylist (see module docstring)."""
-    return isinstance(test, ast.Compare) and all(isinstance(op, (ast.NotEq, ast.NotIn, ast.IsNot)) for op in test.ops)
+def _host_test_is_positive(test: ast.expr) -> bool:
+    """Whether ``test``'s TRUE branch is the host-scoped one (``True``) or
+    the "not this host" case (``False``).
+
+    * an ``ast.Compare`` whose EVERY op is ``!=``/``not in``/``is not`` is
+      negative (review finding: ``if host != safe: headers[...] = ...`` was
+      silently suppressed);
+    * ``not X`` inverts ``X`` (DW-FU-1-4-2 (b): ``if not host_ok(h):``
+      used to suppress its TRUE branch -- the inverse-condition leak);
+    * a ``BoolOp`` is negative when every operand that references a
+      host-like name is negative (``host != a and host != b``); operands
+      with no host-like name do not vote;
+    * anything else -- a positive compare, a bare predicate call or name
+      (``host_ok(h)``, ``is_enterprise_host``), a mixed ``BoolOp`` -- is
+      positive: a host predicate is read as holding for the allowed host,
+      and the undecidable mixed case keeps the old conservative suppression.
+    """
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        return not _host_test_is_positive(test.operand)
+    if isinstance(test, ast.Compare):
+        return not all(isinstance(op, (ast.NotEq, ast.NotIn, ast.IsNot)) for op in test.ops)
+    if isinstance(test, ast.BoolOp):
+        votes = [_host_test_is_positive(value) for value in test.values if _references_host_like(value)]
+        return not votes or any(votes)
+    return True
+
+
+def _always_exits(body: list[ast.stmt]) -> bool:
+    """Whether ``body`` unconditionally leaves the enclosing block -- its
+    last statement is a ``return``/``raise``/``continue``/``break``."""
+    return bool(body) and isinstance(body[-1], (ast.Return, ast.Raise, ast.Continue, ast.Break))
+
+
+def _is_early_exit_guard(stmt: ast.stmt) -> bool:
+    """Whether ``stmt`` is a host-scoped guard clause after which the rest
+    of its block runs only for the allowed host (DW-FU-1-4-2 (a)): ``if
+    host != safe: return`` / ``if not is_host(url): raise ...``, or the
+    positive form whose ``else`` exits."""
+    if not isinstance(stmt, ast.If) or not _references_host_like(stmt.test):
+        return False
+    if _host_test_is_positive(stmt.test):
+        return _always_exits(stmt.orelse)
+    return _always_exits(stmt.body)
+
+
+def _is_irrefutable(pattern: ast.pattern) -> bool:
+    if isinstance(pattern, ast.MatchAs):
+        return pattern.pattern is None or _is_irrefutable(pattern.pattern)
+    if isinstance(pattern, ast.MatchOr):
+        return any(_is_irrefutable(alternative) for alternative in pattern.patterns)
+    return False
+
+
+# Literal dict keys that name an HTTP header: the auth-bearing names plus any
+# hyphenated token (`X-JFrog-Art-Api`, `Private-Token`).
+_HEADER_KEY_RE = re.compile(r"^(authorization|proxy-authorization|cookie|[a-z][a-z0-9]*(-[a-z0-9]+)+)$")
+
+
+# `_scan_file`'s whole-file prefilter: a file with none of these cannot
+# hold a header-shaped target. A hyphenated returned key that is not an
+# `X-` header (`Private-Token`) is only seen in a file that says one of them.
+_HEADER_PREFILTER_MARKERS = ("header", "authorization", "cookie", "'x-", '"x-')
+
+
+def _is_header_key(key: str) -> bool:
+    return _HEADER_KEY_RE.match(key.lower()) is not None
 
 
 class _CredentialInjectionVisitor(ast.NodeVisitor):
     """Walks one module's AST tracking a stack of enclosing ``ast.If.test``
     nodes (TRUE-branch only, see ``visit_If``), collecting ``(lineno,
-    header_var, env_var_name)`` for every unconditional credential-
+    target, env_var_name)`` for every unconditional credential-
     injection assignment found.
 
     The guard stack is RESET (not merely appended to) at each function
@@ -577,18 +634,16 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
     env-var read that produced it, closing the "intermediate variable"
     v1 gap (``token = os.environ.get(...); headers["X"] = token``).
 
-    A bare ``return {...}`` dict literal (no header-named variable at all,
-    e.g. ``dependency-checker.py``'s ``return {"X-JFrog-Art-Api":
-    api_key}``) is DELIBERATELY still not tracked: this repo's own
-    ``_auth_headers`` uses the early-return guard-clause idiom (``if not
-    enterprise_host: return {}`` ... later ... ``if api_key: return
-    {...}``), which this module's enclosing-guard model cannot see (that is
-    DW-FU-1-4-2's OWN separately-tracked, still-open item (a) -- fixing it
-    here first, live-confirmed during this pass, would newly flag five
-    already-safe real findings in this repo's own scripts and break
-    ``test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts``).
-    Chasing that shape needs the statement-flow analysis DW-FU-1-4-2(a)
-    already scopes out; not duplicated here."""
+    Guards are recognized beyond enclosing ``if``/``elif`` tests
+    (DW-FU-1-4, DW-FU-1-4-2): a host-scoped guard clause (``if not
+    is_enterprise_host(url): return {}``) guards the REST of its block
+    (``_visit_block``); a ``match`` on a host-like subject guards every
+    refutable ``case``; a host-scoped ternary drops its guarded branch
+    (``_walk_value_positions``). With statement-flow guards in place, a bare
+    ``return {"X-JFrog-Art-Api": api_key}`` dict literal with a header-shaped
+    literal key is checked too (``visit_Return``) -- this repo's own
+    ``_auth_headers`` guard clause now suppresses it rather than producing
+    the false positives that kept it out before."""
 
     def __init__(
         self,
@@ -606,27 +661,60 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
     def visit_If(self, node: ast.If) -> None:
         # node.test is evaluated under the CURRENT (not-yet-extended) guard
         # stack. Only the branch that runs "gated on the host condition
-        # HOLDING" inherits node.test as a guard -- for an ordinary test
-        # that is node.body (node.orelse runs precisely when the test did
-        # NOT match: inheriting the guard there would suppress the exact
-        # inverse-condition leak this check exists to catch -- review
-        # finding: `if host==safe: ... else: headers[...] =
-        # os.environ.get(...)` was silently invisible); for a pure-negation
-        # test the branches swap (review finding: `if host != safe:
-        # headers[...] = os.environ.get(...)` was silently suppressed --
-        # its TRUE branch is the "not this host" case, and its else branch
-        # is the host-scoped one).
+        # HOLDING" inherits node.test as a guard: node.body for a positive
+        # test, node.orelse for a negative one (`_host_test_is_positive`) --
+        # inheriting it on the other branch would suppress the exact
+        # inverse-condition leak this check exists to catch (review
+        # findings: `if host == safe: ... else: headers[...] = ...` and `if
+        # host != safe: headers[...] = ...` were both silently invisible).
         self.visit(node.test)
-        if _is_pure_negation(node.test):
-            guarded, unguarded = node.orelse, node.body
-        else:
+        if _host_test_is_positive(node.test):
             guarded, unguarded = node.body, node.orelse
+        else:
+            guarded, unguarded = node.orelse, node.body
         self._guards.append(node.test)
-        for stmt in guarded:
-            self.visit(stmt)
+        self._visit_block(guarded)
         self._guards.pop()
-        for stmt in unguarded:
+        self._visit_block(unguarded)
+
+    def visit_Match(self, node: ast.Match) -> None:
+        self.visit(node.subject)
+        subject_is_host = _references_host_like(node.subject)
+        for case in node.cases:
+            self.visit(case.pattern)
+            if case.guard is not None:
+                self.visit(case.guard)
+            guards: list[ast.expr] = []
+            if subject_is_host and not _is_irrefutable(case.pattern):
+                guards.append(node.subject)
+            if case.guard is not None and _host_test_is_positive(case.guard):
+                guards.append(case.guard)
+            self._guards.extend(guards)
+            self._visit_block(case.body)
+            del self._guards[len(self._guards) - len(guards) :]
+
+    def _visit_block(self, stmts: list[ast.stmt]) -> None:
+        """Visit one statement list in order; a host-scoped guard clause
+        (``_is_early_exit_guard``) guards every statement after it in the
+        same block."""
+        depth = len(self._guards)
+        for stmt in stmts:
             self.visit(stmt)
+            if isinstance(stmt, ast.If) and _is_early_exit_guard(stmt):
+                self._guards.append(stmt.test)
+        del self._guards[depth:]
+
+    def generic_visit(self, node: ast.AST) -> None:
+        for _field, value in ast.iter_fields(node):
+            if isinstance(value, list):
+                if value and all(isinstance(item, ast.stmt) for item in value):
+                    self._visit_block(value)
+                else:
+                    for item in value:
+                        if isinstance(item, ast.AST):
+                            self.visit(item)
+            elif isinstance(value, ast.AST):
+                self.visit(value)
 
     def _visit_function_scope(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
         saved_guards, self._guards = self._guards, []
@@ -641,9 +729,12 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self._visit_function_scope(node)
 
-    def _check(self, header_var: str | None, value: ast.expr, lineno: int) -> None:
+    def _check(self, header_var: str | None, value: ast.expr, lineno: int, *, target: str | None = None) -> bool:
+        """Record a match when ``value`` carries an unguarded env read;
+        ``target`` is the message's name for where it lands (default
+        ``header_var[...]``)."""
         if header_var is None:
-            return
+            return False
         env_var_name, found = _direct_env_read(
             value,
             self._os_names,
@@ -652,7 +743,9 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
             self._credential_vars,
         )
         if found and not any(_references_host_like(guard) for guard in self._guards):
-            self.matches.append((lineno, header_var, env_var_name))
+            self.matches.append((lineno, target or f"{header_var}[...]", env_var_name))
+            return True
+        return False
 
     def _track_credential_var(self, node: ast.Assign) -> None:
         """DW-FU-1-4 follow-up: record ``name = <credential-bearing-expr>``
@@ -690,6 +783,16 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
         self._track_credential_var(node)
         self.generic_visit(node)
 
+    def visit_Return(self, node: ast.Return) -> None:
+        if isinstance(node.value, ast.Dict):
+            for key, value in zip(node.value.keys, node.value.values):
+                key_text = _literal_str(key)
+                if key_text is None or not _is_header_key(key_text):
+                    continue
+                if self._check("return", value, node.lineno, target=f"a returned header dict ({key_text!r})"):
+                    break
+        self.generic_visit(node)
+
     def visit_AugAssign(self, node: ast.AugAssign) -> None:
         self._check(_header_subscript_name(node.target), node.value, node.lineno)
         self.generic_visit(node)
@@ -707,13 +810,14 @@ class _CredentialInjectionVisitor(ast.NodeVisitor):
 def _scan_file(file_path: Path) -> list[Finding]:
     try:
         source = file_path.read_text(encoding="utf-8")
-        # Cheap whole-file prefilter before ast.parse: the v1 detector only
-        # fires on header-shaped subscript targets and os.environ/os.getenv
-        # reads (see module docstring). Files lacking both substrings cannot
-        # match; skipping them recovered SM-C1 headroom as the monorepo grew
-        # past Story 6.1's baseline without narrowing what CAN match.
+        # Cheap whole-file prefilter before ast.parse: the detector only
+        # fires on header-shaped targets and os.environ/os.getenv reads (see
+        # module docstring). Files lacking both cannot match; skipping them
+        # recovered SM-C1 headroom as the monorepo grew past Story 6.1's
+        # baseline. A returned header dict may never say "header", so the
+        # auth-bearing key names and quoted `X-` keys pass the filter too.
         lower = source.lower()
-        if "header" not in lower:
+        if not any(marker in lower for marker in _HEADER_PREFILTER_MARKERS):
             return []
         if "environ" not in lower and "getenv" not in lower:
             return []
@@ -736,13 +840,12 @@ def _scan_file(file_path: Path) -> list[Finding]:
     # str): visit_If's polarity swap visits a negated test's else-branch
     # before its body, so raw match order is no longer guaranteed to be
     # source order; the stable sort keeps visit order within a line.
-    for lineno, header_var, env_var_name in sorted(visitor.matches, key=lambda match: match[0]):
+    for lineno, target, env_var_name in sorted(visitor.matches, key=lambda match: match[0]):
         env_label = env_var_name or "an env-var"
         message = (
             f"{file_path}:{lineno}: {env_label} is read directly "
-            f"into {header_var}[...] with no enclosing host-scope "
-            "if/elif guard -- looks like an unconditional "
-            "credential injection"
+            f"into {target} with no host-scope guard -- looks like an "
+            "unconditional credential injection"
         )
         findings.append(
             Finding(
@@ -770,8 +873,22 @@ def gather(target: Path) -> tuple[Finding, ...]:
     report a false "all clear" with zero signal that part of the tree was
     never examined (review finding).
 
+    A ``target`` that is not a directory (a typo'd path, a single file)
+    yields one not-a-directory WARN under the sentinel check name -- never
+    an empty "0 findings" that reads as a clean scan (DW-FU-1-5-3).
+
     Pure ``ast.parse`` static analysis -- never executes, imports, or
     otherwise runs any scanned source."""
+    if not target.is_dir():
+        return (
+            Finding(
+                source=Source.ENV_HYGIENE,
+                check=SCAN_INCOMPLETE_CHECK_NAME,
+                status=DoctorStatus.WARN,
+                message=f"{target} is not a directory -- nothing was scanned for credential injection",
+                evidence={"target": str(target), "reason": "not-a-directory"},
+            ),
+        )
     findings: list[Finding] = []
     files, incomplete = _discover_python_files(target)
     for file_path in files:

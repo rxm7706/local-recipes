@@ -53,6 +53,7 @@ Findings stay advisory (CAP-43): WARN or OK, never an exit code. The
 
 from __future__ import annotations
 
+import re
 from pathlib import Path, PurePosixPath
 
 import yaml
@@ -86,6 +87,14 @@ _SPRINT_STATUS_FILENAME = "sprint-status.yaml"
 _LEDGER_RELPATH = "planning-artifacts/sprint-status-ledger.yaml"
 
 
+def _station_relpath(project_dir: Path, target: Path) -> str:
+    return project_dir.relative_to(target).as_posix()
+
+
+def _evidence_path(project_dir: Path, target: Path, *suffix: str) -> str:
+    return (project_dir.relative_to(target).joinpath(*suffix)).as_posix()
+
+
 def gather(target: Path) -> tuple[Finding, ...]:
     """Walk every station under ``target/_bmad-output/projects/`` and judge
     each of Story 9.1's five hygiene classes -- the library form CAP-8's
@@ -99,9 +108,47 @@ def gather(target: Path) -> tuple[Finding, ...]:
     projects_dir = target / "_bmad-output" / "projects"
     findings: list[Finding] = []
     stations_evaluated = 0
-    if projects_dir.is_dir():
-        for project_dir in sorted(projects_dir.iterdir()):
-            if not (project_dir / "planning-artifacts").is_dir():
+    try:
+        projects_listable = projects_dir.is_dir()
+    except OSError as exc:
+        return (
+            Finding(
+                source=Source.BMAD_OUTPUT_HYGIENE,
+                check="bmad-output-hygiene-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(f"fleet hygiene could not list {projects_dir} — {exc.__class__.__name__}: {exc}"),
+                evidence={"path": "_bmad-output/projects"},
+            ),
+        )
+    if projects_listable:
+        try:
+            project_entries = sorted(projects_dir.iterdir())
+        except OSError as exc:
+            return (
+                Finding(
+                    source=Source.BMAD_OUTPUT_HYGIENE,
+                    check="bmad-output-hygiene-unevaluable",
+                    status=DoctorStatus.WARN,
+                    message=(f"fleet hygiene could not list {projects_dir} — {exc.__class__.__name__}: {exc}"),
+                    evidence={"path": "_bmad-output/projects"},
+                ),
+            )
+        for project_dir in project_entries:
+            try:
+                has_planning = (project_dir / "planning-artifacts").is_dir()
+            except OSError as exc:
+                station = project_dir.name.removeprefix("pyforge-")
+                findings.append(
+                    Finding(
+                        source=Source.BMAD_OUTPUT_HYGIENE,
+                        check="station-unevaluable",
+                        status=DoctorStatus.WARN,
+                        message=(f"{station}: could not be evaluated here — {exc.__class__.__name__}: {exc}"),
+                        evidence={"station": station, "path": _station_relpath(project_dir, target)},
+                    )
+                )
+                continue
+            if not has_planning:
                 continue
             stations_evaluated += 1
             station = project_dir.name.removeprefix("pyforge-")
@@ -117,7 +164,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
                         check="station-unevaluable",
                         status=DoctorStatus.WARN,
                         message=(f"{station}: could not be evaluated here — {exc.__class__.__name__}: {exc}"),
-                        evidence={"station": station},
+                        evidence={"station": station, "path": _station_relpath(project_dir, target)},
                     )
                 )
 
@@ -145,14 +192,28 @@ def _evaluate_station(target: Path, project_dir: Path, findings: list[Finding]) 
     produced (mirrors ``board.py``'s own per-project helper)."""
     station = project_dir.name.removeprefix("pyforge-")
 
-    _check_dead_test_scaffolding(project_dir, station, findings)
-    _check_hollow_sprint_status(project_dir, station, findings)
-    _check_readme_placeholder(project_dir, station, findings)
-    _check_stale_dream_status(target, project_dir, station, findings)
-    _check_orphan_files(target, project_dir, station, findings)
+    for check_fn in (
+        lambda: _check_dead_test_scaffolding(target, project_dir, station, findings),
+        lambda: _check_hollow_sprint_status(target, project_dir, station, findings),
+        lambda: _check_readme_placeholder(target, project_dir, station, findings),
+        lambda: _check_stale_dream_status(target, project_dir, station, findings),
+        lambda: _check_orphan_files(target, project_dir, station, findings),
+    ):
+        try:
+            check_fn()
+        except Exception as exc:  # noqa: BLE001 -- one hygiene class per station
+            findings.append(
+                Finding(
+                    source=Source.BMAD_OUTPUT_HYGIENE,
+                    check="hygiene-check-unevaluable",
+                    status=DoctorStatus.WARN,
+                    message=(f"{station}: one hygiene check could not run — {exc.__class__.__name__}: {exc}"),
+                    evidence={"station": station, "path": _station_relpath(project_dir, target)},
+                )
+            )
 
 
-def _check_dead_test_scaffolding(project_dir: Path, station: str, findings: list[Finding]) -> None:
+def _check_dead_test_scaffolding(target: Path, project_dir: Path, station: str, findings: list[Finding]) -> None:
     tests_dir = project_dir / "tests"
     # Computed once and reused for both the has-a-candidate check and the
     # marker-only evidence path below -- avoids re-scanning the filesystem a
@@ -163,12 +224,12 @@ def _check_dead_test_scaffolding(project_dir: Path, station: str, findings: list
         return
     if tests_dir.is_dir():
         relpaths = [str(path.relative_to(tests_dir)) for path in sorted(tests_dir.rglob("*")) if path.is_file()]
-        evidence_path = "tests"
+        evidence_path = _evidence_path(project_dir, target, "tests")
         reason = "tests/ scaffolding holds no real test_*.py file"
     else:
         relpaths = []
-        evidence_path = matched_markers[0]
-        reason = f"{evidence_path} exists with no real tests/ tree behind it"
+        evidence_path = _evidence_path(project_dir, target, matched_markers[0])
+        reason = f"{matched_markers[0]} exists with no real tests/ tree behind it"
     if not is_dead_test_scaffolding(relpaths):
         return
     findings.append(
@@ -186,7 +247,7 @@ def _check_dead_test_scaffolding(project_dir: Path, station: str, findings: list
     )
 
 
-def _check_hollow_sprint_status(project_dir: Path, station: str, findings: list[Finding]) -> None:
+def _check_hollow_sprint_status(target: Path, project_dir: Path, station: str, findings: list[Finding]) -> None:
     sprint_status = project_dir / "planning-artifacts" / _SPRINT_STATUS_FILENAME
     if not sprint_status.is_file():
         return
@@ -201,13 +262,13 @@ def _check_hollow_sprint_status(project_dir: Path, station: str, findings: list[
             message=(f"{station}: {_SPRINT_STATUS_FILENAME} declares zero epics, zero stories, and 0% completion"),
             evidence={
                 "station": station,
-                "path": f"planning-artifacts/{_SPRINT_STATUS_FILENAME}",
+                "path": _evidence_path(project_dir, target, "planning-artifacts", _SPRINT_STATUS_FILENAME),
             },
         )
     )
 
 
-def _check_readme_placeholder(project_dir: Path, station: str, findings: list[Finding]) -> None:
+def _check_readme_placeholder(target: Path, project_dir: Path, station: str, findings: list[Finding]) -> None:
     readme = project_dir / "README.md"
     if not readme.is_file():
         return
@@ -220,45 +281,18 @@ def _check_readme_placeholder(project_dir: Path, station: str, findings: list[Fi
             check=HygieneFindingKind.README_PLACEHOLDER.value,
             status=DoctorStatus.WARN,
             message=f"{station}: README.md still carries the unfilled template stub",
-            evidence={"station": station, "path": "README.md"},
+            evidence={"station": station, "path": _evidence_path(project_dir, target, "README.md")},
         )
     )
 
 
 def _dream_frontmatter_status(dream_path: Path) -> str | None:
-    """The ``status:`` value from a Dream's ``---``-fenced frontmatter, or
-    ``None`` when absent/unparseable.
+    """The ``status:`` value from a Dream's frontmatter (CAP-81 shared reader)."""
+    from pyforge.doctor.sources.chain import _frontmatter_parse_text
 
-    A small, LOCAL frontmatter reader (line-anchored ``---`` fences,
-    ``yaml.safe_load`` the block between them) -- by this package's own
-    convention, each ``sources/*.py`` module writes its own rather than
-    importing a sibling module's private helper (e.g.
-    ``board.py::_frontmatter``). The fence lines must be EXACTLY ``---``
-    (stripped) on their own line -- a blind ``text.split("---", 2)`` would
-    mis-split on a literal ``---`` substring inside an earlier field's own
-    value (e.g. a ``notes:`` line quoting em-dash-style prose), silently
-    truncating before the real closing fence and losing ``status`` with no
-    error. Reading the file is NOT guarded here -- an unreadable/undecodable
-    Dream propagates to ``gather``'s own per-station catch, same as every
-    other file this module reads -- but a MALFORMED yaml block degrades to
-    ``None`` (skip this candidate) rather than crashing the whole station,
-    since a Dream's frontmatter being unparseable is not evidence about that
-    station's real completion state.
-    """
-    lines = dream_path.read_text(encoding="utf-8").splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    closing = next(
-        (index for index, line in enumerate(lines[1:], start=1) if line.strip() == "---"),
-        None,
-    )
-    if closing is None:
-        return None
-    try:
-        data = yaml.safe_load("\n".join(lines[1:closing]))
-    except yaml.YAMLError:
-        return None
-    if not isinstance(data, dict):
+    text = dream_path.read_text(encoding="utf-8")
+    data, unparseable = _frontmatter_parse_text(text)
+    if unparseable:
         return None
     status = data.get("status")
     return status if isinstance(status, str) else None
@@ -323,31 +357,39 @@ def _orphan_file_candidates(project_dir: Path) -> list[Path]:
     return candidates
 
 
+def _grep_other_paths(
+    target: Path,
+    args: list[str],
+) -> list[str]:
+    """Run ``git grep`` and return match paths excluding the candidate itself."""
+    scopes: tuple[tuple[str, ...], ...] = ((), ("--untracked", "--no-exclude-standard"))
+    last_error: CliBridgeError | None = None
+    for scope in scopes:
+        try:
+            output = run_git(
+                target,
+                ["grep", "-l", *args, *scope],
+                ok_exit_codes=frozenset({0, 1}),
+            )
+        except CliBridgeError as exc:
+            last_error = exc
+            continue
+        return [line for line in output.splitlines() if line.strip()]
+    if last_error is not None:
+        raise last_error
+    return []
+
+
 def _has_inbound_references(target: Path, repo_relpath: str) -> bool:
-    """``True`` iff some OTHER tracked file in the repo contains the
-    candidate's basename.
-
-    Design Notes' exact protocol: search the candidate's basename (not the
-    full relpath) via ``git grep -l --fixed-strings -e <basename>`` from the
-    repo root, then drop the candidate's own repo-relative path from the
-    match list before deciding -- a file's own content mentioning its own
-    filename must not count as an inbound reference.
-
-    ``ok_exit_codes={0, 1}`` tolerates ``git grep``'s documented exit 1
-    ("no match") as a clean empty result rather than a raised error; exit
-    >=2 (or git itself unavailable) still raises ``CliBridgeError``, which
-    THIS function does not catch -- the caller degrades that one candidate
-    to a WARN, per-candidate, not per-station.
-    """
+    """``True`` iff some OTHER file in the repo references this candidate by
+    path or whole-token basename (tracked and untracked, non-ignored)."""
     basename = PurePosixPath(repo_relpath).name
-    output = run_git(
-        target,
-        ["grep", "-l", "--fixed-strings", "-e", basename],
-        ok_exit_codes=frozenset({0, 1}),
-    )
-    matches = [line for line in output.splitlines() if line.strip()]
-    others = [match for match in matches if match != repo_relpath]
-    return bool(others)
+    path_hits = _grep_other_paths(target, ["--fixed-strings", "-e", repo_relpath])
+    if any(hit != repo_relpath for hit in path_hits):
+        return True
+    boundary = rf"\b{re.escape(basename)}\b"
+    basename_hits = _grep_other_paths(target, ["-E", boundary])
+    return any(hit != repo_relpath for hit in basename_hits)
 
 
 def _check_orphan_files(target: Path, project_dir: Path, station: str, findings: list[Finding]) -> None:
@@ -372,7 +414,7 @@ def _check_orphan_files(target: Path, project_dir: Path, station: str, findings:
                     check="orphan-file-unevaluable",
                     status=DoctorStatus.WARN,
                     message=(f"{station}: {relpath} — inbound-reference check could not be evaluated here — {exc}"),
-                    evidence={"station": station, "path": relpath},
+                    evidence={"station": station, "path": _evidence_path(project_dir, target, relpath)},
                 )
             )
             continue
@@ -384,6 +426,6 @@ def _check_orphan_files(target: Path, project_dir: Path, station: str, findings:
                 check=HygieneFindingKind.ORPHAN_FILE.value,
                 status=DoctorStatus.WARN,
                 message=(f"{station}: {relpath} is unreferenced and its name/location is non-conventional"),
-                evidence={"station": station, "path": relpath},
+                evidence={"station": station, "path": _evidence_path(project_dir, target, relpath)},
             )
         )

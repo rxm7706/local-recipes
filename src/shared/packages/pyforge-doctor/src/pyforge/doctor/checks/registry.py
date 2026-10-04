@@ -17,9 +17,10 @@ CLI flag wiring (``--list``, ``--engines <name>``) is Story 1.5's job:
   in order: a future warden rename, reorder, addition, or removal fails
   that test loudly instead of letting ``--list`` silently drift.
 - :func:`gather_one` is a filter, not a second code path: it always calls
-  the real category's gather function (today only ``sources.warden.gather``)
-  and picks the one ``Finding`` whose ``check`` matches -- never a
-  duplicated per-check lookup that could drift from the full-suite result.
+  the real category's gather function (``sources.warden.gather`` or
+  ``env_hygiene.gather``) and keeps every ``Finding`` whose ``check``
+  matches, plus the category's degradation sentinel -- never a duplicated
+  per-check lookup that could drift from the full-suite result.
 
 Both functions stay inside the existing closed ``DoctorStatus``/``Source``
 contract (``models.py``, Story 1.1) -- this module produces ``Finding``s,
@@ -101,33 +102,41 @@ def list_checks(category: str | None = None) -> tuple[CheckSpec, ...]:
     return tuple(spec for specs in _CATALOG.values() for spec in specs)
 
 
-def gather_one(category: str, name: str, target: Path) -> Finding | None:
-    """Run ``category``'s real gather and return the ``Finding`` named
-    ``name``, or ``None`` if no such check ran.
+#: Each wired category's degradation-sentinel ``check`` name -- never
+#: cataloged, so a named run can still tell "the category degraded" apart
+#: from "the named check found nothing".
+SENTINEL_CHECK_NAMES: dict[str, str] = {
+    "engines": warden_source.SENTINEL_CHECK_NAME,
+    "env": env_hygiene.SCAN_INCOMPLETE_CHECK_NAME,
+}
+
+
+def gather_one(category: str, name: str, target: Path) -> tuple[Finding, ...]:
+    """Run ``category``'s real gather and return every ``Finding`` named
+    ``name``, plus the category's degradation sentinel when the gather
+    produced one -- in gather order, each Finding once.
 
     A filter over the full-suite result, never a separate lookup path: the
-    result always equals ``next((f for f in sources.warden.gather(target)
-    if f.check == name), None)`` for ``category == "engines"``, and
-    ``next((f for f in env_hygiene.gather(target) if f.check == name),
-    None)`` for ``category == "env"``. Raises ``ValueError`` for any other
-    (unwired) category -- Story 1.5's CLI turns that into a usage error.
+    result always equals ``tuple(f for f in <gather>(target) if f.check in
+    {name, SENTINEL_CHECK_NAMES[category]})`` -- ``sources.warden.gather``
+    for ``category == "engines"``, ``env_hygiene.gather`` for ``"env"``.
+    Raises ``ValueError`` for any other (unwired) category -- Story 1.5's
+    CLI turns that into a usage error.
+
+    Every match is kept (DW-FU-1-5): ``env_hygiene`` emits one Finding per
+    matching file under the same check name, and a first-match filter
+    surfaced only the first. The sentinel rides along with the named
+    results so a degraded or incomplete gather can never read as clean
+    (DW-FU-1-5, DW-FU-1-5-4): for "engines" it carries warden's specific
+    degradation message (absent / unimportable / self-check crashed); for
+    "env" it says the scan was incomplete or the target was not a
+    directory. The sentinel's own name -- one ``list_checks()`` never
+    advertises -- stays addressable and returns the sentinel alone.
 
     ``target`` is forwarded verbatim to the category's gather (for
     "engines": the project directory warden's self-check runs against; for
     "env": the directory tree ``env_hygiene`` scans); it never affects
     which check *names* exist, only their results.
-
-    Filter semantics cut both ways when a category's gather DEGRADES to a
-    sentinel ``Finding`` whose check name is deliberately never cataloged:
-    for "engines" that is ``check == "pyforge-warden"`` (Story 1.2's three
-    failure shapes); for "env" it is ``check ==
-    env_hygiene.SCAN_INCOMPLETE_CHECK_NAME`` (an incomplete discovery
-    walk). Every cataloged name then returns ``None`` (or, for "env", the
-    real matches minus the incompleteness signal), while the sentinel's
-    own name -- one ``list_checks()`` never advertises -- IS addressable
-    here and returns the sentinel itself. Whether a CLI validates names
-    against the catalog or passes them through is Story 1.5's decision
-    (see ``deferred-work.md``).
     """
     # Deliberately NOT derived from `_CATALOG` membership: each category
     # needs its own real gather function ("engines" -> warden_source,
@@ -136,13 +145,10 @@ def gather_one(category: str, name: str, target: Path) -> Finding | None:
     # with its own dispatch branch in this function too -- review finding,
     # 2026-07-30.
     if category == "engines":
-        return next(
-            (finding for finding in warden_source.gather(target) if finding.check == name),
-            None,
-        )
-    if category == "env":
-        return next(
-            (finding for finding in env_hygiene.gather(target) if finding.check == name),
-            None,
-        )
-    raise ValueError(f"unsupported check category: {category!r} (categories with a wired gather: 'engines', 'env')")
+        findings = warden_source.gather(target)
+    elif category == "env":
+        findings = env_hygiene.gather(target)
+    else:
+        raise ValueError(f"unsupported check category: {category!r} (categories with a wired gather: 'engines', 'env')")
+    wanted = {name, SENTINEL_CHECK_NAMES[category]}
+    return tuple(finding for finding in findings if finding.check in wanted)

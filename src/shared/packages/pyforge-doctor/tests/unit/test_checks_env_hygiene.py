@@ -352,17 +352,29 @@ def test_gather_one_env_matches_the_filtered_gather_result(tmp_path: Path):
         'import os\n\ndef handler():\n    if os.environ.get("X"):\n        headers["Y"] = os.environ["X"]\n',
     )
 
-    expected = next(f for f in gather(tmp_path) if f.check == CHECK_NAME)
+    expected = tuple(f for f in gather(tmp_path) if f.check == CHECK_NAME)
 
     assert gather_one("env", CHECK_NAME, tmp_path) == expected
+    assert len(expected) == 1
 
 
-def test_gather_one_env_returns_none_for_a_target_with_no_matches(
+def test_gather_one_env_returns_every_matching_file(tmp_path: Path):
+    # DW-FU-1-5 (a): a first-match filter surfaced only one of several files
+    # matching the same check name.
+    for name in ("a.py", "b.py", "c.py"):
+        _write(tmp_path, name, 'import os\n\ndef handler():\n    headers["Y"] = os.environ["X"]\n')
+
+    result = gather_one("env", CHECK_NAME, tmp_path)
+
+    assert sorted(Path(f.evidence["file"]).name for f in result) == ["a.py", "b.py", "c.py"]
+
+
+def test_gather_one_env_returns_empty_for_a_target_with_no_matches(
     tmp_path: Path,
 ):
     _write(tmp_path, "benign.py", "x = 1\n")
 
-    assert gather_one("env", CHECK_NAME, tmp_path) is None
+    assert gather_one("env", CHECK_NAME, tmp_path) == ()
 
 
 # --- discovery-walk pruning (Story 6.1) ----------------------------------
@@ -480,28 +492,32 @@ def test_gather_one_env_can_address_the_incomplete_sentinel_by_name(monkeypatch,
     )
     _write(tmp_path, "b.py", "y = 2\n")
 
-    sentinel = gather_one("env", SCAN_INCOMPLETE_CHECK_NAME, tmp_path)
+    (sentinel,) = gather_one("env", SCAN_INCOMPLETE_CHECK_NAME, tmp_path)
 
-    assert sentinel is not None
     assert "INCOMPLETE" in sentinel.message
-    # a_direct.py sorts first and is collected before the cap trips, so
-    # the real finding coexists with the sentinel -- and neither shadows
-    # the other under the name filter.
-    real = gather_one("env", CHECK_NAME, tmp_path)
-    assert real is not None
-    assert real.check == CHECK_NAME
-    assert "INCOMPLETE" not in real.message
+    # a_direct.py sorts first and is collected before the cap trips, so the
+    # real finding coexists with the sentinel. DW-FU-1-5 (b): a named lookup
+    # carries the incompleteness signal alongside it, never drops it.
+    named = gather_one("env", CHECK_NAME, tmp_path)
+    assert [f.check for f in named] == [CHECK_NAME, SCAN_INCOMPLETE_CHECK_NAME]
+    assert "INCOMPLETE" not in named[0].message
 
 
-def test_gather_on_a_single_file_target_returns_empty_tuple(tmp_path: Path):
-    # Review finding: after the onerror patch, a non-directory target fed
-    # os.walk's top-level scandir error into onerror, emitting a misleading
-    # "could not read some subdirectory" sentinel -- the established
-    # registry convention for a non-directory target is silent ().
+def test_gather_on_a_single_file_target_warns_not_a_directory(tmp_path: Path):
+    # DW-FU-1-5-3: a non-directory target used to return () -- "0 findings",
+    # exit 0, a false green. It now says nothing was scanned (and never the
+    # misleading "could not read some subdirectory" message os.walk's
+    # onerror would produce).
     file_target = tmp_path / "single.py"
     file_target.write_text('import os\nheaders["Y"] = os.environ["X"]\n', encoding="utf-8")
 
-    assert gather(file_target) == ()
+    (finding,) = gather(file_target)
+
+    assert finding.check == SCAN_INCOMPLETE_CHECK_NAME
+    assert finding.status is DoctorStatus.WARN
+    assert "not a directory" in finding.message
+    assert "subdirectory" not in finding.message
+    assert finding.evidence == {"target": str(file_target), "reason": "not-a-directory"}
 
 
 # --- discovery-walk git-ignore pruning (Story 38.4) ----------------------
@@ -746,8 +762,11 @@ def test_gather_completes_when_the_only_bulk_is_a_git_ignored_directory(monkeypa
     assert not any(f.check == SCAN_INCOMPLETE_CHECK_NAME for f in result)
 
 
-def test_gather_on_a_nonexistent_target_returns_empty_tuple(tmp_path: Path):
-    assert gather(tmp_path / "does-not-exist") == ()
+def test_gather_on_a_nonexistent_target_warns_not_a_directory(tmp_path: Path):
+    (finding,) = gather(tmp_path / "does-not-exist")
+
+    assert finding.check == SCAN_INCOMPLETE_CHECK_NAME
+    assert "not a directory" in finding.message
 
 
 # --- degrade-never-crash on pathological-but-parseable input --------------
@@ -1175,3 +1194,259 @@ def test_gather_dict_literal_host_guard_still_suppresses(tmp_path: Path):
     )
 
     assert gather(tmp_path) == ()
+
+
+# --- statement-flow, ternary, match and polarity guards (story 41.4) ------
+
+
+def _flagged_vars(tmp_path: Path, source: str) -> list[str | None]:
+    _write(tmp_path, "subject.py", source)
+    return [f.evidence["var_name"] for f in gather(tmp_path) if f.check == CHECK_NAME]
+
+
+def test_gather_early_return_guard_clause_suppresses_the_rest_of_the_block(tmp_path: Path):
+    # DW-FU-1-4-2 (a): the guard-clause idiom used to WARN.
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(host):\n"
+            '    if host != "internal.example.com":\n'
+            "        return None\n"
+            '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_early_raise_on_a_negated_host_predicate_suppresses(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(url):\n"
+            "    if not is_enterprise_host(url):\n"
+            '        raise ValueError("refusing")\n'
+            '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_positive_guard_whose_body_exits_does_not_guard_the_rest(tmp_path: Path):
+    # `if host == safe: return` means the rest runs for every OTHER host.
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(host):\n"
+        '    if host == "internal.example.com":\n'
+        "        return None\n"
+        '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_positive_guard_whose_else_exits_guards_the_rest(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(host):\n"
+            '    if host == "internal.example.com":\n'
+            "        pass\n"
+            "    else:\n"
+            "        return None\n"
+            '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_guard_clause_with_a_non_exiting_body_does_not_guard(tmp_path: Path):
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(host):\n"
+        '    if host != "internal.example.com":\n'
+        '        log("other host")\n'
+        '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_guard_clause_does_not_leak_out_of_its_block(tmp_path: Path):
+    # The guard clause sits inside a loop body; the assignment after the
+    # loop is not covered by it.
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(hosts):\n"
+        "    for host in hosts:\n"
+        '        if host != "internal.example.com":\n'
+        "            continue\n"
+        '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_not_predicate_true_branch_is_flagged(tmp_path: Path):
+    # DW-FU-1-4-2 (b): `not host_ok(h)` used to suppress its TRUE branch.
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(h):\n"
+        "    if not host_ok(h):\n"
+        '        headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_not_predicate_else_branch_is_suppressed(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(h):\n"
+            "    if not host_ok(h):\n"
+            "        pass\n"
+            "    else:\n"
+            '        headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_boolop_over_negated_compares_true_branch_is_flagged(tmp_path: Path):
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(host, verbose):\n"
+        '    if host != "a.example" and host != "b.example" and verbose:\n'
+        '        headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_boolop_mixing_polarities_stays_conservatively_suppressed(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(host):\n"
+            '    if host == "a.example" or host != "b.example":\n'
+            '        headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_host_scoped_ternary_is_suppressed(tmp_path: Path):
+    # DW-FU-1-4 (b): the exact shape the ledger row names.
+    assert (
+        _flagged_vars(
+            tmp_path,
+            'import os\n\ndef handler(host):\n    headers["X"] = os.environ.get("Y") if host == "safe" else None\n',
+        )
+        == []
+    )
+
+
+def test_gather_inverted_host_ternary_is_flagged(tmp_path: Path):
+    assert _flagged_vars(
+        tmp_path,
+        'import os\n\ndef handler(host):\n    headers["X"] = None if host == "safe" else os.environ.get("Y")\n',
+    ) == ["Y"]
+
+
+def test_gather_match_on_host_guards_refutable_cases_only(tmp_path: Path):
+    # DW-FU-1-4 (b): a match/case dispatch on the host.
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(host):\n"
+        "    match host:\n"
+        '        case "internal.example.com" | "mirror.example.com":\n'
+        '            headers["A"] = os.environ.get("SAFE")\n'
+        "        case _:\n"
+        '            headers["A"] = os.environ.get("LEAK")\n',
+    ) == ["LEAK"]
+
+
+def test_gather_match_case_guard_on_host_suppresses(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(request):\n"
+            "    match request:\n"
+            '        case {"url": url} if url_host(url) == "internal.example.com":\n'
+            '            headers["A"] = os.environ.get("SAFE")\n',
+        )
+        == []
+    )
+
+
+def test_gather_returned_header_dict_is_flagged(tmp_path: Path):
+    # DW-FU-1-4 (a): `return {"X-JFrog-Art-Api": api_key}` was invisible.
+    _write(
+        tmp_path,
+        "auth.py",
+        "import os\n"
+        "\n"
+        "def auth():\n"
+        '    api_key = os.environ.get("JFROG_API_KEY")\n'
+        "    if api_key:\n"
+        '        return {"X-JFrog-Art-Api": api_key}\n'
+        "    return {}\n",
+    )
+
+    (finding,) = gather(tmp_path)
+
+    assert finding.evidence == {"file": str(tmp_path / "auth.py"), "line": 6, "var_name": "JFROG_API_KEY"}
+    assert "a returned header dict ('X-JFrog-Art-Api')" in finding.message
+
+
+def test_gather_returned_header_dict_behind_a_guard_clause_is_suppressed(tmp_path: Path):
+    # The dependency-checker.py `_auth_headers` shape.
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def auth(url):\n"
+            "    if not _is_configured_enterprise_host(url):\n"
+            "        return {}\n"
+            '    token = os.environ.get("JFROG_TOKEN")\n'
+            "    if token:\n"
+            '        return {"Authorization": f"Bearer {token}"}\n'
+            "    return {}\n",
+        )
+        == []
+    )
+
+
+def test_gather_returned_dict_with_no_header_key_is_not_flagged(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            'import os\n\ndef config():\n    return {"success": True, "home": os.environ.get("HOME")}\n',
+        )
+        == []
+    )
+
+
+def test_gather_real_dependency_checker_auth_headers_stays_clean() -> None:
+    # The real file whose returned dicts kept this shape out of v1: its
+    # guard clause must suppress them now that returns are checked.
+    script = _HTTP_PY_DIR / "dependency-checker.py"
+    if not script.is_file():
+        pytest.skip("not running inside the local-recipes monorepo checkout")
+
+    assert env_hygiene._scan_file(script) == []

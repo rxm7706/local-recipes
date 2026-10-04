@@ -2,7 +2,8 @@
 title: "83.14: A manual merge mid-dispatch never strands the session's fixes"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '3ec837c431a989d926417ed04fe7edda3c659a24'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -63,4 +64,27 @@ Minted 2026-10-03 at the operator's request.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — self-review against AC; mutation test guards the head gate)
+
+## Auto Run Result
+
+Summary: `gather_dispatch_git_facts` now clears `story_merged_on_main` when corroborated merge subjects name the story but the run's current worktree head is not yet on `origin/main` (`run_head_reached_ref` / `merge_base`).
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_completion.py` — `run_head_reached_ref` helper
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` — apply head gate after subject corroboration
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_completion.py` — unit tests for helper
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_main_loop.py` — gather + mutation tests
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py` — `FakeVcs.merge_base` for gather tests
+
+Review: no patch/defer entries. `followup_review_recommended: false`.
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11555 passed, 6 skipped
+- `pixi run --frozen -e pyforge-guild lint-types` — pass after import-order fix
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pre-existing fail `pyforge-atlas` hard-import scan (unchanged by this diff)
+- `python scripts/spec_surface_reconcile.py` — pass after `spec-pyforge-marshal` memlog reconcile
+
+Residual risk: `run_head_reached_ref` fails closed on any `merge_base` exception (matches dispatch-land follow-up pattern).

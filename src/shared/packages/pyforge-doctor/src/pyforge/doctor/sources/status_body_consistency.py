@@ -27,8 +27,6 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-import yaml
-
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
@@ -209,33 +207,17 @@ class ProgressMatch:
 
 
 def _parse_frontmatter(text: str) -> tuple[dict[str, object], bool]:
-    """Return ``(fields, unparseable)`` for a ``---``-fenced document."""
-    if not text.startswith("---"):
-        if "---" in text:
-            return {}, True
-        return {}, False
-    try:
-        parts = text.split("---", 2)
-        if len(parts) < 3:
-            return {}, True
-        data = yaml.safe_load(parts[1])
-    except yaml.YAMLError:
-        return {}, True
-    if data is None:
-        return {}, False
-    if not isinstance(data, dict):
-        return {}, True
-    return data, False
+    """Return ``(fields, unparseable)`` via the shared CAP-81 fence reader."""
+    from pyforge.doctor.sources.chain import _frontmatter_parse_text
+
+    fields, unparseable = _frontmatter_parse_text(text)
+    return fields, unparseable
 
 
 def _body_after_frontmatter(text: str) -> str:
-    if not text.startswith("---"):
-        return text
-    marker = "\n---\n"
-    idx = text.find(marker, 3)
-    if idx == -1:
-        return ""
-    return text[idx + len(marker) :]
+    from pyforge.doctor.sources.chain import _dream_body_after_frontmatter
+
+    return _dream_body_after_frontmatter(text)
 
 
 def _normalize_status(raw: object) -> str:

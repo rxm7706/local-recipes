@@ -30,6 +30,7 @@ from ..core.dispatch_completion import (
     is_spec_only_narration,
     merge_subject_ref,
     narration_spec_path,
+    run_head_reached_ref,
 )
 from ..core.dispatch_harness_done import (
     FollowupReview,
@@ -410,7 +411,11 @@ def gather_dispatch_git_facts(
     INTENT. The run reviews a story that already landed, so ``story_merged_on_main`` counts only the merge
     subjects that reached ``origin/main`` after ``origin/main``'s tip at launch (``merge_subject_ref``) --
     the story's first merge is not this run's, whatever the worktree's baseline is. A normal run (the
-    default, ``None``) reads ``origin/main`` whole, as before."""
+    default, ``None``) reads ``origin/main`` whole.
+
+    Story 83.14: even when corroborated merge subjects name this story, ``story_merged_on_main`` is true
+    only when this run's *current* worktree head is on ``origin/main`` — a manual merge of an earlier tip
+    while the session keeps committing must not declare completion."""
     current_head_sha = vcs.worktree_head_sha(worktree)
     changed_paths = vcs.changed_files(repo_root, worktree, base=_BASE_REF)
     # Story 22.9: the ONE branch derivation, station-scoped, with the
@@ -477,6 +482,8 @@ def gather_dispatch_git_facts(
         known_keys=known_keys,
     )
     story_merged = normalize(story_key) in merged_keys
+    if story_merged and not run_head_reached_ref(vcs, repo_root, current_head_sha, ORIGIN_MAIN):
+        story_merged = False
     return DispatchGitFacts(
         baseline_head_sha=baseline_head_sha,
         current_head_sha=current_head_sha,

@@ -66,6 +66,20 @@ def _resolve_import_from(node: ast.ImportFrom, package_parts: tuple[str, ...]) -
     return ".".join(base)
 
 
+def _dotted_chain(node: ast.Attribute) -> list[str] | None:
+    """``a.b.c`` as ``["a", "b", "c"]`` for an attribute chain rooted at a
+    plain name; None for any other root (a call, a subscript)."""
+    parts: list[str] = []
+    current: ast.expr = node
+    while isinstance(current, ast.Attribute):
+        parts.append(current.attr)
+        current = current.value
+    if not isinstance(current, ast.Name):
+        return None
+    parts.append(current.id)
+    return parts[::-1]
+
+
 def _warden_import_violations(tree: ast.Module, package_parts: tuple[str, ...] = ("pyforge", "doctor")) -> list[int]:
     violations: list[int] = []
     for node in ast.walk(tree):
@@ -90,7 +104,15 @@ def _warden_import_violations(tree: ast.Module, package_parts: tuple[str, ...] =
             # 2026-07-30).
             elif module == "pyforge" and any(alias.name == "warden" for alias in node.names):
                 violations.append(node.lineno)
-    return violations
+        elif isinstance(node, ast.Attribute):
+            # `pyforge` is a namespace package shared by both dists: once
+            # anything has imported pyforge.warden, `import pyforge.doctor`
+            # alone reaches it as `pyforge.warden.<x>` -- no warden import
+            # to flag (DW-FU-1-2-2).
+            chain = _dotted_chain(node)
+            if chain is not None and chain[:2] == ["pyforge", "warden"]:
+                violations.append(node.lineno)
+    return sorted(set(violations))
 
 
 def test_package_scan_surface_is_not_empty():
@@ -127,6 +149,15 @@ def test_guard_fires_on_synthetic_import_violation():
     assert _warden_import_violations(ast.parse(from_submodule)) == [1]
     parent_alias = "from pyforge import warden\n"
     assert _warden_import_violations(ast.parse(parent_alias)) == [1]
+
+
+def test_guard_fires_on_a_warden_attribute_chain_with_no_warden_import():
+    chain = "import pyforge.doctor\nX = pyforge.warden.models.Finding\n"
+    assert _warden_import_violations(ast.parse(chain)) == [2]
+    bare = "import pyforge.doctor\nW = pyforge.warden\n"
+    assert _warden_import_violations(ast.parse(bare)) == [2]
+    benign = "import pyforge.doctor\nM = pyforge.doctor.models\n"
+    assert _warden_import_violations(ast.parse(benign)) == []
 
 
 def test_guard_fires_on_synthetic_relative_import_violation():

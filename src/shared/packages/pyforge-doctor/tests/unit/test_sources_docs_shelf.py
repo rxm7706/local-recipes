@@ -135,6 +135,29 @@ def test_missing_docs_dir_is_silent(tmp_path: Path):
     assert docs_shelf.find_extra_airgap_docs(tmp_path) == ()
 
 
+def test_stale_archive_root_citation_warns(tmp_path: Path) -> None:
+    doc = tmp_path / "docs" / "how-to" / "example.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text("See `_bmad-output/DREAM-TRIAGE-2026-08-08.md` for the triage.\n", encoding="utf-8")
+
+    findings = docs_shelf.find_stale_archive_root_citations(tmp_path)
+
+    assert len(findings) == 1
+    assert findings[0].check == "docs-shelf-stale-archive-citation"
+    assert findings[0].evidence["path"] == "docs/how-to/example.md"
+
+
+def test_archive_prefixed_citation_is_not_stale(tmp_path: Path) -> None:
+    doc = tmp_path / "docs" / "how-to" / "example.md"
+    doc.parent.mkdir(parents=True)
+    doc.write_text(
+        "See `archive/_bmad-output/DREAM-TRIAGE-2026-08-08.md` for the triage.\n",
+        encoding="utf-8",
+    )
+
+    assert docs_shelf.find_stale_archive_root_citations(tmp_path) == ()
+
+
 # --- gather() combines both checks; never a second PR gate ------------------
 
 

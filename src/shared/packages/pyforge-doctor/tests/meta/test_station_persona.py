@@ -12,6 +12,9 @@ STATION = "doctor"
 PERSONA = "bmad-agent-doctor"
 CONTENT_SKILL = f"pyforge-{STATION}"
 CONTENT_SKILL_MD = f".claude/skills/{CONTENT_SKILL}/active/{CONTENT_SKILL}/SKILL.md"
+# The one routed utility skill (AD-2) a doctor task may consult, advisory only.
+ROUTED_UTILITY_SKILL = "bmad-os-root-cause-analysis"
+ROUTED_UTILITY_SKILL_MD = f".claude/skills/{ROUTED_UTILITY_SKILL}/SKILL.md"
 ALLOWED_KINDS = frozenset({"consult_content_skill", "grammar", "mcp"})
 FREELANCE_KINDS = frozenset({"filesystem", "fs", "http", "adhoc_http"})
 MCP_PATH = f"/stations/{STATION}/mcp"
@@ -50,9 +53,13 @@ def validate_transcript(events: list[dict]) -> None:
         if kind not in ALLOWED_KINDS:
             raise PersonaContractError(f"disallowed kind {kind!r}")
         if kind == "consult_content_skill":
+            path = str(event.get("path") or "").replace("\\", "/")
+            if event.get("skill") == ROUTED_UTILITY_SKILL:
+                if not path.endswith(ROUTED_UTILITY_SKILL_MD):
+                    raise PersonaContractError("utility consult path must be the routed skill's SKILL.md")
+                continue
             if event.get("skill") != CONTENT_SKILL:
                 raise PersonaContractError("consult must name the CAP-15 content skill")
-            path = str(event.get("path") or "").replace("\\", "/")
             if CONTENT_SKILL_MD not in path and not path.endswith(f"{CONTENT_SKILL}/SKILL.md"):
                 raise PersonaContractError("consult path must be the CAP-15 SKILL.md")
         elif kind == "grammar":
@@ -200,6 +207,42 @@ def test_live_persona_skill_forbids_filesystem_and_adhoc_http():
     lowered = skill.lower()
     assert "advisory" in lowered
     assert "second pr gate" in lowered or "competing pr" in lowered
+
+
+def test_allowed_actions_name_the_routed_utility_skill_consult():
+    # DW-FU-20-4: the AD-2 routing note names the skill; CAP-16 must name how
+    # a station task reaches it.
+    skill = (_persona_dir(_repo_root()) / "SKILL.md").read_text(encoding="utf-8")
+    assert ROUTED_UTILITY_SKILL in _section(skill, "Utility skill routing (AD-2)")
+    allowed = _section(skill, "Allowed actions (CAP-16)")
+    consult = next(line for line in allowed.splitlines() if line.startswith("- `consult_content_skill`"))
+    assert ROUTED_UTILITY_SKILL_MD in consult
+    assert "advisory" in consult
+    assert (_repo_root() / ROUTED_UTILITY_SKILL_MD).is_file()
+
+
+def test_transcript_may_consult_the_routed_utility_skill_only():
+    root = _repo_root()
+    events = json.loads((_persona_dir(root) / "transcripts" / "doctor-monitor-e2e.json").read_text(encoding="utf-8"))
+    routed = {"kind": "consult_content_skill", "skill": ROUTED_UTILITY_SKILL, "path": ROUTED_UTILITY_SKILL_MD}
+    validate_transcript([routed, *events])
+    other = {
+        "kind": "consult_content_skill",
+        "skill": "bmad-os-gh-triage",
+        "path": ".claude/skills/bmad-os-gh-triage/SKILL.md",
+    }
+    try:
+        validate_transcript([other, *events])
+    except PersonaContractError:
+        pass
+    else:
+        raise AssertionError("an unrouted bmad-os skill consult was accepted")
+    wrong_path = {**routed, "path": ".claude/skills/bmad-os-root-cause-analysis/references/notes.md"}
+    try:
+        validate_transcript([wrong_path, *events])
+    except PersonaContractError:
+        return
+    raise AssertionError("a routed-skill consult of a non-SKILL.md file was accepted")
 
 
 def test_permissive_skill_text_fails_contract():
