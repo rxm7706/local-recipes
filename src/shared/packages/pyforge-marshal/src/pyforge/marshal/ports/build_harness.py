@@ -108,6 +108,7 @@ class BuildHarnessPort(Protocol):
         budget_env: Mapping[str, str],
         log_path: Path,
         wire_layer: Mapping[str, object] | None = None,
+        harness_session_id: str = "",
     ) -> DispatchLaunchResult:
         """Detach-launch one plain background agent session running
         ``bmad-build-auto`` against ``spec_path`` inside ``worktree``, using

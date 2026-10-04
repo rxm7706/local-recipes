@@ -401,12 +401,12 @@ development_status:
   84-2-the-model-list-refresh-tests-can-fail-and-a-partial-listing-is-never-complete: backlog
   85-1-a-verification-refusal-goes-back-to-the-session-that-wrote-the-change-for-one-fix-turn: done
   85-2-a-fix-turn-that-turns-verification-green-lands-and-survives-a-restart: done
-  85-3-the-fix-turn-is-safe-to-switch-on-in-dev-and-staging: backlog
+  85-3-the-fix-turn-is-safe-to-switch-on-in-dev-and-staging: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: backlog
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: backlog
   86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is: backlog
-  86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: backlog
+  86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: done
   86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: backlog
   86-7-the-session-close-docs-name-the-context-advisory-and-the-retired-id-guard-scans-the-planning-docs: backlog
   87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: backlog
@@ -574,13 +574,13 @@ development_status:
   epic-81-retrospective: optional
   epic-82: done
   epic-82-retrospective: optional
-  epic-83: backlog
+  epic-83: in-progress
   epic-83-retrospective: optional
-  epic-84: backlog
+  epic-84: in-progress
   epic-84-retrospective: optional
-  epic-85: backlog
+  epic-85: done
   epic-85-retrospective: optional
-  epic-86: backlog
+  epic-86: in-progress
   epic-86-retrospective: optional
   epic-87: backlog
   epic-87-retrospective: optional

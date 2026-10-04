@@ -18,6 +18,14 @@ push). Story 21.5 (FR-192 CAP-5) documents the per-station parameter surface
 so the same workflow runs against any project by ``project`` / dream /
 ``mode`` / preserve / stage / apply_orphans / resume only — never a
 hardcoded station slug, never ``scripts/bmad-switch``, never auto-commit.
+
+Story 86.5 retired Story 17.4's ``marshal chain regenerate`` verb (its
+``PlanPhaseRunner`` only recorded phases, and its ``--apply`` rewrote the
+ledger with the statuses it had read); ``marshal planning chain-regenerate``
+is the one verb. The four-phase helpers stay here. Story 86.5 also made the
+code-linkage verify and the epic orphan scan read only cites that name a
+story spec or a Spec folder (``_spec_cites``), never a prose word such as
+``spec-surface``.
 """
 
 from __future__ import annotations
@@ -51,8 +59,24 @@ _OWNER_DREAM_RE = re.compile(
     r"^owner-dream:\s*['\"]?([^\s'\"]+)['\"]?\s*$",
     re.MULTILINE,
 )
-# Epics prose often cites ``spec-<slug>`` (folder under planning-artifacts/specs/).
-_SPEC_CITE_RE = re.compile(r"\bspec-([a-z0-9][a-z0-9-]*)\b", re.IGNORECASE)
+# Epics prose cites a Spec by its folder (``spec-<slug>``) and a story spec by its
+# file stem or short id (``spec-<epic>-<story>[-<slug>]``). The lookbehind keeps
+# the tail of a hyphenated word (``tracked-spec-only``, ``…-spec-2026-07-15.md``)
+# from reading as a cite; ``_`` is allowed so a stem carrying one is read whole.
+# A match is only a candidate: ``_spec_cites`` keeps it when it names a real
+# Spec folder or a story spec, so prose (``spec-surface``) is never a cite.
+_SPEC_CITE_RE = re.compile(r"(?<![\w-])spec-([a-z0-9](?:[a-z0-9_-]*[a-z0-9])?)", re.IGNORECASE)
+# ``spec-<epic>-<story>``: epic and story numbers stay under four digits, so a
+# ``spec-YYYY-MM-DD`` date suffix is never read as a story id.
+_STORY_SPEC_ID_RE = re.compile(r"^spec-(\d{1,3})-(\d{1,3})(?:-|$)")
+# Where a Spec folder (or story spec file) can live, live or archived
+# (CHAIN-STANDARD §11 archives a path under ``archive/<path>``).
+_SPEC_PARENT_GLOBS: tuple[str, ...] = (
+    "_bmad-output/projects/*/planning-artifacts/specs",
+    "docs/governance",
+    "archive/_bmad-output/projects/*/planning-artifacts/specs",
+    "archive/docs/governance",
+)
 
 
 @dataclass(frozen=True)
@@ -76,7 +100,7 @@ class OrphanRef:
 
 @dataclass(frozen=True)
 class RegenerationReport:
-    """Full result of one ``chain regenerate`` invocation."""
+    """Full result of one ``run_regeneration`` call."""
 
     project: str
     phases: tuple[PhaseOutcome, ...]
@@ -178,7 +202,6 @@ def find_orphans(root: Path, project: str) -> tuple[OrphanRef, ...]:
     orphans: list[OrphanRef] = []
     orphan_spec_ids: set[str] = set()
     specs_root = planning / "specs"
-    present_spec_ids = _present_spec_ids(specs_root)
 
     if specs_root.is_dir():
         for path in sorted(specs_root.rglob("*")):
@@ -214,22 +237,22 @@ def find_orphans(root: Path, project: str) -> tuple[OrphanRef, ...]:
             epic_text = epics.read_text(encoding="utf-8")
         except OSError:
             epic_text = ""
-        for match in _SPEC_CITE_RE.finditer(epic_text):
-            sid = match.group(0).lower()
-            # Normalize to ``spec-<slug>`` form (regex already includes prefix).
-            if not sid.startswith("spec-"):
-                sid = f"spec-{sid}"
-            missing = sid not in present_spec_ids
-            is_orphan_spec = sid in orphan_spec_ids
-            if missing or is_orphan_spec:
-                reason = f"references orphaned spec {sid}" if is_orphan_spec else f"references missing spec {sid}"
-                orphans.append(
-                    OrphanRef(
-                        kind="epic",
-                        path=_rel(root, epics),
-                        reason=reason,
-                    )
+        cites, missing = _spec_cites(root, planning, epic_text)
+        missing_ids = set(missing)
+        for sid in cites:
+            if sid in orphan_spec_ids:
+                reason = f"references orphaned spec {sid}"
+            elif sid in missing_ids:
+                reason = f"references missing spec {sid}"
+            else:
+                continue
+            orphans.append(
+                OrphanRef(
+                    kind="epic",
+                    path=_rel(root, epics),
+                    reason=reason,
                 )
+            )
 
     # De-dupe epic citations (same epic file + reason).
     seen: set[tuple[str, str, str]] = set()
@@ -386,6 +409,50 @@ def _present_spec_ids(specs_root: Path) -> set[str]:
         elif child.is_file() and name.startswith("spec-") and name.endswith(".md"):
             ids.add(name[: -len(".md")].lower())
     return ids
+
+
+def _known_spec_ids(root: Path) -> set[str]:
+    """Every Spec folder and spec file stem in the repo, live or archived."""
+    ids: set[str] = set()
+    for pattern in _SPEC_PARENT_GLOBS:
+        for parent in root.glob(pattern):
+            ids |= _present_spec_ids(parent)
+    return ids
+
+
+def _story_number(spec_id: str) -> tuple[int, int] | None:
+    match = _STORY_SPEC_ID_RE.match(spec_id)
+    return (int(match.group(1)), int(match.group(2))) if match else None
+
+
+def _spec_cites(root: Path, planning: Path, text: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """``(cites, missing)``: the spec cites in ``text``, and those that resolve nowhere.
+
+    A candidate counts as a cite when it names a Spec folder or spec file that
+    exists anywhere in the repo, or has a story-spec id's shape
+    (``spec-<epic>-<story>[-<slug>]``); every other candidate is a prose word
+    (``spec-surface``, ``spec-template``) and is not counted. A story-spec cite
+    that names no existing file resolves by its epic and story numbers against
+    this project's own story specs (``spec-28-33`` names
+    ``spec-28-33-<slug>.md``); one that matches none is missing. A Spec folder
+    cite is counted only because the folder exists, so it is never missing.
+    """
+    local = _present_spec_ids(planning / "specs")
+    known = _known_spec_ids(root) | local
+    local_stories = {number for number in map(_story_number, local) if number is not None}
+    cites: list[str] = []
+    missing: list[str] = []
+    for cite in sorted({f"spec-{m.group(1).lower()}" for m in _SPEC_CITE_RE.finditer(text)}):
+        if cite in known:
+            cites.append(cite)
+            continue
+        number = _story_number(cite)
+        if number is None:
+            continue
+        cites.append(cite)
+        if number not in local_stories:
+            missing.append(cite)
+    return tuple(cites), tuple(missing)
 
 
 def _spec_id_from_path(specs_root: Path, path: Path) -> str | None:
@@ -686,7 +753,12 @@ def find_latest_incomplete_run(root: Path, project: str) -> Path | None:
 
 
 def verify_code_linkage(root: Path, project: str) -> OrchestratedPhaseOutcome:
-    """Read-only code-linkage verify — never edits implementation code."""
+    """Read-only code-linkage verify — never edits implementation code.
+
+    Counts only the cites ``_spec_cites`` keeps (a story spec or a Spec folder)
+    and names each missing one in the detail. Non-blocking: a missing cite never
+    fails the chain, so the phase completes whatever it finds (DW-FU-21-2).
+    """
     planning = planning_dir(root, project)
     epics = planning / "epics.md"
     if not epics.is_file():
@@ -705,13 +777,14 @@ def verify_code_linkage(root: Path, project: str) -> OrchestratedPhaseOutcome:
             detail=f"cannot read epics.md: {exc}",
             attempts=1,
         )
-    cites = sorted({f"spec-{m.group(1).lower()}" for m in _SPEC_CITE_RE.finditer(text)})
-    present = _present_spec_ids(planning / "specs")
-    missing = [c for c in cites if c not in present]
+    cites, missing = _spec_cites(root, planning, text)
+    detail = f"read-only verify: {len(cites)} spec cite(s); {len(missing)} missing"
+    if missing:
+        detail += ": " + ", ".join(missing)
     return OrchestratedPhaseOutcome(
         name="code_linkage",
         status="complete",
-        detail=(f"read-only verify: {len(cites)} spec cite(s); {len(missing)} missing"),
+        detail=detail,
         attempts=1,
     )
 

@@ -157,6 +157,7 @@ def test_packaged_claude_argv_shape_and_verbatim_tiers():
         worktree=Path("/work/tree"),
         prompt="do the story",
         model="opus",
+        session_id="sess-85-3",
     )
     # Story 46.11 (spec-pyforge-marshal CAP-262): the launch pins Claude Code's
     # built-in `agents-md` mod to `claude-md-and-agents-md` via `--settings`
@@ -169,7 +170,7 @@ def test_packaged_claude_argv_shape_and_verbatim_tiers():
         "bypassPermissions",
         "--settings",
     )
-    assert argv[6:] == ("--model", "opus", "do the story")
+    assert argv[6:] == ("--session-id", "sess-85-3", "--model", "opus", "do the story")
     settings = json.loads(argv[5])
     assert settings == {
         "pluginConfigs": {"agents-md@builtin": {"options": {"instructionFiles": "claude-md-and-agents-md"}}}

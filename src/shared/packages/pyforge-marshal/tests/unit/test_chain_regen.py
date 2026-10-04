@@ -1,15 +1,19 @@
-"""Story 17.4 — orchestrated chain regeneration that cannot lose code status."""
+"""Story 17.4 — orchestrated chain regeneration that cannot lose code status.
+
+Story 86.5 retired the ``marshal chain regenerate`` verb (``marshal planning
+chain-regenerate`` is the one verb) and made the code-linkage verify and the
+epic orphan scan count only cites that name a story spec or a Spec folder.
+"""
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.cli import chain as chain_mod
-from pyforge.marshal.cli.chain import run_chain_regenerate
 from pyforge.marshal.core.chain_regen import (
     CHAIN_PHASES,
     PlanPhaseRunner,
@@ -17,11 +21,19 @@ from pyforge.marshal.core.chain_regen import (
     find_orphans,
     run_regeneration,
 )
-from pyforge.marshal.core.verdict import EXIT_OK
+from pyforge.marshal.core.verdict import EXIT_OK, EXIT_USAGE
+
+_REPO_ROOT = Path(__file__).resolve().parents[6]
 
 
 def _load_promote():
-    return chain_mod._load_promote()
+    """``scripts/promote_sprint_status.py``: the ``regressions`` guard and ledger renderer."""
+    path = _REPO_ROOT / "scripts" / "promote_sprint_status.py"
+    spec = importlib.util.spec_from_file_location("_promote_sprint_status_chain_regen", path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _seed_project(root: Path, slug: str, *, statuses: dict[str, str] | None = None) -> Path:
@@ -201,26 +213,23 @@ def test_apply_status_guard_reuses_regressions():
     assert blocked == (("a", "done", "backlog"),)
 
 
-def test_cli_missing_project(tmp_path: Path):
-    ns = argparse.Namespace(
-        project="no-such-station",
-        apply=False,
-        root=str(tmp_path),
-        format="json",
-    )
-    code = run_chain_regenerate(ns)
-    # WARN findings → exit 0 in marshal lattice for unevaluable-style warns
-    assert code in (EXIT_OK, 0, 1, 2, 3, 4)
-
-
-def test_cli_help_registers():
-    from pyforge.marshal.cli.main import _build_parser
+def test_chain_regenerate_verb_is_retired(capsys: pytest.CaptureFixture[str]):
+    """DW-FU-21-2-2: ``marshal chain`` is no verb; ``planning chain-regenerate`` is the one verb."""
+    from pyforge.marshal.cli.main import _build_parser, main
 
     parser = _build_parser()
-    args = parser.parse_args(["chain", "regenerate", "--project", "acme", "--format", "json"])
-    assert args.command == "chain"
-    assert args.chain_command == "regenerate"
-    assert args.project == "acme"
+    with pytest.raises(SystemExit) as parsed:
+        parser.parse_args(["chain", "regenerate", "--project", "acme"])
+    assert parsed.value.code == 2
+    assert "invalid choice: 'chain'" in capsys.readouterr().err
+
+    assert main(["chain", "regenerate", "--project", "acme"]) == EXIT_USAGE
+
+    with pytest.raises(ModuleNotFoundError):
+        importlib.import_module("pyforge.marshal.cli.chain")
+
+    args = parser.parse_args(["planning", "chain-regenerate", "--project", "acme", "--dream", "docs/dreams/demo.md"])
+    assert (args.command, args.planning_command) == ("planning", "chain-regenerate")
 
 
 def test_find_orphans_empty_when_dreams_present(tmp_path: Path):
@@ -1164,3 +1173,92 @@ def test_cap5_harness_env_uses_bmad_active_never_switch(tmp_path: Path, monkeypa
     assert "never" in prompt.lower() and "scripts/bmad-switch" in prompt
     assert "never scripts/bmad-switch" in prompt.lower().replace("`", "")
     assert "_bmad-output/projects/pyforge-marshal/" in prompt
+
+
+# ---------------------------------------------------------------------------
+# Story 86.5 — code-linkage verify counts only cites that name a real spec
+# ---------------------------------------------------------------------------
+
+import re
+
+from pyforge.marshal.core.chain_regen import verify_code_linkage
+
+# Words that read like a spec id but cite nothing: the old count took each one
+# as a missing spec (marshal: 42 of 87 on the live tree).
+_PROSE = (
+    "The spec-surface gate and spec-surface-check, the tracked-spec-only row,\n"
+    "`spec-template.md`, `{spec-folder}/stories/`, `notes-spec-9-8.txt`,\n"
+    "adversarial-review-pyforge-warden-spec-2026-07-15.md and `spec-2026-07-15.md`.\n"
+)
+# Cites that resolve: this project's Spec folder, a story spec by short id, by
+# its stem, and by a stem whose slug has since changed; another project's Spec
+# folder and story spec; a governance Spec; an archived Spec folder.
+_RESOLVED = (
+    "`spec-acme-kernel` CAP-1, spec-3-7, `spec-3-7-escalation-deferral.md`,\n"
+    "spec-3-7-an-old-slug, spec-other-kernel, `spec-5-1-their-story.md`,\n"
+    "spec-charter and spec-retired-kernel.\n"
+)
+_DETAIL = re.compile(r"^read-only verify: (\d+) spec cite\(s\); (\d+) missing(?:: (.+))?$")
+
+
+def _seed_linkage(root: Path, epics: str) -> Path:
+    planning = root / "_bmad-output" / "projects" / "acme" / "planning-artifacts"
+    (planning / "specs" / "spec-acme-kernel").mkdir(parents=True)
+    (planning / "specs" / "spec-3-7-escalation-deferral.md").write_text("# 3.7\n", encoding="utf-8")
+    other = root / "_bmad-output" / "projects" / "other" / "planning-artifacts" / "specs"
+    (other / "spec-other-kernel").mkdir(parents=True)
+    (other / "spec-5-1-their-story.md").write_text("# 5.1\n", encoding="utf-8")
+    (root / "docs" / "governance" / "spec-charter").mkdir(parents=True)
+    archived = root / "archive" / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "specs"
+    (archived / "spec-retired-kernel").mkdir(parents=True)
+    (planning / "epics.md").write_text(f"# Epics\n\n{epics}", encoding="utf-8")
+    return planning
+
+
+def test_code_linkage_counts_only_story_spec_and_spec_folder_cites(tmp_path: Path):
+    """DW-FU-21-2: prose words are no cites; every real cite resolves, so none is missing."""
+    _seed_linkage(tmp_path, _PROSE + _RESOLVED)
+    outcome = verify_code_linkage(tmp_path, "acme")
+    assert outcome.status == "complete"
+    assert outcome.detail == "read-only verify: 8 spec cite(s); 0 missing"
+
+
+def test_code_linkage_names_each_missing_cite_and_stays_complete(tmp_path: Path):
+    """DW-FU-21-2: a story-spec cite that resolves nowhere is named; the phase never blocks."""
+    _seed_linkage(tmp_path, _PROSE + "Gone: `spec-4-2-gone.md`, spec-9-9; kept: spec-3-7.\n")
+    outcome = verify_code_linkage(tmp_path, "acme")
+    assert outcome.status == "complete"
+    assert outcome.detail == "read-only verify: 3 spec cite(s); 2 missing: spec-4-2-gone, spec-9-9"
+
+
+def test_code_linkage_on_the_live_tree_names_only_story_spec_ids_and_completes():
+    """The live tree: marshal's verify completes, and each missing cite it counts is named."""
+    if not (_REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "epics.md").is_file():
+        pytest.skip("live planning tree not present")
+    outcome = verify_code_linkage(_REPO_ROOT, "pyforge-marshal")
+    assert outcome.status == "complete"
+    match = _DETAIL.match(outcome.detail)
+    assert match is not None, outcome.detail
+    named = match.group(3).split(", ") if match.group(3) else []
+    assert len(named) == int(match.group(2))
+    assert all(re.match(r"^spec-\d{1,3}-\d{1,3}(?:-|$)", cite) for cite in named), named
+    assert "spec-surface" not in outcome.detail
+
+
+def test_epic_orphan_scan_ignores_prose_and_reports_missing_and_orphaned_specs(tmp_path: Path):
+    """The epic half of ``find_orphans`` reads cites the way the verify does."""
+    planning = _seed_project(tmp_path, "acme")
+    (planning / "specs" / "spec-orphan").mkdir()
+    (planning / "specs" / "spec-orphan" / "SPEC.md").write_text(
+        "---\nowner-dream: docs/dreams/missing-forever.md\n---\n# Orphan\n",
+        encoding="utf-8",
+    )
+    (planning / "epics.md").write_text(
+        "# Epics\n\n" + _PROSE + "Cites spec-demo, spec-orphan and spec-9-9.\n",
+        encoding="utf-8",
+    )
+    epic_reasons = sorted(o.reason for o in find_orphans(tmp_path, "acme") if o.kind == "epic")
+    assert epic_reasons == [
+        "references missing spec spec-9-9",
+        "references orphaned spec spec-orphan",
+    ]
