@@ -8,6 +8,7 @@ inputs. Lives outside ``cli/`` so ``dispatch_supervisor`` may import it
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import shlex
 import signal
@@ -31,7 +32,12 @@ from .core.dispatch_ruff_format import (
     DispatchRuffFormatResult,
     apply_dispatch_ruff_format_before_verify,
 )
-from .core.dispatch_verification import reclassify_pre_existing_gate_findings
+from .core.dispatch_verification import (
+    BranchCommitAttribution,
+    COMMIT_ATTRIBUTION_GATE_CODE,
+    findings_for_commit_attribution_violations,
+    reclassify_pre_existing_gate_findings,
+)
 from .core.dispatch_verify_fix import VERIFY_FIX_LOOP_FLAG_KEY
 from .core.egress import to_redacted_text
 from .core.identity import StoryKey, render_feed_key
@@ -44,6 +50,128 @@ from .ports.vcs import VcsPort
 
 _SCOPE_BASE = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
 _SHELL_METACHARACTERS = frozenset("&|<>;()")
+_COMMIT_LOG_FIELD_SEP = "\x1f"
+_COMMIT_LOG_RECORD_SEP = "\x1e"
+_COMMIT_MSG_HOOK_CACHE: dict[Path, object] = {}
+
+
+def _load_commit_msg_hook_module(worktree: Path) -> object | None:
+    """Load ``scripts/commit_msg_hook.py`` from ``worktree`` (Story 83.17).
+
+    Reuses the hook module's ``offending_lines`` so dispatch verification and
+    the ``commit-msg`` hook can never drift on what counts as attribution."""
+    cached = _COMMIT_MSG_HOOK_CACHE.get(worktree)
+    if cached is not None:
+        return cached
+    script = worktree / "scripts" / "commit_msg_hook.py"
+    if not script.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location(
+        f"_dispatch_verify_commit_msg_hook_{worktree}",
+        script,
+    )
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    _COMMIT_MSG_HOOK_CACHE[worktree] = module
+    return module
+
+
+def _parse_branch_commits_from_log(stdout: str) -> tuple[tuple[str, str, str], ...]:
+    """Parse ``git log --format=%H%x1f%s%x1f%B%x1e`` output into commit tuples."""
+    if not stdout:
+        return ()
+    records: list[tuple[str, str, str]] = []
+    for chunk in stdout.split(_COMMIT_LOG_RECORD_SEP):
+        chunk = chunk.strip("\n")
+        if not chunk:
+            continue
+        parts = chunk.split(_COMMIT_LOG_FIELD_SEP, 2)
+        if len(parts) != 3:
+            continue
+        sha, subject, body = parts
+        if sha:
+            records.append((sha, subject, body))
+    return tuple(records)
+
+
+def check_branch_commit_attribution(
+    *,
+    worktree: Path,
+    process: ProcessPort,
+    base: str = _SCOPE_BASE,
+) -> tuple[tuple[Finding, ...], dict[str, object]]:
+    """Story 83.17: refuse when any commit on ``base...HEAD`` carries attribution."""
+    hook = _load_commit_msg_hook_module(worktree)
+    if hook is None:
+        return (
+            (
+                Finding(
+                    code="MRS-GATE-009",
+                    severity=Severity.ERROR,
+                    message=(
+                        "dispatch commit-attribution check could not load "
+                        "scripts/commit_msg_hook.py from the worktree"
+                    ),
+                ),
+            ),
+            {"checked": False, "reason": "commit_msg_hook.py missing"},
+        )
+    rev_range = f"{base}...HEAD"
+    try:
+        result = process.run(
+            [
+                "git",
+                "-C",
+                str(worktree),
+                "log",
+                rev_range,
+                f"--format=%H{_COMMIT_LOG_FIELD_SEP}%s{_COMMIT_LOG_FIELD_SEP}%B{_COMMIT_LOG_RECORD_SEP}",
+            ],
+            cwd=worktree,
+        )
+    except ProcessError as exc:
+        return (
+            (
+                Finding(
+                    code="MRS-GATE-009",
+                    severity=Severity.ERROR,
+                    message=f"dispatch commit-attribution check could not read {rev_range!r}: {exc}",
+                ),
+            ),
+            {"checked": False, "reason": str(exc), "rev_range": rev_range},
+        )
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "").strip()
+        return (
+            (
+                Finding(
+                    code="MRS-GATE-009",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"dispatch commit-attribution check could not read {rev_range!r} "
+                        f"(exit {result.returncode}): {detail}"
+                    ),
+                ),
+            ),
+            {"checked": False, "reason": detail, "rev_range": rev_range},
+        )
+    offending: list[BranchCommitAttribution] = []
+    for sha, subject, body in _parse_branch_commits_from_log(result.stdout):
+        hits = hook.offending_lines(body)
+        if hits:
+            offending.append((sha, subject, tuple(hits)))
+    findings = findings_for_commit_attribution_violations(tuple(offending))
+    return (
+        findings,
+        {
+            "checked": True,
+            "rev_range": rev_range,
+            "commits_scanned": len(_parse_branch_commits_from_log(result.stdout)),
+            "violations": len(findings),
+        },
+    )
 
 
 def _run_verify_command(
@@ -473,6 +601,14 @@ def evaluate_dispatch_verification(
         )
         if intake_finding is not None:
             findings.append(intake_finding)
+
+    attribution_findings, attribution_report = check_branch_commit_attribution(
+        worktree=worktree,
+        process=process,
+        base=_SCOPE_BASE,
+    )
+    findings.extend(attribution_findings)
+    data["commit_attribution_check"] = attribution_report
 
     scope_changed_files: tuple[str, ...] = ()
     scope_effective_surface: tuple[str, ...] = ()
