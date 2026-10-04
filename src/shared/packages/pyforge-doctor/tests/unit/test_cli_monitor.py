@@ -201,6 +201,28 @@ def test_monitor_unknown_source_is_a_usage_error(capsys, monkeypatch):
     assert calls == []
 
 
+def test_monitor_source_no_requested_axis_emits_is_a_usage_error(capsys, monkeypatch):
+    # DW-FU-6-4-13: a known Source outside the --watch axes filtered every
+    # finding away and exited 0 -- indistinguishable from a clean run.
+    calls = _stub_gather(monkeypatch, {})
+    exit_code = main(["monitor", "--fleet", "--watch", "staleness", "--source", "cve-watcher"])
+    err = capsys.readouterr().err
+    assert exit_code == 2
+    assert "never emitted by --watch staleness" in err
+    assert "staleness-report" in err
+    assert calls == []
+
+
+def test_monitor_source_emitted_by_a_composite_axis_is_accepted(monkeypatch, capsys):
+    _stub_gather(
+        monkeypatch,
+        {"abandonment": (_finding(Source.RELEASE_CADENCE, "pkg-c", DoctorStatus.WARN),)},
+    )
+    exit_code = main(["monitor", "--fleet", "--watch", "abandonment", "--source", "release-cadence"])
+    assert exit_code == 0
+    assert "pkg-c" in capsys.readouterr().out
+
+
 # --- --json schema parity (mirrors Story 1.5's own check proof) -----------
 
 

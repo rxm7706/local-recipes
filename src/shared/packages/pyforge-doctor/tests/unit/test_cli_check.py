@@ -436,6 +436,8 @@ def test_degraded_engines_category_named_check_renders_one_synthetic_fail(monkey
     # Never a bare "not found" -- names the degradation and hints a re-run.
     assert "degrad" in finding["message"].lower()
     assert "not found" not in finding["message"].lower()
+    # DW-FU-1-5-4: the synthetic FAIL quotes warden's own specific reason.
+    assert "simulated warden self-check crash" in finding["message"]
 
 
 def test_degraded_whole_engines_category_emits_schema_valid_sentinel_json(monkeypatch, tmp_path: Path, capsys):
@@ -841,3 +843,30 @@ def test_text_output_neutralizes_embedded_newlines_in_messages(capsys):
     assert len(body_lines) == 2
     assert "1 finding(s)" in body_lines[0]
     assert "\\n" in body_lines[1]
+
+
+def test_named_env_check_carries_the_incomplete_scan_sentinel(monkeypatch, tmp_path: Path, capsys):
+    # DW-FU-1-5 (b): `--env NAME` dropped the incomplete-scan signal, so a
+    # partial scan read as clean.
+    from pyforge.doctor.checks import env_hygiene
+
+    monkeypatch.setattr(env_hygiene, "_DISCOVERY_ENTRY_CAP", 1)
+    for name in ("a.py", "b.py"):
+        (tmp_path / name).write_text("x = 1\n", encoding="utf-8")
+
+    exit_code = main(["check", str(tmp_path), "--env", "unconditional-credential-injection", "--json"])
+
+    document = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert [f["check"] for f in document["findings"]] == ["env-hygiene"]
+    assert "INCOMPLETE" in document["findings"][0]["message"]
+
+
+def test_env_check_on_a_non_directory_target_is_not_a_silent_green(tmp_path: Path, capsys):
+    # DW-FU-1-5-3: a typo'd path printed "0 finding(s)" and exited 0.
+    exit_code = main(["check", str(tmp_path / "typo"), "--env", "--json"])
+
+    document = json.loads(capsys.readouterr().out)
+    assert exit_code == 0
+    assert [f["check"] for f in document["findings"]] == ["env-hygiene"]
+    assert "not a directory" in document["findings"][0]["message"]
