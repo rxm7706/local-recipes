@@ -2036,6 +2036,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # ``deferred_work_intake.py --fix`` refused or could not run before
         # the derived ``deferred-work-check``; GATE_FAILED, never WARN.
         "MRS-GATE-018",
+        # Story 83.17 (spec-83-17): MRS-GATE-019 -- a commit on the story
+        # branch carries an AI-attribution trailer the commit-msg hook refuses.
+        "MRS-GATE-019",
         # Story 34.2 shipped `marshal factory checkpoint` building these three findings
         # without registering them, so every failure path of that command raised
         # `UnregisteredFindingCodeError` out of `Finding(...)` instead of exiting non-zero
