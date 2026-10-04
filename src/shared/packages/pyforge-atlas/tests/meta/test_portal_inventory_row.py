@@ -104,3 +104,26 @@ def test_atlas_portal_does_not_copy_chrome() -> None:
         if path.is_file() and path.name in CHROME_COPY_NAMES
     ]
     assert copied == []
+
+
+def test_host_chrome_loads_a_vendored_htmx_runtime_never_a_cdn() -> None:
+    """DW-FU-19-2: the portal's ``hx-*`` poll attributes were markup-only — the
+    chrome loaded no HTMX runtime at all, so nothing they declared ever ran. It is
+    served from this package's own static dir: a CDN script tag in the chrome would
+    break every egress-less host and add a supply-chain surface to every page."""
+    root = _repo_root()
+    base = (root / CHROME_BASE).read_text(encoding="utf-8")
+
+    assert "{% static 'django_pyforge/vendor/htmx.min.js' %}" in base
+    assert (root / VENDORED_HTMX).is_file()
+
+    # No remote script source anywhere in the chrome.
+    for scheme in ("//unpkg.com", "//cdn.", "https://", "http://"):
+        assert scheme not in base, f"host chrome loads a remote asset ({scheme})"
+
+
+def test_the_vendored_htmx_is_the_same_file_the_platform_host_serves() -> None:
+    """Two copies, one runtime: a drift between them would make the portal behave
+    differently inside the platform host than standalone."""
+    root = _repo_root()
+    assert (root / VENDORED_HTMX).read_bytes() == (root / PLATFORM_HTMX).read_bytes()
