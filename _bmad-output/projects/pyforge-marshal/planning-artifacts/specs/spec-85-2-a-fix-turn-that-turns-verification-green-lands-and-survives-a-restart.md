@@ -2,7 +2,9 @@
 title: "85.2: A fix turn that turns verification green lands, and survives a supervisor restart"
 type: 'feature'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
+review_loop_iteration: 1
 baseline_revision: '8e3ced34a1bfb8e3fd9bd4a55547f6b806128150'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -80,4 +82,33 @@ Minted 2026-10-03 at the operator's request (split 85.1, keep Cursor).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 4, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Landing not exercised in finalize-only tests — evidence: AC landing is satisfied by verified finalize + existing tick-loop land path; supervisor tests assert `verified: true` and commit before re-verify.
+  - `[false]` `[reject]` Supervisor restart respawn — evidence: Story 85.2 scope covers wait/kill on journaled pid; full supervisor respawn is 85.3 per design notes.
+  - `[false]` `[reject]` `binary_present` stub missing fields — evidence: production path uses real resolution; tests stub harness only.
+  - `[false]` `[reject]` pyforge-deps-test atlas failure — evidence: `test_every_hard_import_is_a_declared_dependency[pyforge-atlas]` unchanged by this diff; pre-existing on branch.
+
+## Auto Run Result
+
+Summary: Wired the verify-fix turn so sidecar-offloaded failed commands resolve, INTENT is journaled before harness launch with a pid observation, WIP commits before re-verify, latest verification outcome wins, MRS-DISP-060 fires on a second refusal, and a supervisor restart resumes the journaled turn within the remaining wall-clock budget. Dispatch status reads LIVE while the fix-turn session is alive.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` — fix-turn orchestration fixes
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` — latest verification verdict + LIVE during fix turn
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py` — Story 85.2 supervisor tests
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_main_loop.py` — coverage for the entrypoint floor
+
+Review: 0 patches, 0 deferrals, 4 rejected/false findings.
+
+Follow-up review recommended: false.
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass (11125 tests)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` — pass
+- `pixi run --frozen -e pyforge-guild lint-types` — pass
+- `python scripts/spec_surface_reconcile.py` — pass after memlog reconcile
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — fail on pre-existing pyforge-atlas packaging test (not introduced here)
+
+Residual risks: Full landing in the tick loop after fix-turn verify green is not duplicated in unit tests (finalize marks verified only); Story 85.3 owns broader safety and flag enablement.
