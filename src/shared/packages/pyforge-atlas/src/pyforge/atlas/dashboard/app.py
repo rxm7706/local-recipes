@@ -442,9 +442,7 @@ def _declared_chart(page: PageDef, key: str) -> vm.Graph | None:
     return vm.Graph(id=f"{page.id}--chart", figure=figure(key, x=page.chart.x, y=page.chart.y))
 
 
-def _declared_filter_bundle(
-    page: PageDef, loader: Callable[[], Any]
-) -> tuple[Any | None, list[vm.Filter]]:
+def _declared_filter_bundle(page: PageDef, loader: Callable[[], Any]) -> tuple[Any | None, list[vm.Filter]]:
     """One ``vm.Filter`` per declared column — but only once the page's data has rows.
 
     Returns ``(build_time_frame, filters)``. ``build_time_frame`` is the loader's
