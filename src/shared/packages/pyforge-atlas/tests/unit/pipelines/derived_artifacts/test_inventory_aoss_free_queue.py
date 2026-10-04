@@ -15,7 +15,10 @@ from pyforge.atlas.pipelines.derived_artifacts.nodes import (
 )
 
 _FIXED_TS = "2026-08-30T12:00:00Z"
-_PARAMS = {"inventory_verified_packages": {"verification_timestamp_utc": _FIXED_TS}}
+_PARAMS = {
+    "inventory_verified_packages": {"verification_timestamp_utc": _FIXED_TS},
+    "verification_sets": {"core_packages_enumerated_floor": 0, "pypi_universe_floor": 0},
+}
 _AOSS_FREE_QUEUE_REASON = "On PyPI, not on conda-forge, not in CDO consumption (GAOSS-Free)"
 
 

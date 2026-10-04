@@ -6,6 +6,7 @@ Rendered by conda-forge-packaging-inventory-operations_openteams_identity.py
 
 from __future__ import annotations
 
+import importlib.util
 import json
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -547,7 +548,8 @@ def render(
                     f"{type_status[rtype].get('not-attempted', 0):,}",
                     f"{type_status[rtype].get('blank', 0):,}",
                 ]
-                for rtype in recipe_type_order
+                for rtype in list(recipe_type_order)
+                + sorted(t for t in type_status if t not in recipe_type_order)
                 if rtype in type_status
             ],
         ),
@@ -728,33 +730,26 @@ def render(
 # conda-forge-packaging-inventory-operations_priority.py::write_canvas).
 # These two restructure the same already-computed values `render()` uses for
 # its markdown mirror into a `cursor/canvas` TSX file. Same import block and
-# DATA-blob structural pattern as write_canvas -- see its `_CANVAS_PREFIX` /
-# `_CANVAS_SUFFIX` in conda-forge-packaging-inventory-operations_priority.py.
-CANVAS_DIR = Path(
-    "/home/rxm7706/.cursor/projects/"
-    "home-rxm7706-UserLocal-Projects-Github-rxm7706-local-recipes/canvases"
+# DATA-blob structural pattern as write_canvas -- `_CANVAS_PREFIX` lives in
+# conda-forge-packaging-inventory-operations_priority.py (Story 27.1).
+_PRIORITY_SCRIPT = Path(__file__).resolve().parent / (
+    "conda-forge-packaging-inventory-operations_priority.py"
 )
-DEFAULT_OPS_CANVAS_PATH = CANVAS_DIR / "identity-ops.canvas.tsx"
-DEFAULT_WORKBOOK_CANVAS_PATH = CANVAS_DIR / "jfrog-workbook.canvas.tsx"
+_spec = importlib.util.spec_from_file_location("cfpio_priority_canvas", _PRIORITY_SCRIPT)
+assert _spec and _spec.loader
+_priority_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_priority_mod)
+_CANVAS_PREFIX = _priority_mod._CANVAS_PREFIX
+resolve_canvas_dir = _priority_mod.resolve_canvas_dir
 
-_CANVAS_PREFIX = r"""import {
-  BarChart,
-  Button,
-  Callout,
-  Grid,
-  H1,
-  H2,
-  Row,
-  Select,
-  Stack,
-  Stat,
-  Table,
-  Text,
-  TextInput,
-  useCanvasState,
-} from "cursor/canvas";
 
-const DATA = """
+def default_ops_canvas_path() -> Path | None:
+    return _priority_mod.default_ops_canvas_path()
+
+
+def default_workbook_canvas_path() -> Path | None:
+    return _priority_mod.default_workbook_canvas_path()
+
 
 _OPS_CANVAS_SUFFIX = r""" as {
   tab: string;
@@ -979,6 +974,8 @@ def write_ops_canvas(
 
     p_counts = Counter(r.get("P") or "?" for r in records)
     work_counts = Counter(r.get("Work") or "?" for r in records)
+    unknown_p = p_counts.get("?", 0)
+    unknown_work = work_counts.get("?", 0)
 
     have_by_p: Counter = Counter()
     miss_by_p: Counter = Counter()
@@ -999,11 +996,18 @@ def write_ops_canvas(
         type_status[rtype][status] += 1
 
     priority_defs = [[p, PRIORITY_DESC[p], p_counts.get(p, 0)] for p in p_order]
+    if unknown_p:
+        priority_defs.append(["?", "Unknown / unset priority", unknown_p])
     work_defs = [[w, WORK_DESC[w], work_counts.get(w, 0)] for w in work_order]
+    if unknown_work:
+        work_defs.append(["?", "Unknown / unset work type", unknown_work])
     issues_by_p = [
         [p, have_by_p.get(p, 0), miss_by_p.get(p, 0), _pct(miss_by_p.get(p, 0), p_counts.get(p, 0))]
         for p in p_order
     ]
+    ordered_types = list(recipe_type_order) + sorted(
+        t for t in type_status if t not in recipe_type_order
+    )
     build_by_type = [
         [
             rtype,
@@ -1014,7 +1018,7 @@ def write_ops_canvas(
             type_status[rtype].get("not-attempted", 0),
             type_status[rtype].get("blank", 0),
         ]
-        for rtype in recipe_type_order
+        for rtype in ordered_types
         if rtype in type_status
     ]
     rows = [

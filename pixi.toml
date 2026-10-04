@@ -2665,8 +2665,8 @@ boring-semantic-layer = ">=0.2.0" # A boring semantic layer built with ibis
 duckdb-server = ">=0.31.0"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-test]
-description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'."
-cmd = "pytest src/shared/packages/pyforge-atlas/tests -q"
+description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'. Story 27.1: a second pytest run gates the inventory quartet's tests (tests/packaging/test_openteams_handoffs.py and scripts/tests/) -- they hold the kill tests for the quartet scripts and no other lane ran them. A separate run keeps the station suite's own rootdir."
+cmd = "pytest src/shared/packages/pyforge-atlas/tests -q && pytest tests/packaging/test_openteams_handoffs.py scripts/tests -q"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-coverage-gate]
 description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (atlas)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in atlas's own env, against the 80% unit floor. Distinct from pyforge-atlas-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
