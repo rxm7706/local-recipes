@@ -2,7 +2,7 @@
 title: "85.1: A verification refusal goes back to the session that wrote the change for one fix turn"
 type: 'feature'
 created: '2026-10-03'
-status: 'done'
+status: 'in-review'
 baseline_revision: '17dd386508320fa68c99eec40578d8d5020a39f3'
 followup_review_recommended: false
 review_loop_iteration: 0
@@ -98,12 +98,28 @@ Minted 2026-10-03 at the operator's request, from the verification cost analysis
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+**Tests that carry the narrowed criteria (run by `pyforge-marshal-test` above):**
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py` — the two-state flag test: the supervisor reads `pyforge.marshal.verify_fix_loop` for real from two flagd trees, one `"on"` and one `"off"`. Off: a refusal parks (`verified: false`) with no fix-turn call and the verification OUTCOME keeps `main`'s five keys, for a short and a >4 KB output tail; a refusal journaled with `failed_commands` while the flag was on still runs no turn once it reads off. On: the same refusal reaches the fix-turn launch. An unknown environment, an overlay naming an unknown key and an overlay that is not JSON each journal one `dispatch-verify-fix` warning and park with no fix-turn call.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_harness_bmadbuild.py` — `launch_argv` sets `BMAD_ACTIVE_PROJECT` unconditionally: an empty slug reaches the child as `""` over an inherited value.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` — expected: exit 0 (narrowed criterion 4; run by the operator, not bound as a verify command).
+
 ## Spec Change Log
 
 - 2026-10-03 — sent back after an independent adversarial review and a refused dispatch verification (findings below). Three acceptance criteria added. Status back to `ready-for-dev`.
 - 2026-10-03 (night) — split by operator ruling: 85.1 lands the machinery dormant (flag OFF in every environment, behaviour with the flag off identical to `main`, coverage gate green); 85.2 and 85.3 carry the rest (merged on main, PR #1790). Narrowed criteria added at the head of the Acceptance Criteria; `flag.default` is OFF everywhere. Status back to `ready-for-dev`.
 
 ## Review Triage Log
+
+### 2026-10-03 (night) — Landing review (independent reviewer); fixed by the operator's fixer
+The independent landing review of draft PR #1800 (head f77e106cc3) found detectors-ci red and three narrowed criteria not proven. Fixed on this branch:
+- **H1 detectors-ci (3 findings new vs `main`).** (a) flag-gate `flag-verification-names-no-test`: `## Verification` now names `tests/unit/test_dispatch_supervisor_verify_fix.py`, a supervisor-level two-state test (two flagd trees, `"on"` and `"off"`). (b) cap-citation: the branch-only `spec-pyforge-unifying-strategy/.memlog.md` line now cites `spec-pyforge-marshal:CAP-286`, not a bare CAP. (c) chain-currency `chain-audit-checkpoint-staleness` (code newer than retro): the three fix-turn I/O helpers (`verify_fix_loop_enabled`, `wait_for_process`, `terminate_process_group`, with `ProcessWaitResult`) moved from the new module `pyforge/marshal/dispatch_verify_fix.py` into the existing `pyforge/marshal/dispatch_verify.py`; the new module is deleted, and `pyproject.toml`'s AD-3 `source_modules` and `tests/meta/test_ad3_ad4_import_linter.py` are back to `main`.
+- **H2 (narrowed AC 2).** `_run_and_journal_verification` reads the flag on a refusal and builds and emits `failed_commands` (with `output_tail`), and offloads that field, only when the flag reads on; with it off the OUTCOME and its offload set equal `main`'s. Tested for a short and a >4 KB tail.
+- **M1 (narrowed AC 2 and 3).** The supervisor's flag-off decision and its broken-tree warning are now reached by tests: the two-state test, plus `PYFORGE_ENVIRONMENT=qa`, an overlay naming an unknown key and an overlay that is not JSON (each on a fresh and on an already-journaled refusal), each asserting one `dispatch-verify-fix` warning observation, `verified: false` on the finalize entry and no call to `binary_present`, `dispatch_verify_fix` or `wait_for_process`. Mutant MC2 (`flag_enabled = True` right after the read) now fails four tests. The autouse fixture in `test_dispatch_supervisor_main_loop.py` no longer stubs the flag read (it only pins `PYFORGE_ENVIRONMENT`), and its docstring no longer claims dev overlays default ON.
+- **L1 (narrowed AC 5).** `test_harness_bmadbuild.py` pins `launch_argv` with `project_slug=""` and an inherited `BMAD_ACTIVE_PROJECT`: the child env holds `""`. Mutant MD2 (set it only for a non-empty slug) fails it.
+- **L2 (narrowed AC 5).** `launch_argv` carries `main`'s Story 14.4 comment verbatim, and the precedence and wire-PATH comments `dispatch` had; its docstring says it is the one launcher behind both `dispatch` and the fix turn.
+- Mutants re-checked against copies of the source (never the worktree): MA1, MA2 (flag tree and overlays ON) killed by pyforge-core `test_flags.py`; MB, MC1, MC2, MD1, MD2 killed; MH2 (emit `failed_commands` whatever the flag) killed.
+- **For Story 85.2's restart criterion and Story 85.3's flag criterion (left dormant here, L4):** `_maybe_run_verify_fix_turn` resumes a pending fix-turn INTENT before it consults the flag, so a journaled INTENT with no OUTCOME is waited on even with the flag off or the flag tree broken; decide on the flag first.
+- **For Story 85.2's sidecar criterion (left dormant here, L4):** a `failed_commands` field offloaded to a sidecar (a large tail) is invisible to `_failed_commands_from_verification_journal`, which reads only the inline payload, so the turn sees no failed command and never runs; read it through the sidecar resolver.
 
 ### 2026-10-03 (night) — Narrowed send-back after the split (operator session)
 Do only what the narrowed criteria ask; do not attempt H1-H3, M3-M7 or L1-L4 of the review below (they belong to Stories 85.2 and 85.3).

@@ -100,13 +100,11 @@ from ..core.worktree_checkpoint import (
 )
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_verify import (
+    ProcessWaitResult,
     compose_dispatch_policy,
     evaluate_dispatch_verification,
     resolve_spec_text_for_story,
     run_dispatch_ruff_format_before_verify,
-)
-from ..dispatch_verify_fix import (
-    ProcessWaitResult,
     terminate_process_group,
     verify_fix_loop_enabled,
     wait_for_process,
@@ -1857,11 +1855,19 @@ def _run_and_journal_verification(
     )
     verification_verdict = judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
     failed = primary_gate_failure(envelope.findings)
-    command_reports = envelope.data.get("commands")
-    reports_tuple = tuple(command_reports) if isinstance(command_reports, list) else ()
-    fix_settings = resolve_verify_fix_settings(effective)
+    # Story 85.1 (spec-pyforge-marshal:CAP-286, dormant): the failed commands
+    # and their output tails are recorded only when the fix-turn flag reads
+    # on. With it off -- every environment until Story 85.3 -- the OUTCOME
+    # keeps main's shape and main's offload set (an unreadable or invalid
+    # flag tree reads off here; the fix-turn step journals its warning).
+    record_failed_commands = (
+        verification_verdict == DispatchVerificationVerdict.REFUSED and verify_fix_loop_enabled(repo_root=repo_root)[0]
+    )
     failed_commands_payload: list[dict[str, object]] = []
-    if verification_verdict == DispatchVerificationVerdict.REFUSED:
+    if record_failed_commands:
+        command_reports = envelope.data.get("commands")
+        reports_tuple = tuple(command_reports) if isinstance(command_reports, list) else ()
+        fix_settings = resolve_verify_fix_settings(effective)
         for item in extract_failed_verify_commands(reports_tuple, envelope.findings):
             combined = "\n".join(part for part in (item.stdout, item.stderr) if part.strip())
             encoded = combined.encode("utf-8", errors="replace")
@@ -1913,10 +1919,15 @@ def _run_and_journal_verification(
             "failed_gate": failed.code if failed is not None else None,
             "failed_message": failed.message if failed is not None else None,
             "scope_violation_advisories": scope_advisories,
-            "failed_commands": failed_commands_payload,
+            **({VERIFY_FAILED_COMMANDS_FIELD: failed_commands_payload} if record_failed_commands else {}),
         },
     )
     counter += 1
+    offload_fields = (
+        frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD, VERIFY_FAILED_COMMANDS_FIELD})
+        if record_failed_commands
+        else frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD})
+    )
     try:
         _append_entry(fs, run_dir, intent_entry, fsync=True)
         _append_entry(
@@ -1924,7 +1935,7 @@ def _run_and_journal_verification(
             run_dir,
             outcome_entry,
             fsync=False,
-            offload_fields=frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD, VERIFY_FAILED_COMMANDS_FIELD}),
+            offload_fields=offload_fields,
         )
     except FsError as exc:
         print(

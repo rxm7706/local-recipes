@@ -151,9 +151,20 @@ class BmadBuildHarness:
         budget_env: Mapping[str, str],
         project_slug: str,
     ) -> tuple[int, tuple[str, ...]]:
-        """Detach-launch an already-rendered argv (Story 85.1 fix turn)."""
-        # Precedence, lowest to highest: operator env, profile vars, wire layer,
-        # marshal's per-invocation project pin, policy budget env.
+        """Detach-launch an already-rendered argv; return ``(pid, command)``.
+
+        The one launcher behind both ``dispatch`` (the story session, Story
+        22.1) and ``dispatch_verify_fix`` (Story 85.1's fix turn): the child
+        env, the wire layer's PATH and the detached ``Popen`` live here once.
+        ``BMAD_ACTIVE_PROJECT`` is set unconditionally, as ``dispatch``
+        always set it -- an empty ``project_slug`` pins an empty project
+        rather than inheriting the operator shell's.
+        """
+        # Precedence, lowest to highest: the operator's environment, the
+        # profile's own declared vars, the wire layer's own vars (Story
+        # 28.2), marshal's per-invocation project pin, the policy budget
+        # env -- a profile or a wrapper may tune its CLI but never repoint
+        # the dispatched project or the budget ceilings.
         child_env = {
             **os.environ,
             **dict(profile.env),
@@ -162,6 +173,13 @@ class BmadBuildHarness:
             **dict(budget_env),
         }
         if wire.applied and resolution.binary_path is not None:
+            # Wrapping replaces the resolved CLI path with the wrapper's
+            # prefix, and the wrapper then resolves the CLI itself off
+            # PATH. A CLI that only lives in a profile `fallback_bin_dirs`
+            # entry (the pixi-env case this repo runs on) would vanish at
+            # that point, so its own directory is prepended -- restoring
+            # exactly the reachability the unwrapped launch already had,
+            # and nothing more.
             binary_dir = str(Path(resolution.binary_path).parent)
             existing_path = child_env.get("PATH", "")
             child_env["PATH"] = f"{binary_dir}{os.pathsep}{existing_path}" if existing_path else binary_dir
@@ -171,11 +189,18 @@ class BmadBuildHarness:
             raise BuildHarnessError(f"cannot open dispatch log {str(log_path)!r}: {exc}") from exc
         with log_file:
             try:
-                # Story 14.4, CAP-6: stays raw subprocess, exempted file-level in
-                # test_process_sole_ownership.py -- needs a capability
-                # pyforge.core.process does NOT offer (detached launch with a
-                # per-invocation custom env). Mutating os.environ would race
-                # concurrent dispatches for different projects.
+                # Story 14.4, CAP-6: stays raw subprocess, exempted
+                # file-level in test_process_sole_ownership.py -- needs a
+                # capability pyforge.core.process does NOT offer. Neither
+                # PosixProcess.run (waits synchronously, no file-redirected
+                # stdout) nor spawn_detached (no env= override -- inherits
+                # os.environ exactly, by design) supports a DETACHED launch
+                # with a per-invocation custom env (BMAD_ACTIVE_PROJECT +
+                # profile env + budget env). Mutating process-global
+                # os.environ as a workaround would race concurrent
+                # dispatches for different projects -- the exact class of
+                # bug the "never scripts/bmad-switch" convention exists to
+                # avoid.
                 process = subprocess.Popen(
                     list(argv),
                     cwd=worktree,

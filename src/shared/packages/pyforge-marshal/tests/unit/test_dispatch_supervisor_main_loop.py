@@ -51,9 +51,17 @@ _SLUG = "pyforge-marshal"
 
 
 @pytest.fixture(autouse=True)
-def _verify_fix_loop_off(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Story 85.1: dev flag overlays default ON; these tests simulate verify without a live fix turn."""
-    monkeypatch.setattr(supervisor_main, "verify_fix_loop_enabled", lambda *, repo_root: (False, None))
+def _hermetic_flag_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 85.1: pin ``PYFORGE_ENVIRONMENT`` so an operator shell's value cannot leak in.
+
+    The supervisor reads ``pyforge.marshal.verify_fix_loop`` for real, from
+    ``<repo_root>/src/platform/config/flags.json``; the read is never stubbed here, so
+    the flag-off decision and the broken-tree warning stay reachable. A ``_repo`` tree
+    carries no flag tree, so the flag reads its default, off -- the shipped state in
+    every environment. ``test_dispatch_supervisor_verify_fix.py`` seeds flag trees and
+    drives both states and the broken-tree cases.
+    """
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
 
 
 _STORY_KEY = "51.11"

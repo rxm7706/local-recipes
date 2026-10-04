@@ -27,7 +27,7 @@ from pyforge.marshal.core.harness_profile import parse_profile
 from pyforge.marshal.core.harness_profile import render_verify_fix_argv as render_fix
 from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.policy import DEFAULT_POLICY, compose
-from pyforge.marshal.dispatch_verify_fix import (
+from pyforge.marshal.dispatch_verify import (
     ProcessWaitResult,
     terminate_process_group,
     verify_fix_loop_enabled,
@@ -222,7 +222,7 @@ def test_verify_fix_loop_enabled_flag_config_error_returns_warning(monkeypatch, 
         raise FlagConfigError("unknown environment")
 
     monkeypatch.setattr(
-        "pyforge.marshal.dispatch_verify_fix.read_boolean",
+        "pyforge.marshal.dispatch_verify.read_boolean",
         _raise_flag_config,
     )
     enabled, warning = verify_fix_loop_enabled(repo_root=tmp_path)

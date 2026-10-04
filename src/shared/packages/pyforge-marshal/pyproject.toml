@@ -107,7 +107,6 @@ source_modules = [
     "pyforge.marshal.core",
     "pyforge.marshal.dispatch_supervisor",
     "pyforge.marshal.dispatch_verify",  # Story 22.3 / FR-193 CAP-3 dispatch gate runner
-    "pyforge.marshal.dispatch_verify_fix",  # Story 85.1 / CAP-286 verify-fix turn I/O
     "pyforge.marshal.dispatch_land",  # Story 22.4 / FR-193 CAP-4
     "pyforge.marshal.dispatch_land_finalize",  # Story 22.4 finalize subprocess dispatch land composer
     "pyforge.marshal.dispatch_land_heal",  # Story 28.20 / CAP-4 mechanical land heal
