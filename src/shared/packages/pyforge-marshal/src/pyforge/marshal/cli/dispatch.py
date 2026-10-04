@@ -37,6 +37,7 @@ import re
 import secrets
 import sys
 import time
+import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
@@ -135,7 +136,7 @@ from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_
 from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
-from ..dispatch_verify import evaluate_dispatch_verification, fix_session_alive, run_dispatch_ruff_format_before_verify
+from ..dispatch_verify import evaluate_dispatch_verification, run_dispatch_ruff_format_before_verify
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -1477,31 +1478,12 @@ def _is_dispatch_session_alive(
     process: ProcessPort,
     journal: dispatch_core.DispatchJournalFacts,
 ) -> bool:
-    """Check if a dispatch session is genuinely alive, not just a reused PID.
+    """Check if a dispatch session is genuinely alive, not just a reused PID (Story 83.1/85.3)."""
+    from ..dispatch_verify import dispatch_session_alive
 
-    Returns True only if:
-    1. The journal has a session PID
-    2. That PID is alive according to ProcessPort.is_alive (which now checks it's a process, not thread)
-    3. The process start time is consistent with the journal launch time (within tolerance)
-
-    Story 83.1: Fix the defect where a reused PID or thread ID can hold a wave
-    on a story that finished weeks ago.
-    """
     if journal.session_pid is None:
         return False
-
-    if not process.is_alive(journal.session_pid):
-        return False
-
-    # Additional verification: the process start time must match the journaled launch within tolerance -- a
-    # process started well before or after it means the pid was reused (`pid_start_matches_launch`, shared with
-    # the fix turn's own liveness check, Story 85.2).
-    if journal.launched_at is None:
-        return True
-    return dispatch_core.pid_start_matches_launch(
-        process.process_start_time(journal.session_pid),
-        journal.launched_at,
-    )
+    return dispatch_session_alive(process, journal.session_pid, launched_at=journal.launched_at)
 
 
 def resolve_dispatch_session_verdict(
@@ -1532,11 +1514,12 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
-    # Story 85.2 (CAP-286): a verification fix turn in flight is LIVE work, not the refusal it is fixing -- while
-    # its session runs (the pid-reuse check included), `dispatch status` and the in-flight guard read LIVE.
-    if journal.verify_fix_session_pid is not None and fix_session_alive(
-        process, journal.verify_fix_session_pid, launched_at=journal.verify_fix_started_at
-    ):
+    # Story 85.2/85.3 (CAP-286): an open fix-turn INTENT is LIVE work to every reader -- `dispatch status`,
+    # `marshal status`, the in-flight guard, resume -- while its session runs and after it exited: only a
+    # supervisor settles the turn (commit + re-verify, or stop and park), so resume must re-spawn one rather than
+    # refuse MRS-DISP-023, and no second dispatch may take the story meanwhile. Keyed on the journal facts alone
+    # (`verify_fix_started_at` is set exactly while an INTENT is open), so every caller reads it the same way.
+    if journal.verify_fix_started_at is not None:
         return DispatchSessionVerdict.LIVE
     session_alive = _is_dispatch_session_alive(process, journal)
     if journal.baseline_head_sha is None:
@@ -3135,6 +3118,9 @@ def dispatch_once(
 
     log_path = run_dir / _LOG_FILENAME
     data["log"] = str(log_path)
+    # Story 85.3: a harness-native session id the profile's launch argv may pin (`{session_id}`, Claude's
+    # `--session-id`); it is journaled -- and a fix turn may resume it -- only when the launch really carried it.
+    harness_session_id = str(uuid.uuid4())
     try:
         launch = build_harness.dispatch(
             worktree,
@@ -3149,6 +3135,7 @@ def dispatch_once(
             # never the whole `[context]` payload. The launch seam has no
             # business reading a layer it does not implement.
             wire_layer=context_payload[harness_profile.WIRE_LAYER_NAME],
+            harness_session_id=harness_session_id,
         )
     except BuildHarnessError as exc:
         findings.append(
@@ -3205,6 +3192,11 @@ def dispatch_once(
                 message=wire.reason,
             )
         )
+    launch_session_id = (
+        {"harness_session_id": harness_session_id}
+        if any(harness_session_id in token for token in launch.command)
+        else {}
+    )
     outcome_entry = build_entry(
         id=JournalEntryId(writer_id, 1),
         ts=_format_entry_ts(_now_utc()),
@@ -3218,6 +3210,7 @@ def dispatch_once(
             "model": launch.model,
             "budget_env": dict(launch.budget_env),
             "harness_profile": launch.profile,
+            **launch_session_id,
             # A fresh dict per call (never the one already in `data`), so
             # the journal payload and the echoed envelope can never alias.
             "wire": wire.journal_payload(),

@@ -35,17 +35,27 @@ passed per-invocation, never ``scripts/bmad-switch``."""
 
 from __future__ import annotations
 
+import contextlib
 import os
 import re
 import shutil
 import subprocess
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import BinaryIO
 
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError
 
-from ..core.harness_profile import HarnessProfile, WireWrap, load_profiles, wire_port_for_worktree
+from ..core.dispatch_verify_fix import VERIFY_FIX_PROMPT_FILENAME
+from ..core.harness_profile import (
+    HarnessProfile,
+    HarnessProfileError,
+    WireWrap,
+    load_profiles,
+    verify_fix_prompt_on_stdin,
+    wire_port_for_worktree,
+)
 from ..core.harness_profile import render_dispatch_argv as _render_dispatch_argv
 from ..core.harness_profile import render_verify_fix_argv as _render_verify_fix_argv
 from ..core.harness_profile import resolve_wire_wrap as _resolve_wire_wrap
@@ -135,6 +145,18 @@ def _authcheck_failure(profile: HarnessProfile, binary_path: str) -> str | None:
     return None
 
 
+def _write_private_text(path: Path, text: str) -> None:
+    """Write ``text`` to ``path`` readable by its owner only (0600, also when the file already exists) -- a fix
+    turn's prompt carries scrubbed command output, never meant for another account (Story 85.3)."""
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            os.fchmod(handle.fileno(), 0o600)
+            handle.write(text)
+    except OSError as exc:
+        raise BuildHarnessError(f"cannot write fix-turn prompt file {str(path)!r}: {exc}") from exc
+
+
 class BmadBuildHarness:
     """``BuildHarnessPort``'s sole implementation (Story 22.1; profile-
     driven since Story 22.8)."""
@@ -150,8 +172,12 @@ class BmadBuildHarness:
         wire: WireWrap,
         budget_env: Mapping[str, str],
         project_slug: str,
+        stdin_path: Path | None = None,
     ) -> tuple[int, tuple[str, ...]]:
         """Detach-launch an already-rendered argv; return ``(pid, command)``.
+
+        ``stdin_path`` (Story 85.3): a fix turn's prompt file, opened read-only as the session's stdin; every
+        other launch keeps ``/dev/null``.
 
         The one launcher behind both ``dispatch`` (the story session, Story
         22.1) and ``dispatch_verify_fix`` (Story 85.1's fix turn): the child
@@ -187,7 +213,14 @@ class BmadBuildHarness:
             log_file = open(log_path, "wb")  # noqa: SIM115
         except (OSError, ValueError) as exc:
             raise BuildHarnessError(f"cannot open dispatch log {str(log_path)!r}: {exc}") from exc
-        with log_file:
+        with contextlib.ExitStack() as handles:
+            handles.enter_context(log_file)
+            stdin_source: int | BinaryIO = subprocess.DEVNULL
+            if stdin_path is not None:
+                try:
+                    stdin_source = handles.enter_context(open(stdin_path, "rb"))
+                except OSError as exc:
+                    raise BuildHarnessError(f"cannot open fix-turn prompt file {str(stdin_path)!r}: {exc}") from exc
             try:
                 # Story 14.4, CAP-6: stays raw subprocess, exempted
                 # file-level in test_process_sole_ownership.py -- needs a
@@ -205,7 +238,7 @@ class BmadBuildHarness:
                     list(argv),
                     cwd=worktree,
                     start_new_session=True,
-                    stdin=subprocess.DEVNULL,
+                    stdin=stdin_source,
                     stdout=log_file,
                     stderr=log_file,
                     env=child_env,
@@ -226,6 +259,8 @@ class BmadBuildHarness:
         launch_mode: str,
         project_slug: str,
         budget_env: Mapping[str, str] | None = None,
+        harness_session_id: str = "",
+        run_dir: Path | None = None,
     ) -> DispatchLaunchResult:
         """Launch one fix-only or resume session (Story 85.1, not bmad-build-auto)."""
         if not resolution or resolution.spec is None or resolution.binary_path is None:
@@ -249,15 +284,23 @@ class BmadBuildHarness:
                     ),
                     aggressiveness=wire.aggressiveness,
                 )
+        try:
+            prompt_on_stdin = verify_fix_prompt_on_stdin(profile, mode=launch_mode)
+        except HarnessProfileError as exc:
+            raise BuildHarnessError(str(exc)) from exc
+        prompt_dir = run_dir if run_dir is not None else log_path.parent
+        prompt_path = (prompt_dir / VERIFY_FIX_PROMPT_FILENAME).resolve()
+        _write_private_text(prompt_path, prompt)
         argv, rendered_model, model_omitted_reason = _render_verify_fix_argv(
             profile,
             mode=launch_mode,
             binary_path=resolution.binary_path,
             worktree=worktree,
-            prompt=prompt,
             model=model,
             wire=wire,
             wire_port=wire_port_for_worktree(worktree),
+            session_id=harness_session_id,
+            prompt_file=str(prompt_path),
         )
         pid, command = self.launch_argv(
             argv,
@@ -268,6 +311,7 @@ class BmadBuildHarness:
             wire=wire,
             budget_env=budget_env or {},
             project_slug=project_slug,
+            stdin_path=prompt_path if prompt_on_stdin else None,
         )
         return DispatchLaunchResult(
             pid=pid,
@@ -346,6 +390,7 @@ class BmadBuildHarness:
         budget_env: Mapping[str, str],
         log_path: Path,
         wire_layer: Mapping[str, object] | None = None,
+        harness_session_id: str = "",
     ) -> DispatchLaunchResult:
         if not resolution or resolution.spec is None or resolution.binary_path is None:
             raise BuildHarnessError(
@@ -407,6 +452,7 @@ class BmadBuildHarness:
             model=model,
             wire=wire,
             wire_port=wire_port_for_worktree(worktree),
+            session_id=harness_session_id,
         )
         pid, command = self.launch_argv(
             argv,

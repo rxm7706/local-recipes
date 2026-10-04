@@ -10,6 +10,7 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
 from pyforge.core.flags import FlagConfigError
 from pyforge.core.process import PosixProcess
 
@@ -22,6 +23,7 @@ from pyforge.marshal.core.dispatch_verify_fix import (
     decide_verify_fix_turn,
     extract_failed_verify_commands,
     scrub_fix_turn_exposure,
+    scrub_then_tail_bytes,
     tail_bytes,
 )
 from pyforge.marshal.core.harness_profile import parse_profile
@@ -30,6 +32,7 @@ from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.policy import DEFAULT_POLICY, compose
 from pyforge.marshal.dispatch_verify import (
     ProcessWaitResult,
+    TerminateProcessGroupResult,
     terminate_process_group,
     verify_fix_loop_enabled,
     wait_for_process,
@@ -117,11 +120,31 @@ def test_resume_vs_fix_only_from_profile():
             "name": "fake",
             "binary": "fake",
             "argv": ["{prompt}"],
-            "resume_argv": ["--continue", "{prompt}"],
+            "resume_argv": ["--resume", "{session_id}", "{prompt_stdin}"],
         },
         source="t",
     )
-    assert choose_verify_fix_launch_mode(resume_argv=profile.resume_argv) == VerifyFixLaunchMode.RESUME
+    assert (
+        choose_verify_fix_launch_mode(
+            resume_argv=profile.resume_argv,
+            harness_session_id="sid-1",
+            launch_profile="fake",
+            resolved_profile="fake",
+        )
+        == VerifyFixLaunchMode.RESUME
+    )
+    assert choose_verify_fix_launch_mode(resume_argv=profile.resume_argv, harness_session_id=None) == (
+        VerifyFixLaunchMode.FIX_ONLY
+    )
+    assert (
+        choose_verify_fix_launch_mode(
+            resume_argv=profile.resume_argv,
+            harness_session_id="sid-1",
+            launch_profile="claude",
+            resolved_profile="cursor",
+        )
+        == VerifyFixLaunchMode.FIX_ONLY
+    )
     bare = parse_profile({"name": "bare", "binary": "bare", "argv": ["{prompt}"]}, source="t")
     assert choose_verify_fix_launch_mode(resume_argv=bare.resume_argv) == VerifyFixLaunchMode.FIX_ONLY
 
@@ -132,7 +155,7 @@ def test_render_verify_fix_resume_argv():
             "name": "fake",
             "binary": "fake",
             "argv": ["{prompt}"],
-            "resume_argv": ["--continue", "{prompt}"],
+            "resume_argv": ["--resume", "{session_id}", "{prompt_file}"],
         },
         source="t",
     )
@@ -141,11 +164,11 @@ def test_render_verify_fix_resume_argv():
         mode="resume",
         binary_path="/bin/fake",
         worktree=__import__("pathlib").Path("/tmp/wt"),
-        prompt="fix it",
         model=None,
+        session_id="abc-session",
+        prompt_file="/tmp/wt/verify-fix-prompt.txt",
     )
-    assert "--continue" in argv
-    assert "fix it" in argv
+    assert argv == ("/bin/fake", "--resume", "abc-session", "/tmp/wt/verify-fix-prompt.txt")
 
 
 def test_policy_verify_fix_defaults_compose():
@@ -155,12 +178,82 @@ def test_policy_verify_fix_defaults_compose():
     assert block["verify_fix_wall_clock_minutes"] == DEFAULT_POLICY["dispatch"]["verify_fix_wall_clock_minutes"]
 
 
-def test_scrub_fix_turn_exposure_redacts_common_credential_shapes():
-    raw = "postgres://admin:secret@db/x\nAuthorization: Bearer eyJhbGciOi\npassword = 'hunter2'"
+#: Every credential shape Story 85.3's AC names, plus the five the 85.3 landing review found leaking (H3):
+#: ``(case id, raw text, the secret that must not survive)``.
+_CREDENTIAL_SHAPES = [
+    ("url", "postgres://admin:urlsecret1@db/x", "urlsecret1"),
+    ("url-slash", "https://user:pa/ss@host.example/path", "pa/ss"),
+    ("url-slash-colon", "postgresql://admin:p/a:ss@db.example:5432/x", "p/a:ss"),
+    ("bearer", "Authorization: Bearer eyJhbGciOi", "eyJhbGciOi"),
+    ("basic", "Authorization: Basic dXNlcjpwYXNz", "dXNlcjpwYXNz"),
+    ("basic-lower", "authorization: basic dXNlcjpwYXNzd2Q=", "dXNlcjpwYXNzd2Q"),
+    ("password-assign", "password = 'hunter2'", "hunter2"),
+    ("database-password", "DATABASE_PASSWORD=dbsecret1", "dbsecret1"),
+    ("database-password-export", 'export DATABASE_PASSWORD="dbsecret2"', "dbsecret2"),
+    ("aws-secret", "AWS_SECRET_ACCESS_KEY=AKIAEXAMPLE", "AKIAEXAMPLE"),
+    ("sk-ant", "sk-ant-api03-abc12345", "api03-abc12345"),
+    ("sk-ant-short", "key sk-ant-ab1 end", "ab1"),
+    ("yaml-password", "  password: s3cr3t", "s3cr3t"),
+    ("json-password", '{"user": "a", "password": "jsonsecret"}', "jsonsecret"),
+    ("json-password-escaped", '{"password": "esc\\"aped"}', "aped"),
+    ("postgres-password", "POSTGRES_PASSWORD=pgsecret1", "pgsecret1"),
+    ("github-token", "GITHUB_TOKEN=ghp_abcdefghijklmnop1234", "ghp_abcdefghijklmnop1234"),
+    ("db-password-yaml", "db_password: yamlsecret", "yamlsecret"),
+    ("password-colon", "Password: colonsecret", "colonsecret"),
+    ("kwarg", "connect(password='kwsecret')", "kwsecret"),
+    ("client-secret", '{"client_secret": "clsecret"}', "clsecret"),
+    ("api-key", "ANTHROPIC_API_KEY=sk-ant-zz9", "zz9"),
+    ("access-key", "access_key: akvalue1", "akvalue1"),
+]
+
+
+@pytest.mark.parametrize(("case", "raw", "secret"), _CREDENTIAL_SHAPES, ids=[c[0] for c in _CREDENTIAL_SHAPES])
+def test_scrub_fix_turn_exposure_redacts_every_credential_shape(case: str, raw: str, secret: str):
     scrubbed = scrub_fix_turn_exposure(raw)
-    assert "secret" not in scrubbed
-    assert "eyJhbGciOi" not in scrubbed
-    assert "hunter2" not in scrubbed
+    assert secret not in scrubbed, case
+    assert "***REDACTED***" in scrubbed, case
+
+
+def test_scrub_fix_turn_exposure_keeps_the_key_and_ordinary_output():
+    scrubbed = scrub_fix_turn_exposure("DATABASE_PASSWORD=postgres\nE501 line too long (101 > 100)\nassert token == x")
+    assert scrubbed.splitlines() == [
+        "DATABASE_PASSWORD=***REDACTED***",
+        "E501 line too long (101 > 100)",
+        "assert token == x",
+    ]
+
+
+#: A credential right at the tail's cut point (85.3 landing review M2, mutants M01/M02): truncating first would
+#: cut the URL's scheme off and leave a fragment of the password no URL rule can see.
+_CUT_RAW = "x" * 200 + " postgres://admin:supersecretpw@db/x"
+_CUT_BYTES = len("persecretpw@db/x")
+
+
+def test_scrub_then_tail_bytes_redacts_before_truncating():
+    """A credential split by tail truncation must not leak (Story 85.3)."""
+    assert "secretpw" in tail_bytes(_CUT_RAW, max_bytes=_CUT_BYTES), "the cut must fall inside the credential"
+    tailed = scrub_then_tail_bytes(_CUT_RAW, max_bytes=_CUT_BYTES)
+    assert "secretpw" not in tailed
+    assert "persecret" not in tailed
+
+
+def test_the_fix_turn_prompt_redacts_before_truncating():
+    failed = (FailedVerifyCommand(command="pixi run test", stdout=_CUT_RAW, stderr="", exit_code=1),)
+    prompt = build_verify_fix_prompt(failed, output_tail_bytes=_CUT_BYTES)
+    assert "secretpw" not in prompt
+    assert "persecret" not in prompt
+
+
+def test_extract_failed_verify_commands_ignores_gate_018_pseudo_command():
+    findings = (
+        Finding(
+            code="MRS-GATE-018",
+            severity=Severity.ERROR,
+            message="deferred work intake refused",
+        ),
+    )
+    extracted = extract_failed_verify_commands((), findings)
+    assert extracted == ()
 
 
 def test_wait_for_process_reaps_exited_child_without_zombie_poll():
@@ -216,6 +309,45 @@ def test_verify_fix_loop_enabled_reads_off_from_shipped_tree(tmp_path):
     enabled, warning = verify_fix_loop_enabled(repo_root=repo)
     assert enabled is False
     assert warning is None
+
+
+def test_verify_fix_loop_enabled_unset_environment_reads_dev_on(tmp_path, monkeypatch):
+    """Story 85.3: unset PYFORGE_ENVIRONMENT follows dev overlay (verify_fix on)."""
+    repo = tmp_path / "repo"
+    flags_dir = repo / "src/platform/config"
+    flags_dir.mkdir(parents=True)
+    overlays = flags_dir / "flag-overlays.json"
+    overlays.write_text(
+        json.dumps(
+            {"dev": {"pyforge.marshal.verify_fix_loop": "on"}, "production": {"pyforge.marshal.verify_fix_loop": "off"}}
+        ),
+        encoding="utf-8",
+    )
+    flags_dir.joinpath("flags.json").write_text(
+        json.dumps(
+            {
+                "flags": {
+                    "pyforge.marshal.verify_fix_loop": {
+                        "state": "ENABLED",
+                        "defaultVariant": "off",
+                        "variants": {"on": True, "off": False},
+                        "metadata": {
+                            "owner": "marshal",
+                            "story": "85-3-x",
+                            "created": "2026-10-03",
+                            "on_everywhere": "",
+                            "cleanup_by": "",
+                        },
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
+    enabled, warning = verify_fix_loop_enabled(repo_root=repo)
+    assert warning is None
+    assert enabled is True
 
 
 def test_verify_fix_loop_enabled_flag_config_error_returns_warning(monkeypatch, tmp_path):
@@ -365,9 +497,14 @@ def test_terminate_process_group_falls_back_to_kill_when_no_pgid(monkeypatch):
     def fake_kill(pid: int, sig: int) -> None:
         kills.append((pid, sig))
 
+    class _Dead:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
     monkeypatch.setattr(os, "getpgid", fake_getpgid)
     monkeypatch.setattr(os, "kill", fake_kill)
-    terminate_process_group(77)
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    terminate_process_group(77, grace_s=0.0, process=_Dead())
     assert kills == [(77, signal.SIGTERM)]
 
 
@@ -380,6 +517,10 @@ def test_terminate_process_group_swallows_kill_oserror(monkeypatch):
 def test_terminate_process_group_killpg_failure_falls_back_to_kill(monkeypatch):
     kills: list[tuple[int, int]] = []
 
+    class _Dead:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
     monkeypatch.setattr(os, "getpgid", lambda _pid: 5)
 
     def fake_killpg(_pgid: int, _sig: int) -> None:
@@ -390,15 +531,21 @@ def test_terminate_process_group_killpg_failure_falls_back_to_kill(monkeypatch):
 
     monkeypatch.setattr(os, "killpg", fake_killpg)
     monkeypatch.setattr(os, "kill", fake_kill)
-    terminate_process_group(88)
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    terminate_process_group(88, grace_s=0.0, process=_Dead())
     assert kills == [(88, signal.SIGTERM)]
 
 
 def test_terminate_process_group_killpg_and_kill_both_fail(monkeypatch):
+    class _Alive:
+        def is_alive(self, _pid: int) -> bool:
+            return True
+
     monkeypatch.setattr(os, "getpgid", lambda _pid: 5)
     monkeypatch.setattr(os, "killpg", lambda *_args: (_ for _ in ()).throw(OSError))
     monkeypatch.setattr(os, "kill", lambda *_args: (_ for _ in ()).throw(OSError))
-    terminate_process_group(88)  # must not raise
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    terminate_process_group(88, grace_s=0.0, process=_Alive())  # must not raise
 
 
 def test_terminate_process_group_never_signals_a_group_address_or_init(monkeypatch):
@@ -415,10 +562,16 @@ def test_terminate_process_group_never_signals_a_group_address_or_init(monkeypat
 def test_terminate_process_group_signals_only_the_pid_when_it_shares_this_process_group(monkeypatch):
     """``killpg`` on this process's own group would stop the supervisor itself."""
     calls: list[tuple[str, int, int]] = []
+
+    class _Dead:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
     monkeypatch.setattr(os, "getpgid", lambda _pid: os.getpgrp())
     monkeypatch.setattr(os, "killpg", lambda pgid, sig: calls.append(("killpg", pgid, sig)))
     monkeypatch.setattr(os, "kill", lambda pid, sig: calls.append(("kill", pid, sig)))
-    terminate_process_group(4242)
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    terminate_process_group(4242, grace_s=0.0, process=_Dead())
     assert calls == [("kill", 4242, signal.SIGTERM)]
 
 
@@ -429,10 +582,17 @@ def test_terminate_process_group_never_passes_a_group_id_of_this_group_or_init_t
     monkeypatch.setattr(os, "getpgrp", lambda: 7777)
     monkeypatch.setattr(os, "killpg", lambda pgid, sig: calls.append(("killpg", pgid, sig)))
     monkeypatch.setattr(os, "kill", lambda pid, sig: calls.append(("kill", pid, sig)))
+
+    class _Dead:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
     for pgid in (0, 1):
+        calls.clear()
         monkeypatch.setattr(os, "getpgid", lambda _pid, pgid=pgid: pgid)
-        terminate_process_group(4242)
-    assert calls == [("kill", 4242, signal.SIGTERM), ("kill", 4242, signal.SIGTERM)]
+        terminate_process_group(4242, grace_s=0.0, process=_Dead())
+        assert calls == [("kill", 4242, signal.SIGTERM)]
 
 
 def test_terminate_process_group_signals_process_group(monkeypatch):
@@ -445,10 +605,34 @@ def test_terminate_process_group_signals_process_group(monkeypatch):
     def fake_killpg(pgid: int, sig: int) -> None:
         calls.append((pgid, sig))
 
+    class _DeadProcess:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
     monkeypatch.setattr(os, "getpgid", fake_getpgid)
     monkeypatch.setattr(os, "killpg", fake_killpg)
-    terminate_process_group(99)
-    assert calls == [(42, signal.SIGTERM)]
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    result = terminate_process_group(99, grace_s=0.0, process=_DeadProcess())
+    assert (42, signal.SIGTERM) in calls
+    assert isinstance(result, TerminateProcessGroupResult)
+    assert result.signalled_term is True
+
+
+def test_terminate_process_group_sends_sigkill_after_grace(monkeypatch):
+    calls: list[tuple[int, int]] = []
+    alive = {"v": True}
+
+    class _AliveProcess:
+        def is_alive(self, _pid: int) -> bool:
+            return alive["v"]
+
+    monkeypatch.setattr(os, "getpgid", lambda _pid: 42)
+    monkeypatch.setattr(os, "killpg", lambda pgid, sig: calls.append((pgid, sig)))
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    result = terminate_process_group(99, grace_s=0.0, process=_AliveProcess())
+    assert (42, signal.SIGTERM) in calls
+    assert (42, signal.SIGKILL) in calls
+    assert result.signalled_kill is True
 
 
 def test_wait_for_process_times_out_on_slow_child():
@@ -461,7 +645,7 @@ def test_wait_for_process_times_out_on_slow_child():
         assert result.exited is False
         assert result.returncode is None
     finally:
-        terminate_process_group(proc.pid)
+        terminate_process_group(proc.pid, grace_s=0.5)
 
 
 def test_fix_turn_rule_mutation_flag_off_skips_turn():
@@ -593,3 +777,260 @@ def test_pid_start_matches_launch_is_story_83_1s_reuse_guard():
     assert pid_start_matches_launch(at - 3600.0, launched) is False
     assert pid_start_matches_launch(None, launched) is True
     assert pid_start_matches_launch(at - 3600.0, None) is True
+
+
+# --------------------------------------------------------------------------
+# Story 85.3 landing review H1/H5/M8: the fix turn's argv -- the session it resumes, and the prompt never on it
+# --------------------------------------------------------------------------
+
+_REPO_ROOT = Path(__file__).resolve().parents[6]
+_FIX_PROMPT = "UNIQUE-FIX-PROMPT-85-3: make pixi run test pass"
+
+
+def _fix_profiles() -> dict[str, object]:
+    """The packaged claude and cursor profiles, and the repo overlay's cursor -- every fix template that ships."""
+    from pyforge.marshal.core.harness_profile import load_packaged_profiles, load_profiles
+
+    packaged = load_packaged_profiles()
+    overlaid, errors = load_profiles(_REPO_ROOT)
+    assert errors == ()
+    assert (_REPO_ROOT / "_bmad-output/harness-profiles/cursor.toml").is_file()
+    return {"claude": packaged["claude"], "cursor": packaged["cursor"], "cursor-overlay": overlaid["cursor"]}
+
+
+def test_the_packaged_claude_resume_argv_resumes_by_id_without_session_id():
+    """H1: claude 2.1.284 refuses ``--session-id`` beside ``--resume``; the launch pins the id, the resume names it."""
+    from pyforge.marshal.core.harness_profile import load_packaged_profiles, render_dispatch_argv
+
+    claude = load_packaged_profiles()["claude"]
+    argv, _, _ = render_fix(
+        claude, mode="resume", binary_path="claude", worktree=Path("/wt"), model=None, session_id="sid-85-3"
+    )
+    assert "--session-id" not in argv
+    assert argv[argv.index("--resume") + 1] == "sid-85-3"
+    launch, _, _ = render_dispatch_argv(
+        claude, binary_path="claude", worktree=Path("/wt"), prompt="go", model=None, session_id="sid-85-3"
+    )
+    assert launch[launch.index("--session-id") + 1] == "sid-85-3"
+    assert "--resume" not in launch
+
+
+@pytest.mark.parametrize("name", ["claude", "cursor", "cursor-overlay"])
+@pytest.mark.parametrize("mode", ["resume", "fix_only"])
+def test_no_shipped_fix_template_carries_a_prompt_on_argv(name: str, mode: str):
+    """H5/M8: every shipped fix template takes its prompt on stdin, so nothing but the binary and flags is argv."""
+    from pyforge.marshal.core.harness_profile import verify_fix_prompt_on_stdin
+
+    profile = _fix_profiles()[name]
+    template = profile.resume_argv if mode == "resume" and profile.resume_argv else profile.fix_only_argv
+    assert "{prompt}" not in " ".join(template)
+    assert verify_fix_prompt_on_stdin(profile, mode=mode) is True
+    argv, _, _ = render_fix(
+        profile, mode=mode, binary_path="/bin/x", worktree=Path("/wt"), model="opus", session_id="sid-1"
+    )
+    assert not any("{" in token and "}" in token and "prompt" in token for token in argv)
+    assert all(_FIX_PROMPT not in token for token in argv)
+
+
+def test_cursor_declares_no_resume_template():
+    """H2: the Cursor launch records no session id, so its fix turn is fix-only."""
+    profiles = _fix_profiles()
+    assert profiles["cursor"].resume_argv == ()
+    assert profiles["cursor-overlay"].resume_argv == ()
+
+
+@pytest.mark.parametrize("name", ["copilot", "gemini", "devin"])
+def test_a_profile_without_a_fix_template_refuses_rather_than_falling_back_to_argv(name: str):
+    """H5: the launch template's ``{prompt}`` is argv -- a profile with no fix template refuses, naming itself."""
+    from pyforge.marshal.core.harness_profile import (
+        HarnessProfileError,
+        load_packaged_profiles,
+        verify_fix_prompt_on_stdin,
+    )
+
+    profile = load_packaged_profiles()[name]
+    assert (profile.resume_argv, profile.fix_only_argv) == ((), ())
+    with pytest.raises(HarnessProfileError, match=repr(name)):
+        render_fix(profile, mode="fix_only", binary_path="/bin/x", worktree=Path("/wt"), model=None)
+    with pytest.raises(HarnessProfileError, match=repr(name)):
+        verify_fix_prompt_on_stdin(profile, mode="resume")
+
+
+@pytest.mark.parametrize(
+    ("template", "message"),
+    [
+        (["-p", "{prompt}"], "must not carry '{prompt}'"),
+        (["-p", "--message={prompt}", "{prompt_stdin}"], "must not carry '{prompt}'"),
+        (["-p"], "exactly once"),
+        (["-p", "{prompt_stdin}", "{prompt_file}"], "exactly once"),
+        (["-p", "{prompt_stdin}", "{prompt_stdin}"], "exactly once"),
+        (["-p", "x{prompt_stdin}"], "whole"),
+    ],
+)
+@pytest.mark.parametrize("label", ["resume_argv", "fix_only_argv"])
+def test_parse_profile_refuses_a_fix_template_without_exactly_one_safe_prompt_form(label, template, message):
+    from pyforge.marshal.core.harness_profile import HarnessProfileError
+
+    with pytest.raises(HarnessProfileError, match=message):
+        parse_profile({"name": "fake", "binary": "fake", "argv": ["{prompt}"], label: template}, source="t")
+
+
+@pytest.mark.parametrize("token", ["{prompt_stdin}", "{prompt_file}"])
+def test_parse_profile_refuses_a_fix_prompt_form_in_the_launch_argv(token):
+    from pyforge.marshal.core.harness_profile import HarnessProfileError
+
+    with pytest.raises(HarnessProfileError, match="must not carry"):
+        parse_profile({"name": "fake", "binary": "fake", "argv": ["{prompt}", token]}, source="t")
+
+
+class _CapturedPopen:
+    pid = 5151
+
+
+def _capture_fix_launch(monkeypatch, *, profile, mode, tmp_path):
+    """Drive ``BmadBuildHarness.dispatch_verify_fix`` with ``Popen`` recorded: the argv, and what stdin held."""
+    from pyforge.marshal.adapters import harness_bmadbuild
+    from pyforge.marshal.ports.build_harness import HarnessResolution
+
+    seen: dict[str, object] = {}
+
+    def _popen(argv, **kwargs):
+        seen["argv"] = list(argv)
+        stdin = kwargs["stdin"]
+        seen["stdin"] = stdin.read().decode("utf-8") if hasattr(stdin, "read") else stdin
+        return _CapturedPopen()
+
+    monkeypatch.setattr(harness_bmadbuild.subprocess, "Popen", _popen)
+    run_dir = tmp_path / "run"
+    run_dir.mkdir(exist_ok=True)
+    resolution = HarnessResolution(profile=profile.name, spec=profile, binary_path="/bin/x")
+    launch = harness_bmadbuild.BmadBuildHarness().dispatch_verify_fix(
+        tmp_path,
+        resolution=resolution,
+        prompt=_FIX_PROMPT,
+        model="opus",
+        log_path=run_dir / "verify-fix.log",
+        launch_mode=mode,
+        project_slug="pyforge-marshal",
+        harness_session_id="sid-85-3",
+        run_dir=run_dir,
+    )
+    return launch, seen, run_dir
+
+
+@pytest.mark.parametrize(
+    ("name", "mode"), [("claude", "resume"), ("claude", "fix_only"), ("cursor-overlay", "fix_only")]
+)
+def test_the_fix_turn_launch_feeds_the_prompt_on_stdin_from_a_private_file(monkeypatch, tmp_path, name, mode):
+    """H5/M8 + the 0600 prompt file: the session's stdin is the prompt; argv never holds it."""
+    from pyforge.marshal.core.dispatch_verify_fix import VERIFY_FIX_PROMPT_FILENAME
+
+    launch, seen, run_dir = _capture_fix_launch(
+        monkeypatch, profile=_fix_profiles()[name], mode=mode, tmp_path=tmp_path
+    )
+
+    assert seen["stdin"] == _FIX_PROMPT
+    assert all(_FIX_PROMPT not in token for token in seen["argv"])
+    assert tuple(seen["argv"]) == launch.command
+    prompt_file = run_dir / VERIFY_FIX_PROMPT_FILENAME
+    assert prompt_file.read_text(encoding="utf-8") == _FIX_PROMPT
+    assert prompt_file.stat().st_mode & 0o777 == 0o600
+    if mode == "resume":
+        assert seen["argv"][seen["argv"].index("--resume") + 1] == "sid-85-3"
+
+
+def test_the_prompt_file_is_rewritten_0600_when_it_already_exists(monkeypatch, tmp_path):
+    from pyforge.marshal.core.dispatch_verify_fix import VERIFY_FIX_PROMPT_FILENAME
+
+    stale = tmp_path / "run" / VERIFY_FIX_PROMPT_FILENAME
+    stale.parent.mkdir()
+    stale.write_text("stale", encoding="utf-8")
+    stale.chmod(0o644)
+
+    _capture_fix_launch(monkeypatch, profile=_fix_profiles()["claude"], mode="fix_only", tmp_path=tmp_path)
+
+    assert stale.read_text(encoding="utf-8") == _FIX_PROMPT
+    assert stale.stat().st_mode & 0o777 == 0o600
+
+
+def test_a_profile_without_a_fix_template_refuses_the_launch_naming_it(monkeypatch, tmp_path):
+    from pyforge.marshal.adapters.harness_bmadbuild import BuildHarnessError
+    from pyforge.marshal.core.dispatch_verify_fix import VERIFY_FIX_PROMPT_FILENAME
+    from pyforge.marshal.core.harness_profile import load_packaged_profiles
+
+    with pytest.raises(BuildHarnessError, match="'copilot'"):
+        _capture_fix_launch(
+            monkeypatch, profile=load_packaged_profiles()["copilot"], mode="fix_only", tmp_path=tmp_path
+        )
+    assert not (tmp_path / "run" / VERIFY_FIX_PROMPT_FILENAME).exists()
+
+
+# --------------------------------------------------------------------------
+# Story 85.3 landing review M1/M2 (M10): the timeout stop, against real processes
+# --------------------------------------------------------------------------
+
+
+def _gone_or_zombie(pid: int, seconds: float = 5.0) -> bool:
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        try:
+            stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+        except OSError:
+            return True
+        if stat[stat.rfind(")") + 2 : stat.rfind(")") + 3] == "Z":
+            return True
+        time.sleep(0.05)
+    return False
+
+
+def test_terminate_process_group_reaps_a_leader_that_obeys_sigterm():
+    """M10: the stopped child is reaped -- no zombie left -- and its signal exit is reported."""
+    proc = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"], start_new_session=True)
+    time.sleep(0.2)
+    result = terminate_process_group(proc.pid, grace_s=5.0)
+    assert result.signalled_term is True
+    assert result.reaped is True
+    assert result.returncode == -signal.SIGTERM
+    try:
+        os.waitpid(proc.pid, os.WNOHANG)
+    except ChildProcessError:
+        pass
+    else:  # pragma: no cover - the defect this pins
+        raise AssertionError("the leader was left unreaped")
+
+
+def test_terminate_process_group_kills_and_reaps_a_leader_that_ignores_sigterm():
+    code = (
+        "import signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); print('ready', flush=True); time.sleep(60)"
+    )
+    proc = subprocess.Popen([sys.executable, "-c", code], start_new_session=True, stdout=subprocess.PIPE, text=True)
+    assert proc.stdout is not None and proc.stdout.readline().strip() == "ready"
+    result = terminate_process_group(proc.pid, grace_s=0.5)
+    assert (result.signalled_term, result.signalled_kill, result.reaped) == (True, True, True)
+    assert result.returncode == -signal.SIGKILL
+
+
+def test_terminate_process_group_kills_a_child_that_ignores_sigterm_after_its_leader_obeys():
+    """M1: the leader exits on SIGTERM, its child ignores it -- the group is swept and the child killed."""
+    child = "import signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(60)"
+    leader = (
+        "import subprocess, sys, time\n"
+        f"p = subprocess.Popen([sys.executable, '-c', {child!r}])\n"
+        "print(p.pid, flush=True)\n"
+        "time.sleep(60)\n"
+    )
+    proc = subprocess.Popen([sys.executable, "-c", leader], start_new_session=True, stdout=subprocess.PIPE, text=True)
+    assert proc.stdout is not None
+    child_pid = int(proc.stdout.readline())
+    time.sleep(0.3)
+    try:
+        result = terminate_process_group(proc.pid, grace_s=2.0)
+        assert result.reaped is True
+        assert result.returncode == -signal.SIGTERM
+        assert result.signalled_kill is True
+        assert _gone_or_zombie(child_pid), "the SIGTERM-ignoring child outlived its leader"
+    finally:
+        try:
+            os.kill(child_pid, signal.SIGKILL)
+        except OSError:
+            pass
