@@ -305,7 +305,7 @@ def test_sidecar_failed_commands_still_reach_the_fix_turn(
     calls = _spy_fix_turn(monkeypatch)
     fs = loop.FakeFs()
 
-    loop._finalize(fs, loop.FakeVcs(), repo_root, worktree)
+    _finalize(fs, repo_root, worktree)
 
     assert calls == ["binary_present", "dispatch_verify_fix"]
 
@@ -341,7 +341,7 @@ def test_fix_turn_intent_is_journaled_before_the_harness_launch(
     )
     fs = loop.FakeFs()
 
-    loop._finalize(fs, loop.FakeVcs(), repo_root, worktree)
+    _finalize(fs, repo_root, worktree)
 
     assert order.index("intent") < order.index("launch")
 
@@ -387,7 +387,7 @@ def test_fix_turn_green_reverify_sets_finalize_verified(
     )
     fs = loop.FakeFs()
 
-    _counter, ok = loop._finalize(fs, vcs, repo_root, worktree)
+    _counter, ok = _finalize(fs, repo_root, worktree)
 
     assert ok is True
     finalize_outcomes = [
@@ -432,7 +432,7 @@ def test_reverify_still_refused_emits_mrs_disp_060(
     )
     fs = loop.FakeFs()
 
-    loop._finalize(fs, vcs, repo_root, worktree)
+    _finalize(fs, repo_root, worktree)
 
     observations = [
         entry
@@ -462,6 +462,6 @@ def test_without_sidecar_resolver_the_long_tail_fix_turn_never_launches(
     )
     fs = loop.FakeFs()
 
-    loop._finalize(fs, loop.FakeVcs(), repo_root, worktree)
+    _finalize(fs, repo_root, worktree)
 
     assert calls == []
