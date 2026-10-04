@@ -133,11 +133,7 @@ class _DiskDirtyVcs:
     def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
         del repo_root
         if base == "HEAD":
-            dirty = [
-                p
-                for p in self._scope
-                if (worktree_path / p).read_bytes() != self._baseline.get(p, b"")
-            ]
+            dirty = [p for p in self._scope if (worktree_path / p).read_bytes() != self._baseline.get(p, b"")]
             return tuple(sorted(dirty))
         return self._scope
 
