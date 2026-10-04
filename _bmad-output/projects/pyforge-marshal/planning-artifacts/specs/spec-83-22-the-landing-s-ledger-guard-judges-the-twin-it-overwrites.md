@@ -2,7 +2,8 @@
 title: "83.22: The landing's ledger guard judges the twin it overwrites"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '1d62151fe27a3afef7ed8bebc39a731d83e5b279'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
