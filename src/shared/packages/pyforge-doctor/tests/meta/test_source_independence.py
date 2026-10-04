@@ -9,8 +9,7 @@ this one property, one per ``sources/*.py`` file
 ``_chain_``, ``_deps_``, ``_factory_``) — each hand-copied, each covering
 only the file it was written for. ``sources/atlas.py`` had none of its own
 and so had ZERO independence coverage despite judging six ``Source``
-members (five wired axes plus the registered-but-not-yet-dispatched
-``BEHIND_UPSTREAM``).
+members (five wired axes plus ``BEHIND_UPSTREAM``, wired by Story 41.2).
 
 This module replaces all six: it is driven by ``sources.REGISTRY`` (Story
 6.2) via ``SOURCE_MODULE``, a hand-maintained map from every in-scope
@@ -98,9 +97,8 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.WARDEN_DOCTOR: "warden.py",
     Source.STALENESS_REPORT: "atlas.py",
     Source.CVE_WATCHER: "atlas.py",
-    Source.BEHIND_UPSTREAM: "atlas.py",  # registered (Story 6.2), not yet
-    # dispatched by atlas.py's own gather() -- still atlas's own subject and
-    # atlas's own file, so it belongs here regardless of wiring status.
+    Source.BEHIND_UPSTREAM: "atlas.py",  # registered (Story 6.2); atlas.py's
+    # "behind-upstream" watch axis emits it (Story 41.2, DW-FU-6-2).
     Source.FEEDSTOCK_HEALTH: "atlas.py",
     Source.RELEASE_CADENCE: "atlas.py",
     Source.MARSHAL_DURABILITY: "marshal.py",
