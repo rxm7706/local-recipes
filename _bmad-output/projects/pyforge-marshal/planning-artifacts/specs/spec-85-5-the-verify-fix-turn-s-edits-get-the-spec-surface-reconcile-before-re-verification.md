@@ -2,10 +2,10 @@
 title: "85.5: The verify fix turn's edits get the spec-surface reconcile before re-verification"
 type: 'fix'
 created: '2026-10-04'
-status: 'done'
+status: 'in-review'
 baseline_revision: '0b58f2fb95bf8009935f4c152409adc169f71233'
-review_loop_iteration: 1
-followup_review_recommended: true
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
