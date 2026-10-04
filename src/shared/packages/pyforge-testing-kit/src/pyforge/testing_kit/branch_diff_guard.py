@@ -194,7 +194,7 @@ _RETRO_SUBJECT = re.compile(r"^retro(\([^)]*\))?:")
 def unsanctioned_commits(
     root: Path,
     *,
-    pathspec: str,
+    pathspec: str | tuple[str, ...],
     changelog_path: str,
     base: str = ORIGIN_MAIN,
 ) -> list[str]:
@@ -221,7 +221,7 @@ def unsanctioned_commits(
         files = commit_files(root, sha)
         if not (_RETRO_SUBJECT.match(subject) and changelog_path in files):
             bad.append(f"{sha[:10]} {subject}")
-    dirty = _git_out(root, "diff", "--name-only", "HEAD", "--", pathspec).split()
+    dirty = _git_out(root, "diff", "--name-only", "HEAD", *_pathspec_args(pathspec)).split()
     if dirty:
         bad.append("uncommitted: " + ", ".join(dirty))
     return bad
