@@ -323,9 +323,16 @@ def _union_appended_line_lists(base_body: list[str], main_body: list[str], branc
     return main_body + appended
 
 
+def _team_memory_index_lines(text: str) -> list[str]:
+    r"""Split on ``\n`` only -- the one splitter for parsing and reconstruction (Story 83.13), so a line
+    carrying U+2028, ``\x0b``, ``\x1c`` or ``\x85`` stays one opaque line (``str.splitlines`` would
+    break it, and the rejoin would turn the break into ``\n``)."""
+    return text.split("\n")
+
+
 def _parse_team_memory_index(text: str) -> tuple[list[str], list[tuple[str, list[str]]]] | None:
     """Preamble lines before the first ``## `` heading, then ordered ``(heading, body lines)``."""
-    lines = text.splitlines()
+    lines = _team_memory_index_lines(text)
     first_h2 = next((i for i, line in enumerate(lines) if line.startswith("## ")), len(lines))
     preamble = lines[:first_h2]
     sections: list[tuple[str, list[str]]] = []
@@ -368,7 +375,7 @@ def _reconstruct_team_memory_index_from_main(
     """Keep ``main`` byte-for-byte except branch-only appended lines (Story 83.13)."""
     if not branch_only_preamble and not any(branch_only_sections):
         return main
-    lines = main.split("\n")
+    lines = _team_memory_index_lines(main)
     h2s = _h2_line_indices(lines)
     for section_index in range(len(h2s) - 1, -1, -1):
         inserted = branch_only_sections[section_index] if section_index < len(branch_only_sections) else []
