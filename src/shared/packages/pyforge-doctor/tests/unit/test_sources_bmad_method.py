@@ -2816,3 +2816,342 @@ extra:
     assert len(suite) == 1
     assert suite[0].status is DoctorStatus.OK
     assert suite[0].evidence == {"packages_checked": 12, "packages_watched": 12}
+
+
+# --- story 41.4: floor forms, table names, partial parses ---------------------
+
+
+@pytest.mark.parametrize(
+    "constraint",
+    [
+        '{ version = ">=6.11.0", channel = "SelfExplainML" }',  # DW-FU-10-1-2 inline table
+        '">=6.11.0,<7"',  # DW-FU-10-1-6 compound range
+        '">= 6.11.0"',  # DW-FU-10-1-6 internal whitespace
+        '"6.*,>=6.11.0,<7.0"',
+    ],
+)
+def test_declared_floor_is_read_from_every_pixi_constraint_form(tmp_path: Path, constraint: str) -> None:
+    _write_pixi(tmp_path, f"[feature.python.dependencies]\nbmad-method = {constraint}\n")
+    _write_manifest(tmp_path, _MANIFEST_610)
+
+    (finding,) = bmad_method.gather(tmp_path)
+
+    assert finding.check == "bmad-method-version-drift"
+    assert finding.status is DoctorStatus.WARN
+    assert finding.evidence["declared_floor"] == ">=6.11.0"
+
+
+def test_declared_floor_is_read_from_a_pypi_dependencies_table(tmp_path: Path) -> None:
+    _write_pixi(tmp_path, '[feature.python.pypi-dependencies]\nbmad-method = ">=6.11.0"\n')
+    _write_manifest(tmp_path, _MANIFEST_610)
+
+    (finding,) = bmad_method.gather(tmp_path)
+
+    assert finding.evidence["declared_floor_table"] == "feature.python.pypi-dependencies"
+
+
+def test_the_winning_floor_names_its_table(tmp_path: Path) -> None:
+    # DW-FU-10-1-3: the operator must learn WHERE to bump the pin.
+    _write_pixi(tmp_path, _PIXI_TWO_TABLES_DIFFERENT_FLOORS)
+    _write_manifest(tmp_path, _MANIFEST_611)
+
+    (finding,) = bmad_method.gather(tmp_path)
+
+    assert finding.evidence == {
+        "installed": "6.11.0",
+        "declared_floor": ">=6.12.0",
+        "declared_floor_table": "feature.local-recipes.dependencies",
+    }
+
+
+def test_one_unreadable_table_does_not_discard_a_good_floor(tmp_path: Path) -> None:
+    # DW-FU-10-1-4: the first bad constraint used to raise and discard the
+    # good floor already found.
+    _write_pixi(
+        tmp_path,
+        '[feature.python.dependencies]\nbmad-method = ">=6.11.0"\n\n'
+        '[feature.local-recipes.dependencies]\nbmad-method = "==broken"\n',
+    )
+    _write_manifest(tmp_path, _MANIFEST_610)
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert [f.check for f in findings] == ["bmad-method-version-drift", "bmad-method-floor-unparseable"]
+    assert findings[0].status is DoctorStatus.WARN
+    assert findings[0].evidence["declared_floor"] == ">=6.11.0"
+    assert findings[1].evidence == {"table": "feature.local-recipes.dependencies", "constraint": "'==broken'"}
+
+
+def test_only_unreadable_constraints_still_degrade_to_one_warn(tmp_path: Path) -> None:
+    _write_pixi(tmp_path, _PIXI_UNPARSEABLE_EQUALS)
+    _write_manifest(tmp_path, _MANIFEST_611)
+
+    (finding,) = bmad_method.gather(tmp_path)
+
+    assert finding.status is DoctorStatus.WARN
+    assert "unrecognized" in finding.message
+
+
+# --- story 41.4: manifest module divergence (DW-FU-10-1-7) ---------------------
+
+
+def test_a_built_in_module_disagreeing_with_installation_version_warns(tmp_path: Path) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(
+        tmp_path,
+        "installation:\n  version: 6.12.0\nmodules:\n"
+        "  - name: core\n    version: 6.12.0\n    source: built-in\n"
+        "  - name: bmm\n    version: 6.11.0\n    source: built-in\n"
+        "  - name: skf\n    version: main\n    source: custom\n",
+    )
+
+    findings = bmad_method.gather(tmp_path)
+
+    assert [f.check for f in findings] == ["bmad-method-version-drift", "bmad-method-manifest-divergence"]
+    divergence = findings[1]
+    assert divergence.status is DoctorStatus.WARN
+    assert divergence.evidence == {"installed": "6.12.0", "modules": {"bmm": "6.11.0"}}
+
+
+def test_agreeing_modules_and_custom_modules_add_nothing(tmp_path: Path) -> None:
+    _write_pixi(tmp_path, _PIXI_SINGLE)
+    _write_manifest(
+        tmp_path,
+        "installation:\n  version: 6.12.0\nmodules:\n"
+        "  - name: core\n    version: 6.12.0\n    source: built-in\n"
+        "  - name: skf\n    version: main\n    source: custom\n",
+    )
+
+    assert [f.check for f in bmad_method.gather(tmp_path)] == ["bmad-method-version-drift"]
+
+
+# --- story 41.4: suite floor drift, offline (DW-FU-14-1-2) ---------------------
+
+
+def test_installed_suite_package_behind_its_own_floor_warns_with_no_fetch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    calls: list[str] = []
+    _stub_fetch_by_package(monkeypatch, {}, calls=calls)
+
+    findings = bmad_method.gather(tmp_path)
+
+    floor = [f for f in findings if f.check == "bmad-suite-floor-drift"]
+    assert len(floor) == 1
+    assert floor[0].status is DoctorStatus.WARN
+    assert floor[0].evidence == {
+        "package": "bmad-loop",
+        "installed": "0.9.0",
+        "declared_floor": ">=0.11.0",
+        "declared_floor_table": "feature.local-recipes.dependencies",
+    }
+
+
+def test_installed_suite_package_meeting_its_floor_adds_no_floor_finding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.11.0")
+    _stub_fetch_by_package(monkeypatch, {})
+
+    assert not [f for f in bmad_method.gather(tmp_path) if f.check == "bmad-suite-floor-drift"]
+
+
+# --- story 41.4: channel/recipe checks without an install (DW-FU-15-2) ---------
+
+
+def test_an_uninstalled_suite_package_still_gets_its_recipe_upstream_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Fresh clone/CI: no .pixi at all, but the tracked recipe lags upstream.
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(tmp_path, "bmad-loop", 'context:\n  name: bmad-loop\n  version: "0.9.0"\n')
+    _stub_fetch_by_package(monkeypatch, {"bmad-loop": (0, 11, 0)})
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", lambda **_: (0, 8, 0))
+
+    findings = bmad_method.gather(tmp_path)
+
+    checks = [f.check for f in findings]
+    assert "bmad-recipe-upstream-drift" in checks
+    assert "bmad-channel-drift" in checks
+    # Nothing installed, so nothing was compared against upstream.
+    assert "bmad-suite-upstream-drift" not in checks
+
+
+def test_an_uninstalled_commit_pinned_package_is_not_probed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    _write_pixi(tmp_path, '[feature.python.dependencies]\nbmad-method = ">=6.11.0"\nbmad-manticore = "*"\n')
+    _write_manifest(tmp_path, _MANIFEST_611)
+    _write_recipe_yaml(
+        tmp_path,
+        "bmad-manticore",
+        'context:\n  version: "0.1.0.dev0"\n  commit: "abc"\n'
+        "extra:\n  cfe-source-kind: github-commit\n  cfe-upstream-registry: github\n"
+        "  cfe-upstream-name: bmad-code-org/bmad-manticore\n",
+    )
+
+    def _unreachable(**_):
+        raise AssertionError("an uninstalled commit-pinned package must not be probed")
+
+    monkeypatch.setattr(bmad_method, "_fetch_default_branch_head_sha", _unreachable)
+
+    assert not [f for f in bmad_method.gather(tmp_path) if f.check == "bmad-suite-upstream-drift"]
+
+
+# --- story 41.4: offline mode (DW-FU-10-3-2) -----------------------------------
+
+
+def test_offline_gather_issues_no_fetch_and_keeps_the_offline_checks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(tmp_path, _PIXI_SUITE_PRE_UPDATE)
+    _write_manifest(tmp_path, _MANIFEST_610)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    _write_recipe_yaml(tmp_path, "bmad-loop", 'context:\n  name: bmad-loop\n  version: "0.9.0"\n')
+
+    def _no_network(*args: object, **kwargs: object):
+        raise AssertionError("offline gather reached the network")
+
+    for name in (
+        "_fetch_latest_upstream_version",
+        "_resolve_upstream_latest",
+        "_fetch_channel_version",
+        "_fetch_latest_github_release",
+        "_fetch_default_branch_head_sha",
+        "_fetch_pypi_latest_version",
+    ):
+        monkeypatch.setattr(bmad_method, name, _no_network)
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _no_network)
+
+    findings = bmad_method.gather(tmp_path, offline=True)
+
+    assert [(f.check, f.status) for f in findings] == [
+        ("bmad-method-version-drift", DoctorStatus.WARN),
+        ("bmad-suite-floor-drift", DoctorStatus.WARN),
+    ]
+
+
+# --- story 41.4: GitHub /tags pagination (DW-FU-15-1) --------------------------
+
+
+class _FakePagedResponse(_FakeUrlopenResponse):
+    def __init__(self, body: bytes, link: str | None) -> None:
+        super().__init__(body)
+        self.headers = email.message.Message()
+        if link is not None:
+            self.headers["Link"] = link
+
+
+def test_fetch_latest_github_release_follows_tags_pagination(monkeypatch: pytest.MonkeyPatch) -> None:
+    page2 = "https://api.github.com/repositories/1/tags?page=2"
+    seen: list[str] = []
+
+    def _urlopen(url: str, timeout: float | None = None):
+        seen.append(url)
+        if "/releases/latest" in url:
+            raise urllib.error.HTTPError(url, 404, "Not Found", email.message.Message(), None)
+        if url.endswith("/tags"):
+            return _FakePagedResponse(
+                json.dumps([{"name": "v0.9.0"}, {"name": "v0.10.0"}]).encode(),
+                f'<{page2}>; rel="next", <https://api.github.com/repositories/1/tags?page=2>; rel="last"',
+            )
+        if url == page2:
+            return _FakePagedResponse(json.dumps([{"name": "v0.11.0"}]).encode(), None)
+        raise AssertionError(f"unexpected URL: {url}")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _urlopen)
+
+    assert bmad_method._fetch_latest_github_release(owner_repo="bmad-code-org/bmad-loop") == (0, 11, 0)
+    assert seen[-1] == page2
+
+
+def test_a_failing_later_tags_page_keeps_the_earlier_pages(monkeypatch: pytest.MonkeyPatch) -> None:
+    page2 = "https://api.github.com/repositories/1/tags?page=2"
+
+    def _urlopen(url: str, timeout: float | None = None):
+        if "/releases/latest" in url:
+            raise urllib.error.HTTPError(url, 404, "Not Found", email.message.Message(), None)
+        if url.endswith("/tags"):
+            return _FakePagedResponse(json.dumps([{"name": "v0.10.0"}]).encode(), f'<{page2}>; rel="next"')
+        raise urllib.error.URLError("page 2 unreachable")
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _urlopen)
+
+    assert bmad_method._fetch_latest_github_release(owner_repo="bmad-code-org/bmad-loop") == (0, 10, 0)
+
+
+def test_next_page_url_refuses_a_non_github_link() -> None:
+    headers = email.message.Message()
+    headers["Link"] = '<https://evil.example/tags?page=2>; rel="next"'
+    assert bmad_method._next_page_url(headers) is None
+
+
+# --- story 41.4: the never-FAIL contract (DW-FU-10-3) --------------------------
+
+
+@pytest.mark.parametrize(
+    ("pixi", "manifest"),
+    [
+        (_PIXI_SINGLE, _MANIFEST_610),
+        (_PIXI_SINGLE, _MANIFEST_612),
+        (_PIXI_NO_BMAD_METHOD, _MANIFEST_611),
+        (_PIXI_UNPARSEABLE_STAR, _MANIFEST_611),
+        (_PIXI_SUITE_PRE_UPDATE, _MANIFEST_BAD_YAML),
+        (_PIXI_SUITE_PRE_UPDATE, _MANIFEST_610),
+    ],
+)
+def test_gather_never_emits_a_fail(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pixi: str, manifest: str
+) -> None:
+    # fleet_picture.py renders whatever this source returns; a FAIL here would
+    # make the sources CLI exit 2 and the two surfaces disagree.
+    _write_pixi(tmp_path, pixi)
+    _write_manifest(tmp_path, manifest)
+    _write_conda_meta(tmp_path, "default", "bmad-loop", "0.9.0")
+    _write_recipe_yaml(tmp_path, "bmad-loop", 'context:\n  name: bmad-loop\n  version: "0.9.0"\n')
+    _stub_fetch_by_package(monkeypatch, {"bmad-method": (6, 13, 0), "bmad-loop": (0, 12, 0)})
+    monkeypatch.setattr(bmad_method, "_fetch_channel_version", lambda **_: (0, 1, 0))
+
+    for offline in (False, True):
+        findings = bmad_method.gather(tmp_path, offline=offline)
+        assert findings
+        assert {f.status for f in findings} <= {DoctorStatus.OK, DoctorStatus.WARN}
+
+
+# --- story 41.4: the real recipes' GitHub mapping (DW-FU-15-1-2) ---------------
+
+_REPO_ROOT = Path(__file__).resolve().parents[6]
+
+#: The npm-invisible suite packages the GitHub fallback exists for, with the
+#: owner/repo each real recipe must map to.
+_LIVE_GITHUB_MAPPED = {
+    "bmad-loop": "bmad-code-org/bmad-loop",
+    "bmad-builder": "bmad-code-org/bmad-builder",
+    "bmad-creative-intelligence-suite": "bmad-code-org/bmad-module-creative-intelligence-suite",
+    "bmad-method-test-architecture-enterprise": "bmad-code-org/bmad-method-test-architecture-enterprise",
+    "bmad-method-wds-expansion": "bmad-code-org/bmad-method-wds-expansion",
+    "bmad-eval-quality": "bmad-code-org/bmad-eval-quality",
+}
+
+
+@pytest.mark.parametrize(("package", "owner_repo"), sorted(_LIVE_GITHUB_MAPPED.items()))
+def test_the_real_recipe_resolves_through_the_github_fallback(
+    monkeypatch: pytest.MonkeyPatch, package: str, owner_repo: str
+) -> None:
+    if not (_REPO_ROOT / "recipes" / package / "recipe.yaml").is_file():
+        pytest.skip("not running inside the local-recipes monorepo checkout")
+    seen: list[str] = []
+
+    def _urlopen(url: str, timeout: float | None = None):
+        seen.append(url)
+        return _FakeUrlopenResponse(json.dumps({"tag_name": "v9.9.9"}).encode())
+
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _urlopen)
+
+    assert bmad_method._github_owner_repo(_REPO_ROOT, package) == owner_repo
+    assert bmad_method._resolve_upstream_latest(package, _REPO_ROOT, timeout=1.0) == (9, 9, 9)
+    assert seen == [f"https://api.github.com/repos/{owner_repo}/releases/latest"]
