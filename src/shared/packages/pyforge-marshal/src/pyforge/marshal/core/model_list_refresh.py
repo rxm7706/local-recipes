@@ -17,6 +17,18 @@ HarnessListStatus = Literal["ok", "unavailable", "unchecked"]
 
 _CURSOR_LINE_RE = re.compile(r"^(\S+)\s+-\s+.+")
 
+#: A listed model id is lowercase and starts and ends with a letter or digit:
+#: every listing marshal reads (Cursor, Anthropic, Gemini) spells ids that
+#: way, so a capitalised first word is CLI prose (``Warning - ...``,
+#: ``Error - ...``), never an id (Story 84.2).
+_MODEL_ID_RE = re.compile(r"[a-z0-9](?:[a-z0-9._/:+-]*[a-z0-9])?")
+
+#: Diagnostic words a CLI prints in the same ``word - text`` shape, in any
+#: case; never model ids (Story 84.2).
+_NON_ID_WORDS = frozenset(
+    {"debug", "deprecated", "error", "fatal", "hint", "info", "note", "notice", "tip", "usage", "warn", "warning"}
+)
+
 
 @dataclass(frozen=True)
 class DeclaredModelRef:
@@ -48,6 +60,14 @@ class SnapshotDiff:
     removed: frozenset[str]
 
 
+@dataclass(frozen=True)
+class LastOkBlock:
+    """A harness's newest ``ok`` ids and the snapshot day they were read."""
+
+    read_on: date
+    ids: frozenset[str]
+
+
 def parse_command_model_lines(text: str) -> frozenset[str]:
     """Each ``id - Display Name`` line yields one id (Cursor ``models`` output)."""
     ids: set[str] = set()
@@ -56,11 +76,12 @@ def parse_command_model_lines(text: str) -> frozenset[str]:
         if not stripped:
             continue
         match = _CURSOR_LINE_RE.match(stripped)
-        if match:
-            model_id = match.group(1)
-            if model_id.lower() == "error":
-                continue
-            ids.add(model_id)
+        if match is None:
+            continue
+        model_id = match.group(1)
+        if model_id.lower() in _NON_ID_WORDS or _MODEL_ID_RE.fullmatch(model_id) is None:
+            continue
+        ids.add(model_id)
     return frozenset(ids)
 
 
@@ -201,17 +222,21 @@ def build_snapshot_payload(
     snapshot_date: str,
     harness_ids: Mapping[str, frozenset[str]],
     harness_status: Mapping[str, HarnessListStatus],
+    carried: Mapping[str, LastOkBlock] | None = None,
 ) -> dict[str, object]:
-    return {
-        "date": snapshot_date,
-        "harnesses": {
-            name: {
-                "status": harness_status.get(name, "unavailable"),
-                "ids": sorted(harness_ids.get(name, frozenset())),
-            }
-            for name in sorted(harness_ids.keys() | harness_status.keys())
-        },
-    }
+    """One day's snapshot. A ``carried`` harness keeps its own status and ids
+    and records the earlier ``ok`` read under ``last_ok`` with its date."""
+    harnesses: dict[str, object] = {}
+    for name in sorted(harness_ids.keys() | harness_status.keys()):
+        block: dict[str, object] = {
+            "status": harness_status.get(name, "unavailable"),
+            "ids": sorted(harness_ids.get(name, frozenset())),
+        }
+        last_ok = (carried or {}).get(name)
+        if last_ok is not None:
+            block["last_ok"] = {"date": last_ok.read_on.isoformat(), "ids": sorted(last_ok.ids)}
+        harnesses[name] = block
+    return {"date": snapshot_date, "harnesses": harnesses}
 
 
 def parse_snapshot_payload(
@@ -240,16 +265,23 @@ def snapshot_filename_for_date(day: date) -> str:
     return "model-list-" + day.isoformat() + ".json"
 
 
+def last_ok_blocks(
+    snapshots: Sequence[tuple[date, Mapping[str, frozenset[str]], Mapping[str, HarnessListStatus]]],
+) -> dict[str, LastOkBlock]:
+    """From oldest to newest snapshot tuples, keep each harness's latest ``ok`` ids and their day."""
+    last_ok: dict[str, LastOkBlock] = {}
+    for day, ids_map, status_map in snapshots:
+        for harness, status in status_map.items():
+            if status == "ok" and harness in ids_map:
+                last_ok[harness] = LastOkBlock(read_on=day, ids=ids_map[harness])
+    return last_ok
+
+
 def accumulate_last_ok_ids(
     snapshots: Sequence[tuple[date, Mapping[str, frozenset[str]], Mapping[str, HarnessListStatus]]],
 ) -> dict[str, frozenset[str]]:
     """From oldest to newest snapshot tuples, keep the latest ``ok`` ids per harness."""
-    last_ok: dict[str, frozenset[str]] = {}
-    for _day, ids_map, status_map in snapshots:
-        for harness, status in status_map.items():
-            if status == "ok" and harness in ids_map:
-                last_ok[harness] = ids_map[harness]
-    return last_ok
+    return {harness: block.ids for harness, block in last_ok_blocks(snapshots).items()}
 
 
 def merge_snapshot_blocks_for_write(
@@ -257,11 +289,19 @@ def merge_snapshot_blocks_for_write(
     harness_ids: Mapping[str, frozenset[str]],
     harness_status: Mapping[str, HarnessListStatus],
     same_day_existing: Mapping[str, object] | None,
-    last_ok_ids: Mapping[str, frozenset[str]],
-) -> tuple[dict[str, frozenset[str]], dict[str, HarnessListStatus]]:
-    """Preserve last ``ok`` blocks when a re-run is ``unavailable`` (Story 84.1)."""
+    last_ok: Mapping[str, LastOkBlock],
+) -> tuple[dict[str, frozenset[str]], dict[str, HarnessListStatus], dict[str, LastOkBlock]]:
+    """Keep an ``unavailable`` harness's earlier read without passing it off as today's.
+
+    A same-day re-run keeps that day's earlier ``ok`` block (it was read live
+    today). On a new day the harness stays ``unavailable`` and its last
+    ``ok`` ids are returned as carried, with the day they were read, so the
+    snapshot records them under ``last_ok`` -- never as today's live read
+    (Story 84.2; Story 84.1 wrote them as ``ok``).
+    """
     out_ids: dict[str, frozenset[str]] = dict(harness_ids)
     out_status: dict[str, HarnessListStatus] = dict(harness_status)
+    carried: dict[str, LastOkBlock] = {}
     same_day_ok: dict[str, frozenset[str]] = {}
     if same_day_existing is not None:
         for name, block in same_day_existing.items():
@@ -271,17 +311,15 @@ def merge_snapshot_blocks_for_write(
                 id_list = block.get("ids")
                 if isinstance(id_list, list):
                     same_day_ok[name] = frozenset(x for x in id_list if isinstance(x, str))
-    names = set(out_ids) | set(out_status) | set(same_day_ok) | set(last_ok_ids)
-    for name in names:
-        if out_status.get(name) != "unavailable":
+    for name, status in harness_status.items():
+        if status != "unavailable":
             continue
         if name in same_day_ok:
             out_ids[name] = same_day_ok[name]
             out_status[name] = "ok"
-        elif name in last_ok_ids:
-            out_ids[name] = last_ok_ids[name]
-            out_status[name] = "ok"
-    return out_ids, out_status
+        elif name in last_ok:
+            carried[name] = last_ok[name]
+    return out_ids, out_status, carried
 
 
 def _quote_query_value(value: str) -> str:

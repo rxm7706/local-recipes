@@ -2,19 +2,25 @@
 
 from __future__ import annotations
 
+import argparse
 import json
+from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
 
+from pyforge.marshal.adapters.fs_local import LocalFs
 from pyforge.marshal.adapters.model_list_live import fetch_live_ids_for_profile
+from pyforge.marshal.cli import adapters as adapters_cli
 from pyforge.marshal.core.harness_profile import HarnessProfile, ModelListSource, load_packaged_profiles, load_profiles
 from pyforge.marshal.core.model_list_refresh import (
     DeclaredModelRef,
     HarnessListResult,
+    LastOkBlock,
     SnapshotDiff,
     accumulate_last_ok_ids,
     anthropic_models_page_url,
+    build_snapshot_payload,
     collect_catalog_refs,
     collect_profile_map_refs,
     collect_tier_map_refs,
@@ -22,6 +28,7 @@ from pyforge.marshal.core.model_list_refresh import (
     ensure_no_secret_in_text,
     find_not_listed,
     gemini_models_page_url,
+    last_ok_blocks,
     merge_snapshot_blocks_for_write,
     model_absent_from_live_list,
     parse_anthropic_models_page,
@@ -85,6 +92,64 @@ class RecordingFetch(ModelListFetchPort):
         self.calls.append((url, normalized_headers))
         body = self.pages.get(url, b"{}")
         return HttpGetResult(status_code=self.status, body=body)
+
+
+_SNAPSHOT_DIR = Path("_bmad-output/projects/pyforge-marshal/planning-artifacts/model-lists")
+_TEST_KEY_ENV = "MODEL_LIST_TEST_KEY_84_2"
+
+
+def _cursor_profile() -> HarnessProfile:
+    return HarnessProfile(
+        name="cursor",
+        binary="cursor-agent",
+        argv=("{prompt}",),
+        model_list=ModelListSource(catalog_provider="cursor", command=("cursor-agent", "models")),
+    )
+
+
+def _http_profile(name: str, url: str, credential_env: str) -> HarnessProfile:
+    return HarnessProfile(
+        name=name,
+        binary=name,
+        argv=("{prompt}",),
+        model_list=ModelListSource(
+            catalog_provider="anthropic",
+            url=url,
+            credential_env=credential_env,
+            credential_header="x-api-key",
+            pagination="anthropic",
+        ),
+    )
+
+
+def _run_models_cli(
+    monkeypatch: pytest.MonkeyPatch,
+    root: Path,
+    profiles: dict[str, HarnessProfile],
+    *,
+    fetch: ModelListFetchPort | None,
+    fmt: str = "json",
+    write: bool = False,
+    overlay_errors: tuple[str, ...] = (),
+) -> int:
+    """``run_adapters_models`` against ``root`` with the fetch port injected
+    (the handler parameter, Story 84.2) and a real filesystem."""
+    monkeypatch.setattr(adapters_cli, "repo_root", lambda: root)
+    monkeypatch.setattr(adapters_cli, "load_profiles", lambda _root: (profiles, overlay_errors))
+    args = argparse.Namespace(slug="pyforge-marshal", format=fmt, write=write)
+    return adapters_cli.run_adapters_models(args, fs=LocalFs(), fetch=fetch)
+
+
+def _write_snapshot(root: Path, day: date, harnesses: dict[str, dict[str, object]]) -> None:
+    snap_dir = root / _SNAPSHOT_DIR
+    snap_dir.mkdir(parents=True, exist_ok=True)
+    (snap_dir / f"model-list-{day.isoformat()}.json").write_text(
+        json.dumps({"date": day.isoformat(), "harnesses": harnesses}), encoding="utf-8"
+    )
+
+
+def _read_snapshot(root: Path, day: date) -> dict[str, object]:
+    return json.loads((root / _SNAPSHOT_DIR / f"model-list-{day.isoformat()}.json").read_text(encoding="utf-8"))
 
 
 def test_parse_command_model_lines():
@@ -160,15 +225,71 @@ def test_parse_command_skips_error_auth_line():
     assert parse_command_model_lines(text) == frozenset({"real-id"})
 
 
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Warning - model list may be stale",
+        "WARNING - rate limited",
+        "Error - not authenticated",
+        "Note - some models are hidden",
+        "Tip - run cursor-agent login to see more",
+        "warning - lowercase diagnostic",
+        "error - lowercase diagnostic",
+        "info - lowercase diagnostic",
+        "Available - Models",
+    ],
+)
+def test_parse_command_never_reads_a_diagnostic_line_as_an_id(line):
+    """Story 84.2: a ``Warning ...`` / ``Error ...`` line is never an id."""
+    text = f"{line}\nauto - Auto\ngrok-4.7-high - Grok 4.7 High\nsonnet-4.5-thinking - Sonnet 4.5 Thinking\n"
+    assert parse_command_model_lines(text) == frozenset({"auto", "grok-4.7-high", "sonnet-4.5-thinking"})
+
+
 def test_merge_snapshot_write_keeps_same_day_ok():
-    ids, status = merge_snapshot_blocks_for_write(
+    ids, status, carried = merge_snapshot_blocks_for_write(
         harness_ids={"claude": frozenset()},
         harness_status={"claude": "unavailable"},
         same_day_existing={"claude": {"status": "ok", "ids": ["a", "b"]}},
-        last_ok_ids={},
+        last_ok={"claude": LastOkBlock(read_on=date(2026, 1, 1), ids=frozenset({"old"}))},
     )
     assert status["claude"] == "ok"
     assert ids["claude"] == frozenset({"a", "b"})
+    assert carried == {}
+
+
+def test_merge_snapshot_write_new_day_carries_with_date_never_as_ok():
+    """Story 84.2: an earlier day's ok ids are recorded with their date; the
+    harness stays unavailable today."""
+    earlier = LastOkBlock(read_on=date(2026, 1, 1), ids=frozenset({"a", "b"}))
+    ids, status, carried = merge_snapshot_blocks_for_write(
+        harness_ids={"claude": frozenset(), "cursor": frozenset({"c"})},
+        harness_status={"claude": "unavailable", "cursor": "ok"},
+        same_day_existing={"claude": {"status": "unavailable", "ids": []}},
+        last_ok={"claude": earlier, "cursor": LastOkBlock(read_on=date(2026, 1, 1), ids=frozenset({"x"}))},
+    )
+    assert status == {"claude": "unavailable", "cursor": "ok"}
+    assert ids == {"claude": frozenset(), "cursor": frozenset({"c"})}
+    assert carried == {"claude": earlier}
+    payload = build_snapshot_payload(
+        snapshot_date="2026-01-03", harness_ids=ids, harness_status=status, carried=carried
+    )
+    harnesses = payload["harnesses"]
+    assert isinstance(harnesses, dict)
+    assert harnesses["claude"] == {
+        "status": "unavailable",
+        "ids": [],
+        "last_ok": {"date": "2026-01-01", "ids": ["a", "b"]},
+    }
+    assert harnesses["cursor"] == {"status": "ok", "ids": ["c"]}
+
+
+def test_last_ok_blocks_keep_the_day_of_the_newest_ok_read():
+    history = [
+        (date(2026, 1, 1), {"cursor": frozenset({"a"})}, {"cursor": "ok"}),
+        (date(2026, 1, 2), {"cursor": frozenset({"a", "b"})}, {"cursor": "ok"}),
+        (date(2026, 1, 3), {"cursor": frozenset()}, {"cursor": "unavailable"}),
+    ]
+    assert last_ok_blocks(history) == {"cursor": LastOkBlock(read_on=date(2026, 1, 2), ids=frozenset({"a", "b"}))}
 
 
 def test_accumulate_last_ok_skips_unavailable_day():
@@ -384,48 +505,26 @@ def test_collect_refs_helpers():
 
 
 def test_models_cli_drift_exits_zero(monkeypatch, capsys, tmp_path):
-    import argparse
-
-    from pyforge.marshal.cli import adapters as adapters_cli
-
-    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
-    profiles = {
-        "cursor": HarnessProfile(
-            name="cursor",
-            binary="cursor-agent",
-            argv=("{prompt}",),
-            model_list=ModelListSource(catalog_provider="cursor", command=("cursor-agent", "models")),
-        )
-    }
-    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
-    monkeypatch.setattr(
-        adapters_cli,
-        "fetch_live_ids_for_profile",
-        lambda profile, fetch, **kw: HarnessListResult("cursor", "ok", frozenset({"listed"})),
+    policy = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
+    policy.parent.mkdir(parents=True)
+    policy.write_text(
+        'harness_preference = ["cursor"]\n[model_tier_map.easy]\ndev = [{ model = "missing-model", harness = "cursor" }]\n',
+        encoding="utf-8",
     )
-    monkeypatch.setattr(
-        adapters_cli,
-        "_gather_declared_model_refs",
-        lambda root, profs: [
-            DeclaredModelRef("missing-model", "cursor", "policy.toml", "model_tier_map.easy.dev"),
-        ],
+    code = _run_models_cli(
+        monkeypatch,
+        tmp_path,
+        {"cursor": _cursor_profile()},
+        fetch=FakeFetch(command_output="listed - Listed\n"),
     )
-    args = argparse.Namespace(slug="pyforge-marshal", format="json", write=False)
-
-    class _MinimalFs:
-        def ensure_dir(self, path: object) -> None:
-            del path
-
-        def write_text_atomic(self, path: object, text: str) -> None:
-            del path, text
-
-    code = adapters_cli.run_adapters_models(args, fs=_MinimalFs())
-    out = capsys.readouterr().out
-    envelope = json.loads(out)
+    envelope = json.loads(capsys.readouterr().out)
     codes = {f["code"] for f in envelope["findings"]}
     assert "MRS-MDL-001" in codes
     assert code == 0
-    assert "missing-model" in envelope["data"]["report"]
+    assert (
+        "missing-model (cursor) declared in _bmad-output/projects/pyforge-marshal/planning-artifacts/"
+        "marshal-policy.toml key model_tier_map.easy.dev"
+    ) in envelope["data"]["report"]
 
 
 def test_fetch_command_empty_output_unavailable():
@@ -517,273 +616,146 @@ def test_render_report_no_drift_when_all_unavailable():
     assert "0 harness(es) compared" in text
 
 
-def test_models_cli_sentinel_secret_not_in_json_output(monkeypatch, capsys, tmp_path):
-    import argparse
-
-    from pyforge.marshal.adapters import model_list_live as mll
-    from pyforge.marshal.cli import adapters as adapters_cli
-
-    sentinel = "SENTINEL-KEY-84-1\r"
-    monkeypatch.setenv("ANTHROPIC_API_KEY", sentinel)
-    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
-    profiles = {
-        "claude": HarnessProfile(
-            name="claude",
-            binary="claude",
-            argv=("{prompt}",),
-            model_list=ModelListSource(
-                catalog_provider="anthropic",
-                url="https://api.anthropic.com/v1/models",
-                credential_env="ANTHROPIC_API_KEY",
-                credential_header="x-api-key",
-                pagination="anthropic",
-            ),
-        ),
-        "cursor": HarnessProfile(
-            name="cursor",
-            binary="cursor-agent",
-            argv=("{prompt}",),
-            model_list=ModelListSource(catalog_provider="cursor", command=("cursor-agent", "models")),
-        ),
-    }
-    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
-    live_fetch = mll.LiveModelListFetch(repo_root=str(tmp_path))
-
-    def _fetch(profile, fetch, **kw):
-        if profile.name == "claude":
-            return mll.fetch_live_ids_for_profile(
-                profile,
-                live_fetch,
-                env={"ANTHROPIC_API_KEY": sentinel},
-            )
-        return HarnessListResult("cursor", "ok", frozenset({"listed-id"}))
-
-    monkeypatch.setattr(adapters_cli, "fetch_live_ids_for_profile", _fetch)
-    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
-    args = argparse.Namespace(slug="pyforge-marshal", format="json", write=False)
-
-    class _MinimalFs:
-        def ensure_dir(self, path: object) -> None:
-            del path
-
-        def write_text_atomic(self, path: object, text: str) -> None:
-            del path, text
-
-    code = adapters_cli.run_adapters_models(args, fs=_MinimalFs())
-    out = capsys.readouterr().out
-    assert sentinel not in out
-    assert "listed-id" in out or "listed 1" in out
-    assert code == 0
-
-
 def test_models_cli_write_snapshot(monkeypatch, tmp_path):
-    import argparse
-
-    from pyforge.marshal.cli import adapters as adapters_cli
-
-    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
-    profiles = {
-        "cursor": HarnessProfile(
-            name="cursor",
-            binary="cursor-agent",
-            argv=("{prompt}",),
-            model_list=ModelListSource(catalog_provider="cursor", command=("cursor-agent", "models")),
-        ),
-    }
-    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
-    monkeypatch.setattr(
-        adapters_cli,
-        "fetch_live_ids_for_profile",
-        lambda profile, fetch, **kw: HarnessListResult("cursor", "ok", frozenset({"m1"})),
+    code = _run_models_cli(
+        monkeypatch,
+        tmp_path,
+        {"cursor": _cursor_profile()},
+        fetch=FakeFetch(command_output="m1 - One\n"),
+        fmt="text",
+        write=True,
     )
-    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
-    args = argparse.Namespace(slug="pyforge-marshal", format="text", write=True)
-    written: list[str] = []
-
-    class _Fs:
-        def ensure_dir(self, path: object) -> None:
-            Path(path).mkdir(parents=True, exist_ok=True)
-
-        def write_text_atomic(self, path: object, text: str) -> None:
-            written.append(text)
-            Path(path).write_text(text, encoding="utf-8")
-
-    code = adapters_cli.run_adapters_models(args, fs=_Fs())
     assert code == 0
-    assert written
-    payload = json.loads(written[0])
-    assert payload["harnesses"]["cursor"]["ids"] == ["m1"]
+    payload = _read_snapshot(tmp_path, date.today())
+    assert payload["harnesses"] == {"cursor": {"status": "ok", "ids": ["m1"]}}
 
 
 def test_models_cli_prior_snapshot_diff(monkeypatch, tmp_path, capsys):
-    import argparse
-
-    from pyforge.marshal.cli import adapters as adapters_cli
-
-    snap_dir = tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "model-lists"
-    snap_dir.mkdir(parents=True)
-    (snap_dir / "model-list-2026-01-01.json").write_text(
-        json.dumps({"date": "2026-01-01", "harnesses": {"cursor": {"status": "ok", "ids": ["a"]}}}),
-        encoding="utf-8",
+    _write_snapshot(tmp_path, date(2026, 1, 1), {"cursor": {"status": "ok", "ids": ["a"]}})
+    code = _run_models_cli(
+        monkeypatch,
+        tmp_path,
+        {"cursor": _cursor_profile()},
+        fetch=FakeFetch(command_output="a - A\nb - B\n"),
+        fmt="text",
     )
-    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
-    profiles = {
-        "cursor": HarnessProfile(
-            name="cursor",
-            binary="cursor-agent",
-            argv=("{prompt}",),
-            model_list=ModelListSource(catalog_provider="cursor", command=("cursor-agent", "models")),
-        ),
-    }
-    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
-    monkeypatch.setattr(
-        adapters_cli,
-        "fetch_live_ids_for_profile",
-        lambda profile, fetch, **kw: HarnessListResult("cursor", "ok", frozenset({"a", "b"})),
-    )
-    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
-    args = argparse.Namespace(slug="pyforge-marshal", format="text", write=False)
-
-    class _Fs:
-        def ensure_dir(self, path: object) -> None:
-            del path
-
-        def write_text_atomic(self, path: object, text: str) -> None:
-            del path, text
-
-    code = adapters_cli.run_adapters_models(args, fs=_Fs())
     out = capsys.readouterr().out
     assert code == 0
-    assert "+ b" in out or "since previous snapshot" in out
+    assert "since previous snapshot:\n  [cursor]\n    + b" in out
 
 
 def test_models_cli_write_preserves_ok_when_rerun_unavailable(monkeypatch, tmp_path):
-    import argparse
-    from datetime import date
-
-    from pyforge.marshal.cli import adapters as adapters_cli
-
-    snap_dir = tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "model-lists"
-    snap_dir.mkdir(parents=True)
-    today = date.today().isoformat()
-    (snap_dir / f"model-list-{today}.json").write_text(
-        json.dumps({"date": today, "harnesses": {"claude": {"status": "ok", "ids": ["m1", "m2"]}}}),
-        encoding="utf-8",
-    )
-    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
-    profiles = {
-        "claude": HarnessProfile(
-            name="claude",
-            binary="claude",
-            argv=("{prompt}",),
-            model_list=ModelListSource(
-                catalog_provider="anthropic",
-                url="https://api.anthropic.com/v1/models",
-                credential_env="ANTHROPIC_API_KEY",
-                credential_header="x-api-key",
-                pagination="anthropic",
-            ),
-        ),
-    }
-    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
-    monkeypatch.setattr(
-        adapters_cli,
-        "fetch_live_ids_for_profile",
-        lambda profile, fetch, **kw: HarnessListResult("claude", "unavailable", frozenset(), "credential unset"),
-    )
-    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
-    args = argparse.Namespace(slug="pyforge-marshal", format="text", write=True)
-    written: list[str] = []
-
-    class _Fs:
-        def ensure_dir(self, path: object) -> None:
-            Path(path).mkdir(parents=True, exist_ok=True)
-
-        def write_text_atomic(self, path: object, text: str) -> None:
-            written.append(text)
-            Path(path).write_text(text, encoding="utf-8")
-
-    code = adapters_cli.run_adapters_models(args, fs=_Fs())
+    """A same-day re-run keeps that day's earlier live ok block."""
+    today = date.today()
+    _write_snapshot(tmp_path, today, {"claude": {"status": "ok", "ids": ["m1", "m2"]}})
+    monkeypatch.delenv(_TEST_KEY_ENV, raising=False)
+    profile = _http_profile("claude", "https://models.invalid/v1/models", _TEST_KEY_ENV)
+    code = _run_models_cli(monkeypatch, tmp_path, {"claude": profile}, fetch=FakeFetch(), fmt="text", write=True)
     assert code == 0
-    payload = json.loads(written[0])
-    assert payload["harnesses"]["claude"]["status"] == "ok"
-    assert payload["harnesses"]["claude"]["ids"] == ["m1", "m2"]
+    payload = _read_snapshot(tmp_path, today)
+    assert payload["harnesses"] == {"claude": {"status": "ok", "ids": ["m1", "m2"]}}
+
+
+def test_models_cli_write_new_day_unavailable_records_last_ok_with_its_date(monkeypatch, tmp_path):
+    """Story 84.2: on a new day an unavailable harness is written unavailable,
+    its last ok ids recorded under ``last_ok`` with the day they were read --
+    never as today's live read."""
+    today = date.today()
+    earlier = today - timedelta(days=2)
+    _write_snapshot(tmp_path, earlier, {"claude": {"status": "ok", "ids": ["m1", "m2"]}})
+    monkeypatch.delenv(_TEST_KEY_ENV, raising=False)
+    profile = _http_profile("claude", "https://models.invalid/v1/models", _TEST_KEY_ENV)
+    code = _run_models_cli(
+        monkeypatch,
+        tmp_path,
+        {"claude": profile, "cursor": _cursor_profile()},
+        fetch=FakeFetch(command_output="c1 - C1\n"),
+        fmt="text",
+        write=True,
+    )
+    assert code == 0
+    payload = _read_snapshot(tmp_path, today)
+    assert payload["date"] == today.isoformat()
+    assert payload["harnesses"] == {
+        "claude": {"status": "unavailable", "ids": [], "last_ok": {"date": earlier.isoformat(), "ids": ["m1", "m2"]}},
+        "cursor": {"status": "ok", "ids": ["c1"]},
+    }
 
 
 def test_models_cli_diff_uses_last_ok_not_unavailable_day(monkeypatch, tmp_path, capsys):
-    import argparse
-
-    from pyforge.marshal.cli import adapters as adapters_cli
-
-    snap_dir = tmp_path / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "model-lists"
-    snap_dir.mkdir(parents=True)
-    (snap_dir / "model-list-2026-01-01.json").write_text(
-        json.dumps({"date": "2026-01-01", "harnesses": {"cursor": {"status": "ok", "ids": ["a", "b"]}}}),
-        encoding="utf-8",
+    _write_snapshot(tmp_path, date(2026, 1, 1), {"cursor": {"status": "ok", "ids": ["a", "b"]}})
+    _write_snapshot(tmp_path, date(2026, 1, 2), {"cursor": {"status": "unavailable", "ids": []}})
+    code = _run_models_cli(
+        monkeypatch,
+        tmp_path,
+        {"cursor": _cursor_profile()},
+        fetch=FakeFetch(command_output="a - A\n"),
+        fmt="text",
     )
-    (snap_dir / "model-list-2026-01-02.json").write_text(
-        json.dumps({"date": "2026-01-02", "harnesses": {"cursor": {"status": "unavailable", "ids": []}}}),
-        encoding="utf-8",
-    )
-    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
-    profiles = {
-        "cursor": HarnessProfile(
-            name="cursor",
-            binary="cursor-agent",
-            argv=("{prompt}",),
-            model_list=ModelListSource(catalog_provider="cursor", command=("cursor-agent", "models")),
-        ),
-    }
-    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
-    monkeypatch.setattr(
-        adapters_cli,
-        "fetch_live_ids_for_profile",
-        lambda profile, fetch, **kw: HarnessListResult("cursor", "ok", frozenset({"a"})),
-    )
-    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
-    args = argparse.Namespace(slug="pyforge-marshal", format="text", write=False)
-
-    class _Fs:
-        def ensure_dir(self, path: object) -> None:
-            del path
-
-        def write_text_atomic(self, path: object, text: str) -> None:
-            del path, text
-
-    code = adapters_cli.run_adapters_models(args, fs=_Fs())
     out = capsys.readouterr().out
     assert code == 0
-    assert "- b" in out
+    assert "since previous snapshot:\n  [cursor]\n    - b" in out
 
 
 def test_models_cli_all_unavailable_warn_findings(monkeypatch, capsys, tmp_path):
-    import argparse
-
-    from pyforge.marshal.cli import adapters as adapters_cli
-
-    monkeypatch.setattr(adapters_cli, "repo_root", lambda: tmp_path)
-    profiles = {
-        "copilot": HarnessProfile(name="copilot", binary="copilot", argv=("{prompt}",)),
-    }
-    monkeypatch.setattr(adapters_cli, "load_profiles", lambda root: (profiles, ()))
-    monkeypatch.setattr(
-        adapters_cli,
-        "fetch_live_ids_for_profile",
-        lambda profile, fetch, **kw: HarnessListResult(profile.name, "unavailable", frozenset(), "no source declared"),
-    )
-    monkeypatch.setattr(adapters_cli, "_gather_declared_model_refs", lambda root, profs: [])
-    args = argparse.Namespace(slug="pyforge-marshal", format="json", write=False)
-
-    class _Fs:
-        def ensure_dir(self, path: object) -> None:
-            del path
-
-        def write_text_atomic(self, path: object, text: str) -> None:
-            del path, text
-
-    code = adapters_cli.run_adapters_models(args, fs=_Fs())
+    profiles = {"copilot": HarnessProfile(name="copilot", binary="copilot", argv=("{prompt}",))}
+    code = _run_models_cli(monkeypatch, tmp_path, profiles, fetch=FakeFetch())
     envelope = json.loads(capsys.readouterr().out)
     codes = {f["code"] for f in envelope["findings"]}
     assert "MRS-MDL-002" in codes
     assert code == 0
+    assert envelope["data"]["harness_results"]["copilot"] == {
+        "status": "unavailable",
+        "count": 0,
+        "reason": "no source declared",
+    }
     assert "no drift detected" not in envelope["data"]["report"]
+
+
+_PACKAGED_GEMINI = "src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/gemini.toml"
+_OVERLAY_GEMINI = "_bmad-output/harness-profiles/gemini.toml"
+
+
+def _model_map_sources(monkeypatch, capsys, root: Path) -> dict[str, set[str]]:
+    """Run the CLI on ``root`` with its real overlay loading; return each
+    not-listed gemini ``model_map`` id -> the files the report names for it."""
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setenv("GEMINI_API_KEY", "SENTINEL-NOT-A-REAL-KEY")
+    page = json.dumps(
+        {"models": [{"name": "models/unrelated", "supportedGenerationMethods": ["generateContent"]}]}
+    ).encode()
+    monkeypatch.setattr(adapters_cli, "repo_root", lambda: root)
+    args = argparse.Namespace(slug="pyforge-marshal", format="json", write=False)
+    code = adapters_cli.run_adapters_models(args, fs=LocalFs(), fetch=FakeFetch(http_bodies=[page]))
+    assert code == 0
+    envelope = json.loads(capsys.readouterr().out)
+    sources: dict[str, set[str]] = {}
+    for finding in envelope["findings"]:
+        message = finding["message"]
+        if finding["code"] == "MRS-MDL-001" and "'gemini'" in message and "key model_map." in message:
+            model_id = message.split("'")[1]
+            sources.setdefault(model_id, set()).add(message.split("declared in ")[1].split(" key ")[0])
+    return sources
+
+
+def test_model_map_refs_name_the_packaged_profile_when_the_overlay_was_rejected(monkeypatch, capsys, tmp_path):
+    """Story 84.2: an overlay file that failed to load never gets credit for the map in force."""
+    overlay = tmp_path / _OVERLAY_GEMINI
+    overlay.parent.mkdir(parents=True)
+    overlay.write_text('name = "gemini"\nbinary = \n', encoding="utf-8")
+    sources = _model_map_sources(monkeypatch, capsys, tmp_path)
+    assert sources == {"gemini-3-pro-preview": {_PACKAGED_GEMINI}, "gemini-3-flash-preview": {_PACKAGED_GEMINI}}
+
+
+def test_model_map_refs_name_the_overlay_when_it_loaded(monkeypatch, capsys, tmp_path):
+    packaged = (Path(adapters_cli.__file__).parent.parent / "data/harness_profiles/gemini.toml").read_text(
+        encoding="utf-8"
+    )
+    assert 'haiku = "gemini-3-flash-preview"' in packaged
+    overlay = tmp_path / _OVERLAY_GEMINI
+    overlay.parent.mkdir(parents=True)
+    overlay.write_text(
+        packaged.replace('haiku = "gemini-3-flash-preview"', 'haiku = "overlay-flash"'), encoding="utf-8"
+    )
+    sources = _model_map_sources(monkeypatch, capsys, tmp_path)
+    assert sources == {"gemini-3-pro-preview": {_OVERLAY_GEMINI}, "overlay-flash": {_OVERLAY_GEMINI}}
