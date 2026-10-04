@@ -2,7 +2,8 @@
 title: "86.6: The test-coverage matrices are regenerated and their check blocks drift"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '7e8113feae7cbf190e14621c85cae7cf60f0f68d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

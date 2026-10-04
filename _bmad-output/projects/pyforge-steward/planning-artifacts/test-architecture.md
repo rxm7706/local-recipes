@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 43d1115a8be18c1e
-story_count: 190
-test_file_count: 69
+source_fingerprint: 8cc317153b03f2a2
+story_count: 323
+test_file_count: 96
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 190
-- **Epics parsed:** 46
-- **Test files inventoried:** 69 under `src/shared/packages/pyforge-steward/tests/`
+- **Stories parsed:** 323
+- **Epics parsed:** 85
+- **Test files inventoried:** 96 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `43d1115a8be18c1e`
+- **Source fingerprint:** `8cc317153b03f2a2`
 
 ## Risk Assessment
 
@@ -35,6 +35,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 9: Secure live dashboards
 - Epic 16: The platform host earns its 15 factors
 - Epic 42: Agent and bus containment (CAP-4 / CAP-8 / CAP-11 / CAP-12)
+- Epic 52: The last two suite skips become an authoring path and an isolated sidecar
+- Epic 71: The preflight answers in under a minute (spec-pyforge-steward CAP-159)
+- Epic 78: Two platform auth controls stop failing open (security hotfix)
 
 ### Medium-risk epics
 
@@ -49,6 +52,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 14: The BMAD core upgrades repeatably
 - Epic 15: The bmad-suite channel is a governed product
 - Epic 17: A fresh machine reaches validate-fast through steward verbs
+- Epic 18: Chrome and the trusted client
 - Epic 19: Eight portals, one prefix
 - Epic 20: The published front door
 - Epic 21: Agents survive; run state is a service
@@ -74,14 +78,49 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 41: Data safety (CAP-9 / CAP-10 / CAP-19)
 - Epic 43: Contracts and the document (CAP-6 / CAP-10 / Dream)
 - Epic 45: eval-quality joins the suite and the reviewer gets measured (spec-bmad-eval-quality CAP-1 CAP-2)
-- Epic 46: The bmad-suite is wielded by the fleet (spec-bmad-suite-lifecycle CAP-1..8)
+- Epic 46: The bmad-suite is wielded by the fleet (spec-bmad-suite-lifecycle CAP-1..145)
 - Epic 47: The BMAD estate is cutover-ready (spec-bmad-suite-lifecycle CAP-9)
+- Epic 48: The chain tells the truth (spec-pyforge-unifying-strategy Residual 2026-09-09)
+- Epic 49: Shipped becomes in effect (spec-pyforge-unifying-strategy — the realization gate)
+- Epic 50: Object storage is consumable, without pyforge operating it (spec-platform-object-storage-kind)
+- Epic 51: PostgreSQL and Redis become consumable, without pyforge mandating self-hosting
+- Epic 53: Intelligence Hub realization (spec-intelligence-hub hub:CAP-1..145)
+- Epic 54: Foundry kernel regenerate (spec-foundry-regenerate-not-fold fnr:CAP-1..145 / fnd:CAP-11)
+- Epic 55: Foundry capability ledger (spec-foundry-capability-ledger fcl:CAP-1..145)
+- Epic 56: platform-dev boots the local leaf (spec-platform-dev-boots-local pdl:CAP-1)
+- Epic 58: The mcp-host sidecar hosts real station tools (spec-mcp-host-real-station-tools)
+- Epic 59: One name, one job (spec-vocabulary-one-name-one-job CAP-1..145)
+- Epic 60: Estate BMAD catalog (spec-self-hosted-bmad-marketplace CAP-1..145)
+- Epic 61: Work passports and dated extracts (spec-work-passports-dated-extracts CAP-1..145)
+- Epic 62: Published measure catalog (spec-build-league-scorecard CAP-1..145)
+- Epic 63: The Guild environment — `pyforge-guild` is the default for every agent (spec-pyforge-steward CAP-5)
+- Epic 65: The estate sprint-ledger query engine (spec-pyforge-steward CAP-146..149; partially CAP-140)
+- Epic 66: Lint, types and the pre-push gate are checks, not prose (spec-pyforge-steward CAP-153..154)
+- Epic 67: The estate consolidates — one laptop SBOM, one control plane, one instruction surface (spec-python-foundry-cutover fnd:CAP-12..15)
+- Epic 68: Housekeeping that does not leak, and a gate journal that names what was pushed (spec-pyforge-steward CAP-155..156)
+- Epic 69: An archive only for work that has not landed (spec-pyforge-steward CAP-157)
+- Epic 70: Steward reads `origin/main` and its own branches by their full refs (spec-pyforge-steward CAP-158)
+- Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
+- Epic 73: The session check reads the seed check it asks (spec-pyforge-steward CAP-162)
+- Epic 74: The object-storage seam gets its first consumer (spec-pyforge-steward CAP-163)
+- Epic 75: `steward keys` reaches GitHub Enterprise with scoped identities (spec-pyforge-steward CAP-164)
+- Epic 76: The one flag tree can say what the flag rule needs (spec-feature-flag-governance CAP-5)
+- Epic 77: The console's specs and archived pages follow the retired tier and the archive (spec-one-chain-per-station CAP-11)
+- Epic 79: The session check and the dispatch preamble read each other's real output
+- Epic 80: The chart tests run in Platform CI (deferral burn-down inflow)
+- Epic 81: The session check reads a declared-off kit layer as silent
+- Epic 82: The session check's kit remedy applies the kit
+- Epic 83: Phase 2 of the deferral burn-down: steward's high deferrals
+- Epic 84: Phase 3 of the deferral burn-down: steward's ruled fixes
+- Epic 85: The session guardrails refuse deleting protected branches and loop homes
 
 ### Low-risk epics
 
 - Epic 10: python-agent-platform — the host takes root
 - Epic 12: Deploy anywhere, including nowhere-connected
 - Epic 44: Cutover to python-foundry (spec-python-foundry-cutover fnd:CAP-1 fnd:CAP-2 fnd:CAP-3 fnd:CAP-4 fnd:CAP-5 fnd:CAP-6 fnd:CAP-7 fnd:CAP-8 fnd:CAP-9 fnd:CAP-10)
+- Epic 57: One pixi env for the platform image (spec-platform-image-one-pixi-env)
+- Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 
 ## Test Inventory
 
@@ -91,18 +130,27 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_release_cadence_runbook.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_session_check_entry_points.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_domain_skills.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_remedies.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_setup_flow.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_budget_check.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_budget_set.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_budget_show.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_catalog.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_cli.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_corridor.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_cutover.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_admin_and_htmx.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_audit.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_cache.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_declarations.py` | unit | none observed |
@@ -112,6 +160,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_middleware.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_navigation.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_dashboard_views.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_deck_drift_duty.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_build.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_dry_run.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_ledger_refusal.py` | unit | none observed |
@@ -121,15 +170,22 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_static.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_deploy_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_duty_protocol.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_events_stream_consumer.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_frame_preflight.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_fresh_clone_class_path.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_glass.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_guards.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_audit_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_audit_drift.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_encrypt_decrypt.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_ghe_credentials.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_host_scoping.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_keys_http_bridge.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_list.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_plaintext_secret_scan.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_revoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_env.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_install_class_playbook.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_list.py` | unit | none observed |
@@ -141,19 +197,29 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_verify.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_revoke_duty.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_session.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_sprint_ledger_query.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_story_52_1_consume_sidecar.py` | unit | 52.1 |
 | `src/shared/packages/pyforge-steward/tests/unit/test_suite_advance.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_suite_fetchers_fail_open.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_suite_pipeline_truth.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_suite_wired_class_predicates.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_sync_config.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_sync_duty.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_sync_github_only_marker.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_sync_reconcile_propagation.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_sync_retry.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_track.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_apply.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_native_path_spot_checks.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_next_rehearsal.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_pin_fan_out.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_preflight.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_prove_landed.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set_status_teardown.py` | unit | none observed |
 
@@ -270,10 +336,13 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 26.2 | Manifests carry secret references only | none observed |
 | 26.3 | OpenFeature packages on the channel (operator gate) | none observed |
 | 26.4 | One flag flips three surfaces without a redeploy | none observed |
+| 26.5 | The flag provider follows langflow onto protobuf 7 | none observed |
 | 27.1 | Liquibase on the channel (operator gate) | none observed |
 | 27.2 | Pre-upgrade Job and DML-only app role | none observed |
 | 27.3 | Stale extraction fails CI | none observed |
 | 27.4 | Test databases still migrate | none observed |
+| 27.5 | The JDBC driver ships under its own name | none observed |
+| 27.6 | The Liquibase Job runs on an empty database and reports nothing home | none observed |
 | 28.1 | PostgreSQL driver behind the existing port | none observed |
 | 28.2 | Semantic recall | none observed |
 | 29.1 | SKF domain skills from station packages | none observed |
@@ -301,7 +370,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 39.1 | Canonical suite manifest | none observed |
 | 39.2 | Metapackage recipe | none observed |
 | 39.3 | Generator and batch build | none observed |
-| 39.4 | Optional pixi feature bundle (CAP-4) | none observed |
+| 39.4 | Optional pixi feature bundle (suite:CAP-4) | none observed |
 | 40.1 | IdP bearer is verified before mint | none observed |
 | 40.2 | redis-broker is durable and bounded | none observed |
 | 41.1 | DR contract and PostgreSQL backup | none observed |
@@ -313,12 +382,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 42.3 | Bus delivery semantics and a deployed consumer | none observed |
 | 42.4 | Celery hardening and the builds pool | none observed |
 | 42.5 | Role namespaces and the tenant claim | none observed |
+| 42.6 | The real-Redis backoff test accepts the server's millisecond clock | none observed |
 | 43.1 | Split the Dream into living and archive | none observed |
 | 43.2 | Station API contract and the /api/v1 collision | none observed |
 | 43.3 | In-process station port, no self-call | none observed |
 | 43.4 | Golden Path CD by digest | none observed |
 | 43.5 | One interpreter story | none observed |
 | 43.6 | Platform image moves to Python 3.14 | none observed |
+| 43.7 | Sidecar runtime validation on Python 3.14 | none observed |
 | 44.1 | The capability ledger and the move-list manifest | none observed |
 | 44.2 | The red-team document fixes | none observed |
 | 44.3 | Open the foundry | none observed |
@@ -342,7 +413,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 46.4 | bmad-builder is provisioned beside skf, with the cleanup-legacy guard proven | none observed |
 | 46.5 | labs-skills arrive by name and by consent | none observed |
 | 46.6 | Herald's manticore studio has a root and a proven native path | none observed |
-| 46.7 | skf is pinned to `v2.1.0` and CAP-7 is exercised live | none observed |
+| 46.7 | skf is pinned to `v2.1.0` and suite:CAP-7 is exercised live | none observed |
 | 46.8 | CIS is re-provisioned to the packaged revision | none observed |
 | 46.9 | pipeline-truth's installed stage reads the applied core, and `wired` is a dec... | none observed |
 | 46.10 | The release cadence is one verified runbook | none observed |
@@ -351,6 +422,134 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 47.3 | `_bmad/**` joins Epic 44's surface and `PROJECTS.md` carries the cutover layout | none observed |
 | 47.4 | The foundry stack carries a `bmad-*` floor row | none observed |
 | 47.5 | Epic 44 depends on the era tail, and 44.13's scope names the spines | none observed |
+| 48.1 | The ledger syncer guards blocked and missing keys | none observed |
+| 48.2 | R-18 sizing rewrite | none observed |
+| 48.3 | R-19 network baseline | none observed |
+| 48.4 | R-20 secrets profile | none observed |
+| 48.5 | R-21 observability contract | none observed |
+| 48.6 | R-22 live browser streaming, or the pillar deleted | none observed |
+| 48.7 | The CAP-axis namespace pass | none observed |
+| 48.8 | The Single-Spec merge | none observed |
+| 48.9 | OIDC default profile — Keycloak in-cluster, BYO seam kept | none observed |
+| 48.10 | The one-container Guild proves itself at build time — CI builds the root Cont... | none observed |
+| 48.11 | The platform image can import the warden engine it calls | none observed |
+| 49.1 | The verified column on every capability | none observed |
+| 49.2 | The capability effect check | none observed |
+| 49.3 | CAP-4 in effect — start and get on all eight, with a real disconnect | none observed |
+| 49.4 | CAP-7 in effect — the real board, or the criterion says fixture | none observed |
+| 49.5 | CAP-11 in effect — the eviction test | none observed |
+| 49.6 | CAP-12 in effect — revocation on the next request | none observed |
+| 49.7 | CAP-14 in effect — real semantic recall, or the criterion says lexical | none observed |
+| 49.8 | CAP-17 in effect — marshal publishes run state to the supervisor | none observed |
+| 49.9 | Index — marshal realization-gate effect stories | none observed |
+| 49.10 | Index — atlas realization-gate effect stories | none observed |
+| 49.11 | Index — herald realization-gate effect stories | none observed |
+| 49.12 | Index — mason realization-gate effect stories | none observed |
+| 49.13 | Index — scribe realization-gate effect stories | none observed |
+| 49.14 | CAP-10 in effect — the resilience primitives get a real caller, or the criter... | none observed |
+| 50.1 | The Silo conda-forge recipe exists and is pixi-installable | none observed |
+| 50.2 | Local-dev object storage — Silo default, Garage alternative, pixi-provisioned | none observed |
+| 50.3 | A minimal S3-client seam proves the exception end-to-end | none observed |
+| 51.1 | A BYO-external-PostgreSQL deployment overlay exists, additive to the self-hos... | none observed |
+| 51.2 | A BYO-external-Redis deployment overlay exists, additive to the self-hosted d... | none observed |
+| 51.3 | The backup/PITR handoff is explicit when the BYO-PostgreSQL overlay is active | none observed |
+| 52.1 | Module-template is authoring-only and mybmad is an isolated sidecar never the... | `src/shared/packages/pyforge-steward/tests/unit/test_story_52_1_consume_sidecar.py` |
+| 53.1 | The Charter carries the Hub vocabulary map | none observed |
+| 53.2 | Company and eight station Frames pass in-repo preflight | none observed |
+| 53.3 | One tracked track.json per run | none observed |
+| 53.4 | Guards as a library without a second verdict | none observed |
+| 53.5 | Adopt the frame-spec v0.3 working draft | none observed |
+| 53.6 | Frame identity is the qualified-ref identifier, not the name | none observed |
+| 54.1 | Thin oracle for the foundry kernel | none observed |
+| 54.2 | Rebuild pyforge-core in foundry | none observed |
+| 54.3 | Rebuild steward in foundry | none observed |
+| 54.4 | Rebuild marshal in foundry | none observed |
+| 54.5 | A/B protocol and pin on foundry | none observed |
+| 55.1 | Tracked capability ledger | none observed |
+| 55.2 | Extract detector in detectors-ci | none observed |
+| 55.3 | verified-in-foundry joins the case list | none observed |
+| 56.1 | django-debug-toolbar on platform-dev only | none observed |
+| 57.1 | One frozen env replaces the pip `--no-deps` layer | none observed |
+| 57.2 | Containerfile drops the pip installer entirely | none observed |
+| 57.3 | pixitainer-docker re-evaluated, hand-rolled Containerfile kept | none observed |
+| 58.1 | A station's real MCP tool is reachable through a deployed cluster | none observed |
+| 58.2 | A station with no real app keeps the slice-1 stub, unchanged | none observed |
+| 58.3 | The one unproven run-state row flips to PASS | none observed |
+| 59.1 | The Spec ladder is declared and the Charter states the rule | none observed |
+| 59.2 | Detectors read one declaration; in-progress is grandfathered | none observed |
+| 59.3 | The Charter carries the BMAD cross-walk and pitched stays optional | none observed |
+| 59.4 | Design teaching is named; the pull cannot silently rot | none observed |
+| 59.5 | One mint-time slugify and two DW families | none observed |
+| 59.6 | Shape hygiene — roster, S-N.N, commits, status comments | none observed |
+| 59.7 | atlas check= is a finding code only | none observed |
+| 60.1 | The catalog config names backends and sources | none observed |
+| 60.2 | Publish uses tools we wield; steward records the review | none observed |
+| 60.3 | Ship backends — conda channel default | none observed |
+| 60.4 | Frame index and a thin browse list | none observed |
+| 61.1 | Corridor transports — upload default | none observed |
+| 61.2 | Work passport and core schema | none observed |
+| 61.3 | As-of glass and mailed query | none observed |
+| 61.4 | Signed outbound slice | none observed |
+| 61.5 | Quarantine — mint then reject | none observed |
+| 62.1 | The catalog names eight measures and their states | none observed |
+| 62.2 | Add, switch, and archive without a rewrite | none observed |
+| 62.3 | Consumers cite `on` rows only | none observed |
+| 63.1 | The `pyforge-guild` feature and environment exist and the Guild tasks live in it | none observed |
+| 63.2 | Every agent surface names `pyforge-guild` as the session default | none observed |
+| 63.3 | One deny list, one hook — the Guild session guardrails are enforced, not asse... | none observed |
+| 63.4 | `steward session check` — one verdict for the session preconditions, run from... | none observed |
+| 63.5 | `pyforge-foundry-full` — the fleet's whole dependency closure is one locked a... | none observed |
+| 63.6 | No station code assumes the `local-recipes` environment at runtime | none observed |
+| 64.1 | The nine Frames go bare `type: frame` and the README pins the upstream heads | none observed |
+| 64.2 | PyForge publishes its Frame conformance profile | none observed |
+| 65.1 | Reusable, pluggable, feature-flagged estate sprint ledger query module & BMAD... | none observed |
+| 65.2 | The ledger query answers done / running / next in one call | none observed |
+| 66.1 | Lint and types gate the ten packages, locally and on the runners alike | none observed |
+| 66.2 | The pre-commit set — attribution lines and un-preflighted pushes are refused ... | none observed |
+| 67.1 | The SBOM composes the laptop bill of materials on three platforms, with Postg... | none observed |
+| 67.2 | One laptop gate proves the laptop needs nothing beyond the SBOM | none observed |
+| 67.3 | Every gap and every fat-only pin has a disposition and an owner | none observed |
+| 67.4 | Upstream tickets for the gaps that need one | none observed |
+| 67.5 | The estate points at the SBOM | none observed |
+| 67.6 | Index — herald's dossier states the cutover's control plane (herald 26.1) | none observed |
+| 67.7 | Index — scribe's instruction surface names the estate first (scribe 21.1) | none observed |
+| 67.8 | The cutover spine drops the archive | none observed |
+| 68.1 | A workspace archive holds the work, not the environments, and one bad record ... | none observed |
+| 68.2 | The pre-push gate skips a push that carries nothing new, and its journal name... | none observed |
+| 69.1 | `workspace clean` keeps a note, not a tarball, for a worktree already on its ... | none observed |
+| 70.1 | Steward reads the workspace source and branch, and `origin/main`, by their fu... | none observed |
+| 71.1 | Every preflight run journals each lane's wall time and exit code | none observed |
+| 71.2 | The preflight runs the lanes CI would run for the diff, read from the workflo... | none observed |
+| 71.3 | Selected lanes run concurrently and share no mutable state | none observed |
+| 71.4 | A station's coverage gate reuses its own suite's run | none observed |
+| 71.5 | The two lanes every branch runs fit the budget | none observed |
+| 71.6 | The large suites run under pytest-xdist, locally and in CI alike | none observed |
+| 71.7 | The one-minute budget is a check that reads the journal | none observed |
+| 72.1 | The Guild environment answers pyforge mason | none observed |
+| 72.2 | Mason's five-tier skill cell requires its station skill and conda-forge-expert | none observed |
+| 73.1 | `steward session check` reads `marshal seed check`'s envelope, whatever its e... | none observed |
+| 74.1 | A station streams bytes to object storage by sha256 key — herald's deck expor... | none observed |
+| 74.2 | The chart names the bucket and prefix per environment and reaches only the co... | none observed |
+| 75.1 | `steward keys` resolves the GitHub Enterprise host with a read identity and a... | none observed |
+| 76.1 | The one flag tree carries per-environment values, so off in production is a v... | none observed |
+| 76.2 | Every flag in the tree carries its owner, story and cleanup clock in flagd me... | none observed |
+| 76.3 | The ledger query's flags fold into the one tree and evaluate through OpenFeature | none observed |
+| 76.4 | The pyforge.three_surfaces demo flag leaves the tree | none observed |
+| 77.1 | The console lists Tier-2 Specs and the archived Dreams | none observed |
+| 78.1 | The platform refuses Langflow auto-login and honours an IdP revocation on the... | none observed |
+| 79.1 | The session check and the dispatch preamble read each other's real output | none observed |
+| 80.1 | The Platform CI `test` job runs the chart tests, and a skipped one fails there | none observed |
+| 81.1 | The session check reads a declared-off kit layer as silent | none observed |
+| 82.1 | The session check's kit remedy applies the kit | none observed |
+| 83.1 | `steward keys` resolves its `_http` bridge on first use and reports a missing... | none observed |
+| 83.2 | Login works on the plain-HTTP local stack, and `sync` retries rate limits and... | none observed |
+| 83.3 | The platform chart and the compose stack run a Postgres image that carries pg... | none observed |
+| 84.1 | An audit purge records itself, and the audit table is append-only by privilege | none observed |
+| 84.2 | An audit read records its scope, and the perimeter refuses an over-long identity | none observed |
+| 84.3 | Trusted ingress addresses are IP networks | none observed |
+| 84.4 | Sync skips a board item marked GitHub-only | none observed |
+| 84.5 | The GitHub-only marker tests can fail, and config refuses half declarations | none observed |
+| 85.1 | The session hook refuses deleting protected branches and loop homes | none observed |
 
 ## Quality Gates
 
@@ -359,7 +558,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | Unit coverage | ≥80% | Story 19.3 CI gate |
 | Integration coverage | ≥70% | Story 19.3 CI gate |
 | Forbidden placeholder token | zero occurrences | this generator (hard fail) |
-| Idempotent regen | byte-identical on unchanged tree | canopy:FR-132 |
+| Idempotent regen | byte-identical on unchanged tree | FR-132 |
 | Story-id coverage drift | every epic story id in matrix | `--check` (CAP-5 / Story 19.4) |
 
 ## Regeneration
