@@ -116,7 +116,7 @@ NODE_REGISTRY: dict[str, tuple] = {
     ),
     "match_source_urls": (
         pypi_nodes.match_source_urls,
-        ["pypi_conda_mapping_base", "pypi_json_raw"],
+        ["pypi_conda_mapping_base", "pypi_json_raw", "core_packages_enumerated"],
         ["pypi_conda_mapping"],
     ),
     "enumerate_pypi_universe": (

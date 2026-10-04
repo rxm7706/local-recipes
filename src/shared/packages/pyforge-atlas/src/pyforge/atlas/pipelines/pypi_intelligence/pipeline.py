@@ -57,7 +57,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=match_source_urls,
-                inputs=["pypi_conda_mapping_base", "pypi_json_raw"],
+                inputs=["pypi_conda_mapping_base", "pypi_json_raw", "core_packages_enumerated"],
                 outputs="pypi_conda_mapping",
                 name="match_source_urls",
             ),

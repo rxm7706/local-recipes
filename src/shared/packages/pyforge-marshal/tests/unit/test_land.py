@@ -2801,6 +2801,70 @@ def test_land_stays_exit_zero_with_a_warn_when_the_ledger_publish_times_out(tmp_
     assert "sprint_ledger_promoted" not in payload["data"]
 
 
+# --- Story 83.21: `marshal land`'s two promotion call sites publish the sync's epic roll-ups ----------------
+#
+# `run_land` reaches `_promote_sprint_ledger` from its merge path and from its already-landed path; both
+# must publish the epic rows `scripts/promote_sprint_status.py::apply_epic_rollups` computes from the final
+# statuses, never the Tier-3 feed's own stale `epic-N` row.
+
+_STALE_EPIC_TWIN_83_21 = {"epic-4": "in-progress", "4-4-batch": "review", "4-5-other": "backlog"}
+
+
+def _write_stale_epic_feed_83_21(tmp_path: Path) -> None:
+    feed_path = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts" / "sprint-status.yaml"
+    feed_path.parent.mkdir(parents=True, exist_ok=True)
+    feed_path.write_text(
+        "development_status:\n  epic-4: backlog\n  4-4-batch: review\n  4-5-other: backlog\n", encoding="utf-8"
+    )
+
+
+def _published_ledger_83_21(vcs) -> str:
+    [ledger_text] = [
+        writes[0][1]
+        for (_root, _rm, _ref, writes, _msg) in vcs.isolated_promote_calls
+        if writes[0][0].endswith("sprint-status-ledger.yaml")
+    ]
+    return ledger_text
+
+
+def test_land_merge_path_publishes_the_syncs_epic_roll_up_over_a_stale_feed_epic_row(tmp_path, capsys, monkeypatch):
+    policy_path = _write_project_policy(tmp_path, _rule_policy(required_check=None))
+    _patch_repo(monkeypatch, tmp_path, policy_path=policy_path)
+    _write_sprint_ledger(tmp_path, "acme", _STALE_EPIC_TWIN_83_21)
+    _write_stale_epic_feed_83_21(tmp_path)
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        changed_paths=("docs/notes.md",),
+    )
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=_FakeForge(existing=None))
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert payload["data"]["merged"] is True
+    statuses = land_module._parse_sprint_ledger_statuses(_published_ledger_83_21(vcs))
+    assert statuses == {"4-4-batch": "done", "4-5-other": "backlog", "epic-4": "in-progress"}
+
+
+def test_land_already_landed_path_rolls_the_last_open_story_s_epic_to_done(tmp_path, capsys, monkeypatch):
+    _patch_repo(monkeypatch, tmp_path)
+    _write_sprint_ledger(tmp_path, "acme", {"epic-4": "in-progress", "4-4-batch": "review"})
+    vcs = _FakeVcs(
+        existing_branches=frozenset({"loop/acme"}),
+        wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+        base_subjects=(_BMADLOOP_WAVE_SUBJECT,),
+    )
+
+    exit_code = land_module.run_land(_args(), vcs=vcs, fs=LocalFs(), forge=_FakeForge(existing=None))
+
+    payload = _payload(capsys)
+    assert exit_code == 0
+    assert payload["data"]["already_landed"] is True
+    statuses = land_module._parse_sprint_ledger_statuses(_published_ledger_83_21(vcs))
+    assert statuses == {"4-4-batch": "done", "epic-4": "done"}
+
+
 class _FakePromoteModForRefusal:
     @staticmethod
     def regressions(existing: dict, incoming: dict):

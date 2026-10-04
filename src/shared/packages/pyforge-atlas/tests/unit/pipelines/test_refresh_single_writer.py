@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from pyforge.atlas.pipelines.core import create_pipeline as core_create
 from pyforge.atlas.pipelines.pypi_intelligence import create_pipeline as pypi_create
+from pyforge.atlas.pipelines.upstream_discovery import create_pipeline as upstream_create
 from pyforge.atlas.pipelines.vcs_health import create_pipeline as vcs_create
 from pyforge.atlas.pipelines.vulnerability import create_pipeline as vuln_create
 
@@ -22,8 +23,16 @@ _STORE_TO_REFRESH_ASSET = {
 }
 
 
+_UPSTREAM_REFRESH_STORES = {
+    "trending_candidates": "refresh_trending_candidates",
+    "discovery_anaconda_dist_2026x_raw": "refresh_anaconda_dist_2026x",
+    "discovery_basilisk_packages_raw": "refresh_basilisk_packages",
+    "discovery_aoss_premium_python_raw": "refresh_aoss_premium_python",
+}
+
+
 def _all_nodes():
-    combined = core_create() + vcs_create() + pypi_create() + vuln_create()
+    combined = core_create() + vcs_create() + pypi_create() + vuln_create() + upstream_create()
     return list(combined.nodes)
 
 
@@ -41,6 +50,13 @@ def test_stores_are_consumed_read_only_never_a_non_refresh_output():
     for store, expected_writer in _STORE_TO_REFRESH_ASSET.items():
         offenders = [n.name for n in nodes if store in n.outputs and n.name != expected_writer]
         assert not offenders, (store, offenders)
+
+
+def test_upstream_discovery_refresh_stores_have_exactly_one_writer_each():
+    nodes = _all_nodes()
+    for store, expected_writer in _UPSTREAM_REFRESH_STORES.items():
+        producers = [n.name for n in nodes if store in n.outputs]
+        assert producers == [expected_writer], (store, producers)
 
 
 def test_vdb_store_feeds_g_and_gprime_as_inputs():

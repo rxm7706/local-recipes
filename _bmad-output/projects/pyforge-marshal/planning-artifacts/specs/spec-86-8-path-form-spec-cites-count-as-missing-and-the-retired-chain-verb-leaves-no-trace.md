@@ -79,7 +79,9 @@ Minted 2026-10-04 at the operator's request ("chain it Story 86.8 in Epic 86").
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0 with no unused-section note.
-- `python3 scripts/docs_station_cli.py --check` — expected: exit 0.
+
+**Manual checks (not a dispatch gate):**
+- `python3 scripts/docs_station_cli.py --check` — expected: exit 0. It is not among the station's `verify_commands`, so naming it under **Commands:** refused verification (MRS-GATE-011, dispatch run `pyforge-marshal-20261004T134059690Z-65cc67ab`).
 
 ## Review Triage Log
 
