@@ -14,10 +14,13 @@ or a ``ChartDef`` on a page whose Layout never asked for one.
 from __future__ import annotations
 
 import re
+import shutil
 from pathlib import Path
 
 import pandas as pd
 import pytest
+from vizro import Vizro
+from vizro.managers import model_manager
 
 from pyforge.atlas.dashboard import app
 
@@ -115,6 +118,31 @@ def test_a_declared_filter_column_the_loader_never_projects_refuses_loudly() -> 
     # And with rows, the Filter really is built.
     built = app._declared_filters(page, lambda: pd.DataFrame({"facet": ["platform"]}))
     assert [f.id for f in built] == ["probe--filter-facet"]
+
+
+_FIXTURE_DATA_ROOT = Path(__file__).resolve().parents[2] / "fixtures" / "data"
+
+
+def test_distribution_breakdown_facet_filter_builds_against_fixture_rows(tmp_path: Path) -> None:
+    """Story 27.5 / DW-atlas-27-3-1: the facet filter must not be ``_dynamic`` — Vizro
+    hides dynamic filter selectors until a clientside reload, which e2e saw as an empty
+    ``#distribution-breakdown--filter-facet`` container."""
+    data_root = tmp_path / "data"
+    shutil.copytree(
+        _FIXTURE_DATA_ROOT,
+        data_root,
+        ignore=shutil.ignore_patterns("*.py", "*.md", "__pycache__"),
+    )
+    dashboard = app.build_dashboard(
+        build_stamp="2026-07-18T12:00:00Z",
+        data_root=data_root,
+        now=1_700_000_000,
+        reset=True,
+    )
+    Vizro().build(dashboard)
+    filt = model_manager["distribution-breakdown--filter-facet"]
+    assert filt._dynamic is False
+    assert sorted(filt.selector.options) == ["platform", "python-version"]
 
 
 def test_the_two_live_scan_pages_declare_no_vizro_filter() -> None:
