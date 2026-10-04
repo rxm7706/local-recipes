@@ -608,10 +608,9 @@ def test_protected_ref_deletion_denied(fake_repo: Path, command: str) -> None:
     assert "worktree_sweep.py --retire" in reason
 
 
-def test_protected_ref_deletion_allows_recover_and_rescue_branches(fake_repo: Path) -> None:
+def test_protected_ref_deletion_allows_recover_and_unprotected_branches(fake_repo: Path) -> None:
     for command in (
         "git push origin --delete recover/x",
-        "git push origin --delete rescue/x",
         "git branch -d feature/x",
         "git push origin --delete feature/x",
     ):
@@ -676,6 +675,111 @@ def test_protected_ref_deletion_floor_when_roster_omits_loop_prefix(
 
 def test_protected_ref_deletion_mutation_missing_matcher_fails_parity(hook_module) -> None:
     assert "protected-ref-deletion" in hook_module.MATCHERS
+
+
+def _ensure_origin_main(repo: Path) -> str:
+    tip = subprocess.run(
+        ["git", "rev-parse", "main"], cwd=repo, capture_output=True, text=True, check=True
+    ).stdout.strip()
+    _git(["update-ref", "refs/remotes/origin/main", tip], repo)
+    return tip
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git tag -d archive/x",
+        "git push origin :refs/tags/preserve/a/b/c",
+        "git push --delete origin rescue/dangling-20260801-abcd1234",
+        "gh api -X DELETE repos/o/r/git/refs/tags/archive/y",
+        "git update-ref -d refs/heads/loop/x",
+        "git push --mirror origin",
+        "git push --prune origin refs/tags/*:refs/tags/*",
+        "git fetch --prune --prune-tags origin",
+    ],
+)
+def test_protected_ref_deletion_widened_forms(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    reason = _claude_deny_reason(result)
+    assert reason is not None
+    assert "worktree_sweep.py --retire" in reason or "operator" in reason.lower()
+
+
+def test_rm_rf_loop_home_denied(fake_repo: Path, tmp_path: Path) -> None:
+    loop_home = tmp_path / ".bmad-loops" / "pyforge-atlas"
+    loop_home.mkdir(parents=True)
+    result = _run(
+        _claude_bash(f"rm -rf {loop_home}", fake_repo),
+        fake_repo,
+        env_extra={"HOME": str(tmp_path)},
+    )
+    assert _claude_deny_reason(result) is not None
+
+
+def test_rm_rf_worktree_allowed(fake_repo: Path, tmp_path: Path) -> None:
+    wt = tmp_path / "scratch-wt"
+    wt.mkdir()
+    (wt / "file").write_text("x\n", encoding="utf-8")
+    result = _run(_claude_bash(f"rm -rf {wt}", fake_repo), fake_repo)
+    assert result.returncode == 0
+
+
+def test_gh_pr_merge_delete_branch_explicit_loop_head_denied(fake_repo: Path) -> None:
+    cmd = "gh pr merge 12 --delete-branch --head loop/pyforge-marshal"
+    assert _claude_deny_reason(_run(_claude_bash(cmd, fake_repo), fake_repo)) is not None
+
+
+def test_gh_pr_merge_delete_branch_without_head_allowed(fake_repo: Path) -> None:
+    cmd = "gh pr merge 12 --merge --delete-branch"
+    result = _run(_claude_bash(cmd, fake_repo), fake_repo)
+    assert result.returncode == 0
+
+
+def test_unreachable_ref_deletion_denies_orphan_branch(fake_repo: Path) -> None:
+    _ensure_origin_main(fake_repo)
+    _git(["switch", "-c", "fix/x"], fake_repo)
+    _git(["commit", "--allow-empty", "-m", "orphan-only"], fake_repo)
+    _git(["switch", "main"], fake_repo)
+    for command in (
+        "git push origin --delete fix/x",
+        "git branch -D fix/x",
+    ):
+        result = _run(_claude_bash(command, fake_repo), fake_repo)
+        reason = _claude_deny_reason(result)
+        assert reason is not None
+        assert "preserve tag" in reason or "worktree_sweep.py --retire" in reason
+
+
+def test_unreachable_ref_deletion_allows_after_preserve_tag(fake_repo: Path) -> None:
+    _ensure_origin_main(fake_repo)
+    _git(["switch", "-c", "fix/x"], fake_repo)
+    _git(["commit", "--allow-empty", "-m", "orphan-only"], fake_repo)
+    tip = subprocess.run(
+        ["git", "rev-parse", "fix/x"], cwd=fake_repo, capture_output=True, text=True, check=True
+    ).stdout.strip()
+    _git(["tag", "preserve/held", tip], fake_repo)
+    _git(["switch", "main"], fake_repo)
+    result = _run(_claude_bash("git branch -D fix/x", fake_repo), fake_repo)
+    assert result.returncode == 0
+
+
+def test_unreachable_ref_deletion_allows_tag_on_main(fake_repo: Path) -> None:
+    main_tip = _ensure_origin_main(fake_repo)
+    _git(["tag", "feature-tag", main_tip], fake_repo)
+    result = _run(_claude_bash("git tag -d feature-tag", fake_repo), fake_repo)
+    assert result.returncode == 0
+
+
+def test_unreachable_ref_deletion_fetch_remedy_without_remote_tracking(fake_repo: Path) -> None:
+    _ensure_origin_main(fake_repo)
+    result = _run(_claude_bash("git push origin --delete no-such-remote-branch", fake_repo), fake_repo)
+    reason = _claude_deny_reason(result)
+    assert reason is not None
+    assert "git fetch" in reason
+
+
+def test_unreachable_ref_deletion_mutation_missing_matcher_fails_parity(hook_module) -> None:
+    assert "unreachable-ref-deletion" in hook_module.MATCHERS
 
 
 # --------------------------------------------------------------------------

@@ -158,13 +158,13 @@ Agentic frameworks (BMAD, Agno, CrewAI, LangGraph) start from the Dream in `docs
 
 ## Session guardrails (enforced, not asserted)
 
-Eleven of this file's own rules — the guild-task/local-recipes mix-up, an ad hoc `pip`/`conda`/`npx`
+Twelve of this file's own rules — the guild-task/local-recipes mix-up, an ad hoc `pip`/`conda`/`npx`
 install, a live `pixi add`/`pixi update`, `scripts/bmad-switch` from a worktree or with
 `BMAD_ACTIVE_PROJECT` set, a `git commit` on `main`/the primary checkout or carrying
 `Co-Authored-By`/AI attribution, `gh pr merge --squash`, a `gh pr create` missing `--repo
 rxm7706/local-recipes`, `uv run` off the repo root, a bare `spec_surface_check.py
 --write-baseline`, a direct write to `SPEC.md` / `sprint-status-ledger.yaml` / a tracked
-`implementation-artifacts/` path, and deleting a protected branch or a `~/.bmad-loops/` loop home — are additionally enforced by a repo-level `PreToolUse` hook,
+`implementation-artifacts/` path, deleting every protected ref form and any `~/.bmad-loops/` loop home, and deleting a branch or tag whose tip would orphan commits — are additionally enforced by a repo-level `PreToolUse` hook,
 `.claude/hooks/pre-shell.py`. It is registered on `Bash` and on `Edit`/`Write` in
 `.claude/settings.json` (Claude Code) and on `beforeShellExecution` (deny) / `afterFileEdit`
 (warn — Cursor has no before-edit deny) in `.cursor/hooks.json` (Cursor). **One script serves both
@@ -177,8 +177,12 @@ script asserts its matchers are exactly that list at every run (a drift between 
 failure, not a silent gap) and never denies anything not on the list.
 
 **Gemini CLI, GitHub Copilot CLI, and Devin have no verified deny surface for this hook.** For
-them these eleven rules remain instruction-only, exactly as written elsewhere in this file — do not
+them these twelve rules remain instruction-only, exactly as written elsewhere in this file — do not
 assume they are enforced there.
+
+The hook matchers are a command-line denylist only — git config such as `fetch.pruneTags=true` can
+still prune protected tags without passing through Bash, so the server rulesets in
+`docs/governance/rulesets/protected-refs.json` remain the guarantee; the hook is defence in depth.
 
 ## Trunk, worktrees, PRs (session path)
 

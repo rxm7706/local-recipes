@@ -267,7 +267,7 @@
     "script serves both harnesses (Claude Code's `PreToolUse` on `Bash` and on",
     "`Edit`/`Write`; Cursor's `beforeShellExecution` deny and `afterFileEdit`",
     "warn -- Cursor has no before-edit deny). Gemini CLI, GitHub Copilot CLI",
-    "and Devin have no verified deny surface for this hook; the eleven rules stay",
+    "and Devin have no verified deny surface for this hook; the twelve rules stay",
     "instruction-only there, as written in AGENTS.md.",
     "",
     "Each entry's `id` MUST have exactly one matching callable in the script's",
@@ -386,8 +386,17 @@
     {
       "id": "protected-ref-deletion",
       "applies_to": "bash",
-      "trigger": "git push/branch/worktree or gh api DELETE that deletes a protected branch (refs/heads/main, refs/heads/loop/, refs/heads/attempt-preserve/, or another branch prefix declared in protected_refs) or removes a ~/.bmad-loops loop home",
-      "reason": "Protected branches and loop homes are not deleted from an agent session -- retire a branch with `python scripts/worktree_sweep.py --retire <branch>`, and remove a loop home only after an explicit operator decision."
+      "trigger": "any deletion form for a protected_refs entry (tag or branch): git tag -d; push delete or :refs/… refspec; gh api DELETE on refs/heads or refs/tags; git update-ref -d; git push --mirror; push/fetch --prune covering a listed prefix; rm -rf or git worktree remove under ~/.bmad-loops/; gh pr merge --delete-branch with an explicit loop/ head",
+      "reason": "Protected refs and loop homes are not deleted from an agent session -- retire a branch with `python scripts/worktree_sweep.py --retire <branch>`, and remove a loop home only after an explicit operator decision."
+    },
+    {
+      "id": "unreachable-ref-deletion",
+      "applies_to": "bash",
+      "trigger": "git push delete, :refs/… refspec, git branch -d/-D, git tag -d, gh api DELETE, or update-ref -d on a ref outside protected_refs whose tip is not on origin/main and is not contained in a preserve/ or archive/ tag",
+      "reason": {
+        "unreachable": "This ref's tip is not on origin/main and no preserve/ or archive/ tag holds it -- use `pyforge marshal preserve tag` or `python scripts/worktree_sweep.py --retire <branch>` before deleting.",
+        "fetch_remedy": "Cannot resolve this remote branch's tip -- run `git fetch origin` so refs/remotes/origin/<branch> exists, then retry or use the sanctioned preserve/retire forms."
+      }
     }
   ]
 }
