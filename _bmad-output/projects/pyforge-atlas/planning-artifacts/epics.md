@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
+updated: "2026-10-04"   # RE-STAMPED 2026-10-04: Story 27.5 added to done Epic 27 (fix, no CAP, no flag; DW-atlas-27-3-1); epic-27 reopens to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.4 minted from the operator's Phase 4+5 ruling (fix, no CAP, no flag; 96 open medium and low deferrals). Prior: RE-STAMPED 2026-10-03: arch->epics cascade for marshal Story 66.2's deferred-work backfill; no epic or story minted. Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 26 / Story 26.1 minted (spec-one-chain-per-station CAP-11 relay; no atlas CAP or FR). Prior 2026-09-28   # RE-STAMPED 2026-09-28: Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-atlas CAP-61, FR-69); Story 24.4's stale pre-rekey "Story 25.2" citations corrected to 24.2; § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-20 (fleet consistency pass).
 currency_review: "Reviewed 2026-09-06 (Epic 24 added: spec-bmad-suite-lifecycle atlas relay — mcp-builder for the MCP face, Story 24.1). Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02. Validated 2026-08-26 against the re-cut architecture spine — no heading or status changed; see the dated validation note at end of file. 2026-08-27: Epic 20 appended (spec-atlas-query-dashboards CAP-5..7 reconcile against the 2026-08-26 query-plane rulings); no existing heading or status changed."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -2178,6 +2178,15 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling: every open medium and lo
 **When** Stories 27.1-27.3 have landed and this story runs
 **Then** DESIGN.md, epics.md, catalog-sources.md and the ledger match the tree under tests that fail on drift, every closed row's citation resolves, steward's register test checks the routing constraint, and the template placeholder resolves through `_bmad/custom/`
 **And** 15 rows (7 medium, 8 low) are each closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed: DW-FU-20-4-2, DW-FU-20-4-5, DW-FU-20-4-4, DW-FU-20-4-7, DW-FU-21-8-6, DW-FU-21-8-11, DW-FU-24-1, DW-FU-20-2, DW-FU-20-4, DW-FU-21-5-2, DW-FU-21-5-4, DW-FU-21-8-7, DW-FU-20-4-3, DW-FU-20-4-6, DW-FU-24-1-2; `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
+
+### Story 27.5: The distribution-breakdown facet filter builds its control
+**Type:** fix • **Effort:** S • **Deps:** S-27.3 • **FR/AD:** — (a `fix`, so no new CAP and no FR; `spec-feature-flag-governance` Q1: a `fix` needs no flag) • AD-8, AD-11 (the FR-9 Vizro read surface; gates are fixtures) • Story 27.3 (`DW-FU-20-5`)
+**Surface:** `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/` (`app.py`), `src/shared/packages/pyforge-atlas/tests/integration/dashboard/` (`test_dashboard_e2e.py`, `test_dashboard_controls.py`), the atlas deferred-work ledger
+**Spec:** `planning-artifacts/specs/spec-27-5-the-distribution-breakdown-facet-filter-builds-its-control.md`
+**Given** the fixture data tree and the `distribution-breakdown` page, which declares a `facet` filter and a chart (DESIGN.md § 3.8)
+**When** the dashboard is built and the page is served
+**Then** `#distribution-breakdown--filter-facet` holds its selector on every build and page load, never an empty 0×0 container, and a test that needs no browser pins the root cause
+**And** the non-strict `xfail` that #1842 put on `test_declared_controls_render_against_real_rows` is removed and the test passes ten runs in a row; `DW-atlas-27-3-1` (medium) is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed; `pixi run -e pyforge-atlas kedro-test` and `pixi run -e pyforge-atlas kedro-catalog-check` green
 
 ## Validation note — 2026-08-26 (chain-currency sweep)
 
