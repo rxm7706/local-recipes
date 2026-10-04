@@ -73,7 +73,7 @@ class LockedDuckDB:
     DuckDB's C connection object does not allow assigning ``close``.
     """
 
-    __slots__ = ("_con", "_lock")
+    __slots__ = ("_con", "_lock", "_yielded_to")
 
     def __init__(
         self,
@@ -82,13 +82,33 @@ class LockedDuckDB:
     ) -> None:
         object.__setattr__(self, "_con", con)
         object.__setattr__(self, "_lock", lock)
+        object.__setattr__(self, "_yielded_to", None)
+
+    def yield_connection(self, *, to: str) -> None:
+        """Close the raw connection, keep the lock, and record who took the file.
+
+        ``to`` is the face a later caller is told to reach instead — an endpoint
+        or another human-readable address, quoted verbatim in
+        :class:`ConnectionYielded`.
+        """
+        object.__setattr__(self, "_yielded_to", to)
+        self._con.close()
 
     def __getattr__(self, name: str) -> Any:
+        yielded_to = object.__getattribute__(self, "_yielded_to")
+        if yielded_to is not None:
+            msg = (
+                f"this handle's DuckDB connection was yielded to {yielded_to}; "
+                f"{name!r} is unavailable in-process. Query the file through that "
+                "face, or shut the face down and re-open with connect_writer."
+            )
+            raise ConnectionYielded(msg)
         return getattr(self._con, name)
 
     def close(self) -> None:
         try:
             self._con.close()
         finally:
+            object.__setattr__(self, "_yielded_to", None)
             if self._lock.is_locked:
                 self._lock.release()

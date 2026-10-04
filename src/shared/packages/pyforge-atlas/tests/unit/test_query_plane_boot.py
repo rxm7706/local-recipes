@@ -17,6 +17,7 @@ import pytest
 from pyforge.atlas import query_plane_boot
 from pyforge.atlas.duckdb_writer import (
     ATLAS_DUCKDB_NAME,
+    ConnectionYielded,
     SecondWriterRefused,
     connect_writer,
 )
