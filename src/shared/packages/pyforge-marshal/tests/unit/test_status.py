@@ -1376,6 +1376,25 @@ class TestDeriveDispatchPhase:
         )
         assert status.derive_dispatch_phase(facts) == "chaining"
 
+    def test_held_for_review_is_not_landed_chaining_and_surfaces_in_row(self):
+        from pyforge.marshal.core import dispatch_landing
+
+        facts = status.FleetHomeFacts(
+            slug="marshal",
+            branch="loop/pyforge-marshal",
+            has_run=False,
+            dispatch_story="83-18-example",
+            dispatch_engine_alive=False,
+            dispatch_supervisor_alive=False,
+            dispatch_landing_verdict="held-for-review",
+            dispatch_landing_findings=(),
+        )
+        assert status.derive_dispatch_phase(facts) == "verifying"
+        row, finding = status.build_fleet_row(facts)
+        assert finding is None
+        assert row["dispatch_landing_verdict"] == "held-for-review"
+        assert not dispatch_landing.landing_was_refused(facts.dispatch_landing_findings)
+
     def test_chaining_when_completion_verdict_completed(self):
         facts = status.FleetHomeFacts(
             slug="marshal",

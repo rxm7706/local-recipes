@@ -858,6 +858,7 @@ def running_stations() -> tuple[set[str], dict[str, dict]]:
                 # (review 1, medium).
                 "landing_superseded": r.get("dispatch_landing_superseded") is True,
                 "landing_story": r.get("dispatch_story") or "",
+                "dispatch_landing_verdict": r.get("dispatch_landing_verdict"),
                 "awaiting_operator_remedy": r.get("awaiting_operator_remedy"),
                 "missing_spec_escalation_glob": r.get("missing_spec_escalation_glob"),
                 "dispatch_stranded_work": r.get("dispatch_stranded_work"),
@@ -1114,6 +1115,9 @@ def main() -> int:
         # was refused and a human must act, so it goes to `needs`; anything
         # else (MRS-DISP-047, WARN) is FYI in `watch`, matching the
         # scope-advisory treatment.
+        landing_verdict = (live.get(slug, {}) or {}).get("dispatch_landing_verdict")
+        if landing_verdict == "held-for-review":
+            watch.append(f"{slug}: landing held for review (draft PR -- not refused)")
         land_findings = (live.get(slug, {}) or {}).get("landing_findings") or []
         if land_findings:
             errors = [

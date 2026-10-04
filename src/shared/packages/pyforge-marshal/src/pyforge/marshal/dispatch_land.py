@@ -32,7 +32,7 @@ from .adapters.vcs_git import GitVcs, VcsCommandError
 from .core import dispatch as dispatch_core
 from .core import identity, promotion
 from .core.commit_vcs import CommittingVcs
-from .core.dispatch_harness_done import FollowupReview
+from .core.dispatch_harness_done import FollowupReview, resolve_hold_dispatch_landing
 from .core.dispatch_landing import (
     DispatchLandingVerdict,
     may_attempt_dispatch_landing,
@@ -914,6 +914,8 @@ def execute_dispatch_land(
     monotonic: Callable[[], float] | None = None,
     on_wait_tick: Callable[[], None] | None = None,
     followup_review: FollowupReview | None = None,
+    hold_landing_cli: bool = False,
+    story_spec_text: str | None = None,
 ) -> tuple[DispatchLandingResult, Envelope]:
     """Land a verified dispatch through existing marshal land/deploy semantics.
 
@@ -993,6 +995,20 @@ def execute_dispatch_land(
     delete_branch = effective.landing_branch_retirement.value
 
     git_repo_root = dispatch_core.canonical_repo_root(repo_root)
+    if story_spec_text is None:
+        spec_path = dispatch_core.resolve_story_spec_path(worktree, project_slug, feed_story)
+        if spec_path is not None:
+            try:
+                story_spec_text = spec_path.read_text(encoding="utf-8")
+            except OSError:
+                story_spec_text = ""
+        else:
+            story_spec_text = ""
+    hold_after_verify = resolve_hold_dispatch_landing(
+        spec_text=story_spec_text,
+        hold_landing_cli=hold_landing_cli,
+        pr_ready_for_review=None,
+    )
     # Story 22.9: the branch carries the station. A run that started under
     # the pre-22.9 `marshal/<key>` name still lands from it -- but only when
     # git has THAT branch checked out at THIS run's worktree; a legacy
@@ -1196,6 +1212,7 @@ def execute_dispatch_land(
                 head_branch_ref,
                 _dispatch_pr_title(project_slug, key),
                 _dispatch_pr_body(key),
+                draft=hold_after_verify,
             )
             data["opened"] = True
         else:
@@ -1206,6 +1223,8 @@ def execute_dispatch_land(
                 _dispatch_pr_body(key),
             )
             data["updated"] = True
+            if hold_after_verify and not pr.is_draft:
+                pr = forge.set_pr_draft(repo_ref, pr.number, draft=True)
     except ForgeCommandError as exc:
         findings.append(
             Finding(
@@ -1369,6 +1388,55 @@ def execute_dispatch_land(
         return (
             DispatchLandingResult(
                 verdict=DispatchLandingVerdict.REFUSED,
+                pr_number=pr.number,
+                subject=subject,
+                marshal_native=True,
+            ),
+            envelope,
+        )
+
+    hold_after_verify = resolve_hold_dispatch_landing(
+        spec_text=story_spec_text,
+        hold_landing_cli=hold_landing_cli,
+        pr_ready_for_review=not pr.is_draft,
+    )
+    if hold_after_verify:
+        if not pr.is_draft:
+            try:
+                pr = forge.set_pr_draft(repo_ref, pr.number, draft=True)
+            except ForgeCommandError as exc:
+                findings.append(
+                    Finding(
+                        code="MRS-DISP-018",
+                        severity=Severity.ERROR,
+                        message=f"cannot mark PR #{pr.number} as a draft for landing review hold: {exc}",
+                    )
+                )
+                envelope = build_envelope(
+                    command="dispatch land",
+                    verdict=compute_verdict(tuple(findings)),
+                    data=data,
+                    findings=tuple(findings),
+                )
+                return (
+                    DispatchLandingResult(
+                        verdict=DispatchLandingVerdict.REFUSED,
+                        pr_number=pr.number,
+                        subject=subject,
+                        marshal_native=True,
+                    ),
+                    envelope,
+                )
+        data["held_for_review"] = True
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(tuple(findings)),
+            data=data,
+            findings=tuple(findings),
+        )
+        return (
+            DispatchLandingResult(
+                verdict=DispatchLandingVerdict.HELD_FOR_REVIEW,
                 pr_number=pr.number,
                 subject=subject,
                 marshal_native=True,

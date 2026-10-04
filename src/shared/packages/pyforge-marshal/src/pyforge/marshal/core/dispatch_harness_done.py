@@ -23,9 +23,12 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from .dispatch_landing import DispatchLandingVerdict
+
 _FRONTMATTER_DELIMITER = "---"
 _STATUS_KEY = "status:"
 _FOLLOWUP_KEY = "followup_review_recommended:"
+_LANDING_REVIEW_KEY = "landing_review:"
 _BLOCKING_CONDITION_KEY = "blocking_condition:"
 _BASELINE_REVISION_KEY = "baseline_revision:"
 _BARE_TOKEN_RE = re.compile(r"^[A-Za-z0-9_-]+$")
@@ -141,6 +144,50 @@ def blocks_harness_relaunch(status: str | None, followup: bool) -> bool:
 # session stopped — not after an operator send-back to ``ready-for-dev``/``draft``.
 _REFUSED_LANDING_LAND_ONLY_STATUSES = frozenset({"in-progress", "in-review"})
 
+# Story 83.18: journaled on the launch INTENT when ``--hold-landing`` is set.
+HOLD_LANDING_PAYLOAD_KEY = "hold_landing"
+
+
+def parse_landing_review(text: str) -> str | None:
+    """Story spec ``landing_review:`` token, or ``None`` when absent."""
+    value = _frontmatter_scalar(text, _LANDING_REVIEW_KEY)
+    return value.lower() if value is not None else None
+
+
+def landing_review_requires_hold(text: str) -> bool:
+    """True when the worktree spec declares ``landing_review: required``."""
+    return parse_landing_review(text) == "required"
+
+
+def landing_review_passed(text: str) -> bool:
+    """True when the operator cleared the hold in spec (``landing_review: passed``)."""
+    return parse_landing_review(text) == "passed"
+
+
+def landing_review_permits_merge(*, spec_text: str, pr_ready_for_review: bool | None) -> bool:
+    """True when a held story may merge on re-dispatch (Story 83.18).
+
+    Either the spec reads ``passed`` or the forge reports the PR is no longer a draft
+    (operator marked it ready on GitHub).
+    """
+    if landing_review_passed(spec_text):
+        return True
+    return pr_ready_for_review is True
+
+
+def resolve_hold_dispatch_landing(
+    *,
+    spec_text: str,
+    hold_landing_cli: bool,
+    pr_ready_for_review: bool | None,
+) -> bool:
+    """True when this verified landing must stop at a draft PR (Story 83.18)."""
+    if landing_review_permits_merge(spec_text=spec_text, pr_ready_for_review=pr_ready_for_review):
+        return False
+    if hold_landing_cli:
+        return True
+    return landing_review_requires_hold(spec_text)
+
 
 def should_take_harness_done_land_only(
     status: str | None,
@@ -148,16 +195,20 @@ def should_take_harness_done_land_only(
     *,
     latest_landing_verdict: str | None,
 ) -> bool:
-    """True when single-story dispatch must take CAP-4 land-only (Story 29.2, 83.7).
+    """True when single-story dispatch must take CAP-4 land-only (Story 29.2, 83.7, 83.18).
 
     Besides a harness-done worktree spec, a latest run that journaled a refused
-    ``dispatch-land`` outcome finished its session — re-dispatch verifies and
-    lands without launching ``bmad-build-auto`` — but only while the worktree
-    spec still reads ``in-progress`` or ``in-review``. A send-back to
-    ``ready-for-dev`` or ``draft`` always launches a session."""
+    or ``held-for-review`` ``dispatch-land`` outcome finished its session —
+    re-dispatch verifies and lands (or holds again) without launching
+    ``bmad-build-auto`` — but only while the worktree spec still reads
+    ``in-progress`` or ``in-review``. A send-back to ``ready-for-dev`` or
+    ``draft`` always launches a session."""
     if blocks_harness_relaunch(status, followup):
         return True
-    if latest_landing_verdict != "refused":
+    if latest_landing_verdict not in {
+        DispatchLandingVerdict.REFUSED.value,
+        DispatchLandingVerdict.HELD_FOR_REVIEW.value,
+    }:
         return False
     return status in _REFUSED_LANDING_LAND_ONLY_STATUSES
 

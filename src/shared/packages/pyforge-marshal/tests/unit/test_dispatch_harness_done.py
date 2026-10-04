@@ -11,6 +11,7 @@ from pyforge.marshal.core.dispatch_harness_done import (
     land_fail_operator_message,
     parse_baseline_revision,
     parse_spec_status,
+    resolve_hold_dispatch_landing,
     should_take_harness_done_land_only,
 )
 
@@ -121,6 +122,32 @@ def test_removing_the_send_back_guard_would_land_only_on_ready_for_dev_after_ref
 def test_removing_the_refused_landing_journal_rule_leaves_in_progress_stories_launchable() -> None:
     """Mutation guard (Story 83.7 AC): land-only must not fire without the journal fact."""
     assert blocks_harness_relaunch("in-progress", False) is False
+
+
+def test_should_take_land_only_when_latest_landing_was_held_for_review() -> None:
+    assert should_take_harness_done_land_only(
+        "in-progress",
+        False,
+        latest_landing_verdict="held-for-review",
+    )
+
+
+def test_resolve_hold_dispatch_landing_respects_required_and_passed() -> None:
+    required_spec = "---\nlanding_review: required\n---\n"
+    passed_spec = "---\nlanding_review: passed\n---\n"
+    assert resolve_hold_dispatch_landing(spec_text=required_spec, hold_landing_cli=False, pr_ready_for_review=None)
+    assert resolve_hold_dispatch_landing(spec_text=required_spec, hold_landing_cli=False, pr_ready_for_review=False)
+    assert not resolve_hold_dispatch_landing(spec_text=passed_spec, hold_landing_cli=False, pr_ready_for_review=False)
+    assert not resolve_hold_dispatch_landing(spec_text=required_spec, hold_landing_cli=False, pr_ready_for_review=True)
+
+
+def test_removing_held_for_review_from_land_only_gate_would_skip_redispatch_land() -> None:
+    """Mutation guard (Story 83.18 AC): held-for-review must take land-only like refused."""
+    assert not should_take_harness_done_land_only(
+        "in-progress",
+        False,
+        latest_landing_verdict="landed",
+    )
 
 
 # --- leading banner (mirrors test_spec_low_risk.py's identical suite) --------

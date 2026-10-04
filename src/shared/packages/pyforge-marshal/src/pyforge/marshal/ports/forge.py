@@ -91,6 +91,7 @@ class PrInfo:
     url: str
     state: str
     base: str
+    is_draft: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.number, int) or isinstance(self.number, bool) or self.number <= 0:
@@ -124,10 +125,20 @@ class ForgePort(Protocol):
         ``gh`` failure."""
         ...
 
-    def create_pr(self, repo: ForgeRef, base: ForgeRef, head: ForgeRef, title: Redacted, body: Redacted) -> PrInfo:
+    def create_pr(
+        self,
+        repo: ForgeRef,
+        base: ForgeRef,
+        head: ForgeRef,
+        title: Redacted,
+        body: Redacted,
+        *,
+        draft: bool = False,
+    ) -> PrInfo:
         """Opens a new PR on ``repo`` from ``head`` into ``base``.
         ``title``/``body`` accept ONLY ``Redacted`` -- never a bare ``str``
         -- assembled and redacted before this port's boundary (AD-34).
+        When ``draft`` is true the PR is opened as a draft (Story 83.18).
         Raises ``ForgeCommandError`` on any ``gh`` failure."""
         ...
 
@@ -135,6 +146,11 @@ class ForgePort(Protocol):
         """Updates an existing PR's title/body. Same ``Redacted``-only
         contract as ``create_pr``. Raises ``ForgeCommandError`` on any
         ``gh`` failure."""
+        ...
+
+    def set_pr_draft(self, repo: ForgeRef, number: int, *, draft: bool) -> PrInfo:
+        """Story 83.18: mark PR ``number`` a draft or ready for review on ``repo``.
+        Raises ``ForgeCommandError`` on any ``gh`` failure."""
         ...
 
     def add_labels(self, repo: ForgeRef, number: int, labels: tuple[str, ...]) -> None:

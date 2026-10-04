@@ -259,6 +259,31 @@ def _append_landing_refused(journal_path: Path, fs: FakeFs, *, run_id: str) -> N
     _append_journal_lines(fs, journal_path, land_intent, land_outcome)
 
 
+def _append_landing_held_for_review(journal_path: Path, fs: FakeFs, *, run_id: str, pr_number: int = 99) -> None:
+    land_intent = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 4),
+            ts="2026-10-02T00:01:00.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAND,
+            phase=Phase.INTENT,
+            payload={},
+        )
+    ).line
+    land_outcome = prepare_for_write(
+        build_entry(
+            id=JournalEntryId("w", 5),
+            ts="2026-10-02T00:01:01.000Z",
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_LAND,
+            phase=Phase.OUTCOME,
+            intent_id=JournalEntryId("w", 4),
+            payload={"ok": True, "verdict": "held-for-review", "pr_number": pr_number},
+        )
+    ).line
+    _append_journal_lines(fs, journal_path, land_intent, land_outcome)
+
+
 def test_declared_globs_overlap_detects_shared_prefix() -> None:
     assert dispatch_core.declared_globs_overlap("src/pkg/**", "src/pkg/foo.py")
     assert not dispatch_core.declared_globs_overlap("src/a/**", "src/b/**")
@@ -797,6 +822,58 @@ def test_refused_story_with_open_pr_blocks_overlapping_dispatch(tmp_path: Path) 
     assert conflict.code == "MRS-DISP-034"
     assert conflict.in_flight_story_key == "82.4"
     assert "refused" in conflict.message
+
+
+def test_held_for_review_story_with_open_pr_does_not_block_overlapping_dispatch(tmp_path: Path) -> None:
+    """Story 83.18: held-for-review is not Story 83.4's refused-landing hold."""
+    from pyforge.marshal.cli.dispatch import _compose_policy
+
+    slug = "pyforge-marshal"
+    fs = FakeFs()
+    specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
+    specs.mkdir(parents=True)
+
+    held_spec = specs / "spec-83-18-held.md"
+    held_spec.write_text(
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        encoding="utf-8",
+    )
+    cand_spec = specs / "spec-83-19-candidate.md"
+    cand_spec.write_text(
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        encoding="utf-8",
+    )
+
+    run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-held", story_key="83.18")
+    journal_path = run_dir / "journal.jsonl"
+    _append_verified_session(journal_path, fs, run_id="run-held")
+    _append_landing_held_for_review(journal_path, fs, run_id="run-held")
+
+    class HeldOpenPrVcs(FakeVcs):
+        def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str):
+            return ("src/shared/packages/pyforge-marshal/cli/dispatch.py",)
+
+        def is_branch_merged(self, repo_root: Path, branch: str, *, into: str, into_ref: str | None = None) -> bool:
+            return False
+
+        def commit_subjects(self, repo_root: Path, ref: str):
+            return ()
+
+        def worktree_head_sha(self, worktree_path: Path) -> str:
+            return "ccc333"
+
+    conflict = station_in_flight_conflict(
+        fs=fs,
+        vcs=HeldOpenPrVcs(tmp_path),
+        process=FakeProcess(alive=False),
+        repo_root=tmp_path,
+        slug=slug,
+        story_key="83-19-candidate",
+        effective_policy=_compose_policy(slug),
+        candidate_spec_text=cand_spec.read_text(encoding="utf-8"),
+        parallel_dispatch=True,
+    )
+    assert conflict is None
 
 
 def test_refused_story_with_closed_pr_allows_overlapping_dispatch(tmp_path: Path) -> None:
