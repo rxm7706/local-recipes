@@ -55,7 +55,6 @@ from typing import Any, Callable
 
 import vizro.models as vm
 import vizro.plotly.express as px
-from dash import html, no_update
 from vizro import Vizro
 from vizro.managers import data_manager, model_manager
 from vizro.models.types import capture
@@ -539,6 +538,10 @@ def _scan_action(page: PageDef, data_root: Path) -> vm.Action:
 
     @capture("action")
     def run_scan(path_value: str | None) -> tuple[str, Any]:
+        # `dash` reaches atlas only through vizro (a declared dependency), so it is imported where it is
+        # used, never at module level (tests/packaging/test_dependency_completeness.py, AUD-ATLAS-010).
+        from dash import no_update
+
         submission = _scan.submit_scan(page_id, path_value, data_root=data_root)
         if submission.frame is None:
             return f"**{submission.status}** — {submission.message}", no_update
@@ -747,6 +750,8 @@ class LandmarkDashboard(vm.Dashboard):
     """
 
     def _arrange_page(self, outer_page: Any) -> Any:
+        from dash import html  # through vizro; never a module-level import (AUD-ATLAS-010)
+
         layout = super()._arrange_page(outer_page=outer_page)
         layout["right-side"].role = "main"
         nav_control_panel = layout["nav-control-panel"]
