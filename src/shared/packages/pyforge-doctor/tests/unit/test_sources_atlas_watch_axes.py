@@ -16,6 +16,7 @@ from pyforge.doctor.cli_bridge import CliBridgeError
 from pyforge.doctor.models import DoctorStatus, Finding, Source
 from pyforge.doctor.sources.atlas import (
     _CHECK_ADOPTION_STAGE,
+    _CHECK_BEHIND_UPSTREAM,
     _CHECK_CVE,
     _CHECK_FEEDSTOCK_HEALTH,
     _CHECK_RELEASE_CADENCE,
@@ -531,6 +532,133 @@ def test_adoption_is_a_member_of_valid_watch_axes():
     from pyforge.doctor.sources.atlas import VALID_WATCH_AXES
 
     assert "adoption" in VALID_WATCH_AXES
+
+
+# --- behind-upstream axis (Story 41.2, DW-FU-6-2) -------------------------
+
+_BEHIND_ROWS = [
+    {
+        "conda_name": "lagging-pkg",
+        "latest_conda_version": "1.0.0",
+        "upstream_version": "2.1.0",
+        "upstream_source": "pypi",
+        "lag_label": "major",
+        "_priority": 4,
+    },
+    {
+        "conda_name": "slightly-behind",
+        "latest_conda_version": "3.4.1",
+        "upstream_version": "3.4.2",
+        "upstream_source": "github",
+        "lag_label": "patch",
+        "_priority": 2,
+    },
+]
+
+
+def test_behind_upstream_mcp_success_one_warn_finding_per_row():
+    findings = gather("behind-upstream", mcp_caller=_mcp_returns("behind_upstream", json.dumps(_BEHIND_ROWS)))
+    assert len(findings) == 2
+    for finding, row in zip(findings, _BEHIND_ROWS):
+        assert finding.source is Source.BEHIND_UPSTREAM
+        assert finding.check == _CHECK_BEHIND_UPSTREAM
+        assert finding.status is DoctorStatus.WARN
+        assert finding.evidence["conda_name"] == row["conda_name"]
+        assert row["conda_name"] in finding.message
+        assert f"upstream_version={row['upstream_version']}" in finding.message
+        assert f"lag={row['lag_label']}" in finding.message
+
+
+def test_behind_upstream_empty_list_is_no_findings():
+    assert gather("behind-upstream", mcp_caller=_mcp_returns("behind_upstream", "[]")) == ()
+
+
+def test_behind_upstream_target_threads_to_maintainer_on_mcp_and_cli():
+    seen_mcp = {}
+
+    def caller(tool, arguments):
+        seen_mcp["arguments"] = arguments
+        return "[]"
+
+    gather("behind-upstream", target="somemaintainer", mcp_caller=caller)
+    assert seen_mcp["arguments"] == {"maintainer": "somemaintainer"}
+
+    seen_cli = {}
+
+    def runner(script_path, args):
+        seen_cli["script"] = script_path
+        seen_cli["args"] = args
+        return []
+
+    gather(
+        "behind-upstream",
+        target="somemaintainer",
+        mcp_caller=_mcp_raises(ConnectionError("simulated failure")),
+        cli_runner=runner,
+    )
+    assert seen_cli["script"].name == "behind_upstream.py"
+    assert seen_cli["args"] == ["--json", "--maintainer", "somemaintainer"]
+
+
+def test_behind_upstream_cli_fallback_when_mcp_fails():
+    findings = gather(
+        "behind-upstream",
+        mcp_caller=_mcp_raises(ConnectionError("simulated failure")),
+        cli_runner=_cli_ok(_BEHIND_ROWS),
+    )
+    assert [f.evidence["conda_name"] for f in findings] == ["lagging-pkg", "slightly-behind"]
+
+
+def test_behind_upstream_non_list_payload_degrades_to_one_fail_finding():
+    findings = gather(
+        "behind-upstream",
+        mcp_caller=_mcp_raises(ConnectionError("simulated failure")),
+        cli_runner=_cli_ok({"rows": []}),
+    )
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].source is Source.BEHIND_UPSTREAM
+
+
+def test_behind_upstream_both_transports_fail_returns_one_fail_finding_tagged_behind_upstream():
+    findings = gather(
+        "behind-upstream",
+        mcp_caller=_mcp_raises(ConnectionError("simulated: server unreachable")),
+        cli_runner=_cli_raises(CliBridgeError("simulated: script missing")),
+    )
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.source is Source.BEHIND_UPSTREAM
+    assert finding.status is DoctorStatus.FAIL
+    assert "simulated: server unreachable" in finding.message
+    assert "simulated: script missing" in finding.message
+
+
+def test_behind_upstream_non_dict_row_degrades_to_a_fail_finding_not_a_crash():
+    findings = gather("behind-upstream", mcp_caller=_mcp_returns("behind_upstream", json.dumps(["not-a-dict"])))
+    assert len(findings) == 1
+    assert findings[0].status is DoctorStatus.FAIL
+    assert findings[0].source is Source.BEHIND_UPSTREAM
+
+
+def test_behind_upstream_equivalence_mcp_and_cli_paths():
+    via_mcp = gather("behind-upstream", mcp_caller=_mcp_returns("behind_upstream", json.dumps(_BEHIND_ROWS)))
+    via_cli = gather(
+        "behind-upstream",
+        mcp_caller=_mcp_raises(ConnectionError("forced failure")),
+        cli_runner=_cli_ok(_BEHIND_ROWS),
+    )
+    mcp_dicts = sorted((f.source.value, f.check, f.status.value, tuple(sorted(f.evidence.items()))) for f in via_mcp)
+    cli_dicts = sorted((f.source.value, f.check, f.status.value, tuple(sorted(f.evidence.items()))) for f in via_cli)
+    assert mcp_dicts == cli_dicts
+
+
+def test_behind_upstream_is_a_valid_axis_and_maps_to_its_source():
+    from pyforge.doctor.sources.atlas import AXIS_SOURCES, VALID_WATCH_AXES
+
+    assert "behind-upstream" in VALID_WATCH_AXES
+    assert AXIS_SOURCES["behind-upstream"] == frozenset({Source.BEHIND_UPSTREAM})
+    assert set(AXIS_SOURCES) == set(VALID_WATCH_AXES)
 
 
 # --- multi-axis composition is a CLI-layer concern (Story 2.3), not this --

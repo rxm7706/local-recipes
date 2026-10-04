@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for CAP-286 (Epic 85); FR-233 registered. See section 36. Earlier 2026-10-02: RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for CAP-285 (Epic 84); FR-232 registered. See section 35. Earlier 2026-10-01: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for CAP-284 (Epic 80); FR-231 registered. See section 34. Earlier 2026-09-30: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD) for CAP-283 (Epic 78); FR-230 registered. See section 33. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-10-04"   # RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-287 (Epic 87); FR-234 registered; FR-59, FR-62 and FR-63 gain dated consequences. See section 37. Earlier 2026-10-03: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for CAP-286 (Epic 85); FR-233 registered. See section 36. Earlier 2026-10-02: RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for CAP-285 (Epic 84); FR-232 registered. See section 35. Earlier 2026-10-01: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for CAP-284 (Epic 80); FR-231 registered. See section 34. Earlier 2026-09-30: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD) for CAP-283 (Epic 78); FR-230 registered. See section 33. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -700,6 +700,7 @@ The rules a repository demands for landing compose from the policy layers with p
 - Required checks, merge strategy, label rules, branch-retirement behaviour, and repo-specific triggers are policy keys, not memorized habits — including this repository's `maintenance` label on non-`recipes/` changes and the **ungated** `environment.yaml` sync check that the label does not suppress.
 - The effective landing policy prints with each key's winning layer; an invalid landing policy is a preflight finding.
 - *Grounding: five PRs hand-driven in one session (2026-07-31), each repeating the same written-but-unenforced sequence; one (#170) merged a real detector break because nothing in the landing path asked.*
+- *(Amended 2026-10-04, FR-234 / AD-47 as amended:)* branch retirement never deletes an operational `loop/*` head: `marshal land` merges a `loop/<slug>` PR without `--delete-branch` and records `branch_retired` only from a post-merge remote fact. Only `marshal teardown` removes a station branch, under AD-81's preserve precondition (§ 37).
 
 #### FR-60: The last mile lands itself — `marshal land` *(added 2026-08-01 — CAP-9)* ← CAP-9
 A story or wave that passed its gates lands on the integration branch without a human driving the sequence.
@@ -717,6 +718,7 @@ Marshal proposes which station and story branches may be released, across the wh
 - Every proposed retirement names its evidence (merge sha, patch-id match, concluded run); anything unproven is refused, never defaulted to delete. Dry-run by default, like teardown (FR-8).
 - Distinct from FR-59's per-landing branch-retirement policy key: that retires the one branch a landing just merged; this sweeps the fleet's accumulated estate on its own schedule. The two share no code path but must not disagree — a branch FR-59 already retired is never re-proposed here.
 - *Motivating evidence: saving work created 36 branches and 160 rescue tags in one afternoon (2026-07-31), and nothing knew when any of them could be released.*
+- *(Amended 2026-10-04, FR-234 / AD-47 as amended:)* every tag (`refs/tags/**`) is a structural exclusion, not only `rescue/*`, and so is every entry of the declared protected list. A retirement writes an annotated `refs/tags/archive/heads/<branch>` twin first when deleting the branch would make commits unreachable (the tip is not an ancestor of `refs/remotes/origin/main` and no other durable ref contains it), so a squash-proven branch gets a twin and an ancestor branch does not (§ 37).
 
 ---
 
@@ -762,6 +764,7 @@ Status output has a versioned schema downstream consumers can depend on.
 - A row whose branches carry local-only content is never reported clean — the same refusal the fleet view already applies to an unowned Dream row.
 - The finding names the branch and the extent (line/commit count) so the operator does not have to cross-reference a second command to size the exposure.
 - *Rationale: "is the fleet's work saved?" required four separate commands before this FR (`bmad-loop status`, `tmux capture-pane`, a manual detector run, and re-deriving from git) — the same operator question, asked twice, is the failure signature this FR closes.*
+- *(Amended 2026-10-04, FR-234 / AD-48 as amended:)* the row also carries preserve debt (local-only `preserve/` tags, unpromoted engine scratch refs, patches or tarballs with no tag), each a registered finding code; an unpushed ref that matches no row is reported fleet-wide, never discarded; a detector that could not observe is reported as such, never as zero findings (§ 37).
 
 #### FR-65: The detector registry as a verb — `marshal check` *(added 2026-08-01 — `docs/dreams/one-front-door.md`, CAP-3/CAP-5)* ← CAP-23
 `marshal check` reaches the repo's detector registry through the same front door as every other verb, and every routed call — `check` included — carries its project/loop-home/policy/story context from one resolution rather than each tool re-deriving it.
@@ -3126,3 +3129,58 @@ wall-clock budget parks the story. Verification is never relaxed, and every turn
 **Content changed:** § 36 added (FR-233 registered). No FR renumbered or removed. No AD amended: the resume form is profile
 data (AD-19), the fix-turn decision and prompt are pure `core/` functions (AD-4), and a failed turn is a named refusal
 (AD-8). `updated:` bumped.
+
+## 37. Currency reconciliation — 2026-10-04
+
+### 37.1 The FR space: FR-234 registered
+
+On 2026-10-04 a hand-rolled branch cleanup deleted 464 branches in one hour. The research that followed
+(`research/preserved-work-refs-2026-10-04.md`) found nine names for preserved work and no definition of it: every
+protection is a name list, but whether work survives depends on reachability. Of the 454 deleted tips, 98 are
+reachable from nothing, and 83 of those were under no protected name. bmad-loop prunes `attempt-preserve/*` at every
+run start while this repo parks durable work there; marshal's intent-gap preserve and the dispatch patches stay on one
+disk; tags are unprotected server-side; and the unpushed-work detector's printed remedy had minted 682 lightweight
+`rescue/dangling-*` tags, 23 of which re-preserved the history the 2026-07-24 purge removed. An independent review
+(`research/preserved-work-refs-2026-10-04-review.md`) adopted the standard with changes, and the operator accepted
+every default it recommended the same day. FR-234 decomposes into **Epic 87** (Stories 87.2–87.16, beside the
+already-chained fix Story 87.1, amended), with steward's half under `spec-pyforge-steward:CAP-165` (steward FR-38,
+Epic 85).
+
+#### FR-234: Preserved work is an annotated tag in every mode, and nothing removes a working copy it does not hold ← CAP-287
+Every mode that can lose work preserves it as a commit reachable from an annotated
+`refs/tags/preserve/<slug>/<N.M>/<producer>-<sha8>` tag (or `preserve/unbound/<producer>-<sha8>`), named and parsed
+by one stdlib-only module, `pyforge.core.preserve_refs`.
+**Consequences (testable):**
+- A local preserve tag is enough to remove a local working copy (a worktree, run directory, patch, tarball or local
+  branch); it is AD-29's declared durable local ref. An unpushed preserve is reported as preserve debt, never a
+  refusal. Deleting a ref on `origin` needs the content on `origin`, confirmed by `git ls-remote`.
+- Content is unique when deleting would make commits unreachable (the tip is not an ancestor of
+  `refs/remotes/origin/main` and no other durable ref contains it); one criterion everywhere.
+- Before any push a content gate refuses purge-listed history or paths, a flagged secret and an oversized file, and
+  keeps the tag local; content that was only ever local is pushed only after the operator reviews it row by row. A
+  push names one refspec per tag, never `--tags`.
+- A preserve with the same story and tree as an existing one is a no-op; per-run and per-story caps keep a runaway
+  producer's tags local.
+- `preserve/` tags are never moved or deleted; a preserve retires by derived state. A branch retires by an annotated
+  `refs/tags/archive/heads/<branch>` twin only when deleting it would orphan commits.
+- Upstream `attempt-preserve/*` and `refs/attempt-preserve-dirty/*` are scratch: promoted on the event and by a
+  reconcile scan, never pushed, never the record; `preserve_keep = 0` is rendered.
+- `marshal land` never deletes a `loop/*` head; teardown refuses unpreserved runtime work; retire and the sweeper never
+  touch tags; the protected list is steward's roster unioned with marshal's code floor.
+- The detectors fail closed, mint nothing, and read tags, custom refs and `origin`, not only local `refs/heads`.
+- *Motivating evidence: measured 2026-10-04 — 494 branch deletions in one day, 98 tips reachable from nothing, 8 of
+  them from an operator retirement; 19,412 synthetic merged-check commits in the object store; an unpushed-work
+  detector whose code turns a failed `git fsck` into 0 dangling commits (it did, at research time, while 20,135
+  existed) and whose printed remedy would now mint about 16,000 tags for synthetic commits.*
+
+**ONE FR space now FR-1..FR-234** (FR-235 = next free id).
+
+### 37.2 FR-59, FR-62 and FR-63 consequences (AD-40, AD-47 and AD-48 amended)
+
+Each gains one dated consequence line in place: FR-59, a landing never deletes a `loop/*` head (review minor 9); FR-62,
+preserve debt and could-not-observe; FR-63, all of `refs/tags/**` is excluded and an archive twin is written only when
+deletion would orphan commits (review M5). None is renumbered or re-scoped.
+
+**Content changed:** § 37 added (FR-234 registered); dated consequence lines on FR-59, FR-62 and FR-63. No FR
+renumbered or removed. The spine gains AD-81 and amends AD-11, AD-29, AD-40, AD-47, AD-48 and AD-74 (spine
+§ Currency reconciliation — 2026-10-04). `updated:` bumped.

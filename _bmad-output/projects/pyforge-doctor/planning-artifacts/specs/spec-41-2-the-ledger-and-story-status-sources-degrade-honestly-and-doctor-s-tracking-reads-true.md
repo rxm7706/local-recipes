@@ -2,8 +2,9 @@
 title: "41.2: The ledger, story-status and capability-effect sources degrade honestly, the source dispatch passes its scope through, and doctor's own tracking reads true"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -96,4 +97,49 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 26 findings — high 0, medium 2, low 3, false 14, maybe-false 1, reject 6
+- findings:
+  - `[false]` `[reject]` Deferred-work YAML duplicate `verified:` keys — later `verified: RESOLVED` overwrites STANDS in practice; readers use the last key.
+  - `[medium]` `[defer]` `DW-FU-23-6-2` / `DW-FU-30-3` still open until operator `bmad-spec` render — story boundary and memlog input landed; `_bmad/scripts/bmad-spec.py` absent in this checkout.
+  - `[false]` `[reject]` Wrong `verified:` pasted under `DW-FU-23-6-3` — row text re-read at HEAD; not changed in this pass.
+  - `[defer]` `[defer]` Central `cli_bridge.run_git` Unicode degrade — out of story surface; local `_git` wrappers fixed per rows.
+  - `[defer]` `[defer]` Marshal subdirectory guard — not in the 24-row list for this story; ledger side addressed.
+  - `[false]` `[reject]` Auto Run omitted pr-preflight — verification section lists station commands; reconcile guard run and recorded below.
+  - `[patch]` `[patch]` `--head` help named ledger-direction — fixed help string in `sources/__main__.py`.
+  - `[false]` `[reject]` Review Triage Log stale — updated in this pass.
+  - `[maybe-false]` `[defer]` `_check` inventory WARN revision label — not reproduced in review pass; defer unless a live ls-tree head failure mislabels.
+  - `[low]` `[reject]` Empty `--inv` filter — argparse accepts `nargs='*'`; no CI task passes empty list.
+  - `[low]` `[reject]` dreams-hygiene task description lag — pixi description not in story AC.
+  - `[defer]` `[defer]` Fleet epics status beyond doctor — AC scopes doctor project only; meta-test added.
+  - `[low]` `[reject]` Monitor default `--watch` unchanged — additive axis only per DW-FU-6-2.
+  - `[false]` `[reject]` honest_reads test mapping opaque — tests name DW rows in module docstring and deferred closures cite tests.
+  - `[defer]` `[defer]` Hundreds of unresolved CAPs remain — join widened; AC is lower count not zero.
+  - `[medium]` `[patch]` ledger-direction `--base` CLI untested — added `test_base_reaches_ledger_direction_gather`.
+  - `[medium]` `[patch]` flag_inventory `story_specs_dir` untested at script boundary — added `test_a_cap_joined_only_through_its_story_spec_parent_line_is_runtime_not_unresolved`.
+  - `[false]` `[reject]` Edge: second `development_status:` block — no fixture in diff; pre-existing parser contract.
+  - `[false]` `[reject]` Edge: `Done` non-lowercase terminal — normalize_status_value handles quotes; TERMINAL is lowercase set by design.
+  - `[false]` `[reject]` Edge: cross-ledger move without base preload — move check requires base membership in implementation.
+  - `[false]` `[reject]` Edge: AC 24 closed — 22 closed + 2 SPEC rows documented open per Always boundary.
+  - `[false]` `[reject]` Edge: DW-FU-6-4-23 overstates chdir — WARN on subdirectory is the shipped contract.
+  - `[false]` `[reject]` Intent: revert-test not universal — 19/24 honest_reads pins fail at base revision per Auto Run Result.
+  - `[defer]` `[defer]` Intent: spec-surface stamp not in diff — `spec_surface_reconcile.py` OK at HEAD; no `--write-baseline`.
+
+## Auto Run Result
+
+Status: done  
+Review pass 2026-10-04: three patches applied (`--head` help, ledger-direction `--base` test, flag_inventory story-spec join test). `followup_review_recommended: false`.
+
+Open for the operator: `DW-FU-23-6-2` and `DW-FU-30-3` — memlog re-derive input is appended; `bmad-spec` render was not run here (`_bmad/scripts/bmad-spec.py` missing). 22 of 24 deferred-work rows closed in `deferred-work-ledger.md`.
+
+What landed on top of the earlier core fixes (ledger, story-status, dispatch, frozen-path):
+- `capability_effect.py`: `_surface_field` reads multi-line `**Surface:**` fields (bullet and wrapped inline); `_story_surface_by_cap` joins a CAP to a surface through the story specs under `planning-artifacts/specs/` that cite the parent spec and CAP; `scripts/flag_inventory.py` passes `story_specs_dir`. `flag-inventory` unresolved count: 722 to 682 (doctor 79 to 77), recorded on `DW-doctor-34-4`.
+- `atlas.py`: the `behind-upstream` watch axis (MCP `behind_upstream`, CLI `behind_upstream.py`) emitting `Source.BEHIND_UPSTREAM`.
+- `epics.md`: the 19 lagging `**Status:**` lines now read the ledger; `tests/meta/test_epics_status_tracks_the_ledger.py` pins every doctor status line to `sprint-status-ledger.yaml`.
+- `sources/__init__.py` lists the `degrade_on_exception` call sites; `test_sources_registry.py` counts them by AST.
+- `tests/scripts/test_detectors_doctor_sources.py`: every `_DOCTOR_SOURCE_TASKS` entry is a pixi task running `python -m pyforge.doctor.sources <name>`. `dreams-hygiene-check` in `pixi.toml` ran `dream-chain --dreams` and now runs its own source. `dashboard-layout-check` is declared under `feature.local-recipes`, not `guild-tasks`; that is pinned as a documented exception.
+- Rows whose fix had no test now have one in `tests/unit/test_sources_honest_reads_41_2.py` (19 of its 24 tests fail at the base revision `dfe4007e46`). Three fixes were completed while pinning them: alias-form keys in `gather_story_status` (DW-FU-6-4-9; Route 3 and Route 4 now run on the alias token and on any spelling), a cross-ledger key move (DW-FU-6-4-6; the check sat behind the same-tail test and never fired for a move to a project with no such tail), and the leftover `ledger-regression` / `ledger-regression-total` check names in `marshal.py` (DW-FU-6-4-21; now `marshal-durability-git` / `marshal-durability-total`).
+
+Verification run (exit codes read from files, not pipes): `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` (3328 passed, 1 skipped, exit 0); `pixi run --frozen -e pyforge-guild lint-types` (exit 0); `pixi run --frozen -e pyforge-guild flag-inventory` (exit 0). `spec_surface_reconcile.py`, `deferred-work-check` and the memlog entries are recorded below once run.
+
+Surface reconcile memlog paths named: see `spec-pyforge-doctor/.memlog.md` and the co-governor `spec-pyforge-core/.memlog.md` (same paths in both).

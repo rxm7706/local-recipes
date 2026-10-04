@@ -230,7 +230,7 @@ def _build_parser() -> tuple[
         metavar="AXIS[,AXIS...]",
         help=(
             "comma-separated Watch axes to run (staleness, cve, "
-            "abandonment, adoption); default when omitted: staleness,cve"
+            "abandonment, adoption, behind-upstream); default when omitted: staleness,cve"
         ),
     )
     monitor.add_argument(

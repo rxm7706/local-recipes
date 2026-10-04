@@ -547,3 +547,122 @@ def test_external_reference_count_falls_back_to_corpus_without_git(
 
     assert count == 3
     assert corpus_holder[0] is not None  # corpus built once and cached
+
+
+# --- DW-doctor-34-4: the wider Surface join (multi-line field, story-spec Parent: join) ---------------
+
+
+def test_surface_field_reads_a_bullet_list_and_keeps_leading_paths() -> None:
+    block = (
+        "### Story 1.1: x\n\n"
+        "**Type:** fix\n\n"
+        "**Surface:**\n"
+        "- `src/pkg/a.py` (`alpha`, `beta`): the wrapped\n"
+        "  continuation line is prose.\n"
+        "- Moves, each a `git mv`:\n"
+        "  - `src/pkg/b.py` gains `gamma`.\n"
+        "\n"
+        "**Deps:** none\n"
+    )
+
+    surface = capability_effect._surface_field(block)
+
+    assert surface == "`src/pkg/a.py` (`alpha`, `beta`), `src/pkg/b.py`"
+    assert capability_effect._split_surface_fragments(surface or "") == [
+        "`src/pkg/a.py` (`alpha`, `beta`)",
+        "`src/pkg/b.py`",
+    ]
+
+
+def test_surface_field_inline_joins_indented_wrap_and_stops_at_the_next_field() -> None:
+    block = "**Surface:** `a.py`,\n  `b.py`\n**Deps:** none\n- unrelated bullet\n"
+
+    assert capability_effect._surface_field(block) == "`a.py`, `b.py`"
+
+
+def test_surface_field_absent_or_bare_returns_none() -> None:
+    assert capability_effect._surface_field("### Story 1.1: x\n\nno field here\n") is None
+    assert capability_effect._surface_field("**Surface:**\n\n**Deps:** none\n") is None
+
+
+def test_story_surface_by_cap_reads_multiline_epics_surface() -> None:
+    epics = (
+        "## Epic 1\n\n### Story 1.1: x\n\n**FR/AD:** spec-demo CAP-1\n\n"
+        "**Surface:**\n- `src/pkg/a.py` (`alpha`)\n- `src/pkg/b.py`\n\n**Deps:** none\n"
+    )
+
+    assert capability_effect._story_surface_by_cap(epics, ["spec-demo"]) == {
+        ("spec-demo", 1): "`src/pkg/a.py` (`alpha`), `src/pkg/b.py`"
+    }
+
+
+def _write_story_spec(specs_dir: Path, name: str, body: str) -> None:
+    specs_dir.mkdir(parents=True, exist_ok=True)
+    specs_dir.joinpath(name).write_text(body, encoding="utf-8")
+
+
+def test_story_spec_parent_line_joins_a_cap_to_its_surface(tmp_path: Path) -> None:
+    specs = tmp_path / "specs"
+    _write_story_spec(
+        specs,
+        "spec-5-1-a-story.md",
+        "---\nstatus: done\n---\n\n## Binding\n\n"
+        "Parent: spec-demo CAP-2, CAP-4-CAP-6, CAP-9..10 (the capabilities).\n"
+        "Surface: `src/pkg/a.py` (`alpha`), `src/pkg/b.py`\n",
+    )
+
+    got = capability_effect._story_surface_by_cap("", ["spec-demo"], story_specs_dir=specs)
+
+    surface = "`src/pkg/a.py` (`alpha`), `src/pkg/b.py`"
+    assert got == {("spec-demo", n): surface for n in (2, 4, 5, 6, 9, 10)}
+
+
+def test_story_spec_join_never_overrides_epics_and_ignores_a_longer_slug(tmp_path: Path) -> None:
+    specs = tmp_path / "specs"
+    _write_story_spec(
+        specs,
+        "spec-5-1-a-story.md",
+        "Parent: spec-demo-extra CAP-1 (a different Spec whose slug extends this one)\nSurface: `story/spec.py`\n",
+    )
+    _write_story_spec(specs, "spec-5-2-b-story.md", "Parent: spec-demo CAP-2\nSurface: `story/two.py`\n")
+    epics = "## Epic 1\n\n### Story 1.1: x\n\n**FR/AD:** spec-demo CAP-2\n\n**Surface:** `epics/win.py`\n"
+
+    got = capability_effect._story_surface_by_cap(epics, ["spec-demo"], story_specs_dir=specs)
+
+    assert got == {("spec-demo", 2): "`epics/win.py`"}
+
+
+def test_story_spec_with_prose_surface_or_no_parent_names_no_code(tmp_path: Path) -> None:
+    specs = tmp_path / "specs"
+    _write_story_spec(specs, "spec-6-1-prose.md", "Parent: spec-demo CAP-3\nSurface: named on the story in epics.md\n")
+    _write_story_spec(specs, "spec-6-2-no-parent.md", "Surface: `x.py`\n")
+    _write_story_spec(specs, "spec-6-1-prose.memlog.md", "Parent: spec-demo CAP-8\nSurface: `m.py`\n")
+
+    got = capability_effect._story_surface_by_cap("", ["spec-demo"], story_specs_dir=specs)
+
+    assert got == {("spec-demo", 3): None}
+
+
+def test_story_spec_join_missing_dir_is_empty(tmp_path: Path) -> None:
+    assert capability_effect._story_surface_by_cap("", ["spec-demo"], story_specs_dir=tmp_path / "nope") == {}
+
+
+def test_caller_reach_resolves_a_cap_through_its_story_spec(tmp_path: Path) -> None:
+    _init_repo(tmp_path)
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs", slug="spec-viaparent", caps="- **CAP-1 — code cap.**\n")
+    _write_epics(
+        pa,
+        "## Epic 1\n\n### Story 1.1: cites the cap, names no surface\n\n**FR/AD:** spec-viaparent CAP-1\n",
+    )
+    _write_story_spec(
+        pa / "specs",
+        "spec-1-1-cites-the-cap.md",
+        "Parent: spec-viaparent CAP-1\nSurface: `src/pkg/nowhere.py`\n",
+    )
+    _commit_all(tmp_path)
+
+    findings = capability_effect.gather_caller_reach(tmp_path)
+
+    assert [f.check for f in findings] == ["capability-effect-absent-surface-path"]
+    assert "src/pkg/nowhere.py" in findings[0].message

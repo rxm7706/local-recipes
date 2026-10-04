@@ -124,7 +124,7 @@ development_status:
   4-4-safe-upgrade-path-recommendation-fr-13: done
   40-1-doctor-executes-no-code-from-the-judged-tree-and-an-unresolved-head-or-a-failed-gather-reads-as-unevaluable: done
   41-1-the-chain-sources-measure-what-they-claim: done
-  41-2-the-ledger-and-story-status-sources-degrade-honestly-and-doctor-s-tracking-reads-true: backlog
+  41-2-the-ledger-and-story-status-sources-degrade-honestly-and-doctor-s-tracking-reads-true: done
   41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way: backlog
   41-4-the-check-cli-the-score-and-the-bmad-method-source-report-every-degradation: backlog
   41-5-a-new-story-reopens-its-done-epic-without-reading-as-a-ledger-regression: done

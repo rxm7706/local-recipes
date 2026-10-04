@@ -432,6 +432,39 @@ verify_commands = [
   # co-governor reconciles (spec-pyforge-testing-charter governs the kit)
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
+"87" = [  # preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287; Story 87.1's
+  # sweeper fix), added 2026-10-04. The default surface, restated because a declared entry replaces it outright, plus:
+  # pyforge-core's preserve_refs grammar and its tests (87.3, 87.15; spec-pyforge-core co-governs), the repo scripts
+  # and their tests (the sweeper, the detectors and readers, the fleet poll, the one-off migration scripts), the flagd
+  # tree (pyforge.marshal.preserve_refs), the build-skill customizations (87.11), the how-tos and the map, the purge list
+  # and the retirement ledger under docs/governance/, the tracked preserve manifests, the one workflow whose tag-push
+  # trigger 87.15 filters, team memory (87.11's scribe capture correction), and every Spec memlog.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/preserve-manifests/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py",
+  "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py",
+  "src/shared/packages/pyforge-core/tests/**",
+  "scripts/**",
+  "tests/scripts/**",
+  "src/platform/config/flags.json",
+  "src/platform/config/flag-overlays.json",
+  "_bmad/custom/bmad-build.toml",
+  "_bmad/custom/bmad-build-auto.toml",
+  "docs/how-to/**",
+  "docs/MAP.md",
+  "docs/governance/preserve-purge-list.json",
+  "docs/governance/preserve-retirements.yaml",
+  ".github/workflows/copilot-setup-steps.yml",
+  ".claude/memory/**",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
 "86" = [  # Phase 3 of the deferral burn-down: marshal's ruled fixes (fix stories, no CAP), added 2026-10-03.
   # The default surface, restated because a declared entry replaces it outright, plus what the bundles touch outside
   # the package: 86.2's adopted files, 86.5's scripts, 86.6's matrices and detectors, 86.7's docs and the CFE guard.
