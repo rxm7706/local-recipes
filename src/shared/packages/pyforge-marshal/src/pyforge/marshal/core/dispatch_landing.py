@@ -357,6 +357,50 @@ def _render_team_memory_index(preamble: list[str], sections: list[tuple[str, lis
     return "\n".join(parts).rstrip("\n") + "\n"
 
 
+def _h2_line_indices(lines: list[str]) -> list[int]:
+    return [index for index, line in enumerate(lines) if line.startswith("## ")]
+
+
+def _insert_after_last_nonblank(lines: list[str], start: int, end: int, inserted: list[str]) -> None:
+    """Insert ``inserted`` after the last non-blank line in ``lines[start:end]`` (Story 83.13)."""
+    if not inserted:
+        return
+    last_nonblank = start - 1
+    for index in range(start, end):
+        if lines[index].strip():
+            last_nonblank = index
+    lines[last_nonblank + 1 : last_nonblank + 1] = inserted
+
+
+def _reconstruct_team_memory_index_from_main(
+    main: str,
+    *,
+    branch_only_preamble: list[str],
+    branch_only_sections: list[list[str]],
+) -> str:
+    """Keep ``main`` byte-for-byte except branch-only appended lines (Story 83.13)."""
+    if not branch_only_preamble and not any(branch_only_sections):
+        return main
+    lines = main.split("\n")
+    h2s = _h2_line_indices(lines)
+    for section_index in range(len(h2s) - 1, -1, -1):
+        inserted = branch_only_sections[section_index] if section_index < len(branch_only_sections) else []
+        if not inserted:
+            continue
+        h2_index = h2s[section_index]
+        body_start = h2_index + 1
+        body_end = h2s[section_index + 1] if section_index + 1 < len(h2s) else len(lines)
+        _insert_after_last_nonblank(lines, body_start, body_end, inserted)
+    h2s = _h2_line_indices(lines)
+    preamble_end = h2s[0] if h2s else len(lines)
+    _insert_after_last_nonblank(lines, 0, preamble_end, branch_only_preamble)
+    trailing_newline = main.endswith("\n")
+    result = "\n".join(lines)
+    if trailing_newline and not result.endswith("\n"):
+        result += "\n"
+    return result
+
+
 def union_team_memory_index_texts(base: str, main: str, branch: str) -> str | None:
     """Story 83.11: union two append-only edits of ``.claude/memory/MEMORY.md``, or ``None`` when
     either side edited, removed, or reordered an existing line or section.
@@ -381,13 +425,20 @@ def union_team_memory_index_texts(base: str, main: str, branch: str) -> str | No
     )
     if preamble is None:
         return None
-    merged_sections: list[tuple[str, list[str]]] = []
-    for (heading, base_body), (_, main_body), (_, branch_body) in zip(base_secs, main_secs, branch_secs):
-        body = _union_appended_line_lists(base_body, main_body, branch_body)
-        if body is None:
+    main_pre_stripped = _rstrip_blank_tail(main_pre)
+    branch_only_preamble = preamble[len(main_pre_stripped) :]
+    branch_only_sections: list[list[str]] = []
+    for (_, base_body), (_, main_body), (_, branch_body) in zip(base_secs, main_secs, branch_secs):
+        merged_body = _union_appended_line_lists(base_body, main_body, branch_body)
+        if merged_body is None:
             return None
-        merged_sections.append((heading, body))
-    return _render_team_memory_index(preamble, merged_sections)
+        main_body_stripped = _rstrip_blank_tail(main_body)
+        branch_only_sections.append(merged_body[len(main_body_stripped) :])
+    return _reconstruct_team_memory_index_from_main(
+        main,
+        branch_only_preamble=branch_only_preamble,
+        branch_only_sections=branch_only_sections,
+    )
 
 
 # --- Story 83.3: deferred-work ledger union ----------------------------------
