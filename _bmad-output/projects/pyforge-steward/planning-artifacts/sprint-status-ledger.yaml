@@ -332,7 +332,7 @@ development_status:
   85-1-the-session-hook-refuses-deleting-protected-branches-and-loop-homes: done
   85-2-the-protected-ref-list-is-declared-once-and-the-live-rulesets-are-proven-to-match-it: done
   85-3-the-pre-push-gate-skips-a-push-it-can-prove-carries-only-preserve-or-archive-tags: done
-  85-4-the-hook-denies-every-protected-ref-deletion-and-any-deletion-that-orphans-commits: backlog
+  85-4-the-hook-denies-every-protected-ref-deletion-and-any-deletion-that-orphans-commits: done
   85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree: blocked
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
