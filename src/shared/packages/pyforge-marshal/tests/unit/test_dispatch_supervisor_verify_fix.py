@@ -299,9 +299,7 @@ def test_a_broken_flag_tree_parks_with_one_warning_and_no_fix_turn(
 # --------------------------------------------------------------------------
 
 
-def test_sidecar_failed_commands_still_reach_the_fix_turn(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_sidecar_failed_commands_still_reach_the_fix_turn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A long output tail offloads ``failed_commands`` to a sidecar; finalize must still read it."""
     repo_root = loop._repo(tmp_path)
     _seed_flag(repo_root, on=True)
@@ -354,9 +352,7 @@ def test_fix_turn_intent_is_journaled_before_the_harness_launch(
     assert order.index("intent") < order.index("launch")
 
 
-def test_fix_turn_green_reverify_sets_finalize_verified(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fix_turn_green_reverify_sets_finalize_verified(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from pyforge.marshal.dispatch_verify import ProcessWaitResult
 
     repo_root = loop._repo(tmp_path)
@@ -408,9 +404,7 @@ def test_fix_turn_green_reverify_sets_finalize_verified(
     assert vcs.commits, "fix-turn WIP must be committed before re-verify"
 
 
-def test_reverify_still_refused_emits_mrs_disp_060(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_reverify_still_refused_emits_mrs_disp_060(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
     from pyforge.marshal.dispatch_verify import ProcessWaitResult
 
@@ -445,7 +439,8 @@ def test_reverify_still_refused_emits_mrs_disp_060(
     observations = [
         entry
         for entry in _verify_fix_entries(fs)
-        if entry.get("phase") == "observation" and entry.get("payload", {}).get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+        if entry.get("phase") == "observation"
+        and entry.get("payload", {}).get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
     ]
     assert observations
     assert observations[-1]["payload"]["failed_command"] == _COMMAND

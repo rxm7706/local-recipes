@@ -1045,9 +1045,7 @@ def _maybe_run_verify_fix_turn(
         if fix_pid is None:
             return counter, False, folded
     else:
-        failed_rows = _failed_commands_from_verification_journal(
-            folded, run_id, fs=fs, run_dir=run_dir
-        )
+        failed_rows = _failed_commands_from_verification_journal(folded, run_id, fs=fs, run_dir=run_dir)
         failed_cmds = tuple(
             FailedVerifyCommand(
                 command=str(row.get("command", "")),
@@ -1255,18 +1253,13 @@ def _maybe_run_verify_fix_turn(
     v_after = _verification_outcome_verdict(folded, run_id)
     verified = v_after == DispatchVerificationVerdict.VERIFIED.value
     if not verified:
-        failed_after = _failed_commands_from_verification_journal(
-            folded, run_id, fs=fs, run_dir=run_dir
-        )
-        failed_command = (
-            str(failed_after[0]["command"]) if failed_after and failed_after[0].get("command") else None
-        )
+        failed_after = _failed_commands_from_verification_journal(folded, run_id, fs=fs, run_dir=run_dir)
+        failed_command = str(failed_after[0]["command"]) if failed_after and failed_after[0].get("command") else None
         finding = Finding(
             code=FIX_TURN_REVERIFY_REFUSED_CODE,
             severity=Severity.ERROR,
             message=(
-                f"verification still refused after one fix turn"
-                + (f" ({failed_command!r})" if failed_command else "")
+                f"verification still refused after one fix turn" + (f" ({failed_command!r})" if failed_command else "")
             ),
         )
         reverify_entry = build_entry(

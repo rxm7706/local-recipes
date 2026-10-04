@@ -3927,9 +3927,7 @@ def test_verify_fix_turn_reads_failed_commands_from_a_sidecar(tmp_path: Path, mo
     assert calls == ["launch"]
 
 
-def test_verify_fix_turn_reverify_green_and_pre_verify_commit(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_verify_fix_turn_reverify_green_and_pre_verify_commit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from pyforge.marshal.dispatch_verify import ProcessWaitResult
 
     repo_root = _repo(tmp_path)
@@ -3964,9 +3962,7 @@ def test_verify_fix_turn_reverify_green_and_pre_verify_commit(
     assert vcs.commits
 
 
-def test_verify_fix_turn_resume_waits_on_a_journaled_pid(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_verify_fix_turn_resume_waits_on_a_journaled_pid(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from pyforge.marshal.core.journal import VERIFY_FAILED_COMMANDS_FIELD
     from pyforge.marshal.dispatch_verify import ProcessWaitResult
 
