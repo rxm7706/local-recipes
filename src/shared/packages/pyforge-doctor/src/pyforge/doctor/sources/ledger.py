@@ -191,8 +191,9 @@ def _parse_statuses(text: str) -> dict[str, str]:
 
 
 def _rekey_paths(target: Path, rev: str) -> list[str]:
-    listing = _git(target, "ls-tree", "-r", "--name-only", rev) or ""
-    return sorted(p for p in listing.splitlines() if _REKEY_RE.match(p))
+    # NUL-split with quotePath off, like `_ledger_paths` (Story 41.2 / DW-FU-20-3).
+    listing = _git(target, "-c", "core.quotePath=false", "ls-tree", "-r", "-z", "--name-only", rev) or ""
+    return sorted(p for p in listing.split("\0") if _REKEY_RE.match(p))
 
 
 def _new_rekey_maps(target: Path, base: str, head: str) -> tuple[dict[str, dict[str, str]], list[dict]]:
@@ -320,6 +321,11 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
         blob = _git(target, "show", f"{head}:{path}")
         if blob is not None:
             head_status_by_path[path] = _parse_statuses(blob)
+    base_status_by_path: dict[str, dict[str, str]] = {}
+    for path in base_paths:
+        blob = _git(target, "show", f"{base}:{path}")
+        if blob is not None:
+            base_status_by_path[path] = _parse_statuses(blob)
     findings.extend(rekey_problems)
     compared = 0
     for path in sorted(base_paths | head_paths):
@@ -423,25 +429,27 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                 continue
             new = after.get(key)
             if new is None:
+                # DW-FU-6-4-6: a `done` key that is `done` in ANOTHER ledger at head and was
+                # not `done` there at base moved projects; it is not gone.
+                moved_elsewhere = any(
+                    other_path != path
+                    and statuses.get(key) in TERMINAL
+                    and base_status_by_path.get(other_path, {}).get(key) not in TERMINAL
+                    for other_path, statuses in head_status_by_path.items()
+                )
+                if moved_elsewhere:
+                    findings.append(
+                        {
+                            "kind": "ledger-key-moved",
+                            "project": project,
+                            "path": path,
+                            "detail": (f"story key {key!r} moved to another project's ledger — not a regression"),
+                            "keys": [key],
+                        }
+                    )
+                    continue
                 tail = _tail(key)
                 if tail in surviving_tails:
-                    moved_elsewhere = any(
-                        other_path != path and statuses.get(key) in TERMINAL
-                        for other_path, statuses in head_status_by_path.items()
-                    )
-                    if moved_elsewhere:
-                        findings.append(
-                            {
-                                "kind": "ledger-key-moved",
-                                "project": project,
-                                "path": path,
-                                "detail": (
-                                    f"story key {key!r} moved to another project's ledger — not a regression"
-                                ),
-                                "keys": [key],
-                            }
-                        )
-                        continue
                     survivors = {k for k, v in after.items() if v in TERMINAL and _tail(k) == tail}
                     base_same_tail = {k for k, v in before.items() if v in TERMINAL and _tail(k) == tail}
                     # DW-FU-6-4-5: a coincidentally new `done` key with the same
