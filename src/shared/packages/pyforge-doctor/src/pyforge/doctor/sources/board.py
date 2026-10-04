@@ -238,9 +238,10 @@ _CAP_SECTION_HEADING_RE = re.compile(
     re.MULTILINE | re.IGNORECASE,
 )
 
-#: Headings whose section bodies count for INV-A citation windows (Story 41.3).
+#: Headings whose section bodies count for INV-A citation windows (Story 41.3;
+#: ``## Fold provenance`` added Story 41.6 — the one-chain pilot's INV-A window).
 _DECOMP_SECTION_OPEN_RE = re.compile(
-    r"^(?:## Epic \d+|## (?:Capabilities|Scope \(capabilities\))\b|### Story \d+)",
+    r"^(?:## Epic \d+|## (?:Capabilities|Scope \(capabilities\))\b|## Fold provenance\b|### Story \d+)",
     re.MULTILINE | re.IGNORECASE,
 )
 

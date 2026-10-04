@@ -50,6 +50,31 @@ def test_deferred_specs_entries_name_open_specs_live() -> None:
     )
 
 
+_STATION_SPECS = (
+    "spec-pyforge-atlas",
+    "spec-pyforge-doctor",
+    "spec-pyforge-marshal",
+    "spec-pyforge-scribe",
+    "spec-pyforge-steward",
+    "spec-pyforge-warden",
+)
+
+
+def test_live_tree_no_spec_not_decomposed_on_station_specs() -> None:
+    """Story 41.6: fold-provenance citations in each station's ``epics.md`` cover
+    declared CAPs — no false ``spec-not-decomposed`` on the six station Specs."""
+    repo_root = _require_repo_root()
+    findings = board.gather_chain_completeness(repo_root)
+    bad = [
+        f
+        for f in findings
+        if f.check == "spec-not-decomposed" and f.evidence.get("subject") in _STATION_SPECS
+    ]
+    assert not bad, "live tree still reports spec-not-decomposed on station Specs:\n  " + "\n  ".join(
+        f"{f.evidence.get('project')}/{f.evidence.get('subject')}: {f.message}" for f in bad
+    )
+
+
 def test_live_tree_reports_zero_spec_status_missing() -> None:
     """After Class-B status flips, no tracked Spec should lack a ``status:``
     key — the live monorepo must report zero ``spec-status-missing`` findings."""

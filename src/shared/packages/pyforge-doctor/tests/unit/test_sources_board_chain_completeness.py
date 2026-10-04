@@ -172,6 +172,95 @@ def test_missing_roster_degrades_to_fallback_and_warns(tmp_path: Path) -> None:
 # --- INV-A: every open Spec is decomposed ------------------------------------
 
 
+def test_fold_provenance_section_covers_declared_caps(tmp_path: Path) -> None:
+    """Story 41.6: ``## Fold provenance`` is decomposition prose — citations there
+    count toward INV-A like epic sections."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[1, 2, 3])
+    epics = pa / "epics.md"
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_text(
+        "---\nepics_role: canonical\n---\n\n"
+        "## Fold provenance (2026-09-17)\n\n"
+        "INV-A window: `spec-foo` CAP-1..3.\n\n"
+        "## Epic 1: Test\n\n"
+        "### Story 1.1: title\n",
+        encoding="utf-8",
+    )
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done"})
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert not [f for f in findings if f.check == "spec-not-decomposed"]
+
+
+def test_fold_provenance_em_dash_heading_covers_caps(tmp_path: Path) -> None:
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[1, 2])
+    epics = pa / "epics.md"
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_text(
+        "---\nepics_role: canonical\n---\n\n"
+        "## Fold provenance — 2026-09-17\n\n"
+        "Cites `spec-foo` CAP-1..2.\n\n"
+        "## Epic 1: Test\n\n"
+        "### Story 1.1: title\n",
+        encoding="utf-8",
+    )
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done"})
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    assert not [f for f in findings if f.check == "spec-not-decomposed"]
+
+
+def test_fold_provenance_partial_coverage_still_fails_open_cap(tmp_path: Path) -> None:
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[1, 2, 3])
+    epics = pa / "epics.md"
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_text(
+        "---\nepics_role: canonical\n---\n\n"
+        "## Fold provenance (2026-09-17)\n\n"
+        "Only `spec-foo` CAP-1..2 here.\n\n"
+        "## Epic 1: Test\n\n"
+        "### Story 1.1: title\n",
+        encoding="utf-8",
+    )
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done"})
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    decomp = [f for f in findings if f.check == "spec-not-decomposed"]
+    assert len(decomp) == 1
+    assert decomp[0].status is DoctorStatus.FAIL
+    assert "CAP-3" in decomp[0].message
+
+
+def test_changelog_section_does_not_cover_caps(tmp_path: Path) -> None:
+    """DW-CHAIN-COMPLETENESS-4 / Story 41.3: ``## Changelog`` stays excluded."""
+    pa = _pa(tmp_path, "pyforge-testproj")
+    _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft", capabilities=[1, 2, 3])
+    epics = pa / "epics.md"
+    epics.parent.mkdir(parents=True, exist_ok=True)
+    epics.write_text(
+        "---\nepics_role: canonical\n---\n\n"
+        "## Changelog\n\n"
+        "Noted `spec-foo` CAP-3 in release notes.\n\n"
+        "## Epic 1: Test\n\n"
+        "Covers `spec-foo` CAP-1..2 only.\n\n"
+        "### Story 1.1: title\n",
+        encoding="utf-8",
+    )
+    _write_ledger(pa / "sprint-status-ledger.yaml", {"1-1-a": "done"})
+
+    findings = board.gather_chain_completeness(tmp_path)
+
+    decomp = [f for f in findings if f.check == "spec-not-decomposed"]
+    assert len(decomp) == 1
+    assert "CAP-3" in decomp[0].message
+
+
 def test_open_undecomposed_spec_reports_fail(tmp_path: Path) -> None:
     pa = _pa(tmp_path, "pyforge-testproj")
     _write_spec(pa / "specs" / "spec-foo" / "SPEC.md", "draft")
