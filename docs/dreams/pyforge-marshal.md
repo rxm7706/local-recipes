@@ -946,6 +946,13 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-04 (night)** — **Found: 86.5's cite rule hides real missing cites.** Story 86.5's post-landing review
+  showed its new code-linkage cite rule drops path-form cites with non-numeric ids, so 26 stale atlas
+  `specs/spec-a1-…md` links (to specs renamed in 893c96110d0) and a steward cite of a folded Spec folder now
+  read as prose instead of missing. A dead mypy override and stale `marshal chain regenerate` docs remain too.
+  **What it looks like when fixed:** a path-form cite that resolves nowhere is counted missing and named; the
+  stale links are repaired; no live doc describes the retired verb. **Constraints:** a fix story, no CAP, no flag.
+  Owner `spec-pyforge-marshal`. → Story 86.8, specced 2026-10-04.
 - **2026-10-04 (later)** — **Found: the sweeper stops at local branches, so remote cleanup is hand-rolled.** A
   hand-rolled cleanup deleted the eight loop homes, the `loop/*` branches and 41 `attempt-preserve/*` branches, all of
   which `scripts/worktree_sweep.py` would have kept. All were restored from GitHub's activity log, except the loop homes'
