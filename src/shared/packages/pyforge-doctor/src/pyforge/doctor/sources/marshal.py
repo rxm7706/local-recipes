@@ -67,6 +67,7 @@ from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from ..refs import MAIN
 from ..rekey import load_rekey_maps, reverse_map
+from .ledger import epic_reopened_by_new_story
 
 __all__ = ("gather", "gather_story_status")
 
@@ -507,7 +508,11 @@ def gather(target: Path) -> tuple[Finding, ...]:
             continue
 
         before, after = _parse_statuses(committed), _parse_statuses(working)
-        lost = [(k, v) for k, v in sorted(before.items()) if v in TERMINAL and after.get(k) not in TERMINAL]
+        lost = [
+            (k, v)
+            for k, v in sorted(before.items())
+            if v in TERMINAL and after.get(k) not in TERMINAL and not epic_reopened_by_new_story(k, before, after)
+        ]
         if lost:
             total_lost += len(lost)
             findings.append(
@@ -516,7 +521,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
                     check="ledger-regression",
                     status=DoctorStatus.FAIL,
                     message=(
-                        f"{project}: {len(lost)} story(ies) un-finished relative to the "
+                        f"{project}: {len(lost)} key(s) un-finished relative to the "
                         f"committed ledger — a completion that was durable is not any more"
                     ),
                     evidence={

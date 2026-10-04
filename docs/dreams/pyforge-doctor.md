@@ -86,6 +86,14 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-04** — **Found: a fix story cannot join its own done epic.** The operator expects a done epic to reopen when a
+  story is added to it, and the sync's roll-up does that. But `ledger-regression`, blocking in CI, reads `epic-N` keys
+  as stories, so the reopen turns Detectors red (marshal 85.4 under Epic 85: `epic-85` `done -> in-progress`, exit 2).
+  The only way round it was a new epic for every fix, which clutters the specs, sprints and ledger. The guard still
+  matters for epics: on 2026-10-03 three promotions dropped done epics to `backlog` while all their stories stayed
+  done, and Detectors caught each one. **What it looks like when fixed:** an epic leaves `done` without a finding when
+  a new non-done story joins it. Every other move of a done key is still a regression. **Constraints:** a fix story,
+  no new CAP, no flag. Owner `spec-pyforge-doctor`. → Story 41.5, specced 2026-10-04.
 - **2026-10-03 (Phase 4+5)** — **Phases 4 and 5 of the deferral burn-down: doctor's medium and low deferrals.**
   Measured on `main` with a parser over `deferred-work-ledger.md`: 39 open medium and 84 open low rows. The
   operator ruled both phases run now, on the idle station lanes: every medium row is fixed, each fix also closes

@@ -946,6 +946,27 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-04 (finalize roll-up)** — **Found: landings overwrite epic roll-ups with stale feed rows.** The landing
+  finalize renders the feed into the tracked ledger without the sync's epic roll-up. The feed's epic rows lag, because
+  the sync writes roll-ups only to the twin, so a landing copies the stale value. Doctor 41.5's landing set `epic-41`
+  to `backlog` with two stories done. On 2026-10-03 three landings dropped done epics to `backlog`, which turned main red.
+  **What it looks like when fixed:** every ledger write applies the same roll-up, so a landing never moves an epic the
+  stories do not move. **Constraints:** a fix story, no CAP, no flag. Owner `spec-pyforge-marshal`. → Story 83.21,
+  specced 2026-10-04.
+- **2026-10-04 (late night)** — **Found: the fix turn's redaction can hang the supervisor.** Story 85.3's post-landing
+  review showed the new secret rule backtracks exponentially on an unclosed quoted value full of backslashes
+  (`password="` plus 32 backslashes takes 0.5 s, and 1,000 take more than 20 s). The scrub runs in the supervisor thread
+  on every failed command's full output, and the fix turn is ON in dev and staging. The review also found these:
+  - the URL rule is quadratic;
+  - a compiler location loses its line and column;
+  - five credential shapes leak;
+  - the fix wait's journal heartbeat writes every second;
+  - three wirings have no test;
+  - one test races.
+  **What it looks like when fixed:** every scrub is linear and keeps what a fix needs, the heartbeat runs at the tick
+  rate, and the tests are deterministic. **Constraints:** a fix story under CAP-286, no new CAP or flag. It goes into
+  Epic 85 and reopens it (operator ruling, 2026-10-04: a fix joins its own epic and reopens it, never a new epic; doctor Story 41.5 lets `ledger-regression` accept the reopen). Owner
+  `spec-pyforge-marshal`. → Story 85.4, specced 2026-10-04.
 - **2026-10-04 (night)** — **Found: 86.5's cite rule hides real missing cites.** Story 86.5's post-landing review
   showed its new code-linkage cite rule drops path-form cites with non-numeric ids, so 26 stale atlas
   `specs/spec-a1-…md` links (to specs renamed in 893c96110d0) and a steward cite of a folded Spec folder now
