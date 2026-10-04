@@ -24,6 +24,18 @@ class SecondWriterRefused(PyforgeError, RuntimeError):
     """A writer already holds ``atlas.duckdb``."""
 
 
+class ConnectionYielded(PyforgeError, RuntimeError):
+    """The handle's DuckDB connection was yielded to another holder of the file.
+
+    duckdb refuses a second cross-process open while a read-write connection is
+    held, so a caller that hands the file to another process (the query plane's
+    HTTP face) closes the raw connection but keeps the writer filelock. Querying
+    the handle after that raises this instead of duckdb's bare
+    "Connection Error: Connection already closed", which names neither who took
+    the file nor how to reach it.
+    """
+
+
 def _require_atlas_path(path: Path | str) -> Path:
     resolved = Path(path)
     if resolved.name != ATLAS_DUCKDB_NAME:
