@@ -401,11 +401,21 @@ def _wired_resolution(
 
 
 def _await_file(path: Path, *, tries: int = 200) -> str:
+    """Poll until ``path`` exists with non-empty content.
+
+    Dispatch opens ``log_path`` before the detached child runs; reading as
+    soon as the file appears races an empty log (seen under CI load on the
+    wrapped fallback-dir reachability test).
+    """
     for _ in range(tries):
         if path.is_file():
-            time.sleep(0.05)
-            return path.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8")
+            if text:
+                time.sleep(0.05)
+                return path.read_text(encoding="utf-8")
         time.sleep(0.05)
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
     raise AssertionError(f"{path} never appeared")
 
 
