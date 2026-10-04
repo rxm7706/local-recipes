@@ -665,7 +665,13 @@ _LANDING_CHECK_DEFAULTS = {
     "landing_check_grace_seconds": 120,
 }
 #: The whole composed Marshal default `dispatch` block: Story 73.2 adds the per-campaign follow-up review cap.
-_DISPATCH_DEFAULTS = {"max_parallel": 1, **_LANDING_CHECK_DEFAULTS, "max_followup_reviews_per_campaign": 2}
+_DISPATCH_DEFAULTS = {
+    "max_parallel": 1,
+    **_LANDING_CHECK_DEFAULTS,
+    "max_followup_reviews_per_campaign": 2,
+    "verify_fix_output_tail_bytes": 8192,
+    "verify_fix_wall_clock_minutes": 15,
+}
 
 
 def test_dispatch_landing_check_keys_default_to_60_45_and_120():

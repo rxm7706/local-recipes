@@ -385,6 +385,9 @@ def test_registered_codes_contains_the_real_codes():
             # landing refuses before `forge.merge_pr` and leaves the PR open.
             "MRS-DISP-056",
             "MRS-DISP-057",
+            "MRS-DISP-058",
+            "MRS-DISP-059",
+            "MRS-DISP-060",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
             # Story 73.2 (spec-pyforge-marshal CAP-281): follow-up review scheduling -- 018

@@ -732,3 +732,49 @@ def test_dispatch_child_survives_via_new_session(tmp_path: Path, bare_path: Path
         )
     assert os.getsid(result.pid) != os.getsid(0)
     os.kill(result.pid, 15)
+
+
+# --- Story 85.1: launch_argv pins the project unconditionally ----------------
+
+
+class _RecordedPopen:
+    pid = 4242
+
+
+def test_launch_argv_pins_an_empty_project_over_the_inherited_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 85.1 (narrowed criterion; review L1): ``launch_argv`` -- the one
+    launcher behind ``dispatch`` and the fix turn -- sets ``BMAD_ACTIVE_PROJECT``
+    unconditionally, as ``dispatch`` always did. An empty ``project_slug`` reaches
+    the child as ``""``; it never inherits the operator shell's project (setting
+    it only for a non-empty slug makes this fail)."""
+    from pyforge.marshal.adapters import harness_bmadbuild
+    from pyforge.marshal.core.harness_profile import WireWrap, parse_profile
+
+    seen: dict[str, str] = {}
+
+    def _popen(argv: list[str], **kwargs: object) -> _RecordedPopen:
+        env = kwargs["env"]
+        assert isinstance(env, dict)
+        seen.update(env)
+        return _RecordedPopen()
+
+    monkeypatch.setattr(harness_bmadbuild.subprocess, "Popen", _popen)
+    monkeypatch.setenv("BMAD_ACTIVE_PROJECT", "operator-shell-project")
+    profile = parse_profile({"name": "fake", "binary": "fake", "argv": ["{prompt}"]}, source="test")
+    resolution = HarnessResolution(profile="fake", spec=profile, binary_path="/bin/true")
+
+    pid, command = BmadBuildHarness().launch_argv(
+        ["/bin/true"],
+        worktree=tmp_path,
+        profile=profile,
+        resolution=resolution,
+        log_path=tmp_path / "log",
+        wire=WireWrap(applied=False, reason=None),
+        budget_env={},
+        project_slug="",
+    )
+
+    assert (pid, command) == (4242, ("/bin/true",))
+    assert seen["BMAD_ACTIVE_PROJECT"] == ""

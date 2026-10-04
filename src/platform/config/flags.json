@@ -74,6 +74,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.marshal.verify_fix_loop": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "marshal",
+        "story": "85-1-a-verification-refusal-goes-back-to-the-session-that-wrote-the-change-for-one-fix-turn",
+        "created": "2026-10-03",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     }
   }
 }

@@ -17,7 +17,7 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-85-1-a-verification-refusal-goes-back-to-the-session-that-wrote-the-change-for-one-fix-turn.md
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py
-  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify_fix.py
+  - src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py
 deferred: []
 declared_low_risk: false
