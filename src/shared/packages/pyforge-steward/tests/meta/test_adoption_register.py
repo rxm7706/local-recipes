@@ -171,15 +171,28 @@ def _mention_re(name: str) -> re.Pattern[str]:
 #: reference file read as un-routed to this check.
 _PERSONA_ROUTING_FILES = ("SKILL.md", "customize.toml", "README.md")
 
+# Story 27.4 / DW-FU-24-1: a bare skill-name hit is not routing — the persona must
+# still carry the register row's grammar constraint, not a stray mention elsewhere.
+_PERSONA_ROUTING_CONSTRAINTS: dict[tuple[str, str], re.Pattern[str]] = {
+    ("atlas", "mcp-builder"): re.compile(r"grammar verbs only", re.I),
+}
+
 
 def _persona_mentions(root: Path, station: str, name: str) -> bool:
     persona_dir = root / ".claude" / "skills" / f"bmad-agent-{station}"
     rx = _mention_re(name)
+    constraint = _PERSONA_ROUTING_CONSTRAINTS.get((station, name))
     candidates = [persona_dir / f for f in _PERSONA_ROUTING_FILES]
     candidates += sorted(persona_dir.glob("reference/*.md"))
     for path in candidates:
-        if path.is_file() and rx.search(path.read_text(encoding="utf-8")):
-            return True
+        if not path.is_file():
+            continue
+        body = path.read_text(encoding="utf-8")
+        if not rx.search(body):
+            continue
+        if constraint is not None and not constraint.search(body):
+            return False
+        return True
     return False
 
 
@@ -408,6 +421,19 @@ def test_wired_column_agrees_with_live_pipeline_truth_for_every_row():
         f"steward suite pipeline-truth run (register, live, detail): {disagreements}"
     )
     assert len(SUITE_PACKAGES) == 13, "the story's own '13-row register' claim assumes 13 members"
+
+
+def test_persona_routing_requires_constraint_not_skill_name_alone(tmp_path):
+    """DW-FU-24-1: dropping the atlas mcp-builder grammar constraint must fail."""
+    fake_root = tmp_path
+    persona_dir = fake_root / ".claude" / "skills" / "bmad-agent-atlas"
+    persona_dir.mkdir(parents=True)
+    (persona_dir / "SKILL.md").write_text(
+        "# Atlas\n\nWe mention `mcp-builder` in passing with no grammar rule.\n",
+        encoding="utf-8",
+    )
+    (fake_root / ".claude" / "skills" / "mcp-builder").mkdir(parents=True)
+    assert not _persona_mentions(fake_root, "atlas", "mcp-builder")
 
 
 def test_single_station_branch_is_not_dead_code(tmp_path):
