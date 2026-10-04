@@ -2,7 +2,7 @@
 title: "85.3: The fix turn is safe to switch on in dev and staging"
 type: 'feature'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 712b45809c253baea1d5175872f7afb23170f66e
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -82,4 +82,37 @@ Minted 2026-10-03 at the operator's request (split 85.1, keep Cursor).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — verification commands green; diff matches acceptance criteria)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Story 85.3 closes Story 85.1 review safety gaps and turns `pyforge.marshal.verify_fix_loop` on in dev and staging (off in production). Fix-turn tails are scrubbed before truncation; prompts go through a run-dir file, not argv; timeout kill SIGTERM/SIGKILL/reaps; publisher heartbeats during fix wait; session resume uses recorded `harness_session_id` with profile match; open fix INTENT with a dead session stays resumable (no MRS-DISP-023); original session liveness uses start-time check in the tick loop.
+
+Files changed (vs baseline `712b45809c`):
+- `src/platform/config/flag-overlays.json` — verify_fix_loop on dev/staging, off production
+- `src/platform/tests/test_openfeature_file_flags.py`, `pyforge-core/tests/unit/test_flags.py` — per-environment pins
+- `core/dispatch_verify_fix.py`, `dispatch_verify.py` — scrub, SIGKILL/reap, prompt file constant
+- `dispatch_supervisor/__main__.py`, `cli/dispatch.py` — heartbeat, pending INTENT LIVE, session liveness
+- `adapters/harness_bmadbuild.py`, harness profiles (claude/cursor + overlay) — `{prompt_file}`, session id argv
+- Unit tests in `test_dispatch_verify_fix.py`, `test_dispatch_supervisor_verify_fix.py`, etc.
+
+Review: 0 patch/defer items this pass.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11162 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+
+Governed paths reconciled in memlogs:
+- Owning `spec-pyforge-marshal/.memlog.md`: all marshal + platform flag paths above (full list in memlog event 2026-10-04 Story 85.3)
+- Co-governor `spec-pyforge-core/.memlog.md`: marshal `src/` surfaces + `test_flags.py`
+- Co-governor `spec-pyforge-unifying-strategy/.memlog.md`: `flag-overlays.json`, `test_openfeature_file_flags.py`
+
+Residual risks: Live Cursor `--resume {session_id}` not proven on operator hardware; production still relies on `PYFORGE_ENVIRONMENT=production` for flag off.
