@@ -12,154 +12,22 @@ import json
 import re
 import tempfile
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 from pyforge.core.errors import PyforgeError
 
+from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import (
+    GIST_COLUMNS,
+    GIST_SCHEMA,
+    stringify_export_cell,
+)
 from pyforge.atlas.semantic import models
 from pyforge.atlas.semantic.query_helpers import bsl_query
 
 GIST_FILENAME = "mgmt-wf-python-modernization-identity.md"
 GIST_DASHBOARD_FILENAME = "mgmt-wf-python-modernization-dashboards.md"
-
-GIST_COLUMNS: tuple[str, ...] = (
-    "P",
-    "Rank",
-    "Score",
-    "Package",
-    "Work",
-    "Platforms",
-    "Apps",
-    "Downloads",
-    "Versions",
-    "Vuln",
-    "Core_Python_Package_Name",
-    "OpenTeams_Title",
-    "identity_source",
-    "associator_key",
-    "associator_status",
-    "primary_purl",
-    "primary_type",
-    "alternative_purls",
-    "cpes",
-    "conda_purl",
-    "source_repository_url",
-    "OpenTeams_Issue_URL",
-    "Conda-Forge_FeedStock_URL",
-    "Conda-Forge_Metadata_URL",
-    "Staged_Recipes_PR_URL",
-    "Local_Recipes_URL",
-    "Local_Build_Status",
-    "Verification_Timestamp_UTC",
-    "Priority_Bucket_Description",
-    "Priority_Source",
-    "Priority_Reason",
-    "JFROG_risk_level",
-    "JFROG_latest_vuln_count",
-    "internal_component_count",
-    "internal_lob_count",
-)
-
-GIST_SCHEMA: tuple[tuple[str, str, str, str], ...] = (
-    ("P", "enum", "yes", "Proposed priority `P1`–`P10`."),
-    ("Rank", "int", "yes", "1-based rank across the snapshot (P1 first)."),
-    ("Score", "int", "yes", "Use-score percentile 1–100."),
-    ("Package", "string", "yes", "Display name (same identity as Core_Python_Package_Name)."),
-    (
-        "Work",
-        "enum",
-        "yes",
-        "`Fix vulnerability` | `Create recipe` | `File OpenTeams tracking issue [Conda-Forge Packaging]` | `Already tracked`.",
-    ),
-    ("Platforms", "int", "no", "JFROG `platform_env_count`."),
-    ("Apps", "int", "no", "JFROG `internal_app_count`."),
-    ("Downloads", "int", "no", "JFROG `artifactory_downloads`."),
-    ("Versions", "int", "no", "JFROG `artifactory_version_count`."),
-    ("Vuln", "enum", "no", "JFROG `vuln_status` (`affected_latest`, `clean`, …)."),
-    (
-        "Core_Python_Package_Name",
-        "string",
-        "yes",
-        "Primary key. Conda/PyPI package identity as stored (unique).",
-    ),
-    ("OpenTeams_Title", "string", "yes", "Issue title `[Conda-Forge Packaging] {name}`."),
-    (
-        "identity_source",
-        "enum",
-        "yes",
-        "`purl-associator` | `inventory` | `none` | `openteams-board`.",
-    ),
-    (
-        "associator_key",
-        "string",
-        "no",
-        "Key matched in prefix-dev/purl-associator mappings-index. Blank if unused.",
-    ),
-    (
-        "associator_status",
-        "string",
-        "no",
-        "Associator status, or `inventory-derived` / `unmapped`.",
-    ),
-    ("primary_purl", "purl", "no", "Upstream PURL (`pkg:pypi/…` or `pkg:github/…`). Not a conda PURL."),
-    ("primary_type", "enum", "no", "`pypi` | `github` | `git` | blank."),
-    ("alternative_purls", "purl[]", "no", "`; `-joined extra PURLs."),
-    ("cpes", "string[]", "no", "`; `-joined CPEs from the associator."),
-    ("conda_purl", "purl", "no", "`pkg:conda/{name}?channel=conda-forge` only when on conda-forge."),
-    ("source_repository_url", "url", "no", "Upstream VCS URL. Not a feedstock and not PyPI/anaconda."),
-    (
-        "OpenTeams_Issue_URL",
-        "url",
-        "no",
-        "GitHub issue on OpenTeams-WFT-CDO/mgmt-wf-python-modernization.",
-    ),
-    (
-        "Conda-Forge_FeedStock_URL",
-        "url[]",
-        "no",
-        "`; `-joined github.com/conda-forge/{repo}-feedstock from conda-forge.org/packages.",
-    ),
-    (
-        "Conda-Forge_Metadata_URL",
-        "url",
-        "no",
-        "Packages-page Browse link: conda-metadata-app.streamlit.app/?q=conda-forge/{pkg}.",
-    ),
-    (
-        "Staged_Recipes_PR_URL",
-        "url",
-        "no",
-        "Best conda-forge/staged-recipes PR (open file path, else title; prefer open then merged).",
-    ),
-    (
-        "Local_Recipes_URL",
-        "url[]",
-        "no",
-        "`; `-joined github.com/rxm7706/local-recipes/tree/main/recipes/{dir}.",
-    ),
-    (
-        "Local_Build_Status",
-        "enum",
-        "no",
-        "`success` | `failed` | `build-clean-test-blocked` | `not-attempted`. From the local `recipe.yaml` CFE stamp. Blank if no stamp.",
-    ),
-    ("Verification_Timestamp_UTC", "datetime", "yes", "ISO 8601 UTC generation time for this snapshot."),
-    ("Priority_Bucket_Description", "string", "yes", "Human description of `P`."),
-    (
-        "Priority_Source",
-        "string",
-        "no",
-        "Assignment source (`current-version-vuln`, `platform`, `work-create-recipe`, …).",
-    ),
-    ("Priority_Reason", "string", "no", "Short reason for this `P`."),
-    ("JFROG_risk_level", "enum", "no", "`HIGH` | `MEDIUM` | `LOW` | `NO_DATA`."),
-    ("JFROG_latest_vuln_count", "int", "no", "Basilisk latest-version known vulnerability count."),
-    ("internal_component_count", "int", "no", "JFROG internal component count."),
-    ("internal_lob_count", "int", "no", "JFROG internal LOB count."),
-)
 
 PRIORITY_DESC = {
     "P1": "Current-version vulnerability: the latest release has confirmed advisories (HIGH / affected_latest). Existing OpenTeams board P1 also stays here.",
@@ -341,9 +209,7 @@ def _data_root_from_export(export_path: Path) -> Path:
 
 
 def _records_from_frame(df: pd.DataFrame) -> list[dict[str, str]]:
-    return [
-        {str(k): ("" if pd.isna(v) else str(v).strip()) for k, v in row.items()} for row in df.to_dict(orient="records")
-    ]
+    return [{str(k): stringify_export_cell(v) for k, v in row.items()} for row in df.to_dict(orient="records")]
 
 
 def _pep503_name(value: str) -> str:
@@ -590,9 +456,12 @@ def _render_identity_catalog(
         key = _filled_key(col)
         fills[col] = _scalar_measure(model, key)
 
-    ts = (rows[0].get("Verification_Timestamp_UTC") if rows else "") or datetime.now(timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
-    )
+    ts = str(rows[0].get("Verification_Timestamp_UTC") or "").strip() if rows else ""
+    if not ts:
+        raise IdentityGistError(
+            "identity_complete_export missing Verification_Timestamp_UTC; "
+            "refusing to publish gist with a synthetic timestamp"
+        )
     for row in rows:
         row["Verification_Timestamp_UTC"] = ts
     sha = _file_sha256(export_path)
@@ -722,9 +591,12 @@ def _render_dashboards(
     repo_root: Path,
 ) -> str:
     n = len(records)
-    ts = (records[0].get("Verification_Timestamp_UTC") if records else "") or datetime.now(timezone.utc).strftime(
-        "%Y-%m-%dT%H:%M:%SZ"
-    )
+    ts = str(records[0].get("Verification_Timestamp_UTC") or "").strip() if records else ""
+    if not ts:
+        raise IdentityGistError(
+            "identity_complete_export missing Verification_Timestamp_UTC; "
+            "refusing dashboard companion with a synthetic timestamp"
+        )
     sha = _file_sha256(export_path)
 
     p_df = _query_counts(model, ["P"])
@@ -977,7 +849,7 @@ def _render_dashboards(
                         f"{type_status[rtype].get('not-attempted', 0):,}",
                         f"{type_status[rtype].get('blank', 0):,}",
                     ]
-                    for rtype in RECIPE_TYPE_ORDER
+                    for rtype in list(RECIPE_TYPE_ORDER) + sorted(t for t in type_status if t not in RECIPE_TYPE_ORDER)
                     if rtype in type_status
                 ],
             ),

@@ -38,8 +38,10 @@ import re
 import shutil
 import subprocess
 import sys
+import time
+import types
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
@@ -91,44 +93,27 @@ GIST_ID_ENV = "OPENTEAMS_IDENTITY_GIST_ID"
 INVENTORY_IDENTITY_UI_ENV = "INVENTORY_IDENTITY_UI"
 _VALID_IDENTITY_UI_MODES = frozenset({"both", "canvas", "vizro"})
 LOCAL_ENV_PATH = REPO_ROOT / "conf/conda-forge-packaging-inventory-operations.local.env"
-GIST_SCHEMA = [
-    ("P", "enum", "yes", "Proposed priority `P1`–`P10`."),
-    ("Rank", "int", "yes", "1-based rank across the snapshot (P1 first)."),
-    ("Score", "int", "yes", "Use-score percentile 1–100."),
-    ("Package", "string", "yes", "Display name (same identity as Core_Python_Package_Name)."),
-    ("Work", "enum", "yes", "`Fix vulnerability` | `Create recipe` | `File OpenTeams tracking issue [Conda-Forge Packaging]` | `Already tracked`."),
-    ("Platforms", "int", "no", "JFROG `platform_env_count`."),
-    ("Apps", "int", "no", "JFROG `internal_app_count`."),
-    ("Downloads", "int", "no", "JFROG `artifactory_downloads`."),
-    ("Versions", "int", "no", "JFROG `artifactory_version_count`."),
-    ("Vuln", "enum", "no", "JFROG `vuln_status` (`affected_latest`, `clean`, …)."),
-    ("Core_Python_Package_Name", "string", "yes", "Primary key. Conda/PyPI package identity as stored (unique)."),
-    ("OpenTeams_Title", "string", "yes", "Issue title `[Conda-Forge Packaging] {name}`."),
-    ("identity_source", "enum", "yes", "`purl-associator` | `inventory` | `none` | `openteams-board`."),
-    ("associator_key", "string", "no", "Key matched in prefix-dev/purl-associator mappings-index. Blank if unused."),
-    ("associator_status", "string", "no", "Associator status, or `inventory-derived` / `unmapped`."),
-    ("primary_purl", "purl", "no", "Upstream PURL (`pkg:pypi/…` or `pkg:github/…`). Not a conda PURL."),
-    ("primary_type", "enum", "no", "`pypi` | `github` | `git` | blank."),
-    ("alternative_purls", "purl[]", "no", "`; `-joined extra PURLs."),
-    ("cpes", "string[]", "no", "`; `-joined CPEs from the associator."),
-    ("conda_purl", "purl", "no", "`pkg:conda/{name}?channel=conda-forge` only when on conda-forge."),
-    ("source_repository_url", "url", "no", "Upstream VCS URL. Not a feedstock and not PyPI/anaconda."),
-    ("OpenTeams_Issue_URL", "url", "no", "GitHub issue on OpenTeams-WFT-CDO/mgmt-wf-python-modernization."),
-    ("Conda-Forge_FeedStock_URL", "url[]", "no", "`; `-joined github.com/conda-forge/{repo}-feedstock from conda-forge.org/packages."),
-    ("Conda-Forge_Metadata_URL", "url", "no", "Packages-page Browse link: conda-metadata-app.streamlit.app/?q=conda-forge/{pkg}."),
-    ("Staged_Recipes_PR_URL", "url", "no", "Best conda-forge/staged-recipes PR (open file path, else title; prefer open then merged)."),
-    ("Local_Recipes_URL", "url[]", "no", "`; `-joined github.com/rxm7706/local-recipes/tree/main/recipes/{dir}."),
-    ("Local_Build_Status", "enum", "no", "`success` | `failed` | `build-clean-test-blocked` | `not-attempted`. From the local `recipe.yaml` CFE stamp. Blank if no stamp."),
-    ("Verification_Timestamp_UTC", "datetime", "yes", "ISO 8601 UTC generation time for this snapshot."),
-    ("Priority_Bucket_Description", "string", "yes", "Human description of `P`."),
-    ("Priority_Source", "string", "no", "Assignment source (`current-version-vuln`, `platform`, `work-create-recipe`, …)."),
-    ("Priority_Reason", "string", "no", "Short reason for this `P`."),
-    ("JFROG_risk_level", "enum", "no", "`HIGH` | `MEDIUM` | `LOW` | `NO_DATA`."),
-    ("JFROG_latest_vuln_count", "int", "no", "Basilisk latest-version known vulnerability count."),
-    ("internal_component_count", "int", "no", "JFROG internal component count."),
-    ("internal_lob_count", "int", "no", "JFROG internal LOB count."),
-]
-GIST_COLUMNS = [name for name, _typ, _req, _meaning in GIST_SCHEMA]
+
+
+def _load_identity_export_contract() -> types.ModuleType:
+    """Atlas's ``identity_export_contract`` -- the one schema and cell rule (Story 27.1)."""
+    atlas_src = PYFORGE_ATLAS_PROJECT_DIR / "src"
+    if str(atlas_src) not in sys.path:
+        sys.path.insert(0, str(atlas_src))
+    from pyforge.atlas.pipelines.derived_artifacts import identity_export_contract
+
+    return identity_export_contract
+
+
+_EXPORT_CONTRACT = _load_identity_export_contract()
+GIST_SCHEMA: tuple[tuple[str, str, str, str], ...] = _EXPORT_CONTRACT.GIST_SCHEMA
+GIST_COLUMNS: list[str] = list(_EXPORT_CONTRACT.GIST_COLUMNS)
+_stringify_export_cell = _EXPORT_CONTRACT.stringify_export_cell
+IDENTITY_EXPORT_READ_WARNINGS: list[str] = []
+_FILED_NOT_ADDED_PREFIX = "filed-but-not-added: "
+_GH_PACE_SECONDS = 0.25
+_GH_MAX_RETRIES = 5
+_GH_BACKOFF_BASE = 2.0
 LOCAL_RECIPES_URL = "https://github.com/rxm7706/local-recipes/tree/main/recipes/{dir}"
 CFE_BUILD_STATUS_RE = re.compile(r"(?m)^  cfe-local-build-status:\s*(\S+)")
 LOCAL_DIR_FROM_URL_RE = re.compile(r"/recipes/([^/\s]+)\s*$")
@@ -239,11 +224,62 @@ PROJECT_OWNER = "OpenTeams-WFT-CDO"
 PROJECT_NUMBER = "1"
 
 
+def _gh_secondary_rate_limit(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    if isinstance(exc, subprocess.CalledProcessError):
+        text += (getattr(exc, "stderr", "") or "").lower()
+    return "secondary rate limit" in text or (
+        "rate limit" in text and ("403" in text or "429" in text)
+    )
+
+
+def _run_gh(
+    cmd: list[str],
+    *,
+    gh_runner: Callable[..., str] | None = None,
+    gh_call_runner: Callable[..., None] | None = None,
+    expect_output: bool = True,
+) -> str:
+    """Run one ``gh`` invocation with pacing and bounded backoff on rate limits."""
+    delay = _GH_BACKOFF_BASE
+    last_exc: BaseException | None = None
+    for attempt in range(_GH_MAX_RETRIES + 1):
+        try:
+            time.sleep(_GH_PACE_SECONDS)
+            if gh_runner is not None and expect_output:
+                return gh_runner(cmd, text=True).strip()
+            if gh_call_runner is not None and not expect_output:
+                gh_call_runner(cmd)
+                return ""
+            proc = subprocess.run(cmd, text=True, capture_output=True, check=True)
+            if expect_output:
+                return (proc.stdout or "").strip()
+            return ""
+        except subprocess.CalledProcessError as exc:
+            last_exc = exc
+            if attempt >= _GH_MAX_RETRIES or not _gh_secondary_rate_limit(exc):
+                raise
+            time.sleep(delay)
+            delay *= _GH_BACKOFF_BASE
+        except OSError as exc:
+            last_exc = exc
+            if attempt >= _GH_MAX_RETRIES or not _gh_secondary_rate_limit(exc):
+                raise
+            time.sleep(delay)
+            delay *= _GH_BACKOFF_BASE
+    assert last_exc is not None
+    raise last_exc
+
+
 def create_missing_issues(
     gh: str | None,
     records: list[dict[str, str]],
     board: dict[str, str],
     dry_run: bool = True,
+    *,
+    gh_runner: Callable[..., str] | None = None,
+    gh_call_runner: Callable[..., None] | None = None,
+    not_filed: list[tuple[str, str]] | None = None,
 ) -> list[tuple[str, str]]:
     """One GitHub issue per record missing ``OpenTeams_Issue_URL``.
 
@@ -288,19 +324,23 @@ def create_missing_issues(
     if not gh:
         raise SystemExit("gh not found; cannot create issues with --create-issues")
     created: list[tuple[str, str]] = []
+    failed = not_filed if not_filed is not None else []
     for row in missing:
         name = row.get("Core_Python_Package_Name", "")
         title = row.get("OpenTeams_Title") or f"[Conda-Forge Packaging] {name}"
         try:
-            url = subprocess.check_output(
+            url = _run_gh(
                 [gh, "issue", "create", "--repo", ISSUE_CREATE_REPO, "--title", title],
-                text=True,
-            ).strip()
+                gh_runner=gh_runner,
+                gh_call_runner=gh_call_runner,
+                expect_output=True,
+            )
         except (subprocess.CalledProcessError, OSError) as exc:
             print(f"gh issue create failed for {name}: {exc}", file=sys.stderr)
+            failed.append((name, title))
             continue
         try:
-            subprocess.check_call(
+            _run_gh(
                 [
                     gh,
                     "project",
@@ -311,14 +351,17 @@ def create_missing_issues(
                     PROJECT_NUMBER,
                     "--url",
                     url,
-                ]
+                ],
+                gh_runner=gh_runner,
+                gh_call_runner=gh_call_runner,
+                expect_output=False,
             )
         except (subprocess.CalledProcessError, OSError) as exc:
             print(
-                f"gh project item-add failed for {name} ({url}): {exc}",
+                f"gh project item-add failed for {name} (issue filed at {url}): {exc}",
                 file=sys.stderr,
             )
-            created.append((name, title))
+            failed.append((name, f"{_FILED_NOT_ADDED_PREFIX}{url}"))
             continue
         row["OpenTeams_Issue_URL"] = url
         board[pep503_name(name)] = url
@@ -494,37 +537,74 @@ def emit_status_block(lines: list[str], indent: str, counts: Counter) -> None:
         lines.append(f"{indent}{status}: {counts[status]}")
 
 
-def identity_complete_export_parquet_path() -> Path:
+def identity_complete_export_parquet_path() -> Path | None:
     """Physical location of Story 23.5's ``identity_complete_export.parquet``."""
-    data_root = Path(os.environ.get(PYFORGE_ATLAS_DATA_ROOT_ENV, "data"))
+    raw_root = os.environ.get(PYFORGE_ATLAS_DATA_ROOT_ENV)
+    if raw_root is not None and not str(raw_root).strip():
+        print(
+            "identity_complete_export: PYFORGE_ATLAS_DATA_ROOT is set but empty; "
+            "refusing to resolve export path",
+            file=sys.stderr,
+        )
+        return None
+    data_root = Path(raw_root if raw_root is not None else "data")
     if not data_root.is_absolute():
         data_root = PYFORGE_ATLAS_PROJECT_DIR / data_root
     return data_root / IDENTITY_COMPLETE_EXPORT_RELPATH
 
 
+def _identity_export_missing_message(path: Path) -> str:
+    return (
+        f"identity_complete_export not found at {path} -- run "
+        "`pixi run -e pyforge-atlas pyforge-atlas-bootstrap` first"
+    )
+
+
+def _export_read_warning(msg: str) -> None:
+    IDENTITY_EXPORT_READ_WARNINGS.append(msg)
+    print(f"warning: {msg}", file=sys.stderr)
+
+
 def read_identity_complete_export_records() -> list[dict[str, str]] | None:
     """Read Story 23.5's ``identity_complete_export.parquet``.
 
-    Never falls back to a live fetch: a missing Parquet is a hard, named error
-    (I/O & Edge-Case Matrix), reported here and signaled to the caller as
-    ``None`` rather than raising."""
+    Never falls back to a live fetch: a missing or corrupt Parquet is a hard,
+    named error (I/O & Edge-Case Matrix), reported here and signaled to the
+    caller as ``None`` rather than raising."""
+    IDENTITY_EXPORT_READ_WARNINGS.clear()
     path = identity_complete_export_parquet_path()
-    if not path.is_file():
-        print(
-            f"identity_complete_export not found at {path} -- run "
-            "`pixi run -e pyforge-atlas pyforge-atlas-bootstrap` first",
-            file=sys.stderr,
-        )
+    if path is None:
         return None
-    df = pd.read_parquet(path)
+    if not path.is_file():
+        print(_identity_export_missing_message(path), file=sys.stderr)
+        return None
+    try:
+        df = pd.read_parquet(path)
+    except Exception as exc:
+        print(f"identity_complete_export unreadable at {path}: {exc}", file=sys.stderr)
+        return None
     if df.empty:
         print(
             f"identity_complete_export is empty at {path}; refusing to continue",
             file=sys.stderr,
         )
         return None
+    ranked = (*_EXPORT_CONTRACT.RANKING_COLUMNS, *_EXPORT_CONTRACT.SECONDARY_RANKING_COLUMNS)
+    for col in ranked:
+        if col not in df.columns:
+            _export_read_warning(f"identity_complete_export: ranking column {col} absent from export")
+    if "Core_Python_Package_Name" in df.columns:
+        rows_by_key: dict[str, list[str]] = defaultdict(list)
+        for raw in df["Core_Python_Package_Name"].dropna():
+            rows_by_key[pep503_name(str(raw))].append(str(raw))
+        for key, names in rows_by_key.items():
+            if key and len(names) > 1:
+                _export_read_warning(
+                    f"identity_complete_export: duplicate ranked rows normalize to "
+                    f"{key} ({len(names)} rows): {', '.join(names)}"
+                )
     return [
-        {str(k): ("" if pd.isna(v) else str(v).strip()) for k, v in row.items()}
+        {str(k): _stringify_export_cell(v) for k, v in row.items()}
         for row in df.to_dict(orient="records")
     ]
 
@@ -609,29 +689,48 @@ def write_dashboard_markdown(
     script_dir = str(Path(__file__).resolve().parent)
     if script_dir not in sys.path:
         sys.path.insert(0, script_dir)
-    import types
     from openteams_identity_dashboards import (
-        DEFAULT_OPS_CANVAS_PATH,
-        DEFAULT_WORKBOOK_CANVAS_PATH,
+        default_ops_canvas_path,
+        default_workbook_canvas_path,
         write_ops_canvas,
         write_workbook_canvas,
     )
 
     helpers = types.SimpleNamespace(**globals())
-    try:
-        write_ops_canvas(ops_canvas or DEFAULT_OPS_CANVAS_PATH, records, tab, helpers=helpers)
-    except Exception as exc:
-        print(f"ops canvas write failed ({exc}); continuing", file=sys.stderr)
-    try:
-        write_workbook_canvas(
-            workbook_canvas or DEFAULT_WORKBOOK_CANVAS_PATH,
-            records,
-            export_path,
-            tab,
-            helpers=helpers,
+    ops_target = ops_canvas if ops_canvas is not None else default_ops_canvas_path()
+    workbook_target = (
+        workbook_canvas if workbook_canvas is not None else default_workbook_canvas_path()
+    )
+    if ops_target is None:
+        from openteams_identity_dashboards import _priority_mod
+
+        print(
+            f"Skipped ops canvas write ({_priority_mod.INVENTORY_CANVAS_DIR_ENV} unset)",
+            flush=True,
         )
-    except Exception as exc:
-        print(f"workbook canvas write failed ({exc}); continuing", file=sys.stderr)
+    else:
+        try:
+            write_ops_canvas(ops_target, records, tab, helpers=helpers)
+        except Exception as exc:
+            print(f"ops canvas write failed ({exc}); continuing", file=sys.stderr)
+    if workbook_target is None:
+        from openteams_identity_dashboards import _priority_mod
+
+        print(
+            f"Skipped workbook canvas write ({_priority_mod.INVENTORY_CANVAS_DIR_ENV} unset)",
+            flush=True,
+        )
+    else:
+        try:
+            write_workbook_canvas(
+                workbook_target,
+                records,
+                export_path,
+                tab,
+                helpers=helpers,
+            )
+        except Exception as exc:
+            print(f"workbook canvas write failed ({exc}); continuing", file=sys.stderr)
 
 
 def gist_file_names(gh: str, gist_id: str) -> set[str]:
@@ -672,7 +771,7 @@ def publish_gist_files(
 
 
 def publish_gist_from_export(
-    export_path: Path,
+    export_path: Path | None,
     gist_id_cli: str | None,
     tab: str = _DEFAULT_EXPORT_TAB_LABEL,
     ops_canvas: Path | None = None,
@@ -680,6 +779,12 @@ def publish_gist_from_export(
     skip_gist: bool = False,
 ) -> int:
     """Edit the pinned gist from ``identity_complete_export.parquet`` (Story 23.6)."""
+    if export_path is None:
+        print(
+            "identity_complete_export: refusing gist publish (export path unresolved)",
+            file=sys.stderr,
+        )
+        return 1
     if not export_path.is_file():
         print(
             f"identity_complete_export not found at {export_path} -- run "
@@ -727,7 +832,7 @@ def publish_gist_from_export(
         return 1
 
     records = [
-        {str(k): ("" if pd.isna(v) else str(v).strip()) for k, v in row.items()}
+        {str(k): _stringify_export_cell(v) for k, v in row.items()}
         for row in pd.read_parquet(export_path).to_dict(orient="records")
     ]
     overlay_live_local(records, REPO_ROOT / "recipes")
@@ -836,8 +941,9 @@ def main() -> int:
         default=None,
         help=(
             "Ops dashboard canvas output path (Priority/Issues/Builds/Census). "
-            "Default: the live identity-ops.canvas.tsx under the Cursor project "
-            "canvases dir. Override for offline tests."
+            "Default: identity-ops.canvas.tsx under PYFORGE_INVENTORY_CANVAS_DIR "
+            "(environment, else conf/conda-forge-packaging-inventory-operations.local.env), "
+            "resolved at write time; unset skips the canvas write with a message."
         ),
     )
     p.add_argument(
@@ -845,9 +951,9 @@ def main() -> int:
         type=Path,
         default=None,
         help=(
-            "Artifactory/workbook dashboard canvas output path. Default: the "
-            "live jfrog-workbook.canvas.tsx under the Cursor project canvases "
-            "dir. Override for offline tests."
+            "Artifactory/workbook dashboard canvas output path. Default: "
+            "jfrog-workbook.canvas.tsx under the same PYFORGE_INVENTORY_CANVAS_DIR as "
+            "--ops-canvas; unset skips the write with a message."
         ),
     )
     args = p.parse_args()
@@ -879,12 +985,34 @@ def main() -> int:
 
     overlay_live_local(records, REPO_ROOT / "recipes")
 
-    created = create_missing_issues(gh_bin(), records, {}, dry_run=not args.create_issues)
+    not_filed: list[tuple[str, str]] = []
+    created = create_missing_issues(
+        gh_bin(),
+        records,
+        {},
+        dry_run=not args.create_issues,
+        not_filed=not_filed,
+    )
     if created:
         label = "Created" if args.create_issues else "Would create (dry-run)"
         print(f"{label} {len(created)} missing OpenTeams issue(s):")
         for name, title in created:
             print(f"  {name}: {title}")
+    filed_not_added = [(n, d) for n, d in not_filed if d.startswith(_FILED_NOT_ADDED_PREFIX)]
+    could_not_file = [(n, d) for n, d in not_filed if not d.startswith(_FILED_NOT_ADDED_PREFIX)]
+    if could_not_file:
+        print(f"Could not file {len(could_not_file)} OpenTeams issue(s):", file=sys.stderr)
+        for name, title in could_not_file:
+            print(f"  {name}: {title}", file=sys.stderr)
+    if filed_not_added:
+        print(
+            f"Filed but not added to OpenTeams project {PROJECT_NUMBER} "
+            f"({len(filed_not_added)}) -- add each by hand with `gh project item-add`; "
+            "a re-run would file a duplicate issue:",
+            file=sys.stderr,
+        )
+        for name, detail in filed_not_added:
+            print(f"  {name}: {detail.removeprefix(_FILED_NOT_ADDED_PREFIX)}", file=sys.stderr)
 
     export_path = identity_complete_export_parquet_path()
     if args.output_csv:
