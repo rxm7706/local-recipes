@@ -3581,6 +3581,24 @@ def _journal_then_fold(tmp_path: Path, report, run_name: str = "campaign"):
     return cli_dispatch._campaign_blocked_from_journal(fs, run_dir, run_name)
 
 
+def test_two_fleet_drain_cycles_in_one_campaign_mint_distinct_writer_ids(tmp_path: Path) -> None:
+    """Story 86.3 (DW-FU-3-2-13): fleet-cycle writer ids carry deploy's random token."""
+    from pyforge.marshal.cli.dispatch import FleetCycleReport, _journal_fleet_cycle
+
+    fs = FakeFs()
+    run_dir = tmp_path / "campaign"
+    run_dir.mkdir()
+    empty = FleetCycleReport(results=(), findings=(), data={"mode": "drain_to_zero"})
+    _journal_fleet_cycle(fs, run_dir, "camp-86-3", empty, [])
+    _journal_fleet_cycle(fs, run_dir, "camp-86-3", empty, [])
+    writer_ids = {
+        json.loads(line)["id"]["writer_id"]
+        for line in (run_dir / "journal.jsonl").read_text(encoding="utf-8").strip().splitlines()
+    }
+    assert len(writer_ids) == 2
+    assert all(writer_id.startswith("deploy-fleet-drain-") for writer_id in writer_ids)
+
+
 def test_a_refused_primary_beside_a_dispatched_sibling_journals_its_own_outcome_and_predicate(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
