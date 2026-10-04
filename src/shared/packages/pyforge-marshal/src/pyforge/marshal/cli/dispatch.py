@@ -73,13 +73,13 @@ from ..core.dispatch_completion import (
     zombie_redispatch_evidence,
 )
 from ..core.dispatch_harness_done import (
+    HOLD_LANDING_PAYLOAD_KEY,
     FollowupReview,
     followup_review_recommended,
     is_followup_review_spec,
     land_fail_operator_message,
     parse_blocking_condition,
     parse_spec_status,
-    HOLD_LANDING_PAYLOAD_KEY,
     should_take_harness_done_land_only,
     should_take_verification_refusal_land_only,
 )

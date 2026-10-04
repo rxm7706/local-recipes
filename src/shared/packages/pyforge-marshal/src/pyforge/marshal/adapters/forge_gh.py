@@ -279,9 +279,7 @@ class GhForge:
             )
         if result.returncode != 0:
             action = "draft" if draft else "ready"
-            raise ForgeCommandError(
-                f"gh pr {action} {number} --repo {repo_value} failed: {result.stderr.strip()}"
-            )
+            raise ForgeCommandError(f"gh pr {action} {number} --repo {repo_value} failed: {result.stderr.strip()}")
         return _view_pr(repo_value, number)
 
     def add_labels(self, repo: ForgeRef, number: int, labels: tuple[str, ...]) -> None:

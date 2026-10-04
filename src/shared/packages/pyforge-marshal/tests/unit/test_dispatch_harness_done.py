@@ -137,12 +137,8 @@ def test_resolve_hold_dispatch_landing_respects_required_and_passed() -> None:
     passed_spec = "---\nlanding_review: passed\n---\n"
     assert resolve_hold_dispatch_landing(spec_text=required_spec, hold_landing_cli=False, pr_ready_for_review=None)
     assert resolve_hold_dispatch_landing(spec_text=required_spec, hold_landing_cli=False, pr_ready_for_review=False)
-    assert not resolve_hold_dispatch_landing(
-        spec_text=passed_spec, hold_landing_cli=False, pr_ready_for_review=False
-    )
-    assert not resolve_hold_dispatch_landing(
-        spec_text=required_spec, hold_landing_cli=False, pr_ready_for_review=True
-    )
+    assert not resolve_hold_dispatch_landing(spec_text=passed_spec, hold_landing_cli=False, pr_ready_for_review=False)
+    assert not resolve_hold_dispatch_landing(spec_text=required_spec, hold_landing_cli=False, pr_ready_for_review=True)
 
 
 def test_removing_held_for_review_from_land_only_gate_would_skip_redispatch_land() -> None:

@@ -1862,8 +1862,7 @@ def _run_and_journal_landing(
     counter += 1
     outcome_payload: dict[str, object] = {
         "verdict": landing_result.verdict.value,
-        "ok": landing_result.verdict
-        in {DispatchLandingVerdict.LANDED, DispatchLandingVerdict.HELD_FOR_REVIEW},
+        "ok": landing_result.verdict in {DispatchLandingVerdict.LANDED, DispatchLandingVerdict.HELD_FOR_REVIEW},
         "envelope_verdict": envelope.verdict.value,
         "pr_number": landing_result.pr_number,
         "merge_sha": landing_result.merge_sha,
