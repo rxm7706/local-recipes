@@ -2369,6 +2369,17 @@ def test_mason_error_raised_in_main_prints_message_and_returns_exit_failed(monke
 # --- Story 1.7: CfeUnresolvedError degrades to EXIT_CFE_UNAVAILABLE --------
 
 
+def test_cfe_unresolved_error_json_mode_writes_error_envelope(capsys):
+    with patch("pyforge.mason.cli.recipe.validate", side_effect=CfeUnresolvedError()):
+        rc = main(["recipe", "validate", "recipes/foo", "--format", "json"])
+    assert rc == EXIT_CFE_UNAVAILABLE
+    captured = capsys.readouterr()
+    assert captured.err.strip() == str(CfeUnresolvedError())
+    doc = json.loads(captured.out)
+    assert doc["status"] == "error"
+    assert doc["errors"][0]["identifier"] == CfeUnresolvedError().identifier
+
+
 def test_cfe_unresolved_error_raised_in_main_returns_exit_cfe_unavailable(monkeypatch, capsys):
     """A `CfeUnresolvedError` raised inside main()'s try block must be caught
     by its own branch -- listed before `except MasonError`, since it is a
@@ -3856,9 +3867,8 @@ def test_environment_lock_missing_output_is_a_usage_error(capsys):
 
 
 def test_environment_lock_failed_child_still_renders_ok(capsys):
-    """A non-zero delegated engine returncode is DATA, never raised (AD-4)
-    -- mirrors `package build`'s own established "the gap is data"
-    precedent."""
+    """A non-zero delegated engine returncode is DATA on the result (AD-4) and
+    projects to EXIT_FAILED like `environment check` (Story 4.4 / FR-28)."""
     failed_result = LockResult(
         manifest_paths=("environment.yml",),
         output_path="lock.yml",
@@ -3869,13 +3879,31 @@ def test_environment_lock_failed_child_still_renders_ok(capsys):
         stdout="conflict: could not solve\n",
     )
     with patch("pyforge.mason.cli.environment.lock", return_value=failed_result):
-        assert main(["environment", "lock", "environment.yml", "-o", "lock.yml"]) == EXIT_OK
+        assert main(["environment", "lock", "environment.yml", "-o", "lock.yml"]) == EXIT_FAILED
 
     out = capsys.readouterr()
     assert out.err == ""
     assert "environment lock: ok" in out.out
     assert "returncode: 1" in out.out
     assert "conflict: could not solve" in out.out
+
+
+def test_mason_error_in_main_writes_json_error_envelope_when_format_json(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.lock",
+        side_effect=EnvironmentLockfileMissingError("missing.yml"),
+    ):
+        rc = main(
+            ["environment", "lock", "environment.yml", "-o", "lock.yml", "--format", "json"],
+        )
+
+    assert rc == EXIT_FAILED
+    captured = capsys.readouterr()
+    assert "environment:lockfile-missing" in captured.err
+    doc = json.loads(captured.out)
+    assert doc["command"] == "environment lock"
+    assert doc["status"] == "error"
+    assert doc["errors"][0]["identifier"] == "environment:lockfile-missing"
 
 
 def test_environment_lock_engine_absent_error_projects_to_exit_failed(capsys):
@@ -4209,6 +4237,46 @@ def test_environment_check_nonzero_returncode_projects_to_exit_failed_even_when_
     # only the process exit code reflects the failure.
     assert "environment check: ok" in out.out
     assert "returncode: 1" in out.out
+
+
+def _run_environment_check_against_engine(tmp_path, monkeypatch, extra_argv):
+    """Drive `environment check` through the real `environment.check()` and
+    `engines.condalock.check()` -- only the engine probe and the conda-lock
+    child are faked -- so the engine's own log line reaches Story 1.10's
+    logging configuration exactly as in a real run."""
+    import subprocess
+
+    for var in ("MASON_QUIET", "MASON_VERBOSE", "MASON_FORMAT"):
+        monkeypatch.delenv(var, raising=False)
+    lockfile = tmp_path / "conda-lock.yml"
+    lockfile.write_text("metadata:\n  content_hash:\n    linux-64: abc\n", encoding="utf-8")
+    with (
+        patch("pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2"),
+        patch(
+            "pyforge.mason.engines.condalock.subprocess.run",
+            return_value=subprocess.CompletedProcess(args=[], returncode=0, stdout=""),
+        ),
+    ):
+        rc = main(["environment", "check", "environment.yml", "-l", str(lockfile), *extra_argv])
+    return rc, lockfile
+
+
+def test_environment_check_default_run_maps_temp_copy_to_lockfile_on_stderr(tmp_path, monkeypatch, capsys):
+    """DW-4-4-12: a default run (no --verbose) shows the temp-copy mapping
+    line on stderr, naming the caller's lockfile."""
+    rc, lockfile = _run_environment_check_against_engine(tmp_path, monkeypatch, [])
+
+    assert rc == EXIT_OK
+    err = capsys.readouterr().err
+    assert "temporary lockfile copy" in err
+    assert str(lockfile) in err
+
+
+def test_environment_check_quiet_suppresses_temp_copy_mapping_line(tmp_path, monkeypatch, capsys):
+    rc, _lockfile = _run_environment_check_against_engine(tmp_path, monkeypatch, ["--quiet"])
+
+    assert rc == EXIT_OK
+    assert "temporary lockfile copy" not in capsys.readouterr().err
 
 
 def test_environment_check_stale_and_nonzero_returncode_together_still_exit_failed(

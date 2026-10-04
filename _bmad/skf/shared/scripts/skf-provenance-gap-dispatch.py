@@ -297,8 +297,11 @@ def _classify(prior_actions: list[str]) -> tuple[str, str | None]:
     """Pick the dominant amendment action for a single candidate path.
 
     A path may have multiple amendments (e.g. promoted then later
-    demoted-exclude). Most recent action wins — the list is in
+    demoted-exclude). Most recent scope decision wins — the list is in
     amendment-record-insertion order, so iterate from the end.
+    `retro-mirror` is a known action that records a mirrored CFE retro,
+    not a scope decision: it is skipped, so an earlier decision on the path
+    stands and a path with no other decision stays unresolved.
     """
     for action in reversed(prior_actions):
         if action == "promoted":
@@ -307,6 +310,8 @@ def _classify(prior_actions: list[str]) -> tuple[str, str | None]:
             return _PRE_DECIDED_SKIPPED, "skipped"
         if action in ("demoted-include", "demoted-exclude"):
             return _PRE_DECIDED_DEMOTED, action
+        if action == "retro-mirror":
+            continue
     return _UNRESOLVED, None
 
 

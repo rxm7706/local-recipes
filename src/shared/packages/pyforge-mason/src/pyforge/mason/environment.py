@@ -16,8 +16,8 @@ built at that point, so `lock()` required its caller to supply manifest
 paths explicitly -- `cli.py`'s own `manifest_path` positional (`nargs="+"`)
 enforced "at least one" before this function was ever reached.
 
-Story 4.4 adds `check()`, the `mason environment check` use-case (FR-25,
-FR-27, FR-29): CI's own companion to `lock()` above -- a thin wrapper around
+Story 4.4 adds `check()`, the `mason environment check` use-case (FR-28):
+CI's own companion to `lock()` above -- a thin wrapper around
 `engines.condalock.check()`, mirroring `lock()`'s own platform-parsing/
 wrapping shape verbatim. Unlike `lock()`, `check()`'s own engine-layer
 counterpart validates `lockfile_path`'s existence itself
@@ -146,7 +146,7 @@ def lock(manifest_paths: Sequence[str], output_path: str, *, platforms: str | No
 
 def check(lockfile_path: str, manifest_paths: Sequence[str], *, platforms: str | None = None) -> CheckResult:
     """Report whether `lockfile_path` is stale relative to `manifest_paths`
-    via `engines.condalock.check()` (FR-25, FR-27, FR-29).
+    via `engines.condalock.check()` (FR-28).
 
     `platforms` parsing is IDENTICAL to `lock()`'s own, above (verbatim-
     mirrored, spec Always boundary): the caller's own raw `--platform`
@@ -167,10 +167,11 @@ def check(lockfile_path: str, manifest_paths: Sequence[str], *, platforms: str |
 
     Raises `EngineAbsentError`/`EnvironmentLockfileMissingError`/
     `EnvironmentLockfileMalformedError`/`EnvironmentCheckTimeoutError` (all
-    already defined, Story 4.1/4.4), propagated unchanged from
-    `engines.condalock.check()` -- the same four `cli.py`'s own dispatch
-    branch documents (review pass, 2026-08-15 second: this list omitted
-    `EnvironmentLockfileMalformedError`, so the use-case layer and the
+    already defined, Story 4.1/4.4) and `EnvironmentCheckTempCopyUnreadableError`
+    (Story 27.1: the temp copy unreadable after conda-lock ran), propagated
+    unchanged from `engines.condalock.check()` -- the same five `cli.py`'s
+    own dispatch branch documents (review pass, 2026-08-15 second: this list
+    omitted `EnvironmentLockfileMalformedError`, so the use-case layer and the
     dispatch layer published different contracts for the same call). Never
     raises for a stale verdict (AD-4) -- `stale` is DATA on the returned
     `CheckResult`.

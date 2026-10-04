@@ -853,7 +853,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Story 4.3: mason environment lock <manifest_path>... --output/-o PATH
     # [--platform PLATFORMS] -- the `environment` noun's first verb (FR-25,
-    # FR-27, FR-29). Mirrors `package build`'s own registration shape
+    # FR-27: Story 4.3; FR-29: Story 4.1). Mirrors `package build`'s own registration shape
     # (parents=[global_flags], for the same "a global flag given after the
     # verb and its positionals" reason documented on that registration
     # above). `--output`/`-o` mirrors `recipe new --output`'s exact
@@ -896,8 +896,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # Story 4.4: mason environment check <manifest_path>... --lockfile/-l PATH
-    # [--platform PLATFORMS] -- the `environment` noun's second verb (FR-25,
-    # FR-27, FR-29), CI's own companion to `lock` above: reports whether an
+    # [--platform PLATFORMS] -- the `environment` noun's second verb (FR-28,
+    # Story 4.4), CI's own companion to `lock` above: reports whether an
     # EXISTING lockfile has gone stale relative to its manifests, rather than
     # producing one. Mirrors `lock`'s own registration shape
     # (parents=[global_flags], `manifest_path` positional -- identical
@@ -1051,7 +1051,34 @@ def _dispatch_package_ship(ns: argparse.Namespace, *, raw_targets: str) -> int:
     return EXIT_FAILED if any(r.state == ShipState.FAILED for r in results) else EXIT_OK
 
 
+def _report_mason_error(ns: argparse.Namespace | None, exc: MasonError) -> None:
+    """Project a typed `MasonError` caught in `main()`: the one-line
+    `identifier: message` on stderr always, plus -- when the effective
+    `--format` (flag -> MASON_FORMAT -> "text", AD-13) is json -- the JSON
+    error envelope on stdout, so a `--format json` consumer always gets a
+    parseable document (Story 27.1 / DW-4-4-13). `ns` is None when the
+    failure precedes a successful `parse_args`; the envelope then names the
+    command `mason`."""
+    fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text") if ns is not None else "text"
+    print(str(exc), file=sys.stderr)
+    if fmt != "json":
+        return
+    command = "mason"
+    if ns is not None and getattr(ns, "noun", None):
+        verb = getattr(ns, "verb", None)
+        command = f"{ns.noun} {verb}" if verb else ns.noun
+    render.write(
+        fmt,
+        sys.stdout,
+        command,
+        "error",
+        {},
+        [{"identifier": exc.identifier, "message": exc.message}],
+    )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
+    ns: argparse.Namespace | None = None
     try:
         # build_parser() is INSIDE the try deliberately: a KeyboardInterrupt (or
         # any failure) during parser construction must project like every other
@@ -1465,7 +1492,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _dispatch_package_ship(ns, raw_targets=ns.to)
 
         if ns.noun == "environment" and ns.verb == "lock":
-            # FR-25/FR-27/FR-29: drives Story 4.1's engine protocol through
+            # FR-25/FR-27 (Story 4.3), FR-29 (Story 4.1): drives Story 4.1's engine protocol through
             # environment.py's own single adapter (engines.condalock). Like
             # `package build`, `environment.lock()` never touches CFE at
             # all (spec Always boundary) -- no cfe-root/cfe-python/
@@ -1486,12 +1513,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"discovered manifests: {', '.join(manifest_paths)}", file=sys.stderr)
             result = environment.lock(manifest_paths, ns.output, platforms=ns.platform)
             # A non-zero delegated engine returncode is DATA on `result`,
-            # never raised (AD-4) -- this branch always reports "ok"/
-            # EXIT_OK for a Mason-successful invocation, mirroring `package
-            # build`'s identical "the gap is data" precedent above.
-            # `EngineAbsentError`/`EnvironmentLockTimeoutError` are the
-            # exceptions `environment.lock()` can still raise, propagating
-            # to main()'s existing `except MasonError` handler below.
+            # never raised (AD-4): the JSON envelope's `status` stays "ok"
+            # and carries the returncode, while the exit code projects it --
+            # EXIT_FAILED when conda-lock failed, as `environment check`
+            # below does (Story 27.1 / DW-4-4-11), so a CI step never greens
+            # on a failed solve. `EngineAbsentError`/
+            # `EnvironmentLockTimeoutError` are the exceptions
+            # `environment.lock()` can still raise, propagating to main()'s
+            # existing `except MasonError` handler below.
             render.write(
                 fmt,
                 sys.stdout,
@@ -1500,21 +1529,21 @@ def main(argv: Sequence[str] | None = None) -> int:
                 dataclasses.asdict(result),
                 [],
             )
-            return EXIT_OK
+            return EXIT_OK if result.returncode == 0 else EXIT_FAILED
 
         if ns.noun == "environment" and ns.verb == "check":
-            # FR-25/FR-27/FR-29: CI's own companion to `environment lock`
+            # FR-28 (Story 4.4): CI's own companion to `environment lock`
             # above -- drives `engines.condalock.check()` through
             # `environment.py`'s own use-case wrapper. Like `environment
             # lock`, `environment.check()` never touches CFE at all (spec
             # Always boundary) -- no cfe-root/cfe-python/cfe-timeout flags
             # are read here.
             #
-            # Unlike `environment lock`, this branch projects the delegated
-            # staleness verdict onto the process exit code (spec Intent,
-            # mirrors `recipe validate`'s own "wrapped tool's pass/fail
-            # outcome becomes the process exit code" precedent -- the ONE
-            # other verb in this codebase that does this): `EXIT_OK` when
+            # Beyond `environment lock`'s returncode projection, this branch
+            # projects the delegated staleness verdict onto the process exit
+            # code (spec Intent, mirrors `recipe validate`'s own "wrapped
+            # tool's pass/fail outcome becomes the process exit code"
+            # precedent): `EXIT_OK` when
             # `result.stale` is `False` AND `result.returncode == 0`, else
             # `EXIT_FAILED`. The `returncode` half (review pass, 2026-08-15)
             # guards against a genuine `conda-lock` failure (bad manifest,
@@ -1528,9 +1557,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             # itself never raises for either a stale verdict or a non-zero
             # `returncode` (AD-4) -- `EnvironmentLockfileMissingError`/
             # `EnvironmentLockfileMalformedError`/`EngineAbsentError`/
-            # `EnvironmentCheckTimeoutError` are the exceptions it can still
-            # raise, propagating to main()'s existing `except MasonError`
-            # handler below.
+            # `EnvironmentCheckTimeoutError`/
+            # `EnvironmentCheckTempCopyUnreadableError` are the exceptions it
+            # can still raise, propagating to main()'s existing `except
+            # MasonError` handler below.
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
             # Story 4.2: identical discovery fallback to `environment lock`
             # above -- see that branch's comment for the full rationale.
@@ -1576,14 +1606,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         # first except clause the raised exception is an instance of, and
         # this one maps to the distinct EXIT_CFE_UNAVAILABLE (3), not the
         # generic EXIT_FAILED the MasonError branch produces (Story 1.7,
-        # FR-5). Same print-to-stderr/no-traceback pattern as MasonError.
-        print(str(exc), file=sys.stderr)
+        # FR-5). Same stderr line plus JSON error envelope as MasonError
+        # (`_report_mason_error`).
+        _report_mason_error(ns, exc)
         return EXIT_CFE_UNAVAILABLE
     except MasonError as exc:
         # Anticipated failure (AD-7): the identifier + message is the whole
         # diagnostic, no traceback. Must precede the bare `Exception` catch
         # below, since MasonError is a subclass of it.
-        print(str(exc), file=sys.stderr)
+        _report_mason_error(ns, exc)
         return EXIT_FAILED
     except Exception:  # noqa: BLE001 — deliberate boundary
         import traceback
