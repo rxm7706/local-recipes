@@ -2,7 +2,7 @@
 title: "83.21: Landing finalize writes the epic roll-ups the sync writes"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
