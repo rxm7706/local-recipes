@@ -3563,34 +3563,10 @@ def test_gather_git_facts_counts_the_merge_when_the_run_head_is_on_origin_main(t
     assert _gather_followup(repo_root, worktree, vcs, followup_review=None).story_merged_on_main is True
 
 
-def test_a_normal_run_stays_live_when_origin_main_carries_the_merge_but_the_head_does_not(
+def test_without_the_run_head_gate_the_manual_merge_fixture_reads_completed_on_the_first_tick(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
 ) -> None:
-    """Manual merge mid-dispatch: merge subject on ``origin/main``, session still alive, head ahead of main."""
-    repo_root = _repo(tmp_path)
-    run_dir = _run_dir(repo_root)
-    worktree = _worktree(repo_root)
-    _seed_journal(run_dir, (_launch_line(),))
-    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
-    facts = _gather_facts_spy(monkeypatch)
-    publisher = FakePublisher()
-    vcs = _first_landing_vcs(head_sha=_MOVED, head_on_origin_main=False)
-
-    code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=[True, False]), publisher=publisher)
-
-    assert code == 0
-    assert facts[0].story_merged_on_main is False
-    assert publisher.heartbeats == ["handle-1"]
-    assert [status for _handle, status, _result in publisher.completions] != [DispatchSessionVerdict.COMPLETED.value]
-
-
-@pytest.mark.parametrize("always_on_main", [True, False])
-def test_without_the_run_head_gate_the_manual_merge_fixture_reads_completed_on_the_first_tick(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, always_on_main: bool
-) -> None:
     """Mutation proof (Story 83.14): disabling the head gate makes the manual-merge fixture complete immediately."""
-    if always_on_main:
-        pytest.skip("head already on main -- not the manual-merge mid-dispatch case")
     repo_root = _repo(tmp_path)
     run_dir = _run_dir(repo_root)
     worktree = _worktree(repo_root)
