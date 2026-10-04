@@ -4237,7 +4237,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
   },
-  "memlog": "b10bed20e76bc385e067c1851a7675712cc49898"
+  "memlog": "3ee4bbfd3582601d4f9ed5cc279f0fa60197d3fe"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},

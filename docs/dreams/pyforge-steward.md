@@ -525,6 +525,13 @@ Drift — orphaned between stations.
   closes its DW rows on landing. Six already-fixed rows close without a story (DW-FU-11-1, DW-FU-26-1: Story 78.1;
   DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1: Story 80.1).
   Owner: steward. → Epic 83 / Stories 83.1–83.3, specced 2026-10-02.
+- **2026-10-04 — Found: the session guardrails let an agent delete protected branches and loop homes.** A
+  hand-rolled branch cleanup deleted the eight `~/.bmad-loops/` loop homes, the `loop/*` branches and protected
+  `attempt-preserve/*` branches; no session denial covers either. **What it looks like when fixed:** the session hook
+  refuses deleting a `loop/`, `attempt-preserve/`, `recover/`, `rescue/` or `main` branch (push, branch, or `gh api`)
+  and removing a loop home, naming the sweeper's `--retire` path. **Constraints:** a fix story under CAP-5, no flag;
+  adding the `session_denials` entry is the operator's governance ruling of 2026-10-04. → Story 85.1, specced 2026-10-04;
+  marshal twin Story 87.1.
 - **2026-10-03 (night) — Found: Story 84.4's tests cannot all fail.** It landed by operator ruling with its behaviour
   proved by probes; its fourth review found a false-green production test, a missing `prod` case, a no-marker test that
   does not prove the flag is unread, half declarations config still accepts, and two stale citations. **What it looks
