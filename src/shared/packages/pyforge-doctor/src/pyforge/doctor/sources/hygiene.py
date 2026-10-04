@@ -357,33 +357,26 @@ def _orphan_file_candidates(project_dir: Path) -> list[Path]:
     return candidates
 
 
-def _text_references_candidate(text: str, basename: str, repo_relpath: str) -> bool:
-    if repo_relpath in text:
-        return True
-    return re.search(rf"(?<![/\w.-]){re.escape(basename)}(?![/\w.-])", text) is not None
-
-
 def _has_inbound_references(target: Path, repo_relpath: str) -> bool:
     """``True`` iff some OTHER file in the repo references this candidate by
     path or whole-token basename (tracked and untracked, non-ignored)."""
     basename = PurePosixPath(repo_relpath).name
+    grep_common = ["--untracked", "--no-exclude-standard"]
+    path_hits = run_git(
+        target,
+        ["grep", "-l", "--fixed-strings", "-e", repo_relpath, *grep_common],
+        ok_exit_codes=frozenset({0, 1}),
+    )
+    if any(line.strip() and line.strip() != repo_relpath for line in path_hits.splitlines()):
+        return True
+    boundary = rf"(?<![/\w.-]){re.escape(basename)}(?![/\w.-])"
     output = run_git(
         target,
-        ["grep", "-l", "--fixed-strings", "-e", basename, "--untracked", "--no-exclude-standard"],
+        ["grep", "-l", "-P", boundary, *grep_common],
         ok_exit_codes=frozenset({0, 1}),
     )
     matches = [line for line in output.splitlines() if line.strip()]
-    for match in matches:
-        if match == repo_relpath:
-            continue
-        candidate_path = target / match
-        try:
-            text = candidate_path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        if _text_references_candidate(text, basename, repo_relpath):
-            return True
-    return False
+    return any(match != repo_relpath for match in matches)
 
 
 def _check_orphan_files(target: Path, project_dir: Path, station: str, findings: list[Finding]) -> None:

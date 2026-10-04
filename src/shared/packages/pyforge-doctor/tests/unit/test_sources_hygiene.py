@@ -115,8 +115,8 @@ def _seed_all_classes_fixture(repo: Path, slug: str) -> Path:
     _write(
         project_dir / "README.md",
         "acme is a [role] station in the PyForge factory, responsible for "
-        "[responsibilities]. See planning-artifacts/sprint-status.yaml for "
-        "historical context.\n",
+        "[responsibilities]. See _bmad-output/projects/pyforge-acme/planning-artifacts/"
+        "sprint-status.yaml for historical context.\n",
     )
 
     # hollow-sprint-status: the Tier-3 non-ledger feed, scaffolded but empty.
@@ -161,7 +161,10 @@ def test_gather_emits_exactly_five_findings_for_a_synthetic_all_classes_fixture(
     assert all(f.evidence["station"] == "acme" for f in findings)
     assert all(isinstance(f.evidence.get("path"), str) and f.evidence["path"] for f in findings)
     by_check = {f.check: f for f in findings}
-    assert by_check[HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value].evidence["path"] == "tests"
+    assert (
+        by_check[HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value].evidence["path"]
+        == "_bmad-output/projects/pyforge-acme/tests"
+    )
 
 
 # --- Row: gather() invocation never mutates the tree it scans --------------
