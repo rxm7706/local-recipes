@@ -116,7 +116,7 @@ development_status:
   33-1-deck-facts-counts-dreams-under-the-archive-too: backlog
   34-1-herald-cites-the-deck-how-to-not-the-intake-stub: backlog
   35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals: done
-  35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence: backlog
+  35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence: done
   4-1-poll-loop-with-quiescence-debounce: done
   4-2-idle-backoff: done
   4-3-halt-on-auth-error: done
@@ -194,7 +194,7 @@ development_status:
   epic-33-retrospective: optional
   epic-34: backlog
   epic-34-retrospective: optional
-  epic-35: in-progress
+  epic-35: backlog
   epic-35-retrospective: optional
   epic-4: done
   epic-4-retrospective: optional

@@ -328,7 +328,7 @@ development_status:
   84-2-an-audit-read-records-its-scope-and-the-perimeter-refuses-an-over-long-identity: done
   84-3-trusted-ingress-addresses-are-ip-networks: done
   84-4-sync-skips-a-board-item-marked-github-only: done
-  84-5-the-github-only-marker-tests-can-fail-and-config-refuses-half-declarations: backlog
+  84-5-the-github-only-marker-tests-can-fail-and-config-refuses-half-declarations: done
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
@@ -500,7 +500,7 @@ development_status:
   epic-82-retrospective: optional
   epic-83: done
   epic-83-retrospective: optional
-  epic-84: in-progress
+  epic-84: backlog
   epic-84-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional

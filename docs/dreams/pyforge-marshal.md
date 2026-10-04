@@ -946,6 +946,14 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
+  Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
+  the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
+  commits, which every station's CFE guard refuses, so the branch needs a history rewrite to land. **What it looks like
+  when fixed:** a spec key or flag holds the landing for review without counting as a refusal; dispatch's own commits
+  leave the CFE surface out and its CFE changes land in one `retro(cfe):` commit. **Constraints:** fix stories, no CAP,
+  no flag (operator ruling 2026-10-03, "yes chain both fixes"). Owner `spec-pyforge-marshal`. → Stories 83.18-83.19,
+  specced 2026-10-03.
 - **2026-10-03 (night, latest)** — **Found: two more dispatch gaps.** Herald 35.1's supervisor could not commit its
   session's work because `git status --porcelain` quotes paths with spaces and the finalize passed the quoted text to
   `git add`; a Cursor session's commit on mason 27.1 carried a `Co-authored-by: Cursor` trailer that dispatch never
