@@ -405,6 +405,10 @@ this).
 
 Findings investigated and rejected after verification: `PurlAssociatorMappingsDataset.fetch_shard` being unwired from the join is correct, not a gap — the module's own investigation confirmed the legacy parity target (`lookup_assoc`/`from_assoc`) never performs a second/shard fetch either, so wiring it would break byte-for-byte parity with the legacy script, the story's primary mandate; `_id_pep503` vs. `_normalize_pypi_name` stripping-behavior mismatch is real but requires a leading/trailing-hyphen package name to manifest (negligible in practice, already documented as deliberate); `_ID_GIT_HOST_RE` matching `codeberg.org` while `_id_git_purl` returns `None` for it is spec-compliant — the I/O matrix scopes "recognizable" source URLs to github/gitlab/bitbucket only; duplicate `assoc_key` last-wins is structurally unreachable (the JSON source object has unique keys and the store is replaced, not merged, on each refresh); the untracked parity-fixture test files flagged by the verification-gap reviewer are resolved automatically by this step's own Finalize (all reviewed-diff files get committed); the remaining rejects (`LocalRecipesOverlayDataset` per-run scan cost, no reciprocal legacy-script comment, no fixture for conflicting `conda_purl` values, uniform weekly TTL cadence across the three new sources) are non-behavioral/informational observations with no test or contract impact.
 
+## Spec Change Log
+
+- **2026-10-04 (Story 27.2, DW-FU-21-6-4):** The Code Map’s instruction to extend `tests/parity/test_parity_complete.py` with `upstream_discovery` does not apply — `_PIPELINES` never included that pipeline. Identity join parity stays in `tests/unit/pipelines/upstream_discovery/test_identity_parity_fixtures.py` instead.
+
 ## Auto Run Result
 
 **Status:** done — reconstructed 2026-09-20 from git during the fleet consistency pass before the foundry cutover; no run record survived in this tracked spec.

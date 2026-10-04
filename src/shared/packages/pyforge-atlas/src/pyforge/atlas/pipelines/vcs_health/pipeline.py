@@ -34,19 +34,19 @@ def create_pipeline(**kwargs) -> Pipeline:
             # inputs — the DAG resolves refresh -> consume automatically.
             node(
                 func=refresh_vcs_github_store,
-                inputs="params:ttls",
+                inputs=["params:ttls", "identity_packages_primary"],
                 outputs="vcs_github_api_raw",
                 name="refresh_vcs_github_store",
             ),
             node(
                 func=refresh_vcs_host_stores,
-                inputs="params:ttls",
+                inputs=["params:ttls", "identity_packages_primary"],
                 outputs=["vcs_gitlab_api_raw", "vcs_codeberg_api_raw"],
                 name="refresh_vcs_host_stores",
             ),
             node(
                 func=refresh_vcs_registry_stores,
-                inputs="params:ttls",
+                inputs=["params:ttls", "identity_packages_primary"],
                 outputs=[
                     "vcs_registry_npm_raw",
                     "vcs_registry_cran_raw",

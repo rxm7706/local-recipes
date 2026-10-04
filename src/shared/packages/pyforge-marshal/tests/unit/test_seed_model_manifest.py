@@ -15,13 +15,16 @@ import pytest
 import yaml
 
 from pyforge.marshal.seed.model.manifest import (
+    SLUG_PLACEHOLDER,
     AppliesTo,
     ArtifactClass,
     Manifest,
     ManifestEntry,
     ManifestError,
     Region,
+    RequiredIn,
     load_manifest,
+    render_slug_paths,
 )
 from pyforge.marshal.seed.model.version import ModelVersion
 
@@ -1797,3 +1800,200 @@ def test_a_path_ending_in_a_slash_names_a_directory_entry(path, expected):
         id="e", artifact_class=ArtifactClass.GENERATED_DERIVED, path=path, applies_to=AppliesTo.BOTH, rationale="r"
     )
     assert entry.is_directory is expected
+
+
+# --- Story 70.1: the one `{{ slug }}` renderer and the `required_in` scope ---
+
+
+def _entry(
+    entry_id: str,
+    path: str,
+    *,
+    artifact_class: ArtifactClass = ArtifactClass.COPIED_SEEDED,
+    applies_to: AppliesTo = AppliesTo.BOTH,
+) -> ManifestEntry:
+    return ManifestEntry(id=entry_id, artifact_class=artifact_class, path=path, applies_to=applies_to, rationale="r")
+
+
+def _manifest_of(*entries: ManifestEntry) -> Manifest:
+    return Manifest(model_version=ModelVersion.parse("1.0.0"), never_write=("docs/dreams/*.md",), entries=entries)
+
+
+def test_render_slug_paths_substitutes_every_placeholder_and_keeps_every_other_field():
+    templated = ManifestEntry(
+        id="templated",
+        artifact_class=ArtifactClass.COPIED_SEEDED,
+        path="some/{{ slug }}/dir/{{ slug }}.md",
+        applies_to=AppliesTo.INIT,
+        rationale="r",
+        since=ModelVersion.parse("1.0.0"),
+        required_in=RequiredIn.LOOP_HOME,
+    )
+    manifest = _manifest_of(templated)
+
+    rendered = render_slug_paths(manifest, "demo")
+
+    (entry,) = rendered.entries
+    assert entry.path == "some/demo/dir/demo.md"
+    assert entry == dataclasses.replace(templated, path="some/demo/dir/demo.md")
+    assert rendered.model_version == manifest.model_version
+    assert rendered.never_write == manifest.never_write
+
+
+def test_render_slug_paths_returns_an_entry_without_a_placeholder_unchanged():
+    """AC: a manifest path carrying no placeholder is returned unchanged -- the
+    same object, not an equal copy -- so `init` and `check` judge it exactly
+    as loaded."""
+    literal = _entry("literal", "LITERAL.md")
+    directory = _entry("dir", "docs/dreams/", artifact_class=ArtifactClass.GENERATED_DERIVED)
+    referenced = ManifestEntry(
+        id="ref",
+        artifact_class=ArtifactClass.REFERENCED,
+        path="https://example.invalid//x",
+        applies_to=AppliesTo.BOTH,
+        rationale="r",
+        pin=">=1",
+    )
+    manifest = _manifest_of(literal, directory, referenced, _entry("templated", "docs/dreams/{{ slug }}.md"))
+
+    rendered = render_slug_paths(manifest, "demo")
+
+    assert rendered.entries[0] is literal
+    assert rendered.entries[1] is directory
+    assert rendered.entries[2] is referenced
+    assert rendered.entries[3].path == "docs/dreams/demo.md"
+
+
+@pytest.mark.parametrize("slug", ["../../x", "a/../../b", "..\\x", "", "a/"])
+def test_render_slug_paths_refuses_a_slug_that_renders_a_refused_path_naming_the_entry(slug):
+    """`dataclasses.replace` re-runs `ManifestEntry.__post_init__`, so a slug
+    that renders a `..`, `.` or empty segment is refused -- as a
+    `ManifestError` prefixed with the entry's id, the loader's own locator."""
+    manifest = _manifest_of(_entry("project-config", "_bmad-output/projects/{{ slug }}/.bmad-config.toml"))
+
+    with pytest.raises(ManifestError, match=r"^project-config: path must"):
+        render_slug_paths(manifest, slug)
+
+
+def test_render_slug_paths_reruns_the_one_owner_rule_on_the_rendered_paths(tmp_path):
+    """Story 86.1's note for 70.1: the one-owner rule runs at load on RAW
+    paths, so `docs/{{ slug }}.md` beside `docs/demo.md` loads clean -- and
+    renders, under the slug `demo`, to two owners of one file. The renderer
+    refuses that, naming both ids; any other slug renders clean."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: literal-doc
+            class: copied-managed
+            path: "docs/demo.md"
+            applies_to: both
+            rationale: r
+          - id: templated-doc
+            class: copied-seeded
+            path: "docs/{{ slug }}.md"
+            applies_to: both
+            rationale: r
+    """
+    manifest = load_manifest(_write(tmp_path, text))
+
+    with pytest.raises(ManifestError, match=r"^templated-doc: path 'docs/demo.md' is also declared by 'literal-doc'"):
+        render_slug_paths(manifest, "demo")
+    assert [entry.path for entry in render_slug_paths(manifest, "other").entries] == ["docs/demo.md", "docs/other.md"]
+
+
+def test_render_slug_paths_lets_disjoint_windows_render_to_one_path():
+    """The rendered comparison is the load-time rule, windows included: an
+    `init`-only and an `adopt`-only entry never meet, rendered or not."""
+    manifest = _manifest_of(
+        _entry("init-doc", "docs/demo.md", applies_to=AppliesTo.INIT),
+        _entry("adopt-doc", "docs/{{ slug }}.md", applies_to=AppliesTo.ADOPT),
+    )
+
+    rendered = render_slug_paths(manifest, "demo")
+
+    assert [entry.path for entry in rendered.entries] == ["docs/demo.md", "docs/demo.md"]
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("docs/dreams/{{ slug }}.md", True),
+        ("_bmad-output/projects/{{ slug }}/", True),
+        ("docs/dreams/README.md", False),
+        ("docs/dreams/{{slug}}.md", False),
+    ],
+)
+def test_an_entry_is_slug_templated_only_while_its_path_carries_the_placeholder(path, expected):
+    assert SLUG_PLACEHOLDER == "{{ slug }}"
+    assert _entry("e", path).is_slug_templated is expected
+
+
+def test_required_in_is_optional_and_absent_means_every_checked_repository(tmp_path):
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: scoped
+            class: generated-derived
+            path: ".bmad-loop/policy.toml"
+            applies_to: both
+            required_in: loop-home
+            rationale: r
+          - id: everywhere
+            class: copied-managed
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+    """
+    manifest = load_manifest(_write(tmp_path, text))
+
+    by_id = {entry.id: entry for entry in manifest.entries}
+    assert by_id["scoped"].required_in is RequiredIn.LOOP_HOME
+    assert by_id["everywhere"].required_in is None
+    assert [member.value for member in RequiredIn] == ["loop-home"]
+
+
+@pytest.mark.parametrize("bad_value", ["nowhere", "loop_home", "5"])
+def test_an_unknown_required_in_raises_manifest_error_prefixed_with_the_entry_id(tmp_path, bad_value):
+    """AC: `required_in` is closed like `applies_to` -- an unknown value is a
+    `ManifestError` prefixed with the offending entry's id."""
+    text = f"""\
+        model_version: "1.0.0"
+        artifacts:
+          - id: bmad-loop-policy
+            class: generated-derived
+            path: ".bmad-loop/policy.toml"
+            applies_to: both
+            required_in: {bad_value}
+            rationale: r
+    """
+    with pytest.raises(ManifestError, match=r"^bmad-loop-policy: .*not a valid RequiredIn"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_a_misspelled_required_in_key_is_an_unrecognized_key(tmp_path):
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: generated-derived
+            path: ".bmad-loop/policy.toml"
+            applies_to: both
+            requried_in: loop-home
+            rationale: r
+    """
+    with pytest.raises(ManifestError, match=r"^foo: unrecognized entry key\(s\): requried_in"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_manifest_entry_coerces_and_refuses_required_in_when_built_directly():
+    entry = ManifestEntry(
+        id="e",
+        artifact_class=ArtifactClass.GENERATED_DERIVED,
+        path="x",
+        applies_to=AppliesTo.BOTH,
+        rationale="r",
+        required_in="loop-home",  # type: ignore[arg-type]
+    )
+    assert entry.required_in is RequiredIn.LOOP_HOME
+    with pytest.raises(ValueError, match="not a valid RequiredIn"):
+        dataclasses.replace(entry, required_in="nowhere")

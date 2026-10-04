@@ -1203,6 +1203,7 @@ def _id_universe_frame(
     enterprise_conda_maintainers: pd.DataFrame,
     pypi_universe: pd.DataFrame,
     core_packages_enumerated: pd.DataFrame,
+    core_feedstock_attribution: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     """The Story 21.6 join universe: CDO-ENT-JFROG (``enterprise_jfrog_names``)
     union CDO-ENT-CONDA (``enterprise_conda_maintainers``) — Story 21.5's own
@@ -1217,13 +1218,25 @@ def _id_universe_frame(
     against ``pypi_universe``/``core_packages_enumerated`` (the two live,
     already-persisted verification signals verification-matrix.md documents for
     ``PyPI_Verified``/``CondaForge_Verified``). ``source_repository_url`` is
-    always blank — no Atlas dataset carries a per-package upstream repository
-    URL yet (a genuine, documented gap; ``from_inventory``'s git-purl fallback
-    simply never fires against production data until a future story adds that
-    column — the parity fixture corpus exercises the code path directly with
-    synthetic values instead of production data). Never raises: an
-    empty/malformed input degrades that source's contribution to zero rows."""
+    populated from ``core_feedstock_attribution`` (conda-forge feedstock GitHub
+    URL) when available (Story 27.2). Never raises: an empty/malformed input
+    degrades that source's contribution to zero rows."""
     names: dict[str, str] = {}  # pep503 key -> original-cased name, first-seen wins
+    src_by_key: dict[str, str] = {}
+    if (
+        core_feedstock_attribution is not None
+        and not getattr(core_feedstock_attribution, "empty", True)
+        and {"conda_name", "feedstock_name"} <= set(getattr(core_feedstock_attribution, "columns", []))
+    ):
+        for row in core_feedstock_attribution.itertuples(index=False):
+            conda_name = getattr(row, "conda_name", None)
+            feedstock_name = getattr(row, "feedstock_name", None)
+            if not isinstance(conda_name, str) or not isinstance(feedstock_name, str):
+                continue
+            url = f"https://github.com/conda-forge/{quote(_id_feedstock_repo_name(feedstock_name), safe='')}"
+            for key in (conda_name, conda_name.lower(), _id_pep503(conda_name), conda_name.replace("-", "_")):
+                if key and key not in src_by_key:
+                    src_by_key[key] = url
 
     def _add(raw_name) -> None:
         if not isinstance(raw_name, str) or not raw_name.strip():
@@ -1272,12 +1285,13 @@ def _id_universe_frame(
     for key, original in names.items():
         pypi_match = pypi_index.get(key)
         conda_match = conda_index.get(key)
+        src_url = src_by_key.get(key, "")
         rows.append(
             {
                 "core_python_package_name": original,
                 "pypi_purl": f"pkg:pypi/{pypi_match}" if pypi_match else "",
                 "conda_purl": f"pkg:conda/{conda_match}?channel=conda-forge" if conda_match else "",
-                "source_repository_url": "",
+                "source_repository_url": src_url,
             }
         )
     return pd.DataFrame(rows, columns=["core_python_package_name", "pypi_purl", "conda_purl", "source_repository_url"])
@@ -1318,7 +1332,11 @@ def build_identity_packages_primary(
     staged_map = _id_staged_map(discovery_staged_recipes_prs_raw)
     local_map, status_map = _id_local_maps(discovery_local_recipes_raw)
     universe = _id_universe_frame(
-        enterprise_jfrog_names, enterprise_conda_maintainers, pypi_universe, core_packages_enumerated
+        enterprise_jfrog_names,
+        enterprise_conda_maintainers,
+        pypi_universe,
+        core_packages_enumerated,
+        core_feedstock_attribution,
     )
 
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

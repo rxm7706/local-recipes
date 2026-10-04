@@ -291,12 +291,26 @@ CREDENTIAL_ALLOWLIST = {
     # credential — no second GitHub credential key.
     "openteams_project_1_board_raw": "github_token",
     "discovery_staged_recipes_prs_raw": "github_token",
+    # Story 27.2 (DW-FU-21-2-7): optional tokens for GitLab/Codeberg and the
+    # rate-limited registries — anonymous remains the default when unset.
+    "vcs_gitlab_api_raw": "gitlab_token",
+    "vcs_codeberg_api_raw": "codeberg_token",
+    "vcs_registry_npm_raw": "npm_token",
+    "vcs_registry_crates_raw": "crates_token",
+    "vcs_registry_rubygems_raw": "rubygems_token",
+    "vcs_registry_nuget_raw": "nuget_token",
 }
 
 STUB_CREDENTIALS = {
     "github_token": ["x-access-token", "stub-token"],
     "bigquery_adc": ["service-account", "stub-adc"],
     "jfrog": ["stub-user", "stub-key"],
+    "gitlab_token": ["PRIVATE-TOKEN", "stub-gitlab"],
+    "codeberg_token": ["Authorization", "token stub-codeberg"],
+    "npm_token": ["Authorization", "Bearer stub-npm"],
+    "crates_token": ["Authorization", "stub-crates"],
+    "rubygems_token": ["Authorization", "stub-rubygems"],
+    "nuget_token": ["X-NuGet-ApiKey", "stub-nuget"],
 }
 
 # All env vars that could perturb the deterministic default resolution.

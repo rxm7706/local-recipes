@@ -251,6 +251,11 @@ NODE_TIMEOUTS: dict[str, int] = {
     "enrich_pypi_intelligence": 1800,  # Phase R (cold ~15m — its OWN budget)
     "score_pypi_readiness": 600,  # Phase R scoring
     "export_pypi_conda_map": 120,  # update-mapping-cache export shim
+    "refresh_pypi_json_store": 1800,  # Story 27.2 — bounded live fan-out refresh
+    "assemble_and_gate": 600,
+    "compose_semantic_packages": 300,
+    "extract_estate_to_cache": 600,
+    "run_dependency_hygiene": 300,
     # -- vulnerability ----------------------------------------------------- #
     "refresh_vdb_store": 1200,  # vdb-refresh (~5-10m)
     "refresh_osv_offline_store": 600,  # update-cve-db

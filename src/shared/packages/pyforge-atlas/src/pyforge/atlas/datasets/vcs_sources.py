@@ -35,38 +35,23 @@ import re
 import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
 import pandas as pd
 from kedro.io import AbstractDataset
 from kedro_datasets.api import APIDataset
-from pyforge.core.atomic_write import atomic_write
 
 from .rate_limit import DEFAULT_RPS, RateLimitedScheduler
 from .refresh import (
     DEFAULT_REFRESH_MAX_RETRIES,
     DEFAULT_REFRESH_TIMEOUT_SECONDS,
     RefreshRequest,
-    StalenessMarker,
-    _safe_int,
+    _ParquetRefreshStore,
+    fetch_one_with_retry,
 )
 
 logger = logging.getLogger(__name__)
-
-# Retry backoff between fetch_one/fetch_repo_health attempts (review fix #3/#4):
-# small deterministic steps (0.05s, 0.10s, 0.15s, ... capped at 0.5s) — real enough
-# to avoid hammering a flaky endpoint back-to-back, small enough that the default
-# DEFAULT_REFRESH_MAX_RETRIES=3 retry budget never meaningfully slows a test suite
-# exercising a failing fetcher. Injectable via the ``sleep`` constructor param.
-_RETRY_BACKOFF_STEP_SECONDS = 0.05
-_RETRY_BACKOFF_CAP_SECONDS = 0.5
-
-
-def _retry_backoff_seconds(attempt: int) -> float:
-    return min(_RETRY_BACKOFF_STEP_SECONDS * attempt, _RETRY_BACKOFF_CAP_SECONDS)
-
 
 _VERSION_SEGMENT_RE = re.compile(r"\d+|\D+")
 
@@ -102,118 +87,6 @@ def _coerce_json(raw: Any) -> Any:
         except json.JSONDecodeError, TypeError, UnicodeDecodeError:
             return None
     return None
-
-
-class _ParquetRefreshStore:
-    """Shared last-good Parquet + staleness-marker persistence (AD-13).
-
-    A plain mixin — NOT an ``AbstractDataset`` itself — for datasets whose fetch/
-    extract logic differs but whose store plumbing is identical (de-duplicates the
-    near-identical ``_persist``/``_store_path``/``_store_exists``/``_store_mtime``/
-    ``_write``/``load()`` blocks the pre-amendment implementation repeated between
-    :class:`VcsHostSeedDataset` and :class:`RegistryUpstreamDataset`, review finding).
-    Concrete classes set ``self._filepath`` (a directory) at construction time.
-    """
-
-    STORE_FILENAME = "store.parquet"
-    STALENESS_FILENAME = ".staleness.json"
-
-    @property
-    def _store_path(self) -> Path:
-        return Path(self._filepath) / self.STORE_FILENAME
-
-    @property
-    def _staleness_path(self) -> Path:
-        return Path(self._filepath) / self.STALENESS_FILENAME
-
-    def _store_exists(self) -> bool:
-        return self._store_path.is_file()
-
-    def _store_mtime(self) -> float:
-        return self._store_path.stat().st_mtime
-
-    def _refresh_due(self, cadence_seconds: int, now: float | None = None) -> bool:
-        if not self._store_exists():
-            return True
-        try:
-            age = (time.time() if now is None else now) - self._store_mtime()
-        except OSError:
-            return True
-        return age >= cadence_seconds
-
-    @staticmethod
-    def _atomic_write(target: Path, write_fn: Callable[[Path], None]) -> None:
-        atomic_write(target, write_fn)
-
-    def _mark_stale(self, reason: str, *, only_if_absent: bool = False) -> StalenessMarker:
-        marker = StalenessMarker(stale=True, reason=reason, last_good_exists=self._store_exists())
-        if only_if_absent and self._staleness_path.is_file():
-            return marker
-        try:
-            self._atomic_write(
-                self._staleness_path,
-                lambda p: p.write_text(json.dumps(marker.to_dict(), indent=2), encoding="utf-8"),
-            )
-        except OSError as exc:  # marker write must itself never take the run down
-            logger.warning("could not write staleness marker for %s: %s", self._filepath, exc)
-        return marker
-
-    def _clear_stale(self) -> None:
-        try:
-            self._staleness_path.unlink(missing_ok=True)
-        except OSError:  # pragma: no cover - best-effort
-            pass
-
-    def staleness(self) -> StalenessMarker | None:
-        path = self._staleness_path
-        if not path.is_file():
-            return None
-        try:
-            raw = json.loads(path.read_text(encoding="utf-8"))
-        except OSError, ValueError:
-            return None
-        if not isinstance(raw, dict):
-            return None
-        return StalenessMarker(
-            stale=bool(raw.get("stale", True)),
-            reason=str(raw.get("reason", "")),
-            marked_at=_safe_int(raw.get("marked_at", 0)),
-            last_good_exists=bool(raw.get("last_good_exists", False)),
-        )
-
-    def is_stale(self) -> bool:
-        marker = self.staleness()
-        return bool(marker and marker.stale)
-
-    def _read_store(self, columns: Sequence[str]) -> pd.DataFrame:
-        cols = list(columns)
-        if not self._store_exists():
-            self._mark_stale("store absent (never refreshed)", only_if_absent=True)
-            return pd.DataFrame(columns=cols)
-        try:
-            frame = pd.read_parquet(self._store_path)
-        except Exception as exc:  # corrupt/truncated store must not crash the consumer.
-            logger.warning("store %s unreadable, degrading to empty: %s", self._store_path, exc)
-            self._mark_stale("store unreadable", only_if_absent=True)
-            return pd.DataFrame(columns=cols)
-        for c in cols:
-            if c not in frame.columns:
-                frame[c] = pd.NA
-        return frame[cols].reset_index(drop=True)
-
-    def _persist(self, frame: pd.DataFrame) -> None:
-        """AD-13 never-clobber: an empty (or all-failed) fetch keeps last-good + marks
-        stale rather than overwriting it with an empty/all-null result."""
-        if frame is None or frame.empty:
-            self._mark_stale("fetch returned no data — keeping last-good")
-            return
-        try:
-            self._atomic_write(self._store_path, lambda p: frame.to_parquet(p, index=False))
-        except Exception as exc:
-            logger.warning("write of %s failed, keeping last-good: %s", self._store_path, exc)
-            self._mark_stale(f"write failed: {type(exc).__name__}: {exc}")
-            return
-        self._clear_stale()
 
 
 # ---------------------------------------------------------------------------
@@ -439,28 +312,25 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         return _HOST_SPECS[self._host].build_path(self._base_url, identifier)
 
     def fetch_one(self, identifier: str, *, fetcher: Callable[[str], Any] | None = None) -> Any:
-        """One bounded fetch, retried up to ``max_retries`` times. The rate-limit
-        token is acquired on EVERY attempt (not just the first — review fix #3), and
-        a short backoff runs between retries (injectable via ``sleep`` so tests never
-        actually wait)."""
+        """One bounded fetch via :func:`~pyforge.atlas.datasets.refresh.fetch_one_with_retry`."""
         url = None if fetcher is not None else self.request_path(identifier)
-        attempt = 0
-        while True:
-            self.scheduler.acquire()
-            try:
-                if fetcher is not None:
-                    return fetcher(identifier)
-                inner = APIDataset(
-                    url=url,
-                    load_args={"timeout": self._timeout_seconds},
-                    credentials=self._credentials,
-                )
-                return _coerce_json(inner.load())
-            except Exception:
-                attempt += 1
-                if attempt > self._max_retries:
-                    raise
-                self._sleep(_retry_backoff_seconds(attempt))
+
+        def _do_fetch() -> Any:
+            if fetcher is not None:
+                return fetcher(identifier)
+            inner = APIDataset(
+                url=url,
+                load_args={"timeout": self._timeout_seconds},
+                credentials=self._credentials,
+            )
+            return _coerce_json(inner.load())
+
+        return fetch_one_with_retry(
+            acquire=self.scheduler.acquire,
+            fetch=_do_fetch,
+            max_retries=self._max_retries,
+            sleep=self._sleep,
+        )
 
     def load_many(
         self,
@@ -512,13 +382,7 @@ class VcsHostSeedDataset(_ParquetRefreshStore, AbstractDataset):
         if not data.force and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
-        # Story 21.2 scope: no production identifier source is wired yet (a fresh
-        # clone has nothing that classifies which packages use GitLab/Codeberg as
-        # their upstream) — an empty batch degrades cleanly to keep-last-good + mark
-        # stale (AD-13), the same as any other fetch producing no data. Real
-        # identifier wiring is deferred to Story 21.6 (upstream_discovery identity
-        # join).
-        self.load_many(())
+        self.load_many(data.vcs_pairs)
 
     def _describe(self) -> dict[str, Any]:
         return {
@@ -572,26 +436,25 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
         return _REGISTRY_SPECS[self._registry].build_path(self._base_url, identifier)
 
     def fetch_one(self, identifier: str, *, fetcher: Callable[[str], Any] | None = None) -> Any:
-        """See ``VcsHostSeedDataset.fetch_one`` — the token is acquired on EVERY
-        attempt (review fix #3) with a short injectable backoff between retries."""
+        """See :class:`VcsHostSeedDataset.fetch_one` (shared :func:`fetch_one_with_retry`)."""
         url = None if fetcher is not None else self.request_path(identifier)
-        attempt = 0
-        while True:
-            self.scheduler.acquire()
-            try:
-                if fetcher is not None:
-                    return fetcher(identifier)
-                inner = APIDataset(
-                    url=url,
-                    load_args={"timeout": self._timeout_seconds},
-                    credentials=self._credentials,
-                )
-                return _coerce_json(inner.load())
-            except Exception:
-                attempt += 1
-                if attempt > self._max_retries:
-                    raise
-                self._sleep(_retry_backoff_seconds(attempt))
+
+        def _do_fetch() -> Any:
+            if fetcher is not None:
+                return fetcher(identifier)
+            inner = APIDataset(
+                url=url,
+                load_args={"timeout": self._timeout_seconds},
+                credentials=self._credentials,
+            )
+            return _coerce_json(inner.load())
+
+        return fetch_one_with_retry(
+            acquire=self.scheduler.acquire,
+            fetch=_do_fetch,
+            max_retries=self._max_retries,
+            sleep=self._sleep,
+        )
 
     def load_many(
         self,
@@ -637,11 +500,7 @@ class RegistryUpstreamDataset(_ParquetRefreshStore, AbstractDataset):
         if not data.force and not self._refresh_due(data.cadence_seconds):
             self._clear_stale()
             return
-        # Story 21.2 scope: see VcsHostSeedDataset.save — no production identifier
-        # source is wired yet; an empty batch degrades to keep-last-good + mark stale.
-        # Real identifier wiring is deferred to Story 21.6 (upstream_discovery
-        # identity join).
-        self.load_many(())
+        self.load_many(data.vcs_pairs)
 
     def _describe(self) -> dict[str, Any]:
         return {

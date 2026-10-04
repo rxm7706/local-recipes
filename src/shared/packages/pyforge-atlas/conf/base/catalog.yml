@@ -123,7 +123,7 @@ core_cf_graph_raw:
 
 core_packages_enumerated:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/core_packages_enumerated/core_packages_enumerated.parquet
+  filepath: ${globals:paths.data_root}/intermediate/core_packages_enumerated/core_packages_enumerated.parquet
   metadata:
     layer: intermediate
 
@@ -132,49 +132,50 @@ core_packages_enumerated:
 # Derived, not itself a fetch-mode entry.
 core_anaconda_main_packages:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/core_anaconda_main_packages/core_anaconda_main_packages.parquet
+  filepath: ${globals:paths.data_root}/intermediate/core_anaconda_main_packages/core_anaconda_main_packages.parquet
   metadata:
     layer: intermediate
 
 # Phase B.5 attribution (_pick_feedstock semantics — prefer the entry equal to
 # the package name when a split-out feedstock coexists with an umbrella).
 core_feedstock_attribution:
-  type: pandas.ParquetDataset
-  filepath: data/intermediate/core_feedstock_attribution/core_feedstock_attribution.parquet
+  type: pyforge.atlas.datasets.DegradingParquetDataset
+  filepath: ${globals:paths.data_root}/intermediate/core_feedstock_attribution/core_feedstock_attribution.parquet
+  columns: [conda_name, feedstock_name]
   metadata:
     layer: intermediate
 
 core_latest_status:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/core_latest_status/core_latest_status.parquet
+  filepath: ${globals:paths.data_root}/intermediate/core_latest_status/core_latest_status.parquet
   metadata:
     layer: intermediate
 
 # A3: IncrementalParquetDataset
 core_downloads:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/core_downloads/core_downloads.parquet
+  filepath: ${globals:paths.data_root}/primary/core_downloads/core_downloads.parquet
   metadata:
     layer: primary
 
 # A3: IncrementalParquetDataset
 core_downloads_platform_breakdown:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/core_downloads_platform_breakdown/core_downloads_platform_breakdown.parquet
+  filepath: ${globals:paths.data_root}/primary/core_downloads_platform_breakdown/core_downloads_platform_breakdown.parquet
   metadata:
     layer: primary
 
 # A3: IncrementalParquetDataset
 core_downloads_pyver_breakdown:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/core_downloads_pyver_breakdown/core_downloads_pyver_breakdown.parquet
+  filepath: ${globals:paths.data_root}/primary/core_downloads_pyver_breakdown/core_downloads_pyver_breakdown.parquet
   metadata:
     layer: primary
 
 # A3: IncrementalParquetDataset
 core_downloads_channel_breakdown:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/core_downloads_channel_breakdown/core_downloads_channel_breakdown.parquet
+  filepath: ${globals:paths.data_root}/primary/core_downloads_channel_breakdown/core_downloads_channel_breakdown.parquet
   metadata:
     layer: primary
 
@@ -182,19 +183,19 @@ core_downloads_channel_breakdown:
 # A3: IncrementalParquetDataset
 core_version_download_history:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/core_version_download_history/core_version_download_history.parquet
+  filepath: ${globals:paths.data_root}/primary/core_version_download_history/core_version_download_history.parquet
   metadata:
     layer: primary
 
 core_dependencies:
   type: pandas.ParquetDataset
-  filepath: data/primary/core_dependencies/core_dependencies.parquet
+  filepath: ${globals:paths.data_root}/primary/core_dependencies/core_dependencies.parquet
   metadata:
     layer: primary
 
 core_feedstock_health:
   type: pandas.ParquetDataset
-  filepath: data/primary/core_feedstock_health/core_feedstock_health.parquet
+  filepath: ${globals:paths.data_root}/primary/core_feedstock_health/core_feedstock_health.parquet
   metadata:
     layer: primary
 
@@ -280,35 +281,35 @@ pypi_cross_channel_repodata_raw:
 discovery_homebrew_packages_raw:
   type: pyforge.atlas.datasets.HomebrewPackagesDataset
   url: ${globals:endpoint_bases.HOMEBREW_BASE_URL}/api/formula.json
-  filepath: data/stores/discovery_homebrew_packages_raw
+  filepath: ${globals:paths.data_root}/stores/discovery_homebrew_packages_raw
   metadata:
     layer: raw
 
 discovery_nixpkgs_packages_raw:
   type: pyforge.atlas.datasets.NixpkgsPackagesDataset
   url: ${globals:endpoint_bases.NIXPKGS_BASE_URL}/nixpkgs-unstable/packages.json
-  filepath: data/stores/discovery_nixpkgs_packages_raw
+  filepath: ${globals:paths.data_root}/stores/discovery_nixpkgs_packages_raw
   metadata:
     layer: raw
 
 discovery_spack_packages_raw:
   type: pyforge.atlas.datasets.SpackPackagesDataset
   url: ${globals:endpoint_bases.SPACK_RAW_BASE_URL}/spack/spack/develop/var/spack/repos/builtin/package_index.json
-  filepath: data/stores/discovery_spack_packages_raw
+  filepath: ${globals:paths.data_root}/stores/discovery_spack_packages_raw
   metadata:
     layer: raw
 
 discovery_debian_packages_raw:
   type: pyforge.atlas.datasets.DebianPackagesDataset
   url: ${globals:endpoint_bases.DEBIAN_BASE_URL}/debian/dists/sid/main/binary-amd64/Packages.gz
-  filepath: data/stores/discovery_debian_packages_raw
+  filepath: ${globals:paths.data_root}/stores/discovery_debian_packages_raw
   metadata:
     layer: raw
 
 discovery_fedora_packages_raw:
   type: pyforge.atlas.datasets.FedoraPackagesDataset
   url: ${globals:endpoint_bases.FEDORA_SRC_BASE_URL}/rest/projects/
-  filepath: data/stores/discovery_fedora_packages_raw
+  filepath: ${globals:paths.data_root}/stores/discovery_fedora_packages_raw
   metadata:
     layer: raw
 
@@ -344,14 +345,14 @@ pypi_conda_map_store:
 # A3: IncrementalParquetDataset
 pypi_universe:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/intermediate/pypi_universe/pypi_universe.parquet
+  filepath: ${globals:paths.data_root}/intermediate/pypi_universe/pypi_universe.parquet
   metadata:
     layer: intermediate
 
 # Phase O 90-day rolling serial snapshots.
 pypi_universe_serial_snapshots:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/pypi_universe_serial_snapshots/pypi_universe_serial_snapshots.parquet
+  filepath: ${globals:paths.data_root}/intermediate/pypi_universe_serial_snapshots/pypi_universe_serial_snapshots.parquet
   metadata:
     layer: intermediate
 
@@ -359,7 +360,7 @@ pypi_universe_serial_snapshots:
 # B2/B6 node/test law — noted for the Wave B stories).
 pypi_conda_mapping:
   type: pandas.ParquetDataset
-  filepath: data/primary/pypi_conda_mapping/pypi_conda_mapping.parquet
+  filepath: ${globals:paths.data_root}/primary/pypi_conda_mapping/pypi_conda_mapping.parquet
   metadata:
     layer: primary
 
@@ -369,7 +370,7 @@ pypi_conda_mapping:
 # A3: IncrementalParquetDataset
 pypi_current_versions:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/pypi_current_versions/pypi_current_versions.parquet
+  filepath: ${globals:paths.data_root}/primary/pypi_current_versions/pypi_current_versions.parquet
   metadata:
     layer: primary
 
@@ -377,14 +378,14 @@ pypi_current_versions:
 # A3: IncrementalParquetDataset
 pypi_downloads_monthly:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/pypi_downloads_monthly/pypi_downloads_monthly.parquet
+  filepath: ${globals:paths.data_root}/primary/pypi_downloads_monthly/pypi_downloads_monthly.parquet
   metadata:
     layer: primary
 
 # A3: IncrementalParquetDataset
 pypi_cross_channel_flags:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/pypi_cross_channel_flags/pypi_cross_channel_flags.parquet
+  filepath: ${globals:paths.data_root}/primary/pypi_cross_channel_flags/pypi_cross_channel_flags.parquet
   metadata:
     layer: primary
 
@@ -392,7 +393,7 @@ pypi_cross_channel_flags:
 # A3: IncrementalParquetDataset
 pypi_tier3_channel_flags:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/pypi_tier3_channel_flags/pypi_tier3_channel_flags.parquet
+  filepath: ${globals:paths.data_root}/primary/pypi_tier3_channel_flags/pypi_tier3_channel_flags.parquet
   metadata:
     layer: primary
 
@@ -400,14 +401,14 @@ pypi_tier3_channel_flags:
 # A3: IncrementalParquetDataset
 pypi_intelligence_enriched:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/pypi_intelligence_enriched/pypi_intelligence_enriched.parquet
+  filepath: ${globals:paths.data_root}/primary/pypi_intelligence_enriched/pypi_intelligence_enriched.parquet
   metadata:
     layer: primary
 
 # Phase S readiness + template (preserves `notes` operator overrides).
 pypi_intelligence_scored:
   type: pandas.ParquetDataset
-  filepath: data/derived/pypi_intelligence_scored/pypi_intelligence_scored.parquet
+  filepath: ${globals:paths.data_root}/derived/pypi_intelligence_scored/pypi_intelligence_scored.parquet
   metadata:
     layer: derived
 
@@ -490,20 +491,20 @@ vulnerability_basilisk_detail_raw:
 
 vulnerability_cisa_kev:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/vulnerability_cisa_kev/vulnerability_cisa_kev.parquet
+  filepath: ${globals:paths.data_root}/intermediate/vulnerability_cisa_kev/vulnerability_cisa_kev.parquet
   metadata:
     layer: intermediate
 
 # 0-100 normalized EPSS scores.
 vulnerability_epss_scores:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/vulnerability_epss_scores/vulnerability_epss_scores.parquet
+  filepath: ${globals:paths.data_root}/intermediate/vulnerability_epss_scores/vulnerability_epss_scores.parquet
   metadata:
     layer: intermediate
 
 vulnerability_cwe_categories:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/vulnerability_cwe_categories/vulnerability_cwe_categories.parquet
+  filepath: ${globals:paths.data_root}/intermediate/vulnerability_cwe_categories/vulnerability_cwe_categories.parquet
   metadata:
     layer: intermediate
 
@@ -511,7 +512,7 @@ vulnerability_cwe_categories:
 # A3: IncrementalParquetDataset
 vulnerability_package_rollup:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/vulnerability_package_rollup/vulnerability_package_rollup.parquet
+  filepath: ${globals:paths.data_root}/primary/vulnerability_package_rollup/vulnerability_package_rollup.parquet
   metadata:
     layer: primary
 
@@ -519,7 +520,7 @@ vulnerability_package_rollup:
 # A3: IncrementalParquetDataset
 vulnerability_package_version_vulns:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/vulnerability_package_version_vulns/vulnerability_package_version_vulns.parquet
+  filepath: ${globals:paths.data_root}/primary/vulnerability_package_version_vulns/vulnerability_package_version_vulns.parquet
   metadata:
     layer: primary
 
@@ -530,7 +531,7 @@ vulnerability_package_version_vulns:
 # Matched BY PACKAGE NAME (never the OSV ecosystem tag). NEVER parity-gated (AD-14).
 vulnerability_basilisk_advisories:
   type: pandas.ParquetDataset
-  filepath: data/primary/vulnerability_basilisk_advisories/vulnerability_basilisk_advisories.parquet
+  filepath: ${globals:paths.data_root}/primary/vulnerability_basilisk_advisories/vulnerability_basilisk_advisories.parquet
   metadata:
     layer: primary
 
@@ -539,7 +540,7 @@ vulnerability_basilisk_advisories:
 # set, which stays len==3). Consumed by the v_basilisk_advisories read-view transform.
 vulnerability_basilisk_details:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/vulnerability_basilisk_details/vulnerability_basilisk_details.parquet
+  filepath: ${globals:paths.data_root}/intermediate/vulnerability_basilisk_details/vulnerability_basilisk_details.parquet
   metadata:
     layer: intermediate
 
@@ -582,6 +583,7 @@ vcs_gitlab_api_raw:
   type: pyforge.atlas.datasets.VcsHostSeedDataset
   url: ${globals:endpoint_bases.GITLAB_API_BASE_URL}
   host: gitlab
+  credentials: gitlab_token
   filepath: ${globals:paths.data_root}/raw/vcs_gitlab_api_raw
   metadata:
     layer: raw
@@ -590,6 +592,7 @@ vcs_codeberg_api_raw:
   type: pyforge.atlas.datasets.VcsHostSeedDataset
   url: ${globals:endpoint_bases.CODEBERG_API_BASE_URL}
   host: codeberg
+  credentials: codeberg_token
   filepath: ${globals:paths.data_root}/raw/vcs_codeberg_api_raw
   metadata:
     layer: raw
@@ -602,6 +605,7 @@ vcs_registry_npm_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.NPM_BASE_URL}
   registry: npm
+  credentials: npm_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_npm_raw
   metadata:
     layer: raw
@@ -634,6 +638,7 @@ vcs_registry_crates_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.CRATES_BASE_URL}
   registry: crates
+  credentials: crates_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_crates_raw
   metadata:
     layer: raw
@@ -642,6 +647,7 @@ vcs_registry_rubygems_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.RUBYGEMS_BASE_URL}
   registry: rubygems
+  credentials: rubygems_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_rubygems_raw
   metadata:
     layer: raw
@@ -658,6 +664,7 @@ vcs_registry_nuget_raw:
   type: pyforge.atlas.datasets.RegistryUpstreamDataset
   url: ${globals:endpoint_bases.NUGET_BASE_URL}
   registry: nuget
+  credentials: nuget_token
   filepath: ${globals:paths.data_root}/raw/vcs_registry_nuget_raw
   metadata:
     layer: raw
@@ -666,19 +673,19 @@ vcs_registry_nuget_raw:
 
 vcs_maintainers:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/vcs_maintainers/vcs_maintainers.parquet
+  filepath: ${globals:paths.data_root}/intermediate/vcs_maintainers/vcs_maintainers.parquet
   metadata:
     layer: intermediate
 
 vcs_package_maintainers:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/vcs_package_maintainers/vcs_package_maintainers.parquet
+  filepath: ${globals:paths.data_root}/intermediate/vcs_package_maintainers/vcs_package_maintainers.parquet
   metadata:
     layer: intermediate
 
 vcs_archived_feedstocks:
   type: pandas.ParquetDataset
-  filepath: data/intermediate/vcs_archived_feedstocks/vcs_archived_feedstocks.parquet
+  filepath: ${globals:paths.data_root}/intermediate/vcs_archived_feedstocks/vcs_archived_feedstocks.parquet
   metadata:
     layer: intermediate
 
@@ -688,7 +695,7 @@ vcs_archived_feedstocks:
 # A3: IncrementalParquetDataset
 vcs_upstream_versions:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/vcs_upstream_versions/vcs_upstream_versions.parquet
+  filepath: ${globals:paths.data_root}/primary/vcs_upstream_versions/vcs_upstream_versions.parquet
   metadata:
     layer: primary
 
@@ -696,7 +703,7 @@ vcs_upstream_versions:
 # A3: IncrementalParquetDataset
 vcs_registry_versions:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/vcs_registry_versions/vcs_registry_versions.parquet
+  filepath: ${globals:paths.data_root}/primary/vcs_registry_versions/vcs_registry_versions.parquet
   metadata:
     layer: primary
 
@@ -704,7 +711,7 @@ vcs_registry_versions:
 # A3: IncrementalParquetDataset
 vcs_live_health:
   type: pyforge.atlas.datasets.IncrementalParquetDataset
-  filepath: data/primary/vcs_live_health/vcs_live_health.parquet
+  filepath: ${globals:paths.data_root}/primary/vcs_live_health/vcs_live_health.parquet
   metadata:
     layer: primary
 
@@ -716,7 +723,7 @@ vcs_live_health:
 # parity-gated (AD-14). Derived from already-fetched data (no new external source).
 vcs_release_velocity:
   type: pandas.ParquetDataset
-  filepath: data/primary/vcs_release_velocity/vcs_release_velocity.parquet
+  filepath: ${globals:paths.data_root}/primary/vcs_release_velocity/vcs_release_velocity.parquet
   metadata:
     layer: primary
 
@@ -786,7 +793,7 @@ vcs_migration_detail_raw:
 # NEVER parity-gated (AD-14).
 vcs_migration_readiness:
   type: pandas.ParquetDataset
-  filepath: data/primary/vcs_migration_readiness/vcs_migration_readiness.parquet
+  filepath: ${globals:paths.data_root}/primary/vcs_migration_readiness/vcs_migration_readiness.parquet
   metadata:
     layer: primary
 
@@ -862,13 +869,13 @@ seed_lts_registry:
     layer: raw
 
 seed_cwe_categories:
-  type: json.JSONDataset
+  type: pyforge.atlas.datasets.DegradedJsonSeedDataset
   filepath: ${globals:paths.seed_root}/cwe_categories_seed.json
   metadata:
     layer: raw
 
 seed_spdx_schema:
-  type: json.JSONDataset
+  type: pyforge.atlas.datasets.DegradedJsonSeedDataset
   filepath: ${globals:paths.seed_root}/spdx.schema.json
   metadata:
     layer: raw
@@ -886,25 +893,25 @@ seed_spdx_upstream_list_raw:
 
 seed_gaps_lts_registry_report:
   type: pandas.ParquetDataset
-  filepath: data/derived/seed_gaps_lts_registry_report/seed_gaps_lts_registry_report.parquet
+  filepath: ${globals:paths.data_root}/derived/seed_gaps_lts_registry_report/seed_gaps_lts_registry_report.parquet
   metadata:
     layer: derived
 
 seed_gaps_cwe_report:
   type: pandas.ParquetDataset
-  filepath: data/derived/seed_gaps_cwe_report/seed_gaps_cwe_report.parquet
+  filepath: ${globals:paths.data_root}/derived/seed_gaps_cwe_report/seed_gaps_cwe_report.parquet
   metadata:
     layer: derived
 
 seed_gaps_spdx_report:
   type: pandas.ParquetDataset
-  filepath: data/derived/seed_gaps_spdx_report/seed_gaps_spdx_report.parquet
+  filepath: ${globals:paths.data_root}/derived/seed_gaps_spdx_report/seed_gaps_spdx_report.parquet
   metadata:
     layer: derived
 
 seed_gaps_license_map_report:
   type: pandas.ParquetDataset
-  filepath: data/derived/seed_gaps_license_map_report/seed_gaps_license_map_report.parquet
+  filepath: ${globals:paths.data_root}/derived/seed_gaps_license_map_report/seed_gaps_license_map_report.parquet
   metadata:
     layer: derived
 
@@ -928,7 +935,7 @@ derived_purl_exports:
 # Full-universe CycloneDX BOM (~856k components).
 derived_universe_sbom:
   type: json.JSONDataset
-  filepath: data/derived/derived_universe_sbom/universe_sbom.cdx.json
+  filepath: ${globals:paths.data_root}/derived/derived_universe_sbom/universe_sbom.cdx.json
   metadata:
     layer: derived
 
@@ -951,42 +958,42 @@ derived_universe_sbom:
 # Notes for the accepted 10kClosed delta).
 inventory_universe:
   type: pandas.ParquetDataset
-  filepath: data/derived/inventory_universe/inventory_universe.parquet
+  filepath: ${globals:paths.data_root}/derived/inventory_universe/inventory_universe.parquet
   metadata:
     layer: derived
 
 # Story 23.3 — per-package Basilisk vuln rollup (risk_level / vuln_status / count).
 vulnerability_basilisk_rollup:
   type: pandas.ParquetDataset
-  filepath: data/derived/vulnerability_basilisk_rollup/vulnerability_basilisk_rollup.parquet
+  filepath: ${globals:paths.data_root}/derived/vulnerability_basilisk_rollup/vulnerability_basilisk_rollup.parquet
   metadata:
     layer: derived
 
 # Story 23.3 — priority.py P1–P10 / Rank / Score / Work over Kedro Parquet inputs.
 inventory_priority_assignments:
   type: pandas.ParquetDataset
-  filepath: data/derived/inventory_priority_assignments/inventory_priority_assignments.parquet
+  filepath: ${globals:paths.data_root}/derived/inventory_priority_assignments/inventory_priority_assignments.parquet
   metadata:
     layer: derived
 
 # Story 23.4 — deliverable A (14-column verified inventory export).
 inventory_verified_packages:
   type: pandas.ParquetDataset
-  filepath: data/derived/inventory_verified_packages/inventory_verified_packages.parquet
+  filepath: ${globals:paths.data_root}/derived/inventory_verified_packages/inventory_verified_packages.parquet
   metadata:
     layer: derived
 
 # Story 23.4 — AOSS-Free Mason queue (supplementary; never expands OpenTeams universe).
 inventory_aoss_free_queue:
   type: pandas.ParquetDataset
-  filepath: data/derived/inventory_aoss_free_queue/inventory_aoss_free_queue.parquet
+  filepath: ${globals:paths.data_root}/derived/inventory_aoss_free_queue/inventory_aoss_free_queue.parquet
   metadata:
     layer: derived
 
 # Story 23.5 — canonical single complete export (63-column join over Stories 21.6/23.2/23.3/23.4).
 identity_complete_export:
   type: pandas.ParquetDataset
-  filepath: data/derived/identity_complete_export/identity_complete_export.parquet
+  filepath: ${globals:paths.data_root}/derived/identity_complete_export/identity_complete_export.parquet
   metadata:
     layer: derived
 
@@ -1009,7 +1016,7 @@ identity_complete_export:
 # block. CAP-5 (Mason handoff) is Story 13.5, still pending.
 trending_candidates:
   type: pyforge.atlas.datasets.TrendingSnapshotDataset
-  filepath: data/raw/trending_candidates
+  filepath: ${globals:paths.data_root}/raw/trending_candidates
   daily_url: ${globals:endpoint_bases.GITHUB_BASE_URL}/trending/python?since=daily
   weekly_url: ${globals:endpoint_bases.GITHUB_BASE_URL}/trending/python?since=weekly
   monthly_url: ${globals:endpoint_bases.GITHUB_BASE_URL}/trending/python?since=monthly
@@ -1032,7 +1039,7 @@ trending_candidates:
 # out of scope.
 trending_candidates_classified:
   type: pandas.ParquetDataset
-  filepath: data/derived/trending_candidates_classified/trending_candidates_classified.parquet
+  filepath: ${globals:paths.data_root}/derived/trending_candidates_classified/trending_candidates_classified.parquet
   metadata:
     layer: derived
 
@@ -1042,7 +1049,7 @@ trending_candidates_classified:
 # credentials, no endpoint-base.
 org_audit_candidates:
   type: pandas.ParquetDataset
-  filepath: data/raw/org_audit_candidates/org_audit_candidates.parquet
+  filepath: ${globals:paths.data_root}/raw/org_audit_candidates/org_audit_candidates.parquet
   metadata:
     layer: raw
 
@@ -1054,7 +1061,7 @@ org_audit_candidates:
 # tier="skip"/reason="already-on-conda-forge" automatically (FR-67).
 org_audit_candidates_classified:
   type: pandas.ParquetDataset
-  filepath: data/derived/org_audit_candidates_classified/org_audit_candidates_classified.parquet
+  filepath: ${globals:paths.data_root}/derived/org_audit_candidates_classified/org_audit_candidates_classified.parquet
   metadata:
     layer: derived
 
@@ -1159,7 +1166,7 @@ discovery_about_maintainers_raw:
 # with the existing hand-curated list unchanged.
 # fetch mode: tracked seed
 discovery_curated_groups_seed:
-  type: json.JSONDataset
+  type: pyforge.atlas.datasets.DegradedJsonSeedDataset
   filepath: conf/base/curated_groups.json
   metadata:
     layer: raw
@@ -1171,7 +1178,7 @@ discovery_curated_groups_seed:
 # never fabricated with a null core_python_package_name.
 enterprise_conda_maintainers:
   type: pandas.ParquetDataset
-  filepath: data/derived/enterprise_conda_maintainers/enterprise_conda_maintainers.parquet
+  filepath: ${globals:paths.data_root}/derived/enterprise_conda_maintainers/enterprise_conda_maintainers.parquet
   metadata:
     layer: derived
 
@@ -1242,8 +1249,8 @@ discovery_local_recipes_raw:
 # build_identity_packages_primary reproduces the legacy
 # lookup_assoc/from_assoc/from_inventory/from_board_only/attach_packaging_urls join.
 identity_packages_primary:
-  type: pandas.ParquetDataset
-  filepath: data/primary/identity_packages_primary/identity_packages_primary.parquet
+  type: pyforge.atlas.datasets.DegradingParquetDataset
+  filepath: ${globals:paths.data_root}/primary/identity_packages_primary/identity_packages_primary.parquet
   metadata:
     layer: primary
 
@@ -1251,7 +1258,7 @@ identity_packages_primary:
 # columns present but null until Epic 23.3/23.5 merge them at gist-publish time.
 identity_export_parquet:
   type: pandas.ParquetDataset
-  filepath: data/derived/identity_export_parquet/identity_export_parquet.parquet
+  filepath: ${globals:paths.data_root}/derived/identity_export_parquet/identity_export_parquet.parquet
   metadata:
     layer: derived
 
@@ -1268,13 +1275,13 @@ identity_export_parquet:
 
 artifactory_downloads_raw:
   type: pandas.ParquetDataset
-  filepath: data/raw/artifactory_downloads_raw/artifactory_downloads_raw.parquet
+  filepath: ${globals:paths.data_root}/raw/artifactory_downloads_raw/artifactory_downloads_raw.parquet
   metadata:
     layer: raw
 
 artifactory_downloads_joined:
   type: pandas.ParquetDataset
-  filepath: data/derived/artifactory_downloads_joined/artifactory_downloads_joined.parquet
+  filepath: ${globals:paths.data_root}/derived/artifactory_downloads_joined/artifactory_downloads_joined.parquet
   metadata:
     layer: derived
 
@@ -1286,7 +1293,7 @@ artifactory_downloads_joined:
 # [], the committed default) or populated later by a separate, attended live bring-up.
 enterprise_jfrog_names:
   type: pandas.ParquetDataset
-  filepath: data/derived/enterprise_jfrog_names/enterprise_jfrog_names.parquet
+  filepath: ${globals:paths.data_root}/derived/enterprise_jfrog_names/enterprise_jfrog_names.parquet
   metadata:
     layer: derived
 
@@ -1294,13 +1301,13 @@ enterprise_jfrog_names:
 # enterprise_jfrog_consumption derived Parquet (complete-export-contract.md §1).
 artifactory_consumption_raw:
   type: pandas.ParquetDataset
-  filepath: data/raw/artifactory_consumption_raw/artifactory_consumption_raw.parquet
+  filepath: ${globals:paths.data_root}/raw/artifactory_consumption_raw/artifactory_consumption_raw.parquet
   metadata:
     layer: raw
 
 enterprise_jfrog_consumption:
   type: pandas.ParquetDataset
-  filepath: data/derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet
+  filepath: ${globals:paths.data_root}/derived/enterprise_jfrog_consumption/enterprise_jfrog_consumption.parquet
   metadata:
     layer: derived
 
@@ -1310,13 +1317,13 @@ enterprise_jfrog_consumption:
 
 query_plane_estate_source:
   type: pandas.ParquetDataset
-  filepath: data/raw/query_plane_estate_source/query_plane_estate_source.parquet
+  filepath: ${globals:paths.data_root}/raw/query_plane_estate_source/query_plane_estate_source.parquet
   metadata:
     layer: raw
 
 query_plane_estate:
   type: pandas.ParquetDataset
-  filepath: data/primary/query_plane_estate/query_plane_estate.parquet
+  filepath: ${globals:paths.data_root}/primary/query_plane_estate/query_plane_estate.parquet
   save_args:
     compression: zstd
   metadata:
@@ -1335,6 +1342,6 @@ query_plane_estate:
 
 semantic_packages:
   type: pandas.ParquetDataset
-  filepath: data/primary/semantic_packages/semantic_packages.parquet
+  filepath: ${globals:paths.data_root}/primary/semantic_packages/semantic_packages.parquet
   metadata:
     layer: primary

@@ -11,6 +11,7 @@ import json
 import tarfile
 import zipfile
 
+import pandas as pd
 import pytest
 
 from pyforge.atlas.datasets import (
@@ -191,8 +192,8 @@ def test_cross_channel_falls_back_to_second_subdir_when_first_fails(monkeypatch)
     def fake_fetch(url, *, load_args, credentials, metadata):
         attempted.append(url)
         if "/selfexplainml/linux-64/repodata.json" in url:
-            return _repodata("piml", "gaminet")
-        return None  # noarch (both filenames, both mirrors) unavailable
+            return _repodata("piml", "gaminet"), False
+        return None, False  # noarch (both filenames, both mirrors) unavailable
 
     monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch", "linux-64")),))
@@ -207,7 +208,7 @@ def test_cross_channel_falls_back_to_second_subdir_when_first_fails(monkeypatch)
 
 
 def test_cross_channel_every_subdir_failing_is_skipped_never_raises(monkeypatch):
-    monkeypatch.setattr(CS, "_fetch_repodata_at_url", lambda url, **kw: None)
+    monkeypatch.setattr(CS, "_fetch_repodata_at_url", lambda url, **kw: (None, False))
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch", "linux-64")),))
     out = CS.CrossChannelRepodataDataset(url="ignored").load()  # never raises
     assert out.empty
@@ -219,7 +220,7 @@ def test_cross_channel_first_subdir_success_short_circuits(monkeypatch):
 
     def fake_fetch(url, **kw):
         attempted.append(url)
-        return _repodata("torch") if "/noarch/current_repodata.json" in url else None
+        return (_repodata("torch"), False) if "/noarch/current_repodata.json" in url else (None, False)
 
     monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("pytorch", "pytorch", ("noarch", "linux-64")),))
@@ -236,6 +237,57 @@ class _StubInner:
 
     def load(self):
         return self._payload
+
+
+def test_conda_channeldata_dataset_transport_error_returns_empty_columned_frame():
+    ds = CondaChanneldataDataset(url="https://example.invalid/anaconda/channeldata.json")
+
+    class _Boom:
+        def load(self):
+            raise ConnectionError("offline")
+
+    ds._inner = _Boom()
+    df = ds.load()
+    assert list(df.columns) == ["conda_name", "subdirs"]
+    assert df.empty
+
+
+def test_fetch_repodata_at_url_connection_failure_sets_flag(monkeypatch):
+    class _ConnFail:
+        def __init__(self, **kwargs):
+            pass
+
+        def load(self):
+            raise ConnectionError("down")
+
+    monkeypatch.setattr(CS, "APIDataset", _ConnFail)
+    repodata, connection_failed = CS._fetch_repodata_at_url(
+        "https://conda.anaconda.org/pytorch/noarch/repodata.json",
+        load_args=None,
+        credentials=None,
+        metadata=None,
+    )
+    assert repodata is None
+    assert connection_failed is True
+
+
+def test_cross_channel_skips_remaining_urls_on_same_mirror_after_connection_failure(monkeypatch):
+    attempted: list[str] = []
+
+    def fake_fetch(url, **kw):
+        attempted.append(url)
+        if "prefix.dev" in url:
+            return None, True
+        return _repodata("torch"), False
+
+    monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
+    monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("pytorch", "pytorch", ("noarch",)),))
+    out = CS.CrossChannelRepodataDataset(url="ignored").load()
+    assert out["conda_name"].tolist() == ["torch"]
+    prefix_attempts = [u for u in attempted if "prefix.dev" in u]
+    anaconda_attempts = [u for u in attempted if "conda.anaconda.org" in u]
+    assert len(prefix_attempts) == 1
+    assert len(anaconda_attempts) >= 1
 
 
 @pytest.mark.parametrize(
@@ -263,10 +315,10 @@ def test_cross_channel_empty_index_on_first_subdir_falls_through_to_second(monke
     def fake_fetch(url, **kw):
         attempted.append(url)
         if "/noarch/" in url:
-            return {"packages": {}, "packages.conda": {}}  # valid, empty
+            return {"packages": {}, "packages.conda": {}}, False  # valid, empty
         if "/linux-64/" in url:
-            return _repodata("piml")
-        return None
+            return _repodata("piml"), False
+        return None, False
 
     monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch", "linux-64")),))
@@ -292,7 +344,7 @@ def test_cross_channel_repodata_filename_fallback_current_then_repodata(monkeypa
 
     def fake_fetch(url, **kw):
         attempted.append(url)
-        return _repodata("piml") if url.endswith("/noarch/repodata.json") else None
+        return (_repodata("piml"), False) if url.endswith("/noarch/repodata.json") else (None, False)
 
     monkeypatch.setattr(CS, "_fetch_repodata_at_url", fake_fetch)
     monkeypatch.setattr(CS, "_CROSS_CHANNEL_SPECS", (("selfexplainml", "selfexplainml", ("noarch",)),))
@@ -313,3 +365,187 @@ def test_cross_channels_node_tuple_matches_dataset_specs():
     from pyforge.atlas.pipelines.pypi_intelligence.nodes import _CROSS_CHANNELS
 
     assert _CROSS_CHANNELS == tuple(short for short, _, _ in CS._CROSS_CHANNEL_SPECS)
+
+
+def test_api_json_normalizes_response_json():
+    class _Resp:
+        def json(self):
+            return {"packages": {}}
+
+    class _BadResp:
+        def json(self):
+            raise ValueError("not json")
+
+    assert CS._api_json(_Resp()) == {"packages": {}}
+    assert CS._api_json(_BadResp()) is None
+    assert CS._api_json(b'{"a": 1}') == {"a": 1}
+    assert CS._api_json(b"[1]") is None
+
+
+def test_as_bytes_rejects_non_bytes_like_payload():
+    with pytest.raises(TypeError, match="bytes-like"):
+        CS._as_bytes(42)
+
+
+def test_parse_pypi_simple_index_skips_invalid_project_rows():
+    df = CS.parse_pypi_simple_index({"projects": [{"name": "ok", "_last-serial": 1}, "skip", {"no_name": True}]})
+    assert df.iloc[0]["pypi_name"] == "ok"
+    assert len(df) == 1
+
+
+def test_conda_repodata_merges_rows_from_multiple_subdirs(monkeypatch):
+    class _Inner:
+        def __init__(self, **kwargs):
+            self._url = str(kwargs.get("url", ""))
+
+        def load(self):
+            if "/noarch/" in self._url:
+                return json.dumps(_repodata("noarch-pkg")).encode()
+            if "/linux-64/" in self._url:
+                return json.dumps(_repodata("linux-pkg")).encode()
+            return b"{}"
+
+    monkeypatch.setattr(CS, "APIDataset", _Inner)
+    ds = CS.CondaRepodataDataset(url="https://example/base", subdirs=("noarch", "linux-64"))
+    df = ds.load()
+    assert set(df["conda_name"]) == {"noarch-pkg", "linux-pkg"}
+
+
+def test_fetch_repodata_at_url_non_connection_error_returns_no_connection_flag(monkeypatch):
+    class _ValueFail:
+        def __init__(self, **kwargs):
+            pass
+
+        def load(self):
+            raise ValueError("bad payload")
+
+    monkeypatch.setattr(CS, "APIDataset", _ValueFail)
+    repodata, connection_failed = CS._fetch_repodata_at_url(
+        "https://conda.anaconda.org/bioconda/noarch/repodata.json",
+        load_args=None,
+        credentials=None,
+        metadata=None,
+    )
+    assert repodata is None
+    assert connection_failed is False
+
+
+def test_conda_repodata_dataset_skips_non_dict_payload(monkeypatch):
+    class _Inner:
+        def __init__(self, **kwargs):
+            pass
+
+        def load(self):
+            return b"not-json"
+
+    monkeypatch.setattr(CS, "APIDataset", _Inner)
+    ds = CS.CondaRepodataDataset(url="https://example/base", subdirs=("linux-64",))
+    df = ds.load()
+    assert df.empty
+
+
+def test_conda_repodata_dataset_aggregates_subdir_rows(monkeypatch):
+    class _Inner:
+        def __init__(self, **kwargs):
+            self._url = kwargs.get("url", "")
+
+        def load(self):
+            if "linux-64" in self._url:
+                return json.dumps(_repodata("numpy")).encode()
+            return b"{}"
+
+    monkeypatch.setattr(CS, "APIDataset", _Inner)
+    ds = CS.CondaRepodataDataset(url="https://example/base", subdirs=("linux-64",))
+    df = ds.load()
+    assert df.iloc[0]["conda_name"] == "numpy"
+    assert df.iloc[0]["subdir"] == "linux-64"
+
+
+def test_pypi_simple_index_dataset_parses_projects(monkeypatch):
+    payload = {"projects": [{"name": "requests", "_last-serial": 99}]}
+
+    class _Inner:
+        def load(self):
+            return payload
+
+    ds = CS.PyPISimpleIndexDataset(url="https://pypi.org/simple")
+    ds._inner = _Inner()
+    df = ds.load()
+    assert df.iloc[0]["pypi_name"] == "requests"
+    assert df.iloc[0]["last_serial"] == 99
+
+
+def test_feedstock_outputs_archive_dataset_parses_zip(monkeypatch):
+    raw = _zip_with_outputs({"numpy": {"feedstocks": ["numpy-feedstock"]}})
+
+    class _BytesInner:
+        def load(self):
+            return raw
+
+    ds = CS.FeedstockOutputsArchiveDataset(url="https://example/outputs.zip")
+    ds._inner = _BytesInner()
+    df = ds.load()
+    assert df.iloc[0]["conda_name"] == "numpy"
+
+
+def test_cf_graph_tarball_dataset_parses_tar(monkeypatch):
+    tar_bytes = _multi_file_tar(("cf-graph/node_attrs/n-feedstock.json", {"meta_yaml": {"requirements": {"run": []}}}))
+
+    class _BytesInner:
+        def load(self):
+            return tar_bytes
+
+    ds = CS.CfGraphTarballDataset(url="https://example/graph.tgz")
+    ds._inner = _BytesInner()
+    assert isinstance(ds.load(), pd.DataFrame)
+
+
+def test_s3_download_stats_returns_empty_columned_frame():
+    df = CS.S3DownloadStatsDataset(url="s3://bucket/prefix").load()
+    assert list(df.columns) == ["conda_name", "month", "platform", "pyver", "channel", "downloads"]
+    assert df.empty
+
+
+def test_resolve_anaconda_channel_urls_honors_channel_env_override(monkeypatch):
+    monkeypatch.setenv("PYTORCH_BASE_URL", "https://custom.example/pytorch")
+    urls = CS._resolve_anaconda_channel_urls("pytorch", "noarch", "repodata.json")
+    assert urls[0] == "https://custom.example/pytorch/noarch/repodata.json"
+
+
+def test_parselmouth_mapping_cache_exception_degrades_empty(monkeypatch, tmp_path):
+    ds = ParselmouthMappingDataset(filepath=str(tmp_path / "map.json"))
+
+    def _boom() -> None:
+        raise OSError("cache unreadable")
+
+    monkeypatch.setattr(ds._cache, "load", _boom)
+    out = ds.load()
+    assert out.empty
+    assert list(out.columns) == ["pypi_name", "conda_name", "match_source"]
+
+
+def test_parselmouth_non_dict_cache_degrades_empty(monkeypatch, tmp_path):
+    ds = ParselmouthMappingDataset(filepath=str(tmp_path / "map.json"))
+    monkeypatch.setattr(ds._cache, "load", lambda: ["not-a-dict"])
+    assert ds.load().empty
+
+
+def test_conda_repodata_dataset_iterates_default_subdirs(monkeypatch):
+    seen: list[str] = []
+
+    class _Inner:
+        def __init__(self, **kwargs):
+            seen.append(str(kwargs.get("url", "")))
+
+        def load(self):
+            return b"{}"
+
+    monkeypatch.setattr(CS, "APIDataset", _Inner)
+    CS.CondaRepodataDataset(url="https://conda.anaconda.org/conda-forge").load()
+    assert len(seen) == len(CS.CONDA_FORGE_SUBDIRS)
+
+
+def test_cross_channel_repodata_describe_lists_channels():
+    desc = CS.CrossChannelRepodataDataset(url="ignored")._describe()
+    assert "channels" in desc
+    assert len(desc["channels"]) == len(CS._CROSS_CHANNEL_SPECS)

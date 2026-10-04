@@ -135,34 +135,36 @@ def test_ttl_cadence_falls_back_to_weekly_on_non_numeric_value():
     assert _ttl_cadence({"vcs_upstream_versions": None}, "vcs_upstream_versions") == WEEKLY_SECONDS
 
 
-def test_ttl_cadence_passes_through_zero_and_negative():
-    # _ttl_cadence itself does not clamp -- it only guards against non-numeric /
-    # missing values; RefreshRequest.cadence_seconds=0 is a legitimate "always due"
-    # trigger, consumed downstream by the dataset's own _refresh_due check.
-    assert _ttl_cadence({"vcs_upstream_versions": 0}, "vcs_upstream_versions") == 0
-    assert _ttl_cadence({"vcs_upstream_versions": -5}, "vcs_upstream_versions") == -5
+def test_ttl_cadence_clamps_zero_and_negative():
+    from pyforge.atlas.datasets.refresh import _MIN_TTL_CADENCE_SECONDS
+
+    assert _ttl_cadence({"vcs_upstream_versions": 0}, "vcs_upstream_versions") == _MIN_TTL_CADENCE_SECONDS
+    assert _ttl_cadence({"vcs_upstream_versions": -5}, "vcs_upstream_versions") == _MIN_TTL_CADENCE_SECONDS
+
+
+_EMPTY_IDENTITY = __import__("pandas").DataFrame()
 
 
 def test_refresh_vcs_github_store_returns_a_refresh_request_for_its_own_store():
-    req = refresh_vcs_github_store({"vcs_upstream_versions": 999})
+    req = refresh_vcs_github_store({"vcs_upstream_versions": 999}, _EMPTY_IDENTITY)
     assert isinstance(req, RefreshRequest)
     assert req.store == "vcs_github_api_raw"
     assert req.cadence_seconds == 999
 
 
 def test_refresh_vcs_github_store_defaults_cadence_to_weekly():
-    req = refresh_vcs_github_store({})
+    req = refresh_vcs_github_store({}, _EMPTY_IDENTITY)
     assert req.cadence_seconds == WEEKLY_SECONDS
 
 
 def test_refresh_vcs_host_stores_returns_one_request_per_host():
-    gitlab_req, codeberg_req = refresh_vcs_host_stores({"vcs_upstream_versions": 555})
+    gitlab_req, codeberg_req = refresh_vcs_host_stores({"vcs_upstream_versions": 555}, _EMPTY_IDENTITY)
     assert (gitlab_req.store, gitlab_req.cadence_seconds) == ("vcs_gitlab_api_raw", 555)
     assert (codeberg_req.store, codeberg_req.cadence_seconds) == ("vcs_codeberg_api_raw", 555)
 
 
 def test_refresh_vcs_registry_stores_returns_one_request_per_registry():
-    reqs = refresh_vcs_registry_stores({"vcs_registry_versions": 777})
+    reqs = refresh_vcs_registry_stores({"vcs_registry_versions": 777}, _EMPTY_IDENTITY)
     assert len(reqs) == len(_REGISTRY_INPUTS) == 8
     stores = {r.store for r in reqs}
     assert stores == {f"vcs_registry_{r}_raw" for r in _REGISTRY_INPUTS}
