@@ -47,6 +47,7 @@ The 19-page spine (BSL models, layouts, personas, journeys) is
 from __future__ import annotations
 
 import time
+import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable
@@ -453,10 +454,23 @@ def _declared_filters(page: PageDef, loader: Callable[[], Any]) -> list[vm.Filte
 
     A declared column the loader does NOT project is a typo, not an empty state, and
     refuses loudly — an honest-empty frame still carries its declared columns.
+
+    Building the dashboard must not depend on the data root being READABLE (it is
+    offline-buildable against any root, including none), so a loader that raises
+    yields no control here and the page's own read path surfaces the error where it
+    belongs — in the page, at read time.
     """
     if not page.filters:
         return []
-    frame = loader()
+    try:
+        frame = loader()
+    except Exception as exc:  # noqa: BLE001 — any read failure is the page's to report
+        warnings.warn(
+            f"page {page.id!r} declares filters but its data could not be read "
+            f"at build time ({type(exc).__name__}: {exc}); rendering no filter",
+            stacklevel=2,
+        )
+        return []
     absent = [column for column in page.filters if column not in frame.columns]
     if absent:
         msg = (
