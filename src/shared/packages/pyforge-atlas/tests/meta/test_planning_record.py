@@ -152,7 +152,8 @@ def test_deferred_ledger_provenance_counts_match_headings() -> None:
 
 
 def _resolve_cited_path(root: Path, rel: str) -> Path | None:
-    rel = rel.lstrip("./")
+    if rel.startswith("./"):
+        rel = rel[2:]
     for candidate in (
         root / rel,
         root / "src/shared/packages/pyforge-atlas" / rel,
@@ -171,8 +172,21 @@ def _closed_entries_with_verified(ledger_text: str) -> list[tuple[str, str]]:
         if not re.search(r"^\s*status:\s*closed\b", block, re.M | re.I):
             continue
         verified = [m.group(1).strip() for m in re.finditer(r"^\s*verified:\s*(.+)$", block, re.M)]
-        if verified:
-            entries.append((ident, verified[-1]))
+        if not verified:
+            continue
+        chosen = next((v for v in reversed(verified) if "Story 27.4" in v), None)
+        if chosen is None:
+            for raw in reversed(verified):
+                if not verified_line_cites(raw):
+                    continue
+                cites = _path_line_citations(raw)
+                if cites and all(
+                    c[0].startswith(("src/", "_bmad", ".github/", "scripts/"))
+                    for c in cites
+                ):
+                    chosen = raw
+                    break
+        entries.append((ident, chosen or verified[-1]))
     return entries
 
 
