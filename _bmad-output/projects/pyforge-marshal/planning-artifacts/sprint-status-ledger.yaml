@@ -384,7 +384,7 @@ development_status:
   83-13-the-landing-heal-keeps-the-team-memory-index-s-blank-lines: done
   83-14-a-manual-merge-mid-dispatch-never-strands-the-session-s-fixes: backlog
   83-15-dispatch-applies-ruff-s-safe-fixes-before-it-verifies: backlog
-  83-16-dispatch-finalize-commits-paths-with-spaces: backlog
+  83-16-dispatch-finalize-commits-paths-with-spaces: done
   83-17-dispatch-refuses-a-commit-that-carries-an-attribution-trailer: backlog
   83-18-a-re-dispatched-send-back-waits-for-its-landing-review: backlog
   83-19-dispatch-never-commits-the-cfe-surface-outside-a-sanctioned-retro: backlog
