@@ -10,6 +10,11 @@ VIEWS = STATION_PORTAL / "views.py"
 CHROME_COPY_NAMES = frozenset({"base.html", "switcher.html", "theme.css"})
 _HTTP_TOPLEVEL = frozenset({"httpx", "requests", "http.client"})
 
+HOST_CHROME = Path("src/shared/packages/django-pyforge/src/django_pyforge")
+CHROME_BASE = HOST_CHROME / "templates/django_pyforge/base.html"
+VENDORED_HTMX = HOST_CHROME / "static/django_pyforge/vendor/htmx.min.js"
+PLATFORM_HTMX = Path("src/platform/platformapp/static/js/vendor/htmx.min.js")
+
 
 def _repo_root() -> Path:
     here = Path(__file__).resolve()
