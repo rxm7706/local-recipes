@@ -290,6 +290,11 @@ def _commit_status_facts(stdout: str, named: set[str]) -> tuple[frozenset[str], 
             staged_deletions.add(path)
         if "R" in status and original is not None and original not in named:
             sources[original] = None
+        # With status.renames/diff.renames off, ``changed_files`` names BOTH sides of a ``git mv`` (``A new``,
+        # ``D old``) while this pinned read sees one ``R new\0old`` record: the named original's deletion is
+        # already staged, so ``git add`` must never see it (delta review LOW-1).
+        if status[0] == "R" and original is not None and original in named:
+            staged_deletions.add(original)
     return frozenset(staged_deletions), tuple(sources)
 
 

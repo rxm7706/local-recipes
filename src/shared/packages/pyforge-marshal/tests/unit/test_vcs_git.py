@@ -1423,6 +1423,55 @@ def test_commit_paths_pairs_a_rename_under_an_operators_renames_off_config(vcs, 
     assert _head_paths(repo) == ["README.md", "new name.md"]
 
 
+def test_the_finalize_path_commits_a_rename_under_an_operators_renames_off_config(vcs, repo):
+    """Delta review LOW-1: under ``status.renames=false`` the callers' ``changed_files`` names BOTH sides of a
+    ``git mv`` (``A new``, ``D old``), while ``commit_paths``' pinned read sees one ``R new\\0old`` record. The
+    named original's deletion is staged, so ``git add`` must never see it -- driven end to end, as the finalize
+    does, not by naming only the new path."""
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _git(repo, "config", "status.renames", "false")
+    _git(repo, "config", "diff.renames", "false")
+    _git(repo, "mv", "old name.md", "new name.md")
+
+    changed = vcs.changed_files(repo, repo, base="HEAD")
+    vcs.commit_paths(repo, tuple(Path(path) for path in changed), to_redacted_text("marshal: supervisor finalize"))
+
+    assert set(changed) == {"new name.md", "old name.md"}
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md", "new name.md"]
+
+
+@pytest.mark.parametrize("original", [":colon start.md", "glob[ab]*?.md"], ids=["colon-start", "glob-chars"])
+def test_commit_paths_names_a_renames_awkward_original_literally(vcs, repo, original):
+    """Delta review LOW-2 (N9): a rename's original reaches ``git commit --`` as a literal pathspec, so a name
+    that starts with ``:`` or carries glob characters is committed, never read as pathspec magic."""
+    (repo / original).write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add an awkward file")
+    _git(repo, "mv", original, "renamed.md")
+
+    vcs.commit_paths(repo, (Path("renamed.md"),), to_redacted_text("marshal: supervisor finalize"))
+
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md", "renamed.md"]
+
+
+def test_commit_paths_pairs_a_rename_named_by_an_absolute_path(vcs, repo):
+    """Delta review LOW-2 (N10): a destination handed over as an absolute path under the repo is matched to
+    its ``git status`` record, so the rename's source deletion is still committed."""
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _git(repo, "mv", "old name.md", "new name.md")
+
+    vcs.commit_paths(repo, (repo / "new name.md",), to_redacted_text("marshal: supervisor finalize"))
+
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md", "new name.md"]
+
+
 def test_commit_paths_commits_a_staged_deletion_without_re_adding_it(vcs, repo):
     """``git add -- <path>`` refuses a path whose deletion is already staged (``git rm``): it is committed
     without one, alongside the other named paths."""
