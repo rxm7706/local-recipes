@@ -2995,7 +2995,7 @@ def test_promote_feed_sync_refuses_un_finish_against_origin_main(tmp_path):
 
 
 def test_promote_feed_sync_does_not_refuse_done_key_only_on_stale_local(tmp_path):
-    remote_twin = "development_status:\n  12-1-a: backlog\n"
+    remote_twin = "development_status:\n  12-2-b: backlog\n"
     _write_sprint_ledger(tmp_path, "acme", {"12-1-a": "done", "12-2-b": "backlog"})
     _write_tier3_feed(tmp_path, "acme", "development_status:\n  12-2-b: backlog\n")
     fs = LocalFs()

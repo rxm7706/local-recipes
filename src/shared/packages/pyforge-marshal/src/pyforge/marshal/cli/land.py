@@ -113,6 +113,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -1304,6 +1305,7 @@ def _load_fleet_scan_module() -> object | None:
     if spec is None or spec.loader is None:
         return None
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     try:
         spec.loader.exec_module(module)
     except Exception:  # noqa: BLE001 -- unloadable script degrades to empty parse
