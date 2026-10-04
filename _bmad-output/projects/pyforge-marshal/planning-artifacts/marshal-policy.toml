@@ -596,34 +596,6 @@ verify_commands = [
 # verbatim from CLAUDE.md's "PR CI gates" section -- now governed, machine-
 # readable policy instead of a paragraph a human has to remember.
 #
-# protected_refs (Story 85.2 / steward CAP-165): branch prefixes marshal in-code
-# deleters union with the code floor. Must match docs/governance/guild-roster.json
-# branch entries; the parity detector reports drift.
-[[protected_refs]]
-refname = "refs/heads/loop/"
-kind = "operational-branch"
-scope = "both"
-
-[[protected_refs]]
-refname = "refs/heads/attempt-preserve/"
-kind = "legacy"
-scope = "both"
-
-[[protected_refs]]
-refname = "refs/tags/preserve/"
-kind = "preserve-tag"
-scope = "both"
-
-[[protected_refs]]
-refname = "refs/tags/archive/"
-kind = "archive-tag"
-scope = "both"
-
-[[protected_refs]]
-refname = "refs/tags/rescue/"
-kind = "legacy"
-scope = "both"
-
 # maintenance-label: any change outside `recipes/**` needs the `maintenance`
 # label at PR open/update time (gated -- suppressed for a recipe-only PR).
 # trigger_mode = "exclude": fires when at least one changed path is OUTSIDE

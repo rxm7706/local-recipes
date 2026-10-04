@@ -13,14 +13,6 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 ROSTER_PATH = ROOT / "docs" / "governance" / "guild-roster.json"
 DOCUMENT_PATH = ROOT / "docs" / "governance" / "rulesets" / "protected-refs.json"
-MARSHAL_POLICY_PATH = (
-    ROOT
-    / "_bmad-output"
-    / "projects"
-    / "pyforge-marshal"
-    / "planning-artifacts"
-    / "marshal-policy.toml"
-)
 
 TAG_RULES = ("deletion", "update", "non_fast_forward")
 BRANCH_RULES_BY_KIND = {
@@ -229,39 +221,7 @@ def roster_branch_refnames(roster: dict[str, Any]) -> set[str]:
     return out
 
 
-def load_marshal_policy_refnames(path: Path = MARSHAL_POLICY_PATH) -> set[str]:
-    if not path.is_file():
-        return set()
-    import tomllib
-
-    data = tomllib.loads(path.read_text(encoding="utf-8"))
-    out: set[str] = set()
-    for entry in data.get("protected_refs", []):
-        ref = entry.get("refname", "")
-        if isinstance(ref, str) and ref:
-            out.add(ref)
-    return out
-
-
 def roster_all_refnames(roster: dict[str, Any]) -> set[str]:
     return {entry["refname"] for entry in roster.get("protected_refs", [])}
 
 
-def compare_marshal_policy_to_roster(
-    roster: dict[str, Any],
-    *,
-    policy_path: Path | None = None,
-) -> list[str]:
-    diffs: list[str] = []
-    roster_all = roster_all_refnames(roster)
-    roster_branches = roster_branch_refnames(roster)
-    policy_all = load_marshal_policy_refnames(policy_path or MARSHAL_POLICY_PATH)
-    for extra in sorted(policy_all - roster_all):
-        diffs.append(
-            f"marshal-policy.toml protected_refs declares {extra!r} absent from roster"
-        )
-    for missing in sorted(roster_branches - policy_all):
-        diffs.append(
-            f"roster branch entry {missing!r} missing from marshal-policy.toml protected_refs"
-        )
-    return diffs

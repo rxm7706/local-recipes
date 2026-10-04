@@ -112,7 +112,6 @@ def run_check(
     """Return (findings, exit_code_override). exit_code_override 2 = could not observe live."""
     diffs: list[str] = []
     diffs.extend(check_document_freshness(roster))
-    diffs.extend(lib.compare_marshal_policy_to_roster(roster))
 
     declared_doc = lib.render_document(roster)
     declared_map = lib.rulesets_by_name(declared_doc)

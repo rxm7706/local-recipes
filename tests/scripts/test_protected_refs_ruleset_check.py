@@ -244,17 +244,13 @@ def test_api_error_exits_two() -> None:
     assert override == 2
 
 
-def test_marshal_policy_drift_exits_one(tmp_path: Path) -> None:
-    lib = _load_lib()
-    policy = tmp_path / "marshal-policy.toml"
-    policy.write_text(
-        '[[protected_refs]]\nrefname = "refs/heads/loop/"\nkind = "operational-branch"\n',
-        encoding="utf-8",
-    )
-    diffs = lib.compare_marshal_policy_to_roster(
-        lib.load_roster(), policy_path=policy
-    )
-    assert any("attempt-preserve" in d for d in diffs)
+def test_the_protected_ref_list_is_declared_once_in_the_roster() -> None:
+    """Story 85.2: the list lives in guild-roster.json only. A copy in marshal-policy.toml duplicated it and
+    broke marshal's strict policy loader, which refuses unknown top-level keys."""
+    import tomllib
+
+    policy = Path(__file__).resolve().parents[2] / "_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.toml"
+    assert "protected_refs" not in tomllib.loads(policy.read_text(encoding="utf-8"))
 
 
 def test_mutation_missing_creation_rule_fails() -> None:
