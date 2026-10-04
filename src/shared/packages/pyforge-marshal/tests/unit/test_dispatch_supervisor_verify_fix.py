@@ -284,3 +284,184 @@ def test_a_broken_flag_tree_parks_with_one_warning_and_no_fix_turn(
     assert fix_entries[0]["payload"]["warning"]
     if path == "fresh":
         assert set(_verification_outcomes(fs)[-1]) == _MAIN_OUTCOME_KEYS
+
+
+# --------------------------------------------------------------------------
+# Story 85.2 — one fix turn end to end (flag on; supervisor ports only)
+# --------------------------------------------------------------------------
+
+
+def test_sidecar_failed_commands_still_reach_the_fix_turn(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A long output tail offloads ``failed_commands`` to a sidecar; finalize must still read it."""
+    repo_root = loop._repo(tmp_path)
+    _seed_flag(repo_root, on=True)
+    worktree = loop._worktree(repo_root)
+    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
+    monkeypatch.setattr(
+        supervisor_main, "evaluate_dispatch_verification", lambda **_k: _refused_with_output(_LONG_TAIL)
+    )
+    calls = _spy_fix_turn(monkeypatch)
+    fs = loop.FakeFs()
+
+    loop._finalize(fs, loop.FakeVcs(), repo_root, worktree)
+
+    assert calls == ["binary_present", "dispatch_verify_fix"]
+
+
+def test_fix_turn_intent_is_journaled_before_the_harness_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = loop._repo(tmp_path)
+    _seed_flag(repo_root, on=True)
+    worktree = loop._worktree(repo_root)
+    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
+    order: list[str] = []
+
+    def _launch(*_a, **_k):
+        order.append("launch")
+        raise supervisor_main.BuildHarnessError("stop after intent ordering check")
+
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "binary_present", lambda *_a, **_k: _NoProfile())
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", _launch)
+
+    real_append = supervisor_main._append_entry
+
+    def _append(fs, run_dir, entry, **kwargs):
+        from pyforge.marshal.core.journal import Phase
+
+        if entry.kind == dispatch_core.KIND_DISPATCH_VERIFY_FIX and entry.phase is Phase.INTENT:
+            order.append("intent")
+        return real_append(fs, run_dir, entry, **kwargs)
+
+    monkeypatch.setattr(supervisor_main, "_append_entry", _append)
+    monkeypatch.setattr(
+        supervisor_main, "evaluate_dispatch_verification", lambda **_k: _refused_with_output(_SHORT_TAIL)
+    )
+    fs = loop.FakeFs()
+
+    loop._finalize(fs, loop.FakeVcs(), repo_root, worktree)
+
+    assert order.index("intent") < order.index("launch")
+
+
+def test_fix_turn_green_reverify_sets_finalize_verified(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+
+    repo_root = loop._repo(tmp_path)
+    _seed_flag(repo_root, on=True)
+    worktree = loop._worktree(repo_root)
+    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
+    branch = dispatch_core.dispatch_worktree_branch(loop._SLUG, loop._STORY_KEY)
+    vcs = loop.FakeVcs(dirty=True, changed_vs_head=("fix.py",), branches=frozenset({branch}), head_sha=loop._MOVED)
+    verify_pass = {"n": 0}
+
+    def _evaluate(**_kwargs):
+        verify_pass["n"] += 1
+        if verify_pass["n"] == 1:
+            return _refused_with_output(_SHORT_TAIL)
+        return loop._clean_envelope()
+
+    monkeypatch.setattr(supervisor_main, "evaluate_dispatch_verification", _evaluate)
+
+    class _Launch:
+        pid = 88001
+
+    monkeypatch.setattr(
+        supervisor_main.BmadBuildHarness,
+        "binary_present",
+        lambda *_a, **_k: _NoProfile(),
+    )
+    monkeypatch.setattr(
+        supervisor_main.BmadBuildHarness,
+        "dispatch_verify_fix",
+        lambda *_a, **_k: _Launch(),
+    )
+    monkeypatch.setattr(
+        supervisor_main,
+        "wait_for_process",
+        lambda *_a, **_k: ProcessWaitResult(exited=True, returncode=0),
+    )
+    fs = loop.FakeFs()
+
+    _counter, ok = loop._finalize(fs, vcs, repo_root, worktree)
+
+    assert ok is True
+    finalize_outcomes = [
+        json.loads(line)["payload"]
+        for _path, line, _fsync in fs.appended
+        if json.loads(line).get("kind") == dispatch_core.KIND_DISPATCH_FINALIZE
+        and json.loads(line).get("phase") == "outcome"
+    ]
+    assert finalize_outcomes[-1]["verified"] is True
+    assert vcs.commits, "fix-turn WIP must be committed before re-verify"
+
+
+def test_reverify_still_refused_emits_mrs_disp_060(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
+    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+
+    repo_root = loop._repo(tmp_path)
+    _seed_flag(repo_root, on=True)
+    worktree = loop._worktree(repo_root)
+    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
+    branch = dispatch_core.dispatch_worktree_branch(loop._SLUG, loop._STORY_KEY)
+    vcs = loop.FakeVcs(dirty=True, changed_vs_head=("fix.py",), branches=frozenset({branch}), head_sha=loop._MOVED)
+    monkeypatch.setattr(
+        supervisor_main, "evaluate_dispatch_verification", lambda **_k: _refused_with_output(_SHORT_TAIL)
+    )
+    monkeypatch.setattr(
+        supervisor_main.BmadBuildHarness,
+        "binary_present",
+        lambda *_a, **_k: _NoProfile(),
+    )
+    monkeypatch.setattr(
+        supervisor_main.BmadBuildHarness,
+        "dispatch_verify_fix",
+        lambda *_a, **_k: type("L", (), {"pid": 88002})(),
+    )
+    monkeypatch.setattr(
+        supervisor_main,
+        "wait_for_process",
+        lambda *_a, **_k: ProcessWaitResult(exited=True, returncode=0),
+    )
+    fs = loop.FakeFs()
+
+    loop._finalize(fs, vcs, repo_root, worktree)
+
+    observations = [
+        entry
+        for entry in _verify_fix_entries(fs)
+        if entry.get("phase") == "observation" and entry.get("payload", {}).get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+    ]
+    assert observations
+    assert observations[-1]["payload"]["failed_command"] == _COMMAND
+
+
+def test_without_sidecar_resolver_the_long_tail_fix_turn_never_launches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root = loop._repo(tmp_path)
+    _seed_flag(repo_root, on=True)
+    worktree = loop._worktree(repo_root)
+    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
+    monkeypatch.setattr(
+        supervisor_main, "evaluate_dispatch_verification", lambda **_k: _refused_with_output(_LONG_TAIL)
+    )
+    calls = _spy_fix_turn(monkeypatch)
+
+    monkeypatch.setattr(
+        supervisor_main,
+        "resolve_verify_failed_commands_from_payload",
+        lambda *_a, **_k: (),
+    )
+    fs = loop.FakeFs()
+
+    loop._finalize(fs, loop.FakeVcs(), repo_root, worktree)
+
+    assert calls == []

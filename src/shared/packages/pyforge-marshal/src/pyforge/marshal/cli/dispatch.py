@@ -1543,16 +1543,16 @@ def resolve_dispatch_session_verdict(
             if pending_fix is not None:
                 fix_pid = pending_fix.payload.get("session_pid")
                 if not isinstance(fix_pid, int):
-                    for fix_entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX):
-                        if (
-                            fix_entry.run_id == run_dir.name
-                            and fix_entry.intent_id == pending_fix.id
-                            and fix_entry.phase is Phase.OBSERVATION
-                        ):
-                            obs_pid = fix_entry.payload.get("session_pid")
-                            if isinstance(obs_pid, int):
-                                fix_pid = obs_pid
-                                break
+                    intent_token = str(pending_fix.id)
+                    for fix_entry in reversed(folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX)):
+                        if fix_entry.run_id != run_dir.name or fix_entry.phase is not Phase.OBSERVATION:
+                            continue
+                        if fix_entry.payload.get("fix_intent_id") not in (None, intent_token):
+                            continue
+                        obs_pid = fix_entry.payload.get("session_pid")
+                        if isinstance(obs_pid, int):
+                            fix_pid = obs_pid
+                            break
                 if isinstance(fix_pid, int) and process.is_alive(fix_pid):
                     return DispatchSessionVerdict.LIVE
     session_alive = _is_dispatch_session_alive(process, journal)

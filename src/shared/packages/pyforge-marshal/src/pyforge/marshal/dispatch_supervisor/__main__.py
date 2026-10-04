@@ -1015,10 +1015,11 @@ def _maybe_run_verify_fix_turn(
         raw_pid = intent_entry.payload.get("session_pid")
         if isinstance(raw_pid, int):
             return raw_pid
-        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX):
-            if entry.run_id != run_id or entry.intent_id != intent_entry.id:
+        intent_token = str(intent_entry.id)
+        for entry in reversed(folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX)):
+            if entry.run_id != run_id or entry.phase is not Phase.OBSERVATION:
                 continue
-            if entry.phase is not Phase.OBSERVATION:
+            if entry.payload.get("fix_intent_id") not in (None, intent_token):
                 continue
             obs_pid = entry.payload.get("session_pid")
             if isinstance(obs_pid, int):
@@ -1150,8 +1151,11 @@ def _maybe_run_verify_fix_turn(
             run_id=run_id,
             kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
             phase=Phase.OBSERVATION,
-            intent_id=intent_entry.id,
-            payload={"session_pid": fix_pid, "ok": True},
+            payload={
+                "session_pid": fix_pid,
+                "ok": True,
+                "fix_intent_id": str(intent_entry.id),
+            },
         )
         counter += 1
         try:
@@ -1271,12 +1275,12 @@ def _maybe_run_verify_fix_turn(
             run_id=run_id,
             kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
             phase=Phase.OBSERVATION,
-            intent_id=intent_entry.id,
             payload={
                 "ok": False,
                 "code": FIX_TURN_REVERIFY_REFUSED_CODE,
                 "failed_command": failed_command,
                 "finding": finding.to_json_dict(),
+                "fix_intent_id": str(intent_entry.id),
             },
         )
         counter += 1
