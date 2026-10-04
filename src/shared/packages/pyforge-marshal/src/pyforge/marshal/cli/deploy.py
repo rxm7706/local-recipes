@@ -593,6 +593,14 @@ def add_deploy_subparser(subparsers: argparse._SubParsersAction) -> None:
     reconcile_completions_parser.set_defaults(handler=run_reconcile_completions)
 
 
+def _resolved(path: Path) -> Path:
+    """``path`` with symlinks resolved, or as given when it cannot be resolved (a missing dir resolves to itself)."""
+    try:
+        return path.resolve()
+    except OSError:
+        return path
+
+
 def _discover_candidates(fs: FsPort, tier3_dir: Path) -> tuple[SpecCandidate, ...]:
     """Every ``spec-*.md`` file directly under ``tier3_dir`` (the Tier-3
     "run scratch" AD-12 names), parsed into a ``SpecCandidate`` per file.
@@ -784,7 +792,10 @@ def _scan_promotions(
     candidates = _discover_candidates(fs, tier3_dir)
     if worktree is not None:
         worktree_tier3_dir = worktree / "_bmad-output" / "projects" / project_slug / "implementation-artifacts"
-        candidates = candidates + _discover_candidates(fs, worktree_tier3_dir)
+        # A worktree's Tier-3 dir is usually a symlink back to the primary's (AGENTS.md): reading it again would
+        # list every candidate twice, and report each orphan twice (Story 83.20 landing review LOW-2).
+        if _resolved(worktree_tier3_dir) != _resolved(tier3_dir):
+            candidates = candidates + _discover_candidates(fs, worktree_tier3_dir)
     already_promoted = _already_promoted_keys(fs, vcs, root, specs_dir, candidates)
 
     # Push route: best-effort, never a hard failure (AD-29/F-14) -- a

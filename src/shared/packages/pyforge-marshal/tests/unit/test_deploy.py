@@ -4566,6 +4566,24 @@ def test_scan_promotions_worktree_copy_wins_on_key_collision(tmp_path, monkeypat
     assert promoted["1.2"].text == worktree_text
 
 
+def test_scan_promotions_worktree_tier3_symlinked_to_the_primary_is_read_once(tmp_path, monkeypatch):
+    """Story 83.20 landing review LOW-2: a worktree whose Tier-3 dir links back to the primary's (the documented
+    pattern) is the same directory, so each candidate -- and each orphan finding -- appears once, not twice."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC, ledger_row=False)
+    worktree = tmp_path / "wt"
+    link = worktree / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts")
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
+
+    scan = deploy_module._scan_promotions(tmp_path, "acme", vcs=vcs, fs=LocalFs(), worktree=worktree)
+
+    orphans = [finding for finding in scan.findings if finding.code == "MRS-DEPLOY-028"]
+    assert len(orphans) == 1
+    assert scan.plan is not None and scan.plan.to_promote == ()
+
+
 def test_scan_promotions_worktree_with_no_twin_is_silent(tmp_path, monkeypatch):
     """A worktree given but whose Tier-3 dir has no matching file (or
     doesn't even exist) behaves exactly as ``worktree=None`` would -- no
