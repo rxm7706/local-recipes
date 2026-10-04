@@ -2,7 +2,7 @@
 title: "83.18: A re-dispatched send-back waits for its landing review"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 baseline_revision: '65af7632c15f5a9d087e2a588214820f34b45279'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -67,4 +67,35 @@ Minted 2026-10-03 at the operator's request ("yes chain both fixes").
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — intent-alignment and AC spot-check against diff; all acceptance criteria covered by new unit tests)
+
+## Auto Run Result
+
+**Summary:** Dispatch can hold landing after green verification when the worktree spec declares `landing_review: required` or the operator passes `--hold-landing`: verify, push, open/update the PR as a draft, journal `dispatch-land` with verdict `held-for-review` and `ok: true`, and report held-for-review in status/fleet without treating the outcome as a refused landing (Story 83.4 unchanged for held). Re-dispatch after `landing_review: passed` or a ready (non-draft) PR takes the existing land-only path and merges.
+
+**Files changed:**
+
+- `core/dispatch_landing.py` — `HELD_FOR_REVIEW` verdict and helper
+- `core/dispatch_harness_done.py` — `landing_review` frontmatter, hold resolution, land-only after hold
+- `dispatch_land.py` — hold branch before merge, draft PR via forge
+- `cli/dispatch.py` — `--hold-landing`, intent payload, journal and land-only wiring
+- `dispatch_supervisor/__main__.py` — propagate hold flag; journal `ok` for held
+- `ports/forge.py`, `adapters/forge_gh.py` — draft create/edit, `is_draft` on `PrInfo`
+- `core/status.py`, `scripts/fleet_picture.py` — held-for-review reporting
+- Unit tests in `test_dispatch_landing.py`, `test_dispatch_harness_done.py`, `test_dispatch.py`, `test_dispatch_station_guard.py`, `test_status.py`
+
+**Review:** No patch/defer/intent_gap items this pass.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+
+- `pyforge-marshal-test`: 11565 passed, 6 skipped
+- `pyforge-deps-test`: 130 passed, 3 skipped
+- `lint-types`: exit 0
+- `python scripts/spec_surface_reconcile.py`: exit 0 after memlog reconcile on `spec-pyforge-marshal`
+
+**Surface reconcile (memlog, no baseline stamp):** `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — event 2026-10-04 naming all governed paths above; no co-governor.
