@@ -1142,17 +1142,17 @@ cmd = "bash scripts/ensure-bmad-preflight.sh"
 description = "Pluggable estate sprint ledger query CLI duty (Story 65.1, spec-pyforge-steward CAP-146..149). Reads each station's TRACKED planning-artifacts/sprint-status-ledger.yaml + epics.md; counts agree with fleet_scan.parse_sprint_status. --format: markdown (default), summary, json, table; flag-gated: sync-matrix/jira-csv/github-json (enable_jira_github_matrix), herald-facts (enable_herald_facts), atlas-dataset (enable_vizro_dataset), static-dossier (enable_dossier_export) -- open one with `-- --flag <name>=true`, FLAGS_<NAME>=true, or .steward/flags.json. stdout carries the payload only; `--output PATH` writes it to that file instead (stdout empty). Writes into no other station's tree by default."
 cmd = "steward ledger-query"
 
-[feature.local-recipes.tasks.tea-playwright-all]
-description = "Story 19.1 / FR-129: regenerate every station's planning-artifacts/test-architecture.md from epics + live test inventory. TBD in output is a hard fail. Idempotent on an unchanged tree."
-cmd = "python _bmad/scripts/bmad_tea_playwright.py --all"
-
-[feature.local-recipes.tasks.tea-playwright-check]
-description = "Story 19.4 / CAP-5: fail if any epic story id is absent from a station's on-disk Story Coverage Matrix (or the doc/matrix is missing). Does not write; cure with tea-playwright-all."
-cmd = "python _bmad/scripts/bmad_tea_playwright.py --all --check"
-
 [feature.local-recipes.tasks.tea-test-review]
 description = "Story 46.3 (spec-bmad-suite-lifecycle CAP-4 half): headless run of TEA's bmad-testarch-test-review skill (steward provision --module tea) against the PR's changed test files -- a Marshal review-lens / Warden-advisory precursor, never this task itself. Default: --base refs/remotes/origin/main --min-score 80 (the full refname: TEA diffs <base>...HEAD, and a short origin/main resolves to a local branch or tag of that name first -- steward Story 70.1). Override or add flags after `--`, e.g. `pixi run -e local-recipes tea-test-review -- --min-score 90`. Not a gate: never joins detectors/detectors-ci -- Warden's own PR-gate exit code is unaffected by this task's existence."
 cmd = "tea-test-review --base refs/remotes/origin/main --min-score 80"
+
+[feature.guild-tasks.tasks.tea-playwright-all]
+description = "Story 19.1 / FR-129 (Story 86.6: pyforge-guild home): regenerate every station's planning-artifacts/test-architecture.md from epics + live test inventory. TBD in output is a hard fail. Idempotent on an unchanged tree."
+cmd = "python _bmad/scripts/bmad_tea_playwright.py --all"
+
+[feature.guild-tasks.tasks.tea-playwright-check]
+description = "Story 19.4 / CAP-5 (Story 86.6: repo-scope detector): fail if any epic story id is absent from a station's on-disk Story Coverage Matrix (or the doc/matrix is missing). Does not write; cure with tea-playwright-all. scope=repo; discovered by scripts/detectors.py and run in detectors-ci."
+cmd = "python scripts/tea_playwright_check.py"
 
 [feature.guild-tasks.tasks.bmad-drift-check]
 description = "Detector: report drift between the _bmad-output/pyforge-marshal factory-doc artifacts and the live factory (pins, counts, coverage completeness, baseline, stale rules). Exits non-zero on drift. Ported into pyforge-doctor (Story 6.9); --fix/--write-baseline are mutation, outside Doctor's read-only-gather scope, so they were not ported -- run them via `python scripts/bmad_drift_check.py` instead. See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md."

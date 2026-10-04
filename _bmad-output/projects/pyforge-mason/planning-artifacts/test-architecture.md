@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 44291bfab689964e
-story_count: 61
-test_file_count: 39
+source_fingerprint: cb4edc1b9fc1faf1
+story_count: 93
+test_file_count: 41
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 61
-- **Epics parsed:** 14
-- **Test files inventoried:** 39 under `src/shared/packages/pyforge-mason/tests/`
+- **Stories parsed:** 93
+- **Epics parsed:** 27
+- **Test files inventoried:** 41 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `44291bfab689964e`
+- **Source fingerprint:** `cb4edc1b9fc1faf1`
 
 ## Risk Assessment
 
@@ -47,6 +47,19 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 12: The CFE rebuild continues — gate closure and slice 2
 - Epic 13: Two feedstock pins admit Python 3.14 (steward 43.5 hybrid decision)
 - Epic 14: The eval-quality Windows variant (spec-bmad-suite-lifecycle CAP-7 relay)
+- Epic 15: Close the CFE rebuild campaign at slices 1–2
+- Epic 16: Turn on what is built — mason's realization-gate and coverage residue
+- Epic 17: The recipes/ fleet is stewarded (spec-fleet-stewardship fs:CAP-1..3)
+- Epic 18: The recipe CI picks changed recipes from the remote-tracking ref (spec-pyforge-mason CAP-28)
+- Epic 19: Mason has its own skills, and conda-forge-expert is one of them (spec-pyforge-mason CAP-29)
+- Epic 20: No station or environment caps pixi (spec-pyforge-mason CAP-30)
+- Epic 21: Mason packages the intake toolchain (spec-pyforge-mason CAP-31)
+- Epic 22: Twelve recipes lose conda-recipe-manager's leaked sentinel key, and CFE's validation refuses the next one (spec-pyforge-mason CAP-32)
+- Epic 23: CFE's generator asks instead of guessing, a mismatched copyleft licence is refused, and a negative corpus keeps each check honest (spec-pyforge-mason CAP-33)
+- Epic 24: The CFE host-gate tests give the same verdict in any developer shell (spec-pyforge-mason CAP-34)
+- Epic 25: The feedstock refresh campaign is Mason's: every feedstock rxm7706 can modify has a local recipe at its published version (spec-pyforge-mason CAP-35)
+- Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
+- Epic 27: Phase 4+5 of the deferral burn-down: mason's open medium and low deferrals
 
 ### Low-risk epics
 
@@ -61,6 +74,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-mason/tests/integration/test_package_ship.py` | integration | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_adapter_sole_caller.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_capability_tiers.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_cfe_import_floor_env_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_cfe_independence.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_credential_isolation.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_dependency_direction.py` | meta | none observed |
@@ -88,6 +102,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-mason/tests/unit/test_environment.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_errors.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_exit_codes.py` | unit | none observed |
+| `src/shared/packages/pyforge-mason/tests/unit/test_factory_island.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_fake_cfe_root_fixture.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_models.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_package.py` | unit | none observed |
@@ -161,6 +176,38 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 13.1 | langflow-base onnxruntime pin admits Python 3.14 | none observed |
 | 13.2 | dbgpt-client sqlalchemy cap admits Python 3.14 | none observed |
 | 14.1 | `bmad-eval-quality` builds a `__win` variant | none observed |
+| 15.1 | Close the CFE rebuild campaign — cut callers over to slices 1–2 or retire the... | none observed |
+| 15.2 | Rule-2 retro for Story 13.2 lands in the CFE skill | none observed |
+| 16.1 | Mason's own env satisfies the CFE import floor | none observed |
+| 16.2 | A first estate caller of `mason recipe` | none observed |
+| 16.3 | Mason's MCP tool surface passes the CLI⇄tool parity gate | none observed |
+| 16.4 | The Containerfile convention guard derives its file list | none observed |
+| 17.1 | The local mirror is the source of truth | none observed |
+| 17.2 | Every local recipe carries its internal metadata, stripped on push | none observed |
+| 17.3 | The recurring campaigns have a home and a record | none observed |
+| 18.1 | The recipe CI picks changed recipes from the remote-tracking ref | none observed |
+| 19.1 | Mason's station skill is SKF-compiled, exported and consulted by the persona | none observed |
+| 19.2 | The package craft skill teaches mason package build and ship | none observed |
+| 19.3 | The environment craft skill teaches mason environment lock and check | none observed |
+| 19.4 | The two feedstock campaigns become Mason skills | none observed |
+| 19.5 | The closing Rule-2 retro teaches conda-forge-expert it is one of Mason's skills | none observed |
+| 20.1 | Mason's pixi run-dependency is a floor, and a guard reds any pixi ceiling | none observed |
+| 21.1 | git-pkgs builds green from source as a local recipe | none observed |
+| 21.2 | forge builds green from source as a local recipe | none observed |
+| 21.3 | gitgres builds green against PostgreSQL 17 from a pinned commit | none observed |
+| 21.4 | opengrep is repackaged from its release binaries as a local-only recipe | none observed |
+| 21.5 | pptxgenjs-plus-jsx builds green beside its pptxgenjs-plus sibling | none observed |
+| 22.1 | The twelve recipes carrying conda-recipe-manager's sentinel key are repaired | none observed |
+| 22.2 | CFE's validation reds a recipe with a non-string key or a Python object repr | none observed |
+| 23.1 | CFE refuses a copyleft -only licence whose LICENSE grants any later version | none observed |
+| 23.2 | CFE's recipe generator asks instead of guessing | none observed |
+| 23.3 | A negative corpus proves each CFE check keeps rejecting its defect | none observed |
+| 24.1 | CFE's host-gate tests pass in any developer shell | none observed |
+| 25.1 | Track A's Wave H refreshes the sole-maintainer recipes the first waves missed | none observed |
+| 25.2 | Track B refreshes the co-maintained recipes and keeps every other maintainer'... | none observed |
+| 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
+| 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |
+| 27.2 | CFE, its failure catalog and the closed rebuild campaign's records close thei... | none observed |
 
 ## Quality Gates
 
