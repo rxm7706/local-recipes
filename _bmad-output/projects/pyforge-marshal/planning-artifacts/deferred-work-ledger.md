@@ -3432,7 +3432,7 @@ status: open
   status: closed
   severity: medium
   resolution: 2026-10-04 (marshal Story 86.3) `_journal_fleet_cycle` uses `cli/deploy.py::_deploy_writer_id("fleet-drain")`.
-  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py `_journal_fleet_cycle`; test `test_two_fleet_drain_cycles_in_one_campaign_mint_distinct_writer_ids`.
+  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:5482-5484 `_journal_fleet_cycle` calls `cli/deploy.py::_deploy_writer_id("fleet-drain")`; pinned by src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_fleet.py:3584 `test_two_fleet_drain_cycles_in_one_campaign_mint_distinct_writer_ids`.
 
 ### DW-FU-3-3-2: `marshal factory spin` has no guard against launching a SECOND detached `bmad-loop run` for a project that already has one live -- nothing in `run_spin`'s precondition gates (nor any `MRS-SPIN-*` code) checks for an already-active run before minting a new run id and spawning another.
 
@@ -3550,7 +3550,7 @@ status: open
   severity: low
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
   resolution: 2026-10-04 (marshal Story 86.3) launch intents for spin and dispatch now carry `marshal_version` and `harness_version` (FR-57 launch-intent half).
-  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py `_launch_version_journal_fields`; src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py `_dispatch_launch_version_journal_fields` and dispatch-launch intent payload; tests `test_spin_launch_intent_carries_marshal_and_harness_versions`, `test_dispatch_launch_intent_carries_marshal_and_harness_versions`.
+  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py:646 `_launch_version_journal_fields`; src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:5456 `_dispatch_launch_version_journal_fields` and dispatch-launch intent payload; pinned by src/shared/packages/pyforge-marshal/tests/unit/test_spin.py:3915 `test_spin_launch_intent_carries_marshal_and_harness_versions`, src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py:2346 `test_dispatch_launch_intent_carries_marshal_and_harness_versions`.
   verified: 2026-10-01 — NEEDS-DECISION — cli/spin.py and core/journal.py -- no `marshal_version`/`harness_version` anywhere (grep empty); cli/spin.py's outcome payload is exactly `{pid, harness_run_id[, error]}`, deliberately unchanged per a prior review pass's own stated reasoning. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Where should marshal_version/harness_version live to satisfy FR-57's 'both versions appear in the journal for every run' -- every outcome payload, a once-per-run header entry, or the run directory name -- given the outcome payload's fields were deliberately pinned exactly as {pid, harness_run_id} in a prior review pass?
 
@@ -3582,7 +3582,7 @@ status: open
   severity: low
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
   resolution: 2026-10-04 (marshal Story 86.3) best-effort `fs.remove_empty_dir(run_dir)` on failed launch-intent append; still MRS-SPIN-003.
-  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py intent-append `except FsError` path; test `test_spin_failed_launch_intent_append_removes_the_run_directory`.
+  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py:1962 `fs.remove_empty_dir(run_dir)` on intent-append `except FsError`; pinned by src/shared/packages/pyforge-marshal/tests/unit/test_spin.py:3899 `test_spin_failed_launch_intent_append_removes_the_run_directory`.
   verified: 2026-10-01 — NEEDS-DECISION — cli/spin.py -- no `remove_empty_dir` call anywhere (grep empty); a failed intent-journal write still leaves the freshly-created run directory behind in the canonical Tier-3 store. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: On an intent-write failure in run_spin, should the just-created (now-empty) run directory be removed, left as evidence a launch was attempted (AD-6's own write-before-act ordering), or should fold() instead learn to report an entry-less run distinctly from a corrupted one?
 
@@ -3723,7 +3723,7 @@ status: open
   severity: medium
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/fs_local.py
   resolution: 2026-10-04 (marshal Story 86.3) `LocalFs.read_text` opens O_RDONLY|O_NONBLOCK and refuses non-regular files with FsError.
-  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/fs_local.py `LocalFs.read_text`; test `test_read_text_refuses_a_fifo`.
+  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/fs_local.py:130-140 `LocalFs.read_text` (O_NONBLOCK, `S_ISREG`); pinned by src/shared/packages/pyforge-marshal/tests/unit/test_fs_local.py:58 `test_read_text_refuses_a_fifo`.
   verified: 2026-10-01 — NEEDS-DECISION — supervisor/__main__.py -- no `S_ISREG`/regular-file check anywhere; adapters/fs_local.py's `read_text` (:120) has no timeout parameter or mechanism. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should FsPort gain a regular-file check (a new method, or an os.stat bypass of the existing read seam) or a read timeout, to guard the supervisor's journal and sidecar-blob reads against a FIFO or other blocking special file at either path?
 
@@ -3741,7 +3741,7 @@ status: open
   severity: medium
   location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py
   resolution: 2026-10-04 (marshal Story 86.3) `_compose_spin_policy` returns read failures; callers surface them as WARN MRS-SPIN-008.
-  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py `_compose_spin_policy`, `_warn_spin_policy_compose_findings`; test `test_spin_surfaces_unreadable_project_policy_under_mrs_spin_008`.
+  verified: 2026-10-04 — RESOLVED — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/spin.py:675 `_compose_spin_policy`, :656 `_warn_spin_policy_compose_findings`; pinned by src/shared/packages/pyforge-marshal/tests/unit/test_spin.py:3931 `test_spin_surfaces_unreadable_project_policy_under_mrs_spin_008`.
   verified: 2026-10-01 — NEEDS-DECISION — cli/spin.py:399 `except Exception: # noqa: BLE001` around the project-policy read, falling back to project_policy_data = {} with no Finding appended -- contrast run_config's identical read, which appends exc.finding (MRS-POLICY-004). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   decision: Should a failed project-policy read for idle_threshold_minutes surface a WARN finding (like `marshal config`'s MRS-POLICY-004), or is silently falling back to the default acceptable since it's a non-blocking, soft-ladder value?
 
