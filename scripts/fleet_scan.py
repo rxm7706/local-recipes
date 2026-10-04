@@ -1351,8 +1351,12 @@ def _task_cmd(task: str) -> list[str] | None:
     for feat in cfg.get("feature", {}).values():
         spec = (feat.get("tasks") or {}).get(task)
         cmd = spec.get("cmd") if isinstance(spec, dict) else spec
-        if isinstance(cmd, str) and cmd.split() and cmd.split()[0] == "python":
-            return [sys.executable, *cmd.split()[1:]]
+        if isinstance(cmd, str):
+            parts = cmd.split()
+            if parts and parts[0] == "python":
+                if len(parts) >= 3 and parts[1] == "-m" and parts[2].startswith("pyforge."):
+                    return None
+                return [sys.executable, *parts[1:]]
     return None
 
 
@@ -1374,10 +1378,19 @@ def _run_detector(task: str):
         if not cmd:
             continue
         try:
-            return subprocess.run(cmd, capture_output=True, text=True,
-                                  cwd=REPO_ROOT, timeout=120)
-        except Exception:                      # interpreter/pixi absent, timeout, anything
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                cwd=REPO_ROOT,
+                timeout=120,
+            )
+        except Exception:  # interpreter/pixi absent, timeout, anything
             continue
+        combined = result.stdout + result.stderr
+        if result.returncode != 0 and ("Traceback (most recent call last)" in combined or "ModuleNotFoundError" in combined):
+            continue
+        return result
     return None
 
 
