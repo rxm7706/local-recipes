@@ -52,29 +52,37 @@ _SCOPE_BASE = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a sho
 _SHELL_METACHARACTERS = frozenset("&|<>;()")
 _COMMIT_LOG_FIELD_SEP = "\x1f"
 _COMMIT_LOG_RECORD_SEP = "\x1e"
-_COMMIT_MSG_HOOK_CACHE: dict[Path, object] = {}
+_COMMIT_MSG_HOOK_CACHE: dict[tuple[Path, Path | None], object] = {}
 
 
-def _load_commit_msg_hook_module(worktree: Path) -> object | None:
+def _load_commit_msg_hook_module(worktree: Path, *, repo_root: Path | None = None) -> object | None:
     """Load ``scripts/commit_msg_hook.py`` from ``worktree`` (Story 83.17).
 
     Reuses the hook module's ``offending_lines`` so dispatch verification and
     the ``commit-msg`` hook can never drift on what counts as attribution."""
-    cached = _COMMIT_MSG_HOOK_CACHE.get(worktree)
+    cache_key = (worktree, repo_root)
+    cached = _COMMIT_MSG_HOOK_CACHE.get(cache_key)
     if cached is not None:
         return cached
-    script = worktree / "scripts" / "commit_msg_hook.py"
-    if not script.is_file():
+    script: Path | None = None
+    for root in (worktree, repo_root):
+        if root is None:
+            continue
+        candidate = root / "scripts" / "commit_msg_hook.py"
+        if candidate.is_file():
+            script = candidate
+            break
+    if script is None:
         return None
     spec = importlib.util.spec_from_file_location(
-        f"_dispatch_verify_commit_msg_hook_{worktree}",
+        f"_dispatch_verify_commit_msg_hook_{script}",
         script,
     )
     if spec is None or spec.loader is None:
         return None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    _COMMIT_MSG_HOOK_CACHE[worktree] = module
+    _COMMIT_MSG_HOOK_CACHE[cache_key] = module
     return module
 
 
@@ -100,10 +108,11 @@ def check_branch_commit_attribution(
     *,
     worktree: Path,
     process: ProcessPort,
+    repo_root: Path | None = None,
     base: str = _SCOPE_BASE,
 ) -> tuple[tuple[Finding, ...], dict[str, object]]:
     """Story 83.17: refuse when any commit on ``base...HEAD`` carries attribution."""
-    hook = _load_commit_msg_hook_module(worktree)
+    hook = _load_commit_msg_hook_module(worktree, repo_root=repo_root)
     if hook is None:
         return (
             (
@@ -605,6 +614,7 @@ def evaluate_dispatch_verification(
     attribution_findings, attribution_report = check_branch_commit_attribution(
         worktree=worktree,
         process=process,
+        repo_root=repo_root,
         base=_SCOPE_BASE,
     )
     findings.extend(attribution_findings)

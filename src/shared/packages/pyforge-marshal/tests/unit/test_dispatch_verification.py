@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -14,10 +15,12 @@ from pyforge.marshal.core.dispatch_retry import (
     classify_dispatch_block,
 )
 from pyforge.marshal.core.dispatch_verification import (
+    COMMIT_ATTRIBUTION_GATE_CODE,
     PRE_EXISTING_GATE_CODE,
     DispatchVerificationInput,
     DispatchVerificationVerdict,
     extract_failure_paths_from_verify_output,
+    findings_for_commit_attribution_violations,
     gate_verdict_is_clean,
     judge_dispatch_verification,
     path_in_story_blast_radius,
@@ -31,11 +34,25 @@ from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.dispatch_verify import (
     PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
+    check_branch_commit_attribution,
     compose_dispatch_policy,
     coverage_gate_commands_for_changed_files,
     evaluate_dispatch_verification,
     run_pre_verification_deferred_work_intake,
 )
+
+_REPO_ROOT = next(
+    parent
+    for parent in Path(__file__).resolve().parents
+    if (parent / "scripts" / "commit_msg_hook.py").is_file()
+)
+
+
+def _fake_git_log_empty(tokens: list[str]) -> ProcessResult | None:
+    """Story 83.17: unit fakes are not git worktrees; an empty log is a clean branch."""
+    if tokens and tokens[0] == "git" and "log" in tokens:
+        return ProcessResult(returncode=0, stdout="", stderr="")
+    return None
 
 # Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal (not
 # imported from `dispatch_verify`) so deleting or renaming the derivation fails
@@ -257,6 +274,9 @@ def test_build_fleet_row_omits_landing_findings_key_when_empty() -> None:
 
 class FakeProcess:
     def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
         if tokens and tokens[0] == "false":
             return ProcessResult(returncode=1, stdout="", stderr="fail")
         return ProcessResult(returncode=0, stdout="ok", stderr="")
@@ -288,7 +308,7 @@ def test_evaluate_dispatch_verification_runs_gates_not_self_report(
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -326,7 +346,7 @@ def test_evaluate_dispatch_verification_appends_surface_guard_after_declared_com
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -343,6 +363,9 @@ class FakeProcessGuardFails:
     guard is a fixed ``python ...`` invocation, never a station's choice."""
 
     def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
         if tokens and tokens[0] == "python":
             return ProcessResult(returncode=1, stdout="", stderr="found drift")
         return ProcessResult(returncode=0, stdout="ok", stderr="")
@@ -367,7 +390,7 @@ def test_evaluate_dispatch_verification_surface_guard_failure_refuses(
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcessGuardFails(),
@@ -404,7 +427,7 @@ def test_evaluate_dispatch_verification_spec_binding_stays_clean_with_derived_gu
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=spec_text,
         process=FakeProcess(),
@@ -431,7 +454,7 @@ def test_evaluate_dispatch_verification_dedupes_an_already_declared_guard(
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -462,7 +485,7 @@ def test_evaluate_dispatch_verification_dedupes_a_guard_declared_with_different_
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -486,6 +509,9 @@ class FakeProcessLintFails:
         self._output = output
 
     def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
         if tokens and tokens[-1] == "lint-types":
             return ProcessResult(returncode=1, stdout=self._output, stderr="")
         return ProcessResult(returncode=0, stdout="ok", stderr="")
@@ -496,6 +522,9 @@ class FakeProcessCoreTestFails:
     core test failure from other commands."""
 
     def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
         if tokens and tokens[-1] == "pyforge-core-test":
             return ProcessResult(returncode=1, stdout="", stderr="core test failed")
         return ProcessResult(returncode=0, stdout="ok", stderr="")
@@ -506,6 +535,9 @@ class FakeProcessDeferredWorkFails:
     deferred work check failure from other commands."""
 
     def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
         if tokens and tokens[-1] == "deferred-work-check":
             return ProcessResult(returncode=1, stdout="", stderr="found uncited verified lines")
         return ProcessResult(returncode=0, stdout="ok", stderr="")
@@ -531,7 +563,7 @@ def _verify_with(
         project_slug=slug,
         story_key=normalize(_STORY_22_3),
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=spec_text,
         process=process,
@@ -825,6 +857,9 @@ class FakeProcessCoverageGateFails:
         self._stderr = stderr or ("src/shared/packages/pyforge-doctor/src/pyforge/doctor/unrelated.py below 80% floor")
 
     def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
         if tokens and tokens[-1].endswith("-coverage-gate"):
             return ProcessResult(returncode=1, stdout="", stderr=self._stderr)
         return ProcessResult(returncode=0, stdout="ok", stderr="")
@@ -893,6 +928,9 @@ class _IntakeScriptProcess:
         self._append_ledger = append_ledger
 
     def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
         joined = " ".join(tokens)
         if "deferred_work_intake.py" in joined:
             if self._append_ledger is not None:
@@ -986,7 +1024,7 @@ def test_evaluate_dispatch_verification_runs_pre_verification_intake_when_commit
         project_slug="pyforge-marshal",
         story_key=normalize("22-3-verification-is-the-product-no-landing-on-a-self-report"),
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -1012,7 +1050,7 @@ def test_evaluate_dispatch_verification_intake_refusal_refuses_verification(
         project_slug="pyforge-marshal",
         story_key=normalize("22-3-verification-is-the-product-no-landing-on-a-self-report"),
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=_IntakeScriptProcess(intake_exit=1),
@@ -1090,7 +1128,7 @@ def test_evaluate_dispatch_verification_unconfigured_epic_still_denies_outside_d
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -1125,7 +1163,7 @@ def test_evaluate_dispatch_verification_declared_entry_wins_over_auto_derived_de
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -1153,7 +1191,7 @@ def test_evaluate_dispatch_verification_no_declared_mode_defaults_to_warn_and_ve
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -1187,7 +1225,7 @@ def test_evaluate_dispatch_verification_off_mode_reports_zero_findings(
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -1222,7 +1260,7 @@ def test_evaluate_dispatch_verification_two_stations_apply_their_own_mode_indepe
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=hard_effective,
         spec_text=None,
         process=FakeProcess(),
@@ -1232,7 +1270,7 @@ def test_evaluate_dispatch_verification_two_stations_apply_their_own_mode_indepe
         project_slug="pyforge-atlas",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=warn_effective,
         spec_text=None,
         process=FakeProcess(),
@@ -1277,7 +1315,7 @@ def test_evaluate_dispatch_verification_threads_the_real_project_slug_into_the_r
         project_slug="acme",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=FakeProcess(),
@@ -1468,6 +1506,9 @@ def test_pre_existing_gate_is_terminal_for_dispatch_retry() -> None:
 
 class PackagingFailProcess:
     def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
         command = " ".join(tokens)
         if "pyforge-deps-test" in command:
             return ProcessResult(
@@ -1507,7 +1548,7 @@ def test_evaluate_dispatch_verification_pre_existing_packaging_gate_warns(
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=PackagingFailProcess(),
@@ -1537,7 +1578,7 @@ def test_evaluate_dispatch_verification_marshal_test_failure_still_refuses(
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=PackagingFailProcess(),
@@ -1561,6 +1602,9 @@ class CrossSurfaceProcess:
         self.platform_invocations = 0
 
     def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
         joined = " ".join(tokens)
         if "platform-ci-local" in joined:
             self.platform_invocations += 1
@@ -1597,7 +1641,7 @@ def test_evaluate_dispatch_verification_station_only_diff_skips_cross_surface(
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=process,
@@ -1626,7 +1670,7 @@ def test_evaluate_dispatch_verification_platform_diff_runs_cross_surface_pass(
         project_slug="pyforge-marshal",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=process,
@@ -1660,7 +1704,7 @@ def test_evaluate_dispatch_verification_49_14_fixture_bound_green_platform_red(
         project_slug="pyforge-steward",
         story_key=story_key,
         worktree=worktree,
-        repo_root=tmp_path,
+        repo_root=_REPO_ROOT,
         effective=effective,
         spec_text=None,
         process=process,
@@ -1694,7 +1738,7 @@ def test_evaluate_dispatch_verification_cross_station_same_cross_surface_bar(
             project_slug=slug,
             story_key=story_key,
             worktree=worktree,
-            repo_root=tmp_path,
+            repo_root=_REPO_ROOT,
             effective=effective,
             spec_text=None,
             process=process,
@@ -1702,3 +1746,138 @@ def test_evaluate_dispatch_verification_cross_station_same_cross_surface_bar(
         )
         assert envelope.data["cross_surface_check"]["command"] == (gate.shared_surface_verify_command())
         assert any(f.code == "MRS-GATE-015" for f in envelope.findings)
+
+
+# --- Story 83.17 (spec-83-17): commit-attribution gate -------------------------
+
+
+def test_findings_for_commit_attribution_violations_names_the_commit() -> None:
+    sha = "deadbeef0123456789abcdef0123456789abcdef"
+    findings = findings_for_commit_attribution_violations(
+        (
+            (
+                sha,
+                "Fix the widget",
+                ((2, "Co-Authored-By trailer", "Co-authored-by: Cursor <cursoragent@cursor.com>"),),
+            ),
+        )
+    )
+    assert len(findings) == 1
+    assert findings[0].code == COMMIT_ATTRIBUTION_GATE_CODE
+    assert "deadbeef" in findings[0].message
+    assert "Fix the widget" in findings[0].message
+    assert "Co-Authored-By trailer" in findings[0].message
+
+
+def test_findings_for_commit_attribution_violations_empty_when_clean() -> None:
+    assert findings_for_commit_attribution_violations(()) == ()
+
+
+def _init_story_worktree(tmp_path: Path) -> Path:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    subprocess.run(["git", "init"], cwd=worktree, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "a@example.com"], cwd=worktree, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=worktree, check=True)
+    return worktree
+
+
+def test_check_branch_commit_attribution_refuses_co_authored_commit(
+    tmp_path: Path,
+) -> None:
+    """Story 83.17 AC1: a branch commit carrying Co-authored-by is refused."""
+    from pyforge.core.process import PosixProcess
+    from pyforge.marshal.core.refs import ORIGIN_MAIN
+
+    worktree = _init_story_worktree(tmp_path)
+    subprocess.run(["git", "commit", "--allow-empty", "-m", "origin tip"], cwd=worktree, check=True, capture_output=True)
+    subprocess.run(["git", "update-ref", ORIGIN_MAIN, "HEAD"], cwd=worktree, check=True, capture_output=True)
+    (worktree / "f.txt").write_text("x\n", encoding="utf-8")
+    subprocess.run(["git", "add", "f.txt"], cwd=worktree, check=True)
+    subprocess.run(
+        [
+            "git",
+            "commit",
+            "-m",
+            "Fix the widget\n\nCo-authored-by: Cursor <cursoragent@cursor.com>",
+        ],
+        cwd=worktree,
+        check=True,
+        capture_output=True,
+    )
+    findings, report = check_branch_commit_attribution(
+        worktree=worktree,
+        process=PosixProcess(),
+        repo_root=_REPO_ROOT,
+        base=ORIGIN_MAIN,
+    )
+    assert report["checked"] is True
+    assert len(findings) == 1
+    assert findings[0].code == COMMIT_ATTRIBUTION_GATE_CODE
+
+
+def test_check_branch_commit_attribution_passes_clean_commit(tmp_path: Path) -> None:
+    from pyforge.core.process import PosixProcess
+    from pyforge.marshal.core.refs import ORIGIN_MAIN
+
+    worktree = _init_story_worktree(tmp_path)
+    subprocess.run(["git", "commit", "--allow-empty", "-m", "origin tip"], cwd=worktree, check=True, capture_output=True)
+    subprocess.run(["git", "update-ref", ORIGIN_MAIN, "HEAD"], cwd=worktree, check=True, capture_output=True)
+    (worktree / "f.txt").write_text("x\n", encoding="utf-8")
+    subprocess.run(["git", "add", "f.txt"], cwd=worktree, check=True)
+    subprocess.run(["git", "commit", "-m", "Fix the widget"], cwd=worktree, check=True, capture_output=True)
+    findings, report = check_branch_commit_attribution(
+        worktree=worktree,
+        process=PosixProcess(),
+        repo_root=_REPO_ROOT,
+        base=ORIGIN_MAIN,
+    )
+    assert report["checked"] is True
+    assert findings == ()
+
+
+def test_evaluate_dispatch_verification_commit_attribution_mutation_guard(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Story 83.17 AC3: removing the check lets a violating branch pass verify."""
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("83-17-dispatch-refuses-a-commit-that-carries-an-attribution-trailer")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+
+    def _skip(*_args, **_kwargs):
+        return ((), {"checked": False, "reason": "mutation: check removed"})
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_verify.check_branch_commit_attribution",
+        _skip,
+    )
+    envelope_without = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=_REPO_ROOT,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    assert envelope_without.data["commit_attribution_check"]["reason"] == "mutation: check removed"
+
+    monkeypatch.undo()
+    envelope_with = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=_REPO_ROOT,
+        effective=effective,
+        spec_text=None,
+        process=FakeProcess(),
+        vcs=FakeVcs(),
+    )
+    assert envelope_with.data["commit_attribution_check"]["checked"] is True
