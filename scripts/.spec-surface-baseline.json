@@ -6768,7 +6768,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/test_main_version.py": "d9d1b72d52e5e6c973bb9f738556c03959ff8db3",
    "src/shared/packages/pyforge-atlas/tests/unit/test_one_duckdb_writer.py": "7f439b1f474639e3dfbcc26b631c15fbc5f16179",
    "src/shared/packages/pyforge-atlas/tests/unit/test_pipeline_inventory.py": "4d20129d49fe7f1bbebef1d80cf48a3b858a1f44",
-   "src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_boot.py": "9ce1bd2230aeeb2be2f9b52cfdd7c196fd9f742c",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_boot.py": "9c5ca8491fc01c499bacbad8d1b14b709d69f5e0",
    "src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_parquet_cache.py": "5eca8ccc46f56cc554acff8be441af07221720c6",
    "src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_vectors.py": "6f19f51f80eee6dac81477cfb864876958ce7d3f",
    "src/shared/packages/pyforge-atlas/tests/unit/test_read_only_live_attach.py": "4f324c646c4a1ad95399608fd943eb2efbaf148d",
@@ -6898,7 +6898,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "b0e800b9ceef847bd68c884b1f403539977218e8"
   },
-  "memlog": "c5073569eec579f957f5396d277784beb4e3e78b"
+  "memlog": "7ee2f51f5709206966c51537b63a0cca1cd426c4"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
