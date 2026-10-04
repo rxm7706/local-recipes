@@ -61,10 +61,23 @@ deletion (AD-55's "the manifest is the product's actual contract").
 No pydantic, no runtime ``jsonschema`` validation path (no precedent for
 that pattern in this package; ``schemas/*.json`` is for cross-process
 wire contracts, not internal loading) -- this story's own Never bullet.
+
+Story 70.1 (CAP-279, AD-55 amended 2026-09-28) adds two things. The ONE
+``{{ slug }}`` path renderer, ``render_slug_paths``: AD-55 declares a manifest
+path templated on the project slug, ``seed init`` and ``seed check`` both
+judge the rendered path, and neither re-derives the substitution (P-03). It
+re-runs the one-owner rule on what it renders, since two entries whose raw
+paths differ can render to one. And the closed optional entry key
+``required_in`` (``RequiredIn``): where an entry is owed. Absent means every
+checked repository; ``loop-home`` means a loop home only -- ``.bmad-loop/
+policy.toml`` is rendered per loop home, and a primary checkout never holds
+one. The key is the manifest's; ``seed check`` resolves whether its target is
+a loop home at the CLI boundary.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import re
 from dataclasses import dataclass
 from enum import StrEnum
@@ -97,6 +110,21 @@ class AppliesTo(StrEnum):
     INIT = "init"
     ADOPT = "adopt"
     BOTH = "both"
+
+
+class RequiredIn(StrEnum):
+    """Where an entry is owed (Story 70.1, AD-55 amended 2026-09-28) -- the
+    optional ``required_in`` key. An entry without it is owed in every
+    checked repository; ``loop-home`` is owed in a loop home only (a worktree
+    checked out on ``loop/<slug>``), so ``seed check`` does not report it
+    missing from a target it knows is not one."""
+
+    LOOP_HOME = "loop-home"
+
+
+#: The one placeholder a manifest path may carry (AD-55): the project slug,
+#: substituted by ``render_slug_paths`` and nowhere else.
+SLUG_PLACEHOLDER = "{{ slug }}"
 
 
 class ManifestError(PyforgeError, Exception):
@@ -197,6 +225,7 @@ _ENTRY_KEYS = frozenset(
         "since",
         "until",
         "legacy_of",
+        "required_in",
     }
 )
 _REGION_KEYS = frozenset({"name", "anchor"})
@@ -335,6 +364,7 @@ class ManifestEntry:
     since: ModelVersion | None = None
     until: ModelVersion | None = None
     legacy_of: str | None = None
+    required_in: RequiredIn | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "id", _require_text("id", self.id))
@@ -356,6 +386,10 @@ class ManifestEntry:
             ),
         )
         object.__setattr__(self, "applies_to", AppliesTo(self.applies_to))
+        # Optional, closed like `applies_to`: an unknown value raises the enum's own ValueError, which
+        # `load_manifest` prefixes with this entry's id (Story 70.1).
+        if self.required_in is not None:
+            object.__setattr__(self, "required_in", RequiredIn(self.required_in))
         object.__setattr__(self, "rationale", _require_text("rationale", self.rationale))
 
         object.__setattr__(self, "regions", tuple(self.regions) if isinstance(self.regions, list) else self.regions)
@@ -434,6 +468,13 @@ class ManifestEntry:
         ``docs/dreams/*.md``) read, literally, as "recompute that subtree".
         ``model.artifact.describe`` reports the same contract."""
         return self.path.endswith("/")
+
+    @property
+    def is_slug_templated(self) -> bool:
+        """Whether this entry's ``path`` still carries the ``{{ slug }}``
+        placeholder (Story 70.1) -- a path no repository can hold until
+        ``render_slug_paths`` substitutes a project slug into it."""
+        return SLUG_PLACEHOLDER in self.path
 
 
 @dataclass(frozen=True)
@@ -567,6 +608,7 @@ def _build_entry(raw_entry: dict) -> ManifestEntry:
         since=_parse_bound("since", raw_entry.get("since")),
         until=_parse_bound("until", raw_entry.get("until")),
         legacy_of=raw_entry.get("legacy_of"),
+        required_in=raw_entry.get("required_in"),
     )
 
 
@@ -619,7 +661,7 @@ def load_manifest(path: Path) -> Manifest:
     missing or malformed top-level ``model_version``, a ``never_write``
     that is not a list of non-blank str, a non-list ``artifacts``, any
     entry-level shape violation (missing/wrong-type/blank required field,
-    an unrecognized ``class``, a ``hybrid-managed-region`` entry missing
+    an unrecognized ``class`` or ``required_in``, a ``hybrid-managed-region`` entry missing
     ``format``/``regions``, a ``referenced`` entry missing ``pin``, a
     ``pin``/``format``/``regions`` on a class that does not take one, a
     malformed region, duplicate region names within an entry, an
@@ -720,3 +762,34 @@ def load_manifest(path: Path) -> Manifest:
 
     filtered_entries = tuple(entry for entry in entries if in_range(model_version, entry.since, entry.until))
     return Manifest(model_version=model_version, never_write=never_write, entries=filtered_entries)
+
+
+def render_slug_paths(manifest: Manifest, slug: str) -> Manifest:
+    """``manifest`` with ``slug`` substituted for every ``{{ slug }}`` in an
+    entry's ``path`` (Story 70.1, AD-55) -- the one renderer ``seed init`` and
+    ``seed check`` share, so a templated entry is planned and judged at the
+    same path.
+
+    An entry whose path carries no placeholder is returned as the same
+    object; every other field of a rendered entry is unchanged.
+    ``dataclasses.replace`` re-runs ``ManifestEntry.__post_init__`` on the
+    rendered path, and the one-owner rule (``_refuse_shared_paths``) is re-run
+    on the rendered entries: two entries whose raw paths differ only in the
+    placeholder (``docs/{{ slug }}.md`` beside ``docs/demo.md``) render to one
+    path, which ``load_manifest``'s raw-path comparison never saw.
+
+    Raises ``ManifestError`` prefixed with the offending entry's id when the
+    slug renders a path the manifest refuses (absolute, a ``..``, ``.`` or
+    empty segment) or a second owner of one path. The slug is the caller's
+    input, so each verb reports that as a usage error in its own words."""
+    rendered: list[ManifestEntry] = []
+    for entry in manifest.entries:
+        if not entry.is_slug_templated:
+            rendered.append(entry)
+            continue
+        try:
+            rendered.append(dataclasses.replace(entry, path=entry.path.replace(SLUG_PLACEHOLDER, slug)))
+        except ValueError as exc:
+            raise ManifestError(f"{entry.id}: {exc}") from exc
+    _refuse_shared_paths(rendered)
+    return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=tuple(rendered))

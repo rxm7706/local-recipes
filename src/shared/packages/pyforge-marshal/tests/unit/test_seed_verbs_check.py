@@ -45,7 +45,9 @@ from pyforge.marshal.seed.model.manifest import (
     ArtifactClass,
     Manifest,
     ManifestEntry,
+    ManifestError,
     Region,
+    RequiredIn,
     load_manifest,
 )
 from pyforge.marshal.seed.model.version import ModelVersion
@@ -867,3 +869,187 @@ def test_check_report_is_a_plain_frozen_dataclass():
     )
     with pytest.raises(AttributeError):
         report.findings = (object(),)  # type: ignore[misc]
+
+
+# --- Story 70.1: the paths the manifest means, never its placeholders -------
+
+#: The five packaged `{{ slug }}` entries (`templates/manifest.yaml`), with
+#: their packaged ids, classes and paths -- built here rather than read from
+#: the packaged manifest so each scenario's shape is legible from the fixture.
+_TEMPLATED = (
+    ("starter-dream", ArtifactClass.COPIED_SEEDED, "docs/dreams/{{ slug }}.md"),
+    ("project-config", ArtifactClass.COPIED_SEEDED, "_bmad-output/projects/{{ slug }}/.bmad-config.toml"),
+    (
+        "specs-readme",
+        ArtifactClass.COPIED_SEEDED,
+        "_bmad-output/projects/{{ slug }}/planning-artifacts/specs/README.md",
+    ),
+    ("deck-scaffolding", ArtifactClass.COPIED_SEEDED, "presentations/{{ slug }}/"),
+    ("project-subtree", ArtifactClass.GENERATED_DERIVED, "_bmad-output/projects/{{ slug }}/"),
+)
+
+
+def _templated_entries() -> tuple[ManifestEntry, ...]:
+    return tuple(
+        ManifestEntry(id=entry_id, artifact_class=cls, path=path, applies_to=AppliesTo.BOTH, rationale="test")
+        for entry_id, cls, path in _TEMPLATED
+    )
+
+
+def _lay_out_demo_project(repo: Path, *, without: str | None = None) -> None:
+    """Every rendered path of the five templated entries for the slug
+    `demo`, except `without`."""
+    for _entry_id, _cls, path in _TEMPLATED:
+        rendered = path.replace("{{ slug }}", "demo")
+        if rendered == without:
+            continue
+        target = repo / rendered
+        if rendered.endswith("/"):
+            target.mkdir(parents=True, exist_ok=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(f"{rendered}\n", encoding="utf-8")
+
+
+def test_a_slug_judges_every_templated_entry_at_the_path_it_renders_to(clean_repo):
+    """AC: with the slug `demo` and every rendered path present, no finding's
+    path carries `{{` and none of the five templated entries is
+    `artifact-missing`. Removing the rendering from `run_check` reports
+    `docs/dreams/{{ slug }}.md` missing here (mutation)."""
+    _lay_out_demo_project(clean_repo)
+
+    report = run_check(clean_repo, _manifest(*_templated_entries()), slug="demo")
+
+    assert not [finding.path for finding in report.findings if "{{" in finding.path]
+    assert not [finding for finding in report.findings if finding.type is FindingType.ARTIFACT_MISSING]
+    assert not [finding for finding in report.findings if finding.type is FindingType.SLUG_UNRESOLVED]
+    assert report.failing is False
+
+
+def test_an_absent_rendered_path_is_hard_missing_at_that_path(clean_repo):
+    """AC: the same fixture without `docs/dreams/demo.md` -- a truly absent
+    rendered path stays HARD, named at the rendered path."""
+    _lay_out_demo_project(clean_repo, without="docs/dreams/demo.md")
+
+    report = run_check(clean_repo, _manifest(*_templated_entries()), slug="demo")
+
+    missing = [finding for finding in report.findings if finding.type is FindingType.ARTIFACT_MISSING]
+    assert [(finding.severity, finding.path) for finding in missing] == [(Severity.HARD, "docs/dreams/demo.md")]
+    assert report.failing is True
+
+
+@pytest.mark.parametrize("slug", [None, ""])
+def test_no_slug_leaves_each_templated_entry_unjudged_with_one_info_finding(clean_repo, monkeypatch, slug):
+    """AC: with no slug (`None`, or the empty string the CLI passes when
+    nothing resolves) each templated entry yields one INFO `slug-unresolved`
+    finding naming it, whose remedy names `--project`; none is classified or
+    planned at a literal placeholder path; `failing` is untouched by them."""
+    classified_paths: list[str] = []
+    real_classify = check_module.classify
+
+    def spy(manifest, repo_root):
+        classified_paths.extend(entry.path for entry in manifest.entries)
+        return real_classify(manifest, repo_root)
+
+    monkeypatch.setattr(check_module, "classify", spy)
+    manifest = _manifest(*_templated_entries(), _whole_file("whole", "WHOLE.md"))
+    (clean_repo / "WHOLE.md").write_text("hello\n", encoding="utf-8")
+
+    report = run_check(clean_repo, manifest, slug=slug)
+
+    unresolved = [finding for finding in report.findings if finding.type is FindingType.SLUG_UNRESOLVED]
+    assert [(finding.severity, finding.path) for finding in unresolved] == [
+        (Severity.INFO, path) for _entry_id, _cls, path in _TEMPLATED
+    ]
+    for finding, (entry_id, _cls, _path) in zip(unresolved, _TEMPLATED, strict=True):
+        assert repr(entry_id) in finding.message
+        assert "--project" in finding.remedy
+    assert classified_paths == ["WHOLE.md"]
+    assert not [finding for finding in report.findings if finding.type is FindingType.ARTIFACT_MISSING]
+    assert report.failing is False
+
+
+def test_a_slug_that_renders_two_owners_of_one_path_raises_manifest_error(clean_repo):
+    """Story 86.1's note: the one-owner rule is re-run on the rendered
+    manifest `check` judges, so two entries rendering to one path refuse --
+    `cli/seed.py` reports it as a usage error naming the slug."""
+    manifest = _manifest(
+        _whole_file("literal-doc", "docs/demo.md"),
+        ManifestEntry(
+            id="templated-doc",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            path="docs/{{ slug }}.md",
+            applies_to=AppliesTo.BOTH,
+            rationale="test",
+        ),
+    )
+
+    with pytest.raises(ManifestError, match=r"^templated-doc: path 'docs/demo.md' is also declared by 'literal-doc'"):
+        run_check(clean_repo, manifest, slug="demo")
+
+
+@pytest.mark.parametrize("mode", [None, "adopt", "init"])
+def test_an_unclassified_deferred_glob_with_no_literal_match_is_never_missing(clean_repo, mode):
+    """AC: `.claude/skills/**` names no literal file, so it classifies
+    `ABSENT` and `build_plan` plans it -- but the class has no contract, so it
+    is never `artifact-missing`, adopted or not."""
+    if mode is not None:
+        _write_state(clean_repo, _state(mode=mode))
+    manifest = _manifest(
+        ManifestEntry(
+            id="claude-skills",
+            artifact_class=ArtifactClass.UNCLASSIFIED_DEFERRED,
+            path=".claude/skills/**",
+            applies_to=AppliesTo.BOTH,
+            rationale="test",
+        ),
+        _whole_file("whole", "WHOLE.md"),
+    )
+
+    report = run_check(clean_repo, manifest)
+
+    missing = {finding.path for finding in report.findings if finding.type is FindingType.ARTIFACT_MISSING}
+    assert missing == {"WHOLE.md"}
+
+
+def _loop_policy_entry() -> ManifestEntry:
+    return ManifestEntry(
+        id="bmad-loop-policy",
+        artifact_class=ArtifactClass.GENERATED_DERIVED,
+        path=".bmad-loop/policy.toml",
+        applies_to=AppliesTo.BOTH,
+        rationale="test",
+        required_in=RequiredIn.LOOP_HOME,
+    )
+
+
+def test_a_loop_home_only_entry_is_not_owed_by_a_target_known_not_to_be_a_loop_home(clean_repo):
+    """AC (amended 2026-09-28): `in_loop_home=False` -- an absent
+    `required_in: loop-home` entry yields no finding. Removing the scope gate
+    reports `.bmad-loop/policy.toml` missing here (mutation)."""
+    report = run_check(clean_repo, _manifest(_loop_policy_entry()), in_loop_home=False)
+
+    assert not [finding for finding in report.findings if finding.path == ".bmad-loop/policy.toml"]
+    assert report.failing is False
+
+
+@pytest.mark.parametrize("in_loop_home", [True, None, "omitted"])
+def test_a_loop_home_or_an_unreadable_target_still_owes_a_loop_home_only_entry(clean_repo, in_loop_home):
+    """AC: in a loop home (`True`), or where the branch could not be read
+    (`None`, also the default), the absent entry is HARD `artifact-missing`
+    as before -- an unreadable target never passes on the scope."""
+    kwargs = {} if in_loop_home == "omitted" else {"in_loop_home": in_loop_home}
+
+    report = run_check(clean_repo, _manifest(_loop_policy_entry()), **kwargs)
+
+    missing = [finding for finding in report.findings if finding.type is FindingType.ARTIFACT_MISSING]
+    assert [(finding.severity, finding.path) for finding in missing] == [(Severity.HARD, ".bmad-loop/policy.toml")]
+    assert report.failing is True
+
+
+def test_the_loop_home_scope_never_hides_an_unscoped_entry(clean_repo):
+    """The scope is the entry's, never a test of the target: off a loop home
+    an entry with no `required_in` is still owed."""
+    report = run_check(clean_repo, _manifest(_whole_file("whole", "WHOLE.md")), in_loop_home=False)
+
+    assert [finding.path for finding in report.findings if finding.type is FindingType.ARTIFACT_MISSING] == ["WHOLE.md"]
