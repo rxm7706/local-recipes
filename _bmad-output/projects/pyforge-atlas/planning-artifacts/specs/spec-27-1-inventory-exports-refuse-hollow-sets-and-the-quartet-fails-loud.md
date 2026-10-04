@@ -111,6 +111,10 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 
 ## Review Triage Log
 
+
+### 2026-10-04 — Post-landing follow-up (operator)
+`identity_export_contract.py` imported numpy, which pyforge-atlas does not declare, so `pyforge-deps-test` (`tests/packaging/test_dependency_completeness.py`) went red on main after this story landed; no CI lane runs that test, so it surfaced only in marshal's dispatch verification. `stringify_export_cell` now matches an array by shape (`tolist` plus `ndim >= 1`) with no numpy import; the existing `np.array` case in `test_identity_complete_export.py` still passes.
+
 ### 2026-10-03 (night) — Final landing review; fixed by the operator's fixer
 Reopened: none. Every finding landed with a test that fails on the reverted code (mutants in a copy under the session scratchpad, never in this worktree), so all 25 rows stay closed and are re-cited at the fixer's final HEAD (each `path:line` read back by script after the last edit).
 - `medium` **MEDIUM 1 — DW-FU-17-2 pacing and backoff: pinned.** `test_create_missing_issues_retries_secondary_rate_limit` records every `time.sleep` and asserts `[0.25, 2.0, 0.25, 4.0, 0.25, 0.25]` and the call order (issue three times, then project); new `test_create_missing_issues_gives_up_after_the_retry_budget`: a rate limit that never clears makes exactly six `gh issue create` calls (`_GH_MAX_RETRIES + 1`, pinned at 6), paces each and backs off 2, 4, 8, 16, 32 s, then reports the name in `not_filed` and writes no board entry or issue URL. Killed X16 (no pacing), X21 (backoff not doubled), X22 (retry bound 50). DW-FU-17-2's `verified:` cites both tests.
