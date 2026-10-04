@@ -850,6 +850,22 @@ def terminate_process_group(
     signalled_term = _signal_session_stop(pid, signal.SIGTERM)
     deadline = time.monotonic() + grace_s
     proc = process if process is not None else PosixProcess()
+    reaped, code = _try_reap_pid(pid)
+    if reaped:
+        return TerminateProcessGroupResult(
+            signalled_term=signalled_term,
+            signalled_kill=False,
+            reaped=True,
+            returncode=code,
+        )
+    if not proc.is_alive(pid) or _is_zombie(pid):
+        reaped, code = _try_reap_pid(pid)
+        return TerminateProcessGroupResult(
+            signalled_term=signalled_term,
+            signalled_kill=False,
+            reaped=reaped,
+            returncode=code,
+        )
     while time.monotonic() < deadline:
         reaped, code = _try_reap_pid(pid)
         if reaped:
@@ -867,7 +883,7 @@ def terminate_process_group(
                 reaped=reaped,
                 returncode=code,
             )
-        time.sleep(0.1)
+        time.sleep(0.05)
     signalled_kill = _signal_session_stop(pid, signal.SIGKILL)
     kill_deadline = time.monotonic() + grace_s
     while time.monotonic() < kill_deadline:

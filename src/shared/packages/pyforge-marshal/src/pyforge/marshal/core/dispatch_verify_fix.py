@@ -33,7 +33,7 @@ _URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s]+)@")
 _BEARER_TOKEN = re.compile(r"(?i)(Authorization:\s*Bearer\s+)\S+")
 _BASIC_AUTH = re.compile(r"(?i)(Authorization:\s*Basic\s+)\S+")
 _SECRET_ASSIGNMENT = re.compile(
-    r"(?i)(\b(?:password|passwd|secret|api[_-]?key|token|database_password|aws_secret_access_key)\s*=\s*['\"]?)[^'\"\s]+(['\"]?)"
+    r"(?i)((?:\b(?:password|passwd|secret|api[_-]?key|token)\s*=|(?:DATABASE_PASSWORD|AWS_SECRET_ACCESS_KEY)=)\s*['\"]?)[^'\"\s]+(['\"]?)"
 )
 _YAML_JSON_PASSWORD = re.compile(r"(?i)(^\s*password\s*:\s*)\S+", re.MULTILINE)
 _SK_ANT_KEY = re.compile(r"\bsk-ant-[A-Za-z0-9_-]{8,}\b")

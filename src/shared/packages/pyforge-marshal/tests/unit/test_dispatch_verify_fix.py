@@ -556,9 +556,10 @@ def test_terminate_process_group_never_passes_a_group_id_of_this_group_or_init_t
 
     monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
     for pgid in (0, 1):
+        calls.clear()
         monkeypatch.setattr(os, "getpgid", lambda _pid, pgid=pgid: pgid)
         terminate_process_group(4242, grace_s=0.0, process=_Dead())
-    assert calls == [("kill", 4242, signal.SIGTERM), ("kill", 4242, signal.SIGTERM)]
+        assert calls == [("kill", 4242, signal.SIGTERM)]
 
 
 def test_terminate_process_group_signals_process_group(monkeypatch):

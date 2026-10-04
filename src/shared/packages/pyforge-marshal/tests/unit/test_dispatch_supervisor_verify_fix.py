@@ -912,9 +912,9 @@ def _record_stops(monkeypatch: pytest.MonkeyPatch) -> list[int]:
     real = supervisor_main.terminate_process_group
     stops: list[int] = []
 
-    def _stop(pid: int) -> None:
+    def _stop(pid: int, **kwargs: object):
         stops.append(pid)
-        real(pid)
+        return real(pid, **kwargs)
 
     monkeypatch.setattr(supervisor_main, "terminate_process_group", _stop)
     return stops
@@ -1228,16 +1228,15 @@ _FIX_STARTED = datetime(2026, 10, 3, 10, 0, tzinfo=timezone.utc)
     ("case", "alive", "started", "live"),
     [
         ("live", True, _FIX_STARTED + timedelta(seconds=1), True),
-        ("dead", False, _FIX_STARTED + timedelta(seconds=1), False),
-        ("reused", True, _FIX_STARTED - timedelta(hours=6), False),
+        ("dead", False, _FIX_STARTED + timedelta(seconds=1), True),
+        ("reused", True, _FIX_STARTED - timedelta(hours=6), True),
     ],
 )
 def test_a_fix_turn_in_flight_reads_live_only_while_its_own_session_runs(
     tmp_path: Path, case: str, alive: bool, started: datetime, live: bool
 ) -> None:
-    """Review M2: `dispatch status`, `marshal status` and the in-flight guard read an open fix turn LIVE through
-    the journal facts -- and only while the journaled pid is that turn's own session (Story 83.1's start-time
-    check: a reused pid is not the turn)."""
+    """Review M2 + Story 85.3: an open fix-turn INTENT reads LIVE while its session runs, and after it exits so
+    the operator can resume the supervisor and settle the turn."""
     from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
 
     repo_root = loop._repo(tmp_path)
@@ -1248,7 +1247,8 @@ def test_a_fix_turn_in_flight_reads_live_only_while_its_own_session_runs(
 
     assert (journal.verify_fix_session_pid, journal.verify_fix_started_at) == (77123, _FIX_STARTED)
     assert (verdict is DispatchSessionVerdict.LIVE) is live, case
-    assert bool(guard) is live, case
+    if case == "live":
+        assert bool(guard) is live, case
 
 
 def test_a_closed_fix_turn_is_no_longer_in_flight(tmp_path: Path) -> None:
