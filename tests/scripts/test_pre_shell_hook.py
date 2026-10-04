@@ -609,6 +609,10 @@ def test_protected_ref_deletion_denied(fake_repo: Path, command: str) -> None:
 
 
 def test_protected_ref_deletion_allows_recover_and_unprotected_branches(fake_repo: Path) -> None:
+    main_tip = _ensure_origin_main(fake_repo)
+    _git(["branch", "feature/x", main_tip], fake_repo)
+    _git(["update-ref", "refs/remotes/origin/feature/x", main_tip], fake_repo)
+    _git(["update-ref", "refs/remotes/origin/recover/x", main_tip], fake_repo)
     for command in (
         "git push origin --delete recover/x",
         "git branch -d feature/x",
