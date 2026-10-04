@@ -108,7 +108,8 @@ from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
     should_checkpoint_on_idle,
 )
-from ..dispatch_land import execute_dispatch_land
+from ..core import identity as identity_core
+from ..dispatch_land import _reconcile_spec_surface_drift, execute_dispatch_land
 from ..dispatch_verify import (
     ProcessWaitResult,
     TerminateProcessGroupResult,
@@ -1065,6 +1066,105 @@ class _FixTurnResult:
     failed_message: str | None = None
 
 
+def _fix_turn_head_before(intent_payload: dict[str, object]) -> str | None:
+    raw = intent_payload.get("worktree_head_before_turn")
+    return raw if isinstance(raw, str) and raw else None
+
+
+def _reconcile_fix_turn_spec_surface(
+    *,
+    vcs: CommittingVcs,
+    process: ProcessPort,
+    repo_root: Path,
+    worktree: Path,
+    slug: str,
+    story_key: str,
+    run_id: str,
+    head_before_turn: str,
+    fix_intent_id: dict[str, object] | None,
+    journal_fix: Callable[[Phase, dict[str, object]], None],
+) -> tuple[bool, str | None]:
+    """Story 85.5: reconcile spec-surface drift on the paths this fix turn committed.
+
+    Returns ``(ok, refusal_message)``. ``ok`` is False when the reconcile cannot be applied and the
+    supervisor must park without re-verifying."""
+    try:
+        fix_turn_paths = frozenset(vcs.changed_files(repo_root, worktree, base=head_before_turn))
+    except VcsCommandError as exc:
+        message = f"cannot list the fix turn's changed paths for spec-surface reconcile: {exc}"
+        journal_fix(
+            Phase.OBSERVATION,
+            {
+                "ok": False,
+                "step": "reconcile",
+                "error": message,
+                "fix_intent_id": fix_intent_id,
+            },
+        )
+        return False, message
+
+    if not fix_turn_paths:
+        journal_fix(
+            Phase.OBSERVATION,
+            {
+                "ok": True,
+                "step": "reconcile",
+                "skipped": True,
+                "reason": "the fix turn changed no paths since its recorded HEAD",
+                "fix_intent_id": fix_intent_id,
+            },
+        )
+        return True, None
+
+    journal_fix(
+        Phase.OBSERVATION,
+        {
+            "ok": True,
+            "step": "reconcile",
+            "paths": sorted(fix_turn_paths),
+            "fix_intent_id": fix_intent_id,
+        },
+    )
+    head_branch = dispatch_core.dispatch_worktree_branch(slug, story_key)
+    reconcile_outcome = _reconcile_spec_surface_drift(
+        git_repo_root=repo_root,
+        worktree=worktree,
+        head_branch=head_branch,
+        key=identity_core.normalize(story_key),
+        run_id=run_id,
+        vcs=vcs,
+        process=process,
+        own_changed_paths=fix_turn_paths,
+        push_when_done=False,
+        foreign_drift_refuses=False,
+    )
+    if reconcile_outcome.refuse:
+        finding = reconcile_outcome.finding
+        message = finding.message if finding is not None else "spec-surface reconcile refused"
+        journal_fix(
+            Phase.OBSERVATION,
+            {
+                "ok": False,
+                "step": "reconcile",
+                "error": message,
+                "fix_intent_id": fix_intent_id,
+            },
+        )
+        return False, message
+
+    payload: dict[str, object] = {
+        "ok": True,
+        "step": "reconcile",
+        "outcome": "reconciled" if reconcile_outcome.finding is not None else "nothing_to_reconcile",
+        "paths": sorted(fix_turn_paths),
+        "fix_intent_id": fix_intent_id,
+    }
+    if reconcile_outcome.finding is not None:
+        payload["finding"] = reconcile_outcome.finding.to_json_dict()
+    journal_fix(Phase.OBSERVATION, payload)
+    return True, None
+
+
 def _journal_fix_turn_park(
     *,
     fs: FsPort,
@@ -1167,10 +1267,12 @@ def _maybe_run_verify_fix_turn(
         except FsError:
             pass
 
+    head_before_turn: str | None = None
     in_flight = in_flight_verify_fix_turn(folded, run_id)
     if in_flight is not None:
         intent_entry = in_flight.intent
         started_at = in_flight.started_at
+        head_before_turn = _fix_turn_head_before(intent_entry.payload)
         if in_flight.session_pid is None:
             # Review M3: the launch never recorded a pid -- nothing to wait for or stop. Close the INTENT so no
             # reader keeps reading the turn in flight; the turn is never relaunched.
@@ -1267,6 +1369,7 @@ def _maybe_run_verify_fix_turn(
         fix_log = run_dir / "verify-fix.log"
         started_at = _now_utc()
         wait_budget_s = fix_policy.wall_clock_seconds
+        head_before_turn = vcs.worktree_head_sha(worktree)
         intent_entry = build_entry(
             id=JournalEntryId(writer_id, counter),
             ts=_format_entry_ts(started_at),
@@ -1278,6 +1381,7 @@ def _maybe_run_verify_fix_turn(
                 "prompt_bytes": len(prompt.encode("utf-8")),
                 "failed_command_count": len(failed_cmds),
                 "wall_clock_budget_s": fix_policy.wall_clock_seconds,
+                "worktree_head_before_turn": head_before_turn,
             },
         )
         counter += 1
@@ -1424,6 +1528,29 @@ def _maybe_run_verify_fix_turn(
             failed_step="commit",
             failed_message=commit_refusal,
         )
+
+    if head_before_turn is not None:
+        reconcile_ok, reconcile_refusal = _reconcile_fix_turn_spec_surface(
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            worktree=worktree,
+            slug=slug,
+            story_key=story_key,
+            run_id=run_id,
+            head_before_turn=head_before_turn,
+            fix_intent_id=fix_intent_ref(intent_entry.id),
+            journal_fix=_journal_fix,
+        )
+        if not reconcile_ok:
+            return _FixTurnResult(
+                counter=counter,
+                verified=False,
+                folded=folded,
+                committed=committed,
+                failed_step="reconcile",
+                failed_message=reconcile_refusal,
+            )
 
     if publish_heartbeat is not None:
         publish_heartbeat()
