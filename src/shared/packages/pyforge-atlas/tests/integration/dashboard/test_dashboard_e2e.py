@@ -94,7 +94,10 @@ def dashboard_server(bmad_fixture, tmp_path_factory):
     now = 1_700_000_000
     stamp = "2026-07-18T12:00:00Z"
 
-    proc = multiprocessing.Process(
+    # Spawn, not fork: pytest's parent process may have already touched Vizro's
+    # global managers; inheriting that state in a forked server left filter controls
+    # hidden even after Story 27.5 pinned static page data (DW-atlas-27-3-1).
+    proc = multiprocessing.get_context("spawn").Process(
         target=run_vizro_server,
         args=(port, str(data_root), stamp, now, sprint_path, epics_path, specs_dir),
     )
