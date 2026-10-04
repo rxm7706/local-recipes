@@ -22,15 +22,15 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-GENERATOR = ROOT / "_bmad" / "scripts" / "bmad_tea_playwright.py"
 PREFIX = "[tea-playwright]"
 
 
 def run_check(root: Path) -> tuple[int, list[str]]:
-    if not GENERATOR.is_file():
-        rel = GENERATOR.relative_to(root).as_posix()
+    generator = root / "_bmad" / "scripts" / "bmad_tea_playwright.py"
+    if not generator.is_file():
+        rel = generator.relative_to(root).as_posix()
         return 2, [f"{PREFIX} could-not-run: missing generator at {rel}"]
-    command = [sys.executable, str(GENERATOR), "--all", "--check", "--repo-root", str(root)]
+    command = [sys.executable, str(generator), "--all", "--check", "--repo-root", str(root)]
     try:
         proc = subprocess.run(command, capture_output=True, text=True, check=False)
     except OSError as exc:
