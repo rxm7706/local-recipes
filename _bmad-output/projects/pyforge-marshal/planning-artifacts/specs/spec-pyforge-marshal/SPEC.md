@@ -73,6 +73,8 @@ surface:
   - .cursor/rules/bmad-build-auto.mdc
   - scripts/bmad_cursor_mdc_check.py
   - tests/scripts/test_bmad_cursor_mdc_check.py
+  - scripts/tea_playwright_check.py
+  - tests/scripts/test_tea_playwright_check.py
   - pixi.toml
   - scripts/bmad_loop_baseline_drift_check.py
   - docs/dreams/bmad-loop-baseline-drift.md
