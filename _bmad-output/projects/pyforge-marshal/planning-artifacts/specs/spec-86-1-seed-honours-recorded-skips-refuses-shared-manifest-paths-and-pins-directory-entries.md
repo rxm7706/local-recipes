@@ -3,7 +3,7 @@ title: "86.1: Seed honours recorded skips, refuses shared manifest paths, and pi
 type: 'fix'
 created: '2026-10-03'
 status: 'in-review'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
@@ -86,3 +86,36 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 - 2026-10-04 — Build complete (hand-built, branch `land/pyforge-marshal-86-1`); ready for an independent review.
   Each AC carries a test that fails with its rule removed (13 mutants, all killed, run on a scratch copy of the
   package). The three deferred-work rows are closed in the ledger with `resolution:` and `verified:` lines.
+- 2026-10-04 — Landing review: **SEND BACK** (one MEDIUM, three LOW; the reviewer's probes and a 16-mutant run on a
+  scratch copy of the package, two of them surviving). Fixed on the same branch:
+  - **MEDIUM-1 — AC1's update-side rung 6 was unpinned.** Mutant M3u (update hands `skip`, not `skip_patterns`, to
+    `managed_after_skips`, `seed/verbs/update.py:1362`) survived: no update test had a record with no update action
+    whose path only a *recorded* pattern names. Fix: `test_a_recorded_skip_keeps_a_record_with_no_update_action_away_from_rung_6`
+    (`tests/unit/test_seed_verbs_update.py`) — recorded `skips=("S.md",)`, a `copied-seeded` record at `S.md` with a
+    stale `body_sha`, the file hand-edited; `run_update(run=True)` must not raise. Under M3u it refuses
+    `managed-content-modified`; the reviewer's `probe_m3u.py` reports both of its cases OK on the fixed tree and
+    REFUSED under M3u.
+  - **LOW-2 — the reversed overlap boundary was untested.** Mutant M7 (`first.since <= second.until`,
+    `seed/model/manifest.py`) survived. Fix: `test_disjoint_windows_may_share_a_path[successor-declared-first]`
+    (`since: "2.0.0"` declared before `until: "2.0.0"`).
+  - **LOW-3 — the one-owner rule compared raw path strings,** so `./AGENTS.md` beside `AGENTS.md`, or `docs//x`
+    beside `docs/x`, loaded as two owners of one file. Fix: `_require_repo_relative_path` (`seed/model/manifest.py`)
+    now refuses a `.` segment and an empty segment in either separator dialect, keeping the single trailing `/` of a
+    directory entry; `load_manifest` prefixes the entry id. Tests:
+    `test_a_dot_or_empty_path_segment_raises_manifest_error_naming_the_entry_id` (7 cases),
+    `test_a_second_spelling_of_an_owned_path_cannot_reach_the_one_owner_rule` (2 cases),
+    `test_dot_names_and_a_single_trailing_slash_keep_loading`. No shipped manifest path carries either form.
+  - **LOW-4 — a behavioural leg was dropped** from adopt's
+    `test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_state_record`. Restored: with
+    `state.skips` cleared, the same re-adopt refuses `managed-content-modified` naming `a:`.
+  - **DW-marshal-86-1** (ledger evidence extended): masked today by adopt's known limitation (1) — a real apply
+    against the packaged manifest fails first at the Copier boundary (`TemplateBoundaryError`,
+    `seed/engine/copier.py:336-337`); owner DW-10-3-3 (guarded mkdir plus directory rollback).
+  - **Mutants after the fixes:** 19 of 19 killed — the reviewer's 16 (M1–M14 with M3a/M3u and M7/M7b; M3u and M7
+    now killed by the tests above) plus three for LOW-3 (M15 `.` segment allowed, M16 empty segment allowed, M17
+    trailing `/` not exempted).
+  - **Note for Story 70.1:** the one-owner rule runs at load on *unrendered* paths, so two entries that differ only
+    in `{{ slug }}` and render to one path are not compared. 70.1's renderer (`render_slug_paths`) must re-run
+    `_refuse_shared_paths` on the rendered entries, or validate the slug so no rendering can collide, and switch
+    the test helper `_shipped_entries_for_slug` (`tests/unit/test_seed_verbs_update.py`) from its hand-rolled
+    `str.replace` to that renderer.

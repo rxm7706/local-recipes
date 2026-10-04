@@ -254,11 +254,23 @@ def _require_repo_relative_path(value: str) -> str:
     Windows drive (``C:\\x``, ``C:x``), a backslash-rooted or UNC path, and a
     ``..`` segment split on ``/`` or ``\\``. An in-repo symlink that points
     out cannot be seen from the string alone; ``detect.inventory`` refuses
-    that one per entry (``ArtifactState.ESCAPING``)."""
+    that one per entry (``ArtifactState.ESCAPING``).
+
+    One spelling per location, too (Story 86.1 send-back): the one-owner rule
+    (``_refuse_shared_paths``) compares path strings, so ``./AGENTS.md`` and
+    ``docs//x`` would pass it as a second owner of ``AGENTS.md`` and
+    ``docs/x``. A ``.`` segment and an empty segment are refused, in both
+    separator dialects; the one empty segment kept is a single trailing
+    ``/``, the directory-entry mark (``ManifestEntry.is_directory``)."""
     if PurePosixPath(value).is_absolute() or PureWindowsPath(value).drive or PureWindowsPath(value).root:
         raise ValueError(f"path must be repo-relative, not absolute, got {value!r}")
-    if ".." in value.replace("\\", "/").split("/"):
+    segments = value.removesuffix("/").replace("\\", "/").split("/")
+    if ".." in segments:
         raise ValueError(f"path must not contain a '..' segment, got {value!r}")
+    if "." in segments:
+        raise ValueError(f"path must not contain a '.' segment, got {value!r}")
+    if "" in segments:
+        raise ValueError(f"path must not contain an empty segment, got {value!r}")
     return value
 
 

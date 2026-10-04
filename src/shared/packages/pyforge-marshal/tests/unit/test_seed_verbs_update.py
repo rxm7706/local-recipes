@@ -1545,6 +1545,49 @@ def test_recorded_skips_and_the_runs_own_skip_both_apply(clean_repo):
     assert [(entry.artifact_id, entry.pattern) for entry in result.plan.skipped] == [("a", "A.md"), ("b", "B.md")]
 
 
+def test_a_recorded_skip_keeps_a_record_with_no_update_action_away_from_rung_6(clean_repo):
+    """AC1's rung-6 leg, for a record no update action exists for: a
+    `copied-seeded` file is never regenerated, so no wholesale action carries
+    its skip into `plan.skipped` -- only the record's path matching a pattern
+    keeps it from rung 6. The recorded pattern must reach that filter too, not
+    just this run's `--skip`, or a hand-edit the operator skipped at adopt is
+    refused as `managed-content-modified` on the next `update`."""
+    manifest = _manifest(
+        ManifestEntry(
+            id="seeded",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            path="S.md",
+            applies_to=AppliesTo.BOTH,
+            rationale="test",
+        )
+    )
+    (clean_repo / "S.md").write_text("hand-edited S.md\n", encoding="utf-8")
+    write_state(
+        _seed_state(
+            managed=(
+                ManagedArtifact(
+                    id="seeded",
+                    path="S.md",
+                    artifact_class="copied-seeded",
+                    body_sha=hash_content("the seeded original\n"),
+                    inserted_region_spans=(),
+                ),
+            ),
+            skips=("S.md",),
+        ),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+
+    result = run_update(
+        clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
+    )
+
+    assert result.plan.actions == ()
+    assert (clean_repo / "S.md").read_text(encoding="utf-8") == "hand-edited S.md\n"
+
+
 def _shipped_entries_for_slug(slug: str, *entry_ids: str) -> tuple[tuple[str, ...], tuple[ManifestEntry, ...]]:
     """The packaged manifest's `never_write` and the named entries, with
     `{{ slug }}` rendered the way `seed init` renders it."""

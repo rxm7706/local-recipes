@@ -53,6 +53,7 @@ usual whole-file seam) is deliberately NOT used here."""
 
 from __future__ import annotations
 
+import dataclasses
 import subprocess
 import tempfile
 from importlib import resources
@@ -998,6 +999,18 @@ def test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_stat
     )
     assert again.declined is False
     assert again.plan.actions == ()
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+
+    # The kept record is what still guards the edit: with the recorded skip
+    # cleared, the same re-adopt refuses it at rung 6. Recording the edited
+    # bytes instead of the original `body_sha` would let this run pass.
+    state_now = read_state(clean_repo)
+    assert state_now is not None
+    write_state(dataclasses.replace(state_now, skips=()), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
+    _commit_all(clean_repo)
+    with pytest.raises(PreconditionFailure, match="managed-content-modified") as refused:
+        run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
+    assert "a:" in refused.value.message
     assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
 
 

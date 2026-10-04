@@ -1637,12 +1637,14 @@ def test_overlapping_windows_on_one_path_refuse(tmp_path, first_extra, second_ex
     [
         pytest.param("    applies_to: init\n", "    applies_to: adopt\n", id="init-vs-adopt"),
         pytest.param('    until: "2.0.0"\n', '    since: "2.0.0"\n', id="retired-as-the-next-starts"),
+        pytest.param('    since: "2.0.0"\n', '    until: "2.0.0"\n', id="successor-declared-first"),
     ],
 )
 def test_disjoint_windows_may_share_a_path(tmp_path, first_extra, second_extra):
     """A reclassification retires one entry at the version the next starts
     (half-open `[since, until)`), and an `init`-only entry never meets an
-    `adopt`-only one -- neither is a double owner."""
+    `adopt`-only one -- neither is a double owner. The boundary holds in
+    either declaration order: the successor may be listed first."""
     path = tmp_path / "manifest.yaml"
     path.write_text(_two_entries_at("AGENTS.md", first_extra, second_extra), encoding="utf-8")
 
@@ -1668,6 +1670,78 @@ def test_referenced_entries_are_left_out_of_the_one_owner_rule(tmp_path):
             pin: ">=2"
     """
     assert {entry.id for entry in load_manifest(_write(tmp_path, text)).entries} == {"one", "two"}
+
+
+@pytest.mark.parametrize(
+    ("bad_path", "expected"),
+    [
+        ("./AGENTS.md", r"'\.' segment"),
+        ("docs/./x", r"'\.' segment"),
+        ("docs\\.\\x", r"'\.' segment"),
+        (".", r"'\.' segment"),
+        ("docs//x", r"empty segment"),
+        ("docs\\\\x", r"empty segment"),
+        ("docs/dreams//", r"empty segment"),
+    ],
+)
+def test_a_dot_or_empty_path_segment_raises_manifest_error_naming_the_entry_id(tmp_path, bad_path, expected):
+    """The one-owner rule compares path strings, so a second spelling of one
+    location -- `./AGENTS.md` beside `AGENTS.md`, `docs//x` beside `docs/x` --
+    would slip past it as a second owner of the same file. A `.` segment and
+    an empty segment are refused at load, naming the entry; the one empty
+    segment kept is the single trailing `/` that marks a directory entry."""
+    text = f"""\
+        model_version: "1.0.0"
+        artifacts:
+          - id: respelled
+            class: copied-seeded
+            path: {json.dumps(bad_path)}
+            applies_to: init
+            rationale: r
+    """
+    with pytest.raises(ManifestError, match=rf"^respelled: path must .*{expected}"):
+        load_manifest(_write(tmp_path, text))
+
+
+@pytest.mark.parametrize(
+    ("respelled", "canonical"),
+    [
+        pytest.param("./AGENTS.md", "AGENTS.md", id="dot-prefix"),
+        pytest.param("docs//x", "docs/x", id="doubled-separator"),
+    ],
+)
+def test_a_second_spelling_of_an_owned_path_cannot_reach_the_one_owner_rule(tmp_path, respelled, canonical):
+    """The second owner is refused under its own id at the entry build, before
+    the one-owner rule runs -- so the double owner never loads."""
+    text = (
+        'model_version: "1.0.0"\n'
+        "artifacts:\n"
+        "  - id: agents-a\n"
+        "    class: copied-managed\n"
+        f'    path: "{canonical}"\n'
+        "    applies_to: both\n"
+        "    rationale: r\n"
+        "  - id: agents-b\n"
+        "    class: generated-derived\n"
+        f'    path: "{respelled}"\n'
+        "    applies_to: both\n"
+        "    rationale: r\n"
+    )
+    path = tmp_path / "manifest.yaml"
+    path.write_text(text, encoding="utf-8")
+
+    with pytest.raises(ManifestError, match=r"^agents-b: path must not contain"):
+        load_manifest(path)
+
+
+def test_dot_names_and_a_single_trailing_slash_keep_loading():
+    """Only a whole `.` segment is refused: `.github/x`, `.gitignore` and
+    `a.b/` are ordinary names, and one trailing `/` is the directory mark."""
+    for path in (".github/workflows/detectors.yml", ".gitignore", "a.b/", "docs/dreams/"):
+        entry = ManifestEntry(
+            id="e", artifact_class=ArtifactClass.COPIED_SEEDED, path=path, applies_to=AppliesTo.BOTH, rationale="r"
+        )
+        assert entry.path == path
 
 
 @pytest.mark.parametrize(
