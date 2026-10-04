@@ -413,7 +413,7 @@ development_status:
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done
   86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is: done
   86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: done
-  86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: backlog
+  86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: done
   86-7-the-session-close-docs-name-the-context-advisory-and-the-retired-id-guard-scans-the-planning-docs: backlog
   86-8-path-form-spec-cites-count-as-missing-and-the-retired-chain-verb-leaves-no-trace: done
   87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: backlog
