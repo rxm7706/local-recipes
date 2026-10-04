@@ -2,7 +2,7 @@
 title: "85.5: The verify fix turn's edits get the spec-surface reconcile before re-verification"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '0b58f2fb95bf8009935f4c152409adc169f71233'
 review_loop_iteration: 0
 followup_review_recommended: false
