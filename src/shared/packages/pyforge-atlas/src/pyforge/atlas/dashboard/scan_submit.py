@@ -39,11 +39,15 @@ from . import data as _data
 
 # Each page's CLI invocation(s). A tuple of argv tails because `env-inspect`'s
 # two declared column groups (licenses, security) are two of its modes.
+# `env-inspect` runs its script in `pyforge-guild`: only the guild env exists at runtime, never the
+# `local-recipes` recipe-factory env (spec-pyforge-steward CAP-152; steward's
+# test_no_station_assumes_local_recipes.py). The script needs nothing the guild env lacks.
+_ENV_INSPECT = ("pixi", "run", "-e", "pyforge-guild", "python", ".claude/scripts/conda-forge-expert/env_inspect.py")
 SCAN_INVOCATIONS: dict[str, tuple[tuple[str, ...], ...]] = {
     "scan-project": (("pixi", "run", "-e", "vuln-db", "scan-project", "{path}", "--json"),),
     "env-inspect": (
-        ("pixi", "run", "-e", "local-recipes", "env-inspect", "--prefix", "{path}", "--licenses", "--json"),
-        ("pixi", "run", "-e", "local-recipes", "env-inspect", "--prefix", "{path}", "--security", "--json"),
+        (*_ENV_INSPECT, "--prefix", "{path}", "--licenses", "--json"),
+        (*_ENV_INSPECT, "--prefix", "{path}", "--security", "--json"),
     ),
 }
 
