@@ -2188,9 +2188,12 @@ status: open
   origin: spec-deferred 63ed15e7314d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolution: RESOLVED 2026-10-04 — Story 86.6 (`86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift`) regenerated all eight matrices, moved `tea-playwright-all` / `tea-playwright-check` to pyforge-guild, and registered the check as a repo-scope detector in `detectors-ci`.
+  status: resolved
   verified: 2026-10-01 — NEEDS-DECISION — Still unwired: grep over .github/workflows/ and scripts/detectors.py finds no reference; only pixi.toml:1147-1149 defines the local-recipes task. Ran its command read-only (`python _bmad/scripts/bmad_tea_playwright.py --all --check`, tree clean afterwards): exit 1 with DRIFT on all 8 stations -- e.g. marshal's matrix misses ~140 story ids (5.11 ... 78.1), steward's ~120, herald's ~58, doctor's ~57. (2026-09-30 deferral burn-down triage)
   decision: CAP-5's Story Coverage Matrices are stale on all eight stations: should the check be wired into detectors-ci (advisory or blocking) after a regeneration, or should CAP-5's matrix contract be retired?
+
+  verified: 2026-10-04 — RESOLVED — `scripts/tea_playwright_check.py:18` declares `DETECTOR = {"scope": "repo"}`; `pixi.toml` `[feature.guild-tasks.tasks.tea-playwright-check]` invokes it and `detectors-ci` runs `scripts/detectors.py --scope repo`, which discovers the wrapper; `python scripts/tea_playwright_check.py` exits 0 on the regenerated matrices (Story 86.6).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
