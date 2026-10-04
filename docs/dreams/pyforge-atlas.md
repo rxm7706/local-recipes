@@ -278,6 +278,21 @@ Upstream-discovery, the third initiative below, remains genuinely untouched.
     went; it closes on citation alone only when the behaviour is gone.
   - NFR-1 holds: every gate stays fixture-based and non-credentialed.
   Owner `spec-pyforge-atlas`. → Epic 27 / Stories 27.1–27.4, specced 2026-10-03.
+- **2026-10-04 — Found: the distribution-breakdown facet filter renders an empty container.** Story 27.3's
+  `test_declared_controls_render_against_real_rows` fails intermittently: `#distribution-breakdown--filter-facet`
+  renders as an empty 0×0 `div` with no children while the chart beside it renders. It failed in CI on #1836 and
+  #1838, and locally on every run after one early pass; neither a longer wait nor a `spawn` start method helped, so
+  the defect is in the filter build, not the test. #1842 quarantined the test with a non-strict `xfail` and recorded
+  `DW-atlas-27-3-1`.
+  **What it looks like when fixed:** the page builds its declared facet control from the rows it shows, on every build
+  and page load; the `xfail` is gone and the row is closed.
+  **Constraints:**
+  - A `fix` story: no CAP, no FR, no flag (`spec-feature-flag-governance` Q1).
+  - It goes into Epic 27 and reopens it (operator ruling 2026-10-04: a fix joins its own epic and reopens it, never a
+    new epic; doctor Story 41.5 lets `ledger-regression` accept the reopen).
+  - The root cause is pinned by a test that needs no browser; waits and retries are not a fix.
+  - NFR-1 holds: the proof stays fixture-based.
+  Owner `spec-pyforge-atlas`. → Story 27.5, specced 2026-10-04.
 
 ## 2026-09-17 — One-chain fold (atlas, CAP-3)
 

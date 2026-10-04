@@ -113,7 +113,7 @@ JOIN_NAMES: Mapping[str, Mapping[str, str]] = {
 
 @dataclass(frozen=True)
 class Join:
-    story_surface_by_cap: Callable[[str, list[str]], dict[tuple[str, int], str | None]]
+    story_surface_by_cap: Callable[..., dict[tuple[str, int], str | None]]
     caps_cited_on_spec_line: Callable[[str, str], set[int]]
     split_surface_fragments: Callable[[str], list[str]]
     is_document_surface_fragment: Callable[[str], bool]
@@ -517,7 +517,9 @@ def build_station(
                 f"cannot read epics {flag_rule.repo_relative(planning / 'epics.md', root)}: not a file"
             )
         if epics is not None:
-            surface_by_cap = join.story_surface_by_cap(_read_text(epics, root, "epics"), slugs)
+            surface_by_cap = join.story_surface_by_cap(
+                _read_text(epics, root, "epics"), slugs, story_specs_dir=planning / "specs"
+            )
     gating = _gating_flags(join, root, stories, slugs) if open_specs else {}
 
     blocks: list[SpecBlock] = []

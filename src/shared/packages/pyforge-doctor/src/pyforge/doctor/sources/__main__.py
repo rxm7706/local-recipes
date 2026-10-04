@@ -46,6 +46,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from ..models import Finding, Source
+from ..refs import ORIGIN_MAIN
 from ..verdict import EXIT_SIGINT, exit_code_for
 from . import (
     bmad_config,
@@ -234,6 +235,28 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help=("BMAD project slug for --layers (e.g. pyforge-marshal). Required with --layers; ignored otherwise."),
     )
+    parser.add_argument(
+        "--base",
+        metavar="REV",
+        default=None,
+        help=f"base revision for {Source.LEDGER_REGRESSION.value!r} / {Source.LEDGER_DIRECTION.value!r} (default {ORIGIN_MAIN!r})",
+    )
+    parser.add_argument(
+        "--head",
+        metavar="REV",
+        default=None,
+        help=f"head revision for {Source.LEDGER_REGRESSION.value!r} only (default HEAD)",
+    )
+    parser.add_argument(
+        "--inv",
+        metavar="INV",
+        nargs="*",
+        default=None,
+        help=(
+            f"filter to invariant id(s) for {Source.DREAM_CHAIN.value!r} or "
+            f"{Source.CHAIN_COMPLETENESS.value!r} findings (e.g. INV-0 INV-1)"
+        ),
+    )
     return parser
 
 
@@ -255,6 +278,19 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.project and not args.layers:
         parser.error("argument --project: only valid together with --layers")
+
+    if args.base and args.source not in (Source.LEDGER_REGRESSION.value, Source.LEDGER_DIRECTION.value):
+        parser.error(
+            f"argument --base: only valid for {Source.LEDGER_REGRESSION.value!r} or "
+            f"{Source.LEDGER_DIRECTION.value!r}, got {args.source!r}"
+        )
+    if args.head and args.source != Source.LEDGER_REGRESSION.value:
+        parser.error(f"argument --head: only valid for {Source.LEDGER_REGRESSION.value!r}, got {args.source!r}")
+    if args.inv is not None and args.source not in (Source.DREAM_CHAIN.value, Source.CHAIN_COMPLETENESS.value):
+        parser.error(
+            f"argument --inv: only valid for {Source.DREAM_CHAIN.value!r} or "
+            f"{Source.CHAIN_COMPLETENESS.value!r}, got {args.source!r}"
+        )
 
     if args.groundtruth and args.dreams:
         parser.error("argument --dreams: not valid together with --groundtruth")
@@ -282,8 +318,22 @@ def main(argv: list[str] | None = None) -> int:
         findings = chain.gather_dreams_hygiene(target)
     elif args.layers:
         findings = board.gather_chain_layers_audit(target, args.project)
+    elif args.source == Source.LEDGER_REGRESSION.value and (args.base is not None or args.head is not None):
+        findings = ledger.gather(
+            target,
+            base=args.base or ORIGIN_MAIN,
+            head=args.head or "HEAD",
+        )
+    elif args.source == Source.LEDGER_DIRECTION.value and args.base is not None:
+        if args.head is not None:
+            parser.error(f"argument --head: not valid for {Source.LEDGER_DIRECTION.value!r}")
+        findings = ledger.gather_direction(target, base_ref=args.base)
     else:
         findings = DISPATCH[args.source](target)
+
+    if args.inv is not None:
+        allowed = set(args.inv)
+        findings = tuple(f for f in findings if f.evidence.get("inv") in allowed)
 
     if args.json:
         print(json.dumps([finding.to_json_dict() for finding in findings], indent=2))

@@ -177,6 +177,28 @@ def _odd_backtick_cells(report: str) -> list[str]:
 # --- CLI CAP, no flag -----------------------------------------------------------------------
 
 
+def test_a_cap_joined_only_through_its_story_spec_parent_line_is_runtime_not_unresolved(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Story 41.2 / DW-doctor-34-4: flag_inventory must pass story_specs_dir into the join."""
+    root = _fixture(tmp_path)
+    _spec(root)
+    _epics(root, ("CAP-1", None))
+    _code(root, "cli.py", 'sub.add_parser("frobnicate")\n')
+    _story_spec(
+        root,
+        "spec-1-1-alpha.md",
+        body=f"Parent: `{SLUG}` CAP-1\nSurface: `cli.py`\n",
+    )
+
+    report = _report(root, tmp_path, capsys)
+
+    row = _row(report, 1)
+    assert "| runtime |" in row
+    assert "| unresolved |" not in row
+    assert _header(report, "Runtime CAPs with no flag") == 1
+
+
 def test_a_cli_cap_whose_story_names_a_verb_module_and_no_flag_is_listed_with_its_verb_and_none(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):

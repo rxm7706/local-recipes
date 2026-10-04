@@ -58,7 +58,17 @@ _CHECK_UNREADABLE_EPICS = "capability-effect-unreadable-epics"
 _CHECK_ABSENT_SURFACE = "capability-effect-absent-surface-path"
 _CHECK_NO_SURFACE = "capability-effect-no-surface-line"
 
-_SURFACE_LINE_RE = re.compile(r"^\*\*Surface:\*\*\s*(.+)$", re.MULTILINE)
+# A ``Surface:`` field opens on a line of its own: ``**Surface:**`` in epics.md, bare ``Surface:`` in a story
+# spec. The remainder of that line is the field's first text; ``_surface_field`` reads any continuation.
+_SURFACE_START_RE = re.compile(r"^(?:\*\*Surface:\*\*|Surface:)[ \t]*(.*)$")
+# The next ``**Field:**`` line or a heading ends a multi-line ``Surface:`` field.
+_FIELD_BOUNDARY_RE = re.compile(r"^(?:\*\*[^*\n]+:\*\*|#{1,6}\s)")
+# A bullet item that opens with a backticked path, optionally followed by its ``(...)`` annotation.
+_BULLET_LEAD_RE = re.compile(r"^`[^`]+`(?:\s*\([^)]*\))?")
+_BULLET_MARKER_RE = re.compile(r"^\s*[-*]\s+")
+# ``CAP-17-CAP-19`` (a story spec's range spelling; board's ``CAP-17..19`` is handled by ``_expand_cap_token``).
+_CAP_DASH_RANGE_RE = re.compile(r"\bCAP-(\d+)\s*[-\u2013]\s*CAP-(\d+)\b")
+_PARENT_LINE_RE = re.compile(r"^(?:\*\*)?Parent:(?:\*\*)?\s*(.*)$")
 _SURFACE_SYMBOL_RE = re.compile(r"`([A-Za-z_][A-Za-z0-9_]*)`")
 _DECLARATION_RE_TEMPLATE = r"^\s*(?:async\s+def|def|class)\s+{}\b"
 _DOCUMENT_SURFACE_SUFFIXES = (
@@ -495,20 +505,78 @@ def _caps_cited_on_spec_line(line: str, slug: str) -> set[int]:
     return caps
 
 
+def _surface_field(block: str) -> str | None:
+    """The text of the first ``Surface:`` field in ``block``, joined to one line.
+
+    Two shapes: an inline field (``**Surface:** a, b`` — an indented wrapped line continues it) and a bullet-list
+    field (``**Surface:**`` alone, then ``- `path` ...`` items, nested bullets and wrapped lines included). A
+    bullet item contributes only its leading backticked path (with its ``(...)`` annotation): the rest of the
+    item is prose, and prose fed to the comma splitter would read as absent paths. The field ends at the next
+    ``**Field:**`` line, a heading, or the first non-continuation line.
+    """
+    lines = block.splitlines()
+    for idx, line in enumerate(lines):
+        start = _SURFACE_START_RE.match(line)
+        if start:
+            break
+    else:
+        return None
+    first = start.group(1).strip()
+    bullet_form = not first
+    inline_parts = [first] if first else []
+    items: list[str] = []
+    current: str | None = None
+    seen_blank = False
+    for line in lines[idx + 1 :]:
+        if not line.strip():
+            if not bullet_form:
+                break
+            seen_blank = True
+            continue
+        if _FIELD_BOUNDARY_RE.match(line):
+            break
+        indented = line[0] in " \t"
+        is_bullet = bool(_BULLET_MARKER_RE.match(line))
+        if bullet_form:
+            if not (indented or is_bullet):
+                break
+            if is_bullet:
+                if current is not None:
+                    items.append(current)
+                current = _BULLET_MARKER_RE.sub("", line).strip()
+            elif current is not None:
+                current += " " + line.strip()
+            seen_blank = False
+        else:
+            if not indented or seen_blank:
+                break
+            inline_parts.append(line.strip())
+    if current is not None:
+        items.append(current)
+    if not bullet_form:
+        return " ".join(inline_parts)
+    leads = [m.group(0) for item in items if (m := _BULLET_LEAD_RE.match(item))]
+    return ", ".join(leads) if leads else None
+
+
 def _story_surface_by_cap(
     epics_text: str,
     spec_slugs: list[str],
+    *,
+    story_specs_dir: Path | None = None,
 ) -> dict[tuple[str, int], str | None]:
-    """Map ``(spec-slug, CAP-N)`` to the citing story's ``Surface:`` line."""
-    headings = list(STORY_HEADING_RE.finditer(epics_text))
-    if not headings:
-        return {}
+    """Map ``(spec-slug, CAP-N)`` to the citing story's ``Surface:`` line.
+
+    The primary join is epics.md: a story block that names the Spec slug and the CAP on one line. When
+    ``story_specs_dir`` is given, the CAPs a story *spec* cites on its ``Parent:`` line join to that spec's own
+    ``Surface:`` field wherever epics.md left the CAP without one (DW-doctor-34-4).
+    """
     out: dict[tuple[str, int], str | None] = {}
+    headings = list(STORY_HEADING_RE.finditer(epics_text))
     for idx, match in enumerate(headings):
         block_end = headings[idx + 1].start() if idx + 1 < len(headings) else len(epics_text)
         block = epics_text[match.start() : block_end]
-        surface_match = _SURFACE_LINE_RE.search(block)
-        surface = surface_match.group(1).strip() if surface_match else None
+        surface = _surface_field(block)
         cited_caps: dict[str, set[int]] = {slug: set() for slug in spec_slugs}
         for line in block.splitlines():
             for slug in spec_slugs:
@@ -520,7 +588,73 @@ def _story_surface_by_cap(
                     out[key] = surface
                 elif key not in out:
                     out[key] = None
+    if story_specs_dir is not None:
+        _join_story_spec_surfaces(out, spec_slugs, story_specs_dir)
     return out
+
+
+def _parent_caps_for_slug(parent_text: str, slug: str) -> set[int]:
+    """CAP ids a story spec's ``Parent:`` text cites against ``slug`` (whole-slug match, both spellings)."""
+    bare = slug.removeprefix("spec-")
+    names = "|".join(re.escape(name) for name in dict.fromkeys((slug, bare)))
+    if not re.search(rf"(?<![A-Za-z0-9-])(?:{names})(?![A-Za-z0-9-])", parent_text):
+        return set()
+    caps: set[int] = set()
+    for match in _CAP_CITATION_RE.finditer(parent_text):
+        caps.update(_expand_cap_token(match))
+    for match in _CAP_DASH_RANGE_RE.finditer(parent_text):
+        low, high = int(match.group(1)), int(match.group(2))
+        if low <= high and high - low <= 500:
+            caps.update(range(low, high + 1))
+    return caps
+
+
+def _parent_text(text: str) -> str:
+    """The story spec's ``Parent:`` line plus its wrapped continuation lines (up to the next blank line)."""
+    lines = text.splitlines()
+    for idx, line in enumerate(lines):
+        match = _PARENT_LINE_RE.match(line)
+        if match:
+            parts = [match.group(1)]
+            for follow in lines[idx + 1 :]:
+                if not follow.strip():
+                    break
+                parts.append(follow.strip())
+            return " ".join(parts)
+    return ""
+
+
+def _join_story_spec_surfaces(
+    out: dict[tuple[str, int], str | None],
+    spec_slugs: list[str],
+    story_specs_dir: Path,
+) -> None:
+    """Fill ``out`` from story specs (``specs/spec-*.md``) for CAPs epics.md left without a ``Surface:``."""
+    try:
+        story_paths = sorted(p for p in story_specs_dir.glob("spec-*.md") if p.is_file())
+    except OSError:
+        return
+    for path in story_paths:
+        if path.name.endswith(".memlog.md"):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError, UnicodeDecodeError:
+            continue
+        parent = _parent_text(text)
+        if not parent:
+            continue
+        surface = _surface_field(text)
+        # A surface with no backticked path ("named on the story in epics.md", "as in the Code Map") names no code.
+        if surface is not None and "`" not in surface:
+            surface = None
+        for slug in spec_slugs:
+            for cap_n in _parent_caps_for_slug(parent, slug):
+                key = (slug, cap_n)
+                if surface is not None and out.get(key) is None:
+                    out[key] = surface
+                elif key not in out:
+                    out[key] = None
 
 
 def _epics_prose_for_caps(epics_text: str) -> str:
@@ -579,7 +713,7 @@ def _caller_reach_findings_for_project(
     spec_slugs = [p.parent.name for p in spec_paths]
     prose = _epics_prose_for_caps(epics_text)
     cited_by_spec = _cited_cap_ids_by_spec(prose, spec_slugs)
-    surface_by_cap = _story_surface_by_cap(epics_text, spec_slugs)
+    surface_by_cap = _story_surface_by_cap(epics_text, spec_slugs, story_specs_dir=pa / "specs")
 
     findings: list[Finding] = []
     for spec_md in spec_paths:

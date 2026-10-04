@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: atlas
-# stories: 156
+# stories: 157
 development_status:
   1-1-generate-legacy-contextual-skill: done
   10-1-restore-atlas-dependency-completeness-so-the-suite-can-collect: done
@@ -87,7 +87,8 @@ development_status:
   27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud: done
   27-2-the-data-plane-honours-its-data-root-and-fetches-what-it-claims: done
   27-3-the-read-surfaces-render-what-design-specifies-on-real-data: done
-  27-4-the-planning-record-matches-the-tree-and-owed-reviews-run: backlog
+  27-4-the-planning-record-matches-the-tree-and-owed-reviews-run: done
+  27-5-the-distribution-breakdown-facet-filter-builds-its-control: backlog
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
   3-2-port-the-pypi-vulnerability-pipelines: done

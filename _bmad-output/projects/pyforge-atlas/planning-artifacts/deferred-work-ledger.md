@@ -8,22 +8,12 @@ entries: 60
 
 # pyforge-atlas — deferred-work ledger (RESTORED, tracked)
 
-**All 52 real deferrals recorded during the Kedro migration, with full bodies — the
-ledger is complete.** The run log's index of "54" double-counted two aliases; see
-§ Provenance.
-
-The frontmatter `entries` count is the number of `## DW-` headings in this file and so
-runs ahead of that 52 as post-restore work lands: **57** today = the 52 restored + `DW-I4-1`
-(promoted 2026-07-29 out of the gitignored Tier-3 ledger) + `DW-AD23-1` and `DW-AD23-2`
-(Story 10.6, same date — the first *defining* an id that eight artifacts had been citing
-with no entry behind it) + `DW-I5-1` (the 10.6 review-budget follow-up, promoted the same
-day) + `DW-AD23-3` (the lock-store default, found by the pass `DW-I5-1` owed; closed
-2026-07-30 by PR #140).
-
-*(The count read `55` until 2026-07-30, when the verification campaign recounted the
-headings and found 57 — the two Story-10.6 follow-ups had been added without re-stamping
-it. Stale counts in a file that declares its own counting rule are exactly what the
-campaign exists to catch.)*
+**Top-level ledger entries (`## DW-`): 60 today.** The Kedro-migration restore held **52
+real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
+Follow-up intake and verification campaigns added more `## DW-` headings without retiring
+that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**178** `### DW-` headings
+today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
 
@@ -56,8 +46,9 @@ Tier-2 `planning-artifacts/`, where it cannot be lost to a Tier-3 accident again
     store not yet materialized — DW-D2)". The index read that banner as a distinct
     entry alongside `DW-D2-1/2/3`.
 
-  The real count is **52**, and 52 is what this file holds. Nothing from the
-  migration's deferred work is missing.
+  The real migration count is **52** bodies recovered into this durable ledger; the live
+  file now carries **60** top-level `## DW-` headings and **178** `### DW-` sub-entries
+  after years of follow-up intake — nothing from the migration's deferred work is missing.
 
 Six of these are also re-stated as contract-level capabilities **DC-1…DC-6** in
 the PRD § 6.4, because they outlived the migration: `DW-C1-1`/`DW-G3`/`DW-H4`
@@ -2948,7 +2939,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 989c90524998 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py:108
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3086,7 +3082,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 70d7500fc66d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py:108
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3099,7 +3100,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 3ef01fe75c87 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py:66
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3112,7 +3118,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 9ac040d8d84d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad/custom/bmad-cis-design-thinking.toml:7
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 3/3 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3127,7 +3138,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 130f6c75a3c1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py:188
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/1 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -3806,7 +3822,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 13d230071bb9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md:39
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4065,7 +4086,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 31528b66d9fc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:4852
 
   verified: 2026-09-07 — resolved — `_flatten_deferred_scalar()` (`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py`, the same pure helper `scripts/deferred_work_intake.py` imports) no longer silently hard-slices: when a scalar exceeds its limit it still caps the surviving head at the same budget (bounded ledger growth, unchanged), but now appends `... [truncated, N chars total]`, so the cut is visible and the original untruncated length is recoverable instead of guessed at. Short values (under the limit) are returned byte-for-byte unchanged, unmarked. Applies uniformly to `summary`/`evidence`/`location` since all three route through the one helper. New regression tests: `test_flatten_deferred_scalar_marks_truncation_and_records_original_length` + `test_flatten_deferred_scalar_short_value_is_returned_unmarked` + `test_spec_frontmatter_deferral_long_summary_is_marked_not_silently_corrupted` (`src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py`, 95 passed / 1 skipped for the full file) and an end-to-end `test_intake_marks_long_summary_truncation_instead_of_silently_corrupting` in `tests/scripts/test_deferred_work_intake.py` (`pixi run -e pyforge-ci pyforge-doctor-scripts-test`: 280 passed, 8 skipped). Did NOT retroactively re-derive the other already-corrupted backlog entries this item names (`DW-FU-21-3-7`, `DW-FU-21-5-2`) — that requires locating each source spec's own frontmatter individually and is out of scope for this fix (same narrow-surface reasoning the original evidence recorded).
 
@@ -4080,7 +4106,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 1f4ed5e45458 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py:149
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
@@ -4198,7 +4229,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 814a39b21f4d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py:175
 
   verified: 2026-09-08 — still-open — PARTIALLY ADDRESSED, and the remaining half is named. The shared helper this entry and steward/DW-FU-46-1-2 both indict was fixed 2026-09-08: `_persona_mentions` gained word-boundary matching and a widened scan (README.md + reference/*.md). But THIS entry's own claim is the other half -- that the check verifies only that the skill NAME appears, never that the routing line's stated grammar-constraint text is present -- and that is still true: `_mention_re` matches the name alone. Asserting constraint text needs a per-skill expected-constraint source that does not exist yet, so it stays open rather than being closed on a fix that did not do it.
 
@@ -4211,7 +4247,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 2dd4de723657 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: .github/workflows/pyforge-station-tests.yml:1
 
   verified: 2026-09-08 — resolved — RESOLVED by the PR that wrapped this branch. `gh pr view 1079` reports `state=MERGED labels=["maintenance"]` -- the label this entry said belonged to 'whichever later PR wraps it' was applied, and the staged-recipes linter gate it protects against did not fire. Nothing further owed.
 
@@ -4224,7 +4265,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred d18772973fb6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py:66
 
   verified: 2026-09-08 — resolved — RESOLVED as a documentation obligation: the derivation this entry says must be recorded IS recorded. `planning-artifacts/DESIGN.md:20` carries `## 0. How Carson and Maya derived "19"` and `:387` carries `## 6. Page count reconciliation`, exactly the two sections the entry cites. The 19-vs-21 discrepancy is therefore documented rather than latent. Residual noted, not hidden: `epics.md:1826` and `:1830` still use the literal '19 unshipped pages' / 'nineteen' wording, so a reader who never opens DESIGN.md still meets the unreconciled numeral.
 
@@ -4237,7 +4283,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred f26835a559b0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad/custom/bmad-cis-design-thinking.toml:7
 
   verified: 2026-09-08 — still-open — CONFIRMED in the vendored skill. `.claude/skills/bmad-cis-design-thinking/template.md` line 1 is `# Design Thinking Session: {{project_name}}`, and `grep -c project_name` against that skill's own `SKILL.md` returns **0** -- no step resolves the key, so the placeholder renders literally. Unchanged since authoring; this is upstream `bmad-creative-intelligence-suite` surface, not repo-local, so it stays open pending an upstream fix or a local override.
 
@@ -4250,7 +4301,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred c119b5bcc31d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py:188
 
   verified: 2026-09-08 — still-open — CONFIRMED against live code. `pyforge/doctor/sources/ledger.py` defines `TERMINAL = frozenset({"done"})` at `:64` and its regression logic only compares baseline-vs-head membership (`:218` collects keys `in TERMINAL` at baseline; `:238`/`:245` branch on `old not in TERMINAL` / `new not in TERMINAL`). A `backlog -> done` transition never enters that check, so nothing verifies a `done` value against the artifact it cites. The false-self-report gap this entry describes is intact.
 
@@ -4468,7 +4524,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 12c8434756b5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md:39
 
   verified: 2026-09-08 — still-open — CONFIRMED as a doc-vs-code divergence, with the code side being correct. `catalog-sources.md`'s Tier 2 table still names `artifactory_downloads_raw` under `artifactory_downloads`, while what shipped is `enterprise_jfrog_names` bucketed under `upstream_discovery` in `PREFIX_TO_PIPELINE`. The diff correctly implements the intent-contract; the companion planning doc was never reconciled and remains stale.
 
@@ -4515,7 +4576,12 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred fb74ecd35929 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.4
+  resolution: Story 27.4
+
+  verified: 2026-10-04 — closed — Story 27.4; verified: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:4852
 
   verified: 2026-09-08 — resolved — CODE DEFECT RESOLVED; data residual repaired here. `pyforge/doctor/sources/chain.py:2692-2698` now documents the fix in `_flatten_deferred_scalar`'s own docstring -- 'DW-FU-21-8-6 fix: a scalar longer than `limit` used to be hard-sliced with no marker, silently corrupting mid-sentence/mid-word' -- and the head is still capped at `limit` but now carries a marker, so no NEW entry can be corrupted this way. The residual the entry predicted was real and is fixed in this sweep: `DW-FU-21-3-7` and `DW-FU-21-5-2` still had 518-char headings ending mid-sentence ('...matches the story's own explicit', '...was never reconciled to matc'); both now carry an explicit truncation marker so they no longer read as complete sentences. `DW-FU-21-8-2` (639 chars, ends '...actually honor it.') was already hand-repaired during the original review and was left alone.
 

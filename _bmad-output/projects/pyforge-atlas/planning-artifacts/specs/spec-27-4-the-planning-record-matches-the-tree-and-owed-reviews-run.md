@@ -2,8 +2,9 @@
 title: "27.4: The planning record matches the tree and the cross-station seams hold"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: 0d2ce6c4ce707990312a0e89cf9ebe4c693ca945
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
@@ -88,4 +89,12 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-04 — Blind Hunter (single pass): triaged 8 findings — **patch** DESIGN.md Non-scope contradiction and strengthen seeded-failure meta-tests; **accept** Epic 27.4 block lacks a per-story `Status:` line (same shape as 27.1–27.3; gate is `_epics_story_statuses` on stories that carry `**Status:**`); **accept** design-thinking test pins `_bmad/custom/` override text without full render merge; **defer** stale contradictory `verified:` prose under closed DW rows (cosmetic, rows closed); **defer** restore truncated DW-FU-21-3-7 / 21-5-2 bodies (doctor intake fix landed; full restore is a separate ledger edit); **defer** DW-FU-24-1-2 maintenance-label proof until integration PR opens (`gh pr edit … --add-label maintenance` at PR time per AGENTS.md).
+
+## Auto Run Result
+
+- **Station:** pyforge-atlas · **Story:** 27.4 · **Branch:** `dispatch/pyforge-atlas/27.4` · **Baseline:** `0d2ce6c4ce707990312a0e89cf9ebe4c693ca945`
+- **Delivered:** planning-record meta-tests (`test_planning_record.py`), steward adoption-register routing constraint test, `catalog-sources.md` Tier 2 fix, DESIGN.md §6 / scope reconciliation, epics `**Status:**` lines aligned to ledger, 15 DW-FU rows closed with Story 27.4 `resolution:` / `verified:` lines, `_bmad/custom/bmad-cis-design-thinking.toml` placeholder step.
+- **Verification:** `pytest` meta/planning tests green; `kedro-test` and `kedro-catalog-check` green; `pixi run --frozen -e pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK (no `--write-baseline`).
+- **Ledger:** `27-4-the-planning-record-matches-the-tree-and-owed-reviews-run` → `done` via Tier-3 feed + `sprint-ledger-sync`.
+- **Land:** uncommitted in worktree — open PR with `maintenance` label when ready.

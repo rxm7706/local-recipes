@@ -138,10 +138,18 @@ def _changed_paths(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD")
     only the real unescaped name with this flag) -- without it, a frozen
     path containing a non-ASCII character could never match a real changed
     path, silently missing a genuine violation."""
-    output = _git(target, "-c", "core.quotepath=false", "diff", "--name-only", f"{base}..{head}")
+    output = _git(
+        target,
+        "-c",
+        "core.quotePath=false",
+        "diff",
+        "--name-only",
+        "-z",
+        f"{base}..{head}",
+    )
     if output is None:
         return None
-    return {line.strip() for line in output.splitlines() if line.strip()}
+    return {part for part in output.split("\0") if part}
 
 
 def _is_frozen(changed_path: str, frozen_prefix: str) -> bool:

@@ -36,7 +36,7 @@ Cross-channel bioconda / pytorch / nvidia / robostack: **harden** existing
 |--------|-------------------------|----------|-------|
 | rxm7706/about README | `discovery_about_maintainers_raw` | `upstream_discovery` | Maintainer + co-maintainer sets |
 | Curated org sweeps | extend `org_audit_candidates` | `upstream_discovery` | `curated_groups.json` air-gap seed |
-| Artifactory / CDO names | `artifactory_downloads_raw` (live) | `artifactory_downloads` | Names only; telemetry stays inventory |
+| Artifactory / CDO names | `enterprise_jfrog_names` | `upstream_discovery` | Names only (`project_artifactory_names` writer lives in `artifactory_downloads`); telemetry is `enterprise_jfrog_consumption` (Epic 23) |
 | conda-forge.org/packages | — | deferred | Prefer `core_feedstock_attribution` |
 
 ## Tier 3 — Epic 23.1 (CAP-8 closure; deferred from Epic 21 v1)

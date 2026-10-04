@@ -1382,7 +1382,7 @@ cmd = "python -m pyforge.doctor.sources dream-chain"
 
 [feature.guild-tasks.tasks.dreams-hygiene-check]
 description = "Detector: Dream-tier hygiene (Story 17-2 / FR-147) — per-Dream frontmatter validity (status vocab, owner in station/guild, title present), README table sync, realization-log presence for pitched+. Distinct from dream-chain-check INV-0..3. Warn-only, and in detectors-ci since Story 41.1 (DW-FU-21-6-2) as the DISPATCH name `dreams-hygiene`; `dream-chain --dreams`, the original CLI spelling, still reaches the same gather."
-cmd = "python -m pyforge.doctor.sources dream-chain --dreams"
+cmd = "python -m pyforge.doctor.sources dreams-hygiene"
 
 [feature.guild-tasks.tasks.chain-sprawl-check]
 description = "Detector: Dream-APPEND-first is enforced, not asserted (doctor Story 25.1, spec-one-chain-per-station CAP-2). Every docs/dreams/*.md and every specs/spec-*/ folder not present at the ruling SHA (docs/governance/chain-sprawl-baseline.json, a dated snapshot that only ever shrinks) must carry `fold-exemption:` from guild-roster.json `fold_exemptions` -- else FAIL chain-sprawl-unexempted. Station Dreams, station Specs and story-spec files are the chain, not sprawl. Exempt remainders are an OK finding so the exemption is visible. Standard: docs/governance/spec-one-chain-per-station/CHAIN-STANDARD.md."

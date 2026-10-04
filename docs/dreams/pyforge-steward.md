@@ -525,6 +525,20 @@ Drift — orphaned between stations.
   closes its DW rows on landing. Six already-fixed rows close without a story (DW-FU-11-1, DW-FU-26-1: Story 78.1;
   DW-FU-41-2-4, DW-FU-42-1-5, DW-FU-42-4-2, DW-steward-76-1: Story 80.1).
   Owner: steward. → Epic 83 / Stories 83.1–83.3, specced 2026-10-02.
+- **2026-10-04 (later) — Found: the protected-ref list is branch-only and nowhere declared, and a name list cannot
+  stop the deletion that lost work.** Story 85.1's hook rule covers branch deletion by name only. Tag deletion,
+  `update-ref -d`, `fetch --prune-tags`, `push --mirror` and `rm` of a loop home pass, and 83 of the 98 tips the
+  2026-10-04 cleanup left reachable from nothing were under no protected name. The GitHub ruleset that holds the list
+  lives only in repo settings; the pre-push gate runs the full preflight on a tag-only push; and `steward workspace
+  clean` keeps an unlanded worktree's commits only on a local branch. **What it looks like when fixed:** the roster
+  declares the protected refs once, as full refnames with a kind and a scope, and every consumer unions them with its
+  own code floor. A ruleset document is rendered from the roster, and a runtime check proves the live rulesets match it.
+  The hook denies every deletion form for a listed ref, and any branch or tag deletion whose commits would become
+  unreachable. A push the hook can prove carries only `preserve/` or `archive/` tags skips the preflight, journaled.
+  `workspace clean` parks unlanded commits as a `preserve/` tag before it removes a worktree. **Constraints:** each new
+  `session_denials` entry is a governance act (operator rulings 2026-10-04: the widened protected-ref denial and the
+  reachability guard); applying a ruleset is the operator's settings change. Owner: steward. → CAP-165, FR-38,
+  Stories 85.2–85.5 (85.1 amended), specced 2026-10-04; marshal twin `spec-pyforge-marshal:CAP-287`.
 - **2026-10-04 — Found: the session guardrails let an agent delete protected branches and loop homes.** A
   hand-rolled branch cleanup deleted the eight `~/.bmad-loops/` loop homes, the `loop/*` branches and protected
   `attempt-preserve/*` branches; no session denial covers either. **What it looks like when fixed:** the session hook

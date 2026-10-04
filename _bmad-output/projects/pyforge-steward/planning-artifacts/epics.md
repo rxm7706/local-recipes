@@ -18,7 +18,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-foundry-cutover/cutover.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-10-04'   # RE-STAMPED 2026-10-04: Epic 85 / Story 85.1 added (fix under CAP-5). Prior: RE-STAMPED 2026-10-03 (night): Story 84.5 added to Epic 84 (fix, CAP-60 follow-up of 84.4). Prior: RE-STAMPED 2026-10-03 (Phase 3): Epic 84 / Stories 84.1-84.4 minted from the operator's Phase 3 rulings. Prior: RE-STAMPED 2026-10-01: Epic 78 / Story 78.1 minted (security hotfix: Langflow auto-login, IdP revocation; defects of CAP-99, unifying CAP-12, CAP-86; no CAP minted). Prior: RE-STAMPED 2026-09-29: Epic 77 / Story 77.1 minted (spec-one-chain-per-station CAP-11 relay; no steward CAP or FR). Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Story 76.4 added to Epic 76 (operator ruling: the demo flag pyforge.three_surfaces is removed; Deps S-76.2) and Story 76.2's text amended to name it; § Currency reconciliation — 2026-09-28 (night, Story 76.4) appended. Earlier: RE-STAMPED 2026-09-28 (night): Epics 74-76 minted -- Stories 74.1-74.2 (spec-pyforge-steward CAP-163, FR-36), 75.1 (CAP-164, FR-37), 76.1-76.3 (spec-feature-flag-governance CAP-5); § Currency reconciliation — 2026-09-28 (night) appended. Earlier: AMENDED 2026-09-28 (operator rulings): Story 72.1 amended -- CAP-5's size bound restated 1 GB -> 2 GB, the pixi stop replaced by a Kinship to spec-pyforge-mason:CAP-30 (mason Story 20.1) and an AC that the Guild's pixi does not move, virtualenv 21 -> 20 and filelock 4 -> 3 accepted on evidence; FR-34 amended in place; key, status and counts unchanged. Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-35 / CAP-162; Epic 73 / Story 73.1 minted; Story 72.1 amended (atlas's exclusion documented beside warden's, the Guild's measured size and pins); § Currency reconciliation — 2026-09-28 (later) appended. Earlier 2026-09-28: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-33 / CAP-160 and FR-34 / CAP-161; Epic 72 / Stories 72.1-72.2 minted (72.2 blocked on mason Story 19.1); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
+updated: '2026-10-04'   # RE-STAMPED 2026-10-04 (later): Epic 85 widened to CAP-165 (FR-38); Stories 85.2-85.5 added (85.2-85.4 detector-or-gate exempt; 85.5 behind pyforge.steward.workspace_preserve_tag, minted blocked on marshal 87.3); Story 85.1 amended (roster key protected_refs). Prior: RE-STAMPED 2026-10-04: Epic 85 / Story 85.1 added (fix under CAP-5). Prior: RE-STAMPED 2026-10-03 (night): Story 84.5 added to Epic 84 (fix, CAP-60 follow-up of 84.4). Prior: RE-STAMPED 2026-10-03 (Phase 3): Epic 84 / Stories 84.1-84.4 minted from the operator's Phase 3 rulings. Prior: RE-STAMPED 2026-10-01: Epic 78 / Story 78.1 minted (security hotfix: Langflow auto-login, IdP revocation; defects of CAP-99, unifying CAP-12, CAP-86; no CAP minted). Prior: RE-STAMPED 2026-09-29: Epic 77 / Story 77.1 minted (spec-one-chain-per-station CAP-11 relay; no steward CAP or FR). Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Story 76.4 added to Epic 76 (operator ruling: the demo flag pyforge.three_surfaces is removed; Deps S-76.2) and Story 76.2's text amended to name it; § Currency reconciliation — 2026-09-28 (night, Story 76.4) appended. Earlier: RE-STAMPED 2026-09-28 (night): Epics 74-76 minted -- Stories 74.1-74.2 (spec-pyforge-steward CAP-163, FR-36), 75.1 (CAP-164, FR-37), 76.1-76.3 (spec-feature-flag-governance CAP-5); § Currency reconciliation — 2026-09-28 (night) appended. Earlier: AMENDED 2026-09-28 (operator rulings): Story 72.1 amended -- CAP-5's size bound restated 1 GB -> 2 GB, the pixi stop replaced by a Kinship to spec-pyforge-mason:CAP-30 (mason Story 20.1) and an AC that the Guild's pixi does not move, virtualenv 21 -> 20 and filelock 4 -> 3 accepted on evidence; FR-34 amended in place; key, status and counts unchanged. Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-35 / CAP-162; Epic 73 / Story 73.1 minted; Story 72.1 amended (atlas's exclusion documented beside warden's, the Guild's measured size and pins); § Currency reconciliation — 2026-09-28 (later) appended. Earlier 2026-09-28: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-33 / CAP-160 and FR-34 / CAP-161; Epic 72 / Stories 72.1-72.2 minted (72.2 blocked on mason Story 19.1); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (late): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-32 / CAP-159; Epic 71 / Stories 71.1-71.7 minted; § Currency reconciliation — 2026-09-27 appended. Prior 2026-09-27 (night): Epic 70 / Story 70.1 minted (spec-pyforge-steward CAP-158). Prior 2026-09-25   # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics) after the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md); Epic 67 minted (67.1-67.8); 44.10 marked retired; § Currency reconciliation — 2026-09-25 appended. Prior 2026-09-24
 currency_review: "Reviewed 2026-09-24 (arch→epics cascade after the spec→prd→arch re-stamps for Story 63.4, `steward session check`) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-24): no AD added or changed. Story 63.4 already carries its own `### Story 63.4` heading (line 4179, Epic 63) with ledger key `63-4-steward-session-check-one-verdict-for-the-session-preconditions-run-from-every-entry-point`; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-17 (arch→epics cascade after the spec→prd→arch re-stamps for the one-chain steward fold) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-17): no AD added or changed. Fold provenance heading already cites spec-pyforge-steward CAP-1..145; historical stories keep sequential epic numbers 1..64. Every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. No blocked ledger keys flipped. Reviewed 2026-09-14 (fleet-picture follow-up audit, undecomposed-Spec sweep) — spec-platform-image-one-pixi-env (status `shipped`, verified 2026-09-11) had zero Epic/Story despite all three CAPs being real, tested, and running (`59083b8391`, 2026-08-25): retroactive Epic 57 added, mirroring the Epic 38/39 precedent — no new implementation, ledger keys 57-1/57-2/57-3 added at `done`, every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Same sweep corrected spec-intelligence-hub's stale frontmatter (Dream `dreamt`→`realized`, Spec `ready`→`shipped` — Epic 53 was already 5/5 done, decomposition was NOT missing, no epics.md change needed there) and confirmed spec-build-league-scorecard's `draft` status is correctly parked (operator-owned measure set, not overdue). Reviewed 2026-09-08 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-08 memlog motion) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-08): no AD added or changed. One new Story since the last review — Story 43.7 (Sidecar runtime validation on Python 3.14), hand-authored 2026-09-08 into the existing Epic 43 to own the sidecar runtime validation mason/DW-13-2-2 had deferred to Story 43.6, which closed done without doing it. Its ACs were CORRECTED the same day before implementation: the Celery half is not achievable against this sidecar (no celery/redis package in the env, no broker in container-dbgpt, and the Containerfile assigns that wiring to Stories 11.2/11.3), so 43.7 owns the SQLite metadata-store proof and a real API round-trip instead; it decomposes pap:CAP-5/CAP-6 and mints no new capability. Its ledger key 43-7-sidecar-runtime-validation-on-python-3-14 was added at backlog, so every Story heading still maps 1:1 to a sprint-status-ledger.yaml key. Reviewed 2026-09-06 (new chain spec-bmad-suite-lifecycle → PRD → spine → Story 14.9 + Epics 46/47; ledger 14-6/7/8 → done, 45-2 → backlog; see the 2026-09-06 note at end of file). Reviewed 2026-09-05 (arch→epics cascade after the spec→prd→arch re-stamps for spec-pyforge-steward's 2026-09-05 memlog motions + the new spec-bmad-eval-quality) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-09-05): no AD added or changed; one new Epic since the last review — Epic 45 (Story 45.1 in-progress, 45.2 blocked), hand-authored 2026-09-05 to decompose spec-bmad-eval-quality CAP-1/CAP-2; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (sprint-ledger-sync --repair-feed + story-status-check re-run same day). Reviewed 2026-08-31 (arch→epics cascade, chain-currency sweep — research→brief→PRD→arch cascade folding technical-pyforge-station-dossier-2026-08-30.md in) — validated against the re-dated ARCHITECTURE-SPINE.md (updated 2026-08-31): no AD added or changed (canopy:AD-21 gained a corroborating 'Realization 2026-08-31' note only, confirming core.hooks already live and used by all 7 non-core stations — no new obligation on any Story here), no new CAP; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key, all 170 real story keys done (the 38 epic-retrospective entries are optional flags, not undone work). Prior 2026-08-29 (arch→epics cascade after the arch spine re-dated, spec-surface drift catch-up + retroactive Epic 38) — validated against the re-cut ARCHITECTURE-SPINE.md: no AD changed, Epic 38 (spec-mcp-factory-stdio-translator, retroactive, own owned spec) sits outside the spine's CLI-package boundary same as Epics 9-37; every Story heading still maps 1:1 to a sprint-status-ledger.yaml key (38/38 epics, 132/132 stories done). Prior 2026-08-25 — lane1-serves-dw-h3 answered no (Wagtail /cms/ ≠ LaSuiteClient Docs REST). Prior 2026-08-24 (Canopy Phase 6 readiness) — spec-pyforge-unifying-strategy Epics 18–30 appended; verdict CONCERNS-proceed (packaging gates). See planning-artifacts/implementation-readiness-report-2026-08-24.md. Prior review 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (canopy:FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -5382,25 +5382,94 @@ So that the marker's guarantees are held by tests.
 **Then** each fails with its mutant, and config refuses a label with a lone field half
 **And** DW-8-5-2 cites its live lines; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 
-## Epic 85: The session guardrails refuse deleting protected branches and loop homes
+## Epic 85: The protected refs are declared once, and no session deletes what would orphan commits (spec-pyforge-steward CAP-165)
 
 Minted 2026-10-04 from the station Dream's entry of the same date. A hand-rolled branch cleanup deleted the loop homes,
-the `loop/*` branches and protected `attempt-preserve/*` branches; nothing in the session guardrails stopped it. A fix
-story under CAP-5, no flag; its marshal twin is marshal Story 87.1. The new `session_denials` entry is the operator's
-governance ruling of 2026-10-04.
+the `loop/*` branches and protected `attempt-preserve/*` branches; nothing in the session guardrails stopped it (Story
+85.1, a fix under CAP-5; its `session_denials` entry is the operator's governance ruling of 2026-10-04). Widened the same
+day by the Dream's entry (later), the preserved-work-refs research and its review under
+`_bmad-output/projects/pyforge-marshal/planning-artifacts/research/`, and the operator's ruling accepting every default
+the review recommended: CAP-165 / FR-38, with CAP-156 and CAP-157 amended. Its marshal twin is marshal Epic 87
+(spec-pyforge-marshal:CAP-287). **HARD boundaries:** the roster is the one declared list and every consumer unions it with its own code
+floor; each new `session_denials` entry is a governance act (operator rulings 2026-10-04); applying any ruleset is the
+operator's settings change, never a session's; station code never imports `pyforge.marshal`.
 
 ### Story 85.1: The session hook refuses deleting protected branches and loop homes
 
 As the operator whose loop homes and protected branches were deleted by an agent's cleanup,
-I want the session hook to refuse deleting a `loop/`, `attempt-preserve/`, `recover/`, `rescue/` or `main` branch and removing a loop home,
+I want the session hook to refuse deleting a `loop/`, `attempt-preserve/` or `main` branch and removing a loop home,
 So that only the sweeper's explicit `--retire` path, or an operator, can retire them.
 
 **Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (Story 63.3) •
 **Surface:** `.claude/hooks/pre-shell.py`, `docs/governance/guild-roster.json`, `tests/scripts/test_pre_shell_hook.py`, `AGENTS.md`
+**Amended 2026-10-04 (architecture review M3, M6):** the roster key is `protected_refs` (full-refname prefixes with a kind
+and a scope), unioned with the hook's code floor (`refs/heads/main`, `refs/heads/loop/`); the `recover/` and `rescue/`
+branch entries drop; tag entries are declared here and enforced from Story 85.4. The matcher keeps the branch-deletion
+forms the operator ruled. Its spec's Spec Change Log carries the detail.
 **Given** a push, branch, `gh api` or worktree command that deletes a protected branch or a loop home
 **When** the session hook runs
 **Then** it denies with the `protected-ref-deletion` reason naming the sanctioned form
-**And** ordinary branches and worktrees stay allowed; the roster carries the id and `protected_ref_prefixes`; AGENTS.md names the rule; removing the matcher fails its new tests (mutation)
+**And** ordinary branches and worktrees stay allowed; the roster carries the id and `protected_refs`; a roster that omits `loop/` still denies it (the floor); AGENTS.md names the rule; removing the matcher fails its new tests (mutation)
+
+### Story 85.2: The protected-ref list is declared once and the live rulesets are proven to match it
+
+As the operator whose protected-ref ruleset lives only in repository settings, branch-only,
+I want a ruleset document rendered from the roster and a runtime check that the live rulesets match it,
+So that the server-side guarantee and the declared list can never drift apart unnoticed.
+
+**Type:** feature • **Effort:** M • **Deps:** S-85.1 • **FR/AD:** spec-pyforge-steward CAP-165 (FR-38); AD-1, AD-8 •
+**Flag:** exempt, `detector-or-gate` (a parity detector; a gated gate reports a silent green)
+**Surface:** `docs/governance/guild-roster.json` (the `rules` per entry), `docs/governance/rulesets/protected-refs.json` (new, rendered), a renderer and `scripts/protected_refs_ruleset_check.py` (new, scope `runtime`), `pixi.toml` (task; `pixi.lock` and `environment.yaml` regenerated), `tests/scripts/test_protected_refs_ruleset_check.py` (new), the generated detector reference docs
+**Spec:** `planning-artifacts/specs/spec-85-2-the-protected-ref-list-is-declared-once-and-the-live-rulesets-are-proven-to-match-it.md`
+**Given** a roster and a live-ruleset fixture
+**When** the check runs
+**Then** it exits 0 when they match, 1 naming each missing or extra pattern, rule (`deletion`, `update`, `non_fast_forward`, `creation`) or bypass actor, and 2 when `gh api rate_limit` shows no authenticated quota or any call fails, never passing
+**And** the ruleset document regenerates byte-identical from the roster; a marshal station-policy protected-ref addition the roster does not declare is drift; creating or editing a live ruleset waits for the operator's explicit confirmation
+
+### Story 85.3: The pre-push gate skips a push it can prove carries only preserve or archive tags
+
+As the operator whose preserve pushes, taken from failing worktrees, would run the full preflight and be refused,
+I want the pre-push gate to skip a push it can prove is tag-only under `preserve/` or `archive/`, journaled,
+So that a preserve reaches origin when it matters, and no branch ever slips past the preflight with it.
+
+**Type:** feature • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-165 (FR-38), CAP-156 (as amended), CAP-154; AD-8 •
+**Flag:** exempt, `detector-or-gate` (the pre-push preflight is a gate)
+**Surface:** `scripts/pre_push_preflight.sh`, `tests/scripts/test_lint_types_gate.py` (or a new hook test beside it)
+**Spec:** `planning-artifacts/specs/spec-85-3-the-pre-push-gate-skips-a-push-it-can-prove-carries-only-preserve-or-archive-tags.md`
+**Given** a bare-git push whose every stdin line names a `refs/tags/preserve/` or `refs/tags/archive/` remote ref
+**When** the hook runs
+**Then** it skips the preflight and journals the refs and shas
+**And** the same push with a branch ref added runs the preflight; in the pre-commit form, which sees only the first ref, it skips only on the pushing tool's proof; a red preflight still refuses a branch push
+
+### Story 85.4: The hook denies every protected-ref deletion and any deletion that orphans commits
+
+As the operator whose cleanup deleted 98 tips reachable from nothing, 83 of them under no protected name,
+I want the session hook to deny every deletion form for a listed ref, and any branch or tag deletion whose commits no other ref reaches,
+So that a repeat of the 2026-10-04 cleanup is refused in every session that has the hook.
+
+**Type:** feature • **Effort:** M • **Deps:** S-85.1 • **FR/AD:** spec-pyforge-steward CAP-165 (FR-38), CAP-5; AD-1, AD-8 •
+**Flag:** exempt, `detector-or-gate` (a session guardrail; a gated guardrail allows silently)
+**Surface:** `.claude/hooks/pre-shell.py`, `docs/governance/guild-roster.json` (two `session_denials` entries), `tests/scripts/test_pre_shell_hook.py`, `AGENTS.md` § Session guardrails
+**Spec:** `planning-artifacts/specs/spec-85-4-the-hook-denies-every-protected-ref-deletion-and-any-deletion-that-orphans-commits.md`
+**Given** `git tag -d archive/x`, `git push origin :refs/tags/preserve/a/b/c`, `git update-ref -d refs/heads/loop/x`, `git push --mirror`, `git fetch --prune --prune-tags`, `rm -rf ~/.bmad-loops/pyforge-atlas` or `gh pr merge 1 --delete-branch` naming a `loop/` head
+**When** the hook runs
+**Then** it denies with the widened `protected-ref-deletion` reason
+**And** deleting an unlisted branch or tag whose tip is not an ancestor of `refs/remotes/origin/main` and that no `preserve/` or `archive/` tag contains is denied by the new reachability entry, naming `marshal preserve tag` and the sweeper's `--retire`; `git tag -d feature-tag` on an ancestor of `origin/main` is allowed; an unresolvable ref is denied with a fetch remedy; AGENTS.md names both rules and the bypass a git config leaves open
+
+### Story 85.5: Workspace clean parks unlanded commits as a preserve tag before removing the worktree
+
+As the operator whose unlanded workspace commits survive only on a local branch after `clean`,
+I want `workspace clean` to tag them under `preserve/` before it removes the worktree,
+So that a cleaned workspace's work lives in git, offline included.
+
+**Type:** feature • **Effort:** S • **Deps:** — (cross-project gate: marshal's story that ships `pyforge.core.preserve_refs`; minted `blocked`, the operator flips it) • **FR/AD:** spec-pyforge-steward CAP-165 (FR-38), CAP-157 (as amended), CAP-155 •
+**Flag:** `pyforge.steward.workspace_preserve_tag` (OFF: today's note-or-tarball behaviour; the unmerged branch is kept)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py`, steward unit tests; `src/platform/config/flags.json`, `flag-overlays.json`
+**Spec:** `planning-artifacts/specs/spec-85-5-workspace-clean-parks-unlanded-commits-as-a-preserve-tag-before-removing-the-worktree.md`
+**Given** a recorded scratch worktree whose commits are not on its source
+**When** `steward workspace clean` removes it
+**Then** a local `preserve/<slug>/<N.M>/workspace-<sha8>` (or `preserve/unbound/workspace-<sha8>`) tag exists first and the result names it; its push goes through the content gate or is reported as debt
+**And** a tag that cannot be written keeps the worktree, reported `branch_kept` with the reason; a landed worktree keeps its `.landed.txt` note; the tarball keeps only git-ignored bytes; no station module imports `pyforge.marshal`
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
