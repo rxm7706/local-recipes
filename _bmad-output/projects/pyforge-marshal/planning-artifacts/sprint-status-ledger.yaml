@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 573
+# stories: 574
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -402,6 +402,7 @@ development_status:
   85-1-a-verification-refusal-goes-back-to-the-session-that-wrote-the-change-for-one-fix-turn: done
   85-2-a-fix-turn-that-turns-verification-green-lands-and-survives-a-restart: done
   85-3-the-fix-turn-is-safe-to-switch-on-in-dev-and-staging: done
+  85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: backlog
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: backlog
@@ -579,7 +580,7 @@ development_status:
   epic-83-retrospective: optional
   epic-84: done
   epic-84-retrospective: optional
-  epic-85: done
+  epic-85: in-progress
   epic-85-retrospective: optional
   epic-86: in-progress
   epic-86-retrospective: optional

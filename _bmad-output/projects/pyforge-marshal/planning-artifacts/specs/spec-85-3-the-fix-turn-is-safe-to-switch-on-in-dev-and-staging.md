@@ -115,6 +115,18 @@ Minted 2026-10-03 at the operator's request (split 85.1, keep Cursor).
   - `[low]` `[fix]` This log's first entry is corrected.
 - mutation (scratch copies, current tests): all 34 mutants killed; the unmutated control passes (578 tests). The reviewer's survivors re-expressed against the fixed code -- M01, M02 (tail before scrub, both sites), M05 (no Basic), M08 as three (prompt appended to argv, stdin not fed, `{prompt}` back in the Claude template), M10 (no reap), M11 (tick loop without the start-time check), M13 (`resolved_profile=None`), M14 (no publish in the fix wait), M15 (progress thread never started -- now failed by the assertion on its calls), M18 (session id never journaled), M19 (no publish while finalize settles an in-flight turn) -- and its killed ones (M06, M07, M09, M12, M16, M17) all fail the new tests; plus 15 for the fixes themselves: H1 (`--session-id` back in the resume argv), H3 x6 (no `token`, no `access key`, no quoted key, no key prefix, `sk-ant-` needing 8, no `:` separator -- the last three standing in for the reviewer's M03 and M04, whose text the one rule replaced), H5 x3 (fallback to the launch argv, `{prompt}` allowed in a fix template, prompt file 0644), M1 (no group sweep), M18b (session id journaled for every launch), M3 (facts-keyed LIVE only with a run dir), and the throttle and lock removed.
 
+### 2026-10-04 — Post-landing delta review (independent reviewer, after #1812 merged); verdict FIX FORWARD as Story 85.4
+- verdicts: all 16 send-back fixes verified (H1–H5, M1–M3 and the LOWs). New findings: medium 1, low 7. Mutants: 24 of 29 killed; X02, X11 and X12 survived as test gaps, X09 is near-equivalent and X14 is harmless.
+- findings:
+  - `[medium]` `[defer: Story 85.4]` The `_SECRET_KEY_VALUE` quoted-value branch backtracks exponentially on an unclosed quote followed by backslashes. The scrub runs on full outputs in the supervisor thread, so a run can hang (dev and staging).
+  - `[low]` `[defer: Story 85.4]` `_URL_CREDENTIALS` is quadratic on long separator-free runs.
+  - `[low]` `[defer: Story 85.4]` A compiler location `file.py:42:5:` loses its line and column.
+  - `[low]` `[defer: Story 85.4]` Five shapes leak: `--password x`, `Authorization: token`, bare `ghp_`, an empty-user URL, `Cookie:`.
+  - `[low]` `[defer: Story 85.4]` The fix wait's journal heartbeat writes at 1 Hz, not the tick rate (AC5).
+  - `[low]` `[fix]` Correction to the landing-review entry above: "flag off identical to main" also excepts the AC4 liveness changes. The tick loop judges the session by start time and zombie state on every run, and `_is_dispatch_session_alive` gained the zombie check. Both are intended.
+  - `[low]` `[defer: Story 85.4]` X02, X11 and X12 have no test.
+  - `[low]` `[defer: Story 85.4]` The SIGTERM-ignoring-grandchild test relies on a fixed 0.3 s sleep.
+
 ## Auto Run Result
 
 Status: done

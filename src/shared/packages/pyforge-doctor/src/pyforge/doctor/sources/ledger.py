@@ -53,6 +53,7 @@ from __future__ import annotations
 
 import re
 import tomllib
+from collections.abc import Collection
 from pathlib import Path
 
 from pyforge.core.landing_evidence import parse_templated_merge_subject
@@ -87,6 +88,40 @@ _MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 #: then no longer exists anywhere) can never fire forever.
 _REKEY_RE = re.compile(r"^_bmad-output/projects/([^/]+)/planning-artifacts/rekey-[^/]+\.md$")
 TERMINAL = frozenset({"done"})
+
+#: An ``epic-N`` row is not a story: the sync derives it from the epic's stories
+#: (``scripts/promote_sprint_status.py`` ``apply_epic_rollups``), so adding a story
+#: to a done epic rolls the epic to ``in-progress``. That reopen is not a regression
+#: (Story 41.5). A done epic that leaves ``done`` any other way still is -- with no
+#: new story (the 2026-10-03 promotions that dropped done epics to ``backlog`` while
+#: every story stayed done), to a value the roll-up never writes for a reopen, or by
+#: being deleted.
+_EPIC_ROLLUP_RE = re.compile(r"^epic-(\d+)$")
+_REOPENED_EPIC_STATUS = "in-progress"
+
+
+def epic_reopened_by_new_story(key: str, before_keys: Collection[str], after: dict[str, str]) -> bool:
+    """True when ``key`` is an ``epic-N`` roll-up that ``after`` reads ``in-progress``,
+    and ``after`` holds a story of epic N that ``before_keys`` lacks and that is not
+    ``done`` -- a story just added to the epic.
+
+    The one reopen rule for both ledger guards (this module and ``sources/marshal.py``'s
+    working-tree durability check). ``in-progress`` is the only value the roll-up writes
+    for a done epic that gains a not-done story, so a reopen to ``backlog`` or
+    ``blocked``, or a deleted epic key, is never excused. A story key is never excused,
+    and a new story never excuses another story's own regression: that story's key is
+    judged on its own. A caller that re-keys ``before`` passes the keys from both sides
+    of the map, so a re-key line cannot make a surviving story look new.
+    """
+    match = _EPIC_ROLLUP_RE.match(key)
+    if match is None or after.get(key) != _REOPENED_EPIC_STATUS:
+        return False
+    prefix = f"{match.group(1)}-"
+    return any(
+        story.startswith(prefix) and story not in before_keys and status not in TERMINAL
+        for story, status in after.items()
+    )
+
 
 # A story key is `<id>-<kebab-title>`, where `<id>` is either the canonical
 # `<epic>-<num>[suffix]` or a legacy alias (`a1`, `b10`). The TAIL is what
@@ -283,6 +318,8 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                 )
             continue  # otherwise: absent at base, i.e. a new ledger — nothing to regress
         before = _parse_statuses(before_text)
+        # Every key the base held, under its own name and its re-keyed one (Story 41.5).
+        before_keys: set[str] = set(before)
 
         after_text = _git(target, "show", f"{head}:{path}") if path in head_paths else None
         if after_text is None:
@@ -322,8 +359,9 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
         # to the BASE side before comparing, so a `done` row whose key moved
         # per the map is judged under its new name. The map moves keys and
         # only keys -- a status flip through it is still caught below. A map
-        # line pointing at a key that exists on neither side is dangling: it
-        # claims a move that did not happen, and is a FAIL in its own right.
+        # line pointing at a key that exists on neither side, or whose old key
+        # survives at head, is dangling: it claims a move that did not happen,
+        # and is a FAIL in its own right.
         mapping = rekey_maps.get(project)
         if mapping:
             dangling = []
@@ -332,6 +370,13 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                     dangling.append({"line": f"{old} -> {new}", "why": f"{old} not in {display_ref(base)}"})
                 elif new not in after:
                     dangling.append({"line": f"{old} -> {new}", "why": f"{new} not in {head}"})
+                elif old in after and old not in mapping.values():
+                    # A re-key moves a key; one whose old key survives at head copied it, and
+                    # applying it would hide the surviving row from this check (Story 41.5).
+                    # A surviving old key that is another line's target is a renumbering
+                    # chain (`epic-13 -> epic-12`, `epic-12 -> epic-11`), not a copy; an
+                    # identity line is its own target, so it never reads as one either.
+                    dangling.append({"line": f"{old} -> {new}", "why": f"{old} still in {head}"})
             if dangling:
                 findings.append(
                     {
@@ -341,10 +386,11 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                         "count": len(dangling),
                         "keys": [d["line"] for d in dangling],
                         "transitions": dangling,
-                        "detail": f"{len(dangling)} re-key line(s) name a key that exists on neither side",
+                        "detail": f"{len(dangling)} re-key line(s) move no key: a side is missing, or the old key survives",
                     }
                 )
             before = {mapping.get(k, k): v for k, v in before.items()}
+            before_keys |= set(before)
 
         surviving_tails = {_tail(k) for k, v in after.items() if v in TERMINAL}
         lost = []
@@ -356,7 +402,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                 if _tail(key) in surviving_tails:
                     continue  # renamed, still done — continuity, not regression
                 lost.append((key, old, "<absent>"))
-            elif new not in TERMINAL:
+            elif new not in TERMINAL and not epic_reopened_by_new_story(key, before_keys, after):
                 lost.append((key, old, new))
         if lost:
             findings.append(
@@ -367,7 +413,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                     "count": len(lost),
                     "keys": [k for k, _o, _n in lost],
                     "transitions": [{"key": k, "from": o, "to": n} for k, o, n in lost],
-                    "detail": f"{len(lost)} story key(s) moved out of `done`",
+                    "detail": f"{len(lost)} key(s) moved out of `done`",
                 }
             )
     return findings, compared
