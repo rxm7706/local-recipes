@@ -101,6 +101,7 @@ from ..core.dispatch_verification import (
     DispatchVerificationVerdict,
     judge_dispatch_verification,
 )
+from ..core.dispatch_verify_fix import in_flight_verify_fix_turn
 from ..core.identity import (
     MalformedStoryKeyError,
     StoryKey,
@@ -134,7 +135,7 @@ from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_
 from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
-from ..dispatch_verify import evaluate_dispatch_verification, run_dispatch_ruff_format_before_verify
+from ..dispatch_verify import evaluate_dispatch_verification, fix_session_alive, run_dispatch_ruff_format_before_verify
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -1394,24 +1395,26 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
             # Story 53.2 review (I1): read regardless of `ok` -- a refused
             # landing (MRS-DISP-048) is exactly the case this must surface.
             landing_findings = resolve_land_findings_from_payload(entry.payload, sidecars=sidecars)
-    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION):
-        if entry.phase == Phase.OUTCOME:
-            vval = entry.payload.get("verdict")
-            if isinstance(vval, str):
-                verification_verdict = vval
-            gate_val = entry.payload.get("failed_gate")
-            if isinstance(gate_val, str):
-                verification_failed_gate = gate_val
-            msg_val = entry.payload.get("failed_message")
-            if isinstance(msg_val, str):
-                verification_failed_message = msg_val
-            # Story 28.15 (CAP-17): best-effort, matching every other
-            # journal-payload read in this function -- a malformed/missing
-            # entry degrades to the empty tuple rather than raising, never
-            # a fabricated advisory.
-            verification_scope_advisories = resolve_scope_violation_advisories_from_payload(
-                entry.payload, sidecars=sidecars
-            )
+    for entry in reversed(folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION)):
+        if entry.phase != Phase.OUTCOME:
+            continue
+        vval = entry.payload.get("verdict")
+        if isinstance(vval, str):
+            verification_verdict = vval
+        gate_val = entry.payload.get("failed_gate")
+        if isinstance(gate_val, str):
+            verification_failed_gate = gate_val
+        msg_val = entry.payload.get("failed_message")
+        if isinstance(msg_val, str):
+            verification_failed_message = msg_val
+        # Story 28.15 (CAP-17): best-effort, matching every other
+        # journal-payload read in this function -- a malformed/missing
+        # entry degrades to the empty tuple rather than raising, never
+        # a fabricated advisory.
+        verification_scope_advisories = resolve_scope_violation_advisories_from_payload(
+            entry.payload, sidecars=sidecars
+        )
+        break
     story_started_at: str | None = None
     story_ended_at: str | None = None
     baseline_revision: str | None = None
@@ -1440,6 +1443,9 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         baseline_revision = baseline_head_sha
     if story_started_at is None and launched_at is not None:
         story_started_at = _format_entry_ts(launched_at)
+    # Story 85.2 (CAP-286): a verification fix turn still in flight, so every reader of these facts -- `dispatch
+    # status`, the in-flight guard, `marshal status` -- can read it LIVE (`resolve_dispatch_session_verdict`).
+    in_flight_fix = in_flight_verify_fix_turn(folded, run_id)
     return dispatch_core.DispatchJournalFacts(
         story_key=story_key,
         session_pid=session_pid,
@@ -1462,6 +1468,8 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         baseline_revision=baseline_revision,
         final_revision=final_revision,
         preserve_ref=preserve_ref,
+        verify_fix_session_pid=in_flight_fix.session_pid if in_flight_fix is not None else None,
+        verify_fix_started_at=in_flight_fix.started_at if in_flight_fix is not None else None,
     )
 
 
@@ -1485,23 +1493,15 @@ def _is_dispatch_session_alive(
     if not process.is_alive(journal.session_pid):
         return False
 
-    # Additional verification: check process start time matches launch time within tolerance
-    if journal.launched_at is not None:
-        process_start_time = process.process_start_time(journal.session_pid)
-        if process_start_time is not None:
-            # Convert journal launch time to timestamp
-            journal_timestamp = journal.launched_at.timestamp()
-
-            # Allow up to 30 seconds tolerance for the process to start after the journal entry
-            # This accounts for the time between journaling the launch and the process actually starting
-            tolerance_seconds = 30.0
-            time_diff = process_start_time - journal_timestamp
-
-            # Process should have started within tolerance after the journal launch time
-            # But not significantly before it (which would indicate PID reuse)
-            if time_diff < -tolerance_seconds or time_diff > tolerance_seconds:
-                return False
-    return True
+    # Additional verification: the process start time must match the journaled launch within tolerance -- a
+    # process started well before or after it means the pid was reused (`pid_start_matches_launch`, shared with
+    # the fix turn's own liveness check, Story 85.2).
+    if journal.launched_at is None:
+        return True
+    return dispatch_core.pid_start_matches_launch(
+        process.process_start_time(journal.session_pid),
+        journal.launched_at,
+    )
 
 
 def resolve_dispatch_session_verdict(
@@ -1532,6 +1532,12 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
+    # Story 85.2 (CAP-286): a verification fix turn in flight is LIVE work, not the refusal it is fixing -- while
+    # its session runs (the pid-reuse check included), `dispatch status` and the in-flight guard read LIVE.
+    if journal.verify_fix_session_pid is not None and fix_session_alive(
+        process, journal.verify_fix_session_pid, launched_at=journal.verify_fix_started_at
+    ):
+        return DispatchSessionVerdict.LIVE
     session_alive = _is_dispatch_session_alive(process, journal)
     if journal.baseline_head_sha is None:
         return DispatchSessionVerdict.LIVE if session_alive else None
