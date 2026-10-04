@@ -25,6 +25,7 @@ head_sha="$(git rev-parse --short HEAD)"
 # (the local sha; all zeros for a delete) and PRE_COMMIT_FROM_REF. Run bare by git, the same facts
 # arrive on stdin as `<local ref> <local sha> <remote ref> <remote sha>` lines. Read both; the two
 # skips below never fired on the first live pushes (2026-09-20) because only stdin was read.
+stdin_refs=""
 remote_ref="${PRE_COMMIT_REMOTE_BRANCH:-}"
 local_sha="${PRE_COMMIT_TO_REF:-}"
 if [ -z "$remote_ref" ]; then
@@ -63,10 +64,8 @@ if [ -n "$remote_ref" ] && ! printf '%s\n' $remote_ref | grep -qvE '^refs/heads/
 fi
 
 _is_preserve_or_archive_tag() {
-  case "$1" in
-    refs/tags/preserve/*|refs/tags/archive/*) return 0 ;;
-    *) return 1 ;;
-  esac
+  # case globs do not match `/` in nested tag names (bash pathname rules).
+  printf '%s\n' "$1" | grep -qxE 'refs/tags/preserve/.+|refs/tags/archive/.+'
 }
 
 _nonzero_sha() {
