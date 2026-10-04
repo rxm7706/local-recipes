@@ -53,6 +53,7 @@ _OWNER_DREAM_RE = re.compile(
 )
 # Epics prose often cites ``spec-<slug>`` (folder under planning-artifacts/specs/).
 _SPEC_CITE_RE = re.compile(r"\bspec-([a-z0-9][a-z0-9-]*)\b", re.IGNORECASE)
+_STORY_SPEC_CITE_HEAD_RE = re.compile(r"^spec-\d+-\d+[a-z]?(?:-|$)")
 
 
 @dataclass(frozen=True)
@@ -373,6 +374,26 @@ def _resolve_dream(root: Path, dream: str) -> Path | None:
         if candidate.is_file():
             return candidate
     return candidate if candidate.exists() else None
+
+
+def _is_story_spec_cite(spec_id: str) -> bool:
+    """True when ``spec_id`` names a per-story spec (``spec-<epic>-<story>…``)."""
+    return bool(_STORY_SPEC_CITE_HEAD_RE.match(spec_id))
+
+
+def _epic_spec_cites(epic_text: str, present_spec_ids: set[str]) -> list[str]:
+    """Cites in ``epics.md`` that name a story spec or a Spec folder — not prose tokens."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for match in _SPEC_CITE_RE.finditer(epic_text):
+        sid = f"spec-{match.group(1).lower()}"
+        if not (_is_story_spec_cite(sid) or sid in present_spec_ids):
+            continue
+        if sid in seen:
+            continue
+        seen.add(sid)
+        out.append(sid)
+    return sorted(out)
 
 
 def _present_spec_ids(specs_root: Path) -> set[str]:
@@ -705,13 +726,17 @@ def verify_code_linkage(root: Path, project: str) -> OrchestratedPhaseOutcome:
             detail=f"cannot read epics.md: {exc}",
             attempts=1,
         )
-    cites = sorted({f"spec-{m.group(1).lower()}" for m in _SPEC_CITE_RE.finditer(text)})
     present = _present_spec_ids(planning / "specs")
+    cites = _epic_spec_cites(text, present)
     missing = [c for c in cites if c not in present]
+    if missing:
+        missing_part = f"; {len(missing)} missing: {', '.join(missing)}"
+    else:
+        missing_part = "; 0 missing"
     return OrchestratedPhaseOutcome(
         name="code_linkage",
         status="complete",
-        detail=(f"read-only verify: {len(cites)} spec cite(s); {len(missing)} missing"),
+        detail=f"read-only verify: {len(cites)} spec cite(s){missing_part}",
         attempts=1,
     )
 

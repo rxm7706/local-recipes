@@ -3,25 +3,32 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.cli import chain as chain_mod
-from pyforge.marshal.cli.chain import run_chain_regenerate
 from pyforge.marshal.core.chain_regen import (
     CHAIN_PHASES,
     PlanPhaseRunner,
     apply_status_guard,
     find_orphans,
     run_regeneration,
+    verify_code_linkage,
 )
 from pyforge.marshal.core.verdict import EXIT_OK
 
 
 def _load_promote():
-    return chain_mod._load_promote()
+    checkout_root = Path(__file__).resolve().parents[6]
+    path = checkout_root / "scripts" / "promote_sprint_status.py"
+    spec = importlib.util.spec_from_file_location("_promote_sprint_status_chain_test", path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def _seed_project(root: Path, slug: str, *, statuses: dict[str, str] | None = None) -> Path:
@@ -201,26 +208,30 @@ def test_apply_status_guard_reuses_regressions():
     assert blocked == (("a", "done", "backlog"),)
 
 
-def test_cli_missing_project(tmp_path: Path):
-    ns = argparse.Namespace(
-        project="no-such-station",
-        apply=False,
-        root=str(tmp_path),
-        format="json",
-    )
-    code = run_chain_regenerate(ns)
-    # WARN findings → exit 0 in marshal lattice for unevaluable-style warns
-    assert code in (EXIT_OK, 0, 1, 2, 3, 4)
-
-
-def test_cli_help_registers():
+def test_chain_regenerate_subcommand_retired():
     from pyforge.marshal.cli.main import _build_parser
 
     parser = _build_parser()
-    args = parser.parse_args(["chain", "regenerate", "--project", "acme", "--format", "json"])
-    assert args.command == "chain"
-    assert args.chain_command == "regenerate"
-    assert args.project == "acme"
+    with pytest.raises(SystemExit):
+        parser.parse_args(["chain", "regenerate", "--project", "acme"])
+
+
+def test_verify_code_linkage_ignores_prose_and_names_missing_story_specs(tmp_path: Path):
+    planning = tmp_path / "_bmad-output/projects/acme/planning-artifacts"
+    specs = planning / "specs"
+    specs.mkdir(parents=True)
+    (specs / "spec-pyforge-marshal").mkdir()
+    (planning / "epics.md").write_text(
+        "# Epics\n\n"
+        "See spec-pyforge-marshal and spec-surface-check prose, "
+        "plus story spec-1-4 and spec-11-2.\n",
+        encoding="utf-8",
+    )
+    outcome = verify_code_linkage(tmp_path, "acme")
+    assert outcome.status == "complete"
+    assert "spec-surface-check" not in outcome.detail
+    assert "spec-1-4" in outcome.detail and "spec-11-2" in outcome.detail
+    assert "2 missing" in outcome.detail or "missing: spec-1-4" in outcome.detail
 
 
 def test_find_orphans_empty_when_dreams_present(tmp_path: Path):

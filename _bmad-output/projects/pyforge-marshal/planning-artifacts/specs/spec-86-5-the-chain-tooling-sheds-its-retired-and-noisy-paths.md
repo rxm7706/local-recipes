@@ -2,7 +2,8 @@
 title: "86.5: The chain tooling sheds its retired and noisy paths"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 33a7af0cb5e1f58540ba1f14385991ee74582cdf
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

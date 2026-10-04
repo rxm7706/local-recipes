@@ -948,8 +948,8 @@ def apply_git(projects: dict) -> None:
 
 DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
 # `spec-one-chain-per-station` CAP-11 / CHAIN-STANDARD §11: a Dream is live in
-# docs/dreams/ or archived under archive/docs/dreams/. scan_dreams() and
-# _fleet_chains() read both through _dream_files() (marshal Story 75.1).
+# docs/dreams/ or archived under archive/docs/dreams/. _fleet_chains() reads
+# both through _dream_files() (marshal Story 75.1).
 ARCHIVE_DREAMS_DIR = REPO_ROOT / "archive" / "docs" / "dreams"
 
 
@@ -1042,138 +1042,6 @@ DREAM_PROGRAM = {
     "pyforge-warden": "warden",
     "pyforge-atlas": "atlas",
 }
-
-
-def dream_chain(slug: str) -> dict:
-    """Chain links for the drill-through indicators (no-straggler visibility):
-    deck dir (exact slug or alias), Spec folder, BMAD project dir,
-    console-program key."""
-    chain: dict[str, str] = {}
-    deck = DREAM_DECK_ALIASES.get(slug, slug)
-    if (REPO_ROOT / "presentations" / deck).is_dir():
-        chain["deck"] = f"presentations/{deck}"
-    hits = sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
-        f"*/planning-artifacts/specs/spec-{slug}"))
-    if hits:
-        chain["spec"] = str(hits[0].relative_to(REPO_ROOT))
-    if (REPO_ROOT / "_bmad-output" / "projects" / slug).is_dir():
-        chain["project"] = f"_bmad-output/projects/{slug}"
-    if slug in DREAM_PROGRAM:
-        chain["program"] = DREAM_PROGRAM[slug]
-    return chain
-
-
-def scan_dreams() -> list[dict]:
-    """[{slug, title, status, owner, type, chain}] from Dream frontmatter (README
-    skipped), plus `blockedOn` / `archived_reason` when set.
-
-    Reads docs/dreams/*.md, then archive/docs/dreams/*.md (see _dream_files()).
-    Location is the archive signal: a Dream read from the archive is reported
-    `archived` whatever its frontmatter `status` says (operator ruling
-    2026-09-30, Story 75.1).
-    """
-    dreams: list[dict] = []
-    for f, in_archive in _dream_files():
-        title, status, owner, archived_reason = None, None, None, None
-        dtype, blocked_on = None, None
-        lines = f.read_text(encoding="utf-8").splitlines()
-        if lines and lines[0].strip() == "---":
-            for line in lines[1:]:
-                if line.strip() == "---":
-                    break
-                if line.startswith("title:"):
-                    title = line.split(":", 1)[1].strip()
-                elif line.startswith("status:"):
-                    status = line.split(":", 1)[1].strip()
-                elif line.startswith("owner:"):
-                    owner = line.split(":", 1)[1].strip()
-                elif line.startswith("archived-reason:"):
-                    archived_reason = line.split(":", 1)[1].strip()
-                elif line.startswith("type:"):
-                    dtype = line.split(":", 1)[1].strip()
-                elif line.startswith("blocked-on:"):
-                    blocked_on = line.split(":", 1)[1].strip()
-        if in_archive:
-            status = "archived"
-        if status not in DREAM_STATUSES:
-            print(f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
-                  " — passed through; board shows it under 'dreamt'")
-        if not owner:
-            print(f"[dreams] WARN {f.name}: no owner: in frontmatter")
-        elif owner == "guild" and f.stem not in GUILD_DREAMS:
-            print(f"[dreams] WARN {f.name}: owner 'guild' is reserved for "
-                  f"{GUILD_DREAMS} — every other Dream must name a station")
-        elif owner not in STATIONS and owner != "guild":
-            print(f"[dreams] WARN {f.name}: owner {owner!r} is not one of the "
-                  f"eight Smiths {STATIONS}")
-        if dtype and dtype not in DREAM_TYPES:
-            print(f"[dreams] WARN {f.name}: type {dtype!r} not in {DREAM_TYPES}")
-        dream = {"slug": f.stem, "title": title or f.stem,
-                 "status": status or "", "owner": owner or "",
-                 "type": dtype or "dream",
-                 "chain": dream_chain(f.stem)}
-        if blocked_on:
-            dream["blockedOn"] = blocked_on
-        if archived_reason:
-            dream["archived_reason"] = archived_reason
-        dreams.append(dream)
-    by_status = {s: sum(1 for d in dreams if d["status"] == s) for s in DREAM_STATUSES}
-    print(f"[dreams] {len(dreams)} scanned: "
-          + " / ".join(f"{n} {s}" for s, n in by_status.items()))
-    return dreams
-
-
-# ---- specs roster (all BMAD Specs; the legacy intake tier is deliberately out) --
-
-def _git_date(path: Path) -> str:
-    r = subprocess.run(
-        ["git", "log", "-1", "--format=%ad", "--date=format:%Y-%m-%d", "--",
-         str(path.relative_to(REPO_ROOT))],
-        capture_output=True, text=True, cwd=REPO_ROOT)
-    return r.stdout.strip()
-
-
-def scan_specs() -> list[dict]:
-    """Spec KERNELS only (Row 4) — .../specs/spec-<slug>/SPEC.md. For per-story specs (Row 7) see scan_story_specs().
-
-    Includes docs/governance/spec-*/ -- the constitutive (`owner: guild`) kernel, which
-    lives outside `_bmad-output/projects/` entirely since 2026-08-02 (`pyforge-genesis`
-    dissolved; see GOVERNANCE_DIR). One kernel since 2026-08-08, when the Lexicon half
-    was absorbed into spec-pyforge-charter and `guild` closed at one Dream.
-    """
-    rows: list[dict] = []
-    spec_dirs = (sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
-            "*/planning-artifacts/specs/spec-*"))
-        + sorted((REPO_ROOT / GOVERNANCE_DIR).glob("spec-*")))
-    for spec_dir in spec_dirs:
-        smd = spec_dir / "SPEC.md"
-        if not smd.is_file():
-            continue
-        text = smd.read_text(encoding="utf-8")
-        slug = spec_dir.name.removeprefix("spec-")
-        project = (GOVERNANCE_DIR if spec_dir.parent == REPO_ROOT / GOVERNANCE_DIR
-                   else spec_dir.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0])
-        m = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
-        title = (m.group(1).strip() if m else slug)
-        title = re.sub(r"^SPEC\s*[—–-]\s*", "", title)
-        caps = len(set(re.findall(r"\bCAP-\d+\b", text)))
-        comp = 0
-        if text.startswith("---"):
-            fm = text.split("---", 2)[1]
-            cm = re.search(r"^companions:\s*\n((?:[ \t]*-[ \t].*\n)*)", fm, re.MULTILINE)
-            if cm:
-                comp = len(re.findall(r"^[ \t]*-[ \t]", cm.group(1), re.MULTILINE))
-            inline = re.search(r"^companions:\s*\[([^\]]*)\]", fm, re.MULTILINE)
-            if inline and inline.group(1).strip():
-                comp = len(inline.group(1).split(","))
-        dream = slug if (DREAMS_DIR / f"{slug}.md").exists() else ""
-        rows.append({"slug": slug, "project": project, "title": title,
-                     "caps": caps, "companions": comp,
-                     "updated": _git_date(spec_dir), "dream": dream,
-                     "path": str(spec_dir.relative_to(REPO_ROOT))})
-    print(f"[specs] {len(rows)} Specs scanned "
-          f"({', '.join(sorted({r['project'] for r in rows}))})")
-    return rows
 
 
 def scan_story_specs() -> list[dict]:
