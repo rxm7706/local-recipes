@@ -3091,6 +3091,7 @@ def dispatch_once(
             "baseline_head_sha": baseline_head_sha,
             "harness_profile": resolution.profile,
             "context": context_payload,
+            **_dispatch_launch_version_journal_fields(),
             **(
                 {
                     "escalated": True,
@@ -5452,6 +5453,18 @@ def _fold_campaign_journal(fs: FsPort, run_dir: Path) -> FoldResult | None:
     return fold(lines, sidecars=sidecars)
 
 
+def _dispatch_launch_version_journal_fields() -> dict[str, object]:
+    """FR-57 / Story 86.3: marshal and bmad-loop versions on dispatch intents."""
+    from ..adapters.harness_bmadloop import BmadLoopHarness
+    from .main import __version__ as marshal_version
+
+    loop_harness = BmadLoopHarness()
+    return {
+        "marshal_version": marshal_version,
+        "harness_version": loop_harness.harness_version(),
+    }
+
+
 def _journal_fleet_cycle(
     fs: FsPort,
     run_dir: Path,
@@ -5461,11 +5474,14 @@ def _journal_fleet_cycle(
 ) -> None:
     """Journal one cycle's intent/outcome pair under ``pyforge-marshal``.
 
-    ``writer_id`` carries this process's pid, so successive supervised cycles
-    (each its own process, all sharing one campaign run id) never collide on
-    a journal entry id.
+    ``writer_id`` carries this process's pid plus a fresh random token (the
+    same uniqueness source ``cli/deploy.py::_deploy_writer_id`` uses), so
+    successive supervised cycles in one campaign never collide on a journal
+    entry id even when the OS reuses a pid across separate invocations.
     """
-    writer_id = f"fleet-drain-{os.getpid()}"
+    from .deploy import _deploy_writer_id
+
+    writer_id = _deploy_writer_id("fleet-drain")
     intent = build_entry(
         id=JournalEntryId(writer_id, 0),
         ts=_format_entry_ts(_now_utc()),

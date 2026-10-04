@@ -274,27 +274,58 @@ def test_registered_data_functions_are_callable_and_return_frames(dashboard):
 # --------------------------------------------------------------------------- #
 
 
-def test_factory_status_reads_the_real_sprint_status():
-    """The factory-status frame reads the REAL tracked sprint-status.yaml (default path)
-    and surfaces known story keys + their statuses."""
-    sprint_status_path = fs._default_paths()["sprint_status_path"]
-    if not sprint_status_path.exists():
-        pytest.skip(
-            f"{sprint_status_path} is a gitignored, locally-generated Tier-3 file "
-            "(sprint-ledger-sync) -- absent in a fresh worktree/clone"
-        )
-    frame = fs.build_factory_status_frame(build_stamp=STAMP)
+def test_factory_status_reads_the_sprint_status_it_is_pointed_at(bmad_fixture):
+    """The factory-status frame surfaces every story key + status from the
+    sprint-status.yaml it is GIVEN, alongside epics.md and the spec statuses.
+
+    Pointed at the ``bmad_fixture`` file through the injectable parameter, not at
+    ``_default_paths()``: that default is the gitignored, locally-generated Tier-3
+    ``implementation-artifacts/sprint-status.yaml``, so the previous form of this
+    test skipped itself in a fresh worktree and in CI — it asserted nothing where
+    it mattered most (Story 27.3, DW-FU-20-5-6).
+    """
+    frame = fs.build_factory_status_frame(
+        build_stamp=STAMP,
+        sprint_status_path=bmad_fixture["sprint"],
+        epics_path=bmad_fixture["epics"],
+        specs_dir=bmad_fixture["specs"],
+    )
     sprint = frame[frame["source"] == "sprint-status.yaml"]
     keyed = dict(zip(sprint["key"], sprint["status"]))
-    # Epic 5's stories (D1/D2 in epics.md's spec-ID alias) are real stories in the live sprint
-    # feed. Matched by suffix, not the full key, since the leading numbering scheme is a ledger
-    # convention (currently Epic.Story, e.g. "5-1-...") that has already been renamed once
-    # (PR #322, 2026-08-08) and may be renamed again.
-    assert any(k.endswith("define-the-boring-semantic-layer-bsl-models") for k in keyed)
-    assert any(k.endswith("build-the-vizro-dashboard-port-the-28-clis-to-pages") for k in keyed)
+    assert keyed == {
+        "epic-5": "in-progress",
+        "d1-define-the-boring-semantic-layer-bsl-models": "done",
+        "d2-build-the-vizro-dashboard-port-the-28-clis-to-pages": "in-progress",
+    }
     # epics.md frontmatter + spec statuses are surfaced too.
     assert (frame["source"] == "epics.md").any()
     assert (frame["source"] == "docs/specs").sum() >= 1
+
+
+def test_factory_status_defaults_to_the_tracked_bmad_locations():
+    """The injectable parameters DEFAULT to the repo's own artifact paths — the gate
+    above must not be able to pass by the defaults having been changed to a fixture."""
+    defaults = fs._default_paths()
+    assert defaults["sprint_status_path"].parts[-3:] == (
+        "pyforge-atlas",
+        "implementation-artifacts",
+        "sprint-status.yaml",
+    )
+    assert defaults["epics_path"].parts[-2:] == ("planning-artifacts", "epics.md")
+    assert defaults["specs_dir"].parts[-2:] == ("docs", "specs")
+
+
+def test_factory_status_of_an_absent_sprint_feed_is_empty_never_fabricated(tmp_path):
+    """The Tier-3 feed really can be absent; that renders no sprint rows, not a guess."""
+    frame = fs.build_factory_status_frame(
+        build_stamp=STAMP,
+        sprint_status_path=tmp_path / "absent-sprint-status.yaml",
+        epics_path=tmp_path / "absent-epics.md",
+        specs_dir=tmp_path / "absent-specs",
+    )
+    assert (frame["source"] == "sprint-status.yaml").sum() == 0
+    # row 0 (the AD-17 stamp) is always there -- the frame is never empty.
+    assert frame.iloc[0]["key"] == "generated_at"
 
 
 def test_factory_status_carries_build_timestamp_ad17(dashboard):

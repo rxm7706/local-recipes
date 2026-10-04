@@ -100,6 +100,16 @@ class FakeFs:
         # Story 3.7's own `run_resume` read seam -- see `read_text` below.
         self.read_text_contents: dict[Path, str] = {}
         self.fail_read_text: Exception | None = None
+        self.remove_empty_dir_calls: list[Path] = []
+
+    def remove_empty_dir(self, path: Path) -> bool:
+        self.calls.append("remove_empty_dir")
+        self.remove_empty_dir_calls.append(path)
+        if path in self.dirs:
+            self.dirs.discard(path)
+            self.created_dirs = [entry for entry in self.created_dirs if entry != path]
+            return True
+        return False
 
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
@@ -210,6 +220,11 @@ class FakeHarness:
         self.adapter_binary_result: str = "claude"
         self.fail_adapter_binary: Exception | None = None
         self.adapter_binary_calls: list[tuple[str, Path]] = []
+        self.harness_version_result: str | None = "0.11.0"
+
+    def harness_version(self) -> str | None:
+        self.calls.append("harness_version")
+        return self.harness_version_result
 
     def adapter_binary(self, adapter_name: str, project: Path) -> str:
         self.calls.append("adapter_binary")
@@ -3879,6 +3894,63 @@ def _tier_policy_launch(
     if on_disk is not None:
         _seed_policy_file(home, fs, on_disk)
     return fs, harness, policy_path
+
+
+def test_spin_failed_launch_intent_append_removes_the_run_directory(home, tmp_path, monkeypatch, capsys):
+    """Story 86.3 (DW-FU-3-3-11): a failed intent append best-effort removes
+    the run directory and still reports MRS-SPIN-003."""
+    fs, harness, _ = _tier_policy_launch(home, tmp_path, monkeypatch)
+    fs.fail_append_line = FsError("disk full")
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == exit_code_for(Verdict.ERROR)
+    envelope = json.loads(capsys.readouterr().out)
+    assert any(f["code"] == "MRS-SPIN-003" and "launch intent" in f["message"] for f in envelope["findings"])
+    assert len(fs.remove_empty_dir_calls) == 1
+    assert fs.remove_empty_dir_calls[0].name.startswith("acme-")
+    assert not harness.spin_calls
+
+
+def test_spin_launch_intent_carries_marshal_and_harness_versions(home, tmp_path, monkeypatch, capsys):
+    """Story 86.3 (DW-FU-3-3-9): launch intent records marshal_version and harness_version."""
+    from pyforge.marshal.cli import main as marshal_main
+
+    fs, harness, _ = _tier_policy_launch(home, tmp_path, monkeypatch)
+    harness.harness_version_result = "0.12.1"
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    intent_line = fs.appended_lines[0][1]
+    intent = json.loads(intent_line)
+    assert intent["payload"]["marshal_version"] == marshal_main.__version__
+    assert intent["payload"]["harness_version"] == "0.12.1"
+
+
+def test_spin_surfaces_unreadable_project_policy_under_mrs_spin_008(home, tmp_path, monkeypatch, capsys):
+    """Story 86.3 (DW-FU-3-5-2): a project-policy read failure is WARN-tier MRS-SPIN-008."""
+    from pyforge.marshal.cli.config import PolicyIOError
+
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+    policy_path = tmp_path / "marshal-policy.toml"
+    policy_path.write_text("idle_threshold_minutes = 30\n", encoding="utf-8")
+    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+    def _fail_read(path):
+        raise PolicyIOError("permission denied reading project policy")
+
+    monkeypatch.setattr(spin_module, "_read_project_policy", _fail_read)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    envelope = json.loads(capsys.readouterr().out)
+    findings_by_code = {finding["code"]: finding for finding in envelope["findings"]}
+    assert exit_code == EXIT_OK
+    assert "MRS-SPIN-008" in findings_by_code
+    assert "MRS-POLICY-004" in findings_by_code["MRS-SPIN-008"]["message"]
 
 
 @pytest.mark.parametrize(

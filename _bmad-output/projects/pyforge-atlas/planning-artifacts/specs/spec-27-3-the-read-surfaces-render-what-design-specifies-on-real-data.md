@@ -2,7 +2,8 @@
 title: "27.3: The read surfaces render what DESIGN.md specifies, and prove it on fixture data"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '1f67f67105f9e9417012d45e07b45c77f36de221'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

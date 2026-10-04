@@ -55,6 +55,14 @@ def test_read_text_wraps_undecodable_bytes(fs, tmp_path):
         fs.read_text(target)
 
 
+def test_read_text_refuses_a_fifo(fs, tmp_path):
+    """Story 86.3 (DW-FU-3-4-10): journal reads must not block on a FIFO."""
+    fifo = tmp_path / "journal.jsonl"
+    os.mkfifo(fifo, mode=0o600)
+    with pytest.raises(FsError, match="not a regular file"):
+        fs.read_text(fifo)
+
+
 # --- write_text_atomic -----------------------------------------------------------
 
 

@@ -10,6 +10,11 @@
       {% endblock title %}
     </title>
     <link rel="stylesheet" href="{% static 'django_pyforge/theme.css' %}" />
+    {# The portal's hx-* attributes need a runtime to be more than markup (DW-FU-19-2).
+       Served from this package's own static dir, never a CDN: the portal must render
+       and poll on a host with no egress, and a third-party script tag in the chrome
+       is a supply-chain surface. Byte-identical to src/platform's vendored copy. #}
+    <script defer src="{% static 'django_pyforge/vendor/htmx.min.js' %}"></script>
   </head>
   <body>
     <div id="pyforge-chrome">

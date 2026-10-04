@@ -59,6 +59,7 @@ import errno
 import fcntl
 import os
 import shutil
+import stat
 import threading
 import time
 from pathlib import Path
@@ -128,13 +129,20 @@ class LocalFs:
 
     def read_text(self, path: Path) -> str | None:
         try:
-            return path.read_text(encoding="utf-8")
+            fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)
         except FileNotFoundError:
             return None
-        # UnicodeDecodeError is a ValueError, not an OSError -- without the
-        # explicit catch, a corrupt (non-UTF-8) marker file would escape as
-        # a raw traceback instead of an envelope finding (review finding).
-        except (OSError, UnicodeDecodeError) as exc:
+        except OSError as exc:
+            raise FsError(f"cannot read {path}: {exc}") from exc
+        try:
+            mode = os.fstat(fd).st_mode
+            if not stat.S_ISREG(mode):
+                raise FsError(f"cannot read {path}: not a regular file")
+            with os.fdopen(fd, "r", encoding="utf-8") as handle:
+                return handle.read()
+        except UnicodeDecodeError as exc:
+            raise FsError(f"cannot read {path}: {exc}") from exc
+        except OSError as exc:
             raise FsError(f"cannot read {path}: {exc}") from exc
 
     def write_text_atomic(self, path: Path, content: str) -> None:

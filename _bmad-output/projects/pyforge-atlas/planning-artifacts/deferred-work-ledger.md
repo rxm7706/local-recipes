@@ -2898,9 +2898,22 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 039beea183ee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 vendored the runtime into the host chrome.
+    `src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html`
+    now loads htmx 2.0.9 with a deferred `{% static 'django_pyforge/vendor/htmx.min.js' %}`
+    script tag, served from this package's own static dir -- never a CDN: the portal must render
+    and poll on a host with no egress, and a third-party script tag in the chrome is a
+    supply-chain surface on every page. The file is byte-identical to the copy `src/platform`
+    already serves, so the portal behaves the same standalone and inside the platform host; the
+    gate asserts both that and the absence of any remote asset URL in the chrome. The portal's
+    `hx-*` poll attributes are no longer markup-only.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 vendored the runtime into the host chrome. Verified: src/shared/packages/django-pyforge/src/django_pyforge/templates/django_pyforge/base.html:17; src/shared/packages/django-pyforge/src/django_pyforge/static/django_pyforge/vendor/htmx.min.js (51332 bytes, htmx version 2.0.9); gate src/shared/packages/pyforge-atlas/tests/meta/test_portal_inventory_row.py:109 (5 passed).
 
 ### DW-FU-20-1: Stack-up PlaneBoot.library is a lock token whose query methods raise raw duckdb closed-connection errors once the connection yields to the HTTP face; consider a typed yielded-state guard, and/or the server-on-:memory: + exec-API ATTACH-read-only design (with autoinstall/autoload_known_extensions=false) as a route to two concurrently usable faces.
 
@@ -2911,9 +2924,20 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred b1c23c7b7c85 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 took the typed-guard route the entry's first option names (not the
+    server-on-:memory: + ATTACH redesign). `duckdb_writer.ConnectionYielded` is a new typed
+    error; `LockedDuckDB.yield_connection(to=...)` records WHERE the connection went before
+    closing it, and `__getattr__` then raises `ConnectionYielded` naming the attribute and the
+    HTTP endpoint to query instead -- in place of duckdb's bare "Connection already closed".
+    `boot_query_plane` calls it with the live endpoint string. The lock is still held (a second
+    cross-process writer is still refused) and `close()` still releases it.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 took the typed-guard route the entry's first option names (not the server-on-:memory: + ATTACH redesign). Verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/duckdb_writer.py:27 (ConnectionYielded), :87 (yield_connection); src/shared/packages/pyforge-atlas/src/pyforge/atlas/query_plane_boot.py:222; gate src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_boot.py:126 (23 passed).
 
 ### DW-FU-20-2: epics.md still shows Story 20.2 (and 20.1) as "Status: backlog" even though the spec/ledger have progressed past that.
 
@@ -2937,9 +2961,22 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 960735f131e6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 widened the fixture to `(id INTEGER, label VARCHAR, amount DOUBLE,
+    released DATE, observed TIMESTAMP, price DECIMAL(12,3), digest BLOB)` with an all-NULL row,
+    and added a query per type. Doing so showed the entry's suspicion was right and then some:
+    over the JSON wire format a BLOB arrives as `{}` and dates/decimals are lossily re-encoded,
+    so a parity gate on JSON could not have compared these types at all. The gate therefore asks
+    the face for `type: "arrow"` and reads the Arrow IPC stream with pyarrow -- the lossless
+    transport the server already ships -- and the two faces then agree value-for-value. A seeded
+    divergence in EACH typed column is driven as its own case, so the gate is proven able to
+    fail per type, not just to pass.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 widened the fixture to `(id INTEGER, label VARCHAR, amount DOUBLE, released DATE, observed TIMESTAMP, price DECIMAL(12,3), digest BLOB)` with an all-NULL row, and added a query per type. Verified: src/shared/packages/pyforge-atlas/tests/unit/query_plane/test_face_parity.py:133 (TYPED_DIVERGENCES), :398 (5 parametrized divergence cases); 8 passed in 6.89s.
 
 ### DW-FU-20-2-3: A TOCTOU race exists between `_port_is_free(DEFAULT_PORT)` and `boot_query_plane`'s actual bind of that same hard-coded port.
 
@@ -2950,9 +2987,21 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 47b29c1a278d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 removed the race by removing the shared port from the gate. The parity
+    gate no longer probes and then binds `DEFAULT_PORT`: it takes an EPHEMERAL port from the
+    kernel (bind to :0, read the number back) and passes it to an injected launcher that runs
+    the shipped `pkg.server.server` with `socketify.App.listen` bound to that port --
+    `duckdb-server` exposes no port flag, so this is how its own server is reused rather than
+    reimplemented. `_port_is_free` is gone from the gate. The one test that deliberately
+    exercises the REAL hard-coded-port launch site keeps its guard, because that port is what it
+    is testing.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 removed the race by removing the shared port from the gate. Verified: src/shared/packages/pyforge-atlas/tests/unit/query_plane/test_face_parity.py:348 (test_the_gate_runs_on_an_ephemeral_port_never_the_hard_coded_default); 8 passed.
 
 ### DW-FU-20-3: dashboard/app.py's PAGE_INVENTORY notes, dashboard/__init__.py's module docstring, and a provenance comment at app.py:243 still describe the packages-backed pages as "renders empty until the composed store lands (DW-D2)", now stale relative to DW-D2-2's closure by this story.
 
@@ -2963,9 +3012,21 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred fff73eb6b482 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 de-staled all three. `PAGE_INVENTORY`'s notes no longer say "renders
+    empty until the composed store lands (DW-D2)"; each now states what its page actually reads
+    and, where a DESIGN control has no backing column, names that gap instead.
+    `dashboard/__init__.py`'s module docstring records the declared controls, the live-scan
+    submit path and the landmark chrome. The provenance comment block now points at the gate
+    that pins the one-page-one-constant rule. `data.py`'s `load_scan_project` /
+    `load_env_inspect` docstrings, which asserted that no in-dashboard submit was wired, now
+    describe the submit that is.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 de-staled all three. Verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/__init__.py:15; src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py:294 (load_scan_project), :316 (load_env_inspect); src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:120 (PAGE_INVENTORY notes).
 
 ### DW-FU-20-3-2: README.md's "Status" line ("8 Kedro pipelines live") already omitted the pre-existing artifactory_downloads and query_plane_cache pipelines before this story; this story adds a 9th/10th pipeline (semantic_packages) without correcting that inventory.
 
@@ -2976,9 +3037,21 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred d245c8cb57f9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 corrected the count and gated it. README's Status line read "8 Kedro
+    pipelines live" and named eight while eleven were registered -- `artifactory_downloads`,
+    `query_plane_cache` and `semantic_packages` had each been added with no doc edit. It now
+    names all eleven, and a new test parses that line and compares it against
+    `find_pipelines()`'s own discovery, in both directions, with the count cross-checked against
+    the names it lists. The bootstrap section's separate "eight" is correct (that task
+    deliberately excludes the entry-scoped `universal_sbom` and the two downstream
+    composition/cache pipelines) and is pinned so it cannot be mistaken for drift.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 corrected the count and gated it. Verified: src/shared/packages/pyforge-atlas/README.md:16; gate src/shared/packages/pyforge-atlas/tests/unit/test_pipeline_inventory.py:38 (3 passed).
 
 ### DW-FU-20-3-3: test_nodes.py's duplicate-key test (test_duplicate_conda_name_across_joined_inputs_does_not_fan_out_the_population) only exercises duplicate keys in core_packages_enumerated/core_latest_status, not in core_downloads, core_feedstock_attribution, or vcs_archived_feedstocks.
 
@@ -2989,9 +3062,20 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 867782247fa3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 closed the coverage gap the entry describes (the fan-out guard already
+    existed in code; only the proof was missing). Two cases were added: one exercising duplicate
+    keys in each of the three remaining joined inputs -- `core_feedstock_attribution`,
+    `vcs_archived_feedstocks` (read as a membership set) and `core_downloads` -- and one with
+    duplicates in every input at once. Both use CONFLICTING duplicates, so `drop_duplicates`'s
+    first-wins resolution is pinned rather than left looking coincidental: a would-be fan-out
+    shows up as both an extra row and an ambiguous value.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 closed the coverage gap the entry describes (the fan-out guard already existed in code; only the proof was missing). Verified: src/shared/packages/pyforge-atlas/tests/unit/pipelines/semantic_packages/test_nodes.py:115 (and the all-inputs case below it); 8 passed.
 
 ### DW-FU-20-4: epics.md still shows Story 20.4 (and 20.5) as "Status: backlog" even though the spec/ledger have progressed past that -- the same known epics.md-staleness pattern recorded by Stories 20.2/20.3's own specs.
 
@@ -3056,9 +3140,24 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 17aab2c827dd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 gave `PageDef` the two declarations DESIGN.md's Layout bullets specify
+    -- `filters` (one `vm.Filter` per loader column) and `chart` (one `vm.Graph` via the new
+    `ChartDef`) -- and `_data_page` now renders both. Seven pages declare a control
+    (cve-watcher, version-downloads, release-cadence, find-alternative, adoption-stage,
+    distribution-breakdown, universe-sbom); `_declared_filters` refuses a declared column the
+    loader does not project, and skips one with no non-null values because vizro 0.1.60's
+    `Filter.pre_build` cannot build over an empty frame (its own `TODO: Enable empty data_frame
+    handling`) -- an honest-empty page carries no Filter exactly as it carries no rows. The gate
+    parses DESIGN.md itself rather than restating it, so drift reds from either side. A DESIGN
+    control with no backing loader column stays NAMED in that page's `note`, not silently
+    dropped (cve-watcher's maintainer filter, release-cadence's long `window` dimension).
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 gave `PageDef` the two declarations DESIGN.md's Layout bullets specify -- `filters` (one `vm.Filter` per loader column) and `chart` (one `vm.Graph` via the new `ChartDef`) -- and `_data_page` now renders both. Verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:88 (ChartDef), :117 (PageDef.filters), :437 (_declared_chart), :445 (_declared_filters); gate src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_controls.py:82,93 (41 passed); rendered against real rows at src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:216.
 
 ### DW-FU-20-5-2: The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached per-invocation result via the same honest-empty BSL seam as every other shell page, but do NOT wire an actual in-dashboard submit control that triggers a new scan (a Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md / EXPERIENCE.md describe an upload/path input as the primary interaction; building that live-invocation wiring is a materially larger, separate engineering effort (a new
 
@@ -3069,9 +3168,24 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred d17a66db7038 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 wired the submit. `dashboard/scan_submit.py` is the new module: a path
+    field (`vm.UserInput`) + Run button (`vm.Button` -> `vm.Action`) per live-scan page, running
+    the CLI through `pyforge.core.process.PosixProcess` -- the ONE sanctioned subprocess seam,
+    so the atlas package still imports `subprocess` nowhere outside `query_plane_boot.py`'s
+    exempted launch site (AD-4). Each CLI's `--json` payload is reshaped by a PURE normalizer
+    into exactly the columns that page's BSL loader declares, then written to the page's own
+    cached Parquet via a staging file + `os.replace`. `env-inspect` runs both of its declared
+    modes (`--licenses`, `--security`) and joins them on the package name. A refusal (unknown
+    page, empty path, absent path) starts nothing; a non-zero exit or an unreadable payload is a
+    `failed` submission that leaves the previous cached result in place -- never a fabricated
+    row.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 wired the submit. Verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py:191 (submit_scan); src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:508 (_scan_action), :536 (_scan_page); gates src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py:69,130 (18 passed) and src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:237.
 
 ### DW-FU-20-5-3: The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"` landmark. Native `<a href>` links + heading elements remain genuinely, indepen
 
@@ -3082,9 +3196,21 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred c4988094d094 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 added the landmarks Vizro 0.1.60 does not ship. `app.LandmarkDashboard`
+    subclasses `vm.Dashboard` and re-tags its own two containers in `_arrange_page`:
+    `right-side` (the page header + components) becomes `role="main"`, and the
+    `nav-control-panel` children are wrapped in an `html.Nav(role="navigation",
+    aria-label="Dashboard pages")`, so the page select really sits INSIDE the navigation
+    landmark. Asserted in the browser, on the home page and on every one of the 34 pages -- the
+    e2e docstring's "deliberately does NOT assert" paragraph is gone, replaced by the
+    assertions.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 added the landmarks Vizro 0.1.60 does not ship. Verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:713 (LandmarkDashboard); gate src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:292 (per-page re-check in the same test's page loop); 5 passed.
 
 ### DW-FU-20-5-4: DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA navigation-check residual is genuinely done; the "data-present visual pass" residual DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real da
 
@@ -3095,9 +3221,22 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 787059d3db2f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 built the data-present pass a gate can run. `tests/fixtures/data/` is a
+    new STATIC fixture Parquet tree mirroring the catalog's own `data/` layout (the home atlas
+    AGENTS.md already declares for "static Parquet for offline gate runs"), with a tracked
+    builder documenting every row; the e2e fixture materializes its data root by copying that
+    tree instead of hand-placing three tmp files. Every `grounded-data` page is then driven in
+    the browser and asserted to render its rows, and `distribution-breakdown` -- the one page
+    declaring both a filter and a chart -- is asserted to build both over real rows. This is a
+    headless-browser assertion, not a human looking at a screenshot: the residual DW-D2-3 named
+    is now mechanically checked.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 built the data-present pass a gate can run. Verified: src/shared/packages/pyforge-atlas/tests/fixtures/data/build_fixture_data.py (6 datasets); src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:66 (FIXTURE_DATA_ROOT), :193 (grounded rows), :216 (declared controls on real rows); 5 passed.
 
 ### DW-FU-20-5-5: A handful of DESIGN.md's per-page measures are genuinely multi-signal composite scores computed by algorithms that need row-to-row comparison or set operations over the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without reimplementing a substantial search algorithm in SQL. These are modeled as PRE-COM
 
@@ -3108,9 +3247,22 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 94f216576c1e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 turned the docstring claim into a gate. The composite-score columns
+    (`similarity_score`, `match_confidence`, `freshness_percentile`, `futures_score`,
+    `futures_tier`, `py314_readiness`) are each pinned by an AST check to a BARE pass-through
+    declaration (`lambda t: t.<col>` for a Dimension, `lambda t: t.<col>.mean()` for a Measure)
+    and asserted absent from `metrics.METRIC_PROVENANCE` -- the registry of columns the BSL
+    layer DERIVES -- and absent from `metrics.py`'s function names. Re-implementing any of these
+    algorithms as an Ibis expression would previously have passed every test; now it reds. The
+    entry's judgment stands: these stay pre-computed upstream outputs read as ordinary columns
+    (AD-8).
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 turned the docstring claim into a gate. Verified: src/shared/packages/pyforge-atlas/tests/unit/semantic/test_composite_scores.py:87 (20 passed); pass-throughs at src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py:290,392,424,457,458,461.
 
 ### DW-FU-20-5-6: test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in THIS worktree, verified pre-existing (identical failure on baseline main HEAD via `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3 `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`, which is absent in a fresh worktree/checkout (only the main checkout's local runtime state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: g
 
@@ -3121,9 +3273,22 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 865b12049f93 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 removed the dependence on the gitignored Tier-3 file.
+    `test_factory_status_reads_the_real_sprint_status` is now
+    `test_factory_status_reads_the_sprint_status_it_is_pointed_at`: it drives
+    `build_factory_status_frame` through its already-injectable `sprint_status_path` /
+    `epics_path` / `specs_dir` parameters against the `bmad_fixture` file and asserts the WHOLE
+    key->status map, so it runs (and can fail) in a fresh worktree and in CI where it previously
+    skipped itself. Two companions keep that from being a loophole: one pins the parameters'
+    defaults to the real repo artifact paths, and one proves an absent feed renders no sprint
+    rows rather than a guess.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: _bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 removed the dependence on the gitignored Tier-3 file. Verified: src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py:277 (plus the defaults pin and the absent-feed case immediately below); 8 passed.
 
 ### DW-FU-20-5-7: No test verifies that a given page's `_provenance.resolve_for_file(...)` call in `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only the generic "backing file not found" substring is checked (by `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g. `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some other page's constant. A future edit swapping two of the 18 near-identical per-page provenance declarations would
 
@@ -3134,9 +3299,20 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 90563d160b78 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 pinned the pairing. The new gate hand-declares page id ->
+    Parquet-relpath constant for all 34 pages (that declaration IS the pin, not a readback),
+    writes every constant with a DISTINCT mtime, builds the dashboard, and reads each page's own
+    legibility Card back: a page wired to the wrong constant renders another page's ISO stamp
+    and reds. The two-file `identity-workbook` page and the two no-dataset shells are covered on
+    their own terms, a coverage case reds a page added without a row, and a final case proves
+    the stamps really are distinct -- otherwise every other case would pass against any pairing.
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  verified: 2026-10-04 — closed — Story 27.3 pinned the pairing. Verified: src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_provenance.py:33 (PAGE_PARQUET_CONSTANT), :128 (per-page stamp); 35 passed.
 
 ### DW-FU-15-1: Epic 15's spec-artifactory-download-intelligence SPEC.md declares a `surface:` glob that matches zero real tracked files, leaving the whole epic invisible to the repo's spec-surface drift/coverage gate.
 
@@ -4087,9 +4263,25 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 8413b1068844 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 gave `PageDef` the two declarations DESIGN.md's Layout bullets specify
+    -- `filters` (one `vm.Filter` per loader column) and `chart` (one `vm.Graph` via the new
+    `ChartDef`) -- and `_data_page` now renders both. Seven pages declare a control
+    (cve-watcher, version-downloads, release-cadence, find-alternative, adoption-stage,
+    distribution-breakdown, universe-sbom); `_declared_filters` refuses a declared column the
+    loader does not project, and skips one with no non-null values because vizro 0.1.60's
+    `Filter.pre_build` cannot build over an empty frame (its own `TODO: Enable empty data_frame
+    handling`) -- an honest-empty page carries no Filter exactly as it carries no rows. The gate
+    parses DESIGN.md itself rather than restating it, so drift reds from either side. A DESIGN
+    control with no backing loader column stays NAMED in that page's `note`, not silently
+    dropped (cve-watcher's maintainer filter, release-cadence's long `window` dimension).
+    (DW-FU-20-5-8 is the same finding as DW-FU-20-5, ingested twice.)
 
   verified: 2026-09-08 — still-open — CONFIRMED as shipped. `dashboard/app.py` still builds every page through the minimal `_data_page`/`_shell_page` helpers -- 33 references in that one module -- with no per-page Filter rows, Graph charts, dimension-selector radio, or click-to-filter segments. The richer DESIGN.md/EXPERIENCE.md layouts remain deferred exactly as the entry's scope judgment recorded.
+
+  verified: 2026-10-04 — closed — Story 27.3 gave `PageDef` the two declarations DESIGN.md's Layout bullets specify -- `filters` (one `vm.Filter` per loader column) and `chart` (one `vm.Graph` via the new `ChartDef`) -- and `_data_page` now renders both. Verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:88 (ChartDef), :117 (PageDef.filters), :437 (_declared_chart), :445 (_declared_filters); gate src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_controls.py:82,93 (41 passed); rendered against real rows at src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:216.
 
 ### DW-FU-20-5-9: The 2 live-scan-artifact pages (scan-project, env-inspect) read the LATEST cached per-invocation result via the same honest-empty BSL seam as every other shell page, but do NOT wire an actual in-dashboard submit control that triggers a new scan (a Dash callback invoking scan_project.py/env_inspect.py as a subprocess). DESIGN.md / EXPERIENCE.md describe an upload/path input as the primary interaction; building that live-invocation wiring is a materially larger, separate engineering effort (a new... [truncated, 686 chars total]
 
@@ -4100,9 +4292,24 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred c71697e59038 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 wired the submit. `dashboard/scan_submit.py` is the new module: a path
+    field (`vm.UserInput`) + Run button (`vm.Button` -> `vm.Action`) per live-scan page, running
+    the CLI through `pyforge.core.process.PosixProcess` -- the ONE sanctioned subprocess seam,
+    so the atlas package still imports `subprocess` nowhere outside `query_plane_boot.py`'s
+    exempted launch site (AD-4). Each CLI's `--json` payload is reshaped by a PURE normalizer
+    into exactly the columns that page's BSL loader declares, then written to the page's own
+    cached Parquet via a staging file + `os.replace`. `env-inspect` runs both of its declared
+    modes (`--licenses`, `--security`) and joins them on the package name. A refusal (unknown
+    page, empty path, absent path) starts nothing; a non-zero exit or an unreadable payload is a
+    `failed` submission that leaves the previous cached result in place -- never a fabricated
+    row. (DW-FU-20-5-9 is the same finding as DW-FU-20-5-2, ingested twice.)
 
   verified: 2026-09-08 — still-open — CONFIRMED. No in-dashboard submit control exists for the two live-scan pages; the pages still read the latest cached artifact through the honest-empty seam and no Dash callback invokes `scan_project.py`/`env_inspect.py` as a subprocess. The forward-looking wiring the entry describes is unbuilt.
+
+  verified: 2026-10-04 — closed — Story 27.3 wired the submit. Verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py:191 (submit_scan); src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:508 (_scan_action), :536 (_scan_page); gates src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py:69,130 (18 passed) and src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:237.
 
 ### DW-FU-20-5-10: The §2.1 semantic-HTML/ARIA browser-agent navigation check found a REAL, pre-existing accessibility gap while driving the actual rendered DOM: Vizro's shipped page-select control is a `<div>`-based accordion, not a native `<nav>`/`role="navigation"` landmark (the one literal `<nav>` tag on the page is an empty, hidden top navbar Vizro doesn't use), and page content sits in a plain `<div>`, not a `<main>`/`role="main"` landmark. Native `<a href>` links + heading elements remain genuinely, indepen... [truncated, 626 chars total]
 
@@ -4113,9 +4320,21 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 4b12adaeb6ab — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 added the landmarks Vizro 0.1.60 does not ship. `app.LandmarkDashboard`
+    subclasses `vm.Dashboard` and re-tags its own two containers in `_arrange_page`:
+    `right-side` (the page header + components) becomes `role="main"`, and the
+    `nav-control-panel` children are wrapped in an `html.Nav(role="navigation",
+    aria-label="Dashboard pages")`, so the page select really sits INSIDE the navigation
+    landmark. Asserted in the browser, on the home page and on every one of the 34 pages -- the
+    e2e docstring's "deliberately does NOT assert" paragraph is gone, replaced by the
+    assertions. (DW-FU-20-5-10 is the same finding as DW-FU-20-5-3, ingested twice.)
 
   verified: 2026-09-08 — still-open — CONFIRMED, and the gap is unchanged. `grep -rn 'role="navigation"|role="main"'` across `pyforge/atlas/dashboard/*.py` returns **nothing** -- no landmark role is emitted anywhere in the dashboard source, so Vizro's `<div>`-based accordion still stands in for a `<nav>` and page content still sits in a plain `<div>`. This is upstream Vizro DOM, not repo-local markup, so it remains a real accessibility gap the fleet cannot close alone.
+
+  verified: 2026-10-04 — closed — Story 27.3 added the landmarks Vizro 0.1.60 does not ship. Verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py:713 (LandmarkDashboard); gate src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:292 (per-page re-check in the same test's page loop); 5 passed.
 
 ### DW-FU-20-5-11: DW-D2-3 STAYS OPEN, not closed -- corrected after review. Only the §2.1 ARIA navigation-check residual is genuinely done; the "data-present visual pass" residual DW-D2-3's own 2026-08-26 evidence-update named is NOT done. The visual pass actually run in this story (`pixi run -e local-recipes dashboard-serve`, headless-Chrome screenshots) was against a FRESH, EMPTY data root -- it re-proves the already-known honest-empty behavior, not a post-pipeline-run, data-present state. Materializing real da... [truncated, 1381 chars total]
 
@@ -4126,9 +4345,23 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred ddb289787793 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 built the data-present pass a gate can run. `tests/fixtures/data/` is a
+    new STATIC fixture Parquet tree mirroring the catalog's own `data/` layout (the home atlas
+    AGENTS.md already declares for "static Parquet for offline gate runs"), with a tracked
+    builder documenting every row; the e2e fixture materializes its data root by copying that
+    tree instead of hand-placing three tmp files. Every `grounded-data` page is then driven in
+    the browser and asserted to render its rows, and `distribution-breakdown` -- the one page
+    declaring both a filter and a chart -- is asserted to build both over real rows. This is a
+    headless-browser assertion, not a human looking at a screenshot: the residual DW-D2-3 named
+    is now mechanically checked. (DW-FU-20-5-11 is the same finding as DW-FU-20-5-4, ingested
+    twice.)
 
   verified: 2026-09-08 — still-open — CONFIRMED, and its premise re-checked at source: `DW-D2-3` (this same ledger, `:507`) is still open, and its own `verified: 2026-07-30` line independently states the visual pass 'remains unverified by anything'. So this entry's correction -- that only the ARIA residual is done and the data-present visual pass is not -- still holds. CAP-6 NOTE: `DW-FU-20-5-4` in this same ledger is a near-duplicate of this entry (same DW-D2-3-stays-open claim, near-identical summary text); they are one defect class, not two independent findings.
+
+  verified: 2026-10-04 — closed — Story 27.3 built the data-present pass a gate can run. Verified: src/shared/packages/pyforge-atlas/tests/fixtures/data/build_fixture_data.py (6 datasets); src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:66 (FIXTURE_DATA_ROOT), :193 (grounded rows), :216 (declared controls on real rows); 5 passed.
 
 ### DW-FU-20-5-12: A handful of DESIGN.md's per-page measures are genuinely multi-signal composite scores computed by algorithms that need row-to-row comparison or set operations over the full catalog (e.g. find-alternative's similarity_score is find_alternative.py's own weighted-Jaccard composite across keyword/summary/dependent/maintainer overlap x recency x downloads) -- not expressible as a per-row Ibis/DuckDB expression without reimplementing a substantial search algorithm in SQL. These are modeled as PRE-COM... [truncated, 1149 chars total]
 
@@ -4139,9 +4372,22 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred f4a014e9ca52 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 turned the docstring claim into a gate. The composite-score columns
+    (`similarity_score`, `match_confidence`, `freshness_percentile`, `futures_score`,
+    `futures_tier`, `py314_readiness`) are each pinned by an AST check to a BARE pass-through
+    declaration (`lambda t: t.<col>` for a Dimension, `lambda t: t.<col>.mean()` for a Measure)
+    and asserted absent from `metrics.METRIC_PROVENANCE` -- the registry of columns the BSL
+    layer DERIVES -- and absent from `metrics.py`'s function names. Re-implementing any of these
+    algorithms as an Ibis expression would previously have passed every test; now it reds. The
+    entry's judgment stands: these stay pre-computed upstream outputs read as ordinary columns
+    (AD-8). (DW-FU-20-5-12 is the same finding as DW-FU-20-5-5, ingested twice.)
 
   verified: 2026-09-08 — still-open — CONFIRMED as an accepted modelling decision rather than a defect. The composite measures remain pre-computed rather than expressed as per-row Ibis/DuckDB expressions, as `semantic/models.py`'s own docstring records. Nothing has changed that would make a SQL reimplementation of the weighted-Jaccard similarity tractable, so the deferral stands on its original reasoning.
+
+  verified: 2026-10-04 — closed — Story 27.3 turned the docstring claim into a gate. Verified: src/shared/packages/pyforge-atlas/tests/unit/semantic/test_composite_scores.py:87 (20 passed); pass-throughs at src/shared/packages/pyforge-atlas/src/pyforge/atlas/semantic/models.py:290,392,424,457,458,461.
 
 ### DW-FU-20-5-13: test_dashboard_dryrun.py::test_factory_status_reads_the_real_sprint_status fails in THIS worktree, verified pre-existing (identical failure on baseline main HEAD via `git stash`) and unrelated to this story's diff: it reads the real, gitignored Tier-3 `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml`, which is absent in a fresh worktree/checkout (only the main checkout's local runtime state has it, from a prior session's bmad-loop/marshal run). Not a PR-CI gate: g... [truncated, 579 chars total]
 
@@ -4152,9 +4398,23 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 9c87e8586e2e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 removed the dependence on the gitignored Tier-3 file.
+    `test_factory_status_reads_the_real_sprint_status` is now
+    `test_factory_status_reads_the_sprint_status_it_is_pointed_at`: it drives
+    `build_factory_status_frame` through its already-injectable `sprint_status_path` /
+    `epics_path` / `specs_dir` parameters against the `bmad_fixture` file and asserts the WHOLE
+    key->status map, so it runs (and can fail) in a fresh worktree and in CI where it previously
+    skipped itself. Two companions keep that from being a loophole: one pins the parameters'
+    defaults to the real repo artifact paths, and one proves an absent feed renders no sprint
+    rows rather than a guess. (DW-FU-20-5-13 is the same finding as DW-FU-20-5-6, ingested
+    twice.)
 
   verified: 2026-09-08 — still-open — CONFIRMED structurally, and the mechanism verified rather than the symptom. `git check-ignore -v` resolves `_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml` to `.gitignore:775` (`_bmad-output/projects/*/implementation-artifacts`), so the Tier-3 file this test reads is absent from every fresh clone and worktree by design -- the failure is reproducible anywhere the local runtime state does not exist. It passes in a long-lived checkout only because a prior run left the file behind. PATH UPDATE: the test moved to `tests/integration/dashboard/test_dashboard_dryrun.py` in marshal Story 32.5 (dashboard is integration weight -- it needs a provisioned Chromium).
+
+  verified: 2026-10-04 — closed — Story 27.3 removed the dependence on the gitignored Tier-3 file. Verified: src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py:277 (plus the defaults pin and the absent-feed case immediately below); 8 passed.
 
 ### DW-FU-20-5-14: No test verifies that a given page's `_provenance.resolve_for_file(...)` call in `build_dashboard()` is paired to THAT SAME page's own Parquet path constant -- only the generic "backing file not found" substring is checked (by `test_shell_pages_state_unavailable_provenance_honestly`), never that e.g. `cve_watcher_provenance` is actually built from `VULN_HISTORY_PARQUET` and not some other page's constant. A future edit swapping two of the 18 near-identical per-page provenance declarations would... [truncated, 724 chars total]
 
@@ -4165,9 +4425,21 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 8aaf871b33bc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.3 (spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data)
+  resolution: Story 27.3 pinned the pairing. The new gate hand-declares page id ->
+    Parquet-relpath constant for all 34 pages (that declaration IS the pin, not a readback),
+    writes every constant with a DISTINCT mtime, builds the dashboard, and reads each page's own
+    legibility Card back: a page wired to the wrong constant renders another page's ISO stamp
+    and reds. The two-file `identity-workbook` page and the two no-dataset shells are covered on
+    their own terms, a coverage case reds a page added without a row, and a final case proves
+    the stamps really are distinct -- otherwise every other case would pass against any pairing.
+    (DW-FU-20-5-14 is the same finding as DW-FU-20-5-7, ingested twice.)
 
   verified: 2026-09-08 — still-open — CONFIRMED. The only `resolve_for_file` assertions in atlas's suite are `tests/unit/mcp/test_read_surface.py:527-533` (`test_resolve_for_file_refuses_a_directory_mtime`) -- a behaviour test of the helper itself, not a pairing test. Nothing verifies that a given page's provenance call uses THAT page's own Parquet constant, so the swap-two-declarations defect the entry describes would still pass the suite.
+
+  verified: 2026-10-04 — closed — Story 27.3 pinned the pairing. Verified: src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_provenance.py:33 (PAGE_PARQUET_CONSTANT), :128 (per-page stamp); 35 passed.
 
 ### DW-FU-21-3-12: --live-catalog degrading cf_packages to empty (missing/sub-floor core_packages_enumerated.parquet, run without --live-catalog-only) makes every already-on-conda-forge AOSS package look "not on conda-forge" (cf_or_pm membership test), which poisons the AOSS-Free Mason-facing queue output (write_aoss_free_queue) -- documented elsewhere as a live/irreversible signal. Not a new code path (the aoss_free_candidates gate is pre-existing and unmodified by this story) and matches the story's own explicit... [truncated, 678 chars total]
 
