@@ -337,9 +337,7 @@ def _degrade_call_counts() -> dict[str, int]:
         n = sum(
             1
             for node in ast.walk(tree)
-            if isinstance(node, ast.Call)
-            and isinstance(node.func, ast.Name)
-            and node.func.id == "degrade_on_exception"
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "degrade_on_exception"
         )
         if n:
             counts[path.stem] = n

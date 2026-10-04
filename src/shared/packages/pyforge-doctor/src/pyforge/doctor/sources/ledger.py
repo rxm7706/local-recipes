@@ -257,11 +257,7 @@ def _ledger_paths(target: Path, rev: str) -> list[str] | None:
     )
     if listing is None:
         return None
-    return sorted(
-        p
-        for p in listing.split("\0")
-        if p and p.startswith(PROJECTS_PREFIX) and p.endswith(LEDGER_SUFFIX)
-    )
+    return sorted(p for p in listing.split("\0") if p and p.startswith(PROJECTS_PREFIX) and p.endswith(LEDGER_SUFFIX))
 
 
 def _repo_top(target: Path) -> Path | None:
@@ -455,9 +451,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                     # DW-FU-6-4-5: a coincidentally new `done` key with the same
                     # tail must not mask a deletion unless this is the one-key
                     # rename case (exactly one done key on each side, same tail).
-                    if any(s in before for s in survivors) or (
-                        len(survivors) == 1 and base_same_tail == {key}
-                    ):
+                    if any(s in before for s in survivors) or (len(survivors) == 1 and base_same_tail == {key}):
                         continue  # renamed, still done — continuity, not regression
                 lost.append((key, old, "<absent>"))
             elif new not in TERMINAL and not epic_reopened_by_new_story(key, before_keys, after):

@@ -285,9 +285,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{Source.LEDGER_DIRECTION.value!r}, got {args.source!r}"
         )
     if args.head and args.source != Source.LEDGER_REGRESSION.value:
-        parser.error(
-            f"argument --head: only valid for {Source.LEDGER_REGRESSION.value!r}, got {args.source!r}"
-        )
+        parser.error(f"argument --head: only valid for {Source.LEDGER_REGRESSION.value!r}, got {args.source!r}")
     if args.inv is not None and args.source not in (Source.DREAM_CHAIN.value, Source.CHAIN_COMPLETENESS.value):
         parser.error(
             f"argument --inv: only valid for {Source.DREAM_CHAIN.value!r} or "

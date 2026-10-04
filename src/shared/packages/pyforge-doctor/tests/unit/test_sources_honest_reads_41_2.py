@@ -414,4 +414,3 @@ def test_inv_on_another_source_is_a_usage_error(capsys: pytest.CaptureFixture[st
         dispatch.main(["story-status", "--inv", "INV-1"])
     assert exc.value.code == 2
     assert "--inv" in capsys.readouterr().err
-
