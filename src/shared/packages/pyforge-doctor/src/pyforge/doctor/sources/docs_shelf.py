@@ -41,9 +41,7 @@ _ARCHIVED_ROOT_FILENAMES = (
     "POLICY_COMPOSITION_README.md",
 )
 _STALE_ARCHIVE_CITATION_RE = re.compile(
-    r"(?<!archive/)_bmad-output/(?:"
-    + "|".join(re.escape(name) for name in _ARCHIVED_ROOT_FILENAMES)
-    + r")"
+    r"(?<!archive/)_bmad-output/(?:" + "|".join(re.escape(name) for name in _ARCHIVED_ROOT_FILENAMES) + r")"
 )
 
 # `_bmad-output/` root allow-list. docs/MAP.md's "Outside this map" table

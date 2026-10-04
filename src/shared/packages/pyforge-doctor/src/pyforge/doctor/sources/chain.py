@@ -327,15 +327,9 @@ def _unparseable_frontmatter_item(
         except Exception:
             cause = None
     remedies = {
-        "glued-opener": (
-            "split the opener: put `---` alone on line 1, then `title:` (or the first key) on line 2"
-        ),
-        "unbounded-opener": (
-            "close the frontmatter block with a column-0 `---` line before the body"
-        ),
-        "non-mapping": (
-            "make the fenced YAML block a mapping (key: value pairs), then re-check"
-        ),
+        "glued-opener": ("split the opener: put `---` alone on line 1, then `title:` (or the first key) on line 2"),
+        "unbounded-opener": ("close the frontmatter block with a column-0 `---` line before the body"),
+        "non-mapping": ("make the fenced YAML block a mapping (key: value pairs), then re-check"),
     }
     remedy = remedies.get(cause or "", "fix the --- fenced YAML frontmatter block, then re-check")
     cause_note = f" ({cause})" if cause else ""

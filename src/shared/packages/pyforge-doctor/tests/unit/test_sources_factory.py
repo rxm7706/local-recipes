@@ -647,10 +647,7 @@ def test_rekey_map_is_classified_and_not_flagged_uncovered(tmp_path: Path) -> No
     assert findings[0].check == "bmad-drift"
     assert findings[0].status is DoctorStatus.OK
     assert factory.classify(Path("planning-artifacts/rekey-2026-09-16.md"), repo) == "tracked:plan"
-    assert (
-        factory.classify(Path("planning-artifacts/spike-0-copier-api-fit-report.md"), repo)
-        == "archive:spike-report"
-    )
+    assert factory.classify(Path("planning-artifacts/spike-0-copier-api-fit-report.md"), repo) == "archive:spike-report"
     # Undated or mis-dated names are NOT the shape (AGENTS.md § Dates: YYYY-MM-DD only).
     assert factory.classify(Path("planning-artifacts/rekey.md"), repo) != "tracked:plan"
 

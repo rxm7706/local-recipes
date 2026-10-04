@@ -219,6 +219,7 @@ def _ground_truth_for_gather(target: Path) -> _GatherState:
         live_error = str(exc)
     return _GatherState(gt=gt, live=live, live_error=live_error)
 
+
 _SEVERITY_TO_STATUS: dict[str, DoctorStatus] = {
     HARD: DoctorStatus.FAIL,
     DRIFT: DoctorStatus.WARN,
@@ -893,11 +894,7 @@ def check_spec_status(target: Path) -> list[Finding]:
     retro_slugs = []
     retros_dir = impl / "retros"
     if _is_dir(retros_dir):
-        retro_slugs = [
-            slug
-            for p in _listdir_match(retros_dir, "retro-*.md")
-            if (slug := _slug(p.name))
-        ]
+        retro_slugs = [slug for p in _listdir_match(retros_dir, "retro-*.md") if (slug := _slug(p.name))]
     for spec in _listdir_match(impl, "spec-*.md"):
         text = _read_item(spec, "check_spec_status", target, out)
         if text is None:
