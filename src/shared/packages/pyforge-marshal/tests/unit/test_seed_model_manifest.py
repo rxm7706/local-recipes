@@ -1704,6 +1704,45 @@ def test_a_dot_or_empty_path_segment_raises_manifest_error_naming_the_entry_id(t
 
 
 @pytest.mark.parametrize(
+    "referenced_path",
+    ["https://example.com/not-a-real-file", "docs/./x", "docs//x"],
+    ids=["url", "dot-segment", "empty-segment"],
+)
+def test_a_referenced_entry_keeps_any_spelling_of_its_path(tmp_path, referenced_path):
+    """Story 86.1 landing regression: a `referenced` entry names no repo file
+    (often a URL, whose `//` is an empty segment) and the one-owner rule never
+    compares it, so the one-spelling refusal does not apply to it -- it loads
+    as written. The absolute and `..` refusals still do."""
+    text = f"""\
+        model_version: "1.0.0"
+        artifacts:
+          - id: upstream-doc
+            class: referenced
+            path: {json.dumps(referenced_path)}
+            applies_to: both
+            rationale: r
+            pin: ">=1"
+    """
+    (entry,) = load_manifest(_write(tmp_path, text)).entries
+    assert entry.path == referenced_path
+
+
+def test_a_referenced_entry_still_refuses_a_parent_segment(tmp_path):
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: upstream-doc
+            class: referenced
+            path: "../outside"
+            applies_to: both
+            rationale: r
+            pin: ">=1"
+    """
+    with pytest.raises(ManifestError, match=r"^upstream-doc: path must not contain a '\.\.' segment"):
+        load_manifest(_write(tmp_path, text))
+
+
+@pytest.mark.parametrize(
     ("respelled", "canonical"),
     [
         pytest.param("./AGENTS.md", "AGENTS.md", id="dot-prefix"),

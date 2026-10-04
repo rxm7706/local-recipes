@@ -241,7 +241,7 @@ def _require_text(name: str, value: Any, *, suffix: str = "") -> str:
     return value.strip()
 
 
-def _require_repo_relative_path(value: str) -> str:
+def _require_repo_relative_path(value: str, *, one_spelling: bool = True) -> str:
     """``value`` (already stripped, non-blank) if it names a location that can
     only be INSIDE the repository, else ``ValueError`` (Story 82.11, DW-FU-7-4).
 
@@ -261,12 +261,17 @@ def _require_repo_relative_path(value: str) -> str:
     ``docs//x`` would pass it as a second owner of ``AGENTS.md`` and
     ``docs/x``. A ``.`` segment and an empty segment are refused, in both
     separator dialects; the one empty segment kept is a single trailing
-    ``/``, the directory-entry mark (``ManifestEntry.is_directory``)."""
+    ``/``, the directory-entry mark (``ManifestEntry.is_directory``). A
+    ``referenced`` entry passes ``one_spelling=False``: it names no repo file
+    (often a URL, whose ``//`` is an empty segment) and the one-owner rule
+    never compares it, so only the absolute / ``..`` refusals apply to it."""
     if PurePosixPath(value).is_absolute() or PureWindowsPath(value).drive or PureWindowsPath(value).root:
         raise ValueError(f"path must be repo-relative, not absolute, got {value!r}")
     segments = value.removesuffix("/").replace("\\", "/").split("/")
     if ".." in segments:
         raise ValueError(f"path must not contain a '..' segment, got {value!r}")
+    if not one_spelling:
+        return value
     if "." in segments:
         raise ValueError(f"path must not contain a '.' segment, got {value!r}")
     if "" in segments:
@@ -341,7 +346,15 @@ class ManifestEntry:
         if ARTIFACT_ID_PATTERN.fullmatch(self.id) is None:
             raise ValueError(f"id must carry no whitespace and no '#' (the opt-out key's separator), got {self.id!r}")
         object.__setattr__(self, "artifact_class", ArtifactClass(self.artifact_class))
-        object.__setattr__(self, "path", _require_repo_relative_path(_require_text("path", self.path)))
+        # A `referenced` entry names no repo file and is left out of the one-owner rule, so it keeps any
+        # spelling (Story 86.1 landing regression: a `referenced` URL's `//` read as an empty segment).
+        object.__setattr__(
+            self,
+            "path",
+            _require_repo_relative_path(
+                _require_text("path", self.path), one_spelling=self.artifact_class is not ArtifactClass.REFERENCED
+            ),
+        )
         object.__setattr__(self, "applies_to", AppliesTo(self.applies_to))
         object.__setattr__(self, "rationale", _require_text("rationale", self.rationale))
 
