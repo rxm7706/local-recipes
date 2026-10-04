@@ -2294,7 +2294,9 @@ status: open
   origin: spec-deferred bc68c76465f6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 86.5 — verify_code_linkage counts only story-spec and Spec-folder cites via _epic_spec_cites(), names each missing id in detail, stays status complete.
+  verified: 2026-10-04 — src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/chain_regen.py:688-730 verify_code_linkage and _epic_spec_cites filter prose tokens; test_verify_code_linkage_ignores_prose_and_names_missing_story_specs in tests/unit/test_chain_regen.py.
   verified: 2026-10-01 — NEEDS-DECISION — src/pyforge/marshal/core/chain_regen.py:688-716 verify_code_linkage always returns status='complete' regardless of how many spec cites are missing -- detail carries only 'N spec cite(s); M missing', never a 'failed'/blocking outcome. (2026-09-30 deferral burn-down triage)
   decision: Should read-only code-linkage verify be tightened to fail/block the orchestrated chain when spec cites are missing, or does CAP-1's read-only-verify-then-orphan-report contract intentionally stop short of that (as the entry's own text states: 'a product choice beyond CAP-1')?
 
@@ -2313,7 +2315,9 @@ status: open
   origin: spec-deferred a437fc395281 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 86.5 — retired marshal chain regenerate; planning chain-regenerate remains the orchestrated entry.
+  verified: 2026-10-04 — src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py no longer registers chain; test_chain_regenerate_subcommand_retired in tests/unit/test_chain_regen.py; cli/chain.py is a stub docstring only.
   verified: 2026-10-01 — NEEDS-DECISION — src/pyforge/marshal/cli/chain.py (marshal chain regenerate, Story 17.4) and src/pyforge/marshal/cli/planning.py (marshal planning chain-regenerate, Story 21.2) both still exist as live subcommands; grep for 'deprecat' across both files: zero matches. (2026-09-30 deferral burn-down triage)
   decision: Should marshal chain regenerate (the Story 17.4 four-phase dry-run verb) be deprecated or cross-linked to marshal planning chain-regenerate (Story 21.2's fuller orchestrated verb), or do the two serve genuinely distinct, permanent purposes?
 
@@ -7748,7 +7752,9 @@ status: open
   origin: spec-deferred fd4645ac7631 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 86.5 — deleted _generate() and its only-caller readers; archive contract kept on _fleet_chains()/_dream_files().
+  verified: 2026-10-04 — scripts/fleet_scan.py:3231 main() only (no _generate); tests/scripts/test_fleet_scan_archive.py exercises _fleet_chains archive reads.
   verified: 2026-10-01 — NEEDS-DECISION — scripts/fleet_scan.py:3559-3568 -- `main()` immediately prints 'retired: Guildhall generate.py is gone (steward 30.2) ...' and `return 2`; `_generate(args)` is never called from `main()` or anywhere else in the file (grep for `_generate(` with parens finds only its own definition at :3568). (2026-09-30 deferral burn-down triage)
   decision: Should the retired _generate() console generator and its downstream-only-test-exercised readers in scripts/fleet_scan.py be deleted outright, or rewired/repaired (fixing the dead docs/dreams/<slug>.md link in build_archived and the double-listed archived Dream in scan_backlog)? The entry's own text says this is not this story's decision to make.
 

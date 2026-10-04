@@ -2,7 +2,7 @@
 title: "86.5: The chain tooling sheds its retired and noisy paths"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 33a7af0cb5e1f58540ba1f14385991ee74582cdf
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -68,4 +68,13 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — build-auto (Story 86.5)
+- intent_gap: 0
+- patch: 0 (implementation matched spec)
+- defer: 0 (closed DW-FU-21-2, DW-FU-21-2-2, DW-marshal-75-1-2 in deferred-work-ledger.md)
+- Verification: pyforge-marshal-test, pyforge-deps-test, lint-types, spec_surface_reconcile OK (memlog on spec-pyforge-marshal and spec-pyforge-core; no --write-baseline).
+
+## Auto Run Result
+
+Status: done
+Blocking condition: —

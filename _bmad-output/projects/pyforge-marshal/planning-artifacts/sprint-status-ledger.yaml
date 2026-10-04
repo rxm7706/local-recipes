@@ -406,7 +406,7 @@ development_status:
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: backlog
   86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is: backlog
-  86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: backlog
+  86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: done
   86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: backlog
   86-7-the-session-close-docs-name-the-context-advisory-and-the-retired-id-guard-scans-the-planning-docs: backlog
   9-1-findings-model-severity-types-remedies: done
