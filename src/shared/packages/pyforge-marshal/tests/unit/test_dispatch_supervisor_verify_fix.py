@@ -34,13 +34,13 @@ import pytest
 import test_dispatch_supervisor_main_loop as loop
 from pyforge.testing_kit.flags import flagd_tree
 
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_verify_fix import (
     FIX_TURN_START_FAILED_CODE,
     VERIFY_FIX_LOOP_FLAG_KEY,
     fix_intent_ref,
 )
-from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.model import Finding, Severity, build_envelope
