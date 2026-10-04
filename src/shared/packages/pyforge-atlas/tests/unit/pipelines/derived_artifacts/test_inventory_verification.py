@@ -142,3 +142,33 @@ def test_unknown_floor_key_is_refused_not_silently_defaulted(key):
             pd.DataFrame(columns=["pypi_name"]),
             {"verification_sets": {key: 0}},
         )
+
+
+@pytest.mark.parametrize(
+    ("block", "named"),
+    [
+        (["core_packages_enumerated_floor"], "got list"),
+        ("core_packages_enumerated_floor: 3", "got str"),
+        (7, "got int"),
+    ],
+)
+def test_a_non_mapping_verification_sets_block_is_a_named_error(block, named):
+    with pytest.raises(ValueError, match=rf"params:verification_sets must be a mapping of floor keys .*{named}"):
+        verification_sets(
+            pd.DataFrame([{"conda_name": "numpy"}]),
+            pd.DataFrame([{"pypi_name": "numpy"}]),
+            pd.DataFrame(columns=["pypi_name"]),
+            {"verification_sets": block},
+        )
+
+
+@pytest.mark.parametrize("key", ["core_packages_enumerated_floor", "pypi_universe_floor"])
+@pytest.mark.parametrize("value", [None, "thirty thousand"])
+def test_a_null_or_non_integer_floor_is_a_named_error(key, value):
+    with pytest.raises(ValueError, match=rf"params:verification_sets\.{key} must be an integer, got {value!r}"):
+        verification_sets(
+            pd.DataFrame([{"conda_name": "numpy"}]),
+            pd.DataFrame([{"pypi_name": "numpy"}]),
+            pd.DataFrame(columns=["pypi_name"]),
+            {"verification_sets": {key: value}},
+        )

@@ -405,7 +405,9 @@ def test_ranked_rows_sharing_a_pep503_key_warn_naming_every_row(caplog, names, e
         (["pkg:pypi/a", "pkg:github/b"], "pkg:pypi/a; pkg:github/b"),
         (("x", None, "y"), "x; y"),
         (np.array(["p", "q"]), "p; q"),
-        (["a", pd.NA], "a; "),
+        (["a", pd.NA], "a"),
+        ([pd.NA, "a", float("nan"), None, pd.NaT, "b"], "a; b"),
+        ([pd.NA, None], ""),
         ([], ""),
     ],
 )

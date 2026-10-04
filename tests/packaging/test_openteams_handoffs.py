@@ -1352,6 +1352,43 @@ def test_ops_canvas_shows_unset_buckets_and_keeps_unknown_recipe_types(tmp_path)
     assert sum(row[1] for row in data["buildByType"]) == data["n"] == 3
 
 
+def test_dashboards_markdown_keeps_unknown_recipe_types(tmp_path):
+    """The dashboards markdown's local-build table keeps a recipe type outside
+    RECIPE_TYPE_ORDER, after the known ones -- as the ops canvas does."""
+    recipes_url = "https://github.com/rxm7706/local-recipes/tree/main/recipes/{}"
+    records = [
+        {
+            "Core_Python_Package_Name": "known",
+            "P": "P4",
+            "Work": "Create recipe",
+            "Local_Build_Status": "success",
+            "Local_Recipes_URL": recipes_url.format("known"),
+            "Verification_Timestamp_UTC": _EXPORT_TS,
+        },
+        {
+            "Core_Python_Package_Name": "oddtype",
+            "P": "P9",
+            "Work": "Already tracked",
+            "Local_Build_Status": "failed",
+            "Local_Recipes_URL": recipes_url.format("oddtype"),
+            "Verification_Timestamp_UTC": _EXPORT_TS,
+        },
+    ]
+    helpers = types.SimpleNamespace(**vars(identity))
+    helpers.overlay_live_local = lambda _records, _dir: None
+    helpers.load_local_recipe_type = lambda _dir: {"known": "noarch-python", "oddtype": "noarch-other"}
+    helpers.REPO_ROOT = tmp_path
+    export_path = tmp_path / "data" / "derived" / "identity_complete_export" / "identity_complete_export.parquet"
+
+    md = dashboards.render(records, export_path, "gist-fixture", "identity-fixture", helpers)
+
+    section = md.split("## Local build (CFE stamp)", 1)[1]
+    type_rows = [line for line in section.split("\n\n", 2)[1].splitlines() if line.startswith("| ")]
+    assert type_rows[0].startswith("| Type |")
+    assert [row.strip("|").split("|")[0].strip() for row in type_rows[2:]] == ["noarch-python", "noarch-other"]
+    assert type_rows[-1].replace(" ", "") == "|noarch-other|1|0|0|1|0|0|"
+
+
 # ---------------------------------------------------------------------------
 # Story 27.1 third review -- one export timestamp (DW-FU-21-7) and AC 3(b)/(c)
 # ---------------------------------------------------------------------------

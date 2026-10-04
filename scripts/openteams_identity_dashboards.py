@@ -548,7 +548,8 @@ def render(
                     f"{type_status[rtype].get('not-attempted', 0):,}",
                     f"{type_status[rtype].get('blank', 0):,}",
                 ]
-                for rtype in recipe_type_order
+                for rtype in list(recipe_type_order)
+                + sorted(t for t in type_status if t not in recipe_type_order)
                 if rtype in type_status
             ],
         ),

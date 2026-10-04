@@ -9,6 +9,7 @@ default unnoticed.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import pandas as pd
@@ -25,6 +26,11 @@ class HollowVerificationSetError(PyforgeError, ValueError):
 
 def _floor_block(parameters: dict[str, Any] | None) -> dict[str, Any]:
     block = (parameters or {}).get("verification_sets") or {}
+    if not isinstance(block, Mapping):
+        raise ValueError(
+            "params:verification_sets must be a mapping of floor keys "
+            f"({', '.join(sorted(FLOOR_KEYS))}), got {type(block).__name__}"
+        )
     unknown = sorted(set(block) - FLOOR_KEYS)
     if unknown:
         raise ValueError(
@@ -32,6 +38,14 @@ def _floor_block(parameters: dict[str, Any] | None) -> dict[str, Any]:
             f"known keys: {', '.join(sorted(FLOOR_KEYS))}"
         )
     return dict(block)
+
+
+def _floor(block: dict[str, Any], key: str, default: int) -> int:
+    value = block.get(key, default)
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"params:verification_sets.{key} must be an integer, got {value!r}") from exc
 
 
 def verification_sets(
@@ -49,8 +63,8 @@ def verification_sets(
     cf_or_pm = cf_packages | parselmouth_pypi
 
     block = _floor_block(parameters)
-    pypi_floor = int(block.get("pypi_universe_floor", DEFAULT_PYPI_UNIVERSE_FLOOR))
-    core_floor = int(block.get("core_packages_enumerated_floor", DEFAULT_CORE_PACKAGES_ENUMERATED_FLOOR))
+    pypi_floor = _floor(block, "pypi_universe_floor", DEFAULT_PYPI_UNIVERSE_FLOOR)
+    core_floor = _floor(block, "core_packages_enumerated_floor", DEFAULT_CORE_PACKAGES_ENUMERATED_FLOOR)
 
     if len(pypi_index) < pypi_floor:
         raise HollowVerificationSetError(

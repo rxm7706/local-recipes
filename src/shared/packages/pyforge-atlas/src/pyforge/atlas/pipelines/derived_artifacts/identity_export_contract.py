@@ -199,13 +199,14 @@ SECONDARY_RANKING_COLUMNS: tuple[str, ...] = (
 
 def stringify_export_cell(value: object) -> str:
     """One export cell as text: ``None``/NA/NaN/NaT read as ``""``; a list, tuple or
-    array joins its items with ``"; "`` instead of crashing ``pd.isna``."""
+    array joins its non-blank items with ``"; "`` (NA items skipped) instead of
+    crashing ``pd.isna``."""
     if value is None:
         return ""
     if isinstance(value, np.ndarray):
         value = value.tolist()
     if isinstance(value, (list, tuple)):
-        return "; ".join(stringify_export_cell(v) for v in value if v is not None)
+        return "; ".join(text for text in (stringify_export_cell(v) for v in value) if text)
     try:
         if pd.isna(value):
             return ""

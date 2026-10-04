@@ -55,6 +55,18 @@ def _tree_fingerprint(root: Path) -> dict[str, str]:
     }
 
 
+def _modules_loaded_from(root: Path) -> list[str]:
+    """``pyforge.atlas`` modules in ``sys.modules`` whose file sits under ``root``."""
+    resolved = root.resolve()
+    return sorted(
+        name
+        for name, module in list(sys.modules.items())
+        if name.startswith("pyforge.atlas")
+        and getattr(module, "__file__", None)
+        and resolved in Path(module.__file__).resolve().parents
+    )
+
+
 def _identity_row(name: str, **extra: str) -> dict[str, str]:
     row = {
         "Core_Python_Package_Name": name,
@@ -204,9 +216,19 @@ def _seed_conf_local(project: Path, inputs: dict[str, pd.DataFrame]) -> None:
 
 @pytest.fixture
 def _isolated_kedro_state(monkeypatch, tmp_path):
-    """Undo everything ``bootstrap_project`` / a session mutates in this process."""
+    """Undo everything ``bootstrap_project`` / a session mutates in this process.
+
+    ``pyforge.atlas.settings`` and ``pyforge.atlas.pipeline_registry`` (and with them the
+    ``pyforge.atlas`` package) are imported from the real tree first: ``bootstrap_project``
+    prepends the copy's ``src`` to ``sys.path``, and a package not yet imported would then
+    load from the copy and stay in ``sys.modules`` after the test.
+    """
+    import importlib
+
     from kedro.framework import project as kedro_project
 
+    for module in ("pyforge.atlas.settings", "pyforge.atlas.pipeline_registry"):
+        importlib.import_module(module)
     monkeypatch.setattr(sys, "path", list(sys.path))
     monkeypatch.setenv("PYTHONPATH", os.environ.get("PYTHONPATH", ""))
     monkeypatch.setenv("PYFORGE_ATLAS_DATA_ROOT", str(tmp_path / "pyforge-atlas" / "data"))
@@ -278,6 +300,7 @@ def test_derived_artifacts_inventory_and_export_slice_via_kedro_session(tmp_path
     assert set(export["Verification_Timestamp_UTC"]) == {_TS}
 
     assert _tree_fingerprint(_REAL_DATA) == real_before, "the session wrote into the member's real data/ tree"
+    assert _modules_loaded_from(tmp_path) == [], "pyforge.atlas modules were imported from the tmp copy"
 
 
 @pytest.mark.usefixtures("_isolated_kedro_state")
@@ -299,3 +322,4 @@ def test_slice_refuses_a_hollow_core_set_through_the_session(tmp_path: Path):
             session.run(pipeline_name="derived_artifacts", node_names=_SLICE_NODES)
 
     assert not (project / "data/derived/inventory_aoss_free_queue/inventory_aoss_free_queue.parquet").exists()
+    assert _modules_loaded_from(tmp_path) == [], "pyforge.atlas modules were imported from the tmp copy"

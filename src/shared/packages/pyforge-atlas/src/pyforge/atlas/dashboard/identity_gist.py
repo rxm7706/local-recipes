@@ -849,7 +849,7 @@ def _render_dashboards(
                         f"{type_status[rtype].get('not-attempted', 0):,}",
                         f"{type_status[rtype].get('blank', 0):,}",
                     ]
-                    for rtype in RECIPE_TYPE_ORDER
+                    for rtype in list(RECIPE_TYPE_ORDER) + sorted(t for t in type_status if t not in RECIPE_TYPE_ORDER)
                     if rtype in type_status
                 ],
             ),

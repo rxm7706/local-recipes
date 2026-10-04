@@ -483,3 +483,43 @@ def test_dashboards_markdown_external_source_counts(rendered_env):
     md = rendered_env["dashboards_md"]
     assert "## External source counts" in md
     assert "Live row counts from materialized Atlas Parquet" in md
+
+
+def test_dashboards_local_build_table_keeps_unknown_recipe_types(tmp_path: Path):
+    """Story 27.1: a recipe type outside RECIPE_TYPE_ORDER (``noarch: unix`` reads as
+    ``noarch-other``) keeps its row in the dashboards' local-build table, after the known
+    types -- the same order the ops canvas and the identity frontmatter use."""
+    root = tmp_path / "pyforge-atlas"
+    (root / ".git").mkdir(parents=True)
+    export_path = root / "data" / "derived" / "identity_complete_export" / "identity_complete_export.parquet"
+    export_path.parent.mkdir(parents=True)
+    recipes = root / "recipes"
+    for name, build in (("pkgknown", "noarch: python"), ("pkgodd", "noarch: unix")):
+        (recipes / name).mkdir(parents=True)
+        (recipes / name / "recipe.yaml").write_text(
+            f'package:\n  name: {name}\n  version: "1.0.0"\n\nbuild:\n  {build}\n\n'
+            "extra:\n  cfe-local-build-status: success\n",
+            encoding="utf-8",
+        )
+    assert ig.classify_recipe_text("build:\n  noarch: unix\n") not in ig.RECIPE_TYPE_ORDER
+
+    def row(name: str) -> dict[str, str]:
+        base = {c: "" for c in ig.GIST_COLUMNS}
+        base.update(
+            P="P4",
+            Package=name,
+            Work="Create recipe",
+            Core_Python_Package_Name=name,
+            Verification_Timestamp_UTC=STAMP_TS,
+        )
+        return base
+
+    pd.DataFrame([row("pkgknown"), row("pkgodd")], columns=list(ig.GIST_COLUMNS)).to_parquet(export_path)
+
+    _identity_md, dashboards_md = ig.render_identity_gist_markdown(export_path, gist_id="g", repo_root=root)
+
+    section = dashboards_md.split("## Local build (CFE stamp)", 1)[1]
+    type_rows = [line for line in section.split("\n\n", 2)[1].splitlines() if line.startswith("| ")]
+    assert type_rows[0].startswith("| Type |")
+    assert [r.strip("|").split("|")[0].strip() for r in type_rows[2:]] == ["noarch-python", "noarch-other"]
+    assert type_rows[-1].replace(" ", "") == "|noarch-other|1|1|0|0|0|0|"
