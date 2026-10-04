@@ -797,6 +797,36 @@ def _kill(pid: int) -> None:
         pass
 
 
+def _record_stops(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Wrap the real ``terminate_process_group``: record each pid the supervisor stops, then really stop it."""
+    real = supervisor_main.terminate_process_group
+    stops: list[int] = []
+
+    def _stop(pid: int) -> None:
+        stops.append(pid)
+        real(pid)
+
+    monkeypatch.setattr(supervisor_main, "terminate_process_group", _stop)
+    return stops
+
+
+def _gone_within(pid: int, seconds: float = 10.0) -> bool:
+    """Whether the signalled session is gone (or a zombie) within ``seconds`` -- generous for a loaded host."""
+    deadline = time.monotonic() + seconds
+    while time.monotonic() < deadline:
+        if not _running(pid):
+            return True
+        time.sleep(0.05)
+    return not _running(pid)
+
+
+def _proc_state(pid: int) -> str:
+    try:
+        return Path(f"/proc/{pid}/status").read_text(encoding="utf-8").replace("\n", " | ")[:600]
+    except OSError:
+        return "gone"
+
+
 def test_a_restarted_supervisor_waits_out_the_remaining_budget_then_stops_a_live_session(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -815,18 +845,16 @@ def test_a_restarted_supervisor_waits_out_the_remaining_budget_then_stops_a_live
     started = datetime.now(timezone.utc) - timedelta(seconds=budget_s - 1.5)
     lines = (*_journaled_refusal_with_failed_commands(), *_fix_intent_lines(pid, started_at=started, budget_s=budget_s))
     vcs = _FixTurnVcs(events, dirty=True, changed_vs_head=("half-written.py",))
+    stops = _record_stops(monkeypatch)
     fs = loop.FakeFs()
     try:
         assert _running(pid)
         t0 = time.monotonic()
         _counter, ok = _finalize_with(fs, vcs, repo_root, worktree, process=PosixProcess(), journal_lines=lines)
         elapsed = time.monotonic() - t0
-        for _ in range(40):
-            if not _running(pid):
-                break
-            time.sleep(0.05)
         journaled = [(entry["phase"], entry["payload"]) for entry in _verify_fix_entries(fs)]
-        assert not _running(pid), f"the session must be stopped once the budget is spent: {journaled}"
+        assert stops == [pid], f"the session must be stopped once the budget is spent: {journaled}"
+        assert _gone_within(pid), f"stopped session still running: {_proc_state(pid)}"
     finally:
         _kill(pid)
 
@@ -906,20 +934,20 @@ def test_with_the_flag_off_a_pending_fix_turn_is_only_stopped_journaled_and_park
         *_fix_intent_lines(pid, started_at=datetime.now(timezone.utc), budget_s=900.0),
     )
     vcs = _FixTurnVcs(events, dirty=True, changed_vs_head=("half-written.py",))
+    stops = _record_stops(monkeypatch)
     fs = loop.FakeFs()
     try:
         t0 = time.monotonic()
         _counter, ok = _finalize_with(fs, vcs, repo_root, worktree, process=PosixProcess(), journal_lines=lines)
         elapsed = time.monotonic() - t0
-        for _ in range(40):
-            if not _running(pid):
-                break
-            time.sleep(0.05)
-        stopped = not _running(pid)
+        journaled = [(entry["phase"], entry["payload"]) for entry in _verify_fix_entries(fs)]
+        gone = _gone_within(pid)
+        state = _proc_state(pid)
     finally:
         _kill(pid)
 
-    assert stopped, "the in-flight session is stopped"
+    assert stops == [pid], f"the in-flight session is stopped: {journaled}"
+    assert gone, f"stopped session still running: {state}"
     assert elapsed < 5.0, "never waited for"
     assert calls == []
     assert vcs.commits == []
