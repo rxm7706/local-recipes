@@ -214,8 +214,8 @@ pages:
       - pixi.toml
       - src/shared/packages
     stamp:
-      derived_at: '2026-10-04T08:42:05-05:00'
-      tree: f5804a6773580feae648122b61242561c223964e-dirty
+      derived_at: '2026-10-04T09:57:30-05:00'
+      tree: adc10a8b2c5d8d777fc3c612d286563314b5478e
   - path: reference/station-verify-commands.md
     quadrant: reference
     owner: fleet
