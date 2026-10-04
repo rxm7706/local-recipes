@@ -115,6 +115,8 @@ def test_pre_push_hook_script_exists_and_names_the_opt_out() -> None:
     assert "branch delete -- nothing to preflight" in text  # `git push --delete` carries no commits
     # Under pre-commit a pre-push hook gets no stdin; the refs arrive as PRE_COMMIT_* env vars.
     assert "PRE_COMMIT_REMOTE_BRANCH" in text and "PRE_COMMIT_TO_REF" in text
+    assert "PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF" in text
+    assert "preserve/archive tag-only push" in text
 
 
 @pytest.mark.parametrize(
@@ -248,3 +250,98 @@ def test_pre_push_hook_automatic_skips_journal_the_pushed_ref(tmp_path: Path, ex
     (row,) = _journal(repo)
     assert row[1] == ref
     assert row[3] == reason
+
+
+# Story 85.3 (spec-pyforge-steward CAP-165): tag-only preserve/archive pushes skip the preflight.
+_PRESERVE_TAG = "refs/tags/preserve/pyforge-steward/85.3/workspace-deadbeef"
+_ARCHIVE_TAG = "refs/tags/archive/pyforge-steward/old-run-deadbeef"
+_TAG_SHA = "a" * 40
+
+
+@pytest.mark.parametrize(
+    ("stdin", "refs"),
+    [
+        (f"HEAD\t{_TAG_SHA}\t{_PRESERVE_TAG}\t{'0' * 40}\n", _PRESERVE_TAG),
+        (
+            f"HEAD\t{_TAG_SHA}\t{_PRESERVE_TAG}\t{'0' * 40}\n"
+            f"HEAD\t{'b' * 40}\t{_ARCHIVE_TAG}\t{'0' * 40}\n",
+            f"{_PRESERVE_TAG} {_ARCHIVE_TAG}",
+        ),
+    ],
+    ids=["one-preserve-tag", "preserve-and-archive"],
+)
+def test_pre_push_hook_skips_stdin_tag_only_preserve_archive(tmp_path: Path, stdin: str, refs: str) -> None:
+    repo, env, _ = _hook_repo(tmp_path)
+    proc = _run_hook(repo, env, stdin=stdin)
+    assert proc.returncode == 0, proc.stderr
+    assert "PREFLIGHT-RAN" not in proc.stderr
+    assert "preserve/archive tag-only push" in proc.stderr
+    (row,) = _journal(repo)
+    assert row[1] == refs
+    if refs.count(" ") == 0:
+        assert row[2] == _TAG_SHA[:10]
+    else:
+        assert row[2] == f"{_TAG_SHA[:10]} {'b' * 10}"
+    assert row[3] == "preserve/archive tag-only push"
+
+
+def test_pre_push_hook_stdin_mixed_branch_runs_preflight(tmp_path: Path) -> None:
+    repo, env, _ = _hook_repo(tmp_path)
+    stdin = f"HEAD\t{_TAG_SHA}\t{_PRESERVE_TAG}\t{'0' * 40}\nrefs/heads/x\t{'c' * 40}\trefs/heads/feature\t{'0' * 40}\n"
+    proc = _run_hook(repo, env, stdin=stdin)
+    assert proc.returncode == 1
+    assert "PREFLIGHT-RAN" in proc.stderr
+    assert _journal(repo) == []
+
+
+def test_pre_push_hook_stdin_other_tag_prefix_runs_preflight(tmp_path: Path) -> None:
+    repo, env, _ = _hook_repo(tmp_path)
+    stdin = f"HEAD\t{_TAG_SHA}\trefs/tags/v1.0.0\t{'0' * 40}\n"
+    proc = _run_hook(repo, env, stdin=stdin)
+    assert proc.returncode == 1
+    assert "PREFLIGHT-RAN" in proc.stderr
+
+
+def test_pre_push_hook_precommit_preserve_tag_without_proof_runs_preflight(tmp_path: Path) -> None:
+    repo, env, _ = _hook_repo(tmp_path)
+    proc = _run_hook(
+        repo,
+        env,
+        extra={"PRE_COMMIT_REMOTE_BRANCH": _PRESERVE_TAG, "PRE_COMMIT_TO_REF": _TAG_SHA},
+    )
+    assert proc.returncode == 1
+    assert "PREFLIGHT-RAN" in proc.stderr
+    assert _journal(repo) == []
+
+
+def test_pre_push_hook_precommit_preserve_tag_with_proof_skips(tmp_path: Path) -> None:
+    repo, env, _ = _hook_repo(tmp_path)
+    proc = _run_hook(
+        repo,
+        env,
+        extra={
+            "PRE_COMMIT_REMOTE_BRANCH": _PRESERVE_TAG,
+            "PRE_COMMIT_TO_REF": _TAG_SHA,
+            "PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF": "1",
+        },
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "PREFLIGHT-RAN" not in proc.stderr
+    (row,) = _journal(repo)
+    assert row[1] == _PRESERVE_TAG
+    assert row[3] == "preserve/archive tag-only push"
+
+
+def test_pre_push_hook_precommit_branch_with_proof_still_runs_preflight(tmp_path: Path) -> None:
+    repo, env, _ = _hook_repo(tmp_path)
+    proc = _run_hook(
+        repo,
+        env,
+        extra={
+            "PRE_COMMIT_REMOTE_BRANCH": "refs/heads/feature",
+            "PRE_COMMIT_TO_REF": _TAG_SHA,
+            "PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF": "1",
+        },
+    )
+    assert proc.returncode == 1
+    assert "PREFLIGHT-RAN" in proc.stderr

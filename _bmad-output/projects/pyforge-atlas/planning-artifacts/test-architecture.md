@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: atlas
-source_fingerprint: 8a3aa8d5aaac7ee8
-story_count: 91
-test_file_count: 129
+source_fingerprint: dfb62ae6ae89fdce
+story_count: 103
+test_file_count: 144
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-atlas`
-- **Stories parsed:** 91
-- **Epics parsed:** 23
-- **Test files inventoried:** 129 under `src/shared/packages/pyforge-atlas/tests/`
+- **Stories parsed:** 103
+- **Epics parsed:** 27
+- **Test files inventoried:** 144 under `src/shared/packages/pyforge-atlas/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `8a3aa8d5aaac7ee8`
+- **Source fingerprint:** `dfb62ae6ae89fdce`
 
 ## Risk Assessment
 
@@ -44,30 +44,35 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 8: Wave G — WebAssembly Portability & Event-Driven Sensors
 - Epic 9: Wave H — The AI Software Factory & Karpathy Wiki
 - Epic 10: Post-Audit Remediation — Round-3 Findings
-- Epic 12: Kedro-org tooling — audit, publish, decide
-- Epic 13: Upstream discovery — what to package next
-- Epic 14: Atlas query dashboards — hand-someone-a-link views
-- Epic 15: Artifactory download intelligence — mock-first AQL
-- Epic 16: Wagtail corporate brain — the narrow DW-H3 contract
-- Epic 17: The packaging-inventory intake engine, governed
-- Epic 18: Kedro hooks on the shared contract
-- Epic 19: Atlas owns its skill, persona, and one portal job
-- Epic 20: The query plane meets the query surfaces
-- Epic 21: Kedro catalog expansion — self-contained inventory data plane
-- Epic 22: Vizro parity with identity canvases
-- Epic 23: Complete inventory export — zero deferred
-- Epic 24: Atlas builds its MCP face with `mcp-builder`
+- Epic 11: Kedro-org tooling — audit, publish, decide
+- Epic 12: Upstream discovery — what to package next
+- Epic 13: Atlas query dashboards — hand-someone-a-link views
+- Epic 14: Artifactory download intelligence — mock-first AQL
+- Epic 15: Wagtail corporate brain — the narrow DW-H3 contract
+- Epic 16: The packaging-inventory intake engine, governed
+- Epic 17: Kedro hooks on the shared contract
+- Epic 18: Atlas owns its skill, persona, and one portal job
+- Epic 19: The query plane meets the query surfaces
+- Epic 20: Kedro catalog expansion — self-contained inventory data plane
+- Epic 21: Vizro parity with identity canvases
+- Epic 22: Complete inventory export — zero deferred
+- Epic 23: Atlas builds its MCP face with `mcp-builder`
+- Epic 24: Turn on what is built — atlas's realization-gate effect stories
+- Epic 25: Atlas keeps each scanned repo's dependency history (spec-pyforge-atlas CAP-61)
+- Epic 27: Phase 4+5 of the deferral burn-down — atlas's open medium and low deferrals, fixed
 
 ### Low-risk epics
 
-- none observed
+- Epic 26: The factory-status page stops reading the retired intake-spec tier (spec-one-chain-per-station CAP-11)
 
 ## Test Inventory
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_controls.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_provenance.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_catalog_page.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_gist_markdown.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_identity_ops_page.py` | integration | none observed |
@@ -76,8 +81,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_zero_deferred_e2e_gate.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/publish/test_emit_range.py` | integration | none observed |
 | `src/shared/packages/pyforge-atlas/tests/integration/wasm/test_wasm_smoke.py` | integration | none observed |
+| `src/shared/packages/pyforge-atlas/tests/meta/test_cli_tool_parity.py` | meta | none observed |
+| `src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_portal_inventory_row.py` | meta | none observed |
 | `src/shared/packages/pyforge-atlas/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
+| `src/shared/packages/pyforge-atlas/tests/tools/test_live_artifactory_transport.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/a2a_surface/test_a2a_payloads.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/artifactory/test_aql_adapter.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/artifactory/test_identity_join.py` | unit | none observed |
@@ -101,10 +109,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_refresh_assets.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_request_datasets.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_sbom_intake.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_story_27_2_degraded_datasets.py` | unit | 27.2 |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_tier3_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_upstream_discovery.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vcs_sources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vdb_boundary.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_vulnerability_feeds.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/factory/test_crews.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/factory/test_lasuite_live_rehearsal.py` | unit | none observed |
@@ -132,10 +142,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/parity/test_parity_vulnerability.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/artifactory_downloads/test_nodes.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/core/test_nodes.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_derived_artifacts_e2e.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_identity_complete_export.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_aoss_free_queue.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_priority_assignments.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_universe.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verification.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_inventory_verified_packages.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/derived_artifacts/test_universe_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/pipelines/pypi_intelligence/test_mapping_export.py` | unit | none observed |
@@ -165,23 +177,30 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/query_plane/test_face_parity.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/rag/test_vss_similarity_search.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_bsl_metric_parity.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_composite_scores.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_maintainer_dimension.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/semantic/test_metric_provenance.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/singularity/test_duckdb_sole_engine.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/singularity/test_one_duckdb_server_launch_site.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_admission.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_cap18_kedro_hook_map.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_app.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_data.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_factory_status.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_identity_gist.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_duckdb_boundary.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_estate_cache_bsl.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_hooks.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_import_smoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_main_version.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_one_duckdb_writer.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_pipeline_inventory.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_boot.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_parquet_cache.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_vectors.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_read_only_live_attach.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scaffold_layout.py` | unit | none observed |
+| `src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/test_semantic_packages_pipeline.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/test_handoff.py` | unit | none observed |
@@ -193,7 +212,6 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-atlas/tests/unit/views/test_live.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/views/test_registry.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/views/test_render.py` | unit | none observed |
-| `src/shared/packages/pyforge-atlas/tests/unit/views/test_resources.py` | unit | none observed |
 | `src/shared/packages/pyforge-atlas/tests/unit/views/test_widgets.py` | unit | none observed |
 
 ## Story Coverage Matrix
@@ -238,59 +256,71 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 10.4 | Preserve NULL identity under pandas 3.0 | none observed |
 | 10.5 | Stamp advisory data with its build provenance (AD-17) | none observed |
 | 10.6 | Make run admission real, or stop claiming it | none observed |
-| 12.1 | kedro-skills audit-then-adopt (FR-61) | none observed |
-| 12.2 | Publish the real DAG continuously (FR-62) | none observed |
-| 12.3 | Record the `vscode-kedro` verdict (FR-63) | none observed |
-| 13.1 | Trending ingest (FR-64) | none observed |
-| 13.2 | Tier classification (FR-65) | none observed |
-| 13.3 | `trending-candidates` operator surface (FR-66) | none observed |
-| 13.4 | Fixed-source audit track (FR-67) | none observed |
-| 13.5 | Downstream handoff to Mason (FR-68) | none observed |
-| 14.1 | Static view catalog (CAP-1) | none observed |
-| 14.2 | Pluggable widget registry (CAP-3) | none observed |
-| 14.3 | Bokeh WebSocket interactivity (CAP-2) | none observed |
-| 14.4 | Air-gap asset rewriting (CAP-4) | none observed |
-| 15.1 | Injectable AQL adapter (CAP-1) | none observed |
-| 15.2 | Identity join and internal flag (CAP-2, CAP-3) | none observed |
-| 15.3 | Kedro pipeline surfacing (CAP-4) | none observed |
-| 16.1 | Instance deploy definition (CAP-1) | none observed |
-| 16.2 | Httpx opener and rehearsal (CAP-2, CAP-3) | none observed |
-| 17.1 | The from-scratch run is a chartered capability | none observed |
-| 17.2 | Handoffs are execution-ready | none observed |
-| 18.1 | Map existing Kedro hooks to CAP-18 | none observed |
-| 19.1 | SKF domain skill and BMAD persona for atlas | none observed |
-| 19.2 | First portal slice — one inventory/run row | none observed |
-| 20.1 | One boot script raises both plane faces (CAP-5) | none observed |
-| 20.2 | Face parity is part of done (CAP-5) | none observed |
-| 20.3 | Named-pipeline derivation of the dashboard stores (CAP-6) | none observed |
-| 20.4 | The CIS two-spine specs exist (CAP-7) | none observed |
-| 20.5 | Port the remaining nineteen Vizro pages (CAP-7) | none observed |
-| 21.1 | Relocate atlas data defaults and add pyforge-atlas-bootstrap | none observed |
-| 21.2 | Remove cf_atlas.db seeds from production datasets | none observed |
-| 21.3 | Tier 0 harden and `--live-catalog` contract | none observed |
-| 21.4 | Tier 1 catalog sources (SelfExplainML, Anaconda, Basilisk, AOSS) | none observed |
-| 21.5 | Tier 2 sources (about, curated orgs, Artifactory names) | none observed |
-| 21.6 | upstream_discovery identity join and export Parquet | none observed |
-| 21.7 | Quartet thin-out and gist wrapper | none observed |
-| 21.8 | End-to-end verification gate | none observed |
-| 21.9 | Vizro bootstrap health pages (optional, CAP-5) | none observed |
-| 21.10 | Kedro-Viz CI path sync (optional, CAP-6) | none observed |
-| 22.1 | Ranked export bridge (quartet → Vizro feed) | none observed |
-| 22.2 | Vizro `identity-catalog` page | none observed |
-| 22.3 | Vizro `identity-ops` page | none observed |
-| 22.4 | Vizro `identity-workbook` page | none observed |
-| 22.5 | Canvas vs Vizro parity gate | none observed |
-| 22.6 | Canvas deprecation switch | none observed |
-| 23.1 | Tier 3 bulk OS indexes | none observed |
-| 23.2 | Enterprise JFROG consumption Parquet | none observed |
-| 23.3 | Priority rules in Kedro (`inventory_priority_assignments`) | none observed |
-| 23.4 | Deliverable A + `Packaging_Candidate_Status` | none observed |
-| 23.5 | `identity_complete_export.parquet` (canonical) | none observed |
-| 23.6 | BSL gist aggregates (CAP-8d) | none observed |
-| 23.7 | Zero-deferred E2E gate | none observed |
-| 23.8 | Workbook-free metrics universe (Kedro `inventory_universe` + `--analysis-xlsx... | none observed |
-| 23.9 | Quartet workbook retirement (thin actuators, no `openpyxl` in `scripts/`) | none observed |
-| 24.1 | `mcp-builder` is atlas-wielded for the MCP face | none observed |
+| 11.1 | kedro-skills audit-then-adopt (FR-61) | none observed |
+| 11.2 | Publish the real DAG continuously (FR-62) | none observed |
+| 11.3 | Record the `vscode-kedro` verdict (FR-63) | none observed |
+| 12.1 | Trending ingest (FR-64) | none observed |
+| 12.2 | Tier classification (FR-65) | none observed |
+| 12.3 | `trending-candidates` operator surface (FR-66) | none observed |
+| 12.4 | Fixed-source audit track (FR-67) | none observed |
+| 12.5 | Downstream handoff to Mason (FR-68) | none observed |
+| 13.1 | Static view catalog (CAP-1) | none observed |
+| 13.2 | Pluggable widget registry (CAP-3) | none observed |
+| 13.3 | Bokeh WebSocket interactivity (CAP-2) | none observed |
+| 13.4 | Air-gap asset rewriting (CAP-4) | none observed |
+| 14.1 | Injectable AQL adapter (CAP-1) | none observed |
+| 14.2 | Identity join and internal flag (CAP-2, CAP-3) | none observed |
+| 14.3 | Kedro pipeline surfacing (CAP-4) | none observed |
+| 15.1 | Instance deploy definition (CAP-1) | none observed |
+| 15.2 | Httpx opener and rehearsal (CAP-2, CAP-3) | none observed |
+| 16.1 | The from-scratch run is a chartered capability | none observed |
+| 16.2 | Handoffs are execution-ready | none observed |
+| 17.1 | Map existing Kedro hooks to CAP-18 | none observed |
+| 18.1 | SKF domain skill and BMAD persona for atlas | none observed |
+| 18.2 | First portal slice — one inventory/run row | none observed |
+| 19.1 | One boot script raises both plane faces (CAP-5) | none observed |
+| 19.2 | Face parity is part of done (CAP-5) | none observed |
+| 19.3 | Named-pipeline derivation of the dashboard stores (CAP-6) | none observed |
+| 19.4 | The CIS two-spine specs exist (CAP-7) | none observed |
+| 19.5 | Port the remaining nineteen Vizro pages (CAP-7) | none observed |
+| 20.1 | Relocate atlas data defaults and add pyforge-atlas-bootstrap | none observed |
+| 20.2 | Remove cf_atlas.db seeds from production datasets | none observed |
+| 20.3 | Tier 0 harden and `--live-catalog` contract | none observed |
+| 20.4 | Tier 1 catalog sources (SelfExplainML, Anaconda, Basilisk, AOSS) | none observed |
+| 20.5 | Tier 2 sources (about, curated orgs, Artifactory names) | none observed |
+| 20.6 | upstream_discovery identity join and export Parquet | none observed |
+| 20.7 | Quartet thin-out and gist wrapper | none observed |
+| 20.8 | End-to-end verification gate | none observed |
+| 20.9 | Vizro bootstrap health pages (optional, CAP-5) | none observed |
+| 20.10 | Kedro-Viz CI path sync (optional, CAP-6) | none observed |
+| 21.1 | Ranked export bridge (quartet → Vizro feed) | none observed |
+| 21.2 | Vizro `identity-catalog` page | none observed |
+| 21.3 | Vizro `identity-ops` page | none observed |
+| 21.4 | Vizro `identity-workbook` page | none observed |
+| 21.5 | Canvas vs Vizro parity gate | none observed |
+| 21.6 | Canvas deprecation switch | none observed |
+| 22.1 | Tier 3 bulk OS indexes | none observed |
+| 22.2 | Enterprise JFROG consumption Parquet | none observed |
+| 22.3 | Priority rules in Kedro (`inventory_priority_assignments`) | none observed |
+| 22.4 | Deliverable A + `Packaging_Candidate_Status` | none observed |
+| 22.5 | `identity_complete_export.parquet` (canonical) | none observed |
+| 22.6 | BSL gist aggregates (CAP-8d) | none observed |
+| 22.7 | Zero-deferred E2E gate | none observed |
+| 22.8 | Workbook-free metrics universe (Kedro `inventory_universe` + `--analysis-xlsx... | none observed |
+| 22.9 | Quartet workbook retirement (thin actuators, no `openpyxl` in `scripts/`) | none observed |
+| 23.1 | `mcp-builder` is atlas-wielded for the MCP face | none observed |
+| 24.1 | Retire the second Lane-3 runtime | none observed |
+| 24.2 | Materialize CAP-8's canonical Parquets — one recorded run | none observed |
+| 24.3 | Atlas's MCP tools pass the CLI⇄tool parity gate | none observed |
+| 24.4 | A live Artifactory transport exists for the attended operator to plug in | none observed |
+| 25.1 | A per-repo dependency-history dataset from git-pkgs and an estate pixi parser | none observed |
+| 25.2 | A poll-cursor sensor refreshes the history over Warden's fleet inventory | none observed |
+| 26.1 | The factory-status frame drops its docs/specs rows | none observed |
+| 27.1 | The inventory exports refuse a hollow verification set, and the quartet scrip... | none observed |
+| 27.2 | The data plane honours its data root, degrades offline and fetches what it cl... | `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_story_27_2_degraded_datasets.py` |
+| 27.3 | The read surfaces render what DESIGN.md specifies, and prove it on fixture data | none observed |
+| 27.4 | The planning record matches the tree and the cross-station seams hold | none observed |
+| 27.5 | The distribution-breakdown facet filter builds its control | none observed |
 
 ## Quality Gates
 

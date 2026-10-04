@@ -3775,8 +3775,8 @@
    "docs/dreams/bmad-loop-baseline-drift.md": "15a1e7e4f9d97e3d8acc856de8490bcf36bcc914",
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
    "docs/reference/library-llms-full.md": "88206a00cf32457daf2639e0a138730613e2b574",
-   "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
-   "pixi.toml": "73275581b4354f36be50f65b814d2e420259f9b7",
+   "environment.yaml": "0ca26ec581dfeba8f0fb0f4195ae279cc879e1c9",
+   "pixi.toml": "014f5d6be785bdb2cba434093b379988743d9511",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "8e9c02c8a311f36b0f4b8a628cb64ef5e28050cb",
@@ -3789,6 +3789,7 @@
    "scripts/llms_full_check.py": "a4d1b10b2fdece0cf547af6877b21f5ebc7bf672",
    "scripts/missing_preserve_check.py": "957613ef51c65c0a227adc4722caea0f9ba5d8cf",
    "scripts/promote_sprint_status.py": "f2499674c7a160f9d331c67673b57b03ed0ae9a9",
+   "scripts/tea_playwright_check.py": "b24852a10dab98cc1c8dbd24f9122794b62a0a1a",
    "src/shared/packages/pyforge-core/.gitignore": "4c9f2f038d1f42f7b52051b78522f27be8fb5f79",
    "src/shared/packages/pyforge-core/README.md": "f7c24e3c9635851611afa37632e5a4c305fe86b8",
    "src/shared/packages/pyforge-core/pixi.toml": "7974c46731748dd56e3f5e2b39f3f4570e4cf9b6",
@@ -4265,9 +4266,10 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_watch.py": "559b767ac21141f2d3383c2d6a18972324811fed",
    "src/shared/packages/pyforge-marshal/tests/unit/test_wave_scheduler.py": "96bcc0d5a6f4b7bc1d2130a10e22e4ac21f4a703",
    "src/shared/packages/pyforge-marshal/tests/unit/test_worktree_checkpoint.py": "0846aec73260e5d4967eaa8fc073de88a71c6aa5",
-   "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e"
+   "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
+   "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "2ad91dd034f6597d95869a2cba388e644c64db9c"
+  "memlog": "666d335beb2c7aa2259d256247fbadaf6b91c2e0"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},

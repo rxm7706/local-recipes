@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: 173058a881ab485d
-story_count: 43
-test_file_count: 66
+source_fingerprint: 3d70ea17572fb509
+story_count: 59
+test_file_count: 68
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 43
-- **Epics parsed:** 11
-- **Test files inventoried:** 66 under `src/shared/packages/pyforge-warden/tests/`
+- **Stories parsed:** 59
+- **Epics parsed:** 17
+- **Test files inventoried:** 68 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `173058a881ab485d`
+- **Source fingerprint:** `3d70ea17572fb509`
 
 ## Risk Assessment
 
@@ -45,6 +45,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - Epic 9: PR-gate hook specs; scanners are plugins
 - Epic 10: Warden owns its skill, persona, and one portal job
 - Epic 11: Two advisory lenses beside the gate
+- Epic 12: A promotion gate that has seen what it ships
+- Epic 13: The TEA advisory reviews the diff from the remote-tracking ref (spec-pyforge-warden CAP-23)
+- Epic 14: The fix-PR actuator finishes the fix on the estate's repos (spec-pyforge-warden CAP-24)
+- Epic 15: SAST joins as an optional plugin: opengrep with estate-owned rules (spec-pyforge-warden CAP-25)
+- Epic 16: Warden scans the enterprise fleet on GitHub Enterprise (spec-pyforge-warden CAP-26)
+- Epic 17: Phase 4+5 of the deferral burn-down: warden's open medium and low deferrals
 
 ### Low-risk epics
 
@@ -70,6 +76,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/integration/test_osv_engine.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_osv_offline_db_spike.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_perf_overhead.py` | integration | none observed |
+| `src/shared/packages/pyforge-warden/tests/integration/test_pixi_lock_environment_scope.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_report_schema.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_sbom_schema.py` | integration | none observed |
 | `src/shared/packages/pyforge-warden/tests/integration/test_scan_harness.py` | integration | none observed |
@@ -91,6 +98,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_default_warden_without_checkmarx.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_discovery_extract_cli.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_eligibility.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_eligibility_rederive.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_eligibility_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_engine_env_deptry.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_environment_yml_extractor.py` | unit | none observed |
@@ -168,6 +176,22 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 10.2 | First portal slice — start/get one audit | none observed |
 | 11.1 | `bmad-os-review-pr` and `findings-triage` are warden-wielded advisory lenses | none observed |
 | 11.2 | `tea-test-review` is a warden advisory finding | none observed |
+| 12.1 | Regression test — the promotion verifier's clean-only refusal cannot be remov... | none observed |
+| 12.2 | Environment-scoped lockfile extraction | none observed |
+| 12.3 | The promotion scans the shipped closure | none observed |
+| 12.4 | The offline OSV database is provisioned in CI | none observed |
+| 12.5 | The verdict is honest and specific | none observed |
+| 12.6 | Deploy gates on the verdict — preserve the clean-only promotion gate | none observed |
+| 13.1 | The TEA advisory diffs from the remote-tracking ref | none observed |
+| 14.1 | The actuator resolves the lowest OSV-fixed release the estate's solver accepts | none observed |
+| 14.2 | The actuator edits the manifest and re-solves the lock in a throwaway copy | none observed |
+| 14.3 | The actuator opens the fix as a draft PR on an estate repo | none observed |
+| 15.1 | Opengrep is an optional SAST scanner that informs, never publishes, the verdict | none observed |
+| 16.1 | Warden inventories a GHE organisation's repos | none observed |
+| 16.2 | A fleet run scans each inventoried repo, one verdict per repo | none observed |
+| 16.3 | Each fleet fix waits in a proposal queue for operator approval | none observed |
+| 16.4 | Non-Python lockfiles scan through osv-scanner's own parsers | none observed |
+| 17.1 | Eligibility records its policy, and warden's other open deferrals close | none observed |
 
 ## Quality Gates
 
