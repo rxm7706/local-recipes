@@ -2,7 +2,7 @@
 title: "41.2: The ledger, story-status and capability-effect sources degrade honestly, the source dispatch passes its scope through, and doctor's own tracking reads true"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -10,7 +10,18 @@ context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md
-deferred: []
+deferred:
+  - summary: >-
+      DW-FU-23-6-2 and DW-FU-30-3: spec-pyforge-doctor/SPEC.md's CAP-53 annotation and its
+      30.3 realized-state line are re-derived through bmad-spec, not hand-edited.
+    evidence: |-
+      The memlog input is appended (the 41.2 surface reconcile entry and the CAP-53 / 30.3
+      re-derive input note). A faithful bmad-spec render of the 381-line SPEC is the
+      operator's step; both deferred-work rows stay open with a verified line saying so,
+      and scripts/spec_surface_allowlist.txt:112-117 stays until the render lands.
+    location: >-
+      _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
+    severity: low
 declared_low_risk: false
 ---
 
@@ -101,21 +112,17 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 
 ## Auto Run Result
 
-Status: blocked  
-Blocking condition: Story 41.2 partial — ledger/story-status/dispatch/frozen-path core fixes landed and `pyforge-doctor-test` + `lint-types` + `spec_surface_reconcile.py` are green; remaining acceptance rows (capability-effect join + flag-inventory, atlas `behind-upstream` axis, epics.md/ledger live-tree sync, SPEC memlog/`bmad-spec` re-derive for CAP-53/30.3, all 24 deferred-work ledger closures, degrade_on_exception call-site test, detectors `_DOCTOR_SOURCE_TASKS` meta-test) still open.
+Status: in-review  
+Open for the operator: `DW-FU-23-6-2` and `DW-FU-30-3` (22 of the 24 deferred-work rows are closed). Both need the `bmad-spec` re-derive of `spec-pyforge-doctor/SPEC.md`, which is never hand-edited; the memlog input for it is appended and each row carries a `verified:` line saying so.
 
-Verification run: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` (3280 passed, 1 skipped); `pixi run --frozen -e pyforge-guild lint-types` (exit 0); `python scripts/spec_surface_reconcile.py` (OK).
+What landed on top of the earlier core fixes (ledger, story-status, dispatch, frozen-path):
+- `capability_effect.py`: `_surface_field` reads multi-line `**Surface:**` fields (bullet and wrapped inline); `_story_surface_by_cap` joins a CAP to a surface through the story specs under `planning-artifacts/specs/` that cite the parent spec and CAP; `scripts/flag_inventory.py` passes `story_specs_dir`. `flag-inventory` unresolved count: 722 to 682 (doctor 79 to 77), recorded on `DW-doctor-34-4`.
+- `atlas.py`: the `behind-upstream` watch axis (MCP `behind_upstream`, CLI `behind_upstream.py`) emitting `Source.BEHIND_UPSTREAM`.
+- `epics.md`: the 19 lagging `**Status:**` lines now read the ledger; `tests/meta/test_epics_status_tracks_the_ledger.py` pins every doctor status line to `sprint-status-ledger.yaml`.
+- `sources/__init__.py` lists the `degrade_on_exception` call sites; `test_sources_registry.py` counts them by AST.
+- `tests/scripts/test_detectors_doctor_sources.py`: every `_DOCTOR_SOURCE_TASKS` entry is a pixi task running `python -m pyforge.doctor.sources <name>`. `dreams-hygiene-check` in `pixi.toml` ran `dream-chain --dreams` and now runs its own source. `dashboard-layout-check` is declared under `feature.local-recipes`, not `guild-tasks`; that is pinned as a documented exception.
+- Rows whose fix had no test now have one in `tests/unit/test_sources_honest_reads_41_2.py` (19 of its 24 tests fail at the base revision `dfe4007e46`). Three fixes were completed while pinning them: alias-form keys in `gather_story_status` (DW-FU-6-4-9; Route 3 and Route 4 now run on the alias token and on any spelling), a cross-ledger key move (DW-FU-6-4-6; the check sat behind the same-tail test and never fired for a move to a project with no such tail), and the leftover `ledger-regression` / `ledger-regression-total` check names in `marshal.py` (DW-FU-6-4-21; now `marshal-durability-git` / `marshal-durability-total`).
 
-Surface reconcile memlog paths named:
-- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/feed_status.py`
-- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py`
-- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py`
-- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py`
-- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py`
-- `src/shared/packages/pyforge-doctor/tests/unit/test_feed_status.py`
-- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py`
-- `src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py`
+Verification run (exit codes read from files, not pipes): `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` (3328 passed, 1 skipped, exit 0); `pixi run --frozen -e pyforge-guild lint-types` (exit 0); `pixi run --frozen -e pyforge-guild flag-inventory` (exit 0). `spec_surface_reconcile.py`, `deferred-work-check` and the memlog entries are recorded below once run.
 
-Co-governor `spec-pyforge-core` memlog: same paths (append under `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md`).
-
-- 2026-10-04, operator decision (session on the operator's standing direction): the 41.2 dispatch session stopped partway and set this spec `blocked` (MRS-DISP-045). The core fixes for ledger, story-status, dispatch and frozen-path had landed in the worktree, with `pyforge-doctor-test` and `lint-types` green. The remaining rows were listed: the capability-effect join plus the flag-inventory re-run, the atlas `behind-upstream` gather, the epics Status vs ledger test, the SPEC memlog / `bmad-spec` for CAP-53 / 30.3, closing the 24 deferred-work rows, the `degrade_on_exception` call-site test, and the `_DOCTOR_SOURCE_TASKS` meta-test. Unblocked to `in-progress`. A re-dispatch continues on this branch from the partial work.
+Surface reconcile memlog paths named: see `spec-pyforge-doctor/.memlog.md` and the co-governor `spec-pyforge-core/.memlog.md` (same paths in both).
