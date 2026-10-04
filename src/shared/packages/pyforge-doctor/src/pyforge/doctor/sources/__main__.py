@@ -46,7 +46,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from ..models import Finding, Source
-from ..refs import ORIGIN_MAIN
+from ..refs import MAIN, ORIGIN_MAIN
 from ..verdict import EXIT_SIGINT, exit_code_for
 from . import (
     bmad_config,
@@ -284,10 +284,9 @@ def main(argv: list[str] | None = None) -> int:
             f"argument --base: only valid for {Source.LEDGER_REGRESSION.value!r} or "
             f"{Source.LEDGER_DIRECTION.value!r}, got {args.source!r}"
         )
-    if args.head and args.source not in (Source.LEDGER_REGRESSION.value, Source.LEDGER_DIRECTION.value):
+    if args.head and args.source != Source.LEDGER_REGRESSION.value:
         parser.error(
-            f"argument --head: only valid for {Source.LEDGER_REGRESSION.value!r} or "
-            f"{Source.LEDGER_DIRECTION.value!r}, got {args.source!r}"
+            f"argument --head: only valid for {Source.LEDGER_REGRESSION.value!r}, got {args.source!r}"
         )
     if args.inv is not None and args.source not in (Source.DREAM_CHAIN.value, Source.CHAIN_COMPLETENESS.value):
         parser.error(
@@ -328,11 +327,9 @@ def main(argv: list[str] | None = None) -> int:
             head=args.head or "HEAD",
         )
     elif args.source == Source.LEDGER_DIRECTION.value:
-        findings = ledger.gather_direction(
-            target,
-            base=args.base or ORIGIN_MAIN,
-            head=args.head or "HEAD",
-        )
+        if args.head is not None:
+            parser.error(f"argument --head: not valid for {Source.LEDGER_DIRECTION.value!r}")
+        findings = ledger.gather_direction(target, base_ref=args.base or MAIN)
     else:
         findings = DISPATCH[args.source](target)
 
