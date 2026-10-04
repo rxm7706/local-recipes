@@ -39,8 +39,8 @@ class _Completed:
         self.returncode = 0
 
 
-def _finding(check: str, message: str, **evidence) -> dict:
-    return {"source": "s", "check": check, "status": "warn", "message": message, "evidence": evidence}
+def _finding(check: str, message: str, status: str = "warn", **evidence) -> dict:
+    return {"source": "s", "check": check, "status": status, "message": message, "evidence": evidence}
 
 
 _PROBES = (
@@ -129,6 +129,29 @@ def test_every_probe_result_reaches_needs_or_watch(mod, monkeypatch, capsys):
         "capability-effect: CAP-9 has no effect",
         "status-body-consistency: body says done (precision=0.500)",
     ]
+
+
+def test_bmad_core_fail_finding_reaches_watch(mod, monkeypatch, capsys):
+    monkeypatch.setattr(mod.subprocess, "run", lambda cmd, **kwargs: _Completed(""))
+    for probe in _PROBES:
+        if probe != "bmad_core_drift_findings":
+            monkeypatch.setattr(mod, probe, lambda: [])
+    monkeypatch.setattr(
+        mod,
+        "bmad_core_drift_findings",
+        lambda: [
+            _finding(
+                "bmad-method-version-drift",
+                "declared floor behind upstream",
+                status="fail",
+            )
+        ],
+    )
+
+    assert mod.main() == 0
+
+    _needs, watch = _attention(capsys)
+    assert watch == ["bmad-method-version-drift: declared floor behind upstream"]
 
 
 def test_every_failing_probe_degrades_to_its_own_watch_line(mod, monkeypatch, capsys):

@@ -3035,6 +3035,42 @@ def test_offline_gather_issues_no_fetch_and_keeps_the_offline_checks(
     ]
 
 
+def test_offline_gather_keeps_manifest_and_unparseable_checks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_pixi(
+        tmp_path,
+        '[feature.python.dependencies]\nbmad-method = ">=6.11.0"\n\n'
+        '[feature.local-recipes.dependencies]\nbmad-method = "==broken"\n',
+    )
+    _write_manifest(
+        tmp_path,
+        "installation:\n  version: 6.12.0\nmodules:\n"
+        "  - name: core\n    version: 6.12.0\n    source: built-in\n"
+        "  - name: bmm\n    version: 6.11.0\n    source: built-in\n"
+        "  - name: skf\n    version: main\n    source: custom\n",
+    )
+
+    def _no_network(*args: object, **kwargs: object):
+        raise AssertionError("offline gather reached the network")
+
+    for name in (
+        "_fetch_latest_upstream_version",
+        "_resolve_upstream_latest",
+        "_fetch_channel_version",
+        "_fetch_latest_github_release",
+        "_fetch_default_branch_head_sha",
+        "_fetch_pypi_latest_version",
+    ):
+        monkeypatch.setattr(bmad_method, name, _no_network)
+    monkeypatch.setattr(bmad_method.urllib.request, "urlopen", _no_network)
+
+    checks = [f.check for f in bmad_method.gather(tmp_path, offline=True)]
+
+    assert "bmad-method-floor-unparseable" in checks
+    assert "bmad-method-manifest-divergence" in checks
+
+
 # --- story 41.4: GitHub /tags pagination (DW-FU-15-1) --------------------------
 
 
