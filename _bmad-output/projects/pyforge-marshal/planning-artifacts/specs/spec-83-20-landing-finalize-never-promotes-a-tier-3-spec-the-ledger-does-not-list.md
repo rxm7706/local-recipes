@@ -2,7 +2,7 @@
 title: "83.20: Landing finalize never promotes a Tier-3 spec the ledger does not list"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -77,3 +77,4 @@ Minted 2026-10-04 at the operator's request (the "Stop finalize promoting pre-re
   - LOW-1 (corrected here): the "about 1% of tracked specs drift" line above is wrong. Measured on origin/main 33a7af0cb5: 9 of 1298 tracked specs are not ledger rows (3 `.memlog.md` companions, 6 secondary copies); 1289 of 1290 ledger story rows have a tracked spec named exactly like the row. 40 of 310 Tier-3 specs are not ledger rows (20 atlas rekey leftovers, 20 pre-fold name drift), all belonging to done stories already promoted, so `already_promoted` skips them before either rule runs. No spec added since 2026-09-18 drifts. "No exact title collision" holds only between tracked specs: 5 Tier-3 leftovers share a title with a tracked spec under another key (atlas 16.1/17.1, 16.2/17.2, 23.1/24.1; herald 23.3/23.5, 23.4/23.6), and rule 1 also refuses all five.
   - LOW-2 (fixed): a worktree whose Tier-3 dir links back to the primary's was read twice, so each orphan was reported twice. `_scan_promotions` now reads the worktree's dir only when it resolves to a different directory. Test: `test_scan_promotions_worktree_tier3_symlinked_to_the_primary_is_read_once`; removing the guard fails it.
   - LOW-3 (accepted, not required by the Spec): a hand-run finalize prints only ERROR findings, so a WARN orphan appears in the finalize journal (`payload.findings`) but not on the console.
+- 2026-10-04, landing: merged by the operator as #1814 (381de94c52) with GitHub's default merge subject, so the landing finalize promoted the ledger row but not this spec; status set to done by hand (housekeeping).

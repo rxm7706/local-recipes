@@ -2,7 +2,7 @@
 title: "86.1: Seed honours recorded skips, refuses shared manifest paths, and pins directory entries"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 1
 followup_review_recommended: false
 context:
