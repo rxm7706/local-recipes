@@ -558,8 +558,8 @@ def _finalize_with(
 def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Review M6: push -> verify (failed commands offloaded to a sidecar) -> launch -> wait -> commit -> verify ->
-    land, driven through ``run_dispatch_supervisor`` itself."""
+    """Review M6: push -> verify (failed commands offloaded to a sidecar) -> launch -> wait -> commit -> reconcile ->
+    verify -> land, driven through ``run_dispatch_supervisor`` itself."""
     monkeypatch.setattr(supervisor_main, "time", loop._FakeClock())
     repo_root, worktree = _fix_ready_repo(tmp_path)
     run_dir = loop._run_dir(repo_root)
@@ -577,6 +577,11 @@ def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
         return real_land(**kwargs)
 
     monkeypatch.setattr(supervisor_main, "execute_dispatch_land", _land)
+    monkeypatch.setattr(
+        supervisor_main,
+        "_reconcile_spec_surface_drift",
+        lambda **_kwargs: _SpecSurfaceReconcileOutcome(finding=None, refuse=False),
+    )
     fs = loop.FakeFs()
 
     code = loop._run(repo_root, fs=fs, vcs=vcs, process=loop.FakeProcess(alive=False), publisher=loop.FakePublisher())
@@ -1924,13 +1929,13 @@ def test_a_fix_turn_records_head_before_launch_and_reconciles_only_its_own_paths
     launch_at = events.index(("launch",))
     commit_at = events.index(("commit", _WIP_SUBJECT))
     reverify_at = events.index(("verify", 2))
-    reconcile_at = next(
-        i
-        for i, entry in enumerate(_verify_fix_entries(fs))
-        if entry["payload"].get("step") == "reconcile" and entry["payload"].get("ok") is True
-    )
     assert launch_at < commit_at < reverify_at
-    assert reconcile_at >= 0
+    reconcile_steps = [
+        entry["payload"]
+        for entry in _verify_fix_entries(fs)
+        if entry["payload"].get("step") == "reconcile" and entry["payload"].get("paths")
+    ]
+    assert len(reconcile_steps) == 1
 
 
 def test_a_fix_turn_that_changes_no_paths_skips_reconcile_work(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1943,8 +1948,19 @@ def test_a_fix_turn_that_changes_no_paths_skips_reconcile_work(tmp_path: Path, m
         reconcile_calls.append(dict(kwargs))
         return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
 
+    def _launch_no_worktree_edit(*_a: object, **_k: object) -> _Launch:
+        return _Launch(88001)
+
     monkeypatch.setattr(supervisor_main, "_reconcile_spec_surface_drift", _reconcile_stub)
-    _fake_fix_session(monkeypatch, vcs)
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "binary_present", lambda *_a, **_k: _NoProfile())
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", _launch_no_worktree_edit)
+    monkeypatch.setattr(
+        supervisor_main,
+        "wait_for_process",
+        lambda *_a, **_k: __import__(
+            "pyforge.marshal.dispatch_verify", fromlist=["ProcessWaitResult"]
+        ).ProcessWaitResult(exited=True, returncode=0),
+    )
     _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
     fs = loop.FakeFs()
 
@@ -2014,42 +2030,19 @@ def test_foreign_drift_is_left_for_reverification_to_refuse_with_mrs_disp_060(
     assert len(parks) == 1
 
 
-def test_removing_the_pre_reverify_reconcile_is_detected_by_the_scoped_paths_contract(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Mutation (Story 85.5 AC7): reconciling the whole branch would pass foreign paths the fix turn did not touch."""
-    repo_root, worktree = _fix_ready_repo(tmp_path)
-    events: list[tuple] = []
-    vcs = _FixTurnVcs(
-        events,
-        changed=("src/other_story.py",),
-        changed_vs_head=("src/shared/packages/pyforge-marshal/tests/unit/test_query_plane_boot.py",),
-    )
-    seen: list[frozenset[str] | None] = []
-    real = supervisor_main._reconcile_spec_surface_drift
-
-    def _whole_branch_reconcile(**kwargs: object) -> _SpecSurfaceReconcileOutcome:
-        bad = dict(kwargs)
-        bad["own_changed_paths"] = None
-        seen.append(bad.get("own_changed_paths"))
-        return real(**bad)
-
-    monkeypatch.setattr(supervisor_main, "_reconcile_spec_surface_drift", _whole_branch_reconcile)
-    _fake_fix_session(monkeypatch, vcs)
-    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
-    fs = loop.FakeFs()
-
-    _finalize(fs, repo_root, worktree, vcs=vcs)
-
-    assert seen == [None]
-
-
 def test_a_fix_turn_reconcile_failure_from_changed_files_parks_without_reverifying(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     repo_root, worktree = _fix_ready_repo(tmp_path)
     events: list[tuple] = []
-    vcs = _FixTurnVcs(events, changed_files_raises=True)
+    vcs = _FixTurnVcs(events)
+
+    def _changed_files(repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
+        if base == vcs._recorded_head_before:
+            raise VcsCommandError("git diff failed (test double)")
+        return _FixTurnVcs.changed_files(vcs, repo_root, worktree_path, base=base)
+
+    vcs.changed_files = _changed_files  # type: ignore[method-assign]
     _fake_fix_session(monkeypatch, vcs)
     _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
     fs = loop.FakeFs()

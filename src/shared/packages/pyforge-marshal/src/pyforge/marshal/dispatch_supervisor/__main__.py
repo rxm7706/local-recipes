@@ -1116,15 +1116,6 @@ def _reconcile_fix_turn_spec_surface(
         )
         return True, None
 
-    journal_fix(
-        Phase.OBSERVATION,
-        {
-            "ok": True,
-            "step": "reconcile",
-            "paths": sorted(fix_turn_paths),
-            "fix_intent_id": fix_intent_id,
-        },
-    )
     head_branch = dispatch_core.dispatch_worktree_branch(slug, story_key)
     reconcile_outcome = _reconcile_spec_surface_drift(
         git_repo_root=repo_root,
