@@ -462,7 +462,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
         return (
             Finding(
                 source=Source.MARSHAL_DURABILITY,
-                check="ledger-regression",
+                check="marshal-durability-git",
                 status=DoctorStatus.WARN,
                 message=(
                     f"{len(ledgers)} tracked ledger(s) present but git is unavailable or "
@@ -572,7 +572,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
         findings.append(
             Finding(
                 source=Source.MARSHAL_DURABILITY,
-                check="ledger-regression-total",
+                check="marshal-durability-total",
                 status=DoctorStatus.FAIL,
                 message=(
                     f"{total_lost} completion(s) lost across "
