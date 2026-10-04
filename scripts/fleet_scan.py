@@ -7,7 +7,6 @@ sprint-ledger sync, and marshal land/deploy still need the parsers. The
 """
 from __future__ import annotations
 
-import argparse
 import collections
 import glob
 import json
@@ -15,7 +14,6 @@ import os
 import re
 import subprocess
 import sys
-import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -948,8 +946,8 @@ def apply_git(projects: dict) -> None:
 
 DREAMS_DIR = REPO_ROOT / "docs" / "dreams"
 # `spec-one-chain-per-station` CAP-11 / CHAIN-STANDARD §11: a Dream is live in
-# docs/dreams/ or archived under archive/docs/dreams/. scan_dreams() and
-# _fleet_chains() read both through _dream_files() (marshal Story 75.1).
+# docs/dreams/ or archived under archive/docs/dreams/. _fleet_chains() reads
+# both through _dream_files() (marshal Story 75.1).
 ARCHIVE_DREAMS_DIR = REPO_ROOT / "archive" / "docs" / "dreams"
 
 
@@ -1037,144 +1035,9 @@ DREAM_DECK_ALIASES = {
     # and renaming it would desync the bridge for a cosmetic gain.
     "pyforge-charter": "pyforge-genesis",
 }
-# Dreams whose build runs as a console program (chip shows live done/total).
-DREAM_PROGRAM = {
-    "pyforge-warden": "warden",
-    "pyforge-atlas": "atlas",
-}
 
 
-def dream_chain(slug: str) -> dict:
-    """Chain links for the drill-through indicators (no-straggler visibility):
-    deck dir (exact slug or alias), Spec folder, BMAD project dir,
-    console-program key."""
-    chain: dict[str, str] = {}
-    deck = DREAM_DECK_ALIASES.get(slug, slug)
-    if (REPO_ROOT / "presentations" / deck).is_dir():
-        chain["deck"] = f"presentations/{deck}"
-    hits = sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
-        f"*/planning-artifacts/specs/spec-{slug}"))
-    if hits:
-        chain["spec"] = str(hits[0].relative_to(REPO_ROOT))
-    if (REPO_ROOT / "_bmad-output" / "projects" / slug).is_dir():
-        chain["project"] = f"_bmad-output/projects/{slug}"
-    if slug in DREAM_PROGRAM:
-        chain["program"] = DREAM_PROGRAM[slug]
-    return chain
-
-
-def scan_dreams() -> list[dict]:
-    """[{slug, title, status, owner, type, chain}] from Dream frontmatter (README
-    skipped), plus `blockedOn` / `archived_reason` when set.
-
-    Reads docs/dreams/*.md, then archive/docs/dreams/*.md (see _dream_files()).
-    Location is the archive signal: a Dream read from the archive is reported
-    `archived` whatever its frontmatter `status` says (operator ruling
-    2026-09-30, Story 75.1).
-    """
-    dreams: list[dict] = []
-    for f, in_archive in _dream_files():
-        title, status, owner, archived_reason = None, None, None, None
-        dtype, blocked_on = None, None
-        lines = f.read_text(encoding="utf-8").splitlines()
-        if lines and lines[0].strip() == "---":
-            for line in lines[1:]:
-                if line.strip() == "---":
-                    break
-                if line.startswith("title:"):
-                    title = line.split(":", 1)[1].strip()
-                elif line.startswith("status:"):
-                    status = line.split(":", 1)[1].strip()
-                elif line.startswith("owner:"):
-                    owner = line.split(":", 1)[1].strip()
-                elif line.startswith("archived-reason:"):
-                    archived_reason = line.split(":", 1)[1].strip()
-                elif line.startswith("type:"):
-                    dtype = line.split(":", 1)[1].strip()
-                elif line.startswith("blocked-on:"):
-                    blocked_on = line.split(":", 1)[1].strip()
-        if in_archive:
-            status = "archived"
-        if status not in DREAM_STATUSES:
-            print(f"[dreams] WARN {f.name}: status {status!r} not in {DREAM_STATUSES}"
-                  " — passed through; board shows it under 'dreamt'")
-        if not owner:
-            print(f"[dreams] WARN {f.name}: no owner: in frontmatter")
-        elif owner == "guild" and f.stem not in GUILD_DREAMS:
-            print(f"[dreams] WARN {f.name}: owner 'guild' is reserved for "
-                  f"{GUILD_DREAMS} — every other Dream must name a station")
-        elif owner not in STATIONS and owner != "guild":
-            print(f"[dreams] WARN {f.name}: owner {owner!r} is not one of the "
-                  f"eight Smiths {STATIONS}")
-        if dtype and dtype not in DREAM_TYPES:
-            print(f"[dreams] WARN {f.name}: type {dtype!r} not in {DREAM_TYPES}")
-        dream = {"slug": f.stem, "title": title or f.stem,
-                 "status": status or "", "owner": owner or "",
-                 "type": dtype or "dream",
-                 "chain": dream_chain(f.stem)}
-        if blocked_on:
-            dream["blockedOn"] = blocked_on
-        if archived_reason:
-            dream["archived_reason"] = archived_reason
-        dreams.append(dream)
-    by_status = {s: sum(1 for d in dreams if d["status"] == s) for s in DREAM_STATUSES}
-    print(f"[dreams] {len(dreams)} scanned: "
-          + " / ".join(f"{n} {s}" for s, n in by_status.items()))
-    return dreams
-
-
-# ---- specs roster (all BMAD Specs; the legacy intake tier is deliberately out) --
-
-def _git_date(path: Path) -> str:
-    r = subprocess.run(
-        ["git", "log", "-1", "--format=%ad", "--date=format:%Y-%m-%d", "--",
-         str(path.relative_to(REPO_ROOT))],
-        capture_output=True, text=True, cwd=REPO_ROOT)
-    return r.stdout.strip()
-
-
-def scan_specs() -> list[dict]:
-    """Spec KERNELS only (Row 4) — .../specs/spec-<slug>/SPEC.md. For per-story specs (Row 7) see scan_story_specs().
-
-    Includes docs/governance/spec-*/ -- the constitutive (`owner: guild`) kernel, which
-    lives outside `_bmad-output/projects/` entirely since 2026-08-02 (`pyforge-genesis`
-    dissolved; see GOVERNANCE_DIR). One kernel since 2026-08-08, when the Lexicon half
-    was absorbed into spec-pyforge-charter and `guild` closed at one Dream.
-    """
-    rows: list[dict] = []
-    spec_dirs = (sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
-            "*/planning-artifacts/specs/spec-*"))
-        + sorted((REPO_ROOT / GOVERNANCE_DIR).glob("spec-*")))
-    for spec_dir in spec_dirs:
-        smd = spec_dir / "SPEC.md"
-        if not smd.is_file():
-            continue
-        text = smd.read_text(encoding="utf-8")
-        slug = spec_dir.name.removeprefix("spec-")
-        project = (GOVERNANCE_DIR if spec_dir.parent == REPO_ROOT / GOVERNANCE_DIR
-                   else spec_dir.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0])
-        m = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
-        title = (m.group(1).strip() if m else slug)
-        title = re.sub(r"^SPEC\s*[—–-]\s*", "", title)
-        caps = len(set(re.findall(r"\bCAP-\d+\b", text)))
-        comp = 0
-        if text.startswith("---"):
-            fm = text.split("---", 2)[1]
-            cm = re.search(r"^companions:\s*\n((?:[ \t]*-[ \t].*\n)*)", fm, re.MULTILINE)
-            if cm:
-                comp = len(re.findall(r"^[ \t]*-[ \t]", cm.group(1), re.MULTILINE))
-            inline = re.search(r"^companions:\s*\[([^\]]*)\]", fm, re.MULTILINE)
-            if inline and inline.group(1).strip():
-                comp = len(inline.group(1).split(","))
-        dream = slug if (DREAMS_DIR / f"{slug}.md").exists() else ""
-        rows.append({"slug": slug, "project": project, "title": title,
-                     "caps": caps, "companions": comp,
-                     "updated": _git_date(spec_dir), "dream": dream,
-                     "path": str(spec_dir.relative_to(REPO_ROOT))})
-    print(f"[specs] {len(rows)} Specs scanned "
-          f"({', '.join(sorted({r['project'] for r in rows}))})")
-    return rows
-
+# ---- story-spec compliance (Row 7) -----------------------------------------
 
 def scan_story_specs() -> list[dict]:
     """Per-station Row-7 compliance: done stories vs. tracked flat specs (spec-*.md pattern only, excludes nested SPEC.md)."""
@@ -2662,185 +2525,6 @@ def scan_deferred() -> dict:
             "triaged": totals["triaged"], "bySeverity": by_sev, "projects": projects}
 
 
-# ---- archived (absorbed / retired / terminal / blocked) ----------------------
-
-# Archived is driven ENTIRELY by the Dream: frontmatter `status: archived` (with
-# `archived-reason:`), or a Dream read from archive/docs/dreams/, which
-# scan_dreams() reports `archived` whatever its frontmatter says (Story 75.1).
-# The former hardcoded ARCHIVED_SEED list was retired 2026-07-25 when its five
-# entries became real archived Dreams. One source of truth: a thing cannot be
-# archived on the board without being archived in its Dream, which is what let
-# Sentinel render as a live backlog Dream AND an archived entry simultaneously.
-
-
-def build_archived(dreams: list[dict]) -> list[dict]:
-    """Every Dream whose row reads `status: archived`: frontmatter-marked, or read
-    from archive/docs/dreams/ (scan_dreams() sets it)."""
-    out: list[dict] = []
-    for d in dreams:
-        if d["status"] == "archived":
-            out.append({"name": d["title"],
-                        "reason": d.get("archived_reason") or "retired",
-                        "owner": d.get("owner", ""),
-                        "note": d["title"],
-                        "link": f"docs/dreams/{d['slug']}.md"})
-    by_reason: dict[str, int] = {}
-    for e in out:
-        by_reason[e["reason"]] = by_reason.get(e["reason"], 0) + 1
-    print(f"[archived] {len(out)} entries — "
-          + " / ".join(f"{v} {k}" for k, v in sorted(by_reason.items())))
-    return out
-
-
-# ---- the Guild (every station, every Dream it owns) -------------------------
-
-def scan_guild(dreams: list[dict], projects: dict | None = None,
-               backlog: dict | None = None) -> dict:
-    """One row per Smith — all eight, always, including empty ones.
-
-    Grouping by station is the accountability view the `owner:` through-line
-    exists for: "what is Atlas answerable for, and where does each piece stand?"
-    Every station renders even at zero, so a thin station is VISIBLE rather than
-    merely absent (Warden and Doctor own one Dream each; Marshal owns six).
-
-    The Charter is NOT a ninth row. It constitutes the Guild, so it sits above
-    the roster, not beside it — `guild` is not a station.
-    """
-    rows = []
-    for st in STATIONS:
-        mine = [d for d in dreams if d.get("owner") == st]
-        counts = {s: sum(1 for d in mine if d["status"] == s and d.get("type") != "practice")
-                  for s in DREAM_STATUSES}
-        counts["practice"] = sum(1 for d in mine if d.get("type") == "practice")
-        # G1 — what this station is actually DOING. The Guild counted Dreams and
-        # said nothing about activity: a station could own four Dreams and have
-        # nothing running. Derived from the build lines, never declared.
-        line = ""
-        for key, proj in (projects or {}).items():
-            if proj.get("owner") != st or proj.get("practice"):
-                continue
-            ls = proj.get("lineState") or {}
-            state, at = ls.get("state", ""), ls.get("at", "")
-            cand = f"{state} {at}".strip()
-            # a live/paused line outranks a complete one for display
-            if state in ("in flight", "paused") or not line:
-                line = cand
-        # G2 — backlog load. Makes a thin station meaningful: warden owns one
-        # Dream AND has zero pending, which is a different fact from being small.
-        load = ((backlog or {}).get("byOwner") or {}).get(st, 0)
-        blocked = sum(1 for r in (backlog or {}).get("rows", [])
-                      if r.get("owner") == st and r.get("blockedOn"))
-        rows.append({
-            "station": st, "total": len(mine), "counts": counts,
-            "line": line, "load": load, "blocked": blocked,
-            "dreams": [{"slug": d["slug"], "title": d["title"], "status": d["status"],
-                        "type": d.get("type", "dream"),
-                        "blockedOn": d.get("blockedOn", "")}
-                       for d in sorted(mine, key=lambda x: (x["status"], x["slug"]))],
-        })
-    constitutive = [{"slug": d["slug"], "title": d["title"], "status": d["status"]}
-                    for d in dreams if d.get("owner") == "guild"]
-    idle = [r["station"] for r in rows if not r["line"] and not r["load"]]
-    print(f"[guild] {sum(r['total'] for r in rows)} dreams across {len(rows)} stations"
-          f" · {len(constitutive)} constitutive"
-          + (f" · idle (no line, no backlog): {', '.join(idle)}" if idle else ""))
-    # `practice` sits with the ACTIVE states, before `archived` — archived is the
-    # terminal state and belongs last. A practice is tended, not ended.
-    order = [s for s in DREAM_STATUSES if s != "archived"] + ["practice", "archived"]
-    return {"stations": list(STATIONS), "order": order,
-            "rows": rows, "constitutive": constitutive}
-
-
-# ---- backlog (what a station owns that is not building and not done) --------
-
-def _decomposed_satellites(dreams: list[dict]) -> set[str]:
-    """Dream slugs whose Spec is decomposed into their owner station's epics.
-
-    The same test `chain-completeness` INV-A applies (`spec-<slug>` named in the
-    station's own prose), read here so the console's "is it building?" question is
-    answered by the chain rather than by a hand-maintained station map. A Dream with
-    no owner, no project tree, or an unreadable epics.md simply is not counted --
-    absence of evidence stays absence, never a claim of motion.
-    """
-    out: set[str] = set()
-    for d in dreams:
-        owner = d.get("owner") or ""
-        slug = d.get("slug") or ""
-        if not owner or not slug or owner == "guild":
-            continue
-        pa = REPO_ROOT / f"_bmad-output/projects/pyforge-{owner}/planning-artifacts"
-        # INV-A's own test, mirrored EXACTLY: `spec-<slug>` OR the bare slug, across the
-        # station's PRD + epics prose (board.py `_check_project_chain_completeness`).
-        # A narrower `spec-<slug>`-only match missed steward's Epic 8, which decomposes
-        # `jira-github-projects-sync` while citing it through its architecture document
-        # rather than its spec filename -- an epic with a story RUNNING at the time the
-        # panel still called that Dream "owned, not started".
-        prose = ""
-        for doc in list(pa.glob("prds/*/prd.md")) + list(pa.glob("epics*.md")):
-            try:
-                prose += doc.read_text(encoding="utf-8")
-            except OSError:
-                continue
-        if f"spec-{slug}" in prose or slug in prose:
-            out.add(slug)
-    return out
-
-
-def scan_backlog(dreams: list[dict], projects: dict) -> dict:
-    """Dreams a station owns that are neither building nor finished.
-
-    The naive definition — "not in Realized and not In Build" — does NOT hold,
-    because those two sections are driven by the 6 wired build lines, not by the
-    26 Dreams. It swept in 7 realized-but-never-a-build-line Dreams
-    (factory-console, modernist-identity, design-code-bridge, ...), every future
-    `archived` one, and the perpetual practices. Bucketing off the Dream's OWN
-    lifecycle is total and non-overlapping instead:
-
-      dreamt / pitched / specified  -> backlog, UNLESS a build line exists
-      realized                      -> Realized
-      archived                      -> Archived
-      type: practice                -> neither (tended, never finished)
-
-    `blocked-on:` splits backlog into WAITING vs AVAILABLE — backlog implies
-    pickup-ready, and work held on an external gate is not.
-    """
-    building = {PROGRAM_DREAM[k] for k, v in projects.items()
-                if k in PROGRAM_DREAM and (v.get("lineState") or {}).get("state")
-                in ("in flight", "paused")}
-    # PROGRAM_DREAM maps a project to its STATION Dream, so the set above can only
-    # ever hold the 9 station slugs -- a SATELLITE Dream (one whose work lives inside
-    # a station's epics rather than in its own build line) was structurally unable to
-    # read as building, and sat in BACKLOG forever no matter how far it got. Live
-    # 2026-08-11: four satellites were decomposed into mason E6 / doctor E7 / herald
-    # E13 / steward E9 with ledger stories and their stations RUNNING, and the panel
-    # still called all four "owned, not started". Derive the missing half from the
-    # same signal chain-completeness INV-A uses -- is `spec-<slug>` referenced by the
-    # owner station's epics? -- rather than from a slug map that cannot grow.
-    building |= _decomposed_satellites(dreams)
-    rows = []
-    for d in dreams:
-        if d.get("type") == "practice" or d["status"] in ("realized", "archived"):
-            continue
-        if d.get("owner") == "guild":
-            continue          # constitutive — not any station's pending work
-        if d["slug"] in building:
-            continue
-        rows.append({"slug": d["slug"], "title": d["title"], "status": d["status"],
-                     "owner": d["owner"], "blockedOn": d.get("blockedOn", ""),
-                     "chain": d.get("chain", {})})
-    order = {s: i for i, s in enumerate(DREAM_STATUSES)}
-    rows.sort(key=lambda r: (bool(r["blockedOn"]), order.get(r["status"], 9), r["slug"]))
-    blocked = sum(1 for r in rows if r["blockedOn"])
-    by_owner: dict[str, int] = {}
-    for r in rows:
-        by_owner[r["owner"]] = by_owner.get(r["owner"], 0) + 1
-    practices = [{"slug": d["slug"], "title": d["title"], "owner": d["owner"],
-                  "status": d["status"]} for d in dreams if d.get("type") == "practice"]
-    print(f"[backlog] {len(rows)} open ({len(rows) - blocked} available / {blocked} blocked)"
-          f" · {len(practices)} standing practices")
-    return {"rows": rows, "blocked": blocked, "byOwner": by_owner, "practices": practices}
-
-
 # ---- delivery timing / velocity (journals + wall-clock fallback) -------------
 
 _WALL_CLOCK_CEILING_METRIC = (
@@ -3563,110 +3247,6 @@ def main() -> int:
         file=sys.stderr,
     )
     return 2
-
-
-def _generate(args: argparse.Namespace) -> int:
-    n_resolved, via_override = _resolve_roster_slugs()
-    print(f"[resolve] {n_resolved} slug(s) resolved ({via_override} via override, "
-          f"{n_resolved - via_override} default)")
-
-    data = load_data()
-    data["projects"] = scan_projects(data["projects"])
-    check_project_coverage(data["projects"])
-    if args.source == "git":
-        # Tracked truth FIRST, archaeology second. The ledger twins are committed,
-        # so CI can read them; `apply_git` then only has to cover whatever predates
-        # a twin. Order matters only for the log's readability — both paths upgrade
-        # and neither downgrades.
-        apply_tracked_ledger(data["projects"])
-        apply_git(data["projects"])
-    else:
-        apply_sprint_status(data["projects"])
-        # Tracked twins as a FLOOR under local mode too, and last so it can only
-        # raise. `apply_sprint_status` leaves a project "as-is" when its Tier-3
-        # feed is missing — and as-is is the embedded `pending` baseline, not the
-        # project's real state. That is invisible in the main worktree, where all
-        # ten feeds exist, and wrong in every other one: run from a bmad-loop home,
-        # where only the running project's feed is symlinked in, this rendered SIX
-        # projects' shipped stories back to `pending` (2026-07-30, caught before
-        # commit by diffing against the published board). `dashboard-drift-check`
-        # could not catch it there either — it compares the board against feeds
-        # that are themselves absent, so it reported OK on a regressed board.
-        apply_tracked_ledger(data["projects"])
-        apply_loop_inflight(data["projects"])
-    data["dreams"] = scan_dreams()
-    data["specs"] = scan_specs()
-    data["storySpecs"] = scan_story_specs()
-    data.pop("campaign", None)
-    data.pop("campaign2", None)
-    spec_c = scan_campaign()
-    # Computed ONCE, shared by every LOCAL-ONLY panel needing a live/not-live
-    # distinction — see `live_running_stations()`'s own docstring for why a
-    # second definition of "running" is exactly how the build-campaign panel
-    # drifted from the fleet roll-up panel and mislabeled a stopped station.
-    running_stations: set[str] = set()
-    live_error: str | None = None
-    if args.source != "git":
-        running_stations, live_error = live_running_stations()
-    build_c = scan_impl_campaign(data["projects"],
-                                  running_stations if args.source != "git" else None)
-    apply_line_state(data["projects"])
-    # Fleet roll-up: tracked-only, so it renders the same on Pages as locally.
-    data["fleetProgress"] = build_fleet_progress(data["projects"])
-    if args.source != "git":
-        # Local render only — see the function's own docstring for why
-        # Pages must NOT carry these.
-        enrich_fleet_progress_live(data["fleetProgress"], data["projects"],
-                                    running_stations, live_error)
-    data["health"] = scan_health()
-    # Pitch BEFORE fleet: the deck dot is sub-scored against the six-artifact family
-    # contract, and scan_pitch already computes exactly that per deck. Recomputing it
-    # inside the fleet would be a second producer of one fact.
-    data["pitch"] = scan_pitch()
-    data["fleet"] = scan_fleet(data["projects"], data["pitch"])
-    data["commandCenter"] = scan_command_center(data["fleet"])
-    data["readiness"] = scan_readiness()
-    data["campaigns"] = [
-        {"id": "spec-completion-2026-07-25", "title": "Spec Completion",
-         "kind": "planning", "status": "completed", "completed": "2026-07-25",
-         "record": "_bmad-output/projects/local-recipes/planning-artifacts/campaign-spec-completion-2026-07-25.md",
-         **spec_c},
-        {"id": "build-2026-07-25", "title": "The Build", "kind": "build",
-         "status": "active", **build_c},
-    ]
-    data["openwork"] = scan_deferred()
-    data["archived"] = build_archived(data["dreams"])
-    # apply_owner MUST precede scan_guild: the Guild's `building` column reads
-    # proj["owner"], which apply_owner sets. Ordered the other way it silently
-    # worked for pre-existing lines (their owner persisted in data.js from an
-    # earlier run) and reported every NEW line as idle — caught when marshal /
-    # mason / steward / genesis were added 2026-07-25.
-    apply_owner(data)
-    scan_timing(data["projects"])
-    data["backlog"] = scan_backlog(data["dreams"], data["projects"])
-    data["guild"] = scan_guild(data["dreams"], data["projects"], data["backlog"])
-
-    violations = gate_ownership(data)
-    if violations:
-        print(f"\n[GATE] ACCOUNTABILITY — {len(violations)} violation(s); NOT publishing:")
-        for x in violations:
-            print(f"     ✗ {x}")
-        print("  Charter §7: the hall does not put a row on the wall it cannot attribute.")
-        return 1
-
-    ts = now_utc()
-    data["snapshot"] = _SNAP_TS.sub(ts, data["snapshot"], count=1)
-    data["status"] = build_status(data, args.source)
-    data["status"]["generatedAt"] = ts
-    # epoch too, so the front-end can render it in the VIEWER's timezone --
-    # a UTC string alone forces mental arithmetic on every glance.
-    data["status"]["generatedEpoch"] = int(time.time())
-    DATA_JS.write_text(
-        "window.DASHBOARD_DATA = " + json.dumps(data, indent=2, ensure_ascii=False) + ";\n",
-        encoding="utf-8",
-    )
-    print(f"\nsnapshot -> {ts}  ·  source: {args.source}  ·  data.js rewritten")
-    return 0
 
 
 if __name__ == "__main__":

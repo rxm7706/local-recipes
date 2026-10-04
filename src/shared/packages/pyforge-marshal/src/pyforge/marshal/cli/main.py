@@ -124,7 +124,6 @@ from ..core.context import MarshalContext
 from ..core.model import Verdict
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES, exit_code_for
 from . import adapters as adapters_cli
-from . import chain as chain_cli
 from . import check as check_cli
 from . import config as config_cli
 from . import context as context_cli
@@ -267,7 +266,6 @@ def _build_parser() -> argparse.ArgumentParser:
     upstream_cli.add_upstream_subparser(subparsers)
     seed_cli.add_seed_subparser(subparsers)
     refresh_cli.add_refresh_subparser(subparsers)
-    chain_cli.add_chain_subparser(subparsers)
     planning_cli.add_planning_subparser(subparsers)
     context_cli.add_context_subparser(subparsers)
     login_cli.add_login_subparser(subparsers)
