@@ -288,7 +288,9 @@ def test_verify_fix_loop_enabled_unset_environment_reads_dev_on(tmp_path, monkey
     flags_dir.mkdir(parents=True)
     overlays = flags_dir / "flag-overlays.json"
     overlays.write_text(
-        json.dumps({"dev": {"pyforge.marshal.verify_fix_loop": "on"}, "production": {"pyforge.marshal.verify_fix_loop": "off"}}),
+        json.dumps(
+            {"dev": {"pyforge.marshal.verify_fix_loop": "on"}, "production": {"pyforge.marshal.verify_fix_loop": "off"}}
+        ),
         encoding="utf-8",
     )
     flags_dir.joinpath("flags.json").write_text(
@@ -550,6 +552,7 @@ def test_terminate_process_group_never_passes_a_group_id_of_this_group_or_init_t
     monkeypatch.setattr(os, "getpgrp", lambda: 7777)
     monkeypatch.setattr(os, "killpg", lambda pgid, sig: calls.append(("killpg", pgid, sig)))
     monkeypatch.setattr(os, "kill", lambda pid, sig: calls.append(("kill", pid, sig)))
+
     class _Dead:
         def is_alive(self, _pid: int) -> bool:
             return False

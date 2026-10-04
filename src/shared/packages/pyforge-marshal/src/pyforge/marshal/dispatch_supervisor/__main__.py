@@ -79,7 +79,6 @@ from ..core.dispatch_verify_fix import (
     fix_turn_remaining_budget_s,
     in_flight_verify_fix_turn,
     pending_verify_fix_intent,
-    scrub_fix_turn_exposure,
     scrub_then_tail_bytes,
 )
 from ..core.egress import redact_raw_text, to_redacted_text

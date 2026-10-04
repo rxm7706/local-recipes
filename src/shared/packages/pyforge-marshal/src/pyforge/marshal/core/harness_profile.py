@@ -679,9 +679,7 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
                 "exactly once when declared"
             )
         if _PROMPT_TOKEN in template and _PROMPT_FILE_TOKEN in template:
-            raise HarnessProfileError(
-                f"{source}: {label!r} must not mix {_PROMPT_TOKEN!r} and {_PROMPT_FILE_TOKEN!r}"
-            )
+            raise HarnessProfileError(f"{source}: {label!r} must not mix {_PROMPT_TOKEN!r} and {_PROMPT_FILE_TOKEN!r}")
 
     return HarnessProfile(
         name=name,

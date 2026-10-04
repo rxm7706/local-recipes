@@ -844,9 +844,7 @@ def terminate_process_group(
     ``killpg``: 0 addresses this process's own group (a kernel thread reports pgid 0) and 1 is init's group, so
     such a pid is signalled alone too."""
     if pid <= 1:
-        return TerminateProcessGroupResult(
-            signalled_term=False, signalled_kill=False, reaped=False, returncode=None
-        )
+        return TerminateProcessGroupResult(signalled_term=False, signalled_kill=False, reaped=False, returncode=None)
     signalled_term = _signal_session_stop(pid, signal.SIGTERM)
     deadline = time.monotonic() + grace_s
     proc = process if process is not None else PosixProcess()
