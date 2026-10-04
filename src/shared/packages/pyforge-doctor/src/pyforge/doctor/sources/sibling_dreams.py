@@ -135,7 +135,8 @@ def _parse_dream_fingerprint(text: str) -> dict[str, str] | None:
     # toward silence, either way).
     ack_raw = data.get("sibling-acknowledged")
     ack = str(ack_raw) if isinstance(ack_raw, (int, float)) and not isinstance(ack_raw, bool) else ack_raw
-    body_bytes = _dream_body_after_frontmatter(text).encode("utf-8")
+    body = _dream_body_after_frontmatter(text)
+    body_bytes = body.encode("utf-8") if body.strip() else b""
     return {
         "title": title.strip(),
         "status": status.strip() if isinstance(status, str) else "",

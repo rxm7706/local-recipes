@@ -857,6 +857,7 @@ def test_docs_specs_nonmd_reports_warn(tmp_path: Path) -> None:
     docs_specs = repo / "docs" / "specs"
     docs_specs.mkdir(parents=True, exist_ok=True)
     (docs_specs / "foo.txt").write_text("x\n", encoding="utf-8")
+    (repo / "CLAUDE.md").write_text("# Project\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -909,6 +910,7 @@ def test_spec_unindexed_reports_warn(tmp_path: Path) -> None:
     docs_specs = repo / "docs" / "specs"
     docs_specs.mkdir(parents=True, exist_ok=True)
     (docs_specs / "bar.md").write_text("x\n", encoding="utf-8")
+    (repo / "CLAUDE.md").write_text("# Project\n\nNo intake index here.\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 

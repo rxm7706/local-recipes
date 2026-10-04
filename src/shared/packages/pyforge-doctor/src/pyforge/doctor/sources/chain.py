@@ -496,7 +496,14 @@ def _collect_dreams(target: Path, findings: list[dict]) -> dict[str, dict]:
         try:
             dream_text = p.read_text(encoding="utf-8")
         except Exception:
-            dream_text = ""
+            findings.append(
+                _unparseable_frontmatter_item(
+                    inv="INV-1",
+                    subject=p.stem,
+                    path=p,
+                )
+            )
+            continue
         fm, unparseable = _frontmatter_parse_text(dream_text)
         if unparseable:
             findings.append(
