@@ -506,25 +506,14 @@ def test_kinship_wikilink_skips_frontmatter_below_a_banner(tmp_path: Path) -> No
 
 
 def test_live_tree_kinship_wikilink_dead_count() -> None:
-    """Measured live 2026-09-19 under Story 28.1's opener rule: 31 dead
-    Kinship wikilinks under docs/dreams/ (was 33 on 2026-09-18, 26 on
-    2026-09-14). The -2 is one archived Dream, ``enterprise-airgap.md``,
-    whose glued ``---title:`` opener (the 2026-09-17 fold, deliberately
-    left in place by ``0b74756679``) is now refused as
-    ``unparseable-frontmatter`` before the Kinship scan runs; the old
-    reader parsed that opener leniently and scanned its body, where
-    ``[[deckcraft]]`` and ``[[pyforge-genesis]]`` do not resolve. The
-    count rises by two once that Dream's opener is repaired (and its two
-    links are still dead); this test only tracks the live count.
-
-    30 since 2026-09-25 (32 once ``enterprise-airgap.md``'s opener is repaired): ``pyforge-pages.md``'s ``[[python-foundry-cutover]]``
-    (no Dream by that name; the cutover Spec's owning Dream is
-    ``pyforge-unifying-strategy``) was repointed in the unifying-strategy
-    consolidation."""
+    """Measured live 2026-10-04 (Story 41.3): 32 dead Kinship wikilinks under
+    ``docs/dreams/`` after the 34 glued-opener Dreams were repaired (was 30 on
+    2026-09-25 when ``enterprise-airgap.md`` was still refused as
+    ``unparseable-frontmatter`` before the Kinship scan)."""
     repo_root = _require_repo_root()
     findings = chain.gather_dreams_hygiene(repo_root)
     dead = [f for f in findings if f.check == "kinship-wikilink-dead"]
-    assert len(dead) == 30
+    assert len(dead) == 32
 
 
 def test_specified_spec_ready_suppresses_finding(tmp_path: Path) -> None:

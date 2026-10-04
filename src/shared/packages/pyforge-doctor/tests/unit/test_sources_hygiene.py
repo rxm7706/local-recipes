@@ -115,8 +115,8 @@ def _seed_all_classes_fixture(repo: Path, slug: str) -> Path:
     _write(
         project_dir / "README.md",
         "acme is a [role] station in the PyForge factory, responsible for "
-        "[responsibilities]. See planning-artifacts/sprint-status.yaml for "
-        "historical context.\n",
+        "[responsibilities]. See _bmad-output/projects/pyforge-acme/planning-artifacts/"
+        "sprint-status.yaml for historical context.\n",
     )
 
     # hollow-sprint-status: the Tier-3 non-ledger feed, scaffolded but empty.
@@ -161,7 +161,10 @@ def test_gather_emits_exactly_five_findings_for_a_synthetic_all_classes_fixture(
     assert all(f.evidence["station"] == "acme" for f in findings)
     assert all(isinstance(f.evidence.get("path"), str) and f.evidence["path"] for f in findings)
     by_check = {f.check: f for f in findings}
-    assert by_check[HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value].evidence["path"] == "tests"
+    assert (
+        by_check[HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value].evidence["path"]
+        == "_bmad-output/projects/pyforge-acme/tests"
+    )
 
 
 # --- Row: gather() invocation never mutates the tree it scans --------------
@@ -261,10 +264,12 @@ def test_one_stations_unreadable_file_warns_without_discarding_another_stations_
 
     findings = hygiene.gather(repo)
 
-    by_station = {f.evidence.get("station"): f for f in findings}
-    assert by_station["broken"].check == "station-unevaluable"
-    assert by_station["broken"].status is DoctorStatus.WARN
-    assert by_station["good"].check == HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value
+    broken = [f for f in findings if f.evidence.get("station") == "broken"]
+    good = [f for f in findings if f.evidence.get("station") == "good"]
+    assert any(f.check == "hygiene-check-unevaluable" for f in broken)
+    assert all(f.status is DoctorStatus.WARN for f in broken)
+    assert len(good) == 1
+    assert good[0].check == HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value
     assert len(findings) == 2
 
 
@@ -289,7 +294,7 @@ def test_orphan_file_with_no_inbound_references_resolves_true_not_a_warn(
     finding = findings[0]
     assert finding.check == HygieneFindingKind.ORPHAN_FILE.value
     assert finding.status is DoctorStatus.WARN
-    assert finding.evidence["path"] == "planning-artifacts/orphan-notes.md"
+    assert finding.evidence["path"] == "_bmad-output/projects/pyforge-acme/planning-artifacts/orphan-notes.md"
 
 
 # --- Row: orphan-file, git errors -------------------------------------------
@@ -340,7 +345,7 @@ def test_dead_test_scaffolding_is_not_even_considered_without_a_marker(
     assert not (project_dir / "playwright.config.ts").exists()
 
     findings: list = []
-    hygiene._check_dead_test_scaffolding(project_dir, "acme", findings)
+    hygiene._check_dead_test_scaffolding(tmp_path, project_dir, "acme", findings)
 
     assert findings == []
 
@@ -356,11 +361,11 @@ def test_dead_test_scaffolding_path_names_the_marker_file_when_no_tests_dir_exis
     assert not (project_dir / "tests").exists()
 
     findings: list = []
-    hygiene._check_dead_test_scaffolding(project_dir, "acme", findings)
+    hygiene._check_dead_test_scaffolding(tmp_path, project_dir, "acme", findings)
 
     assert len(findings) == 1
     assert findings[0].check == HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value
-    assert findings[0].evidence["path"] == "pytest.ini"
+    assert findings[0].evidence["path"] == "_bmad-output/projects/pyforge-acme/pytest.ini"
 
 
 # --- Row: hollow-sprint-status, no non-ledger file --------------------------
@@ -375,7 +380,7 @@ def test_hollow_sprint_status_is_not_even_considered_without_the_non_ledger_file
     assert (project_dir / "planning-artifacts" / "sprint-status-ledger.yaml").exists()
 
     findings: list = []
-    hygiene._check_hollow_sprint_status(project_dir, "acme", findings)
+    hygiene._check_hollow_sprint_status(tmp_path, project_dir, "acme", findings)
 
     assert findings == []
 
@@ -435,7 +440,7 @@ def test_live_repo_gather_surfaces_at_least_one_true_positive_naming_a_non_warde
     assert any(
         f.check == HygieneFindingKind.ORPHAN_FILE.value
         and f.evidence.get("station") == "herald"
-        and f.evidence.get("path") == "planning-artifacts/" + basename
+        and f.evidence.get("path") == "_bmad-output/projects/pyforge-herald/planning-artifacts/" + basename
         for f in findings
     ), "expected the re-verified herald orphan file to be reported"
     assert any(f.evidence.get("station") not in (None, "warden") for f in findings)

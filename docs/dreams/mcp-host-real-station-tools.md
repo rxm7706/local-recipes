@@ -1,4 +1,5 @@
----title: The sidecar that only says its own name
+---
+title: The sidecar that only says its own name
 type: dream
 owner: steward
 status: archived   # 2026-09-12, same day as seeding -- spec-mcp-host-real-station-tools

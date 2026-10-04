@@ -1,4 +1,5 @@
----title: Langflow integrates into a cookiecutter-django project without fighting it
+---
+title: Langflow integrates into a cookiecutter-django project without fighting it
 type: dream
 owner: steward
 status: archived   # was `absorbed` (off-vocabulary, normalised 2026-09-05); 2026-08-22 pointer spec authored (spec-langflow-django-plugin); realized through python-agent-platform per the 2026-08-14 Realization log
