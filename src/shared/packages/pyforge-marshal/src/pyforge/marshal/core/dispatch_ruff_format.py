@@ -1,8 +1,9 @@
-"""Story 83.9: apply ``ruff format`` to a dispatch story's own ``.py`` files before verify.
+"""Story 83.9 / 83.15: safe ruff fixes and format on a story's ``.py`` files before verify.
 
-Uses the same per-package ``cwd`` and file-list invocation as
-``scripts/lint_types.py ruff-format --fix``, but only on paths the story
-changed against ``origin/main`` — never whole ``src/`` / ``tests/`` trees.
+Runs ``ruff check --fix`` (safe fixes only, never ``--unsafe-fixes``) then
+``ruff format`` per package, using the same per-package ``cwd`` and file-list
+invocation as ``scripts/lint_types.py``, but only on paths the story changed
+against ``origin/main`` — never whole ``src/`` / ``tests/`` trees.
 """
 
 from __future__ import annotations
@@ -86,6 +87,10 @@ def apply_dispatch_ruff_format_before_verify(
         if not rel_paths:
             continue
         try:
+            process.run(["ruff", "check", "--fix", *rel_paths], cwd=package_root)
+        except ProcessError:
+            continue
+        try:
             result = process.run(["ruff", "format", *rel_paths], cwd=package_root)
         except ProcessError:
             continue
@@ -105,7 +110,7 @@ def apply_dispatch_ruff_format_before_verify(
         vcs.commit_paths(
             worktree,
             tuple(Path(path) for path in to_commit),
-            to_redacted_text("marshal: ruff format story files (Story 83.9)"),
+            to_redacted_text("marshal: ruff check --fix and format story files (Story 83.9, 83.15)"),
         )
     except Exception:
         return DispatchRuffFormatResult((), False)
