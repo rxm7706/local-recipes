@@ -4,7 +4,7 @@ type: 'fix'
 created: '2026-10-03'
 status: 'done'
 baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -127,8 +127,10 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 
 ## Auto Run Result
 
-Status: in-review  
-Open for the operator: `DW-FU-23-6-2` and `DW-FU-30-3` (22 of the 24 deferred-work rows are closed; both stay tracked in `deferred-work-ledger.md`, so the frontmatter `deferred:` list stays empty). Both need the `bmad-spec` re-derive of `spec-pyforge-doctor/SPEC.md`, which is never hand-edited; the memlog input for it is appended and each row carries a `verified:` line saying so.
+Status: done  
+Review pass 2026-10-04: three patches applied (`--head` help, ledger-direction `--base` test, flag_inventory story-spec join test). `followup_review_recommended: false`.
+
+Open for the operator: `DW-FU-23-6-2` and `DW-FU-30-3` — memlog re-derive input is appended; `bmad-spec` render was not run here (`_bmad/scripts/bmad-spec.py` missing). 22 of 24 deferred-work rows closed in `deferred-work-ledger.md`.
 
 What landed on top of the earlier core fixes (ledger, story-status, dispatch, frozen-path):
 - `capability_effect.py`: `_surface_field` reads multi-line `**Surface:**` fields (bullet and wrapped inline); `_story_surface_by_cap` joins a CAP to a surface through the story specs under `planning-artifacts/specs/` that cite the parent spec and CAP; `scripts/flag_inventory.py` passes `story_specs_dir`. `flag-inventory` unresolved count: 722 to 682 (doctor 79 to 77), recorded on `DW-doctor-34-4`.
