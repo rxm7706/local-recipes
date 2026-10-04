@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "source": "docs/governance/guild-roster.json",
+  "rulesets": [
+    {
+      "name": "protected-refs-attempt-preserve-branches",
+      "target": "branch",
+      "enforcement": "disabled",
+      "conditions": {
+        "ref_name": {
+          "include": [
+            "refs/heads/attempt-preserve/**"
+          ],
+          "exclude": []
+        }
+      },
+      "rules": [
+        {
+          "type": "deletion"
+        }
+      ],
+      "bypass_actors": []
+    },
+    {
+      "name": "protected-refs-loop-branches",
+      "target": "branch",
+      "enforcement": "disabled",
+      "conditions": {
+        "ref_name": {
+          "include": [
+            "refs/heads/loop/**"
+          ],
+          "exclude": []
+        }
+      },
+      "rules": [
+        {
+          "type": "deletion"
+        },
+        {
+          "type": "non_fast_forward"
+        }
+      ],
+      "bypass_actors": []
+    },
+    {
+      "name": "protected-refs-tags",
+      "target": "tag",
+      "enforcement": "disabled",
+      "conditions": {
+        "ref_name": {
+          "include": [
+            "refs/tags/archive/**",
+            "refs/tags/preserve/**",
+            "refs/tags/rescue/**"
+          ],
+          "exclude": []
+        }
+      },
+      "rules": [
+        {
+          "type": "deletion"
+        },
+        {
+          "type": "update"
+        },
+        {
+          "type": "non_fast_forward"
+        }
+      ],
+      "bypass_actors": []
+    },
+    {
+      "name": "protected-refs-restrict-preserve-branch-creation",
+      "target": "branch",
+      "enforcement": "disabled",
+      "conditions": {
+        "ref_name": {
+          "include": [
+            "refs/heads/preserve/**",
+            "refs/heads/archive/**"
+          ],
+          "exclude": []
+        }
+      },
+      "rules": [
+        {
+          "type": "creation"
+        }
+      ],
+      "bypass_actors": []
+    }
+  ]
+}

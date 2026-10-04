@@ -6218,3 +6218,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   promoted: 2026-10-03 — Story 66.2 backfill
   reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
   status: closed
+
+### DW-steward-85-2: Add a mocked successful gh ruleset list/detail test so fetch/normalize regressions fail in CI without calling GitHub.
+
+- source_spec: `planning-artifacts/specs/spec-85-2-the-protected-ref-list-is-declared-once-and-the-live-rulesets-are-proven-to-match-it.md`
+  summary: Add a mocked successful gh ruleset list/detail test so fetch/normalize regressions fail in CI without calling GitHub.
+  evidence: Live parity is operator-gated; only API failure is mocked today. A break in fetch_live_rulesets could pass fixture tests until an authenticated run.
+  location: scripts/protected_refs_ruleset_check.py:63
+  origin: spec-deferred c8c850b0dd30 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-04 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

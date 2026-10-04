@@ -579,6 +579,7 @@ def test_real_roster_protected_refs_shape() -> None:
     assert by_ref["refs/tags/rescue/"]["kind"] == "legacy"
     for entry in refs:
         assert entry["scope"] in ("origin", "local", "both")
+        assert "rules" in entry and entry["rules"]
 
 
 def test_protected_branch_prefixes_floor_when_roster_omits_loop(hook_module) -> None:

@@ -287,27 +287,32 @@
     {
       "refname": "refs/heads/loop/",
       "kind": "operational-branch",
-      "scope": "both"
+      "scope": "both",
+      "rules": ["deletion", "non_fast_forward"]
     },
     {
       "refname": "refs/heads/attempt-preserve/",
       "kind": "legacy",
-      "scope": "both"
+      "scope": "both",
+      "rules": ["deletion"]
     },
     {
       "refname": "refs/tags/preserve/",
       "kind": "preserve-tag",
-      "scope": "both"
+      "scope": "both",
+      "rules": ["deletion", "update", "non_fast_forward"]
     },
     {
       "refname": "refs/tags/archive/",
       "kind": "archive-tag",
-      "scope": "both"
+      "scope": "both",
+      "rules": ["deletion", "update", "non_fast_forward"]
     },
     {
       "refname": "refs/tags/rescue/",
       "kind": "legacy",
-      "scope": "both"
+      "scope": "both",
+      "rules": ["deletion", "update", "non_fast_forward"]
     }
   ],
   "session_denials": [
