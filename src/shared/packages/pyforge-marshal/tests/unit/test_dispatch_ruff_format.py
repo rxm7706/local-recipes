@@ -164,7 +164,7 @@ def test_apply_ruff_check_fix_removes_safe_violations(tmp_path: Path) -> None:
     target = pkg / "src/pyforge/marshal/sample.py"
     target.parent.mkdir(parents=True)
     target.write_text("import sys\nimport os\n\nx = 1\n", encoding="utf-8")
-    marshal_pkg = Path(__file__).resolve().parents[1]
+    marshal_pkg = Path(__file__).resolve().parents[2]
     shutil.copy(marshal_pkg / "pyproject.toml", pkg / "pyproject.toml")
 
     vcs = _DiskDirtyVcs(scope=(_STORY_PY,), worktree=worktree)
@@ -180,7 +180,8 @@ def test_apply_ruff_check_fix_removes_safe_violations(tmp_path: Path) -> None:
     assert result.committed is True
     text = target.read_text(encoding="utf-8")
     assert "import os" not in text
-    assert "import sys" in text
+    assert "import sys" not in text
+    assert "x = 1" in text
 
 
 def test_mutation_verification_without_ruff_format_journal_partner(
