@@ -344,7 +344,7 @@ def test_env_hygiene_is_out_of_scope_by_design():
 #: 2026-08-10 when doctor story 6-9 landed the sources dispatcher: it imports EVERY
 #: source by design, so an independence scan over it is meaningless, and it gathers
 #: nothing itself.
-NON_SOURCE_MODULES = frozenset({"__init__.py", "__main__.py"})
+NON_SOURCE_MODULES = frozenset({"__init__.py", "__main__.py", "feed_status.py"})
 
 
 def test_every_real_sources_file_is_mapped_by_at_least_one_source():

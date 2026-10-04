@@ -320,16 +320,16 @@ def main(argv: list[str] | None = None) -> int:
         findings = chain.gather_dreams_hygiene(target)
     elif args.layers:
         findings = board.gather_chain_layers_audit(target, args.project)
-    elif args.source == Source.LEDGER_REGRESSION.value:
+    elif args.source == Source.LEDGER_REGRESSION.value and (args.base is not None or args.head is not None):
         findings = ledger.gather(
             target,
             base=args.base or ORIGIN_MAIN,
             head=args.head or "HEAD",
         )
-    elif args.source == Source.LEDGER_DIRECTION.value:
+    elif args.source == Source.LEDGER_DIRECTION.value and args.base is not None:
         if args.head is not None:
             parser.error(f"argument --head: not valid for {Source.LEDGER_DIRECTION.value!r}")
-        findings = ledger.gather_direction(target, base_ref=args.base or MAIN)
+        findings = ledger.gather_direction(target, base_ref=args.base)
     else:
         findings = DISPATCH[args.source](target)
 
