@@ -19,3 +19,25 @@ authcheck_args = ["status"]
 authcheck_ok_pattern = "Logged in as"
 verified = true
 notes = "Overlay 2026-09-02: packaged shape plus --force so drain sessions do not wait on Smart Mode."
+
+# Story 85.3: fix turn uses prompt file on disk, not argv text.
+resume_argv = [
+  "-p",
+  "--trust",
+  "--force",
+  "--workspace",
+  "{worktree}",
+  "--resume",
+  "{session_id}",
+  "{model_args}",
+  "{prompt_file}",
+]
+fix_only_argv = [
+  "-p",
+  "--trust",
+  "--force",
+  "--workspace",
+  "{worktree}",
+  "{model_args}",
+  "{prompt_file}",
+]
