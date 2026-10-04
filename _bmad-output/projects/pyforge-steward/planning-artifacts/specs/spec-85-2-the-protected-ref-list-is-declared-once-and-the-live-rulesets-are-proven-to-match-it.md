@@ -2,11 +2,11 @@
 title: "85.2: The protected-ref list is declared once and the live rulesets are proven to match it"
 type: 'feature'
 created: '2026-10-04'
-status: 'done'
+status: 'in-review'
 baseline_revision: '2c22d23a06766dbc5c592ae81e046c6d062fa909'
 flag-exempt: detector-or-gate   # a parity detector; a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
