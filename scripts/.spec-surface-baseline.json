@@ -601,7 +601,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "34d8fb1b940bfe5acdfc54c52fab0f39fedc1719",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py": "c7669349a027d75714c47710dce4fdde8f3b578f",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py": "80e3e6b129eddc4c1f1d20db0d51340258193657",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "9edee54cfee7c347f0941a05851399f35579c2d9",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "9bf2469abdb8132e556d7ad368fc940d6143e3f5",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/live_proof_surfaces.py": "511d43f7377a31efe23fe48232878e81f6cc8db4",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "34ad40f686d8e5d11d5d5945e544532060c9af46",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py": "125a4d9d581a1f196398028993093cd42a6544e2",
@@ -714,7 +714,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_frozen_path.py": "2a38239a62f116214029ee7ca34126debddffe31",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_general_docs_consistency.py": "970077c94ea1f6e62a58ab10d423026ee848eddb",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_hygiene.py": "75584d5b777cdf398381bac4643cec477bc6d8cb",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py": "01043e496366343cd6223fe89a1788c3d322c80d",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py": "663061a97c9dd9a164cd7414758c9edabbaed348",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_direction.py": "7afc862100859342998079432199a615acbdb2a8",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_live_proof_surfaces.py": "62c7a9c193c6166effb52644f14f11be442ce4c9",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_marshal_story_status.py": "49497bbade16fa7f2493404cfd19a9cb33923ba6",
@@ -732,7 +732,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "65545423d692429a8db4112ab69166ed79e45565"
+  "memlog": "db4d92e6e6e0fbdaf475e3b9b78357cb48a505b4"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -3096,7 +3096,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py": "c7669349a027d75714c47710dce4fdde8f3b578f",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/general_docs_consistency.py": "53a7e359321367e7292989cf073400bdcdd9b3f5",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py": "80e3e6b129eddc4c1f1d20db0d51340258193657",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "9edee54cfee7c347f0941a05851399f35579c2d9",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "9bf2469abdb8132e556d7ad368fc940d6143e3f5",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/live_proof_surfaces.py": "511d43f7377a31efe23fe48232878e81f6cc8db4",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "34ad40f686d8e5d11d5d5945e544532060c9af46",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/one_chain.py": "125a4d9d581a1f196398028993093cd42a6544e2",
@@ -3478,7 +3478,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7841247dfd900ae288c19463e38af1276d4d9e81",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "5134a045d5ca7434205161361c3afd5c37f63f60"
+  "memlog": "f53ceaec626a0a6ba03f2f3bb4fa55ad92f29479"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {

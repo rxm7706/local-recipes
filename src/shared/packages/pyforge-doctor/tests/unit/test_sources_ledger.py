@@ -969,6 +969,40 @@ def test_a_re_key_line_whose_old_key_survives_neither_hides_the_story_nor_reopen
     assert by_check["done-key-regressed"].evidence["keys"] == ["epic-9"]
 
 
+def test_a_renumbering_chain_in_a_fold_map_is_not_dangling(tmp_path: Path) -> None:
+    # A compaction folds epics 1, 3, 4 into 1, 2, 3: `epic-3` survives at head as the new
+    # name of `epic-4`. The atlas fold (rekey-2026-09-17.md) has 20 such lines.
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    seed = {"epic-1": "done", "1-1-a": "done", "epic-3": "done", "3-1-b": "done", "epic-4": "done", "4-1-c": "done"}
+    _write_ledger(repo, "doctor", seed)
+    _origin_main_at(repo, _commit_all(repo, "seed epics 1, 3 and 4"))
+    _write_ledger(
+        repo,
+        "doctor",
+        {"epic-1": "done", "1-1-a": "done", "epic-2": "done", "2-1-b": "done", "epic-3": "done", "3-1-c": "done"},
+    )
+    _write_rekey(repo, "doctor", "epic-3 -> epic-2\n3-1-b -> 2-1-b\nepic-4 -> epic-3\n4-1-c -> 3-1-c\n")
+    _commit_all(repo, "fold: compact the numbering")
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert [(f.check, f.status) for f in findings] == [("ledger-regression", DoctorStatus.OK)]
+
+
+def test_an_identity_line_in_a_fold_map_is_not_dangling(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", _DONE_EPIC)
+    _origin_main_at(repo, _commit_all(repo, "seed a done epic"))
+    _write_rekey(repo, "doctor", "9-1-first -> 9-1-first\n")
+    _commit_all(repo, "a map that names a key unchanged")
+
+    findings = ledger.gather(repo, base="origin/main", head="HEAD")
+
+    assert [(f.check, f.status) for f in findings] == [("ledger-regression", DoctorStatus.OK)]
+
+
 def _durability_after(tmp_path: Path, working: dict[str, str]) -> tuple:
     from pyforge.doctor.sources import marshal
 

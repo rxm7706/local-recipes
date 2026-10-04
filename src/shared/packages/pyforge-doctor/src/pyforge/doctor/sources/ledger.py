@@ -370,9 +370,12 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                     dangling.append({"line": f"{old} -> {new}", "why": f"{old} not in {display_ref(base)}"})
                 elif new not in after:
                     dangling.append({"line": f"{old} -> {new}", "why": f"{new} not in {head}"})
-                elif old != new and old in after:
+                elif old in after and old not in mapping.values():
                     # A re-key moves a key; one whose old key survives at head copied it, and
                     # applying it would hide the surviving row from this check (Story 41.5).
+                    # A surviving old key that is another line's target is a renumbering
+                    # chain (`epic-13 -> epic-12`, `epic-12 -> epic-11`), not a copy; an
+                    # identity line is its own target, so it never reads as one either.
                     dangling.append({"line": f"{old} -> {new}", "why": f"{old} still in {head}"})
             if dangling:
                 findings.append(

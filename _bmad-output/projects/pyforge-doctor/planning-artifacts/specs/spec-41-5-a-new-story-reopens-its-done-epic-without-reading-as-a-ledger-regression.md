@@ -100,3 +100,15 @@ Type / Effort / Deps: fix / S / —.
   - `lint-types`: rc 0.
   - Mutants: dropping the `in-progress` clause, the `not in before` clause, the base-key union, or the surviving-old-key dangling rule each fails a test.
   - Replaying `1be676d263`, `fd328844d6` and `cc137c9faa` still reports `done-key-regressed`, naming `epic-66`, `epic-35` and `epic-17`.
+
+### 2026-10-04 — Re-review of the fixes (same reviewer, on 6bc284269d); verdict SEND BACK on one new finding; fixed with the reviewer's verified change
+- verdicts: findings 1–4 confirmed fixed (P1–P4 now FAIL as intended; M4 and M10 killed). New: high 1.
+- findings:
+  - `[high]` `[fix]` The new surviving-old-key `rekey-map-dangling` rule also flagged renumbering chains. In a compaction such as `epic-13 -> epic-12` with `epic-12 -> epic-11`, the old key survives as another line's new name. Replaying the real atlas fold `rekey-2026-09-17.md` (91 lines) over its branch and merge ranges gave 20 false dangling lines; the other 8 real maps were unaffected. Fixed: a surviving old key that is also a target in the map is a chain, not a copy (`old not in mapping.values()`). That clause also covers identity lines, so the redundant `old != new` guard is gone. Tests: `test_a_renumbering_chain_in_a_fold_map_is_not_dangling` and `test_an_identity_line_in_a_fold_map_is_not_dangling`.
+  - `[low]` `[accept]` Mutant N2 (raw base keys only) survives and is harmless. The re-keyed names only decide whether a not-done story moved into a done epic by a map excuses that epic's reopen; the union is the conservative choice.
+  - `[low]` `[accept]` A story's regression behind a copy line surfaces as the `rekey-map-dangling` FAIL, not as a `done-key-regressed` key. The lane goes red either way.
+- re-verification after the fix:
+  - `pyforge-doctor-test`: 3273 passed.
+  - `lint-types`: rc 0.
+  - Mutant: dropping the chain clause fails a test.
+  - Replay: the atlas fold ranges (`86d1cdf3ee`, `93bcba96dc`) read `ok`. `1be676d263`, `fd328844d6` and `cc137c9faa` still read `done-key-regressed`. The reviewer had run the same change over all 18 real-map ranges: all `ok`.
