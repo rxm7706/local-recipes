@@ -224,6 +224,18 @@ explicit-path read of the tracked ledger file alone. The reported
 completion-path label is ``"not-loop-native"``, never ``"bmad-quick-dev"``
 (Spec Change Log, 2026-08-12) -- see ``core.promotion.
 marshal_native_merged_keys``'s own docstring for why.
+
+Story 83.20 (landing finalize never promotes a Tier-3 spec the ledger does
+not list): ``_scan_promotions`` -- shared by ``deploy promote``, the landing
+finalize, ``reconcile-completions`` and teardown -- now hands the station's
+tracked ledger rows and tracked spec paths to the classification, which
+refuses an orphan: a Tier-3 candidate whose full key is no ledger row, or
+whose title slug a tracked spec already carries under another story key.
+Each is an ``MRS-DEPLOY-028`` WARN naming the file (and the tracked twin),
+never a promotion and never a moved or deleted Tier-3 file. The 2026-10-03
+atlas incident: three pre-rekey Tier-3 copies read as merged through the
+OLD numbers' real bmad-loop landing subjects, with no tracked spec under
+those numbers once the rekey renamed them.
 """
 
 from __future__ import annotations
@@ -247,6 +259,7 @@ from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import HarnessError, resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import identity, policy, promotion, status
+from ..core.chain_regen import parse_ledger_statuses
 from ..core.commit_vcs import CommittingVcs
 from ..core.egress import Redacted, to_redacted, to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, render_filename_slug
@@ -663,6 +676,30 @@ def _already_promoted_keys(
     return frozenset(already)
 
 
+def _ledger_row_keys(fs: FsPort, ledger_path: Path) -> frozenset[str] | None:
+    """Story 83.20: every raw row key of the tracked ``sprint-status-ledger.yaml`` at ``ledger_path`` (the
+    ``development_status:`` map, read by ``core.chain_regen``'s ledger-twin parser), or ``None`` when the
+    file is absent or unreadable -- the classification then reads every candidate as having no ledger row,
+    so a missing ledger never lets an orphan through."""
+    try:
+        text = fs.read_text(ledger_path)
+    except FsError:
+        return None
+    if text is None:
+        return None
+    return frozenset(parse_ledger_statuses(text))
+
+
+def _tracked_spec_paths(specs_dir: Path) -> tuple[str, ...]:
+    """Story 83.20: the paths of every tracked ``spec-*.md`` file directly under ``specs_dir`` (the glob
+    ``_already_promoted_keys`` and ``_discover_candidates`` use), for the orphan rule's title-slug twin
+    check. An unreadable directory reads as no tracked specs."""
+    try:
+        return tuple(str(path) for path in sorted(specs_dir.glob("spec-*.md")))
+    except OSError:
+        return ()
+
+
 class _PromotionScan:
     """The result of ``_scan_promotions`` (Story 4.2): everything both
     ``run_promote`` and ``unreachable_promotions_for_slug`` need from the
@@ -708,8 +745,15 @@ def _scan_promotions(
     there instead of into the primary checkout's Tier-3 dir -- its
     candidates are appended AFTER the primary's, so on a story-key
     collision the worktree's copy is the one ``classify_promotion_candidates``
-    classifies (later entry wins its ``candidate_by_key`` dict-merge). No
-    twin in the worktree is silent -- not a finding."""
+    classifies (the last candidate of a story key that the orphan rules let
+    through wins). No twin in the worktree is silent -- not a finding.
+
+    Story 83.20: the station's tracked ledger rows and tracked spec paths are
+    read from ``root`` -- the same root ``already_promoted`` is read from --
+    and handed to the classification, which refuses to promote an orphan
+    (a candidate whose full key is no ledger row, or whose title slug a
+    tracked spec carries under another story key). Each orphan's
+    ``MRS-DEPLOY-028`` WARN joins this scan's ``findings``."""
     project_data: Mapping[str, object] = {}
     findings: list[Finding] = []
     if project_slug and policy._is_valid_project_slug(project_slug):
@@ -774,7 +818,12 @@ def _scan_promotions(
         candidates=candidates,
         merged_keys=merged_keys,
         already_promoted=already_promoted,
+        ledger_keys=_ledger_row_keys(fs, root / _LEDGER_RELPATH.format(slug=project_slug)),
+        tracked_specs=_tracked_spec_paths(specs_dir),
     )
+    # Story 83.20: an orphan is reported with the scan's own findings, so every caller -- `deploy promote`,
+    # the landing finalize, `reconcile-completions` -- names it; none of them promotes it.
+    findings.extend(plan.orphans)
     return _PromotionScan(
         plan=plan,
         findings=tuple(findings),
@@ -824,7 +873,13 @@ def unreachable_promotions_for_slug(
 
     Teardown's OTHER refusal channels (dirty worktree, unmerged branch) are
     unaffected by either degrade -- only the AD-29 check itself is being
-    reported on here."""
+    reported on here.
+
+    Story 83.20: ``plan.orphan_keys`` (merged stories whose every Tier-3
+    candidate the orphan rules refused) are unreachable too -- before that
+    story those candidates sat in ``plan.to_promote``, so teardown stays
+    exactly as strict as it was; an orphan is resolved by the operator,
+    never by a promotion."""
     vcs = vcs if vcs is not None else GitVcs()
     fs = fs if fs is not None else LocalFs()
     if not project_slug or not policy._is_valid_project_slug(project_slug):
@@ -835,6 +890,7 @@ def unreachable_promotions_for_slug(
     keys = {candidate.story_key for candidate in scan.plan.to_promote}
     keys.update(scan.plan.missing_spec_keys)
     keys.update(scan.plan.invalid_spec_keys)
+    keys.update(scan.plan.orphan_keys)
     return tuple(sorted(keys))
 
 

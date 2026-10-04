@@ -232,6 +232,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-DEPLOY-025",
             "MRS-DEPLOY-026",
             "MRS-DEPLOY-027",
+            "MRS-DEPLOY-028",
             "MRS-SPIN-016",
             "MRS-REFRESH-001",
             "MRS-REFRESH-002",
