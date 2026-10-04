@@ -24,6 +24,7 @@ from ..core import gate as gate_core
 from ..core import identity as identity_core
 from ..core import promotion as promotion_core
 from ..core.commit_vcs import CommittingVcs
+from ..core.dispatch_cfe_commit import paths_excluding_cfe
 from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
@@ -208,21 +209,27 @@ def _commit_pre_verify_wip(
 
     Returns ``(committed, refusal)``: ``refusal`` names why the tree is NOT clean afterwards -- a failed git call,
     or edits the commit left behind -- and is ``None`` once it is clean. A failure is reported, never swallowed
-    (review H2): a re-verification of a dirty tree would verify what landing never pushes."""
+    (review H2): a re-verification of a dirty tree would verify what landing never pushes.
+
+    Story 83.19: conda-forge-expert surface paths are left out of the commit and do not count as left
+    behind -- the re-verification commits them once as ``retro(cfe):`` or refuses on Rule 2."""
     committed = False
     try:
         if not vcs.has_uncommitted_changes(worktree):
             return False, None
         changed = vcs.changed_files(repo_root, worktree, base="HEAD")
-        if changed:
+        to_commit = paths_excluding_cfe(changed)
+        if to_commit:
             vcs.commit_paths(
                 worktree,
-                tuple(Path(path) for path in changed),
+                to_commit,
                 to_redacted_text("marshal: pre-verify WIP checkpoint"),
             )
             committed = True
         if vcs.has_uncommitted_changes(worktree):
-            return committed, "the worktree still has uncommitted changes after the pre-verify WIP commit"
+            remaining = vcs.changed_files(repo_root, worktree, base="HEAD")
+            if not remaining or paths_excluding_cfe(remaining):
+                return committed, "the worktree still has uncommitted changes after the pre-verify WIP commit"
     except VcsCommandError as exc:
         return committed, f"pre-verify WIP commit failed: {exc}"
     return committed, None
@@ -865,7 +872,8 @@ def _commit_and_journal_blocked_halt(
     except VcsCommandError:
         return counter, False
     patch_paths = _attempted_change_patch_paths(worktree)
-    paths_to_commit = tuple(Path(path) for path in changed) + tuple(p.relative_to(worktree) for p in patch_paths)
+    rel_patch = tuple(p.relative_to(worktree).as_posix() for p in patch_paths)
+    paths_to_commit = paths_excluding_cfe(changed) + paths_excluding_cfe(rel_patch)
     if not paths_to_commit:
         return counter, False
     try:
@@ -1656,10 +1664,11 @@ def _run_supervisor_finalize_sequence(
     try:
         if vcs.has_uncommitted_changes(worktree):
             changed = vcs.changed_files(repo_root, worktree, base="HEAD")
-            if changed:
+            to_commit = paths_excluding_cfe(changed)  # Story 83.19: verification commits the CFE surface
+            if to_commit:
                 vcs.commit_paths(
                     worktree,
-                    tuple(Path(path) for path in changed),
+                    to_commit,
                     to_redacted_text("marshal: supervisor finalize (Story 28.24)"),
                 )
                 committed = True

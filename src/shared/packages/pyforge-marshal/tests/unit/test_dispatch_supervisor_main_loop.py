@@ -719,6 +719,38 @@ def test_commit_pre_verify_wip_refuses_a_tree_the_commit_left_dirty(tmp_path: Pa
     assert refusal is not None and "still has uncommitted changes" in refusal
 
 
+_CFE_PATH = ".claude/skills/conda-forge-expert/tests/meta/test_example.py"
+
+
+def test_commit_pre_verify_wip_leaves_the_cfe_surface_for_the_retro_step(tmp_path: Path) -> None:
+    """Story 83.19: the CFE path stays out of the WIP commit, and being left behind is not a refusal --
+    the re-verification commits it as ``retro(cfe):`` or refuses on Rule 2."""
+
+    class _CfeLeftDirtyVcs(FakeVcs):
+        def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+            sha = super().commit_paths(repo_root, paths, message)
+            self.changed_vs_head = (_CFE_PATH,)
+            return sha
+
+    vcs = _CfeLeftDirtyVcs(dirty=True, changed_vs_head=("a.py", _CFE_PATH))
+    repo_root = _repo(tmp_path)
+
+    result = supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
+
+    assert result == (True, None)
+    assert [commit[1] for commit in vcs.commits] == [(Path("a.py"),)]
+
+
+def test_commit_pre_verify_wip_skips_the_commit_when_only_the_cfe_surface_is_dirty(tmp_path: Path) -> None:
+    vcs = FakeVcs(dirty=True, changed_vs_head=(_CFE_PATH,))
+    repo_root = _repo(tmp_path)
+
+    result = supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
+
+    assert result == (False, None)
+    assert vcs.commits == []
+
+
 def test_commit_pre_verify_wip_reports_a_git_failure(tmp_path: Path) -> None:
     vcs = FakeVcs(dirty=True, commit_paths_raises=True)
     repo_root = _repo(tmp_path)
@@ -1798,6 +1830,32 @@ def test_finalize_sequence_gives_up_when_the_commit_fails(tmp_path: Path) -> Non
 
     assert (counter, ok) == (2, False)
     assert '"failed_step": "commit"' in fs.appended[-1][1]
+
+
+def test_finalize_sequence_commit_leaves_the_cfe_surface_out(tmp_path: Path) -> None:
+    """Story 83.19 AC1: the finalize commit carries the story's paths, never a CFE-surface path."""
+    repo_root = _repo(tmp_path)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    vcs = FakeVcs(
+        changed_vs_head=("src/pyforge/marshal/thing.py", _CFE_PATH, ".claude/tools/conda_forge_server.py"),
+        branches=frozenset({branch}),
+        push_raises=True,
+        head_sha=_MOVED,
+    )
+
+    _finalize(FakeFs(), vcs, repo_root, _worktree(repo_root))
+
+    assert vcs.commits[0][1:] == ((Path("src/pyforge/marshal/thing.py"),), "marshal: supervisor finalize (Story 28.24)")
+
+
+def test_finalize_sequence_makes_no_commit_when_only_the_cfe_surface_is_dirty(tmp_path: Path) -> None:
+    repo_root = _repo(tmp_path)
+    branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
+    vcs = FakeVcs(changed_vs_head=(_CFE_PATH,), branches=frozenset({branch}), push_raises=True, head_sha=_MOVED)
+
+    _finalize(FakeFs(), vcs, repo_root, _worktree(repo_root))
+
+    assert vcs.commits == []
 
 
 def test_finalize_sequence_gives_up_when_the_push_fails(tmp_path: Path) -> None:

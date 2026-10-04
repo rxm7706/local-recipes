@@ -388,7 +388,7 @@ development_status:
   83-16-dispatch-finalize-commits-paths-with-spaces: done
   83-17-dispatch-refuses-a-commit-that-carries-an-attribution-trailer: done
   83-18-a-re-dispatched-send-back-waits-for-its-landing-review: done
-  83-19-dispatch-never-commits-the-cfe-surface-outside-a-sanctioned-retro: backlog
+  83-19-dispatch-never-commits-the-cfe-surface-outside-a-sanctioned-retro: done
   83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree: done
   83-20-landing-finalize-never-promotes-a-tier-3-spec-the-ledger-does-not-list: done
   83-21-landing-finalize-writes-the-epic-roll-ups-the-sync-writes: done
