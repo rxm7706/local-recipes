@@ -416,7 +416,12 @@ def _walk_value_positions(node: ast.AST) -> Iterator[ast.AST]:
     yield node
     if isinstance(node, ast.IfExp):
         yield from _skipped_test_walrus_values(iter((node.test,)))
-        for child in (node.body, node.orelse):
+        branches: tuple[ast.expr, ...] = (node.body, node.orelse)
+        if _references_host_like(node.test):
+            # A host-scoped ternary (DW-FU-1-4 (b)): the branch taken only
+            # when the host condition holds carries no unguarded value.
+            branches = (node.orelse,) if _host_test_is_positive(node.test) else (node.body,)
+        for child in branches:
             yield from _walk_value_positions(child)
         return
     if isinstance(node, ast.comprehension):
@@ -537,17 +542,66 @@ def _references_host_like(test: ast.expr) -> bool:
     return False
 
 
-def _is_pure_negation(test: ast.expr) -> bool:
-    """Whether ``test`` is an ``ast.Compare`` whose EVERY op is a negative
-    comparator (``!=``/``not in``/``is not``) -- the one negation shape
-    whose polarity is statically decidable: its TRUE branch is the "not
-    this host" case, so a host-referencing guard of this shape must not
-    suppress there (review finding: ``if host != safe: headers[...] =
-    os.environ.get(...)`` -- the exact inverse-condition leak -- was
-    silently suppressed). ``not x`` / ``BoolOp`` negation forms are
-    deliberately excluded: resolving them requires knowing whether the
-    compared set is an allowlist or a denylist (see module docstring)."""
-    return isinstance(test, ast.Compare) and all(isinstance(op, (ast.NotEq, ast.NotIn, ast.IsNot)) for op in test.ops)
+def _host_test_is_positive(test: ast.expr) -> bool:
+    """Whether ``test``'s TRUE branch is the host-scoped one (``True``) or
+    the "not this host" case (``False``).
+
+    * an ``ast.Compare`` whose EVERY op is ``!=``/``not in``/``is not`` is
+      negative (review finding: ``if host != safe: headers[...] = ...`` was
+      silently suppressed);
+    * ``not X`` inverts ``X`` (DW-FU-1-4-2 (b): ``if not host_ok(h):``
+      used to suppress its TRUE branch -- the inverse-condition leak);
+    * a ``BoolOp`` is negative when every operand that references a
+      host-like name is negative (``host != a and host != b``); operands
+      with no host-like name do not vote;
+    * anything else -- a positive compare, a bare predicate call or name
+      (``host_ok(h)``, ``is_enterprise_host``), a mixed ``BoolOp`` -- is
+      positive: a host predicate is read as holding for the allowed host,
+      and the undecidable mixed case keeps the old conservative suppression.
+    """
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        return not _host_test_is_positive(test.operand)
+    if isinstance(test, ast.Compare):
+        return not all(isinstance(op, (ast.NotEq, ast.NotIn, ast.IsNot)) for op in test.ops)
+    if isinstance(test, ast.BoolOp):
+        votes = [_host_test_is_positive(value) for value in test.values if _references_host_like(value)]
+        return not votes or any(votes)
+    return True
+
+
+def _always_exits(body: list[ast.stmt]) -> bool:
+    """Whether ``body`` unconditionally leaves the enclosing block -- its
+    last statement is a ``return``/``raise``/``continue``/``break``."""
+    return bool(body) and isinstance(body[-1], (ast.Return, ast.Raise, ast.Continue, ast.Break))
+
+
+def _is_early_exit_guard(stmt: ast.stmt) -> bool:
+    """Whether ``stmt`` is a host-scoped guard clause after which the rest
+    of its block runs only for the allowed host (DW-FU-1-4-2 (a)): ``if
+    host != safe: return`` / ``if not is_host(url): raise ...``, or the
+    positive form whose ``else`` exits."""
+    if not isinstance(stmt, ast.If) or not _references_host_like(stmt.test):
+        return False
+    if _host_test_is_positive(stmt.test):
+        return _always_exits(stmt.orelse)
+    return _always_exits(stmt.body)
+
+
+def _is_irrefutable(pattern: ast.pattern) -> bool:
+    if isinstance(pattern, ast.MatchAs):
+        return pattern.pattern is None or _is_irrefutable(pattern.pattern)
+    if isinstance(pattern, ast.MatchOr):
+        return any(_is_irrefutable(alternative) for alternative in pattern.patterns)
+    return False
+
+
+# Literal dict keys that name an HTTP header: the auth-bearing names plus any
+# hyphenated token (`X-JFrog-Art-Api`, `Private-Token`).
+_HEADER_KEY_RE = re.compile(r"^(authorization|proxy-authorization|cookie|[a-z][a-z0-9]*(-[a-z0-9]+)+)$")
+
+
+def _is_header_key(key: str) -> bool:
+    return _HEADER_KEY_RE.match(key.lower()) is not None
 
 
 class _CredentialInjectionVisitor(ast.NodeVisitor):
