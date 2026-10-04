@@ -2,7 +2,8 @@
 title: "27.2: CFE, its failure catalog and the closed rebuild campaign's records close their open deferrals"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'blocked'
+baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -122,3 +123,8 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling of 2026-10-03 (open mediu
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: blocked
+Blocking condition: Story 27.2 partially implemented — CFE failure-catalog generator/check, regenerated catalog, cheatsheet `test-ci`, campaign-state HOW TO RESUME header, and semver 8.91.5 landed in the worktree; remaining acceptance items (strip-on-push fixture test DW-17-2-1, SM-4 optimize re-run DW-5-4-1, marshal `.sync-baseline.json` DW-15-1-1, db-gpt re-verify DW-13-2-3, slice-map/spec-12-5/rebuild Spec memlog corrections DW-12-4-1 through DW-12-7-2, all 25 deferred-work ledger closures, spec_surface memlog reconcile, separate retro(cfe) vs records commits, pyforge-mason-test + lint-types verification) still open.

@@ -8,8 +8,10 @@
 # knowledge sections, caller inventory) behind its one-line summary — `slice_map` / `spec`
 # below are exactly those pointers, followed only when the summary here isn't enough.
 #
-# HOW TO RESUME: read `campaign.current_focus`, find that slice under `slices:`, read its
-# `next_action`. That is the whole resume protocol.
+# HOW TO RESUME (2026-10-04): the CFE-rebuild campaign closed in Story 15.1 — this file
+# is historical slice status only; every slice's `next_action` is history, not an active
+# work order. Do not resume via `campaign.current_focus`; use the station epics and
+# deferred-work ledger for live mason/CFE work.
 
 schema_version: 1
 last_updated: "2026-09-11"
