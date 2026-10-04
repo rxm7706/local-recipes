@@ -622,12 +622,11 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
 ---
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
+  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
   resolution: 2026-10-04 — story 41.4 — `test_fleet_picture_main_attention.py` feeds `bmad-channel-drift` and `bmad-recipe-upstream-drift` findings through `fleet_picture.main()` and asserts both named watch lines.
   verified: 2026-10-04 — RESOLVED — `.claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py:124`; `pixi run --frozen -e local-recipes python -m pytest .claude/skills/conda-forge-expert/tests/meta/test_fleet_picture_main_attention.py` exit 0.
 
 ## Canopy course correction (2026-08-24)
-
-  verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
 ### DW-CANOPY-2026-08-24
 
