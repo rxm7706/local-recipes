@@ -3,7 +3,7 @@ title: "83.18: A re-dispatched send-back waits for its landing review"
 type: 'fix'
 created: '2026-10-03'
 status: 'in-review'
-baseline_revision: '32117c8caf72990d62b611b8cd2ad8287d861c12'
+baseline_revision: '65af7632c15f5a9d087e2a588214820f34b45279'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
