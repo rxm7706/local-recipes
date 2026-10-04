@@ -8815,3 +8815,14 @@ status: open
   severity: low
   promoted: 2026-10-03 — landing review of Story 83.12
   status: open
+
+### DW-marshal-86-1: A directory entry's create-if-missing half is pinned but not materialized: an ABSENT trailing-`/` entry still gets an ordinary creation action, and every commit dispatcher (adopt, init, update) treats it as a file.
+
+- source_spec: `planning-artifacts/specs/spec-86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries.md`
+  summary: A directory entry's create-if-missing half is pinned but not materialized: an ABSENT trailing-`/` entry still gets an ordinary creation action, and every commit dispatcher (adopt, init, update) treats it as a file.
+  evidence: Story 86.1 pinned the semantics (`ManifestEntry.is_directory`, `model.artifact.DIRECTORY_BEHAVIOR`) and stopped every path that touched an EXISTING directory (update's wholesale pass, rung 6 in adopt and update, adopt's first claim). Creating an absent one is adopt's documented known limitation (2): `fs` has no guarded directory-creation primitive, and the commit dispatchers look for staged file bytes at the target, so applying such an action fails rather than creating the directory (not run; read from `_staged_bytes_for` in verbs/adopt.py and verbs/update.py). A fix needs a never-write-guarded mkdir in `fs`, a directory branch in the three commit dispatchers, and apply rollback for a created directory (DW-10-3-3 tracks that a rolled-back apply never removes a directory it created) -- a multi-module change outside this story's three rulings.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/adopt.py:176
+  origin: spec-deferred 51d87a4fc837 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-04 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
