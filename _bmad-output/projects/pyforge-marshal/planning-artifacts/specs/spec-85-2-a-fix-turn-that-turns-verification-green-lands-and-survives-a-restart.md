@@ -2,7 +2,7 @@
 title: "85.2: A fix turn that turns verification green lands, and survives a supervisor restart"
 type: 'feature'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 baseline_revision: '8e3ced34a1bfb8e3fd9bd4a55547f6b806128150'
 followup_review_recommended: false
 review_loop_iteration: 1
