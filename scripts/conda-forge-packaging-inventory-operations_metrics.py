@@ -308,12 +308,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-revised-prompt",
         type=Path,
-        default=Path("docs/reference/conda-forge-packaging-inventory-operations_prompt.md"),
+        default=None,
+        metavar="PATH",
+        help=(
+            "Write the revised prompt (this run's replay command) to PATH. Without it no "
+            "revised prompt is written, so a run never overwrites the tracked "
+            "docs/reference/conda-forge-packaging-inventory-operations_prompt.md."
+        ),
     )
     parser.add_argument(
         "--skip-revised-prompt",
         action="store_true",
-        help="Do not overwrite docs/reference/conda-forge-packaging-inventory-operations_prompt.md.",
+        help="Do not write the revised prompt even when --output-revised-prompt is given.",
     )
     return parser
 
@@ -335,7 +341,8 @@ def main() -> int:
     write_markdown(args.output_md, exports.verified_rows, len(exports.queue_rows))
     queue_path = _queue_output_path(args.output_csv, exports.queue_rows)
     write_aoss_queue_csv(queue_path, exports.queue_rows)
-    if not args.skip_revised_prompt:
+    write_prompt = args.output_revised_prompt is not None and not args.skip_revised_prompt
+    if write_prompt:
         write_revised_prompt(args.output_revised_prompt, args)
 
     # Terminal summary: the exact shape both docs/reference/...{prompt,replay}.md show.
@@ -356,7 +363,7 @@ def main() -> int:
     print(f"Wrote CSV: {args.output_csv}")
     print(f"Wrote Markdown: {args.output_md}")
     print(f"Wrote AOSS-Free queue CSV: {queue_path}")
-    if not args.skip_revised_prompt:
+    if write_prompt:
         print(f"Wrote revised prompt: {args.output_revised_prompt}")
     return 0
 

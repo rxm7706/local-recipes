@@ -413,6 +413,11 @@ def _line_pattern(doc_line: str) -> re.Pattern[str]:
     return re.compile(rf"^{pattern}$")
 
 
+_REVISED_PROMPT_LINE = "Wrote revised prompt: <path>"
+_PROMPT_DOC = _DOCS / "conda-forge-packaging-inventory-operations_prompt.md"
+
+
+@pytest.mark.parametrize("with_revised_prompt", [True, False], ids=["revised-prompt-path", "default"])
 @pytest.mark.parametrize(
     "doc_name",
     [
@@ -420,7 +425,9 @@ def _line_pattern(doc_line: str) -> re.Pattern[str]:
         "conda-forge-packaging-inventory-operations_replay.md",
     ],
 )
-def test_terminal_summary_matches_both_docs_exactly(tmp_path: Path, capsys, doc_name: str):
+def test_terminal_summary_matches_both_docs_exactly(
+    tmp_path: Path, capsys, doc_name: str, with_revised_prompt: bool
+):
     catalog_root = tmp_path / "catalog"
     _make_catalog_root(catalog_root)
     argv = [
@@ -431,16 +438,56 @@ def test_terminal_summary_matches_both_docs_exactly(tmp_path: Path, capsys, doc_
         str(tmp_path / "out.csv"),
         "--output-md",
         str(tmp_path / "out.md"),
-        "--output-revised-prompt",
-        str(tmp_path / "revised-prompt.md"),
     ]
+    if with_revised_prompt:
+        argv += ["--output-revised-prompt", str(tmp_path / "revised-prompt.md")]
     with mock.patch.object(sys, "argv", argv):
         assert metrics.main() == 0
     printed = capsys.readouterr().out.rstrip("\n").split("\n")
-    expected = _doc_summary_block(_DOCS / doc_name)
+    doc = _DOCS / doc_name
+    expected = _doc_summary_block(doc)
+    assert expected[-1] == _REVISED_PROMPT_LINE
+    if not with_revised_prompt:
+        # The doc says the line appears only when a path is given; a default run omits it.
+        assert "a default run writes no revised prompt" in " ".join(doc.read_text(encoding="utf-8").split())
+        expected = expected[:-1]
     assert len(printed) == len(expected), (printed, expected)
     for got, want in zip(printed, expected, strict=True):
         assert _line_pattern(want).match(got), f"{doc_name}: {got!r} does not match {want!r}"
+
+
+def test_default_run_leaves_the_tracked_prompt_doc_unchanged(tmp_path: Path, capsys, monkeypatch):
+    """A run without --output-revised-prompt writes no revised prompt -- least of all over
+    the tracked prompt doc, which the retired default path resolved to from the repo root."""
+    assert metrics.build_parser().parse_args(["--live-catalog", "x"]).output_revised_prompt is None
+    catalog_root = tmp_path / "catalog"
+    _make_catalog_root(catalog_root)
+    monkeypatch.chdir(_DOCS.parents[1])
+    before = _PROMPT_DOC.read_bytes()
+    argv = [
+        "metrics",
+        "--live-catalog",
+        str(catalog_root),
+        "--output-csv",
+        str(tmp_path / "out.csv"),
+        "--output-md",
+        str(tmp_path / "out.md"),
+    ]
+    try:
+        with mock.patch.object(sys, "argv", argv):
+            assert metrics.main() == 0
+        after = _PROMPT_DOC.read_bytes()
+    finally:
+        if _PROMPT_DOC.read_bytes() != before:  # never leave a regression's overwrite behind
+            _PROMPT_DOC.write_bytes(before)
+    assert after == before
+    assert "Wrote revised prompt" not in capsys.readouterr().out
+    assert sorted(p.name for p in tmp_path.iterdir()) == [
+        "aoss-free-queue-2026-08-30.csv",
+        "catalog",
+        "out.csv",
+        "out.md",
+    ]
 
 
 if __name__ == "__main__":

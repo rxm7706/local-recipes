@@ -146,8 +146,7 @@ Execution commands (Story 23.9 — workbook-free; `--analysis-xlsx` exits 2):
 python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
   --live-catalog "src/shared/packages/pyforge-atlas/data" \
   --output-csv "cdao_consolidated_inventory_verified_all_packages.csv" \
-  --output-md "cdao_consolidated_inventory_verified_all_packages.md" \
-  --skip-revised-prompt
+  --output-md "cdao_consolidated_inventory_verified_all_packages.md"
 ```
 
 2. Identity gist publish (reads `identity_complete_export.parquet`; ranking already on export):
@@ -190,7 +189,9 @@ Wrote revised prompt: <path>
 ```
 
 The `Verification timestamp (UTC)` line appears only when the verified export has
-rows; the `Wrote revised prompt` line is omitted under `--skip-revised-prompt`.
+rows; the `Wrote revised prompt` line appears only when `--output-revised-prompt PATH`
+is given without `--skip-revised-prompt` -- a default run writes no revised prompt and
+never overwrites `conda-forge-packaging-inventory-operations_prompt.md`.
 `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` pins this
 block against the actuator's stdout.
 

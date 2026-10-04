@@ -221,7 +221,9 @@ Wrote revised prompt: <path>
 ```
 
 The `Verification timestamp (UTC)` line appears only when the verified export has
-rows; the `Wrote revised prompt` line is omitted under `--skip-revised-prompt`.
+rows; the `Wrote revised prompt` line appears only when `--output-revised-prompt PATH`
+is given without `--skip-revised-prompt` -- a default run writes no revised prompt and
+never overwrites this file.
 `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` pins this
 block against the actuator's stdout.
 
