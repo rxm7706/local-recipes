@@ -8,7 +8,10 @@
 #   PYFORGE_PREFLIGHT_SKIP=1 git push ...
 # appends timestamp, the pushed ref(s) and sha(s), and the reason
 # ($PYFORGE_PREFLIGHT_SKIP_REASON) to .steward/preflight-skips.log (gitignored) and lets
-# the push through. Automatic, journaled skips: branch deletes and `dispatch/*` branches.
+# the push through. Automatic, journaled skips: branch deletes, `dispatch/*` branches, and
+# a push proved tag-only under `refs/tags/preserve/` or `refs/tags/archive/` (Story 85.3,
+# CAP-165). In the pre-commit form the pushing tool sets PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF=1
+# (pyforge.core.preserve_refs, marshal Story 87.15) -- never inferred from the first ref alone.
 # Every journal line names the pushed ref(s) and sha(s) (Story 68.2).
 set -euo pipefail
 
@@ -56,6 +59,55 @@ fi
 if [ -n "$remote_ref" ] && ! printf '%s\n' $remote_ref | grep -qvE '^refs/heads/dispatch/'; then
   journal_skip "dispatch/* branch: supervisor-gated"
   echo "[pre-push] dispatch/* branch -- pr-preflight left to the supervisor gate and CI (journaled)" >&2
+  exit 0
+fi
+
+_is_preserve_or_archive_tag() {
+  case "$1" in
+    refs/tags/preserve/*|refs/tags/archive/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+_nonzero_sha() {
+  [ -n "$1" ] && ! printf '%s\n' "$1" | grep -qvE '^0+$'
+}
+
+# Bare-git form: every stdin line must name a preserve/archive tag with a non-zero local sha.
+_stdin_is_tag_only_preserve_archive() {
+  [ -n "$stdin_refs" ] || return 1
+  local line loc_ref loc_sha rem_ref rem_sha
+  while IFS= read -r line; do
+    [ -z "$line" ] && continue
+    loc_ref="$(printf '%s\n' "$line" | awk '{print $1}')"
+    loc_sha="$(printf '%s\n' "$line" | awk '{print $2}')"
+    rem_ref="$(printf '%s\n' "$line" | awk '{print $3}')"
+    rem_sha="$(printf '%s\n' "$line" | awk '{print $4}')"
+    _is_preserve_or_archive_tag "$rem_ref" || return 1
+    _nonzero_sha "$loc_sha" || return 1
+  done <<EOF
+$stdin_refs
+EOF
+  return 0
+}
+
+# Pre-commit form: skip only when the tool supplied proof -- not when the first ref alone looks like a tag.
+_precommit_has_proven_preserve_archive_push() {
+  [ "${PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF:-}" = "1" ] || return 1
+  _is_preserve_or_archive_tag "$remote_ref" || return 1
+  _nonzero_sha "$local_sha" || return 1
+  return 0
+}
+
+if [ -z "${PRE_COMMIT_REMOTE_BRANCH:-}" ] && _stdin_is_tag_only_preserve_archive; then
+  journal_skip "preserve/archive tag-only push"
+  echo "[pre-push] preserve/archive tag-only push -- pr-preflight skipped (journaled)" >&2
+  exit 0
+fi
+
+if [ -n "${PRE_COMMIT_REMOTE_BRANCH:-}" ] && _precommit_has_proven_preserve_archive_push; then
+  journal_skip "preserve/archive tag-only push"
+  echo "[pre-push] preserve/archive tag-only push -- pr-preflight skipped (journaled)" >&2
   exit 0
 fi
 
