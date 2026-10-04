@@ -31,6 +31,10 @@ needed, and they belong to different lifetimes:
   action -- so it can never enter `plan.skipped`, and a skip that named only
   `plan.skipped` was a silent no-op for exactly the file it was meant to
   protect (Story 82.12).
+* `with_recorded_skips` closes the loop between the two lifetimes: it puts
+  the patterns `state.skips[]` recorded on earlier runs in front of this
+  run's own, so a skip is honoured on every later run rather than only the
+  one that recorded it (Story 86.1, FR-87).
 
 **Why `fnmatch.fnmatchcase`, deliberately identical to `fs._matches`.**
 A skip glob and a never-write glob are the same KIND of rule -- both say
@@ -254,6 +258,33 @@ def record_skip(patterns: Sequence[str], pattern: str) -> tuple[str, ...]:
     return (*existing, stripped)
 
 
+def with_recorded_skips(recorded: Sequence[str], patterns: Sequence[str]) -> tuple[str, ...]:
+    """The skip patterns a run applies: every pattern `state.skips[]` recorded
+    on an earlier run, then each of this run's own `patterns` not already among
+    them (Story 86.1, FR-87, `DW-FU-11-4`).
+
+    FR-87 says a skip is "honored on every subsequent run", and `adopt` records
+    one into `state.skips[]` for exactly that reason -- but until this function
+    nothing read it back, so a skip lasted one run: the next `update` or
+    re-adopt planned the artifact again (a skipped file created, a skipped
+    hand-edit regenerated or refused at rung 6). `adopt` and `update` both hand
+    the result to `apply_skips` and `managed_after_skips`, so a recorded skip and
+    a `--skip` given now mean the same thing to the plan and to rung 6.
+
+    Recorded patterns come first, in their stored order, so the pattern a
+    `SkippedArtifact` names is the one the operator chose first; a run pattern
+    is added by `record_skip`, which strips it and drops a duplicate. Both
+    arguments are validated the way every other entry point here validates
+    them -- a bare `str` or a blank pattern raises `UsageError`. This function
+    writes no state: what `adopt` records into `state.skips[]` is still decided
+    by `adopt`."""
+    combined = _materialize_patterns(recorded)
+    _require_patterns(combined)
+    for pattern in _materialize_patterns(patterns):
+        combined = record_skip(combined, pattern)
+    return combined
+
+
 def apply_skips(plan: Plan, patterns: Sequence[str]) -> Plan:
     """A new `Plan` with every action whose `target_path` matches one of
     `patterns` MOVED out of `actions` and into `skipped`.
@@ -391,7 +422,8 @@ def managed_after_skips(managed: Sequence[_RecordT], plan: Plan, patterns: Seque
     the operator passed, by the identical lexical rule `apply_skips` applies
     to an action's `target_path` (`_normalize_relative_posix`, then
     `first_match`), so one `--skip` glob means the same thing to both.
-    `adopt` and `update` both pass their `--skip` patterns; a caller with no
+    `adopt` and `update` both pass their `--skip` patterns together with the
+    ones `state.skips[]` recorded (`with_recorded_skips`); a caller with no
     patterns passes none and gets the `plan.skipped` filter alone.
 
     Pure: reads no disk, preserves `managed`'s order, never mutates it, and

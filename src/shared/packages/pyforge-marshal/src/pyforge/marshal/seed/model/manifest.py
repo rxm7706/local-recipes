@@ -394,6 +394,22 @@ class ManifestEntry:
         if self.since is not None and self.until is not None and not (self.since < self.until):
             raise ValueError(f"until ({self.until}) must be strictly greater than since ({self.since})")
 
+    @property
+    def is_directory(self) -> bool:
+        """Whether this entry names a DIRECTORY -- its ``path`` ends in ``/``
+        (Story 86.1, ``DW-FU-7-5-2``).
+
+        A directory entry is CREATE-IF-MISSING, whatever its class: a seed verb
+        may create the directory when it is absent, and never recomputes,
+        claims, overwrites or hashes it once it exists. Everything beneath it
+        belongs to the entries that name it -- each child entry's own class
+        decides what happens to it -- and a ``never_write`` pattern beneath it
+        still refuses every write. Without this rule a ``generated-derived``
+        directory over a never-write subtree (``dreams-dir`` over
+        ``docs/dreams/*.md``) read, literally, as "recompute that subtree".
+        ``model.artifact.describe`` reports the same contract."""
+        return self.path.endswith("/")
+
 
 @dataclass(frozen=True)
 class Manifest:
@@ -529,6 +545,45 @@ def _build_entry(raw_entry: dict) -> ManifestEntry:
     )
 
 
+def _windows_overlap(first: ManifestEntry, second: ManifestEntry) -> bool:
+    """Whether ``first`` and ``second`` can both be in force for the same verb
+    at the same model version: their ``applies_to`` meet (``both`` meets every
+    value; ``init`` and ``adopt`` are disjoint) AND their half-open
+    ``[since, until)`` windows intersect, a missing bound being open."""
+    if AppliesTo.BOTH not in (first.applies_to, second.applies_to) and first.applies_to is not second.applies_to:
+        return False
+    first_starts_in_time = first.since is None or second.until is None or first.since < second.until
+    second_starts_in_time = second.since is None or first.until is None or second.since < first.until
+    return first_starts_in_time and second_starts_in_time
+
+
+def _refuse_shared_paths(entries: list[ManifestEntry]) -> None:
+    """Raise ``ManifestError`` naming both ids when two non-``referenced``
+    entries declare the same ``path`` with overlapping windows (Story 86.1,
+    ``DW-FU-7-4-4``).
+
+    Two such entries hand the apply stage two writers for one file under two
+    class contracts, and whichever runs last wins. Entries whose
+    ``applies_to`` or ``since``/``until`` windows are disjoint may share a path
+    -- the manifest is an append-only ledger, so a reclassification retires
+    one entry at the version the next one starts. ``referenced`` entries all
+    carry the ``n/a`` sentinel and name no file, so they are never compared.
+    Checked over every entry, before the version filter: a double owner at
+    any model version the ledger describes is a double owner."""
+    owners: dict[str, list[ManifestEntry]] = {}
+    for entry in entries:
+        if entry.artifact_class is ArtifactClass.REFERENCED:
+            continue
+        for other in owners.get(entry.path, []):
+            if _windows_overlap(other, entry):
+                raise ManifestError(
+                    f"{entry.id}: path {entry.path!r} is also declared by {other.id!r} with an overlapping"
+                    " applies_to and since/until window -- one file cannot have two owners; give the entries"
+                    " disjoint windows or remove one"
+                )
+        owners.setdefault(entry.path, []).append(entry)
+
+
 def load_manifest(path: Path) -> Manifest:
     """Read, validate, and version-filter one manifest YAML document.
 
@@ -543,8 +598,9 @@ def load_manifest(path: Path) -> Manifest:
     ``format``/``regions``, a ``referenced`` entry missing ``pin``, a
     ``pin``/``format``/``regions`` on a class that does not take one, a
     malformed region, duplicate region names within an entry, an
-    unparseable ``since``/``until``, or ``until <= since``), and a
-    duplicate ``id`` across entries.
+    unparseable ``since``/``until``, or ``until <= since``), a duplicate
+    ``id`` across entries, and two non-``referenced`` entries sharing a
+    ``path`` with overlapping windows (``_refuse_shared_paths``).
     """
     try:
         with path.open("r", encoding="utf-8") as handle:
@@ -635,6 +691,7 @@ def load_manifest(path: Path) -> Manifest:
             raise ManifestError(f"{entry.id}: duplicate id")
         seen_ids.add(entry.id)
         entries.append(entry)
+    _refuse_shared_paths(entries)
 
     filtered_entries = tuple(entry for entry in entries if in_range(model_version, entry.since, entry.until))
     return Manifest(model_version=model_version, never_write=never_write, entries=filtered_entries)

@@ -28,8 +28,10 @@ REAL packaged region fragments and the fixed Genesis-owned
 
 from __future__ import annotations
 
+import dataclasses
 import subprocess
 import tempfile
+from importlib import resources
 from pathlib import Path
 
 import pytest
@@ -46,6 +48,7 @@ from pyforge.marshal.seed.model.manifest import (
     Manifest,
     ManifestEntry,
     Region,
+    load_manifest,
 )
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.plan.types import Action, Plan, RepoFingerprint
@@ -60,6 +63,7 @@ from pyforge.marshal.seed.state import (
     write_state,
 )
 from pyforge.marshal.seed.verbs import update as update_module
+from pyforge.marshal.seed.verbs.adopt import run_adopt
 from pyforge.marshal.seed.verbs.update import run_update
 
 _V1 = ModelVersion.parse("1.0.0")
@@ -195,6 +199,7 @@ def _seed_state(
     managed: tuple[ManagedArtifact, ...] = (),
     migrations_applied: tuple[str, ...] = (),
     mode: str = "adopt",
+    skips: tuple[str, ...] = (),
 ) -> SeedState:
     return SeedState(
         model_version=model_version,
@@ -204,7 +209,7 @@ def _seed_state(
         mode=mode,
         agents=(),
         managed=managed,
-        skips=(),
+        skips=skips,
         legacy=(),
         migrations_applied=migrations_applied,
         opted_out=(),
@@ -1445,3 +1450,193 @@ def test_default_commit_wholesale_regenerates_an_adapter_composition_entry(clean
     content = (clean_repo / "GEMINI.md").read_text(encoding="utf-8")
     assert content == expected
     assert "stale, pre-refresh content" not in content
+
+
+# --- Story 86.1: recorded skips (DW-FU-11-4) and directory entries (DW-FU-7-5-2)
+
+
+def test_an_adopt_time_skip_survives_a_later_update_and_re_adopt(clean_repo):
+    """FR-87: a `--skip` is "honored on every subsequent run". `adopt` records
+    the pattern into `state.skips`, but neither verb read it back, so the next
+    `update` planned the skipped artifact like any other absent entry and
+    created it. Now the recorded pattern is applied on every later run: the
+    artifact sits in `plan.skipped` naming the pattern, and nothing writes it."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"), _copied_managed("other", "OTHER.md"))
+    adopted = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        skip=("OTHER.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
+    )
+    assert adopted.applied == ("whole",)
+    assert read_state(clean_repo).skips == ("OTHER.md",)
+    _commit_all(clean_repo)
+    calls: list[str] = []
+
+    updated = run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert calls == ["whole"]
+    assert [(entry.artifact_id, entry.pattern) for entry in updated.plan.skipped] == [("other", "OTHER.md")]
+    assert not (clean_repo / "OTHER.md").exists()
+    assert read_state(clean_repo).skips == ("OTHER.md",)
+
+    _commit_all(clean_repo)
+    readopted = run_adopt(
+        clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
+    )
+
+    assert readopted.plan.actions == ()
+    assert [(entry.artifact_id, entry.pattern) for entry in readopted.plan.skipped] == [("other", "OTHER.md")]
+    assert not (clean_repo / "OTHER.md").exists()
+
+
+def test_a_recorded_skip_keeps_a_hand_edited_managed_file_from_the_wholesale_regenerate(clean_repo):
+    """The half of DW-FU-11-4 Story 82.13 left open: the wholesale pass names
+    every managed record, so a hand-edit skipped at adopt was refused at rung 6
+    (or, under `--force`, regenerated) on the next `update`. With the recorded
+    pattern applied, its wholesale action moves into `plan.skipped` and its
+    record is not handed to rung 6 -- no `--skip`, no `--force`."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"))
+    (clean_repo / "WHOLE.md").write_text("hand-edited WHOLE.md\n", encoding="utf-8")
+    write_state(
+        _seed_state(managed=(_managed_record("whole", "WHOLE.md"),), skips=("WHOLE.md",)),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+
+    result = run_update(
+        clean_repo, manifest, run=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
+    )
+
+    assert result.plan.actions == ()
+    assert [(entry.artifact_id, entry.pattern) for entry in result.plan.skipped] == [("whole", "WHOLE.md")]
+    assert (clean_repo / "WHOLE.md").read_text(encoding="utf-8") == "hand-edited WHOLE.md\n"
+
+
+def test_recorded_skips_and_the_runs_own_skip_both_apply(clean_repo):
+    """The run's `--skip` adds to what state recorded; it does not replace it."""
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("b", "B.md"), _copied_managed("c", "C.md"))
+    write_state(_seed_state(skips=("A.md",)), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
+    _commit_all(clean_repo)
+    calls: list[str] = []
+
+    result = run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        skip=("B.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert calls == ["c"]
+    assert [(entry.artifact_id, entry.pattern) for entry in result.plan.skipped] == [("a", "A.md"), ("b", "B.md")]
+
+
+def _shipped_entries_for_slug(slug: str, *entry_ids: str) -> tuple[tuple[str, ...], tuple[ManifestEntry, ...]]:
+    """The packaged manifest's `never_write` and the named entries, with
+    `{{ slug }}` rendered the way `seed init` renders it."""
+    manifest_ref = resources.files("pyforge.marshal.seed.templates") / "manifest.yaml"
+    with resources.as_file(manifest_ref) as manifest_path:
+        shipped = load_manifest(manifest_path)
+    by_id = {entry.id: entry for entry in shipped.entries}
+    entries = tuple(
+        dataclasses.replace(by_id[entry_id], path=by_id[entry_id].path.replace("{{ slug }}", slug))
+        for entry_id in entry_ids
+    )
+    return shipped.never_write, entries
+
+
+def test_update_leaves_what_sits_beneath_a_directory_entry_to_its_own_class(clean_repo):
+    """DW-FU-7-5-2: `dreams-dir` (`docs/dreams/`) and `project-subtree`
+    (`_bmad-output/projects/<slug>/`) are `generated-derived` DIRECTORY
+    entries. Read as "recomputed every run", update gave each a
+    wholesale-regenerate action -- refused at rung 5 as `directory-target` --
+    and handed each record to rung 6, which cannot read a directory. A
+    directory entry is create-if-missing: update leaves it alone, and the
+    files beneath it follow their own entries -- the seeded starter dream and
+    project config are never touched, the never-write planning subtree is
+    never written, and the managed `dreams-readme` beneath `docs/dreams/` is
+    still regenerated as its own class says."""
+    never_write, entries = _shipped_entries_for_slug(
+        "demo", "dreams-dir", "project-subtree", "starter-dream", "project-config", "dreams-readme"
+    )
+    manifest = Manifest(model_version=_V1, never_write=never_write, entries=entries)
+    starter = clean_repo / "docs" / "dreams" / "demo.md"
+    readme = clean_repo / "docs" / "dreams" / "README.md"
+    config = clean_repo / "_bmad-output" / "projects" / "demo" / ".bmad-config.toml"
+    planning = clean_repo / "_bmad-output" / "projects" / "demo" / "planning-artifacts" / "epics.md"
+    for path, text in (
+        (starter, "# the repo's own starter dream\n"),
+        (readme, "packaged readme\n"),
+        (config, "slug = 'demo'\n"),
+        (planning, "# tier-2 planning, never written\n"),
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+
+    def directory_record(entry_id: str, path: str) -> ManagedArtifact:
+        return ManagedArtifact(
+            id=entry_id,
+            path=path,
+            artifact_class="generated-derived",
+            body_sha=hash_content(""),
+            inserted_region_spans=(),
+        )
+
+    write_state(
+        _seed_state(
+            managed=(
+                directory_record("dreams-dir", "docs/dreams/"),
+                directory_record("project-subtree", "_bmad-output/projects/demo/"),
+                ManagedArtifact(
+                    id="dreams-readme",
+                    path="docs/dreams/README.md",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content("packaged readme\n"),
+                    inserted_region_spans=(),
+                ),
+                ManagedArtifact(
+                    id="project-config",
+                    path="_bmad-output/projects/demo/.bmad-config.toml",
+                    artifact_class="copied-seeded",
+                    body_sha=hash_content("slug = 'demo'\n"),
+                    inserted_region_spans=(),
+                ),
+            )
+        ),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    untouched = {path: path.read_bytes() for path in (starter, config, planning)}
+    calls: list[str] = []
+
+    result = run_update(
+        clean_repo,
+        manifest,
+        run=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo, calls),
+    )
+
+    assert [action.artifact_id for action in result.plan.actions] == ["dreams-readme"]
+    assert calls == ["dreams-readme"]
+    assert readme.read_text(encoding="utf-8") == "content for dreams-readme\n"
+    assert {path: path.read_bytes() for path in untouched} == untouched
+    state_after = read_state(clean_repo)
+    assert state_after is not None
+    assert {"dreams-dir", "project-subtree", "project-config"} <= {record.id for record in state_after.managed}

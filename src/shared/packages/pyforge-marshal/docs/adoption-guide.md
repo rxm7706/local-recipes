@@ -58,7 +58,7 @@ When the plan looks correct:
 marshal seed adopt --repo-root . --agents claude,cursor --apply --yes
 ```
 
-Use `--skip <glob>` to exclude specific manifest paths for this run (recorded in state). Use `--reinstate <artifact>#<region>` to bring a previously opted-out managed region back under management.
+Use `--skip <glob>` to exclude specific manifest paths. The pattern is recorded in state and honoured on every later `adopt` and `update` run as well (FR-87), so a skipped artifact stays skipped without repeating the flag. Use `--reinstate <artifact>#<region>` to bring a previously opted-out managed region back under management.
 
 ### 3. Upgrade later
 

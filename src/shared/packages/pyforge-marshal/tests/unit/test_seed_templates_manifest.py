@@ -26,10 +26,12 @@ import pytest
 from pyforge.marshal.seed.derive.adapters import ADAPTER_COMPOSITION
 from pyforge.marshal.seed.detect.inventory import coverage_counts, coverage_findings
 from pyforge.marshal.seed.fs import NeverWrite
+from pyforge.marshal.seed.model.artifact import DIRECTORY_BEHAVIOR, describe
 from pyforge.marshal.seed.model.manifest import (
     ARTIFACT_ID_PATTERN,
     AppliesTo,
     ArtifactClass,
+    ManifestError,
     load_manifest,
 )
 from pyforge.marshal.seed.model.version import ModelVersion
@@ -475,3 +477,38 @@ def test_an_opt_out_for_every_region_of_every_shipped_hybrid_entry_validates(man
         assert read_state(tmp_path) == everything
         assert everything.managed == ()
         assert len(everything.opted_out) == len(entry.regions)
+
+
+def test_the_shipped_manifest_loads_clean_under_the_one_owner_rule_and_the_rule_is_live(tmp_path):
+    """Story 86.1 (DW-FU-7-4-4): the packaged manifest has no two
+    non-referenced entries owning one path with overlapping windows -- it
+    loads -- and the rule is really applied to it: the same document with
+    one more entry at `AGENTS.md` refuses, naming both ids."""
+    manifest_ref = resources.files("pyforge.marshal.seed.templates") / "manifest.yaml"
+    with resources.as_file(manifest_ref) as manifest_path:
+        text = manifest_path.read_text(encoding="utf-8")
+        load_manifest(manifest_path)
+    doubled = tmp_path / "manifest.yaml"
+    doubled.write_text(
+        text
+        + "  - id: agents-md-copy\n"
+        + "    class: copied-managed\n"
+        + '    path: "AGENTS.md"\n'
+        + "    applies_to: both\n"
+        + "    rationale: a second owner for one file\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ManifestError, match=r"^agents-md-copy: path 'AGENTS.md' is also declared by 'agents-md'"):
+        load_manifest(doubled)
+
+
+def test_every_shipped_directory_entry_carries_the_directory_contract(manifest):
+    """Story 86.1 (DW-FU-7-5-2): each trailing-`/` entry -- `dreams-dir`,
+    `specs-dir-legacy`, `project-subtree`, `deck-scaffolding` -- is described
+    as create-if-missing, never by its class's "recomputed every run" row."""
+    directory_ids = {entry.id for entry in manifest.entries if entry.is_directory}
+    assert directory_ids == {"dreams-dir", "specs-dir-legacy", "project-subtree", "deck-scaffolding"}
+    for entry in manifest.entries:
+        if entry.is_directory:
+            assert describe(entry).behavior == DIRECTORY_BEHAVIOR

@@ -2,14 +2,30 @@
 title: "86.1: Seed honours recorded skips, refuses shared manifest paths, and pins directory entries"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md
-deferred: []
+deferred:
+  - summary: >-
+      A directory entry's create-if-missing half is pinned but not materialized: an ABSENT trailing-`/` entry still
+      gets an ordinary creation action, and every commit dispatcher (adopt, init, update) treats it as a file.
+    evidence: |-
+      Story 86.1 pinned the semantics (`ManifestEntry.is_directory`, `model.artifact.DIRECTORY_BEHAVIOR`) and stopped
+      every path that touched an EXISTING directory (update's wholesale pass, rung 6 in adopt and update, adopt's
+      first claim). Creating an absent one is adopt's documented known limitation (2): `fs` has no guarded
+      directory-creation primitive, and the commit dispatchers look for staged file bytes at the target, so applying
+      such an action fails rather than creating the directory (not run; read from `_staged_bytes_for` in
+      verbs/adopt.py and verbs/update.py). A fix needs a never-write-guarded
+      mkdir in `fs`, a directory branch in the three commit dispatchers, and apply rollback for a created directory
+      (DW-10-3-3 tracks that a rolled-back apply never removes a directory it created) -- a multi-module change
+      outside this story's three rulings.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/adopt.py:176
+    severity: low
 declared_low_risk: false
 ---
 
@@ -67,4 +83,6 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-04 — Build complete (hand-built, branch `land/pyforge-marshal-86-1`); ready for an independent review.
+  Each AC carries a test that fails with its rule removed (13 mutants, all killed, run on a scratch copy of the
+  package). The three deferred-work rows are closed in the ledger with `resolution:` and `verified:` lines.

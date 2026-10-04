@@ -106,17 +106,17 @@ def test_applies_to_every_member_accepted(tmp_path):
         artifacts:
           - id: a
             class: copied-seeded
-            path: "x"
+            path: "a.md"
             applies_to: init
             rationale: r
           - id: b
             class: copied-seeded
-            path: "x"
+            path: "b.md"
             applies_to: adopt
             rationale: r
           - id: c
             class: copied-seeded
-            path: "x"
+            path: "c.md"
             applies_to: both
             rationale: r
     """
@@ -513,24 +513,24 @@ def test_mixed_range_filtering_across_several_entries(tmp_path):
         artifacts:
           - id: always
             class: copied-seeded
-            path: "x"
+            path: "always.md"
             applies_to: init
             rationale: r
           - id: retired
             class: copied-seeded
-            path: "x"
+            path: "retired.md"
             applies_to: init
             rationale: r
             until: "1.5.0"
           - id: not-yet
             class: copied-seeded
-            path: "x"
+            path: "not-yet.md"
             applies_to: init
             rationale: r
             since: "2.0.0"
           - id: in-window
             class: copied-seeded
-            path: "x"
+            path: "in-window.md"
             applies_to: init
             rationale: r
             since: "1.0.0"
@@ -1383,19 +1383,23 @@ def test_merge_key_sequence_is_accepted_and_resolves_first_wins(tmp_path):
             class: copied-seeded
             path: "from-a.md"
             applies_to: both
-            rationale: r
+            rationale: from a
           - &b
             id: base_b
             class: copied-seeded
             path: "from-b.md"
             applies_to: both
-            rationale: r
+            rationale: from b
           - <<: [*a, *b]
             id: merged
+            path: "merged.md"
     """
     manifest = load_manifest(_write(tmp_path, text))
     merged = next(entry for entry in manifest.entries if entry.id == "merged")
-    assert merged.path == "from-a.md"
+    # The merged entry names its own path: inheriting `from-a.md` would give
+    # one file two owners, which the loader refuses (Story 86.1). First-wins
+    # still decides every key it does inherit.
+    assert merged.rationale == "from a"
 
 
 # --- dataclass-level type guards (direct construction) --------------------------
@@ -1573,3 +1577,110 @@ def test_legacy_of_and_a_legacy_entrys_own_id_keep_their_looser_grammar():
         legacy_of="an old id with spaces",
     )
     assert entry.legacy_of == "an old id with spaces"
+
+
+# --- Story 86.1: one owner per path (DW-FU-7-4-4) and directory entries ------
+
+
+def _two_entries_at(path: str, first_extra: str = "", second_extra: str = "") -> str:
+    """Two non-referenced entries declaring ``path``, each with optional extra
+    YAML lines (an ``applies_to`` override, ``since``/``until``)."""
+    first_applies = "" if "applies_to" in first_extra else "    applies_to: both\n"
+    second_applies = "" if "applies_to" in second_extra else "    applies_to: both\n"
+    return (
+        'model_version: "1.0.0"\n'
+        "artifacts:\n"
+        "  - id: agents-a\n"
+        "    class: copied-managed\n"
+        f'    path: "{path}"\n'
+        "    rationale: r\n" + first_applies + first_extra + "  - id: agents-b\n"
+        "    class: generated-derived\n"
+        f'    path: "{path}"\n'
+        "    rationale: r\n" + second_applies + second_extra
+    )
+
+
+def test_two_entries_owning_one_path_refuse_naming_both_ids(tmp_path):
+    """The DW-FU-7-4-4 repro: `agents-a` (copied-managed) and `agents-b`
+    (generated-derived) both declaring `AGENTS.md` loaded clean and both
+    survived the version filter, handing the apply stage two writers for one
+    file -- last writer wins. The loader now refuses, naming both."""
+    path = tmp_path / "manifest.yaml"
+    path.write_text(_two_entries_at("AGENTS.md"), encoding="utf-8")
+
+    with pytest.raises(ManifestError, match=r"^agents-b: path 'AGENTS.md' is also declared by 'agents-a'"):
+        load_manifest(path)
+
+
+@pytest.mark.parametrize(
+    ("first_extra", "second_extra"),
+    [
+        pytest.param("    applies_to: init\n", "    applies_to: both\n", id="init-meets-both"),
+        pytest.param("    applies_to: adopt\n", "    applies_to: adopt\n", id="adopt-meets-adopt"),
+        pytest.param('    until: "2.0.0"\n', '    since: "1.5.0"\n', id="windows-overlap"),
+        pytest.param('    since: "3.0.0"\n', '    since: "4.0.0"\n', id="both-future-staged-still-overlap"),
+    ],
+)
+def test_overlapping_windows_on_one_path_refuse(tmp_path, first_extra, second_extra):
+    """Overlap is judged over the whole ledger, before the version filter: two
+    entries both staged for a later version are a double owner at that
+    version even though neither is in force today."""
+    path = tmp_path / "manifest.yaml"
+    path.write_text(_two_entries_at("AGENTS.md", first_extra, second_extra), encoding="utf-8")
+
+    with pytest.raises(ManifestError, match=r"agents-a"):
+        load_manifest(path)
+
+
+@pytest.mark.parametrize(
+    ("first_extra", "second_extra"),
+    [
+        pytest.param("    applies_to: init\n", "    applies_to: adopt\n", id="init-vs-adopt"),
+        pytest.param('    until: "2.0.0"\n', '    since: "2.0.0"\n', id="retired-as-the-next-starts"),
+    ],
+)
+def test_disjoint_windows_may_share_a_path(tmp_path, first_extra, second_extra):
+    """A reclassification retires one entry at the version the next starts
+    (half-open `[since, until)`), and an `init`-only entry never meets an
+    `adopt`-only one -- neither is a double owner."""
+    path = tmp_path / "manifest.yaml"
+    path.write_text(_two_entries_at("AGENTS.md", first_extra, second_extra), encoding="utf-8")
+
+    load_manifest(path)
+
+
+def test_referenced_entries_are_left_out_of_the_one_owner_rule(tmp_path):
+    """Every `referenced` entry carries the `n/a` sentinel and names no file."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: one
+            class: referenced
+            path: "n/a"
+            applies_to: both
+            rationale: r
+            pin: ">=1"
+          - id: two
+            class: referenced
+            path: "n/a"
+            applies_to: both
+            rationale: r
+            pin: ">=2"
+    """
+    assert {entry.id for entry in load_manifest(_write(tmp_path, text)).entries} == {"one", "two"}
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("docs/dreams/", True),
+        ("_bmad-output/projects/{{ slug }}/", True),
+        ("docs/dreams/README.md", False),
+        ("docs/dreams", False),
+    ],
+)
+def test_a_path_ending_in_a_slash_names_a_directory_entry(path, expected):
+    entry = ManifestEntry(
+        id="e", artifact_class=ArtifactClass.GENERATED_DERIVED, path=path, applies_to=AppliesTo.BOTH, rationale="r"
+    )
+    assert entry.is_directory is expected
