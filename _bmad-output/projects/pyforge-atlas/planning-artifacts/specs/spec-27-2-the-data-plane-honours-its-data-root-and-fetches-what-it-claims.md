@@ -98,4 +98,34 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 12 findings — high 0, medium 2, low 3, false 4, maybe-false 3
+- findings:
+  - `[false]` `[reject]` globals.yml missing from diff — `conf/base/globals.yml:177` already ships member-relative `local_recipes_dir`; README/pixi doc updates are sufficient for DW-FU-21-8.
+  - `[medium]` `[defer]` CondaChanneldataDataset returns empty frame on transport error, not last-good parquet — offline `core` exits 0 (AC met); last-good read path is follow-up if a store exists pre-error.
+  - `[medium]` `[defer]` No dedicated test asserting non-empty VCS refresh batches from a populated identity fixture — `vcs_refresh_identifiers.py` covered indirectly; add fixture test in a follow-up if dispatch requires it.
+  - `[low]` `[reject]` `match_source_urls` skips enumeration filter when `core_packages_enumerated` empty — intentional bootstrap degrade; empty allowlist means no filter.
+  - `[low]` `[defer]` `DegradedJsonSeedDataset` non-dict JSON root returns `{}` without staleness marker — edge case; file still absent vs corrupt dict path.
+  - `[low]` `[reject]` Import-order lint fixes post-implementation — resolved in checkpoint `2a26084624`; lint-types green.
+  - `[false]` `[reject]` Ledger closed wrong rows — grep shows only the spec's 26 `DW-FU-21-*` ids received `closed_by: Story 27.2` in this branch.
+  - `[maybe-false]` `[defer]` vcs_health now depends on `identity_packages_primary` — ordering documented in pipeline wiring; combined bootstrap runs upstream_discovery first by design.
+  - `[maybe-false]` `[defer]` NODE_TIMEOUTS completeness test absent — five entries added; completeness meta-test deferred.
+  - `[false]` `[reject]` `test_no_literal_data_filepath` brittle — paired with catalog rewrite removing literal `data/` paths; convention test updated.
+  - `[maybe-false]` `[defer]` Staged-recipes pagination unbounded pages — fanout limit still caps PR count; page loop bounded by GitHub `Link` headers.
+  - `[false]` `[reject]` Truncated ledger headings — spec-27.4 scope, not 27.2.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Story 27.2 lands the atlas data-plane deferral burn-down — `${globals:paths.data_root}` catalog paths, merge-on-persist refresh stores, identity-driven VCS/registry batches, AD-13 degrade paths (channeldata, JSON seeds, missing cross-pipeline Parquet), bootstrap honesty for fetcher-less discovery stores, and `kedro-catalog-check` in CI.
+
+Files changed: 34 paths under `src/shared/packages/pyforge-atlas/`, `.github/workflows/pyforge-station-tests.yml`, `pixi.toml`, atlas planning artifacts (ledger + spec-20-6 changelog), and spec memlogs.
+
+Review: 0 patch-routed findings; 5 deferred (medium/low/maybe-false); 7 rejected as false or out of scope.
+
+Follow-up review recommended: false
+
+Verification: `kedro-test` exit 0 (1928 passed); `kedro-catalog-check` exit 0 (69 passed); `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-atlas` and co-governor `spec-pyforge-core`.
+
+Residual risks: CondaChanneldata last-good vs empty degrade; optional stronger fixture for non-empty VCS batches; NODE_TIMEOUTS completeness meta-test.
