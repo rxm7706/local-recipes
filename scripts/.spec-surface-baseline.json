@@ -3779,8 +3779,8 @@
    "docs/dreams/bmad-loop-baseline-drift.md": "15a1e7e4f9d97e3d8acc856de8490bcf36bcc914",
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
    "docs/reference/library-llms-full.md": "88206a00cf32457daf2639e0a138730613e2b574",
-   "environment.yaml": "0ca26ec581dfeba8f0fb0f4195ae279cc879e1c9",
-   "pixi.toml": "014f5d6be785bdb2cba434093b379988743d9511",
+   "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
+   "pixi.toml": "64b8cbd85bd9f967d99c5495ba1e1a0f0764dbe7",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "8e9c02c8a311f36b0f4b8a628cb64ef5e28050cb",
@@ -4275,7 +4275,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "e97f759085e7adbe7e4ec705203b2626be423f9f"
+  "memlog": "bf07b31a2d09283363f316df6aebdf0cbd89f947"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
