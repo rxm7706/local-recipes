@@ -2,7 +2,9 @@
 title: '70.1: Seed check judges the paths the manifest means, never its placeholders'
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md

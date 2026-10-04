@@ -19,6 +19,7 @@ from .model import Finding, Severity, Status, status_for
 from .verdict import classify
 
 VERIFY_FIX_LOOP_FLAG_KEY = "pyforge.marshal.verify_fix_loop"
+VERIFY_FIX_PROMPT_FILENAME = "verify-fix-prompt.txt"
 
 # Finding codes (Story 85.1)
 FIX_TURN_START_FAILED_CODE = "MRS-DISP-058"
@@ -27,18 +28,44 @@ FIX_TURN_REVERIFY_REFUSED_CODE = "MRS-DISP-060"
 
 _VERIFY_REFUSAL_GATE_PREFIX = "MRS-GATE-"
 
-# Story 85.1 (M7): scrub credential-shaped text before fix-turn prompt/journal tails.
-_URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s/]+)@")
+# Story 85.1 (M7) + 85.3: scrub credential-shaped text before truncation (never after).
+_URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s]+)@")
 _BEARER_TOKEN = re.compile(r"(?i)(Authorization:\s*Bearer\s+)\S+")
-_SECRET_ASSIGNMENT = re.compile(r"(?i)(\b(?:password|passwd|secret|api[_-]?key|token)\s*=\s*['\"]?)[^'\"\s]+(['\"]?)")
+_BASIC_AUTH = re.compile(r"(?i)(Authorization:\s*Basic\s+)\S+")
+#: One key=value / key: value rule (85.3 landing review H3): a bare or quoted key NAMING a secret -- any
+#: identifier carrying password / passwd / secret / token / api key / access key (`DATABASE_PASSWORD`,
+#: `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`, JSON `"password"`, YAML `db_password`) -- then `=` or `:` (never
+#: `==` or `::`), then a quoted value (to its closing quote, escapes included) or a bare one (to the next
+#: whitespace; an unclosed opening quote is taken with it).
+_SECRET_KEY_VALUE = re.compile(
+    r"(?i)(?<![A-Za-z0-9_.-])"
+    r"(?P<key>(?P<kq>['\"]?)"
+    r"[A-Za-z0-9_.-]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_.-]*"
+    r"(?P=kq)\s*(?:=(?!=)|:(?!:))\s*)"
+    r"(?:(?P<vq>['\"])(?:\\.|(?!(?P=vq)).)*(?P=vq)|['\"]?[^\s'\"]+)"
+)
+_SK_ANT_KEY = re.compile(r"sk-ant-[A-Za-z0-9_-]+")
+_REDACTED = "***REDACTED***"
+
+
+def _redact_secret_value(match: re.Match[str]) -> str:
+    quote = match.group("vq") or ""
+    return f"{match.group('key')}{quote}{_REDACTED}{quote}"
 
 
 def scrub_fix_turn_exposure(text: str) -> str:
-    """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1)."""
-    scrubbed = _URL_CREDENTIALS.sub(r"\1:***REDACTED***@", text)
-    scrubbed = _BEARER_TOKEN.sub(r"\1***REDACTED***", scrubbed)
-    scrubbed = _SECRET_ASSIGNMENT.sub(r"\1***REDACTED***\2", scrubbed)
+    """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1/85.3)."""
+    scrubbed = _URL_CREDENTIALS.sub(rf"\1:{_REDACTED}@", text)
+    scrubbed = _BEARER_TOKEN.sub(rf"\1{_REDACTED}", scrubbed)
+    scrubbed = _BASIC_AUTH.sub(rf"\1{_REDACTED}", scrubbed)
+    scrubbed = _SECRET_KEY_VALUE.sub(_redact_secret_value, scrubbed)
+    scrubbed = _SK_ANT_KEY.sub(f"sk-ant-{_REDACTED}", scrubbed)
     return scrubbed
+
+
+def scrub_then_tail_bytes(text: str, *, max_bytes: int) -> str:
+    """Redact the full output, then keep at most ``max_bytes`` from the end (Story 85.3)."""
+    return tail_bytes(scrub_fix_turn_exposure(text), max_bytes=max_bytes)
 
 
 class VerifyFixLaunchMode(StrEnum):
@@ -96,8 +123,6 @@ def extract_failed_verify_commands(
             cmd = _command_from_gate_001_message(finding.message)
             if cmd is not None:
                 failed_commands.add(cmd)
-        elif code == "MRS-GATE-018":
-            failed_commands.add("pre-verification deferred-work intake")
     by_command: dict[str, FailedVerifyCommand] = {}
     for report in command_reports:
         command = report.get("command")
@@ -140,7 +165,7 @@ def build_verify_fix_prompt(
             lines.append(f"Exit code: {item.exit_code}")
         combined = "\n".join(part for part in (item.stdout, item.stderr) if part.strip())
         if combined.strip():
-            tail = tail_bytes(scrub_fix_turn_exposure(combined), max_bytes=output_tail_bytes)
+            tail = scrub_then_tail_bytes(combined, max_bytes=output_tail_bytes)
             lines.append("Output tail:")
             lines.append(tail)
         lines.append("")
@@ -175,10 +200,15 @@ def decide_verify_fix_turn(
 def choose_verify_fix_launch_mode(
     *,
     resume_argv: tuple[str, ...] | None,
+    harness_session_id: str | None = None,
+    launch_profile: str | None = None,
+    resolved_profile: str | None = None,
 ) -> VerifyFixLaunchMode:
-    if resume_argv:
-        return VerifyFixLaunchMode.RESUME
-    return VerifyFixLaunchMode.FIX_ONLY
+    if not resume_argv or not harness_session_id:
+        return VerifyFixLaunchMode.FIX_ONLY
+    if launch_profile is not None and resolved_profile is not None and launch_profile != resolved_profile:
+        return VerifyFixLaunchMode.FIX_ONLY
+    return VerifyFixLaunchMode.RESUME
 
 
 def fix_turn_park_message(*, failed_command: str | None) -> str:

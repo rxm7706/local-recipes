@@ -3909,6 +3909,7 @@ def _seed_verify_fix_flag(repo_root: Path, *, on: bool) -> None:
 
 
 class _HarnessResolutionStub:
+    profile = "claude"
     spec = None
 
 
