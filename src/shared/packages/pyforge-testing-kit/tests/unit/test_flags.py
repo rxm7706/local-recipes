@@ -122,7 +122,11 @@ def test_flagd_tree_has_the_platform_trees_shape(tmp_path: Path) -> None:
 
     platform = json.loads((_REPO_ROOT / "src/platform/config/flags.json").read_text(encoding="utf-8"))
     assert platform["flags"], "the platform tree carries no flag to compare the written shape against"
-    assert set(entry) == set(next(iter(platform["flags"].values())))
+    # The evaluation shape must match. The platform tree's `metadata` block is its governance clock
+    # (Story 76.2), checked only when a tree is composed with a flag-overlays.json beside it, which a
+    # flagd_tree never has -- so it is the one platform key a test tree does not carry.
+    platform_flag = next(iter(platform["flags"].values()))
+    assert set(entry) == set(platform_flag) - {"metadata"}
     assert set(json.loads(path.read_text(encoding="utf-8"))) == set(platform)
 
 

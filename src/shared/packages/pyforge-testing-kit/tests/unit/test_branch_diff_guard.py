@@ -236,6 +236,28 @@ def test_unsanctioned_commits_flags_uncommitted_dirt(repo: Path):
     assert any(entry.startswith("uncommitted:") for entry in bad)
 
 
+def test_unsanctioned_commits_reads_every_path_of_a_tuple_pathspec(repo: Path):
+    # Story 83.19: the CFE surface is three pathspecs; both the history and the dirty-path read
+    # must cover the second one, not only the first.
+    _make_origin_main(repo)
+    first, second = "surface", "scripts"
+    changelog = f"{first}/CHANGELOG.md"
+    (repo / first).mkdir()
+    (repo / second).mkdir()
+    (repo / changelog).write_text("v1\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "retro: seed surface")
+    (repo / second / "tool.sh").write_text("echo 1\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "story: touch scripts")
+    (repo / second / "tool.sh").write_text("echo 2\n", encoding="utf-8")
+
+    bad = unsanctioned_commits(repo, pathspec=(first, second), changelog_path=changelog)
+
+    assert [entry.split(" ", 1)[1] for entry in bad] == ["story: touch scripts", f"{second}/tool.sh"]
+    assert bad[-1] == f"uncommitted: {second}/tool.sh"
+
+
 # --- marshal Story 62.1 (CAP-272): a local `origin/main` never stands in for the remote ------------
 
 

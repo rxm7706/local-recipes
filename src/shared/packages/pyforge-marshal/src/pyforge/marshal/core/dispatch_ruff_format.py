@@ -15,7 +15,6 @@ from pyforge.core.process import ProcessError, ProcessPort
 
 from . import dispatch as dispatch_core
 from .commit_vcs import CommittingVcs
-from .dispatch_cfe_commit import filter_story_py_paths_excluding_cfe, paths_excluding_cfe
 from .egress import to_redacted_text
 from .refs import ORIGIN_MAIN
 
@@ -75,7 +74,7 @@ def apply_dispatch_ruff_format_before_verify(
     except Exception:
         return DispatchRuffFormatResult((), False)
 
-    story_py = filter_story_py_paths_excluding_cfe(story_scoped_pyforge_py_paths(scope_changed))
+    story_py = story_scoped_pyforge_py_paths(scope_changed)
     if not story_py:
         return DispatchRuffFormatResult((), False)
 
@@ -107,14 +106,10 @@ def apply_dispatch_ruff_format_before_verify(
     if not to_commit:
         return DispatchRuffFormatResult((), False)
 
-    commit_paths = paths_excluding_cfe(to_commit)
-    if not commit_paths:
-        return DispatchRuffFormatResult((), False)
-
     try:
         vcs.commit_paths(
             worktree,
-            commit_paths,
+            tuple(Path(path) for path in to_commit),
             to_redacted_text("marshal: ruff check --fix and format story files (Story 83.9, 83.15)"),
         )
     except Exception:

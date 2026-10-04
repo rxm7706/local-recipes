@@ -29,8 +29,10 @@ from .core import dispatch as dispatch_core
 from .core import gate, journal, policy, spec_binding
 from .core.commit_vcs import CommittingVcs
 from .core.dispatch_cfe_commit import (
+    CFE_GIT_PATHSPECS,
     commit_pending_cfe_retro,
-    findings_for_unsanctioned_cfe_commits,
+    findings_for_unsanctioned_cfe_entries,
+    unsanctioned_cfe_entries,
 )
 from .core.dispatch_ruff_format import (
     DispatchRuffFormatResult,
@@ -181,6 +183,83 @@ def check_branch_commit_attribution(
             "rev_range": rev_range,
             "commits_scanned": len(_parse_branch_commits_from_log(result.stdout)),
             "violations": len(findings),
+        },
+    )
+
+
+def _parse_cfe_commits_from_log(stdout: str) -> tuple[tuple[str, str, tuple[str, ...]], ...]:
+    """Parse ``git log --name-only --format=%x1e%H%x1f%s`` output into ``(sha, subject, files)``."""
+    commits: list[tuple[str, str, tuple[str, ...]]] = []
+    for chunk in stdout.split(_COMMIT_LOG_RECORD_SEP):
+        header, _, rest = chunk.partition("\n")
+        sha, sep, subject = header.partition(_COMMIT_LOG_FIELD_SEP)
+        if not sep or not sha:
+            continue
+        files = tuple(line for line in rest.splitlines() if line.strip())
+        commits.append((sha, subject, files))
+    return tuple(commits)
+
+
+def _cfe_check_read_failure(rev_range: str, detail: str) -> tuple[tuple[Finding, ...], dict[str, object]]:
+    return (
+        (
+            Finding(
+                code="MRS-GATE-009",
+                severity=Severity.ERROR,
+                message=f"dispatch CFE-surface commit check could not read {rev_range!r}: {detail}",
+            ),
+        ),
+        {"checked": False, "reason": detail, "rev_range": rev_range},
+    )
+
+
+def check_unsanctioned_cfe_commits(
+    *,
+    worktree: Path,
+    process: ProcessPort,
+    base: str = _SCOPE_BASE,
+) -> tuple[tuple[Finding, ...], dict[str, object]]:
+    """Story 83.19: refuse when ``base..HEAD`` touches the CFE surface outside a sanctioned retro.
+
+    The station guards' ``branch_diff_guard.unsanctioned_commits`` over the CFE surface, read
+    through marshal's own process seam (a production station never imports the testing kit),
+    so a dispatch branch the guards would refuse never reaches a push. A git read that fails
+    refuses (``MRS-GATE-009``); it never reads as clean."""
+    rev_range = f"{base}..HEAD"
+    log_argv = [
+        "git",
+        "-C",
+        str(worktree),
+        "log",
+        "--no-merges",
+        "--full-diff",
+        "--name-only",
+        f"--format={_COMMIT_LOG_RECORD_SEP}%H{_COMMIT_LOG_FIELD_SEP}%s",
+        rev_range,
+        "--",
+        *CFE_GIT_PATHSPECS,
+    ]
+    dirty_argv = ["git", "-C", str(worktree), "diff", "--name-only", "HEAD", "--", *CFE_GIT_PATHSPECS]
+    outputs: list[str] = []
+    for argv in (log_argv, dirty_argv):
+        try:
+            result = process.run(argv, cwd=worktree)
+        except ProcessError as exc:
+            return _cfe_check_read_failure(rev_range, str(exc))
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip()
+            return _cfe_check_read_failure(rev_range, f"exit {result.returncode}: {detail}")
+        outputs.append(result.stdout)
+    commits = _parse_cfe_commits_from_log(outputs[0])
+    entries = unsanctioned_cfe_entries(commits, outputs[1].split())
+    findings = findings_for_unsanctioned_cfe_entries(entries, base=base)
+    return (
+        findings,
+        {
+            "checked": True,
+            "rev_range": rev_range,
+            "commits_scanned": len(commits),
+            "unsanctioned": entries,
         },
     )
 
@@ -613,6 +692,8 @@ def evaluate_dispatch_verification(
         if intake_finding is not None:
             findings.append(intake_finding)
 
+        # Story 83.19: dispatch's own commits leave the CFE surface uncommitted; commit it here
+        # once, as `retro(cfe):`, when the CFE CHANGELOG.md moves with it -- else refuse (Rule 2).
         try:
             dirty_paths = vcs.changed_files(repo_root, worktree, base="HEAD")
         except Exception as exc:
@@ -620,22 +701,23 @@ def evaluate_dispatch_verification(
                 Finding(
                     code="MRS-GATE-009",
                     severity=Severity.ERROR,
-                    message=f"dispatch CFE retro commit could not read dirty paths: {exc}",
+                    message=f"dispatch CFE retro commit could not read the worktree's dirty paths: {exc}",
                 )
             )
-            dirty_paths = ()
-        if dirty_paths:
-            cfe_retro = commit_pending_cfe_retro(
-                committing_vcs,
-                worktree=worktree,
-                changed_paths=dirty_paths,
-            )
-            data["cfe_retro_commit"] = {"committed": cfe_retro.committed}
+            data["cfe_retro_commit"] = {"checked": False, "reason": str(exc)}
+        else:
+            cfe_retro = commit_pending_cfe_retro(committing_vcs, worktree=worktree, changed_paths=dirty_paths)
+            data["cfe_retro_commit"] = {
+                "checked": True,
+                "committed": cfe_retro.committed,
+                "paths": list(cfe_retro.paths),
+            }
             if cfe_retro.finding is not None:
                 findings.append(cfe_retro.finding)
 
-    findings.extend(findings_for_unsanctioned_cfe_commits(worktree, base=_SCOPE_BASE))
-    data["cfe_unsanctioned_commits_check"] = {"checked": True}
+    cfe_findings, cfe_report = check_unsanctioned_cfe_commits(worktree=worktree, process=process, base=_SCOPE_BASE)
+    findings.extend(cfe_findings)
+    data["cfe_unsanctioned_commits_check"] = cfe_report
 
     attribution_findings, attribution_report = check_branch_commit_attribution(
         worktree=worktree,

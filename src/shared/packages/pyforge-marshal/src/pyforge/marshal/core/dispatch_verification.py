@@ -22,9 +22,6 @@ PRE_EXISTING_GATE_CODE = "MRS-GATE-014"
 # runs the same rule over ``base...HEAD`` before push or land.
 COMMIT_ATTRIBUTION_GATE_CODE = "MRS-GATE-019"
 
-# Story 83.19 (spec-83-19): CFE surface must not land outside a sanctioned retro.
-CFE_COMMIT_GATE_CODE = "MRS-GATE-020"
-
 CommitAttributionHit = tuple[int, str, str]
 BranchCommitAttribution = tuple[str, str, tuple[CommitAttributionHit, ...]]
 

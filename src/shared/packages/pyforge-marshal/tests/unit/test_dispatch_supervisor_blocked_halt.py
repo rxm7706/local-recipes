@@ -445,6 +445,37 @@ def test_commit_and_journal_blocked_halt_false_when_nothing_changed(
     assert counter == 0
 
 
+def test_commit_and_journal_blocked_halt_leaves_the_cfe_surface_out(tmp_path: Path) -> None:
+    """Story 83.19: neither a dirty CFE path nor a patch dropped inside the CFE tree rides the
+    blocked-halt commit -- the station guards would refuse that commit for good."""
+    fs = FakeFs()
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    fs.files[run_dir / "journal.jsonl"] = ""
+    worktree = _worktree(tmp_path)
+    cfe_dir = worktree / ".claude" / "skills" / "conda-forge-expert"
+    cfe_dir.mkdir(parents=True)
+    (cfe_dir / "51-11-attempted-change.patch").write_text("diff\n", encoding="utf-8")
+    vcs = FakeVcs(changed=("spec-51-11.md", ".claude/skills/conda-forge-expert/SKILL.md"))
+
+    _counter, committed = _commit_and_journal_blocked_halt(
+        fs=fs,
+        vcs=vcs,
+        run_dir=run_dir,
+        run_id="run-51-11",
+        writer_id="test-writer",
+        counter=0,
+        repo_root=tmp_path,
+        slug=_SLUG,
+        story_key=_STORY_KEY,
+        worktree=worktree,
+        reason="an intent gap",
+    )
+
+    assert committed is True
+    assert vcs.commit_paths_calls[0][1] == (Path("spec-51-11.md"),)
+
+
 # --------------------------------------------------------------------------
 # _promote_blocked_twin
 # --------------------------------------------------------------------------
