@@ -848,6 +848,15 @@ closing step, not a precondition of the write it follows), and the next
 ``sprint-ledger-sync --repair-feed`` run or ``dashboard-drift-check``'s
 own twin-ahead-of-feed detector still catches the gap.
 
+Story 83.20 (landing finalize never promotes a Tier-3 spec the ledger
+does not list) adds ``MRS-DEPLOY-028``: a Tier-3 spec candidate of a
+merged, not-yet-promoted story is an orphan -- its full key (the file name
+after ``spec-``) is no row of the station's tracked ledger, or a tracked
+spec already carries its title slug under another story key -- and was not
+promoted. It classifies ``Verdict.WARN``, the same "reported, never
+blocks" tier as ``MRS-DEPLOY-001``/``002``: the refusal itself is the
+safety, and the operator resolves the orphan by hand.
+
 Story 53.2 ("the landing reconciles from git facts and runs intake",
 spec-pyforge-marshal CAP-261b) adds two more codes to ``dispatch_land.py``'s
 existing ``MRS-DISP-*`` area, closing the gap 53.1 left open: even a
@@ -1630,6 +1639,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-025",
         "MRS-DEPLOY-026",
         "MRS-DEPLOY-027",
+        # Story 83.20: an orphan Tier-3 spec (no ledger row for its full key,
+        # or a tracked twin under another key) is never promoted -- WARN.
+        "MRS-DEPLOY-028",
         "MRS-SPIN-016",
         # Story 15.1 (fleet homes refresh, FR-133..FR-135, AD-21):
         # MRS-REFRESH-001 enumerate/fetch/repo-root failure (ERROR);

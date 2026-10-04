@@ -48,6 +48,13 @@ merged story, or an invalid/truncated spec). A not-yet-merged story's spec
 is neither promoted nor a gap -- it is correctly not yet a candidate at all
 (per the story's own I/O matrix: "Skipped -- not a promotion candidate
 yet"), so it produces nothing in either bucket.
+
+Story 83.20 (orphan Tier-3 specs): a story's NUMBER reading as merged does
+not make a Tier-3 file with that number the story's spec. A candidate is
+promoted only when its full key (the filename after ``spec-``) is a row of
+the station's tracked ledger AND no tracked spec carries the same title
+slug under a different story key; one that fails either rule is an
+``orphans`` entry (``MRS-DEPLOY-028``, WARN), never promoted.
 """
 
 from __future__ import annotations
@@ -55,6 +62,7 @@ from __future__ import annotations
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import PurePath
 
 from pyforge.core.landing_evidence import (
     BranchDerivedShape,
@@ -78,6 +86,7 @@ from .model import Finding, Severity
 
 _MISSING_SPEC_CODE = "MRS-DEPLOY-001"
 _INVALID_SPEC_CODE = "MRS-DEPLOY-002"
+_ORPHAN_SPEC_CODE = "MRS-DEPLOY-028"
 
 # GitHub PR-merge subject shape retained only to extract the ``branch``
 # token for ``land/<station>-<epic>-<seq>`` recovery landings whose merge
@@ -491,12 +500,25 @@ class PromotionPlan:
     the unreachable set alongside ``missing_spec_keys`` too (this
     DELIBERATELY widens Story 4.2's original Always bullet, which named
     only the missing-spec case; see this story's own Spec Change Log for
-    the review finding that corrected it)."""
+    the review finding that corrected it).
+
+    ``orphans`` (Story 83.20): one ``MRS-DEPLOY-028`` WARN per Tier-3
+    candidate of a merged, not-yet-promoted story that the orphan rules
+    refuse (its full key is no ledger row, or a tracked spec carries its
+    title slug under another story key) -- kept apart from ``gaps`` because
+    the caller reports them with the scan's own findings, so every caller
+    of ``cli/deploy.py::_scan_promotions`` names them. ``orphan_keys`` is
+    the story keys for which EVERY candidate was refused, so nothing was
+    promoted for them: ``unreachable_promotions_for_slug`` folds them into
+    the unreachable set, keeping teardown exactly as strict as it was when
+    these candidates still sat in ``to_promote``."""
 
     to_promote: tuple[SpecCandidate, ...]
     gaps: tuple[Finding, ...]
     missing_spec_keys: frozenset[StoryKey] = frozenset()
     invalid_spec_keys: frozenset[StoryKey] = frozenset()
+    orphans: tuple[Finding, ...] = ()
+    orphan_keys: frozenset[StoryKey] = frozenset()
 
 
 # A `status:` key at the LINE START of the frontmatter block, after
@@ -656,10 +678,61 @@ def set_spec_status(text: str, status: str) -> str:
     return text
 
 
+def spec_full_key(path: str) -> str:
+    """Story 83.20: a spec file's FULL key -- its file name without the ``spec-`` prefix and the ``.md``
+    suffix (``.../spec-13-5-downstream-handoff-to-mason.md`` -> ``13-5-downstream-handoff-to-mason``), the
+    form a ``sprint-status-ledger.yaml`` row carries. ``PurePath`` only: no I/O (AD-4)."""
+    return PurePath(path).name.removeprefix("spec-").removesuffix(".md")
+
+
+def spec_title_slug(full_key: str) -> str:
+    """Story 83.20: a full key's title slug -- the text after its leading story-key token and the one
+    separator that follows it (``13-5-downstream-handoff-to-mason`` -> ``downstream-handoff-to-mason``).
+    ``""`` when the key carries no title (``13-5``) or does not lead with a story key at all. The token is
+    found through ``normalize`` and the key's own two renderings (AD-23: identity owns the key grammar),
+    never a second key regex; a token those renderings do not reproduce (``06-01-x``) reads as no title."""
+    try:
+        key = normalize(full_key)
+    except MalformedStoryKeyError:
+        return ""
+    stripped = full_key.strip()
+    for head in (render_filename_slug(key), str(key)):
+        if stripped.lower().startswith(head):
+            return stripped[len(head) + 1 :]
+    return ""
+
+
+def _orphan_reasons(
+    candidate: SpecCandidate,
+    ledger_keys: frozenset[str] | None,
+    tracked_by_title: dict[str, list[tuple[StoryKey, str]]],
+) -> list[str]:
+    """Why Story 83.20's rules refuse ``candidate`` -- empty when it passes both. Rule 1: its full key is
+    a row of the tracked ledger (``ledger_keys``; ``None`` = no readable ledger, so no key is a row). Rule 2:
+    no tracked spec carries its title slug under a different story key."""
+    full_key = spec_full_key(candidate.path)
+    reasons: list[str] = []
+    if ledger_keys is None:
+        reasons.append("no ledger row: the station's tracked sprint-status-ledger.yaml is absent or unreadable")
+    elif full_key not in ledger_keys:
+        reasons.append(f"no ledger row for its key {full_key!r} in the station's tracked sprint-status-ledger.yaml")
+    title = spec_title_slug(full_key)
+    if title:
+        for tracked_key, tracked_path in tracked_by_title.get(title, ()):
+            if tracked_key != candidate.story_key:
+                reasons.append(
+                    f"a tracked spec for the same story already exists under story {tracked_key}: {tracked_path!r}"
+                )
+    return reasons
+
+
 def classify_promotion_candidates(
     candidates: tuple[SpecCandidate, ...],
     merged_keys: frozenset[StoryKey],
     already_promoted: frozenset[StoryKey],
+    *,
+    ledger_keys: frozenset[str] | None,
+    tracked_specs: tuple[str, ...],
 ) -> PromotionPlan:
     """Partition ``candidates`` against ``merged_keys`` (AD-33's git-truthful
     reachability answer) and ``already_promoted`` (the CLI boundary's own
@@ -670,28 +743,78 @@ def classify_promotion_candidates(
 
     - no matching Tier-3 candidate at all -> a ``MRS-DEPLOY-001`` gap
       (never silently passed over, per the story's own Always bullet);
-    - a matching candidate whose content fails ``is_valid_spec_text`` -> a
+    - every matching candidate refused by Story 83.20's orphan rules -> one
+      ``MRS-DEPLOY-028`` WARN per candidate in ``orphans``, the key in
+      ``orphan_keys``, and nothing promoted;
+    - the chosen candidate (the LAST one the orphan rules let through --
+      a refused one never shadows it) fails ``is_valid_spec_text`` -> a
       ``MRS-DEPLOY-002`` gap, and it is NEVER added to ``to_promote``
       (AD-13: a zero-byte/truncated source is reported, never promoted over
       a good copy);
-    - otherwise -> added to ``to_promote``.
+    - otherwise -> added to ``to_promote`` (any refused sibling of the same
+      key still reports its own ``MRS-DEPLOY-028``).
+
+    The orphan rules (Story 83.20) -- a story NUMBER reading as merged is
+    not proof a Tier-3 file carrying that number is the story's spec (a
+    renumbered story's pre-rekey leftover reads merged through the OLD
+    number's real landing evidence):
+
+    1. the candidate's full key (``spec_full_key``) is a row of the
+       station's tracked ledger -- ``ledger_keys``, the raw row keys, or
+       ``None`` when the ledger is absent or unreadable (no key is a row);
+    2. no tracked spec (``tracked_specs``, the paths of the tracked
+       ``spec-*.md`` files) carries the candidate's title slug
+       (``spec_title_slug``) under a different story key.
+
+    Both are keyword-only and required: no caller can classify with the
+    rules silently off.
 
     A key present in ``candidates`` but absent from ``merged_keys``
     contributes nothing to either bucket -- it is correctly not yet a
     promotion candidate (the story's own I/O matrix: "not-yet-merged story,
     spec exists in Tier-3" -> "Skipped -- not a promotion candidate yet").
     """
-    candidate_by_key: dict[StoryKey, SpecCandidate] = {candidate.story_key: candidate for candidate in candidates}
+    candidates_by_key: dict[StoryKey, list[SpecCandidate]] = {}
+    for candidate in candidates:
+        candidates_by_key.setdefault(candidate.story_key, []).append(candidate)
+    tracked_by_title: dict[str, list[tuple[StoryKey, str]]] = {}
+    for tracked_path in tracked_specs:
+        tracked_full_key = spec_full_key(tracked_path)
+        tracked_title = spec_title_slug(tracked_full_key)
+        if tracked_title:
+            # `spec_title_slug` is non-empty only for a key `normalize` parses.
+            tracked_by_title.setdefault(tracked_title, []).append((normalize(tracked_full_key), tracked_path))
 
     to_promote: list[SpecCandidate] = []
     gaps: list[Finding] = []
+    orphans: list[Finding] = []
     missing_spec_keys: set[StoryKey] = set()
     invalid_spec_keys: set[StoryKey] = set()
+    orphan_keys: set[StoryKey] = set()
     for key in sorted(merged_keys):
         if key in already_promoted:
             continue
-        candidate = candidate_by_key.get(key)
-        if candidate is None:
+        eligible: list[SpecCandidate] = []
+        for keyed in candidates_by_key.get(key, ()):
+            reasons = _orphan_reasons(keyed, ledger_keys, tracked_by_title)
+            if not reasons:
+                eligible.append(keyed)
+                continue
+            orphans.append(
+                Finding(
+                    code=_ORPHAN_SPEC_CODE,
+                    severity=Severity.WARN,
+                    message=(
+                        f"Tier-3 spec {keyed.path!r} for merged story {key} is an orphan and was not promoted: "
+                        + "; ".join(reasons)
+                    ),
+                    path=keyed.path,
+                )
+            )
+        if key in candidates_by_key and not eligible:
+            orphan_keys.add(key)
+            continue
+        if not eligible:
             gaps.append(
                 Finding(
                     code=_MISSING_SPEC_CODE,
@@ -705,6 +828,8 @@ def classify_promotion_candidates(
             )
             missing_spec_keys.add(key)
             continue
+        # Later entry wins (a dispatch worktree's copy is appended after the primary's, Story 51.2).
+        candidate = eligible[-1]
         if not is_valid_spec_text(candidate.text):
             gaps.append(
                 Finding(
@@ -727,4 +852,6 @@ def classify_promotion_candidates(
         gaps=tuple(gaps),
         missing_spec_keys=frozenset(missing_spec_keys),
         invalid_spec_keys=frozenset(invalid_spec_keys),
+        orphans=tuple(orphans),
+        orphan_keys=frozenset(orphan_keys),
     )
