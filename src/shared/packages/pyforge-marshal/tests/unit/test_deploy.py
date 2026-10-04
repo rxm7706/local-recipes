@@ -169,10 +169,26 @@ def _args(*, project: str = "acme", format: str = "json") -> argparse.Namespace:
     return argparse.Namespace(project=project, format=format)
 
 
-def _write_tier3_spec(tmp_path, slug: str, filename_key: str, text: str) -> None:
+def _write_tier3_spec(tmp_path, slug: str, filename_key: str, text: str, *, ledger_row: bool = True) -> None:
+    """Story 83.20: a Tier-3 spec is promoted only when its full key is a row of the station's tracked
+    ledger, so the spec is written with that row (under the same ``tmp_path``) unless ``ledger_row`` is
+    False -- the orphan shape the tests of that rule build on purpose."""
     tier3_dir = tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts"
     tier3_dir.mkdir(parents=True, exist_ok=True)
     (tier3_dir / f"spec-{filename_key}.md").write_text(text, encoding="utf-8")
+    if ledger_row:
+        _add_ledger_row(tmp_path, slug, filename_key)
+
+
+def _add_ledger_row(root: Path, slug: str, raw_key: str, status: str = "backlog") -> Path:
+    """Append ``raw_key`` to ``root``'s tracked ledger for ``slug`` (created with its
+    ``development_status:`` header when absent); a key already listed is left as it is."""
+    ledger = root / "_bmad-output" / "projects" / slug / "planning-artifacts" / "sprint-status-ledger.yaml"
+    ledger.parent.mkdir(parents=True, exist_ok=True)
+    text = ledger.read_text(encoding="utf-8") if ledger.is_file() else "development_status:\n"
+    if f"  {raw_key}:" not in text:
+        ledger.write_text(f"{text}  {raw_key}: {status}\n", encoding="utf-8")
+    return ledger
 
 
 def _write_tracked_spec(tmp_path, slug: str, filename_key: str, text: str) -> None:
@@ -3777,12 +3793,15 @@ def test_reconcile_completions_advances_and_promotes_a_not_loop_native_story(tmp
 def test_reconcile_completions_missing_ledger_row_reports_mrs_deploy_026(tmp_path, capsys, monkeypatch):
     """I/O matrix row 2: corroborated and not-loop-native-landed, but the
     tracked ledger carries no row for it at all -- never advanced, never
-    invented, reported. Spec promotion is a SEPARATE concern from the
-    ledger advance: `to_promote_scoped` does not depend on the ledger's
-    own advance set at all, so the spec IS still promoted here even
-    though the ledger row is missing."""
+    invented, reported.
+
+    Story 83.20: a Tier-3 spec whose full key is no ledger row is an orphan
+    and is never promoted (the next test), so the corroboration here comes
+    from a spec that is already promoted -- a valid, committed tracked copy
+    -- and nothing is committed at all."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC, ledger_row=False)
+    _write_tracked_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
     _write_ledger(tmp_path, "acme", _ledger_text(("1-1-x", "done")))
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("1-1-x", "done"),))
@@ -3797,12 +3816,34 @@ def test_reconcile_completions_missing_ledger_row_reports_mrs_deploy_026(tmp_pat
     assert "5.9" in finding["message"]
     assert payload["data"]["missing_from_ledger"] == ["5.9"]
     assert payload["data"]["advanced"] == []
-    assert payload["data"]["promoted"] == ["5.9"]
+    assert payload["data"]["promoted"] == []
     assert exit_code == 0  # WARN never blocks
-    # Exactly one commit -- the spec's own; the ledger was never touched
-    # (no row to advance).
-    dest = _tracked_path(tmp_path, "acme", "5-9-title")
-    assert vcs.commit_calls == [((dest,), vcs.commit_calls[0][1])]
+    # Nothing committed: the ledger has no row to advance, and the spec is already promoted.
+    assert vcs.commit_calls == []
+
+
+def test_reconcile_completions_never_promotes_an_orphan_tier3_spec(tmp_path, capsys, monkeypatch):
+    """Story 83.20: `reconcile-completions` shares `_scan_promotions`, so a merged story's Tier-3 spec whose
+    full key is no row of the tracked ledger is reported (`MRS-DEPLOY-028`, naming the file) and never
+    promoted -- and, no longer corroborated by a promotable spec, it triggers no ledger write either."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC, ledger_row=False)
+    _write_ledger(tmp_path, "acme", _ledger_text(("1-1-x", "done")))
+    vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
+    harness = _FakeReconcileHarness(ledger_statuses=(("1-1-x", "done"),))
+
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    payload = json.loads(capsys.readouterr().out)
+    [orphan] = [f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-028"]
+    assert orphan["severity"] == "warn"
+    assert "spec-5-9-title.md" in orphan["message"]
+    assert "no ledger row" in orphan["message"]
+    assert payload["data"]["promoted"] == []
+    assert payload["data"]["advanced"] == []
+    assert exit_code == 0
+    assert vcs.commit_calls == []
+    assert not _tracked_path(tmp_path, "acme", "5-9-title").exists()
 
 
 def test_reconcile_completions_excludes_a_marshal_native_landed_key(tmp_path, capsys, monkeypatch):
@@ -4062,6 +4103,22 @@ def test_reconcile_completions_ledger_commit_failure_recovers_on_a_later_run(tmp
     assert non_failing_vcs.commit_calls[0][0] == (ledger_path,)
 
 
+class _LedgerRewrittenAfterFirstReadFs(LocalFs):
+    """Real ``LocalFs``, except that the FIRST ``read_text`` of ``ledger_path`` answers ``first_text`` -- the
+    ledger as it stood before a concurrent rewrite; every later read sees the file on disk."""
+
+    def __init__(self, *, ledger_path: Path, first_text: str) -> None:
+        super().__init__()
+        self._ledger_path = ledger_path
+        self._first_text: str | None = first_text
+
+    def read_text(self, path):
+        if path == self._ledger_path and self._first_text is not None:
+            text, self._first_text = self._first_text, None
+            return text
+        return super().read_text(path)
+
+
 def test_reconcile_completions_toctou_mismatch_reports_mrs_deploy_026_and_writes_nothing(tmp_path, capsys, monkeypatch):
     """Review fix, 2026-08-12, high-severity: `render_ledger_advancements`
     reports back which raw keys it actually matched -- a whole-batch match
@@ -4072,14 +4129,20 @@ def test_reconcile_completions_toctou_mismatch_reports_mrs_deploy_026_and_writes
     and reporting nothing, and no ledger write/commit is attempted (spec
     promotion for the SAME key is a separate concern and still proceeds
     independently -- it does not depend on the ledger's own text match at
-    all)."""
+    all).
+
+    Story 83.20: the promotion scan now reads the ledger too (a Tier-3
+    spec is promoted only when its full key is a row), so the rewrite is
+    modelled where it happens -- between the scan's read, which still
+    lists ``5-9-title``, and the raw-text re-read, which does not."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
-    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
+    _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC, ledger_row=False)
     ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("5-9-a-different-raw-spelling", "backlog")))
     vcs = _FakeVcs(main_subjects=(_not_loop_native_subject("5-9-title"),))
     harness = _FakeReconcileHarness(ledger_statuses=(("5-9-title", "backlog"),))
+    fs = _LedgerRewrittenAfterFirstReadFs(ledger_path=ledger_path, first_text=_ledger_text(("5-9-title", "backlog")))
 
-    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=LocalFs(), harness=harness)
+    exit_code = deploy_module.run_reconcile_completions(_args(), vcs=vcs, fs=fs, harness=harness)
 
     payload = json.loads(capsys.readouterr().out)
     codes = [f["code"] for f in payload["findings"]]
@@ -4471,7 +4534,9 @@ def test_scan_promotions_worktree_only_copy_is_discovered(tmp_path, monkeypatch)
     story key is merged."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     worktree = tmp_path / "wt"
-    _write_tier3_spec(worktree, "acme", "1-2", _VALID_SPEC)
+    _write_tier3_spec(worktree, "acme", "1-2", _VALID_SPEC, ledger_row=False)
+    # Story 83.20: the ledger is read from the scan's own root (the primary), never the worktree.
+    _add_ledger_row(tmp_path, "acme", "1-2")
     vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
 
     scan = deploy_module._scan_promotions(tmp_path, "acme", vcs=vcs, fs=LocalFs(), worktree=worktree)
@@ -4499,6 +4564,24 @@ def test_scan_promotions_worktree_copy_wins_on_key_collision(tmp_path, monkeypat
     assert scan.plan is not None
     promoted = {str(candidate.story_key): candidate for candidate in scan.plan.to_promote}
     assert promoted["1.2"].text == worktree_text
+
+
+def test_scan_promotions_worktree_tier3_symlinked_to_the_primary_is_read_once(tmp_path, monkeypatch):
+    """Story 83.20 landing review LOW-2: a worktree whose Tier-3 dir links back to the primary's (the documented
+    pattern) is the same directory, so each candidate -- and each orphan finding -- appears once, not twice."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2", _VALID_SPEC, ledger_row=False)
+    worktree = tmp_path / "wt"
+    link = worktree / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts")
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
+
+    scan = deploy_module._scan_promotions(tmp_path, "acme", vcs=vcs, fs=LocalFs(), worktree=worktree)
+
+    orphans = [finding for finding in scan.findings if finding.code == "MRS-DEPLOY-028"]
+    assert len(orphans) == 1
+    assert scan.plan is not None and scan.plan.to_promote == ()
 
 
 def test_scan_promotions_worktree_with_no_twin_is_silent(tmp_path, monkeypatch):
@@ -4555,3 +4638,115 @@ def test_scan_promotions_default_worktree_is_byte_identical(tmp_path, monkeypatc
     explicit_keys = {str(c.story_key) for c in explicit_none.plan.to_promote}
     omitted_keys = {str(c.story_key) for c in omitted.plan.to_promote}
     assert explicit_keys == omitted_keys == {"1.2"}
+
+
+# --- Story 83.20: `deploy promote` never promotes an orphan Tier-3 spec ---------------------------
+
+
+def test_promote_refuses_a_merged_tier3_spec_whose_key_has_no_ledger_row(tmp_path, capsys, monkeypatch):
+    """AC 1 through `deploy promote`: story 13.5 reads as merged, but `13-5-downstream-handoff-to-mason` is
+    no row of the tracked ledger -- a WARN naming the file and "no ledger row"; nothing copied, nothing
+    committed, the Tier-3 file left where it was."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "13-5-downstream-handoff-to-mason", _VALID_SPEC, ledger_row=False)
+    _add_ledger_row(tmp_path, "acme", "12-5-downstream-handoff-to-mason-fr-68", "done")
+    vcs = _FakeVcs(main_subjects=("Merge acme/13-5 into main",))
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    [orphan] = [f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-028"]
+    assert orphan["severity"] == "warn"
+    assert "spec-13-5-downstream-handoff-to-mason.md" in orphan["message"]
+    assert "no ledger row" in orphan["message"]
+    assert payload["data"]["promoted"] == []
+    assert payload["verdict"] == "warn"
+    assert exit_code == 0
+    assert vcs.commit_calls == []
+    assert not _tracked_path(tmp_path, "acme", "13-5-downstream-handoff-to-mason").exists()
+    tier3 = tmp_path / "_bmad-output" / "projects" / "acme" / "implementation-artifacts"
+    assert (tier3 / "spec-13-5-downstream-handoff-to-mason.md").read_text(encoding="utf-8") == _VALID_SPEC
+
+
+def test_promote_refuses_a_tier3_spec_whose_title_a_tracked_spec_carries_under_another_key(
+    tmp_path, capsys, monkeypatch
+):
+    """AC 2 through `deploy promote`: the candidate's full key IS a ledger row, but `spec-20-1-…` already
+    tracks the same title slug under story 20.1 -- a WARN naming both files, and nothing promoted."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "21-1-relocate-the-data-defaults", _VALID_SPEC)
+    _write_tracked_spec(tmp_path, "acme", "20-1-relocate-the-data-defaults", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge acme/21-1 into main",))
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    [orphan] = [f for f in payload["findings"] if f["code"] == "MRS-DEPLOY-028"]
+    assert "spec-21-1-relocate-the-data-defaults.md" in orphan["message"]
+    assert str(_tracked_path(tmp_path, "acme", "20-1-relocate-the-data-defaults")) in orphan["message"]
+    assert "no ledger row" not in orphan["message"]
+    assert payload["data"]["promoted"] == []
+    assert exit_code == 0
+    assert vcs.commit_calls == []
+
+
+def test_promote_still_promotes_a_ledger_listed_spec_with_no_twin(tmp_path, capsys, monkeypatch):
+    """AC 4 through `deploy promote`: with other rows and other tracked specs around it, a candidate whose
+    key is a row and whose title no tracked spec carries is copied byte for byte and committed, as before."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tracked_spec(tmp_path, "acme", "12-5-downstream-handoff-to-mason-fr-68", _VALID_SPEC)
+    _add_ledger_row(tmp_path, "acme", "12-5-downstream-handoff-to-mason-fr-68", "done")
+    _write_tier3_spec(tmp_path, "acme", "27-1-the-landed-story", _VALID_SPEC)
+    vcs = _FakeVcs(main_subjects=("Merge acme/27-1 into main",))
+
+    exit_code = deploy_module.run_promote(_args(), vcs=vcs, fs=LocalFs())
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["data"]["promoted"] == ["27.1"]
+    assert payload["findings"] == []
+    assert payload["verdict"] == "clean"
+    assert exit_code == 0
+    dest = _tracked_path(tmp_path, "acme", "27-1-the-landed-story")
+    assert dest.read_text(encoding="utf-8") == _VALID_SPEC
+    assert [paths for paths, _message in vcs.commit_calls] == [(dest,)]
+
+
+def test_scan_reads_an_unreadable_ledger_as_no_rows(tmp_path, monkeypatch):
+    """A ledger the scan cannot read (here a directory where the file should be) lets nothing through: the
+    candidate is an orphan, never promoted."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "1-2-title", _VALID_SPEC, ledger_row=False)
+    (tmp_path / "_bmad-output" / "projects" / "acme" / "planning-artifacts" / "sprint-status-ledger.yaml").mkdir(
+        parents=True
+    )
+    vcs = _FakeVcs(main_subjects=("Merge acme/1-2 into main",))
+
+    scan = deploy_module._scan_promotions(tmp_path, "acme", vcs=vcs, fs=LocalFs())
+
+    assert scan.plan is not None
+    assert scan.plan.to_promote == ()
+    [orphan] = [f for f in scan.findings if f.code == "MRS-DEPLOY-028"]
+    assert "absent or unreadable" in orphan.message
+
+
+def test_unreachable_promotions_still_count_an_orphan_key(tmp_path, monkeypatch):
+    """Teardown stays as strict as before Story 83.20: an orphan used to sit in `to_promote`, so its key is
+    still unreachable -- the operator resolves it, never a promotion."""
+    monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
+    _write_tier3_spec(tmp_path, "acme", "13-5-downstream-handoff-to-mason", _VALID_SPEC, ledger_row=False)
+    _add_ledger_row(tmp_path, "acme", "12-5-downstream-handoff-to-mason-fr-68", "done")
+    vcs = _FakeVcs(main_subjects=("Merge acme/13-5 into main",))
+
+    assert deploy_module.unreachable_promotions_for_slug(tmp_path, "acme", vcs=vcs, fs=LocalFs()) == (
+        deploy_module.identity.normalize("13.5"),
+    )
+
+
+def test_an_unreadable_specs_dir_reads_as_no_tracked_specs():
+    """The twin check's directory read fails safe: an unreadable ``specs/`` lists no tracked spec."""
+
+    class _UnreadableDir:
+        def glob(self, pattern):
+            raise PermissionError(f"cannot list {pattern}")
+
+    assert deploy_module._tracked_spec_paths(_UnreadableDir()) == ()

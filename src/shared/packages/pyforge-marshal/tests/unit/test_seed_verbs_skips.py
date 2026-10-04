@@ -37,6 +37,7 @@ from pyforge.marshal.seed.verbs.skips import (
     first_match,
     managed_after_skips,
     record_skip,
+    with_recorded_skips,
 )
 
 
@@ -674,3 +675,32 @@ def test_a_skipped_plan_round_trips_through_json():
     assert restored == result
     assert isinstance(restored.skipped, tuple)
     assert all(isinstance(entry, SkippedArtifact) for entry in restored.skipped)
+
+
+# --- with_recorded_skips (Story 86.1, FR-87, DW-FU-11-4) -----------------------
+
+
+def test_with_recorded_skips_puts_the_recorded_patterns_first_then_the_runs_own():
+    assert with_recorded_skips(("docs/b/*", "a.md"), ("c.md",)) == ("docs/b/*", "a.md", "c.md")
+
+
+def test_with_recorded_skips_adds_a_run_pattern_once_comparing_stripped_forms():
+    assert with_recorded_skips(("a.md",), (" a.md ", "b.md", "b.md")) == ("a.md", "b.md")
+
+
+def test_with_recorded_skips_of_nothing_is_empty():
+    assert with_recorded_skips((), ()) == ()
+
+
+@pytest.mark.parametrize(
+    ("recorded", "patterns"),
+    [
+        pytest.param("a.md", (), id="recorded-bare-str"),
+        pytest.param((), "a.md", id="run-bare-str"),
+        pytest.param(("   ",), (), id="recorded-blank"),
+        pytest.param((), ("   ",), id="run-blank"),
+    ],
+)
+def test_with_recorded_skips_rejects_a_bare_string_or_a_blank_pattern(recorded, patterns):
+    with pytest.raises(UsageError):
+        with_recorded_skips(recorded, patterns)

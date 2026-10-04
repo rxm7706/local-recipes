@@ -818,6 +818,11 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # repair-write failed) classifies WARN: the ledger commit already landed
 # and stands regardless -- a best-effort closing step, not a precondition.
 #
+# Story 83.20 adds MRS-DEPLOY-028 (a merged story's Tier-3 spec candidate
+# is an orphan -- no ledger row for its full key, or a tracked spec carries
+# its title slug under another story key -- and was not promoted) at WARN,
+# the same "reported, never blocks" tier as MRS-DEPLOY-001/002.
+#
 # Story 3.12 (retry escalation, AD-26, the spec-adaptive-model-tiering
 # Spec's own CAP-2) adds a thirteenth MRS-SPIN-* code, MRS-SPIN-016 (the
 # atomic write of the resumed run's floor-raised [adapter].model failed) at
@@ -1022,6 +1027,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DEPLOY-025": Verdict.ERROR,
     "MRS-DEPLOY-026": Verdict.WARN,
     "MRS-DEPLOY-027": Verdict.WARN,
+    "MRS-DEPLOY-028": Verdict.WARN,
     "MRS-SPIN-016": Verdict.WARN,
     # Story 15.1 (fleet homes refresh, FR-133..FR-135, AD-21):
     # MRS-REFRESH-001 (enumerate/fetch/repo-root) at ERROR -- the sweep

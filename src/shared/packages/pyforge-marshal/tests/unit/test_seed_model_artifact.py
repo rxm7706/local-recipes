@@ -12,7 +12,7 @@ import importlib
 
 import pytest
 
-from pyforge.marshal.seed.model.artifact import CLASS_BEHAVIOR, Artifact, describe
+from pyforge.marshal.seed.model.artifact import CLASS_BEHAVIOR, DIRECTORY_BEHAVIOR, Artifact, describe
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
     ArtifactClass,
@@ -274,3 +274,53 @@ def test_no_mutable_module_level_alias_backs_the_read_only_table():
     assert mutable_aliases == [], (
         f"the class-behavior table must not be reachable under a mutable name: {mutable_aliases}"
     )
+
+
+# --- Story 86.1: directory entries (DW-FU-7-5-2) ------------------------------
+
+
+def _directory_entry(artifact_class: ArtifactClass) -> ManifestEntry:
+    return ManifestEntry(
+        id="dreams-dir",
+        artifact_class=artifact_class,
+        path="docs/dreams/",
+        applies_to=AppliesTo.BOTH,
+        rationale="directory skeleton; created if missing",
+    )
+
+
+@pytest.mark.parametrize("artifact_class", [ArtifactClass.GENERATED_DERIVED, ArtifactClass.COPIED_SEEDED])
+def test_describe_pairs_a_directory_entry_with_the_directory_contract(artifact_class):
+    """A trailing-`/` entry is create-if-missing whatever its class: read
+    literally, `generated-derived`'s "recomputed every run" told the engine to
+    rewrite a directory over a never-write subtree."""
+    artifact = describe(_directory_entry(artifact_class))
+
+    assert artifact.behavior == DIRECTORY_BEHAVIOR
+    assert artifact.behavior.update_behavior.startswith("created if missing, never recomputed")
+    assert "own class" in artifact.behavior.update_behavior
+
+
+def test_artifact_refuses_a_directory_entry_paired_with_its_class_row():
+    with pytest.raises(ValueError, match=r"^dreams-dir: behavior is generated-derived's, not a directory entry's"):
+        Artifact(
+            entry=_directory_entry(ArtifactClass.GENERATED_DERIVED),
+            behavior=CLASS_BEHAVIOR[ArtifactClass.GENERATED_DERIVED],
+        )
+
+
+def test_artifact_refuses_a_file_entry_paired_with_the_directory_contract():
+    with pytest.raises(ValueError, match=r"^gemini-md: behavior is a directory entry's, not generated-derived's"):
+        Artifact(entry=_ENTRY_BY_CLASS[ArtifactClass.GENERATED_DERIVED], behavior=DIRECTORY_BEHAVIOR)
+
+
+def test_a_directory_shaped_unclassified_entry_still_has_no_contract():
+    entry = ManifestEntry(
+        id="deferred-dir",
+        artifact_class=ArtifactClass.UNCLASSIFIED_DEFERRED,
+        path="somewhere/",
+        applies_to=AppliesTo.BOTH,
+        rationale="too repo-specific to classify confidently at V1",
+    )
+    with pytest.raises(ValueError, match=r"^deferred-dir: no ClassBehavior"):
+        describe(entry)

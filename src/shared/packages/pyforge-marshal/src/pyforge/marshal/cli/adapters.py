@@ -71,7 +71,7 @@ import os
 import platform
 import secrets
 import tomllib
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -106,7 +106,7 @@ from ..core.conformance import (
     render_matrix_markdown,
 )
 from ..core.egress import to_redacted
-from ..core.harness_profile import HarnessProfile, load_profiles
+from ..core.harness_profile import OVERLAY_RELPATH, HarnessProfile, load_profiles
 from ..core.model import Finding, Severity, build_envelope
 from ..core.model_list_refresh import (
     HarnessListResult,
@@ -119,6 +119,7 @@ from ..core.model_list_refresh import (
     diff_harness_ids,
     ensure_no_secret_in_text,
     find_not_listed,
+    last_ok_blocks,
     merge_snapshot_blocks_for_write,
     parse_snapshot_payload,
     providers_named_by_profiles,
@@ -131,6 +132,7 @@ from ..core.skill_projection import CANONICAL_SKILL_TREE_REL, plan_projection
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
+from ..ports.model_list_fetch import ModelListFetchPort
 from ..ports.record import RecordPort
 from ..ports.vcs import VcsPort
 from .config import PROJECT_POLICY_RELPATH, _suppress_downstream_pipe_close, repo_root
@@ -1973,7 +1975,18 @@ def _scan_text_for_profile_secrets(text: str, profiles: Mapping[str, object]) ->
             ensure_no_secret_in_text(text, secret)
 
 
-def _gather_declared_model_refs(root: Path, profiles: Mapping[str, HarnessProfile]) -> list:
+def _overlay_rejected(overlay_path: Path, overlay_errors: Sequence[str]) -> bool:
+    """True when ``load_profiles`` recorded ``overlay_path`` as ignored."""
+    prefix = f"overlay profile {overlay_path} "
+    return any(err.startswith(prefix) for err in overlay_errors)
+
+
+def _gather_declared_model_refs(
+    root: Path,
+    profiles: Mapping[str, HarnessProfile],
+    *,
+    overlay_errors: Sequence[str] = (),
+) -> list:
     from ..core.model_list_refresh import DeclaredModelRef
 
     refs: list[DeclaredModelRef] = []
@@ -2027,8 +2040,11 @@ def _gather_declared_model_refs(root: Path, profiles: Mapping[str, HarnessProfil
     for name, profile in profiles.items():
         if not hasattr(profile, "model_map"):
             continue
-        overlay_path = root / "_bmad-output" / "harness-profiles" / f"{name}.toml"
-        if overlay_path.is_file():
+        # An overlay replaces the whole profile, model_map included -- but only
+        # when it loaded; a rejected overlay leaves the packaged map in force
+        # (Story 84.2).
+        overlay_path = root / OVERLAY_RELPATH / f"{name}.toml"
+        if overlay_path.is_file() and not _overlay_rejected(overlay_path, overlay_errors):
             profile_path = str(overlay_path.relative_to(root))
         else:
             profile_path = f"src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/{name}.toml"
@@ -2086,9 +2102,14 @@ def run_adapters_models(
     args: argparse.Namespace,
     *,
     fs: FsPort | None = None,
+    fetch: ModelListFetchPort | None = None,
     context: MarshalContext | None = None,
 ) -> int:
-    """``marshal adapters models`` (Story 84.1, CAP-285): operator-run refresh."""
+    """``marshal adapters models`` (Story 84.1, CAP-285): operator-run refresh.
+
+    ``fetch`` is the injected command/HTTP port (AD-20); the live adapter is
+    built only when the caller passes none (Story 84.2).
+    """
     del context
     fs = fs if fs is not None else LocalFs()
     slug = args.slug
@@ -2110,7 +2131,7 @@ def run_adapters_models(
     for err in overlay_errors:
         findings.append(Finding(code="MRS-DISP-028", severity=Severity.WARN, message=err))
 
-    fetcher = LiveModelListFetch(repo_root=str(root))
+    fetcher = fetch if fetch is not None else LiveModelListFetch(repo_root=str(root))
     harness_results: dict[str, HarnessListResult] = {}
     harness_ids: dict[str, frozenset[str]] = {}
     aliases_by_harness: dict[str, frozenset[str]] = {}
@@ -2133,7 +2154,7 @@ def run_adapters_models(
         if source is not None and source.catalog_provider:
             catalog_provider_by_harness[name] = source.catalog_provider
 
-    declared = _gather_declared_model_refs(root, profiles)
+    declared = _gather_declared_model_refs(root, profiles, overlay_errors=overlay_errors)
     not_listed = find_not_listed(declared, harness_results, aliases_by_harness)
     for item in not_listed:
         findings.append(
@@ -2203,7 +2224,7 @@ def run_adapters_models(
     if args.write:
         write_ids = dict(harness_ids)
         write_status: dict[str, HarnessListStatus] = {name: r.status for name, r in harness_results.items()}
-        last_ok_ids = accumulate_last_ok_ids(_load_snapshot_history(snapshot_dir, before=today))
+        last_ok = last_ok_blocks(_load_snapshot_history(snapshot_dir, before=today))
         same_day_path = snapshot_dir / snapshot_filename_for_date(today)
         same_day_harnesses: Mapping[str, object] | None = None
         if same_day_path.is_file():
@@ -2215,16 +2236,17 @@ def run_adapters_models(
                         same_day_harnesses = harness_block
             except OSError, json.JSONDecodeError, ValueError:
                 pass
-        write_ids, write_status = merge_snapshot_blocks_for_write(
+        write_ids, write_status, carried = merge_snapshot_blocks_for_write(
             harness_ids=write_ids,
             harness_status=write_status,
             same_day_existing=same_day_harnesses,
-            last_ok_ids=last_ok_ids,
+            last_ok=last_ok,
         )
         payload = build_snapshot_payload(
             snapshot_date=today.isoformat(),
             harness_ids=write_ids,
             harness_status=write_status,
+            carried=carried,
         )
         snapshot_text = json.dumps(payload, indent=2, sort_keys=True)
         _scan_text_for_profile_secrets(snapshot_text, profiles)

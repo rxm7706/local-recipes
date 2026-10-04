@@ -1129,7 +1129,7 @@ def test_changed_files_a_rename_reports_only_the_new_path(vcs, repo, tmp_path):
 
 def test_changed_files_a_committed_rename_reports_only_the_new_path(vcs, repo, tmp_path):
     """Review finding (Edge Case Hunter): unlike the uncommitted-rename case
-    above (already handled by the porcelain branch's own " -> " parsing), a
+    above (already handled by the porcelain branch's own rename record), a
     COMMITTED rename is reported by `git diff`, which without rename
     detection (`-M`) shows BOTH the old (now-nonexistent) and new paths as
     separate changed entries."""
@@ -1207,6 +1207,316 @@ def test_changed_files_returns_a_sorted_tuple(vcs, repo, tmp_path):
     result = vcs.changed_files(repo, home, base="main")
     assert result == tuple(sorted(result))
     assert result == ("a.txt", "z.txt")
+
+
+# --- changed_files returns literal paths (Story 83.16) -------------------------
+#
+# Without `-z`, `git status --porcelain` wraps a path holding a space (or a quote, a tab, a newline,
+# a backslash) in C-style quotes, and `git diff --name-status` does the same for every one of those
+# but the space. The 2026-10-03 herald 35.1 finalize handed `"presentations/.../PyForge Atlas -
+# Infographic Deck.dc.html"` -- quotes included -- to `git add`, which refused it.
+
+_HERALD_DECK = "presentations/pyforge-atlas/project/PyForge Atlas - Infographic Deck.dc.html"
+
+
+def test_changed_files_untracked_and_modified_paths_with_spaces_come_back_literal(vcs, repo, tmp_path):
+    (repo / "docs").mkdir()
+    (repo / "docs" / "a b.md").write_text("one\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced tracked file")
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "docs" / "a b.md").write_text("modified\n", encoding="utf-8")
+    deck = home / _HERALD_DECK
+    deck.parent.mkdir(parents=True)
+    deck.write_text("<html></html>\n", encoding="utf-8")
+    (home / "docs" / "résumé notes.md").write_text("non-ascii\n", encoding="utf-8")
+
+    result = vcs.changed_files(repo, home, base="main")
+
+    assert result == tuple(sorted(("docs/a b.md", "docs/résumé notes.md", _HERALD_DECK)))
+    assert not any(path.startswith('"') or path.endswith('"') for path in result)
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "a b.md",
+        'say "hi".md',
+        "tab\there.md",
+        "new\nline.md",
+        "back\\slash.md",
+        "café.md",
+        "日本語 ファイル.md",
+    ],
+    ids=["space", "double-quote", "tab", "newline", "backslash", "non-ascii", "non-ascii-and-space"],
+)
+def test_changed_files_returns_an_awkward_path_literally_from_the_diff_and_the_status(vcs, repo, tmp_path, name):
+    """One committed copy (read from `git diff --name-status`) and one untracked copy (read from
+    `git status --porcelain`): both come back byte-for-byte, never quoted or escaped."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    (home / "committed").mkdir()
+    (home / "committed" / name).write_text("c\n", encoding="utf-8")
+    _git(home, "add", "-A")
+    _git(home, "commit", "-m", "commit an awkward path")
+    (home / "dirty").mkdir()
+    (home / "dirty" / name).write_text("d\n", encoding="utf-8")
+
+    assert vcs.changed_files(repo, home, base="main") == (f"committed/{name}", f"dirty/{name}")
+
+
+@pytest.mark.parametrize("committed", [False, True], ids=["staged-rename", "committed-rename"])
+def test_changed_files_a_rename_of_a_spaced_path_reports_only_the_new_path(vcs, repo, tmp_path, committed):
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    _git(home, "mv", "old name.md", "new name.md")
+    if committed:
+        _git(home, "commit", "-m", "rename the spaced file")
+
+    assert vcs.changed_files(repo, home, base="main") == ("new name.md",)
+
+
+def test_changed_files_a_committed_rename_reports_only_the_new_path_under_an_operators_renames_off(vcs, repo, tmp_path):
+    """``-M`` on the diff, not git's default ``diff.renames``, is what pairs a committed rename: an operator's
+    ``diff.renames=false`` must not bring the old path back (Story 83.16 landing review, mutant M10)."""
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _git(repo, "config", "diff.renames", "false")
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    _git(home, "mv", "old name.md", "new name.md")
+    _git(home, "commit", "-m", "rename the spaced file")
+
+    assert vcs.changed_files(repo, home, base="main") == ("new name.md",)
+
+
+def test_changed_files_output_commits_every_awkward_path(vcs, repo, tmp_path):
+    """The supervisor finalize's own commit step at the adapter: `changed_files` against `HEAD`, each path
+    handed to `commit_paths`, leaves the worktree clean with every path committed."""
+    home = tmp_path / "home"
+    vcs.add_worktree(repo, home, "loop/x", base="main")
+    deck = home / _HERALD_DECK
+    deck.parent.mkdir(parents=True)
+    deck.write_text("<html></html>\n", encoding="utf-8")
+    (home / 'say "hi" café.md').write_text("q\n", encoding="utf-8")
+    (home / "README.md").write_text("modified\n", encoding="utf-8")
+
+    changed = vcs.changed_files(repo, home, base="HEAD")
+    vcs.commit_paths(home, tuple(Path(path) for path in changed), to_redacted_text("marshal: supervisor finalize"))
+
+    assert _git(home, "status", "--porcelain").stdout == ""
+    committed = _git(home, "show", "-z", "--name-only", "--format=", "HEAD").stdout.split("\0")
+    assert sorted(path for path in committed if path) == sorted(("README.md", 'say "hi" café.md', _HERALD_DECK))
+
+
+def test_name_status_z_paths_keeps_only_the_destination_of_a_rename_or_copy():
+    stdout = "M\0a b.md\0R087\0old name.md\0new name.md\0C075\0src x.md\0dst x.md\0D\0gone.md\0"
+
+    assert vcs_git_module._name_status_z_paths(stdout) == {"a b.md", "new name.md", "dst x.md", "gone.md"}
+
+
+@pytest.mark.parametrize("stdout", ["M\0", "M\0\0", "R100\0old.md\0"], ids=["no-path", "empty-path", "rename-cut"])
+def test_name_status_z_paths_refuses_a_record_cut_short(stdout):
+    with pytest.raises(VcsCommandError, match="unparseable 'git diff --name-status -z' record"):
+        vcs_git_module._name_status_z_paths(stdout)
+
+
+def test_porcelain_z_paths_drops_the_original_path_of_a_rename_or_copy():
+    """A rename in EITHER status column carries its original: ``R `` staged, `` R`` the intent-to-add form
+    (Story 83.16 landing review -- an index-column-only check misreads the worktree-column original as a
+    record of its own)."""
+    stdout = (
+        "?? a b.md\0R  new name.md\0old name.md\0 R moved to.md\0moved from.md\0"
+        "C  dst x.md\0src x.md\0 M tab\there.md\0"
+    )
+
+    assert vcs_git_module._porcelain_z_paths(stdout) == {
+        "a b.md",
+        "new name.md",
+        "moved to.md",
+        "dst x.md",
+        "tab\there.md",
+    }
+
+
+@pytest.mark.parametrize(
+    "stdout",
+    ["??\0", "?? \0", "??x.md\0", "R  new.md\0", " R new.md\0\0"],
+    ids=["no-path", "empty-path", "no-separator", "rename-cut", "worktree-rename-empty-original"],
+)
+def test_porcelain_z_paths_refuses_a_malformed_record(stdout):
+    with pytest.raises(VcsCommandError, match="unparseable 'git status --porcelain -z' record"):
+        vcs_git_module._porcelain_z_paths(stdout)
+
+
+def test_commit_status_facts_names_rename_originals_and_staged_deletions_of_named_paths_only():
+    stdout = (
+        "R  new a.md\0old a.md\0 R new b.md\0old b.md\0C  dst.md\0src.md\0D  gone x.md\0"
+        "R  other new.md\0other old.md\0D  other gone.md\0 D unstaged gone.md\0 M kept.md\0"
+    )
+    named = {"new a.md", "new b.md", "dst.md", "gone x.md", "unstaged gone.md", "kept.md"}
+
+    staged_deletions, sources = vcs_git_module._commit_status_facts(stdout, named)
+
+    # A copy's source stays; an unnamed rename or deletion is not this commit's; an unstaged deletion is
+    # still `git add`ed (the path is in the index, so git stages its removal).
+    assert staged_deletions == frozenset({"gone x.md"})
+    assert sources == ("old a.md", "old b.md")
+    # An original already named is not carried twice.
+    assert vcs_git_module._commit_status_facts(stdout, named | {"old a.md"})[1] == ("old b.md",)
+
+
+# --- commit_paths commits a rename's source deletion (Story 83.16 landing review) ---------------------
+#
+# `changed_files` reports a rename by its destination alone. Committing only that path left the source's
+# deletion behind -- staged after a `git mv`, unstaged in the intent-to-add form -- while the finalize journaled
+# ok. `commit_paths` now carries the original into the commit pathspec (never into `git add`).
+
+
+def _rename(repo: Path, old: str, new: str, form: str) -> None:
+    if form == "git-mv":
+        _git(repo, "mv", old, new)
+    else:
+        (repo / old).rename(repo / new)
+        _git(repo, "add", "-N", new)
+
+
+def _head_paths(repo: Path) -> list[str]:
+    listing = _git(repo, "ls-tree", "-r", "-z", "--name-only", "HEAD").stdout
+    return sorted(path for path in listing.split("\0") if path)
+
+
+@pytest.mark.parametrize("form", ["git-mv", "intent-to-add"])
+def test_commit_paths_commits_a_spaced_renames_source_deletion(vcs, repo, form):
+    (repo / "docs").mkdir()
+    (repo / "docs" / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _rename(repo, "docs/old name.md", "docs/new name.md", form)
+
+    changed = vcs.changed_files(repo, repo, base="HEAD")
+    vcs.commit_paths(repo, tuple(Path(path) for path in changed), to_redacted_text("marshal: supervisor finalize"))
+
+    assert changed == ("docs/new name.md",)
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md", "docs/new name.md"]
+
+
+def test_commit_paths_pairs_a_rename_under_an_operators_renames_off_config(vcs, repo):
+    """``status.renames``/``diff.renames=false`` would show a ``git mv`` as an add plus a staged delete, hiding
+    the pair: the status read pins rename detection on."""
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _git(repo, "config", "status.renames", "false")
+    _git(repo, "config", "diff.renames", "false")
+    _git(repo, "mv", "old name.md", "new name.md")
+
+    vcs.commit_paths(repo, (Path("new name.md"),), to_redacted_text("marshal: supervisor finalize"))
+
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md", "new name.md"]
+
+
+def test_the_finalize_path_commits_a_rename_under_an_operators_renames_off_config(vcs, repo):
+    """Delta review LOW-1: under ``status.renames=false`` the callers' ``changed_files`` names BOTH sides of a
+    ``git mv`` (``A new``, ``D old``), while ``commit_paths``' pinned read sees one ``R new\\0old`` record. The
+    named original's deletion is staged, so ``git add`` must never see it -- driven end to end, as the finalize
+    does, not by naming only the new path."""
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _git(repo, "config", "status.renames", "false")
+    _git(repo, "config", "diff.renames", "false")
+    _git(repo, "mv", "old name.md", "new name.md")
+
+    changed = vcs.changed_files(repo, repo, base="HEAD")
+    vcs.commit_paths(repo, tuple(Path(path) for path in changed), to_redacted_text("marshal: supervisor finalize"))
+
+    assert set(changed) == {"new name.md", "old name.md"}
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md", "new name.md"]
+
+
+@pytest.mark.parametrize("original", [":colon start.md", "glob[ab]*?.md"], ids=["colon-start", "glob-chars"])
+def test_commit_paths_names_a_renames_awkward_original_literally(vcs, repo, original):
+    """Delta review LOW-2 (N9): a rename's original reaches ``git commit --`` as a literal pathspec, so a name
+    that starts with ``:`` or carries glob characters is committed, never read as pathspec magic."""
+    (repo / original).write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add an awkward file")
+    _git(repo, "mv", original, "renamed.md")
+
+    vcs.commit_paths(repo, (Path("renamed.md"),), to_redacted_text("marshal: supervisor finalize"))
+
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md", "renamed.md"]
+
+
+def test_commit_paths_pairs_a_rename_named_by_an_absolute_path(vcs, repo):
+    """Delta review LOW-2 (N10): a destination handed over as an absolute path under the repo is matched to
+    its ``git status`` record, so the rename's source deletion is still committed."""
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _git(repo, "mv", "old name.md", "new name.md")
+
+    vcs.commit_paths(repo, (repo / "new name.md",), to_redacted_text("marshal: supervisor finalize"))
+
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md", "new name.md"]
+
+
+def test_commit_paths_commits_a_staged_deletion_without_re_adding_it(vcs, repo):
+    """``git add -- <path>`` refuses a path whose deletion is already staged (``git rm``): it is committed
+    without one, alongside the other named paths."""
+    (repo / "gone file.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _git(repo, "rm", "-q", "gone file.md")
+    (repo / "README.md").write_text("modified\n", encoding="utf-8")
+
+    changed = vcs.changed_files(repo, repo, base="HEAD")
+    vcs.commit_paths(repo, tuple(Path(path) for path in changed), to_redacted_text("marshal: supervisor finalize"))
+
+    assert changed == ("README.md", "gone file.md")
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md"]
+
+
+def test_commit_paths_leaves_an_unnamed_rename_alone(vcs, repo):
+    """The original rides only with its own destination: a rename none of ``paths`` names stays staged."""
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _git(repo, "mv", "old name.md", "new name.md")
+    (repo / "README.md").write_text("modified\n", encoding="utf-8")
+
+    vcs.commit_paths(repo, (repo / "README.md",), to_redacted_text("marshal: supervisor finalize"))
+
+    assert _git(repo, "status", "--porcelain", "-z").stdout == "R  new name.md\0old name.md\0"
+    assert _head_paths(repo) == ["README.md", "old name.md"]
+
+
+def test_worktree_checkpoint_commits_a_spaced_renames_source_deletion(vcs, repo):
+    """The auto-checkpoint call site (``core/worktree_checkpoint.py``) commits through ``commit_paths`` too."""
+    from pyforge.marshal.core.worktree_checkpoint import commit_worktree_checkpoint
+
+    (repo / "old name.md").write_text("content\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "add a spaced file")
+    _git(repo, "mv", "old name.md", "new name.md")
+
+    result = commit_worktree_checkpoint(vcs, repo_root=repo, worktree=repo, story_key="83.16")
+
+    assert result.committed is True
+    assert _git(repo, "status", "--porcelain").stdout == ""
+    assert _head_paths(repo) == ["README.md", "new name.md"]
 
 
 # --- commit_subjects/commit_paths (Story 4.1, AD-29/AD-33) -----------------

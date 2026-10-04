@@ -176,8 +176,13 @@ None``) for the hybrid-region path, which needs no such workaround (see
 above). (2) A directory-shaped artifact (a manifest
 ``path`` ending in ``/``, e.g. ``docs/dreams/``) is out of this story's
 tested scope: ``fs.write`` has no directory-creation primitive, and no
-I/O-matrix row names this case. (3) A ``copied-seeded``/``generated-
-derived`` entry whose ``path`` still carries an unrendered ``{{ slug }}``
+I/O-matrix row names this case. [Story 86.1 pinned what such an entry
+MEANS -- create-if-missing, with every entry beneath it governed by its own
+class (``ManifestEntry.is_directory``, ``model.artifact.DIRECTORY_BEHAVIOR``)
+-- so a directory that already exists is never first-claimed here and never
+handed to rung 6; materializing an ABSENT one is still this limitation.]
+(3) A ``copied-seeded``/``generated-derived`` entry whose ``path`` still
+carries an unrendered ``{{ slug }}``
 placeholder (e.g. ``project-config``, ``deck-scaffolding`` -- both
 ``applies_to: both``) has no ``--slug`` flag to resolve it with here (that
 belongs to ``seed init``, Story 10.7) -- ``classify()`` treats the
@@ -308,7 +313,7 @@ from ..state import (
     write_state,
 )
 from .preconditions import ManagedRecord, check_preconditions
-from .skips import apply_skips, managed_after_skips
+from .skips import apply_skips, managed_after_skips, with_recorded_skips
 
 # The classes FR-83's first-claim augmentation ever fires for -- the epics
 # AC's own two named classes. ``copied-seeded`` and ``hybrid-managed-region``
@@ -498,8 +503,9 @@ def _augment_plan_with_first_claims(
 ) -> Plan:
     """FR-83's own resolution (see the module docstring's opening section):
     one ``Action`` per entry that is ``PRESENT_CONFORMANT``, whose
-    ``artifact_class`` is ``COPIED_MANAGED`` or ``GENERATED_DERIVED``, and
-    whose id has no record in ``state.managed`` (or ``state is None``).
+    ``artifact_class`` is ``COPIED_MANAGED`` or ``GENERATED_DERIVED``, that
+    is not a directory entry (create-if-missing, Story 86.1), and whose id
+    has no record in ``state.managed`` (or ``state is None``).
     Returns ``plan`` UNCHANGED (the identical object, matching ``skips.
     apply_skips``'s own "nothing moved, return the input" convention) when
     no entry qualifies -- the overwhelmingly common case on a re-adopt,
@@ -513,6 +519,13 @@ def _augment_plan_with_first_claims(
             continue
         entry = entries_by_id[classification.entry_id]
         if entry.artifact_class not in _FIRST_CLAIM_CLASSES:
+            continue
+        if entry.is_directory:
+            # A directory entry is create-if-missing (Story 86.1,
+            # DW-FU-7-5-2): one that already exists is what the entry asks
+            # for, so there is nothing to claim -- and "claim and overwrite"
+            # a directory reached rung 5 as `directory-target`, refusing the
+            # whole adopt of any repo that already had, say, `docs/dreams/`.
             continue
         claimed_record = claimed_by_id.get(entry.id)
         if claimed_record is not None and claimed_record.path == entry.path:
@@ -571,13 +584,21 @@ def _managed_records(state: SeedState | None, manifest: Manifest) -> tuple[Manag
     "stale record shape" case ``verbs/check.py``'s own module docstring
     already names and defers to a future migration story to reconcile --
     this module detects nothing and repairs nothing either, it only must
-    not crash building rung 6's input."""
+    not crash building rung 6's input. A record whose entry is a DIRECTORY
+    (``ManifestEntry.is_directory``) is excluded too: a directory carries no
+    content of its own to compare (Story 86.1)."""
     if state is None:
         return ()
     entries_by_id = {entry.id: entry for entry in manifest.entries}
     records: list[ManagedRecord] = []
     for artifact in state.managed:
         entry = entries_by_id.get(artifact.id)
+        if entry is not None and entry.is_directory:
+            # A directory has no content of its own to attest: what sits in it
+            # belongs to the entries beneath it, each with its own record
+            # (Story 86.1, DW-FU-7-5-2). Handed to rung 6 it read as an
+            # unreadable file and refused the run.
+            continue
         if artifact.inserted_region_spans:
             if entry is None or entry.format is None:
                 continue
@@ -1189,22 +1210,26 @@ def run_adopt(
     opted_out = frozenset(state.opted_out) if state is not None else frozenset()
     plan = build_plan(filtered_manifest, inventory, opted_out=opted_out)
     plan = _augment_plan_with_first_claims(plan, inventory, filtered_manifest, state)
-    plan = apply_skips(plan, skip)
+    # The patterns a re-adopt skips are the ones `state.skips` recorded on
+    # earlier runs as well as this run's own `--skip` (FR-87: a skip is
+    # honoured on every subsequent run; Story 86.1, DW-FU-11-4).
+    skip_patterns = with_recorded_skips(state.skips if state is not None else (), skip)
+    plan = apply_skips(plan, skip_patterns)
 
     never_write = fs.NeverWrite(
         patterns=tuple(sorted(effective_never_write(filtered_manifest, inventory))),
         exempt=writable_exemptions(filtered_manifest, inventory),
     )
-    # `skip` is passed as patterns as well as `plan.skipped` carrying the
-    # actioned ones: a hand-edited `copied-managed` file has no action to move
-    # into `plan.skipped`, so only its path matching the pattern reaches it
-    # (Story 82.12, DW-10-4-4).
+    # The skip patterns (recorded and this run's) are passed as well as
+    # `plan.skipped` carrying the actioned ones: a hand-edited `copied-managed`
+    # file has no action to move into `plan.skipped`, so only its path matching
+    # a pattern reaches it (Story 82.12, DW-10-4-4).
     managed_records = managed_after_skips(
         tuple(
             record for record in _managed_records(state, filtered_manifest) if record.artifact_id not in escaping_ids
         ),
         plan,
-        skip,
+        skip_patterns,
     )
 
     check_preconditions(
