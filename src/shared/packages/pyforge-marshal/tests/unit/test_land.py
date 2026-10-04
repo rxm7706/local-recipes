@@ -2986,7 +2986,14 @@ def test_promote_feed_sync_refuses_un_finish_against_origin_main(tmp_path):
     findings: list = []
 
     land_module._promote_sprint_ledger(
-        fs, vcs, tmp_path, "acme", [StoryKey(12, 1)], deploy_module._DeployRun(fs, tmp_path, "acme", "w"), findings, base="main"
+        fs,
+        vcs,
+        tmp_path,
+        "acme",
+        [StoryKey(12, 1)],
+        deploy_module._DeployRun(fs, tmp_path, "acme", "w"),
+        findings,
+        base="main",
     )
 
     refusal = next(f for f in findings if "un-finish" in f.message)
@@ -3003,7 +3010,14 @@ def test_promote_feed_sync_does_not_refuse_done_key_only_on_stale_local(tmp_path
     findings: list = []
 
     land_module._promote_sprint_ledger(
-        fs, vcs, tmp_path, "acme", [StoryKey(12, 2)], deploy_module._DeployRun(fs, tmp_path, "acme", "w"), findings, base="main"
+        fs,
+        vcs,
+        tmp_path,
+        "acme",
+        [StoryKey(12, 2)],
+        deploy_module._DeployRun(fs, tmp_path, "acme", "w"),
+        findings,
+        base="main",
     )
 
     drop_refusals = [f for f in findings if "feed would drop" in f.message and "12-1-a" in f.message]
@@ -3011,13 +3025,7 @@ def test_promote_feed_sync_does_not_refuse_done_key_only_on_stale_local(tmp_path
 
 
 def test_roll_up_epic_rows_reads_rows_below_a_column_zero_comment(tmp_path):
-    text = (
-        "development_status:\n"
-        "# wave note\n"
-        "  epic-4: in-progress\n"
-        "  4-4-batch: done\n"
-        "  4-5-other: done\n"
-    )
+    text = "development_status:\n# wave note\n  epic-4: in-progress\n  4-4-batch: done\n  4-5-other: done\n"
     promote_mod = land_module._load_promote_sprint_status_module()
     rollup = land_module._sync_epic_rollup(promote_mod)
     assert rollup is not None
@@ -3027,19 +3035,12 @@ def test_roll_up_epic_rows_reads_rows_below_a_column_zero_comment(tmp_path):
 
 
 def test_roll_up_epic_rows_mutation_land_parser_misses_comment_below_rows():
-    text = (
-        "development_status:\n"
-        "# wave note\n"
-        "  epic-4: in-progress\n"
-        "  4-4-batch: done\n"
-        "  4-5-other: done\n"
-    )
+    text = "development_status:\n# wave note\n  epic-4: in-progress\n  4-4-batch: done\n  4-5-other: done\n"
     promote_mod = land_module._load_promote_sprint_status_module()
     rollup = land_module._sync_epic_rollup(promote_mod)
     assert rollup is not None
     statuses = {
-        key: value.partition("#")[0].strip()
-        for key, value in land_module._parse_sprint_ledger_statuses(text).items()
+        key: value.partition("#")[0].strip() for key, value in land_module._parse_sprint_ledger_statuses(text).items()
     }
     rolled = rollup(dict(statuses))
     assert rolled.get("epic-4") != "done"
@@ -3054,7 +3055,14 @@ def test_promote_warns_missing_rollup_when_feed_present_and_nothing_to_publish(t
     findings: list = []
 
     promoted = land_module._promote_sprint_ledger(
-        fs, vcs, tmp_path, "acme", [StoryKey(4, 4)], deploy_module._DeployRun(fs, tmp_path, "acme", "w"), findings, base="main"
+        fs,
+        vcs,
+        tmp_path,
+        "acme",
+        [StoryKey(4, 4)],
+        deploy_module._DeployRun(fs, tmp_path, "acme", "w"),
+        findings,
+        base="main",
     )
 
     assert promoted == ()

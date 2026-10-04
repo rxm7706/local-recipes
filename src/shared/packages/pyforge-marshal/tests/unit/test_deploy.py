@@ -3795,9 +3795,7 @@ def test_reconcile_completions_rolls_epic_to_done_when_last_open_story_advances(
     """Story 83.22: reconcile-completions applies the sync's epic roll-up after advancing story rows."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
-    ledger_path = _write_ledger(
-        tmp_path, "acme", _ledger_text(("epic-5", "in-progress"), ("5-9-title", "backlog"))
-    )
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("epic-5", "in-progress"), ("5-9-title", "backlog")))
     _write_tier3_feed(
         tmp_path,
         "acme",
@@ -3814,15 +3812,11 @@ def test_reconcile_completions_rolls_epic_to_done_when_last_open_story_advances(
     assert "epic-5: done" in ledger_text
 
 
-def test_reconcile_completions_missing_rollup_module_warns_without_writing_epic_rows(
-    tmp_path, capsys, monkeypatch
-):
+def test_reconcile_completions_missing_rollup_module_warns_without_writing_epic_rows(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(land_module, "_load_promote_sprint_status_module", lambda: None)
     _write_tier3_spec(tmp_path, "acme", "5-9-title", _VALID_SPEC)
-    ledger_path = _write_ledger(
-        tmp_path, "acme", _ledger_text(("epic-5", "in-progress"), ("5-9-title", "backlog"))
-    )
+    ledger_path = _write_ledger(tmp_path, "acme", _ledger_text(("epic-5", "in-progress"), ("5-9-title", "backlog")))
     _write_tier3_feed(
         tmp_path,
         "acme",
