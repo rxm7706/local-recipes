@@ -3419,15 +3419,15 @@ def test_mutation_without_the_heals_wait_a_red_union_head_lands(tmp_path: Path, 
 
 
 def _seed_hold_spec(worktree: Path, *, landing_review: str = "required") -> None:
-    spec_dir = (
-        worktree
-        / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-83-18-hold"
-    )
-    spec_dir.mkdir(parents=True)
-    (spec_dir / "spec-83-18-hold.md").write_text(
+    specs = worktree / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
+    specs.mkdir(parents=True)
+    (specs / "spec-83-18-hold-fixture.md").write_text(
         f"---\nlanding_review: {landing_review}\nstatus: in-progress\n---\n\nbody\n",
         encoding="utf-8",
     )
+
+
+_HOLD_STORY_KEY = "83-18-hold-fixture"
 
 
 def test_execute_dispatch_land_holds_with_draft_pr_when_landing_review_required(tmp_path: Path) -> None:
@@ -3439,7 +3439,7 @@ def test_execute_dispatch_land_holds_with_draft_pr_when_landing_review_required(
 
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
-        story_key="83-18-hold",
+        story_key=_HOLD_STORY_KEY,
         worktree=worktree,
         repo_root=tmp_path,
         verification_verdict=DispatchVerificationVerdict.VERIFIED,
@@ -3487,7 +3487,7 @@ def test_execute_dispatch_land_merges_after_landing_review_passed(tmp_path: Path
 
     result, envelope = execute_dispatch_land(
         project_slug="pyforge-marshal",
-        story_key="83-18-hold",
+        story_key=_HOLD_STORY_KEY,
         worktree=worktree,
         repo_root=tmp_path,
         verification_verdict=DispatchVerificationVerdict.VERIFIED,
@@ -3502,9 +3502,9 @@ def test_execute_dispatch_land_merges_after_landing_review_passed(tmp_path: Path
 
 def test_mutation_without_hold_path_merges_when_landing_review_required(tmp_path: Path, monkeypatch) -> None:
     """Mutation guard (Story 83.18): hold rule removed → landing merges."""
-    from pyforge.marshal.core import dispatch_harness_done as harness_done
+    import pyforge.marshal.dispatch_land as dispatch_land_mod
 
-    monkeypatch.setattr(harness_done, "resolve_hold_dispatch_landing", lambda **kwargs: False)
+    monkeypatch.setattr(dispatch_land_mod, "resolve_hold_dispatch_landing", lambda **kwargs: False)
     worktree = tmp_path / "wt"
     worktree.mkdir()
     _seed_hold_spec(worktree)
@@ -3512,7 +3512,7 @@ def test_mutation_without_hold_path_merges_when_landing_review_required(tmp_path
 
     result, _ = execute_dispatch_land(
         project_slug="pyforge-marshal",
-        story_key="83-18-hold",
+        story_key=_HOLD_STORY_KEY,
         worktree=worktree,
         repo_root=tmp_path,
         verification_verdict=DispatchVerificationVerdict.VERIFIED,
