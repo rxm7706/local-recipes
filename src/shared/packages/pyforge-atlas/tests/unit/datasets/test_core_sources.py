@@ -388,9 +388,7 @@ def test_as_bytes_rejects_non_bytes_like_payload():
 
 
 def test_parse_pypi_simple_index_skips_invalid_project_rows():
-    df = CS.parse_pypi_simple_index(
-        {"projects": [{"name": "ok", "_last-serial": 1}, "skip", {"no_name": True}]}
-    )
+    df = CS.parse_pypi_simple_index({"projects": [{"name": "ok", "_last-serial": 1}, "skip", {"no_name": True}]})
     assert df.iloc[0]["pypi_name"] == "ok"
     assert len(df) == 1
 
