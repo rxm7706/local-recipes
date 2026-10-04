@@ -154,6 +154,8 @@ import stat
 import sys
 from pathlib import Path
 
+import yaml
+
 from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception, locate_checkout_script
@@ -814,13 +816,17 @@ def check_spec_status(target: Path) -> list[Finding]:
     retro_slugs = []
     retros_dir = impl / "retros"
     if _is_dir(retros_dir):
-        retro_slugs = [_slug(p.name) for p in _listdir_match(retros_dir, "retro-*.md")]
+        retro_slugs = [
+            slug
+            for p in _listdir_match(retros_dir, "retro-*.md")
+            if (slug := _slug(p.name))
+        ]
     for spec in _listdir_match(impl, "spec-*.md"):
         text = _read_item(spec, "check_spec_status", target, out)
         if text is None:
             continue
         status = _spec_status(text)
-        if not status or TERMINAL_STATUS.search(status) or not NONTERMINAL_STATUS.search(status):
+        if not status or TERMINAL_STATUS.search(status):
             continue
         sslug = _slug(spec.name)
         shipped = any(sslug and (sslug in rs or rs in sslug) for rs in retro_slugs)
@@ -1358,7 +1364,17 @@ def check_spec_indexed(target: Path) -> list[Finding]:
     docs_specs = _docs_specs(target)
     if not _is_dir(docs_specs):
         return []
-    claude = _read(target / "CLAUDE.md")
+    claude_path = target / "CLAUDE.md"
+    if not _is_file(claude_path):
+        return [
+            _finding(
+                DRIFT,
+                "spec-index-unevaluable",
+                "CLAUDE.md",
+                "CLAUDE.md is absent — cannot verify intake spec index",
+            )
+        ]
+    claude = _read(claude_path)
     return [
         _finding(
             DRIFT,
