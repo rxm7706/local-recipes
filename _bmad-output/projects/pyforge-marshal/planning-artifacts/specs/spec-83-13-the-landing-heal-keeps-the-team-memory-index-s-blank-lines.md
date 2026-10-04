@@ -2,7 +2,7 @@
 title: "83.13: The landing heal keeps the team-memory index's blank lines"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 baseline_revision: '33a7af0cb5e1f58540ba1f14385991ee74582cdf'
 review_loop_iteration: 0
 followup_review_recommended: false
