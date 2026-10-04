@@ -2,7 +2,8 @@
 title: "83.15: Dispatch applies ruff's safe fixes before it verifies"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '0cb8a62ec7c19485cb0f55b9faf89b3b5302c6f6'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
