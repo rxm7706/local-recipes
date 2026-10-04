@@ -2,7 +2,8 @@
 title: "83.19: Dispatch never commits the CFE surface outside a sanctioned retro"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: '325ca80bfb'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -67,4 +68,9 @@ Minted 2026-10-03 at the operator's request ("yes chain both fixes").
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-04: Implementation review against AC — checkpoint/finalize/ruff paths exclude CFE; verify runs `commit_pending_cfe_retro` then `unsanctioned_commits` (`MRS-GATE-020`). Unit fixtures in `test_dispatch_cfe_commit.py`. Verification: `pyforge-marshal-test`, `pyforge-deps-test`, `lint-types`, `spec_surface_reconcile.py` green.
+
+## Auto Run Result
+
+Status: in-review
+Blocking condition: —
