@@ -316,7 +316,10 @@ status: closed
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-6-11-the-classifier-recognizes-a-spike-report.md`
   summary: No test in test_sources_factory.py asserts classify()'s literal return string for any rule, including the new spike-report one, so a typo in a returned label would sail through the whole file's coverage as long as it isn't literally "UNKNOWN".
   evidence: Found by review pass 1 (Blind Hunter). Verified by inspection: every test in test_sources_factory.py exercises classify() only indirectly through factory.gather()/check_coverage()'s check/status/evidence fields (e.g. check == "bmad-drift" and status is DoctorStatus.OK, or check == "uncovered" and status is DoctorStatus.FAIL) -- none calls factory.classify(path, target) directly and asserts its return string. This story's own three new tests (test_spike_report_is_classified_and_not_flagged_uncovered, test_a_second_spike_index_is_also_classified, test_spike_report_look_alike_without_a_numeric_index_still_hard_fails) follow that same pre-existing convention, so a typo in the new rule's return label (e.g. "archive:spike_report" for "archive:spike-report") would still pass every test in the file. Pre-existing across the whole file -- every prior classify() rule has the identical gap -- not a regression introduced by this story, and out of Story 6.11's Boundaries & Constraints, which scope the change to exactly one new rule using the file's existing test pattern. Worth a dedicated follow-up: add direct classify()-return-value assertions across the file's coverage tests.
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py:649
+
   severity: low
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/tests/unit/test_sources_factory.py:647 now asserts one classify() literal directly (`== "tracked:plan"` for rekey-*.md), but the spike-report tests (:616-680) still assert only through gather()'s status and check. factory.classify (factory.py:1008) has about 50 `return "..."` labels, and almost none are pinned literally. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-6-11` there) during the pre-shutdown deferred-work audit.
@@ -376,7 +379,10 @@ status: closed
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match.md`
   summary: `board.py::_parse_declared_cap_ids` recognizes only a literal `## Capabilities` heading (exact string, case-sensitive, no trailing text) as the start of a Spec's declared-CAP-ids section. A SPEC.md using any other heading for the same content — confirmed live: `spec-dream-to-code-model-self-verification`'s `SPEC.md` uses `## Scope (capabilities)` — parses to zero declared ids, which is INV-A's own signal to fall back to the original, weaker bare-substring check instead of being detected and flagged as a genuine coverage gap or a malformed-but-real Capabilities section.
   evidence: Found during Story 12.3's review pass 1 (adversarial review) via a live grep of every tracked `SPEC.md`'s section headings fleet-wide; confirmed by reading `spec-dream-to-code-model-self-verification/SPEC.md` directly. Deliberately not folded into Story 12.3's own fix (its Never clause scopes the story to the `board.py` INV-A comparison logic, not to auditing every SPEC.md heading-convention variant fleet-wide — a separate, larger scope question, possibly its own catalog item under `hygiene-gap-catalog.md` Category 1).
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:470
+
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:236 _CAP_SECTION_HEADING_RE = re.compile(r"^## Capabilities\s*$", re.MULTILINE) is unchanged -- still exact-string, case-sensitive, no trailing text. (2026-09-30 deferral burn-down triage)
   severity: low
   raised: 2026-08-21 — raised during Story 12.3's review pass 1, deferred rather than folded in to keep that story's diff bounded to its one scoped bug; minted here as promised in that pass's own triage log, once the story actually landed. Owner: doctor (owns `board.py`'s INV-A parsing) — a real fix widens `_CAP_SECTION_HEADING_RE` to tolerate case/trailing-text variance, or standardizes every SPEC.md onto one heading spelling (a `bmad-spec` template question, not purely a `board.py` one).
@@ -389,7 +395,10 @@ status: closed
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match.md`
   summary: `board.py`'s Round 4 fix slices each source file to start at its own first `## ` heading, discarding everything before it. It does not distinguish a decomposition-relevant heading from an irrelevant one — if the file's FIRST heading happens to be something like `## Changelog` and that section incidentally mentions a Spec's slug near an unrelated CAP id, that text is never stripped (it comes after the first heading) and can still open a false citation window, crediting a CAP id the Spec's own epics/stories never actually cite.
   evidence: Live-reproduced during Story 12.3's Round 4 review pass (Blind Hunter) against the actual merged `board.gather_chain_completeness`: a Spec declaring `CAP-1,2,3,9` with a legitimate `CAP-1..3` citation in `epics.md`, plus a `prd.md` whose first `## ` heading is `## Changelog` containing "spec-foo's CAP-9 was discussed and deferred" — reports `ok` instead of `FAIL: CAP-9 uncovered`. Same defect class as `DW-CHAIN-COMPLETENESS-1`'s original bug (a real, open gap silently reading as covered), recurring in a new position after four rounds of narrowing. Not folded into Story 12.3's own fix by operator decision (2026-08-21): the heuristic has already needed narrowing on rounds 2, 3, and 4, and a fifth loopback risks the same pattern recurring in yet another position rather than closing the underlying class. Landed with this residual documented instead.
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:394
+
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:811-821 still strips only the text before each file's first `## ` heading. _cited_cap_ids_by_spec (:328-381) opens a citation window at ANY occurrence of a Spec slug and credits every CAP id up to the next slug or the second following heading. A `## Changelog` (or any other section) that mentions `spec-foo` near an unrelated CAP id still credits that CAP. (2026-09-30 deferral burn-down triage)
   severity: medium
   raised: 2026-08-21 — raised during Story 12.3's Round 4 review pass, landed as a documented residual rather than triggering a fifth bad_spec loopback. Owner: doctor (owns `board.py`'s INV-A parsing). A real fix likely needs to allowlist decomposition-relevant heading shapes (e.g. `## Epic N`, `### Story N.M`) rather than treating "any `## ` heading" as the boundary of relevant content — a larger redesign of the windowing model, not a narrow patch, given the heuristic's track record.
@@ -402,7 +411,10 @@ status: closed
 - source_spec: `_bmad-output/projects/pyforge-doctor/implementation-artifacts/spec-12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match.md`
   summary: When a source file has no `## ` heading at all, Round 4's per-file preamble stripping has no signal to slice against and keeps the file's text whole, unchanged — so a slug+CAP-id adjacency anywhere in that file's prose (there being no "preamble" boundary to strip) can still open a false citation window, the same leak class as `DW-CHAIN-COMPLETENESS-4` triggered by a different shape.
   evidence: Confirmed directly in `board.py`'s own preamble-stripping code and comments ("a file with no `## ` heading anywhere is kept whole, unchanged -- there is no signal to slice against"), live-reproduced during Story 12.3's Round 4 review pass with a synthetic headerless `epics*.md`-shaped fixture. This exact edge was already identified and consciously deferred during Story 12.3's Review pass 3 ("a project with zero `## `-level headings anywhere would disable both the heading-cap and preamble-exclusion logic simultaneously... untested, not live-triggered by any of the 8 tracked projects today... revisit only if a real headerless project file surfaces") — re-confirmed here as still real and still not live-triggered (`grep -L '^## ' _bmad-output/projects/*/planning-artifacts/{prd.md,epics*.md}` finds none), so minted as its own tracked entry now rather than left as a one-off note buried in a landed story's Review Triage Log.
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:394
+
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:799 still carries the comment 'kept whole, unchanged -- there is no signal to slice against' for a headerless file. Re-checked fleet-wide: no _bmad-output/projects/*/planning-artifacts/{prd.md,epics*.md} file lacks a '## ' heading today, so still not live-triggered. (2026-09-30 deferral burn-down triage)
   severity: low
   raised: 2026-08-21 — raised during Story 12.3's Review pass 3, minted as a proper ledger entry at landing time per that pass's own commitment. Owner: doctor (owns `board.py`'s INV-A parsing). No live occurrence today; revisit if a real headerless `prd.md`/`epics*.md` ever surfaces fleet-wide, or fold into `DW-CHAIN-COMPLETENESS-4`'s redesign if that work happens first.
@@ -1240,7 +1252,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `_load_foreign_module` cleans up only its OWN `sys.modules` key, so the TRANSITIVE imports the exec'd file performs stay cached under their own names — `docs/dashboard/generate.py` does `from bmad_drift_check import GUILD_DREAMS, STATIONS`, so calling `gather_dashboard_drift` for two DIFFERENT targets in one process silently gives the second target the FIRST target's `bmad_drift_check`, and therefore a verdict computed from the wrong tree.
   evidence: Reproduced live by adversarial review with two tmp targets carrying different `scripts/probe_mod.py` contents: `target A -> TARGET-A`, then `target B -> TARGET-A`. A previous review pass rejected the adjacent fixed-`sys.modules`-key finding on the (correct) grounds that each call's RETURN VALUE is the freshly-`exec_module`'d object and is never re-fetched from the cache — that reasoning holds for the loader's own key but does not cover transitive modules, which is where the contamination actually lives. Not fixed here because the honest fix is a design decision, not a patch: snapshotting and restoring the whole of `sys.modules` around an `exec_module` strands module objects and can break legitimately-shared stdlib/third-party caching, so the alternative (accept single-target-per-process, and say so) may well be the right answer. No production caller exists yet (this story wires nothing into `__main__.py`), and Doctor's CLI runs against one target per process, so nothing is wrong today. Belongs with the already-recorded "Doctor `exec_module`s two Marshal-owned files as trusted code" entry — the same "reuse the original script's parsers by executing them" tradeoff, one level deeper — and wants resolving together with it.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:520
+
   severity: medium
   verified: 2026-10-01 — STANDS — board.py's `_load_foreign_module` (lines 1437-1494) is unchanged in the relevant respect: it only pops its OWN `mod_name` key from sys.modules on failure, never on success, and never touches any transitive import the loaded file performs. The live caller has changed: `gather_dashboard_drift`/`gather_check_layout` no longer use it (see DW-FU-6-5-2), but `_gather_chain_layers_audit` -> `_load_dashboard_generate` now loads `target/scripts/fleet_scan.py` through the same helper, so the identical cross-target contamination risk (a second `target` in the same process inheriting the first target's cached transitive imports) still exists, just via a different file. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1267,7 +1282,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   evidence: Identified by adversarial review (edge-case walk); not reproduced against live data — no current slug pair in this repo collides. The test is verbatim from `scripts/chain_completeness_check.py`, unchanged by this port, so it is a pre-existing detector weakness surfaced incidentally rather than anything this story introduced, and the story's Boundaries require the invariants port with identical behavior. The fix is a word-boundary match (`re.search(rf"\b{re.escape(bare)}\b", prose)`), but it must land in the ORIGINAL script and the port together or the two detectors disagree — which makes it Story 6.9's business (that story owns reconciling the scripts with their Doctor ports), not this review pass's. Reachable in practice as soon as a station names a Spec `spec-foo` alongside a `spec-foo-bar`, a shape this repo already uses elsewhere.
   resolution: Resolved by deletion (Story 6.9, 2026-08-09) — `scripts/chain_completeness_check.py` is deleted; the "must land in both or they disagree" premise no longer holds. The inherited word-boundary gap itself is not patched (this story's Boundaries don't ask for it), only its two-copies blocking reason.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py:612
+
   severity: medium
   verified: 2026-10-01 — STANDS — board.py line 921: `if bare not in raw_prose and slug not in raw_prose:` is unchanged, still a bare substring test with no word-boundary guard. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1456,7 +1474,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `sources/factory.py`'s `gather()` recomputes `_ground_truth()`/`_live_version()` independently up to four times per call (`check_pins`, `check_deferred_work`, `check_counts`, and again inside `check_baseline`'s `_fingerprint`), where the original script's `run_checks()` computed it once and threaded it into each check.
   evidence: Confirmed by inspection — each of the four call sites calls `_ground_truth(target)`/`_live_version(target)` independently rather than receiving a shared value. No live consequence today: `Source.BMAD_DRIFT` is not wired into `__main__.py`/`doctor check` dispatch (this story's own Boundaries), and after this same review pass removed the dead `recipes_churny` computation, the remaining per-call cost is a handful of small-file reads (`CHANGELOG.md`, `conda_forge_atlas.py` x2, `SKILL.md`, `pixi.toml`), not a directory scan — so it is a real but currently minor inefficiency, not a budget threat (SM-C1). Worth threading through (matching the original's own data flow) when a future story wires this gather behind `doctor check`'s dispatch, at which point Story 6.1's per-gather cost attribution would surface it precisely.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:1697
+
   severity: low
   verified: 2026-10-01 — STANDS — factory.py::_gather (lines 1537-1577) still dispatches each check via `fn = globals()[name]; findings.extend(fn(target))` with the uniform `(target) -> list[Finding]` signature; check_counts (line ~869) and check_deferred_work (line ~838) each independently call `_ground_truth(target)`/`_live_version(target)`. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1495,7 +1516,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   evidence: Confirmed by direct comparison — both implementations share the identical `if not status or TERMINAL_STATUS.search(status) or not NONTERMINAL_STATUS.search(status): continue` line. A spec whose frontmatter status is a word outside both regexes' vocabularies silently escapes the `spec-status-stale` check regardless of retro evidence. Not reproduced against live data (no live spec currently carries such a status). Faithful port of a pre-existing origin-script gap; belongs with Story 6.9's reconciliation of the origin scripts themselves, per the same reasoning already recorded for `spec_surface_check.py`'s inherited gaps in the Story 6.6 entries above.
   resolution: Resolved by deletion (Story 6.9, 2026-08-09) — `scripts/bmad_drift_check.py` is deleted; there is no longer an "origin script" left to reconcile against. The inherited vocabulary gap itself is not patched (this story's Boundaries don't ask for it), only its two-copies blocking reason.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:829
+
   severity: medium
   verified: 2026-10-01 — STANDS — factory.py:817 `if not status or TERMINAL_STATUS.search(status) or not NONTERMINAL_STATUS.search(status): continue` is unchanged -- a status word outside both regexes' vocabularies (e.g. 'blocked', 'on-hold') still silently escapes the check regardless of retro evidence. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1507,7 +1531,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: A stray throwaway file (`.patch`/`.diff`/`.bak`/`.orig`/`.tmp`/`.rej`) nested in a subdirectory, or filed under `planning-artifacts/` instead of `implementation-artifacts/`, is invisible to the whole detector — `check_archive_hygiene` only scans `implementation-artifacts/`'s top level (`impl.iterdir()`, non-recursive), and `check_coverage` deliberately exempts any `STRAY_SUFFIXES` file from its `uncovered` HARD finding — inherited verbatim from the original.
   evidence: Confirmed by direct comparison — both implementations share the identical non-recursive `impl.iterdir()` scan and the identical `path.suffix not in STRAY_SUFFIXES` coverage exemption (commented `# strays handled elsewhere` in both). Not reproduced against live data. Faithful port of a pre-existing origin-script gap.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:835
+
   severity: low
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:788-789 uses _listdir(impl) which is sorted(d.iterdir()) (factory.py:309-319, explicitly non-recursive) so a nested stray file is invisible; factory.py:1289 check_coverage exempts any STRAY_SUFFIXES file from the UNKNOWN/HARD 'uncovered' finding. Both confirmed present verbatim as described. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1519,7 +1546,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `check_dream_owners`'s `dream-unowned` finding message hardcodes the literal text "the eight Smiths" rather than deriving the station count from the `docs/governance/guild-roster.json` roster it now reads — inherited verbatim from the original, but notable because Part 1 of this same story (merged ahead of this branch) consolidated the roster specifically to stop this class of hand-mirrored-vocabulary drift, and the count is exactly the kind of fact that consolidation was meant to keep honest.
   evidence: Confirmed present verbatim in both `scripts/bmad_drift_check.py` (`f"owner {owner!r} is not one of the eight Smiths"`) and the port. Not a live inconsistency today (the roster currently does hold eight stations), but if a station is ever added or removed, the message becomes self-contradictory without either script's own tests catching it (the port's own `test_dream_owned_by_an_unknown_station_reports_warn` intentionally uses a 2-station fixture roster and still asserts the literal "eight Smiths" substring, since the message is meant to be verbatim-identical to the origin regardless of the real roster — a deliberate parity choice, not an oversight, but one that means no test would notice the count drifting from reality either). status: open
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:1562
+
   severity: low
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:1459 still emits f"owner {owner!r} is not one of the eight Smiths"; docs/governance/guild-roster.json still lists exactly 8 stations today, so not live-wrong, but hardcoded. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1531,7 +1561,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `check_counts`'s four ground-truth probes still degrade silently when their source file cannot be read: `_mcp_tool_count`/`_env_count` return `0` for an absent or unreadable `.claude/tools/conda_forge_server.py`/`pixi.toml` (so `int(stated) < 0` is never true and the MCP-tools and pixi-envs probes can never fire), while `_schema_version`/`_gotcha_max` return `None` and are skipped by the check's own `if live_val is None: continue` — in all four cases a doc stating a stale count reads as clean with no WARN naming the gap.
   evidence: Confirmed by inspection of all four helpers plus `check_counts`'s probe loop. This is the same "ground truth that could not be read must not read as clean" class the follow-up review pass DID close for `_live_version` (a missing `CHANGELOG.md` silently erased all 17 `pin-behind` findings) and `_max_single_phase` (a missing atlas registry fabricated `omits phases through N`), both reproduced live and fixed in that pass. It is deferred rather than fixed with them for a real structural reason: `0` is a LEGITIMATE value for a count in a way `(0,0,0)` never is for a live version, so distinguishing "0 tools" from "file unreadable" requires changing the helpers' return contracts (`int` -> `int | None`) and then deciding, per probe, whether an unreadable source deserves a WARN even when no tracked doc states that count at all — the same lazy-evaluation judgement `check_phase_lists` needed. Inherited verbatim from `scripts/bmad_drift_check.py`, which had the same hole but printed all four values in its report header (`schema v29 | 46 MCP tools | 22 phases | 20 pixi envs | G1-G107`) where an operator would see a zero; this library module has no header. Not reproduced against live data — all four source files are present and readable in this repo.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:948
+
   severity: low
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:454-455 (_mcp_tool_count) and :498-509 (_env_count) both return 0 on an absent/unreadable source; check_counts's probe loop (factory.py:868-898) does `if int(mm.group(1)) < live_val` which can never fire when live_val==0, and only `if live_val is None: continue` guards the other two probes -- exactly as claimed. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1543,7 +1576,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: The origin's `check_coverage()` returned `(findings, summary)` and its CLI printed `coverage: 195 files classified — tracked:spec=110 archive:research=14 …` on EVERY run including clean ones; the port drops `summary` entirely and emits no "how much did you measure?" signal, so an operator cannot tell a project whose files were all classified from one whose tree was mostly unwalkable.
   evidence: Confirmed by direct comparison (`scripts/bmad_drift_check.py:590` returns the tuple, `:806` prints it unconditionally; `sources/factory.py`'s `check_coverage` returns findings only). This contradicts a convention Story 6.7 stated explicitly for the immediately-preceding port, recorded in this spec dir's own `.memlog.md`: "The coverage summary is likewise emitted unconditionally, including on a red run — 'how much did you measure?' matters most precisely when something failed" — and `sources/board.py` implements the same idea (`evidence={"measured": measured}`, plus an explicit refusal to "claim a clean grid that was not measured"). Deferred rather than patched because closing it means adding a NINETEENTH finding kind to a module whose own Boundaries mandate preserving the origin's 18 kinds verbatim, and because that new OK finding would make `_gather`'s `if not findings` aggregate-OK branch unreachable, changing this gather's whole return contract — a surface change that belongs with the CLI/dispatch-wiring story where a renderer for it exists, not in a review pass. Note the same reasoning already recorded in this module for dropping the origin's `recipes_churny` value ("this module has no printer to feed") applies, but is weaker here: `recipes_churny` fed only the header, whereas the coverage summary is a measurement-completeness signal the fleet convention says should survive.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:1395
+
   severity: low
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:1272-1295 check_coverage returns list[Finding] only, no summary/measured count. scripts/bmad_drift_check.py's own module docstring (lines 1-14) confirms it is now 'NOT a detector any more' -- a 'mutation-only residual' -- and the read-only verdict (including check_coverage) lives solely in factory.gather. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1569,7 +1605,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `check_spec_indexed` fabricates a `spec-unindexed` WARN for EVERY file in `docs/specs/` when `CLAUDE.md` is simply absent from the target — `_read` correctly answers `""` for a genuinely-absent file, but the check's membership test is `p.name not in claude`, and every name is "not in" the empty string.
   evidence: Confirmed by inspection and reproduced against a tmp fixture: a target with `docs/specs/alpha.md` + `beta.md` and no `CLAUDE.md` yields two `spec-unindexed` findings, each naming a spec that is not in fact unindexed — there is simply no index to check against. Inherited verbatim from `scripts/bmad_drift_check.py`, which reads `CLAUDE.md` through the identical `_read` and has the identical membership test; the origin was unreachable in practice because its module-level `REPO_ROOT` always named the repo it lives in, where `CLAUDE.md` exists by construction. The port generalizes to an arbitrary `gather(target)`, which is exactly what makes the case reachable. Distinct from the absent-vs-unreadable class the third review pass closed: `_read` is behaving correctly here (the file really is absent); the defect is the check treating "no index exists" as "the index omits everything" rather than as its own honest cannot-evaluate. Not reproduced against this repo (`CLAUDE.md` is present); the fix is a `_is_file` gate before the loop, which belongs with the same pass that decides whether an absent index is a WARN or a silent skip.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:1368
+
   severity: medium
   verified: 2026-10-01 — STANDS — factory.py:1350-1365 `check_spec_indexed` is unchanged: `claude = _read(target / "CLAUDE.md")` (now returning `""` cleanly for a genuinely-absent file per the reworked `_read`) still feeds `if p.name not in claude`, so every docs/specs/*.md is flagged `spec-unindexed` when CLAUDE.md simply doesn't exist at `target`. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1581,7 +1620,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `check_spec_status`'s shipped-detection guards the SPEC slug against emptiness but not the RETRO slug — `any(sslug and (sslug in rs or rs in sslug) for rs in retro_slugs)` — so a single retro file whose `_slug` reduces to the empty string (e.g. `retro-.md`) makes `rs in sslug` true for every spec, flagging every in-flight spec in the project as `spec-status-stale` ("a matching retro exists — it shipped").
   evidence: Confirmed by direct comparison — `scripts/bmad_drift_check.py:365` carries the identical expression with the identical one-sided guard, so this is a faithful port of a pre-existing origin gap, not a porting error. `_slug` strips a leading `spec-`/`retro-` prefix and the extension, so `retro-.md` reduces to `""`; Python's `"" in anything` is unconditionally true. The blast radius is the whole check rather than one file: every non-terminal spec in `implementation-artifacts/` acquires a false DRIFT finding, and the finding's message actively asserts the spec shipped. Reproduced against a tmp fixture: one `retros/retro-.md` plus one wholly unrelated `spec-totally-unrelated.md` marked `status: in-progress` yields `status 'in-progress' but a matching retro exists — it shipped`. Not reproduced against live data (no such file exists in any project today), and the trigger requires a degenerate filename, which is why it is deferred rather than patched — but it is a one-token fix (`rs and`) whenever the origin scripts are next reconciled, and belongs with the other inherited-verbatim `check_spec_status` gap already recorded above.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:821
+
   severity: medium
   verified: 2026-10-01 — STANDS — factory.py:820 `shipped = any(sslug and (sslug in rs or rs in sslug) for rs in retro_slugs)` is unchanged -- still guards only `sslug`, not `rs`, so a degenerate `retro-.md` (whose `_slug` reduces to `""`) makes `rs in sslug` vacuously true for every spec. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1593,7 +1635,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `docs/dashboard/generate.py`'s `_task_cmd()` classifies any pixi task whose `cmd` starts with the literal token `python` as directly runnable on the bare GitHub Pages build (no pixi, no `local-recipes` env, no `pyforge-doctor`). Before this story that was safe: `bmad_drift_check.py`/`spec_surface_check.py`/`llms_full_check.py` were genuinely stdlib-only. After this story, `bmad-drift-check`/`bmad-groundtruth`/`spec-surface-check`'s new `cmd`s (`python -m pyforge.doctor.sources ...`) still start with `python` but now need `pyforge-doctor` (and its `jsonschema`/`PyYAML`/`mcp` deps) — unavailable on the Pages runner. `subprocess.run` doesn't raise on a nonzero exit, so `_run_detector`'s pixi-fallback (which *would* correctly degrade to `state="unknown"`) never triggers; the traceback's exit code instead reads as `state="drift"` for those 2-3 dashboard rows.
   evidence: Traced by inspection of `docs/dashboard/generate.py:_task_cmd`/`_run_detector` (unmodified by this story — `docs/dashboard/generate.py` is explicitly outside this story's Surface, epics.md does not name it). `_task_cmd` returns `[sys.executable, "-m", "pyforge.doctor.sources", "bmad-drift", "--groundtruth"]` for the new `bmad-groundtruth` cmd, which `_run_detector` then runs directly with the bare Pages interpreter — `ModuleNotFoundError`, non-zero exit, caught only by the generic `except Exception: continue` that also catches the intended pixi-fallback path, so the fallback (`pixi run --frozen -e local-recipes bmad-groundtruth`) is never reached either (no pixi on Pages). This is a **mislabel, not a false green** (`state="drift"` never satisfies `state == "green"`) — recorded per this story's own Design Notes ("Known, accepted consequence — not fixed here"), not patched here, since fixing it correctly belongs with whoever owns `generate.py`'s classifier contract.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (legacy legacy-flat entry, no prior id)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — scripts/fleet_scan.py:1354
+
   severity: medium
   verified: 2026-10-01 — STANDS — docs/dashboard/generate.py is gone entirely (steward Story 30.2 moved this logic); scripts/fleet_scan.py:1476-1493 (_task_cmd) and :1496-1518 (_run_detector) now carry the identical logic and bug. pixi.toml:1155-1161 shows bmad-drift-check's and bmad-groundtruth's cmd = "python -m pyforge.doctor.sources bmad-drift[...]", both starting with the literal token 'python', so _task_cmd (line 1491: `cmd.split()[0] == "python"`) returns a direct sys.executable invocation that needs pyforge-doctor's own deps (jsonschema/PyYAML/mcp). _run_detector's `except Exception: continue` (line 1516) only catches a launch failure, not a ModuleNotFoundError inside a successfully-launched subprocess (subprocess.r… Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
 
@@ -1674,7 +1719,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `gather()`'s `projects_dir.iterdir()` call and each project's `(project_dir / "planning-artifacts").is_dir()` check run outside any try/except, so a `PermissionError` (or a directory vanishing mid-iteration) raises straight out of `gather()` and crashes the entire fleet-wide sweep, contradicting the module's own docstring claim that "degrades, never crashes" is "the house rule for every Doctor source" -- yet this is not a novel mistake: `sources/board.py::gather_chain_completeness` (Story 6.5, already shipped) has the byte-identical shape (`projects_dir.iterdir()` and the per-project `is_dir()` check both unguarded, only the inner `_check_project_chain_completeness` call wrapped), and the story spec's own Boundaries explicitly directed this story to mirror that exact function.
   evidence: Found independently by both Blind Hunter and Edge Case Hunter during Story 9.2's review pass (2026-08-15); Edge Case Hunter named the precise lines (`sources/hygiene.py`, the `projects_dir.iterdir()` call and the per-project `planning-artifacts` `is_dir()` check, both ahead of the per-station `try/except Exception` that starts one line later). Confirmed by direct inspection of `sources/board.py`'s `gather_chain_completeness`: `if not projects_dir.is_dir(): return findings` followed by `for project_dir in sorted(projects_dir.iterdir()): if not (project_dir / "planning-artifacts").is_dir(): continue`, with no try/except around either line -- the exact pattern `hygiene.py` was asked to mirror, carrying the same gap forward rather than introducing a new one. Not patched in this pass: fixing only `hygiene.py` would leave it inconsistent with the very precedent it claims to follow and would not close the same gap in `board.py`; a real fix needs to harden both files' top-level directory-listing step together (wrap the listing itself in a try/except that degrades to one WARN, same shape as the existing per-project/per-station catch), which is a cross-cutting hardening pass outside this story's Code Map (`board.py` is not a file Story 9.2 touches).
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:115
+
   severity: low
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:102-110: `if projects_dir.is_dir(): for project_dir in sorted(projects_dir.iterdir()):` and the per-project `(project_dir / "planning-artifacts").is_dir()` check both run unguarded before the try/except around _evaluate_station. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   verified: 2026-10-01 — STANDS — re-probed against the dispatched source in Story 38.3 on python 3.14: with `_bmad-output/projects` at mode 000, `python -m pyforge.doctor.sources bmad-output-hygiene` dies with an uncaught `PermissionError: [Errno 13] ... '_bmad-output/projects'` from src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:103 (exit 1, a raw traceback) and `detectors._run_doctor_sources` reads that row `unknown`/rc 2, never green. The per-project `is_dir()` half does NOT reproduce here: with a project dir at mode 000 `Path.is_dir()` returns False on 3.14, the station is skipped silently and the sweep reports `ok` with 0 stations judged (hygiene.py:104). Still open (the `iterdir()` crash, and that silent skip); not fixed in 38.3, which wires the source warn-only.
@@ -1687,7 +1735,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `_evaluate_station` runs all five hygiene checks (`_check_dead_test_scaffolding`, `_check_hollow_sprint_status`, `_check_readme_placeholder`, `_check_stale_dream_status`, `_check_orphan_files`) sequentially, isolated only as one unit by `gather()`'s per-station `try/except`; if one check raises (e.g. a malformed `sprint-status.yaml`), every check ordered after it for that same station never runs, so a real, independent finding on that same station (e.g. a genuine README placeholder or orphan file) is silently dropped rather than degraded to its own WARN.
   evidence: Found by Blind Hunter during Story 9.2's review pass (2026-08-15). The story spec's own Boundaries scoped isolation to per-station granularity only ("mirrors `board.py::_check_chain_completeness`'s own per-project isolation"), and `board.py::_check_project_chain_completeness` has the identical shape: it runs its own several checks (INV-A/B/C/D) sequentially inside one function, isolated only at the whole-project level by its caller's single `try/except`, with no isolation between its own distinct invariant checks. `hygiene.py` faithfully mirrors that existing, already-shipped convention rather than inventing a new gap. Not patched in this pass: narrowing isolation to per-check granularity only in the new `hygiene.py` (while leaving `board.py`'s identical shape as-is) would fix this file inconsistently with the very precedent its own spec cites, and independent of the source of truth question -- whether finer-grained isolation should become the fleet's default here, or whether five separate try/except blocks per station is disproportionate for how rarely any of these five reads actually raises -- is a design-level call spanning at least two files, not a mechanical patch to this one story's diff.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:195
+
   severity: low
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:141-152 _evaluate_station still runs _check_dead_test_scaffolding/_check_hollow_sprint_status/_check_readme_placeholder/_check_stale_dream_status/_check_orphan_files sequentially with no per-check isolation, only the outer per-station try/except in gather(). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   verified: 2026-10-01 — STANDS — reproduced in Story 38.3 with `python -m pyforge.doctor.sources bmad-output-hygiene` over a one-station repo carrying a malformed `planning-artifacts/sprint-status.yaml`, a README placeholder and an orphan file: the sweep prints ONE `station-unevaluable: warn` (yaml ParserError, hygiene.py:110-122) and exit 0; the same station without the malformed yaml prints `readme-placeholder` and `orphan-file` WARNs, so both real findings are dropped when `_check_hollow_sprint_status` (hygiene.py:189-194) raises ahead of them in `_evaluate_station` (hygiene.py:141-152). Still open; the CLI never exits non-zero for it.
@@ -1700,7 +1751,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `_has_inbound_references` (`sources/hygiene.py`) runs `git grep -l --fixed-strings -e <basename>` against the whole repo and treats ANY match (besides the candidate's own path) as an inbound reference -- a bare substring match, not path- or word-boundary-aware, and `git grep` without `--untracked`/`--no-index` only scans tracked content. Two independent latent false-negative shapes follow, both masking a real `ORPHAN_FILE` finding rather than crashing: (1) a genuinely orphaned candidate whose basename happens to be a substring mentioned elsewhere in the repo for an unrelated reason (prose, another file's name) reads as "referenced" even though nothing actually points at that specific file; (2) a candidate whose only real reference lives in a not-yet-`git add`ed file is invisible to `git grep`'s default tracked-only scan, so it reads as unreferenced when it is not. This is not a coding mistake against the story spec -- it is exactly the protocol the spec's own Design Notes mandate ("search the candidate's basename ... via `git grep -l --fixed-strings -e <basename>`") -- so it is a real, inherent limitation of the specified design, not a bug in its implementation.
   evidence: Found independently by both Blind Hunter and Edge Case Hunter during this repair pass's re-review (2026-08-15), triggered while investigating the deterministic-verification failure this same pass fixed (a related but distinct self-reference hazard in `test_sources_hygiene.py`, already patched: see the pass's own triage log entry). Blind Hunter verified live that the literal filename `sprint-status.yaml` -- a real filename this module's OWN `_check_hollow_sprint_status` targets, not in `hygiene_definitions.py`'s `_CONVENTIONAL_FILENAMES` allowlist -- appears in 157 tracked files repo-wide, so any station's genuinely orphaned `planning-artifacts/sprint-status.yaml` would always resolve `has_inbound_references=True` and never surface, confirmed by direct inspection: `hygiene_definitions.py:134-143`'s `_CONVENTIONAL_FILENAMES` frozenset does not include `sprint-status.yaml` (only `sprint-status-ledger.yaml`), so such a file is not excluded by the pre-filter either. Edge Case Hunter independently named the same class of risk plus the untracked-file blind spot. No live false negative exists today (confirmed: no station currently has an unreferenced `sprint-status.yaml`), so this is latent, not currently manifesting, and does not affect this story's own acceptance criteria (all of which pass against the current live repo). Not patched in this pass: hardening the match (word/path-boundary awareness, excluding the searching module's own path, or including untracked content) would mean amending the Design Notes' own specified protocol, which is outside this repair pass's explicit charter (repair the deterministic-verification failure without touching the spec's frozen intent or expanding scope) -- the same reasoning `DW-FU-9-2` and `DW-FU-9-2-2` already recorded for this story's other precedent-mirroring gaps.
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:375
+
   severity: low
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:326-336 _has_inbound_references still runs `git grep -l --fixed-strings -e <basename>` with no path/word-boundary scoping and no --untracked. hygiene_definitions.py:131 _CONVENTIONAL_FILENAMES still omits 'sprint-status.yaml' (only 'sprint-status-ledger.yaml' family names are likely listed) -- did not re-verify the exact 157-file repo-wide match count, but the code shape enabling the false-negative is unchanged. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   verified: 2026-10-01 — STANDS — both shapes reproduced in Story 38.3 with `python -m pyforge.doctor.sources bmad-output-hygiene` over throwaway git repos (exit 0 each): (1) `planning-artifacts/orphan-notes.md` with no real reference but another tracked file saying `my-orphan-notes.md` is NOT reported (the substring matches, hygiene.py:342-350); (2) the same candidate whose only reference sits in an untracked file IS reported as an orphan (`git grep` scans tracked content only). Live: `git grep -l --fixed-strings -e sprint-status.yaml | wc -l` is now 258 (the entry's 157 has grown) and `is_orphan_file('planning-artifacts/sprint-status.yaml', has_inbound_references=False)` is True, so that name is a candidate that always reads referenced. Still open; the 5 live orphan WARNs were not re-judged by hand.
@@ -1727,7 +1781,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   summary: `_check_stale_dream_status` sets `evidence["path"]` relative to the repo root (`docs/dreams/<slug>.md`, no `_bmad-output/projects/<slug>/` prefix), while the other 4 classes (`hollow_sprint_status`, `readme_placeholder`, `orphan_file`, and this story's own fix to `dead_test_scaffolding`) all set it relative to the station's own `project_dir` (e.g. `README.md`, `planning-artifacts/sprint-status.yaml`, `tests`) — a downstream consumer resolving `evidence["path"]` against one base directory gets it wrong for exactly the stale-dream-status class.
   evidence: Found independently by both Blind Hunter and Edge Case Hunter during Story 9.3's review pass (2026-08-15). Confirmed by direct inspection of `hygiene.py`: `_check_stale_dream_status`'s `dream_path = target / "docs" / "dreams" / f"{project_dir.name}.md"` and its evidence line `f"docs/dreams/{project_dir.name}.md"` are both `target`-relative, while `_check_hollow_sprint_status`/`_check_readme_placeholder`/`_check_orphan_files` all build their evidence paths from `project_dir`-relative components. This predates Story 9.3 — Story 9.2 shipped 4 of the 5 evidence shapes, including the stale-dream-status outlier, unremarked at the time. Story 9.3 did not cause it but made it more consequential: before this story, only 4 of 5 classes had a `path` key at all (`dead_test_scaffolding` had none), so the split was less visible; now every class has one, so the inconsistent base is a real, load-bearing question for any future consumer. Not patched in this pass: renormalizing either shape is a design call (which base is "right," and whether to touch the other 4 already-shipped classes' evidence) explicitly outside this story's own Never clause ("no evidence key beyond `path`... the 4 already-shipped shapes are frozen; don't touch them").
   promoted: 2026-08-28 — promoted from Tier-3 implementation-artifacts/deferred-work.md (already-identified identified-bulleted entry, never previously copied to the tracked ledger)
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:101
+
   severity: low
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:289-292 _check_stale_dream_status still builds `dream_path = target / "docs" / "dreams" / f"{project_dir.name}.md"` and (per surrounding code) an evidence path relative to target, not project_dir, unlike the sibling checks. Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   verified: 2026-10-01 — STANDS — reproduced in Story 38.3: `python -m pyforge.doctor.sources bmad-output-hygiene --json` over a one-station repo with a stale Dream and an orphan file (exit 0) emits `stale-dream-status` with `evidence.path` `docs/dreams/pyforge-acme.md` (repo-root-relative, hygiene.py:305-308) and `orphan-file` with `evidence.path` `planning-artifacts/orphan-notes.md` (station-relative, hygiene.py:387), the split the entry describes. Still open: aligning it changes a frozen evidence shape, not touched by the wiring story.
@@ -2157,7 +2214,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred be6c272db6d7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:205
+
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/status_body_consistency.py:211-228 still does `if '---' in text: return {}, True` for a document that does not start with a fence, and `text.split('---', 2)` otherwise. _body_after_frontmatter (:231-238) finds the first '\n---\n'. chain.py:204-281 (_frontmatter_parse, Story 28.1) uses line-anchored fences via _split_fenced_block. So a Dream with a thematic break and no frontmatter is ({}, False) in chain.py but ({}, True) (unparseable) here, and the 34 glued-opener Dreams are refused by chain.py but parsed here. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-28-1-2: factory.py's pin-scope extractor still takes the frontmatter as the text before the first three-dash substring, so a pin declared after an embedded three-dash run in a frontmatter scalar is missed
@@ -2169,7 +2229,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred 7dd30eafde52 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:670
+
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py:616-639 _doc_pin still does `parts = text.split(\"---\", 2); scope = parts[1] if ... else text[:1500]` -- the same first-substring cut Story 28.1 fixed only in chain.py. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-28-1-3: 34 archived docs/dreams/*.md files carry a glued opener (three dashes fused to `title:` on line 1) and are now refused as unparseable-frontmatter, hiding 20 readme-table-drift and 2 kinship-wikilink-dead findings until the openers are repaired
@@ -2181,7 +2244,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred a1a347e035e7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — docs/dreams/mcp-era-isolation.md:1
+
   verified: 2026-10-01 — STANDS — `grep -rl '^---title:' docs/ archive/` returns exactly 34 files, all under docs/dreams/ (e.g. asgi-multiplexer-monolith.md, bmad-eval-quality.md). `pixi run --frozen -e pyforge-guild python -m pyforge.doctor.sources dream-chain` emits 34 `unparseable-frontmatter: warn` lines, one per file. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-28-1-4: `unparseable-frontmatter` findings name no refusal cause, and `_unparseable_frontmatter_item`'s remedy text ("could not be parsed as a mapping ... fix the fenced YAML frontmatter block") is wrong for the attempted-but- unbounded opener that produces all 34 live hits
@@ -2193,7 +2259,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred a8c284f7e5ef — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:230
+
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py:284-305 — _unparseable_frontmatter_item's remedy is still 'fix the --- fenced YAML frontmatter block', and its detail 'could not be parsed as a mapping'. _frontmatter_parse (:204-281) still returns (dict, bool), with no refusal reason. The live dream-chain output for the 34 glued-opener Dreams says 'could not be parsed as a mapping', although each block IS a valid mapping and the only defect is line 1. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-28-1-5: Five other doctor readers close the frontmatter block on a stripped three-dash line, so an indented three-dash line inside a block scalar ends their block early with no error -- the class Story 28.1 fixed only in chain.py::_frontmatter_parse
@@ -2205,7 +2274,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred a4e74eb1dcfa — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/hygiene.py:230
+
   verified: 2026-10-01 — STANDS — Confirmed all five still use the fragile `line.strip() == \"---\"` test: hygiene.py:252, sibling_dreams.py:120, status_body_consistency.py:512 and :694, board.py:430. chain.py:204-230 _frontmatter_parse is the one already fixed (line-anchored fences, _is_fence). (2026-09-30 deferral burn-down triage)
 
 ### DW-OPS-2026-09-19-6: six folded-and-archived Dreams still live unfolded in the sibling repo — `sibling-dreams-drift` (CAP-71) reports status / content_hash / title divergence once a token reaches it
@@ -2228,7 +2300,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred b39d4a218335 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_shelf.py:150
+
   verified: 2026-10-01 — STANDS — src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_shelf.py now exists (Story 23.7 shipped, spec-pyforge-doctor CAP-54) and checks whether the five archived files (or the air-gap doc cluster) REGROW at their old location (lines 1-40 of docs_shelf.py), but this is a different check from the one this entry names: no live doc-citation scan for lingering references TO the old (pre-archive) path in OTHER docs was found (grepped sources/*.py for 'archive/_bmad-output'/'stale.*citation'/'broken-link' -- only docs_shelf.py matches, and only for the regrowth concern). (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-23-6: This story's own tracking artifacts (sprint-status-ledger.yaml key 23-6-…, epics.md's Story 23.6 section) still read backlog even as the spec advances through in-review to done.
@@ -2280,7 +2355,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred 922f3cdd50a8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — docs/how-to/github-actions-recipe-ci.md:7
+
   verified: 2026-10-01 — STANDS — docs/how-to/github-actions-recipe-ci.md:7 still states 'The repo ships **19** workflow files under `.github/workflows/`'; `ls .github/workflows/*.yml | wc -l` now returns 23. docs/reference/github-workflows.md (the page this file points readers to for the full inventory) is itself hand-maintained prose ('Regenerate this table by reading .github/workflows/ -- do not trust it blind'), not a generated page, so the entry's suggested remedy (a Story 30.3 generated table) has not yet materialized for this specific count. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-30-1-2: `docs/explanation/pyforge-estate-overview.md` uses Docusaurus-style `:::note` admonitions that GitHub does not render; left as authored (style, not fact) — a `docs-currency` style rule or the `bmad-os-diataxis` style guide should decide one admonition syntax for `docs/`.
@@ -2292,7 +2370,10 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred 3bd6506da5c6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-19 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way
+  verified: 2026-10-04 — docs/explanation/pyforge-estate-overview.md:26
+
   verified: 2026-10-01 — STANDS — docs/explanation/pyforge-estate-overview.md still contains 4 occurrences of `:::` (Docusaurus-style admonition fencing), confirmed via grep -c. (2026-09-30 deferral burn-down triage)
 
 ### DW-FU-30-1-3: The unmapped-page class is `warn` (CAP-62 posture); nothing blocks a PR that adds a quadrant page without a MAP row until Story 30.2 promotes the class to `fail` once the registry exists.
