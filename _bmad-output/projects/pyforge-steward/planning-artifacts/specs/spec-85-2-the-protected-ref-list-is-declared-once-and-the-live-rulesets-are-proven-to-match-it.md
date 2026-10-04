@@ -32,7 +32,7 @@ declared_low_risk: false
   - deletion and `non_fast_forward` for `refs/heads/loop/`;
   - deletion for the legacy `refs/heads/attempt-preserve/`.
 - **Creation.** A `restrict-creation` rule covers `refs/heads/preserve/**` and `refs/heads/archive/**`, so neither prefix can become a branch (review minor 3).
-- **Document.** A renderer writes `docs/governance/rulesets/protected-refs.json`, the GitHub ruleset JSON for the branch and tag rulesets, from the roster alone. Regeneration is byte-identical (AD-12: derived, never hand-edited).
+- **Document.** A renderer writes `docs/governance/rulesets/protected-refs.json`, the GitHub ruleset JSON for the branch and tag rulesets, from the roster alone. Regeneration is byte-identical (marshal:AD-12: derived, never hand-edited).
 - **Detector.** A new runtime-scope detector, `scripts/protected_refs_ruleset_check.py`, compares that document with the live rulesets through an authenticated `gh api`. It exits 0 on a match, 1 naming each difference, and 2 when `gh api rate_limit` shows no authenticated quota or any call fails, never passing (an unauthenticated probe fails open otherwise). It also reports as drift a protected-ref addition in marshal's station policy that the roster does not declare.
 - **Applying.** Creating or editing a live ruleset is the operator's settings change, never this story's code and never a dispatched session's.
 
@@ -66,7 +66,7 @@ Type / Effort / Deps: feature / M / S-85.1.
 
 ## Binding
 
-Parent: `spec-pyforge-steward` CAP-165 (FR-38); co-governs `spec-pyforge-marshal` CAP-287 / AD-81.
+Parent: `spec-pyforge-steward` CAP-165 (FR-38); co-governs `spec-pyforge-marshal:CAP-287` / marshal:AD-81.
 Dream: `docs/dreams/pyforge-steward.md` § *Realization log*, the 2026-10-04 (later) entry.
 Research: drafts' Story 85.2; review M3 (union, scope), minor 3 (restrict branch creation), minor 16 (`non_fast_forward` on `loop/**`), Q9 and Q17.
 Ledger key: `85-2-the-protected-ref-list-is-declared-once-and-the-live-rulesets-are-proven-to-match-it`.

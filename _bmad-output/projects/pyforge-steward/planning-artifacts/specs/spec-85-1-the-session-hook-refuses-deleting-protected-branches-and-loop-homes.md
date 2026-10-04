@@ -77,7 +77,7 @@ Dream: `docs/dreams/pyforge-steward.md`, the 2026-10-04 entry.
 Ledger key: `85-1-the-session-hook-refuses-deleting-protected-branches-and-loop-homes`.
 Ledger status at mint: `backlog`.
 Deps: —.
-Minted 2026-10-04 at the operator's request ("chain the sweeper fixes"); the new `session_denials` entry is the operator's governance ruling of the same date. Amended 2026-10-04 (later) by the preserved-work refs chain (`spec-pyforge-steward` CAP-165; marshal CAP-287).
+Minted 2026-10-04 at the operator's request ("chain the sweeper fixes"); the new `session_denials` entry is the operator's governance ruling of the same date. Amended 2026-10-04 (later) by the preserved-work refs chain (`spec-pyforge-steward` CAP-165; `spec-pyforge-marshal:CAP-287`).
 
 ## Verification
 

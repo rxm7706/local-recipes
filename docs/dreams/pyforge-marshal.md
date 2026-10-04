@@ -971,7 +971,7 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   operator ruling, and every outward GitHub settings change is the operator's. The grammar lives in
   `pyforge.core.preserve_refs`. Owner `spec-pyforge-marshal` (co-governors `spec-pyforge-steward`,
   `spec-pyforge-core`). → CAP-287, FR-234, AD-81, Stories 87.2–87.16 (87.1 amended), specced 2026-10-04; steward twin
-  CAP-165, Stories 85.2–85.5 (85.1 amended). Research
+  `spec-pyforge-steward:CAP-165`, Stories 85.2–85.5 (85.1 amended). Research
   `_bmad-output/projects/pyforge-marshal/planning-artifacts/research/preserved-work-refs-2026-10-04.md`, its drafts and
   its review (`preserved-work-refs-2026-10-04-review.md`, same folder).
 - **2026-10-04 (finalize roll-up)** — **Found: landings overwrite epic roll-ups with stale feed rows.** The landing

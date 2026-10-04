@@ -51,7 +51,7 @@ Type / Effort / Deps: feature / M / S-87.3.
 
 ### Living CAP citations
 
-- `spec-pyforge-marshal` CAP-287 (FR-234, AD-81; AD-11 as amended). Co-governed by `spec-pyforge-core` (the module) and `spec-pyforge-steward` CAP-165 (the pre-push proof). Flag `pyforge.marshal.preserve_refs`.
+- `spec-pyforge-marshal` CAP-287 (FR-234, AD-81; AD-11 as amended). Co-governed by `spec-pyforge-core` (the module) and `spec-pyforge-steward:CAP-165` (the pre-push proof). Flag `pyforge.marshal.preserve_refs`.
 
 ## Acceptance Criteria
 

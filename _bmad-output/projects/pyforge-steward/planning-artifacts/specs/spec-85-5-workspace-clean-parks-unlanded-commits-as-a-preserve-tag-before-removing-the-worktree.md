@@ -29,13 +29,13 @@ declared_low_risk: false
 
 ## Intent
 
-**Problem:** `steward workspace clean` removes an unlanded scratch worktree after it archives the files into a host-local tarball (`workspace.py:866-945`). Since CAP-157, the recorded branch is kept when it is not on its source, so its commits survive only on that local branch. The tarball holds files, never history, and AD-81 asks for a `preserve/` tag. Low urgency: on 2026-10-04 `.steward/workspace-archive/` held 26 `.landed.txt` notes and no tarballs (review minor 8).
+**Problem:** `steward workspace clean` removes an unlanded scratch worktree after it archives the files into a host-local tarball (`workspace.py:866-945`). Since CAP-157, the recorded branch is kept when it is not on its source, so its commits survive only on that local branch. The tarball holds files, never history, and marshal:AD-81 asks for a `preserve/` tag. Low urgency: on 2026-10-04 `.steward/workspace-archive/` held 26 `.landed.txt` notes and no tarballs (review minor 8).
 
 **Blocked:** this story needs `pyforge.core.preserve_refs`, which marshal Story 87.3 ships. Marshal's `Deps:` parser is station-local, so the gate is this ledger row, minted `blocked`. The operator flips it once marshal 87.3 is `done`.
 
 **Approach:**
 - **Tag first.** Behind `pyforge.steward.workspace_preserve_tag`, before removing a worktree whose commits are not on its source, `clean` writes an annotated `preserve/<slug>/<N.M>/workspace-<sha8>` tag through `pyforge.core.preserve_refs` (or `preserve/unbound/workspace-<sha8>` when the record names no story). It snapshots uncommitted and untracked files with no branch moved.
-- **Then remove.** The local tag is enough to remove the worktree (AD-81 predicate (a)).
+- **Then remove.** The local tag is enough to remove the worktree (marshal:AD-81 predicate (a)).
 - **Push.** The tag is pushed through the core module's content gate, or reported as debt when it cannot be.
 - **Failure.** A tag that cannot be written keeps the worktree, and the record is reported `branch_kept` with the reason.
 - **Tarball.** The tarball keeps only git-ignored bytes and is reported as host-local; untracked files go into the snapshot.

@@ -1543,7 +1543,7 @@ the invariant.
 *Added 2026-10-04 (FR-234, Epic 87), after the preserved-work-refs research and its independent review; operator
 ruling of the same day.*
 
-- **Binds:** FR-234 / CAP-287, with steward's FR-38 / CAP-165 as co-governor; extends AD-29 (durability is
+- **Binds:** FR-234 / CAP-287, with steward's FR-38 / `spec-pyforge-steward:CAP-165` as co-governor; extends AD-29 (durability is
   reachability — this AD names its declared durable local ref), AD-46 (stage-bound push), AD-47 (retirement), AD-48
   (durability in status) and AD-74 (detect → preserve → defer-loud); declares a write target beside AD-11's four;
   mirrors the shape of `spec-one-chain-per-station` CAP-11's `archive/<original path>` for refs.
@@ -1572,7 +1572,7 @@ ruling of the same day.*
     commit descending from a purge-listed sha or carrying a purge-listed path (a tracked governance list), a blob the
     secret scan flags, and a file over the size cap; a refused tag stays local and is reported. Content that was only
     ever local reaches `origin` only after the operator reviews it row by row. A push names one refspec per tag, never
-    `--tags`, and steward's pre-push gate skips only a push it can prove is tag-only (steward CAP-156 as amended).
+    `--tags`, and steward's pre-push gate skips only a push it can prove is tag-only (`spec-pyforge-steward:CAP-156` as amended).
   - **Volume.** A preserve for a story whose tree equals an existing preserve's tree is a no-op; per-run and per-story
     caps keep a runaway producer's tags local with a HARD finding.
   - **Append-only, with derived retirement.** `preserve/` tags are never moved or deleted. A preserve retires by derived

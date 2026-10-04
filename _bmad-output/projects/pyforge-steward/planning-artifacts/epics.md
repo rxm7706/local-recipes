@@ -5390,7 +5390,7 @@ the `loop/*` branches and protected `attempt-preserve/*` branches; nothing in th
 day by the Dream's entry (later), the preserved-work-refs research and its review under
 `_bmad-output/projects/pyforge-marshal/planning-artifacts/research/`, and the operator's ruling accepting every default
 the review recommended: CAP-165 / FR-38, with CAP-156 and CAP-157 amended. Its marshal twin is marshal Epic 87
-(CAP-287). **HARD boundaries:** the roster is the one declared list and every consumer unions it with its own code
+(spec-pyforge-marshal:CAP-287). **HARD boundaries:** the roster is the one declared list and every consumer unions it with its own code
 floor; each new `session_denials` entry is a governance act (operator rulings 2026-10-04); applying any ruleset is the
 operator's settings change, never a session's; station code never imports `pyforge.marshal`.
 

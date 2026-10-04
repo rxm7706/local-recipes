@@ -3143,7 +3143,7 @@ disk; tags are unprotected server-side; and the unpushed-work detector's printed
 `rescue/dangling-*` tags, 23 of which re-preserved the history the 2026-07-24 purge removed. An independent review
 (`research/preserved-work-refs-2026-10-04-review.md`) adopted the standard with changes, and the operator accepted
 every default it recommended the same day. FR-234 decomposes into **Epic 87** (Stories 87.2–87.16, beside the
-already-chained fix Story 87.1, amended), with steward's half under `spec-pyforge-steward` CAP-165 (steward FR-38,
+already-chained fix Story 87.1, amended), with steward's half under `spec-pyforge-steward:CAP-165` (steward FR-38,
 Epic 85).
 
 #### FR-234: Preserved work is an annotated tag in every mode, and nothing removes a working copy it does not hold ← CAP-287

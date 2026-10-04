@@ -9013,7 +9013,7 @@ the `loop/*` branches and 41 `attempt-preserve/*` branches that `scripts/worktre
 sweeper does not reach remote branches (Story 87.1, a fix). Widened the same day by the Dream's preserved-work-refs entry,
 the research `research/preserved-work-refs-2026-10-04.md`, its independent review
 (`research/preserved-work-refs-2026-10-04-review.md`) and the operator's ruling accepting every default the review
-recommended: CAP-287 / FR-234 / AD-81. Steward's twin is steward Epic 85 (CAP-165).
+recommended: CAP-287 / FR-234 / AD-81. Steward's twin is steward Epic 85 (spec-pyforge-steward:CAP-165).
 **HARD boundaries:** one grammar module (`pyforge.core.preserve_refs`); a local preserve tag suffices to remove a working
 copy and an unpushed one is debt, never a refusal; nothing reaches `origin` past the content gate; no marshal deleter
 touches `refs/tags/**`; nothing is deleted without an operator ruling; every outward GitHub settings change is an

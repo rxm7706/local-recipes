@@ -2484,7 +2484,7 @@ override on DW-8-5-2). The audit-trail and ingress rulings are fixes under Epic 
 
 *Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-165 on 2026-10-04 and amended CAP-156
 and CAP-157, from the Realization-log entry of that date (later): the steward half of the preserved-work refs standard
-(marshal's `spec-pyforge-marshal` CAP-287, research `preserved-work-refs-2026-10-04.md` and its review under
+(marshal's `spec-pyforge-marshal:CAP-287`, research `preserved-work-refs-2026-10-04.md` and its review under
 `_bmad-output/projects/pyforge-marshal/planning-artifacts/research/`). Same-day reconcile; the FR is derived from its
 CAP.*
 
@@ -2496,7 +2496,7 @@ The roster declares the refs nothing may delete, and every guard — the session
 the server rulesets — enforces that one list, while a reachability guard covers everything the list does not name.
 **Consequences (testable):**
 - `docs/governance/guild-roster.json` declares `protected_refs`: full-refname prefixes with a kind and a scope (`origin`,
-  `local`, `both`). Each consumer unions them with its own code floor, so a roster edit can only add (AD-27).
+  `local`, `both`). Each consumer unions them with its own code floor, so a roster edit can only add (marshal:AD-27).
 - A ruleset document under `docs/governance/rulesets/` is rendered from the roster and regenerates byte-identical; a
   runtime detector compares it with the live rulesets through an authenticated `gh api` and exits 0 on a match, 1 naming
   each difference, 2 when it cannot observe (never green). Applying a ruleset is the operator's settings change.

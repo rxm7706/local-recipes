@@ -2260,7 +2260,7 @@ to match, and no session deletes what would orphan commits.* Checked against eve
 - **AD-1 (wrap, never reimplement).** The ruleset parity check wraps `gh api` and the hook's reachability guard wraps
   `git merge-base --is-ancestor` and `git for-each-ref --contains`; neither re-implements git. The protected list stays
   one declared source (the roster), and the rendered ruleset document is derived from it, never hand-kept. `workspace
-  clean` writes its preserve tag through `pyforge.core.preserve_refs` (the kernel seam marshal's AD-81 names) and never
+  clean` writes its preserve tag through `pyforge.core.preserve_refs` (the kernel seam `marshal:AD-81` names) and never
   imports `pyforge.marshal`.
 - **AD-8 (exit-code sole ownership).** The parity detector's `main()` owns its exit code — 0 match, 1 drift, 2 could not
   observe (unauthenticated, rate-limited, an API error) — and is never green on a failed read. A hook denial is the

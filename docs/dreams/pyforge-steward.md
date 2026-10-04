@@ -538,7 +538,7 @@ Drift — orphaned between stations.
   `workspace clean` parks unlanded commits as a `preserve/` tag before it removes a worktree. **Constraints:** each new
   `session_denials` entry is a governance act (operator rulings 2026-10-04: the widened protected-ref denial and the
   reachability guard); applying a ruleset is the operator's settings change. Owner: steward. → CAP-165, FR-38,
-  Stories 85.2–85.5 (85.1 amended), specced 2026-10-04; marshal twin CAP-287.
+  Stories 85.2–85.5 (85.1 amended), specced 2026-10-04; marshal twin `spec-pyforge-marshal:CAP-287`.
 - **2026-10-04 — Found: the session guardrails let an agent delete protected branches and loop homes.** A
   hand-rolled branch cleanup deleted the eight `~/.bmad-loops/` loop homes, the `loop/*` branches and protected
   `attempt-preserve/*` branches; no session denial covers either. **What it looks like when fixed:** the session hook
