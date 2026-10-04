@@ -50,10 +50,11 @@ class DegradingParquetDataset(AbstractDataset):
     def _mark_stale(self, reason: str) -> None:
         marker = StalenessMarker(stale=True, reason=reason, last_good_exists=Path(self._filepath).is_file())
         try:
-            atomic_write(
-                self._staleness_path,
-                lambda target: target.write_text(json.dumps(marker.to_dict(), indent=2), encoding="utf-8"),
-            )
+
+            def _write_staleness(target: Path) -> None:
+                target.write_text(json.dumps(marker.to_dict(), indent=2), encoding="utf-8")
+
+            atomic_write(self._staleness_path, _write_staleness)
         except OSError as exc:
             logger.warning("could not write staleness marker for %s: %s", self._filepath, exc)
 

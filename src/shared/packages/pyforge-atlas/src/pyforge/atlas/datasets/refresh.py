@@ -714,6 +714,7 @@ class _ParquetRefreshStore:
     Lives beside :class:`StalenessMarker` / :class:`RefreshRequest` (DW-FU-21-2-6).
     """
 
+    _filepath: str
     STORE_FILENAME = "store.parquet"
     STALENESS_FILENAME = ".staleness.json"
     merge_on: tuple[str, ...] = ("conda_name",)

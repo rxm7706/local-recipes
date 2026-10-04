@@ -723,7 +723,11 @@ class PyPIJsonFanOutDataset(_ParquetRefreshStore, PyPIJsonRequestDataset):
         next_offset = (offset + len(batch)) % len(names) if names else 0
         try:
             offset_path.parent.mkdir(parents=True, exist_ok=True)
-            atomic_write(offset_path, lambda p: p.write_text(str(next_offset), encoding="utf-8"))
+
+            def _write_offset(path: Path) -> None:
+                path.write_text(str(next_offset), encoding="utf-8")
+
+            atomic_write(offset_path, _write_offset)
         except OSError as exc:
             logger.warning("could not persist pypi fan-out offset: %s", exc)
         payloads = self.load_many(batch, fetcher=fetcher)
