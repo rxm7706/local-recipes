@@ -88,8 +88,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-01T09:27:13-05:00'
-      tree: 464a1ad08a4568bfad3c506c270641bcd95b7523-dirty
+      derived_at: '2026-10-03T16:09:08-05:00'
+      tree: 97268d304cb9bba7837c542656d1d336ac78d2ed-dirty
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -159,8 +159,8 @@ pages:
       - scripts/detectors.py
       - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__init__.py
     stamp:
-      derived_at: '2026-10-01T04:16:50-05:00'
-      tree: d8f1deade0a455a7fe712e7e92f738f467d60993-dirty
+      derived_at: '2026-10-03T13:30:58-05:00'
+      tree: 5af87d05b79d80d3319063d7554429f086def0a5-dirty
   - path: reference/developer-guide.md
     quadrant: reference
     owner: fleet

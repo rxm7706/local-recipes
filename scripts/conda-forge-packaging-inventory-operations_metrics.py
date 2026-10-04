@@ -19,9 +19,12 @@ from __future__ import annotations
 import argparse
 import csv
 import sys
+import threading
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 _VERIFIED_PACKAGES_REL = (
     "derived/inventory_verified_packages/inventory_verified_packages.parquet"
@@ -65,6 +68,8 @@ _RETIRED_WORKBOOK_MSG = (
     f"{_VERIFIED_PACKAGES_REL} + {_AOSS_QUEUE_REL} under PYFORGE_ATLAS_DATA_ROOT"
 )
 
+PARQUET_READ_DEADLINE_SECONDS = 120
+
 
 @dataclass
 class AtlasExports:
@@ -76,7 +81,44 @@ class AtlasExports:
     failed: bool = False
 
 
-def load_atlas_exports(root: Path) -> AtlasExports:
+def _read_parquet_with_deadline(
+    path: Path,
+    *,
+    read_fn: Callable[[Path], Any] | None = None,
+    deadline_seconds: float = PARQUET_READ_DEADLINE_SECONDS,
+) -> Any:
+    """Run one Parquet read on a daemon thread and give up after ``deadline_seconds``.
+
+    A daemon worker bounds the process as well as the call: a read stuck on a dead
+    network mount cannot hold interpreter exit the way a pool worker would.
+    """
+    import pandas as pd
+
+    reader = read_fn if read_fn is not None else pd.read_parquet
+    outcome: dict[str, Any] = {}
+
+    def _work() -> None:
+        try:
+            outcome["value"] = reader(path)
+        except BaseException as exc:  # re-raised on the caller's thread below
+            outcome["error"] = exc
+
+    worker = threading.Thread(target=_work, name=f"parquet-read:{path.name}", daemon=True)
+    worker.start()
+    worker.join(deadline_seconds)
+    if worker.is_alive():
+        raise TimeoutError(f"parquet read deadline exceeded ({deadline_seconds}s) for {path}")
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["value"]
+
+
+def load_atlas_exports(
+    root: Path,
+    *,
+    read_parquet_fn: Callable[[Path], Any] | None = None,
+    deadline_seconds: float = PARQUET_READ_DEADLINE_SECONDS,
+) -> AtlasExports:
     """Read Story 23.4 Parquet exports under ``root`` (``PYFORGE_ATLAS_DATA_ROOT``).
 
     Lazily imports pandas. A missing or unreadable export is fatal (``failed``)
@@ -97,10 +139,14 @@ def load_atlas_exports(root: Path) -> AtlasExports:
                 result.failed = True
                 result.warnings.append(f"--live-catalog: {key} missing at {path}")
                 return result
-            df = pd.read_parquet(path)
+            df = _read_parquet_with_deadline(
+                path, read_fn=read_parquet_fn, deadline_seconds=deadline_seconds
+            )
         except Exception as exc:
             result.failed = True
-            result.warnings.append(f"--live-catalog: {key} unreadable at {path}: {exc}")
+            result.warnings.append(
+                f"--live-catalog: {key} unreadable at {path} ({type(exc).__name__}): {exc}"
+            )
             return result
         missing = [col for col in required_cols if col not in df.columns]
         if missing:
@@ -153,10 +199,13 @@ def write_markdown(
         and row["Packaging_Candidate_Status"] in _NET_NEW_STATUSES
     )
     not_on_cf_count = sum(1 for row in rows if row.get("CondaForge_Verified") != "Yes")
+    stamp = rows[0].get("Verification_Timestamp_UTC", "") if rows else ""
 
     lines: list[str] = []
     lines.append("# Consolidated Verified Package Inventory Report")
     lines.append("")
+    if stamp:
+        lines.append(f"- Verification timestamp (UTC): **{stamp}**")
     lines.append(f"- Total final unique package count: **{len(rows):,}**")
     lines.append(f"- Count not on conda-forge: **{not_on_cf_count:,}**")
     lines.append(f"- AOSS-Free Mason queue rows: **{queue_count:,}**")
@@ -206,7 +255,18 @@ def _queue_output_path(output_csv: Path, queue_rows: list[dict[str, str]]) -> Pa
     return output_csv.parent / f"aoss-free-queue-{stamp}.csv"
 
 
-def main() -> int:
+def _help_epilog() -> str:
+    return (
+        "Verification scale floors (enforced in Kedro derived_artifacts nodes, not "
+        "in this actuator), counted after package-name normalization: "
+        "core_packages_enumerated (conda-forge core names) must meet "
+        "params verification_sets.core_packages_enumerated_floor (default 30,000); "
+        "the PyPI universe must meet verification_sets.pypi_universe_floor "
+        "(default 1); the PyPI-to-conda mapping table carries no floor."
+    )
+
+
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="conda-forge-packaging-inventory-operations-metrics",
         description=(
@@ -214,6 +274,8 @@ def main() -> int:
             "Story 23.4 Parquet exports (inventory_verified_packages + "
             "inventory_aoss_free_queue)."
         ),
+        epilog=_help_epilog(),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         _RETIRED_WORKBOOK_FLAG,
@@ -246,14 +308,24 @@ def main() -> int:
     parser.add_argument(
         "--output-revised-prompt",
         type=Path,
-        default=Path("docs/reference/conda-forge-packaging-inventory-operations_prompt.md"),
+        default=None,
+        metavar="PATH",
+        help=(
+            "Write the revised prompt (this run's replay command) to PATH. Without it no "
+            "revised prompt is written, so a run never overwrites the tracked "
+            "docs/reference/conda-forge-packaging-inventory-operations_prompt.md."
+        ),
     )
     parser.add_argument(
         "--skip-revised-prompt",
         action="store_true",
-        help="Do not overwrite docs/reference/conda-forge-packaging-inventory-operations_prompt.md.",
+        help="Do not write the revised prompt even when --output-revised-prompt is given.",
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> int:
+    args = build_parser().parse_args()
 
     if args.analysis_xlsx is not None:
         print(_RETIRED_WORKBOOK_MSG, file=sys.stderr)
@@ -269,9 +341,11 @@ def main() -> int:
     write_markdown(args.output_md, exports.verified_rows, len(exports.queue_rows))
     queue_path = _queue_output_path(args.output_csv, exports.queue_rows)
     write_aoss_queue_csv(queue_path, exports.queue_rows)
-    if not args.skip_revised_prompt:
+    write_prompt = args.output_revised_prompt is not None and not args.skip_revised_prompt
+    if write_prompt:
         write_revised_prompt(args.output_revised_prompt, args)
 
+    # Terminal summary: the exact shape both docs/reference/...{prompt,replay}.md show.
     not_on_cf_count = sum(
         1 for row in exports.verified_rows if row.get("CondaForge_Verified") != "Yes"
     )
@@ -279,17 +353,20 @@ def main() -> int:
     print()
     print(f"Total final unique packages processed: {len(exports.verified_rows):,}")
     print(f"Count not on conda-forge: {not_on_cf_count:,}")
+    print(f"AOSS-Free Mason queue rows: {len(exports.queue_rows):,}")
+    if exports.verified_rows:
+        print(
+            "Verification timestamp (UTC): "
+            f"{exports.verified_rows[0].get('Verification_Timestamp_UTC', '')}"
+        )
+    print()
     print(f"Wrote CSV: {args.output_csv}")
-    print(f"Wrote Markdown report: {args.output_md}")
-    print(f"Wrote AOSS-Free queue: {queue_path} ({len(exports.queue_rows):,} rows)")
-    if not args.skip_revised_prompt:
+    print(f"Wrote Markdown: {args.output_md}")
+    print(f"Wrote AOSS-Free queue CSV: {queue_path}")
+    if write_prompt:
         print(f"Wrote revised prompt: {args.output_revised_prompt}")
-    if exports.warnings:
-        print("\nWarnings:")
-        for warning in exports.warnings:
-            print(f"  - {warning}")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

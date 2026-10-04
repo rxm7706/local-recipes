@@ -59,6 +59,13 @@ Verification and classification:
    23.8, execution mode 5), the package universe itself is ALSO read from that
    same Kedro data plane (`inventory_universe.parquet`) instead of the
    workbook's sheets.
+   Story 27.1 scale floors (Kedro ``derived_artifacts`` only), counted after
+   package-name normalization: ``core_packages_enumerated`` (conda-forge core names)
+   must meet ``params:verification_sets.core_packages_enumerated_floor`` (default
+   30,000) and the PyPI universe ``params:verification_sets.pypi_universe_floor``
+   (default 1); the PyPI-to-conda mapping table carries no floor. Any other key in
+   ``verification_sets`` (including the retired ``cf_or_pm_floor``) is refused.
+   The metrics actuator summarizes these floors in its ``--help`` epilog.
 2. Assign `Packaging_Candidate_Status`:
    - Already Packaged: PyPI = Yes and conda-forge = Yes
    - High Priority Candidate: PyPI = Yes and conda-forge = No and Priority P1–P8
@@ -139,8 +146,7 @@ Execution commands (Story 23.9 — workbook-free; `--analysis-xlsx` exits 2):
 python3 scripts/conda-forge-packaging-inventory-operations_metrics.py \
   --live-catalog "src/shared/packages/pyforge-atlas/data" \
   --output-csv "cdao_consolidated_inventory_verified_all_packages.csv" \
-  --output-md "cdao_consolidated_inventory_verified_all_packages.md" \
-  --skip-revised-prompt
+  --output-md "cdao_consolidated_inventory_verified_all_packages.md"
 ```
 
 2. Identity gist publish (reads `identity_complete_export.parquet`; ranking already on export):
@@ -166,20 +172,28 @@ python3 scripts/conda-forge-packaging-inventory-operations_priority.py \
    `identity_complete_export.parquet` and `inventory_priority_assignments.parquet`.
    No `.xlsx` is opened anywhere in the quartet.
 
-Terminal summary format must still include:
+Terminal summary format (exact shape the actuator prints):
 
 ```text
 === MASTER PROMPT V3.0 EXECUTION SUMMARY METRICS ===
 
 Total final unique packages processed: <number>
 Count not on conda-forge: <number>
-Count from analysis-dataset portion not on conda-forge: <number>
-Count parsed from OpenTeams-style portion:
-  - rows used by rule (a): <number>
-  - rows used by rule (b): <number>
-  - rows ignored by rule (c): <number>
-  - unique packages extracted from that portion: <number>
+AOSS-Free Mason queue rows: <number>
+Verification timestamp (UTC): <timestamp>
+
+Wrote CSV: <path>
+Wrote Markdown: <path>
+Wrote AOSS-Free queue CSV: <path>
+Wrote revised prompt: <path>
 ```
+
+The `Verification timestamp (UTC)` line appears only when the verified export has
+rows; the `Wrote revised prompt` line appears only when `--output-revised-prompt PATH`
+is given without `--skip-revised-prompt` -- a default run writes no revised prompt and
+never overwrites `conda-forge-packaging-inventory-operations_prompt.md`.
+`scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` pins this
+block against the actuator's stdout.
 
 ---
 

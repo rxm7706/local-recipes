@@ -2,39 +2,27 @@
 
 from __future__ import annotations
 
-import ast
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 
+from pyforge.atlas.pipelines.derived_artifacts.identity_export_contract import (
+    GIST_COLUMNS,
+    stringify_export_cell,
+)
 from pyforge.atlas.pipelines.derived_artifacts.nodes import (
     _IDENTITY_COMPLETE_EXPORT_COLUMNS,
     build_identity_complete_export,
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[8]
-_IDENTITY_SCRIPT = _REPO_ROOT / "scripts" / "conda-forge-packaging-inventory-operations_openteams_identity.py"
 _FIXTURE_DIR = _REPO_ROOT / "src/shared/packages/pyforge-atlas/tests/fixtures/inventory_identity"
 
 _FIXED_TS = "2026-08-30T12:00:00Z"
 _PARAMS = {"identity_complete_export": {"verification_timestamp_utc": _FIXED_TS}}
-
-
-def _gist_columns_from_script() -> list[str]:
-    """Parse ``GIST_SCHEMA`` names without importing the legacy script (openpyxl)."""
-    source = _IDENTITY_SCRIPT.read_text(encoding="utf-8")
-    for node in ast.walk(ast.parse(source)):
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "GIST_SCHEMA":
-                    schema = ast.literal_eval(node.value)
-                    return [str(row[0]) for row in schema]
-    raise RuntimeError(f"GIST_SCHEMA not found in {_IDENTITY_SCRIPT}")
-
-
-GIST_COLUMNS = _gist_columns_from_script()
 
 
 def _identity_row(
@@ -300,3 +288,128 @@ def test_fixture_corpus_column_parity():
             assert pd.isna(got[key])
         else:
             assert got[key] == exp
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 — DW-FU-21-7-5 / DW-FU-21-7-7: the ranking merge warns, never blanks silently
+# ---------------------------------------------------------------------------
+
+_NODES_LOGGER = "pyforge.atlas.pipelines.derived_artifacts.nodes"
+
+
+def _warnings(caplog) -> list[str]:
+    return [r.getMessage() for r in caplog.records if r.name == _NODES_LOGGER and r.levelname == "WARNING"]
+
+
+@pytest.mark.parametrize(
+    "column",
+    [
+        "P",
+        "Rank",
+        "Score",
+        "Work",
+        "Priority_Bucket_Description",
+        "Priority_Source",
+        "Priority_Reason",
+        "risk_level",
+        "jfrog_latest_vuln_count",
+        "vuln_status",
+    ],
+)
+def test_absent_ranking_input_column_is_a_named_warning(caplog, column):
+    row = _priority_row("warn-pkg")
+    del row[column]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        out = _run([_identity_row("warn-pkg")], priority_rows=[row])
+    assert f"identity_complete_export: ranking input missing column {column}" in _warnings(caplog)
+    assert len(out) == 1
+
+
+@pytest.mark.parametrize(
+    "column",
+    [
+        "platform_env_count",
+        "internal_app_count",
+        "artifactory_downloads",
+        "artifactory_version_count",
+        "internal_component_count",
+        "internal_lob_count",
+    ],
+)
+def test_absent_jfrog_input_column_is_a_named_warning(caplog, column):
+    row = _jfrog_row("warn-pkg")
+    del row[column]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        _run([_identity_row("warn-pkg")], priority_rows=[_priority_row("warn-pkg")], jfrog_rows=[row])
+    assert f"identity_complete_export: JFROG consumption input missing column {column}" in _warnings(caplog)
+
+
+def test_ranked_input_without_its_join_key_warns_that_nothing_joins(caplog):
+    row = _priority_row("keyless-pkg")
+    del row["core_python_package_name"]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        out = _run([_identity_row("keyless-pkg")], priority_rows=[row])
+    assert (
+        "identity_complete_export: ranking input missing column core_python_package_name; no ranked row can join"
+        in _warnings(caplog)
+    )
+    assert pd.isna(out.iloc[0]["P"])
+
+
+def test_blank_ranked_names_are_skipped_not_counted_as_duplicates(caplog):
+    rows = [_priority_row("", P="P1"), _priority_row("   ", P="P2"), _priority_row("real-pkg")]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        _run([_identity_row("real-pkg")], priority_rows=rows)
+    assert not [w for w in _warnings(caplog) if "duplicate" in w]
+
+
+def test_complete_inputs_raise_no_merge_warning(caplog):
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        _run(
+            [_identity_row("clean-pkg")],
+            priority_rows=[_priority_row("clean-pkg")],
+            jfrog_rows=[_jfrog_row("clean-pkg")],
+        )
+    assert _warnings(caplog) == []
+
+
+@pytest.mark.parametrize(
+    ("names", "expected"),
+    [
+        (["My_Pkg", "my-pkg"], "my-pkg (2 rows, last wins): My_Pkg, my-pkg"),
+        (["dup-pkg", "dup-pkg"], "dup-pkg (2 rows, last wins): dup-pkg, dup-pkg"),
+    ],
+)
+def test_ranked_rows_sharing_a_pep503_key_warn_naming_every_row(caplog, names, expected):
+    rows = [_priority_row(name, P=f"P{i + 1}") for i, name in enumerate(names)]
+    with caplog.at_level("WARNING", logger=_NODES_LOGGER):
+        out = _run([_identity_row(names[-1])], priority_rows=rows)
+    assert f"identity_complete_export: duplicate ranked rows normalize to {expected}" in _warnings(caplog)
+    assert out.iloc[0]["P"] == f"P{len(names)}"
+
+
+# ---------------------------------------------------------------------------
+# Story 27.1 — DW-FU-21-7-6: one cell-to-text rule for every export reader
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (None, ""),
+        (pd.NA, ""),
+        (pd.NaT, ""),
+        (float("nan"), ""),
+        ("  padded  ", "padded"),
+        (7, "7"),
+        (["pkg:pypi/a", "pkg:github/b"], "pkg:pypi/a; pkg:github/b"),
+        (("x", None, "y"), "x; y"),
+        (np.array(["p", "q"]), "p; q"),
+        (["a", pd.NA], "a"),
+        ([pd.NA, "a", float("nan"), None, pd.NaT, "b"], "a; b"),
+        ([pd.NA, None], ""),
+        ([], ""),
+    ],
+)
+def test_stringify_export_cell(value, expected):
+    assert stringify_export_cell(value) == expected

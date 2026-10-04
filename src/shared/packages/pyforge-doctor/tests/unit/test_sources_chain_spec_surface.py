@@ -14,8 +14,12 @@ spec's own Tasks & Acceptance for the requirement.
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import os
 import subprocess
+import sys
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
@@ -441,7 +445,10 @@ def test_tracked_files_is_fetched_once_and_reused(tmp_path: Path, monkeypatch) -
 
     chain.gather_spec_surface(repo)
 
-    ls_files_calls = [c for c in calls if c == ["ls-files"]]
+    # DW-doctor-38-2/DW-FU-6-6-4 moved the invocation to
+    # `-c core.quotePath=false ls-files -z`; match on the subcommand, not the
+    # whole argv, so this stays a once-only assertion and not an arg-shape one.
+    ls_files_calls = [c for c in calls if "ls-files" in c]
     assert len(ls_files_calls) == 1, f"git ls-files was called {len(ls_files_calls)} times, expected 1: {calls}"
 
 
@@ -1361,24 +1368,30 @@ def test_live_globs_report_no_stale_surface_row(tmp_path: Path) -> None:
 def test_trailing_slash_and_brace_globs_are_judged_by_what_they_match(
     tmp_path: Path,
 ) -> None:
-    """``_glob_to_re`` is the one governing matcher: a trailing ``/`` matches no
-    file and ``{a,b}`` is not expanded, so both govern nothing and are dead --
-    even though the directory exists and ``a.py``/``b.py`` are tracked. A brace
-    glob that equals a tracked file's literal name does match it, so it is live."""
+    """``_glob_to_re`` is the one governing matcher, and DW-FU-12-4 makes a
+    trailing ``/`` govern that directory's whole subtree -- the shape every
+    Spec author already writes and every reader already assumes. ``{a,b}`` is
+    still NOT expanded, so a brace glob governs nothing and is dead, while a
+    brace glob equal to a tracked file's literal name does match it and is
+    live. ``empty/`` names a directory holding no tracked file, so the
+    trailing slash is read and still finds nothing: dead, as it should be."""
     repo = tmp_path / "repo"
     _init_repo(repo)
     _write_spec(
         repo,
         "pyforge-x",
         "spec-foo",
-        surface=["src/", "src/{a,b}.py", "src/*.py", "lit/x{1,2}.txt"],
+        surface=["src/", "src/{a,b}.py", "src/*.py", "lit/x{1,2}.txt", "empty/"],
         drift="exempt",
     )
     (repo / "src").mkdir()
     (repo / "src" / "a.py").write_text("a = 1\n", encoding="utf-8")
     (repo / "src" / "b.py").write_text("b = 1\n", encoding="utf-8")
+    (repo / "src" / "deep").mkdir()
+    (repo / "src" / "deep" / "c.py").write_text("c = 1\n", encoding="utf-8")
     (repo / "lit").mkdir()
     (repo / "lit" / "x{1,2}.txt").write_text("literal\n", encoding="utf-8")
+    (repo / "empty").mkdir()
     _write_allowlist(repo, [("**", "everything else")])
     _add_commit(repo)
 
@@ -1386,10 +1399,14 @@ def test_trailing_slash_and_brace_globs_are_judged_by_what_they_match(
 
     messages = " | ".join(f.message for f in rows)
     assert len(rows) == 2, rows
-    assert "'src/'" in messages
+    assert "'src/'" not in messages
+    assert "'empty/'" in messages
     assert "'src/{a,b}.py'" in messages
     assert "'src/*.py'" not in messages
     assert "lit/x{1,2}.txt" not in messages
+    # The subtree really is governed, not just the directory's own children:
+    # `src/deep/c.py` is matched by `src/` alone.
+    assert chain._glob_to_re("src/").match("src/deep/c.py")
 
 
 def test_unreadable_spec_surface_is_not_judged_stale(tmp_path: Path) -> None:
@@ -1487,3 +1504,251 @@ def test_dead_glob_does_not_change_an_existing_gating_finding(tmp_path: Path) ->
     assert [f.evidence["path"] for f in stale_allow] == ["nowhere/**"]
     assert stale_allow[0].status is DoctorStatus.FAIL
     assert len(_stale_surface(findings)) == 1
+
+
+# === Story 41.1: the surface contract measures what it claims =================
+
+
+def _write_raw_spec(repo: Path, project: str, spec: str, frontmatter: str) -> Path:
+    """A SPEC.md whose frontmatter is written VERBATIM -- `_write_spec` only
+    emits one canonical shape, and these tests are about the shapes a human
+    actually writes (quoted, flow, oddly indented, empty)."""
+    sd = _spec_dir(repo, project, spec)
+    sd.mkdir(parents=True, exist_ok=True)
+    (sd / "SPEC.md").write_text(f"---\n{frontmatter}---\n\nbody\n", encoding="utf-8")
+    return sd
+
+
+@pytest.mark.parametrize(
+    ("frontmatter", "expected"),
+    [
+        # Quoted globs, both quote styles -- the quotes are YAML syntax, not
+        # part of the path, so an unstripped quote governed nothing.
+        ("surface:\n  - \"a.py\"\n  - 'b.py'\n", ["a.py", "b.py"]),
+        # A flow sequence on one line, the shape a short surface is written in.
+        ("surface: [a.py, b.py]\n", ["a.py", "b.py"]),
+        ("surface: ['a.py', \"b.py\"]\n", ["a.py", "b.py"]),
+        # One bare scalar, no sequence at all.
+        ("surface: a.py\n", ["a.py"]),
+        # Any indent: four spaces, a tab, none at all -- YAML permits each.
+        ("surface:\n    - a.py\n", ["a.py"]),
+        ("surface:\n- a.py\n", ["a.py"]),
+        # A trailing comment belongs to the reader, not to the path.
+        ("surface:\n  - a.py  # the one module\n", ["a.py"]),
+    ],
+)
+def test_parse_surface_reads_every_shape_a_human_writes(tmp_path: Path, frontmatter: str, expected: list[str]) -> None:
+    """DW-FU-6-6-9: `_parse_surface` is a hand-rolled frontmatter reader, and
+    every shape it silently mis-read was a surface that governed nothing --
+    a FAIL-storm of `ungoverned` for files whose Spec plainly claims them,
+    or worse a drift verdict computed over an empty governed set."""
+    spec_md = tmp_path / "SPEC.md"
+    spec_md.write_text(f"---\n{frontmatter}---\n\nbody\n", encoding="utf-8")
+
+    globs, _excludes, _drift = chain._parse_surface(spec_md)
+
+    assert globs == expected
+
+
+def test_a_declared_but_valueless_surface_is_unevaluable_not_empty(tmp_path: Path) -> None:
+    """DW-FU-6-6-9: a `surface:` key with no readable value at all is a
+    surface nobody can know, and an unknown surface is not an EMPTY one. It
+    used to read as empty, which made every tracked file in the repo
+    `ungoverned` on that Spec's behalf -- a confident FAIL derived from a
+    parse failure. One WARN naming the Spec is the honest answer."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_raw_spec(repo, "pyforge-x", "spec-dark", "surface:\nsome-other-key: 1\n")
+    (repo / "governed.py").write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+
+    dark = [f for f in findings if f.check == "spec-surface-unevaluable"]
+    assert len(dark) == 1, [f.check for f in findings]
+    assert dark[0].status is DoctorStatus.WARN
+    assert dark[0].evidence["path"] == "pyforge-x/spec-dark"
+    assert "not evaluable" in dark[0].message
+
+
+def test_an_explicitly_empty_surface_stays_empty_not_unevaluable(tmp_path: Path) -> None:
+    """The carve-out that keeps DW-FU-6-6-9 honest: nine live Specs declare
+    `surface: []` deliberately ("archived -- no live surface"). An author
+    who wrote the empty sequence SAID the surface is empty; that is a known
+    answer, not a missing one, and must not become a WARN."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_raw_spec(repo, "pyforge-x", "spec-archived", "surface: []\n")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo)
+
+    assert [f for f in findings if f.check == "spec-surface-unevaluable"] == []
+
+
+def test_a_subdirectory_target_is_one_warn_not_an_ungoverned_storm(tmp_path: Path) -> None:
+    """DW-FU-6-6-7: `git ls-files` run from a SUBDIRECTORY lists only that
+    subtree, while Spec discovery still walks `_bmad-output/projects/` from
+    the given target -- which does not exist there. So every file the
+    subdirectory does contain came back `ungoverned`: a FAIL storm whose
+    real cause was standing in the wrong place. Spec surface is a
+    whole-repository verdict; say so once, and say where to re-run."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["pkg/**"])
+    (repo / "pkg").mkdir()
+    for name in ("a.py", "b.py", "c.py"):
+        (repo / "pkg" / name).write_text("x = 1\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    findings = chain.gather_spec_surface(repo / "pkg")
+
+    assert len(findings) == 1, [f.check for f in findings]
+    assert findings[0].check == "spec-surface-unevaluable"
+    assert findings[0].status is DoctorStatus.WARN
+    assert str(repo.resolve()) in findings[0].message
+    assert findings[0].evidence["top_level"] == str(repo.resolve())
+
+
+def test_a_path_needing_quoting_is_read_literally(tmp_path: Path) -> None:
+    """DW-doctor-38-2 / DW-FU-6-6-4: `git ls-files` C-quotes and
+    octal-escapes any path with a non-ASCII or special character unless
+    `core.quotePath=false`, so a Diátaxis spec's own filename came back as
+    `"...di\\303\\241taxis..."` -- a string that matches no glob and no
+    allowlist entry, and therefore read as a brand-new ungoverned file that
+    could only be silenced by allowlisting the ESCAPED form. `-z` with a NUL
+    split is the other half: a path containing a literal newline cannot be
+    recovered from newline-separated output at all."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_spec(repo, "pyforge-x", "spec-foo", surface=["diátaxis.md"])
+    (repo / "diátaxis.md").write_text("x\n", encoding="utf-8")
+    # git C-quotes a `"` even with core.quotePath=false; only `-z` returns it literally.
+    (repo / 'we"ird.md').write_text("x\n", encoding="utf-8")
+    _write_allowlist(repo, [("**", "everything else")])
+    _add_commit(repo)
+
+    tracked = chain._tracked_files(repo)
+
+    assert tracked is not None
+    assert "diátaxis.md" in tracked
+    assert 'we"ird.md' in tracked
+    assert not any("\\303" in path or path.startswith('"') for path in tracked)
+    # And the literal path really is governed by the literal glob.
+    ungoverned = {f.evidence["path"] for f in chain.gather_spec_surface(repo) if f.check == "ungoverned"}
+    assert "diátaxis.md" not in ungoverned
+
+
+REPO_ROOT = Path(__file__).resolve().parents[6]
+
+
+@lru_cache
+def _stamp_script_module():
+    """Mutation script twin — must stay aligned with chain (Story 41.1)."""
+    path = REPO_ROOT / "scripts" / "spec_surface_check.py"
+    spec = importlib.util.spec_from_file_location("_spec_surface_check_parity", path)
+    assert spec is not None and spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@pytest.mark.parametrize(
+    ("frontmatter", "expected"),
+    [
+        ("surface:\n  - a.py\n", ["a.py"]),
+        ("surface: [a.py, b.py]\n", ["a.py", "b.py"]),
+        ("surface: a.py\n", ["a.py"]),
+        ("surface:\n    - meta/\n", ["meta/"]),
+    ],
+)
+def test_stamp_script_parse_surface_matches_chain(tmp_path: Path, frontmatter: str, expected: list[str]) -> None:
+    """Story 41.1: `parse_surface` and `_parse_surface` read the contract identically."""
+    spec_md = tmp_path / "SPEC.md"
+    spec_md.write_text(f"---\n{frontmatter}---\n\nbody\n", encoding="utf-8")
+    script = _stamp_script_module()
+    globs_script, _, _ = script.parse_surface(spec_md)
+    globs_chain, _, _ = chain._parse_surface(spec_md)
+    assert globs_script == globs_chain == expected
+
+
+@pytest.mark.parametrize(
+    ("pattern", "path"),
+    [
+        ("src/", "src/deep/mod.py"),
+        ("pkg/**", "pkg/a/b.py"),
+        ("exact.py", "exact.py"),
+    ],
+)
+def test_stamp_script_glob_to_re_matches_chain(pattern: str, path: str) -> None:
+    script = _stamp_script_module()
+    script_hit = script.glob_to_re(pattern).match(path)
+    chain_hit = chain._glob_to_re(pattern).match(path)
+    assert bool(script_hit) == bool(chain_hit)
+    if script_hit and chain_hit:
+        assert script_hit.group(0) == chain_hit.group(0)
+
+
+def test_stamp_script_tracked_files_reads_non_ascii_paths_literally(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DW-FU-6-6-4: the stamp script's ``tracked_files()`` matches chain's read."""
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "diátaxis.md").write_text("x\n", encoding="utf-8")
+    (repo / 'we"ird.md').write_text("x\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "diátaxis.md", 'we"ird.md'], check=True)
+    subprocess.run(
+        ["git", "-C", str(repo), "commit", "-m", "add", "--date", "2026-01-01T00:00:00+00:00"],
+        check=True,
+        env={
+            **os.environ,
+            "GIT_AUTHOR_DATE": "2026-01-01T00:00:00+00:00",
+            "GIT_COMMITTER_DATE": "2026-01-01T00:00:00+00:00",
+        },
+    )
+
+    script = _stamp_script_module()
+    monkeypatch.setattr(script, "REPO_ROOT", repo, raising=False)
+
+    script_paths = set(script.tracked_files())
+    chain_paths = set(chain._tracked_files(repo) or [])
+
+    assert "diátaxis.md" in script_paths
+    assert 'we"ird.md' in script_paths
+    assert script_paths == chain_paths
+
+
+def test_stamp_script_full_stamp_over_a_corrupt_baseline_refuses_and_writes_nothing(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Story 41.1: a ``--spec``-less full stamp reads the committed baseline
+    BEFORE it writes, so a corrupt baseline refuses (exit 1, naming the file
+    and its ``git checkout`` recovery) even when discovery found Specs. The
+    full stamp used to read the baseline only on its zero-Spec guard, so with
+    any Spec discovered it replaced the corrupt file at exit 0 and the damage
+    was never reported."""
+    script = _stamp_script_module()
+    (tmp_path / "scripts").mkdir()
+    baseline = tmp_path / "scripts" / ".spec-surface-baseline.json"
+    corrupt = b'{"proj/spec-alpha": "abc'
+    baseline.write_bytes(corrupt)
+    live = {"proj/spec-alpha": {"memlog": "0" * 40, "files": {"a.py": "1" * 40}}}
+    monkeypatch.setattr(script, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(script, "BASELINE", baseline)
+    monkeypatch.setattr(script, "_live_state", lambda unevaluable=None: live)
+    monkeypatch.setattr(sys, "argv", ["spec_surface_check.py", "--write-baseline"])
+
+    assert script.main() == 1
+
+    assert baseline.read_bytes() == corrupt
+    assert not baseline.with_name(baseline.name + ".tmp").exists()
+    err = capsys.readouterr().err
+    assert "scripts/.spec-surface-baseline.json" in err
+    assert "git checkout --" in err

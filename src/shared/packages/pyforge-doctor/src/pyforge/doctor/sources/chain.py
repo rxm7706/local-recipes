@@ -51,7 +51,7 @@ import os
 import re
 import stat
 from collections.abc import Mapping, Sequence, Set
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
@@ -462,6 +462,29 @@ def _collect_dreams(target: Path, findings: list[dict]) -> dict[str, dict]:
     return dreams
 
 
+def _covers_dreams_values(raw: object) -> list[str]:
+    """``covers-dreams:``'s declared values as a list (DW-FU-6-6-6).
+
+    A bare SCALAR reads as the one-item list it plainly means. The original
+    iterated the raw value directly, so a scalar was walked CHARACTER BY
+    CHARACTER: the Dream it consolidates was still reported FAIL
+    ``dream-without-spec`` -- a false gating failure -- while any
+    one-character Dream slug would have been silently marked covered.
+
+    Any OTHER non-list shape (a mapping, a number) RAISES, which
+    ``_append_spec_entry``'s own per-spec isolation turns into one named
+    ``dream-chain-unevaluable`` WARN for that Spec. Guessing at a shape
+    nobody writes deliberately is how the character-by-character read
+    happened in the first place."""
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        return [raw]
+    if isinstance(raw, list):
+        return [c or "" for c in raw]
+    raise ValueError(f"covers-dreams: must be a list of Dream paths (or one bare path), got {type(raw).__name__}")
+
+
 def _spec_entry(sp: Path, project: str, target: Path) -> dict:
     """One Spec's collected fields -- verbatim from the original's own
     ``collect()`` (both the per-project and the governance loop build this
@@ -474,7 +497,7 @@ def _spec_entry(sp: Path, project: str, target: Path) -> dict:
         # `covers-dreams:` -- a consolidating Spec's explicit declaration that
         # it also satisfies INV-1 for OTHER Dreams whose whole chain was
         # folded in here (2026-08-02 satellite-consolidation convention).
-        "covers": [(c or "").split("/")[-1].removesuffix(".md") for c in (fm.get("covers-dreams") or [])],
+        "covers": [c.split("/")[-1].removesuffix(".md") for c in _covers_dreams_values(fm.get("covers-dreams"))],
         "satellite_titles": _satellite_titles(sp),
         "status": str(fm.get("status") or "").strip(),
         "path": str(sp.relative_to(target)),
@@ -1660,9 +1683,36 @@ ALLOWLIST_REL = Path("scripts") / "spec_surface_allowlist.txt"
 BASELINE_REL = Path("scripts") / ".spec-surface-baseline.json"
 
 
+#: The glob metacharacters ``_glob_to_re`` below translates. A ``surface:``
+#: entry containing none of them is a literal path -- and a literal path
+#: ending in ``/`` is a DIRECTORY, which is what ``_SURFACE_DIR_SUFFIX``
+#: below reads it as.
+_GLOB_METACHARS = frozenset("*?")
+
+#: What a glob-less trailing-slash entry is expanded to (DW-FU-12-4). Written
+#: once here so ``scripts/spec_surface_check.py``'s own twin states the same
+#: rule in the same words.
+_SURFACE_DIR_SUFFIX = "**"
+
+
 def _glob_to_re(pattern: str) -> re.Pattern:
     """Verbatim from the original: ``**`` spans path separators, ``*``/``?``
-    do not; a pattern with no glob chars matches exactly."""
+    do not; a pattern with no glob chars matches exactly.
+
+    ONE addition (DW-FU-12-4): a glob-less entry ending in ``/`` governs that
+    directory's whole subtree -- it reads as ``dir/**``. ``git ls-files``
+    never emits a directory, so such an entry could previously match NOTHING
+    at all, and seven Specs' surfaces named a directory that way (measured
+    2026-10-01, the dead-glob WARN of Story 38.2): the Spec claimed a tree
+    and governed none of it. Expanding the entry instead of reporting it dead
+    is what the Spec's author plainly meant, and it is the reading
+    ``scripts/spec_surface_check.py::glob_to_re`` applies too -- the stamp and
+    the verdict must agree on what a surface covers, or a stamp writes a
+    baseline the verdict then reads as drift. An entry that already carries a
+    glob (``dir/*``, ``dir/**``) is untouched: its author already said what
+    depth they meant."""
+    if pattern.endswith("/") and not (_GLOB_METACHARS & set(pattern)):
+        pattern += _SURFACE_DIR_SUFFIX
     out: list[str] = []
     i = 0
     while i < len(pattern):
@@ -1682,15 +1732,109 @@ def _glob_to_re(pattern: str) -> re.Pattern:
     return re.compile("^" + "".join(out) + "$")
 
 
+class SurfaceUnevaluable(Exception):
+    """A SPEC.md declares ``surface:`` but no glob can be read from it
+    (DW-FU-6-6-9) -- raised by ``_parse_surface`` so ``_collect_surfaces``
+    reports ONE named ``spec-surface-unevaluable`` WARN for that Spec,
+    exactly as it already does for an unreadable SPEC.md.
+
+    Not raised for an EXPLICIT empty sequence (``surface: []``): nine live
+    Specs declare that deliberately with an "archived -- no live surface"
+    comment beside it, and an author who wrote ``[]`` has said "governs
+    nothing" out loud. The defect this exception names is the SILENT kind --
+    a ``surface:`` key whose items the reader could not see at all."""
+
+
+def _strip_surface_comment(value: str) -> str:
+    """``value`` with a trailing ``#`` comment removed -- but only one that
+    starts a word OUTSIDE any quoted run. A bare ``split("#", 1)`` (the
+    original) truncates ``"docs/#notes/**"`` and, worse, any quoted glob
+    whose own text carries a ``#``; a glob also legitimately contains ``#``
+    nowhere else, so the quote-aware scan costs nothing and cannot lose a
+    character the author wrote."""
+    quote = ""
+    for i, ch in enumerate(value):
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#" and (i == 0 or value[i - 1] in " \t"):
+            return value[:i]
+    return value
+
+
+def _unquote_surface(token: str) -> str:
+    """``token`` with one matched pair of surrounding YAML quotes removed.
+    ``- "src/**"`` is as valid as ``- src/**`` and means the same glob; the
+    original read the quotes as part of the pattern, so the entry matched
+    nothing (five of steward's own surface entries are quoted, measured
+    2026-10-01)."""
+    token = token.strip()
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in "\"'":
+        return token[1:-1]
+    return token
+
+
+def _split_flow_items(inner: str) -> list[str]:
+    """A YAML flow sequence's body split on the commas that are OUTSIDE any
+    quoted run -- a brace glob (``"a/{b,c}/**"``) must be quoted to be valid
+    YAML flow syntax, so its own commas are always inside quotes here."""
+    items: list[str] = []
+    buf: list[str] = []
+    quote = ""
+    for ch in inner:
+        if quote:
+            buf.append(ch)
+            if ch == quote:
+                quote = ""
+            continue
+        if ch in "\"'":
+            quote = ch
+            buf.append(ch)
+        elif ch == ",":
+            items.append("".join(buf))
+            buf = []
+        else:
+            buf.append(ch)
+    items.append("".join(buf))
+    return items
+
+
+def _surface_flow_sequence(value: str) -> list[str] | None:
+    """A ``[a, "b"]`` flow sequence's items, or ``None`` when ``value`` is
+    not a flow sequence at all. ``[]`` returns ``[]`` -- an EXPLICIT empty
+    surface, which ``_parse_surface`` distinguishes from an unreadable one."""
+    value = value.strip()
+    if not (value.startswith("[") and value.endswith("]")):
+        return None
+    inner = value[1:-1].strip()
+    if not inner:
+        return []
+    return [g for g in (_unquote_surface(part) for part in _split_flow_items(inner)) if g]
+
+
 def _parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
     """(``surface:`` globs, ``surface-drift-exclude:`` globs, drift mode)
-    from a SPEC.md's frontmatter -- verbatim hand-rolled reader from the
-    original (NOT ``yaml.safe_load``: preserve, don't redesign -- unlike
-    ``gather_dream_chain``'s frontmatter, this parser's own comments explain
-    why a comment/blank line inside a block sequence must not end the
-    section, a real historical bug this port keeps fixed).
+    from a SPEC.md's frontmatter -- a YAML frontmatter reader, still
+    hand-rolled rather than ``yaml.safe_load`` so ``scripts/spec_surface_
+    check.py``'s stdlib-only twin can state the identical contract, and so a
+    comment or blank line inside a block sequence still does not end the
+    section (a real historical bug this reader keeps fixed).
 
-    RAISES on an unreadable/non-UTF-8 SPEC.md rather than degrading to an
+    Four spellings of the SAME declaration are read, where the original
+    recognised exactly one (``  - glob`` at that one indent) and parsed the
+    other three to an EMPTY surface with no word of warning -- DW-FU-6-6-9:
+
+    * a block sequence item at ANY indent (``- g``, ``  - g``, ``    - g``);
+    * a quoted item (``- "src/**"``, ``- 'src/**'``);
+    * a flow sequence (``surface: [a, "b/{c,d}/**"]``);
+    * a scalar (``surface: src/**``), read as the one-item list it is --
+      the same ruling DW-FU-6-6-6 applies to ``covers-dreams:``.
+
+    RAISES on an unreadable/non-UTF-8 SPEC.md, and raises
+    ``SurfaceUnevaluable`` when ``surface:`` is declared but yields no glob
+    and was not written as an explicit ``[]``, rather than degrading to an
     empty surface. An empty surface is indistinguishable from "this spec
     governs nothing", so degrading here silently UN-GOVERNS every file the
     spec really owns: each one is then reported FAIL ``ungoverned`` ("no spec
@@ -1706,6 +1850,8 @@ def _parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
     globs: list[str] = []
     excludes: list[str] = []
     drift = "memlog"
+    surface_declared = False
+    surface_explicitly_empty = False
     text = spec_md.read_text(encoding="utf-8")
     in_fm = False
     section: str | None = None
@@ -1717,18 +1863,43 @@ def _parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
             continue
         if not in_fm:
             continue
-        if section and line.startswith("  - "):
-            (globs if section == "surface" else excludes).append(line[4:].split("#", 1)[0].strip())
+        stripped = line.strip()
+        if section and (stripped.startswith("- ") or stripped == "-"):
+            item = _unquote_surface(_strip_surface_comment(stripped[1:]))
+            if item:
+                (globs if section == "surface" else excludes).append(item)
             continue
-        if section and (not line.strip() or line.lstrip().startswith("#")):
+        if section and (not stripped or stripped.startswith("#")):
             continue
         section = None
-        if line.startswith("surface:"):
-            section = "surface"
-        elif line.startswith("surface-drift-exclude:"):
-            section = "exclude"
-        elif line.startswith("surface-drift:"):
-            drift = line.split(":", 1)[1].split("#", 1)[0].strip()
+        # Frontmatter keys sit at column 0; an indented `surface:` belongs to
+        # some other key's mapping and is not this contract.
+        key, sep, raw = line.partition(":")
+        if not sep or key not in ("surface", "surface-drift-exclude", "surface-drift"):
+            continue
+        value = _strip_surface_comment(raw).strip()
+        if key == "surface-drift":
+            drift = _unquote_surface(value)
+            continue
+        target = globs if key == "surface" else excludes
+        if key == "surface":
+            surface_declared = True
+        flow = _surface_flow_sequence(value)
+        if flow is not None:
+            target.extend(flow)
+            if key == "surface" and not flow:
+                surface_explicitly_empty = True
+            continue
+        if value:
+            target.append(_unquote_surface(value))
+            continue
+        section = "surface" if key == "surface" else "exclude"
+    if surface_declared and not globs and not surface_explicitly_empty:
+        raise SurfaceUnevaluable(
+            f"{spec_md.name} declares surface: but no glob could be read from it "
+            f"— write one `- <glob>` per line, or an explicit `surface: []` to "
+            f"say it governs nothing"
+        )
     return globs, excludes, drift
 
 
@@ -1824,6 +1995,18 @@ def _tracked_files(target: Path) -> list[str] | None:
     routes through ``cli_bridge.run_git`` (AD-5: the sole subprocess site),
     unlike the original's own direct ``subprocess.run`` call.
 
+    ``-c core.quotePath=false`` and ``-z`` (DW-doctor-38-2): git's DEFAULT
+    path quoting wraps any path carrying a non-ASCII byte in double quotes
+    and octal-escapes the byte, so ``docs/café.md`` arrived as
+    ``"docs/caf\\303\\251.md"`` -- a string no literal ``surface:`` glob and
+    no allowlist pattern can match, producing a spurious ``ungoverned`` FAIL
+    for a file whose real drift then went unmeasured. Turning the quoting off
+    and splitting on NUL instead of newline also makes a path containing a
+    newline arrive whole, for the same reason: this list is matched against
+    globs and hashed, so every element must be the literal path on disk.
+    ``scripts/spec_surface_check.py::tracked_files`` reads git identically
+    (DW-FU-6-6-4) -- the stamp and the verdict must see the same file set.
+
     ``UnicodeDecodeError`` is caught alongside ``CliBridgeError`` because
     ``run_git`` decodes with ``text=True`` -- a tracked path containing a
     non-UTF-8 byte would otherwise raise straight out of this function and
@@ -1831,10 +2014,29 @@ def _tracked_files(target: Path) -> list[str] | None:
     the exact gap ``sources/ledger.py``'s own ``_git`` wrapper already
     guards against for the same underlying cause."""
     try:
-        out = run_git(target, ["ls-files"])
+        out = run_git(target, ["-c", "core.quotePath=false", "ls-files", "-z"])
     except CliBridgeError, UnicodeDecodeError:
         return None
-    return [line for line in out.splitlines() if line]
+    return [path for path in out.split("\0") if path]
+
+
+def _repo_top_level(target: Path) -> Path | None:
+    """``target``'s repository top level, or ``None`` when git cannot say --
+    the one probe that tells a monorepo ROOT apart from a SUBDIRECTORY of
+    one (DW-FU-6-6-7). Resolved on both sides before the caller compares
+    them, so a symlinked checkout (``/tmp`` -> ``/private/tmp``) is not read
+    as a subdirectory of itself."""
+    try:
+        out = run_git(target, ["rev-parse", "--show-toplevel"])
+    except CliBridgeError, UnicodeDecodeError:
+        return None
+    top = out.strip()
+    if not top:
+        return None
+    try:
+        return Path(top).resolve()
+    except OSError:
+        return None
 
 
 def _governed_and_ungoverned(
@@ -2162,6 +2364,19 @@ def _collect_surfaces(target: Path) -> tuple[dict[str, dict], list[dict]]:
             name = f"{proj.name}/{sd.name}"
             try:
                 globs, excludes, drift = _parse_surface(spec_md)
+            except SurfaceUnevaluable as exc:
+                # DW-FU-6-6-9: the surface key is THERE and declares nothing
+                # readable. Named separately from the unreadable-file branch
+                # below so the message says what to fix, not "could not be read".
+                unsound.append(
+                    {
+                        "kind": "spec-surface-unevaluable",
+                        "path": name,
+                        "detail": f"{name}: {exc}; its surface is unknown, so coverage is not evaluable",
+                        "warn": True,
+                    }
+                )
+                continue
             except Exception as exc:  # noqa: BLE001 -- one spec's unreadable
                 # SPEC.md must degrade to a named WARN, never to a silently
                 # empty surface (see `_parse_surface`'s own docstring).
@@ -2199,10 +2414,14 @@ def _stale_surface_findings(specs: dict[str, dict], files: list[str]) -> list[di
     never judged here; the existing ``spec-surface-unevaluable`` WARN names
     it. Judged by ``_glob_to_re``'s own compiled regex -- the matcher
     governance itself uses -- so a glob this reports dead really governs
-    nothing: a trailing-slash directory glob or a brace glob is dead, not
-    "live by directory existence" or "live by brace expansion". A match is
+    nothing: a brace glob is dead, not "live by brace expansion". A match is
     independent of every OTHER Spec's surface, so (like ``stale-allowlist``)
-    an unreadable sibling Spec cannot make this a false positive."""
+    an unreadable sibling Spec cannot make this a false positive.
+
+    A glob-less trailing-slash entry is NO LONGER among the dead shapes: as
+    of DW-FU-12-4 ``_glob_to_re`` expands ``dir/`` to ``dir/**``, so such an
+    entry is dead here only when the directory itself holds no tracked file.
+    The remedy text below says so."""
     items: list[dict] = []
     for name, s in sorted(specs.items()):
         seen: set[str] = set()
@@ -2218,9 +2437,10 @@ def _stale_surface_findings(specs: dict[str, dict], files: list[str]) -> list[di
                     "path": name,
                     "detail": (
                         f"{name}: surface glob {glob!r} matches no tracked file "
-                        "(a trailing '/' or a '{a,b}' brace is not expanded; write "
-                        "'dir/**', one glob per name) — fix it in the owning Spec, "
-                        "re-derived with bmad-spec, never hand-edited"
+                        "(a '{a,b}' brace is not expanded; write one glob per name. "
+                        "A trailing '/' IS read as that directory's subtree, so this "
+                        "names a directory holding no tracked file) — fix it in the "
+                        "owning Spec, re-derived with bmad-spec, never hand-edited"
                     ),
                 }
             )
@@ -2362,16 +2582,6 @@ def gather_spec_surface(target: Path) -> tuple[Finding, ...]:
 
 
 def _gather_spec_surface(target: Path) -> tuple[Finding, ...]:
-    # NOTE: deliberately NO "target is not a monorepo root" guard here, unlike
-    # `_gather_dream_chain`/`_gather_deferred_work`. Review proposed one (a
-    # run from a subdirectory reports every file in that subtree FAIL
-    # `ungoverned`), but the two cases are not symmetric: those guards
-    # replace a false OK -- a SILENT wrong answer -- whereas one here would
-    # replace a false FAIL, which is loud and self-evident, with a WARN that
-    # also silences the legitimate "this repo governs nothing yet" FAIL an
-    # unconfigured root should report (an empty repo and a subdirectory are
-    # indistinguishable from the filesystem alone). Trading a loud wrong
-    # answer for a quiet one is the defect class this module exists to avoid.
     files = _tracked_files(target)
     if files is None:
         return (
@@ -2381,6 +2591,39 @@ def _gather_spec_surface(target: Path) -> tuple[Finding, ...]:
                 status=DoctorStatus.WARN,
                 message=(f"git is unavailable or {target} is not a repository — spec surface cannot be evaluated"),
                 evidence={"target": str(target)},
+            ),
+        )
+
+    # DW-FU-6-6-7, reversing this function's earlier "deliberately no root
+    # guard" note. The argument for leaving it out was that a subdirectory run
+    # trades a loud wrong answer (every file FAIL `ungoverned`) for a quiet
+    # one, and that an empty repo root and a subdirectory look alike. Neither
+    # half held: git itself tells the two apart in one call
+    # (`rev-parse --show-toplevel`), and the FAIL storm is not self-evident at
+    # all -- `git ls-files` run in a subdirectory returns paths relative to
+    # THAT directory, `target.glob(SPEC_GLOB)` finds no Spec there, and the
+    # output is hundreds of confident "no spec surface and no allowlist entry"
+    # FAILs about paths that are governed perfectly well one level up. One
+    # WARN naming BOTH paths is the honest answer; the "this repo governs
+    # nothing yet" FAIL an unconfigured ROOT should report is untouched,
+    # because the guard only fires when the two paths genuinely differ.
+    top = _repo_top_level(target)
+    try:
+        here = target.resolve()
+    except OSError:
+        here = target
+    if top is not None and top != here:
+        return (
+            Finding(
+                source=Source.SPEC_SURFACE,
+                check="spec-surface-unevaluable",
+                status=DoctorStatus.WARN,
+                message=(
+                    f"{here} is a subdirectory of the repository rooted at {top}, "
+                    f"not its top level — spec surface is evaluated for a whole "
+                    f"repository only; re-run from {top}"
+                ),
+                evidence={"target": str(here), "top_level": str(top)},
             ),
         )
 
@@ -2498,24 +2741,53 @@ def _entries(path: Path) -> list[tuple[str, bool]]:
 
 def _anonymous(path: Path) -> list[int]:
     """Line numbers of entries with no ``## DW-<id>`` heading of their own --
-    verbatim from the original (see its own docstring for the positional
-    ``- source_spec:`` disambiguation rule)."""
+    the original's positional ``- source_spec:`` disambiguation rule, with
+    the header's claim WINDOW bounded (DW-FU-8-1).
+
+    An ID'd header claims the first ``- source_spec:`` bullet in its OWN
+    field block. The original bounded that claim only by the next heading,
+    so a ``### DW-<n>:`` header whose body uses PLAIN (non-bulleted)
+    ``origin:``/``source_spec:`` keys never satisfied ``_ANON_RE`` at all,
+    left ``field_taken`` False for the rest of the section, and then claimed
+    the next topically unrelated headerless bullet anywhere later --
+    silently dropping a real orphan from the count. 38 such headers exist
+    fleet-wide and 25 swallow a real orphan this way (this story's own
+    measurement, via ``classify_tier3_entries``, which never had the bug).
+
+    The window now closes at the first blank line AFTER the entry's own
+    FIELD block has begun, which is where ``classify_tier3_entries`` already
+    ends a header's claim. Two blank lines are deliberately NOT that
+    boundary, because neither ends a field block: the one every real entry
+    has between its heading and its first field line, and the one around an
+    ``<!-- id assigned ... -->`` provenance comment, which marshal's own
+    ledger puts between the heading and the bullet (lines 170 and 260). So
+    ``in_block`` turns on for a KNOWN field key (``_FIELD_BLOCK_LINE_RE``),
+    never for arbitrary prose."""
     if not _is_file(path):
         return []
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     out: list[int] = []
     field_taken = False
     in_entry = False
+    in_block = False
     for n, ln in enumerate(lines, 1):
         if _ENTRY_RE.match(ln):
-            field_taken, in_entry = False, True
-        elif re.match(r"^#{1,6}\s", ln):
-            field_taken, in_entry = False, False
+            field_taken, in_entry, in_block = False, True, False
+        elif _HEADING_RE.match(ln):
+            field_taken, in_entry, in_block = False, False, False
+        elif not ln.strip():
+            if in_block:
+                # The entry's own field block ended; nothing after it belongs
+                # to that header.
+                field_taken, in_entry, in_block = False, False, False
         elif _ANON_RE.match(ln):
+            in_block = True
             if in_entry and not field_taken:
                 field_taken = True
             else:
                 out.append(n)
+        elif _FIELD_BLOCK_LINE_RE.match(ln):
+            in_block = True
     return out
 
 
@@ -2608,6 +2880,13 @@ _KNOWN_FIELD_KEYS = (
     "note",
 )
 _CONT_KEY_RE = re.compile(r"^\s{2,}(" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):\s*(.*)$")
+
+#: Any line that belongs to an entry's own FIELD block -- a known field key,
+#: at any indent, bulleted or not. Read by ``_anonymous`` (DW-FU-8-1) to know
+#: when an ID'd header's field block has actually begun, so the blank line
+#: that ENDS that block can close the header's claim without the blank line
+#: before it (or around a provenance comment) closing it early.
+_FIELD_BLOCK_LINE_RE = re.compile(r"^\s*(?:-\s+)?(?:" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):")
 
 
 class Tier3Shape(StrEnum):
@@ -4001,7 +4280,29 @@ def _check_project_deferred_work(
         # count 0.
         if baseline is not None:
             count = baseline.get(proj.name, 0)
-            for n in _anonymous(t3_path)[count:]:
+            anonymous = _anonymous(t3_path)
+            if count > len(anonymous):
+                # DW-7-3-1: the stamp is HIGHER than the live count, so the
+                # positional slice above grandfathers entries that are not
+                # there -- and will keep grandfathering the next `count -
+                # len(anonymous)` entries appended to this file, which are
+                # new work nothing will ever name. The slice is only sound
+                # while the stamp equals the count it was taken from, so
+                # baseline freshness is checked on every run, not assumed.
+                findings.append(
+                    {
+                        "kind": "stale-deferred-work-baseline",
+                        "project": proj.name,
+                        "id": "",
+                        "tier3": str(t3_path.relative_to(target)),
+                        "baseline": str(DEFERRED_WORK_BASELINE_REL),
+                        "stamped": count,
+                        "live": len(anonymous),
+                        "warn": True,
+                        "generic_id": False,
+                    }
+                )
+            for n in anonymous[count:]:
                 entry = t3_entries_by_line.get(n)
                 if entry is not None and _tier3_entry_already_promoted(
                     entry,
@@ -4186,6 +4487,16 @@ def _deferred_work_message(item: dict) -> str:
             f"neither a `path:line` nor a backtick-quoted command with its exit "
             f"code — a verdict written from now on says what it read "
             f"(spec-deferred-work-resolution-sweep CAP-4)"
+        )
+    if kind == "stale-deferred-work-baseline":
+        return (
+            f"{item['project']}: {item['baseline']} stamps "
+            f"{item['stamped']} anonymous Tier-3 entries but {item['tier3']} "
+            f"now holds {item['live']} — a stale-high stamp grandfathers "
+            f"entries that are not there, and will grandfather the next "
+            f"{item['stamped'] - item['live']} appended to that file. "
+            f"Re-stamp with `python scripts/deferred_work_baseline.py "
+            f"--write-baseline --project {item['project']}`."
         )
     if kind == "no-deferred-work-baseline":
         return item["detail"]
@@ -4438,7 +4749,13 @@ def _verification(path: Path) -> list[tuple[str, str | None]]:
 def _parse_verified_date(raw: str) -> date | None:
     """The leading ``YYYY-MM-DD`` token of a raw ``verified:`` line's value,
     or ``None`` when it cannot be parsed as one -- a malformed date must fail
-    toward re-checking ("never-verified"), never raise (I/O matrix)."""
+    toward re-checking ("never-verified"), never raise (I/O matrix).
+
+    A date AFTER today is still returned here, not discarded: each caller
+    (the due selector and the coverage sweep, DW-FU-11-1) needs it to name
+    the future date in its own finding. What must never happen is
+    SILENTLY reading it as fresh, which is the caller's branch to get right,
+    not this one's."""
     token = raw.strip().split(maxsplit=1)[0] if raw.strip() else ""
     try:
         return date.fromisoformat(token)
@@ -4466,12 +4783,55 @@ def _parse_verified_date(raw: str) -> date | None:
 #: the earliest cutoff that does not.
 VERIFIED_CITATION_CUTOFF = date(2026, 10, 2)
 
-#: A `path:line` reference -- `<path>.<ext>:<n>` or `<path>.<ext>:<n>-<m>` --
-#: anywhere in a `verified:` line's value. The extension must start with a
-#: letter so a version or an address (`3.14:5`, `127.0.0.1:8080`) is not read
-#: as a file; `(?<!\w)` keeps a match from starting mid-word, while a leading
-#: `./`, `../` or `.github/` is part of the path.
-_VERIFIED_PATH_LINE_RE = re.compile(r"(?<!\w)[\w./-]*\w\.[A-Za-z][A-Za-z0-9]*:\d+(?:-\d+)?")
+#: Extensionless filenames this grammar recognises as paths on their own
+#: (DW-doctor-38-1-2). A CLOSED list on purpose: without an extension or a
+#: `/`, nothing distinguishes a filename from an ordinary capitalised word,
+#: so a bare `Note: 12` must not read as a citation. Add a name here only
+#: when a ledger line really cites that file.
+_EXTENSIONLESS_FILENAMES = (
+    "CODEOWNERS",
+    "Containerfile",  # at this repo's root (Story 41.1)
+    "Dockerfile",
+    "Justfile",
+    "LICENSE",
+    "Makefile",
+    "NOTICE",
+    "Procfile",
+)
+
+#: A citation anywhere in a `verified:` line's value: a path followed by
+#: either `:<n>` / `:<n>-<m>` (a line or line range) or `::<symbol>` (an
+#: anchor-style cite, the shape the ledgers already use for "this function
+#: in this module" -- DW-doctor-38-1-2).
+#:
+#: A path is recognised three ways, because a citation's job is to be
+#: followable and all three shapes are: it carries an EXTENSION that starts
+#: with a letter (`chain.py`, so a version or an address -- `3.14:5`,
+#: `127.0.0.1:8080` -- is not read as a file); or it is a DOTFILE
+#: (`.gitignore:3`); or it contains a `/`, which proves it is a path whatever
+#: its last segment looks like (`docs/MAP:3`). `_EXTENSIONLESS_FILENAMES`
+#: covers the one remaining real shape, a bare `Makefile:12`.
+#:
+#: `(?<![\w.])` keeps a match from starting mid-word or mid-extension, while
+#: a leading `./`, `../` or `.github/` is part of the path.
+#:
+#: KNOWN over-acceptance of the `/` alternative (found implementing Story
+#: 41.1): slash-bearing PROSE followed by `:<n>` reads as a citation --
+#: `Phase 2/3:1`, `and/or:1`, `N/A:1`. Nothing in the grammar distinguishes
+#: those from `docs/MAP:3`, which is a real live citation style, so tightening
+#: this needs a clause-boundary decision rather than a tighter character
+#: class. Measured 2026-10-03: zero `verified:` lines in any tracked ledger
+#: match any of these shapes. Tracked as DW-doctor-41-1-2, not fixed blind.
+_VERIFIED_PATH_LINE_RE = re.compile(
+    r"(?<![\w.])"
+    r"(?:"
+    r"[\w./-]*\w\.[A-Za-z][A-Za-z0-9]*"
+    r"|\.[A-Za-z][\w-]*"
+    r"|[\w.-]*/[\w./-]*[A-Za-z0-9_-]"
+    r"|(?:" + "|".join(_EXTENSIONLESS_FILENAMES) + r")"
+    r")"
+    r"(?:::[A-Za-z_]\w*|:\d+(?:-\d+)?)"
+)
 
 #: A backtick-quoted command followed (within a short gap, so `` `cmd` -> exit
 #: 0 `` and `` `cmd` (exit code 1) `` both count) by an exit code: `exit 0`,
@@ -4489,10 +4849,19 @@ _VERIFIED_COMMAND_EXIT_RE = re.compile(
 )
 
 
-def _verified_line_cites(raw: str) -> bool:
+def verified_line_cites(raw: str) -> bool:
     """Does a raw ``verified:`` value cite what it read -- a ``path:line``
-    (or ``path:n-m``) reference, or a backtick-quoted command followed by its
-    exit code (Story 38.1)?"""
+    (``path:n-m``, ``path::symbol``) reference, or a backtick-quoted command
+    followed by its exit code (Story 38.1)?
+
+    PUBLIC, unlike its neighbours here (DW-doctor-38-1): this predicate is
+    the rule, and ``scripts/apply_verification_verdicts.py`` -- the one
+    sanctioned writer of a ``verified:`` line -- must refuse a line that
+    this would FAIL. A writer that cannot see the rule writes lines the
+    reader then reds, so the two share ONE definition rather than a copy
+    that drifts. Everything else in this module stays private; a public
+    name here is what makes "never a copy" possible across the
+    read-only/mutation boundary."""
     return bool(_VERIFIED_PATH_LINE_RE.search(raw) or _VERIFIED_COMMAND_EXIT_RE.search(raw))
 
 
@@ -4509,11 +4878,20 @@ def _verified_citation_scan(path: Path) -> tuple[list[tuple[str, int]], int]:
     line whose leading token is not a ``YYYY-MM-DD`` date is neither failed
     nor counted -- it already reads as never-verified in 11.1. Duplicates
     ``_verification()``'s boundary walk rather than extracting a shared
-    primitive (that function stays untouched)."""
+    primitive (that function stays untouched).
+
+    The span BEFORE the first ``DW-`` heading is judged too, under the id
+    ``(before the first entry)`` (found implementing Story 41.1): the
+    walk used to start at the first mark, so a bare post-cutoff line written
+    into a ledger's preamble -- or into a ledger with no entry headings at
+    all -- was neither failed nor counted as grandfathered. It read as clean
+    while the grandfather total under-reported it."""
     if not _is_file(path):
         return [], 0
     text = path.read_text(encoding="utf-8", errors="replace")
     marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
+    if not marks or marks[0][0] > 0:
+        marks.insert(0, (0, "(before the first entry)"))
     uncited: list[tuple[str, int]] = []
     grandfathered = 0
     for i, (pos, ident) in enumerate(marks):
@@ -4522,7 +4900,7 @@ def _verified_citation_scan(path: Path) -> tuple[list[tuple[str, int]], int]:
         for m in _VERIFIED_RE.finditer(text[pos:end]):
             raw = m.group(1).strip()
             verified_on = _parse_verified_date(raw)
-            if verified_on is None or _verified_line_cites(raw):
+            if verified_on is None or verified_line_cites(raw):
                 continue
             if verified_on >= VERIFIED_CITATION_CUTOFF:
                 bare += 1
@@ -4687,7 +5065,59 @@ def _entry_named_paths(path: Path) -> list[tuple[str, list[str]]]:
     return out
 
 
-def _authored_date(target: Path, tracked_path: Path, entry_id: str) -> date | None:
+#: The ref ``_churn_since``/``_authored_date`` read history from
+#: (DW-FU-11-2-2). A bare ``git log`` sees only what is reachable from the
+#: CHECKED-OUT branch, so a change that landed on ``main`` but has not been
+#: merged into the worktree the sweep runs from was invisible to ``--since``
+#: and the entry was wrongly tagged ``skip_reason: no-churn`` -- a false
+#: "nothing could have invalidated this claim" in the one direction that
+#: silently retires a real finding. Every sweep here runs from a worktree
+#: branched off ``origin/main``, so that remote-tracking ref is the honest
+#: history; ``HEAD`` is the fallback when it does not exist (a fresh clone
+#: with no remote, or a test fixture's bare ``git init``).
+_CHURN_PREFERRED_REF = "refs/remotes/origin/main"
+
+
+def _churn_ref(target: Path) -> str:
+    """``refs/remotes/origin/main`` when it exists in ``target``, else
+    ``HEAD`` -- resolved once per sweep by ``_ChurnCache`` below, never per
+    entry."""
+    try:
+        run_git(target, ["rev-parse", "--verify", "--quiet", _CHURN_PREFERRED_REF])
+    except CliBridgeError, UnicodeDecodeError:
+        return "HEAD"
+    return _CHURN_PREFERRED_REF
+
+
+@dataclass
+class _ChurnCache:
+    """One sweep's memo of the git history reads ``_churn_since`` and
+    ``_authored_date`` make (DW-FU-11-2).
+
+    Both used to spawn a fresh ``git log`` per ledger entry with no sharing,
+    so a commonly-cited path -- ``chain.py`` itself, ``pixi.toml`` -- cited
+    by many due entries fleet-wide paid for one identical subprocess per
+    citing entry, working directly against this filter's own stated
+    cost-reduction purpose. Keyed by exactly what the answer depends on:
+    ``(rel, since)`` for churn, ``(rel, entry_id)`` for authoring, and the
+    ref once.
+
+    Scoped to ONE sweep (constructed in ``_due_for_verification_findings``,
+    discarded with it) rather than a module-level cache: Doctor's gathers are
+    read-only but not immutable -- a long-lived process gathering twice would
+    otherwise answer the second run from the first run's git state."""
+
+    target: Path
+    ref: str
+    churn: dict[tuple[str, date], bool] = field(default_factory=dict)
+    authored: dict[tuple[str, str], date | None] = field(default_factory=dict)
+
+    @classmethod
+    def for_target(cls, target: Path) -> _ChurnCache:
+        return cls(target=target, ref=_churn_ref(target))
+
+
+def _authored_date(target: Path, tracked_path: Path, entry_id: str, cache: _ChurnCache | None = None) -> date | None:
     """The date ``entry_id`` was first introduced into ``tracked_path``'s
     own git history -- the "since authoring" churn-window start for a
     never-verified entry, which carries no ``verified:`` date of its own.
@@ -4713,13 +5143,22 @@ def _authored_date(target: Path, tracked_path: Path, entry_id: str) -> date | No
     ``None`` -- never raises -- on any git failure, an empty match (the
     ledger was never committed, or genuinely has no commit whose diff
     introduced this id's literal text), or an unparseable date, so the
-    caller fails toward "not skipped" (I/O matrix)."""
+    caller fails toward "not skipped" (I/O matrix).
+
+    ``cache`` memoizes the answer per ``(path, entry_id)`` and supplies the
+    explicit history ref (DW-FU-11-2 / DW-FU-11-2-2); ``None`` resolves its
+    own, which is what a direct unit-test call does."""
     rel = str(tracked_path.relative_to(target))
+    cache = cache if cache is not None else _ChurnCache.for_target(target)
+    key = (rel, entry_id)
+    if key in cache.authored:
+        return cache.authored[key]
     try:
         out = run_git(
             target,
             [
                 "log",
+                cache.ref,
                 "--reverse",
                 "--follow",
                 "--format=%ad",
@@ -4731,17 +5170,18 @@ def _authored_date(target: Path, tracked_path: Path, entry_id: str) -> date | No
             ],
         )
     except CliBridgeError, UnicodeDecodeError:
+        cache.authored[key] = None
         return None
     first = out.splitlines()[0].strip() if out.strip() else ""
-    if not first:
-        return None
     try:
-        return date.fromisoformat(first)
+        authored = date.fromisoformat(first) if first else None
     except ValueError:
-        return None
+        authored = None
+    cache.authored[key] = authored
+    return authored
 
 
-def _churn_since(target: Path, rel_paths: list[str], since: date) -> bool:
+def _churn_since(target: Path, rel_paths: list[str], since: date, cache: _ChurnCache | None = None) -> bool:
     """``True`` only when EVERY path in ``rel_paths`` is both tracked in
     this repo's history (step 1) and untouched since ``since`` (step 2) --
     the two-step algorithm the Boundaries section spells out, short-
@@ -4763,32 +5203,55 @@ def _churn_since(target: Path, rel_paths: list[str], since: date) -> bool:
     A ``run_git`` failure for ANY path -- ``CliBridgeError`` or
     ``UnicodeDecodeError`` -- degrades the WHOLE check to ``False`` (not
     churn-free), indistinguishable by design from a path with no tracked
-    history, never raised past this function."""
+    history, never raised past this function.
+
+    Both reads name an explicit ref (``cache.ref``, DW-FU-11-2-2) instead of
+    whatever branch happens to be checked out, and the PER-PATH answer is
+    memoized per ``(path, since)`` (DW-FU-11-2), so one path cited by many
+    due entries costs one pair of ``git log`` calls per sweep, not one pair
+    per citing entry. The memo is per path, not per path LIST, so entries
+    citing overlapping sets share every path they have in common.
+    ``cache=None`` resolves a fresh one, which is what a direct unit-test
+    call does."""
+    cache = cache if cache is not None else _ChurnCache.for_target(target)
     for rel in rel_paths:
-        try:
-            tracked = run_git(target, ["log", "--oneline", "-1", "--", rel])
-        except CliBridgeError, UnicodeDecodeError:
-            return False
-        if not tracked.strip():
-            return False
-        try:
-            since_out = run_git(
-                target,
-                [
-                    "log",
-                    "--oneline",
-                    "-1",
-                    "--since",
-                    since.isoformat(),
-                    "--",
-                    rel,
-                ],
-            )
-        except CliBridgeError, UnicodeDecodeError:
-            return False
-        if since_out.strip():
+        key = (rel, since)
+        if key in cache.churn:
+            if not cache.churn[key]:
+                return False
+            continue
+        cache.churn[key] = _path_churn_free(target, rel, since, cache.ref)
+        if not cache.churn[key]:
             return False
     return True
+
+
+def _path_churn_free(target: Path, rel: str, since: date, ref: str) -> bool:
+    """One path's half of ``_churn_since``'s two-step test -- split out so
+    the memo above has exactly one value to store per ``(path, since)``."""
+    try:
+        tracked = run_git(target, ["log", ref, "--oneline", "-1", "--", rel])
+    except CliBridgeError, UnicodeDecodeError:
+        return False
+    if not tracked.strip():
+        return False
+    try:
+        since_out = run_git(
+            target,
+            [
+                "log",
+                ref,
+                "--oneline",
+                "-1",
+                "--since",
+                since.isoformat(),
+                "--",
+                rel,
+            ],
+        )
+    except CliBridgeError, UnicodeDecodeError:
+        return False
+    return not since_out.strip()
 
 
 def _attach_churn_skip(
@@ -4796,6 +5259,7 @@ def _attach_churn_skip(
     item: dict,
     paths: list[str],
     since: date | None,
+    cache: _ChurnCache | None = None,
 ) -> None:
     """Mutate ``item`` IN PLACE, adding ``skip_reason``/
     ``churn_checked_paths`` when every one of ``paths`` is confirmed
@@ -4819,7 +5283,7 @@ def _attach_churn_skip(
     if since is None or not paths:
         return
     try:
-        churn_free = _churn_since(target, paths, since)
+        churn_free = _churn_since(target, paths, since, cache)
     except Exception:  # noqa: BLE001 -- see docstring: isolate per-entry.
         return
     if churn_free:
@@ -4857,12 +5321,36 @@ _UNUSED_CLAIM_RE = re.compile(
 
 def _entry_unused_symbol_claims(path: Path) -> list[tuple[str, str | None]]:
     """``(id, symbol)`` for every ID'd entry in a tracked ledger -- ``symbol``
-    is the entry's own FIRST ``_UNUSED_CLAIM_RE`` match (its claimed-unused
-    bare identifier), or ``None`` when the entry's body carries no
-    recognizable claim of that shape. Duplicates ``_verification()``'s own
-    boundary-walk shape rather than extracting a shared primitive (Design
-    Notes: neither ``_entries()`` nor ``_verification()`` is touched by this
-    story)."""
+    is the bare identifier the entry claims is unused, or ``None`` when the
+    entry's body carries no recognizable claim of that shape. Duplicates
+    ``_verification()``'s own boundary-walk shape rather than extracting a
+    shared primitive (Design Notes: neither ``_entries()`` nor
+    ``_verification()`` is touched by this story).
+
+    DW-FU-11-3-2: the symbol is read from ALL of an entry's matches, not
+    ``search()``'s FIRST in document order, and an entry whose matches
+    DISAGREE yields ``None``.
+
+    Because ``_UNUSED_CLAIM_RE``'s own gap class is ``[^`]{0,80}?``, each
+    individual match already binds a phrase to its nearest PRECEDING
+    backticked identifier -- no backtick can sit between them. What
+    ``search()`` got wrong was choosing among an entry's several phrase
+    occurrences: the row's own example, "`` `_helper` `` unused? No,
+    actually `` `_foo` `` is unused.", yields two matches, and the first
+    names ``_helper`` -- the subject that sentence explicitly rejects.
+    Picking by smallest gap does not fix it either (``_helper`` sits one
+    character from its phrase, ``_foo`` four from its own), and "take the
+    last" is a guess about prose order, not a reading of it.
+
+    So when an entry's matches name two different identifiers, this
+    mechanism does not know which the entry meant, and says so by returning
+    ``None``: that entry gets no ``mechanical_verdict`` and stays fully due
+    for a human read. This is the same "an honest unevaluable beats a
+    confident wrong answer" rule the rest of this module applies, and it is
+    what makes the claim never name the WRONG subject. Live, no entry's
+    matches disagree (measured over all eight tracked ledgers: five entries
+    carry a claim, one has two matches and both name the same symbol), so
+    this costs no verdict anything is relying on today."""
     if not _is_file(path):
         return []
     text = path.read_text(encoding="utf-8", errors="replace")
@@ -4870,8 +5358,8 @@ def _entry_unused_symbol_claims(path: Path) -> list[tuple[str, str | None]]:
     out = []
     for i, (pos, ident) in enumerate(marks):
         end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
-        match = _UNUSED_CLAIM_RE.search(text[pos:end])
-        out.append((ident, match.group(1) if match else None))
+        claimed = {m.group(1) for m in _UNUSED_CLAIM_RE.finditer(text[pos:end])}
+        out.append((ident, claimed.pop() if len(claimed) == 1 else None))
     return out
 
 
@@ -4886,10 +5374,53 @@ def _entry_unused_symbol_claims(path: Path) -> list[tuple[str, str | None]]:
 _DECLARATION_RE_TEMPLATE = r"^\s*(?:async\s+def|def|class)\s+{}\b"
 
 
-def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
-    """``(call_sites, has_declaration)`` for ``symbol`` across the whole
-    repo -- ``git grep -n -w -I --untracked --no-exclude-standard -- <symbol>``
-    (whole repo, whole-word, binary-excluded, including not-yet-committed
+#: A line whose content is a COMMENT or a bare docstring/string line, not
+#: code -- a textual mention of a symbol, never a call (DW-FU-11-3). Matched
+#: against the line's own content as `git grep` returns it: a `#` comment
+#: line in any of the repo's line-comment languages, a `//` or `*` line
+#: (JS/TS, C, a block-comment continuation), or a line that opens or
+#: continues a triple-quoted string. Deliberately a LINE-shape test, not a
+#: language parse: a trailing comment after real code (`foo()  # see _bar`)
+#: still counts, because the line does contain a call.
+_PROSE_LINE_RE = re.compile(r"^\s*(?:#|//|\*(?=\s|/|$)|\"\"\"|'''|<!--|--\s)")
+
+
+def _symbol_search_scope(cited_paths: list[str]) -> list[str]:
+    """The ``git grep`` pathspecs that scope a symbol search to the PACKAGE
+    of an entry's own cited paths (DW-FU-11-3), or ``[]`` when the entry
+    cites nothing usable and the whole repo is the only honest scope.
+
+    An unscoped whole-repo search attributed any whole-word textual
+    occurrence of a short, generic name (``_run``, ``_helper``, ``_probe``)
+    to whichever entry happened to claim it, so two unrelated functions
+    sharing one name counted each other's usages. The entry already names
+    where its own code lives; the package root of those paths is the
+    narrowest scope that cannot exclude a real call site within the same
+    package.
+
+    The package root is the first three segments of a
+    ``src/shared/packages/<pkg>/`` path and the first two of anything else
+    (``scripts/x.py`` -> ``scripts``, ``src/platform/...`` -> ``src/platform``),
+    so an entry citing one station's module searches that station, not the
+    fleet. A cited path at the repo root (``pixi.toml``) yields no scope of
+    its own and is skipped -- it would otherwise widen the search back to
+    everything."""
+    scopes: list[str] = []
+    for rel in cited_paths:
+        parts = PurePosixPath(rel).parts
+        if len(parts) < 2:
+            continue
+        depth = 4 if parts[:3] == ("src", "shared", "packages") else 2
+        root = "/".join(parts[:depth])
+        if root not in scopes:
+            scopes.append(root)
+    return [f"{root}/**" for root in scopes]
+
+
+def _call_site_count(target: Path, symbol: str, cited_paths: list[str] | None = None) -> tuple[int, bool] | None:
+    """``(call_sites, has_declaration)`` for ``symbol`` across the repo --
+    ``git grep -z -n -w -I --untracked --no-exclude-standard -- <symbol>``
+    (whole-word, binary-excluded, including not-yet-committed
     files) via ``run_git``, with ``ok_exit_codes={0, 1}`` since git grep's
     exit code 1 ("no matches") is the expected, common "still-open" outcome
     here, never an error (Boundaries).
@@ -4946,13 +5477,36 @@ def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
     pruning already trusts, not a second independently-maintained list) via
     additional pathspecs, so the untracked-file recall `--no-exclude-standard`
     exists for is preserved everywhere EXCEPT these known-huge vendor/cache/
-    worktree trees."""
+    worktree trees.
+
+    ``cited_paths`` (DW-FU-11-3) scopes the search to the package of the
+    entry's own cited paths -- see ``_symbol_search_scope``. ``None`` or an
+    empty list searches the whole repo, as before, because an entry that
+    names no path gives nothing to narrow to.
+
+    Comment and bare docstring lines are not counted (``_PROSE_LINE_RE``,
+    DW-FU-11-3): ``-w`` matches any whole-word textual occurrence, so a
+    comment or a docstring MENTIONING the symbol inflated the live count and
+    pushed a genuinely dead symbol to ``escalate`` -- the one direction that
+    costs an agent read for nothing.
+
+    ``-z`` makes git emit ``<path>NUL<lineno>NUL<content>`` per record
+    (verified against this repo's own git), so the path and the line number
+    are split on NUL rather than by the two chained ``partition(":")`` calls
+    this used to do (DW-FU-11-3-3). Those mis-split any matched path that
+    itself contains a colon -- one tracked path here does
+    (``docs/intake/gists/.../BMAD-METHOD SPEC: Enterprise Monorepo....md``)
+    -- shifting the line's CONTENT into the line-number field, so the
+    declaration regex could not recognise a real ``def``/``class`` line in
+    such a file. Records stay newline-separated; a line's own content never
+    contains one."""
     prune_pathspecs = [f":(exclude,glob)**/{name}/**" for name in sorted(_PRUNED_DIR_NAMES)]
     try:
         out = run_git(
             target,
             [
                 "grep",
+                "-z",
                 "-n",
                 "-w",
                 "-I",
@@ -4960,6 +5514,7 @@ def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
                 "--no-exclude-standard",
                 "--",
                 symbol,
+                *_symbol_search_scope(cited_paths or []),
                 ":(exclude,glob)**/deferred-work-ledger.md",
                 *prune_pathspecs,
             ],
@@ -4972,12 +5527,16 @@ def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
     symbol_re = re.compile(rf"\b{escaped}\b")
     count = 0
     has_declaration = False
-    for line in out.splitlines():
-        _, _, rest = line.partition(":")
-        _, _, content = rest.partition(":")
+    for record in out.split("\n"):
+        if not record:
+            continue
+        _, _, rest = record.partition("\0")
+        _, _, content = rest.partition("\0")
         if decl_re.match(content):
             has_declaration = True
             count += len(symbol_re.findall(content)) - 1
+            continue
+        if _PROSE_LINE_RE.match(content):
             continue
         count += 1
     return count, has_declaration
@@ -4987,6 +5546,7 @@ def _attach_mechanical_verdict(
     target: Path,
     item: dict,
     symbol: str | None,
+    cited_paths: list[str] | None = None,
 ) -> None:
     """Mutate ``item`` IN PLACE, adding ``mechanical_verdict``/
     ``mechanical_symbol``/``mechanical_call_sites`` when ``symbol`` names a
@@ -5008,11 +5568,14 @@ def _attach_mechanical_verdict(
     epic AC's own framing), not any bare identifier, so a claim that cannot
     be confirmed as being about a real function/class is left for Story
     11.4's agent rather than risk a variable's own assignment line being
-    miscounted as a call site."""
+    miscounted as a call site.
+
+    ``cited_paths`` are the entry's OWN cited paths, forwarded so the search
+    is scoped to their package rather than the whole repo (DW-FU-11-3)."""
     if symbol is None:
         return
     try:
-        result = _call_site_count(target, symbol)
+        result = _call_site_count(target, symbol, cited_paths)
     except Exception:  # noqa: BLE001 -- see docstring: isolate per-entry.
         return
     if result is None:
@@ -5099,6 +5662,8 @@ def _check_project_due_for_verification(
     proj: Path,
     findings: list[dict],
     today: date,
+    *,
+    cache: _ChurnCache | None = None,
 ) -> None:
     """Append one project's due-for-verification findings to the CALLER's
     ``findings`` list -- mirrors ``_check_project_deferred_work``'s own
@@ -5148,7 +5713,13 @@ def _check_project_due_for_verification(
     invariant-violating) id would silently collapse to one dict entry,
     pairing an EARLIER duplicate's finding with a LATER duplicate's paths
     (review finding, patch). Positional pairing is correct regardless of
-    whether ids repeat."""
+    whether ids repeat.
+
+    DW-FU-11-2: ``cache`` is the sweep-wide git-history memo -- keyword-only
+    so the four positional parameters stay the whole calling contract, and
+    defaulted so calling this helper directly (every unit test here does)
+    still works and simply gets a cache of its own."""
+    cache = cache if cache is not None else _ChurnCache.for_target(target)
     tracked_path = proj / TRACKED_REL
     other_roots = {slug: root for slug, root in _known_project_code_roots(target).items() if slug != proj.name}
     paths_by_entry = _entry_named_paths(tracked_path)
@@ -5160,19 +5731,32 @@ def _check_project_due_for_verification(
         strict=True,
     ):
         parsed = _parse_verified_date(raw_verified) if raw_verified else None
-        if parsed is None:
+        if parsed is None or parsed > today:
+            # DW-FU-11-1: a `verified:` line dated after today -- a typo'd
+            # year (`2126-07-15` for `2026-07-15`) is the live shape --
+            # parses cleanly and yields a large NEGATIVE `days_stale`, so the
+            # entry read as permanently fresh and was silently exempt from
+            # ever being selected again: exactly the class of gap this epic
+            # exists to catch. It is due, like a never-verified entry, and
+            # its `reason` names the defect instead of hiding it inside the
+            # never-verified bucket.
             item = {
                 "kind": "due-for-verification",
-                "reason": "never-verified",
+                "reason": "verified-date-in-future" if parsed else "never-verified",
                 "project": proj.name,
                 "id": entry_id,
                 "tracked": str(tracked_path.relative_to(target)),
                 "other_project_roots": dict(other_roots),
             }
-            since = _authored_date(target, tracked_path, entry_id) if paths else None
-            _attach_churn_skip(target, item, paths, since)
+            if parsed:
+                item["verified_on"] = parsed.isoformat()
+                item["today"] = today.isoformat()
+            # The churn window cannot open at a date that has not happened;
+            # fall back to the authoring proxy, as for a never-verified entry.
+            since = _authored_date(target, tracked_path, entry_id, cache) if paths else None
+            _attach_churn_skip(target, item, paths, since, cache)
             if item.get("skip_reason") != "no-churn":
-                _attach_mechanical_verdict(target, item, symbol)
+                _attach_mechanical_verdict(target, item, symbol, paths)
             findings.append(item)
             continue
         days_stale = (today - parsed).days
@@ -5186,9 +5770,9 @@ def _check_project_due_for_verification(
                 "days_stale": days_stale,
                 "other_project_roots": other_roots,
             }
-            _attach_churn_skip(target, item, paths, parsed)
+            _attach_churn_skip(target, item, paths, parsed, cache)
             if item.get("skip_reason") != "no-churn":
-                _attach_mechanical_verdict(target, item, symbol)
+                _attach_mechanical_verdict(target, item, symbol, paths)
             findings.append(item)
 
 
@@ -5446,7 +6030,13 @@ def _verification_coverage(target: Path, *, today: date | None = None) -> list[d
     ``_check_project_due_for_verification``'s own ``days_stale >
     DUE_FOR_VERIFICATION_STALENESS_DAYS`` test uses, just read the other way
     round, so a project's coverage percentage and its own per-entry due
-    findings always agree about which entries are "due" versus "fresh"."""
+    findings always agree about which entries are "due" versus "fresh".
+
+    A date AFTER ``as_of`` does NOT count as verified (DW-FU-11-1): its
+    ``(as_of - parsed).days`` is negative, which the one-sided test above
+    read as "comfortably inside the window" and so as coverage this project
+    had not earned. The per-entry selector reports the same entry due, so
+    without this the two halves disagreed about the same entry."""
     as_of = today if today is not None else date.today()  # noqa: DTZ011 --
     # mirrors `_due_for_verification_findings`'s own identical, deliberately
     # unfixed `today is not None else date.today()` call boundary below.
@@ -5465,7 +6055,9 @@ def _verification_coverage(target: Path, *, today: date | None = None) -> list[d
                 if not raw_verified:
                     continue
                 parsed = _parse_verified_date(raw_verified)
-                if parsed is not None and (as_of - parsed).days <= DUE_FOR_VERIFICATION_STALENESS_DAYS:
+                if parsed is None or parsed > as_of:
+                    continue
+                if (as_of - parsed).days <= DUE_FOR_VERIFICATION_STALENESS_DAYS:
                     verified_within_window += 1
             items.append(
                 {
@@ -5527,9 +6119,14 @@ def _due_for_verification_findings(
     projects_dir = target / "_bmad-output" / "projects"
     if not _is_dir(projects_dir):
         return findings
+    # DW-FU-11-2: ONE memo for the whole sweep, so a path many projects'
+    # entries cite (`pixi.toml`, `chain.py`) is read from git once, not once
+    # per citing entry. Keyword-passed so a positional stand-in in a test
+    # keeps its existing arity (see the callee's own docstring).
+    cache = _ChurnCache.for_target(target)
     for proj in sorted(p for p in projects_dir.iterdir() if p.is_dir()):
         try:
-            _check_project_due_for_verification(target, proj, findings, as_of)
+            _check_project_due_for_verification(target, proj, findings, as_of, cache=cache)
         except Exception as exc:  # noqa: BLE001 -- one project's unreadable
             # ledger must not discard findings already appended for a
             # different project.
@@ -5577,6 +6174,14 @@ def _due_for_verification_message(item: dict) -> str:
                 f"{item['project']}/{item['id']}: no `verified:` line "
                 f"in {item['tracked']} — never re-checked against live "
                 f"code."
+            )
+        elif item["reason"] == "verified-date-in-future":
+            message = (
+                f"{item['project']}/{item['id']}: its `verified:` line in "
+                f"{item['tracked']} is dated {item['verified_on']}, after "
+                f"today ({item['today']}) — a date that has not happened "
+                f"cannot be a re-check, and reads as permanently fresh. Fix "
+                f"the date, then re-check against live code."
             )
         else:
             message = (

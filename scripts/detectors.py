@@ -282,6 +282,14 @@ _DOCTOR_SOURCE_TASKS: tuple[tuple[str, str], ...] = (
     # escaping it reads `unknown` (rc 2), not pass. Offline apart from one
     # `git grep` per candidate.
     ("bmad-output-hygiene", "bmad-output-hygiene-check"),
+    # Story 41.1 (spec-pyforge-doctor CAP-43; DW-FU-21-6-2): the three
+    # dreams-hygiene classes, registered since Epic 21 but never run here --
+    # they had no DISPATCH name of their own (only `dream-chain --dreams`),
+    # and this tuple threads names, not flags. Every finding is WARN (137
+    # live at this commit), so the row reads `pass`, never `FINDINGS`: the
+    # same warn-only shape Story 38.3 used to wire the hygiene sweep beside
+    # its siblings without a live-volume red. Offline, deterministic.
+    ("dreams-hygiene", "dreams-hygiene-check"),
 )
 
 
