@@ -205,7 +205,7 @@ def test_every_grounded_page_renders_rows_on_the_fixture_data_root(dashboard_ser
         page = browser.new_page()
         try:
             for page_def in grounded:
-                page.goto(f"{dashboard_server}/{page_def.id}")
+                page.goto(f"{dashboard_server}{_page_path(page_def)}")
                 grid = page.locator(f"#{page_def.id}--grid")
                 expect(grid).to_be_visible()
                 for cell in GROUNDED_PAGE_EVIDENCE[page_def.id]:
@@ -226,7 +226,7 @@ def test_declared_controls_render_against_real_rows(dashboard_server):
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
         try:
-            page.goto(f"{dashboard_server}/{page_def.id}")
+            page.goto(f"{dashboard_server}{_page_path(page_def)}")
             expect(page.locator("#distribution-breakdown--filter-facet")).to_be_visible()
             expect(page.locator("#distribution-breakdown--chart")).to_be_visible()
             grid = page.locator("#distribution-breakdown--grid")
@@ -248,7 +248,7 @@ def test_the_scan_pages_offer_a_path_input_and_a_submit_control(dashboard_server
         page = browser.new_page()
         try:
             for page_def in scan_pages:
-                page.goto(f"{dashboard_server}/{page_def.id}")
+                page.goto(f"{dashboard_server}{_page_path(page_def)}")
                 expect(page.locator(f"#{page_def.id}--path")).to_be_visible()
                 expect(page.locator(f"#{page_def.id}--submit")).to_be_visible()
                 expect(page.locator(f"#{page_def.id}--status")).to_contain_text("No scan submitted yet")
@@ -310,8 +310,7 @@ def test_dashboard_pages_semantic_nav_and_aria(dashboard_server):
 
         # -- every page is independently reachable + renders a deterministic heading --
         for page_def in app.PAGE_INVENTORY:
-            path = "/" if page_def is app.PAGE_INVENTORY[0] else f"/{page_def.id}"
-            page.goto(f"{dashboard_server}{path}")
+            page.goto(f"{dashboard_server}{_page_path(page_def)}")
             heading = page.locator("h2#page-title")
             expect(heading).to_contain_text(page_def.title)
             content_id = f"{page_def.id}--stamp" if page_def.kind == "factory" else f"{page_def.id}--about"
