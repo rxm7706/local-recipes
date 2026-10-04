@@ -428,7 +428,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/test_main_version.py": "d9d1b72d52e5e6c973bb9f738556c03959ff8db3",
    "src/shared/packages/pyforge-atlas/tests/unit/test_one_duckdb_writer.py": "7f439b1f474639e3dfbcc26b631c15fbc5f16179",
    "src/shared/packages/pyforge-atlas/tests/unit/test_pipeline_inventory.py": "4d20129d49fe7f1bbebef1d80cf48a3b858a1f44",
-   "src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_boot.py": "9ce1bd2230aeeb2be2f9b52cfdd7c196fd9f742c",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_boot.py": "9c5ca8491fc01c499bacbad8d1b14b709d69f5e0",
    "src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_parquet_cache.py": "5eca8ccc46f56cc554acff8be441af07221720c6",
    "src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_vectors.py": "6f19f51f80eee6dac81477cfb864876958ce7d3f",
    "src/shared/packages/pyforge-atlas/tests/unit/test_read_only_live_attach.py": "4f324c646c4a1ad95399608fd943eb2efbaf148d",
@@ -462,7 +462,7 @@
    "src/shared/packages/pyforge-atlas/wasm/index.html": "58d44155379ec640d36caf59b8c701ec8fcfce27",
    "src/shared/packages/pyforge-atlas/wasm/package.json": "e8ec7eef8dff664e2910f4fee67ada79e4105d93"
   },
-  "memlog": "0070cf0ec7e914c1ef8b422531060c09b9f97ac1"
+  "memlog": "3d4ef6d4e633ebc99f1f09e08c94180246baa176"
  },
  "pyforge-atlas/spec-pyforge-atlas-intelligence-platform": {
   "files": {},
