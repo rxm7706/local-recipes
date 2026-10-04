@@ -1240,6 +1240,11 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # re-run -- a pending or red signal is never passing (AD-8).
     "MRS-DISP-056": Verdict.ERROR,
     "MRS-DISP-057": Verdict.ERROR,
+    # Story 85.1 (CAP-286): verification fix turn — start failure, wall-clock
+    # budget exceeded, or re-verification still refused after one turn.
+    "MRS-DISP-058": Verdict.ERROR,
+    "MRS-DISP-059": Verdict.ERROR,
+    "MRS-DISP-060": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight

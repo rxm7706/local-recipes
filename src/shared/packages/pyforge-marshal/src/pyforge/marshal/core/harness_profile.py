@@ -139,6 +139,7 @@ _MODEL_ARGS_TOKEN = "{model_args}"
 _WORKTREE_TOKEN = "{worktree}"
 _WIRE_PORT_TOKEN = "{wire_port}"
 _MODEL_TOKEN = "{model}"
+_SESSION_ID_TOKEN = "{session_id}"
 
 _WIRE_PORT_BASE = 8800
 _WIRE_PORT_SPAN = 1000
@@ -191,6 +192,9 @@ _PROFILE_KEYS: frozenset[str] = frozenset(
         # Story 28.2 (SPEC-marshal-token-economy CAP-2): the optional
         # wire-compression `[wrapper]` sub-table -- see `parse_wrapper`.
         "wrapper",
+        # Story 85.1 (CAP-286): optional argv templates for verification fix turns.
+        "resume_argv",
+        "fix_only_argv",
         # Story 84.1 (CAP-285): optional live model-list source declaration.
         "model_list",
     }
@@ -396,6 +400,8 @@ class HarnessProfile:
     verified: bool = False
     notes: str = ""
     wrapper: HarnessWrapper | None = None
+    resume_argv: tuple[str, ...] = ()
+    fix_only_argv: tuple[str, ...] = ()
     model_list: ModelListSource | None = None
 
     def __post_init__(self) -> None:
@@ -660,6 +666,16 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
                 "authenticated"
             )
 
+    resume_argv = _require_str_list(data, "resume_argv", source, allow_empty_items=False)
+    fix_only_argv = _require_str_list(data, "fix_only_argv", source, allow_empty_items=False)
+    for label, template in (("resume_argv", resume_argv), ("fix_only_argv", fix_only_argv)):
+        if not template:
+            continue
+        if template.count(_PROMPT_TOKEN) != 1:
+            raise HarnessProfileError(
+                f"{source}: {label!r} must contain the {_PROMPT_TOKEN!r} token exactly once when declared"
+            )
+
     return HarnessProfile(
         name=name,
         binary=binary,
@@ -675,6 +691,8 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
         verified=_require_bool(data, "verified", source),
         notes=_require_str(data, "notes", source),
         wrapper=wrapper,
+        resume_argv=resume_argv,
+        fix_only_argv=fix_only_argv,
         model_list=model_list,
     )
 
@@ -907,6 +925,75 @@ def resolve_wire_wrap(
     )
 
 
+def _render_profile_argv_template(
+    profile: HarnessProfile,
+    template: tuple[str, ...],
+    *,
+    binary_path: str,
+    worktree: Path,
+    prompt: str,
+    model: str | None,
+    wire: WireWrap | None = None,
+    wire_port: int | None = None,
+    session_id: str = "",
+) -> tuple[tuple[str, ...], str | None, str | None]:
+    rendered_model, omitted_reason = translate_model(profile, model)
+    port = wire_port if wire_port is not None else wire_port_for_worktree(worktree)
+
+    def _substitute_launch_token(token: str) -> str:
+        return (
+            token.replace(_WORKTREE_TOKEN, str(worktree))
+            .replace(_PROMPT_TOKEN, prompt)
+            .replace(_WIRE_PORT_TOKEN, str(port))
+            .replace(_SESSION_ID_TOKEN, session_id)
+        )
+
+    if wire is not None and wire:
+        argv = [_substitute_launch_token(token) for token in wire.argv_prefix]
+    else:
+        argv = [binary_path]
+    for token in template:
+        if token == _MODEL_ARGS_TOKEN:
+            if rendered_model is None:
+                continue
+            argv.extend(arg.replace(_MODEL_TOKEN, rendered_model) for arg in profile.model_args)
+            continue
+        argv.append(_substitute_launch_token(token))
+    return tuple(argv), rendered_model, omitted_reason
+
+
+def render_verify_fix_argv(
+    profile: HarnessProfile,
+    *,
+    mode: str,
+    binary_path: str,
+    worktree: Path,
+    prompt: str,
+    model: str | None,
+    wire: WireWrap | None = None,
+    wire_port: int | None = None,
+    session_id: str = "",
+) -> tuple[tuple[str, ...], str | None, str | None]:
+    """Render argv for a verification fix turn (Story 85.1, AD-19)."""
+    if mode == "resume" and profile.resume_argv:
+        template = profile.resume_argv
+    elif profile.fix_only_argv:
+        template = profile.fix_only_argv
+    else:
+        template = profile.argv
+    return _render_profile_argv_template(
+        profile,
+        template,
+        binary_path=binary_path,
+        worktree=worktree,
+        prompt=prompt,
+        model=model,
+        wire=wire,
+        wire_port=wire_port,
+        session_id=session_id,
+    )
+
+
 def render_dispatch_argv(
     profile: HarnessProfile,
     *,
@@ -931,28 +1018,16 @@ def render_dispatch_argv(
     rewritten prompt). The wrapper then resolves the wrapped CLI itself;
     the adapter keeps ``binary_path``'s own directory on the child ``PATH``
     so a CLI that only lives in a profile fallback dir stays reachable."""
-    rendered_model, omitted_reason = translate_model(profile, model)
-    port = wire_port if wire_port is not None else wire_port_for_worktree(worktree)
-
-    def _substitute_launch_token(token: str) -> str:
-        return (
-            token.replace(_WORKTREE_TOKEN, str(worktree))
-            .replace(_PROMPT_TOKEN, prompt)
-            .replace(_WIRE_PORT_TOKEN, str(port))
-        )
-
-    if wire is not None and wire:
-        argv = [_substitute_launch_token(token) for token in wire.argv_prefix]
-    else:
-        argv = [binary_path]
-    for token in profile.argv:
-        if token == _MODEL_ARGS_TOKEN:
-            if rendered_model is None:
-                continue
-            argv.extend(arg.replace(_MODEL_TOKEN, rendered_model) for arg in profile.model_args)
-            continue
-        argv.append(_substitute_launch_token(token))
-    return tuple(argv), rendered_model, omitted_reason
+    return _render_profile_argv_template(
+        profile,
+        profile.argv,
+        binary_path=binary_path,
+        worktree=worktree,
+        prompt=prompt,
+        model=model,
+        wire=wire,
+        wire_port=wire_port,
+    )
 
 
 def bmadloop_adapter_for_preference(preference: Sequence[str]) -> str | None:
