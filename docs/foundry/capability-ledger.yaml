@@ -3312,6 +3312,12 @@ capabilities:
     heading: "a verification refusal goes back to the session that wrote the change for one fix turn"
     mode: rebuild
     path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
+  - id: pyforge-marshal:CAP-287
+    spec: pyforge-marshal
+    station: pyforge-marshal
+    heading: "preserved work is an annotated tag, and nothing removes a working copy it does not hold"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   # 2026-09-19 spec-pyforge-core draft→ready (Epic 14 realized CAP-1..7 in August; CAP-8/9 minted for Epic 52)
   - id: pyforge-core:CAP-1
     spec: pyforge-core
@@ -4363,6 +4369,12 @@ capabilities:
     spec: pyforge-steward
     station: pyforge-steward
     heading: "steward keys learns the GitHub Enterprise host: a read identity for the fleet scan, a PR-draft identity only for an approved proposal"
+    mode: rebuild
+    path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - id: pyforge-steward:CAP-165
+    spec: pyforge-steward
+    station: pyforge-steward
+    heading: "the protected refs are declared once, the live rulesets are proven to match, and no session deletes what would orphan commits"
     mode: rebuild
     path: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
 

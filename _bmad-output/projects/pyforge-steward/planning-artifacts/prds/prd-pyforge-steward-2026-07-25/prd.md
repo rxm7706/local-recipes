@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-04"   # RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2479,3 +2479,39 @@ override on DW-8-5-2). The audit-trail and ingress rulings are fixes under Epic 
 
 **Content changed:** this section only. No FR added, renumbered or removed. `updated:` bumped.
 
+
+## Currency reconciliation — 2026-10-04
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward` gained CAP-165 on 2026-10-04 and amended CAP-156
+and CAP-157, from the Realization-log entry of that date (later): the steward half of the preserved-work refs standard
+(marshal's `spec-pyforge-marshal:CAP-287`, research `preserved-work-refs-2026-10-04.md` and its review under
+`_bmad-output/projects/pyforge-marshal/planning-artifacts/research/`). Same-day reconcile; the FR is derived from its
+CAP.*
+
+### The FR space: FR-38 registered
+
+#### FR-38: The protected refs are declared once, the live rulesets are proven to match, and no session deletes what would orphan commits ← CAP-165
+
+The roster declares the refs nothing may delete, and every guard — the session hook, marshal's sweeper and deleters, and
+the server rulesets — enforces that one list, while a reachability guard covers everything the list does not name.
+**Consequences (testable):**
+- `docs/governance/guild-roster.json` declares `protected_refs`: full-refname prefixes with a kind and a scope (`origin`,
+  `local`, `both`). Each consumer unions them with its own code floor, so a roster edit can only add (marshal:AD-27).
+- A ruleset document under `docs/governance/rulesets/` is rendered from the roster and regenerates byte-identical; a
+  runtime detector compares it with the live rulesets through an authenticated `gh api` and exits 0 on a match, 1 naming
+  each difference, 2 when it cannot observe (never green). Applying a ruleset is the operator's settings change.
+- The session hook denies every deletion form for a listed ref, and any branch or tag deletion whose tip is not an
+  ancestor of `refs/remotes/origin/main` and that no `preserve/` or `archive/` tag contains (two `session_denials`
+  entries, operator governance rulings of 2026-10-04). The server ruleset stays the guarantee; the hook is defence in
+  depth, and a git config such as `fetch.pruneTags` bypasses any command matcher.
+- The pre-push gate skips, journaled, a push it can prove carries only `preserve/` or `archive/` tags; under pre-commit,
+  which shows only the first ref, it needs the pushing tool's proof (CAP-156 as amended).
+- `workspace clean` parks an unlanded worktree's commits as a `preserve/` tag before removing it; a local tag is enough,
+  and an undelivered push is reported as debt; behind `pyforge.steward.workspace_preserve_tag` (CAP-157 as amended).
+
+Decomposes into **Epic 85** (Stories 85.2–85.5, beside the already-chained fix Story 85.1, amended to the roster key's
+new shape). Story 85.5 is minted `blocked` on marshal's Story 87.3, which ships `pyforge.core.preserve_refs`.
+
+**ONE kernel FR space now FR-1..FR-38** (FR-39 = next free id).
+
+**Content changed:** this section added (FR-38 registered). No FR renumbered or removed. `updated:` bumped.

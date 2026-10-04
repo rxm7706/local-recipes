@@ -946,6 +946,34 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-04 (preserved-work refs)** — **Found: preserved work has nine names and no definition, and much of it is
+  not durable.** The repo keeps "preserved" work under `attempt-preserve/*`, `refs/attempt-preserve-dirty/*`, 698
+  `rescue/*` tags, 45 `archive/*` tags, `bmad-loop-preserve/*`, `backup/*`, `recover/*`, gitignored
+  `failed/<story>/changes.patch` files, steward tarballs and the sweeper's patch directories. Every protection is a name
+  list, but survival depends on reachability. Measured: 16 of 17 dirty snapshot refs and 3 local tags hold commits on no
+  `origin` ref; of the 454 tips deleted on 2026-10-04, 98 are reachable from nothing, and 83 of those 98 were under no
+  protected name. bmad-loop prunes `attempt-preserve/*` at every run start while this repo parks durable work there,
+  tags are unprotected server-side, and `marshal land` and Story 87.1's `--retire` delete refs the new ruleset
+  protects. 23 public `rescue/dangling-*` tags, minted by the unpushed-work detector's printed remedy, re-preserved the
+  history the 2026-07-24 purge removed; they were deleted from `origin` the same day, and the same remedy would now print
+  about 16,000 more for marshal's own synthetic merged-check commits. An independent architecture review adopted the
+  standard with changes, and the operator accepted every default it recommended the same day.
+  **What it looks like when fixed:** one rule in every mode (spin, dispatch on every harness, drain, bare bmad-loop,
+  bmad-build, bmad-build-auto, hand `land/*` rebuilds, steward workspaces, agent worktrees). Work outlives its working
+  copy only as a commit reachable from an annotated `refs/tags/preserve/<slug>/<N.M>/<producer>-<sha8>` tag, with no
+  date in the name. A local tag is enough to remove a working copy, which makes it AD-29's declared durable local ref; an
+  unpushed preserve is reported as debt, never a refusal; deleting a ref on `origin` needs the tag on `origin`. Nothing
+  reaches `origin` without passing a content gate (purge list, secret scan, size cap). Retirement writes an
+  `archive/heads/<branch>` twin only when deletion would orphan commits, and a preserve retires by derived state. One
+  declared list, unioned with a code floor, drives the rulesets, the hook and every in-code deleter, and a reachability
+  guard covers every branch and tag the list does not name. **Constraints:** upstream names stay; marshal promotes them
+  and renders `preserve_keep = 0`. Legacy `rescue/*` and `archive/*` tags are frozen. Nothing is deleted without an
+  operator ruling, and every outward GitHub settings change is the operator's. The grammar lives in
+  `pyforge.core.preserve_refs`. Owner `spec-pyforge-marshal` (co-governors `spec-pyforge-steward`,
+  `spec-pyforge-core`). → CAP-287, FR-234, AD-81, Stories 87.2–87.16 (87.1 amended), specced 2026-10-04; steward twin
+  `spec-pyforge-steward:CAP-165`, Stories 85.2–85.5 (85.1 amended). Research
+  `_bmad-output/projects/pyforge-marshal/planning-artifacts/research/preserved-work-refs-2026-10-04.md`, its drafts and
+  its review (`preserved-work-refs-2026-10-04-review.md`, same folder).
 - **2026-10-04 (finalize roll-up)** — **Found: landings overwrite epic roll-ups with stale feed rows.** The landing
   finalize renders the feed into the tracked ledger without the sync's epic roll-up. The feed's epic rows lag, because
   the sync writes roll-ups only to the twin, so a landing copies the stale value. Doctor 41.5's landing set `epic-41`
