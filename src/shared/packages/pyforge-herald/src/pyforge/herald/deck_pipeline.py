@@ -1860,15 +1860,12 @@ def _normalize_html_readback_body(body: bytes) -> bytes | None:
     return text.rstrip("\n").encode("utf-8")
 
 
-def _readback_matches_pushed_body(expected: bytes, actual: bytes, *, path: str, content_hash: str) -> bool:
+def _readback_matches_pushed_body(expected: bytes, actual: bytes, *, path: str) -> bool:
     """True when ``actual`` (post-harness) matches what was pushed.
 
-    Byte identity is tried first, then the recorded ``content_hash`` (SHA-256
-    of the raw pushed bytes), then HTML newline normalization for ``.html``
+    Byte identity is tried first, then HTML newline normalization for ``.html``
     paths only."""
     if actual == expected:
-        return True
-    if hashlib.sha256(actual).hexdigest() == content_hash:
         return True
     if not path.lower().endswith(".html"):
         return False
@@ -2056,7 +2053,7 @@ def push_exports(
                     new_etags.pop(key, None)
                 continue
             actual = _strip_serve_harness(raw, path=filename)
-            if not _readback_matches_pushed_body(expected, actual, path=filename, content_hash=candidate.local_hash):
+            if not _readback_matches_pushed_body(expected, actual, path=filename):
                 mismatches.append(filename)
                 key = f"{_EXPORT_ARTIFACT_PREFIX}{filename}"
                 if key in existing.etags:
