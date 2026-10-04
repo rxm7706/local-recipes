@@ -2,7 +2,7 @@
 title: "41.2: The ledger, story-status and capability-effect sources degrade honestly, the source dispatch passes its scope through, and doctor's own tracking reads true"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'blocked'
 baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -98,3 +98,22 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: blocked  
+Blocking condition: Story 41.2 partial — ledger/story-status/dispatch/frozen-path core fixes landed and `pyforge-doctor-test` + `lint-types` + `spec_surface_reconcile.py` are green; remaining acceptance rows (capability-effect join + flag-inventory, atlas `behind-upstream` axis, epics.md/ledger live-tree sync, SPEC memlog/`bmad-spec` re-derive for CAP-53/30.3, all 24 deferred-work ledger closures, degrade_on_exception call-site test, detectors `_DOCTOR_SOURCE_TASKS` meta-test) still open.
+
+Verification run: `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` (3280 passed, 1 skipped); `pixi run --frozen -e pyforge-guild lint-types` (exit 0); `python scripts/spec_surface_reconcile.py` (OK).
+
+Surface reconcile memlog paths named:
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/feed_status.py`
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py`
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py`
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py`
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/frozen_path.py`
+- `src/shared/packages/pyforge-doctor/tests/unit/test_feed_status.py`
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger.py`
+- `src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py`
+
+Co-governor `spec-pyforge-core` memlog: same paths (append under `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md`).
