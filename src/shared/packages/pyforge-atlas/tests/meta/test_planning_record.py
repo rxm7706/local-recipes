@@ -22,9 +22,7 @@ _DESIGN = _PLANNING / "DESIGN.md"
 _EPICS = _PLANNING / "epics.md"
 _LEDGER = _PLANNING / "deferred-work-ledger.md"
 _SPRINT_LEDGER = _PLANNING / "sprint-status-ledger.yaml"
-_CATALOG_SOURCES = (
-    _PLANNING / "specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md"
-)
+_CATALOG_SOURCES = _PLANNING / "specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md"
 _DESIGN_THINKING_CUSTOM = Path("_bmad/custom/bmad-cis-design-thinking.toml")
 _CORE_CONFIG = Path("_bmad/core/config.yaml")
 _DESIGN_TEMPLATE = Path(".claude/skills/bmad-cis-design-thinking/template.md")
@@ -180,10 +178,7 @@ def _closed_entries_with_verified(ledger_text: str) -> list[tuple[str, str]]:
                 if not verified_line_cites(raw):
                     continue
                 cites = _path_line_citations(raw)
-                if cites and all(
-                    c[0].startswith(("src/", "_bmad", ".github/", "scripts/"))
-                    for c in cites
-                ):
+                if cites and all(c[0].startswith(("src/", "_bmad", ".github/", "scripts/")) for c in cites):
                     chosen = raw
                     break
         entries.append((ident, chosen or verified[-1]))
