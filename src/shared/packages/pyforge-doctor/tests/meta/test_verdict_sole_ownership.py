@@ -138,15 +138,30 @@ def _is_exit_callable(
     return isinstance(func, ast.Name) and func.id in exit_aliases
 
 
+def _is_bare_system_exit(exc: ast.expr | None) -> bool:
+    if isinstance(exc, ast.Name):
+        return exc.id == "SystemExit"
+    return isinstance(exc, ast.Attribute) and exc.attr == "SystemExit"
+
+
 def _exit_literal_violations(tree: ast.Module) -> list[int]:
     exit_aliases = _exit_call_aliases(tree)
     sys_names, os_names = _exit_module_aliases(tree)
     constants = _module_int_constants(tree)
     violations: list[int] = []
     for node in ast.walk(tree):
+        # A bare `raise SystemExit` is no Call at all, and exits 0 -- a
+        # guarded literal by implication.
+        if isinstance(node, ast.Raise) and _is_bare_system_exit(node.exc):
+            violations.append(node.lineno)
+            continue
         if not isinstance(node, ast.Call) or not _is_exit_callable(node.func, exit_aliases, sys_names, os_names):
             continue
         arguments = [*node.args, *(keyword.value for keyword in node.keywords)]
+        if not arguments:
+            # `sys.exit()` / `SystemExit()` with no argument exits 0.
+            violations.append(node.lineno)
+            continue
         for arg in arguments:
             if (
                 isinstance(arg, ast.Constant)
@@ -238,6 +253,16 @@ def test_exit_detector_sees_aliases_keywords_and_constants():
     # scope by design.
     benign = "import sys\nOK = 1\nsys.exit(OK)\nsys.exit(1)\n"
     assert _exit_literal_violations(ast.parse(benign)) == []
+
+
+def test_exit_detector_sees_argless_and_bare_system_exit():
+    """DW-1-1-4: every implicit exit 0 -- no Call, or a Call with no
+    argument -- fires, since 0 is a guarded literal."""
+    assert _exit_literal_violations(ast.parse("raise SystemExit\n")) == [1]
+    assert _exit_literal_violations(ast.parse("import builtins\nraise builtins.SystemExit\n")) == [2]
+    assert _exit_literal_violations(ast.parse("raise SystemExit()\n")) == [1]
+    assert _exit_literal_violations(ast.parse("import sys\nsys.exit()\n")) == [2]
+    assert _exit_literal_violations(ast.parse("raise ValueError\n")) == []
 
 
 def test_private_detector_sees_verdict_module_aliases():

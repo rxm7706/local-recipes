@@ -42,10 +42,15 @@ from pathlib import Path
 from ..models import DoctorStatus, Finding, Source
 
 _INSTALL_HINT = (
-    "pyforge-warden not installed -- install the `gate` extra "
-    "(`pip install pyforge-doctor[gate]`) or add pyforge-warden to the "
-    "environment"
+    "pyforge-warden not installed -- run doctor from the pixi environment "
+    "that carries it (`pixi run -e pyforge-doctor doctor check`, or "
+    "`-e pyforge-guild`), or add pyforge-warden to the environment"
 )
+
+#: The degradation sentinel's ``check`` name -- deliberately never one of
+#: warden's own check names, so ``checks.registry`` can tell "the category
+#: degraded" apart from any real check result.
+SENTINEL_CHECK_NAME = "pyforge-warden"
 
 # A ModuleNotFoundError naming one of THESE modules means warden itself is
 # absent (the install hint applies); naming anything else means warden is
@@ -57,7 +62,7 @@ def _one_fail_finding(message: str) -> tuple[Finding, ...]:
     return (
         Finding(
             source=Source.WARDEN_DOCTOR,
-            check="pyforge-warden",
+            check=SENTINEL_CHECK_NAME,
             status=DoctorStatus.FAIL,
             message=message,
             evidence={},

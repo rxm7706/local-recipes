@@ -375,6 +375,13 @@ class Partition(StrEnum):
     ACCEPTED_RISK = "accepted-risk"
 
 
+#: The one evidence marker every cannot-evaluate WARN carries
+#: (``evidence[UNEVALUABLE_EVIDENCE_KEY] is True``): the source could not
+#: judge its subject at all, so ``score.grade`` reads its axis as
+#: ``incomplete``, never as a letter grade (DW-doctor-40-1).
+UNEVALUABLE_EVIDENCE_KEY = "unevaluable"
+
+
 @dataclass(frozen=True)
 class Finding:
     """One gathered signal, tagged with its origin ``Source``.

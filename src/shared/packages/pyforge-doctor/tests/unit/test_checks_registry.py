@@ -1,7 +1,7 @@
 """Unit tests for ``pyforge.doctor.checks.registry`` (Story 1.3) -- covers
 every row of the spec's I/O & Edge-Case Matrix: list all/filtered/unknown-
 category, the no-execution proof for ``list_checks``, ``gather_one``
-found/not-found/unknown-category-raises, and the live drift-detection
+found/not-found/sentinel/unknown-category-raises, and the live drift-detection
 cross-check against a real, unmocked ``sources.warden.gather()`` call --
 mirroring ``test_sources_warden.py``'s monkeypatch-``run_doctor_checks``
 idiom and its "live equivalence" real-call idiom.
@@ -112,13 +112,14 @@ def test_gather_one_matches_the_named_finding_from_a_full_gather(monkeypatch, tm
 
     result = gather_one("engines", "osv-scanner", tmp_path)
     full = warden_source.gather(tmp_path)
-    expected = next(f for f in full if f.check == "osv-scanner")
+    expected = tuple(f for f in full if f.check == "osv-scanner")
 
     assert result == expected
-    assert result.status is DoctorStatus.FAIL
+    assert len(result) == 1
+    assert result[0].status is DoctorStatus.FAIL
 
 
-def test_gather_one_unknown_check_name_returns_none(monkeypatch, tmp_path: Path):
+def test_gather_one_unknown_check_name_returns_empty(monkeypatch, tmp_path: Path):
     checks = _checks(
         ("deptry", True, "within tested range"),
         ("osv-scanner", True, "within tested range"),
@@ -129,7 +130,7 @@ def test_gather_one_unknown_check_name_returns_none(monkeypatch, tmp_path: Path)
     )
     monkeypatch.setattr(engines_mod, "run_doctor_checks", lambda target: checks)
 
-    assert gather_one("engines", "not-a-real-check", tmp_path) is None
+    assert gather_one("engines", "not-a-real-check", tmp_path) == ()
 
 
 def test_gather_one_unknown_category_raises_value_error(monkeypatch, tmp_path: Path):
@@ -157,45 +158,38 @@ def test_every_cataloged_category_is_dispatchable_by_gather_one(monkeypatch, tmp
     monkeypatch.setattr(engines_mod, "run_doctor_checks", lambda target: ())
 
     for category in _CATALOG:
-        assert gather_one(category, "no-such-check", tmp_path) is None
+        assert gather_one(category, "no-such-check", tmp_path) == ()
 
 
 def test_gather_one_can_address_the_degradation_sentinel_by_name(monkeypatch, tmp_path: Path):
-    # Filter semantics cut both ways (the complement of the sentinel->None
-    # test below): the degradation sentinel's own check name -- one
-    # list_checks() never advertises -- IS addressable, and returns the
-    # sentinel Finding itself. Whether Story 1.5's CLI validates names
-    # against the catalog (making this unreachable) or passes them through
-    # is its decision (review finding, 2026-07-30 -- logged in
-    # deferred-work.md).
+    # The degradation sentinel's own check name -- one list_checks() never
+    # advertises -- stays addressable, and returns the sentinel once.
     def _boom(target):
         raise RuntimeError("simulated warden self-check crash")
 
     monkeypatch.setattr(engines_mod, "run_doctor_checks", _boom)
 
-    sentinel = gather_one("engines", "pyforge-warden", tmp_path)
+    result = gather_one("engines", "pyforge-warden", tmp_path)
 
-    assert sentinel is not None
-    assert sentinel.check == "pyforge-warden"
-    assert sentinel.status is DoctorStatus.FAIL
+    assert len(result) == 1
+    assert result[0].check == "pyforge-warden"
+    assert result[0].status is DoctorStatus.FAIL
 
 
-def test_gather_one_returns_none_when_gather_degrades_to_sentinel_finding(monkeypatch, tmp_path: Path):
-    # When sources.warden.gather() degrades to its single "pyforge-warden"
-    # sentinel Finding (warden absent/unimportable/raising -- Story 1.2's
-    # own tests cover all three shapes), no Finding named "osv-scanner"
-    # exists in the result. gather_one is a literal filter over that
-    # result (AC3), so it returns None here -- it does not surface the
-    # sentinel's own failure reason. Pinning today's actual, spec-mandated
-    # behavior; whether a caller should see the sentinel instead is a
-    # Story 1.5 CLI-wiring UX decision, not this module's job (review
-    # finding, 2026-07-30 -- logged in deferred-work.md).
+def test_gather_one_surfaces_the_sentinel_when_gather_degrades(monkeypatch, tmp_path: Path):
+    # DW-FU-1-5-4: when sources.warden.gather() degrades to its single
+    # "pyforge-warden" sentinel, a named lookup returns that sentinel -- with
+    # warden's own specific reason -- rather than nothing at all.
     def _boom(target):
         raise RuntimeError("simulated warden self-check crash")
 
     monkeypatch.setattr(engines_mod, "run_doctor_checks", _boom)
 
-    assert gather_one("engines", "osv-scanner", tmp_path) is None
+    result = gather_one("engines", "osv-scanner", tmp_path)
+
+    assert [f.check for f in result] == ["pyforge-warden"]
+    assert "simulated warden self-check crash" in result[0].message
+    assert result == warden_source.gather(tmp_path)
 
 
 # --- live drift-detection cross-check ----------------------------------------
@@ -230,9 +224,6 @@ def test_live_gather_one_equivalence_with_real_gather(tmp_path: Path):
     # live-equivalence idiom (which already relies on two consecutive live
     # runs agreeing): gather_one really is the literal filter over a real
     # full-suite run, not just over the monkeypatched ones above.
-    expected = next(
-        (f for f in warden_source.gather(tmp_path) if f.check == "deptry"),
-        None,
-    )
+    expected = tuple(f for f in warden_source.gather(tmp_path) if f.check in {"deptry", "pyforge-warden"})
 
     assert gather_one("engines", "deptry", tmp_path) == expected

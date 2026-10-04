@@ -51,7 +51,7 @@ import re
 import sys
 from pathlib import Path
 
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception, locate_checkout_script
 
 __all__ = (
@@ -1228,6 +1228,7 @@ def _gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...
                 message=(f"fleet_scan failed to load — chain layer audit cannot be evaluated ({exc})"),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
+                    UNEVALUABLE_EVIDENCE_KEY: True,
                     "project": project,
                     "detail": str(exc),
                     "subject": "pyforge.doctor.sources.fleet_scan",
@@ -1297,6 +1298,7 @@ def _gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...
                 message=(f"project {project!r} has no planning-artifacts tree — chain layer audit cannot be evaluated"),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
+                    UNEVALUABLE_EVIDENCE_KEY: True,
                     "project": project,
                     "detail": "planning-artifacts missing",
                     "subject": str(Path("_bmad-output") / "projects" / project / "planning-artifacts"),
@@ -1328,6 +1330,7 @@ def _gather_chain_layers_audit(target: Path, project: str) -> tuple[Finding, ...
                 message=(f"project {project!r} has no fleet chain row — CAP-3 audit cannot be evaluated"),
                 evidence={
                     "kind": "chain-layers-audit-unevaluable",
+                    UNEVALUABLE_EVIDENCE_KEY: True,
                     "project": project,
                     "detail": "no fleet row",
                 },

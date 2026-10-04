@@ -160,7 +160,7 @@ from pathlib import Path
 import yaml
 
 from ..cli_bridge import CliBridgeError, run_git
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from . import degrade_on_exception, locate_checkout_script
 
 __all__ = ("gather", "ground_truth")
@@ -744,7 +744,7 @@ def _unevaluable(check_name: str, detail: str, target: Path) -> Finding:
         check="bmad-drift-unevaluable",
         status=DoctorStatus.WARN,
         message=f"{check_name} could not be evaluated — {detail}",
-        evidence={"check": check_name, "target": str(target)},
+        evidence={"check": check_name, "target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
     )
 
 
@@ -1687,7 +1687,7 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 check="bmad-drift-unevaluable",
                 status=DoctorStatus.WARN,
                 message=(f"no {PROJ_REL}/ under {target} — the BMAD project drift check cannot be evaluated here"),
-                evidence={"check": "bmad-drift", "target": str(target)},
+                evidence={"check": "bmad-drift", "target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 
