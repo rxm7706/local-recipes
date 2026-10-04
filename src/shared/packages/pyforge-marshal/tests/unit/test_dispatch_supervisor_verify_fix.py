@@ -133,9 +133,17 @@ def _verify_fix_entries(fs: loop.FakeFs) -> list[dict]:
     return [entry for entry in _entries(fs) if entry.get("kind") == dispatch_core.KIND_DISPATCH_VERIFY_FIX]
 
 
-def _finalize(fs: loop.FakeFs, repo_root: Path, worktree: Path, *, journal_lines: tuple[str, ...] = ()):
+def _finalize(
+    fs: loop.FakeFs,
+    repo_root: Path,
+    worktree: Path,
+    *,
+    journal_lines: tuple[str, ...] = (),
+    vcs: loop.FakeVcs | None = None,
+):
     branch = dispatch_core.dispatch_worktree_branch(loop._SLUG, loop._STORY_KEY)
-    vcs = loop.FakeVcs(branches=frozenset({branch}), head_sha=loop._MOVED)
+    if vcs is None:
+        vcs = loop.FakeVcs(branches=frozenset({branch}), head_sha=loop._MOVED)
     return loop._finalize(fs, vcs, repo_root, worktree, journal_lines=journal_lines)
 
 
@@ -387,7 +395,7 @@ def test_fix_turn_green_reverify_sets_finalize_verified(
     )
     fs = loop.FakeFs()
 
-    _counter, ok = _finalize(fs, repo_root, worktree)
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
 
     assert ok is True
     finalize_outcomes = [
@@ -432,7 +440,7 @@ def test_reverify_still_refused_emits_mrs_disp_060(
     )
     fs = loop.FakeFs()
 
-    _finalize(fs, repo_root, worktree)
+    _finalize(fs, repo_root, worktree, vcs=vcs)
 
     observations = [
         entry
