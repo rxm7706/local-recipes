@@ -86,7 +86,7 @@ development_status:
   26-1-the-factory-status-frame-drops-its-docs-specs-rows: backlog
   27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud: done
   27-2-the-data-plane-honours-its-data-root-and-fetches-what-it-claims: done
-  27-3-the-read-surfaces-render-what-design-specifies-on-real-data: backlog
+  27-3-the-read-surfaces-render-what-design-specifies-on-real-data: done
   27-4-the-planning-record-matches-the-tree-and-owed-reviews-run: backlog
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
   3-10-migration-readiness-datasets-classification-node: done
