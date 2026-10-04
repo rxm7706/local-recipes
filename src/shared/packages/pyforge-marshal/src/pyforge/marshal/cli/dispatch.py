@@ -5138,8 +5138,7 @@ def execute_fleet_cycle(
                 )
             else:
                 in_flight_detail = (
-                    f"wave in flight: {', '.join(cycle.live_stories)} "
-                    "(waiting for terminal outcomes before next batch)"
+                    f"wave in flight: {', '.join(cycle.live_stories)} (waiting for terminal outcomes before next batch)"
                 )
                 in_flight_message = (
                     f"station {slug!r}: no dispatch this cycle -- "

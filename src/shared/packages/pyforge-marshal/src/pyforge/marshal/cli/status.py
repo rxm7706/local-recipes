@@ -2138,11 +2138,7 @@ def run_status(
                 # keep the patch listed on the row.
                 patch_key = entry.get("story_key")
                 current = row.get("current_story")
-                if (
-                    patch_key is not None
-                    and current is not None
-                    and str(patch_key) == str(current)
-                ):
+                if patch_key is not None and current is not None and str(patch_key) == str(current):
                     continue
                 home_findings.append(
                     (

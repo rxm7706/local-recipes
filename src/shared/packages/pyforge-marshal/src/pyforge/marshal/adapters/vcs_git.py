@@ -1583,7 +1583,10 @@ class GitVcs:
                 )
             except VcsCommandError as exc:
                 last_error = exc
-                if not _publish_rejection_is_non_fast_forward(exc) or attempt >= _COMMIT_PATHS_ONTO_REMOTE_TIP_MAX_ATTEMPTS:
+                if (
+                    not _publish_rejection_is_non_fast_forward(exc)
+                    or attempt >= _COMMIT_PATHS_ONTO_REMOTE_TIP_MAX_ATTEMPTS
+                ):
                     raise
                 _LOGGER.info(
                     "commit_paths_onto_remote_tip non-fast-forward on attempt %s/%s: %s",

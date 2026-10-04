@@ -595,13 +595,11 @@ def _plan_station(
     elif cycle.live_stories:
         if cycle.parallel_cap <= 1:
             detail = (
-                f"dispatch in flight: {', '.join(cycle.live_stories)} "
-                "(waiting for terminal outcome before next launch)"
+                f"dispatch in flight: {', '.join(cycle.live_stories)} (waiting for terminal outcome before next launch)"
             )
         else:
             detail = (
-                f"wave in flight: {', '.join(cycle.live_stories)} "
-                "(waiting for terminal outcomes before next batch)"
+                f"wave in flight: {', '.join(cycle.live_stories)} (waiting for terminal outcomes before next batch)"
             )
         payload.update(outcome="in-flight", detail=detail)
     else:

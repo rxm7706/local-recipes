@@ -4975,9 +4975,7 @@ class TestFailedPatches:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_failed_patch_for_current_story_stays_listed_without_mrs_status_010(
-        self, tmp_path, capsys, monkeypatch
-    ):
+    def test_failed_patch_for_current_story_stays_listed_without_mrs_status_010(self, tmp_path, capsys, monkeypatch):
         """Story 86.4 (DW-FU-4-14-8): no ``MRS-STATUS-010`` for the in-flight story's patch."""
         run_dir = _seed_run_journal(
             tmp_path,
