@@ -934,8 +934,8 @@ class EnvironmentLockfileMalformedError(MasonError):
 
 class EnvironmentCheckTempCopyUnreadableError(MasonError):
     """`engines.condalock.check()` could not read `metadata.content_hash` from
-    the temporary lockfile copy **after** `conda-lock` ran (Story 4.4, FR-28,
-    NFR-14).
+    the temporary lockfile copy **after** `conda-lock` ran (Story 27.1, fix on
+    Story 4.4 / FR-28, NFR-14).
 
     The before-read already proved the caller's own lockfile parses; a failure
     on the after-read names the temp copy and conda-lock, never the user's

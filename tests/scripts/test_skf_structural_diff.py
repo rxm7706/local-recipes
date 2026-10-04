@@ -107,3 +107,31 @@ def test_structural_diff_mixed_shape_file_on_one_side_reports_unchanged():
 
     reverse = m.diff_inventories(current, baseline)
     assert reverse["summary"] == {"added": 0, "removed": 0, "changed": 0, "moved": 0, "unchanged": 1}
+
+
+def test_structural_diff_lists_order_by_export_name_not_by_file():
+    """Every emitted list sorts by export name first, as the name-keyed diff
+    did: `a` lives in z.py and `b` in y.py, so a (file, name) sort would put
+    `b` first."""
+    m = _load_module()
+    baseline = [
+        {"name": "a", "file": "z.py", "signature": "f(x)"},
+        {"name": "b", "file": "y.py", "signature": "g(x)"},
+    ]
+    changed = m.diff_inventories(baseline, [
+        {"name": "a", "file": "z.py", "signature": "f(y)"},
+        {"name": "b", "file": "y.py", "signature": "g(y)"},
+    ])
+    assert [c["name"] for c in changed["changed"]] == ["a", "b"]
+
+    removed = m.diff_inventories(baseline, [])
+    assert [r["name"] for r in removed["removed"]] == ["a", "b"]
+
+    added = m.diff_inventories([], baseline)
+    assert [a["name"] for a in added["added"]] == ["a", "b"]
+
+    moved = m.diff_inventories(baseline, [
+        {"name": "a", "file": "w.py", "signature": "f(x)"},
+        {"name": "b", "file": "v.py", "signature": "g(x)"},
+    ])
+    assert [mv["name"] for mv in moved["moved"]] == ["a", "b"]

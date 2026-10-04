@@ -78,7 +78,9 @@ Output:
                         ("name" is the export name; summary.changed counts
                         distinct changed entries, i.e. (file, name) keys)
     moved:              list of { name, previous_file, current_file }
-    unchanged_count:    number of entries that matched with no field change
+                        (all four lists sort by export name, then by the
+                        (file, name) key for same-named entries)
+    unchanged_count:   number of entries that matched with no field change
     applied_transforms: list of { transform, count } — which canonicalization
                         transforms actually fired and how many values each
                         touched (empty when none fired). Surfaced by audit
@@ -332,8 +334,12 @@ def diff_inventories(
     removed_names = baseline_names - current_names
     common_names = baseline_names & current_names
 
-    changed: list[dict] = []
-    moved: list[dict] = []
+    # Each changed/moved row carries its (name, key) sort key so the emitted
+    # lists order by export name first -- the order the name-keyed diff
+    # emitted -- and fall back to the (file, name) key only to separate
+    # same-named entries.
+    changed_rows: list[tuple[tuple[str, str], dict]] = []
+    moved_rows: list[tuple[tuple[str, str], dict]] = []
     unchanged_count = 0
     changed_keys: set[str] = set()
 
@@ -348,12 +354,12 @@ def diff_inventories(
             if base_val is None or curr_val is None:
                 continue
             if base_val != curr_val:
-                changed.append({
+                changed_rows.append(((base_rec["name"], key), {
                     "name": base_rec["name"],
                     "field": field,
                     "baseline_value": base_val,
                     "current_value": curr_val,
-                })
+                }))
                 entry_changed = True
         if entry_changed:
             changed_keys.add(key)
@@ -381,11 +387,11 @@ def diff_inventories(
             r_rec, a_rec = baseline[r_key], current[a_key]
             r_file, a_file = r_rec.get("file"), a_rec.get("file")
             if r_file and a_file:
-                moved.append({
+                moved_rows.append(((export_name, r_key), {
                     "name": export_name,
                     "previous_file": r_file,
                     "current_file": a_file,
-                })
+                }))
             compare(r_key, r_rec, a_rec)
             paired_removed.add(r_key)
             paired_added.add(a_key)
@@ -393,8 +399,18 @@ def diff_inventories(
     # Emit normalized entries (uniform name/type/signature/file/line/confidence
     # shape) so added[] and removed[] render into the same report table even
     # though they originate from the snapshot and provenance-map shapes.
-    added = [current[k] for k in sorted(added_names - paired_added)]
-    removed = [baseline[k] for k in sorted(removed_names - paired_removed)]
+    # Every list sorts by (name, key); the sorts are stable, so one entry's
+    # changed fields keep their DIFF_FIELDS order.
+    added = [
+        current[k]
+        for k in sorted(added_names - paired_added, key=lambda k: (current[k]["name"], k))
+    ]
+    removed = [
+        baseline[k]
+        for k in sorted(removed_names - paired_removed, key=lambda k: (baseline[k]["name"], k))
+    ]
+    changed = [row for _, row in sorted(changed_rows, key=lambda r: r[0])]
+    moved = [row for _, row in sorted(moved_rows, key=lambda r: r[0])]
 
     changed_names = len(changed_keys)
 

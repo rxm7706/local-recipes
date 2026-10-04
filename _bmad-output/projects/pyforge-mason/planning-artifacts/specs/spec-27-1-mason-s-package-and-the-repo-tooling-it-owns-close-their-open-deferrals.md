@@ -129,12 +129,26 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling of 2026-10-03 (open mediu
     - `diff_inventories` matches exact keys first and compares each matched pair field by field (`DIFF_FIELDS`). It then pairs the leftover removed and added entries that share an export name, in sorted-key order (`zip`): when both sides carry a file (necessarily different) the pair is a move — a `moved[]` entry `{name, previous_file, current_file}` — AND is compared field by field, so a move plus a signature change reports `changed=1, moved=1` as upstream did; when only one side carries a file the pair is the same entry in another inventory shape, compared field by field and never a move (upstream reported it unchanged, and so does this patch). Paired entries leave `added[]` and `removed[]`. A pair with no field change counts toward `unchanged`, as upstream counted a moved entry.
     - `changed[]` and `moved[]` emit the export name (`rec["name"]`), never the composite key with its NUL byte.
     - `summary.changed` counts distinct changed keys (`(file, name)`, the baseline key for a paired entry), not distinct names, so four changed `main` exports in four files count four.
+    - `added[]`, `removed[]`, `changed[]` and `moved[]` sort by `(name, key)` — export name first, the `(file, name)` key (the baseline key for a paired entry) only to separate same-named entries; the sorts are stable, so one entry's changed fields keep their `DIFF_FIELDS` order (final landing review, below).
     - The module docstring, the `DIFF_FIELDS` comment and `_normalize_entries`'s docstring describe the above. For inventories whose names are unique the output equals upstream's (checked on 5,000 random inventory pairs).
   - `_bmad/skf/shared/scripts/skf-provenance-gap-dispatch.py` (DW-12-1-3): `_classify` gains `if action == "retro-mirror": continue`, so `retro-mirror` is an explicit known action that is not a scope decision: an earlier `promoted`/`skipped`/`demoted-*` decision on the path stands, and a path with no other decision stays `unresolved`. Behaviour equals upstream's (an unknown action already fell through); the line and the docstring sentence that says so exist to make the action known, not to change a result.
   - `_bmad/skf/shared/scripts/schemas/skill-brief.v1.json` (DW-12-1-3): `scope.properties` gains `amendments` — an array of objects that require `action`, constrained to the enum `promoted`, `skipped`, `demoted-include`, `demoted-exclude`, `excluded`, `retro-mirror`, with optional string `path`, `reason`, `category`, `workflow` and a `date` matching `^\d{4}-\d{2}-\d{2}$`; `additionalProperties: true`.
   - Deliberately not patched: the installer's tracked `.claude/skills/shared/scripts/` copies of these three files, and the four prose `skill-brief-schema.md` copies (`_bmad/skf/` and `.claude/skills/`, under `skf-brief-skill/assets/` and `skf-analyze-source/assets/`), which do not list `retro-mirror`. The skf skills resolve `{project-root}/_bmad/skf/shared/scripts/` first, so the patched copies are the ones that run.
 
+- **2026-10-03 (night, final landing review; operator's fixer)** — Amends the local-patch record above with its output-order bullet: `diff_inventories` had emitted its lists in `(file, name)` key order, so for unique names the output equalled upstream's only as a set; it now sorts every list by `(name, key)`, so for unique names it equals upstream's exactly, order included (the reviewer's 5,000-pair parity check: 0 differ exact, 0 differ unordered). Pinned by `test_structural_diff_lists_order_by_export_name_not_by_file`.
+
 ## Review Triage Log
+
+### 2026-10-03 (night) — Final landing review on the rebuilt branch: land; low items fixed by the operator's fixer
+
+- `low` **L1** — `_bmad/skf/shared/scripts/skf-structural-diff.py` emitted `added[]`/`removed[]`/`changed[]`/`moved[]` in `(file, name)` key order. Every list now sorts by `(name, key)`, equal to upstream's order for unique names (parity script: 1,461 of 5,000 pairs differed in order before, 0 after). Test `test_structural_diff_lists_order_by_export_name_not_by_file`; it fails against the unsorted script.
+- `low` **L2** — `tests/meta/test_no_config_file.py`'s `_find_unsanctioned_yaml_attributes` missed `import yaml as <alias>`. Each alias is walked as `yaml` is and is itself reported (`<import yaml as NAME>`). The reviewer's mutant Y05 (`import yaml as _yml` + `_yml.unsafe_load`) survived the old guard and fails the new one. Tests: two new reach fixtures, an aliased import used safely.
+- `low` **L3** — `spec-pyforge-core`'s memlog names the five foreign paths its stamp had ratified only on old mentions: herald's `deck_pipeline.py` and `transport/{agent_sdk_transport,base,mcp_transport}.py` (Stories 35.1/35.2) and marshal's `cli/drain_plan.py` (Story 83.12).
+- `low` **L4** — `test_engines_condalock.py`'s after-read test is renamed `test_check_raises_environment_check_temp_copy_unreadable_error_when_the_after_read_is_malformed`, naming the error it asserts.
+- `low` **L5** — `errors.py`'s `EnvironmentCheckTempCopyUnreadableError` docstring cites "Story 27.1, fix on Story 4.4 / FR-28".
+- `low` **L6** — `cli.py`'s `environment lock` registration comment and dispatch comment attribute FR-25 and FR-27 to Story 4.3 and FR-29 to Story 4.1 (`epics.md` FR map).
+- `low` **L7** — the "Auto Run Result" section is marked superseded by this log.
+- Main moved during the review: `origin/main` (`ea042d5859`) is merged into the branch; the `spec-pyforge-core` memlog conflict resolved main's lines first, then only the branch's lines main lacked.
 
 ### 2026-10-03 (night) — Second landing review; fixed by the operator's fixer
 
@@ -189,6 +203,8 @@ The entry below this one, dated with the implementation run, is void: no reviewe
 - **Story 12.8 (re-scope checkpoint / clause (d))** — campaign closed at `campaign-state.yaml:80`; clause (d) status matching hardened in `cfe_rebuild_guard_check.py` (casefold/strip); no separate `re_scope_gate_2` enforcement required post–Story 15.1.
 
 ## Auto Run Result
+
+Superseded by the Review Triage Log above (the implementation run's own summary, kept as the record; its claims were reviewed, sent back and re-verified there).
 
 Status: done
 

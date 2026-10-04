@@ -1036,7 +1036,7 @@ def test_check_raises_lockfile_malformed_error_when_file_is_empty(tmp_path):
     mock_run.assert_not_called()
 
 
-def test_check_raises_lockfile_malformed_error_when_the_after_read_is_malformed(tmp_path):
+def test_check_raises_environment_check_temp_copy_unreadable_error_when_the_after_read_is_malformed(tmp_path):
     """The child ran (returncode 0) but left the temp copy in a state
     `check()` cannot parse -- the after-read must translate just as
     faithfully as the before-read."""

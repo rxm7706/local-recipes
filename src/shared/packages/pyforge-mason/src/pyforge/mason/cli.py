@@ -853,7 +853,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # Story 4.3: mason environment lock <manifest_path>... --output/-o PATH
     # [--platform PLATFORMS] -- the `environment` noun's first verb (FR-25,
-    # FR-27, FR-29 for lock; Story 4.3). Mirrors `package build`'s own registration shape
+    # FR-27: Story 4.3; FR-29: Story 4.1). Mirrors `package build`'s own registration shape
     # (parents=[global_flags], for the same "a global flag given after the
     # verb and its positionals" reason documented on that registration
     # above). `--output`/`-o` mirrors `recipe new --output`'s exact
@@ -1492,7 +1492,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _dispatch_package_ship(ns, raw_targets=ns.to)
 
         if ns.noun == "environment" and ns.verb == "lock":
-            # FR-25/FR-27/FR-29 (Story 4.1): drives Story 4.1's engine protocol through
+            # FR-25/FR-27 (Story 4.3), FR-29 (Story 4.1): drives Story 4.1's engine protocol through
             # environment.py's own single adapter (engines.condalock). Like
             # `package build`, `environment.lock()` never touches CFE at
             # all (spec Always boundary) -- no cfe-root/cfe-python/
