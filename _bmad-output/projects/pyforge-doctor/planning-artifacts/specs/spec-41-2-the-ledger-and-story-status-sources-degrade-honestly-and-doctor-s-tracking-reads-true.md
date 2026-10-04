@@ -2,7 +2,8 @@
 title: "41.2: The ledger, story-status and capability-effect sources degrade honestly, the source dispatch passes its scope through, and doctor's own tracking reads true"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
