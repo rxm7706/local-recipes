@@ -344,19 +344,6 @@ def _parse_team_memory_index(text: str) -> tuple[list[str], list[tuple[str, list
     return preamble, sections
 
 
-def _render_team_memory_index(preamble: list[str], sections: list[tuple[str, list[str]]]) -> str:
-    parts: list[str] = []
-    if preamble:
-        parts.append("\n".join(_rstrip_blank_tail(preamble)))
-    for heading, body in sections:
-        content = _rstrip_blank_tail(body)
-        block = f"## {heading}\n"
-        if content:
-            block += "\n" + "\n".join(content)
-        parts.append(block)
-    return "\n".join(parts).rstrip("\n") + "\n"
-
-
 def _h2_line_indices(lines: list[str]) -> list[int]:
     return [index for index, line in enumerate(lines) if line.startswith("## ")]
 
