@@ -8853,7 +8853,7 @@ So that a fixable refusal really costs one turn, and a restart never starts a se
 
 **Type:** feature • **Effort:** M • **Deps:** S-85.1 • **FR/AD:** spec-pyforge-marshal CAP-286 (FR-233) •
 **Flag:** `pyforge.marshal.verify_fix_loop` (stays OFF in every environment)
-**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify_fix.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py`,
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py`,
 `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/supervise.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py` (the in-flight read); marshal tests
 **Given** a fake harness whose fix turn makes verification pass, with a failed-command tail above the sidecar threshold
 **When** the supervisor handles the refusal
@@ -8870,7 +8870,7 @@ So that switching it on in dev and staging leaks nothing and orphans nothing.
 
 **Type:** feature • **Effort:** M • **Deps:** S-85.2 • **FR/AD:** spec-pyforge-marshal CAP-286 (FR-233) •
 **Flag:** `pyforge.marshal.verify_fix_loop` (ON in dev and staging, OFF in production, when this story lands)
-**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify_fix.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/redaction.py` (or
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/redaction.py` (or
 the redaction helper the fix turn uses), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/harness_profile.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/*.toml`,
 `src/platform/config/flag-overlays.json`, pyforge-core `tests/unit/test_flags.py`, `src/platform/tests/test_openfeature_file_flags.py`; marshal tests
 **Given** output tails carrying credentials, a fix session that ignores SIGTERM, a turn longer than 300 s, and a profile
