@@ -222,9 +222,7 @@ def test_verify_code_linkage_ignores_prose_and_names_missing_story_specs(tmp_pat
     specs.mkdir(parents=True)
     (specs / "spec-pyforge-marshal").mkdir()
     (planning / "epics.md").write_text(
-        "# Epics\n\n"
-        "See spec-pyforge-marshal and spec-surface-check prose, "
-        "plus story spec-1-4 and spec-11-2.\n",
+        "# Epics\n\nSee spec-pyforge-marshal and spec-surface-check prose, plus story spec-1-4 and spec-11-2.\n",
         encoding="utf-8",
     )
     outcome = verify_code_linkage(tmp_path, "acme")
