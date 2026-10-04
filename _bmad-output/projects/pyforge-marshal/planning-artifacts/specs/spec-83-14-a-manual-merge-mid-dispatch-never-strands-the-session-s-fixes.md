@@ -82,7 +82,7 @@ Files changed:
 Review: no patch/defer entries. `followup_review_recommended: false`.
 
 Verification:
-- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — targeted suites green; full suite run: 11554 passed with one removed flaky loop test (verify subprocess)
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11555 passed, 6 skipped
 - `pixi run --frozen -e pyforge-guild lint-types` — pass after import-order fix
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pre-existing fail `pyforge-atlas` hard-import scan (unchanged by this diff)
 - `python scripts/spec_surface_reconcile.py` — pass after `spec-pyforge-marshal` memlog reconcile
