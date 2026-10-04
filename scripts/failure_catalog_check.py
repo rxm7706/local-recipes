@@ -43,6 +43,7 @@ DETECTOR = {"scope": "repo"}
 import argparse
 import json
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -51,6 +52,11 @@ import yaml
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 GENERATOR_REL = ".claude/skills/conda-forge-expert/scripts/failure_catalog_generator.py"
 CATALOG_REL = ".claude/skills/conda-forge-expert/config/failure-catalog.yaml"
+KNOWN_CATALOG_SCHEMA_VERSION = 1
+_CODE_PRESENT_RE = re.compile(
+    r'code\s*=\s*["\'](?P<code>[A-Z]+-[0-9]+)["\']'
+    r'|"code"\s*:\s*["\'](?P<code2>[A-Z]+-[0-9]+)["\']',
+)
 
 
 class CouldNotRunError(RuntimeError):
@@ -77,6 +83,15 @@ def _load_catalog(path: pathlib.Path) -> dict:
         raise CouldNotRunError(
             f"{path}: does not look like a failure-catalog.yaml (missing "
             "top-level 'rows')")
+    schema_version = data.get("schema_version")
+    if schema_version is None:
+        raise CouldNotRunError(
+            f"{path}: missing top-level schema_version (expected "
+            f"{KNOWN_CATALOG_SCHEMA_VERSION})")
+    if schema_version != KNOWN_CATALOG_SCHEMA_VERSION:
+        raise CouldNotRunError(
+            f"{path}: unknown schema_version {schema_version!r} (expected "
+            f"{KNOWN_CATALOG_SCHEMA_VERSION})")
     rows = data["rows"]
     if not isinstance(rows, list):
         raise CouldNotRunError(
@@ -89,7 +104,12 @@ def _load_catalog(path: pathlib.Path) -> dict:
 
 
 def _code_present(text: str, code: str) -> bool:
-    return f'code="{code}"' in text or f"code='{code}'" in text
+    if f'code="{code}"' in text or f"code='{code}'" in text:
+        return True
+    return any(
+        m.group("code") == code or m.group("code2") == code
+        for m in _CODE_PRESENT_RE.finditer(text)
+    )
 
 
 def check_pointers(root: pathlib.Path, rows: list[dict]) -> tuple[list[dict], int]:
@@ -156,18 +176,19 @@ def check_drift(root: pathlib.Path) -> list[dict]:
 
     if proc.returncode == 0:
         return []
-    if "DRIFT DETECTED" in proc.stderr:
+    if proc.returncode == 1:
         return [{
             "kind": "catalog-drift", "id": None,
             "detail": "failure-catalog.yaml is out of sync with SKILL.md's "
                       "gotcha corpus — regenerate with `pixi run -e "
                       "local-recipes generate-failure-catalog`.\n"
-                      + proc.stderr.strip(),
+                      + (proc.stdout + proc.stderr).strip(),
         }]
     raise CouldNotRunError(
         "failure_catalog_generator.py --check exited "
-        f"{proc.returncode} without reporting drift -- the generator itself "
-        f"could not complete:\n{(proc.stdout + proc.stderr).strip()}")
+        f"{proc.returncode} — the generator itself could not complete "
+        f"(exit 1 = drift, exit 2 = generator failure):\n"
+        f"{(proc.stdout + proc.stderr).strip()}")
 
 
 def run() -> tuple[list[dict], dict]:
