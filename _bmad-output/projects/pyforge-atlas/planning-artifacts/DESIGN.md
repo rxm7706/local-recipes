@@ -12,9 +12,9 @@ this document's authoring source.
 `dashboard/app.py::PAGE_INVENTORY` as of Story 27.3; this document remains the design
 spec those pages port against.
 
-**Non-scope (per this story's Boundaries):** no page is implemented here; `PAGE_INVENTORY` is
-untouched; the query-plane code from Stories 20.1–20.3 is untouched. Everything below is a
-design SPEC, not code.
+**Non-scope (per this story's Boundaries):** this file does not implement pages or touch
+`dashboard/app.py`; Story 27.3 owns the ports. The query-plane code from Stories 20.1–20.3
+stays untouched here. Everything below remains a design SPEC, not executable code.
 
 ---
 

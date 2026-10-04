@@ -120,7 +120,13 @@ def test_epics_per_story_status_matches_sprint_ledger() -> None:
 
 
 def test_epics_status_mismatch_would_fail() -> None:
-    mismatches = [("19.1", "backlog", "done")]
+    epics_text = _read(_EPICS).replace("**Status:** done", "**Status:** backlog", 1)
+    ledger = yaml.safe_load(_read(_SPRINT_LEDGER))["development_status"]
+    mismatches = []
+    for story_id, epics_status in _epics_story_statuses(epics_text):
+        ledger_status = _ledger_status_for_story(story_id, ledger)
+        if epics_status != ledger_status:
+            mismatches.append((story_id, epics_status, ledger_status))
     assert mismatches
 
 
@@ -216,11 +222,17 @@ def test_closed_deferred_verified_citations_resolve_to_real_lines() -> None:
 
 def test_fabricated_verified_citation_fails_resolution() -> None:
     root = _repo_root()
-    rel = Path("src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py")
-    path = root / rel
-    assert path.is_file()
+    rel = "src/shared/packages/pyforge-atlas/tests/meta/test_planning_record.py"
+    path = _resolve_cited_path(root, rel)
+    assert path is not None
     line_no = len(path.read_text(encoding="utf-8").splitlines()) + 50
-    assert len(path.read_text(encoding="utf-8").splitlines()) < line_no
+    offenders: list[str] = []
+    raw = f"verified: 2026-10-04 — closed — Story 27.4; verified: {rel}:{line_no}"
+    for cite_rel, cite_line in _path_line_citations(raw):
+        cite_path = _resolve_cited_path(root, cite_rel)
+        if cite_path is None or len(cite_path.read_text(encoding="utf-8").splitlines()) < cite_line:
+            offenders.append(f"{cite_rel}:{cite_line}")
+    assert offenders == [f"{rel}:{line_no}"]
 
 
 def test_design_thinking_custom_override_resolves_project_name_in_title() -> None:
