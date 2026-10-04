@@ -109,6 +109,7 @@ def _journaled_refusal_with_failed_commands() -> tuple[str, str]:
 
 
 class _NoProfile:
+    profile = None
     spec = None
     binary_path = None
 

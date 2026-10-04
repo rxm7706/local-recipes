@@ -672,9 +672,15 @@ def parse_profile(data: Mapping[str, object], *, source: str) -> HarnessProfile:
     for label, template in (("resume_argv", resume_argv), ("fix_only_argv", fix_only_argv)):
         if not template:
             continue
-        if template.count(_PROMPT_TOKEN) != 1:
+        prompt_tokens = template.count(_PROMPT_TOKEN) + template.count(_PROMPT_FILE_TOKEN)
+        if prompt_tokens != 1:
             raise HarnessProfileError(
-                f"{source}: {label!r} must contain the {_PROMPT_TOKEN!r} token exactly once when declared"
+                f"{source}: {label!r} must contain {_PROMPT_TOKEN!r} or {_PROMPT_FILE_TOKEN!r} "
+                "exactly once when declared"
+            )
+        if _PROMPT_TOKEN in template and _PROMPT_FILE_TOKEN in template:
+            raise HarnessProfileError(
+                f"{source}: {label!r} must not mix {_PROMPT_TOKEN!r} and {_PROMPT_FILE_TOKEN!r}"
             )
 
     return HarnessProfile(

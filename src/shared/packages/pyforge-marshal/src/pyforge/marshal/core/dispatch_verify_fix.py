@@ -29,7 +29,7 @@ FIX_TURN_REVERIFY_REFUSED_CODE = "MRS-DISP-060"
 _VERIFY_REFUSAL_GATE_PREFIX = "MRS-GATE-"
 
 # Story 85.1 (M7) + 85.3: scrub credential-shaped text before truncation (never after).
-_URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s/]+)@")
+_URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s]+)@")
 _BEARER_TOKEN = re.compile(r"(?i)(Authorization:\s*Bearer\s+)\S+")
 _BASIC_AUTH = re.compile(r"(?i)(Authorization:\s*Basic\s+)\S+")
 _SECRET_ASSIGNMENT = re.compile(

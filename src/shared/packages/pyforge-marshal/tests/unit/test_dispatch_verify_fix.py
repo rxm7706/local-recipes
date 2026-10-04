@@ -465,9 +465,14 @@ def test_terminate_process_group_falls_back_to_kill_when_no_pgid(monkeypatch):
     def fake_kill(pid: int, sig: int) -> None:
         kills.append((pid, sig))
 
+    class _Dead:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
     monkeypatch.setattr(os, "getpgid", fake_getpgid)
     monkeypatch.setattr(os, "kill", fake_kill)
-    terminate_process_group(77)
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    terminate_process_group(77, grace_s=0.0, process=_Dead())
     assert kills == [(77, signal.SIGTERM)]
 
 
@@ -480,6 +485,10 @@ def test_terminate_process_group_swallows_kill_oserror(monkeypatch):
 def test_terminate_process_group_killpg_failure_falls_back_to_kill(monkeypatch):
     kills: list[tuple[int, int]] = []
 
+    class _Dead:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
     monkeypatch.setattr(os, "getpgid", lambda _pid: 5)
 
     def fake_killpg(_pgid: int, _sig: int) -> None:
@@ -490,15 +499,21 @@ def test_terminate_process_group_killpg_failure_falls_back_to_kill(monkeypatch):
 
     monkeypatch.setattr(os, "killpg", fake_killpg)
     monkeypatch.setattr(os, "kill", fake_kill)
-    terminate_process_group(88)
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    terminate_process_group(88, grace_s=0.0, process=_Dead())
     assert kills == [(88, signal.SIGTERM)]
 
 
 def test_terminate_process_group_killpg_and_kill_both_fail(monkeypatch):
+    class _Alive:
+        def is_alive(self, _pid: int) -> bool:
+            return True
+
     monkeypatch.setattr(os, "getpgid", lambda _pid: 5)
     monkeypatch.setattr(os, "killpg", lambda *_args: (_ for _ in ()).throw(OSError))
     monkeypatch.setattr(os, "kill", lambda *_args: (_ for _ in ()).throw(OSError))
-    terminate_process_group(88)  # must not raise
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    terminate_process_group(88, grace_s=0.0, process=_Alive())  # must not raise
 
 
 def test_terminate_process_group_never_signals_a_group_address_or_init(monkeypatch):
@@ -515,10 +530,16 @@ def test_terminate_process_group_never_signals_a_group_address_or_init(monkeypat
 def test_terminate_process_group_signals_only_the_pid_when_it_shares_this_process_group(monkeypatch):
     """``killpg`` on this process's own group would stop the supervisor itself."""
     calls: list[tuple[str, int, int]] = []
+
+    class _Dead:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
     monkeypatch.setattr(os, "getpgid", lambda _pid: os.getpgrp())
     monkeypatch.setattr(os, "killpg", lambda pgid, sig: calls.append(("killpg", pgid, sig)))
     monkeypatch.setattr(os, "kill", lambda pid, sig: calls.append(("kill", pid, sig)))
-    terminate_process_group(4242)
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    terminate_process_group(4242, grace_s=0.0, process=_Dead())
     assert calls == [("kill", 4242, signal.SIGTERM)]
 
 
@@ -529,9 +550,14 @@ def test_terminate_process_group_never_passes_a_group_id_of_this_group_or_init_t
     monkeypatch.setattr(os, "getpgrp", lambda: 7777)
     monkeypatch.setattr(os, "killpg", lambda pgid, sig: calls.append(("killpg", pgid, sig)))
     monkeypatch.setattr(os, "kill", lambda pid, sig: calls.append(("kill", pid, sig)))
+    class _Dead:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
     for pgid in (0, 1):
         monkeypatch.setattr(os, "getpgid", lambda _pid, pgid=pgid: pgid)
-        terminate_process_group(4242)
+        terminate_process_group(4242, grace_s=0.0, process=_Dead())
     assert calls == [("kill", 4242, signal.SIGTERM), ("kill", 4242, signal.SIGTERM)]
 
 
@@ -585,7 +611,7 @@ def test_wait_for_process_times_out_on_slow_child():
         assert result.exited is False
         assert result.returncode is None
     finally:
-        terminate_process_group(proc.pid)
+        terminate_process_group(proc.pid, grace_s=0.5)
 
 
 def test_fix_turn_rule_mutation_flag_off_skips_turn():

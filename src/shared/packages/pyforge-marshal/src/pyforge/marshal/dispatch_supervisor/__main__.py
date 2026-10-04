@@ -1219,7 +1219,7 @@ def _maybe_run_verify_fix_turn(
             resume_argv=resolution.spec.resume_argv if resolution.spec else None,
             harness_session_id=harness_session_id,
             launch_profile=profile_name,
-            resolved_profile=resolution.profile,
+            resolved_profile=getattr(resolution, "profile", None),
         )
         fix_log = run_dir / "verify-fix.log"
         started_at = _now_utc()
