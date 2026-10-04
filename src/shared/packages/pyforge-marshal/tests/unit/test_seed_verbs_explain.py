@@ -9,6 +9,7 @@ import pytest
 
 from pyforge.marshal.cli import seed as seed_cli
 from pyforge.marshal.seed.errors import UsageError
+from pyforge.marshal.seed.model.artifact import DIRECTORY_BEHAVIOR
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
     ArtifactClass,
@@ -148,3 +149,23 @@ def test_explain_cli_unknown_exits_usage_error(capsys):
 
     assert code == UsageError.exit_code
     assert "unknown artifact" in capsys.readouterr().out
+
+
+def test_explain_reports_the_directory_contract_for_a_directory_entry():
+    """Story 86.1 (DW-FU-7-5-2): `explain` renders a trailing-`/` entry's
+    contract as create-if-missing, not `generated-derived`'s "recomputed every
+    run" -- the model documenting itself must not tell an agent to rewrite a
+    directory over a never-write subtree."""
+    entry = ManifestEntry(
+        id="dreams-dir",
+        artifact_class=ArtifactClass.GENERATED_DERIVED,
+        path="docs/dreams/",
+        applies_to=AppliesTo.BOTH,
+        rationale="directory skeleton computed from the manifest; created if missing",
+    )
+
+    report = run_explain(_manifest(entry), "dreams-dir")
+
+    assert report.update_behavior == DIRECTORY_BEHAVIOR.update_behavior
+    assert report.hand_edit_behavior == DIRECTORY_BEHAVIOR.hand_edit_behavior
+    assert "recomputed every run" not in render_explain_text(report)

@@ -53,6 +53,7 @@ usual whole-file seam) is deliberately NOT used here."""
 
 from __future__ import annotations
 
+import dataclasses
 import subprocess
 import tempfile
 from importlib import resources
@@ -808,24 +809,26 @@ def test_present_legacy_artifact_is_recorded_and_never_touched(clean_repo):
 
 
 def test_agents_union_is_idempotent_and_never_drops_previous_agents(clean_repo):
-    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("b", "B.md"))
+    first = _manifest(_copied_managed("a", "A.md"))
     run_adopt(
         clean_repo,
-        manifest,
+        first,
         apply=True,
         yes=True,
         agents=("claude", "cursor"),
-        skip=("B.md",),
         confirm=_unreachable_confirm,
-        commit=_fake_commit(manifest, clean_repo),
+        commit=_fake_commit(first, clean_repo),
     )
     _commit_all(clean_repo)
     state_after_first = read_state(clean_repo)
     assert state_after_first.agents == ("claude", "cursor")
 
-    # B.md was skipped on the first call, so it is still pending -- this
-    # SECOND call's plan is genuinely non-empty, which is what lets the
-    # state write (and therefore the agents union) actually happen.
+    # B.md is new to the manifest on the second call, so it is pending --
+    # this SECOND call's plan is genuinely non-empty, which is what lets the
+    # state write (and therefore the agents union) actually happen. (A skip
+    # can no longer leave it pending: a recorded skip is honoured on every
+    # later run, Story 86.1.)
+    manifest = _manifest(_copied_managed("a", "A.md"), _copied_managed("b", "B.md"))
     result = run_adopt(
         clean_repo,
         manifest,
@@ -984,13 +987,118 @@ def test_skip_of_a_hand_edit_in_a_run_that_applies_something_else_keeps_the_stat
     state_after = read_state(clean_repo)
     assert state_after is not None
     assert {record.id: record.body_sha for record in state_after.managed}["a"] == original_sha
+    assert state_after.skips == ("A.md",)
 
-    # Without `--skip` and without `--force` the edit is still refused.
+    # The run recorded the skip, and a later re-adopt honours it with no
+    # `--skip` and no `--force` (FR-87; Story 86.1, DW-FU-11-4): no refusal,
+    # and the edit is kept. Before, the recorded pattern was never read back,
+    # so this re-adopt refused the edit at rung 6.
+    _commit_all(clean_repo)
+    again = run_adopt(
+        clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
+    )
+    assert again.declined is False
+    assert again.plan.actions == ()
+    assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+
+    # The kept record is what still guards the edit: with the recorded skip
+    # cleared, the same re-adopt refuses it at rung 6. Recording the edited
+    # bytes instead of the original `body_sha` would let this run pass.
+    state_now = read_state(clean_repo)
+    assert state_now is not None
+    write_state(dataclasses.replace(state_now, skips=()), repo_root=clean_repo, never_write=_NO_NEVER_WRITE)
     _commit_all(clean_repo)
     with pytest.raises(PreconditionFailure, match="managed-content-modified") as refused:
         run_adopt(clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit)
     assert "a:" in refused.value.message
     assert (clean_repo / "A.md").read_bytes() == b"hand-edited A\n"
+
+
+def test_a_recorded_skip_keeps_an_absent_artifact_skipped_on_re_adopt(clean_repo):
+    """FR-87 (Story 86.1, DW-FU-11-4): the pattern the first adopt recorded
+    into `state.skips` is applied again by a re-adopt that passes no `--skip`.
+    Before, nothing read `state.skips` back, so the re-adopt planned the
+    skipped artifact as an ordinary absent entry and wrote it."""
+    manifest = _manifest(_copied_managed("whole", "WHOLE.md"), _copied_managed("other", "OTHER.md"))
+    run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        skip=("OTHER.md",),
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
+    )
+    _commit_all(clean_repo)
+
+    result = run_adopt(
+        clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
+    )
+
+    assert result.plan.actions == ()
+    assert [(entry.artifact_id, entry.pattern) for entry in result.plan.skipped] == [("other", "OTHER.md")]
+    assert not (clean_repo / "OTHER.md").exists()
+
+
+# --- directory entries (Story 86.1, DW-FU-7-5-2) ---------------------------
+
+
+def test_an_existing_directory_entry_is_never_first_claimed(clean_repo):
+    """A `generated-derived` directory entry (`dreams-dir`, `docs/dreams/`) is
+    create-if-missing. FR-83's first claim used to give an existing one a
+    "claim and overwrite" action, which rung 5 refused as `directory-target`
+    -- refusing the whole adopt of any repo that already had the directory.
+    The files in it are left to their own entries."""
+    (clean_repo / "docs" / "dreams").mkdir(parents=True)
+    (clean_repo / "docs" / "dreams" / "mine.md").write_text("the repo's own dream\n", encoding="utf-8")
+    _commit_all(clean_repo)
+    manifest = _manifest(_generated_derived("dreams-dir", "docs/dreams/"), _copied_managed("whole", "WHOLE.md"))
+
+    result = run_adopt(
+        clean_repo,
+        manifest,
+        apply=True,
+        yes=True,
+        confirm=_unreachable_confirm,
+        commit=_fake_commit(manifest, clean_repo),
+    )
+
+    assert result.applied == ("whole",)
+    assert (clean_repo / "docs" / "dreams" / "mine.md").read_text(encoding="utf-8") == "the repo's own dream\n"
+    assert {record.id for record in read_state(clean_repo).managed} == {"whole"}
+
+
+def test_a_directory_record_is_not_handed_to_rung_6(clean_repo):
+    """A state that records a directory entry (written by an earlier run, or
+    by hand) put a directory in front of rung 6, which cannot read it as a
+    file and refused the re-adopt. A directory has no content of its own to
+    attest -- what is in it belongs to the entries beneath it."""
+    (clean_repo / "docs" / "dreams").mkdir(parents=True)
+    (clean_repo / "docs" / "dreams" / "mine.md").write_text("the repo's own dream\n", encoding="utf-8")
+    write_state(
+        _state(
+            managed=(
+                ManagedArtifact(
+                    id="dreams-dir",
+                    path="docs/dreams/",
+                    artifact_class="generated-derived",
+                    body_sha="e3b0c442",
+                    inserted_region_spans=(),
+                ),
+            )
+        ),
+        repo_root=clean_repo,
+        never_write=_NO_NEVER_WRITE,
+    )
+    _commit_all(clean_repo)
+    manifest = _manifest(_generated_derived("dreams-dir", "docs/dreams/"))
+
+    result = run_adopt(
+        clean_repo, manifest, apply=True, yes=True, confirm=_unreachable_confirm, commit=_unreachable_commit
+    )
+
+    assert result.plan.actions == ()
+    assert result.declined is False
 
 
 # --- applies_to manifest filter ------------------------------------------

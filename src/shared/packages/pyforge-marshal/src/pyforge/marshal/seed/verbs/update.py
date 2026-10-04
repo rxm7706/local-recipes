@@ -151,7 +151,17 @@ asked about an artifact the plan skipped or whose path the operator named. Both
 halves ship together: dropping the record without moving the action would let
 ``update`` overwrite the edit with no ``--force``. A managed record neither the
 plan nor a pattern names is still checked -- where the wholesale-regenerate
-pass emits an action for it, a refusal there guards a real overwrite.
+pass emits an action for it, a refusal there guards a real overwrite. The
+patterns are the run's ``--skip`` AND every pattern ``state.skips`` recorded on
+an earlier run (``skips.with_recorded_skips``; Story 86.1, FR-87,
+``DW-FU-11-4``): an artifact skipped at adopt stays skipped on every update.
+
+**Directory entries (Story 86.1, ``DW-FU-7-5-2``).** A manifest ``path`` ending
+in ``/`` (``dreams-dir``, ``project-subtree``) names a directory, which is
+create-if-missing: the wholesale pass never recomputes one, and rung 6 never
+reads one as a file. What sits beneath it -- a seeded starter file, a
+never-write subtree -- is governed by its own entry's class
+(``ManifestEntry.is_directory``, ``model.artifact.DIRECTORY_BEHAVIOR``).
 
 **Opt-outs (Story 82.13).** FR-112 makes deleting a region's markers a
 permanent opt-out, and ``update`` is the verb that would otherwise undo it:
@@ -235,7 +245,7 @@ from ..state import (
     write_state,
 )
 from .preconditions import ManagedRecord, check_preconditions
-from .skips import apply_skips, managed_after_skips
+from .skips import apply_skips, managed_after_skips, with_recorded_skips
 
 # The classes `_wholesale_regenerate_actions` ever fires for -- FR-98/FR-99's
 # own named classes. `copied-seeded` and `referenced` are deliberately
@@ -433,7 +443,9 @@ def _managed_records(
     82.11) is dropped BEFORE anything is read for it: ``_region_shas_for_record``
     reads the file of any region state does not record, and an escaped target
     is never read -- for a state in the pre-82.13 one-span shape too, where
-    every sibling of the one recorded region is such a region."""
+    every sibling of the one recorded region is such a region. A record whose
+    entry is a DIRECTORY is dropped as well (Story 86.1, see
+    ``ManifestEntry.is_directory``)."""
     if state is None:
         return ()
     entries_by_id = {entry.id: entry for entry in manifest.entries}
@@ -442,6 +454,10 @@ def _managed_records(
         if artifact.id in escaping_ids:
             continue
         entry = entries_by_id.get(artifact.id)
+        if entry is not None and entry.is_directory:
+            # No content of its own to attest (Story 86.1): the entries beneath
+            # it carry their own records. Rung 6 read it as an unreadable file.
+            continue
         if artifact.inserted_region_spans:
             if entry is None or entry.format is None:
                 continue
@@ -527,8 +543,15 @@ def _wholesale_regenerate_actions(
     otherwise insert the deleted region again, silently and with no ``--force``
     prompt: before per-region state a recorded opt-out dropped the whole record
     and this pass skipped the artifact, and with a sibling span keeping the
-    record alive it would have named the region. Only OPTED-OUT regions change;
-    ``state.skips`` and the ``skips`` half of ``DW-FU-11-4`` are untouched.
+    record alive it would have named the region. A SKIPPED artifact still gets
+    its action here: ``run_update`` moves it into ``plan.skipped`` afterwards,
+    with every pattern ``state.skips`` recorded as well as the run's own
+    ``--skip`` (Story 86.1, the ``skips`` half of ``DW-FU-11-4``), so the skip
+    lands in the plan a human reviews rather than vanishing from it.
+
+    **A directory entry (a ``path`` ending in ``/``) gets no action** (Story
+    86.1, ``DW-FU-7-5-2``): it is create-if-missing, and the entries beneath it
+    keep their own classes -- see ``ManifestEntry.is_directory``.
 
     Returns ``((), ())`` when ``state is None`` (nothing has been adopted,
     so ``state.managed`` is empty) or when no record qualifies -- the
@@ -542,6 +565,13 @@ def _wholesale_regenerate_actions(
     for record in state.managed:
         entry = entries_by_id.get(record.id)
         if entry is None or entry.artifact_class not in _WHOLESALE_CLASSES:
+            continue
+        if entry.is_directory:
+            # Story 86.1 (DW-FU-7-5-2): a directory entry is create-if-missing,
+            # never recomputed -- what sits beneath it belongs to the entries
+            # that name it (a seeded starter file, a never-write subtree), each
+            # governed by its own class. An action here would ask to rewrite
+            # the directory itself, which rung 5 refuses as `directory-target`.
             continue
         if entry.id in escaping_ids:
             # Story 82.11: a previously managed entry whose path has since
@@ -1196,9 +1226,11 @@ def run_update(
     ``skips.managed_after_skips`` (so rung 6 is not asked about it). Both
     halves matter: a hand-edited managed file has a wholesale-regenerate
     action, and dropping only its record from rung 6 would let ``update``
-    overwrite the edit without ``--force``. ``update`` does not write the
-    pattern into ``state.skips`` -- state carries it unchanged, as it always
-    has.
+    overwrite the edit without ``--force``. Every pattern ``state.skips``
+    recorded on an earlier run is applied the same way, ahead of ``skip``
+    (``skips.with_recorded_skips``; Story 86.1, FR-87). ``update`` does not
+    write the pattern into ``state.skips`` -- state carries it unchanged, as
+    it always has.
 
     ``template_path``/``commit`` are the identical test-injection seams
     ``run_adopt`` establishes, for the identical reason (exercising the REAL
@@ -1307,10 +1339,13 @@ def run_update(
         wholesale_hashes=wholesale_hashes,
         repo_fingerprint=base_plan.repo_fingerprint,
     )
-    # The operator's `--skip` moves a matching action (the wholesale-regenerate
-    # action of a hand-edited managed file, most often) out of `actions` and
-    # into `plan.skipped`, before anything is checked or written.
-    plan = apply_skips(plan, skip)
+    # The operator's skips -- every pattern `state.skips` recorded on an
+    # earlier run (FR-87; Story 86.1, DW-FU-11-4) and this run's own `--skip`
+    # -- move a matching action (the wholesale-regenerate action of a
+    # hand-edited managed file, most often) out of `actions` and into
+    # `plan.skipped`, before anything is checked or written.
+    skip_patterns = with_recorded_skips(state.skips if state is not None else (), skip)
+    plan = apply_skips(plan, skip_patterns)
 
     # An artifact the plan skipped is not going to be written, so its record is
     # not handed to rung 6 either (Story 82.12, DW-10-4-4): a migration-offered
@@ -1324,7 +1359,7 @@ def run_update(
     managed_records = managed_after_skips(
         _managed_records(state, filtered_manifest, repo_root, escaping_ids),
         plan,
-        skip,
+        skip_patterns,
     )
     check_preconditions(
         plan,
