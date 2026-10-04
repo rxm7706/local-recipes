@@ -3779,8 +3779,8 @@
    "docs/dreams/bmad-loop-baseline-drift.md": "15a1e7e4f9d97e3d8acc856de8490bcf36bcc914",
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
    "docs/reference/library-llms-full.md": "88206a00cf32457daf2639e0a138730613e2b574",
-   "environment.yaml": "0ca26ec581dfeba8f0fb0f4195ae279cc879e1c9",
-   "pixi.toml": "014f5d6be785bdb2cba434093b379988743d9511",
+   "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
+   "pixi.toml": "64b8cbd85bd9f967d99c5495ba1e1a0f0764dbe7",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "8e9c02c8a311f36b0f4b8a628cb64ef5e28050cb",
@@ -4275,7 +4275,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "e97f759085e7adbe7e4ec705203b2626be423f9f"
+  "memlog": "bf07b31a2d09283363f316df6aebdf0cbd89f947"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
@@ -4294,17 +4294,18 @@
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/cfe_surface.py": "dc0db905e4ef7878d61381e664639f4b63a4847d",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/cli_runner.py": "d353ef03458149d4b6457622975808929224258f",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/db_factory.py": "d4b33fc17f7a0fa2726f395a1512d4a3b4cbe3b6",
-   "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/flags.py": "5b7bbe56db8ac3d6c6bcd66be14c08c836bc30d4",
+   "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/flags.py": "41ced1358779199580060b36abd4d88227c13351",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/page_object.py": "e141b68dd6f3ef35cf33bdec7c0cf507be3c0c7a",
    "src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-testing-kit/tests/conftest.py": "d15f83c9fddf3d9e1b88cd7038797eed52b2cf14",
+   "src/shared/packages/pyforge-testing-kit/tests/meta/test_testing_kit_lane_wired.py": "916265bc9406866afcf3bb33d5a37994a81a33ad",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_branch_diff_guard.py": "05bd01d7689fc26f09a5141ff03ccfafd2cb7edd",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_cfe_surface.py": "234fa31f4b451f3b01e04525dd6c406477fcbef4",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_families.py": "38003507640139348c885bd4d15e0b3602fadfa5",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_flags.py": "309502e92957dcd562680bf055e51dc61c48b461",
    "src/shared/packages/pyforge-testing-kit/tests/unit/test_station_api_contract.py": "f3191c31cb02585a8927cd9cb6ec50872a11ae66"
   },
-  "memlog": "5a6c6e418f175fa5e72d903792cc51ff598ac4c2"
+  "memlog": "633cb915953ee98012ffe37896cf0164d0a2468c"
  },
  "pyforge-marshal/spec-quick-dev-reconciliation": {
   "files": {

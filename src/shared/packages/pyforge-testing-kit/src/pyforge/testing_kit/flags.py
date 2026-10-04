@@ -120,7 +120,8 @@ def flagd_tree(tmp_path: Path, flags: dict[str, str], *, name: str = "flags.json
     ``flags`` maps a flag key to its default variant, ``"on"`` or ``"off"``. The file has the shape of
     ``src/platform/config/flags.json`` -- ``flags`` -> key -> ``state``, ``variants``, ``defaultVariant``
     -- for integration tests and for Playwright against a server started on it. It writes JSON only
-    and imports no provider.
+    and imports no provider. It writes no flagd ``metadata``: only a composed tree reads that block
+    (one with a ``flag-overlays.json`` beside it), and this tree has none.
     """
     if not isinstance(flags, dict):
         raise ValueError(f"flags must be a dict of {{key: 'on' | 'off'}}, got {type(flags).__name__}")
