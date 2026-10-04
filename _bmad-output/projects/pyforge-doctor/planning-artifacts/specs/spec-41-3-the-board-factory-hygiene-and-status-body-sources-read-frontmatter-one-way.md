@@ -2,7 +2,7 @@
 title: "41.3: The board, factory, hygiene and status-body sources read frontmatter one way, and the docs pages say what is true"
 type: 'fix'
 created: '2026-10-03'
-status: 'blocked'
+status: 'in-progress'
 baseline_revision: 'e0733d4a1c0e00d8f6bb50a3cf650e3310b8c522'
 blocking_condition: 'Phase 4+5 burn-down incomplete — factory/hygiene/docs_shelf/fleet_scan deferrals and ledger closures remain'
 review_loop_iteration: 0
@@ -115,3 +115,5 @@ Landed in branch commits since `baseline_revision` (partial): shared CAP-81 text
 Governed paths named in memlogs: `spec-pyforge-doctor/.memlog.md`, `spec-pyforge-core/.memlog.md` (co-governor), `spec-mcp-era-isolation/.memlog.md`, `spec-mcp-host-real-station-tools/.memlog.md`.
 
 Still open (not implemented this run): `DW-FU-6-8-2`, `DW-FU-6-8-6`–`9`, `DW-FU-9-2`–`9-3`, `DW-FU-6-9` (`scripts/fleet_scan.py`), `DW-6-11-1`, `DW-FU-23-5`, `DW-FU-30-1`, `DW-FU-30-1-2`, and matching `deferred-work-ledger.md` closures with `resolution:` / `verified:` lines.
+
+- 2026-10-04, operator decision (the session, acting on the operator's standing direction): the 41.3 dispatch session stopped partway and set this spec `blocked` ("Phase 4+5 burn-down incomplete — factory/hygiene/docs_shelf/fleet_scan deferrals and ledger closures remain"). Its partial work is real progress. Unblocked to `in-progress` so that a re-dispatch continues on this branch from that work, the same remedy as 41.2.
