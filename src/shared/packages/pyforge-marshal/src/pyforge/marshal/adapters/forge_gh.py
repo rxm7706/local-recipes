@@ -102,6 +102,7 @@ def _pr_info_from_json(entry: object, *, context: str) -> PrInfo:
     url = entry.get("url")
     state = entry.get("state")
     base = entry.get("baseRefName")
+    is_draft = entry.get("isDraft")
     if not isinstance(number, int) or isinstance(number, bool):
         raise ForgeCommandError(f"{context}: gh returned a PR entry with a non-int number: {entry!r}")
     if not isinstance(url, str) or not url:
@@ -110,7 +111,29 @@ def _pr_info_from_json(entry: object, *, context: str) -> PrInfo:
         raise ForgeCommandError(f"{context}: gh returned a PR entry missing a state: {entry!r}")
     if not isinstance(base, str) or not base:
         raise ForgeCommandError(f"{context}: gh returned a PR entry missing a baseRefName: {entry!r}")
-    return PrInfo(number=number, url=url, state=state.lower(), base=base)
+    draft = is_draft is True
+    return PrInfo(number=number, url=url, state=state.lower(), base=base, is_draft=draft)
+
+
+def _view_pr(repo_value: str, number: int) -> PrInfo:
+    view = _run(
+        [
+            "gh",
+            "pr",
+            "view",
+            str(number),
+            "--repo",
+            repo_value,
+            "--json",
+            "number,url,state,baseRefName,isDraft",
+        ],
+        timeout_s=_GH_READ_TIMEOUT_S,
+    )
+    if view.returncode != 0:
+        raise ForgeCommandError(f"gh pr view {number} --repo {repo_value} failed: {view.stderr.strip()}")
+    context = f"gh pr view {number} --repo {repo_value}"
+    data = _parse_json(view.stdout, context=context)
+    return _pr_info_from_json(data, context=context)
 
 
 def _check_run_from_json(entry: object, *, context: str) -> CheckRun:
@@ -158,7 +181,7 @@ class GhForge:
                 "--state",
                 "open",
                 "--json",
-                "number,url,state,baseRefName",
+                "number,url,state,baseRefName,isDraft",
                 "--limit",
                 "1",
             ],
@@ -176,27 +199,36 @@ class GhForge:
             return None
         return _pr_info_from_json(data[0], context=context)
 
-    def create_pr(self, repo: ForgeRef, base: ForgeRef, head: ForgeRef, title: Redacted, body: Redacted) -> PrInfo:
+    def create_pr(
+        self,
+        repo: ForgeRef,
+        base: ForgeRef,
+        head: ForgeRef,
+        title: Redacted,
+        body: Redacted,
+        *,
+        draft: bool = False,
+    ) -> PrInfo:
         _require_redacted(title, body)
         repo_value, base_value, head_value = repo.value, base.value, head.value
-        result = _run(
-            [
-                "gh",
-                "pr",
-                "create",
-                "--repo",
-                repo_value,
-                "--base",
-                base_value,
-                "--head",
-                head_value,
-                "--title",
-                title.text,
-                "--body",
-                body.text,
-            ],
-            timeout_s=_GH_WRITE_TIMEOUT_S,
-        )
+        argv = [
+            "gh",
+            "pr",
+            "create",
+            "--repo",
+            repo_value,
+            "--base",
+            base_value,
+            "--head",
+            head_value,
+            "--title",
+            title.text,
+            "--body",
+            body.text,
+        ]
+        if draft:
+            argv.append("--draft")
+        result = _run(argv, timeout_s=_GH_WRITE_TIMEOUT_S)
         if result.returncode != 0:
             raise ForgeCommandError(
                 f"gh pr create --repo {repo_value} --base {base_value} --head "
@@ -231,26 +263,26 @@ class GhForge:
         )
         if result.returncode != 0:
             raise ForgeCommandError(f"gh pr edit {number} --repo {repo_value} failed: {result.stderr.strip()}")
-        view = _run(
-            [
-                "gh",
-                "pr",
-                "view",
-                str(number),
-                "--repo",
-                repo_value,
-                "--json",
-                "number,url,state,baseRefName",
-            ],
-            timeout_s=_GH_READ_TIMEOUT_S,
-        )
-        if view.returncode != 0:
-            raise ForgeCommandError(
-                f"gh pr view {number} --repo {repo_value} failed after editing: {view.stderr.strip()}"
+        return _view_pr(repo_value, number)
+
+    def set_pr_draft(self, repo: ForgeRef, number: int, *, draft: bool) -> PrInfo:
+        repo_value = repo.value
+        if draft:
+            result = _run(
+                ["gh", "pr", "edit", str(number), "--repo", repo_value, "--draft"],
+                timeout_s=_GH_WRITE_TIMEOUT_S,
             )
-        context = f"gh pr view {number} --repo {repo_value}"
-        data = _parse_json(view.stdout, context=context)
-        return _pr_info_from_json(data, context=context)
+        else:
+            result = _run(
+                ["gh", "pr", "ready", str(number), "--repo", repo_value],
+                timeout_s=_GH_WRITE_TIMEOUT_S,
+            )
+        if result.returncode != 0:
+            action = "draft" if draft else "ready"
+            raise ForgeCommandError(
+                f"gh pr {action} {number} --repo {repo_value} failed: {result.stderr.strip()}"
+            )
+        return _view_pr(repo_value, number)
 
     def add_labels(self, repo: ForgeRef, number: int, labels: tuple[str, ...]) -> None:
         if not labels:

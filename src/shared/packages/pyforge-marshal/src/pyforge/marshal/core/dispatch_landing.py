@@ -24,6 +24,7 @@ class DispatchLandingVerdict(StrEnum):
     REFUSED = "refused"
     ALREADY_LANDED = "already_landed"
     SKIPPED_UNVERIFIED = "skipped-unverified"
+    HELD_FOR_REVIEW = "held-for-review"
 
 
 def may_attempt_dispatch_landing(
@@ -50,8 +51,14 @@ def merge_subject_is_marshal_native(subject: str, template: str, project_slug: s
 def landing_was_refused(landing_findings: tuple[Mapping[str, object], ...]) -> bool:
     """True when a dispatch landing's journaled findings include a refusal:
     an ERROR-severity finding. A WARN-only landing (MRS-DISP-047) is not a
-    refusal (Story 56.1)."""
+    refusal (Story 56.1). A ``held-for-review`` landing (Story 83.18) carries
+    no ERROR finding and is never a refusal."""
     return any(finding.get("severity") == Severity.ERROR for finding in landing_findings)
+
+
+def landing_verdict_is_held_for_review(landing_verdict: str | None) -> bool:
+    """True when the journaled dispatch-land outcome is Story 83.18's hold."""
+    return landing_verdict == DispatchLandingVerdict.HELD_FOR_REVIEW.value
 
 
 def landing_refusal_superseded(
