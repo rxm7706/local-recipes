@@ -426,8 +426,9 @@ _PROMPT_DOC = _DOCS / "conda-forge-packaging-inventory-operations_prompt.md"
     ],
 )
 def test_terminal_summary_matches_both_docs_exactly(
-    tmp_path: Path, capsys, doc_name: str, with_revised_prompt: bool
+    tmp_path: Path, capsys, monkeypatch, doc_name: str, with_revised_prompt: bool
 ):
+    monkeypatch.chdir(tmp_path)  # a regressed default can then never write over the tracked prompt doc
     catalog_root = tmp_path / "catalog"
     _make_catalog_root(catalog_root)
     argv = [
