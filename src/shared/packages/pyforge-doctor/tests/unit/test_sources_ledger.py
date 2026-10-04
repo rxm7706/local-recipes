@@ -247,7 +247,7 @@ def test_unresolvable_head_ref_reports_one_warn_naming_it_and_no_fail(tmp_path: 
     assert finding.check == "ledger-regression"
     assert finding.status is DoctorStatus.WARN
     assert "no-such-ref" in finding.message
-    assert finding.evidence == {"base": "origin/main", "head": "no-such-ref", "target": str(repo)}
+    assert finding.evidence == {"base": "origin/main", "head": "no-such-ref", "target": str(repo), "unevaluable": True}
     assert not [f for f in findings if f.status is DoctorStatus.FAIL]
 
 
@@ -516,7 +516,7 @@ def test_no_common_ancestor_reports_warn(tmp_path: Path) -> None:
     assert finding.status is DoctorStatus.WARN
     assert finding.check == "ledger-regression"
     assert "no common ancestor" in finding.message
-    assert set(finding.evidence) == {"base", "head", "target"}
+    assert set(finding.evidence) == {"base", "head", "target", "unevaluable"}
 
 
 # --- Never raises, even on a non-UTF-8 committed blob -----------------------
@@ -632,7 +632,7 @@ def test_both_warn_paths_carry_the_same_evidence_keys(tmp_path: Path) -> None:
 
     assert a.status is DoctorStatus.WARN
     assert b.status is DoctorStatus.WARN
-    assert set(a.evidence) == set(b.evidence) == {"base", "head", "target"}
+    assert set(a.evidence) == set(b.evidence) == {"base", "head", "target", "unevaluable"}
 
 
 # --- Evidence is machine-shaped, not print-shaped --------------------------

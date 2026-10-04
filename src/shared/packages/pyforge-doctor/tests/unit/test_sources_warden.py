@@ -103,7 +103,9 @@ def test_pyforge_warden_absent_returns_one_fail_finding_no_exception(monkeypatch
     assert finding.source is Source.WARDEN_DOCTOR
     assert finding.check == "pyforge-warden"
     assert finding.status is DoctorStatus.FAIL
-    assert "pip install pyforge-doctor[gate]" in finding.message
+    # DW-FU-1-2: warden is not on PyPI; the hint names the pixi envs that carry it.
+    assert "pip install" not in finding.message
+    assert "pixi run -e pyforge-doctor" in finding.message
 
 
 # --- warden installed but unimportable --------------------------------------
@@ -159,7 +161,9 @@ def test_genuine_absence_shape_names_parent_and_gets_install_hint(monkeypatch, t
     finding = findings[0]
     assert finding.check == "pyforge-warden"
     assert finding.status is DoctorStatus.FAIL
-    assert "pip install pyforge-doctor[gate]" in finding.message
+    # DW-FU-1-2: warden is not on PyPI; the hint names the pixi envs that carry it.
+    assert "pip install" not in finding.message
+    assert "pixi run -e pyforge-doctor" in finding.message
 
 
 def test_transitive_module_not_found_reports_broken_not_absent(monkeypatch, tmp_path: Path):
@@ -179,7 +183,7 @@ def test_transitive_module_not_found_reports_broken_not_absent(monkeypatch, tmp_
     assert finding.check == "pyforge-warden"
     assert finding.status is DoctorStatus.FAIL
     assert "install the `gate` extra" not in finding.message
-    assert "pip install pyforge-doctor[gate]" not in finding.message
+    assert "pixi run -e pyforge-doctor" not in finding.message
     assert "packaging" in finding.message
 
 
@@ -194,7 +198,7 @@ def test_non_import_error_during_warden_import_returns_one_fail_finding(monkeypa
     assert len(findings) == 1
     finding = findings[0]
     assert finding.status is DoctorStatus.FAIL
-    assert "pip install pyforge-doctor[gate]" not in finding.message
+    assert "pixi run -e pyforge-doctor" not in finding.message
     assert "simulated corrupted install" in finding.message
 
 
@@ -233,7 +237,7 @@ def test_renamed_symbol_plain_import_error_reports_broken_not_absent(monkeypatch
     finding = findings[0]
     assert finding.check == "pyforge-warden"
     assert finding.status is DoctorStatus.FAIL
-    assert "pip install pyforge-doctor[gate]" not in finding.message
+    assert "pixi run -e pyforge-doctor" not in finding.message
     assert "run_doctor_checks" in finding.message
 
 
@@ -294,7 +298,7 @@ def test_malformed_doctor_checks_return_one_fail_finding_no_exception(monkeypatc
     assert finding.source is Source.WARDEN_DOCTOR
     assert finding.check == "pyforge-warden"
     assert finding.status is DoctorStatus.FAIL
-    assert "pip install pyforge-doctor[gate]" not in finding.message
+    assert "pixi run -e pyforge-doctor" not in finding.message
 
 
 # --- live equivalence with run_doctor_checks called directly ---------------

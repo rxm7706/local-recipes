@@ -68,7 +68,7 @@ If the user's message already names a menu item, dispatch it. Otherwise render `
 
 Station tasks use **only** these kinds:
 
-- `consult_content_skill` — load `.claude/skills/pyforge-doctor/active/pyforge-doctor/SKILL.md` (CAP-15). No other skill or data file.
+- `consult_content_skill` — load `.claude/skills/pyforge-doctor/active/pyforge-doctor/SKILL.md` (CAP-15), or, when a detector finding needs a cause, `.claude/skills/bmad-os-root-cause-analysis/SKILL.md` (the AD-2 routing above). The cause it names is advisory and never changes a verdict. No other skill or data file.
 - `grammar` — FR-13 unified dispatch: argv must start `pyforge doctor`. Example: `pyforge doctor monitor --fleet`. Do not call the `doctor` binary as a second public grammar. Do not import `pyforge.doctor` internals.
 - `mcp` — FR-11 service face: `POST /stations/doctor/mcp` only (identity tool `station_face`). No other URL, method, or host.
 

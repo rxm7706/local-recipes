@@ -899,7 +899,7 @@ def test_tier_alignment_degrades_to_warn_when_git_is_unavailable(
     unevaluable = by_check["bmad-drift-unevaluable"]
     assert unevaluable.status is DoctorStatus.WARN
     assert "check_tier_alignment" in unevaluable.message
-    assert unevaluable.evidence == {"check": "check_tier_alignment", "target": str(repo)}
+    assert unevaluable.evidence == {"check": "check_tier_alignment", "target": str(repo), "unevaluable": True}
 
 
 # --------------------------------------------------------------------- spec index
@@ -1138,7 +1138,7 @@ def test_one_check_raising_does_not_discard_the_others_real_findings(
     unevaluable = [f for f in findings if f.check == "bmad-drift-unevaluable"]
     assert len(unevaluable) == 1
     assert unevaluable[0].status is DoctorStatus.WARN
-    assert unevaluable[0].evidence == {"check": "check_pins", "target": str(repo)}
+    assert unevaluable[0].evidence == {"check": "check_pins", "target": str(repo), "unevaluable": True}
     assert "check_pins" in unevaluable[0].message
     assert "RuntimeError" in unevaluable[0].message
     assert "simulated check_pins failure" in unevaluable[0].message
@@ -1404,7 +1404,8 @@ def test_every_unevaluable_finding_carries_the_same_evidence_keys(
         for f in findings:
             if f.check != "bmad-drift-unevaluable":
                 continue
-            assert sorted(f.evidence) == ["check", "target"], f.evidence
+            assert sorted(f.evidence) == ["check", "target", "unevaluable"], f.evidence
+            assert f.evidence["unevaluable"] is True
 
 
 @_needs_unprivileged

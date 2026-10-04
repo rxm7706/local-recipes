@@ -60,7 +60,7 @@ from pyforge.core.landing_evidence import parse_templated_merge_subject
 
 from ..bare_merge import DiffCache, attribute_bare_merge, known_story_keys
 from ..cli_bridge import CliBridgeError, run_git
-from ..models import DoctorStatus, Finding, Source
+from ..models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 from ..refs import MAIN, ORIGIN_MAIN, display_ref
 from ..rekey import RekeyMap, parse_rekey
 from .feed_status import TERMINAL, parse_development_statuses
@@ -524,7 +524,7 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
                 check="ledger-regression",
                 status=DoctorStatus.WARN,
                 message=message,
-                evidence={"base": shown, "head": head, "target": str(target)},
+                evidence={"base": shown, "head": head, "target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 
@@ -541,7 +541,7 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
                 check="ledger-regression",
                 status=DoctorStatus.WARN,
                 message=f"head revision {head!r} not resolvable — ledger regression cannot be evaluated",
-                evidence={"base": shown, "head": head, "target": str(target)},
+                evidence={"base": shown, "head": head, "target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
             ),
         )
 
@@ -562,7 +562,7 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
                     # just the unresolvable-base one: same source, same check,
                     # same status, so a consumer reading evidence["target"]
                     # must not KeyError depending on which of the two fired.
-                    evidence={"base": shown, "head": head, "target": str(target)},
+                    evidence={"base": shown, "head": head, "target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
                 ),
             )
         effective_base = parent
@@ -585,7 +585,7 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
                     message=(
                         f"no common ancestor between {shown!r} and {head!r} — ledger regression cannot be evaluated"
                     ),
-                    evidence={"base": shown, "head": head, "target": str(target)},
+                    evidence={"base": shown, "head": head, "target": str(target), UNEVALUABLE_EVIDENCE_KEY: True},
                 ),
             )
         if merge_base_sha != base_sha:

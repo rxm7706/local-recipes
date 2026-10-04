@@ -26,9 +26,10 @@ twice always produces a byte-identical :class:`GradeResult`.
 Incomplete-gather handling (FR-10's other testable consequence): an axis
 whose OWN gather degraded to a sentinel Finding -- ``sources/atlas.py``'s
 ``_one_fail_finding`` default shape (``check == "doctor.sources.atlas"``,
-``evidence == {}``) or ``sources.degrade_on_exception``'s WARN (the source's
-own ``check`` with ``evidence["exception"]``) -- never gets graded as if it
-were real data. That axis grades ``incomplete``, and an incomplete axis poisons
+``evidence == {}``), ``sources.degrade_on_exception``'s WARN (the source's
+own ``check`` with ``evidence["exception"]``), or a cannot-evaluate WARN
+(``evidence["unevaluable"] is True``, ``models.UNEVALUABLE_EVIDENCE_KEY``) --
+never gets graded as if it were real data. That axis grades ``incomplete``, and an incomplete axis poisons
 the WHOLE composite to ``incomplete`` too -- a computed letter grade must never
 stand in for missing data (this module never silently drops the incomplete axis
 from the composite the way it might be tempting to "just grade what we have").
@@ -40,7 +41,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
-from .models import DoctorStatus, Finding, Source
+from .models import UNEVALUABLE_EVIDENCE_KEY, DoctorStatus, Finding, Source
 
 # Duplicated literal from ``sources/atlas.py``'s ``_one_fail_finding``'s own
 # default ``check`` parameter -- AD-7 forbids ``doctor.score`` from importing
@@ -51,6 +52,12 @@ from .models import DoctorStatus, Finding, Source
 # FAIL Finding about a real package problem; ``_is_gather_failure`` also matches
 # the second shape, ``degrade_on_exception``'s ``evidence["exception"]`` WARN.
 _GATHER_FAILURE_CHECK = "doctor.sources.atlas"
+
+# Sources whose checks are independent capabilities, not samples of one
+# measurement: each check grades as its own axis (``"<source>/<check>"``) so
+# an ``ok`` on one cannot dilute a WARN on another (DW-FU-10-2: bmad-method's
+# CAP-1 floor ``ok`` beside its CAP-2 upstream WARN graded B, not C).
+_PER_CHECK_AXIS_SOURCES: frozenset[Source] = frozenset({Source.BMAD_METHOD_VERSION_DRIFT})
 
 
 class Grade(StrEnum):
@@ -125,7 +132,7 @@ class GradeResult:
 def _is_gather_failure(finding: Finding) -> bool:
     """True when ``finding`` says its axis's OWN gather did not complete.
 
-    Two producers, two shapes, both matched here:
+    Three shapes, all matched here:
 
     * the ``sources/atlas.py`` sentinel -- ``check == "doctor.sources.atlas"``
       with no evidence (see ``_GATHER_FAILURE_CHECK``);
@@ -133,14 +140,25 @@ def _is_gather_failure(finding: Finding) -> bool:
       ``evidence={"exception": <class name>}``, the shape a gather that raised
       outright leaves behind. ``"exception"`` is that function's own key, so the
       WARN is matched by the evidence it alone produces, not by a ``check`` name
-      every source spells differently.
+      every source spells differently;
+    * a cannot-evaluate WARN -- ``evidence[UNEVALUABLE_EVIDENCE_KEY] is True``
+      (an unresolvable ledger head, ``chain-layers-audit-unevaluable``,
+      ``bmad-drift-unevaluable``; DW-doctor-40-1).
 
-    An ordinary WARN about a real problem carries neither shape and is still
+    An ordinary WARN about a real problem carries none of these and is still
     graded (DW-FU-6-6-11).
     """
     if finding.check == _GATHER_FAILURE_CHECK and not finding.evidence:
         return True
-    return finding.status is DoctorStatus.WARN and "exception" in finding.evidence
+    if finding.status is not DoctorStatus.WARN:
+        return False
+    return "exception" in finding.evidence or finding.evidence.get(UNEVALUABLE_EVIDENCE_KEY) is True
+
+
+def _axis_key(finding: Finding) -> str:
+    if finding.source in _PER_CHECK_AXIS_SOURCES:
+        return f"{finding.source.value}/{finding.check}"
+    return finding.source.value
 
 
 def _axis_grade(ok: int, warn: int, fail: int) -> Grade:
@@ -169,8 +187,10 @@ def grade(findings: Sequence[Finding]) -> GradeResult:
     the same input always produces the same :class:`GradeResult`).
 
     Grouping: one axis per distinct ``Finding.source`` present in
-    ``findings`` (sorted by the Source's own string value, for a
-    deterministic ``axis_scores`` ordering independent of gather order).
+    ``findings`` -- or per ``(source, check)`` for a source whose checks are
+    independent capabilities (``_PER_CHECK_AXIS_SOURCES``) -- sorted by axis
+    name, for a deterministic ``axis_scores`` ordering independent of gather
+    order.
 
     An axis is ``incomplete`` when ANY of its Findings is a gather-failure
     sentinel (see module docstring) -- and ANY incomplete axis poisons the
@@ -189,24 +209,24 @@ def grade(findings: Sequence[Finding]) -> GradeResult:
             reason="no findings gathered -- nothing to grade",
         )
 
-    by_source: dict[Source, list[Finding]] = {}
+    by_axis: dict[str, list[Finding]] = {}
     for finding in findings:
-        by_source.setdefault(finding.source, []).append(finding)
+        by_axis.setdefault(_axis_key(finding), []).append(finding)
 
     axis_scores: list[AxisScore] = []
     incomplete_axes: list[str] = []
-    for source in sorted(by_source, key=lambda s: s.value):
-        group = by_source[source]
+    for axis in sorted(by_axis):
+        group = by_axis[axis]
         if any(_is_gather_failure(f) for f in group):
-            incomplete_axes.append(source.value)
-            axis_scores.append(AxisScore(axis=source.value, ok=0, warn=0, fail=0, grade=Grade.INCOMPLETE))
+            incomplete_axes.append(axis)
+            axis_scores.append(AxisScore(axis=axis, ok=0, warn=0, fail=0, grade=Grade.INCOMPLETE))
             continue
         ok = sum(1 for f in group if f.status is DoctorStatus.OK)
         warn = sum(1 for f in group if f.status is DoctorStatus.WARN)
         fail = sum(1 for f in group if f.status is DoctorStatus.FAIL)
         axis_scores.append(
             AxisScore(
-                axis=source.value,
+                axis=axis,
                 ok=ok,
                 warn=warn,
                 fail=fail,

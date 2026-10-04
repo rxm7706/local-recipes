@@ -2,7 +2,9 @@
 title: "41.4: The check CLI, the env and engines checks, the score and the bmad-method source report every degradation they meet"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+followup_review_recommended: false
+baseline_revision: 30a18afa3a
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -100,4 +102,34 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 18 findings — high 0, medium 2, low 6, false 8, maybe-false 2
+- findings:
+  - `[false]` `[reject]` Blind Hunter: memlog overstates diff — full story lands in branch commits from baseline `30a18afa3a`, not the truncated export reviewers saw.
+  - `[false]` `[reject]` Blind Hunter: ledger out of sync with diff — same truncation artifact; `git diff 30a18afa3a..HEAD` includes production paths.
+  - `[false]` `[reject]` Blind Hunter: registry only reformatted — `gather_one` tuple + sentinel filter is in branch diff.
+  - `[false]` `[reject]` Blind Hunter: env_hygiene tests string-only — env_hygiene.py changed on branch; tests extended in same commits.
+  - `[false]` `[reject]` Intent: diff partial vs ledger — branch set is complete relative to `30a18afa3a`.
+  - `[false]` `[reject]` Blind Hunter: no scoped stamp — run forbids `--write-baseline`; memlog reconcile + `spec_surface_reconcile.py` exit 0.
+  - `[medium]` `[patch]` Verification gap: FAIL bmad-core finding through `fleet_picture.main()` unwired in glue test — added `test_bmad_core_fail_finding_reaches_watch`.
+  - `[medium]` `[patch]` Verification gap: offline gather omitted manifest/unparseable checks in test — added `test_offline_gather_keeps_manifest_and_unparseable_checks`.
+  - `[low]` `[defer]` Verification gap: median vs max speed budget — intentional (DW-FU-6-6-8); spike detection is a separate decision.
+  - `[low]` `[reject]` Blind Hunter: duplicate `_dotted_chain` — acceptable test-local duplication to keep meta tests independent.
+  - `[low]` `[reject]` Blind Hunter: hatchling test skips outside monorepo — matches existing env_hygiene skip idiom.
+  - `[low]` `[reject]` Blind Hunter: `/tags` page cap untested — bounded fail-open documented in module; not required for story AC.
+  - `[low]` `[reject]` Blind Hunter: doctor skill CHANGELOG missing — persona skill updated; station SKF not in scope for this fix story.
+  - `[low]` `[reject]` Blind Hunter: stale ledger paragraphs — historical `STANDS` lines kept by house style; last `verified:` wins for due-for-verification.
+  - `[maybe-false]` `[defer]` Blind Hunter: declared_floor_table tie-break — no evidence of duplicate winning floors in live pixi.toml.
+  - `[maybe-false]` `[reject]` Blind Hunter: fleet_scan vs fleet_picture naming — ledger resolution documents correct file (`scripts/fleet_picture.py`).
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Closed all 28 deferred-work rows for Story 41.4: check CLI and `gather_one` report every degradation; env_hygiene guard shapes; bmad_method floor/manifest/suite/offline behavior; score `unevaluable` → incomplete; fleet-picture bmad-core probe; CFE meta tests; hatchling floor alignment; speed budget warm-up/median.
+
+**Verification:** `pyforge-doctor-test` exit 0 (3407 passed); `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` → OK; `deferred-work-check` green on edited ledger.
+
+**Review:** Two medium verification-gap patches applied (fleet_picture FAIL glue, offline manifest/unparseable). Speed-budget median trade-off deferred as intentional.
+
+**Follow-up review recommendation:** false (no high patches; one medium patch only after review).
