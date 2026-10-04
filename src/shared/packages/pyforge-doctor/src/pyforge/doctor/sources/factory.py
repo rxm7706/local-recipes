@@ -1731,4 +1731,4 @@ def _gather(target: Path) -> tuple[Finding, ...]:
                 evidence=evidence,
             ),
         )
-    return tuple(findings)
+    return tuple(substantive)
