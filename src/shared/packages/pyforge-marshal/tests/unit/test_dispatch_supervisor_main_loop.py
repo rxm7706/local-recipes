@@ -201,6 +201,7 @@ class FakeVcs:
         subjects_by_ref: dict[str, tuple[str, ...]] | None = None,
         merged_into_refs: frozenset[str] | None = None,
         unreadable_refs: dict[str, int] | None = None,
+        head_on_origin_main: bool = True,
     ) -> None:
         """``subjects_by_ref`` / ``merged_into_refs`` / ``unreadable_refs`` (Story 72.1, CAP-280) make the
         merge reads ref-aware: ``commit_subjects`` answers per full ref (an unlisted ref is an empty
@@ -237,6 +238,7 @@ class FakeVcs:
         self.subjects_by_ref = subjects_by_ref
         self.merged_into_refs = merged_into_refs
         self._unreadable_refs = dict(unreadable_refs or {})
+        self._head_on_origin_main = head_on_origin_main
         self.calls: list[tuple[str, ...]] = []
 
     # -- reads ------------------------------------------------------------
@@ -274,6 +276,12 @@ class FakeVcs:
         if self.subjects_by_ref is not None:
             return self.subjects_by_ref.get(ref, ())
         return self.subjects
+
+    def merge_base(self, repo_root: Path, a: str, b: str) -> str:
+        self.calls.append(("merge_base", a, b))
+        if self._head_on_origin_main:
+            return a
+        return "not-the-run-head"
 
     def file_text_at_ref(self, repo_root: Path, ref: str, path: str) -> str | None:
         if self._spec_at_ref_raises:
@@ -3526,6 +3534,77 @@ def test_gather_git_facts_defaults_to_a_normal_run(tmp_path: Path) -> None:
 
     assert _gather(repo_root, worktree, vcs).story_merged_on_main is True
     assert _commit_subject_reads(vcs) == [("commit_subjects", ORIGIN_MAIN)]
+
+
+# -- Story 83.14: manual merge mid-dispatch keys on the run's current head -----------------------------
+
+
+def test_gather_git_facts_ignores_a_corroborated_merge_when_the_run_head_is_not_on_origin_main(
+    tmp_path: Path,
+) -> None:
+    """An operator merged an earlier tip by hand; the session kept committing -- subjects lie, the head does not."""
+    repo_root = _repo(tmp_path)
+    worktree = _worktree(repo_root)
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+    vcs = _first_landing_vcs(head_sha=_MOVED, head_on_origin_main=False)
+
+    facts = _gather_followup(repo_root, worktree, vcs, followup_review=None)
+
+    assert facts.story_merged_on_main is False
+    assert ("merge_base", _MOVED, ORIGIN_MAIN) in vcs.calls
+
+
+def test_gather_git_facts_counts_the_merge_when_the_run_head_is_on_origin_main(tmp_path: Path) -> None:
+    repo_root = _repo(tmp_path)
+    worktree = _worktree(repo_root)
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+    vcs = _first_landing_vcs(head_sha=_MOVED, head_on_origin_main=True)
+
+    assert _gather_followup(repo_root, worktree, vcs, followup_review=None).story_merged_on_main is True
+
+
+def test_a_normal_run_stays_live_when_origin_main_carries_the_merge_but_the_head_does_not(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock
+) -> None:
+    """Manual merge mid-dispatch: merge subject on ``origin/main``, session still alive, head ahead of main."""
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+    facts = _gather_facts_spy(monkeypatch)
+    publisher = FakePublisher()
+    vcs = _first_landing_vcs(head_sha=_MOVED, head_on_origin_main=False)
+
+    code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=[True, False]), publisher=publisher)
+
+    assert code == 0
+    assert facts[0].story_merged_on_main is False
+    assert publisher.heartbeats == ["handle-1"]
+    assert [status for _handle, status, _result in publisher.completions] != [DispatchSessionVerdict.COMPLETED.value]
+
+
+@pytest.mark.parametrize("always_on_main", [True, False])
+def test_without_the_run_head_gate_the_manual_merge_fixture_reads_completed_on_the_first_tick(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, clock: _FakeClock, always_on_main: bool
+) -> None:
+    """Mutation proof (Story 83.14): disabling the head gate makes the manual-merge fixture complete immediately."""
+    if always_on_main:
+        pytest.skip("head already on main -- not the manual-merge mid-dispatch case")
+    repo_root = _repo(tmp_path)
+    run_dir = _run_dir(repo_root)
+    worktree = _worktree(repo_root)
+    _seed_journal(run_dir, (_launch_line(),))
+    _seed_spec(repo_root, worktree, primary=_DONE_SPEC_TEXT)
+    monkeypatch.setattr(supervisor_main, "run_head_reached_ref", lambda *_a, **_k: True)
+    publisher = FakePublisher()
+    vcs = _first_landing_vcs(head_sha=_MOVED, head_on_origin_main=False)
+
+    code = _run(repo_root, fs=FakeFs(), vcs=vcs, process=FakeProcess(alive=[True, False]), publisher=publisher)
+
+    assert code == 0
+    assert publisher.heartbeats == []
+    assert [status for _handle, status, _result in publisher.completions] == [DispatchSessionVerdict.COMPLETED.value]
 
 
 # -- gather_dispatch_git_facts against real git: attempt 1's G1 reproduction ---------------------------
