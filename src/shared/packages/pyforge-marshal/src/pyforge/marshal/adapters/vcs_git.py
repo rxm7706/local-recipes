@@ -234,16 +234,16 @@ def _name_status_z_paths(stdout: str) -> set[str]:
     return paths
 
 
-def _porcelain_z_paths(stdout: str) -> set[str]:
-    """Story 83.16: the live paths of ``git status --porcelain -z`` (v1) output.
+def _porcelain_z_records(stdout: str) -> Iterator[tuple[str, str, str | None]]:
+    """Story 83.16: ``(status, path, original)`` per record of ``git status --porcelain -z`` (v1) output.
 
     Each record is ``XY PATH``, NUL-terminated and never quoted -- unlike the line format, which wraps a
     path holding a space or other special byte in C-style quotes (the 2026-10-03 herald 35.1 finalize
     handed that quoted string to ``git add`` and stopped). A rename or copy (``R``/``C`` in either status
-    column) is followed by one more field, its ORIGINAL path: only the new path is live, so the original
-    is consumed and dropped."""
+    column -- ``R `` staged, `` R`` an intent-to-add rename in the worktree) is followed by one more
+    field, its ORIGINAL path, returned as ``original`` (``None`` for every other record). A record that is
+    malformed, or a rename or copy cut short of its original, refuses rather than misreading the next."""
     fields = stdout.split("\0")
-    paths: set[str] = set()
     index = 0
     while index < len(fields):
         record = fields[index]
@@ -253,10 +253,55 @@ def _porcelain_z_paths(stdout: str) -> set[str]:
         if len(record) < 4 or record[2] != " ":
             raise VcsCommandError(f"unparseable 'git status --porcelain -z' record: {record!r}")
         status, path = record[:2], record[3:]
+        original: str | None = None
         if "R" in status or "C" in status:
+            if index >= len(fields) or not fields[index]:
+                raise VcsCommandError(
+                    f"unparseable 'git status --porcelain -z' record: {record!r} without its original"
+                )
+            original = fields[index]
             index += 1
-        paths.add(path)
-    return paths
+        yield status, path, original
+
+
+def _porcelain_z_paths(stdout: str) -> set[str]:
+    """Story 83.16: the live paths of ``git status --porcelain -z`` (v1) output -- a rename or copy keeps only
+    its new path, its original is consumed and dropped (``_porcelain_z_records``)."""
+    return {path for _status, path, _original in _porcelain_z_records(stdout)}
+
+
+def _commit_status_facts(stdout: str, named: set[str]) -> tuple[frozenset[str], tuple[str, ...]]:
+    """Story 83.16 landing review: what ``commit_paths`` must do beyond ``git add`` + ``git commit`` for the
+    ``named`` paths, read off ``git status --porcelain -z`` taken before staging.
+
+    * The named paths whose deletion is already staged (``D ``): ``git add -- <path>`` refuses a path in
+      neither the index nor the worktree, so they are committed without being re-added.
+    * The ORIGINAL path of every rename (``R`` in either column, never a copy -- a copy's source stays) whose
+      new path is named and whose original is not: ``changed_files`` reports only a rename's new path, and a
+      commit pathspec without the original leaves its deletion uncommitted (staged for ``git mv``, unstaged
+      for the intent-to-add form) while the commit itself succeeds. It goes to the commit pathspec only --
+      never to ``git add``, which refuses a staged rename's original outright."""
+    staged_deletions: set[str] = set()
+    sources: dict[str, None] = {}
+    for status, path, original in _porcelain_z_records(stdout):
+        if path not in named:
+            continue
+        if status == "D ":
+            staged_deletions.add(path)
+        if "R" in status and original is not None and original not in named:
+            sources[original] = None
+    return frozenset(staged_deletions), tuple(sources)
+
+
+def _repo_relative(repo_root: Path, path: Path) -> str:
+    """``path`` as ``git status`` names it: repo-relative POSIX (an absolute path under ``repo_root`` is
+    made relative; any other path is taken as already relative)."""
+    if path.is_absolute():
+        try:
+            return path.relative_to(repo_root).as_posix()
+        except ValueError:
+            return path.as_posix()
+    return path.as_posix()
 
 
 def _require_redacted(value: object, name: str) -> Redacted:
@@ -901,11 +946,45 @@ class GitVcs:
         either fail ambiguously or, worse, fall back to committing whatever
         happened to already be staged, exactly the "commits a pre-existing
         index" failure AD-29 forbids. ``message`` is ``Redacted`` (Story 82.9,
-        AD-34); a bare ``str`` raises ``TypeError`` before any git invocation."""
+        AD-34); a bare ``str`` raises ``TypeError`` before any git invocation.
+
+        Renames and staged deletions (Story 83.16 landing review): before
+        staging, one ``git status --porcelain -z`` read (rename detection
+        pinned on, so an operator's ``status.renames``/``diff.renames=false``
+        cannot hide the pair) supplies ``_commit_status_facts``. A named
+        rename destination brings its ORIGINAL path into the commit pathspec
+        (``git add -- <new>``, then ``git commit -- <new>
+        :(top,literal)<old>``), so the source's deletion is committed with
+        it, for a ``git mv`` and for the intent-to-add form alike; the
+        original is never handed to ``git add``. A named path whose deletion
+        is already staged is committed without a ``git add``, which would
+        refuse it."""
         commit_text = _require_redacted(message, "message").text
         if not paths:
             raise VcsCommandError("commit_paths requires at least one path, got none")
+        status_result = _run(
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "-c",
+                "status.renames=true",
+                "status",
+                "--porcelain",
+                "-z",
+                "--untracked-files=no",
+            ]
+        )
+        if status_result.returncode != 0:
+            raise VcsCommandError(
+                f"git status --porcelain -z failed in {repo_root} before committing: {status_result.stderr.strip()}"
+            )
+        staged_deletions, rename_sources = _commit_status_facts(
+            status_result.stdout, {_repo_relative(repo_root, path) for path in paths}
+        )
         for path in paths:
+            if _repo_relative(repo_root, path) in staged_deletions:
+                continue
             add_result = _run(["git", "-C", str(repo_root), "add", "--", str(path)])
             if add_result.returncode != 0:
                 raise VcsCommandError(f"git add -- {path} failed: {add_result.stderr.strip()}")
@@ -918,6 +997,8 @@ class GitVcs:
             commit_text,
             "--",
             *(str(path) for path in paths),
+            # status names an original repo-relative and literally: say so to the pathspec, too.
+            *(f":(top,literal){source}" for source in rename_sources),
         ]
         commit_result = _run(commit_args)
         if commit_result.returncode != 0:

@@ -1945,19 +1945,16 @@ class _RealGitWorktreeVcs(FakeVcs):
         return self._git.commit_paths(repo_root, paths, message)
 
 
-def test_finalize_sequence_commits_paths_with_spaces_and_non_ascii_against_real_git(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Story 83.16: herald 35.1's finalize (2026-10-03) handed ``git add`` the C-quoted porcelain form of a
-    ``presentations/*/project/`` path and stopped with every change uncommitted. A session's spaced and
-    non-ASCII files are committed and the attempt journals ok."""
+def _real_git_dispatch_worktree(tmp_path: Path, base_file: str) -> tuple[Path, Path, str]:
+    """A primary clone of a bare ``origin`` whose ``main`` carries ``base_file``, plus the story's dispatch
+    worktree on its dispatch branch: ``(repo_root, worktree, branch)`` (Story 83.16)."""
     remote, repo_root = tmp_path / "remote.git", tmp_path / "repo"
     subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True)
     subprocess.run(["git", "clone", "-q", str(remote), str(repo_root)], check=True, capture_output=True)
     _git(repo_root, "config", "user.email", "t@example.com")
     _git(repo_root, "config", "user.name", "T")
-    (repo_root / "docs").mkdir()
-    (repo_root / "docs" / "a b.md").write_text("base\n", encoding="utf-8")
+    (repo_root / base_file).parent.mkdir(parents=True, exist_ok=True)
+    (repo_root / base_file).write_text("base\n", encoding="utf-8")
     _git(repo_root, "add", "-A")
     _git(repo_root, "commit", "-qm", "base")
     _git(repo_root, "push", "-q", "origin", "main")
@@ -1967,6 +1964,36 @@ def test_finalize_sequence_commits_paths_with_spaces_and_non_ascii_against_real_
     _git(repo_root, "worktree", "add", "-q", "-b", branch, str(worktree), "main")
     _git(worktree, "config", "user.email", "t@example.com")
     _git(worktree, "config", "user.name", "T")
+    return repo_root, worktree, branch
+
+
+def _rename_in_worktree(worktree: Path, old: str, new: str, form: str) -> None:
+    """A session's rename of a tracked file: ``git mv`` (staged), or ``mv`` then ``git add -N`` (intent-to-add,
+    which ``git status`` reports as a worktree-column `` R``)."""
+    if form == "git-mv":
+        _git(worktree, "mv", old, new)
+    else:
+        (worktree / old).rename(worktree / new)
+        _git(worktree, "add", "-N", new)
+
+
+def _head_tree(worktree: Path) -> list[str]:
+    listing = subprocess.run(
+        ["git", "-C", str(worktree), "ls-tree", "-r", "-z", "--name-only", "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout
+    return sorted(path for path in listing.split("\0") if path)
+
+
+def test_finalize_sequence_commits_paths_with_spaces_and_non_ascii_against_real_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 83.16: herald 35.1's finalize (2026-10-03) handed ``git add`` the C-quoted porcelain form of a
+    ``presentations/*/project/`` path and stopped with every change uncommitted. A session's spaced and
+    non-ASCII files are committed and the attempt journals ok."""
+    repo_root, worktree, branch = _real_git_dispatch_worktree(tmp_path, "docs/a b.md")
     spec = _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
     deck = "presentations/pyforge-atlas/project/PyForge Atlas - Infographic Deck.dc.html"
     (worktree / deck).parent.mkdir(parents=True)
@@ -1992,6 +2019,50 @@ def test_finalize_sequence_commits_paths_with_spaces_and_non_ascii_against_real_
         text=True,
     ).stdout.split("\0")
     assert sorted(path for path in committed if path) == sorted(("docs/a b.md", "docs/café menu.md", deck, spec))
+
+
+@pytest.mark.parametrize("form", ["git-mv", "intent-to-add"])
+def test_finalize_sequence_commits_a_spaced_renames_source_deletion_against_real_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, form: str
+) -> None:
+    """Story 83.16 landing review (MEDIUM): ``changed_files`` reports a rename by its new path alone, so the
+    finalize committed ``docs/new name.md`` and journaled ok while ``docs/old name.md``'s deletion stayed
+    behind -- staged for a ``git mv``, unstaged for the intent-to-add form. Both forms now commit the deletion
+    with the rename: the tree is clean and the old path is gone from ``HEAD``."""
+    repo_root, worktree, branch = _real_git_dispatch_worktree(tmp_path, "docs/old name.md")
+    spec = _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
+    _rename_in_worktree(worktree, "docs/old name.md", "docs/new name.md", form)
+    _patch_verification(monkeypatch, _clean_envelope)
+    vcs = _RealGitWorktreeVcs(branches=frozenset({branch}), head_sha=_MOVED)
+    fs = FakeFs()
+
+    _counter, ok = _finalize(fs, vcs, repo_root, worktree)
+
+    assert ok is True
+    record = fs.appended[-1][1]
+    assert '"committed": true' in record
+    assert '"ok": true' in record
+    assert _git(worktree, "status", "--porcelain") == ""
+    tree = _head_tree(worktree)
+    assert "docs/old name.md" not in tree
+    assert "docs/new name.md" in tree
+    assert spec in tree
+    # changed_files named only the destination: commit_paths itself carried the deletion.
+    assert vcs.commits and set(vcs.commits[0][1]) == {Path("docs/new name.md"), Path(spec)}
+
+
+def test_commit_pre_verify_wip_commits_a_spaced_renames_source_deletion_against_real_git(tmp_path: Path) -> None:
+    """Story 83.16 landing review: the pre-verify WIP checkpoint (Story 85.2) commits through the same
+    ``commit_paths``, so a ``git mv`` leaves no staged deletion behind and the call reports no refusal."""
+    repo_root, worktree, branch = _real_git_dispatch_worktree(tmp_path, "docs/old name.md")
+    _git(worktree, "mv", "docs/old name.md", "docs/new name.md")
+    vcs = _RealGitWorktreeVcs(branches=frozenset({branch}), head_sha=_MOVED)
+
+    result = supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=worktree)
+
+    assert result == (True, None)
+    assert _git(worktree, "status", "--porcelain") == ""
+    assert _head_tree(worktree) == ["docs/new name.md"]
 
 
 # ==========================================================================
