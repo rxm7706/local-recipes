@@ -52,14 +52,24 @@ from pathlib import Path
 from typing import Any, Callable
 
 import vizro.models as vm
+import vizro.plotly.express as px
+from dash import no_update
 from vizro import Vizro
-from vizro.managers import data_manager
+from vizro.managers import data_manager, model_manager
+from vizro.models.types import capture
 from vizro.tables import dash_ag_grid
 
 from .. import provenance as _provenance
 from ..provenance import ProvenanceInfo
 from . import data as _data
 from . import factory_status as _fs
+from . import scan_submit as _scan
+
+# `UserInput` is Vizro 0.1.60's text-entry component but is not in the default
+# `Page.components` union (it is a form component). `add_type` is Vizro's own
+# documented way to widen that union — the two live-scan pages need a free-text
+# path field, which no selector in `SelectorType` provides.
+vm.Page.add_type("components", vm.UserInput)
 
 # The D2 AC's live-confirmed-first consumer set (order preserved for determinism).
 LIVE_CONSUMER_CLIS = (
@@ -74,6 +84,19 @@ LIVE_CONSUMER_CLIS = (
 
 
 @dataclass(frozen=True)
+class ChartDef:
+    """The one ``vm.Graph`` a page's DESIGN.md § 3–5 Layout bullet names.
+
+    ``x``/``y`` are columns of that page's own BSL loader, so a chart can never
+    be declared over a column the page does not actually project.
+    """
+
+    kind: str  # the vizro.plotly.express function name, e.g. "bar"
+    x: str
+    y: str
+
+
+@dataclass(frozen=True)
 class PageDef:
     """Static description of a built page (introspected by the dashboard-dryrun gate)."""
 
@@ -84,9 +107,14 @@ class PageDef:
     # | "live-scan-artifact" — the latter two added by Story 20.5 (DESIGN.md § 1):
     # report-artifact reads the LATEST cached run of a write-path/per-invocation CLI
     # (the dashboard never triggers one); live-scan-artifact is per-invocation,
-    # user-supplied input (the dashboard would submit a NEW scan, not yet wired here).
+    # user-supplied input, and the dashboard DOES submit a new scan (Story 27.3).
     kind: str
     note: str = ""
+    # The controls DESIGN.md specifies for this page (Story 27.3, DW-FU-20-5).
+    # `filters` are loader column names, one `vm.Filter` each; `chart` is the one
+    # `vm.Graph`. A page DESIGN.md gives no Filter/Graph bullet declares neither.
+    filters: tuple[str, ...] = ()
+    chart: ChartDef | None = None
 
 
 PAGE_INVENTORY: tuple[PageDef, ...] = (
@@ -98,24 +126,27 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "Staleness Report",
         "staleness-report",
         "bsl-shell",
-        note="Wired to build_packages_model.staleness_age_days; renders empty until the "
-        "composed packages store lands (latest_conda_upload is not yet migrated — DW-D2).",
+        note="Wired to build_packages_model.staleness_age_days over the composed "
+        "semantic_packages store (`kedro run --pipeline semantic_packages`). "
+        "latest_conda_upload is declared NULL by that pipeline's node — it has no "
+        "migrated input — so the staleness age is null wherever that is the only source.",
     ),
     PageDef(
         "query-atlas",
         "Query Atlas",
         "query-atlas",
         "bsl-shell",
-        note="Wired to build_packages_model (is_actionable + adoption stage + downloads); "
-        "renders empty until the composed packages store lands (DW-D2).",
+        note="Wired to build_packages_model (is_actionable + adoption stage + downloads) "
+        "over the composed semantic_packages store (`kedro run --pipeline "
+        "semantic_packages`).",
     ),
     PageDef(
         "detail-cf-atlas",
         "Package Detail",
         "detail-cf-atlas",
         "bsl-shell",
-        note="Wired to build_packages_model (full per-package metric row); renders empty "
-        "until the composed packages store lands (DW-D2).",
+        note="Wired to build_packages_model (full per-package metric row) over the "
+        "composed semantic_packages store (`kedro run --pipeline semantic_packages`).",
     ),
     PageDef(
         "behind-upstream",
@@ -142,7 +173,10 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "cve-watcher",
         "bsl-shell",
         note="Wired to build_vuln_history_model; renders empty until the vuln_history "
-        "snapshot-diff dataset materializes.",
+        "snapshot-diff dataset materializes. DESIGN.md § 3.1 also names a maintainer "
+        "filter; the loader projects no maintainer column, so only severity and "
+        "since-days are declared here.",
+        filters=("severity", "since_days"),
     ),
     PageDef(
         "version-downloads",
@@ -151,6 +185,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="Wired to build_version_downloads_model; renders empty until the "
         "per-version download-history dataset materializes.",
+        chart=ChartDef("bar", x="version", y="downloads"),
     ),
     PageDef(
         "release-cadence",
@@ -159,7 +194,10 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="Wired to build_release_cadence_model.trend_label (release_cadence.py's "
         "own accelerating/stable/decelerating/silent classifier, ported verbatim); "
-        "renders empty until the rolling-window dataset materializes.",
+        "renders empty until the rolling-window dataset materializes. DESIGN.md § 3.3's "
+        "bar-per-window chart needs a long `window` dimension the model does not "
+        "project — it has one measure per window — so the 90-day window is charted.",
+        chart=ChartDef("bar", x="conda_name", y="release_count_90d"),
     ),
     PageDef(
         "find-alternative",
@@ -168,6 +206,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="Wired to build_alternative_candidates_model; renders empty until the "
         "Phase E/J similarity dataset materializes.",
+        filters=("archived_name",),
     ),
     PageDef(
         "adoption-stage",
@@ -176,16 +215,17 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "bsl-shell",
         note="The portfolio-wide lifecycle VIEW; re-uses build_packages_model.adoption_stage "
         "(no new model) over the same composed semantic_packages store as detail-cf-atlas.",
+        chart=ChartDef("bar", x="adoption_stage", y="package_count"),
     ),
     PageDef(
         "scan-project",
         "Scan Project",
         "scan-project",
         "live-scan-artifact",
-        note="Wired to build_scan_result_model over the latest cached per-invocation scan; "
-        "an in-dashboard submit control (triggering a NEW scan) is forward-looking work, "
-        "not wired here — the page reads the last result the same honest way every other "
-        "shell page does.",
+        note="Wired to build_scan_result_model over the latest cached per-invocation scan. "
+        "The page submits a new scan itself: enter a project path and press Run, and "
+        "dashboard.scan_submit runs the scan-project CLI through pyforge.core.process, "
+        "rewrites this page's cached Parquet, and the grid re-renders from it.",
     ),
     PageDef(
         "env-inspect",
@@ -193,8 +233,9 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "env-inspect",
         "live-scan-artifact",
         note="Wired to build_env_inspect_model over the latest cached per-invocation "
-        "rollup; same per-invocation shape and forward-looking submit-control note as "
-        "scan-project.",
+        "rollup. Same submit path as scan-project: a conda/pixi env prefix path goes to "
+        "the env-inspect CLI's --licenses and --security modes through "
+        "pyforge.core.process, and this page's cached Parquet is rewritten from both.",
     ),
     PageDef(
         "distribution-breakdown",
@@ -206,6 +247,8 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         "facet's --policy-check bump-safety classifier (pyver_breakdown.py's own "
         "policy_check_status, ported verbatim) rides along. Renders empty until the "
         "per-facet download-breakdown dataset materializes.",
+        filters=("facet",),
+        chart=ChartDef("bar", x="bucket", y="downloads_90d"),
     ),
     # Cyclonedx-suite pages (7, DESIGN.md § 4)
     PageDef(
@@ -232,6 +275,7 @@ PAGE_INVENTORY: tuple[PageDef, ...] = (
         note="A SUMMARY over the ~856k-component BOM (build_universe_sbom_summary_model), "
         "never a full-table browse; renders empty until the universe-BOM summary "
         "dataset materializes.",
+        filters=("slice",),
     ),
     PageDef(
         "inventory-match",
