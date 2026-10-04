@@ -955,7 +955,8 @@ def test_create_missing_issues_retries_secondary_rate_limit(monkeypatch):
         )
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    monkeypatch.setattr(identity.time, "sleep", lambda _s: None)
+    sleeps: list[float] = []
+    monkeypatch.setattr(identity.time, "sleep", sleeps.append)
 
     not_filed: list[tuple[str, str]] = []
     result = identity.create_missing_issues(
@@ -967,7 +968,36 @@ def test_create_missing_issues_retries_secondary_rate_limit(monkeypatch):
     )
     assert result == [("retry-pkg", "[Conda-Forge Packaging] retry-pkg")]
     assert not_filed == []
-    assert calls.count("issue") >= 3
+    assert calls == ["issue", "issue", "issue", "project"]
+    # Every gh call is paced 0.25 s; each rate-limited answer backs off 2 s, then 4 s.
+    assert sleeps == [0.25, 2.0, 0.25, 4.0, 0.25, 0.25]
+
+
+def test_create_missing_issues_gives_up_after_the_retry_budget(monkeypatch):
+    """A rate limit that never clears: one attempt plus five retries, backoff doubling
+    from 2 s (62 s in all), then the name is reported as not filed -- never retried forever."""
+    calls: list[str] = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd[1])
+        raise subprocess.CalledProcessError(1, cmd, stderr="You have exceeded a secondary rate limit")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    sleeps: list[float] = []
+    monkeypatch.setattr(identity.time, "sleep", sleeps.append)
+
+    not_filed: list[tuple[str, str]] = []
+    board: dict[str, str] = {}
+    row = _row("stuck-pkg")
+    result = identity.create_missing_issues("gh", [row], board=board, dry_run=False, not_filed=not_filed)
+
+    assert identity._GH_MAX_RETRIES + 1 == 6
+    assert calls == ["issue"] * 6
+    assert sleeps == [0.25, 2.0, 0.25, 4.0, 0.25, 8.0, 0.25, 16.0, 0.25, 32.0, 0.25]
+    assert result == []
+    assert not_filed == [("stuck-pkg", "[Conda-Forge Packaging] stuck-pkg")]
+    assert board == {}
+    assert not row.get("OpenTeams_Issue_URL")
 
 
 def test_read_identity_export_corrupt_parquet_named_error(monkeypatch, tmp_path, capsys):
