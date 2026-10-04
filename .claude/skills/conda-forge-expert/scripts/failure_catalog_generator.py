@@ -270,6 +270,21 @@ def _symptom_paragraph(body: str) -> str | None:
     return paragraph
 
 
+def _relaxed_signature_tokens(text: str) -> list[str]:
+    """Like ``_signature_tokens`` but drops only stopwords — used when
+    quality filtering would otherwise zero a row whose SKILL.md prose is
+    entirely one long quoted error string."""
+    tokens: list[str] = []
+    for m in _SIGNATURE_TOKEN_RE.finditer(text):
+        value = (m.group(1) if m.group(1) is not None else m.group(2)).strip()
+        if not value or value.lower() in _SIGNATURE_STOPWORDS or value in tokens:
+            continue
+        tokens.append(value)
+        if len(tokens) >= MAX_SIGNATURE_TOKENS:
+            break
+    return tokens
+
+
 def extract_symptom_signature(body: str) -> list[str]:
     """Signature tokens for one gotcha body. Prefers the **Symptom**:
     paragraph; falls back to scanning the whole body when there is no
@@ -311,6 +326,19 @@ def _filter_signatures(
             out.append(tok)
             if len(out) >= MAX_SIGNATURE_TOKENS:
                 break
+        if not out:
+            # Relax the cross-row frequency cap so a row never ships empty
+            # once SKILL.md yields extractable spans.
+            for tok in tokens:
+                if tok.lower() in _SIGNATURE_STOPWORDS:
+                    continue
+                if _token_is_whole_sentence(tok):
+                    continue
+                if tok in out:
+                    continue
+                out.append(tok)
+                if len(out) >= MAX_SIGNATURE_TOKENS:
+                    break
         filtered.append(out)
     return filtered
 
@@ -334,13 +362,20 @@ def build_catalog(skill_md_text: str, optimizer_source: str) -> dict[str, Any]:
     signatures = _filter_signatures(raw_rows)
     rows = []
     for (number, title, _raw), signature in zip(raw_rows, signatures, strict=True):
+        body = next(b for n, _, b in entries if n == number)
+        if not signature:
+            signature = _relaxed_signature_tokens(body)
         if not signature:
             raise CatalogError(
                 f"G{number}: extracted zero symptom_signature tokens after "
                 "quality filtering — SKILL.md body may need a more specific "
                 "quoted/backtick span for grep matching."
             )
-        body = next(b for n, _, b in entries if n == number)
+        if len(signature) == 1 and _token_is_whole_sentence(signature[0]):
+            extra = _relaxed_signature_tokens(body)
+            signature = [t for t in extra if not _token_is_whole_sentence(t)]
+            if not signature:
+                signature = extra[:MAX_SIGNATURE_TOKENS]
         rows.append({
             "id": f"G{number}",
             "title": title,
@@ -413,7 +448,7 @@ def main(argv: list[str] | None = None) -> int:
     if repo_root is None:
         print("failure_catalog_generator: could not resolve the repo root "
               "(see _paths.get_repo_root)", file=sys.stderr)
-        return 1
+        return 2 if args.check else 1
 
     skill_md_path = repo_root / SKILL_MD_REL
     optimizer_path = repo_root / OPTIMIZER_REL
