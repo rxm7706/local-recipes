@@ -42,9 +42,7 @@ from pyforge.marshal.dispatch_verify import (
 )
 
 _REPO_ROOT = next(
-    parent
-    for parent in Path(__file__).resolve().parents
-    if (parent / "scripts" / "commit_msg_hook.py").is_file()
+    parent for parent in Path(__file__).resolve().parents if (parent / "scripts" / "commit_msg_hook.py").is_file()
 )
 
 
@@ -53,6 +51,7 @@ def _fake_git_log_empty(tokens: list[str]) -> ProcessResult | None:
     if tokens and tokens[0] == "git" and "log" in tokens:
         return ProcessResult(returncode=0, stdout="", stderr="")
     return None
+
 
 # Story 79.2 (spec-79-2): the derived hygiene lane, pinned as a literal (not
 # imported from `dispatch_verify`) so deleting or renaming the derivation fails
@@ -1787,10 +1786,13 @@ def test_check_branch_commit_attribution_refuses_co_authored_commit(
 ) -> None:
     """Story 83.17 AC1: a branch commit carrying Co-authored-by is refused."""
     from pyforge.core.process import PosixProcess
+
     from pyforge.marshal.core.refs import ORIGIN_MAIN
 
     worktree = _init_story_worktree(tmp_path)
-    subprocess.run(["git", "commit", "--allow-empty", "-m", "origin tip"], cwd=worktree, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "--allow-empty", "-m", "origin tip"], cwd=worktree, check=True, capture_output=True
+    )
     subprocess.run(["git", "update-ref", ORIGIN_MAIN, "HEAD"], cwd=worktree, check=True, capture_output=True)
     (worktree / "f.txt").write_text("x\n", encoding="utf-8")
     subprocess.run(["git", "add", "f.txt"], cwd=worktree, check=True)
@@ -1818,10 +1820,13 @@ def test_check_branch_commit_attribution_refuses_co_authored_commit(
 
 def test_check_branch_commit_attribution_passes_clean_commit(tmp_path: Path) -> None:
     from pyforge.core.process import PosixProcess
+
     from pyforge.marshal.core.refs import ORIGIN_MAIN
 
     worktree = _init_story_worktree(tmp_path)
-    subprocess.run(["git", "commit", "--allow-empty", "-m", "origin tip"], cwd=worktree, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "--allow-empty", "-m", "origin tip"], cwd=worktree, check=True, capture_output=True
+    )
     subprocess.run(["git", "update-ref", ORIGIN_MAIN, "HEAD"], cwd=worktree, check=True, capture_output=True)
     (worktree / "f.txt").write_text("x\n", encoding="utf-8")
     subprocess.run(["git", "add", "f.txt"], cwd=worktree, check=True)

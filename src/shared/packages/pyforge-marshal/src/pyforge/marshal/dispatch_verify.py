@@ -119,8 +119,7 @@ def check_branch_commit_attribution(
                     code="MRS-GATE-009",
                     severity=Severity.ERROR,
                     message=(
-                        "dispatch commit-attribution check could not load "
-                        "scripts/commit_msg_hook.py from the worktree"
+                        "dispatch commit-attribution check could not load scripts/commit_msg_hook.py from the worktree"
                     ),
                 ),
             ),
