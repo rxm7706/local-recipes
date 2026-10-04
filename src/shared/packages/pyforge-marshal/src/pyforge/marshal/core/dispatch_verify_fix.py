@@ -29,22 +29,41 @@ FIX_TURN_REVERIFY_REFUSED_CODE = "MRS-DISP-060"
 _VERIFY_REFUSAL_GATE_PREFIX = "MRS-GATE-"
 
 # Story 85.1 (M7) + 85.3: scrub credential-shaped text before truncation (never after).
-_URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s]+)@")
-_BEARER_TOKEN = re.compile(r"(?i)(Authorization:\s*Bearer\s+)\S+")
-_BASIC_AUTH = re.compile(r"(?i)(Authorization:\s*Basic\s+)\S+")
-#: One key=value / key: value rule (85.3 landing review H3): a bare or quoted key NAMING a secret -- any
-#: identifier carrying password / passwd / secret / token / api key / access key (`DATABASE_PASSWORD`,
-#: `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`, JSON `"password"`, YAML `db_password`) -- then `=` or `:` (never
-#: `==` or `::`), then a quoted value (to its closing quote, escapes included) or a bare one (to the next
-#: whitespace; an unclosed opening quote is taken with it).
+#
+# Story 85.4: the scrub runs in the supervisor's thread on the full output of every failed command, so every rule
+# here is linear in the text -- no quantifier can match one character two ways, and a run of identifier or scheme
+# characters is tried from its first character only (the lookbehinds); `token_budget.py:42:5:` keeps its line and
+# column. `test_dispatch_verify_fix.py` times each rule on 100 KB adversarial input.
+#: A URL's userinfo password (an empty user too): the scheme starts a run of scheme characters, and the password
+#: runs to the `@`, never across whitespace or another `://`.
+_URL_CREDENTIALS = re.compile(r"(?i)(?<![a-z0-9+.-])([a-z][a-z0-9+.-]*+://[^:/@\s]*+):((?:(?!://)[^@\s])++)@")
+#: An `Authorization:` header's credentials, whatever the scheme (`Bearer`, `Basic`, `token`, ...).
+_AUTHORIZATION = re.compile(r"(?i)(Authorization:[ \t]*(?:[A-Za-z][A-Za-z0-9_-]*[ \t]+)?)\S+")
+#: A `Cookie:` or `Set-Cookie:` header's value, to the end of its line.
+_COOKIE = re.compile(r"(?i)(\bCookie:[ \t]*)[^\r\n]+")
+#: What a key or flag names a secret by (85.3 landing review H3).
+_SECRET_WORD = r"(?:password|passwd|secret|token|api[_-]?key|access[_-]?key)"
+#: An identifier carrying a secret word (`DATABASE_PASSWORD`, `GITHUB_TOKEN`, `AWS_SECRET_ACCESS_KEY`,
+#: `db_password`), taken whole: never a `.`, so a file name such as `token_budget.py` is no key.
+_SECRET_IDENTIFIER = r"(?=[A-Za-z0-9_-]*?" + _SECRET_WORD + r")[A-Za-z0-9_-]++"
+#: A quoted value to its closing quote on the same line (escapes included), or a bare one to the next whitespace
+#: (an unclosed opening quote is taken with it).
+_SECRET_VALUE = r"(?:(?P<vq>['\"])(?:\\.|(?!(?P=vq))[^\\\n])*(?P=vq)|['\"]?[^\s'\"]+)"
+#: One key=value / key: value rule (85.3 landing review H3): a bare or quoted secret identifier (JSON
+#: `"password"`, `spring.datasource.password`), then `=` (never `==`) or a `:` that whitespace or a quote follows
+#: (never `file.py:42:5:`), then the value.
 _SECRET_KEY_VALUE = re.compile(
-    r"(?i)(?<![A-Za-z0-9_.-])"
-    r"(?P<key>(?P<kq>['\"]?)"
-    r"[A-Za-z0-9_.-]*(?:password|passwd|secret|token|api[_-]?key|access[_-]?key)[A-Za-z0-9_.-]*"
-    r"(?P=kq)\s*(?:=(?!=)|:(?!:))\s*)"
-    r"(?:(?P<vq>['\"])(?:\\.|(?!(?P=vq)).)*(?P=vq)|['\"]?[^\s'\"]+)"
+    r"(?i)(?<![A-Za-z0-9_-])"
+    r"(?P<key>(?P<kq>['\"]?)" + _SECRET_IDENTIFIER + r"(?P=kq)\s*(?:=(?!=)|:(?=[\s'\"]))\s*)" + _SECRET_VALUE
+)
+#: A command-line flag naming a secret and its space-separated value (`--password hunter2`); a following flag is
+#: never taken as the value.
+_SECRET_FLAG_VALUE = re.compile(
+    r"(?i)(?<![A-Za-z0-9_-])(?P<key>--?" + _SECRET_IDENTIFIER + r"[ \t]+)(?!-)" + _SECRET_VALUE
 )
 _SK_ANT_KEY = re.compile(r"sk-ant-[A-Za-z0-9_-]+")
+#: A bare GitHub token (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`, `github_pat_`).
+_GITHUB_TOKEN = re.compile(r"(?<![A-Za-z0-9_])(gh[pousr]_|github_pat_)[A-Za-z0-9_]+")
 _REDACTED = "***REDACTED***"
 
 
@@ -54,12 +73,14 @@ def _redact_secret_value(match: re.Match[str]) -> str:
 
 
 def scrub_fix_turn_exposure(text: str) -> str:
-    """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1/85.3)."""
+    """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1/85.3/85.4)."""
     scrubbed = _URL_CREDENTIALS.sub(rf"\1:{_REDACTED}@", text)
-    scrubbed = _BEARER_TOKEN.sub(rf"\1{_REDACTED}", scrubbed)
-    scrubbed = _BASIC_AUTH.sub(rf"\1{_REDACTED}", scrubbed)
+    scrubbed = _AUTHORIZATION.sub(rf"\1{_REDACTED}", scrubbed)
+    scrubbed = _COOKIE.sub(rf"\1{_REDACTED}", scrubbed)
     scrubbed = _SECRET_KEY_VALUE.sub(_redact_secret_value, scrubbed)
+    scrubbed = _SECRET_FLAG_VALUE.sub(_redact_secret_value, scrubbed)
     scrubbed = _SK_ANT_KEY.sub(f"sk-ant-{_REDACTED}", scrubbed)
+    scrubbed = _GITHUB_TOKEN.sub(rf"\1{_REDACTED}", scrubbed)
     return scrubbed
 
 

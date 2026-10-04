@@ -133,7 +133,8 @@ _TICK_SECONDS = 60
 _FETCH_EVERY_N_TICKS = 5
 #: Story 85.3: how often a fix turn calls the run publisher's heartbeat at most (the portal marks a run
 #: `heartbeat_lost` after 300 s), and how often the progress thread does during the turn's re-verification. The
-#: journal heartbeat keeps the tick rate.
+#: fix wait polls every second, but its journal heartbeat keeps the tick rate: at most one per `_TICK_SECONDS`
+#: (Story 85.4).
 _FIX_TURN_PUBLISH_INTERVAL_S = 30.0
 _BASE_REF = ORIGIN_MAIN  # Story 60.1 (CAP-270): the full refname, never a short name a local ref can shadow
 
@@ -1318,17 +1319,24 @@ def _maybe_run_verify_fix_turn(
             {"session_pid": fix_pid, "ok": True, "fix_intent_id": fix_intent_ref(intent_entry.id)},
         )
 
+    journal_heartbeat_at: float | None = None
+
     def _fix_turn_heartbeat() -> None:
-        nonlocal counter
-        counter = _journal_heartbeat(
-            fs=fs,
-            run_dir=run_dir,
-            run_id=run_id,
-            writer_id=writer_id,
-            counter=counter,
-            session_alive=False,
-            git_facts=git_facts,
-        )
+        # Called on every one-second poll of the wait: the journal heartbeat is written at most once per
+        # `_TICK_SECONDS` (Story 85.4); the publisher heartbeat throttles itself (`_FixTurnPublisherHeartbeat`).
+        nonlocal counter, journal_heartbeat_at
+        now = time.monotonic()
+        if journal_heartbeat_at is None or now - journal_heartbeat_at >= _TICK_SECONDS:
+            journal_heartbeat_at = now
+            counter = _journal_heartbeat(
+                fs=fs,
+                run_dir=run_dir,
+                run_id=run_id,
+                writer_id=writer_id,
+                counter=counter,
+                session_alive=False,
+                git_facts=git_facts,
+            )
         if publish_heartbeat is not None:
             publish_heartbeat()
 

@@ -2,7 +2,7 @@
 title: "85.4: The fix turn's redaction never hangs the supervisor or hides what the fix needs"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -96,6 +96,17 @@ Type / Effort / Deps: fix / S / S-85.3.
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 - `pixi run --frozen -e pyforge-marshal python -m pytest -q src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py` — expected: pass, including the two timing tests and the LOW-3 shape tests.
 
+**Tests that carry the criteria (run by `pyforge-marshal-test` above):**
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py` — AC1: `test_an_unclosed_quote_before_100k_backslashes_scrubs_in_under_a_second` (both quote types; a SIGALRM deadline turns a backtracking regex into a failure, never a hang); AC2: `test_a_100kb_run_of_url_scheme_characters_scrubs_in_under_a_second`, and `test_every_redaction_rule_stays_linear_on_100kb_adversarial_input` for every other rule; AC3: `test_a_compiler_location_keeps_its_line_and_column`, `test_an_unclosed_quoted_value_never_takes_the_next_line`, with 85.3's `test_scrub_fix_turn_exposure_redacts_every_credential_shape` unchanged; AC4: `test_scrub_fix_turn_exposure_redacts_the_shapes_the_85_3_delta_review_found_leaking`; AC6 (X02): `test_the_story_launch_keeps_dev_null_as_the_sessions_stdin`; AC7: `test_terminate_process_group_kills_a_child_that_ignores_sigterm_after_its_leader_obeys` reads the grandchild's ready line.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py` — AC5: `test_the_fix_wait_journals_at_most_one_heartbeat_per_tick` (a 150 s wait on a fake clock journals 3 heartbeats); AC6 (X11): `test_the_fix_turn_wraps_the_publisher_heartbeat_in_its_throttle`; AC6 (X12): `test_the_reverification_returns_only_after_an_in_flight_progress_heartbeat_finishes`; AC8: the existing two-state flag tests.
+
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Build (hand-built in `land/pyforge-marshal-85-4`); ready for an independent review
+- No review has run yet. The build is ready for an independent review against this spec.
+- Where the build goes past the Approach's wording, and why:
+  - The quoted-value branch is `(?:\\.|(?!(?P=vq))[^\\\n])*(?P=vq)`: the Approach's branch, with `\n` also excluded. 85.3's `.` never matched a newline, so a quoted value stayed on its line; with `[^\\]` an unclosed quote would redact every following line up to the next same quote, hiding what the fix needs. Same linearity (one way to match each character); `test_an_unclosed_quoted_value_never_takes_the_next_line` pins it, and the Approach's literal branch fails that test.
+  - `.` leaves the key's lookbehind too, not only its character class, so `spring.datasource.password=` and `config.api_key = ` stay redacted (tests `dotted-key`, `dotted-attribute`). The `:` rule alone keeps `file.py:42:5:`; dropping `.` keeps `secrets_loader.py: line 42, col 5` (a jshint/ESLint-compact location), which the `:` rule alone would lose.
+  - Two more quadratic shapes the delta review did not name were measured and fixed with the same rule set: a keyword-dense identifier run (`token` x 20,000 ran past a 5 s timeout in 85.3's scrub, and the new flag rule shared the shape) -- the secret identifier is now found by a lookahead and taken whole, possessively -- and a repeated `a://u:` run (8.4 s with the lookbehind alone) -- a URL password now stops at another `://`. Each is a case of `test_every_redaction_rule_stays_linear_on_100kb_adversarial_input`.
+  - `Authorization:` is one rule for any scheme (Bearer, Basic, token, Negotiate, ...), replacing the two Bearer/Basic rules; a URL's user may be empty; `--flag value` is its own rule over the same secret words; `Cookie:` / `Set-Cookie:` redact to the end of the line; bare `gh[pousr]_` / `github_pat_` tokens are redacted.
+- Mutation (scratch copies, this branch's tests; the unmutated control passes): all 18 killed -- AC1 the 85.3 quoted-value branch restored, and the Approach's literal `[^\\]` branch; AC2 no URL lookbehind, a URL password crossing `://`; AC3 `.` back in the key, `:` before a digit as a separator, `.` kept in the lookbehind; the key rule without its lookahead (keyword-run timing); AC4 no flag rule, `Authorization` back to Bearer/Basic only, no Cookie rule, no GitHub token rule, a URL user required; AC5 a journal heartbeat on every poll; X02 the story launch inheriting stdin; X11 no `_FixTurnPublisherHeartbeat` wrapper; X12 the progress thread not joined.
