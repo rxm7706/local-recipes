@@ -719,8 +719,7 @@ def _reconcile_spec_surface_drift(
                     code="MRS-DISP-048",
                     severity=Severity.ERROR,
                     message=(
-                        f"cannot commit/push the spec-surface reconcile for {head_branch!r}: "
-                        f"{exc} — refusing to land"
+                        f"cannot commit/push the spec-surface reconcile for {head_branch!r}: {exc} — refusing to land"
                     ),
                 ),
                 refuse=True,

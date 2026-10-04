@@ -21,6 +21,7 @@ from ..adapters.publisher_host import HostPublisher
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
 from ..core import gate as gate_core
+from ..core import identity as identity_core
 from ..core import promotion as promotion_core
 from ..core.commit_vcs import CommittingVcs
 from ..core.dispatch_completion import (
@@ -108,7 +109,6 @@ from ..core.worktree_checkpoint import (
     commit_worktree_checkpoint,
     should_checkpoint_on_idle,
 )
-from ..core import identity as identity_core
 from ..dispatch_land import _reconcile_spec_surface_drift, execute_dispatch_land
 from ..dispatch_verify import (
     ProcessWaitResult,

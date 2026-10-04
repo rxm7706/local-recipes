@@ -577,6 +577,7 @@ def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
         return real_land(**kwargs)
 
     monkeypatch.setattr(supervisor_main, "execute_dispatch_land", _land)
+
     def _record_reconcile(**_kwargs: object) -> _SpecSurfaceReconcileOutcome:
         events.append(("reconcile", True))
         return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
