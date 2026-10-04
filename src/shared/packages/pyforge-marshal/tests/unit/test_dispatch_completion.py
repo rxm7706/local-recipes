@@ -12,6 +12,7 @@ import pytest
 from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters.fs_local import FsError
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli.dispatch import live_dispatch_conflict, run_dispatch
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_completion import (
@@ -26,7 +27,6 @@ from pyforge.marshal.core.dispatch_completion import (
     run_head_reached_ref,
     zombie_redispatch_evidence,
 )
-from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.core.verdict import EXIT_OK
