@@ -39,7 +39,16 @@ Make the main point easy to find and act on. These rules apply to every page:
 | Table cells / list items         | 1-2 sentences max                        |
 | Header budget                    | 8-12 `##` per doc; 2-3 `###` per section |
 
-## Admonitions (Starlight Syntax)
+## Admonitions
+
+GitHub-flavored Markdown notes (for docs that render on GitHub or in editors that support GFM alerts):
+
+```md
+> [!NOTE]
+> Context, definitions, prerequisites — use this form in `docs/` when the page is not Starlight-only.
+```
+
+Starlight syntax (docs site):
 
 ```md
 :::tip[Title]

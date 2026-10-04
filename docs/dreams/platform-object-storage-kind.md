@@ -1,4 +1,5 @@
----title: The estate gets an S3-compatible object store, without becoming its operator
+---
+title: The estate gets an S3-compatible object store, without becoming its operator
 type: dream
 owner: steward
 status: archived

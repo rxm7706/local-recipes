@@ -2,7 +2,9 @@
 title: "41.3: The board, factory, hygiene and status-body sources read frontmatter one way, and the docs pages say what is true"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: 'e0733d4a1c0e00d8f6bb50a3cf650e3310b8c522'
+blocking_condition: ''
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -100,3 +102,15 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: in-review
+
+Verification: `pyforge-doctor-test` 3339 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile.
+
+Completed this run: factory gather threads ground truth once (`_ground_truth_for_gather` / `_GatherState`); archive hygiene recursive stray/retro scan; `check_counts` unreadable-source WARNs; coverage classification summary; dream-owner roster-derived message; hygiene fleet/station degrade paths, per-check isolation, repo-root evidence paths, boundary-aware inbound references; `docs_shelf` stale archive-root citation scan; `fleet_scan` pyforge module task handling; docs fixes (workflow inventory link, GFM NOTE, style guide); 27 deferred-work rows closed; classify literal pin for `archive:spike-report`.
+
+Governed paths named in memlogs: `spec-pyforge-doctor/.memlog.md`, `spec-pyforge-core/.memlog.md` (co-governor under marshal project), `spec-pyforge-marshal/.memlog.md` (`scripts/fleet_scan.py`), plus prior `spec-mcp-era-isolation/.memlog.md` and `spec-mcp-host-real-station-tools/.memlog.md` from the partial run.
+
+- 2026-10-04: Re-dispatch finished Phase 4+5 burn-down on branch `dispatch/pyforge-doctor/41.3`.

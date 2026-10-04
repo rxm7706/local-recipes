@@ -647,6 +647,7 @@ def test_rekey_map_is_classified_and_not_flagged_uncovered(tmp_path: Path) -> No
     assert findings[0].check == "bmad-drift"
     assert findings[0].status is DoctorStatus.OK
     assert factory.classify(Path("planning-artifacts/rekey-2026-09-16.md"), repo) == "tracked:plan"
+    assert factory.classify(Path("planning-artifacts/spike-0-copier-api-fit-report.md"), repo) == "archive:spike-report"
     # Undated or mis-dated names are NOT the shape (AGENTS.md § Dates: YYYY-MM-DD only).
     assert factory.classify(Path("planning-artifacts/rekey.md"), repo) != "tracked:plan"
 
@@ -857,6 +858,7 @@ def test_docs_specs_nonmd_reports_warn(tmp_path: Path) -> None:
     docs_specs = repo / "docs" / "specs"
     docs_specs.mkdir(parents=True, exist_ok=True)
     (docs_specs / "foo.txt").write_text("x\n", encoding="utf-8")
+    (repo / "CLAUDE.md").write_text("# Project\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -909,6 +911,7 @@ def test_spec_unindexed_reports_warn(tmp_path: Path) -> None:
     docs_specs = repo / "docs" / "specs"
     docs_specs.mkdir(parents=True, exist_ok=True)
     (docs_specs / "bar.md").write_text("x\n", encoding="utf-8")
+    (repo / "CLAUDE.md").write_text("# Project\n\nNo intake index here.\n", encoding="utf-8")
 
     findings = factory.gather(repo)
 
@@ -1047,7 +1050,7 @@ def test_dream_owned_by_an_unknown_station_reports_warn(tmp_path: Path) -> None:
     assert len(findings) == 1
     finding = findings[0]
     assert finding.check == "dream-unowned"
-    assert "eight Smiths" in finding.message
+    assert "marshal" in finding.message and "doctor" in finding.message
 
 
 def test_dream_owned_by_a_known_station_is_clean(tmp_path: Path) -> None:
