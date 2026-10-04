@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit.cfe_surface import CFE_CHANGELOG_PATH
 
 from pyforge.marshal.adapters.vcs_git import GitVcs
 from pyforge.marshal.core.dispatch_cfe_commit import (
@@ -16,7 +17,6 @@ from pyforge.marshal.core.dispatch_cfe_commit import (
     paths_excluding_cfe,
 )
 from pyforge.marshal.core.worktree_checkpoint import auto_checkpoint_message, commit_worktree_checkpoint
-from pyforge.testing_kit.cfe_surface import CFE_CHANGELOG_PATH
 
 _CFE_TEST = ".claude/skills/conda-forge-expert/tests/meta/test_example.py"
 
