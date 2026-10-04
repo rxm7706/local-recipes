@@ -46,7 +46,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from ..models import Finding, Source
-from ..refs import MAIN, ORIGIN_MAIN
+from ..refs import ORIGIN_MAIN
 from ..verdict import EXIT_SIGINT, exit_code_for
 from . import (
     bmad_config,
