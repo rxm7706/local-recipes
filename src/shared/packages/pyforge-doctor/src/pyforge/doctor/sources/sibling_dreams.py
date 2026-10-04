@@ -113,18 +113,10 @@ def _operator_token() -> str | None:
 
 def _parse_dream_fingerprint(text: str) -> dict[str, str] | None:
     """Return ``{title, status, owner, content_hash}`` or ``None`` if unusable."""
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    closing = next(
-        (i for i, line in enumerate(lines[1:], start=1) if line.strip() == "---"),
-        None,
-    )
-    if closing is None:
-        return None
-    try:
-        data = yaml.safe_load("\n".join(lines[1:closing]))
-    except yaml.YAMLError:
+    from pyforge.doctor.sources.chain import _dream_body_after_frontmatter, _frontmatter_parse_text
+
+    data, unparseable = _frontmatter_parse_text(text)
+    if unparseable:
         return None
     if not isinstance(data, dict):
         return None
@@ -143,14 +135,7 @@ def _parse_dream_fingerprint(text: str) -> dict[str, str] | None:
     # toward silence, either way).
     ack_raw = data.get("sibling-acknowledged")
     ack = str(ack_raw) if isinstance(ack_raw, (int, float)) and not isinstance(ack_raw, bool) else ack_raw
-    # Body = everything after the closing fence line (UTF-8). Empty body →
-    # sha256 of b"".
-    marker = "\n---\n"
-    fence_idx = text.find(marker, 3)
-    if fence_idx == -1:
-        body_bytes = b""
-    else:
-        body_bytes = text[fence_idx + len(marker) :].encode("utf-8")
+    body_bytes = _dream_body_after_frontmatter(text).encode("utf-8")
     return {
         "title": title.strip(),
         "status": status.strip() if isinstance(status, str) else "",

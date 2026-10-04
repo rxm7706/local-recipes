@@ -233,7 +233,16 @@ _HEADING_RE = re.compile(r"^## ", re.MULTILINE)
 #: different heading convention (e.g. ``## Scope (capabilities)``) falls back
 #: to zero declared ids, a real, KNOWN, deliberately-deferred gap (this
 #: story's own Review Triage Log, review pass 1).
-_CAP_SECTION_HEADING_RE = re.compile(r"^## Capabilities\s*$", re.MULTILINE)
+_CAP_SECTION_HEADING_RE = re.compile(
+    r"^## (?:Capabilities|Scope \(capabilities\))\b.*$",
+    re.MULTILINE | re.IGNORECASE,
+)
+
+#: Headings whose section bodies count for INV-A citation windows (Story 41.3).
+_DECOMP_SECTION_OPEN_RE = re.compile(
+    r"^(?:## Epic \d+|## (?:Capabilities|Scope \(capabilities\))\b|### Story \d+)",
+    re.MULTILINE | re.IGNORECASE,
+)
 
 #: One declared capability bullet: ``- **CAP-<N> — <title>.**``. Anchored at
 #: column 0 so an indented sub-bullet (``  - **intent:** ...``) never matches.
@@ -252,13 +261,14 @@ _CAP_MAX_RANGE_SPAN = 500
 
 
 def _parse_declared_cap_ids(spec_md_text: str) -> set[int]:
-    """The Spec's own declared ``CAP-N`` ids, scanned from its ``##
-    Capabilities`` section. Returns an empty set when the heading is absent,
-    present but empty, or present but carries no line matching the declared-
-    bullet shape -- all three degrade identically to "this Spec declares no
-    CAP ids", which is INV-A's own signal to fall back to the original
-    bare-substring check (a Spec with nothing to check coverage against).
-    Never raises: an unparseable line under the heading is silently skipped.
+    """The Spec's own declared ``CAP-N`` ids, scanned from its capabilities
+    section heading (``## Capabilities`` or ``## Scope (capabilities)``, case-
+    insensitive). Returns an empty set when the heading is absent, present but
+    empty, or present but carries no line matching the declared-bullet shape --
+    all three degrade identically to "this Spec declares no CAP ids", which is
+    INV-A's own signal to fall back to the original bare-substring check (a Spec
+    with nothing to check coverage against). Never raises: an unparseable line
+    under the heading is silently skipped.
     """
     m = _CAP_SECTION_HEADING_RE.search(spec_md_text)
     if not m:
@@ -380,6 +390,36 @@ def _cited_cap_ids_by_spec(prose: str, slugs: list[str]) -> dict[str, set[int]]:
     return out
 
 
+def _extract_decomposition_prose(text: str) -> str:
+    """Slice a source file to decomposition-relevant sections only (Story 41.3).
+
+    A file with no ``## `` heading contributes nothing (no false citation
+    window from preamble-shaped prose). Irrelevant sections such as
+    ``## Changelog`` are omitted even when they sort before epic headings.
+    """
+    if not _HEADING_RE.search(text):
+        return ""
+    opens = list(_DECOMP_SECTION_OPEN_RE.finditer(text))
+    if not opens:
+        return ""
+    chunks: list[str] = []
+    for index, match in enumerate(opens):
+        start = match.start()
+        end = opens[index + 1].start() if index + 1 < len(opens) else len(text)
+        chunks.append(text[start:end])
+    return "\n\n".join(chunks)
+
+
+def _mentions_spec_slug(prose: str, slug: str, bare: str) -> bool:
+    """True when ``slug`` or its bare form appears as a whole token in ``prose``."""
+    if not prose:
+        return False
+    for token in (slug, bare):
+        if token and re.search(rf"\b{re.escape(token)}\b", prose):
+            return True
+    return False
+
+
 def _frontmatter(path: Path) -> dict[str, str]:
     """The frontmatter block's top-level ``key: value`` pairs, as raw strings.
 
@@ -427,7 +467,7 @@ def _frontmatter_from_text(text: str) -> dict[str, str]:
     in_block = False
     lines = text.splitlines()
     for idx, line in enumerate(lines):
-        if line.strip() == "---":
+        if line.rstrip() == "---":
             if in_block:
                 break
             in_block = True
@@ -814,8 +854,7 @@ def _check_project_chain_completeness(
             text = doc.read_text(encoding="utf-8")
         except Exception:  # noqa: BLE001, S112 -- see raw_prose's own loop.
             continue
-        heading = _HEADING_RE.search(text)
-        stripped_parts.append(text[heading.start() :] if heading else text)
+        stripped_parts.append(_extract_decomposition_prose(text))
     prose = "\n\n".join(stripped_parts)
 
     spec_paths = sorted(pa.glob("specs/spec-*/SPEC.md"))
@@ -882,8 +921,7 @@ def _check_project_chain_completeness(
             owner_dream = str(fm.get("owner-dream", "")).strip()
             dream_stem = Path(owner_dream).stem if owner_dream else ""
             referenced = (
-                slug in raw_prose
-                or bare in raw_prose
+                _mentions_spec_slug(raw_prose, slug, bare)
                 # an epic may claim a Spec by its Dream path instead of its slug
                 # (Epic 51 <- platform-datastores-consumed-not-self-hosted), so
                 # matching only `spec-<slug>` reports a false positive.
@@ -918,7 +956,7 @@ def _check_project_chain_completeness(
             # against the FULL, unstripped `raw_prose` (Round 1's own
             # requirement -- see the block comment above).
             bare = slug.removeprefix("spec-")
-            if bare not in raw_prose and slug not in raw_prose:
+            if not _mentions_spec_slug(raw_prose, slug, bare):
                 findings.append(
                     {
                         "inv": "INV-A",
@@ -1480,18 +1518,23 @@ def _load_foreign_module(path: Path, mod_name: str):
     if spec is None or spec.loader is None:
         raise ImportError(f"cannot load a module spec for {path}")
     mod = importlib.util.module_from_spec(spec)
+    saved_modules = dict(sys.modules)
     sys.modules[mod_name] = mod
     saved_path = list(sys.path)
     try:
         spec.loader.exec_module(mod)
     except SystemExit as exc:
-        sys.modules.pop(mod_name, None)
+        sys.modules.clear()
+        sys.modules.update(saved_modules)
         raise RuntimeError(f"{path} called sys.exit({exc.code!r}) at import") from exc
     except BaseException:
-        sys.modules.pop(mod_name, None)
+        sys.modules.clear()
+        sys.modules.update(saved_modules)
         raise
     finally:
         sys.path[:] = saved_path
+    sys.modules.clear()
+    sys.modules.update(saved_modules)
     return mod
 
 

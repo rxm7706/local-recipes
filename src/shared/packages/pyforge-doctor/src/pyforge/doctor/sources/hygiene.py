@@ -226,39 +226,12 @@ def _check_readme_placeholder(project_dir: Path, station: str, findings: list[Fi
 
 
 def _dream_frontmatter_status(dream_path: Path) -> str | None:
-    """The ``status:`` value from a Dream's ``---``-fenced frontmatter, or
-    ``None`` when absent/unparseable.
+    """The ``status:`` value from a Dream's frontmatter (CAP-81 shared reader)."""
+    from pyforge.doctor.sources.chain import _frontmatter_parse_text
 
-    A small, LOCAL frontmatter reader (line-anchored ``---`` fences,
-    ``yaml.safe_load`` the block between them) -- by this package's own
-    convention, each ``sources/*.py`` module writes its own rather than
-    importing a sibling module's private helper (e.g.
-    ``board.py::_frontmatter``). The fence lines must be EXACTLY ``---``
-    (stripped) on their own line -- a blind ``text.split("---", 2)`` would
-    mis-split on a literal ``---`` substring inside an earlier field's own
-    value (e.g. a ``notes:`` line quoting em-dash-style prose), silently
-    truncating before the real closing fence and losing ``status`` with no
-    error. Reading the file is NOT guarded here -- an unreadable/undecodable
-    Dream propagates to ``gather``'s own per-station catch, same as every
-    other file this module reads -- but a MALFORMED yaml block degrades to
-    ``None`` (skip this candidate) rather than crashing the whole station,
-    since a Dream's frontmatter being unparseable is not evidence about that
-    station's real completion state.
-    """
-    lines = dream_path.read_text(encoding="utf-8").splitlines()
-    if not lines or lines[0].strip() != "---":
-        return None
-    closing = next(
-        (index for index, line in enumerate(lines[1:], start=1) if line.strip() == "---"),
-        None,
-    )
-    if closing is None:
-        return None
-    try:
-        data = yaml.safe_load("\n".join(lines[1:closing]))
-    except yaml.YAMLError:
-        return None
-    if not isinstance(data, dict):
+    text = dream_path.read_text(encoding="utf-8")
+    data, unparseable = _frontmatter_parse_text(text)
+    if unparseable:
         return None
     status = data.get("status")
     return status if isinstance(status, str) else None

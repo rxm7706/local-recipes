@@ -629,8 +629,13 @@ def _doc_pin(path: Path, text: str) -> Ver | None:
     if path.suffix == ".json":
         scope = text
     else:
-        parts = text.split("---", 2)
-        scope = parts[1] if len(parts) >= 3 and text.lstrip().startswith("---") else text[:1500]
+        from pyforge.doctor.sources.chain import _frontmatter_parse_text
+
+        fields, unparseable = _frontmatter_parse_text(text)
+        if unparseable or not fields:
+            scope = text[:1500]
+        else:
+            scope = yaml.safe_dump(fields, sort_keys=False)
     key_match = _PIN_KEY_RE.search(scope)
     if key_match is None:
         return None
