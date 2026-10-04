@@ -155,6 +155,16 @@ GitHub fetch failure leaves that package unchecked, and it draws its fetch
 timeout from the SAME shared per-package budget every other suite fetch
 already uses. ``bmad-method`` (the core) stays excluded from this loop --
 CAP-1/CAP-2 already own its own separate Finding.
+
+**Story 41.4: every degradation reported.** A floor is read from any pixi
+form -- a string, a compound range, an inline table's ``version``, a
+``pypi-dependencies`` table -- and CAP-1's evidence names the table it came
+from (``declared_floor_table``); an unreadable constraint beside a good one
+is its own ``bmad-method-floor-unparseable`` WARN instead of discarding the
+good floor. A built-in module whose ``manifest.yaml`` version disagrees with
+``installation.version`` is a ``bmad-method-manifest-divergence`` WARN; an
+installed suite package behind its own pin is a ``bmad-suite-floor-drift``
+WARN. ``gather(target, offline=True)`` runs only these no-network checks.
 """
 
 from __future__ import annotations

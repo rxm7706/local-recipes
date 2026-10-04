@@ -157,10 +157,10 @@ def _build_parser() -> tuple[
             "no NAME (see _gather_bmad_core); OPT-IN ONLY, NEVER part of "
             "the zero-flag default run -- this source's upstream half makes "
             "a real, un-mockable npm-registry HTTP call (up to 5.0s), which "
-            "would risk the default run's speed budget; registered "
-            "scope='repo' despite that live call -- unlike every other "
-            "'repo'-scoped category, --scope repo does not guarantee no "
-            "network I/O for this one"
+            "would risk the default run's speed budget; with --scope repo "
+            "it runs offline (no network I/O: the declared-floor, manifest "
+            "and suite-floor checks only), like every other 'repo'-scoped "
+            "category"
         ),
     )
     check.add_argument(
@@ -671,7 +671,7 @@ def _gather_durability(target: Path) -> tuple[Finding, ...]:
     return marshal_source.gather(target)
 
 
-def _gather_bmad_core(target: Path) -> tuple[Finding, ...]:
+def _gather_bmad_core(target: Path, *, offline: bool = False) -> tuple[Finding, ...]:
     """Findings for the "bmad-core" category (Story 10.3, Epic 10/CAP-3).
 
     WHOLE-CATEGORY ONLY -- mirrors ``_gather_durability``'s own shape and
@@ -689,8 +689,11 @@ def _gather_bmad_core(target: Path) -> tuple[Finding, ...]:
     ``sources.degrade_on_exception`` wrapper (never raises, never FAILs --
     see that module's own docstring), so there is no synthetic-degradation
     branch to mirror ``_gather_engines``' either.
+
+    ``offline`` is set under ``--scope repo``: a repo-scope run reads only
+    tracked files and never reaches the network (DW-FU-10-3-2).
     """
-    return bmad_method.gather(target)
+    return bmad_method.gather(target, offline=offline)
 
 
 def _gather_sibling_dreams(target: Path) -> tuple[Finding, ...]:
@@ -757,7 +760,7 @@ def _run_check(args: argparse.Namespace) -> int:
     if run_durability:
         findings += _gather_durability(target)
     if run_bmad_core:
-        findings += _gather_bmad_core(target)
+        findings += _gather_bmad_core(target, offline=args.scope == "repo")
     if run_sibling_dreams:
         findings += _gather_sibling_dreams(target)
 
