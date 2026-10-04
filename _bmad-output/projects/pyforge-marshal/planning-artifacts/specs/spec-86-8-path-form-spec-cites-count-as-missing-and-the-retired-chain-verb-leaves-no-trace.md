@@ -2,7 +2,8 @@
 title: "86.8: Path-form spec cites count as missing, and the retired chain verb leaves no trace"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
