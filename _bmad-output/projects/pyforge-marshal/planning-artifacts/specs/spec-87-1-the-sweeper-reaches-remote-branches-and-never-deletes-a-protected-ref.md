@@ -12,6 +12,8 @@ context:
   - tests/scripts/test_worktree_sweep.py
   - docs/how-to/manage-worktrees-with-bmad.md
   - docs/governance/guild-roster.json
+  - _bmad-output/projects/pyforge-marshal/planning-artifacts/research/preserved-work-refs-2026-10-04-review.md
+  - src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py
 deferred: []
 declared_low_risk: false
 ---
@@ -28,30 +30,35 @@ declared_low_risk: false
   - DELETE: the tip is an ancestor of `origin/main`; or the PR merged; or the PR closed and the story's ledger row is `done`.
   - INSPECT: everything else.
 - `--execute` writes a JSON manifest (branch, sha, verdict, reason) under `--preserve-dir` before it deletes anything, and deletes in batches.
-- `--retire <branch>...` deletes only the protected branches named on the command line, never a pattern, after writing the same manifest.
-- The protected prefixes are read from `docs/governance/guild-roster.json` `protected_ref_prefixes` when that key exists (steward Story 85.1 adds it), else from the script's own `PROTECTED_BRANCH_PREFIXES`.
+- `--retire <branch>...` retires only the protected branches named on the command line, never a pattern, after writing the same manifest, and only where the declared list allows deleting that ref on that scope.
+- *(Amended 2026-10-04, review M3:)* the protected list is the script's code floor (`refs/heads/main`, `refs/heads/loop/`, and every `refs/tags/` ref) unioned with the entries of `docs/governance/guild-roster.json` `protected_refs` (full-refname prefixes with a kind and a scope; steward Story 85.1 adds the key). The roster can only add: an entry it omits that the floor names stays protected.
+- *(Amended 2026-10-04, review M5; AD-47 and AD-81 as amended:)* a DELETE, or a `--retire`, that would make commits unreachable (the tip is not an ancestor of `refs/remotes/origin/main` and no other durable ref contains it) first writes an annotated `refs/tags/archive/heads/<branch>` twin through `pyforge.core.preserve_refs`. The twin is pushed through Story 87.15's content gate and verified with `git ls-remote` before the delete. If the gate refuses it, the branch is not deleted and the row says why. A squash-merged or closed-PR branch therefore gets a twin; an ancestor branch does not.
+- *(Amended 2026-10-04:)* the sweeper never touches `refs/tags/**` in any mode. A branch that the declared list or a server ruleset forbids deleting (today `loop/**` and `attempt-preserve/**`, ruleset 24451573, no bypass) is refused with a finding that names the ruleset and the operator act it needs. A GitHub refusal is a reported outcome, never a crash.
+- *(Amended 2026-10-04, review minor 15:)* the manifest stays an operational record under `--preserve-dir`; each row names the archive tag it wrote. The annotated tag is the durable record.
 
 Ledger key: `87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref`.
-Type / Effort / Deps: fix / M / —.
+Type / Effort / Deps: fix / M / S-87.3, S-87.15.
 
 ### Living CAP citations
 
-- The worktree/branch hygiene tool `scripts/worktree_sweep.py`, kept as the permanent home by the Phase 3 ruling on DW-HYGIENE-2026-09-05-1 (2026-10-03). A defect of shipped tooling, so no new CAP; `spec-feature-flag-governance` Q1: a `fix` needs no flag.
+- The worktree/branch hygiene tool `scripts/worktree_sweep.py`, kept as the permanent home by the Phase 3 ruling on DW-HYGIENE-2026-09-05-1 (2026-10-03). A defect of shipped tooling, so no new CAP; `spec-feature-flag-governance` Q1: a `fix` needs no flag. Since 2026-10-04 it also binds AD-47 and AD-81 as amended (`spec-pyforge-marshal` CAP-287): one orphan criterion, the archive twin and the union with the code floor.
 
 ## Acceptance Criteria
 
 - Given a real repository with a bare `origin` holding branches of every kind (merged, PR merged, PR closed with a done or a not-done story, open PR, protected prefixes, checked out in a worktree, no PR and unmerged) When `worktree_sweep.py --remote` runs Then each gets the verdict above with its reason, and nothing is deleted
 - Given the same repository When `--remote --execute` runs Then only DELETE branches leave `origin`, and the manifest names each with its sha before the first delete
-- Given `--retire attempt-preserve/x loop/y` When it runs Then the named branches are deleted after the manifest is written; a pattern or a name that does not exist is refused; without `--retire` no protected branch is ever deleted
+- Given `--retire attempt-preserve/x loop/y` against a bare `origin` whose declared list forbids deleting both When it runs Then each is refused with a finding naming the ruleset and the operator act, after the manifest is written; given a named protected branch the list allows deleting Then it is retired (with an archive twin if deleting it would orphan commits); a pattern or a name that does not exist is refused; without `--retire` no protected branch is ever deleted
+- Given a remote branch whose tip's unique content no tag holds When `--remote --execute` would DELETE it Then it first writes and pushes an annotated `refs/tags/archive/heads/<branch>` twin, verified by `ls-remote`, and the manifest names it; a branch whose tip is an ancestor of `origin/main` gets no twin; a twin the content gate refuses leaves the branch in place
+- Given any `refs/tags/**` ref on `origin` or locally When the sweep runs in any mode Then it is never a candidate
 - Given a loop home `~/.bmad-loops/<station>` whose `git status --porcelain` is empty but which holds gitignored files When the worktree sweep runs with `--execute` Then it stays KEEP with the reason "loop home"
-- Given `docs/governance/guild-roster.json` with `protected_ref_prefixes` When the sweep runs Then it uses that list; given no such key Then it uses `PROTECTED_BRANCH_PREFIXES`
+- Given `docs/governance/guild-roster.json` with `protected_refs` When the sweep runs Then the effective list is the code floor plus those entries; given a roster that omits `refs/heads/loop/`, or no such key, Then `loop/*`, `main` and every tag stay protected
 - Given each rule removed When the new tests run Then they fail (mutation); PR state comes from an injectable reader, never the network
 
 ## Boundaries & Constraints
 
-**Always:** Dry run by default; write the manifest before any delete; test with a real git repository and a bare remote.
+**Always:** Dry run by default; write the manifest before any delete; write the archive twin before a delete that would orphan commits; test with a real git repository and a bare remote.
 
-**Never:** Never delete a protected branch except by explicit `--retire` name. Never remove a loop home. Never call GitHub in tests.
+**Never:** Never delete a protected branch except by explicit `--retire` name, and never one the declared list forbids. Never touch a tag. Never remove a loop home. Never call GitHub in tests.
 
 </intent-contract>
 
@@ -98,16 +105,24 @@ Parent: DW-HYGIENE-2026-09-05-1 (closed 2026-10-03: `scripts/worktree_sweep.py` 
 Dream: `docs/dreams/pyforge-marshal.md` § *Realization log*, the 2026-10-04 (later) entry.
 Ledger key: `87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref`.
 Ledger status at mint: `backlog`.
-Deps: —.
-Minted 2026-10-04 at the operator's request ("retire the 30, keep the 3, and chain the sweeper fixes").
+Deps: S-87.3, S-87.15 (amended 2026-10-04: the archive twin needs the grammar and the content gate).
+Minted 2026-10-04 at the operator's request ("retire the 30, keep the 3, and chain the sweeper fixes"). Amended 2026-10-04 (later) by the preserved-work refs chain: `spec-pyforge-marshal` CAP-287, AD-81.
 
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_worktree_sweep.py -q` — expected: pass.
-- `pixi run --frozen -e pyforge-guild scripts-suite` — expected: pass.
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
+- `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
+
+**Manual checks (not a dispatch gate):**
+- `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_worktree_sweep.py -q` — expected: pass.
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — expected: pass (the CI `scripts-suite` job's local twin; `scripts-suite` is a CI job, not a pixi task).
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-aggregate-scripts-test` — expected: pass (the job's second step).
+
+## Spec Change Log
+
+- **2026-10-04 (later): amended before any dispatch, by the preserved-work refs chain (`spec-pyforge-marshal` CAP-287, AD-81; architecture review of the same day; operator ruling accepting its defaults).** Trigger: review findings M3, M5 and M9, and the drafts' required changes to 87.1. Amended: (1) the protected list is the code floor unioned with the roster's `protected_refs`, not a replacement read of `protected_ref_prefixes` (M3: under replacement, a roster edit dropping `loop/` would make `loop/*` sweepable, against AD-47); (2) a DELETE or `--retire` that would orphan commits writes an annotated `refs/tags/archive/heads/<branch>` twin first, through the grammar and the content gate (M5: "PR closed and story done" can delete never-landed content); (3) `refs/tags/**` is never touched; (4) a ruleset-protected branch is refused with a named finding, because the old AC ("the named branches are deleted") could not pass against ruleset 24451573, which has no bypass; (5) the manifest stays operational and names the twin (minor 15); (6) `## Verification` names only the station's `verify_commands` plus lint-types; the nonexistent `scripts-suite` task and the pytest run move to manual checks (M9; MRS-GATE-011). Deps: — → S-87.3, S-87.15. Known-bad state avoided: a `--retire` that GitHub refuses, or that deletes the only reachability of commits. KEEP: the KEEP / DELETE / INSPECT verdicts, the manifest-before-delete rule, the loop-home KEEP and the retirement table below.
 
 ## Review Triage Log
 

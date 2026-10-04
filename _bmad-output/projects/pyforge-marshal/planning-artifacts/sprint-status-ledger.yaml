@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 575
+# stories: 594
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -342,6 +342,7 @@ development_status:
   7-5-the-v1-extraction-manifest-the-model-as-data: done
   7-6-spike-0-copier-api-fit-critical-gate: done
   70-1-seed-check-judges-the-paths-the-manifest-means-never-its-placeholders: done
+  70-2-seed-check-honours-recorded-skips-and-every-verb-records-directory-entries: backlog
   71-1-the-front-door-names-the-environment-a-roster-station-runs-in: backlog
   72-1-the-dispatch-supervisor-reads-merge-facts-from-origin-main: done
   73-1-a-follow-up-review-run-is-judged-and-landed-by-its-own-branch: done
@@ -391,6 +392,8 @@ development_status:
   83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree: done
   83-20-landing-finalize-never-promotes-a-tier-3-spec-the-ledger-does-not-list: done
   83-21-landing-finalize-writes-the-epic-roll-ups-the-sync-writes: done
+  83-22-the-landing-s-ledger-guard-judges-the-twin-it-overwrites: backlog
+  83-23-dispatch-verification-runs-the-cross-station-meta-tests-that-read-the-story-s-station: backlog
   83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries: done
   83-4-a-serial-campaign-holds-the-next-overlapping-story-while-a-refused-story-is-unlanded: done
   83-5-a-campaign-supervisor-keeps-ticking-through-fleet-lock-contention: done
@@ -404,6 +407,7 @@ development_status:
   85-2-a-fix-turn-that-turns-verification-green-lands-and-survives-a-restart: done
   85-3-the-fix-turn-is-safe-to-switch-on-in-dev-and-staging: done
   85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: done
+  85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification: backlog
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done
@@ -413,6 +417,21 @@ development_status:
   86-7-the-session-close-docs-name-the-context-advisory-and-the-retired-id-guard-scans-the-planning-docs: backlog
   86-8-path-form-spec-cites-count-as-missing-and-the-retired-chain-verb-leaves-no-trace: done
   87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: backlog
+  87-10-merged-check-objects-never-enter-the-object-store: backlog
+  87-11-the-build-skills-and-recovery-recipes-preserve-before-they-revert-or-rebuild: backlog
+  87-12-legacy-refs-are-promoted-and-attempt-preserve-leaves-the-protected-list: backlog
+  87-13-nothing-in-a-loop-home-prunes-a-preserve-or-rewrites-a-station-branch: backlog
+  87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories: backlog
+  87-15-a-preserve-reaches-origin-only-through-the-content-gate: backlog
+  87-16-the-orphaned-tips-are-re-preserved-as-local-archive-tags: backlog
+  87-2-the-unpushed-work-detector-fails-closed-and-never-prints-a-tag-minting-remedy: backlog
+  87-3-preserved-work-has-one-grammar-and-one-verb: backlog
+  87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it: backlog
+  87-5-dispatch-and-drain-preserve-a-stopped-storys-work-as-a-tag-on-origin: backlog
+  87-6-land-retire-and-the-station-branch-never-fight-the-protected-list: backlog
+  87-7-teardown-refuses-to-remove-a-loop-home-that-holds-unpreserved-work: backlog
+  87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch: backlog
+  87-9-every-preserve-reader-sees-preserve-tags-and-origin: backlog
   9-1-findings-model-severity-types-remedies: done
   9-2-repo-inventory-walker-and-artifact-classification: done
   9-3-content-hashing-for-managed-files-and-regions: done
@@ -549,7 +568,7 @@ development_status:
   epic-69-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
-  epic-70: done
+  epic-70: in-progress
   epic-70-retrospective: optional
   epic-71: backlog
   epic-71-retrospective: optional
@@ -581,7 +600,7 @@ development_status:
   epic-83-retrospective: optional
   epic-84: done
   epic-84-retrospective: optional
-  epic-85: done
+  epic-85: in-progress
   epic-85-retrospective: optional
   epic-86: in-progress
   epic-86-retrospective: optional

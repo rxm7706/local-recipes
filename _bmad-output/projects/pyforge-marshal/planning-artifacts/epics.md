@@ -13,7 +13,7 @@ inputDocuments:
 project_name: pyforge-marshal
 epicCount: 72  # 2026-09-28 (night): Epic 74 appended (spec-feature-flag-governance CAP-3, CAP-4, CAP-6); 72 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 5): Epic 73 appended (spec-pyforge-marshal CAP-281); 71 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 4): Epic 72 appended (spec-pyforge-marshal CAP-280); 70 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont. 2): Epic 71 appended (spec-pyforge-core:CAP-11); 69 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening, cont.): Epic 70 appended (spec-pyforge-marshal CAP-279); 68 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (evening): Epic 69 appended (spec-pyforge-marshal CAP-278); 67 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier: 2026-09-28 (later): Epic 68 appended (spec-pyforge-marshal CAP-277); 66 epic keys in the ledger after this commit's sync (measured with fleet_scan.parse_sprint_status). Earlier 2026-09-28: Epics 66 and 67 appended (spec-pyforge-marshal CAP-275, CAP-276); 65 epic keys once epic-66/epic-67 reach the ledger (63 measured today with fleet_scan.parse_sprint_status -- the rows wait behind the live Story 64.1 dispatch, which owns the feed and the tracked ledger until it lands). Earlier: 2026-09-27 (late night, cont.): Epic 65 appended (spec-pyforge-marshal CAP-274); 63 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 62 before this mint). Earlier: 2026-09-27 (late night): Epic 64 appended (spec-pyforge-marshal CAP-273); 62 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 61 before this mint). Earlier: 2026-09-27 (night): Epic 63 appended (spec-pyforge-core:CAP-10). Earlier: 2026-09-27 (late, cont.): Epic 62 appended (spec-pyforge-marshal CAP-272). Earlier: 2026-09-27 (late): Epic 61 appended (spec-pyforge-marshal CAP-271). Earlier: 2026-09-27 (night): Epic 60 appended (spec-pyforge-marshal CAP-270). Earlier: 2026-09-27 (evening, cont.): Epic 59 appended (spec-pyforge-marshal CAP-269). Earlier: 2026-09-27 (evening): Epic 58 appended (spec-pyforge-marshal CAP-268). Earlier 2026-09-27 (later): Epic 57 appended (spec-pyforge-marshal CAP-267). Earlier 2026-09-27: Epic 56 appended (spec-pyforge-marshal CAP-266); 54 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 53 before this mint, Epic 55 had not been counted). Prior 2026-09-24: Epic 54 appended (spec-pyforge-marshal CAP-265); 52 epic keys in the ledger (measured). Prior 2026-09-18: Epic 50 appended; 48 epic keys in the ledger (48/49 reserved holes). Prior 2026-09-14 (later): Epic 42 decomposes spec-surface-overlap-tolerance, promoted draft->ready the same day once its single open question was answered against chain.py. Prior note: 2026-09-14: retroactive Epics 37-41 minted for five `shipped` Specs that had no epic at all (chain-completeness's new delivered-Spec arm). The 33 here was already stale by three — Epics 34/35/36 never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
 storyCount: 346  # 2026-09-28 (night): +3 for Epic 74 / Stories 74.1, 74.2, 74.3 (346 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 5): +2 for Epic 73 / Stories 73.1, 73.2 (343 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 4): +1 for Epic 72 / Story 72.1 (341 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont. 2): +1 for Epic 71 / Story 71.1 (340 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening, cont.): +1 for Epic 70 / Story 70.1 (339 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (evening): +1 for Epic 69 / Story 69.1 (338 story keys in the ledger after this commit's sync, measured). Earlier: 2026-09-28 (later): +1 for Epic 68 / Story 68.1 (337 story keys in the ledger after this commit's sync, measured). Earlier 2026-09-28: +3 for Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 (336 story keys once the three rows reach the ledger; 333 measured today). Earlier: 2026-09-27 (late night, cont.): +2 for Epic 65 / Stories 65.1, 65.2 (333 story keys in the ledger, measured; 331 before this mint). Earlier: 2026-09-27 (late night): +1 for Epic 64 / Story 64.1 (331 story keys in the ledger, measured; 330 before this mint). Earlier: 2026-09-27 (night): +1 for Epic 63 / Story 63.1. Earlier: 2026-09-27 (late, cont.): +1 for Epic 62 / Story 62.1. Earlier: 2026-09-27 (late): +1 for Epic 61 / Story 61.1. Earlier: 2026-09-27 (night): +1 for Epic 60 / Story 60.1. Earlier: 2026-09-27 (evening, cont.): +1 for Epic 59 / Story 59.1. Earlier: 2026-09-27 (evening): +1 for Epic 58 / Story 58.1. Earlier 2026-09-27 (later): +1 for Epic 57 / Story 57.1. Earlier 2026-09-27: +1 for Epic 56 / Story 56.1 (323 story keys in the ledger, measured; 322 before this mint). Prior 2026-09-24: +1 for Epic 54 / Story 54.1. Prior 2026-09-18: +5 for Epic 50 (ledger key count, measured with fleet_scan.parse_sprint_status). Prior 2026-09-14 (later): +2 for Epic 42. Prior note: 2026-09-14: 229 live + 21 stories across retroactive Epics 37-41. The 227 here was already stale — Epics 34-36's stories never bumped it. This numeral is a dated snapshot; the ledger key count is the enumeration.
-updated: "2026-10-04"   # RE-STAMPED 2026-10-04 (finalize roll-up): Story 83.21 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-04 (late night): Story 85.4 added to done Epic 85 (fix, no CAP); epic-85 reopens to in-progress (doctor Story 41.5 lets a new story reopen its epic). Prior: RE-STAMPED 2026-10-04 (night): Story 86.8 added to Epic 86 (fix, no CAP). Prior: RE-STAMPED 2026-10-04 (later): Epic 87 / Story 87.1 added (fix, no CAP). Prior: RE-STAMPED 2026-10-04: Story 83.20 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night, last): Stories 83.18-83.19 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (night, latest): Stories 83.16-83.17 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (85.1 split): Stories 85.2 and 85.3 added to Epic 85 (CAP-286, same flag). Prior: RE-STAMPED 2026-10-03 (night, later): Stories 83.13-83.15 added to Epic 83 and 84.2 to Epic 84 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (late night): Story 83.12 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (Phase 3): Epic 86 / Stories 86.1-86.7 minted from the operator's Phase 3 rulings (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night): Story 83.11 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (evening): Story 83.10 added to Epic 83 (fix, no CAP); Epic 85 / Story 85.1 minted (spec-pyforge-marshal CAP-286, FR-233). Prior: RE-STAMPED 2026-10-03 (later): Story 83.9 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03: Story 83.8 added to Epic 83 (fix, no CAP). Prior 2026-10-02 (night)   # RE-STAMPED 2026-10-02 (night): Epic 84 / Story 84.1 minted (spec-pyforge-marshal CAP-285, FR-232). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epics 81-83 minted since the last stamp; Epic 83 / Stories 83.1-83.6 (fix stories, no CAP) chain the defects found landing Phase 2. Prior 2026-09-30   # RE-STAMPED 2026-09-30: Epic 78 / Story 78.1 minted (spec-pyforge-marshal CAP-283, FR-230). Prior 2026-09-29 (night)   # RE-STAMPED 2026-09-29 (night): Epic 77 / Story 77.1 minted (spec-pyforge-marshal CAP-282, FR-229). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 76 / Story 76.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 75 / Story 75.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-28 (night): Epic 74 / Stories 74.1-74.3 minted (spec-feature-flag-governance CAP-4, CAP-3, CAP-6 -- the Guild's CAPs, no marshal CAP; no FR registered, PRD section 31.11); 74.2 minted blocked behind doctor Story 34.2. Earlier: AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
+updated: "2026-10-04"   # RE-STAMPED 2026-10-04 (chain follow-ups): Stories 83.22 and 83.23 added to Epic 83, Story 85.5 to done Epic 85 and Story 70.2 to done Epic 70 (fixes, no CAP); epic-85 and epic-70 reopen to in-progress (operator ruling 2026-10-04; doctor Story 41.5). Prior: RE-STAMPED 2026-10-04 (preserved-work refs): Epic 87 widened to CAP-287 (FR-234, AD-81); Stories 87.2-87.16 added (fixes 87.2, 87.6, 87.10, 87.13, 87.14; chores 87.12, 87.16, operator-gated; the rest features behind pyforge.marshal.preserve_refs, 87.9 detector-or-gate exempt); Story 87.1 amended (Deps S-87.3, S-87.15). Prior: RE-STAMPED 2026-10-04 (finalize roll-up): Story 83.21 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-04 (late night): Story 85.4 added to done Epic 85 (fix, no CAP); epic-85 reopens to in-progress (doctor Story 41.5 lets a new story reopen its epic). Prior: RE-STAMPED 2026-10-04 (night): Story 86.8 added to Epic 86 (fix, no CAP). Prior: RE-STAMPED 2026-10-04 (later): Epic 87 / Story 87.1 added (fix, no CAP). Prior: RE-STAMPED 2026-10-04: Story 83.20 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night, last): Stories 83.18-83.19 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (night, latest): Stories 83.16-83.17 added to Epic 83 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (85.1 split): Stories 85.2 and 85.3 added to Epic 85 (CAP-286, same flag). Prior: RE-STAMPED 2026-10-03 (night, later): Stories 83.13-83.15 added to Epic 83 and 84.2 to Epic 84 (fixes, no CAP). Prior: RE-STAMPED 2026-10-03 (late night): Story 83.12 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (Phase 3): Epic 86 / Stories 86.1-86.7 minted from the operator's Phase 3 rulings (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (night): Story 83.11 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03 (evening): Story 83.10 added to Epic 83 (fix, no CAP); Epic 85 / Story 85.1 minted (spec-pyforge-marshal CAP-286, FR-233). Prior: RE-STAMPED 2026-10-03 (later): Story 83.9 added to Epic 83 (fix, no CAP). Prior: RE-STAMPED 2026-10-03: Story 83.8 added to Epic 83 (fix, no CAP). Prior 2026-10-02 (night)   # RE-STAMPED 2026-10-02 (night): Epic 84 / Story 84.1 minted (spec-pyforge-marshal CAP-285, FR-232). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epics 81-83 minted since the last stamp; Epic 83 / Stories 83.1-83.6 (fix stories, no CAP) chain the defects found landing Phase 2. Prior 2026-09-30   # RE-STAMPED 2026-09-30: Epic 78 / Story 78.1 minted (spec-pyforge-marshal CAP-283, FR-230). Prior 2026-09-29 (night)   # RE-STAMPED 2026-09-29 (night): Epic 77 / Story 77.1 minted (spec-pyforge-marshal CAP-282, FR-229). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 76 / Story 76.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 75 / Story 75.1 minted (spec-one-chain-per-station CAP-11 relay; no marshal CAP or FR). Prior 2026-09-28 (night): Epic 74 / Stories 74.1-74.3 minted (spec-feature-flag-governance CAP-4, CAP-3, CAP-6 -- the Guild's CAPs, no marshal CAP; no FR registered, PRD section 31.11); 74.2 minted blocked behind doctor Story 34.2. Earlier: AMENDED (evening, cont. 6): operator rulings -- Story 70.1 (CAP-279: .bmad-loop/policy.toml required in loop homes only), Story 72.1 (CAP-280 widened: dispatch land's ALREADY_LANDED read moves to origin/main) and Story 73.2 (CAP-281: the per-campaign follow-up cap) amended; FR-225, FR-227, FR-228 amended in place (PRD section 31.10); keys, statuses, Deps, epicCount and storyCount unchanged. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade for FR-228 / CAP-281; Epic 73 / Stories 73.1, 73.2 minted. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade for FR-227 / CAP-280; Epic 72 / Story 72.1 minted. Earlier: AMENDED (evening, cont. 3): Epic 54 / Story 54.1 re-scoped with CAP-265 (FR-211 amended; operator ruling; key, epic and status kept). Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade for FR-226 / spec-pyforge-core:CAP-11; Epic 71 / Story 71.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-225 / CAP-279; Epic 70 / Story 70.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-224 / CAP-278; Epic 69 / Story 69.1 minted. Earlier: RE-STAMPED (later): chain-currency cascade for FR-223 / CAP-277; Epic 68 / Story 68.1 minted, and the ledger rows for Epics 66-68 synced. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-221 / CAP-275 and FR-222 / CAP-276; Epic 66 / Stories 66.1, 66.2 and Epic 67 / Story 67.1 minted. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade for FR-220 / CAP-274; Epic 65 / Stories 65.1, 65.2 minted. Earlier: RE-STAMPED (late night): chain-currency cascade for FR-219 / CAP-273; Epic 64 / Story 64.1 minted. Earlier: RE-STAMPED (night): Epic 63 / Story 63.1 minted (spec-pyforge-core:CAP-10). Earlier: RE-STAMPED (late, cont.): chain-currency cascade for FR-218 / CAP-272; Epic 62 / Story 62.1 minted. Earlier: RE-STAMPED (late): chain-currency cascade for FR-217 / CAP-271; Epic 61 / Story 61.1 minted. Earlier: RE-STAMPED (night): chain-currency cascade for FR-216 / CAP-270; Epic 60 / Story 60.1 minted. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade for FR-215 / CAP-269; Epic 59 / Story 59.1 minted. Earlier: RE-STAMPED (evening): chain-currency cascade for FR-214 / CAP-268; Epic 58 / Story 58.1 minted. Earlier (later): FR-213 / CAP-267; Epic 57 / Story 57.1 minted. Earlier 2026-09-27: FR-212 / CAP-266; Epic 56 / Story 56.1 minted. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency cascade (arch -> epics) after the 2026-09-26 spine re-stamp; no story minted (a verified dependency-range widening, DW-marshal-bmad-loop-0-12-cap-2026-09-26 closed). Prior 2026-09-24
 status: complete
@@ -7518,6 +7518,21 @@ primary checkout no `{{` path, no `.claude/skills/**` finding and no `.bmad-loop
 **Amended 2026-09-28 (operator ruling):** the loop-home scope for `.bmad-loop/policy.toml` joins the story (key, status and
 Deps kept); the prior text left that finding to Story 12.2's K-02 and the packaged manifest untouched.
 
+### Story 70.2: Seed check honours recorded skips, and every verb records directory entries
+
+As an operator whose recorded seed skips and directory entries the seed verbs still trip over,
+I want `seed check` to honour a recorded skip, and `adopt`, `init` and `update` to create and record a directory entry,
+So that check never reports an artifact the operator chose to skip, and `seed init` against the full packaged manifest writes its state.
+
+**Type:** fix • **Effort:** M • **Deps:** S-70.1 • **FR/AD:** spec-pyforge-marshal CAP-279 (FR-225) • Stories 70.1, 86.1, 10.3 •
+**Closes:** `DW-marshal-86-1`; Story 70.1's build findings and review lows L2 and L4 (its Review Triage Log, #1831)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/check.py`, `seed/verbs/adopt.py`, `seed/verbs/update.py`, `seed/verbs/init.py`, `seed/verbs/skips.py` (the matcher, if it moves), `seed/fs.py`, `seed/apply/run.py`, `seed/detect/findings.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/seed.py`, `src/shared/packages/pyforge-marshal/docs/finding-remedy-reference.md`; their unit tests (including `tests/unit/test_seed_verbs_update.py::_shipped_entries_for_slug`); the station deferred-work ledger
+**Spec:** `planning-artifacts/specs/spec-70-2-seed-check-honours-recorded-skips-and-every-verb-records-directory-entries.md`
+**Given** a state that records a skip for an absent entry, and a plan with an absent directory entry
+**When** `seed check` runs, and `seed adopt`, `init` or `update` applies
+**Then** check reports no `artifact-missing` for the skipped entry (INFO instead, through the one matcher `adopt` uses), and each verb creates the directory through `seed/fs.py`'s guarded primitive and records it without reading it as a file
+**And** a rolled-back apply removes a directory it created; a bad slug from `BMAD_ACTIVE_PROJECT` or the marker reads as INFO `slug-unresolved` while an explicit `--project` still exits 2; `_target_in_loop_home` is pinned for a symlinked target and a `loopback-fix` branch; `_shipped_entries_for_slug` renders through `render_slug_paths`; `DW-marshal-86-1` is closed with a cited `verified:` line; removing each rule fails its new test (mutation)
+
 ## Epic 71: The front door names the environment a roster station runs in (spec-pyforge-core CAP-11)
 
 Minted 2026-09-28 (evening) from the marshal Dream's entry of the same name (`spec-pyforge-core` is hosted here, as Epics 14, 52
@@ -8820,6 +8835,35 @@ So that a stale feed epic row never overwrites the true epic status.
 **Then** every epic row equals `apply_epic_rollups` of the published statuses
 **And** a done epic with a stale feed row stays `done` (`ledger-regression` ok); an unloadable promotion module writes no epic row it did not compute; removing the roll-up fails its test (mutation)
 
+### Story 83.22: The landing's ledger guard judges the twin it overwrites
+
+As the operator whose 2026-10-03 landings dropped done epics past the feed-sync guard,
+I want the guard to judge the ledger text the landing publishes over, read with the sync's own parser,
+So that a stale primary checkout can never let a feed drop or un-finish a key on `main`.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Stories 28.24, 48.1, 79.1, 83.21 •
+**Closes:** Story 83.21's landing review (#1828): MEDIUM (guard source); LOW (land's parser, the unscoped rewrite, `deploy reconcile-completions` without the roll-up, the missing-module WARN)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py`; their unit tests
+**Spec:** `planning-artifacts/specs/spec-83-22-the-landing-s-ledger-guard-judges-the-twin-it-overwrites.md`
+**Given** a primary checkout whose local ledger lags `origin/main`'s, and a feed that drops or un-finishes a key only `origin/main` holds
+**When** the landing finalize promotes the ledger
+**Then** the guard judges `origin/main`'s text and refuses, and a real-git test pins that the guard reads the text it publishes over
+**And** the roll-up reads with the sync's parser past a column-0 comment; `render_ledger_status_rewrites` rewrites only inside `development_status:`; `marshal deploy reconcile-completions` rolls up the epics of the stories it advances; the missing roll-up WARN fires whenever the module is unavailable; removing each fix fails its test (mutation)
+
+### Story 83.23: Dispatch verification runs the cross-station meta-tests that read the story's station
+
+As the operator whose main went red on steward's meta-test after an atlas landing,
+I want a story that touches any station's `src/` to run every meta-test outside pyforge-core that reads every station's `src/`,
+So that a station story cannot break another station's contract and still land.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** Stories 53.1, 83.2, 83.12; steward CAP-152 •
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py`; its unit tests
+**Spec:** `planning-artifacts/specs/spec-83-23-dispatch-verification-runs-the-cross-station-meta-tests-that-read-the-story-s-station.md`
+**Given** a story whose diff adds a `pixi run -e local-recipes` shell-out under a station's `src/` (atlas 27.3's `scan_submit.py`, hotfix #1840)
+**When** its dispatch verifies
+**Then** steward's `tests/meta/test_no_station_assumes_local_recipes.py` runs in `pyforge-steward` and verification refuses; doctor's `test_coverage_gate_stays_outside_every_station.py` and `test_flag_gate_stays_outside_every_station.py` run in `pyforge-doctor` the same way
+**And** the commands are derived beside the coverage gates, never written into a station's `verify_commands`, and run once; a story that touches no `pyforge-*/src/` path derives none; the 28.22 reclassifier never downgrades them; a missing test path fails a marshal test; removing the derivation fails its new test (mutation)
+
 ## Epic 84: Every harness's model list refreshes from its own live source (spec-pyforge-marshal CAP-285)
 
 Minted 2026-10-02 from the station Dream's entry of the same date (night, later), at the operator's request to refresh
@@ -8949,6 +8993,21 @@ So that a hostile or unlucky command output can never stall a dispatch run.
 **Then** each scrub returns in under 1 s and the location is kept, while every shape the 85.3 tests pin is still redacted, along with `--password x`, `ghp_` / `github_pat_` tokens, `Authorization: token`, an empty-user URL and `Cookie:`
 **And** the journal heartbeat writes at most once per tick; mutants X02, X11 and X12 each fail a test; the SIGTERM test waits on a ready line; restoring the old quoted-value branch fails the timing test (mutation)
 
+### Story 85.5: The verify fix turn's edits get the spec-surface reconcile before re-verification
+
+As the operator who hand-landed atlas 27.3 and marshal 86.8 after their fix turns refused on spec-surface drift,
+I want the supervisor to reconcile the fix turn's own changed paths, the way `dispatch land` does, before it re-verifies,
+So that a fix turn that adds or edits a governed file is judged on what it fixed, not on a memlog line it could not write.
+
+**Type:** fix • **Effort:** S • **Deps:** S-85.4 • **FR/AD:** spec-pyforge-marshal CAP-286 (FR-233), CAP-261b (Story 53.2) •
+**Flag:** none; `pyforge.marshal.verify_fix_loop` is unchanged
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` (the shared reconcile); marshal tests
+**Spec:** `planning-artifacts/specs/spec-85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification.md`
+**Given** a fix turn that adds a governed test file after the session reconciled its own paths (atlas 27.3's shape)
+**When** the supervisor commits the turn's edits
+**Then** it runs `dispatch land`'s own memlog reconcile over the paths the turn changed, commits it to the story branch, and re-verification passes the surface guard
+**And** drift that names a path the turn did not change is never absorbed, so re-verification refuses and the story parks with MRS-DISP-060; a reconcile that cannot be applied parks without re-verifying; one reconcile implementation serves both call sites; removing the step fails its new test (mutation)
+
 ## Epic 86: Phase 3 of the deferral burn-down: marshal's ruled fixes
 
 
@@ -9006,11 +9065,23 @@ Minted 2026-10-03 from the operator's Phase 3 rulings on the deferral burn-down 
 **Then** it counts and names that cite missing, while bare `spec-template` prose stays uncounted
 **And** the 26 stale atlas links and the steward cite are repaired; no unused mypy section; `docs_station_cli.py --check` exits 0; DW-FU-21-2's resolution is amended; removing the path rule fails its test (mutation)
 
-## Epic 87: Branch and worktree cleanup never destroys protected state
+## Epic 87: Preserved work is a protected tag, and no cleanup destroys it (spec-pyforge-marshal CAP-287)
 
-Minted 2026-10-04 from the station Dream's entry of the same date (later). A hand-rolled cleanup deleted the loop homes,
+Minted 2026-10-04 from the station Dream's entry of the same date (later): a hand-rolled cleanup deleted the loop homes,
 the `loop/*` branches and 41 `attempt-preserve/*` branches that `scripts/worktree_sweep.py` would have kept, because the
-sweeper does not reach remote branches. A fix story, no CAP, no flag; its steward twin is steward Story 85.1.
+sweeper does not reach remote branches (Story 87.1, a fix). Widened the same day by the Dream's preserved-work-refs entry,
+the research `research/preserved-work-refs-2026-10-04.md`, its independent review
+(`research/preserved-work-refs-2026-10-04-review.md`) and the operator's ruling accepting every default the review
+recommended: CAP-287 / FR-234 / AD-81. Steward's twin is steward Epic 85 (spec-pyforge-steward:CAP-165).
+**HARD boundaries:** one grammar module (`pyforge.core.preserve_refs`); a local preserve tag suffices to remove a working
+copy and an unpushed one is debt, never a refusal; nothing reaches `origin` past the content gate; no marshal deleter
+touches `refs/tags/**`; nothing is deleted without an operator ruling; every outward GitHub settings change is an
+operator-gated step, never a dispatched session's. Feature stories sit behind `pyforge.marshal.preserve_refs` (OFF in
+every environment until the operator turns it on); 87.2, 87.6, 87.10, 87.13 and 87.14 are unflagged fixes.
+**Numbering:** 87.2–87.12 keep the research drafts' numbers; 87.13–87.16 are the review's splits (87.13: `preserve_keep
+= 0` and the fleet poll's rebase; 87.14: the sweeper's stale-lock and orphan-directory fix; 87.15: the content gate and
+the push; 87.16: the drafts' 87.12a). The Deps fields order the drain: the unflagged fixes and 87.3 are ready
+first.
 
 ### Story 87.1: The sweeper reaches remote branches and never deletes a protected ref
 
@@ -9018,12 +9089,235 @@ As the operator whose cleanup deleted protected refs because the sweeper stops a
 I want `worktree_sweep.py --remote` and an explicit-name `--retire`, with a manifest written before any delete,
 So that no branch cleanup is ever hand-rolled again.
 
-**Type:** fix • **Effort:** M • **Deps:** — • **FR/AD:** DW-HYGIENE-2026-09-05-1 (closed 2026-10-03) •
+**Type:** fix • **Effort:** M • **Deps:** S-87.3, S-87.15 • **FR/AD:** DW-HYGIENE-2026-09-05-1 (closed 2026-10-03); AD-47 and AD-81 as amended 2026-10-04 •
 **Surface:** `scripts/worktree_sweep.py`, `tests/scripts/test_worktree_sweep.py`, `docs/how-to/manage-worktrees-with-bmad.md`
+**Amended 2026-10-04 (architecture review M3, M5, M9; the drafts' required changes):** the protected list is the roster's
+`protected_refs` unioned with the script's code floor; a deletion that would orphan commits first writes an annotated
+`refs/tags/archive/heads/<branch>` twin through `pyforge.core.preserve_refs` and the content gate; `refs/tags/**` is
+never touched; a branch the declared list or a server ruleset forbids deleting is refused with a finding naming the
+operator act. Its spec's Spec Change Log carries the detail.
 **Given** a real repository with a bare origin holding every kind of branch
 **When** `worktree_sweep.py --remote` runs, then `--execute`
-**Then** each branch gets KEEP / DELETE / INSPECT with its reason, and only DELETE branches leave origin, after a manifest names them with their shas
-**And** protected branches go only by explicit `--retire` name; a porcelain-clean loop home stays KEEP; the prefixes come from the roster when it names them; removing a rule fails its new tests (mutation)
+**Then** each branch gets KEEP / DELETE / INSPECT with its reason, and only DELETE branches leave origin, after a manifest names them with their shas and any archive twin
+**And** protected branches go only by explicit `--retire` name and only where the list allows; a porcelain-clean loop home stays KEEP; removing a rule fails its new tests (mutation)
+
+### Story 87.2: The unpushed-work detector fails closed and never prints a tag-minting remedy
+
+As the operator whose detector turned a failed `git fsck` into "0 dangling commits" and whose printed remedy minted 682 public tags,
+I want the unpushed-work detector to fail closed, see tags and custom refs, ignore marshal's synthetic commits and print no minting remedy,
+So that "is any work only on this disk?" gets a true answer and no session mints an unreviewed tag.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** FR-62, FR-234; AD-48 (as amended), AD-81 • **Flag:** none (operator ruling 2026-10-04: the urgent hotfix ships unflagged)
+**Surface:** `scripts/unpushed_work_check.py`, `tests/scripts/test_unpushed_work_check_full_ref.py`, `tests/scripts/test_unpushed_work_check.py` (new)
+**Spec:** `planning-artifacts/specs/spec-87-2-the-unpushed-work-detector-fails-closed-and-never-prints-a-tag-minting-remedy.md`
+**Given** a repository where a git call the detector depends on exits non-zero
+**When** the detector runs
+**Then** it exits 2 (could-not-observe) naming the failing command, never reporting 0 dangling commits
+**And** a local-only tag or `refs/<custom>/*` ref holding a commit on no `origin` ref is an `unpushed-ref` finding; a commit whose subject ends "(not a real commit)" is never a finding; no remedy contains `git tag` or `git push`; removing each rule fails a test (mutation)
+
+### Story 87.3: Preserved work has one grammar and one verb
+
+As the operator whose saved work had nine names and no parser,
+I want one stdlib-only module in `pyforge.core` that names, parses, snapshots and tags preserved work, and a `marshal preserve tag|list` verb over it,
+So that every producer and reader speaks one grammar and a preserve is one command.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-287 (FR-234); AD-81, AD-73, AD-4 •
+**Flag:** `pyforge.marshal.preserve_refs` (OFF: the verb is listed disabled and refuses; the module has no caller)
+**Surface:** `src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py` (new) and pyforge-core tests; `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/preserve.py` (new), `cli/main.py`, the marshal MCP face (CLI⇄tool parity); `src/platform/config/flags.json`, `flag-overlays.json`; marshal tests
+**Spec:** `planning-artifacts/specs/spec-87-3-preserved-work-has-one-grammar-and-one-verb.md`
+**Given** every producer and both name shapes
+**When** a name is rendered, then parsed
+**Then** it round-trips, no name carries a date, any other name under `refs/tags/preserve/` is rejected, and a meta-test reds a module outside `preserve_refs` that parses a `refs/tags/preserve/` name
+**And** `marshal preserve tag` on a dirty worktree writes one local annotated tag whose tree includes untracked files, with all seven trailers and no branch moved; the same object or story tree again is a no-op; `marshal preserve list --json` filters by station, story, producer and derived state; the flag off lists the verb disabled and refuses with the usage code; `test_cli_tool_parity` stays green
+
+### Story 87.4: Spin parks every attempt as a preserve tag before bmad-loop can prune it
+
+As the operator whose spin attempts were parked under a prefix bmad-loop prunes, and only on one disk,
+I want the supervisor to promote every engine preserve and every intent-gap park into a `preserve/` tag,
+So that no attempt depends on a scratch name surviving the next run start.
+
+**Type:** feature • **Effort:** M • **Deps:** S-87.3, S-87.13, S-87.15 • **FR/AD:** spec-pyforge-marshal CAP-287 (FR-234), FR-189; AD-81, AD-74, AD-21, AD-9 •
+**Flag:** `pyforge.marshal.preserve_refs` (OFF: today's intent-gap `attempt-preserve/*` park; no promotion)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/supervisor/__main__.py` (stage-boundary loop, intent gap), `supervisor/intent_gap_preserve.py`, `supervisor/durability.py`, `core/status.py`; marshal tests
+**Spec:** `planning-artifacts/specs/spec-87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it.md`
+**Given** a bmad-loop journal event that names preserved work (`attempt-commits-preserved`, `attempt-worktree-preserved`, `worktree-kept`, `story-deferred`), or an unpromoted ref a reconcile scan finds
+**When** the supervisor reaches the next stage boundary
+**Then** a `preserve/<slug>/<N.M>/bmad-loop-<sha8>` tag exists, its target resolved by `git rev-parse` of the engine ref, and is pushed through the content gate with a `stage-push` journal entry
+**And** an intent gap writes `preserve/…/intent-gap-<sha8>` with no `attempt-preserve/*` ref; offline or gate-refused, the escalation names the local tag and status shows debt; a re-run of the same event adds no second tag
+
+### Story 87.5: Dispatch and drain preserve a stopped story's work as a tag on origin
+
+As the operator whose stopped or blocked dispatch runs kept nothing beyond the branch, and whose failed runs kept a patch on one disk,
+I want every dispatch run that ends failed, stopped or blocked with progress to leave a `preserve/` tag, on every harness,
+So that a story's attempt survives its worktree, whichever harness ran it.
+
+**Type:** feature • **Effort:** M • **Deps:** S-87.3, S-87.15 • **FR/AD:** spec-pyforge-marshal CAP-287 (FR-234), FR-193; AD-81, AD-75 •
+**Flag:** `pyforge.marshal.preserve_refs` (OFF: today's patch-only preserve on FAILED)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py`, `core/dispatch_preserve.py`, `adapters/vcs_git.py`, `cli/dispatch.py`, `core/dispatch_fleet.py`, `core/status.py`; marshal tests
+**Spec:** `planning-artifacts/specs/spec-87-5-dispatch-and-drain-preserve-a-stopped-storys-work-as-a-tag-on-origin.md`
+**Given** a dispatch run whose terminal verdict is `failed`, `stopped_externally` or `blocked` with commits or uncommitted changes (untracked included) above baseline
+**When** the supervisor concludes
+**Then** a `preserve/<slug>/<N.M>/dispatch-<sha8>` tag exists and the supervisor pushes it through the content gate; the `dispatch-preserve` payload names it and the patch is still written
+**And** every profile in `harness_preference` yields the same tag through the harness fake; a re-run of the same verdict adds none; a campaign cycle that holds, blocks or stops a story names its tag or a finding; `marshal status` shows it
+
+### Story 87.6: Land, retire and the station branch never fight the protected list
+
+As the operator whose landing default deletes the `loop/*` head the ruleset now protects,
+I want landing to leave `loop/*` alone, record retirement from a remote fact, and retire to exclude every tag and protected ref structurally,
+So that no marshal path deletes what the protected list keeps or records a deletion that never happened.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** FR-59, FR-63; AD-40, AD-47 (as amended) • **Flag:** none (operator ruling 2026-10-04)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py`, `adapters/forge_gh.py`, `core/retire.py`, `cli/retire.py`, `core/policy.py`; marshal tests
+**Spec:** `planning-artifacts/specs/spec-87-6-land-retire-and-the-station-branch-never-fight-the-protected-list.md`
+**Given** `landing_branch_retirement = true` and a `loop/<slug>` head
+**When** `marshal land` merges
+**Then** `gh pr merge` runs without `--delete-branch`, a WARN names AD-47, and `branch_retired` comes only from a post-merge `ls-remote` fact
+**And** `marshal retire` excludes `refs/tags/**` and every protected ref (code floor ∪ policy additions) before evidence-gathering, and refuses a candidate whose deletion would orphan commits, naming the archive-twin route; removing each rule fails a test (mutation)
+
+### Story 87.7: Teardown refuses to remove a loop home that holds unpreserved work
+
+As the operator whose teardown removed a home's failed patches, kept-failed branches and scratch refs without asking,
+I want teardown to refuse while the home holds work no preserve tag holds, and to proceed on a local tag,
+So that removing a home never discards an attempt, offline included.
+
+**Type:** feature • **Effort:** M • **Deps:** S-87.3, S-87.4 • **FR/AD:** spec-pyforge-marshal CAP-287 (FR-234), FR-8; AD-29 (as amended), AD-81 •
+**Flag:** `pyforge.marshal.preserve_refs` (OFF: today's teardown predicate)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/init.py` (`run_teardown`), `core/findings.py`; marshal tests
+**Spec:** `planning-artifacts/specs/spec-87-7-teardown-refuses-to-remove-a-loop-home-that-holds-unpreserved-work.md`
+**Given** a home holding a failed patch, a kept-failed unit branch, an unpromoted scratch ref or a `loop/<slug>` whose unique content no durable ref reaches
+**When** `marshal teardown` runs
+**Then** it refuses with `MRS-TEARDOWN-*` findings naming each item, and `--force --abandon` must name every one
+**And** with every item held by a `preserve/` tag (local suffices) teardown proceeds and reports an unpushed tag as debt, never a refusal
+
+### Story 87.8: The sweeper preserves to tags and retires promoted engine scratch
+
+As the operator whose sweeper parks work as patch files on one host,
+I want PRESERVE-THEN-DELETE to write a `sweep` preserve tag and the sweeper to retire local engine scratch once it is preserved,
+So that a swept worktree's work lives in git and scratch refs stop accumulating.
+
+**Type:** feature • **Effort:** M • **Deps:** S-87.1, S-87.3, S-87.15 • **FR/AD:** spec-pyforge-marshal CAP-287 (FR-234); AD-81, AD-47 (as amended) •
+**Flag:** `pyforge.marshal.preserve_refs` (OFF: today's `format-patch` directories)
+**Surface:** `scripts/worktree_sweep.py`, `tests/scripts/test_worktree_sweep.py`, `docs/how-to/manage-worktrees-with-bmad.md`
+**Spec:** `planning-artifacts/specs/spec-87-8-the-sweeper-preserves-to-tags-and-retires-promoted-engine-scratch.md`
+**Given** a PRESERVE-THEN-DELETE verdict
+**When** `--execute` runs
+**Then** a `preserve/…/sweep-<sha8>` tag exists before `git worktree remove` (local suffices; the push goes through the content gate or is reported as debt), and nothing is written under `~/.local/state/pyforge-marshal/worktree-preserve`
+**And** a local `refs/heads/attempt-preserve/*` or `refs/attempt-preserve-dirty/*` ref is retired only once its `preserve/` tag exists; a local branch whose deletion would orphan commits gets an archive twin first; `refs/tags/**` is never touched
+
+### Story 87.9: Every preserve reader sees preserve tags and origin
+
+As the operator whose detectors read three `origin`-only preserves as missing and whose status discarded unmatched unpushed refs,
+I want every preserve reader to count a preserve tag or an `origin`-only ref as present, and status to report preserve debt,
+So that a preserve is found wherever it lives and a debt is never reported clean.
+
+**Type:** feature • **Effort:** S • **Deps:** S-87.3 • **FR/AD:** FR-62, FR-176, FR-189, FR-234; AD-48 (as amended) •
+**Flag:** exempt, `detector-or-gate` (the readers and status's durability dimension project the unpushed-work detector, AD-48; a gated reader reports a silent clean)
+**Surface:** `scripts/missing_preserve_check.py`, `scripts/bmad_loop_baseline_drift_check.py`, `scripts/fleet_picture.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py`, `core/status.py`, `core/findings.py`; tests
+**Spec:** `planning-artifacts/specs/spec-87-9-every-preserve-reader-sees-preserve-tags-and-origin.md`
+**Given** an intent-gap halt whose `preserve_ref` names a `preserve/` tag, or an `attempt-preserve/*` branch that exists only on `origin` (read by `ls-remote`)
+**When** `missing-preserve-check` runs
+**Then** there is no finding, and a ref that exists nowhere is still a finding
+**And** baseline drift and `fleet_picture` name a `preserve/…/bmad-loop-…` tag as the recovery source; `marshal status` reports an unmatched unpushed ref fleet-wide and a row's preserve debt under registered codes, never clean
+
+### Story 87.10: Merged-check objects never enter the object store
+
+As the operator whose object store gained 19,412 synthetic "not a real commit" objects in five days,
+I want the merged check and the merge-tree preview to leave the object store unchanged,
+So that `fsck` stays fast and no detector mistakes marshal's scratch for lost work.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** AD-47, AD-81 • **Flag:** none (operator ruling 2026-10-04)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` (merged check, merge-tree preview); marshal tests
+**Spec:** `planning-artifacts/specs/spec-87-10-merged-check-objects-never-enter-the-object-store.md`
+**Given** `is_branch_merged` on an unmerged, squash-equivalent branch, and the merge-tree preview
+**When** each runs
+**Then** its verdict is unchanged and `git count-objects -v` (loose and packed) is identical before and after
+**And** reverting the change fails the object-count test (mutation)
+
+### Story 87.11: The build skills and recovery recipes preserve before they revert or rebuild
+
+As the operator whose `bmad-build` sessions revert an intent gap with nothing kept, and whose hand rebuilds never keep their source,
+I want the build skills and the recovery recipes to write a preserve tag before any revert or rebuild,
+So that a discarded attempt is a reviewed choice, not an accident.
+
+**Type:** feature • **Effort:** S • **Deps:** S-87.3 • **FR/AD:** spec-pyforge-marshal CAP-287 (FR-234); AD-81 •
+**Flag:** `pyforge.marshal.preserve_refs` (OFF: the fact's command reports the verb disabled and the skill proceeds as today)
+**Surface:** `_bmad/custom/bmad-build-auto.toml`, `_bmad/custom/bmad-build.toml` (new; installed step files are never edited), `src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py` (convention text), `scripts/bmad_loop_baseline_drift_check.py` (remedy text), `docs/how-to/pixi-tasks.md`, `docs/how-to/troubleshoot-bmad-agent-loops.md`; a team-memory correction through `scribe capture`
+**Spec:** `planning-artifacts/specs/spec-87-11-the-build-skills-and-recovery-recipes-preserve-before-they-revert-or-rebuild.md`
+**Given** the rendered `bmad-build-auto` and `bmad-build` skills
+**When** `render_skill.py` resolves their customization
+**Then** the persistent facts say: before any `intent_gap` or `bad_spec` revert, run `marshal preserve tag --producer build`, cite the tag in the triage log, and leave the push to the supervisor or the operator
+**And** the recovery recipe's first step preserves the source (`--producer hand`); the troubleshooting doc matches the resolve skill's `--restore-patch` refusal; `governance-currency` and the instruction-parity meta-test stay green
+
+### Story 87.12: Legacy refs are promoted and attempt-preserve leaves the protected list
+
+As the operator holding 17 snapshot refs, 3 local tags and 3 kept `attempt-preserve/*` branches outside any durable namespace,
+I want each promoted to a `preserve/` or `archive/` twin from a reviewed, tracked manifest, and the `attempt-preserve/**` protection retired after,
+So that legacy work is durable and the protected list holds only what the standard names.
+
+**Type:** chore • **Effort:** M • **Deps:** S-87.3, S-87.15 • **FR/AD:** spec-pyforge-marshal CAP-287 (FR-234); AD-81 • **Operator-gated:** every push, ruleset and roster change
+**Surface:** a one-off, dry-run-default script under `scripts/` and its test; a tracked manifest under `_bmad-output/projects/pyforge-marshal/planning-artifacts/preserve-manifests/`
+**Spec:** `planning-artifacts/specs/spec-87-12-legacy-refs-are-promoted-and-attempt-preserve-leaves-the-protected-list.md`
+**Given** the 3 `origin` `attempt-preserve/*` branches, the 17 `refs/attempt-preserve-dirty/*`, the 3 local-only tags, `refs/backup/*`, `refs/bundle/*`, the `backup/*` branches and the `archive/crewai-…` branch
+**When** the script runs dry
+**Then** the tracked manifest names each with the twin it would write and the 682 `rescue/dangling-*` tags with their classification, and nothing changes
+**And** `--execute` writes local twins; a row is pushed only through the content gate after the operator marks it reviewed; dropping `refs/heads/attempt-preserve/**` from ruleset 24451573 and from the roster each waits for the twins on `origin` and the operator's explicit confirmation; nothing is deleted
+
+### Story 87.13: Nothing in a loop home prunes a preserve or rewrites a station branch
+
+As the operator whose engine prunes `attempt-preserve/*` beyond 20 at every run start, and whose hourly poll rebases every loop branch,
+I want marshal to render `preserve_keep = 0` and the fleet poll to fast-forward only,
+So that no scratch preserve is pruned before promotion and no station branch is rewritten.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** AD-46, AD-78, AD-81 • **Flag:** none (operator ruling 2026-10-04: `preserve_keep = 0` ships unflagged)
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` and its AD-78 pin tests; `scripts/fleet-poll-hourly.sh` and a `tests/scripts/` test
+**Spec:** `planning-artifacts/specs/spec-87-13-nothing-in-a-loop-home-prunes-a-preserve-or-rewrites-a-station-branch.md`
+**Given** a rendered loop-home policy
+**When** `bmad-loop validate` reads it
+**Then** `[scm] preserve_keep = 0` with zero warnings, and a pin test against the installed package fails if `0` stops meaning "never prune"
+**And** the fleet poll never runs `pull --rebase` or pushes `main` from a home: it fast-forwards `loop/<slug>` only, and a diverged branch is reported, not rewritten
+
+### Story 87.14: The sweeper reports stale-locked agent worktrees and orphan directories
+
+As the operator whose agent worktrees stay KEEP forever behind a dead process's lock, and whose empty agent directories are invisible,
+I want the sweeper to report a stale lock and an unregistered directory, and remove only an empty one,
+So that agent worktrees retire like any other working copy.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** DW-HYGIENE-2026-09-05-1 (closed 2026-10-03); AD-81 • **Flag:** none (operator ruling 2026-10-04)
+**Surface:** `scripts/worktree_sweep.py`, `tests/scripts/test_worktree_sweep.py`, `docs/how-to/manage-worktrees-with-bmad.md`
+**Spec:** `planning-artifacts/specs/spec-87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories.md`
+**Given** a worktree locked as `claude agent <id> (pid N start T)` whose pid is dead or whose start time differs (pid reuse)
+**When** the sweep runs
+**Then** the verdict is `STALE-LOCK` with the usual merged / unmerged evidence, and a live lock stays KEEP
+**And** an unregistered directory under `.claude/worktrees/`, `.cursor/worktrees/` or `~/.cursor/worktrees/` is `ORPHAN-DIR` (DELETE when empty, INSPECT otherwise); nothing under `~/.bmad-loops/` is listed; the docstring and how-to stop naming `marshal retire` as the sweeper's home
+
+### Story 87.15: A preserve reaches origin only through the content gate
+
+As the operator of a public repository whose preserves cannot be deleted once pushed,
+I want every preserve and archive push to pass a purge list, a secret scan and a size cap, one refspec per tag, under caps,
+So that no secret, purged history or runaway volume enters a tag nobody can remove.
+
+**Type:** feature • **Effort:** M • **Deps:** S-87.3 • **FR/AD:** spec-pyforge-marshal CAP-287 (FR-234); AD-81, AD-11 (as amended) •
+**Flag:** `pyforge.marshal.preserve_refs` (OFF: `push` and `retire` are listed disabled and refuse; nothing is pushed)
+**Surface:** `src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py` (gate, push, caps, retirement ledger read), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/preserve.py` (`push`, `retire`), the marshal MCP face; `docs/governance/preserve-purge-list.json` (new), the tracked retirement ledger, `docs/how-to/purge-preserved-refs.md` (new), `docs/MAP.md`; `.github/workflows/copilot-setup-steps.yml`; tests
+**Spec:** `planning-artifacts/specs/spec-87-15-a-preserve-reaches-origin-only-through-the-content-gate.md`
+**Given** a preserve whose commit descends from a purge-listed sha, carries a purge-listed path, adds a blob the secret scan flags, or adds a file over the size cap
+**When** `marshal preserve push` runs
+**Then** the tag stays local with a finding naming the reason, and a clean tag is pushed by one explicit refspec, verified by `ls-remote`
+**And** exceeding the per-run or per-story cap is a HARD finding and the tags stay local; `retire` appends to the tracked retirement ledger and never writes or deletes a tag; a tag push starts no workflow; the operator-gated steps (GitHub cache purge request, non-provider secret-scanning patterns) each wait for explicit operator confirmation
+
+### Story 87.16: The orphaned tips are re-preserved as local archive tags
+
+As the operator whose 2026-10-04 cleanup left 98 deleted tips, and 8 retired ones, reachable from nothing in the only clone that holds them,
+I want a tracked manifest of every orphaned tip and a local annotated archive tag for each, pushed only after review,
+So that `git gc` cannot collect them while the review runs.
+
+**Type:** chore • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-287 (FR-234); AD-81 • **Operator-gated:** `--execute` and every push
+**Surface:** a one-off, dry-run-default script under `scripts/` and its test; a tracked manifest under `_bmad-output/projects/pyforge-marshal/planning-artifacts/preserve-manifests/`
+**Spec:** `planning-artifacts/specs/spec-87-16-the-orphaned-tips-are-re-preserved-as-local-archive-tags.md`
+**Given** the 2026-10-04 branch-deletion activity (`before` shas, read through an injectable reader) and Story 87.1's retirement table
+**When** the script runs dry
+**Then** the tracked manifest lists every tip reachable from no ref, with the `refs/tags/archive/heads/<branch>` tag it would write, and nothing changes
+**And** `--execute`, run by the operator, writes local annotated tags only; no row is pushed until the operator marks it reviewed and Story 87.15's gate passes it; a tip already reachable is skipped
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
