@@ -2,7 +2,8 @@
 title: "27.4: The planning record matches the tree and the cross-station seams hold"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 0d2ce6c4ce707990312a0e89cf9ebe4c693ca945
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
