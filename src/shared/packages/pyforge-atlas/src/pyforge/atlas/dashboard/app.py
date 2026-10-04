@@ -5,7 +5,9 @@ each page's data function in Vizro's ``data_manager``. Data functions are LAZY �
 them at render time, not at build — so the dashboard OBJECT builds fully offline with no
 server and no migrated data present (the ``dashboard-dryrun`` gate builds the object + asserts
 structure, exactly like the C1 ``dagster-dryrun`` / C2 ``viz-loadable`` gates; it never
-``.run()``s a server).
+``.run()``s a server). The one exception is a page that DECLARES filters: Vizro's own
+``Filter.pre_build`` loads a target's data to choose the selector, so ``_declared_filters``
+asks the loader for that page up front rather than hiding a second, hidden read behind it.
 
 Every data function routes through ``dashboard.data`` (the AD-8 BSL seam) or
 ``dashboard.factory_status``; no metric is computed here.
@@ -13,21 +15,29 @@ Every data function routes through ``dashboard.data`` (the AD-8 BSL seam) or
 Page set (the full 34-page inventory, Story 20.5 / CAP-7 closing DW-D2-1):
   * GROUNDED data pages — feedstock-health, my-feedstocks, estate-cache
     (BSL over a migrated dataset or the CAP-19 estate Parquet).
-  * BSL-WIRED SHELL pages — staleness-report, query-atlas, detail-cf-atlas, adoption-stage
-    (wired to build_packages_model; render empty until the composed packages store lands).
+  * BSL-WIRED pages over the composed ``semantic_packages`` store — staleness-report,
+    query-atlas, detail-cf-atlas, adoption-stage. The store is materialized by the
+    ``semantic_packages`` pipeline (Story 20.3); a checkout that has not run it yet gets
+    the honest-empty result ``_bsl_query_or_empty`` returns, never a fabricated row.
   * NO-BSL-MODEL SHELL pages — behind-upstream, whodepends (no D1 BSL model exists yet; a
     Card states the gap — no data function, no fabrication).
-  * BSL-WIRED SHELL pages (Story 20.5, unmigrated datasets) — the 12 remaining atlas-CLI /
-    cyclonedx-suite / seed-gap-suggester pages routed through a brand-new per-page BSL
-    model (``semantic/models.py``); each degrades honestly to empty until its own Kedro
-    pipeline materializes the backing Parquet (the DW-D2-2 lifecycle, generalized).
+  * BSL-WIRED pages over their own per-page model (Story 20.5) — the remaining atlas-CLI /
+    cyclonedx-suite / seed-gap-suggester pages, each routed through a model in
+    ``semantic/models.py``. Each page's ``note`` names the pipeline that has still to
+    produce its backing Parquet; until it does, the page renders the honest-empty state.
   * REPORT-ARTIFACT pages — export-purls, inventory-match, add-handoff, library-futures
     (FR-9: a write-path or per-invocation CLI; the dashboard surfaces the LATEST cached
     run only, never triggers one).
   * LIVE-SCAN-ARTIFACT pages — scan-project, env-inspect (per-invocation, user-supplied
-    input; the dashboard reads the latest cached invocation the same honest way — an
-    in-dashboard submit control is forward-looking work, not wired here).
+    input). These two DO submit a new scan from the dashboard: a path input plus a Run
+    button whose action goes through ``dashboard.scan_submit``, which runs the CLI over
+    ``pyforge.core.process`` and refreshes the cached Parquet the page reads.
   * factory-status — the fully-specified BMAD-artifact-state page (AD-17 build stamp).
+
+Each ``PageDef`` also declares the controls DESIGN.md § 3–5 specifies for that page — the
+filter columns and the one chart — and ``_data_page`` renders them;
+``tests/integration/dashboard/test_dashboard_controls.py`` compares the declarations
+against DESIGN.md's own per-page Layout bullets.
 
 The 19-page spine (BSL models, layouts, personas, journeys) is
 ``_bmad-output/projects/pyforge-atlas/planning-artifacts/{DESIGN,EXPERIENCE}.md`` (Story

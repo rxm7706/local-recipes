@@ -112,18 +112,21 @@ def normalize_scan_project(payload: dict[str, Any]) -> pd.DataFrame:
     atlas_records = payload.get("atlas_records") or {}
 
     licenses: dict[str, Any] = {}
-    for key, record in atlas_records.items() if isinstance(atlas_records, dict) else []:
-        if isinstance(record, dict):
-            licenses[_dep_key_name(str(key))] = record.get("license_spdx") or record.get("license")
+    if isinstance(atlas_records, dict):
+        for key, record in atlas_records.items():
+            if isinstance(record, dict):
+                licenses[_dep_key_name(str(key))] = record.get("license_spdx") or record.get("license")
 
     fixed: dict[str, bool] = {}
     counts: dict[tuple[str, str], int] = {}
-    for key, vulns in vulns_by_dep.items() if isinstance(vulns_by_dep, dict) else []:
-        name = _dep_key_name(str(key))
-        for vuln in vulns or []:
-            counts[(name, _severity_of(vuln))] = counts.get((name, _severity_of(vuln)), 0) + 1
-            if isinstance(vuln, dict) and (vuln.get("fixed_version") or vuln.get("fix_available")):
-                fixed[name] = True
+    if isinstance(vulns_by_dep, dict):
+        for key, vulns in vulns_by_dep.items():
+            name = _dep_key_name(str(key))
+            for vuln in vulns or []:
+                severity = _severity_of(vuln)
+                counts[(name, severity)] = counts.get((name, severity), 0) + 1
+                if isinstance(vuln, dict) and (vuln.get("fixed_version") or vuln.get("fix_available")):
+                    fixed[name] = True
 
     scanned = [str(dep.get("name")) for dep in deps if isinstance(dep, dict) and dep.get("name")]
     for name in scanned:
