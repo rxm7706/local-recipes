@@ -123,6 +123,25 @@ def test_stack_up_launches_via_injected_launcher(tmp_path: Path) -> None:
     writer.close()
 
 
+def test_querying_the_yielded_library_face_names_the_http_face(tmp_path: Path) -> None:
+    """DW-FU-20-1: after the yield the library handle refuses with a typed error
+    naming the HTTP endpoint — not duckdb's bare "Connection already closed"."""
+    path = _plane(tmp_path)
+    boot = boot_query_plane(path, stack_up=True, launcher=lambda argv: _FakeProcess())
+    try:
+        assert boot.http is not None
+        with pytest.raises(ConnectionYielded) as excinfo:
+            boot.library.execute("SELECT 42")
+        message = str(excinfo.value)
+        assert boot.http.endpoint in message
+        assert "execute" in message
+        # The lock is still ours — the refusal is about the connection, not the plane.
+        with pytest.raises(SecondWriterRefused):
+            connect_writer(path)
+    finally:
+        boot.library.close()
+
+
 def test_stack_up_with_custom_port_and_real_launcher_fails_loud(
     tmp_path: Path,
 ) -> None:
