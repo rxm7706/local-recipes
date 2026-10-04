@@ -49,6 +49,16 @@ import pytest
 # NOTE: `fcntl` is imported function-locally by the S-12.5 lock tests below --
 # a module-level import would turn every test in this file (including the
 # POSIX-clean S-13.1 set) into a collection error off POSIX.
+#
+# Function-local importing keeps COLLECTION clean, but the lock tests
+# themselves still need POSIX (`fcntl`) and, for the two that observe a
+# blocked child, a Linux `/proc` fd table. Without the markers below they
+# ERROR rather than skip off Linux, which reads as a broken suite instead of
+# an unsupported platform (Story 41.1).
+_needs_posix = pytest.mark.skipif(
+    not hasattr(os, "fork"), reason="POSIX fcntl.flock required")
+_needs_procfs = pytest.mark.skipif(
+    not Path("/proc").is_dir(), reason="Linux /proc fd table required")
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
 CHECKER = REPO_ROOT / "scripts" / "spec_surface_check.py"
@@ -245,6 +255,7 @@ def _wait_until_blocked_on_lock(proc: subprocess.Popen, lock_path: Path,
         time.sleep(0.05)
 
 
+@_needs_posix
 def test_concurrent_scoped_stamps_neither_write_lost(tmp_path: Path):
     """The race itself, forced deterministically. A 2-party barrier gates
     `_read_baseline` inside `_stamp_baseline`'s critical section: on the
@@ -377,6 +388,8 @@ def _run_cli_against_held_lock(tmp_path: Path, extra_args: list[str]):
     return stale, json.loads(baseline.read_text())
 
 
+@_needs_posix
+@_needs_procfs
 def test_write_baseline_blocks_while_lock_held(tmp_path: Path):
     """Scoped stamp: blocks while the sidecar flock is held elsewhere, then
     lands the merge."""
@@ -388,6 +401,8 @@ def test_write_baseline_blocks_while_lock_held(tmp_path: Path):
         "scoped stamp leaked into another spec")
 
 
+@_needs_posix
+@_needs_procfs
 def test_full_stamp_blocks_while_lock_held(tmp_path: Path):
     """Full (--spec-less) stamp: the lock must bracket BOTH paths -- a future
     refactor that moves the lock inside the scoped branch (reopening the
@@ -417,3 +432,84 @@ def test_stamp_is_atomic_and_leaves_no_residue(tmp_path: Path):
     assert not (scripts / ".spec-surface-baseline.json.tmp").exists()
     json.loads((scripts / ".spec-surface-baseline.json").read_text())
     assert (scripts / ".spec-surface-baseline.json.lock").exists()
+
+
+# --- Story 41.1: the stamper refuses rather than launders --------------------
+
+
+def test_a_corrupt_baseline_is_a_diagnostic_refusal_not_an_empty_dict(tmp_path: Path):
+    """DW-FU-12-5: on main `_read_baseline` was a bare `json.loads`, so a
+    truncated or half-written baseline (the one file every tracked spec's
+    drift protection shares) died as a raw `JSONDecodeError` traceback. The
+    tempting fix -- `except -> {}` -- is the dangerous one: the next scoped
+    stamp would MERGE into that empty dict and silently discard every other
+    spec's committed contract hash. It must stop and say how to recover."""
+    repo, _json = _fixture_repo(tmp_path)
+    checker = _patched_checker(repo)
+    subprocess.run([sys.executable, str(checker), "--write-baseline"],
+                   capture_output=True, text=True, cwd=repo, check=True)
+    baseline = repo / "scripts" / ".spec-surface-baseline.json"
+    before = baseline.read_bytes()
+    baseline.write_text('{"proj/spec-alpha": "abc', encoding="utf-8")
+    corrupt = baseline.read_bytes()
+
+    r = subprocess.run([sys.executable, str(checker), "--write-baseline",
+                        "--spec", "proj/spec-alpha"],
+                       capture_output=True, text=True, cwd=repo)
+
+    assert r.returncode != 0
+    assert ".spec-surface-baseline.json" in r.stdout + r.stderr
+    assert "git checkout --" in r.stdout + r.stderr
+    # Refused means byte-identical: the corrupt file is left exactly as it
+    # was, for `git checkout` to restore, never half-overwritten.
+    assert baseline.read_bytes() == corrupt != before
+
+
+def test_a_full_stamp_that_discovers_nothing_refuses(tmp_path: Path):
+    """A full `--write-baseline` with zero discovered Specs used to write
+    `{}` over a non-empty committed baseline -- every spec's drift
+    protection erased in one command, and nothing to say it happened. Zero
+    discovered Specs against a non-empty baseline is a sign of standing in
+    the wrong tree, not of a repo that governs nothing."""
+    repo, _json = _fixture_repo(tmp_path)
+    checker = _patched_checker(repo)
+    subprocess.run([sys.executable, str(checker), "--write-baseline"],
+                   capture_output=True, text=True, cwd=repo, check=True)
+    baseline = repo / "scripts" / ".spec-surface-baseline.json"
+    before = baseline.read_bytes()
+    # Discovery finds nothing: the planning tree is gone, the baseline is not.
+    import shutil
+
+    shutil.rmtree(repo / "_bmad-output")
+
+    r = subprocess.run([sys.executable, str(checker), "--write-baseline"],
+                       capture_output=True, text=True, cwd=repo)
+
+    assert r.returncode != 0
+    assert "zero Specs" in r.stdout + r.stderr
+    assert baseline.read_bytes() == before
+
+
+def test_a_spec_whose_surface_is_unreadable_cannot_be_stamped(tmp_path: Path):
+    """DW-FU-6-6-9 at the WRITE end: a Spec whose `surface:` cannot be read
+    has an UNKNOWN surface, and a contract hash stamped over an unknown
+    surface accepts whatever that surface turns out to be. The stamp refuses
+    and names the Spec; `gather_spec_surface` reports the same Spec as
+    `spec-surface-unevaluable` at read time."""
+    repo, _json = _fixture_repo(tmp_path)
+    spec_md = (repo / "_bmad-output" / "projects" / "proj"
+               / "planning-artifacts" / "specs" / "spec-alpha" / "SPEC.md")
+    spec_md.write_text("---\nsurface:\nother: 1\n---\n# spec-alpha\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    checker = _patched_checker(repo)
+
+    scoped = subprocess.run([sys.executable, str(checker), "--write-baseline",
+                             "--spec", "proj/spec-alpha"],
+                            capture_output=True, text=True, cwd=repo)
+    full = subprocess.run([sys.executable, str(checker), "--write-baseline"],
+                          capture_output=True, text=True, cwd=repo)
+
+    for r in (scoped, full):
+        assert r.returncode == 2, r.stdout + r.stderr
+        assert "proj/spec-alpha" in r.stdout + r.stderr
+    assert not (repo / "scripts" / ".spec-surface-baseline.json").exists()

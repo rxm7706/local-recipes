@@ -126,10 +126,10 @@ def _anonymous_count_for(slug: str) -> int | None:
 def _known_project_slugs() -> set[str]:
     """Every discovered project's directory name whose Tier-3 file exists --
     an EXISTENCE-only scan (no Tier-3 file CONTENT read, unlike
-    ``_live_state()``'s ``_anonymous()`` call per project) used solely to
-    build a helpful "known" list for ``stamp_projects``'s unknown-project
-    error message. Only reached on that rare error path -- a clean
-    ``stamp_projects`` call never calls this."""
+    ``_live_state()``'s ``_anonymous()`` call per project).
+
+    This is the set whose counts can be MEASURED. It is no longer the set
+    that may be NAMED -- see ``_stampable_project_slugs``."""
     projects_dir = REPO_ROOT / "_bmad-output" / "projects"
     if not projects_dir.is_dir():
         return set()
@@ -137,6 +137,50 @@ def _known_project_slugs() -> set[str]:
         p.name for p in projects_dir.iterdir()
         if p.is_dir() and (p / TIER3_REL).is_file()
     }
+
+
+def _discovered_project_slugs() -> set[str]:
+    """Every directory name under ``_bmad-output/projects/``, whether or not
+    it carries a Tier-3 file. A project directory is TRACKED; its Tier-3
+    ``deferred-work.md`` is gitignored, so the file is routinely absent in a
+    fresh clone or a worktree while the project itself plainly exists."""
+    projects_dir = REPO_ROOT / "_bmad-output" / "projects"
+    if not projects_dir.is_dir():
+        return set()
+    return {p.name for p in projects_dir.iterdir() if p.is_dir()}
+
+
+def _baseline_slugs_tolerant() -> set[str]:
+    """Every slug the COMMITTED baseline grandfathers, or ``set()`` when the
+    baseline cannot be read or parsed.
+
+    Deliberately tolerant: this feeds name VALIDATION only, and validating
+    names must not start failing because the baseline is corrupt -- a corrupt
+    baseline is ``_read_baseline``'s own error to raise, with its own
+    message, a few lines later (``stamp_projects``'s docstring, Review
+    Triage Log 2026-08-15 item 9). A swallowed failure here can only make
+    the known set SMALLER, never admit a slug that is not really there."""
+    try:
+        _raw, parsed = _read_baseline()
+    except (OSError, ValueError):
+        return set()
+    return {str(k) for k in parsed}
+
+
+def _stampable_project_slugs() -> set[str]:
+    """The union of the discoverable projects and the committed baseline's
+    own keys -- every slug ``--project`` may name (DW-FU-7-2-2).
+
+    Validating against ``_known_project_slugs()`` alone made a stale-high
+    baseline entry UNFIXABLE, which is the one thing a baseline must never
+    be: the entry grandfathers that many anonymous Tier-3 entries, so a
+    count left high after the Tier-3 file shrank or was removed silently
+    exempts new entries from ever being named. Yet the only way to lower it
+    -- stamping the project -- was refused as an "unknown project" precisely
+    BECAUSE the Tier-3 file was gone. A slug in the baseline, or a project
+    directory on disk, is a slug that can be stamped; a missing Tier-3 file
+    means a live count of zero, not an unknown project."""
+    return _discovered_project_slugs() | _baseline_slugs_tolerant()
 
 
 def _read_baseline() -> tuple[str | None, dict[str, int]]:
@@ -219,7 +263,10 @@ def stamp_projects(slugs: Iterable[str]) -> dict[str, int]:
 
     Raises ``ValueError`` (never prints/exits itself -- this is a library
     function, importable from another script) naming the unknown slug(s)
-    and the full known set when any named slug has no Tier-3 file, or when
+    and the full known set when a named slug is neither a discoverable
+    project nor a key in the committed baseline (DW-FU-7-2-2 -- a named slug
+    whose Tier-3 file is merely GONE stamps to 0, so a stale-high baseline
+    entry can be lowered or zeroed), or when
     the existing baseline's content can't be parsed as JSON. Raises
     ``OSError`` (or a subclass, e.g. ``PermissionError``) when reading or
     writing the baseline file itself fails for a reason other than "does
@@ -251,13 +298,21 @@ def stamp_projects(slugs: Iterable[str]) -> dict[str, int]:
     # explicitly nearby: a project directory appearing or disappearing
     # between this lookup and the write below is not guarded against here,
     # matching that existing, accepted precedent.
-    current = {name: _anonymous_count_for(name) for name in names}
-    unknown = sorted(name for name, count in current.items() if count is None)
-    if unknown:
-        raise ValueError(
-            f"unknown project(s): {', '.join(unknown)}\n"
-            f"known: {', '.join(sorted(_known_project_slugs()))}"
-        )
+    measured = {name: _anonymous_count_for(name) for name in names}
+    missing_tier3 = sorted(name for name, count in measured.items() if count is None)
+    if missing_tier3:
+        # DW-FU-7-2-2: a missing Tier-3 file is a live count of ZERO for a
+        # project that exists or that the baseline already grandfathers --
+        # that is exactly the stale-high entry a stamp needs to be able to
+        # lower. Only a slug in NEITHER place is genuinely unknown.
+        stampable = _stampable_project_slugs()
+        unknown = sorted(name for name in missing_tier3 if name not in stampable)
+        if unknown:
+            raise ValueError(
+                f"unknown project(s): {', '.join(unknown)}\n"
+                f"known: {', '.join(sorted(stampable))}"
+            )
+    current = {name: (0 if count is None else count) for name, count in measured.items()}
 
     existing_raw, existing = _read_baseline()
     # MERGE, never rewrite: building from `current` alone would silently

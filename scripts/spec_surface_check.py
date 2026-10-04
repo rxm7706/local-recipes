@@ -36,6 +36,23 @@ its own pre-lock live snapshot -- that is its documented accept-everything
 semantics, unchanged by the serialization; only the scoped path reads and
 merges.)
 
+**What the lock does NOT span (DW-12-5-3).** `fcntl.flock` is per-inode, so
+it serializes stamps against ONE baseline file. Two git worktrees of this
+repo each hold their OWN `scripts/.spec-surface-baseline.json` at their own
+inode, and a stamp in each one takes a different lock: both succeed, and the
+two divergent files meet later as a git merge conflict, which no advisory
+lock can prevent or detect. That is the documented boundary of this
+serialization, not a gap in it -- resolve such a conflict by re-stamping the
+specs each side reconciled, never by hand-merging the JSON.
+
+**Refusals that leave the baseline byte-identical.** A corrupt committed
+baseline is a diagnostic naming the file and the recovery path, exit 1,
+never an `except -> {}` fallback that silently turns a scoped stamp into a
+full one (DW-FU-12-5). A `--spec`-less full stamp that discovers zero Specs
+over a non-empty baseline refuses rather than wiping it (DW-FU-12-5-2). A
+spec whose `surface:` declares nothing readable is never stamped, scoped or
+not (DW-FU-6-6-9).
+
 Marshal Story 82.3 (DW-9-1-1): a SCOPED stamp no longer accepts a path
 nobody narrated. A `--spec NAME` stamp merges every file NAME's surface
 matches, so a drifted file under a broad glob was absorbed as reconciled with
@@ -80,7 +97,19 @@ SPEC_GLOB = "_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md"
 BASELINE = REPO_ROOT / "scripts" / ".spec-surface-baseline.json"
 
 
+#: `chain.py`'s own `_GLOB_METACHARS`/`_SURFACE_DIR_SUFFIX`, restated (this
+#: script must stay stdlib-only and cannot import the installed package).
+#: DW-FU-12-4: a glob-less trailing-slash entry governs that directory's
+#: subtree. The stamp and the verdict MUST agree on what a surface covers --
+#: a stamp that read `dir/` as matching nothing would write a baseline the
+#: verdict then reads as a storm of `drift ... added`.
+_GLOB_METACHARS = frozenset("*?")
+_SURFACE_DIR_SUFFIX = "**"
+
+
 def glob_to_re(pattern: str) -> re.Pattern:
+    if pattern.endswith("/") and not (_GLOB_METACHARS & set(pattern)):
+        pattern += _SURFACE_DIR_SUFFIX
     out, i = [], 0
     while i < len(pattern):
         c = pattern[i]
@@ -99,12 +128,83 @@ def glob_to_re(pattern: str) -> re.Pattern:
     return re.compile("^" + "".join(out) + "$")
 
 
+class SurfaceUnevaluable(Exception):
+    """`chain.py`'s own `SurfaceUnevaluable`, restated: a SPEC.md declares
+    `surface:` but no glob can be read from it (DW-FU-6-6-9). The read-only
+    port turns this into one `spec-surface-unevaluable` WARN; here it refuses
+    the stamp for that spec, since a baseline written from an unreadable
+    surface records "governs nothing" as if it were reconciled."""
+
+
+def _strip_surface_comment(value: str) -> str:
+    """`value` with a trailing `#` comment removed -- only one starting a word
+    OUTSIDE any quoted run (`chain.py::_strip_surface_comment`)."""
+    quote = ""
+    for i, ch in enumerate(value):
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch in "\"'":
+            quote = ch
+        elif ch == "#" and (i == 0 or value[i - 1] in " \t"):
+            return value[:i]
+    return value
+
+
+def _unquote_surface(token: str) -> str:
+    """One matched pair of surrounding YAML quotes removed
+    (`chain.py::_unquote_surface`)."""
+    token = token.strip()
+    if len(token) >= 2 and token[0] == token[-1] and token[0] in "\"'":
+        return token[1:-1]
+    return token
+
+
+def _split_flow_items(inner: str) -> list[str]:
+    """A flow sequence's body split on the commas OUTSIDE any quoted run
+    (`chain.py::_split_flow_items`)."""
+    items, buf, quote = [], [], ""
+    for ch in inner:
+        if quote:
+            buf.append(ch)
+            if ch == quote:
+                quote = ""
+            continue
+        if ch in "\"'":
+            quote = ch
+            buf.append(ch)
+        elif ch == ",":
+            items.append("".join(buf))
+            buf = []
+        else:
+            buf.append(ch)
+    items.append("".join(buf))
+    return items
+
+
+def _surface_flow_sequence(value: str) -> list[str] | None:
+    """A `[a, "b"]` flow sequence's items, `[]` for an explicit empty one, or
+    `None` when `value` is not a flow sequence (`chain.py` twin)."""
+    value = value.strip()
+    if not (value.startswith("[") and value.endswith("]")):
+        return None
+    inner = value[1:-1].strip()
+    if not inner:
+        return []
+    return [g for g in (_unquote_surface(p) for p in _split_flow_items(inner)) if g]
+
+
 def parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
     """(`surface:` globs, `surface-drift-exclude:` globs, drift mode) from
-    SPEC.md frontmatter -- verbatim from the pre-reduction script (still the
-    ground truth `--write-baseline` stamps against, so it must read the
-    contract identically to the read-only port)."""
+    SPEC.md frontmatter -- the ground truth `--write-baseline` stamps against,
+    so it must read the contract identically to the read-only port
+    (`chain.py::_parse_surface`, whose docstring carries the full rationale).
+
+    DW-FU-6-6-9: a block sequence item at any indent, a quoted item, a flow
+    sequence and a scalar are all read; a `surface:` that yields no glob and
+    was not written as an explicit `[]` raises `SurfaceUnevaluable`."""
     globs, excludes, drift = [], [], "memlog"
+    surface_declared = surface_explicitly_empty = False
     in_fm, section = False, None
     for line in spec_md.read_text(encoding="utf-8").splitlines():
         if line.strip() == "---":
@@ -114,26 +214,56 @@ def parse_surface(spec_md: Path) -> tuple[list[str], list[str], str]:
             continue
         if not in_fm:
             continue
-        if section and line.startswith("  - "):
-            (globs if section == "surface" else excludes).append(
-                line[4:].split("#", 1)[0].strip())
+        stripped = line.strip()
+        if section and (stripped.startswith("- ") or stripped == "-"):
+            item = _unquote_surface(_strip_surface_comment(stripped[1:]))
+            if item:
+                (globs if section == "surface" else excludes).append(item)
             continue
-        if section and (not line.strip() or line.lstrip().startswith("#")):
+        if section and (not stripped or stripped.startswith("#")):
             continue
         section = None
-        if line.startswith("surface:"):
-            section = "surface"
-        elif line.startswith("surface-drift-exclude:"):
-            section = "exclude"
-        elif line.startswith("surface-drift:"):
-            drift = line.split(":", 1)[1].split("#", 1)[0].strip()
+        # Frontmatter keys sit at column 0; an indented `surface:` belongs to
+        # some other key's mapping and is not this contract.
+        key, sep, raw = line.partition(":")
+        if not sep or key not in ("surface", "surface-drift-exclude", "surface-drift"):
+            continue
+        value = _strip_surface_comment(raw).strip()
+        if key == "surface-drift":
+            drift = _unquote_surface(value)
+            continue
+        target = globs if key == "surface" else excludes
+        if key == "surface":
+            surface_declared = True
+        flow = _surface_flow_sequence(value)
+        if flow is not None:
+            target.extend(flow)
+            if key == "surface" and not flow:
+                surface_explicitly_empty = True
+            continue
+        if value:
+            target.append(_unquote_surface(value))
+            continue
+        section = "surface" if key == "surface" else "exclude"
+    if surface_declared and not globs and not surface_explicitly_empty:
+        raise SurfaceUnevaluable(
+            f"{spec_md.name} declares surface: but no glob could be read from it "
+            f"— write one `- <glob>` per line, or an explicit `surface: []` to "
+            f"say it governs nothing"
+        )
     return globs, excludes, drift
 
 
 def tracked_files() -> list[str]:
-    out = subprocess.run(["git", "-C", str(REPO_ROOT), "ls-files"],
-                         capture_output=True, text=True, check=True).stdout
-    return [l for l in out.splitlines() if l]
+    """Every tracked path, read the way `chain.py::_tracked_files` reads it
+    (DW-FU-6-6-4): `-c core.quotePath=false` so a non-ASCII byte arrives
+    literal instead of C-quoted and octal-escaped, and `-z` so the fields
+    split on NUL. A quoted path matches no glob, so the stamp and the verdict
+    would otherwise disagree about which files a surface governs."""
+    out = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "-c", "core.quotePath=false", "ls-files", "-z"],
+        capture_output=True, text=True, check=True).stdout
+    return [path for path in out.split("\0") if path]
 
 
 def sha1(path: Path) -> str:
@@ -148,14 +278,20 @@ def contract_hash(s: dict) -> str:
     return h
 
 
-def _live_state() -> dict[str, dict]:
+def _live_state(unevaluable: dict[str, str] | None = None) -> dict[str, dict]:
     """Every spec's CURRENT `{memlog, files}` baseline entry -- the ground
     truth `--write-baseline` merges into the committed file. Mirrors
     `gather_spec_surface`'s own internal computation (Doctor's read-only
     port), which is a deliberate, unavoidable duplication: the verdict and
     the stamp must agree on what "current" means, and Doctor's own gather
     cannot write, so this is not one function two ways -- it is the one
-    remaining mutation caller of the same read."""
+    remaining mutation caller of the same read.
+
+    A spec whose `surface:` is unevaluable (DW-FU-6-6-9) is recorded in
+    `unevaluable` (when a dict is passed) and left OUT of the returned state
+    entirely, so it can never be stamped: a baseline written from a surface
+    nobody could read would record "this spec governs nothing" as a
+    reconciled fact. `main()` refuses on any such spec in scope."""
     specs: dict[str, dict] = {}
     for spec_md in sorted(REPO_ROOT.glob(SPEC_GLOB)):
         # Key by <project>/<spec-dir>, never the bare dir name -- the same
@@ -163,7 +299,12 @@ def _live_state() -> dict[str, dict]:
         # would silently drop one surface.
         project = spec_md.relative_to(REPO_ROOT).parts[2]
         name = f"{project}/{spec_md.parent.name}"
-        globs, excludes, drift = parse_surface(spec_md)
+        try:
+            globs, excludes, drift = parse_surface(spec_md)
+        except SurfaceUnevaluable as exc:
+            if unevaluable is not None:
+                unevaluable[name] = str(exc)
+            continue
         specs[name] = {
             "spec": spec_md,
             "globs": globs,
@@ -191,9 +332,43 @@ def _live_state() -> dict[str, dict]:
     }
 
 
+class BaselineCorrupt(Exception):
+    """The committed baseline exists but is not the `{name: entry}` JSON
+    object every read path assumes (DW-FU-12-5).
+
+    Deliberately NOT an `except -> {}` fallback. Collapsing a corrupt
+    baseline to `{}` makes a scoped stamp's merge start from nothing, so the
+    one spec named is written and EVERY other spec's entry is dropped -- the
+    stamp silently becomes the full, accept-everything stamp it exists to
+    avoid, at exit 0. The message names the file and the recovery path
+    instead, and nothing is written."""
+
+
 def _read_baseline() -> dict:
-    return (json.loads(BASELINE.read_text(encoding="utf-8"))
-            if BASELINE.exists() else {})
+    """The committed baseline, `{}` only when the file genuinely does not
+    exist. Raises `BaselineCorrupt` when it exists and cannot be read as a
+    JSON object (DW-FU-12-5) -- `main()` turns that into a diagnostic and a
+    non-zero exit, never a silent empty merge base."""
+    if not BASELINE.exists():
+        return {}
+    try:
+        data = json.loads(BASELINE.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise BaselineCorrupt(
+            f"{BASELINE.relative_to(REPO_ROOT)} exists but could not be read as "
+            f"JSON ({exc.__class__.__name__}: {exc}); nothing written. Recover it "
+            f"from git (`git checkout -- {BASELINE.relative_to(REPO_ROOT)}`), then "
+            f"re-stamp the spec you reconciled with --write-baseline --spec NAME"
+        ) from exc
+    if not isinstance(data, dict):
+        raise BaselineCorrupt(
+            f"{BASELINE.relative_to(REPO_ROOT)} holds a JSON "
+            f"{type(data).__name__}, not the expected object of "
+            f"{{spec: {{memlog, files}}}} entries; nothing written. Recover it "
+            f"from git (`git checkout -- {BASELINE.relative_to(REPO_ROOT)}`), then "
+            f"re-stamp the spec you reconciled with --write-baseline --spec NAME"
+        )
+    return data
 
 
 @contextmanager
@@ -223,10 +398,23 @@ def _write_baseline(merged: dict) -> None:
     # Atomic: sibling temp file + os.replace, so the read-only Doctor
     # detector never sees a torn baseline. The fixed .tmp name is safe
     # because it is only ever written under _baseline_lock().
+    # os.replace gives atomic VISIBILITY, not durability: on a delayed-
+    # allocation filesystem a crash between the write and the writeback can
+    # publish a zero-length baseline, which reads as "every spec ungoverned"
+    # -- the exact silent-governance-loss this file exists to prevent. fsync
+    # the temp before the rename (Story 41.1).
     tmp = BASELINE.with_name(BASELINE.name + ".tmp")
-    tmp.write_text(json.dumps(merged, indent=1, sort_keys=True) + "\n",
-                   encoding="utf-8")
+    with open(tmp, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(merged, indent=1, sort_keys=True) + "\n")
+        fh.flush()
+        os.fsync(fh.fileno())
     os.replace(tmp, BASELINE)
+
+
+class StampAborted(Exception):
+    """A stamp refused for a reason that needs no per-path rendering -- its
+    `str()` IS the stderr text. Raised inside the locked section, before any
+    write, so the baseline is left byte-identical."""
 
 
 class StampRefused(Exception):
@@ -327,6 +515,26 @@ def _stamp_baseline(spec_names: list[str] | None, current: dict[str, dict],
                 merged[name] = current[name]
             scope = f"{len(set(spec_names))} spec(s): {', '.join(sorted(set(spec_names)))}"
         else:
+            # DW-FU-12-5-2: a full stamp replaces the WHOLE baseline with its
+            # own live snapshot. Discovery returning zero Specs over a
+            # non-empty committed baseline is never a real "the repo governs
+            # nothing now" -- it is a run from the wrong directory, a renamed
+            # `_bmad-output/projects/` tree, or an unreadable specs dir -- and
+            # the write would have wiped the baseline to `{}` at exit 0,
+            # turning every governed file in the fleet into `no-baseline`.
+            # Read the committed baseline first so a corrupt file refuses
+            # before any write (Story 41.1 landing review), not only on the
+            # zero-spec path.
+            prior = _read_baseline()
+            if not current and prior:
+                raise StampAborted(
+                    "refusing to stamp: discovery found zero Specs, but the "
+                    f"committed {BASELINE.relative_to(REPO_ROOT)} is not empty — "
+                    "writing would wipe every entry. Run this from the repository "
+                    "root and check that "
+                    "_bmad-output/projects/*/planning-artifacts/specs/spec-*/SPEC.md "
+                    "is readable.\nbaseline untouched"
+                )
             merged = current
             scope = f"{len(current)} spec(s) — ALL (accepts every spec's pending drift)"
         _write_baseline(merged)
@@ -368,20 +576,45 @@ def main() -> int:
 
     # Expensive live-state walk and arg validation stay OUTSIDE the lock --
     # they read the working tree and the spec set, never the baseline.
-    current = _live_state()
+    unevaluable: dict[str, str] = {}
+    current = _live_state(unevaluable)
 
     if args.spec:
-        unknown = sorted(set(args.spec) - set(current))
+        named = set(args.spec)
+        dark = sorted(named & set(unevaluable))
+        if dark:
+            print("refusing to stamp: these spec(s) declare a surface nothing "
+                  "could be read from, so what they govern is unknown:",
+                  file=sys.stderr)
+            for name in dark:
+                print(f"  {name}: {unevaluable[name]}", file=sys.stderr)
+            print("baseline untouched", file=sys.stderr)
+            return 2
+        unknown = sorted(named - set(current))
         if unknown:
             print(f"unknown spec(s): {', '.join(unknown)}\n"
                   f"known: {', '.join(sorted(current))}", file=sys.stderr)
             return 2
+    elif unevaluable:
+        # An unscoped stamp writes EVERY entry, so one dark surface would be
+        # stamped as "governs nothing" along with the rest.
+        print("refusing to stamp every spec: these spec(s) declare a surface "
+              "nothing could be read from, so what they govern is unknown:",
+              file=sys.stderr)
+        for name in sorted(unevaluable):
+            print(f"  {name}: {unevaluable[name]}", file=sys.stderr)
+        print("fix the surface, or stamp the unaffected specs individually "
+              "with --spec NAME\nbaseline untouched", file=sys.stderr)
+        return 2
 
     accept = frozenset(os.path.normpath(p) for p in args.accept or ())
     try:
         scope = _stamp_baseline(args.spec, current, accept)
     except StampRefused as refused:
         print(refused.render(), file=sys.stderr)
+        return 1
+    except (StampAborted, BaselineCorrupt) as aborted:
+        print(str(aborted), file=sys.stderr)
         return 1
     print(f"baseline stamped: {BASELINE.relative_to(REPO_ROOT)} — {scope}")
     return 0
