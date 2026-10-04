@@ -91,6 +91,32 @@
           "items": { "type": "string", "minLength": 1 }
         },
         "exclude": { "type": "array", "items": { "type": "string" } },
+        "amendments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["action"],
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "promoted",
+                  "skipped",
+                  "demoted-include",
+                  "demoted-exclude",
+                  "excluded",
+                  "retro-mirror"
+                ]
+              },
+              "path": { "type": "string" },
+              "reason": { "type": "string" },
+              "category": { "type": "string" },
+              "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+              "workflow": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
         "notes": { "type": "string" },
         "rationale": {
           "type": "object",

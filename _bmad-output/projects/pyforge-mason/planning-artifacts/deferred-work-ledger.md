@@ -114,12 +114,14 @@ status: open
   summary: `test_every_sanctioned_yaml_exception_is_live_and_import_form_scoped` (`tests/meta/test_no_config_file.py:194-228`) does not enforce the invariant its own docstring claims. It asserts only on `ast.ImportFrom`, but the sanctioned `import yaml` form exposes `yaml.unsafe_load` identically via attribute access, and `_SANCTIONED_YAML_EXCEPTIONS` keys on `(path, banned_module)`, blanket-exempting the whole file.
   evidence: Review-verified live — substituting `yaml.unsafe_load` for `yaml.safe_load` in `_read_content_hash` leaves the meta suite green. Fix: add an `ast.Attribute` walk asserting `yaml.<attr>` is only ever `safe_load`.
   severity: medium
-  status: open
+  status: closed
   promoted: 2026-08-15 — the story 4.4 review pass that found this escalated CRITICAL on an unrelated intent gap before any of its findings could be applied ("no patches were applied and no ledger entries were written -- the intent gap makes every lower finding moot"); recovered from the run's own raw session log (`.bmad-loop/runs/20260814-202334-1831/logs/4-4-mason-environment-check-review-2.log`) during `/bmad-loop-resolve` so it is not lost when the run directory is eventually cleaned up.
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/2 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md, tests/meta/test_no_config_file.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/tests/meta/test_no_config_file.py:221 (every yaml.<attr> walked, only safe_load/YAMLError); src/shared/packages/pyforge-mason/tests/meta/test_no_config_file.py:231
 
 ### DW-4-4-6
 
@@ -127,12 +129,14 @@ status: open
   summary: FR-28 — the sole FR Story 4.4 realizes (`epics.md:114`, `:1210`) — is cited nowhere in the package (`grep -rn "FR-28" src tests` returns 0 hits, vs. 17 for FR-25 and 20 for FR-27). Every new Story 4.4 docstring/comment (`errors.py:812,870,928`; `condalock.py:70,242`; `cli.py:1371`) cites FR-25/FR-27/FR-29 — the sibling story's FRs, copied wholesale.
   evidence: Review-verified via direct grep against the delivered code.
   severity: low
-  status: open
+  status: closed
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/errors.py:962; src/shared/packages/pyforge-mason/src/pyforge/mason/engines/condalock.py:241; src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py:1535; src/shared/packages/pyforge-mason/src/pyforge/mason/environment.py:149
 
 ### DW-4-4-7
 
@@ -140,12 +144,14 @@ status: open
   summary: `CondaLockCheckResult`'s `stdout` field docstring (`condalock.py:242-253`) claims it "mirror[s] `CondaLockResult`'s own identical fields **and rationale**" — but that rationale ("a failure investigated outside a live terminal needs diagnostic text, not a bare returncode integer") is false for `check()`: the field is structurally always empty, since `stderr=None` inherits and this module's own docstring states conda-lock writes every progress/diagnostic line to stderr and nothing to stdout on either outcome.
   evidence: Review-verified by direct inspection of `condalock.py`.
   severity: low
-  status: open
+  status: closed
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/engines/condalock.py:251
 
 ### DW-4-4-8
 
@@ -153,12 +159,14 @@ status: open
   summary: `EnvironmentCheckTimeoutError`'s docstring (`errors.py:944-946`) says `timeout` is "the number of seconds that **elapsed** before the child was killed"; the call site (`condalock.py:389`) actually passes `resolved_timeout`, the configured *limit*. Copied verbatim from `EnvironmentLockTimeoutError` (`errors.py:781-782`), which carries the identical pre-existing inaccuracy — the new class propagated it rather than correcting it.
   evidence: Review-verified by direct inspection; the sibling class's own copy is pre-existing (not introduced by this story).
   severity: low
-  status: open
+  status: closed
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/errors.py:979; src/shared/packages/pyforge-mason/src/pyforge/mason/errors.py:795
 
 ### DW-4-4-9
 
@@ -166,12 +174,14 @@ status: open
   summary: the after-invocation lockfile read misattributes engine-side corruption to the user. Both reads call `_read_content_hash(temp_lockfile_path, lockfile_path)` (`condalock.py:367,387`), and the helper names the *second* argument in its error message. The before-read already proved the caller's file parses, so an after-read failure (conda-lock killed, or `$TMPDIR` filling mid-rewrite and truncating the temp copy) can never be the caller's file's fault — yet it raises `EnvironmentLockfileMalformedError` naming the user's own intact lockfile and prescribing regeneration.
   evidence: Review-verified by direct inspection of the two call sites and the helper's error-naming behavior.
   severity: low
-  status: open
+  status: closed
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/engines/condalock.py:446
 
 ### DW-4-4-10
 
@@ -179,12 +189,14 @@ status: open
   summary: `check()`'s argv test asserts via `argv.index("-f")`/`argv.index("-p")` against single-element inputs only (`_MANIFEST_PATHS = ("environment.yml",)`, `platforms = ("linux-64",)`), so it would pass even if `check()` emitted only the first manifest or platform of a multi-element list. `check()` re-implements `lock()`'s repetition loops rather than sharing them, and `lock()` has its own multi-element regression tests (`test_lock_with_multiple_platforms_repeats_dash_p_in_order`, `test_lock_with_multiple_manifests_repeats_dash_f_in_order` — `test_engines_condalock.py:219,234`) that `check()` has no equivalent of.
   evidence: Review-verified by direct inspection of the test suite.
   severity: low
-  status: open
+  status: closed
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/engines/condalock.py:387; src/shared/packages/pyforge-mason/src/pyforge/mason/engines/condalock.py:419
 
 ### DW-4-4-11
 
@@ -192,12 +204,14 @@ status: open
   summary: `environment lock`'s dispatch returns `EXIT_OK` unconditionally (`cli.py:1381-1388`), so a failed solve that wrote no lockfile still exits 0 — the exact opposite policy to the `returncode`-projection this story's own first review pass added to `check`'s dispatch, whose own comment argues "a CI gate must not green-light on its own internal failure." Pre-existing (Story 4.3); the two sibling verbs on one noun now disagree with each other.
   evidence: Review-verified by direct inspection of both dispatch branches in `cli.py`.
   severity: medium
-  status: open
+  status: closed
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py:1532
 
 ### DW-4-4-12
 
@@ -205,12 +219,14 @@ status: open
   summary: every conda-lock diagnostic names the temp copy's path, not the user's real lockfile (e.g. `.../tmp/mason-condalock-check-vedwraei.yml is missing a version`). The path is one the user never supplied, the `finally` block unlinks it before they can inspect it, and nothing maps the message back to their own file. Contrasts with `_read_content_hash`'s own errors, which are careful to name `lockfile_path` (the user's real path) — the child process's own output is never re-mapped at all. A consequence of this story's temp-copy design (necessary so the user's file is never mutated).
   evidence: Review-verified by direct inspection of the temp-copy flow and cleanup.
   severity: low
-  status: open
+  status: closed
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/engines/condalock.py:379 (WARNING: shown by default, suppressed by --quiet)
 
 ### DW-4-4-13
 
@@ -218,12 +234,14 @@ status: open
   summary: `--format json` emits no JSON at all on any typed-error path. `main()`'s `except MasonError` handler (`cli.py:1456-1460`) prints `str(exc)` to stderr and returns `EXIT_FAILED` with stdout left empty — but the frozen spec's own intent-contract states a JSON envelope on both the success path (`:1202-1204`) and a typed-error path (`:1206-1208`) of the same contract.
   evidence: Review-verified by direct inspection of `main()`'s exception handling against the frozen spec's own stated contract.
   severity: low
-  status: open
+  status: closed
   promoted: 2026-08-15 — see DW-4-4-5's promoted note (same recovery).
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec is Tier-3 (gitignored, not in clone); cited paths 0/1 present (absent: _bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py:1617; src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py:1070
 
 ### DW-2-10-1: `recipe update`'s default (non-`--dry-run`) apply has no VCS safety net and shows a thinner plan than `--dry-run`
 - source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-10-mason-recipe-update.md`
@@ -718,11 +736,13 @@ status: open
   origin: spec-deferred 95cffdae989f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: .github/workflows/detectors.yml:73; AGENTS.md:53
 
 ### DW-CANOPY-2026-08-24: Canopy five-tier surfaces and event backbone (steward-owned)
 
@@ -738,6 +758,8 @@ status: open
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec present; cited paths 2/2 present; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+
+  re-homed: mason Story 19.1 (`19-1-mason-s-station-skill-is-skf-compiled-exported-and-consulted-by-the-persona`, backlog) owns the missing `.claude/skills/pyforge-mason/` SKF station skill; the portal, MCP face, persona, CloudEvents wiring and PostgreSQL-first boot reconcile are live at `src/shared/packages/django-mason/src/django_mason_portal/apps.py:14`, `src/shared/packages/django-mason/src/django_mason_portal/mcp_asgi.py:35`, `.claude/skills/bmad-agent-mason/SKILL.md:2`, `src/shared/packages/django-pyforge/src/django_pyforge/events/constants.py:96`, and `src/shared/packages/django-mason/src/django_mason_portal/boot_reconcile.py:31`.
 
 ## DW-OM-2026-08-24 — Operating-model obligations (all eight stations)
 
@@ -761,9 +783,11 @@ status: open
   origin: spec-deferred 611b57d1d425 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: scripts/cfe_rebuild_guard_check.py:339; scripts/cfe_rebuild_guard_check.py:400
 
 ### DW-12-1-2: Slice-1 "equivalence: green" is stale relative to CFE v8.84.0, and guard clause (a) will pass a future compiled->parallel advancement -- the "re-port/re-validate before advancing" gate exists only as prose in next_action.
 
@@ -788,9 +812,11 @@ status: open
   origin: spec-deferred 7e94ac4eb19e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: _bmad/skf/shared/scripts/skf-provenance-gap-dispatch.py:313; _bmad/skf/shared/scripts/schemas/skill-brief.v1.json:108
 
 ### DW-12-2-1: DW-12-2-3: test_github_updater_gap_closed (test_slice1_equivalence.py) makes a live GitHub API call but is marked only @pytest.mark.slow, not @pytest.mark.network, so the new blocking test-ci gate's "-m 'not network'" selection does not actually exclude it.
 
@@ -816,9 +842,11 @@ status: open
   origin: spec-deferred 2b0e73dcdfba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: scripts/cfe_rebuild_guard_check.py:602
 
 ### DW-12-2-3: DW-12-2-5: commands-cheatsheet.md (CLAUDE.md's "canonical full recipe-lifecycle reference") documents test / test-all / test-coverage / test-recipes but was not updated to add the new test-ci task, so the cheatsheet goes stale the moment this story lands.
 
@@ -842,9 +870,11 @@ status: open
   origin: spec-deferred 7b7b754177e1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: _bmad/skf/shared/scripts/skf-structural-diff.py:292
 
 ### DW-12-3-2: cfe-recipe-generation's metadata.json records a dead doc source (a local filesystem path into a deleted ephemeral worktree), which crashes skf-detect-docs.py instead of failing gracefully.
 
@@ -881,9 +911,11 @@ status: open
   origin: spec-deferred b5aebc5c8161 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:80; scripts/cfe_rebuild_guard_check.py:553
 
 ### DW-12-4-3: An explicit slice `id: null` (key present, value None) falls through `sl.get("id", "<unknown-slice>")`'s default, since the default only applies when the key is absent -- a finding would render the literal id value instead of the intended placeholder.
 
@@ -894,9 +926,11 @@ status: open
   origin: spec-deferred 7ba4e7710f27 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: scripts/cfe_rebuild_guard_check.py:249
 
 ### DW-12-4-4: Pre-condition `status` matching (RE_SCOPE_GATE_SATISFIED_STATUSES) is case/whitespace-sensitive -- e.g. "Closed" would not satisfy the gate.
 
@@ -907,9 +941,11 @@ status: open
   origin: spec-deferred fff94ae34801 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: scripts/cfe_rebuild_guard_check.py:264; scripts/cfe_rebuild_guard_check.py:472
 
 ### DW-12-5-1: The Operator ruling's own prose contains an ungrammatical phrase ("authored on and its stories carried by") mirrored verbatim into all three edited artifacts.
 
@@ -1063,9 +1099,11 @@ status: open
   origin: spec-deferred 9e6df236f85b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: .claude/skills/conda-forge-expert/tests/integration/test_slice\d+_equivalence\.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py:311
 
 ### DW-12-8-1: cfe_rebuild_guard_check.py's clause (d) enforces only campaign.re_scope_gate.pre_conditions, never re_scope_gate_2.pre_conditions, so a slice-3/4 brief_path write is not machine-blocked by this story's new gate.
 
@@ -1076,11 +1114,13 @@ status: open
   origin: spec-deferred 07db3769f77b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
   verified: 2026-09-09 — still-open-but-MOOT — the enforcement gap this entry names is real and unclosed (clause (d) still reads only campaign.re_scope_gate.pre_conditions, never re_scope_gate_2), but the risk it guards no longer exists: the operator declared the CFE-rebuild campaign's ENDGAME over slices 1-2 on 2026-09-09 (fleet-readiness-decision-batch-2026-09-09 § 2.3 C2; campaign-state.yaml now reads endgame_declared: true), so no slice-3/4 brief_path will ever be written and there is nothing left for a clause-(d)/(e) extension to block. Do NOT open a follow-up story to extend clause (d) — close this as superseded when the closing story (mason Story 15.1) lands, or re-open it only if the campaign is ever re-scoped upward.
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:80
 
 ### DW-1-8-1: `render_text`'s shallow one-line-per-key rendering (Story 1.4) renders `mason doctor`'s default text-mode `engines` field as a raw Python tuple-of-dicts `repr()` on one unbroken line -- close to unreadable for a self-diagnosis tool whose main audience is a human troubleshooting their own setup.
 
@@ -1438,13 +1478,15 @@ status: open
   severity: medium
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   location: _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md (Story 43.7) — the story this entry defers to
-  status: open
+  status: closed
 
   verified: 2026-09-08 — still-open — CORRECTED POINTER: the story this entry defers to has CLOSED WITHOUT DOING IT. steward `43-6-platform-image-moves-to-python-3-14` reads `done` in the tracked ledger (`sprint-status-ledger.yaml:150`), but its acceptance criteria (`epics.md:2547-2556`) are pin-flip, `pixi lock` resolution, regenerated `environment.yaml`, and an `import pyforge.atlas, pyforge.doctor` smoke inside the image -- none of which is the Celery REST round-trip or SQLite metadata-store runtime validation this entry describes. Searched steward's epics for `Celery REST` / `round-trip` / `SQLite metadata`: zero hits in any story. So the validation is not merely late, it is unowned: 43.6 can never pick it up again. Re-homing it to a named story is the action this entry now needs.
 
   re-homed: 2026-09-08 — steward **Story 43.7** ("Sidecar runtime validation on Python 3.14") was authored to own this, and `43-7-sidecar-runtime-validation-on-python-3-14: backlog` added to steward's tracked ledger. `location:` above now points at it. ALSO: this entry's recorded blocker is STALE and no longer applies -- it says `dbgpt-ext-rag`'s `onnxruntime <=1.18.1` cap has no cp314 build, but `pixi list -e dbgpt-sidecar` resolves `python 3.14.7`, `dbgpt-app 0.8.2`, `dbgpt-ext-rag 0.8.2` and `onnxruntime 1.28.0 py314h112547c_0_cpu` (verified live 2026-09-08). 43.7 is not blocked on a solve; the missing thing is runtime coverage -- `platform-ci`'s `container-dbgpt` job polls `/api/health` for 200 and asserts nothing else.
 
   scope-corrected: 2026-09-08 — this entry's own summary says "Celery REST round-trip", and that half is NOT this sidecar's to prove. `pixi list -e dbgpt-sidecar` carries no celery and no redis package, `container-dbgpt` starts no broker, and `src/platform/compose/dbgpt/Containerfile` states the split in its own words: "Story 11.2/11.3 owns wiring this sidecar to real credentials and the shared Postgres/Celery surface; this story only has to make the container build, boot, and reach a healthy state on its own." The Celery surface belongs to python-agent-platform (pap:AD-7) and its wiring to Stories 11.2/11.3. Steward 43.7 therefore owns the achievable half — the SQLite metadata store proved created and migrated, plus a real API round-trip past /api/health — and the Celery half is recorded here as 11.2/11.3's rather than left implied. Caught before any CI step was written, which would not have passed.
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-43-7-sidecar-runtime-validation-on-python-3-14.md:80; _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-43-7-sidecar-runtime-validation-on-python-3-14.md:81; _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-43-7-sidecar-runtime-validation-on-python-3-14.md:83 (steward Story 43.7, status done); .github/workflows/platform-ci.yml:903; .github/workflows/platform-ci.yml:934
 
 ### DW-13-2-3: Full pixi lock probe including dbgpt-app on 3.14 blocked on onnxruntime cap (outside dbgpt-client scope).
 
@@ -1572,7 +1614,9 @@ status: open
   origin: spec-deferred 17b9964347f1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium (unverified)
   promoted: 2026-09-12 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 27.1 (27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals)
+  verified: src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py:143 (passes at this story's HEAD); src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py:30 (the allowance commit c56e9ec9ef added, 2026-09-11)
 
 ### DW-15-1-1: pyforge-marshal/.sync-baseline.json's skill_version field is now one version behind this story's CFE retro bump (8.90.1 -> 8.90.2).
 

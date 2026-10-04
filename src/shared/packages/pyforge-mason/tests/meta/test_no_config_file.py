@@ -89,8 +89,10 @@ _BANNED_MODULES = (
     "dotenv",
 )
 
+_CONDALOCK_PATH = PKG_ROOT / "engines" / "condalock.py"
+
 _SANCTIONED_YAML_EXCEPTIONS = {
-    (PKG_ROOT / "engines" / "condalock.py", "yaml"),
+    (_CONDALOCK_PATH, "yaml"),
 }
 """Story 4.4's narrow, deliberate carve-out (module docstring) -- applied
 only in `test_no_module_imports_a_config_file_parser` below, never inside
@@ -191,6 +193,90 @@ def test_no_module_imports_a_config_file_parser():
         "AD-13: no module under pyforge/mason/ may import a config-file "
         f"parser ({'/'.join(_BANNED_MODULES)}); found: {unsanctioned}"
     )
+
+
+_SANCTIONED_YAML_ATTRIBUTES = frozenset({"safe_load", "YAMLError"})
+"""The only `yaml.<attr>` names the sanctioned module may touch: the safe
+loader the carve-out exists for, and the exception it raises."""
+
+
+def _find_unsanctioned_yaml_attributes(path: Path = _CONDALOCK_PATH) -> list[str]:
+    """Every `yaml` reach in `path` other than `yaml.safe_load` /
+    `yaml.YAMLError` (Story 27.1, DW-4-4-5).
+
+    The import-form check below sanctions a bare `import yaml`, which binds
+    the whole module: `yaml.unsafe_load` can then arrive by attribute in any
+    expression position -- called directly, passed as an argument
+    (`map(yaml.unsafe_load, ...)`), or bound to a name (`_ld: object =
+    yaml.unsafe_load`). So every `ast.Attribute` on the name `yaml` is
+    walked, not only calls and assignments; and a bare `yaml` name used as a
+    value (`getattr(yaml, ...)`, `y = yaml`) is reported as `<bare yaml>`,
+    since it hands the whole module onward unchecked.
+
+    An aliased import (`import yaml as _yml`) binds the module under another
+    name, so every alias is walked exactly as `yaml` is, and the alias itself
+    is reported as `<import yaml as NAME>`: the carve-out sanctions only a
+    bare `import yaml` (final landing review, 2026-10-03 night)."""
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    bad: list[str] = []
+    yaml_names = {"yaml"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.asname is not None and _matches_banned(alias.name) == "yaml":
+                    yaml_names.add(alias.asname)
+                    bad.append(f"<import {alias.name} as {alias.asname}>")
+    attribute_bases: set[int] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id in yaml_names:
+            attribute_bases.add(id(node.value))
+            if node.attr not in _SANCTIONED_YAML_ATTRIBUTES:
+                bad.append(node.attr)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and node.id in yaml_names and id(node) not in attribute_bases:
+            bad.append(f"<bare {node.id}>")
+    return bad
+
+
+def test_condalock_yaml_attributes_are_only_safe_load_and_yamlerror():
+    assert _CONDALOCK_PATH.is_file(), f"sanctioned yaml module moved? {_CONDALOCK_PATH}"
+    assert _find_unsanctioned_yaml_attributes() == []
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "yaml.unsafe_load('x: 1')\n",
+        "list(map(yaml.unsafe_load, ['x: 1']))\n",
+        "_ld: object = yaml.unsafe_load\n",
+        "_loader = yaml.unsafe_load\n",
+        "yaml.load('x: 1', Loader=yaml.Loader)\n",
+        "getattr(yaml, 'unsafe_load')('x: 1')\n",
+        "import yaml as _yml\n_yml.unsafe_load('x: 1')\n",
+        "import yaml as _yml\n_ld = _yml\n",
+    ],
+)
+def test_detector_fires_on_every_unsanctioned_yaml_reach(tmp_path, body):
+    path = tmp_path / "condalock.py"
+    path.write_text("import yaml\n\n" + body, encoding="utf-8")
+    assert _find_unsanctioned_yaml_attributes(path)
+
+
+def test_detector_permits_safe_load_and_yamlerror(tmp_path):
+    path = tmp_path / "condalock.py"
+    path.write_text(
+        "import yaml\n\ntry:\n    yaml.safe_load('x: 1')\nexcept yaml.YAMLError:\n    pass\n",
+        encoding="utf-8",
+    )
+    assert _find_unsanctioned_yaml_attributes(path) == []
+
+
+def test_detector_reports_an_aliased_yaml_import_even_when_used_safely(tmp_path):
+    """The alias is itself outside the carve-out (a bare `import yaml`), so
+    it is reported whatever it is used for."""
+    path = tmp_path / "condalock.py"
+    path.write_text("import yaml as _yml\n\n_yml.safe_load('x: 1')\n", encoding="utf-8")
+    assert _find_unsanctioned_yaml_attributes(path) == ["<import yaml as _yml>"]
 
 
 def test_every_sanctioned_yaml_exception_is_live_and_import_form_scoped():

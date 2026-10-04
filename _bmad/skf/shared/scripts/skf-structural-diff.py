@@ -33,7 +33,13 @@ Input:
     - signature   <- signature
     - confidence  <- confidence
 
-  "name" is the primary match key. Nameless entries are skipped.
+  "(file, name)" is the primary match key, so same-named exports in different
+  files (four scripts each exporting `main`) are distinct entries. An entry
+  with no "file" is keyed by name alone; nameless entries are skipped. After
+  exact matching, leftover removed/added entries that share a name are paired:
+  different files on both sides is a move (reported in "moved" AND compared
+  field by field, as for any matched entry); a "file" on only one side is the
+  same entry in a different inventory shape (compared, never a move).
 
 Canonicalization (applied symmetrically to BOTH sides before matching):
   The baseline extractor (skf-create-skill) and the re-extractor (audit step 2)
@@ -69,8 +75,12 @@ Output:
     added:              list of entries present in current but not baseline
     removed:            list of entries present in baseline but not current
     changed:            list of { name, field, baseline_value, current_value }
+                        ("name" is the export name; summary.changed counts
+                        distinct changed entries, i.e. (file, name) keys)
     moved:              list of { name, previous_file, current_file }
-    unchanged_count:    number of entries that matched with no field change
+                        (all four lists sort by export name, then by the
+                        (file, name) key for same-named entries)
+    unchanged_count:   number of entries that matched with no field change
     applied_transforms: list of { transform, count } — which canonicalization
                         transforms actually fired and how many values each
                         touched (empty when none fired). Surfaced by audit
@@ -93,8 +103,8 @@ from pathlib import Path
 
 
 # Fields compared for change detection (in order).
-# "name" is the primary key and is not diffed as a field.
-# "file" is excluded — file moves are tracked separately in the "moved" list.
+# "name" (with "file", when present) is the match key and is not diffed as a
+# field. "file" is excluded — file moves are tracked separately in "moved".
 DIFF_FIELDS = ["type", "signature", "line", "confidence"]
 
 # Well-known stdlib module prefixes whose unqualified form is importable at
@@ -253,21 +263,25 @@ def _normalize_entries(
     reexport_map: dict[str, str],
     transform_counts: collections.Counter,
 ) -> dict[str, dict]:
-    """Build a name-keyed dict of canonicalized records.
+    """Build a dict of canonicalized records keyed by (file, name) -- the
+    string `"<file>\\0<name>"` -- or by the bare name when the entry has no
+    file.
 
     Applies field-name aliasing, signature canonicalization, and re-export
     name resolution. Accumulates fired-transform counts into transform_counts.
-    Nameless entries are skipped. On duplicate resolved names, the last entry
-    wins (consistent with prior behaviour).
+    Nameless entries are skipped. On duplicate keys, the last entry wins
+    (consistent with prior behaviour).
     """
     result: dict[str, dict] = {}
     for entry in entries:
         if not isinstance(entry, dict):
             continue
         raw_name = _first(entry, "name", "export_name")
+        raw_file = _first(entry, "file", "source_file")
         if not isinstance(raw_name, str) or not raw_name.strip():
             continue
         name = raw_name.strip()
+        file_path = raw_file.strip() if isinstance(raw_file, str) and raw_file.strip() else None
         resolved = reexport_map.get(name, name)
         if resolved != name:
             transform_counts["reexport-resolution"] += 1
@@ -277,14 +291,15 @@ def _normalize_entries(
         for t in sig_transforms:
             transform_counts[t] += 1
 
+        key = name if file_path is None else f"{file_path}\0{name}"
         # Normalized record — also the public entry shape emitted in
         # added[]/removed[], so both sides render into one consistent table
         # regardless of the input shape they came from.
-        result[name] = {
+        result[key] = {
             "name": name,
             "type": _first(entry, "type", "export_type"),
             "signature": canon_sig,
-            "file": _first(entry, "file", "source_file"),
+            "file": file_path,
             "line": _first(entry, "line", "source_line"),
             "confidence": entry.get("confidence"),
         }
@@ -319,30 +334,17 @@ def diff_inventories(
     removed_names = baseline_names - current_names
     common_names = baseline_names & current_names
 
-    # Emit normalized entries (uniform name/type/signature/file/line/confidence
-    # shape) so added[] and removed[] render into the same report table even
-    # though they originate from the snapshot and provenance-map shapes.
-    added = [current[n] for n in sorted(added_names)]
-    removed = [baseline[n] for n in sorted(removed_names)]
-
-    changed: list[dict] = []
-    moved: list[dict] = []
+    # Each changed/moved row carries its (name, key) sort key so the emitted
+    # lists order by export name first -- the order the name-keyed diff
+    # emitted -- and fall back to the (file, name) key only to separate
+    # same-named entries.
+    changed_rows: list[tuple[tuple[str, str], dict]] = []
+    moved_rows: list[tuple[tuple[str, str], dict]] = []
     unchanged_count = 0
+    changed_keys: set[str] = set()
 
-    for name in sorted(common_names):
-        base_rec = baseline[name]
-        curr_rec = current[name]
-
-        # File moves are tracked separately from field changes.
-        base_file = base_rec.get("file")
-        curr_file = curr_rec.get("file")
-        if base_file and curr_file and base_file != curr_file:
-            moved.append({
-                "name": name,
-                "previous_file": base_file,
-                "current_file": curr_file,
-            })
-
+    def compare(key: str, base_rec: dict, curr_rec: dict) -> None:
+        nonlocal unchanged_count
         entry_changed = False
         for field in DIFF_FIELDS:
             base_val = base_rec.get(field)
@@ -352,18 +354,65 @@ def diff_inventories(
             if base_val is None or curr_val is None:
                 continue
             if base_val != curr_val:
-                changed.append({
-                    "name": name,
+                changed_rows.append(((base_rec["name"], key), {
+                    "name": base_rec["name"],
                     "field": field,
                     "baseline_value": base_val,
                     "current_value": curr_val,
-                })
+                }))
                 entry_changed = True
-
-        if not entry_changed:
+        if entry_changed:
+            changed_keys.add(key)
+        else:
             unchanged_count += 1
 
-    changed_names = len({c["name"] for c in changed})
+    for key in sorted(common_names):
+        compare(key, baseline[key], current[key])
+
+    # Pair leftover removed/added entries that share an export name. Both
+    # sides carrying different files is a move; a file on only one side is the
+    # same entry seen through two inventory shapes. Either way the pair is
+    # compared field by field, as an exact match would be.
+    removed_by_name: dict[str, list[str]] = collections.defaultdict(list)
+    added_by_name: dict[str, list[str]] = collections.defaultdict(list)
+    for key in sorted(removed_names):
+        removed_by_name[baseline[key]["name"]].append(key)
+    for key in sorted(added_names):
+        added_by_name[current[key]["name"]].append(key)
+
+    paired_removed: set[str] = set()
+    paired_added: set[str] = set()
+    for export_name in sorted(set(removed_by_name) & set(added_by_name)):
+        for r_key, a_key in zip(removed_by_name[export_name], added_by_name[export_name]):
+            r_rec, a_rec = baseline[r_key], current[a_key]
+            r_file, a_file = r_rec.get("file"), a_rec.get("file")
+            if r_file and a_file:
+                moved_rows.append(((export_name, r_key), {
+                    "name": export_name,
+                    "previous_file": r_file,
+                    "current_file": a_file,
+                }))
+            compare(r_key, r_rec, a_rec)
+            paired_removed.add(r_key)
+            paired_added.add(a_key)
+
+    # Emit normalized entries (uniform name/type/signature/file/line/confidence
+    # shape) so added[] and removed[] render into the same report table even
+    # though they originate from the snapshot and provenance-map shapes.
+    # Every list sorts by (name, key); the sorts are stable, so one entry's
+    # changed fields keep their DIFF_FIELDS order.
+    added = [
+        current[k]
+        for k in sorted(added_names - paired_added, key=lambda k: (current[k]["name"], k))
+    ]
+    removed = [
+        baseline[k]
+        for k in sorted(removed_names - paired_removed, key=lambda k: (baseline[k]["name"], k))
+    ]
+    changed = [row for _, row in sorted(changed_rows, key=lambda r: r[0])]
+    moved = [row for _, row in sorted(moved_rows, key=lambda r: r[0])]
+
+    changed_names = len(changed_keys)
 
     applied_transforms = [
         {"transform": name, "count": transform_counts[name]}
