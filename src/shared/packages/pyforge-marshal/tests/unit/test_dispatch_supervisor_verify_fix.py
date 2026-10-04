@@ -451,6 +451,71 @@ def test_reverify_still_refused_emits_mrs_disp_060(
     assert observations[-1]["payload"]["failed_command"] == _COMMAND
 
 
+def test_supervisor_restart_resumes_a_pending_fix_turn_without_launching_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
+    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+
+    repo_root = loop._repo(tmp_path)
+    _seed_flag(repo_root, on=True)
+    worktree = loop._worktree(repo_root)
+    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
+    run_dir = loop._run_dir(repo_root)
+    ver_intent, ver_outcome = _journaled_refusal_with_failed_commands()
+    fix_intent = build_entry(
+        id=JournalEntryId("dispatch-supervisor-1", 10),
+        ts="2026-10-03T10:00:00.000Z",
+        run_id=loop._RUN_ID,
+        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+        phase=Phase.INTENT,
+        payload={
+            "launch_mode": "fix_only",
+            "prompt_bytes": 12,
+            "failed_command_count": 1,
+            "wall_clock_budget_s": 900.0,
+            "budget_started_monotonic": 1000.0,
+        },
+    )
+    fix_obs = build_entry(
+        id=JournalEntryId("dispatch-supervisor-1", 11),
+        ts="2026-10-03T10:00:01.000Z",
+        run_id=loop._RUN_ID,
+        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+        phase=Phase.OBSERVATION,
+        payload={"session_pid": 88003, "ok": True, "fix_intent_id": str(fix_intent.id)},
+    )
+    journal_lines = (
+        ver_intent,
+        ver_outcome,
+        prepare_for_write(fix_intent).line,
+        prepare_for_write(fix_obs).line,
+    )
+    launch_calls: list[str] = []
+    wait_calls: list[float] = []
+
+    def _launch(*_a, **_k):
+        launch_calls.append("dispatch_verify_fix")
+        raise AssertionError("must not launch a second fix turn")
+
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", _launch)
+    monkeypatch.setattr(
+        supervisor_main,
+        "wait_for_process",
+        lambda _p, _pid, *, timeout_s, on_poll=None: (
+            wait_calls.append(timeout_s),
+            ProcessWaitResult(exited=True, returncode=1),
+        )[1],
+    )
+    monkeypatch.setattr(supervisor_main.time, "monotonic", lambda: 1100.0)
+    fs = loop.FakeFs()
+
+    _finalize(fs, repo_root, worktree, journal_lines=journal_lines)
+
+    assert launch_calls == []
+    assert wait_calls and wait_calls[0] <= 900.0
+
+
 def test_without_sidecar_resolver_the_long_tail_fix_turn_never_launches(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
