@@ -25,7 +25,8 @@ ledger with the statuses it had read); ``marshal planning chain-regenerate``
 is the one verb. The four-phase helpers stay here. Story 86.5 also made the
 code-linkage verify and the epic orphan scan read only cites that name a
 story spec or a Spec folder (``_spec_cites``), never a prose word such as
-``spec-surface``.
+``spec-surface``. Story 86.8 adds path-form cites (``specs/spec-…``) so
+stale story-spec links count as missing even when the id is not numeric.
 """
 
 from __future__ import annotations
@@ -425,21 +426,33 @@ def _story_number(spec_id: str) -> tuple[int, int] | None:
     return (int(match.group(1)), int(match.group(2))) if match else None
 
 
+def _path_form_spec_cite(text: str, match_start: int) -> bool:
+    """True when the ``spec-…`` token at ``match_start`` is written as ``specs/spec-…``."""
+    return match_start >= len("specs/") and text[match_start - len("specs/") : match_start] == "specs/"
+
+
 def _spec_cites(root: Path, planning: Path, text: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """``(cites, missing)``: the spec cites in ``text``, and those that resolve nowhere.
 
     A candidate counts as a cite when it names a Spec folder or spec file that
-    exists anywhere in the repo, or has a story-spec id's shape
-    (``spec-<epic>-<story>[-<slug>]``); every other candidate is a prose word
-    (``spec-surface``, ``spec-template``) and is not counted. A story-spec cite
-    that names no existing file resolves by its epic and story numbers against
-    this project's own story specs (``spec-28-33`` names
-    ``spec-28-33-<slug>.md``); one that matches none is missing. A Spec folder
-    cite is counted only because the folder exists, so it is never missing.
+    exists anywhere in the repo, has a story-spec id's shape
+    (``spec-<epic>-<story>[-<slug>]``), or is written as a path
+    (``specs/spec-…``) even when the id is not numeric; every other candidate
+    is a prose word (``spec-surface``, ``spec-template``) and is not counted.
+    A story-spec cite that names no existing file resolves by its epic and story
+    numbers against this project's own story specs (``spec-28-33`` names
+    ``spec-28-33-<slug>.md``); one that matches none is missing. A path-form
+    cite that resolves nowhere is missing. A Spec folder cite is counted only
+    because the folder exists, so it is never missing.
     """
     local = _present_spec_ids(planning / "specs")
     known = _known_spec_ids(root) | local
     local_stories = {number for number in map(_story_number, local) if number is not None}
+    path_form: dict[str, bool] = {}
+    for m in _SPEC_CITE_RE.finditer(text):
+        cite = f"spec-{m.group(1).lower()}"
+        if _path_form_spec_cite(text, m.start()):
+            path_form[cite] = True
     cites: list[str] = []
     missing: list[str] = []
     for cite in sorted({f"spec-{m.group(1).lower()}" for m in _SPEC_CITE_RE.finditer(text)}):
@@ -448,6 +461,9 @@ def _spec_cites(root: Path, planning: Path, text: str) -> tuple[tuple[str, ...],
             continue
         number = _story_number(cite)
         if number is None:
+            if path_form.get(cite):
+                cites.append(cite)
+                missing.append(cite)
             continue
         cites.append(cite)
         if number not in local_stories:

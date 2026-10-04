@@ -1231,6 +1231,25 @@ def test_code_linkage_names_each_missing_cite_and_stays_complete(tmp_path: Path)
     assert outcome.detail == "read-only verify: 3 spec cite(s); 2 missing: spec-4-2-gone, spec-9-9"
 
 
+def test_code_linkage_counts_path_form_missing_cite(tmp_path: Path):
+    """Story 86.8: ``specs/spec-…`` cites count as missing when the file exists nowhere."""
+    _seed_linkage(
+        tmp_path,
+        _PROSE + "Full record: `specs/spec-a1-old-name-that-is-gone.md`.\n",
+    )
+    outcome = verify_code_linkage(tmp_path, "acme")
+    assert outcome.status == "complete"
+    assert "1 missing: spec-a1-old-name-that-is-gone" in outcome.detail
+
+
+def test_code_linkage_prose_spec_template_is_not_a_cite(tmp_path: Path):
+    """Story 86.8: bare ``spec-template`` prose is not counted (no ``specs/`` path prefix)."""
+    _seed_linkage(tmp_path, "Follow spec-template when drafting a story spec.\n")
+    outcome = verify_code_linkage(tmp_path, "acme")
+    assert outcome.status == "complete"
+    assert outcome.detail == "read-only verify: 0 spec cite(s); 0 missing"
+
+
 def test_code_linkage_on_the_live_tree_names_only_story_spec_ids_and_completes():
     """The live tree: marshal's verify completes, and each missing cite it counts is named."""
     if not (_REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal" / "planning-artifacts" / "epics.md").is_file():
