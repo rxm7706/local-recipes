@@ -4799,3 +4799,14 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   severity: low
   promoted: 2026-10-04 — dispatch-land finalize
   status: open
+
+### DW-atlas-27-3-1: The distribution-breakdown facet filter's container intermittently renders empty, so its e2e test is quarantined.
+
+- source_spec: `planning-artifacts/specs/spec-27-3-the-read-surfaces-render-what-design-specifies-on-real-data.md`
+  summary: Story 27.3's `test_declared_controls_render_against_real_rows` fails intermittently: `#distribution-breakdown--filter-facet` renders as an empty 0x0 `div` with no children (the filter control never builds), while `#distribution-breakdown--chart` renders at 1240x173. It failed in CI on #1836 (passed on rerun) and on #1838, and locally it failed every time after one early pass, both alone and in the full file. Neither a longer wait (networkidle plus 15 s) nor a `spawn` start method for the server fixed it, so the defect is in the filter build, not in the test. The test is quarantined with a non-strict xfail that names this row. Fix it in atlas Story 27.5 and remove the xfail there.
+  evidence: 2026-10-04 local probes (DOM ids present; filter box 0x0, display block, visible, no children) and the CI logs of #1836 and #1838.
+  location: src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py:216
+  origin: landing 2026-10-04 (operator session)
+  severity: medium
+  promoted: 2026-10-04 — quarantine hotfix
+  status: open
