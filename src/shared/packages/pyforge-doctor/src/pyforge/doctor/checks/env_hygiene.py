@@ -597,6 +597,12 @@ def _is_irrefutable(pattern: ast.pattern) -> bool:
 _HEADER_KEY_RE = re.compile(r"^(authorization|proxy-authorization|cookie|[a-z][a-z0-9]*(-[a-z0-9]+)+)$")
 
 
+# `_scan_file`'s whole-file prefilter: a file with none of these cannot
+# hold a header-shaped target. A hyphenated returned key that is not an
+# `X-` header (`Private-Token`) is only seen in a file that says one of them.
+_HEADER_PREFILTER_MARKERS = ("header", "authorization", "cookie", "'x-", '"x-')
+
+
 def _is_header_key(key: str) -> bool:
     return _HEADER_KEY_RE.match(key.lower()) is not None
 
@@ -809,9 +815,9 @@ def _scan_file(file_path: Path) -> list[Finding]:
         # module docstring). Files lacking both cannot match; skipping them
         # recovered SM-C1 headroom as the monorepo grew past Story 6.1's
         # baseline. A returned header dict may never say "header", so the
-        # auth-bearing key names pass the filter too.
+        # auth-bearing key names and quoted `X-` keys pass the filter too.
         lower = source.lower()
-        if "header" not in lower and "authorization" not in lower and "cookie" not in lower:
+        if not any(marker in lower for marker in _HEADER_PREFILTER_MARKERS):
             return []
         if "environ" not in lower and "getenv" not in lower:
             return []

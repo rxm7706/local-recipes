@@ -1194,3 +1194,268 @@ def test_gather_dict_literal_host_guard_still_suppresses(tmp_path: Path):
     )
 
     assert gather(tmp_path) == ()
+
+
+# --- statement-flow, ternary, match and polarity guards (story 41.4) ------
+
+
+def _flagged_vars(tmp_path: Path, source: str) -> list[str | None]:
+    _write(tmp_path, "subject.py", source)
+    return [f.evidence["var_name"] for f in gather(tmp_path) if f.check == CHECK_NAME]
+
+
+def test_gather_early_return_guard_clause_suppresses_the_rest_of_the_block(tmp_path: Path):
+    # DW-FU-1-4-2 (a): the guard-clause idiom used to WARN.
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(host):\n"
+            '    if host != "internal.example.com":\n'
+            "        return None\n"
+            '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_early_raise_on_a_negated_host_predicate_suppresses(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(url):\n"
+            "    if not is_enterprise_host(url):\n"
+            '        raise ValueError("refusing")\n'
+            '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_positive_guard_whose_body_exits_does_not_guard_the_rest(tmp_path: Path):
+    # `if host == safe: return` means the rest runs for every OTHER host.
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(host):\n"
+        '    if host == "internal.example.com":\n'
+        "        return None\n"
+        '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_positive_guard_whose_else_exits_guards_the_rest(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(host):\n"
+            '    if host == "internal.example.com":\n'
+            "        pass\n"
+            "    else:\n"
+            "        return None\n"
+            '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_guard_clause_with_a_non_exiting_body_does_not_guard(tmp_path: Path):
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(host):\n"
+        '    if host != "internal.example.com":\n'
+        '        log("other host")\n'
+        '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_guard_clause_does_not_leak_out_of_its_block(tmp_path: Path):
+    # The guard clause sits inside a loop body; the assignment after the
+    # loop is not covered by it.
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(hosts):\n"
+        "    for host in hosts:\n"
+        '        if host != "internal.example.com":\n'
+        "            continue\n"
+        '    headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_not_predicate_true_branch_is_flagged(tmp_path: Path):
+    # DW-FU-1-4-2 (b): `not host_ok(h)` used to suppress its TRUE branch.
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(h):\n"
+        "    if not host_ok(h):\n"
+        '        headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_not_predicate_else_branch_is_suppressed(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(h):\n"
+            "    if not host_ok(h):\n"
+            "        pass\n"
+            "    else:\n"
+            '        headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_boolop_over_negated_compares_true_branch_is_flagged(tmp_path: Path):
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(host, verbose):\n"
+        '    if host != "a.example" and host != "b.example" and verbose:\n'
+        '        headers["Authorization"] = os.environ.get("TOKEN")\n',
+    ) == ["TOKEN"]
+
+
+def test_gather_boolop_mixing_polarities_stays_conservatively_suppressed(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(host):\n"
+            '    if host == "a.example" or host != "b.example":\n'
+            '        headers["Authorization"] = os.environ.get("TOKEN")\n',
+        )
+        == []
+    )
+
+
+def test_gather_host_scoped_ternary_is_suppressed(tmp_path: Path):
+    # DW-FU-1-4 (b): the exact shape the ledger row names.
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(host):\n"
+            '    headers["X"] = os.environ.get("Y") if host == "safe" else None\n',
+        )
+        == []
+    )
+
+
+def test_gather_inverted_host_ternary_is_flagged(tmp_path: Path):
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(host):\n"
+        '    headers["X"] = None if host == "safe" else os.environ.get("Y")\n',
+    ) == ["Y"]
+
+
+def test_gather_match_on_host_guards_refutable_cases_only(tmp_path: Path):
+    # DW-FU-1-4 (b): a match/case dispatch on the host.
+    assert _flagged_vars(
+        tmp_path,
+        "import os\n"
+        "\n"
+        "def handler(host):\n"
+        "    match host:\n"
+        '        case "internal.example.com" | "mirror.example.com":\n'
+        '            headers["A"] = os.environ.get("SAFE")\n'
+        "        case _:\n"
+        '            headers["A"] = os.environ.get("LEAK")\n',
+    ) == ["LEAK"]
+
+
+def test_gather_match_case_guard_on_host_suppresses(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def handler(request):\n"
+            "    match request:\n"
+            '        case {"url": url} if url_host(url) == "internal.example.com":\n'
+            '            headers["A"] = os.environ.get("SAFE")\n',
+        )
+        == []
+    )
+
+
+def test_gather_returned_header_dict_is_flagged(tmp_path: Path):
+    # DW-FU-1-4 (a): `return {"X-JFrog-Art-Api": api_key}` was invisible.
+    _write(
+        tmp_path,
+        "auth.py",
+        "import os\n"
+        "\n"
+        "def auth():\n"
+        '    api_key = os.environ.get("JFROG_API_KEY")\n'
+        "    if api_key:\n"
+        '        return {"X-JFrog-Art-Api": api_key}\n'
+        "    return {}\n",
+    )
+
+    (finding,) = gather(tmp_path)
+
+    assert finding.evidence == {"file": str(tmp_path / "auth.py"), "line": 6, "var_name": "JFROG_API_KEY"}
+    assert "a returned header dict ('X-JFrog-Art-Api')" in finding.message
+
+
+def test_gather_returned_header_dict_behind_a_guard_clause_is_suppressed(tmp_path: Path):
+    # The dependency-checker.py `_auth_headers` shape.
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def auth(url):\n"
+            "    if not _is_configured_enterprise_host(url):\n"
+            "        return {}\n"
+            '    token = os.environ.get("JFROG_TOKEN")\n'
+            "    if token:\n"
+            '        return {"Authorization": f"Bearer {token}"}\n'
+            "    return {}\n",
+        )
+        == []
+    )
+
+
+def test_gather_returned_dict_with_no_header_key_is_not_flagged(tmp_path: Path):
+    assert (
+        _flagged_vars(
+            tmp_path,
+            "import os\n"
+            "\n"
+            "def config():\n"
+            '    return {"success": True, "home": os.environ.get("HOME")}\n',
+        )
+        == []
+    )
+
+
+def test_gather_real_dependency_checker_auth_headers_stays_clean() -> None:
+    # The real file whose returned dicts kept this shape out of v1: its
+    # guard clause must suppress them now that returns are checked.
+    script = _HTTP_PY_DIR / "dependency-checker.py"
+    if not script.is_file():
+        pytest.skip("not running inside the local-recipes monorepo checkout")
+
+    assert env_hygiene._scan_file(script) == []
