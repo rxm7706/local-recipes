@@ -3,7 +3,7 @@ title: "41.4: The check CLI, the env and engines checks, the score and the bmad-
 type: 'fix'
 created: '2026-10-03'
 status: 'in-review'
-baseline_revision: 7d8b76106e3cd4b6c7b61c14ce017dc47af7f3ba
+baseline_revision: 30a18afa3a
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
