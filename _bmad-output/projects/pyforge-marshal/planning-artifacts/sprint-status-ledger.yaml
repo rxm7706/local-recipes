@@ -406,7 +406,7 @@ development_status:
   85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
-  86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: backlog
+  86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done
   86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is: backlog
   86-5-the-chain-tooling-sheds-its-retired-and-noisy-paths: done
   86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: backlog
