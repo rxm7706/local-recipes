@@ -8,22 +8,12 @@ entries: 60
 
 # pyforge-atlas — deferred-work ledger (RESTORED, tracked)
 
-**All 52 real deferrals recorded during the Kedro migration, with full bodies — the
-ledger is complete.** The run log's index of "54" double-counted two aliases; see
-§ Provenance.
-
-The frontmatter `entries` count is the number of `## DW-` headings in this file and so
-runs ahead of that 52 as post-restore work lands: **57** today = the 52 restored + `DW-I4-1`
-(promoted 2026-07-29 out of the gitignored Tier-3 ledger) + `DW-AD23-1` and `DW-AD23-2`
-(Story 10.6, same date — the first *defining* an id that eight artifacts had been citing
-with no entry behind it) + `DW-I5-1` (the 10.6 review-budget follow-up, promoted the same
-day) + `DW-AD23-3` (the lock-store default, found by the pass `DW-I5-1` owed; closed
-2026-07-30 by PR #140).
-
-*(The count read `55` until 2026-07-30, when the verification campaign recounted the
-headings and found 57 — the two Story-10.6 follow-ups had been added without re-stamping
-it. Stale counts in a file that declares its own counting rule are exactly what the
-campaign exists to catch.)*
+**Top-level ledger entries (`## DW-`): 60 today.** The Kedro-migration restore held **52
+real deferrals** (the run log's index of "54" double-counted two aliases; see § Provenance).
+Follow-up intake and verification campaigns added more `## DW-` headings without retiring
+that migration set — the frontmatter `entries` field tracks **`## DW-` headings only**, not
+the **`### DW-` follow-up / re-ingest sub-rows** beneath them (**178** `### DW-` headings
+today). Stale narrative prose here is exactly what Story 27.4's counting test guards against.
 
 ## Why this file exists
 
@@ -56,8 +46,9 @@ Tier-2 `planning-artifacts/`, where it cannot be lost to a Tier-3 accident again
     store not yet materialized — DW-D2)". The index read that banner as a distinct
     entry alongside `DW-D2-1/2/3`.
 
-  The real count is **52**, and 52 is what this file holds. Nothing from the
-  migration's deferred work is missing.
+  The real migration count is **52** bodies recovered into this durable ledger; the live
+  file now carries **60** top-level `## DW-` headings and **178** `### DW-` sub-entries
+  after years of follow-up intake — nothing from the migration's deferred work is missing.
 
 Six of these are also re-stated as contract-level capabilities **DC-1…DC-6** in
 the PRD § 6.4, because they outlived the migration: `DW-C1-1`/`DW-G3`/`DW-H4`
