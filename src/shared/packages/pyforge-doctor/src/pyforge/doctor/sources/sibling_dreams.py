@@ -34,8 +34,6 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
 

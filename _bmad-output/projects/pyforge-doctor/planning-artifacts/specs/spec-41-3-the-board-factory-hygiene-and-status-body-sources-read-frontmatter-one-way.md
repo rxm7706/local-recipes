@@ -2,8 +2,9 @@
 title: "41.3: The board, factory, hygiene and status-body sources read frontmatter one way, and the docs pages say what is true"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'blocked'
 baseline_revision: 'e0733d4a1c0e00d8f6bb50a3cf650e3310b8c522'
+blocking_condition: 'Phase 4+5 burn-down incomplete — factory/hygiene/docs_shelf/fleet_scan deferrals and ledger closures remain'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -101,3 +102,16 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: blocked
+Blocking condition: Phase 4+5 burn-down incomplete — factory/hygiene/docs_shelf/fleet_scan deferrals and ledger closures remain
+
+Verification: `pyforge-doctor-test` 3337 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile.
+
+Landed in branch commits since `baseline_revision` (partial): shared CAP-81 text reader (`chain._frontmatter_parse_text`, refusal causes), readers wired in `status_body_consistency`, `hygiene`, `sibling_dreams`, `factory._doc_pin`; INV-A decomposition prose + whole-token slug checks in `board.py`; `_load_foreign_module` sys.modules restore; factory `check_spec_status` / `check_spec_indexed` fixes; 34 archived Dream opener splits; live kinship pin 32.
+
+Governed paths named in memlogs: `spec-pyforge-doctor/.memlog.md`, `spec-pyforge-core/.memlog.md` (co-governor), `spec-mcp-era-isolation/.memlog.md`, `spec-mcp-host-real-station-tools/.memlog.md`.
+
+Still open (not implemented this run): `DW-FU-6-8-2`, `DW-FU-6-8-6`–`9`, `DW-FU-9-2`–`9-3`, `DW-FU-6-9` (`scripts/fleet_scan.py`), `DW-6-11-1`, `DW-FU-23-5`, `DW-FU-30-1`, `DW-FU-30-1-2`, and matching `deferred-work-ledger.md` closures with `resolution:` / `verified:` lines.
