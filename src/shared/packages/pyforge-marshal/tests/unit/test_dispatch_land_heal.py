@@ -1630,6 +1630,39 @@ def test_union_team_memory_index_texts_live_memory_md_parallel_appends() -> None
     base_entries = _index_entry_lines(base)
     result_entries = _index_entry_lines(result)
     assert len(result_entries) == len(base_entries) + 2
+    project_at = main.index("## Project")
+    assert result == main[:project_at].rstrip("\n") + f"\n{branch_line}\n" + main[project_at:]
+    assert "\n\n## Reference" in result
+
+
+def test_union_team_memory_index_texts_unchanged_returns_main_bytes() -> None:
+    base = _memory_index_text()
+    assert union_team_memory_index_texts(base, base, base) == base
+
+
+def test_union_team_memory_index_texts_preserves_heading_blank_lines() -> None:
+    """Story 83.13: union must not re-render ``## `` spacing from the live index shape."""
+    repo_root = Path(__file__).resolve().parents[6]
+    memory_path = repo_root / ".claude" / "memory" / "MEMORY.md"
+    base = memory_path.read_text(encoding="utf-8")
+    main_line = "- [83-13-main](feedback/83-13-main.md) — Story 83.13 blank-line probe (main)"
+    branch_line = "- [83-13-branch](feedback/83-13-branch.md) — Story 83.13 blank-line probe (branch)"
+    project_at = base.index("## Project")
+    main = base[:project_at].rstrip("\n") + f"\n{main_line}\n" + base[project_at:]
+    branch = base[:project_at].rstrip("\n") + f"\n{branch_line}\n" + base[project_at:]
+    result = union_team_memory_index_texts(base, main, branch)
+    assert result is not None
+    project_at = main.index("## Project")
+    assert result == main[:project_at].rstrip("\n") + f"\n{branch_line}\n" + main[project_at:]
+    assert "\n\n## Reference" in result
+    assert result.count("## Reference") == base.count("## Reference")
+
+
+def test_mutation_union_team_memory_index_reconstruction_removed() -> None:
+    """Removing line-preserving reconstruction breaks this test (Story 83.13)."""
+    from pyforge.marshal.core import dispatch_landing as landing_mod
+
+    assert hasattr(landing_mod, "_reconstruct_team_memory_index_from_main")
 
 
 def test_mutation_mechanical_set_includes_team_memory_index() -> None:
