@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from pyforge.core.flags import FlagConfigError, read_boolean
-from pyforge.core.process import ProcessError, ProcessPort
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from .adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 from .adapters.vcs_git import VcsCommandError

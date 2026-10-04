@@ -1209,6 +1209,7 @@ def _cli_verdict(repo_root: Path, run_dir: Path, process: object):
         slug=loop._SLUG,
         journal=journal,
         effective_policy=cli._compose_policy(loop._SLUG),
+        run_dir=run_dir,
     )
     guard = cli._live_dispatch_story_keys(
         fs=fs,
