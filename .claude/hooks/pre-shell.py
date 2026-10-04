@@ -3,7 +3,7 @@
 
 (steward Story 63.3, spec-pyforge-steward CAP-5)
 
-WHAT THIS IS. A repo-level `PreToolUse` guard for the eleven AGENTS.md/CLAUDE.md
+WHAT THIS IS. A repo-level `PreToolUse` guard for the twelve AGENTS.md/CLAUDE.md
 session rules that were previously prose only. Registered on `Bash` and on
 `Edit`/`Write`/`NotebookEdit` in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` / `afterFileEdit` in `.cursor/hooks.json` (Cursor) --
@@ -12,7 +12,7 @@ harness's event(s) at this one script, and this script tells the two apart by
 the shape of the JSON on stdin (see `detect()`).
 
 Gemini CLI, GitHub Copilot CLI and Devin have no verified deny surface for
-this hook -- for them the eleven rules stay instruction-only, as written in
+this hook -- for them the twelve rules stay instruction-only, as written in
 AGENTS.md (see AGENTS.md's own "Session guardrails" section; do not assume
 this script runs there).
 
@@ -136,7 +136,7 @@ def build_context(harness: str, kind: str, payload: dict[str, Any]) -> Context:
 
 # --------------------------------------------------------------------------
 # Command tokenization -- heuristic, not a shell. Good enough to recognize
-# the eleven named forms; not a sandbox and not trying to be one.
+# the twelve named forms; not a sandbox and not trying to be one.
 # --------------------------------------------------------------------------
 
 
@@ -616,14 +616,17 @@ def match_direct_write_governed_path(ctx: Context, rule: dict[str, Any]) -> Opti
 _LOOP_HOMES_ROOT = Path.home() / ".bmad-loops"
 _PROTECTED_BRANCH_FLOOR = frozenset({"refs/heads/main", "refs/heads/loop/"})
 _PROTECTED_BRANCH_KINDS = frozenset({"operational-branch", "legacy"})
+_ORIGIN_MAIN = "refs/remotes/origin/main"
+_PRESERVE_ARCHIVE_TAG_PREFIXES = ("refs/tags/preserve/", "refs/tags/archive/")
 
 
 def load_protected_branch_prefixes(repo_root: Path) -> set[str]:
-    """Branch refname prefixes the protected-ref-deletion rule enforces.
+    """Branch refname prefixes (Story 85.1); kept for tests and branch-only callers."""
+    return {p for p in load_protected_deletion_prefixes(repo_root) if p.startswith("refs/heads/")}
 
-    Unions the roster's branch entries with a code floor so the roster can
-    only add (steward Story 85.1, spec-pyforge-steward CAP-165).
-    """
+
+def load_protected_deletion_prefixes(repo_root: Path) -> set[str]:
+    """Full refname prefixes with a roster `deletion` rule, unioned with the branch floor."""
     prefixes = set(_PROTECTED_BRANCH_FLOOR)
     roster_path = repo_root / "docs" / "governance" / "guild-roster.json"
     try:
@@ -636,12 +639,13 @@ def load_protected_branch_prefixes(repo_root: Path) -> set[str]:
     for entry in entries:
         if not isinstance(entry, dict):
             continue
-        kind = entry.get("kind")
         refname = entry.get("refname")
-        if kind not in _PROTECTED_BRANCH_KINDS or not isinstance(refname, str):
+        rules = entry.get("rules")
+        if not isinstance(refname, str) or not isinstance(rules, list):
             continue
-        if refname.startswith("refs/heads/"):
-            prefixes.add(refname)
+        if "deletion" not in rules:
+            continue
+        prefixes.add(refname)
     return prefixes
 
 
@@ -652,7 +656,14 @@ def _branch_refname(branch: str) -> str:
     return f"refs/heads/{branch}"
 
 
-def _is_protected_branch_ref(refname: str, prefixes: set[str]) -> bool:
+def _tag_refname(tag: str) -> str:
+    tag = tag.strip()
+    if tag.startswith("refs/tags/"):
+        return tag
+    return f"refs/tags/{tag}"
+
+
+def _ref_matches_prefix(refname: str, prefixes: set[str]) -> bool:
     for prefix in prefixes:
         if refname == prefix:
             return True
@@ -661,6 +672,48 @@ def _is_protected_branch_ref(refname: str, prefixes: set[str]) -> bool:
         if not prefix.endswith("/") and refname.startswith(prefix + "/"):
             return True
     return False
+
+
+def _is_protected_branch_ref(refname: str, prefixes: set[str]) -> bool:
+    return _ref_matches_prefix(refname, prefixes)
+
+
+def _is_protected_ref(refname: str, prefixes: set[str]) -> bool:
+    return _ref_matches_prefix(refname, prefixes)
+
+
+def _git_exit_code(args: list[str], cwd: str) -> Optional[int]:
+    try:
+        out = subprocess.run(
+            ["git", *args], cwd=cwd, capture_output=True, text=True, timeout=5
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return out.returncode
+
+
+def _is_ancestor(ancestor: str, descendant: str, cwd: str) -> bool:
+    code = _git_exit_code(["merge-base", "--is-ancestor", ancestor, descendant], cwd)
+    return code == 0
+
+
+def _tip_covered_by_preserve_or_archive_tag(tip: str, cwd: str) -> bool:
+    for prefix in _PRESERVE_ARCHIVE_TAG_PREFIXES:
+        listed = _git(["for-each-ref", "--contains", tip, "--format=%(refname)", prefix], cwd)
+        if listed:
+            return True
+    return False
+
+
+def _resolve_ref_tip(refname: str, cwd: str, *, remote: str = "origin") -> Optional[str]:
+    tip = _git(["rev-parse", "--verify", refname], cwd)
+    if tip:
+        return tip
+    if refname.startswith("refs/heads/"):
+        short = refname.removeprefix("refs/heads/")
+        rtr = f"refs/remotes/{remote}/{short}"
+        return _git(["rev-parse", "--verify", rtr], cwd)
+    return None
 
 
 def _git_subcommand_tokens(tokens: list[str]) -> Optional[list[str]]:
@@ -688,8 +741,18 @@ def _git_subcommand_tokens(tokens: list[str]) -> Optional[list[str]]:
     return None
 
 
-def _branch_deletions_in_push(args: list[str]) -> list[str]:
-    branches: list[str] = []
+def _push_delete_target_ref(tok: str) -> str:
+    if tok.startswith("refs/"):
+        return tok
+    head = tok.split("/", 1)[0]
+    if head in ("preserve", "archive", "rescue"):
+        return _tag_refname(tok)
+    return _branch_refname(tok)
+
+
+def _ref_deletions_in_push(args: list[str]) -> list[str]:
+    """Return full refnames (refs/heads/… or refs/tags/…) targeted for deletion."""
+    refs: list[str] = []
     delete_mode = False
     i = 0
     while i < len(args):
@@ -706,18 +769,28 @@ def _branch_deletions_in_push(args: list[str]) -> list[str]:
             i += 1
             continue
         if delete_mode and not tok.startswith("-"):
-            branches.append(tok)
+            refs.append(_push_delete_target_ref(tok))
             i += 1
             continue
         if ":" in tok:
             left, right = tok.split(":", 1)
             if left == "" and right:
-                if right.startswith("refs/heads/"):
-                    branches.append(right.removeprefix("refs/heads/"))
+                if right.startswith("refs/"):
+                    refs.append(right)
+                elif right.startswith("refs/heads/"):
+                    refs.append(right)
                 else:
-                    branches.append(right)
+                    refs.append(_branch_refname(right))
         i += 1
-    return branches
+    return refs
+
+
+def _branch_deletions_in_push(args: list[str]) -> list[str]:
+    return [
+        r.removeprefix("refs/heads/")
+        for r in _ref_deletions_in_push(args)
+        if r.startswith("refs/heads/")
+    ]
 
 
 def _worktree_remove_target(args: list[str]) -> Optional[Path]:
@@ -737,11 +810,9 @@ def _is_loop_home(path: Path) -> bool:
     return resolved == root or root in resolved.parents
 
 
-def _gh_api_deletes_protected_branch(
-    tokens: list[str], prefixes: set[str]
-) -> bool:
+def _gh_api_delete_ref(tokens: list[str]) -> Optional[str]:
     if not _contains(tokens, ["gh", "api"]):
-        return False
+        return None
     method: Optional[str] = None
     endpoint: Optional[str] = None
     for i, tok in enumerate(tokens):
@@ -749,40 +820,188 @@ def _gh_api_deletes_protected_branch(
             method = tokens[i + 1].upper()
         elif tok.startswith("-X") and len(tok) > 2:
             method = tok[2:].upper()
-        if "git/refs/heads/" in tok:
+        if "git/refs/heads/" in tok or "git/refs/tags/" in tok:
             endpoint = tok
     if method != "DELETE" or endpoint is None:
+        return None
+    if "git/refs/heads/" in endpoint:
+        branch = endpoint.split("git/refs/heads/", 1)[1].strip("/")
+        return _branch_refname(branch) if branch else None
+    if "git/refs/tags/" in endpoint:
+        tag = endpoint.split("git/refs/tags/", 1)[1].strip("/")
+        return _tag_refname(tag) if tag else None
+    return None
+
+
+def _push_mirror_origin(rest: list[str]) -> bool:
+    if "--mirror" not in rest:
         return False
-    branch = endpoint.split("git/refs/heads/", 1)[1].strip("/")
-    if not branch:
+    remotes = [t for t in rest if not t.startswith("-") and t not in ("--mirror", "push")]
+    return not remotes or "origin" in remotes
+
+
+def _prune_refspec_covers_protected(refspec: str, prefixes: set[str]) -> bool:
+    if ":" not in refspec:
         return False
-    return _is_protected_branch_ref(_branch_refname(branch), prefixes)
+    left, right = refspec.split(":", 1)
+    for side in (left.strip(), right.strip()):
+        if side.endswith("/*"):
+            base = side[:-2]
+        else:
+            base = side.rstrip("/")
+        for prefix in prefixes:
+            if side.endswith("/*") and base in ("refs/tags", "refs/heads"):
+                if prefix.startswith(base + "/"):
+                    return True
+            if _ref_matches_prefix(base + "/probe", {prefix}) or _ref_matches_prefix(
+                prefix.rstrip("/") + "/probe", {base}
+            ):
+                return True
+            if base == prefix.rstrip("/") or prefix.startswith(base + "/"):
+                return True
+    return False
+
+
+def _git_prune_covers_protected(verb: str, rest: list[str], prefixes: set[str]) -> bool:
+    if verb == "push" and "--prune" in rest:
+        for tok in rest:
+            if ":" in tok and _prune_refspec_covers_protected(tok, prefixes):
+                return True
+    if verb == "fetch" and "--prune" in rest:
+        if "--prune-tags" not in rest:
+            return False
+        for tok in rest:
+            if tok.startswith("refs/") and _prune_refspec_covers_protected(tok, prefixes):
+                return True
+        return any(p.startswith("refs/tags/") for p in prefixes)
+    return False
+
+
+def _rm_removes_loop_home(tokens: list[str]) -> bool:
+    low = [Path(t).name.lower() for t in tokens]
+    if "rm" not in low:
+        return False
+    idx = low.index("rm")
+    recursive = any(
+        t in ("-r", "-rf", "-fr", "-R") or (t.startswith("-") and "r" in t and "f" in t)
+        for t in tokens[idx + 1 :]
+    )
+    if not recursive:
+        return False
+    for tok in tokens[idx + 1 :]:
+        if tok.startswith("-"):
+            continue
+        if _is_loop_home(Path(os.path.expanduser(tok))):
+            return True
+    return False
+
+
+def _gh_pr_merge_deletes_loop_head(tokens: list[str]) -> bool:
+    if not _contains(tokens, ["gh", "pr", "merge"]):
+        return False
+    if "--delete-branch" not in tokens:
+        return False
+    for i, tok in enumerate(tokens):
+        if tok in ("--head", "-H") and i + 1 < len(tokens):
+            head = tokens[i + 1]
+            if head.startswith("loop/") or head.startswith("refs/heads/loop/"):
+                return True
+    return False
+
+
+def _collect_ref_deletions_from_tokens(tokens: list[str]) -> list[str]:
+    refs: list[str] = []
+    git_rest = _git_subcommand_tokens(tokens)
+    if git_rest:
+        verb = git_rest[0]
+        rest = git_rest[1:]
+        if verb == "push":
+            refs.extend(_ref_deletions_in_push(rest))
+        elif verb == "branch" and rest and rest[0] in ("-d", "-D", "--delete"):
+            for branch in rest[1:]:
+                if branch.startswith("-"):
+                    continue
+                refs.append(_branch_refname(branch))
+        elif verb == "tag" and rest and rest[0] in ("-d", "--delete"):
+            for tag in rest[1:]:
+                if tag.startswith("-"):
+                    continue
+                refs.append(_tag_refname(tag))
+        elif verb == "update-ref" and len(rest) >= 2 and rest[0] == "-d":
+            refs.append(rest[1])
+    deleted = _gh_api_delete_ref(tokens)
+    if deleted:
+        refs.append(deleted)
+    return refs
 
 
 def match_protected_ref_deletion(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     reason = str(rule["reason"])
-    prefixes = load_protected_branch_prefixes(ctx.repo_root)
+    prefixes = load_protected_deletion_prefixes(ctx.repo_root)
     for tokens in ctx.subcommands:
         git_rest = _git_subcommand_tokens(tokens)
         if git_rest:
             verb = git_rest[0]
             rest = git_rest[1:]
             if verb == "push":
-                for branch in _branch_deletions_in_push(rest):
-                    if _is_protected_branch_ref(_branch_refname(branch), prefixes):
+                if _push_mirror_origin(rest):
+                    return reason
+                if _git_prune_covers_protected("push", rest, prefixes):
+                    return reason
+                for ref in _ref_deletions_in_push(rest):
+                    if _is_protected_ref(ref, prefixes):
                         return reason
+            elif verb == "fetch" and _git_prune_covers_protected("fetch", rest, prefixes):
+                return reason
             elif verb == "branch" and rest and rest[0] in ("-d", "-D", "--delete"):
                 for branch in rest[1:]:
                     if branch.startswith("-"):
                         continue
-                    if _is_protected_branch_ref(_branch_refname(branch), prefixes):
+                    if _is_protected_ref(_branch_refname(branch), prefixes):
                         return reason
+            elif verb == "tag" and rest and rest[0] in ("-d", "--delete"):
+                for tag in rest[1:]:
+                    if tag.startswith("-"):
+                        continue
+                    if _is_protected_ref(_tag_refname(tag), prefixes):
+                        return reason
+            elif verb == "update-ref" and len(rest) >= 2 and rest[0] == "-d":
+                if _is_protected_ref(rest[1], prefixes):
+                    return reason
             elif verb == "worktree" and len(rest) >= 2 and rest[0] == "remove":
                 target = _worktree_remove_target(rest[1:])
                 if target is not None and _is_loop_home(target):
                     return reason
-        if _gh_api_deletes_protected_branch(tokens, prefixes):
+        deleted = _gh_api_delete_ref(tokens)
+        if deleted and _is_protected_ref(deleted, prefixes):
             return reason
+        if _rm_removes_loop_home(tokens):
+            return reason
+        if _gh_pr_merge_deletes_loop_head(tokens):
+            return reason
+    return None
+
+
+def match_unreachable_ref_deletion(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    reasons = rule["reason"]
+    unreachable = str(reasons["unreachable"])
+    fetch_remedy = str(reasons["fetch_remedy"])
+    protected = load_protected_deletion_prefixes(ctx.repo_root)
+    origin_main = _git(["rev-parse", "--verify", _ORIGIN_MAIN], ctx.cwd)
+    for tokens in ctx.subcommands:
+        for ref in _collect_ref_deletions_from_tokens(tokens):
+            if _is_protected_ref(ref, protected):
+                continue
+            tip = _resolve_ref_tip(ref, ctx.cwd)
+            if tip is None and ref.startswith("refs/heads/"):
+                return fetch_remedy
+            if tip is None:
+                continue
+            if origin_main and _is_ancestor(tip, origin_main, ctx.cwd):
+                continue
+            if _tip_covered_by_preserve_or_archive_tag(tip, ctx.cwd):
+                continue
+            return unreachable
     return None
 
 
@@ -798,6 +1017,7 @@ MATCHERS: dict[str, Callable[[Context, dict[str, Any]], Optional[str]]] = {
     "spec-surface-bare-write-baseline": match_spec_surface_bare_write_baseline,
     "direct-write-governed-path": match_direct_write_governed_path,
     "protected-ref-deletion": match_protected_ref_deletion,
+    "unreachable-ref-deletion": match_unreachable_ref_deletion,
 }
 
 

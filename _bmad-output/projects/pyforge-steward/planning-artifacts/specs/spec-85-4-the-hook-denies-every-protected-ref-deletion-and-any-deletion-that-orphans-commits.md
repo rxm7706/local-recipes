@@ -2,7 +2,8 @@
 title: "85.4: The hook denies every protected-ref deletion and any deletion that orphans commits"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'e5c5ebab6e29d9d70d44376fcc79cff8072ca09d'
 flag-exempt: detector-or-gate   # a session guardrail; a gated guardrail allows silently
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -88,8 +89,16 @@ Minted 2026-10-04 under the operator's governance rulings of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- **2026-10-04:** Story 85.4 implemented — widened `protected-ref-deletion`, added `unreachable-ref-deletion`, roster + AGENTS.md + hook tests.
 
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pyforge-steward-test`, `lint-types`, `tests/scripts/test_pre_shell_hook.py` (93 passed), `spec_surface_reconcile.py` OK, scribe `instruction_surface` parity OK.
+
+Surface reconcile memlog paths (Story 85.4 / co-governors): `.claude/hooks/pre-shell.py`, `docs/governance/guild-roster.json`, `tests/scripts/test_pre_shell_hook.py`, `AGENTS.md` (also on `spec-pyforge-scribe/.memlog.md` and `spec-pyforge-steward/.memlog.md`).
