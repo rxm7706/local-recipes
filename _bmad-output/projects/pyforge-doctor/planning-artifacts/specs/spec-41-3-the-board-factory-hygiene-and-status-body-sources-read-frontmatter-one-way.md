@@ -2,7 +2,7 @@
 title: "41.3: The board, factory, hygiene and status-body sources read frontmatter one way, and the docs pages say what is true"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'e0733d4a1c0e00d8f6bb50a3cf650e3310b8c522'
 blocking_condition: ''
 review_loop_iteration: 0
