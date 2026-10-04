@@ -2420,6 +2420,27 @@ def _publish(
     )
 
 
+def test_commit_paths_onto_remote_tip_retries_a_push_rejected_as_non_fast_forward(vcs, repo, remote, monkeypatch):
+    """Story 86.4 (DW-marshal-68-1-2, CAP-277): one rejected push is retried and then lands."""
+    _publish_setup(repo, remote)
+    real_run = vcs_git_module._run
+    push_attempts = {"n": 0}
+
+    def _run_with_one_push_rejection(cmd, timeout_s=None):
+        if "push" in cmd:
+            push_attempts["n"] += 1
+            if push_attempts["n"] == 1:
+                return subprocess.CompletedProcess(cmd, 1, "", " ! [rejected] (non-fast-forward)")
+        return real_run(cmd, timeout_s=timeout_s)
+
+    monkeypatch.setattr(vcs_git_module, "_run", _run_with_one_push_rejection)
+
+    sha = _publish(vcs, repo)
+
+    assert push_attempts["n"] == 2
+    assert _remote_main(remote) == sha
+
+
 def test_a_publish_with_a_reason_outruns_a_preflight_that_would_time_out_the_push(vcs, repo, remote, monkeypatch):
     """AC 1: the push completes past a hook that sleeps beyond the push timeout, the remote's main
     holds the commit, and the hook logged a reason naming the sha, the ledger path and the story."""
