@@ -2,7 +2,7 @@
 title: "86.5: The chain tooling sheds its retired and noisy paths"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -67,4 +67,4 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-04 — Build complete on `land/pyforge-marshal-86-5`, ready for an independent review. No review has run yet. Builder notes for the reviewer: the epic half of `find_orphans` (same module, same `spec-<slug>` regex) now reads cites through the same `_spec_cites` as the verify, so its orphan report drops the same prose noise; `core/chain_regen.py`'s four-phase helpers (`run_regeneration`, `PlanPhaseRunner`) are kept per the ruling and now have only test callers; `scripts/fleet_scan.py` keeps the other functions only `_generate()` reached (`load_data`, `build_status`, `scan_campaign`, ...) because the ruling names five readers.
