@@ -2,9 +2,10 @@
 title: "85.1: The session hook refuses deleting protected branches and loop homes"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: '3ec837c431a989d926417ed04fe7edda3c659a24'
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md

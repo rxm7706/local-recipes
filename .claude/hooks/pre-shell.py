@@ -3,7 +3,7 @@
 
 (steward Story 63.3, spec-pyforge-steward CAP-5)
 
-WHAT THIS IS. A repo-level `PreToolUse` guard for the ten AGENTS.md/CLAUDE.md
+WHAT THIS IS. A repo-level `PreToolUse` guard for the eleven AGENTS.md/CLAUDE.md
 session rules that were previously prose only. Registered on `Bash` and on
 `Edit`/`Write`/`NotebookEdit` in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` / `afterFileEdit` in `.cursor/hooks.json` (Cursor) --
@@ -12,7 +12,7 @@ harness's event(s) at this one script, and this script tells the two apart by
 the shape of the JSON on stdin (see `detect()`).
 
 Gemini CLI, GitHub Copilot CLI and Devin have no verified deny surface for
-this hook -- for them the ten rules stay instruction-only, as written in
+this hook -- for them the eleven rules stay instruction-only, as written in
 AGENTS.md (see AGENTS.md's own "Session guardrails" section; do not assume
 this script runs there).
 
@@ -136,7 +136,7 @@ def build_context(harness: str, kind: str, payload: dict[str, Any]) -> Context:
 
 # --------------------------------------------------------------------------
 # Command tokenization -- heuristic, not a shell. Good enough to recognize
-# the ten named forms; not a sandbox and not trying to be one.
+# the eleven named forms; not a sandbox and not trying to be one.
 # --------------------------------------------------------------------------
 
 
@@ -613,6 +613,179 @@ def match_direct_write_governed_path(ctx: Context, rule: dict[str, Any]) -> Opti
     return None
 
 
+_LOOP_HOMES_ROOT = Path.home() / ".bmad-loops"
+_PROTECTED_BRANCH_FLOOR = frozenset({"refs/heads/main", "refs/heads/loop/"})
+_PROTECTED_BRANCH_KINDS = frozenset({"operational-branch", "legacy"})
+
+
+def load_protected_branch_prefixes(repo_root: Path) -> set[str]:
+    """Branch refname prefixes the protected-ref-deletion rule enforces.
+
+    Unions the roster's branch entries with a code floor so the roster can
+    only add (steward Story 85.1, spec-pyforge-steward CAP-165).
+    """
+    prefixes = set(_PROTECTED_BRANCH_FLOOR)
+    roster_path = repo_root / "docs" / "governance" / "guild-roster.json"
+    try:
+        data = json.loads(roster_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return prefixes
+    entries = data.get("protected_refs")
+    if not isinstance(entries, list):
+        return prefixes
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        kind = entry.get("kind")
+        refname = entry.get("refname")
+        if kind not in _PROTECTED_BRANCH_KINDS or not isinstance(refname, str):
+            continue
+        if refname.startswith("refs/heads/"):
+            prefixes.add(refname)
+    return prefixes
+
+
+def _branch_refname(branch: str) -> str:
+    branch = branch.strip()
+    if branch.startswith("refs/heads/"):
+        return branch
+    return f"refs/heads/{branch}"
+
+
+def _is_protected_branch_ref(refname: str, prefixes: set[str]) -> bool:
+    for prefix in prefixes:
+        if refname == prefix:
+            return True
+        if prefix.endswith("/") and refname.startswith(prefix):
+            return True
+        if not prefix.endswith("/") and refname.startswith(prefix + "/"):
+            return True
+    return False
+
+
+def _git_subcommand_tokens(tokens: list[str]) -> Optional[list[str]]:
+    i = 0
+    while i < len(tokens):
+        if tokens[i] != "git":
+            i += 1
+            continue
+        j = i + 1
+        while j < len(tokens):
+            if tokens[j] in ("-C", "--git-dir", "--work-tree") and j + 1 < len(tokens):
+                j += 2
+                continue
+            if tokens[j].startswith("-C") and len(tokens[j]) > 2:
+                j += 1
+                continue
+            if tokens[j].startswith("--git-dir=") or tokens[j].startswith("--work-tree="):
+                j += 1
+                continue
+            if tokens[j].startswith("-"):
+                j += 1
+                continue
+            return tokens[j:]
+        return None
+    return None
+
+
+def _branch_deletions_in_push(args: list[str]) -> list[str]:
+    branches: list[str] = []
+    delete_mode = False
+    i = 0
+    while i < len(args):
+        tok = args[i]
+        if tok in ("--delete", "-d"):
+            delete_mode = True
+            i += 1
+            continue
+        if tok.startswith("--delete="):
+            delete_mode = True
+            i += 1
+            continue
+        if tok.startswith("-") and tok not in ("-d",):
+            i += 1
+            continue
+        if delete_mode and not tok.startswith("-"):
+            branches.append(tok)
+            i += 1
+            continue
+        if ":" in tok:
+            left, right = tok.split(":", 1)
+            if left == "" and right:
+                if right.startswith("refs/heads/"):
+                    branches.append(right.removeprefix("refs/heads/"))
+                else:
+                    branches.append(right)
+        i += 1
+    return branches
+
+
+def _worktree_remove_target(args: list[str]) -> Optional[Path]:
+    for tok in args:
+        if tok.startswith("-"):
+            continue
+        return Path(os.path.expanduser(tok))
+    return None
+
+
+def _is_loop_home(path: Path) -> bool:
+    try:
+        resolved = Path(os.path.realpath(os.path.expanduser(str(path))))
+        root = Path(os.path.realpath(str(_LOOP_HOMES_ROOT)))
+    except OSError:
+        return False
+    return resolved == root or root in resolved.parents
+
+
+def _gh_api_deletes_protected_branch(
+    tokens: list[str], prefixes: set[str]
+) -> bool:
+    if not _contains(tokens, ["gh", "api"]):
+        return False
+    method: Optional[str] = None
+    endpoint: Optional[str] = None
+    for i, tok in enumerate(tokens):
+        if tok in ("-X", "--method") and i + 1 < len(tokens):
+            method = tokens[i + 1].upper()
+        elif tok.startswith("-X") and len(tok) > 2:
+            method = tok[2:].upper()
+        if "git/refs/heads/" in tok:
+            endpoint = tok
+    if method != "DELETE" or endpoint is None:
+        return False
+    branch = endpoint.split("git/refs/heads/", 1)[1].strip("/")
+    if not branch:
+        return False
+    return _is_protected_branch_ref(_branch_refname(branch), prefixes)
+
+
+def match_protected_ref_deletion(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    reason = str(rule["reason"])
+    prefixes = load_protected_branch_prefixes(ctx.repo_root)
+    for tokens in ctx.subcommands:
+        git_rest = _git_subcommand_tokens(tokens)
+        if git_rest:
+            verb = git_rest[0]
+            rest = git_rest[1:]
+            if verb == "push":
+                for branch in _branch_deletions_in_push(rest):
+                    if _is_protected_branch_ref(_branch_refname(branch), prefixes):
+                        return reason
+            elif verb == "branch" and rest and rest[0] in ("-d", "-D", "--delete"):
+                for branch in rest[1:]:
+                    if branch.startswith("-"):
+                        continue
+                    if _is_protected_branch_ref(_branch_refname(branch), prefixes):
+                        return reason
+            elif verb == "worktree" and len(rest) >= 2 and rest[0] == "remove":
+                target = _worktree_remove_target(rest[1:])
+                if target is not None and _is_loop_home(target):
+                    return reason
+        if _gh_api_deletes_protected_branch(tokens, prefixes):
+            return reason
+    return None
+
+
 MATCHERS: dict[str, Callable[[Context, dict[str, Any]], Optional[str]]] = {
     "guild-task-via-local-recipes": match_guild_task_via_local_recipes,
     "adhoc-package-install": match_adhoc_package_install,
@@ -624,6 +797,7 @@ MATCHERS: dict[str, Callable[[Context, dict[str, Any]], Optional[str]]] = {
     "uv-run-outside-repo-root": match_uv_run_outside_repo_root,
     "spec-surface-bare-write-baseline": match_spec_surface_bare_write_baseline,
     "direct-write-governed-path": match_direct_write_governed_path,
+    "protected-ref-deletion": match_protected_ref_deletion,
 }
 
 
