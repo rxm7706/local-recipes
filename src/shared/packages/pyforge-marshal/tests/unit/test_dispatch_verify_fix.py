@@ -22,6 +22,7 @@ from pyforge.marshal.core.dispatch_verify_fix import (
     decide_verify_fix_turn,
     extract_failed_verify_commands,
     scrub_fix_turn_exposure,
+    scrub_then_tail_bytes,
     tail_bytes,
 )
 from pyforge.marshal.core.harness_profile import parse_profile
@@ -30,6 +31,7 @@ from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.policy import DEFAULT_POLICY, compose
 from pyforge.marshal.dispatch_verify import (
     ProcessWaitResult,
+    TerminateProcessGroupResult,
     terminate_process_group,
     verify_fix_loop_enabled,
     wait_for_process,
@@ -121,7 +123,27 @@ def test_resume_vs_fix_only_from_profile():
         },
         source="t",
     )
-    assert choose_verify_fix_launch_mode(resume_argv=profile.resume_argv) == VerifyFixLaunchMode.RESUME
+    assert (
+        choose_verify_fix_launch_mode(
+            resume_argv=profile.resume_argv,
+            harness_session_id="sid-1",
+            launch_profile="fake",
+            resolved_profile="fake",
+        )
+        == VerifyFixLaunchMode.RESUME
+    )
+    assert choose_verify_fix_launch_mode(resume_argv=profile.resume_argv, harness_session_id=None) == (
+        VerifyFixLaunchMode.FIX_ONLY
+    )
+    assert (
+        choose_verify_fix_launch_mode(
+            resume_argv=profile.resume_argv,
+            harness_session_id="sid-1",
+            launch_profile="claude",
+            resolved_profile="cursor",
+        )
+        == VerifyFixLaunchMode.FIX_ONLY
+    )
     bare = parse_profile({"name": "bare", "binary": "bare", "argv": ["{prompt}"]}, source="t")
     assert choose_verify_fix_launch_mode(resume_argv=bare.resume_argv) == VerifyFixLaunchMode.FIX_ONLY
 
@@ -132,7 +154,7 @@ def test_render_verify_fix_resume_argv():
             "name": "fake",
             "binary": "fake",
             "argv": ["{prompt}"],
-            "resume_argv": ["--continue", "{prompt}"],
+            "resume_argv": ["--resume", "{session_id}", "{prompt_file}"],
         },
         source="t",
     )
@@ -143,9 +165,13 @@ def test_render_verify_fix_resume_argv():
         worktree=__import__("pathlib").Path("/tmp/wt"),
         prompt="fix it",
         model=None,
+        session_id="abc-session",
+        prompt_file="/tmp/wt/verify-fix-prompt.txt",
     )
-    assert "--continue" in argv
-    assert "fix it" in argv
+    assert "--resume" in argv
+    assert "abc-session" in argv
+    assert "/tmp/wt/verify-fix-prompt.txt" in argv
+    assert "fix it" not in argv
 
 
 def test_policy_verify_fix_defaults_compose():
@@ -156,11 +182,48 @@ def test_policy_verify_fix_defaults_compose():
 
 
 def test_scrub_fix_turn_exposure_redacts_common_credential_shapes():
-    raw = "postgres://admin:secret@db/x\nAuthorization: Bearer eyJhbGciOi\npassword = 'hunter2'"
+    raw = (
+        "postgres://admin:secret@db/x\n"
+        "Authorization: Bearer eyJhbGciOi\n"
+        "Authorization: Basic dXNlcjpwYXNz\n"
+        "password = 'hunter2'\n"
+        "DATABASE_PASSWORD=postgres\n"
+        "AWS_SECRET_ACCESS_KEY=AKIAEXAMPLE\n"
+        "sk-ant-api03-abc12345\n"
+        "password: s3cr3t\n"
+        "https://user:pa/ss@host.example/path\n"
+    )
     scrubbed = scrub_fix_turn_exposure(raw)
     assert "secret" not in scrubbed
     assert "eyJhbGciOi" not in scrubbed
     assert "hunter2" not in scrubbed
+    assert "postgres" not in scrubbed or "DATABASE" in scrubbed
+    assert "AKIAEXAMPLE" not in scrubbed
+    assert "abc12345" not in scrubbed
+    assert "s3cr3t" not in scrubbed
+    assert "pa/ss" not in scrubbed
+
+
+def test_scrub_then_tail_bytes_redacts_before_truncating():
+    """A credential split by tail truncation must not leak (Story 85.3)."""
+    prefix = "A" * 50
+    secret = "DATABASE_PASSWORD=leaked"
+    raw = prefix + secret
+    tailed = scrub_then_tail_bytes(raw, max_bytes=30)
+    assert "leaked" not in tailed
+    assert "DATABASE_PASSWORD=" not in tailed or "***REDACTED***" in tailed
+
+
+def test_extract_failed_verify_commands_ignores_gate_018_pseudo_command():
+    findings = (
+        Finding(
+            code="MRS-GATE-018",
+            severity=Severity.ERROR,
+            message="deferred work intake refused",
+        ),
+    )
+    extracted = extract_failed_verify_commands((), findings)
+    assert extracted == ()
 
 
 def test_wait_for_process_reaps_exited_child_without_zombie_poll():
@@ -216,6 +279,43 @@ def test_verify_fix_loop_enabled_reads_off_from_shipped_tree(tmp_path):
     enabled, warning = verify_fix_loop_enabled(repo_root=repo)
     assert enabled is False
     assert warning is None
+
+
+def test_verify_fix_loop_enabled_unset_environment_reads_dev_on(tmp_path, monkeypatch):
+    """Story 85.3: unset PYFORGE_ENVIRONMENT follows dev overlay (verify_fix on)."""
+    repo = tmp_path / "repo"
+    flags_dir = repo / "src/platform/config"
+    flags_dir.mkdir(parents=True)
+    overlays = flags_dir / "flag-overlays.json"
+    overlays.write_text(
+        json.dumps({"dev": {"pyforge.marshal.verify_fix_loop": "on"}, "production": {"pyforge.marshal.verify_fix_loop": "off"}}),
+        encoding="utf-8",
+    )
+    flags_dir.joinpath("flags.json").write_text(
+        json.dumps(
+            {
+                "flags": {
+                    "pyforge.marshal.verify_fix_loop": {
+                        "state": "ENABLED",
+                        "defaultVariant": "off",
+                        "variants": {"on": True, "off": False},
+                        "metadata": {
+                            "owner": "marshal",
+                            "story": "85-3-x",
+                            "created": "2026-10-03",
+                            "on_everywhere": "",
+                            "cleanup_by": "",
+                        },
+                    }
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.delenv("PYFORGE_ENVIRONMENT", raising=False)
+    enabled, warning = verify_fix_loop_enabled(repo_root=repo)
+    assert warning is None
+    assert enabled is True
 
 
 def test_verify_fix_loop_enabled_flag_config_error_returns_warning(monkeypatch, tmp_path):
@@ -445,10 +545,34 @@ def test_terminate_process_group_signals_process_group(monkeypatch):
     def fake_killpg(pgid: int, sig: int) -> None:
         calls.append((pgid, sig))
 
+    class _DeadProcess:
+        def is_alive(self, _pid: int) -> bool:
+            return False
+
     monkeypatch.setattr(os, "getpgid", fake_getpgid)
     monkeypatch.setattr(os, "killpg", fake_killpg)
-    terminate_process_group(99)
-    assert calls == [(42, signal.SIGTERM)]
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    result = terminate_process_group(99, grace_s=0.0, process=_DeadProcess())
+    assert (42, signal.SIGTERM) in calls
+    assert isinstance(result, TerminateProcessGroupResult)
+    assert result.signalled_term is True
+
+
+def test_terminate_process_group_sends_sigkill_after_grace(monkeypatch):
+    calls: list[tuple[int, int]] = []
+    alive = {"v": True}
+
+    class _AliveProcess:
+        def is_alive(self, _pid: int) -> bool:
+            return alive["v"]
+
+    monkeypatch.setattr(os, "getpgid", lambda _pid: 42)
+    monkeypatch.setattr(os, "killpg", lambda pgid, sig: calls.append((pgid, sig)))
+    monkeypatch.setattr(os, "waitpid", lambda _pid, _opts: (0, 0))
+    result = terminate_process_group(99, grace_s=0.0, process=_AliveProcess())
+    assert (42, signal.SIGTERM) in calls
+    assert (42, signal.SIGKILL) in calls
+    assert result.signalled_kill is True
 
 
 def test_wait_for_process_times_out_on_slow_child():
