@@ -85,7 +85,7 @@ development_status:
   25-2-a-poll-cursor-sensor-refreshes-the-history-over-warden-s-fleet-inventory: backlog
   26-1-the-factory-status-frame-drops-its-docs-specs-rows: backlog
   27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud: done
-  27-2-the-data-plane-honours-its-data-root-and-fetches-what-it-claims: backlog
+  27-2-the-data-plane-honours-its-data-root-and-fetches-what-it-claims: done
   27-3-the-read-surfaces-render-what-design-specifies-on-real-data: backlog
   27-4-the-planning-record-matches-the-tree-and-owed-reviews-run: backlog
   3-1-port-the-conda-side-backbone-phases-into-kedro-nodes: done
@@ -154,7 +154,7 @@ development_status:
   epic-25-retrospective: optional
   epic-26: backlog
   epic-26-retrospective: optional
-  epic-27: backlog
+  epic-27: in-progress
   epic-27-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
