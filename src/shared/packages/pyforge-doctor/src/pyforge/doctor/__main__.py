@@ -482,6 +482,15 @@ def _validate_monitor_args(args: argparse.Namespace, monitor_parser: argparse.Ar
             monitor_parser.error(
                 f"argument --source: unknown source {args.source!r} (known: {', '.join(known_sources)})"
             )
+        # A known Source no requested axis can emit would filter every
+        # finding away and exit 0 -- indistinguishable from a clean run
+        # (DW-FU-6-4-13).
+        emittable = sorted({source.value for axis in axes for source in atlas.AXIS_SOURCES.get(axis, frozenset())})
+        if args.source not in emittable:
+            monitor_parser.error(
+                f"argument --source: {args.source!r} is never emitted by --watch "
+                f"{','.join(axes)} (emittable: {', '.join(emittable)})"
+            )
 
 
 def _validate_backlog_intake_args(args: argparse.Namespace, backlog_intake_parser: argparse.ArgumentParser) -> None:
@@ -597,27 +606,34 @@ def main(argv: list[str] | None = None) -> int:
 
 def _gather_engines(name: object, target: Path) -> tuple[Finding, ...]:
     """Findings for the "engines" category: the whole suite, or one named
-    check filtered from it. ``gather_one`` returning ``None`` for a
-    (already-validated) name can ONLY mean the category degraded to
-    warden's all-or-nothing sentinel -- ``sources.warden.gather`` never
-    partially succeeds -- so render one synthetic FAIL ``Finding`` naming
-    the degradation, never a bare "not found" (story spec Design Notes)."""
+    check filtered from it. ``gather_one`` returns the named check's
+    Findings, or -- when the category degraded to warden's all-or-nothing
+    sentinel (``sources.warden.gather`` never partially succeeds) -- the
+    sentinel alone. A named run with no Finding under its own name renders
+    one synthetic FAIL quoting the sentinel's specific degradation reason
+    (DW-FU-1-5-4), never a bare "not found"."""
     if name is _WHOLE_CATEGORY:
         return warden_source.gather(target)
-    finding = registry.gather_one("engines", name, target)
-    if finding is not None:
-        return (finding,)
+    name = str(name)
+    findings = registry.gather_one("engines", name, target)
+    named = tuple(finding for finding in findings if finding.check == name)
+    if named:
+        return named
+    sentinel = next(
+        (finding for finding in findings if finding.check == registry.SENTINEL_CHECK_NAMES["engines"]),
+        None,
+    )
+    reason = (
+        f"the 'engines' category degraded: {sentinel.message}"
+        if sentinel is not None
+        else "warden's self-check returned no result under that name"
+    )
     return (
         Finding(
             source=Source.WARDEN_DOCTOR,
             check=name,
             status=DoctorStatus.FAIL,
-            message=(
-                f"check {name!r} did not run -- the 'engines' category "
-                "degraded (pyforge-warden absent, unimportable, or its "
-                "self-check crashed); re-run `doctor check --engines` "
-                "(no name) to see the full degradation reason"
-            ),
+            message=f"check {name!r} did not run -- {reason}",
             evidence={},
         ),
     )
@@ -626,15 +642,13 @@ def _gather_engines(name: object, target: Path) -> tuple[Finding, ...]:
 def _gather_env(name: object, target: Path) -> tuple[Finding, ...]:
     """Findings for the "env" category: the whole suite, or one named check
     filtered from it. ``env_hygiene.gather`` is ADDITIVE, never
-    sentinel-replacing -- ``gather_one`` returning ``None`` here is the
-    ordinary "clean, no match" outcome, not a degradation, so it yields zero
-    Findings, never a synthetic one (the asymmetric complement of
-    ``_gather_engines`` above; see the story spec's Design Notes for why the
-    two categories are NOT handled uniformly)."""
+    sentinel-replacing: a named run returns every matching Finding plus the
+    incomplete-scan / not-a-directory sentinel when there is one, so a
+    partial scan can never read as clean (DW-FU-1-5); zero Findings is the
+    ordinary "clean, no match" outcome."""
     if name is _WHOLE_CATEGORY:
         return env_hygiene.gather(target)
-    finding = registry.gather_one("env", name, target)
-    return (finding,) if finding is not None else ()
+    return registry.gather_one("env", str(name), target)
 
 
 def _gather_durability(target: Path) -> tuple[Finding, ...]:

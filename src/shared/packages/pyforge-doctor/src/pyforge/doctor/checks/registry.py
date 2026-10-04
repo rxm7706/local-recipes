@@ -17,9 +17,10 @@ CLI flag wiring (``--list``, ``--engines <name>``) is Story 1.5's job:
   in order: a future warden rename, reorder, addition, or removal fails
   that test loudly instead of letting ``--list`` silently drift.
 - :func:`gather_one` is a filter, not a second code path: it always calls
-  the real category's gather function (today only ``sources.warden.gather``)
-  and picks the one ``Finding`` whose ``check`` matches -- never a
-  duplicated per-check lookup that could drift from the full-suite result.
+  the real category's gather function (``sources.warden.gather`` or
+  ``env_hygiene.gather``) and keeps every ``Finding`` whose ``check``
+  matches, plus the category's degradation sentinel -- never a duplicated
+  per-check lookup that could drift from the full-suite result.
 
 Both functions stay inside the existing closed ``DoctorStatus``/``Source``
 contract (``models.py``, Story 1.1) -- this module produces ``Finding``s,

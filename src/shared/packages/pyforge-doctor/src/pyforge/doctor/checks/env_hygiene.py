@@ -90,9 +90,9 @@ story spec's Design Notes -- do not re-litigate here):
   merely contains a nested ``def`` does not count either -- see
   ``_CredentialInjectionVisitor``.
 * A ``target`` that is not a directory (a single file, a nonexistent
-  path) yields ``()`` -- the registry-wide ``gather(target: Path)``
-  directory convention (established Story 1.3 review), never a misleading
-  incomplete-scan sentinel.
+  path) yields one not-a-directory WARN under ``SCAN_INCOMPLETE_CHECK_NAME``
+  (DW-FU-1-5-3): an ``--env``-only run on a typo'd path used to print
+  ``0 finding(s)`` and exit 0, a false green.
 
 Every emitted ``Finding`` carries ``status=DoctorStatus.WARN`` (Design
 Decision, story spec): a hand-written pattern-match with no wrap-a-proven-
@@ -770,8 +770,22 @@ def gather(target: Path) -> tuple[Finding, ...]:
     report a false "all clear" with zero signal that part of the tree was
     never examined (review finding).
 
+    A ``target`` that is not a directory (a typo'd path, a single file)
+    yields one not-a-directory WARN under the sentinel check name -- never
+    an empty "0 findings" that reads as a clean scan (DW-FU-1-5-3).
+
     Pure ``ast.parse`` static analysis -- never executes, imports, or
     otherwise runs any scanned source."""
+    if not target.is_dir():
+        return (
+            Finding(
+                source=Source.ENV_HYGIENE,
+                check=SCAN_INCOMPLETE_CHECK_NAME,
+                status=DoctorStatus.WARN,
+                message=f"{target} is not a directory -- nothing was scanned for credential injection",
+                evidence={"target": str(target), "reason": "not-a-directory"},
+            ),
+        )
     findings: list[Finding] = []
     files, incomplete = _discover_python_files(target)
     for file_path in files:
