@@ -153,6 +153,16 @@ def test_env_inspect_runs_both_of_its_declared_modes(tmp_path) -> None:
     assert list(submission.frame.columns) == list(ss.ENV_INSPECT_COLUMNS)
 
 
+def test_env_inspect_runs_in_the_guild_env_never_local_recipes(tmp_path) -> None:
+    """Only `pyforge-guild` exists at runtime (spec-pyforge-steward CAP-152)."""
+    process = FakeProcess(results=[_ok({"rows": []}), _ok({"rows": []})])
+
+    ss.submit_scan("env-inspect", str(tmp_path), data_root=tmp_path, process=process)
+
+    assert all(call[:4] == ["pixi", "run", "-e", "pyforge-guild"] for call in process.calls)
+    assert all("local-recipes" not in call for call in process.calls)
+
+
 def test_the_cache_write_is_atomic_leaving_no_staging_file(tmp_path) -> None:
     process = FakeProcess(results=[_ok(SCAN_PROJECT_PAYLOAD)])
     submission = ss.submit_scan("scan-project", str(tmp_path), data_root=tmp_path, process=process)
