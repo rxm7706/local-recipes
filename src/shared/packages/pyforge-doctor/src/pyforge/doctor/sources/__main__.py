@@ -245,7 +245,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--head",
         metavar="REV",
         default=None,
-        help="head revision for ledger-regression / ledger-direction (default HEAD)",
+        help=f"head revision for {Source.LEDGER_REGRESSION.value!r} only (default HEAD)",
     )
     parser.add_argument(
         "--inv",

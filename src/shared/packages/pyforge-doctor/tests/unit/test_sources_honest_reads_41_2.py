@@ -381,6 +381,19 @@ def test_base_and_head_reach_ledger_gather(monkeypatch: pytest.MonkeyPatch) -> N
     assert seen == {"base": "abc123", "head": "def456"}
 
 
+def test_base_reaches_ledger_direction_gather(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: dict[str, object] = {}
+
+    def _stub(target: Path, *, base_ref: str) -> tuple:
+        seen["base_ref"] = base_ref
+        return ()
+
+    monkeypatch.setattr(ledger, "gather_direction", _stub)
+
+    assert dispatch.main(["ledger-direction", "--base", "abc123"]) == 0
+    assert seen == {"base_ref": "abc123"}
+
+
 def test_base_on_a_source_that_cannot_use_it_is_a_usage_error(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc:
         dispatch.main(["story-status", "--base", "main"])
