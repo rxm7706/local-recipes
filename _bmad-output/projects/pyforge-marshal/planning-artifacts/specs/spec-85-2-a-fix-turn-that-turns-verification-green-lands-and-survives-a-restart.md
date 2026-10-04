@@ -2,12 +2,10 @@
 title: "85.2: A fix turn that turns verification green lands, and survives a supervisor restart"
 type: 'feature'
 created: '2026-10-03'
-status: 'done'
+status: 'in-review'
+baseline_revision: '8e3ced34a1bfb8e3fd9bd4a55547f6b806128150'
 followup_review_recommended: false
 review_loop_iteration: 1
-baseline_revision: '8e3ced34a1bfb8e3fd9bd4a55547f6b806128150'
-review_loop_iteration: 0
-followup_review_recommended: false
 flag:
   key: pyforge.marshal.verify_fix_loop
   provider: openfeature-file
@@ -80,6 +78,11 @@ Minted 2026-10-03 at the operator's request (split 85.1, keep Cursor).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
+**Tests that carry the criteria (run by `pyforge-marshal-test` above):**
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py` — the two-state flag test: the supervisor reads `pyforge.marshal.verify_fix_loop` for real from two flagd trees, one `"on"` and one `"off"`. On: one fix turn end to end through the supervisor's own ports (AC1: the failed commands read through the sidecar resolver, the INTENT and the session pid journaled before the launch and the wait, the turn's edits committed between the launch and exactly one re-verification, the latest outcome read, the landing; also through `run_dispatch_supervisor` itself); a still-red re-verify parks with MRS-DISP-060 naming the command after exactly one launch, and a finished turn re-verified red after a restart launches none (AC2, AC4); a restarted supervisor settles the turn it finds in flight against a real detached session — waited for within the budget left from the INTENT's UTC timestamp, stopped with MRS-DISP-059 once it is spent, its half-written tree never committed — and closes an INTENT with no recorded pid with MRS-DISP-058 (AC3); an open turn reads LIVE to `dispatch status` and the in-flight guard only while its own session runs (live, dead and reused pids). Off: a refusal parks exactly as `main` does, and a turn found in flight is only stopped, journaled and parked — never waited for, committed, re-verified or landed.
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_fix.py` — `wait_for_process` waits for a pid that is not the supervisor's child until it exits (a real detached session, a reused pid, a timeout), `terminate_process_group` never signals a group address, init or its own group, and the pure in-flight reading the supervisor and the CLI share.
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate` — expected: exit 0 (AC5; run by the operator, not bound as a verify command).
+
 ## Review Triage Log
 
 ### 2026-10-03 — Review pass
@@ -89,6 +92,29 @@ Minted 2026-10-03 at the operator's request (split 85.1, keep Cursor).
   - `[false]` `[reject]` Supervisor restart respawn — evidence: Story 85.2 scope covers wait/kill on journaled pid; full supervisor respawn is 85.3 per design notes.
   - `[false]` `[reject]` `binary_present` stub missing fields — evidence: production path uses real resolution; tests stub harness only.
   - `[false]` `[reject]` pyforge-deps-test atlas failure — evidence: `test_every_hard_import_is_a_declared_dependency[pyforge-atlas]` unchanged by this diff; pre-existing on branch.
+
+### 2026-10-04 — Landing review (independent reviewer); fixed by the operator's fixer
+- verdicts: 16 findings — high 4, medium 6, low 6 (one entry per finding below), false 0. All fixed on the branch; none deferred. The flag stays OFF everywhere; with it off, behaviour is identical to `main` (the reviewer's flag-off OUTCOME-shape probe passes unchanged).
+- findings:
+  - `[high]` `[fix]` H1 (AC3) A restarted supervisor neither waited for nor stopped the live fix session (`wait_for_process` returned at once on `ChildProcessError` for a non-child), and the finalize leftover commit committed the session's half-written tree before the pending INTENT was read. Fixed: finalize settles a pending INTENT first; `wait_for_process` polls a non-child through `fix_session_alive` (exists, not a zombie, start time within 30 s of the INTENT — Story 83.1's check) until the budget left from the INTENT's UTC `ts` is spent, then `terminate_process_group` and MRS-DISP-059; an exit inside the budget is journaled with `session_returncode: null` (unknowable to a non-parent) and the re-verify decides; with the flag off a pending turn is only stopped, journaled and parked. Tests against a real detached `sleep`, `wait_for_process` unstubbed.
+  - `[high]` `[fix]` H2 A failed commit of the turn's edits still re-verified and landed. Fixed: `_commit_pre_verify_wip` returns `(committed, refusal)`; a failed commit or a tree still dirty after it journals a `step: commit` refusal and parks, the finalize record `ok: false, failed_step: commit` (the finalize commit step's shape). Tests with `FakeVcs(commit_paths_raises=True)` and a commit that leaves the tree dirty.
+  - `[high]` `[fix]` H3 (AC4) Removing the one-turn bound passed every test. Fixed: a supervisor test with a journaled fix-turn OUTCOME and a still-red re-verify asserts zero launches; the MRS-DISP-060 test asserts exactly one launch.
+  - `[high]` `[fix]` H4 `flag-verification-names-no-test`. Fixed: `## Verification` names the two-state test files under their own heading; status `in-review`.
+  - `[medium]` `[fix]` M1 The fakes started dirty and never cleared, so dropping the turn's commit survived. Fixed: the fake tree starts clean, the fake session dirties it, only a commit cleans it; the test asserts a `pre-verify WIP checkpoint` commit between the launch and the second verification.
+  - `[medium]` `[fix]` M2 The CLI LIVE reading was untested and had no start-time check. Fixed: the pid lookup is one pure core helper (`in_flight_verify_fix_turn`), carried on `DispatchJournalFacts`; LIVE only while `fix_session_alive`; tests for live, dead and reused pids.
+  - `[medium]` `[fix]` M3 An INTENT with no recorded pid was never closed. Fixed: closed with MRS-DISP-058 (`pid not recorded`), no relaunch; the launcher's pid OBSERVATION is asserted on disk before the wait.
+  - `[medium]` `[fix]` M4 A failed INTENT append still launched. Fixed: no launch; the finalize record `ok: false, failed_step: verify-fix-intent`.
+  - `[medium]` `[fix]` M5 The latest-outcome change in `gather_dispatch_journal_facts` was untested. Fixed: REFUSED then VERIFIED reads `verified` with no gate or message left over.
+  - `[medium]` `[fix]` M6 The tick-loop probe is now a supervisor test (`run_dispatch_supervisor`: push, verify with the failed commands in a sidecar, launch, wait, commit, verify, land).
+  - `[low]` `[fix]` MRS-DISP-060's message is `fix_turn_park_message(...)`; the test asserts its literal text.
+  - `[low]` `[fix]` The duplicate `followup_review_recommended` / `review_loop_iteration` frontmatter keys are dropped (one of each kept).
+  - `[low]` `[fix]` The remaining budget is measured from the INTENT's UTC `ts`; `budget_started_monotonic` is gone from the INTENT.
+  - `[low]` `[fix]` One pure core helper (`core/dispatch_verify_fix.py`: `pending_verify_fix_intent`, `in_flight_verify_fix_turn`) serves the supervisor and the CLI; the CLI no longer imports the supervisor's private `_fold_dispatch_journal` / `_pending_verify_fix_intent`.
+  - `[low]` `[fix]` `fix_intent_id` is the journal's own `{writer_id, counter}` form (a line's `intent_id` shape), not the dataclass repr.
+  - `[low]` `[fix]` `marshal status` reads an in-flight turn LIVE through `DispatchJournalFacts` (the facts it already passes), so it needs no `run_dir`. Passing `run_dir` would also start reading the session log for the marshal-initiated-stop rule — a flag-independent change outside this story — so it is not passed.
+- also hardened in passing: `terminate_process_group` (its pid now comes off a journal) never signals a pid `<= 1` and signals only the pid when it shares the supervisor's own process group.
+- mutation (scratch copies, the reviewer's harness): MB1, MB2, MB3, MF, MD3, ME2, MI, MJ killed; the reviewer's MA, MC, MD1, MD2, ME1, MG, MH, MK and twelve more for the fixes above (wait returns at once, commit before pending, no stop at the budget, flag-off waits, commit failure swallowed, no dirty re-check, no start-time check, no-pid INTENT left open, INTENT failure ignored, budget reset, 060 message, id form) also killed; the unmutated baseline passes.
+- the reviewer's 85.2 probes: all eight pass after two fixture adaptations the fix makes necessary — the INTENT is journaled at the session's own start (a fixed 10:00Z INTENT ts against a process started now now reads as a reused pid), and the orphan probe passes a real `PosixProcess` (`loop._finalize` hard-codes a `FakeProcess` that always reads dead, and the settle path judges liveness through the process port).
 
 ## Auto Run Result
 

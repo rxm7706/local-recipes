@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 
+from .dispatch import KIND_DISPATCH_VERIFY_FIX
 from .dispatch_verification import DispatchVerificationVerdict, _command_from_gate_001_message
 from .gate import CROSS_SURFACE_GATE_CODE
+from .journal import FoldResult, JournalEntry, JournalEntryId, Phase
 from .model import Finding, Severity, Status, status_for
 from .verdict import classify
 
@@ -181,3 +184,76 @@ def choose_verify_fix_launch_mode(
 def fix_turn_park_message(*, failed_command: str | None) -> str:
     cmd = f" ({failed_command!r})" if failed_command else ""
     return f"verification still refused after one fix turn{cmd} — story parked for the operator (Story 85.1 / 83.10)"
+
+
+# --------------------------------------------------------------------------
+# Story 85.2 (CAP-286): the fix turn still in flight, read off a folded journal -- one pure reading shared by
+# the supervisor (which settles a turn a killed supervisor left running) and every CLI reader (which reads that
+# turn LIVE). AD-4: no I/O here; the liveness probe stays at the edge (``dispatch_verify.fix_session_alive``).
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class InFlightFixTurn:
+    """An open ``dispatch-verify-fix`` INTENT -- no OUTCOME closes it yet.
+
+    ``session_pid`` is the pid the launcher journaled for it (on the INTENT, else on the pid OBSERVATION naming
+    it), ``None`` when the launch never recorded one; ``started_at`` is the INTENT's own UTC timestamp, the anchor
+    of the turn's wall-clock budget and of the pid-reuse check."""
+
+    intent: JournalEntry
+    session_pid: int | None
+    started_at: datetime
+
+
+def fix_intent_ref(entry_id: JournalEntryId) -> dict[str, object]:
+    """The journal's own id form -- ``{writer_id, counter}``, the shape of a line's ``intent_id`` -- for a payload
+    naming the fix-turn INTENT it belongs to."""
+    return {"writer_id": entry_id.writer_id, "counter": entry_id.counter}
+
+
+def _journaled_pid(raw: object) -> int | None:
+    # A pid of 0 or below is a process-group address to `kill`, never one session's pid.
+    if isinstance(raw, int) and not isinstance(raw, bool) and raw > 0:
+        return raw
+    return None
+
+
+def pending_verify_fix_intent(folded: FoldResult, run_id: str) -> JournalEntry | None:
+    """The run's latest fix-turn INTENT that no OUTCOME closes, else ``None``."""
+    entries = folded.by_kind(KIND_DISPATCH_VERIFY_FIX)
+    closed = {
+        entry.intent_id
+        for entry in entries
+        if entry.run_id == run_id and entry.phase is Phase.OUTCOME and entry.intent_id is not None
+    }
+    for entry in reversed(entries):
+        if entry.run_id == run_id and entry.phase is Phase.INTENT and entry.id not in closed:
+            return entry
+    return None
+
+
+def in_flight_verify_fix_turn(folded: FoldResult, run_id: str) -> InFlightFixTurn | None:
+    """The run's open fix turn with its journaled session pid, else ``None``."""
+    intent = pending_verify_fix_intent(folded, run_id)
+    if intent is None:
+        return None
+    session_pid = _journaled_pid(intent.payload.get("session_pid"))
+    if session_pid is None:
+        ref = fix_intent_ref(intent.id)
+        for entry in reversed(folded.by_kind(KIND_DISPATCH_VERIFY_FIX)):
+            if entry.run_id != run_id or entry.phase is not Phase.OBSERVATION:
+                continue
+            if entry.payload.get("fix_intent_id") != ref:
+                continue
+            session_pid = _journaled_pid(entry.payload.get("session_pid"))
+            if session_pid is not None:
+                break
+    # `JournalEntry` validates `ts` with `datetime.fromisoformat` at construction, so this parse cannot fail.
+    return InFlightFixTurn(intent=intent, session_pid=session_pid, started_at=datetime.fromisoformat(intent.ts))
+
+
+def fix_turn_remaining_budget_s(*, budget_s: float, started_at: datetime, now: datetime) -> float:
+    """What is left of a fix turn's wall-clock budget, measured from its INTENT's UTC timestamp -- so a restarted
+    supervisor never resets the budget (N7) and never trusts another process's monotonic clock."""
+    return max(0.0, budget_s - (now - started_at).total_seconds())

@@ -11,11 +11,23 @@ the fake repo root, never stubbed:
 * a verification journaled with failed commands while the flag was on, read back with the flag off: still no
   fix turn (forcing the flag on after the read makes this fail);
 * an unreadable or invalid flag tree, or an unknown environment: one journaled warning, a park, no crash.
+
+Story 85.2 (flag on unless a test says otherwise) drives one fix turn end to end: the failed commands read
+through the sidecar resolver, the INTENT and the session pid journaled before the launch and the wait, the
+turn's edits committed (or the story parked) before exactly one re-verification, MRS-DISP-060 on a still-red
+re-verify, the one-turn bound across a restart, a restarted supervisor settling the turn it finds in flight
+against a real detached session (waited for within the budget left from the INTENT's UTC timestamp, stopped
+once that is spent; only stopped with the flag off), and the LIVE reading every CLI reader shares.
 """
 
 from __future__ import annotations
 
 import json
+import os
+import signal
+import subprocess
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -23,7 +35,13 @@ import test_dispatch_supervisor_main_loop as loop
 from pyforge.testing_kit.flags import flagd_tree
 
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_START_FAILED_CODE, VERIFY_FIX_LOOP_FLAG_KEY
+from pyforge.marshal.core.dispatch_verify_fix import (
+    FIX_TURN_START_FAILED_CODE,
+    VERIFY_FIX_LOOP_FLAG_KEY,
+    fix_intent_ref,
+)
+from pyforge.marshal.core.egress import Redacted
+from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.model import Finding, Severity, build_envelope
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
@@ -352,163 +370,760 @@ def test_fix_turn_intent_is_journaled_before_the_harness_launch(
     assert order.index("intent") < order.index("launch")
 
 
-def test_fix_turn_green_reverify_sets_finalize_verified(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+# --------------------------------------------------------------------------
+# Story 85.2 — the fix turn's fakes: a tree the fake session dirties and only a commit cleans
+# --------------------------------------------------------------------------
+
+_WIP_SUBJECT = "marshal: pre-verify WIP checkpoint"
+
+
+class _FixTurnVcs(loop.FakeVcs):
+    """A worktree that starts clean (review M1): the fake fix session dirties it, and only a commit cleans it."""
+
+    def __init__(self, events: list[tuple], *, commit_cleans: bool = True, **kwargs: object) -> None:
+        kwargs.setdefault("dirty", False)
+        kwargs.setdefault("changed_vs_head", ("fix.py",))
+        kwargs.setdefault("branches", frozenset({dispatch_core.dispatch_worktree_branch(loop._SLUG, loop._STORY_KEY)}))
+        kwargs.setdefault("head_sha", loop._MOVED)
+        super().__init__(**kwargs)
+        self.events = events
+        self._commit_cleans = commit_cleans
+
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        sha = super().commit_paths(repo_root, paths, message)
+        self.events.append(("commit", message.text))
+        if self._commit_cleans:
+            self.dirty = False
+        return sha
+
+    def push(self, repo_root: Path, branch: str) -> None:
+        self.events.append(("push", self.dirty))
+        super().push(repo_root, branch)
+
+
+class _Launch:
+    def __init__(self, pid: int) -> None:
+        self.pid = pid
+
+
+def _fake_fix_session(
+    monkeypatch: pytest.MonkeyPatch,
+    vcs: _FixTurnVcs,
+    *,
+    pid: int = 88001,
+    returncode: int | None = 0,
+) -> list[int]:
+    """The harness side of a fix turn: each launch dirties the tree (the session edits, never commits) and the
+    wait reports the session's exit. Returns the launched pids, one per launch."""
     from pyforge.marshal.dispatch_verify import ProcessWaitResult
 
-    repo_root = loop._repo(tmp_path)
-    _seed_flag(repo_root, on=True)
-    worktree = loop._worktree(repo_root)
-    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
-    branch = dispatch_core.dispatch_worktree_branch(loop._SLUG, loop._STORY_KEY)
-    vcs = loop.FakeVcs(dirty=True, changed_vs_head=("fix.py",), branches=frozenset({branch}), head_sha=loop._MOVED)
-    verify_pass = {"n": 0}
+    launches: list[int] = []
 
-    def _evaluate(**_kwargs):
-        verify_pass["n"] += 1
-        if verify_pass["n"] == 1:
-            return _refused_with_output(_SHORT_TAIL)
-        return loop._clean_envelope()
+    def _launch(*_a: object, **_k: object) -> _Launch:
+        launches.append(pid)
+        vcs.events.append(("launch",))
+        vcs.dirty = True
+        return _Launch(pid)
+
+    def _wait(*_a: object, **_k: object) -> ProcessWaitResult:
+        vcs.events.append(("wait",))
+        return ProcessWaitResult(exited=True, returncode=returncode)
+
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "binary_present", lambda *_a, **_k: _NoProfile())
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", _launch)
+    monkeypatch.setattr(supervisor_main, "wait_for_process", _wait)
+    return launches
+
+
+def _scripted_verification(monkeypatch: pytest.MonkeyPatch, events: list[tuple], *envelopes) -> None:
+    """Each verification returns the next envelope (the last one repeats) and logs itself in ``events``."""
+    script = list(envelopes)
+    calls = {"n": 0}
+
+    def _evaluate(**_kwargs: object):
+        calls["n"] += 1
+        events.append(("verify", calls["n"]))
+        return script[min(calls["n"], len(script)) - 1]
 
     monkeypatch.setattr(supervisor_main, "evaluate_dispatch_verification", _evaluate)
 
-    class _Launch:
-        pid = 88001
 
-    monkeypatch.setattr(
-        supervisor_main.BmadBuildHarness,
-        "binary_present",
-        lambda *_a, **_k: _NoProfile(),
-    )
-    monkeypatch.setattr(
-        supervisor_main.BmadBuildHarness,
-        "dispatch_verify_fix",
-        lambda *_a, **_k: _Launch(),
-    )
-    monkeypatch.setattr(
-        supervisor_main,
-        "wait_for_process",
-        lambda *_a, **_k: ProcessWaitResult(exited=True, returncode=0),
-    )
-    fs = loop.FakeFs()
-
-    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
-
-    assert ok is True
-    finalize_outcomes = [
-        json.loads(line)["payload"]
-        for _path, line, _fsync in fs.appended
-        if json.loads(line).get("kind") == dispatch_core.KIND_DISPATCH_FINALIZE
-        and json.loads(line).get("phase") == "outcome"
+def _finalize_outcome(fs: loop.FakeFs) -> dict:
+    outcomes = [
+        entry["payload"]
+        for entry in _entries(fs)
+        if entry.get("kind") == dispatch_core.KIND_DISPATCH_FINALIZE and entry.get("phase") == "outcome"
     ]
-    assert finalize_outcomes[-1]["verified"] is True
-    assert vcs.commits, "fix-turn WIP must be committed before re-verify"
+    assert len(outcomes) == 1
+    return outcomes[0]
 
 
-def test_reverify_still_refused_emits_mrs_disp_060(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
-    from pyforge.marshal.dispatch_verify import ProcessWaitResult
-
+def _fix_ready_repo(tmp_path: Path, *, on: bool = True) -> tuple[Path, Path]:
     repo_root = loop._repo(tmp_path)
-    _seed_flag(repo_root, on=True)
+    _seed_flag(repo_root, on=on)
     worktree = loop._worktree(repo_root)
     loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
-    branch = dispatch_core.dispatch_worktree_branch(loop._SLUG, loop._STORY_KEY)
-    vcs = loop.FakeVcs(dirty=True, changed_vs_head=("fix.py",), branches=frozenset({branch}), head_sha=loop._MOVED)
-    monkeypatch.setattr(
-        supervisor_main, "evaluate_dispatch_verification", lambda **_k: _refused_with_output(_SHORT_TAIL)
-    )
-    monkeypatch.setattr(
-        supervisor_main.BmadBuildHarness,
-        "binary_present",
-        lambda *_a, **_k: _NoProfile(),
-    )
-    monkeypatch.setattr(
-        supervisor_main.BmadBuildHarness,
-        "dispatch_verify_fix",
-        lambda *_a, **_k: type("L", (), {"pid": 88002})(),
-    )
-    monkeypatch.setattr(
-        supervisor_main,
-        "wait_for_process",
-        lambda *_a, **_k: ProcessWaitResult(exited=True, returncode=0),
-    )
-    fs = loop.FakeFs()
-
-    _finalize(fs, repo_root, worktree, vcs=vcs)
-
-    observations = [
-        entry
-        for entry in _verify_fix_entries(fs)
-        if entry.get("phase") == "observation"
-        and entry.get("payload", {}).get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
-    ]
-    assert observations
-    assert observations[-1]["payload"]["failed_command"] == _COMMAND
+    return repo_root, worktree
 
 
-def test_supervisor_restart_resumes_a_pending_fix_turn_without_launching_again(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
-    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+def _ts(moment: datetime) -> str:
+    return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
 
-    repo_root = loop._repo(tmp_path)
-    _seed_flag(repo_root, on=True)
-    worktree = loop._worktree(repo_root)
-    loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
-    loop._run_dir(repo_root)
-    ver_intent, ver_outcome = _journaled_refusal_with_failed_commands()
-    fix_intent = build_entry(
+
+def _fix_intent_lines(
+    pid: int | None,
+    *,
+    started_at: datetime,
+    budget_s: float = 900.0,
+    run_id: str = loop._RUN_ID,
+) -> tuple[str, ...]:
+    """A fix-turn INTENT a killed supervisor journaled, and -- with ``pid`` -- the pid OBSERVATION naming it."""
+    intent = build_entry(
         id=JournalEntryId("dispatch-supervisor-1", 10),
-        ts="2026-10-03T10:00:00.000Z",
-        run_id=loop._RUN_ID,
+        ts=_ts(started_at),
+        run_id=run_id,
         kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
         phase=Phase.INTENT,
         payload={
             "launch_mode": "fix_only",
             "prompt_bytes": 12,
             "failed_command_count": 1,
-            "wall_clock_budget_s": 900.0,
-            "budget_started_monotonic": 1000.0,
+            "wall_clock_budget_s": budget_s,
         },
     )
-    fix_obs = build_entry(
-        id=JournalEntryId("dispatch-supervisor-1", 11),
-        ts="2026-10-03T10:00:01.000Z",
+    lines = [prepare_for_write(intent).line]
+    if pid is not None:
+        observation = build_entry(
+            id=JournalEntryId("dispatch-supervisor-1", 11),
+            ts=_ts(started_at),
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+            phase=Phase.OBSERVATION,
+            payload={"session_pid": pid, "ok": True, "fix_intent_id": fix_intent_ref(intent.id)},
+        )
+        lines.append(prepare_for_write(observation).line)
+    return tuple(lines)
+
+
+def _finalize_with(
+    fs: loop.FakeFs,
+    vcs: loop.FakeVcs,
+    repo_root: Path,
+    worktree: Path,
+    *,
+    process: object,
+    journal_lines: tuple[str, ...],
+):
+    """``loop._finalize`` with the process port chosen by the test -- a real one for a real detached session."""
+    run_dir = loop._run_dir(repo_root)
+    loop._seed_journal(run_dir, (loop._launch_line(), *journal_lines))
+    folded = supervisor_main._fold_dispatch_journal(fs, run_dir, fs.journal_text(run_dir))
+    return supervisor_main._run_supervisor_finalize_sequence(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        run_dir=run_dir,
         run_id=loop._RUN_ID,
-        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
-        phase=Phase.OBSERVATION,
-        payload={"session_pid": 88003, "ok": True, "fix_intent_id": str(fix_intent.id)},
+        writer_id="dispatch-supervisor-2",
+        counter=0,
+        repo_root=repo_root,
+        slug=loop._SLUG,
+        story_key=loop._STORY_KEY,
+        worktree=worktree,
+        git_facts=loop._git_facts(),
+        session_log="implementation done",
+        merge_subject_template=loop._TEMPLATE,
+        folded=folded,
     )
-    journal_lines = (
-        ver_intent,
-        ver_outcome,
-        prepare_for_write(fix_intent).line,
-        prepare_for_write(fix_obs).line,
-    )
-    launch_calls: list[str] = []
-    wait_calls: list[float] = []
 
-    def _launch(*_a, **_k):
-        launch_calls.append("dispatch_verify_fix")
-        raise AssertionError("must not launch a second fix turn")
 
-    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", _launch)
-    monkeypatch.setattr(
-        supervisor_main,
-        "wait_for_process",
-        lambda _p, _pid, *, timeout_s, on_poll=None: (
-            wait_calls.append(timeout_s),
-            ProcessWaitResult(exited=True, returncode=1),
-        )[1],
-    )
-    monkeypatch.setattr(supervisor_main.time, "monotonic", lambda: 1100.0)
+# --------------------------------------------------------------------------
+# Story 85.2 AC1 — a green fix turn commits its edits, re-verifies once and lands
+# --------------------------------------------------------------------------
+
+
+def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review M6: push -> verify (failed commands offloaded to a sidecar) -> launch -> wait -> commit -> verify ->
+    land, driven through ``run_dispatch_supervisor`` itself."""
+    monkeypatch.setattr(supervisor_main, "time", loop._FakeClock())
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    run_dir = loop._run_dir(repo_root)
+    loop._seed_journal(run_dir, (loop._launch_line(),))
+    (run_dir / "session.log").write_text("implementation done\n", encoding="utf-8")
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_LONG_TAIL), loop._clean_envelope())
+    land_calls = loop._patch_landing(monkeypatch)
+    real_land = supervisor_main.execute_dispatch_land
+
+    def _land(**kwargs: object):
+        events.append(("land", vcs.dirty))
+        return real_land(**kwargs)
+
+    monkeypatch.setattr(supervisor_main, "execute_dispatch_land", _land)
     fs = loop.FakeFs()
 
-    _finalize(fs, repo_root, worktree, journal_lines=journal_lines)
+    code = loop._run(repo_root, fs=fs, vcs=vcs, process=loop.FakeProcess(alive=False), publisher=loop.FakePublisher())
 
-    assert launch_calls == []
-    assert wait_calls and wait_calls[0] <= 900.0
+    assert code == 0
+    first_outcome = _verification_outcomes(fs)[0]
+    assert "failed_commands" not in first_outcome, "the long tail must reach the fix turn through a sidecar"
+    assert launches == [88001]
+    assert len(land_calls) == 1
+    kinds = [event[0] for event in events]
+    assert kinds == ["push", "verify", "launch", "wait", "commit", "verify", "land"]
+    assert ("commit", _WIP_SUBJECT) in events
+    assert ("land", False) in events, "landing must see the fix turn's edits committed"
+    assert _finalize_outcome(fs)["verified"] is True
+
+
+def test_a_fix_turn_commits_its_edits_between_the_launch_and_the_reverification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review M1: the tree starts clean, the session dirties it, and only the pre-verify WIP commit cleans it --
+    dropping that commit makes this fail."""
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert ok is True
+    launch_at = events.index(("launch",))
+    commit_at = events.index(("commit", _WIP_SUBJECT))
+    reverify_at = events.index(("verify", 2))
+    assert launch_at < commit_at < reverify_at
+    assert vcs.dirty is False
+    outcome = _finalize_outcome(fs)
+    assert (outcome["verified"], outcome["committed"], outcome["ok"]) == (True, True, True)
+
+
+def test_the_launch_journals_the_session_pid_before_the_wait(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Review MI/M3: the pid a restarted supervisor waits for is on disk, naming its INTENT in the journal's own id
+    form, before the wait starts."""
+    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    _fake_fix_session(monkeypatch, vcs, pid=88123)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+    seen_at_wait: list[list[dict]] = []
+
+    def _wait(*_a: object, **_k: object) -> ProcessWaitResult:
+        seen_at_wait.append(_verify_fix_entries(fs))
+        return ProcessWaitResult(exited=True, returncode=0)
+
+    monkeypatch.setattr(supervisor_main, "wait_for_process", _wait)
+
+    _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert len(seen_at_wait) == 1
+    intent, observation = seen_at_wait[0]
+    assert intent["phase"] == "intent"
+    assert observation["phase"] == "observation"
+    assert observation["payload"] == {"session_pid": 88123, "ok": True, "fix_intent_id": intent["id"]}
+    pid_appends = [fsync for _path, line, fsync in fs.appended if '"session_pid": 88123' in line]
+    assert pid_appends[0] is True, "the pid observation is fsynced"
+
+
+def test_a_fix_turn_intent_that_cannot_be_journaled_launches_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review M4: journal every step before it acts -- no INTENT on disk, no launch."""
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL))
+    real_append = supervisor_main._append_entry
+
+    def _append(fs, run_dir, entry, **kwargs):
+        if entry.kind == dispatch_core.KIND_DISPATCH_VERIFY_FIX and entry.phase is Phase.INTENT:
+            raise supervisor_main.FsError("disk full (test double)")
+        return real_append(fs, run_dir, entry, **kwargs)
+
+    monkeypatch.setattr(supervisor_main, "_append_entry", _append)
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert launches == []
+    assert ok is False
+    outcome = _finalize_outcome(fs)
+    assert (outcome["ok"], outcome["verified"], outcome["failed_step"]) == (False, False, "verify-fix-intent")
+    assert "disk full" in outcome["failed_message"]
+
+
+# --------------------------------------------------------------------------
+# Story 85.2 AC2/AC4 — a still-red re-verify parks with MRS-DISP-060; never a second turn
+# --------------------------------------------------------------------------
+
+
+def test_reverify_still_refused_emits_mrs_disp_060_and_launches_exactly_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL))
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert launches == [88001], "exactly one fix turn for one refusal"
+    assert [event for event in events if event[0] == "verify"] == [("verify", 1), ("verify", 2)]
+    parks = [
+        entry["payload"]
+        for entry in _verify_fix_entries(fs)
+        if entry["phase"] == "observation" and entry["payload"].get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+    ]
+    assert len(parks) == 1
+    assert parks[0]["failed_command"] == _COMMAND
+    assert parks[0]["finding"]["code"] == FIX_TURN_REVERIFY_REFUSED_CODE
+    assert parks[0]["finding"]["message"] == (
+        f"verification still refused after one fix turn ({_COMMAND!r}) — story parked for the operator "
+        "(Story 85.1 / 83.10)"
+    )
+    assert ok is True
+    assert _finalize_outcome(fs)["verified"] is False
+
+
+def test_a_finished_fix_turn_with_a_still_red_reverify_never_launches_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review H3: the supervisor was killed after the fix turn's OUTCOME but before its re-verify journaled; the
+    next pass re-verifies, still red, and must not launch a second turn (the one-turn bound, both at the call
+    site and in ``decide_verify_fix_turn``)."""
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    started = datetime(2026, 10, 3, 10, 0, tzinfo=timezone.utc)
+    intent_line = _fix_intent_lines(None, started_at=started)[0]
+    intent_id = JournalEntryId("dispatch-supervisor-1", 10)
+    outcome = build_entry(
+        id=JournalEntryId("dispatch-supervisor-1", 12),
+        ts=_ts(started + timedelta(minutes=5)),
+        run_id=loop._RUN_ID,
+        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+        phase=Phase.OUTCOME,
+        intent_id=intent_id,
+        payload={"ok": True, "session_pid": 88100, "session_returncode": 0, "elapsed_s": 300.0},
+    )
+    lines = (*_journaled_refusal_with_failed_commands(), intent_line, prepare_for_write(outcome).line)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    launches = _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL))
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, journal_lines=lines, vcs=vcs)
+
+    assert launches == [], "a second fix turn was launched for one refusal"
+    assert [event for event in events if event[0] == "verify"] == [("verify", 1)]
+    assert ok is True
+    assert _finalize_outcome(fs)["verified"] is False
+
+
+# --------------------------------------------------------------------------
+# Story 85.2 review H2 — the turn's edits are committed, or the story parks
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("failure", ["commit-raises", "still-dirty"])
+def test_a_fix_turn_whose_edits_are_not_committed_parks_without_reverifying(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    if failure == "commit-raises":
+        vcs = _FixTurnVcs(events, commit_paths_raises=True)
+    else:
+        vcs = _FixTurnVcs(events, commit_cleans=False)
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert [event for event in events if event[0] == "verify"] == [("verify", 1)], "a dirty tree is never re-verified"
+    refusals = [entry["payload"] for entry in _verify_fix_entries(fs) if entry["payload"].get("step") == "commit"]
+    assert len(refusals) == 1 and refusals[0]["ok"] is False
+    assert ok is False
+    outcome = _finalize_outcome(fs)
+    assert (outcome["ok"], outcome["verified"], outcome["failed_step"]) == (False, False, "commit")
+    expected = "git commit failed" if failure == "commit-raises" else "still has uncommitted changes"
+    assert expected in outcome["failed_message"]
+
+
+# --------------------------------------------------------------------------
+# Story 85.2 AC3 — a restarted supervisor settles the fix turn it finds in flight
+# --------------------------------------------------------------------------
+
+
+def _spawn_detached(seconds: float) -> int:
+    """A real session that is NOT this process's child -- the shape a restarted supervisor finds: started by a
+    shell in its own session (so its group holds nothing else), the shell exits, and init reaps it."""
+    out = subprocess.run(
+        ["sh", "-c", f"sleep {seconds} >/dev/null 2>&1 & echo $!"],
+        capture_output=True,
+        text=True,
+        check=True,
+        start_new_session=True,
+    )
+    return int(out.stdout.strip())
+
+
+def _running(pid: int) -> bool:
+    try:
+        state = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+    except OSError:
+        return False
+    return state[state.rfind(")") + 2] != "Z"
+
+
+def _kill(pid: int) -> None:
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except OSError:
+        pass
+
+
+def test_a_restarted_supervisor_waits_out_the_remaining_budget_then_stops_a_live_session(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review H1: the real ``wait_for_process`` (never stubbed) against a live non-child session -- the old wait
+    returned at once on ``ChildProcessError``. It waits the ~1.5 s left of the budget, stops the session, journals
+    MRS-DISP-059, and commits nothing the session was writing."""
+    from pyforge.core.process import PosixProcess
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    pid = _spawn_detached(60)
+    launches: list[int] = []
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", lambda *_a, **_k: launches.append(1))
+    events: list[tuple] = []
+    _scripted_verification(monkeypatch, events, loop._clean_envelope())
+    budget_s = 3.0
+    started = datetime.now(timezone.utc) - timedelta(seconds=budget_s - 1.5)
+    lines = (*_journaled_refusal_with_failed_commands(), *_fix_intent_lines(pid, started_at=started, budget_s=budget_s))
+    vcs = _FixTurnVcs(events, dirty=True, changed_vs_head=("half-written.py",))
+    fs = loop.FakeFs()
+    try:
+        assert _running(pid)
+        t0 = time.monotonic()
+        _counter, ok = _finalize_with(fs, vcs, repo_root, worktree, process=PosixProcess(), journal_lines=lines)
+        elapsed = time.monotonic() - t0
+        for _ in range(40):
+            if not _running(pid):
+                break
+            time.sleep(0.05)
+        journaled = [(entry["phase"], entry["payload"]) for entry in _verify_fix_entries(fs)]
+        assert not _running(pid), f"the session must be stopped once the budget is spent: {journaled}"
+    finally:
+        _kill(pid)
+
+    assert 1.0 <= elapsed < 10.0, f"waited {elapsed:.2f}s for a ~1.5s remaining budget"
+    assert launches == []
+    assert vcs.commits == [], "the half-written tree must never be committed"
+    assert [event for event in events if event[0] == "verify"] == []
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_TIMEOUT_CODE
+
+    outcome = [entry for entry in _verify_fix_entries(fs) if entry["phase"] == "outcome"]
+    assert len(outcome) == 1
+    assert outcome[0]["payload"]["code"] == FIX_TURN_TIMEOUT_CODE
+    assert outcome[0]["payload"]["session_pid"] == pid
+    assert outcome[0]["intent_id"] == {"writer_id": "dispatch-supervisor-1", "counter": 10}
+    assert ok is True
+    assert _finalize_outcome(fs)["verified"] is False
+
+
+def test_a_restarted_supervisor_waits_for_a_session_that_exits_in_budget_then_commits_and_reverifies(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review H1: the session exits inside the remaining budget; only then are its edits committed and verified,
+    once -- its exit code is unknowable to a supervisor that did not launch it, so the re-verify decides."""
+    from pyforge.core.process import PosixProcess
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    pid = _spawn_detached(1)
+    launches: list[int] = []
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", lambda *_a, **_k: launches.append(1))
+    events: list[tuple] = []
+    _scripted_verification(monkeypatch, events, loop._clean_envelope())
+    lines = (
+        *_journaled_refusal_with_failed_commands(),
+        *_fix_intent_lines(pid, started_at=datetime.now(timezone.utc), budget_s=60.0),
+    )
+
+    class _ObservingVcs(_FixTurnVcs):
+        def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+            self.events.append(("session-running-at-commit", _running(pid)))
+            return super().commit_paths(repo_root, paths, message)
+
+    vcs = _ObservingVcs(events, dirty=True)
+    fs = loop.FakeFs()
+    try:
+        t0 = time.monotonic()
+        _counter, ok = _finalize_with(fs, vcs, repo_root, worktree, process=PosixProcess(), journal_lines=lines)
+        elapsed = time.monotonic() - t0
+    finally:
+        _kill(pid)
+
+    assert 0.5 <= elapsed < 30.0, f"waited {elapsed:.2f}s for a session that sleeps 1s"
+    assert launches == []
+    assert events[0] == ("session-running-at-commit", False)
+    assert ("commit", _WIP_SUBJECT) in events
+    assert [event for event in events if event[0] == "verify"] == [("verify", 1)]
+    outcome = [entry["payload"] for entry in _verify_fix_entries(fs) if entry["phase"] == "outcome"]
+    assert len(outcome) == 1
+    assert (outcome[0]["ok"], outcome[0]["session_returncode"], outcome[0]["session_pid"]) == (True, None, pid)
+    assert ok is True
+    assert _finalize_outcome(fs)["verified"] is True
+
+
+def test_with_the_flag_off_a_pending_fix_turn_is_only_stopped_journaled_and_parked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With the flag off a turn found in flight is stopped at once -- never waited for, committed, re-verified or
+    landed. (The flag-on cases are the two tests above.)"""
+    from pyforge.core.process import PosixProcess
+
+    repo_root, worktree = _fix_ready_repo(tmp_path, on=False)
+    pid = _spawn_detached(60)
+    calls = _spy_fix_turn(monkeypatch)
+    events: list[tuple] = []
+    _scripted_verification(monkeypatch, events, loop._clean_envelope())
+    lines = (
+        *_journaled_refusal_with_failed_commands(),
+        *_fix_intent_lines(pid, started_at=datetime.now(timezone.utc), budget_s=900.0),
+    )
+    vcs = _FixTurnVcs(events, dirty=True, changed_vs_head=("half-written.py",))
+    fs = loop.FakeFs()
+    try:
+        t0 = time.monotonic()
+        _counter, ok = _finalize_with(fs, vcs, repo_root, worktree, process=PosixProcess(), journal_lines=lines)
+        elapsed = time.monotonic() - t0
+        for _ in range(40):
+            if not _running(pid):
+                break
+            time.sleep(0.05)
+        stopped = not _running(pid)
+    finally:
+        _kill(pid)
+
+    assert stopped, "the in-flight session is stopped"
+    assert elapsed < 5.0, "never waited for"
+    assert calls == []
+    assert vcs.commits == []
+    assert [event for event in events if event[0] == "verify"] == []
+    outcome = [entry["payload"] for entry in _verify_fix_entries(fs) if entry["phase"] == "outcome"]
+    assert len(outcome) == 1
+    assert (outcome[0]["ok"], outcome[0]["stopped"], outcome[0]["session_pid"]) == (False, True, pid)
+    assert "flag off" in outcome[0]["reason"]
+    assert ok is True
+    assert _finalize_outcome(fs)["verified"] is False
+
+
+def test_a_restart_with_an_intent_but_no_recorded_pid_closes_it_and_launches_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review M3: nothing to wait for or stop -- the INTENT is closed with MRS-DISP-058 and no turn is relaunched."""
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    calls = _spy_fix_turn(monkeypatch)
+    lines = (
+        *_journaled_refusal_with_failed_commands(),
+        *_fix_intent_lines(None, started_at=datetime.now(timezone.utc)),
+    )
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, journal_lines=lines)
+
+    assert calls == []
+    outcome = [entry for entry in _verify_fix_entries(fs) if entry["phase"] == "outcome"]
+    assert len(outcome) == 1
+    assert outcome[0]["payload"]["code"] == FIX_TURN_START_FAILED_CODE
+    assert "pid not recorded" in outcome[0]["payload"]["error"]
+    assert outcome[0]["intent_id"] == {"writer_id": "dispatch-supervisor-1", "counter": 10}
+    run_dir = loop._run_dir(repo_root)
+    folded = supervisor_main._fold_dispatch_journal(fs, run_dir, fs.journal_text(run_dir))
+    assert supervisor_main.verify_fix_turn_in_flight(folded, loop._RUN_ID) is False
+    assert ok is True
+    assert _finalize_outcome(fs)["verified"] is False
+
+
+def test_a_restart_resumes_with_the_budget_left_from_the_intents_utc_timestamp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review N7/LOW: the remaining budget is measured from the INTENT's UTC ``ts``, never a monotonic reading
+    another process took."""
+    from pyforge.marshal.dispatch_verify import ProcessWaitResult
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    started = datetime(2026, 10, 3, 10, 0, tzinfo=timezone.utc)
+    lines = (*_journaled_refusal_with_failed_commands(), *_fix_intent_lines(88003, started_at=started, budget_s=900.0))
+    launches: list[str] = []
+    waits: list[tuple[int, float, datetime | None]] = []
+
+    def _wait(_process, pid, *, timeout_s, on_poll=None, launched_at=None):
+        waits.append((pid, timeout_s, launched_at))
+        return ProcessWaitResult(exited=True, returncode=1)
+
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", lambda *_a, **_k: launches.append("x"))
+    monkeypatch.setattr(supervisor_main, "wait_for_process", _wait)
+    monkeypatch.setattr(supervisor_main, "_now_utc", lambda: started + timedelta(seconds=100))
+    fs = loop.FakeFs()
+
+    _finalize(fs, repo_root, worktree, journal_lines=lines)
+
+    assert launches == []
+    assert waits == [(88003, 800.0, started)]
+
+
+# --------------------------------------------------------------------------
+# Story 85.2 AC3 / review M2, M5 — every CLI reader shares the in-flight reading
+# --------------------------------------------------------------------------
+
+
+class _ProcessAt:
+    """A ``ProcessPort`` answering liveness and a start time for one pid (deterministic, no host probe)."""
+
+    def __init__(self, pid: int, *, alive: bool, started: datetime | None) -> None:
+        self._pid = pid
+        self._alive = alive
+        self._started = started
+
+    def is_alive(self, pid: int) -> bool:
+        return self._alive and pid == self._pid
+
+    def process_start_time(self, pid: int) -> float | None:
+        return self._started.timestamp() if self._started is not None and pid == self._pid else None
+
+
+def _cli_run(repo_root: Path, worktree: Path, lines: tuple[str, ...]) -> Path:
+    from pyforge.marshal.core.journal import JournalEntryId as _Id
+
+    launch = build_entry(
+        id=_Id("dispatch-launcher-1", 0),
+        ts="2026-10-03T09:00:00.000Z",
+        run_id=loop._RUN_ID,
+        kind=dispatch_core.KIND_DISPATCH_LAUNCH,
+        phase=Phase.INTENT,
+        payload={"story_key": loop._STORY_KEY, "worktree_path": str(worktree)},
+    )
+    run_dir = loop._run_dir(repo_root)
+    loop._seed_journal(run_dir, (prepare_for_write(launch).line, *_journaled_refusal_with_failed_commands(), *lines))
+    return run_dir
+
+
+def _cli_verdict(repo_root: Path, run_dir: Path, process: object):
+    from pyforge.marshal.adapters.fs_local import LocalFs
+    from pyforge.marshal.cli import dispatch as cli
+
+    fs = LocalFs()
+    journal = cli.gather_dispatch_journal_facts(fs, run_dir, run_dir.name)
+    verdict = cli.resolve_dispatch_session_verdict(
+        fs=fs,
+        vcs=loop.FakeVcs(),
+        process=process,
+        repo_root=repo_root,
+        slug=loop._SLUG,
+        journal=journal,
+        effective_policy=cli._compose_policy(loop._SLUG),
+    )
+    guard = cli._live_dispatch_story_keys(
+        fs=fs,
+        vcs=loop.FakeVcs(),
+        process=process,
+        repo_root=repo_root,
+        slug=loop._SLUG,
+        effective_policy=cli._compose_policy(loop._SLUG),
+    )
+    return journal, verdict, guard
+
+
+_FIX_STARTED = datetime(2026, 10, 3, 10, 0, tzinfo=timezone.utc)
+
+
+@pytest.mark.parametrize(
+    ("case", "alive", "started", "live"),
+    [
+        ("live", True, _FIX_STARTED + timedelta(seconds=1), True),
+        ("dead", False, _FIX_STARTED + timedelta(seconds=1), False),
+        ("reused", True, _FIX_STARTED - timedelta(hours=6), False),
+    ],
+)
+def test_a_fix_turn_in_flight_reads_live_only_while_its_own_session_runs(
+    tmp_path: Path, case: str, alive: bool, started: datetime, live: bool
+) -> None:
+    """Review M2: `dispatch status`, `marshal status` and the in-flight guard read an open fix turn LIVE through
+    the journal facts -- and only while the journaled pid is that turn's own session (Story 83.1's start-time
+    check: a reused pid is not the turn)."""
+    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
+
+    repo_root = loop._repo(tmp_path)
+    worktree = loop._worktree(repo_root)
+    run_dir = _cli_run(repo_root, worktree, _fix_intent_lines(77123, started_at=_FIX_STARTED))
+
+    journal, verdict, guard = _cli_verdict(repo_root, run_dir, _ProcessAt(77123, alive=alive, started=started))
+
+    assert (journal.verify_fix_session_pid, journal.verify_fix_started_at) == (77123, _FIX_STARTED)
+    assert (verdict is DispatchSessionVerdict.LIVE) is live, case
+    assert bool(guard) is live, case
+
+
+def test_a_closed_fix_turn_is_no_longer_in_flight(tmp_path: Path) -> None:
+    from pyforge.marshal.core.dispatch_completion import DispatchSessionVerdict
+
+    repo_root = loop._repo(tmp_path)
+    worktree = loop._worktree(repo_root)
+    outcome = build_entry(
+        id=JournalEntryId("dispatch-supervisor-1", 12),
+        ts=_ts(_FIX_STARTED + timedelta(minutes=1)),
+        run_id=loop._RUN_ID,
+        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+        phase=Phase.OUTCOME,
+        intent_id=JournalEntryId("dispatch-supervisor-1", 10),
+        payload={"ok": False, "session_pid": 77123, "session_returncode": 1, "elapsed_s": 60.0},
+    )
+    lines = (*_fix_intent_lines(77123, started_at=_FIX_STARTED), prepare_for_write(outcome).line)
+    run_dir = _cli_run(repo_root, worktree, lines)
+    process = _ProcessAt(77123, alive=True, started=_FIX_STARTED)
+
+    journal, verdict, _guard = _cli_verdict(repo_root, run_dir, process)
+
+    assert (journal.verify_fix_session_pid, journal.verify_fix_started_at) == (None, None)
+    assert verdict is not DispatchSessionVerdict.LIVE
+
+
+def test_journal_facts_read_the_latest_verification_outcome(tmp_path: Path) -> None:
+    """Review M5: a fix turn's green re-verify follows the refusal it fixed -- the facts read the latest
+    OUTCOME, with no gate left over from the earlier refusal."""
+    from pyforge.marshal.adapters.fs_local import LocalFs
+    from pyforge.marshal.cli import dispatch as cli
+
+    repo_root = loop._repo(tmp_path)
+    run_dir = loop._run_dir(repo_root)
+    refused = _journaled_refusal_with_failed_commands()
+    verified = loop._outcome_pair(
+        kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
+        payload={"verdict": "verified", "ok": True, "scope_violation_advisories": []},
+        counter=5,
+    )
+    loop._seed_journal(run_dir, (loop._launch_line(), *refused, *verified))
+
+    facts = cli.gather_dispatch_journal_facts(LocalFs(), run_dir, run_dir.name)
+
+    assert facts.verification_verdict == "verified"
+    assert facts.verification_failed_gate is None
+    assert facts.verification_failed_message is None
 
 
 def test_without_sidecar_resolver_the_long_tail_fix_turn_never_launches(

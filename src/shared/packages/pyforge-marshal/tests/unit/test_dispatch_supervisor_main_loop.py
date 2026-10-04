@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -659,40 +660,65 @@ def test_maybe_fetch_origin_main_swallows_a_git_failure(tmp_path: Path) -> None:
     assert vcs.fetches == []
 
 
+class _CleaningVcs(FakeVcs):
+    """A commit cleans the tree -- the shape a real ``git commit`` of every changed path leaves."""
+
+    def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        sha = super().commit_paths(repo_root, paths, message)
+        self.dirty = False
+        return sha
+
+
 def test_commit_pre_verify_wip_skips_a_clean_worktree(tmp_path: Path) -> None:
     vcs = FakeVcs(dirty=False)
     repo_root = _repo(tmp_path)
 
-    supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
+    result = supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
 
+    assert result == (False, None)
     assert vcs.commits == []
 
 
-def test_commit_pre_verify_wip_skips_an_empty_diff(tmp_path: Path) -> None:
+def test_commit_pre_verify_wip_refuses_a_dirty_tree_it_has_nothing_to_commit_for(tmp_path: Path) -> None:
     vcs = FakeVcs(dirty=True, changed_vs_head=())
     repo_root = _repo(tmp_path)
 
-    supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
+    committed, refusal = supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
 
+    assert committed is False
+    assert refusal is not None and "still has uncommitted changes" in refusal
     assert vcs.commits == []
 
 
 def test_commit_pre_verify_wip_commits_the_dirty_paths(tmp_path: Path) -> None:
-    vcs = FakeVcs(dirty=True, changed_vs_head=("a.py", "b.py"))
+    vcs = _CleaningVcs(dirty=True, changed_vs_head=("a.py", "b.py"))
     repo_root = _repo(tmp_path)
 
-    supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
+    result = supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
 
+    assert result == (True, None)
     assert vcs.commits and vcs.commits[0][1] == (Path("a.py"), Path("b.py"))
+    assert vcs.commits[0][2] == "marshal: pre-verify WIP checkpoint"
 
 
-def test_commit_pre_verify_wip_reports_a_git_failure(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_commit_pre_verify_wip_refuses_a_tree_the_commit_left_dirty(tmp_path: Path) -> None:
+    vcs = FakeVcs(dirty=True, changed_vs_head=("a.py",))
+    repo_root = _repo(tmp_path)
+
+    committed, refusal = supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
+
+    assert committed is True
+    assert refusal is not None and "still has uncommitted changes" in refusal
+
+
+def test_commit_pre_verify_wip_reports_a_git_failure(tmp_path: Path) -> None:
     vcs = FakeVcs(dirty=True, commit_paths_raises=True)
     repo_root = _repo(tmp_path)
 
-    supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
+    committed, refusal = supervisor_main._commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=_worktree(repo_root))
 
-    assert "pre-verify WIP commit skipped" in capsys.readouterr().err
+    assert committed is False
+    assert refusal == "pre-verify WIP commit failed: git commit failed (test double)"
 
 
 def test_launch_story_started_ts_reads_the_launch_intent(tmp_path: Path) -> None:
@@ -3935,20 +3961,20 @@ def test_verify_fix_turn_reverify_green_and_pre_verify_commit(tmp_path: Path, mo
     worktree = _worktree(repo_root)
     _seed_spec(repo_root, worktree, primary=_READY_SPEC_TEXT)
     branch = dispatch_core.dispatch_worktree_branch(_SLUG, _STORY_KEY)
-    vcs = FakeVcs(dirty=True, changed_vs_head=("fix.py",), branches=frozenset({branch}), head_sha=_MOVED)
+    vcs = _CleaningVcs(dirty=False, changed_vs_head=("fix.py",), branches=frozenset({branch}), head_sha=_MOVED)
     n = {"v": 0}
 
     def _evaluate(**_k):
         n["v"] += 1
         return _refused_verify_envelope() if n["v"] == 1 else _clean_envelope()
 
+    def _launch(*_a, **_k):
+        vcs.dirty = True  # the fix session edits the tree and does not commit
+        return type("L", (), {"pid": 88011})()
+
     monkeypatch.setattr(supervisor_main, "evaluate_dispatch_verification", _evaluate)
     monkeypatch.setattr(supervisor_main.BmadBuildHarness, "binary_present", lambda *_a, **_k: _HarnessResolutionStub())
-    monkeypatch.setattr(
-        supervisor_main.BmadBuildHarness,
-        "dispatch_verify_fix",
-        lambda *_a, **_k: type("L", (), {"pid": 88011})(),
-    )
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", _launch)
     monkeypatch.setattr(
         supervisor_main,
         "wait_for_process",
@@ -3959,7 +3985,8 @@ def test_verify_fix_turn_reverify_green_and_pre_verify_commit(tmp_path: Path, mo
     _counter, ok = _finalize(fs, vcs, repo_root, worktree)
 
     assert ok is True
-    assert vcs.commits
+    assert [message for _root, _paths, message in vcs.commits] == ["marshal: pre-verify WIP checkpoint"]
+    assert n["v"] == 2
 
 
 def test_verify_fix_turn_resume_waits_on_a_journaled_pid(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -3989,11 +4016,7 @@ def test_verify_fix_turn_resume_waits_on_a_journaled_pid(tmp_path: Path, monkeyp
         run_id=_RUN_ID,
         kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
         phase=Phase.INTENT,
-        payload={
-            "launch_mode": "fix_only",
-            "wall_clock_budget_s": 600.0,
-            "budget_started_monotonic": 1000.0,
-        },
+        payload={"launch_mode": "fix_only", "wall_clock_budget_s": 600.0},
     )
     fix_obs = build_entry(
         id=JournalEntryId("dispatch-supervisor-1", 11),
@@ -4001,18 +4024,26 @@ def test_verify_fix_turn_resume_waits_on_a_journaled_pid(tmp_path: Path, monkeyp
         run_id=_RUN_ID,
         kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
         phase=Phase.OBSERVATION,
-        payload={"session_pid": 88012, "ok": True, "fix_intent_id": str(fix_intent.id)},
+        payload={
+            "session_pid": 88012,
+            "ok": True,
+            "fix_intent_id": {"writer_id": "dispatch-supervisor-1", "counter": 10},
+        },
     )
     waits: list[float] = []
     monkeypatch.setattr(
         supervisor_main,
         "wait_for_process",
-        lambda _p, _pid, *, timeout_s, on_poll=None: (
+        lambda _p, _pid, *, timeout_s, on_poll=None, launched_at=None: (
             waits.append(timeout_s),
             ProcessWaitResult(exited=True, returncode=1),
         )[1],
     )
-    monkeypatch.setattr(supervisor_main.time, "monotonic", lambda: 1150.0)
+    monkeypatch.setattr(
+        supervisor_main,
+        "_now_utc",
+        lambda: datetime(2026, 10, 3, 10, 2, 30, tzinfo=timezone.utc),
+    )
     monkeypatch.setattr(
         supervisor_main.BmadBuildHarness,
         "dispatch_verify_fix",

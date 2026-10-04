@@ -16,6 +16,7 @@ import time
 import tomllib
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 
 from pyforge.core.flags import FlagConfigError, read_boolean
@@ -707,6 +708,29 @@ def verify_fix_loop_enabled(*, repo_root: Path) -> tuple[bool, str | None]:
         return False, str(exc)
 
 
+def _is_zombie(pid: int) -> bool:
+    """``True`` when ``/proc`` reports ``pid`` exited and awaiting its parent's reap (state ``Z``)."""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    # The state follows the parenthesised command name, which may itself hold spaces or parentheses.
+    close = stat.rfind(")")
+    return close != -1 and stat[close + 2 : close + 3] == "Z"
+
+
+def fix_session_alive(process: ProcessPort, pid: int, *, launched_at: datetime | None) -> bool:
+    """True while a journaled fix session runs (Story 85.2): the pid exists and has not exited (a zombie only awaits
+    its parent's reap -- ``ProcessPort.is_alive`` counts it alive, a waiting successor must not) AND, when the
+    launch time is known, its process started within ``PID_START_TOLERANCE_SECONDS`` of that launch -- Story 83.1's
+    guard, so a pid the host has since reused for an unrelated process never reads as the turn still running."""
+    if not process.is_alive(pid) or _is_zombie(pid):
+        return False
+    if launched_at is None:
+        return True
+    return dispatch_core.pid_start_matches_launch(process.process_start_time(pid), launched_at)
+
+
 def wait_for_process(
     process: ProcessPort,
     pid: int,
@@ -714,37 +738,46 @@ def wait_for_process(
     timeout_s: float,
     poll_s: float = 1.0,
     on_poll: Callable[[], None] | None = None,
+    launched_at: datetime | None = None,
 ) -> ProcessWaitResult:
     """Wait until ``pid`` exits or ``timeout_s`` elapses.
 
-    Uses ``waitpid(WNOHANG)`` so an exited-but-unreaped child is not treated
-    as still alive (Story 85.1 review H2).
+    A child of this process is reaped with ``waitpid(WNOHANG)``, so an exited-but-unreaped child is not treated
+    as still alive (Story 85.1 review H2), and its exit code is read. A pid that is NOT this process's child --
+    the fix session a killed supervisor launched, waited on by its successor (Story 85.2 review H1) -- makes
+    ``waitpid`` raise ``ChildProcessError``; from then on it is judged by ``fix_session_alive`` (existence plus
+    the start-time check against ``launched_at``), and its exit code is unknowable (``returncode=None``).
     """
-    del process  # liveness is judged via waitpid, not PosixProcess.is_alive
     deadline = time.monotonic() + timeout_s
-    while time.monotonic() < deadline:
-        try:
-            reaped, status = os.waitpid(pid, os.WNOHANG)
-        except ChildProcessError:
+    is_child = True
+    while True:
+        if is_child:
+            try:
+                reaped, status = os.waitpid(pid, os.WNOHANG)
+            except ChildProcessError:
+                is_child = False
+            except OSError:
+                return ProcessWaitResult(exited=False, returncode=None)
+            else:
+                if reaped == pid:
+                    return ProcessWaitResult(exited=True, returncode=os.waitstatus_to_exitcode(status))
+        if not is_child and not fix_session_alive(process, pid, launched_at=launched_at):
             return ProcessWaitResult(exited=True, returncode=None)
-        except OSError:
+        if time.monotonic() >= deadline:
             return ProcessWaitResult(exited=False, returncode=None)
-        if reaped == pid:
-            return ProcessWaitResult(exited=True, returncode=os.waitstatus_to_exitcode(status))
         if on_poll is not None:
             on_poll()
         time.sleep(poll_s)
-    try:
-        reaped, status = os.waitpid(pid, os.WNOHANG)
-        if reaped == pid:
-            return ProcessWaitResult(exited=True, returncode=os.waitstatus_to_exitcode(status))
-    except ChildProcessError, OSError:
-        pass
-    return ProcessWaitResult(exited=False, returncode=None)
 
 
 def terminate_process_group(pid: int) -> None:
-    """Signal the session leader's process group (Story 85.1 review M4)."""
+    """Signal the session leader's process group (Story 85.1 review M4).
+
+    Story 85.2: the pid now also comes off a journal a restarted supervisor reads, so a pid that is a process-group
+    address (``<= 0``) or init is never signalled, and a session sharing this process's own group is signalled
+    alone -- ``killpg`` there would stop the supervisor itself."""
+    if pid <= 1:
+        return
     try:
         pgid = os.getpgid(pid)
     except OSError:
@@ -754,6 +787,9 @@ def terminate_process_group(pid: int) -> None:
             pass
         return
     try:
+        if pgid == os.getpgrp():
+            os.kill(pid, signal.SIGTERM)
+            return
         os.killpg(pgid, signal.SIGTERM)
     except OSError:
         try:

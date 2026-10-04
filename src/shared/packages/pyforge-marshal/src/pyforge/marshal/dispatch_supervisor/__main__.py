@@ -73,6 +73,11 @@ from ..core.dispatch_verify_fix import (
     choose_verify_fix_launch_mode,
     decide_verify_fix_turn,
     extract_failed_verify_commands,
+    fix_intent_ref,
+    fix_turn_park_message,
+    fix_turn_remaining_budget_s,
+    in_flight_verify_fix_turn,
+    pending_verify_fix_intent,
     scrub_fix_turn_exposure,
 )
 from ..core.egress import redact_raw_text, to_redacted_text
@@ -105,6 +110,7 @@ from ..dispatch_verify import (
     ProcessWaitResult,
     compose_dispatch_policy,
     evaluate_dispatch_verification,
+    fix_session_alive,
     resolve_spec_text_for_story,
     run_dispatch_ruff_format_before_verify,
     terminate_process_group,
@@ -186,23 +192,29 @@ def _commit_pre_verify_wip(
     *,
     repo_root: Path,
     worktree: Path,
-) -> None:
+) -> tuple[bool, str | None]:
+    """Commit the worktree's uncommitted edits before a re-verification (Story 85.2).
+
+    Returns ``(committed, refusal)``: ``refusal`` names why the tree is NOT clean afterwards -- a failed git call,
+    or edits the commit left behind -- and is ``None`` once it is clean. A failure is reported, never swallowed
+    (review H2): a re-verification of a dirty tree would verify what landing never pushes."""
+    committed = False
     try:
         if not vcs.has_uncommitted_changes(worktree):
-            return
+            return False, None
         changed = vcs.changed_files(repo_root, worktree, base="HEAD")
-        if not changed:
-            return
-        vcs.commit_paths(
-            worktree,
-            tuple(Path(path) for path in changed),
-            to_redacted_text("marshal: pre-verify WIP checkpoint"),
-        )
+        if changed:
+            vcs.commit_paths(
+                worktree,
+                tuple(Path(path) for path in changed),
+                to_redacted_text("marshal: pre-verify WIP checkpoint"),
+            )
+            committed = True
+        if vcs.has_uncommitted_changes(worktree):
+            return committed, "the worktree still has uncommitted changes after the pre-verify WIP commit"
     except VcsCommandError as exc:
-        print(
-            f"dispatch supervisor: pre-verify WIP commit skipped: {exc}",
-            file=sys.stderr,
-        )
+        return committed, f"pre-verify WIP commit failed: {exc}"
+    return committed, None
 
 
 def _launch_story_started_ts(folded, run_id: str) -> str | None:
@@ -495,20 +507,6 @@ def _verify_fix_turn_journaled(folded, run_id: str) -> bool:
     )
 
 
-def _pending_verify_fix_intent(folded, run_id: str):
-    outcomes = {
-        entry.intent_id
-        for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX)
-        if entry.run_id == run_id and entry.phase == Phase.OUTCOME and entry.intent_id is not None
-    }
-    for entry in reversed(folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX)):
-        if entry.run_id != run_id or entry.phase != Phase.INTENT:
-            continue
-        if entry.id not in outcomes:
-            return entry
-    return None
-
-
 def _verification_already_journaled(folded, run_id: str) -> bool:
     outcomes = [
         entry
@@ -529,6 +527,14 @@ def _dispatch_push_already_journaled(folded, run_id: str) -> bool:
         entry.run_id == run_id and entry.phase == Phase.OUTCOME
         for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_PUSH)
     )
+
+
+def _dispatch_push_succeeded(folded, run_id: str) -> bool:
+    """Whether the run's first journaled push OUTCOME reads ``pushed`` -- the record finalize reads (Story 85.2)."""
+    for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_PUSH):
+        if entry.run_id == run_id and entry.phase == Phase.OUTCOME:
+            return entry.payload.get("outcome") == "pushed"
+    return False
 
 
 def _landing_already_journaled(folded, run_id: str) -> bool:
@@ -976,10 +982,26 @@ def _failed_commands_from_verification_journal(
     return ()
 
 
+@dataclass(frozen=True)
+class _FixTurnResult:
+    """What one pass of ``_maybe_run_verify_fix_turn`` did (Story 85.2).
+
+    ``failed_step``/``failed_message`` carry a shell failure the finalize record must report the way it reports
+    its own commit step (``ok: false``) -- a fix turn's edits that could not be committed, or a fix-turn INTENT
+    that could not be journaled."""
+
+    counter: int
+    verified: bool
+    folded: object
+    committed: bool = False
+    failed_step: str | None = None
+    failed_message: str | None = None
+
+
 def _maybe_run_verify_fix_turn(
     *,
     fs: FsPort,
-    vcs: VcsPort,
+    vcs: CommittingVcs,
     process: ProcessPort,
     run_dir: Path,
     run_id: str,
@@ -992,8 +1014,13 @@ def _maybe_run_verify_fix_turn(
     git_facts: DispatchGitFacts,
     folded,
     session_alive: bool,
-) -> tuple[int, bool, object]:
-    """Run at most one fix turn; re-verify once. Returns (counter, verified, folded)."""
+) -> _FixTurnResult:
+    """Run at most one fix turn; re-verify once.
+
+    Story 85.2: a fix turn a killed supervisor left in flight -- an open INTENT -- is settled here and never
+    relaunched. With the flag on, its session is waited for within what is left of its budget (measured from the
+    INTENT's UTC timestamp) and stopped once that is spent; with the flag off it is only stopped, journaled and
+    parked -- never committed, re-verified or landed. An INTENT that never recorded a pid is closed."""
     v_outcome = _verification_outcome_verdict(folded, run_id)
     flag_enabled, flag_warning = verify_fix_loop_enabled(repo_root=repo_root)
     if flag_warning is not None:
@@ -1011,39 +1038,64 @@ def _maybe_run_verify_fix_turn(
         except FsError:
             pass
 
-    def _fix_session_pid_from_journal(intent_entry) -> int | None:
-        raw_pid = intent_entry.payload.get("session_pid")
-        if isinstance(raw_pid, int):
-            return raw_pid
-        intent_token = str(intent_entry.id)
-        for entry in reversed(folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFY_FIX)):
-            if entry.run_id != run_id or entry.phase is not Phase.OBSERVATION:
-                continue
-            if entry.payload.get("fix_intent_id") not in (None, intent_token):
-                continue
-            obs_pid = entry.payload.get("session_pid")
-            if isinstance(obs_pid, int):
-                return obs_pid
-        return None
+    def _journal_fix(phase: Phase, payload: dict[str, object], *, intent_id: JournalEntryId | None = None) -> None:
+        nonlocal counter
+        entry = build_entry(
+            id=JournalEntryId(writer_id, counter),
+            ts=_format_entry_ts(_now_utc()),
+            run_id=run_id,
+            kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
+            phase=phase,
+            intent_id=intent_id,
+            payload=payload,
+        )
+        counter += 1
+        try:
+            _append_entry(fs, run_dir, entry, fsync=phase is not Phase.OUTCOME)
+        except FsError:
+            pass
 
-    def _remaining_fix_budget_s(intent_entry, fix_policy) -> tuple[float, float]:
-        raw_budget = intent_entry.payload.get("wall_clock_budget_s")
-        budget_s = float(raw_budget) if isinstance(raw_budget, (int, float)) else fix_policy.wall_clock_seconds
-        raw_started = intent_entry.payload.get("budget_started_monotonic")
-        if isinstance(raw_started, (int, float)):
-            started_mono = float(raw_started)
-            remaining = max(0.0, budget_s - (time.monotonic() - started_mono))
-            return started_mono, remaining
-        return time.monotonic(), budget_s
-
-    pending_intent = _pending_verify_fix_intent(folded, run_id)
-    if pending_intent is not None:
-        intent_entry = pending_intent
+    in_flight = in_flight_verify_fix_turn(folded, run_id)
+    if in_flight is not None:
+        intent_entry = in_flight.intent
+        started_at = in_flight.started_at
+        if in_flight.session_pid is None:
+            # Review M3: the launch never recorded a pid -- nothing to wait for or stop. Close the INTENT so no
+            # reader keeps reading the turn in flight; the turn is never relaunched.
+            _journal_fix(
+                Phase.OUTCOME,
+                {
+                    "ok": False,
+                    "code": FIX_TURN_START_FAILED_CODE,
+                    "error": "fix-turn session pid not recorded; the turn is closed, never relaunched",
+                },
+                intent_id=intent_entry.id,
+            )
+            return _FixTurnResult(counter=counter, verified=False, folded=folded)
+        fix_pid = in_flight.session_pid
+        if not flag_enabled:
+            stopped = fix_session_alive(process, fix_pid, launched_at=started_at)
+            if stopped:
+                terminate_process_group(fix_pid)
+            _journal_fix(
+                Phase.OUTCOME,
+                {
+                    "ok": False,
+                    "session_pid": fix_pid,
+                    "stopped": stopped,
+                    "reason": "verify_fix_loop flag off: the in-flight fix turn is stopped and the story parked",
+                },
+                intent_id=intent_entry.id,
+            )
+            return _FixTurnResult(counter=counter, verified=False, folded=folded)
         fix_policy = resolve_verify_fix_settings(compose_dispatch_policy(slug, repo_root))
-        started, wait_budget_s = _remaining_fix_budget_s(intent_entry, fix_policy)
-        fix_pid = _fix_session_pid_from_journal(intent_entry)
-        if fix_pid is None:
-            return counter, False, folded
+        raw_budget = intent_entry.payload.get("wall_clock_budget_s")
+        budget_s = (
+            float(raw_budget)
+            if isinstance(raw_budget, (int, float)) and not isinstance(raw_budget, bool)
+            else fix_policy.wall_clock_seconds
+        )
+        wait_budget_s = fix_turn_remaining_budget_s(budget_s=budget_s, started_at=started_at, now=_now_utc())
     else:
         failed_rows = _failed_commands_from_verification_journal(folded, run_id, fs=fs, run_dir=run_dir)
         failed_cmds = tuple(
@@ -1065,7 +1117,7 @@ def _maybe_run_verify_fix_turn(
             has_failed_commands=bool(failed_cmds),
         )
         if not decision.run:
-            return counter, False, folded
+            return _FixTurnResult(counter=counter, verified=False, folded=folded)
 
         effective = compose_dispatch_policy(slug, repo_root)
         fix_policy = resolve_verify_fix_settings(effective)
@@ -1081,11 +1133,11 @@ def _maybe_run_verify_fix_turn(
             resume_argv=resolution.spec.resume_argv if resolution.spec else None
         )
         fix_log = run_dir / "verify-fix.log"
-        started = time.monotonic()
+        started_at = _now_utc()
         wait_budget_s = fix_policy.wall_clock_seconds
         intent_entry = build_entry(
             id=JournalEntryId(writer_id, counter),
-            ts=_format_entry_ts(_now_utc()),
+            ts=_format_entry_ts(started_at),
             run_id=run_id,
             kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
             phase=Phase.INTENT,
@@ -1094,17 +1146,26 @@ def _maybe_run_verify_fix_turn(
                 "prompt_bytes": len(prompt.encode("utf-8")),
                 "failed_command_count": len(failed_cmds),
                 "wall_clock_budget_s": fix_policy.wall_clock_seconds,
-                "budget_started_monotonic": started,
             },
         )
         counter += 1
         try:
             _append_entry(fs, run_dir, intent_entry, fsync=True)
-        except FsError:
-            pass
+        except FsError as exc:
+            # Review M4: journal every step before it acts -- an INTENT that is not on disk would leave a
+            # running session no restarted supervisor can find, wait for or stop. No launch.
+            message = f"cannot journal the fix-turn INTENT, so no fix turn is launched: {exc}"
+            print(f"dispatch supervisor: {message}", file=sys.stderr)
+            return _FixTurnResult(
+                counter=counter,
+                verified=False,
+                folded=folded,
+                failed_step="verify-fix-intent",
+                failed_message=message,
+            )
 
         launch_error: str | None = None
-        fix_pid = None
+        launched_pid: int | None = None
         try:
             launch = harness.dispatch_verify_fix(
                 worktree,
@@ -1117,49 +1178,28 @@ def _maybe_run_verify_fix_turn(
                 project_slug=slug,
                 budget_env=budget_env,
             )
-            fix_pid = launch.pid
+            launched_pid = launch.pid
         except BuildHarnessError as exc:
             launch_error = str(exc)
 
-        if launch_error is not None or fix_pid is None:
-            outcome_entry = build_entry(
-                id=JournalEntryId(writer_id, counter),
-                ts=_format_entry_ts(_now_utc()),
-                run_id=run_id,
-                kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
-                phase=Phase.OUTCOME,
-                intent_id=intent_entry.id,
-                payload={
+        if launch_error is not None or launched_pid is None:
+            _journal_fix(
+                Phase.OUTCOME,
+                {
                     "ok": False,
                     "code": FIX_TURN_START_FAILED_CODE,
                     "error": launch_error or "launch returned no pid",
-                    "elapsed_s": time.monotonic() - started,
+                    "elapsed_s": (_now_utc() - started_at).total_seconds(),
                 },
+                intent_id=intent_entry.id,
             )
-            counter += 1
-            try:
-                _append_entry(fs, run_dir, outcome_entry, fsync=False)
-            except FsError:
-                pass
-            return counter, False, folded
-
-        pid_entry = build_entry(
-            id=JournalEntryId(writer_id, counter),
-            ts=_format_entry_ts(_now_utc()),
-            run_id=run_id,
-            kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
-            phase=Phase.OBSERVATION,
-            payload={
-                "session_pid": fix_pid,
-                "ok": True,
-                "fix_intent_id": str(intent_entry.id),
-            },
+            return _FixTurnResult(counter=counter, verified=False, folded=folded)
+        fix_pid = launched_pid
+        # The pid a restarted supervisor waits for or stops (review H1/M3), journaled before the wait.
+        _journal_fix(
+            Phase.OBSERVATION,
+            {"session_pid": fix_pid, "ok": True, "fix_intent_id": fix_intent_ref(intent_entry.id)},
         )
-        counter += 1
-        try:
-            _append_entry(fs, run_dir, pid_entry, fsync=True)
-        except FsError:
-            pass
 
     def _fix_turn_heartbeat() -> None:
         nonlocal counter
@@ -1175,64 +1215,60 @@ def _maybe_run_verify_fix_turn(
 
     wait_result: ProcessWaitResult = wait_for_process(
         process,
-        fix_pid if fix_pid is not None else -1,
+        fix_pid,
         timeout_s=wait_budget_s,
         on_poll=_fix_turn_heartbeat,
+        launched_at=started_at,
     )
-    elapsed = time.monotonic() - started
+    elapsed = (_now_utc() - started_at).total_seconds()
     if not wait_result.exited:
-        terminate_process_group(fix_pid if fix_pid is not None else -1)
-        outcome_entry = build_entry(
-            id=JournalEntryId(writer_id, counter),
-            ts=_format_entry_ts(_now_utc()),
-            run_id=run_id,
-            kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
-            phase=Phase.OUTCOME,
+        terminate_process_group(fix_pid)
+        _journal_fix(
+            Phase.OUTCOME,
+            {"ok": False, "code": FIX_TURN_TIMEOUT_CODE, "session_pid": fix_pid, "elapsed_s": elapsed},
             intent_id=intent_entry.id,
-            payload={
-                "ok": False,
-                "code": FIX_TURN_TIMEOUT_CODE,
-                "session_pid": fix_pid,
-                "elapsed_s": elapsed,
-            },
         )
-        counter += 1
-        try:
-            _append_entry(fs, run_dir, outcome_entry, fsync=False)
-        except FsError:
-            pass
-        return counter, False, folded
+        return _FixTurnResult(counter=counter, verified=False, folded=folded)
 
-    session_ok = wait_result.returncode == 0
-    outcome_entry = build_entry(
-        id=JournalEntryId(writer_id, counter),
-        ts=_format_entry_ts(_now_utc()),
-        run_id=run_id,
-        kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
-        phase=Phase.OUTCOME,
-        intent_id=intent_entry.id,
-        payload={
+    # A known non-zero exit fails the turn. An unknown exit code -- always the case for a session a restarted
+    # supervisor did not launch, whose exit status only its parent could reap -- leaves the decision to the
+    # re-verification, the same oracle every landing answers to.
+    session_ok = wait_result.returncode in (0, None)
+    _journal_fix(
+        Phase.OUTCOME,
+        {
             "ok": session_ok,
             "session_pid": fix_pid,
             "session_returncode": wait_result.returncode,
             "elapsed_s": elapsed,
             "launch_mode": intent_entry.payload.get("launch_mode"),
         },
+        intent_id=intent_entry.id,
     )
-    counter += 1
-    try:
-        _append_entry(fs, run_dir, outcome_entry, fsync=False)
-    except FsError:
-        pass
     if not session_ok:
-        return counter, False, folded
+        return _FixTurnResult(counter=counter, verified=False, folded=folded)
 
-    if callable(getattr(vcs, "commit_paths", None)):
-        _commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=worktree)
-
-    text = fs.read_text(run_dir / _JOURNAL_FILENAME)
-    if text is not None:
-        folded = _fold_dispatch_journal(fs, run_dir, text)
+    committed, commit_refusal = _commit_pre_verify_wip(vcs, repo_root=repo_root, worktree=worktree)
+    if commit_refusal is not None:
+        # Review H2: never re-verify (or land) a tree whose edits are not committed -- park, the way the
+        # finalize commit step does.
+        _journal_fix(
+            Phase.OBSERVATION,
+            {
+                "ok": False,
+                "step": "commit",
+                "error": commit_refusal,
+                "fix_intent_id": fix_intent_ref(intent_entry.id),
+            },
+        )
+        return _FixTurnResult(
+            counter=counter,
+            verified=False,
+            folded=folded,
+            committed=committed,
+            failed_step="commit",
+            failed_message=commit_refusal,
+        )
 
     counter = _run_and_journal_verification(
         fs=fs,
@@ -1258,35 +1294,24 @@ def _maybe_run_verify_fix_turn(
         finding = Finding(
             code=FIX_TURN_REVERIFY_REFUSED_CODE,
             severity=Severity.ERROR,
-            message=(
-                "verification still refused after one fix turn" + (f" ({failed_command!r})" if failed_command else "")
-            ),
+            message=fix_turn_park_message(failed_command=failed_command),
         )
-        reverify_entry = build_entry(
-            id=JournalEntryId(writer_id, counter),
-            ts=_format_entry_ts(_now_utc()),
-            run_id=run_id,
-            kind=dispatch_core.KIND_DISPATCH_VERIFY_FIX,
-            phase=Phase.OBSERVATION,
-            payload={
+        _journal_fix(
+            Phase.OBSERVATION,
+            {
                 "ok": False,
                 "code": FIX_TURN_REVERIFY_REFUSED_CODE,
                 "failed_command": failed_command,
                 "finding": finding.to_json_dict(),
-                "fix_intent_id": str(intent_entry.id),
+                "fix_intent_id": fix_intent_ref(intent_entry.id),
             },
         )
-        counter += 1
-        try:
-            _append_entry(fs, run_dir, reverify_entry, fsync=False)
-        except FsError:
-            pass
-    return counter, verified, folded
+    return _FixTurnResult(counter=counter, verified=verified, folded=folded, committed=committed)
 
 
 def verify_fix_turn_in_flight(folded, run_id: str) -> bool:
     """True when a fix-turn INTENT is open without a terminal OUTCOME (Story 85.2)."""
-    return _pending_verify_fix_intent(folded, run_id) is not None
+    return pending_verify_fix_intent(folded, run_id) is not None
 
 
 def _run_supervisor_finalize_sequence(
@@ -1313,6 +1338,43 @@ def _run_supervisor_finalize_sequence(
     ``followup_review`` (Story 73.1, CAP-281) is the run's follow-up review marker, or ``None``: it scopes
     the repository facts this sequence re-gathers and the spec-only block check to the run's own branch."""
     trigger = classify_finalize_trigger(session_log).value
+    if pending_verify_fix_intent(folded, run_id) is not None:
+        # Story 85.2 (review H1): a fix turn a killed supervisor left in flight is settled FIRST -- waited for or
+        # stopped -- before the leftover commit below could commit the half-written tree its session may still
+        # be editing. Push, the spec block check and the first verification all ran on the pass that launched it.
+        fix = _maybe_run_verify_fix_turn(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            repo_root=repo_root,
+            slug=slug,
+            story_key=story_key,
+            worktree=worktree,
+            git_facts=git_facts,
+            folded=folded,
+            session_alive=False,
+        )
+        counter = _journal_finalize_attempt(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=fix.counter,
+            story_key=story_key,
+            worktree=worktree,
+            trigger=trigger,
+            committed=fix.committed or git_facts.current_head_sha != git_facts.baseline_head_sha,
+            pushed=_dispatch_push_succeeded(fix.folded, run_id),
+            verified=fix.verified,
+            ok=fix.failed_step is None,
+            failed_step=fix.failed_step,
+            failed_message=fix.failed_message,
+        )
+        return counter, fix.failed_step is None
     committed = False
     pushed = False
     verified = False
@@ -1472,8 +1534,11 @@ def _run_supervisor_finalize_sequence(
         v_outcome = _verification_outcome_verdict(folded, run_id)
         verified = v_outcome == DispatchVerificationVerdict.VERIFIED.value
 
+    fix_committed = False
+    fix_failed_step: str | None = None
+    fix_failed_message: str | None = None
     if not verified:
-        counter, verified, folded = _maybe_run_verify_fix_turn(
+        fix = _maybe_run_verify_fix_turn(
             fs=fs,
             vcs=vcs,
             process=process,
@@ -1489,6 +1554,8 @@ def _run_supervisor_finalize_sequence(
             folded=folded,
             session_alive=False,
         )
+        counter, verified, folded = fix.counter, fix.verified, fix.folded
+        fix_committed, fix_failed_step, fix_failed_message = fix.committed, fix.failed_step, fix.failed_message
 
     counter = _journal_finalize_attempt(
         fs=fs,
@@ -1499,12 +1566,14 @@ def _run_supervisor_finalize_sequence(
         story_key=story_key,
         worktree=worktree,
         trigger=trigger,
-        committed=committed or git_facts.current_head_sha != git_facts.baseline_head_sha,
+        committed=committed or fix_committed or git_facts.current_head_sha != git_facts.baseline_head_sha,
         pushed=pushed,
         verified=verified,
-        ok=True,
+        ok=fix_failed_step is None,
+        failed_step=fix_failed_step,
+        failed_message=fix_failed_message,
     )
-    return counter, True
+    return counter, fix_failed_step is None
 
 
 def _journal_heartbeat(

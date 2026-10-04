@@ -131,6 +131,26 @@ class DispatchJournalFacts:
     # (a normal run). Every reader that re-gathers the run's merge facts takes the marker from here --
     # read off the INTENT, never re-derived from a spec the review itself rewrites.
     followup_review: FollowupReview | None = None
+    # Story 85.2 (CAP-286): the verification fix turn still in flight -- an open `dispatch-verify-fix` INTENT --
+    # its session's journaled pid and its INTENT's UTC timestamp (the pid-reuse check's anchor); both ``None``
+    # when no turn is open, or when the turn never recorded a pid.
+    verify_fix_session_pid: int | None = None
+    verify_fix_started_at: datetime | None = None
+
+
+#: Story 83.1: how far a process's start time may sit from its journaled launch before the pid is judged reused.
+PID_START_TOLERANCE_SECONDS = 30.0
+
+
+def pid_start_matches_launch(start_time: float | None, launched_at: datetime | None) -> bool:
+    """Story 83.1's pid-reuse guard, pure: ``False`` only when both readings exist and the process started more
+    than ``PID_START_TOLERANCE_SECONDS`` before or after the journaled launch -- the pid now names another process.
+    An unreadable start time or an unknown launch degrades to ``True`` (existence alone decides), as it always
+    has. Shared by the dispatch session's liveness check and the fix turn's (Story 85.2)."""
+    if start_time is None or launched_at is None:
+        return True
+    time_diff = start_time - launched_at.timestamp()
+    return -PID_START_TOLERANCE_SECONDS <= time_diff <= PID_START_TOLERANCE_SECONDS
 
 
 def canonical_repo_root(repo_root: Path) -> Path:
