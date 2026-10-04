@@ -8,6 +8,7 @@ import re
 import shutil
 import socket
 import time
+from pathlib import Path
 
 import pytest
 from playwright.sync_api import expect, sync_playwright
@@ -62,27 +63,24 @@ def run_vizro_server(
     Vizro().build(dashboard).run(port=port, debug=False, use_reloader=False)
 
 
+FIXTURE_DATA_ROOT = Path(__file__).resolve().parents[2] / "fixtures" / "data"
+
+
 @pytest.fixture()
-def dashboard_server(
-    feedstock_health_parquet, package_maintainers_parquet, packages_parquet, bmad_fixture, tmp_path_factory
-):
-    """Fixture to spawn the Vizro server in a background process for the module duration."""
+def dashboard_server(bmad_fixture, tmp_path_factory):
+    """Spawn the Vizro server over a data root materialized from the STATIC fixture
+    Parquet tree (``tests/fixtures/data/``, Story 27.3 closing DW-FU-20-5-4).
+
+    That tree already mirrors the catalog's own ``data/`` layout, so materializing
+    the root is one copy and every page resolves its backing file exactly as it
+    would against a real ``data/``. Before this, the e2e suite hand-placed three
+    tmp files and every other page was checked against an absent file only.
+    """
     tmp_path = tmp_path_factory.mktemp("dashboard_e2e")
 
-    # 1. Structure the BSL parquets directory
+    # 1. Materialize the data root from the static fixture Parquet.
     data_root = tmp_path / "data"
-
-    fh_dir = data_root / "primary/core_feedstock_health"
-    fh_dir.mkdir(parents=True)
-    shutil.copy(feedstock_health_parquet, fh_dir / "core_feedstock_health.parquet")
-
-    pm_dir = data_root / "intermediate/vcs_package_maintainers"
-    pm_dir.mkdir(parents=True)
-    shutil.copy(package_maintainers_parquet, pm_dir / "vcs_package_maintainers.parquet")
-
-    pkg_dir = data_root / "primary/semantic_packages"
-    pkg_dir.mkdir(parents=True)
-    shutil.copy(packages_parquet, pkg_dir / "semantic_packages.parquet")
+    shutil.copytree(FIXTURE_DATA_ROOT, data_root, ignore=shutil.ignore_patterns("*.py", "*.md", "__pycache__"))
 
     # 2. Extract paths from the BMAD fixture
     sprint_path = bmad_fixture["sprint"]
@@ -176,6 +174,83 @@ def test_dashboard_e2e_navigation_and_rendering(dashboard_server):
         browser.close()
 
 
+# The row each grounded page must actually show, keyed by page id. "Grounded"
+# is PageDef.kind == "grounded-data" -- the pages whose backing dataset is
+# migrated today, so against the static fixture data root every one of them
+# has rows (Story 27.3, DW-FU-20-5-4: the data-present visual pass).
+GROUNDED_PAGE_EVIDENCE = {
+    "feedstock-health": ("alpha", "beta", "gamma"),
+    "my-feedstocks": ("alice", "bob", "carol"),
+    "estate-cache": ("sku-alpha", "sku-beta", "sku-gamma"),
+}
+
+
+def test_every_grounded_page_renders_rows_on_the_fixture_data_root(dashboard_server):
+    """DW-FU-20-5-4: the data-present pass. Against a data root materialized from
+    the static fixture Parquet, every ``grounded-data`` page renders its rows in
+    the browser -- not an empty grid, and not a page the suite never visited."""
+    grounded = [p for p in app.PAGE_INVENTORY if p.kind == "grounded-data"]
+    assert {p.id for p in grounded} == set(GROUNDED_PAGE_EVIDENCE), (
+        "a grounded page was added or removed without extending this gate: "
+        f"{sorted(p.id for p in grounded)}"
+    )
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        try:
+            for page_def in grounded:
+                page.goto(f"{dashboard_server}/{page_def.id}")
+                grid = page.locator(f"#{page_def.id}--grid")
+                expect(grid).to_be_visible()
+                for cell in GROUNDED_PAGE_EVIDENCE[page_def.id]:
+                    expect(grid).to_contain_text(cell)
+        finally:
+            browser.close()
+
+
+def test_declared_controls_render_against_real_rows(dashboard_server):
+    """DW-FU-20-5: a page whose ``PageDef`` declares a filter and a chart really
+    builds both once its backing Parquet has rows. ``distribution-breakdown``
+    declares both (DESIGN.md § 3.8) and the fixture tree carries its dataset."""
+    page_def = next(p for p in app.PAGE_INVENTORY if p.id == "distribution-breakdown")
+    assert page_def.filters == ("facet",)
+    assert page_def.chart is not None
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        try:
+            page.goto(f"{dashboard_server}/{page_def.id}")
+            expect(page.locator("#distribution-breakdown--filter-facet")).to_be_visible()
+            expect(page.locator("#distribution-breakdown--chart")).to_be_visible()
+            grid = page.locator("#distribution-breakdown--grid")
+            expect(grid).to_contain_text("linux-64")
+        finally:
+            browser.close()
+
+
+def test_the_scan_pages_offer_a_path_input_and_a_submit_control(dashboard_server):
+    """DW-FU-20-5-2: the two ``live-scan-artifact`` pages carry the path field and
+    the Run button whose action runs the scan through ``pyforge.core.process``.
+    The scan itself is not driven here (it shells to another pixi env); the unit
+    gate in ``tests/unit/test_scan_submit.py`` drives the submit path end to end."""
+    scan_pages = [p for p in app.PAGE_INVENTORY if p.kind == "live-scan-artifact"]
+    assert {p.id for p in scan_pages} == {"scan-project", "env-inspect"}
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        try:
+            for page_def in scan_pages:
+                page.goto(f"{dashboard_server}/{page_def.id}")
+                expect(page.locator(f"#{page_def.id}--path")).to_be_visible()
+                expect(page.locator(f"#{page_def.id}--submit")).to_be_visible()
+                expect(page.locator(f"#{page_def.id}--status")).to_contain_text("No scan submitted yet")
+        finally:
+            browser.close()
+
+
 def test_dashboard_pages_semantic_nav_and_aria(dashboard_server):
     """DW-D2-3 residual (Story 20.5): the §2.1 semantic-HTML/ARIA browser-agent
     navigation check — a browser-agent must be able to enumerate every page in
@@ -194,17 +269,11 @@ def test_dashboard_pages_semantic_nav_and_aria(dashboard_server):
         genuinely interactive nav control on this page;
       * navigating to EVERY page (not just the 3 the rest of this file drives) by
         its own href renders a deterministic ``<h2 id="page-title">`` matching that
-        page's title, and the page's own legibility Card/stamp Card is present.
-
-    What this deliberately does NOT assert (a real, documented gap, not silently
-    papered over per the ARIA_CHECK_FAILS edge case's "surfaced, never swallowed"
-    contract): Vizro's shipped page-select control is a ``<div>``-based accordion,
-    not a native ``<nav>``/``role="navigation"`` landmark, and page content sits in
-    a plain ``<div>``, not a ``<main>``/``role="main"`` landmark. That is a
-    pre-existing Vizro/dash-bootstrap-components framework limitation outside a
-    single recipe-dashboard-pages story's surgical-change scope (patching Vizro's
-    own component templates is a framework-level change, not a page port) —
-    recorded as a residual in the deferred-work-ledger, not asserted away here.
+        page's title, and the page's own legibility Card/stamp Card is present;
+      * the page select sits in a ``navigation`` landmark and the page content in a
+        ``main`` landmark, on every page — Vizro 0.1.60 ships neither, so
+        ``app.LandmarkDashboard`` re-tags its two containers and this is the gate
+        on that (Story 27.3, DW-FU-20-5-3).
     """
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -214,6 +283,16 @@ def test_dashboard_pages_semantic_nav_and_aria(dashboard_server):
         # -- the nav accordion carries real ARIA state on its one interactive control --
         toggle = page.locator("#nav-panel button.accordion-button")
         expect(toggle).to_have_attribute("aria-expanded", "true")
+
+        # -- the two landmarks a browser agent jumps between --
+        navigation = page.locator("[role='navigation']")
+        expect(navigation).to_have_count(1)
+        expect(navigation).to_have_attribute("aria-label", "Dashboard pages")
+        # The page select really is INSIDE the navigation landmark.
+        expect(navigation.locator("#nav-panel")).to_have_count(1)
+        main = page.locator("[role='main']")
+        expect(main).to_have_count(1)
+        expect(main.locator("h2#page-title")).to_have_count(1)
 
         # -- every page has a real, accessible-name-bearing anchor, in deterministic order --
         links = page.locator("#nav-panel a.accordion-item-link")
@@ -232,6 +311,9 @@ def test_dashboard_pages_semantic_nav_and_aria(dashboard_server):
             expect(heading).to_contain_text(page_def.title)
             content_id = f"{page_def.id}--stamp" if page_def.kind == "factory" else f"{page_def.id}--about"
             expect(page.locator(f"#{content_id}")).to_be_visible()
+            # The landmarks are per-page, not just on the home page.
+            expect(page.locator("[role='navigation']")).to_have_count(1)
+            expect(page.locator("[role='main']")).to_have_count(1)
             # no Dash client-side error overlay leaked onto the rendered page.
             assert (
                 page.locator("._dash-error-menu, #_dash-global-error-container .dash-fe-error__title").count() == 0
