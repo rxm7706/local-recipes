@@ -244,6 +244,190 @@ def test_the_fix_turn_prompt_redacts_before_truncating():
     assert "persecret" not in prompt
 
 
+# --------------------------------------------------------------------------
+# Story 85.4: the redaction never hangs the supervisor or hides what the fix needs
+# --------------------------------------------------------------------------
+
+#: The shapes the 85.3 post-landing delta review found leaking (LOW-3), and the dotted keys the same rule must
+#: keep redacting now that a key never carries a `.`: ``(case id, raw text, the secret that must not survive)``.
+_GH_TAIL = "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8"  # 36 characters, a real GitHub token's length
+
+_LEAKING_SHAPES_85_4 = [
+    ("flag-space", "mysql --password hunter2 -h db", "hunter2"),
+    ("flag-space-quoted", "cli --api-key 'k3y s3cret' run", "k3y s3cret"),
+    ("flag-space-token", "gh auth login --with-token ghs_abc123", "ghs_abc123"),
+    ("authorization-token", "Authorization: token ghp_x", "ghp_x"),
+    ("authorization-token-not-github", "Authorization: token tok123", "tok123"),
+    ("proxy-authorization-any-scheme", "Proxy-Authorization: Negotiate YIIabc", "YIIabc"),
+    # 85.4 review R07/R08: a JWT's dotted tail, and credentials with no scheme word.
+    ("authorization-jwt", "Authorization: Bearer eyJhbGciOi.eyJzdWIi.c2lnbmF0dXJl", "eyJzdWIi"),
+    ("authorization-no-scheme", "Authorization: rawtoken123", "rawtoken123"),
+    ("bare-ghp", f"remote: using ghp_{_GH_TAIL} for push", _GH_TAIL),
+    ("bare-github-pat", "github_pat_11ABCDEFGH0123456789_xyz in the log", "11ABCDEFGH0123456789_xyz"),
+    # 85.4 review R11: every GitHub token prefix, not only ghp_.
+    ("bare-gho", f"gho_{_GH_TAIL}", _GH_TAIL),
+    ("bare-ghu", f"ghu_{_GH_TAIL}", _GH_TAIL),
+    ("bare-ghs", f"ghs_{_GH_TAIL}", _GH_TAIL),
+    ("bare-ghr", f"ghr_{_GH_TAIL}", _GH_TAIL),
+    ("url-empty-user", "postgres://:pw@host/db", "pw@"),
+    ("url-password-with-scheme", "https://u:ab://cd@host", "cd@"),
+    ("url-digit-before-scheme", "1https://u:pw000@host", "pw000"),
+    ("cookie", "Cookie: sessionid=abc", "abc"),
+    ("set-cookie", "Set-Cookie: sessionid=abc; Path=/", "abc"),
+    # 85.4 review R09: the second cookie pair, past whitespace.
+    ("cookie-second-pair", "Cookie: a=b; session=s3cookie", "s3cookie"),
+    ("json-compact", '{"password":"cmpsecret"}', "cmpsecret"),
+    ("dotted-key", "spring.datasource.password=dotsecret", "dotsecret"),
+    ("dotted-attribute", "config.api_key = 'attrsecret'", "attrsecret"),
+    # 85.4 review MEDIUM: a quoted key that carries a `.` (85.3 redacted every one of these).
+    ("quoted-dotted-json", '{"db.password": "hunter2"}', "hunter2"),
+    ("quoted-dotted-python", "{'spring.datasource.password': 'x9dot'}", "x9dot"),
+    ("quoted-dotted-secret", '"app.secret": "v1dot"', "v1dot"),
+    ("quoted-dotted-compact", '"auth.token":"v2dot"', "v2dot"),
+    ("quoted-dotted-equals", '"secrets.api_key" = "v3dot"', "v3dot"),
+    ("quoted-dotted-equals-compact", '"client.secret"="v4dot"', "v4dot"),
+    # 85.4 review LOW-2: a `:` with no space after it is still a separator unless a digit follows a bare key.
+    ("json-colon-number", '{"password":12345}', "12345"),
+    ("bare-colon-no-space", "password:nospace", "nospace"),
+    ("bare-colon-slash-value", "aws_secret_access_key:abc/def", "abc/def"),
+    ("bare-colon-env", "GITHUB_TOKEN:ghp_x1", "ghp_x1"),
+    # 85.4 review LOW-3: a colour code before a credential.
+    ("ansi-url", "\x1b[32mpostgres://admin:ansipw@db/x\x1b[0m", "ansipw"),
+    ("ansi-flag", "\x1b[0m--password ansiflag", "ansiflag"),
+    ("ansi-cookie", "\x1b[36mCookie: s=ansicook\x1b[0m", "ansicook"),
+    # A credential header written as a quoted key (Python and JSON dicts).
+    ("quoted-authorization-python", "{'authorization': 'Bearer hdrtok1'}", "hdrtok1"),
+    ("quoted-authorization-json", '"Authorization": "Bearer hdrtok2"', "hdrtok2"),
+    ("quoted-cookie-json", '{"Cookie": "sid=hdrtok3"}', "hdrtok3"),
+]
+
+
+@pytest.mark.parametrize(("case", "raw", "secret"), _LEAKING_SHAPES_85_4, ids=[c[0] for c in _LEAKING_SHAPES_85_4])
+def test_scrub_fix_turn_exposure_redacts_the_shapes_the_85_3_delta_review_found_leaking(
+    case: str, raw: str, secret: str
+):
+    scrubbed = scrub_fix_turn_exposure(raw)
+    assert secret not in scrubbed, case
+    assert "***REDACTED***" in scrubbed, case
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "token_budget.py:42:5: E501 line too long",
+        "src/pyforge/marshal/core/token_budget.py:42:5: E501 line too long (101 > 100)",
+        "bin/token:42:5: error: unexpected indent",
+        "secrets_loader.py: line 42, col 5, Error - Missing semicolon.",
+        "password.py:10:1: F401 'os' imported but unused",
+        "tests/unit/test_secret_store.py::test_round_trip PASSED",
+    ],
+)
+def test_a_compiler_location_keeps_its_line_and_column(line: str):
+    """LOW-2: a file named for a secret is no key (a key never carries a `.`), and `:` followed by a digit is no
+    separator."""
+    assert scrub_fix_turn_exposure(line) == line
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "ModuleNotFoundError: No module named 'ghp_import'",
+        "cli --no-token-check --verbose",
+        '"tough-cookie": "^5.0.0", "azure-mgmt-authorization": "4.0.0"',
+    ],
+)
+def test_ordinary_output_that_only_looks_like_a_credential_is_kept(line: str):
+    """85.4 review: a short `ghp_` name is no token (LOW-5), a flag after a secret-named flag is no value (R10), and a
+    quoted key is a credential header only when it is named whole."""
+    assert scrub_fix_turn_exposure(line) == line
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "27 |     except TokenError:\n   |     ^^^^^^ E722 Do not use bare `except`",
+        "    if token:\n>       assert budget.spent < budget.limit",
+        "password:\nnext line",
+    ],
+    ids=["ruff-full-format", "pytest-failure-arrow", "bare-key-at-line-end"],
+)
+def test_a_value_is_never_taken_from_the_next_line(text: str):
+    """85.4 review LOW-4: whitespace after a separator never crosses a newline, so the next line's gutter or arrow
+    survives."""
+    assert scrub_fix_turn_exposure(text) == text
+
+
+def test_the_scrub_removes_terminal_colour_codes():
+    """LOW-3: colour codes go first -- a code ends in a letter, which would hide the start of every rule after it."""
+    assert scrub_fix_turn_exposure("\x1b[1;31mE501\x1b[0m line too long\x1b[K") == "E501 line too long"
+
+
+def test_an_unclosed_quoted_value_never_takes_the_next_line():
+    """A quoted value ends at its line: an unclosed quote redacts its own value and leaves the next line -- what the
+    fix needs -- as it was."""
+    scrubbed = scrub_fix_turn_exposure('token = "abc\nE501 at "x.py" line 3')
+    assert scrubbed.splitlines() == ["token = ***REDACTED***", 'E501 at "x.py" line 3']
+
+
+class _DeadlineExpired(Exception):
+    pass
+
+
+def _scrub_seconds(text: str, *, deadline_s: float = 5.0) -> float:
+    """How long the scrub takes on ``text``. A backtracking regex fails the test at ``deadline_s`` instead of hanging
+    the suite: ``re`` checks for signals while it matches, so the SIGALRM handler interrupts it."""
+
+    def _expired(_signum: int, _frame: object) -> None:
+        raise _DeadlineExpired
+
+    previous = signal.signal(signal.SIGALRM, _expired)
+    signal.setitimer(signal.ITIMER_REAL, deadline_s)
+    try:
+        start = time.perf_counter()
+        scrub_fix_turn_exposure(text)
+        return time.perf_counter() - start
+    except _DeadlineExpired:
+        pytest.fail(f"the scrub was still running after {deadline_s} s")
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous)
+
+
+@pytest.mark.parametrize("quote", ['"', "'"])
+def test_an_unclosed_quote_before_100k_backslashes_scrubs_in_under_a_second(quote: str):
+    """MEDIUM (ReDoS): a secret key, `=`, an opening quote and 100,000 backslashes with no closing quote. 85.3's
+    quoted-value branch matched a backslash two ways and backtracked exponentially (N=1000 took over 20 s)."""
+    assert _scrub_seconds(f"password={quote}" + "\\" * 100_000) < 1.0
+
+
+def test_a_100kb_run_of_url_scheme_characters_scrubs_in_under_a_second():
+    """LOW-1: a URL scheme is tried from the start of a run of scheme characters only, never from inside it."""
+    assert _scrub_seconds("ab+c.d-1" * 12_500) < 1.0
+
+
+#: Separator-free or keyword-dense 100 KB runs, one per rule, that a quantifier able to start anywhere in a run
+#: (or to rescan it from every keyword) turns quadratic.
+_ADVERSARIAL_100KB = [
+    ("repeated-url-userinfo", "a://u:" * 16_667),
+    ("keyword-run", "token" * 20_000),
+    ("keyword-run-then-separator", "token" * 20_000 + "="),
+    ("flag-run", "--token" * 14_286),
+    ("spaces-after-a-key", "password=" + " " * 100_000),
+    ("authorization-word-run", "Authorization: " + "a" * 100_000),
+    ("cookie-pairs", "Cookie: " + "a=b; " * 20_000),
+    ("github-prefix-run", "ghp_" * 25_000),
+    ("url-password-scheme-run", "a://u:" + "p://" * 25_000),
+    ("quoted-dotted-keyword-run", '"' + "token." * 16_667),
+    ("quoted-header-run", "'cookie" * 14_286),
+    ("colour-code-run", "\x1b[3" * 33_334),
+]
+
+
+@pytest.mark.parametrize(("case", "text"), _ADVERSARIAL_100KB, ids=[c[0] for c in _ADVERSARIAL_100KB])
+def test_every_redaction_rule_stays_linear_on_100kb_adversarial_input(case: str, text: str):
+    assert _scrub_seconds(text) < 1.0, case
+
+
 def test_extract_failed_verify_commands_ignores_gate_018_pseudo_command():
     findings = (
         Finding(
@@ -965,6 +1149,37 @@ def test_a_profile_without_a_fix_template_refuses_the_launch_naming_it(monkeypat
     assert not (tmp_path / "run" / VERIFY_FIX_PROMPT_FILENAME).exists()
 
 
+def test_the_story_launch_keeps_dev_null_as_the_sessions_stdin(monkeypatch, tmp_path):
+    """85.3 delta review X02: only a fix turn's prompt file becomes a session's stdin; the story launch (``dispatch``)
+    keeps ``/dev/null``, so a session never reads the supervisor's stdin."""
+    from pyforge.marshal.adapters import harness_bmadbuild
+    from pyforge.marshal.ports.build_harness import HarnessResolution
+
+    seen: dict[str, object] = {}
+
+    def _popen(argv, **kwargs):
+        seen["stdin"] = kwargs["stdin"]
+        return _CapturedPopen()
+
+    monkeypatch.setattr(harness_bmadbuild.subprocess, "Popen", _popen)
+    profile = parse_profile({"name": "fake", "binary": "fake", "argv": ["{prompt}"]}, source="test")
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+
+    harness_bmadbuild.BmadBuildHarness().dispatch(
+        worktree,
+        resolution=HarnessResolution(profile="fake", spec=profile, binary_path="/bin/x"),
+        project_slug="pyforge-marshal",
+        story_key="85-4-example",
+        spec_path=worktree / "spec.md",
+        model=None,
+        budget_env={},
+        log_path=tmp_path / "session.log",
+    )
+
+    assert seen["stdin"] is subprocess.DEVNULL
+
+
 # --------------------------------------------------------------------------
 # Story 85.3 landing review M1/M2 (M10): the timeout stop, against real processes
 # --------------------------------------------------------------------------
@@ -1012,17 +1227,20 @@ def test_terminate_process_group_kills_and_reaps_a_leader_that_ignores_sigterm()
 
 def test_terminate_process_group_kills_a_child_that_ignores_sigterm_after_its_leader_obeys():
     """M1: the leader exits on SIGTERM, its child ignores it -- the group is swept and the child killed."""
-    child = "import signal, time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(60)"
-    leader = (
-        "import subprocess, sys, time\n"
-        f"p = subprocess.Popen([sys.executable, '-c', {child!r}])\n"
-        "print(p.pid, flush=True)\n"
+    # The child prints its ready line only once SIGTERM is ignored (85.3 delta review LOW-7: a fixed sleep raced it
+    # under load); it inherits the leader's stdout, so the test reads the line itself.
+    child = (
+        "import os, signal, time\n"
+        "signal.signal(signal.SIGTERM, signal.SIG_IGN)\n"
+        "print('ready', os.getpid(), flush=True)\n"
         "time.sleep(60)\n"
     )
+    leader = f"import subprocess, sys, time\nsubprocess.Popen([sys.executable, '-c', {child!r}])\ntime.sleep(60)\n"
     proc = subprocess.Popen([sys.executable, "-c", leader], start_new_session=True, stdout=subprocess.PIPE, text=True)
     assert proc.stdout is not None
-    child_pid = int(proc.stdout.readline())
-    time.sleep(0.3)
+    ready, child_pid_text = proc.stdout.readline().split()
+    assert ready == "ready"
+    child_pid = int(child_pid_text)
     try:
         result = terminate_process_group(proc.pid, grace_s=2.0)
         assert result.reaped is True

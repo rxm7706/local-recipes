@@ -673,7 +673,7 @@ sections:
       with per-profile data files and room for overlays.'
     - 'Three more surfaces are entirely new: `marshal factory drain` reads every station''s sprint-status
       ledger and auto-chains dispatch fleet-wide, superseding a hand-driven coordinator; `marshal login`
-      writes a local PKCE bearer profile; and `marshal chain` / `marshal planning` regenerate the Dream-to-orphan-report
+      writes a local PKCE bearer profile; and `marshal planning chain-regenerate` regenerates the Dream-to-orphan-report
       planning chain through a skill-invoke port. `marshal upstream` keeps a tracked register of bmad-loop
       gaps and Marshal''s own compensating workarounds.'
   - type: finding
