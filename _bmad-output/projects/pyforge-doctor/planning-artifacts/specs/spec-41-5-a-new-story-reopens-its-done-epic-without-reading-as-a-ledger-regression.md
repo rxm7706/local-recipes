@@ -2,7 +2,7 @@
 title: "41.5: A new story reopens its done epic without reading as a ledger regression"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-review'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -77,4 +77,10 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-04 — Built by hand in the chain PR, so marshal Story 85.4 can reopen Epic 85. `epic_reopened_by_new_story` in `sources/ledger.py` is shared by `ledger-regression` and `MARSHAL_DURABILITY`. Gates, local, read from exit codes:
+  - `pyforge-doctor-test`: 3266 passed.
+  - `lint-types`: rc 0.
+  - `spec-surface-check`: rc 0, after memlog reconciles and scoped stamps of `spec-pyforge-doctor`, `spec-pyforge-core` and `spec-pyforge-marshal`.
+  - `ledger-regression-check` on the branch that reopens marshal `epic-85`: rc 0, where it was rc 2 before the change.
+  - Mutation: removing the rule from `_check`, removing it from `marshal.gather`, or dropping the not-done clause each fails a test.
+  - An independent review is pending.
