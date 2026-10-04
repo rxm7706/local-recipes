@@ -109,6 +109,20 @@ def _subprocess_violations(tree: ast.Module) -> list[int]:
     return sorted(set(violations))
 
 
+def _dotted_chain(node: ast.Attribute) -> list[str] | None:
+    """``a.b.c`` as ``["a", "b", "c"]`` for an attribute chain rooted at a
+    plain name; None for any other root (a call, a subscript)."""
+    parts: list[str] = []
+    current: ast.expr = node
+    while isinstance(current, ast.Attribute):
+        parts.append(current.attr)
+        current = current.value
+    if not isinstance(current, ast.Name):
+        return None
+    parts.append(current.id)
+    return parts[::-1]
+
+
 def _non_engines_warden_submodule_violations(tree: ast.Module) -> list[int]:
     violations: list[int] = []
     for node in ast.walk(tree):
@@ -154,6 +168,16 @@ def _non_engines_warden_submodule_violations(tree: ast.Module) -> list[int]:
             # this form entirely (review finding, 2026-07-30; mirrors the
             # identical fix in test_no_warden_import.py).
             elif module == "pyforge" and any(alias.name == "warden" for alias in node.names):
+                violations.append(node.lineno)
+        elif isinstance(node, ast.Attribute):
+            # The sanctioned `import pyforge.warden.engines` binds
+            # `pyforge`, through which `pyforge.warden.models.X` reaches a
+            # non-engines submodule with no import to flag (DW-FU-1-2-2).
+            # The same symbol allowlist holds for the attribute form.
+            chain = _dotted_chain(node)
+            if chain is None or chain[:2] != ["pyforge", "warden"] or len(chain) < 3:
+                continue
+            if chain[2] != "engines" or (len(chain) > 3 and chain[3] != "run_doctor_checks"):
                 violations.append(node.lineno)
     return sorted(set(violations))
 
@@ -350,3 +374,14 @@ def test_guard_does_not_fire_on_the_sanctioned_engines_import():
     # identical module and is equally sanctioned.
     relative = "from ...warden.engines import run_doctor_checks\n"
     assert _non_engines_warden_submodule_violations(ast.parse(relative)) == []
+
+
+def test_guard_fires_on_a_non_engines_attribute_chain_after_the_engines_import():
+    # DW-FU-1-2-2: the sanctioned import binds `pyforge`; a deep attribute
+    # chain must not reach past engines or past its one sanctioned symbol.
+    chain = "import pyforge.warden.engines\nX = pyforge.warden.models.Finding\n"
+    assert _non_engines_warden_submodule_violations(ast.parse(chain)) == [2]
+    laundered = "import pyforge.warden.engines\nS = pyforge.warden.engines.subprocess\n"
+    assert _non_engines_warden_submodule_violations(ast.parse(laundered)) == [2]
+    sanctioned = "import pyforge.warden.engines\nR = pyforge.warden.engines.run_doctor_checks\n"
+    assert _non_engines_warden_submodule_violations(ast.parse(sanctioned)) == []

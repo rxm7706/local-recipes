@@ -12,15 +12,18 @@ the monorepo root) -- skipped outside a monorepo checkout (no ``.claude/``
 directory present), mirroring that file's own skip idiom for the golden
 ``_http.py`` fixture.
 
-Only 2-3 iterations (not warden's 30-iteration convention): each run costs
-real wall-clock seconds against this repo's own tree, so a larger iteration
-count would make the whole suite noticeably slower for no extra signal --
-the max (not a percentile) is the one number that matters for a hard
-pre-flight budget.
+One untimed warm-up run, then five timed ones judged by their median
+(Story 41.4, DW-FU-6-6-8 / DW-FU-18-2). The first run on a cold worktree
+pays for imports and an unwarmed filesystem cache, and a loaded host adds
+one-off spikes; under the old max-of-three either one failed the gate with
+the code unchanged (4.2s-10.5s measured on identical code). The budget
+itself is unchanged: a warm median over it is still a real regression.
+Not warden's 30-iteration convention -- each run costs real seconds.
 """
 
 from __future__ import annotations
 
+import statistics
 import time
 from pathlib import Path
 
@@ -42,7 +45,8 @@ except IndexError:
 # see the story spec's Design Notes for the live measurement this carries
 # forward (~2.1-2.5s combined against this same monorepo, ~2x headroom).
 _BUDGET_SECONDS = 5.0
-_ITERATIONS = 3
+_WARMUP_ITERATIONS = 1
+_ITERATIONS = 5
 
 
 def test_doctor_check_completes_within_the_five_second_budget(capsys):
@@ -51,10 +55,11 @@ def test_doctor_check_completes_within_the_five_second_budget(capsys):
 
     engines_suite_size = len(registry.list_checks(category="engines"))
     durations: list[float] = []
-    for _ in range(_ITERATIONS):
+    for iteration in range(_WARMUP_ITERATIONS + _ITERATIONS):
         start = time.monotonic()
         exit_code = main(["check", str(_REPO_ROOT)])
-        durations.append(time.monotonic() - start)
+        if iteration >= _WARMUP_ITERATIONS:
+            durations.append(time.monotonic() - start)
         # Only the timing is under budget-test here -- a real environment's
         # engine availability (FAIL) or env-hygiene hits (WARN, never
         # gating) are both acceptable outcomes; a crash (any other exit) is
@@ -75,8 +80,11 @@ def test_doctor_check_completes_within_the_five_second_budget(capsys):
             "benchmark's timing is meaningless"
         )
 
-    assert max(durations) < _BUDGET_SECONDS, (
-        f"doctor check took {max(durations):.2f}s (iterations: "
-        f"{[f'{d:.2f}' for d in durations]}) against the monorepo root -- "
-        f"over the documented {_BUDGET_SECONDS}s budget (PRD SM-C1)"
+    assert len(durations) == _ITERATIONS
+    median = statistics.median(durations)
+    assert median < _BUDGET_SECONDS, (
+        f"doctor check took a median {median:.2f}s (timed runs: "
+        f"{[f'{d:.2f}' for d in durations]}, after {_WARMUP_ITERATIONS} "
+        f"warm-up) against the monorepo root -- over the documented "
+        f"{_BUDGET_SECONDS}s budget (PRD SM-C1)"
     )
