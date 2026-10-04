@@ -1626,6 +1626,8 @@ def test_a_path_needing_quoting_is_read_literally(tmp_path: Path) -> None:
     _init_repo(repo)
     _write_spec(repo, "pyforge-x", "spec-foo", surface=["diátaxis.md"])
     (repo / "diátaxis.md").write_text("x\n", encoding="utf-8")
+    # git C-quotes a `"` even with core.quotePath=false; only `-z` returns it literally.
+    (repo / 'we"ird.md').write_text("x\n", encoding="utf-8")
     _write_allowlist(repo, [("**", "everything else")])
     _add_commit(repo)
 
@@ -1633,6 +1635,7 @@ def test_a_path_needing_quoting_is_read_literally(tmp_path: Path) -> None:
 
     assert tracked is not None
     assert "diátaxis.md" in tracked
+    assert 'we"ird.md' in tracked
     assert not any("\\303" in path or path.startswith('"') for path in tracked)
     # And the literal path really is governed by the literal glob.
     ungoverned = {f.evidence["path"] for f in chain.gather_spec_surface(repo) if f.check == "ungoverned"}
@@ -1697,7 +1700,8 @@ def test_stamp_script_tracked_files_reads_non_ascii_paths_literally(
     repo = tmp_path / "repo"
     _init_repo(repo)
     (repo / "diátaxis.md").write_text("x\n", encoding="utf-8")
-    subprocess.run(["git", "-C", str(repo), "add", "diátaxis.md"], check=True)
+    (repo / 'we"ird.md').write_text("x\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "diátaxis.md", 'we"ird.md'], check=True)
     subprocess.run(
         ["git", "-C", str(repo), "commit", "-m", "add", "--date", "2026-01-01T00:00:00+00:00"],
         check=True,
@@ -1715,6 +1719,7 @@ def test_stamp_script_tracked_files_reads_non_ascii_paths_literally(
     chain_paths = set(chain._tracked_files(repo) or [])
 
     assert "diátaxis.md" in script_paths
+    assert 'we"ird.md' in script_paths
     assert script_paths == chain_paths
 
 
