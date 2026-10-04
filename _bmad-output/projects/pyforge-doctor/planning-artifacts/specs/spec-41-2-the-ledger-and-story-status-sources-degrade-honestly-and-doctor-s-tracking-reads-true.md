@@ -2,7 +2,7 @@
 title: "41.2: The ledger, story-status and capability-effect sources degrade honestly, the source dispatch passes its scope through, and doctor's own tracking reads true"
 type: 'fix'
 created: '2026-10-03'
-status: 'blocked'
+status: 'in-progress'
 baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -117,3 +117,5 @@ Surface reconcile memlog paths named:
 - `src/shared/packages/pyforge-doctor/tests/meta/test_source_independence.py`
 
 Co-governor `spec-pyforge-core` memlog: same paths (append under `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md`).
+
+- 2026-10-04, operator decision (session on the operator's standing direction): the 41.2 dispatch session stopped partway and set this spec `blocked` (MRS-DISP-045). The core fixes for ledger, story-status, dispatch and frozen-path had landed in the worktree, with `pyforge-doctor-test` and `lint-types` green. The remaining rows were listed: the capability-effect join plus the flag-inventory re-run, the atlas `behind-upstream` gather, the epics Status vs ledger test, the SPEC memlog / `bmad-spec` for CAP-53 / 30.3, closing the 24 deferred-work rows, the `degrade_on_exception` call-site test, and the `_DOCTOR_SOURCE_TASKS` meta-test. Unblocked to `in-progress`. A re-dispatch continues on this branch from the partial work.
