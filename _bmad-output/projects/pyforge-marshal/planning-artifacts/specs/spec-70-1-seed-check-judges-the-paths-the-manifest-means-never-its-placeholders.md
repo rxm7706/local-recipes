@@ -2,7 +2,7 @@
 title: '70.1: Seed check judges the paths the manifest means, never its placeholders'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
