@@ -94,3 +94,11 @@ Minted 2026-10-04 under the operator's governance rulings of the same day.
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pyforge-steward-test`, `lint-types`, `tests/scripts/test_pre_shell_hook.py` (93 passed), `spec_surface_reconcile.py` OK, scribe `instruction_surface` parity OK.
+
+Surface reconcile memlog paths (Story 85.4 / co-governors): `.claude/hooks/pre-shell.py`, `docs/governance/guild-roster.json`, `tests/scripts/test_pre_shell_hook.py`, `AGENTS.md` (also on `spec-pyforge-scribe/.memlog.md` and `spec-pyforge-steward/.memlog.md`).
