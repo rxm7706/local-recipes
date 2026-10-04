@@ -17,6 +17,7 @@ import pytest
 from pyforge.atlas import query_plane_boot
 from pyforge.atlas.duckdb_writer import (
     ATLAS_DUCKDB_NAME,
+    ConnectionYielded,
     SecondWriterRefused,
     connect_writer,
 )
@@ -24,6 +25,8 @@ from pyforge.atlas.query_plane_boot import (
     DEFAULT_PORT,
     STACK_UP_ENV,
     DuckDBServerNotProvisionedError,
+    HttpFace,
+    PlaneBoot,
     boot_query_plane,
     stack_is_up,
 )
@@ -120,6 +123,25 @@ def test_stack_up_launches_via_injected_launcher(tmp_path: Path) -> None:
     # ...and closing the boot's library handle releases the plane again.
     writer = connect_writer(path)
     writer.close()
+
+
+def test_querying_the_yielded_library_face_names_the_http_face(tmp_path: Path) -> None:
+    """DW-FU-20-1: after the yield the library handle refuses with a typed error
+    naming the HTTP endpoint — not duckdb's bare "Connection already closed"."""
+    path = _plane(tmp_path)
+    boot = boot_query_plane(path, stack_up=True, launcher=lambda argv: _FakeProcess())
+    try:
+        assert boot.http is not None
+        with pytest.raises(ConnectionYielded) as excinfo:
+            boot.library.execute("SELECT 42")
+        message = str(excinfo.value)
+        assert boot.http.endpoint in message
+        assert "execute" in message
+        # The lock is still ours — the refusal is about the connection, not the plane.
+        with pytest.raises(SecondWriterRefused):
+            connect_writer(path)
+    finally:
+        boot.library.close()
 
 
 def test_stack_up_with_custom_port_and_real_launcher_fails_loud(
@@ -282,6 +304,181 @@ def test_cli_unexpected_crash_exits_two(
     captured = capsys.readouterr()
     assert captured.out == ""
     assert "RuntimeError: boom" in captured.err
+
+
+def test_cli_keyboard_interrupt_during_boot_exits_130(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def interrupt(*args: Any, **kwargs: Any) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(query_plane_boot, "boot_query_plane", interrupt)
+    assert query_plane_boot.main(["--path", str(_plane(tmp_path))]) == 130
+
+
+class _ProcessExitsCleanly:
+    pid = 9001
+
+    def wait(self, timeout: float | None = None) -> int:
+        return 0
+
+    def terminate(self) -> None:
+        pass
+
+    def kill(self) -> None:
+        pass
+
+
+class _ProcessInterruptsSupervisor:
+    pid = 9002
+
+    def __init__(self) -> None:
+        self._wait_calls = 0
+
+    def wait(self, timeout: float | None = None) -> int:
+        self._wait_calls += 1
+        if self._wait_calls == 1:
+            raise KeyboardInterrupt
+        return 0
+
+    def terminate(self) -> None:
+        pass
+
+    def kill(self) -> None:
+        pass
+
+
+class _ProcessNeedsKill:
+    pid = 9003
+    _killed = False
+
+    def terminate(self) -> None:
+        pass
+
+    def wait(self, timeout: float | None = None) -> int:
+        if not self._killed:
+            raise subprocess.TimeoutExpired(cmd="duckdb-server", timeout=timeout or 10)
+        return 0
+
+    def kill(self) -> None:
+        self._killed = True
+
+
+def test_supervise_server_exit_maps_to_error_two(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    path = _plane(tmp_path)
+    library = connect_writer(path)
+    boot = PlaneBoot(
+        library=library,
+        http=HttpFace(endpoint=f"http://127.0.0.1:{DEFAULT_PORT}/", process=_ProcessExitsCleanly()),
+        notices=[{"event": "http-face-raised"}],
+    )
+    assert query_plane_boot._supervise(boot) == 2
+    captured = capsys.readouterr()
+    envelope = json.loads(captured.err.strip())
+    assert envelope["event"] == "http-face-exited"
+    assert envelope["returncode"] == 0
+    writer = connect_writer(path)
+    writer.close()
+
+
+def test_supervise_keyboard_interrupt_shuts_down_and_exits_130(tmp_path: Path) -> None:
+    path = _plane(tmp_path)
+    library = connect_writer(path)
+    boot = PlaneBoot(
+        library=library,
+        http=HttpFace(
+            endpoint=f"http://127.0.0.1:{DEFAULT_PORT}/",
+            process=_ProcessInterruptsSupervisor(),
+        ),
+    )
+    assert query_plane_boot._supervise(boot) == 130
+    writer = connect_writer(path)
+    writer.close()
+
+
+def test_shutdown_kill_fallback_when_wait_fails() -> None:
+    process = _ProcessNeedsKill()
+    query_plane_boot._shutdown(process)
+    assert process._killed is True
+
+
+def test_best_effort_teardown_swallows_shutdown_errors(tmp_path: Path) -> None:
+    path = _plane(tmp_path)
+    library = connect_writer(path)
+
+    class _BrokenProcess:
+        pid = 1
+
+        def terminate(self) -> None:
+            raise OSError("terminate failed")
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+        def kill(self) -> None:
+            raise OSError("kill failed")
+
+    boot = PlaneBoot(
+        library=library,
+        http=HttpFace(endpoint="http://127.0.0.1:3000/", process=_BrokenProcess()),
+    )
+    query_plane_boot._best_effort_teardown(boot)
+    writer = connect_writer(path)
+    writer.close()
+
+
+def test_cli_supervise_path_when_http_face_exits(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    path = _plane(tmp_path)
+    library = connect_writer(path)
+    boot = PlaneBoot(
+        library=library,
+        http=HttpFace(
+            endpoint=f"http://127.0.0.1:{DEFAULT_PORT}/",
+            process=_ProcessExitsCleanly(),
+        ),
+        notices=[{"event": "library-face-yielded"}, {"event": "http-face-raised"}],
+    )
+
+    def fake_boot(*args: Any, **kwargs: Any) -> PlaneBoot:
+        return boot
+
+    monkeypatch.setattr(query_plane_boot, "boot_query_plane", fake_boot)
+    assert query_plane_boot.main(["--path", str(path)]) == 2
+    captured = capsys.readouterr()
+    assert json.loads(captured.out.splitlines()[0])["event"] == "library-face-yielded"
+    writer = connect_writer(path)
+    writer.close()
+
+
+def test_cli_post_boot_failure_exits_two_and_teardown(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    path = _plane(tmp_path)
+    boot = boot_query_plane(path, stack_up=True, launcher=lambda argv: _FakeProcess())
+
+    def fake_boot(*args: Any, **kwargs: Any) -> PlaneBoot:
+        return boot
+
+    def boom_supervise(_boot: PlaneBoot) -> int:
+        raise RuntimeError("supervise failed")
+
+    monkeypatch.setattr(query_plane_boot, "boot_query_plane", fake_boot)
+    monkeypatch.setattr(query_plane_boot, "_supervise", boom_supervise)
+    assert query_plane_boot.main(["--path", str(path)]) == 2
+    captured = capsys.readouterr()
+    assert "RuntimeError: supervise failed" in captured.err
+    writer = connect_writer(path)
+    writer.close()
 
 
 # --- real-binary smoke (guarded) --------------------------------------------
