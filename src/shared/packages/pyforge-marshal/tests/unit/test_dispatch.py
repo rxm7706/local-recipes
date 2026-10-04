@@ -1036,6 +1036,63 @@ def test_run_dispatch_carries_profile_and_reports_skips(
     assert harness.calls and harness.calls[0]["resolution"].profile == "claude"
 
 
+@pytest.mark.parametrize("pins_session", [True, False], ids=["argv-carries-id", "argv-lacks-id"])
+def test_run_dispatch_journals_the_harness_session_id_only_when_the_launch_carried_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, pins_session: bool
+) -> None:
+    """Story 85.3 landing review H2: a session id is minted for every launch, but journaled -- the one a fix turn
+    may resume -- only when the rendered launch argv carried it (Claude's ``--session-id``); a profile whose launch
+    never passes it (Cursor) records none, so its fix turn is fix-only."""
+    import json
+
+    slug = "pyforge-marshal"
+    _init_git_repo(tmp_path, scope_slug=slug)
+    story = "22-8-the-session-harness-is-profile-driven-across-agent-clis"
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True)
+    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+
+    class SessionHarness(FakeBuildHarness):
+        def dispatch(self, worktree: Path, **kwargs) -> DispatchLaunchResult:
+            launch = super().dispatch(worktree, **kwargs)
+            sid = str(kwargs["harness_session_id"])
+            command = ("claude", "-p", "--session-id", sid, "go") if pins_session else ("cursor-agent", "-p", "go")
+            return DispatchLaunchResult(
+                pid=launch.pid,
+                command=command,
+                model=launch.model,
+                budget_env=launch.budget_env,
+                profile=launch.profile,
+            )
+
+    harness = SessionHarness()
+    fs = FakeFs()
+    monkeypatch.chdir(tmp_path)
+    code = run_dispatch(
+        argparse.Namespace(slug=slug, story=story, format="json", harness=None),
+        fs=fs,
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+
+    assert code == EXIT_OK
+    minted = harness.calls[0]["harness_session_id"]
+    assert isinstance(minted, str) and minted
+    outcomes = [
+        json.loads(line)["payload"]
+        for _path, line, _fsync in fs.appended
+        if json.loads(line).get("kind") == dispatch_core.KIND_DISPATCH_LAUNCH
+        and json.loads(line).get("phase") == "outcome"
+        and "session_pid" in json.loads(line)["payload"]
+    ]
+    assert len(outcomes) == 1
+    if pins_session:
+        assert outcomes[0]["harness_session_id"] == minted
+    else:
+        assert "harness_session_id" not in outcomes[0]
+
+
 def test_run_dispatch_refusal_names_every_candidate_tried(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
 ) -> None:
