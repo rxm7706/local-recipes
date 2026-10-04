@@ -112,6 +112,66 @@ def test_duplicate_conda_name_across_joined_inputs_does_not_fan_out_the_populati
     assert out.iloc[0]["conda_name"] == "a"
 
 
+def test_duplicate_keys_in_each_remaining_joined_input_do_not_fan_out_either():
+    """Story 27.3 (DW-FU-20-3-3). The test above covered duplicates in the
+    population and in ``core_latest_status`` only; ``compose_semantic_packages``
+    also ``drop_duplicates`` on ``core_feedstock_attribution`` and
+    ``core_downloads``, and reads ``vcs_archived_feedstocks`` as a membership set.
+    Each of those three is exercised here, with a CONFLICTING duplicate so the
+    first-wins resolution is pinned rather than left to look like a coincidence.
+    """
+    population = pd.DataFrame({"conda_name": ["a", "b"]})
+    # a is attributed twice, to different feedstocks -- only one is archived, so a
+    # fan-out would show up as both a duplicate row AND an ambiguous archived flag.
+    attribution = pd.DataFrame(
+        {"conda_name": ["a", "a", "b"], "feedstock_name": ["alpha", "beta", "beta"]}
+    )
+    # beta listed twice in the archived set (a stale duplicate row upstream).
+    archived = pd.DataFrame(
+        {"feedstock_name": ["beta", "beta"], "archived": pd.array([1, 1], dtype="Int64")}
+    )
+    downloads = pd.DataFrame(
+        {
+            "conda_name": ["a", "a", "b"],
+            "downloads_total": pd.array([100, 999, 200], dtype="Int64"),
+            "downloads_30d": pd.array([1, 9, 2], dtype="Int64"),
+        }
+    )
+
+    out = compose_semantic_packages(population, pd.DataFrame(), attribution, archived, downloads)
+
+    assert sorted(out["conda_name"]) == ["a", "b"]
+    by_name = _by_key(out, "conda_name")
+    # first attribution row wins -> alpha, which is NOT in the archived set
+    assert int(by_name["a"]["feedstock_archived"]) == 0
+    # first downloads row wins -> 100/1, never the 999/9 duplicate and never their sum
+    assert int(by_name["a"]["downloads_total"]) == 100
+    assert int(by_name["a"]["downloads_30d"]) == 1
+    # b resolves through the DUPLICATED archived row without fanning out
+    assert int(by_name["b"]["feedstock_archived"]) == 1
+    assert int(by_name["b"]["downloads_total"]) == 200
+
+
+def test_duplicates_in_every_input_at_once_still_compose_one_row_per_package():
+    """The combined case: no join multiplies another's duplicates."""
+    out = compose_semantic_packages(
+        pd.DataFrame({"conda_name": ["a", "a", "b"]}),
+        pd.DataFrame({"conda_name": ["a", "a", "b"], "latest_status": ["active", "inactive", "active"]}),
+        pd.DataFrame({"conda_name": ["a", "a", "b"], "feedstock_name": ["alpha", "alpha", "beta"]}),
+        pd.DataFrame({"feedstock_name": ["beta", "beta"], "archived": pd.array([1, 1], dtype="Int64")}),
+        pd.DataFrame(
+            {
+                "conda_name": ["a", "a", "b"],
+                "downloads_total": pd.array([10, 10, 20], dtype="Int64"),
+                "downloads_30d": pd.array([1, 1, 2], dtype="Int64"),
+            }
+        ),
+    )
+    assert len(out) == 2
+    assert sorted(out["conda_name"]) == ["a", "b"]
+    assert _by_key(out, "conda_name")["a"]["latest_status"] == "active"  # first wins
+
+
 def test_empty_population_returns_the_declared_empty_shape():
     empty = pd.DataFrame()
     out = compose_semantic_packages(empty, empty, empty, empty, empty)
