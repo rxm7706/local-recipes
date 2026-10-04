@@ -6452,7 +6452,7 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py": "e3bce9c0bd472c747cfa35c1149a89c1172d618e",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py": "24ad964cbb46a987faef32df13f6424dd7686abe",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/identity_gist.py": "ab2469a2e117525d2dc5970e0e8da6eac0e35016",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py": "48b1b88a6e042ffe79b4c27107a6a22a37293fb8",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py": "ccbc5deb4c6fa2d3da0033dbf102065234f96189",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/__init__.py": "dfeeaabb6b4ee20c1746a8b0a540a4892a939dbc",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py": "8b345383514d34eaf9358663be9ea1feb5d465ed",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py": "e8dc1a8fdb8e07a2e45dae0aa70ec04f25799dfe",
@@ -6773,7 +6773,7 @@
    "src/shared/packages/pyforge-atlas/tests/unit/test_query_plane_vectors.py": "6f19f51f80eee6dac81477cfb864876958ce7d3f",
    "src/shared/packages/pyforge-atlas/tests/unit/test_read_only_live_attach.py": "4f324c646c4a1ad95399608fd943eb2efbaf148d",
    "src/shared/packages/pyforge-atlas/tests/unit/test_scaffold_layout.py": "217a47ed89675571be8b9ab7350355114ada1b03",
-   "src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py": "a176c7cce435213391b4d98c0f518161955efc81",
+   "src/shared/packages/pyforge-atlas/tests/unit/test_scan_submit.py": "eaecd6b3452ebdfdb4fabdeb56078b0629f00bcc",
    "src/shared/packages/pyforge-atlas/tests/unit/test_scribe_plane_recall.py": "35ff93a11060b204221449f66be27e9a493434ab",
    "src/shared/packages/pyforge-atlas/tests/unit/test_semantic_packages_pipeline.py": "97b0389f9bf8b38ea137ed392a88ef66115e10a1",
    "src/shared/packages/pyforge-atlas/tests/unit/trending_candidates/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -6898,7 +6898,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "b0e800b9ceef847bd68c884b1f403539977218e8"
   },
-  "memlog": "7ee2f51f5709206966c51537b63a0cca1cd426c4"
+  "memlog": "ac57a538bd26a733251a27659e813ef8808067e3"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
