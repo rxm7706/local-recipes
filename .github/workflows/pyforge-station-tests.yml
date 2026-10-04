@@ -350,6 +350,9 @@ jobs:
   # referenced by no workflow until this job. Mirrors platform-ci.yml's
   # docker/podman matrix (spec 10.3 / Story 48.10).
   guild-container:
+    # Paused while repo variable PAUSE_CONTAINER_BUILDS is 'true' (operator 2026-10-04, to save runner time during
+    # the burn-down landings). Resume: `gh variable set PAUSE_CONTAINER_BUILDS --body false` (or delete it).
+    if: ${{ vars.PAUSE_CONTAINER_BUILDS != 'true' }}
     strategy:
       fail-fast: false
       matrix:

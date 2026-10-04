@@ -946,6 +946,13 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-04 (later)** — **Found: the sweeper stops at local branches, so remote cleanup is hand-rolled.** A
+  hand-rolled cleanup deleted the eight loop homes, the `loop/*` branches and 41 `attempt-preserve/*` branches, all of
+  which `scripts/worktree_sweep.py` would have kept. All were restored from GitHub's activity log, except the loop homes'
+  gitignored run history. **What it looks like when fixed:** the sweeper gives remote branches the same verdicts
+  (KEEP / DELETE / INSPECT), writes a manifest before any delete, and retires a protected branch only by explicit
+  name. **Constraints:** a fix story, no CAP, no flag. Owner `spec-pyforge-marshal`. → Story 87.1, specced 2026-10-04;
+  steward twin Story 85.1 (the session hook).
 - **2026-10-04** — **Found: a landing promotes stale pre-rekey spec copies.** Atlas 27.1's landing finalize
   committed three Tier-3 spec copies left over from atlas's 2026-09-17 rekey (13-5, 14-4, 15-3). Their stories had
   already landed and been promoted under the new keys (12-5, 13-4, 14-3). Promotion matches a candidate by its story
