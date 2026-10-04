@@ -228,18 +228,24 @@ def test_declared_controls_render_against_real_rows(dashboard_server):
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+        # Vizro's filter controls live in the collapsible left nav; Playwright's default
+        # 1280×720 viewport leaves that panel with no layout box (DW-atlas-27-3-1).
+        context = browser.new_context(viewport={"width": 1920, "height": 1080})
+        page = context.new_page()
         try:
             page.goto(f"{dashboard_server}{_page_path(page_def)}")
             # The filter and chart render after the page's data callback. A loaded CI runner took longer than
             # Playwright's 5 s default twice on 2026-10-04 (#1836, #1838), so wait for the network to settle and
             # allow 15 s.
             page.wait_for_load_state("networkidle")
-            expect(page.locator("#distribution-breakdown--filter-facet")).to_be_visible(timeout=15_000)
+            facet_filter = page.locator("#distribution-breakdown--filter-facet")
+            expect(facet_filter).to_be_visible(timeout=15_000)
+            expect(facet_filter.locator("button.dash-dropdown")).to_be_visible(timeout=15_000)
             expect(page.locator("#distribution-breakdown--chart")).to_be_visible(timeout=15_000)
             grid = page.locator("#distribution-breakdown--grid")
             expect(grid).to_contain_text("linux-64")
         finally:
+            context.close()
             browser.close()
 
 
