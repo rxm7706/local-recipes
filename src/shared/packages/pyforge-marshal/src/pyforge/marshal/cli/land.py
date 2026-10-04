@@ -113,6 +113,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -1286,6 +1287,52 @@ def _promote_deferred_work(
         fs.release_advisory_lock(lock)
 
 
+_fleet_scan_module: object | None = None
+
+
+def _load_fleet_scan_module() -> object | None:
+    """Install-free load of ``scripts/fleet_scan.py`` for ``parse_sprint_status`` only."""
+    global _fleet_scan_module
+    if _fleet_scan_module is not None:
+        return _fleet_scan_module
+    import importlib.util
+
+    checkout_root = Path(__file__).resolve().parents[8]
+    path = checkout_root / "scripts" / "fleet_scan.py"
+    if not path.is_file():
+        return None
+    spec = importlib.util.spec_from_file_location("_fleet_scan_land", path)
+    if spec is None or spec.loader is None:
+        return None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    except Exception:  # noqa: BLE001 -- unloadable script degrades to empty parse
+        return None
+    _fleet_scan_module = module
+    return module
+
+
+def _parse_sync_sprint_status_text(text: str) -> dict[str, str]:
+    """``development_status:`` map via ``fleet_scan.parse_sprint_status`` -- the sync's parser, never land's."""
+    import tempfile
+
+    mod = _load_fleet_scan_module()
+    if mod is None or not text.strip():
+        return {}
+    parse = getattr(mod, "parse_sprint_status", None)
+    if not callable(parse):
+        return {}
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False, encoding="utf-8") as tmp:
+        tmp.write(text)
+        tmp_path = Path(tmp.name)
+    try:
+        return parse(tmp_path)
+    finally:
+        tmp_path.unlink(missing_ok=True)
+
+
 def _parse_sprint_ledger_statuses(text: str) -> dict[str, str]:
     """Tiny ``development_status:`` map parser -- same shape
     ``scripts/promote_sprint_status.py`` / Doctor's ledger sources use.
@@ -1352,7 +1399,7 @@ def _roll_up_epic_rows(ledger_text: str, rollup: Callable[[dict[str, str]], dict
     every other byte stays as it was. A status is read as its token, the text
     before any ``#`` comment, the way the sync's own parser reads it."""
     statuses = {
-        key: value.partition("#")[0].strip() for key, value in _parse_sprint_ledger_statuses(ledger_text).items()
+        key: value.partition("#")[0].strip() for key, value in _parse_sync_sprint_status_text(ledger_text).items()
     }
     rolled = rollup(dict(statuses))
     changes = {key: value for key, value in rolled.items() if statuses.get(key) != value}
@@ -1520,6 +1567,27 @@ def _promote_sprint_ledger(
         # Story 83.21: the feed syncs only through the sync's own roll-up -- without it the feed's
         # epic rows are uncomputed, and an uncomputed epic row never reaches the twin.
         epic_rollup = _sync_epic_rollup(promote_mod)
+        missing_rollup_warned = False
+
+        def _warn_missing_epic_rollup_once() -> None:
+            nonlocal missing_rollup_warned
+            if epic_rollup is not None or missing_rollup_warned:
+                return
+            missing_rollup_warned = True
+            not_synced = "; the Tier-3 feed was not synced" if feed_text is not None else ""
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_011,
+                    severity=Severity.WARN,
+                    message=(
+                        f"scripts/promote_sprint_status.py's apply_epic_rollups could not be loaded, so no "
+                        f"epic roll-up was computed for {slug!r}: the published sprint ledger keeps its own "
+                        f"epic-N rows{not_synced}"
+                    ),
+                    path=str(ledger_path),
+                )
+            )
+
         project_key = slug.removeprefix("pyforge-")
         src_rel = f"_bmad-output/projects/{slug}/implementation-artifacts/sprint-status.yaml"
         working = fresh_ledger
@@ -1540,7 +1608,7 @@ def _promote_sprint_ledger(
                 )
                 incoming = {}
             if incoming:
-                existing = gen.parse_sprint_status(ledger_path) if fresh_ledger.strip() else {}
+                existing = _parse_sync_sprint_status_text(fresh_ledger)
                 refusal = _land_feed_sync_refusal(promote_mod, existing, incoming)
                 if refusal is not None:
                     label, detail = refusal
@@ -1560,10 +1628,14 @@ def _promote_sprint_ledger(
 
         needed = _raw_keys_needing_done(working)
         if not needed and not feed_synced:
+            if epic_rollup is None and feed_text is not None:
+                _warn_missing_epic_rollup_once()
             return ()
 
         new_text, matched = render_ledger_advancements(working, needed)
         if not matched and not feed_synced:
+            if epic_rollup is None and feed_text is not None:
+                _warn_missing_epic_rollup_once()
             return ()
 
         # Story 83.21: the epic rows published are the sync's roll-up of the FINAL statuses -- after
@@ -1571,19 +1643,7 @@ def _promote_sprint_ledger(
         if epic_rollup is not None:
             new_text = _roll_up_epic_rows(new_text, epic_rollup)
         else:
-            not_synced = "; the Tier-3 feed was not synced" if feed_text is not None else ""
-            findings.append(
-                Finding(
-                    code=_MRS_LAND_011,
-                    severity=Severity.WARN,
-                    message=(
-                        f"scripts/promote_sprint_status.py's apply_epic_rollups could not be loaded, so no "
-                        f"epic roll-up was computed for {slug!r}: the published sprint ledger keeps its own "
-                        f"epic-N rows{not_synced}"
-                    ),
-                    path=str(ledger_path),
-                )
-            )
+            _warn_missing_epic_rollup_once()
         if new_text == fresh_ledger:
             return ()
 

@@ -322,6 +322,7 @@ _MRS_DEPLOY_024 = "MRS-DEPLOY-024"
 _MRS_DEPLOY_025 = "MRS-DEPLOY-025"
 _MRS_DEPLOY_026 = "MRS-DEPLOY-026"
 _MRS_DEPLOY_027 = "MRS-DEPLOY-027"
+_MRS_DEPLOY_028 = "MRS-DEPLOY-028"
 
 #: The landing policy keys `batch-pr` and `land` refuse to run past when malformed
 #: (MRS-DEPLOY-015 / MRS-LAND-002): each silently falls back to a lower layer's value.
@@ -4003,6 +4004,25 @@ def run_reconcile_completions(
                         # re-read) still emits a finding per key rather
                         # than silently doing and reporting nothing.
                         new_text, matched_raw_keys = status.render_ledger_advancements(ledger_text, raw_keys_to_advance)
+                        from . import land as land_cli
+
+                        promote_mod_land = land_cli._load_promote_sprint_status_module()
+                        epic_rollup = land_cli._sync_epic_rollup(promote_mod_land)
+                        if epic_rollup is not None:
+                            new_text = land_cli._roll_up_epic_rows(new_text, epic_rollup)
+                        elif matched_raw_keys:
+                            findings.append(
+                                Finding(
+                                    code=_MRS_DEPLOY_028,
+                                    severity=Severity.WARN,
+                                    message=(
+                                        f"scripts/promote_sprint_status.py's apply_epic_rollups could not be loaded, "
+                                        f"so no epic roll-up was computed for {project_slug!r}: the reconciled sprint "
+                                        "ledger keeps its own epic-N rows"
+                                    ),
+                                    path=str(ledger_path),
+                                )
+                            )
                         unmatched_raw_keys = raw_keys_to_advance - matched_raw_keys
                         for raw_key in sorted(unmatched_raw_keys):
                             unmatched_dot_key = dot_key_by_raw.get(raw_key, raw_key)

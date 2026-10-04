@@ -1272,12 +1272,11 @@ def test_finalize_warns_about_a_feed_row_the_rewrite_cannot_match(tmp_path: Path
     assert _promotion_flags_79(tmp_path) == (True, False, False)
 
 
-def test_finalize_warns_when_the_key_also_sits_outside_the_development_status_block(
+def test_finalize_advances_the_development_status_row_when_the_key_also_appears_outside_the_block(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """`render_ledger_advancements` rewrites the FIRST line carrying the key, wherever it is: here a `notes:`
-    line, which would take the rewrite and leave the real row at `backlog` with no finding. The rewritten
-    text is re-parsed with the sync's own parser and judged -- the feed keeps its bytes, one WARN."""
+    """Story 83.22: ``render_ledger_status_rewrites`` limits itself to ``development_status:``, so a decoy
+    ``notes:`` line carrying the same key is untouched and the real row reaches ``done``."""
     original = (
         f"{_FEED_HEADER_79}notes:\n  {_FEED_KEY_79}: see the thread\n"
         f"development_status:\n  epic-79: in-progress\n  {_FEED_KEY_79}: backlog\n"
@@ -1287,11 +1286,11 @@ def test_finalize_warns_when_the_key_also_sits_outside_the_development_status_bl
 
     assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
 
-    assert feed.read_text(encoding="utf-8") == original
-    [finding] = _journaled_findings_79(tmp_path)
-    assert (finding["code"], finding["severity"]) == ("MRS-DISP-047", "warn")
-    assert str(feed) in finding["message"] and "outside the development_status block" in finding["message"]
-    assert _promotion_flags_79(tmp_path) == (True, False, False)
+    updated = feed.read_text(encoding="utf-8")
+    assert f"{_FEED_KEY_79}: see the thread" in updated
+    assert f"  {_FEED_KEY_79}: done\n" in updated
+    assert not _journaled_findings_79(tmp_path)
+    assert _promotion_flags_79(tmp_path) == (True, True, False)
 
 
 def test_finalize_warns_when_the_feed_cannot_be_written_and_still_completes(tmp_path: Path, monkeypatch) -> None:
