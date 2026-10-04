@@ -78,9 +78,12 @@ from importlib import resources
 from pathlib import Path
 
 from ..adapters.fs_local import LocalFs
+from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import policy
+from ..core.context import slug_from_loop_branch
 from ..core.verdict import EXIT_OK
 from ..ports.fs import FsPort
+from ..ports.vcs import VcsPort
 from ..seed.detect.findings import Finding, Severity
 from ..seed.detect.kit import KitCheck
 from ..seed.errors import ConformanceFailure, InternalError, SeedError, UsageError
@@ -217,6 +220,30 @@ def _resolve_project_slug(repo_root: Path, explicit: str | None) -> str:
         return marker.read_text(encoding="utf-8").strip()
     except OSError, UnicodeDecodeError:
         return ""
+
+
+def _target_in_loop_home(repo_root: Path, vcs: VcsPort) -> bool | None:
+    """Whether ``repo_root`` is a loop home (Story 70.1): the worktree git
+    lists at that path is checked out on a branch
+    ``core.context.slug_from_loop_branch`` accepts (``loop/<slug>``).
+
+    ``None`` -- not ``False`` -- whenever the answer cannot be read: the
+    listing fails (not a git repository, git missing), no listed worktree is
+    the target (a subdirectory of one), or that worktree's HEAD is detached
+    and so names no branch at all. ``seed check`` judges a ``loop-home`` entry
+    as owed on ``None``, so an unreadable target never passes on the scope."""
+    try:
+        worktrees = vcs.list_worktrees(repo_root)
+    except VcsCommandError:
+        return None
+    target = repo_root.resolve()
+    for entry in worktrees:
+        if entry.path.resolve() != target:
+            continue
+        if entry.branch is None:
+            return None
+        return slug_from_loop_branch(entry.branch) is not None
+    return None
 
 
 def resolve_context_layers(repo_root: Path, explicit_slug: str | None) -> dict[str, dict[str, object]]:
@@ -402,7 +429,7 @@ def _plan_result_dict(plan: Plan) -> dict[str, object]:
     return plan.to_json_dict()
 
 
-def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None) -> int:
+def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None, vcs: VcsPort | None = None) -> int:
     """``marshal seed check`` (Story 10.5): thin CLI plumbing over
     ``seed.verbs.check.run_check``, the pure read-only detector -- this
     function performs no detect/plan/hash/region logic of its own.
@@ -437,21 +464,48 @@ def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None) -> 
     exception: ``ConformanceFailure.exit_code`` is read as a plain class
     attribute for the failing case, matching the epics AC's framing of a
     non-zero exit as this command's ORDINARY designed output, not an
-    exceptional one."""
+    exceptional one.
+
+    Story 70.1 adds two boundary reads the verb needs and may not do itself:
+    the project slug (``_resolve_project_slug``: ``--project``, then
+    ``BMAD_ACTIVE_PROJECT``, then the target's active-project marker; an
+    empty answer is "no slug"), and whether the target is a loop home
+    (``_target_in_loop_home``, through ``vcs`` -- keyword-only and defaulting
+    to the real ``GitVcs``, the same test seam as ``manifest``). A slug that
+    renders a path the manifest refuses is the operator's input, so the
+    verb's ``ManifestError`` is reported as a ``UsageError`` (exit 2) naming
+    the slug -- never as the broken-install ``InternalError`` a packaged
+    manifest that fails to load is."""
     try:
         repo_root = _resolve_repo_root(args.repo_root)
         if manifest is None:
             manifest = _load_packaged_manifest()
-        # Story 28.3: the ONE boundary read this verb owes the pure layer --
-        # the target repo's own `[context]` declaration. Resolved here, never
-        # inside `seed.verbs.check`, matching this module's own established
-        # "the CLI does the file I/O and calls the verb" split.
-        report = _run_check_verb(
-            repo_root,
-            manifest,
-            strict=args.strict,
-            context_layers=resolve_context_layers(repo_root, getattr(args, "project", None)),
-        )
+        slug = _resolve_project_slug(repo_root, getattr(args, "project", None))
+        in_loop_home = _target_in_loop_home(repo_root, vcs if vcs is not None else GitVcs())
+        try:
+            # Story 28.3: the ONE boundary read this verb owes the pure layer --
+            # the target repo's own `[context]` declaration. Resolved here, never
+            # inside `seed.verbs.check`, matching this module's own established
+            # "the CLI does the file I/O and calls the verb" split. The slug is
+            # resolved once and handed to both (`resolve_context_layers` treats
+            # it as explicit, so its own resolution reaches the same answer).
+            report = _run_check_verb(
+                repo_root,
+                manifest,
+                strict=args.strict,
+                context_layers=resolve_context_layers(repo_root, slug),
+                slug=slug or None,
+                in_loop_home=in_loop_home,
+            )
+        except ManifestError as exc:
+            raise UsageError(
+                f"project slug {slug!r} renders a manifest path the seed refuses: {exc}",
+                remedy=(
+                    "pass --project with a plain project name (or correct BMAD_ACTIVE_PROJECT"
+                    " or the target's _bmad/custom/.active-project marker) -- it must not"
+                    " contain a '..' segment or render one entry's path onto another's"
+                ),
+            ) from exc
     except ManifestError as exc:
         wrapped = InternalError(
             f"the packaged seed manifest could not be loaded: {exc}",

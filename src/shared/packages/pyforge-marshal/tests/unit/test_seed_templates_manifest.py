@@ -32,7 +32,9 @@ from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
     ArtifactClass,
     ManifestError,
+    RequiredIn,
     load_manifest,
+    render_slug_paths,
 )
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.state import (
@@ -164,8 +166,11 @@ def test_packaged_manifest_never_write_matches_the_7_pattern_list_exactly(manife
 def test_no_two_materialized_entries_share_a_rendered_path(manifest):
     """Proves the two deliberate dedups hold: `.gitignore` and `CLAUDE.md`
     each appear as exactly one manifest row, not one per class the PRD's
-    prose happened to mention them under."""
-    rendered_paths = [entry.path for entry in manifest.entries if entry.artifact_class is not ArtifactClass.REFERENCED]
+    prose happened to mention them under. Judged on the RENDERED paths
+    (Story 70.1's `render_slug_paths`), the ones `init` writes and `check`
+    reads, not the raw templated ones."""
+    rendered = render_slug_paths(manifest, "demo")
+    rendered_paths = [entry.path for entry in rendered.entries if entry.artifact_class is not ArtifactClass.REFERENCED]
     duplicates = sorted(path for path, count in Counter(rendered_paths).items() if count > 1)
     assert duplicates == [], f"paths claimed by more than one entry: {duplicates}"
 
@@ -512,3 +517,41 @@ def test_every_shipped_directory_entry_carries_the_directory_contract(manifest):
     for entry in manifest.entries:
         if entry.is_directory:
             assert describe(entry).behavior == DIRECTORY_BEHAVIOR
+
+
+# --- Story 70.1: the loop-home scope and the templated entries --------------
+
+
+def test_bmad_loop_policy_is_the_one_entry_required_in_loop_homes_only(manifest):
+    """AC (amended 2026-09-28): the packaged manifest keeps 43 entries at
+    `model_version` 1.0.0, and `bmad-loop-policy` -- rendered into a loop
+    home by every writer -- carries `required_in: loop-home`. No other entry
+    is scoped: the operator's ruling moved exactly one."""
+    assert str(manifest.model_version) == "1.0.0"
+    assert len(manifest.entries) == 43
+    scoped = {entry.id: entry.required_in for entry in manifest.entries if entry.required_in is not None}
+    assert scoped == {"bmad-loop-policy": RequiredIn.LOOP_HOME}
+    policy = next(entry for entry in manifest.entries if entry.id == "bmad-loop-policy")
+    assert policy.path == ".bmad-loop/policy.toml"
+    assert "loop home" in policy.rationale
+
+
+def test_the_packaged_templated_entries_are_the_five_check_renders(manifest):
+    """The five `{{ slug }}` entries `seed check` judges at the project it
+    resolves (and reports `slug-unresolved` for when it resolves none)."""
+    templated = {entry.id: entry.path for entry in manifest.entries if entry.is_slug_templated}
+    assert templated == {
+        "starter-dream": "docs/dreams/{{ slug }}.md",
+        "project-config": "_bmad-output/projects/{{ slug }}/.bmad-config.toml",
+        "specs-readme": "_bmad-output/projects/{{ slug }}/planning-artifacts/specs/README.md",
+        "deck-scaffolding": "presentations/{{ slug }}/",
+        "project-subtree": "_bmad-output/projects/{{ slug }}/",
+    }
+    rendered = {entry.id: entry.path for entry in render_slug_paths(manifest, "demo").entries}
+    assert {entry_id: rendered[entry_id] for entry_id in templated} == {
+        "starter-dream": "docs/dreams/demo.md",
+        "project-config": "_bmad-output/projects/demo/.bmad-config.toml",
+        "specs-readme": "_bmad-output/projects/demo/planning-artifacts/specs/README.md",
+        "deck-scaffolding": "presentations/demo/",
+        "project-subtree": "_bmad-output/projects/demo/",
+    }

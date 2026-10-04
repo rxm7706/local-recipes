@@ -3229,9 +3229,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 6cd9ca77f8dd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/vcs_health/vcs_refresh_identifiers.py:41
 
 ### DW-FU-21-2-3: _ttl_cadence has no validation/clamping for a zero or negative configured cadence value in params:ttls, which could cause excessive live-fetch frequency once real identifiers are wired (Story 21.6).
 
@@ -3242,9 +3246,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 4930f71255e3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py:673
 
 ### DW-FU-21-2-4: A batch containing at least one fetch success overwrites the ENTIRE persisted store with only that batch's rows, rather than merging onto existing rows for names/identifiers outside the batch -- a latent data-loss gap in the AD-13 persistence model this story introduced.
 
@@ -3255,9 +3263,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 0d2251687650 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py:804
 
 ### DW-FU-21-2-5: fetch_one's retry-with-scheduler-and-backoff logic is still duplicated near-verbatim between VcsHostSeedDataset and RegistryUpstreamDataset -- only the persistence/staleness plumbing was hoisted into the shared _ParquetRefreshStore mixin.
 
@@ -3268,9 +3280,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 8308c3e7cd86 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py:691
 
 ### DW-FU-21-2-6: _ParquetRefreshStore (the shared AD-13 persistence mixin) is defined in vcs_sources.py but imported cross-module into request_datasets.py -- arguably belongs in refresh.py alongside StalenessMarker/RefreshRequest instead.
 
@@ -3281,9 +3297,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 113618547533 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/refresh.py:711
 
 ### DW-FU-21-2-7: No credentials: wired for GitLab/Codeberg/registries in catalog.yml -- for registries with meaningful anonymous rate limits (npm, crates.io, RubyGems, NuGet) there is no path to raise the ceiling via an API token without further catalog changes.
 
@@ -3294,9 +3314,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 17952db39aec — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/conf/base/catalog.yml:586
 
 ### DW-FU-21-2-8: PyPIJsonFanOutDataset's candidate selection is sorted(names)[:limit] every run -- with a bounded default limit against a ~20k-package universe, packages later in the alphabet are never live-fetched, indefinitely, with no rotation/offset state between refresh cycles.
 
@@ -3307,9 +3331,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 1b65e2207963 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/request_datasets.py:711
 
 ### DW-FU-21-3: pypi_conda_mapping.parquet's conda_name restriction to enumerated conda packages (map_pypi_conda) is not re-applied by match_source_urls()'s recipe_source_url tier, so "conda_name is a subset of cf_packages" is not strictly true for every row of the final persisted dataset.
 
@@ -3320,9 +3348,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred d6cf8714558a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/pypi_intelligence/nodes.py:160
 
 ### DW-FU-21-3-2: When --live-catalog degrades pypi_index to empty (no -only) and --verify-mode strict is set, main() falls through to the pre-existing per-package pypi_exists() live-HTTP path, in tension with --live-catalog's "no duplicate HTTP clients" framing; cf_packages' degrade path has no equivalent live-HTTP fallback, so the I/O matrix's "mirrors the conda-forge row exactly" claim doesn't fully hold at the downstream-consumption level.
 
@@ -3513,9 +3545,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred c432a3b3f1e9 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:398
 
 ### DW-FU-21-4-2: `tests/pipelines/test_refresh_single_writer.py` (the declared home of the single-writer invariant) omits the `upstream_discovery` pipeline from `_all_nodes()` and its store map lacks `trending_candidates` (pre-existing) and the three Tier-1 stores; the invariant is pinned for them only by `test_tier_1_external_refresh_stores_have_exactly_one_writer_each` in `test_dag_resolves.py`.
 
@@ -3526,9 +3562,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred dc248b290195 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: tests/pipelines/test_refresh_single_writer.py); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/tests/unit/pipelines/test_refresh_single_writer.py:55
 
 ### DW-FU-21-4-3: `_fetch_channel_repodata`'s worst case when hosts black-hole (timeouts, not 404s) is now 5 channels x 2 subdirs x 2 filenames x 2 mirrors = 40 sequential timeout-bound attempts (was 16) against `flag_cross_channel`'s 300 s NODE_TIMEOUTS budget; `_fetch_repodata_at_url` folds every exception into `None`, so a connection-level failure cannot short-circuit a dead mirror.
 
@@ -3539,9 +3579,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 14293eb46cc4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/core_sources.py:539
 
 ### DW-FU-21-4-4: `NODE_TIMEOUTS` has no completeness assertion — `test_every_op_has_its_own_timeout` only checks that a tag exists, and the fallback always supplies one — so an unmapped op silently gets `DEFAULT_TIMEOUT=600`; five pre-existing nodes are already unmapped (assemble_and_gate, compose_semantic_packages, extract_estate_to_cache, refresh_pypi_json_store, run_dependency_hygiene).
 
@@ -3552,9 +3596,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 17a48e05262b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/orchestration/definitions.py:233
 
 ### DW-FU-21-5: A malformed conf/base/curated_groups.json (invalid JSON) raises a DatasetError at the Kedro catalog layer and aborts the whole upstream_discovery pipeline run, rather than degrading to zero rows as the Boundaries text promises for "a malformed/missing seed file."
 
@@ -3565,9 +3613,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred ed4e6c98baf8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/degraded_json.py:19
 
 ### DW-FU-21-5-2: catalog-sources.md's Tier 2 table (the planning doc the Problem statement cites as establishing this story's requirement) names a different catalog entry/pipeline ("artifactory_downloads_raw" under artifactory_downloads) for the Artifactory/CDO-names row than what was actually built (enterprise_jfrog_names, bucketed under upstream_discovery in PREFIX_TO_PIPELINE) — the intent-contract's own Approach section directed the as-built naming, but the companion planning doc was never reconciled to matc […truncated at 500 chars by the pre-fix `_flatten_deferred_scalar`; full text is in the source spec's `deferred:` frontmatter]
 
@@ -3591,9 +3643,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 7db7e06d1eb3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/degrading_parquet.py:20
 
 ### DW-FU-21-7: Verification_Timestamp_UTC diverges between the persisted xlsx tab/CSV and the published gist on every non-`--skip-gist` run.
 
@@ -3748,9 +3804,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred bf8cf6e650c6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/conf/base/globals.yml:177
 
 ### DW-FU-21-8-2: PYFORGE_ATLAS_DATA_ROOT does not control the majority of pipeline outputs -- 53 of 96 `catalog.yml` `filepath:` entries (every intermediate/primary/derived-layer entry, e.g. `core_packages_enumerated`, `pypi_universe`, `pypi_conda_mapping`, `inventory_universe`, `identity_export_parquet`) hardcode a literal `data/...` string instead of `${globals:paths.data_root}/...`, so Kedro always resolves them under the member dir (`src/shared/packages/pyforge-atlas/data/`) regardless of the env override; only the 3 legacy external-refresh stores plus ~27 raw-layer entries (mostly Story 21.3-21.6 additions) actually honor it.
 
@@ -3761,9 +3821,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred b48252c51686 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 0/1 present (absent: src/shared/packages/pyforge-atlas/data/); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/tests/unit/catalog/test_conventions.py:39
 
 ### DW-FU-21-8-3: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw` (`TrackedSeedDataset`, no refresh trigger needed) is unaffected.
 
@@ -3774,9 +3838,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 7ee5f76414ad — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/tools/bootstrap.py:108
 
 ### DW-FU-21-8-4: PYFORGE_ATLAS_LOCAL_RECIPES_DIR's default (`recipes`) is repo-root-relative like seed_root's pre-fix default, but pyforge-atlas-bootstrap's `kedro run` resolves it against the Kedro member dir -- the identity join's `discovery_local_recipes_raw` silently scans an empty/non-existent directory on a default bootstrap run instead of the repo's real `recipes/` tree.
 
@@ -3787,9 +3855,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred e6fc2da0fe6c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/conf/base/globals.yml:177
 
 ### DW-FU-21-8-5: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw
 
@@ -3800,9 +3872,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 7f6b777274fa — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/tools/bootstrap.py:108
 
 ### DW-FU-21-8-6: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f
 
@@ -3841,9 +3917,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred 2778753746de — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; cited paths 1/2 present (absent: .github/workflows/pyforge-atlas.yml); ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: .github/workflows/pyforge-station-tests.yml:211
 
 ### DW-FU-21-6: No Atlas dataset yet carries a per-package source_repository_url, so from_inventory's git-purl fallback branch never fires against real production data (only against synthetic parity-fixture values).
 
@@ -3854,9 +3934,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred a74f6192c65d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/upstream_discovery/nodes.py:1294
 
 ### DW-FU-21-6-2: StagedRecipesPRDataset's per-open-PR files() fetch only reads the first 100 changed files per PR, so the file-path ranking tier is incomplete for PRs with more than 100 files.
 
@@ -3867,9 +3951,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred ff96931ad5a2 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:662
 
 ### DW-FU-21-6-3: discovery_local_recipes_raw's Local_Recipes_URL always points at github.com/rxm7706/local-recipes regardless of the new PYFORGE_ATLAS_LOCAL_RECIPES_DIR override, so pointing the override at a different checkout would still generate URLs into this repo.
 
@@ -3880,9 +3968,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred e78c546ea659 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/identity_sources.py:731
 
 ### DW-FU-21-6-4: spec Code Map's instruction to update tests/parity/test_parity_complete.py node counts does not apply — that file's _PIPELINES tuple never included upstream_discovery to begin with, in this story or any prior one.
 
@@ -3893,9 +3985,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred e0b18322d3d6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-31 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
+  verified: 2026-10-04 — closed — Story 27.2; verified: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-20-6-upstream_discovery-identity-join-and-export-parquet.md:53
 
 ### DW-FU-23-5: End-to-end kedro run of derived_artifacts with materialized upstream Parquet not exercised in CI unit tests.
 
@@ -4113,9 +4209,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred de771c22f707 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-08 — still-open — CONFIRMED **and MEASURABLY WORSE** -- a scope correction, recorded as the corrected number per CAP-4. The entry recorded 53 of 96 `filepath:` entries hardcoding a literal `data/...`. Re-counted live against `conf/base/catalog.yml` today: **115** `filepath:` entries, of which **66** hardcode `data/` and only **27** use `${globals:paths.data_root}`. So both the total and the hardcoded count have grown since authoring (96->115, 53->66); `PYFORGE_ATLAS_DATA_ROOT` controls an even smaller share of outputs than when this was written.
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/tests/unit/catalog/test_conventions.py:39
 
 ### DW-FU-21-8-10: `discovery_basilisk_packages_raw` / `discovery_aoss_premium_python_raw` / `discovery_anaconda_dist_2026x_raw` never populate real data through the plain `kedro run` the literal `pyforge-atlas-bootstrap` pixi task executes -- their dataset classes default `fetcher=None` by design, so even though their refresh-trigger nodes fire, `save()` always degrades to "refresh due but no refresher wired (offline / unattended run)" and the store never gets its first real write. `discovery_aoss_free_python_raw... [truncated, 566 chars total]
 
@@ -4126,9 +4226,13 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: spec-deferred d41556f8b104 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  closed: 2026-10-04
+  closed_by: Story 27.2
+  resolution: Story 27.2
 
   verified: 2026-09-08 — still-open — CONFIRMED against live code. All three discovery datasets are still declared in `conf/base/catalog.yml`, and the degrade path they fall into is intact at `pyforge/atlas/datasets/refresh.py:310`, which emits exactly the marker the entry quotes: `refresh due but no refresher wired (offline / unattended run)`. A plain `kedro run` still never writes their first real parquet.
+  verified: 2026-10-04 — closed — Story 27.2; verified: src/shared/packages/pyforge-atlas/README.md:102
 
 ### DW-FU-21-8-11: `_flatten_deferred_scalar()` in pyforge-doctor's intake tool silently hard-truncates any `summary`/heading text at exactly 500 characters with no ellipsis or marker, corrupting mid-sentence rather than degrading gracefully -- found and hand-fixed for this story's own two affected entries (`DW-FU-21-8-2`, `DW-FU-21-8-3`) during review, but the same defect still affects other already-promoted ledger entries from the caught-up backlog (e.g. `DW-FU-21-3-7`, `DW-FU-21-5-2`) and will keep corrupting f... [truncated, 548 chars total]
 

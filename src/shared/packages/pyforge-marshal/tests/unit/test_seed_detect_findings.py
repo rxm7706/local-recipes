@@ -135,7 +135,8 @@ def test_the_opted_out_remedy_hedges_exactly_as_its_finding_message_does():
 def test_finding_type_is_exactly_the_declared_member_set():
     # A count-only check would still pass a typo'd/renamed member -- pin the
     # exact kebab-case value set: the 12 the epics AC names, plus Story
-    # 28.3's three token-economy-kit members and Story 82.11's one.
+    # 28.3's three token-economy-kit members, Story 82.11's one and Story
+    # 70.1's one.
     assert {member.value for member in FindingType} == {
         "artifact-missing",
         "managed-file-modified",
@@ -161,6 +162,10 @@ def test_finding_type_is_exactly_the_declared_member_set():
         # outside the repo -- its own type, so one escaping entry is reported
         # per entry instead of refusing the whole plan.
         "target-escapes-repo",
+        # Story 70.1 (CAP-279): a `{{ slug }}`-templated entry `seed check`
+        # left unjudged because no project resolved -- INFO, never the HARD
+        # `artifact-missing` at a path no repository can hold.
+        "slug-unresolved",
     }
 
 
@@ -208,3 +213,16 @@ def test_finding_is_frozen_and_hashable():
     with pytest.raises(dataclasses.FrozenInstanceError):
         finding.path = "y"  # type: ignore[misc]
     assert isinstance(hash(finding), int)
+
+
+def test_slug_unresolved_is_a_finding_type_whose_remedy_names_project():
+    """Story 70.1: ``seed check`` leaves a ``{{ slug }}``-templated entry
+    unjudged when no project resolves, and says so with this type -- whose
+    remedy names ``--project``, the flag that makes the entry judgeable."""
+    finding = Finding.new(
+        Severity.INFO, "slug-unresolved", "docs/dreams/{{ slug }}.md", "'starter-dream' was not checked"
+    )
+    assert finding.type is FindingType.SLUG_UNRESOLVED
+    assert finding.to_json_dict()["type"] == "slug-unresolved"
+    assert "--project" in REMEDIES[FindingType.SLUG_UNRESOLVED]
+    assert finding.remedy == REMEDIES[FindingType.SLUG_UNRESOLVED]

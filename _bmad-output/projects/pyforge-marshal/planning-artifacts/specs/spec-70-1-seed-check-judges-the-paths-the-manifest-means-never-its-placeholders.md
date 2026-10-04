@@ -2,7 +2,7 @@
 title: '70.1: Seed check judges the paths the manifest means, never its placeholders'
 type: 'fix'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -116,3 +116,25 @@ Policy: no `[epic_surfaces]` entry; the Surface, including `seed/templates/manif
 
 **Manual checks:**
 - On the primary checkout, `pixi run --frozen -e pyforge-guild marshal seed check --json` carries no finding whose path contains `{{`, no `.claude/skills/**` finding and no `.bmad-loop/policy.toml` finding, reads `result.failing: false` and exits 0.
+
+## Review Triage Log
+
+- 2026-10-04 — Build complete (hand-built, branch `land/pyforge-marshal-70-1`); ready for an independent review.
+  Every behaviour AC carries a test that fails with its rule removed (17 mutants, all killed, run on a scratch copy of
+  the package). Story 86.1's note for this story is folded in: `render_slug_paths` re-runs the one-owner rule
+  (`_refuse_shared_paths`) on the rendered entries, so `init` (a `UsageError` naming `--slug`) and `check` (a
+  `UsageError` naming the project slug, exit 2) refuse a slug that renders two owners of one path. A detached-HEAD
+  target reads `in_loop_home=None`, never `False` (Boundaries: a target whose branch cannot be read never passes on
+  the scope). Manual check on the primary checkout (marker `pyforge-steward`): exit 0, `failing: false`, no `{{`
+  path, no `.claude/skills/**` and no `.bmad-loop/policy.toml` finding. One file outside the named Surface:
+  `src/shared/packages/pyforge-marshal/docs/finding-remedy-reference.md` gains the `slug-unresolved` row, because
+  `tests/meta/test_finding_remedy_reference_sync.py` requires every `FindingType` (with its exact remedy) there.
+- 2026-10-04 — Found while building, outside this story's ACs and Surface (for the operator's triage, not deferred
+  here): (1) `seed check` never reads `state.skips` -- an absent artifact the operator recorded a skip for is still
+  HARD `artifact-missing` with the remedy "run `marshal seed adopt`", which would skip it (Story 86.1 made adopt and
+  update honour recorded skips; `verbs/check.py` imports no `verbs.skips`). (2) Story 86.1's note also asked that
+  `tests/unit/test_seed_verbs_update.py::_shipped_entries_for_slug` call `render_slug_paths` instead of its own
+  `str.replace`; that file is outside this story's Surface. (3) A directory entry that a commit really creates as a
+  directory makes `verbs/adopt.py::_managed_artifact_after_apply` read it as a file (`IsADirectoryError`), so `seed
+  init` against the full packaged manifest cannot write state -- the record half of what `DW-marshal-86-1` tracks for
+  the commit dispatchers.

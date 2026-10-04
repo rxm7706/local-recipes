@@ -59,7 +59,8 @@ def test_match_source_urls_no_clobber_of_protected_tier():
     )
     # source-url candidates: numpy already protected (skip); newpkg is new (add).
     candidates = pd.DataFrame({"pypi_name": ["numpy", "newpkg"], "conda_name": ["numpy-wrong", "newpkg-conda"]})
-    out = match_source_urls(base, candidates)
+    core = pd.DataFrame({"conda_name": ["existing", "newpkg-conda"]})
+    out = match_source_urls(base, candidates, core)
     m = out.set_index("pypi_name")
     assert m.loc["numpy", "conda_name"] == "numpy"  # protected, NOT clobbered
     assert m.loc["numpy", "match_source"] == "parselmouth"

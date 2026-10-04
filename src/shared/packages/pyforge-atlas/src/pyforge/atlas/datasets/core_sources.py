@@ -391,10 +391,15 @@ class CondaChanneldataDataset(AbstractDataset):
         )
 
     def load(self) -> pd.DataFrame:
-        payload = self._inner.load()
+        empty = pd.DataFrame(columns=["conda_name", "subdirs"])
+        try:
+            payload = self._inner.load()
+        except Exception as exc:
+            logger.warning("CondaChanneldataDataset transport error, degrading to empty: %s", exc)
+            return empty
         repodata = _api_json(payload)
         if repodata is None:
-            return pd.DataFrame(columns=["conda_name", "subdirs"])
+            return empty
         return channeldata_json_to_rows(repodata)
 
     def save(self, data: Any) -> None:
@@ -537,7 +542,8 @@ def _fetch_repodata_at_url(
     load_args: dict[str, Any] | None,
     credentials: dict[str, Any] | None,
     metadata: dict[str, Any] | None,
-) -> dict[str, Any] | None:
+) -> tuple[dict[str, Any] | None, bool]:
+    """Return ``(repodata, connection_failed)`` — connection failures skip a dead mirror."""
     try:
         inner = APIDataset(
             url=url,
@@ -545,10 +551,13 @@ def _fetch_repodata_at_url(
             credentials=credentials,
             metadata=metadata,
         )
-        return _api_json(inner.load())
+        return _api_json(inner.load()), False
+    except (ConnectionError, TimeoutError, OSError) as exc:
+        logger.debug("cross-channel repodata connection failed for %s: %s", url, exc)
+        return None, True
     except Exception as exc:
         logger.debug("cross-channel repodata fetch failed for %s: %s", url, exc)
-        return None
+        return None, False
 
 
 def _repodata_has_packages(repodata: dict[str, Any]) -> bool:
@@ -577,13 +586,20 @@ def _fetch_channel_repodata(
     only after every combo is exhausted."""
     for subdir in subdirs:
         for filename in _REPDATA_FILENAMES:
+            dead_mirrors: set[str] = set()
             for url in _resolve_anaconda_channel_urls(channel_name, subdir, filename):
-                repodata = _fetch_repodata_at_url(
+                mirror_base = url.rsplit("/", 2)[0]
+                if mirror_base in dead_mirrors:
+                    continue
+                repodata, connection_failed = _fetch_repodata_at_url(
                     url,
                     load_args=load_args,
                     credentials=credentials,
                     metadata=metadata,
                 )
+                if connection_failed:
+                    dead_mirrors.add(mirror_base)
+                    continue
                 if repodata is None:
                     continue
                 if not _repodata_has_packages(repodata):

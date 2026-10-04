@@ -123,6 +123,23 @@ def test_homebrew_offline_no_fetcher_marks_stale(tmp_path):
     assert ds.is_stale() is True
 
 
+def test_tier3_corrupt_parquet_store_degrades_to_empty(tmp_path):
+    ds = _homebrew_ds(tmp_path, fetcher=lambda: _HOMEBREW_FIXTURE)
+    ds.save(RefreshRequest(store="discovery_homebrew_packages_raw", force=True))
+    ds._store_path.write_bytes(b"not-a-parquet")
+    frame = ds.load()
+    assert frame.empty and list(frame.columns) == ["name"]
+    assert ds.is_stale() is True
+
+
+def test_tier3_store_missing_name_column_degrades(tmp_path):
+    ds = _homebrew_ds(tmp_path, fetcher=lambda: _HOMEBREW_FIXTURE)
+    ds.save(RefreshRequest(store="discovery_homebrew_packages_raw", force=True))
+    pd.DataFrame({"nope": [1]}).to_parquet(ds._store_path, index=False)
+    frame = ds.load()
+    assert frame.empty
+
+
 def test_homebrew_malformed_refresh_rejects_write(tmp_path):
     ds = _homebrew_ds(tmp_path, fetcher=lambda: _HOMEBREW_FIXTURE)
     with pytest.raises(ValueError, match="missing required column"):
