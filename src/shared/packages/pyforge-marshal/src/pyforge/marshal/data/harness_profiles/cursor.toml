@@ -48,9 +48,10 @@ resume_argv = [
   "--trust",
   "--workspace",
   "{worktree}",
-  "--continue",
+  "--resume",
+  "{session_id}",
   "{model_args}",
-  "{prompt}",
+  "{prompt_file}",
 ]
 fix_only_argv = [
   "-p",
@@ -58,7 +59,7 @@ fix_only_argv = [
   "--workspace",
   "{worktree}",
   "{model_args}",
-  "{prompt}",
+  "{prompt_file}",
 ]
 # Story 84.1 (CAP-285): live model-list source for operator-run refresh.
 [model_list]

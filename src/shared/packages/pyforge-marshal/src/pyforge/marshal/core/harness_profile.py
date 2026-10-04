@@ -135,6 +135,7 @@ OVERLAY_RELPATH = "_bmad-output/harness-profiles"
 #: is required exactly once; ``{model_args}`` must be a WHOLE token (it
 #: expands to zero or more tokens, which no substring position could).
 _PROMPT_TOKEN = "{prompt}"
+_PROMPT_FILE_TOKEN = "{prompt_file}"
 _MODEL_ARGS_TOKEN = "{model_args}"
 _WORKTREE_TOKEN = "{worktree}"
 _WIRE_PORT_TOKEN = "{wire_port}"
@@ -936,6 +937,7 @@ def _render_profile_argv_template(
     wire: WireWrap | None = None,
     wire_port: int | None = None,
     session_id: str = "",
+    prompt_file: str = "",
 ) -> tuple[tuple[str, ...], str | None, str | None]:
     rendered_model, omitted_reason = translate_model(profile, model)
     port = wire_port if wire_port is not None else wire_port_for_worktree(worktree)
@@ -944,6 +946,7 @@ def _render_profile_argv_template(
         return (
             token.replace(_WORKTREE_TOKEN, str(worktree))
             .replace(_PROMPT_TOKEN, prompt)
+            .replace(_PROMPT_FILE_TOKEN, prompt_file)
             .replace(_WIRE_PORT_TOKEN, str(port))
             .replace(_SESSION_ID_TOKEN, session_id)
         )
@@ -973,6 +976,7 @@ def render_verify_fix_argv(
     wire: WireWrap | None = None,
     wire_port: int | None = None,
     session_id: str = "",
+    prompt_file: str = "",
 ) -> tuple[tuple[str, ...], str | None, str | None]:
     """Render argv for a verification fix turn (Story 85.1, AD-19)."""
     if mode == "resume" and profile.resume_argv:
@@ -986,11 +990,12 @@ def render_verify_fix_argv(
         template,
         binary_path=binary_path,
         worktree=worktree,
-        prompt=prompt,
+        prompt="",
         model=model,
         wire=wire,
         wire_port=wire_port,
         session_id=session_id,
+        prompt_file=prompt_file,
     )
 
 
@@ -1003,6 +1008,7 @@ def render_dispatch_argv(
     model: str | None,
     wire: WireWrap | None = None,
     wire_port: int | None = None,
+    session_id: str = "",
 ) -> tuple[tuple[str, ...], str | None, str | None]:
     """Render the full launch argv for one dispatch:
     ``(argv, rendered_model, model_omitted_reason)``. Placeholder
@@ -1027,6 +1033,7 @@ def render_dispatch_argv(
         model=model,
         wire=wire,
         wire_port=wire_port,
+        session_id=session_id,
     )
 
 

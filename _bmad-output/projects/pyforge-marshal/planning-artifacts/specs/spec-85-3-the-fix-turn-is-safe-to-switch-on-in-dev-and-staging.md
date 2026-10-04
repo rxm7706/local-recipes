@@ -2,7 +2,8 @@
 title: "85.3: The fix turn is safe to switch on in dev and staging"
 type: 'feature'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 712b45809c253baea1d5175872f7afb23170f66e
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:

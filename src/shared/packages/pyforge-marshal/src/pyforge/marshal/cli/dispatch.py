@@ -101,7 +101,7 @@ from ..core.dispatch_verification import (
     DispatchVerificationVerdict,
     judge_dispatch_verification,
 )
-from ..core.dispatch_verify_fix import in_flight_verify_fix_turn
+from ..core.dispatch_verify_fix import in_flight_verify_fix_turn, pending_verify_fix_intent
 from ..core.identity import (
     MalformedStoryKeyError,
     StoryKey,
@@ -1477,31 +1477,12 @@ def _is_dispatch_session_alive(
     process: ProcessPort,
     journal: dispatch_core.DispatchJournalFacts,
 ) -> bool:
-    """Check if a dispatch session is genuinely alive, not just a reused PID.
+    """Check if a dispatch session is genuinely alive, not just a reused PID (Story 83.1/85.3)."""
+    from ..dispatch_verify import dispatch_session_alive
 
-    Returns True only if:
-    1. The journal has a session PID
-    2. That PID is alive according to ProcessPort.is_alive (which now checks it's a process, not thread)
-    3. The process start time is consistent with the journal launch time (within tolerance)
-
-    Story 83.1: Fix the defect where a reused PID or thread ID can hold a wave
-    on a story that finished weeks ago.
-    """
     if journal.session_pid is None:
         return False
-
-    if not process.is_alive(journal.session_pid):
-        return False
-
-    # Additional verification: the process start time must match the journaled launch within tolerance -- a
-    # process started well before or after it means the pid was reused (`pid_start_matches_launch`, shared with
-    # the fix turn's own liveness check, Story 85.2).
-    if journal.launched_at is None:
-        return True
-    return dispatch_core.pid_start_matches_launch(
-        process.process_start_time(journal.session_pid),
-        journal.launched_at,
-    )
+    return dispatch_session_alive(process, journal.session_pid, launched_at=journal.launched_at)
 
 
 def resolve_dispatch_session_verdict(
@@ -1532,12 +1513,22 @@ def resolve_dispatch_session_verdict(
         return DispatchSessionVerdict.COMPLETED
     if journal.story_key is None or journal.worktree_path is None:
         return None
-    # Story 85.2 (CAP-286): a verification fix turn in flight is LIVE work, not the refusal it is fixing -- while
-    # its session runs (the pid-reuse check included), `dispatch status` and the in-flight guard read LIVE.
+    # Story 85.2/85.3 (CAP-286): an open fix-turn INTENT reads LIVE -- while its session runs, or after it exited
+    # so the operator can resume the supervisor and settle the turn (commit + re-verify).
     if journal.verify_fix_session_pid is not None and fix_session_alive(
         process, journal.verify_fix_session_pid, launched_at=journal.verify_fix_started_at
     ):
         return DispatchSessionVerdict.LIVE
+    if run_dir is not None:
+        journal_text = fs.read_text(run_dir / _JOURNAL_FILENAME)
+        if journal_text is not None:
+            sidecars = sidecar_texts_for_lines(
+                journal_text.splitlines(),
+                read_sidecar=lambda ref: fs.read_text(run_dir / ref),
+            )
+            folded_run = fold(journal_text.splitlines(), sidecars=sidecars)
+            if pending_verify_fix_intent(folded_run, run_dir.name) is not None:
+                return DispatchSessionVerdict.LIVE
     session_alive = _is_dispatch_session_alive(process, journal)
     if journal.baseline_head_sha is None:
         return DispatchSessionVerdict.LIVE if session_alive else None

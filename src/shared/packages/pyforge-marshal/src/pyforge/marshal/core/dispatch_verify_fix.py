@@ -27,18 +27,31 @@ FIX_TURN_REVERIFY_REFUSED_CODE = "MRS-DISP-060"
 
 _VERIFY_REFUSAL_GATE_PREFIX = "MRS-GATE-"
 
-# Story 85.1 (M7): scrub credential-shaped text before fix-turn prompt/journal tails.
+# Story 85.1 (M7) + 85.3: scrub credential-shaped text before truncation (never after).
 _URL_CREDENTIALS = re.compile(r"(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+):([^@\s/]+)@")
 _BEARER_TOKEN = re.compile(r"(?i)(Authorization:\s*Bearer\s+)\S+")
-_SECRET_ASSIGNMENT = re.compile(r"(?i)(\b(?:password|passwd|secret|api[_-]?key|token)\s*=\s*['\"]?)[^'\"\s]+(['\"]?)")
+_BASIC_AUTH = re.compile(r"(?i)(Authorization:\s*Basic\s+)\S+")
+_SECRET_ASSIGNMENT = re.compile(
+    r"(?i)(\b(?:password|passwd|secret|api[_-]?key|token|database_password|aws_secret_access_key)\s*=\s*['\"]?)[^'\"\s]+(['\"]?)"
+)
+_YAML_JSON_PASSWORD = re.compile(r"(?i)(^\s*password\s*:\s*)\S+", re.MULTILINE)
+_SK_ANT_KEY = re.compile(r"\bsk-ant-[A-Za-z0-9_-]{8,}\b")
 
 
 def scrub_fix_turn_exposure(text: str) -> str:
-    """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1)."""
+    """Redact common credential shapes fix-turn tails may carry (pure, Story 85.1/85.3)."""
     scrubbed = _URL_CREDENTIALS.sub(r"\1:***REDACTED***@", text)
     scrubbed = _BEARER_TOKEN.sub(r"\1***REDACTED***", scrubbed)
+    scrubbed = _BASIC_AUTH.sub(r"\1***REDACTED***", scrubbed)
     scrubbed = _SECRET_ASSIGNMENT.sub(r"\1***REDACTED***\2", scrubbed)
+    scrubbed = _YAML_JSON_PASSWORD.sub(r"\1***REDACTED***", scrubbed)
+    scrubbed = _SK_ANT_KEY.sub("sk-ant-***REDACTED***", scrubbed)
     return scrubbed
+
+
+def scrub_then_tail_bytes(text: str, *, max_bytes: int) -> str:
+    """Redact the full output, then keep at most ``max_bytes`` from the end (Story 85.3)."""
+    return tail_bytes(scrub_fix_turn_exposure(text), max_bytes=max_bytes)
 
 
 class VerifyFixLaunchMode(StrEnum):
@@ -96,8 +109,6 @@ def extract_failed_verify_commands(
             cmd = _command_from_gate_001_message(finding.message)
             if cmd is not None:
                 failed_commands.add(cmd)
-        elif code == "MRS-GATE-018":
-            failed_commands.add("pre-verification deferred-work intake")
     by_command: dict[str, FailedVerifyCommand] = {}
     for report in command_reports:
         command = report.get("command")
@@ -140,7 +151,7 @@ def build_verify_fix_prompt(
             lines.append(f"Exit code: {item.exit_code}")
         combined = "\n".join(part for part in (item.stdout, item.stderr) if part.strip())
         if combined.strip():
-            tail = tail_bytes(scrub_fix_turn_exposure(combined), max_bytes=output_tail_bytes)
+            tail = scrub_then_tail_bytes(combined, max_bytes=output_tail_bytes)
             lines.append("Output tail:")
             lines.append(tail)
         lines.append("")
@@ -175,10 +186,15 @@ def decide_verify_fix_turn(
 def choose_verify_fix_launch_mode(
     *,
     resume_argv: tuple[str, ...] | None,
+    harness_session_id: str | None = None,
+    launch_profile: str | None = None,
+    resolved_profile: str | None = None,
 ) -> VerifyFixLaunchMode:
-    if resume_argv:
-        return VerifyFixLaunchMode.RESUME
-    return VerifyFixLaunchMode.FIX_ONLY
+    if not resume_argv or not harness_session_id:
+        return VerifyFixLaunchMode.FIX_ONLY
+    if launch_profile is not None and resolved_profile is not None and launch_profile != resolved_profile:
+        return VerifyFixLaunchMode.FIX_ONLY
+    return VerifyFixLaunchMode.RESUME
 
 
 def fix_turn_park_message(*, failed_command: str | None) -> str:

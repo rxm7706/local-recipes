@@ -24,6 +24,8 @@ argv = [
   "bypassPermissions",
   "--settings",
   '{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}',
+  "--session-id",
+  "{session_id}",
   "{model_args}",
   "{prompt}",
 ]
@@ -46,9 +48,12 @@ resume_argv = [
   "bypassPermissions",
   "--settings",
   '{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}',
-  "--continue",
+  "--session-id",
+  "{session_id}",
+  "--resume",
+  "{session_id}",
   "{model_args}",
-  "{prompt}",
+  "{prompt_file}",
 ]
 fix_only_argv = [
   "-p",
@@ -57,7 +62,7 @@ fix_only_argv = [
   "--settings",
   '{"pluginConfigs":{"agents-md@builtin":{"options":{"instructionFiles":"claude-md-and-agents-md"}}}}',
   "{model_args}",
-  "{prompt}",
+  "{prompt_file}",
 ]
 # Story 84.1 (CAP-285): Anthropic models API (no listing subcommand on the CLI).
 [model_list]
