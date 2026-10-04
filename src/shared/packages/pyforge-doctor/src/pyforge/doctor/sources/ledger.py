@@ -659,6 +659,22 @@ def gather(target: Path, *, base: str = ORIGIN_MAIN, head: str = "HEAD") -> tupl
 
     findings: list[Finding] = []
     for item in raw_findings:
+        if item.get("kind") == "ledger-key-moved":
+            findings.append(
+                Finding(
+                    source=Source.LEDGER_REGRESSION,
+                    check="ledger-key-moved",
+                    status=DoctorStatus.OK,
+                    message=f"{item['project']}: {item['detail']}",
+                    evidence={
+                        "project": item["project"],
+                        "path": item["path"],
+                        "keys": item.get("keys", []),
+                        **range_evidence,
+                    },
+                )
+            )
+            continue
         # A ledger whose blob would not decode is a cannot-evaluate, not a
         # verdict: WARN, and NO `remedy` — the FAIL branch's remedy is a
         # `git checkout <base> -- <path>`, which would discard the head ledger

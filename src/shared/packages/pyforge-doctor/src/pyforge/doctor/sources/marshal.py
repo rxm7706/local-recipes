@@ -67,13 +67,13 @@ from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from ..refs import MAIN
 from ..rekey import load_rekey_maps, reverse_map
+from .feed_status import TERMINAL, is_epic_aggregate_key, parse_development_statuses
 from .ledger import epic_reopened_by_new_story
 
 __all__ = ("gather", "gather_story_status")
 
 LEDGER_REL = "planning-artifacts/sprint-status-ledger.yaml"
 PROJECTS_REL = "_bmad-output/projects"
-TERMINAL = frozenset({"done"})
 
 # --- gather_story_status (Story 6.4, FR-15) -------------------------------
 #
@@ -86,8 +86,9 @@ TERMINAL = frozenset({"done"})
 # wrapper -- no second subprocess pathway.
 
 SPRINT_STATUS_GLOB = "_bmad-output/projects/pyforge-*/implementation-artifacts/sprint-status.yaml"
-DONE_RE = re.compile(r"^  ([a-z0-9][a-z0-9-]*): done$", re.MULTILINE)
 NOT_LANDED = frozenset({"deferred", "escalated", "abandoned"})
+# Same story-id prefix rule as ``sources/ledger.py`` (Story 41.2 / DW-FU-6-4-9).
+_ID_PREFIX_RE = re.compile(r"^(?:\d+-\d+[a-z]?|[a-z]+\d+)-")
 # Repo-default template (Story 50.4), shared with
 # ``pyforge.core.landing_evidence`` conformance. Carries a ``{slug}`` token,
 # so ``parse_templated_merge_subject`` self-scopes a subject rendered from it
@@ -138,6 +139,8 @@ _GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+?/(?P<b
 
 
 def _feed_key_to_ref(key: str) -> StoryKeyRef | None:
+    if not _ID_PREFIX_RE.match(key):
+        return None
     match = _FEED_KEY_RE.match(key)
     if match is None:
         return None
@@ -146,6 +149,18 @@ def _feed_key_to_ref(key: str) -> StoryKeyRef | None:
         seq=int(match.group(2)),
         suffix=match.group(3) or "",
     )
+
+
+def _done_story_keys_from_feed(text: str) -> list[str]:
+    """Every ``done`` story key once — same parser/terminal set as ``ledger``."""
+    seen: set[str] = set()
+    keys: list[str] = []
+    for key, value in parse_development_statuses(text).items():
+        if value not in TERMINAL or is_epic_aggregate_key(key) or key in seen:
+            continue
+        seen.add(key)
+        keys.append(key)
+    return keys
 
 
 def _loose_subject_key_match(
@@ -371,29 +386,7 @@ def _parse_sha_subject_lines(raw: str) -> list[tuple[str, str]]:
 
 
 def _parse_statuses(text: str) -> dict[str, str]:
-    """``key: value`` pairs under ``development_status:``.
-
-    A deliberately tiny parser rather than PyYAML — this must not acquire a
-    dependency to read a file whose shape is fixed by its own generator, and it must
-    keep working on a partially-corrupt file rather than raising.
-    """
-    out: dict[str, str] = {}
-    in_block = False
-    for raw in text.splitlines():
-        if raw.startswith("development_status:"):
-            in_block = True
-            continue
-        if not in_block:
-            continue
-        if raw and not raw.startswith((" ", "\t")):
-            break
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        key, sep, value = line.partition(":")
-        if sep:
-            out[key.strip()] = value.strip()
-    return out
+    return parse_development_statuses(text)
 
 
 def _ledgers(target: Path) -> list[Path]:
@@ -495,7 +488,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
 
         try:
             working = ledger.read_text(encoding="utf-8")
-        except OSError as exc:
+        except (OSError, UnicodeDecodeError) as exc:
             findings.append(
                 Finding(
                     source=Source.MARSHAL_DURABILITY,
@@ -518,7 +511,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
             findings.append(
                 Finding(
                     source=Source.MARSHAL_DURABILITY,
-                    check="ledger-regression",
+                    check="marshal-durability-regression",
                     status=DoctorStatus.FAIL,
                     message=(
                         f"{project}: {len(lost)} key(s) un-finished relative to the "
@@ -538,7 +531,7 @@ def gather(target: Path) -> tuple[Finding, ...]:
         findings.append(
             Finding(
                 source=Source.MARSHAL_DURABILITY,
-                check="ledger-regression",
+                check="marshal-durability-regression",
                 status=DoctorStatus.OK,
                 message=(
                     f"{len(ledgers)} tracked ledger(s) hold every completion they held at HEAD — no story un-finished"
@@ -782,7 +775,7 @@ def gather_story_status(target: Path, *, loop_root: Path | None = None) -> tuple
             unreadable_feeds += 1
             continue
 
-        for key in DONE_RE.findall(text):
+        for key in _done_story_keys_from_feed(text):
             audited += 1
             aliases = (key, *earlier_spellings.get(key, ()))
             task = next((tasks[a] for a in aliases if a in tasks), None)
