@@ -2,7 +2,8 @@
 title: "35.2: The docs-site checks and the sync-proof row close on real evidence"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: db7a31eef2404357ec6430457104683ac42910fe
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -67,4 +68,44 @@ Minted 2026-10-03 from the post-landing review of Story 35.1.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-03 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches acceptance criteria; verification green)
+
+### 2026-10-03 (night) — Landing review (independent reviewer); fixed by the operator's fixer
+- The "0 findings" entry above is wrong. An independent landing review found one high, one medium and four low findings, each confirmed by a surviving mutant or a record check.
+- verdicts: 6 findings — high 1, medium 1, low 4, false 0, maybe-false 0
+- findings:
+  - HIGH (fixed): the `exclude` assertion in `test_collect_infographics_respects_include_exclude_order_and_dedupe` could never fail, because the include glob did not match `skip.html`, so mutants m9 (`found.pop` disabled) and m16 (exclude loop skipped) survived. The noise file is now `presentations/pyforge-alpha/project/Skip Infographic standalone.html` (the include matches it). The test asserts it is absent with the exclude and present without it. m9 and m16 now fail. DW-FU-24-2-1 now credits Story 35.2, and its `verified:` line cites the live test lines, no longer Story 35.1 and `test_docsite_build.py:1`.
+  - MEDIUM (fixed): the herald memlog's Story 35.1 surface-reconcile entry still listed the 15 deck `.dc.html` / `.stamp.json` / Infographic-head paths the operator reverted in b467e70721, and the 35.2 stamp also accepted `.github/workflows/dashboard.yml` (dependabot 0ae4f07fc5) without naming it. Correcting memlog entries now list each reverted path and the dashboard change. `spec-pyforge-herald` was re-stamped scoped after them.
+  - LOW (fixed): DW-FU-20-2's `resolution:` credited Story 35.2 for a 2026-09-14 closure. It now reads `dcd6e4f5a8 (2026-09-14); record restored by Story 35.2`.
+  - LOW (fixed): the missing-stamp spy test covered `--head` only. `test_unchanged_deck_derive_writes_stamp_when_sidecar_is_missing` is the `--deck` twin, and m13b (deck-side `or stamps.read_stamp(deck_path) is None` reverted) now fails it.
+  - LOW (fixed): the act-vocabulary test passed without the parser reading the title, because the band is copied verbatim. It now asserts `deck_trio.main([...]) == 0`, parses the poster with `_DeckStructure` and asserts `acts[0].lbl == "ACT I"` and `acts[0].ttl == "Opening"`. m1b (`"act-title"` dropped) now fails it.
+  - LOW (fixed): the `check()` matrix had no marp download case, so m12 (`("pptx", "marp")` → `("pptx",)`) survived. Two cases now cover a marp download that is missing and one whose size does not match. m12 now fails.
+- residual (not one of the review findings, outside this story's AC): mutant m15 (`collect_families` duplicate-slug skip removed) still survives. No test feeds two infographics from one deck directory.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Expanded `docsite/build.py` check coverage with a green fixture that includes infographic deck, executive summary, pptx, and marp artifacts; parametrized tests assert each check's stderr text. Removed the tautological content-hash branch from `_readback_matches_pushed_body`; reopened DW-FU-23-6-1 with a note naming the missing live `unchanged` proof. Restored DW-FU-20-2 closure record; corrected presenton README Provenance; deck-trio now stamps missing sidecars on unchanged derives; added act-num/act-title and layout-resolution tests.
+
+Files changed:
+- `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py` — full check predicate matrix
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py` — read-back helper without tautological hash
+- `scripts/deck_trio.py` — write stamp when sidecar missing despite unchanged bytes
+- `tests/scripts/test_deck_trio.py` — act vocabulary and missing-stamp tests
+- `src/shared/packages/pyforge-herald/tests/unit/test_pptx_pipeline.py` — unique layout name resolves
+- `presentations/presenton-pixi-image/README.md` — Provenance sentence reconstructed
+- `_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md` — DW-FU-20-2, DW-FU-21-10, DW-FU-23-6-1 rows
+- `spec-pyforge-herald/.memlog.md` — Story 35.2 surface reconcile paths
+
+Review: no patch/defer/intent_gap items.
+
+Verification:
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — 1522 passed, 4 skipped
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+- Scoped stamp `pyforge-herald/spec-pyforge-herald` after memlog reconcile
+
+Residual: DW-FU-23-6-1 stays open until live `deck sync-all --slug pyforge-warden` reaches `unchanged`.

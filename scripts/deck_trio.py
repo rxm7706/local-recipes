@@ -852,10 +852,10 @@ def main(argv: list[str] | None = None) -> int:
         deck_path = poster.parent / f"{persona}{DECK_SUFFIX}"
 
     if head_path is not None and head_bytes is not None:
-        if _write_if_changed(args.slug, root, head_path, head_bytes):
+        if _write_if_changed(args.slug, root, head_path, head_bytes) or stamps.read_stamp(head_path) is None:
             stamps.write_stamp(head_path, repo_root=root, slug=args.slug)
     if deck_path is not None and deck_bytes is not None:
-        if _write_if_changed(args.slug, root, deck_path, deck_bytes):
+        if _write_if_changed(args.slug, root, deck_path, deck_bytes) or stamps.read_stamp(deck_path) is None:
             stamps.write_stamp(deck_path, repo_root=root, slug=args.slug)
     return 0
 

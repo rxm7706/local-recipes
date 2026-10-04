@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 566
+# stories: 568
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -386,6 +386,8 @@ development_status:
   83-15-dispatch-applies-ruff-s-safe-fixes-before-it-verifies: backlog
   83-16-dispatch-finalize-commits-paths-with-spaces: backlog
   83-17-dispatch-refuses-a-commit-that-carries-an-attribution-trailer: backlog
+  83-18-a-re-dispatched-send-back-waits-for-its-landing-review: backlog
+  83-19-dispatch-never-commits-the-cfe-surface-outside-a-sanctioned-retro: backlog
   83-2-every-station-s-dispatch-verification-runs-the-checks-that-read-the-whole-tree: done
   83-3-the-landing-heal-unions-appended-deferred-work-rows-the-way-it-unions-memlog-entries: done
   83-4-a-serial-campaign-holds-the-next-overlapping-story-while-a-refused-story-is-unlanded: done
