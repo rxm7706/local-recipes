@@ -12,10 +12,8 @@ from pathlib import Path
 
 import pytest
 from playwright.sync_api import expect, sync_playwright
-from vizro import Vizro
 
 from pyforge.atlas.dashboard import app
-from pyforge.atlas.dashboard.app import build_dashboard
 
 
 def get_free_port() -> int:
@@ -50,6 +48,10 @@ def run_vizro_server(
     port: int, data_root: str, stamp: str, now: int, sprint_path: str, epics_path: str, specs_dir: str
 ) -> None:
     """Target function for background server process."""
+    from vizro import Vizro
+
+    from pyforge.atlas.dashboard.app import build_dashboard
+
     os.environ["PORT"] = str(port)
     dashboard = build_dashboard(
         build_stamp=stamp,
