@@ -375,6 +375,22 @@ verify_commands = [
   "scripts/bmad-switch",
 ]
 
+"70" = [  # seed check judges the paths the manifest means (spec-pyforge-marshal CAP-279), added 2026-10-04 for Story 70.2.
+          # Story 70.1 ran on the default surface. The default surface, restated because a declared entry replaces it
+          # outright, plus the station deferred-work ledger (70.2 closes DW-marshal-86-1 and notes DW-10-3-3) and every
+          # Spec memlog.
+  "src/shared/packages/pyforge-marshal/**",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-marshal/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 "71" = [  # the front door names the environment a roster station runs in (spec-pyforge-core CAP-11), added 2026-09-28.
           # Hosted on marshal (Epics 14/52/63 precedent). The default surface, restated because a declared entry
           # replaces it outright, plus pyforge-core's front door and its unit test -- nothing else in pyforge-core.

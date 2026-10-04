@@ -946,6 +946,47 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-04 (seed skips and directories)** — **Found: seed check ignores recorded skips, and no verb can record a
+  directory.** Story 70.1's build and review (#1831) found that `seed check` never reads `state.skips`, so an absent
+  artifact the operator chose to skip is still HARD `artifact-missing`, whose remedy runs the very `adopt` that skips
+  it. A directory entry that a commit creates makes the post-apply record read it as a file (`IsADirectoryError`), so
+  `seed init` against the full packaged manifest cannot write state, and the commit dispatchers cannot create an
+  absent directory at all (`DW-marshal-86-1`). The review also asked that a bad slug from the environment or the
+  marker not fail the check, that a test helper render through `render_slug_paths`, and that the loop-home read be
+  pinned for a symlinked target and a near-miss branch name. **What it looks like when fixed:** check honours every
+  recorded skip; `adopt`, `init` and `update` create and record directory entries, and roll back a directory they
+  created; only an explicit `--project` can fail the check on its slug. **Constraints:** a fix story under CAP-279, no
+  new CAP or flag. It goes into Epic 70 and reopens it (operator ruling 2026-10-04: a fix joins its own epic and
+  reopens it, never a new epic; doctor Story 41.5 lets `ledger-regression` accept the reopen). Owner
+  `spec-pyforge-marshal`. → Story 70.2, specced 2026-10-04.
+- **2026-10-04 (fix-turn reconcile)** — **Found: a fix turn's own edits fail re-verification on spec-surface drift.**
+  Atlas 27.3's fix turn added a coverage test after the session had reconciled its memlog. Re-verification then
+  refused on the surface guard, the run failed, and the story was reconciled and landed by hand (`f4c3bfb289`).
+  Marshal 86.8's fix turn changed a test file the same way. The supervisor commits a fix turn's edits and re-verifies
+  with nothing in between; the only memlog reconcile is `dispatch land`'s, which runs after verification.
+  **What it looks like when fixed:** the supervisor runs that same reconcile over the paths the fix turn changed, and
+  commits it, before it re-verifies; drift on any other path still refuses. **Constraints:** a fix story under
+  CAP-286, no new CAP or flag. It goes into Epic 85 and reopens it (operator ruling 2026-10-04). Owner
+  `spec-pyforge-marshal`. → Story 85.5, specced 2026-10-04.
+- **2026-10-04 (cross-station meta-tests)** — **Found: a station story can break another station's contract and still
+  land.** Atlas 27.3 landed `dashboard/scan_submit.py` shelling `-e local-recipes`, and main went red on steward's
+  `tests/meta/test_no_station_assumes_local_recipes.py`, which reads every station's `src/` (hotfix #1840). Atlas's
+  dispatch verification runs atlas's suite and the derived whole-tree checks, never steward's tests, and the PR's CI
+  did not start `steward-test`. Doctor's two `*_stays_outside_every_station.py` contracts read every station's tree
+  the same way. **What it looks like when fixed:** a story that touches any station's `src/` runs every meta-test
+  outside pyforge-core that reads every station's `src/`, in its owning station's environment, before it can land.
+  **Constraints:** a fix story under Epic 83, no CAP, no flag; derived beside the coverage gates, never written into a
+  station's `verify_commands`. Owner `spec-pyforge-marshal`. → Story 83.23, specced 2026-10-04.
+- **2026-10-04 (landing guard source)** — **Found: the landing's ledger guard judges a copy it does not overwrite.**
+  Story 83.21's landing review (#1828) found that the feed-sync guard builds the ledger it protects from the primary
+  checkout's local copy, while the landing publishes over `origin/main`'s. A stale primary therefore let the
+  2026-10-03 epic drops through, and no test pins which copy the guard reads. The review also found that the epic
+  roll-up parses with land's own parser, which stops at a column-0 comment; that the line rewrite matches a key
+  anywhere in the file; that `deploy reconcile-completions` advances stories without the roll-up; and that the
+  missing-module WARN fires only when there is something to publish. **What it looks like when fixed:** the guard
+  judges the text it overwrites, every ledger writer reads with the sync's parser and applies the sync's roll-up, and
+  a missing roll-up is always named. **Constraints:** a fix story under Epic 83, no CAP, no flag. Owner
+  `spec-pyforge-marshal`. → Story 83.22, specced 2026-10-04.
 - **2026-10-04 (finalize roll-up)** — **Found: landings overwrite epic roll-ups with stale feed rows.** The landing
   finalize renders the feed into the tracked ledger without the sync's epic roll-up. The feed's epic rows lag, because
   the sync writes roll-ups only to the twin, so a landing copies the stale value. Doctor 41.5's landing set `epic-41`
