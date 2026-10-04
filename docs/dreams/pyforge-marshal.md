@@ -946,6 +946,13 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   epic because those epics are `done`. Story 83.3 widens CAP-283's mechanical set from memlogs to pure appends of whole
   rows in the station's own deferred-work ledger, and nothing more. Owner `spec-pyforge-marshal`. → Epic 83 /
   Stories 83.1–83.7, specced 2026-10-02.
+- **2026-10-04** — **Found: a landing promotes stale pre-rekey spec copies.** Atlas 27.1's landing finalize
+  committed three Tier-3 spec copies left over from atlas's 2026-09-17 rekey (13-5, 14-4, 15-3). Their stories had
+  already landed and been promoted under the new keys (12-5, 13-4, 14-3). Promotion matches a candidate by its story
+  number, so the stale copies read as durable and unpromoted, and every later finalize would promote them again.
+  **What it looks like when fixed:** promotion skips a Tier-3 spec whose key has no ledger row, or whose story already
+  has a tracked spec under another key, and reports it as an orphan. **Constraints:** a fix story, no CAP, no flag.
+  Owner `spec-pyforge-marshal`. → Story 83.20, specced 2026-10-04.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
