@@ -2,7 +2,8 @@
 title: "83.22: The landing's ledger guard judges the twin it overwrites"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '1d62151fe27a3afef7ed8bebc39a731d83e5b279'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -91,4 +92,25 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation review against acceptance criteria; verification green)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Landing ledger promotion now parses the publish target (`fresh_ledger`) with `fleet_scan.parse_sprint_status`, scopes status rewrites to `development_status:`, rolls epics on `reconcile-completions`, and emits the missing-roll-up WARN when a feed is present but nothing publishes.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py` — sync parser helper, guard source, roll-up input, early-return WARN
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py` — block-scoped rewrites
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/deploy.py` — epic roll-up after reconcile advance (`MRS-DEPLOY-028`)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` — feed promotion aligns with scoped rewrites
+- Unit tests in `test_land.py`, `test_status.py`, `test_deploy.py`, `test_dispatch_land_finalize.py`
+
+**Verification:** `pyforge-marshal-test` 11575 passed; `pyforge-deps-test` 130 passed; `lint-types` ok; `python scripts/spec_surface_reconcile.py` ok after memlog reconcile on `spec-pyforge-marshal/.memlog.md`.
+
+**Follow-up review recommended:** false
+
+**Residual risks:** None identified beyond ordinary dynamic import of `fleet_scan.py` at promotion time (same class of install-free load as `promote_sprint_status.py`).

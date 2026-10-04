@@ -606,16 +606,13 @@ def _promote_tier3_feed_row(fs: FsPort, root: Path, project_slug: str, key: Stor
             f"the Tier-3 sprint feed at {str(feed_path)!r} has a row for story {key} that could not be "
             f"rewritten to done ({sorted(behind - matched)}); the feed was left as it was"
         )
-    # `render_ledger_advancements` rewrites the FIRST line whose key matches, wherever it sits -- a feed that
-    # also carries the key outside `development_status:` (a `notes:` block, say) would take the rewrite there
-    # and leave the real row behind. Judge the result by the parser the sync itself reads the feed with.
+    # Story 83.22: rewrites are limited to ``development_status:``; judge the result with the sync parser.
     reparsed = _parse_sprint_ledger_statuses(new_text)
     not_done = sorted(raw_key for raw_key in behind if _status_token(reparsed.get(raw_key, "")) != _LEDGER_DONE_STATUS)
     if not_done:
         return _warn(
             f"the Tier-3 sprint feed at {str(feed_path)!r} still reads {not_done} short of done for story {key} "
-            f"after the rewrite (the key also appears outside the development_status block); the feed was left "
-            f"as it was"
+            f"after the rewrite; the feed was left as it was"
         )
     try:
         fs.write_text_atomic(feed_path, new_text)

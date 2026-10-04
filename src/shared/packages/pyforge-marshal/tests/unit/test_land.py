@@ -57,6 +57,7 @@ class _FakeVcs:
         fast_forward_sha: str = "ff-sha",
         fast_forward_raises: bool = False,
         commit_paths_raises: bool = False,
+        remote_ledger_text: str | None = None,
     ) -> None:
         self.existing_branches = existing_branches
         self.branch_exists_raises = branch_exists_raises
@@ -83,6 +84,7 @@ class _FakeVcs:
         self.isolated_promote_calls: list[tuple[object, str, str, tuple[tuple[str, str], ...], str]] = []
         # Story 68.1: the `preflight_skip_reason` each publish carried, parallel to the calls above.
         self.isolated_promote_reasons: list[str | None] = []
+        self.remote_ledger_text = remote_ledger_text
 
     def repo_common_root(self, start):
         return Path("/fake-repo-root")
@@ -142,6 +144,8 @@ class _FakeVcs:
         return "deferred-work-commit-sha"
 
     def file_text_at_ref(self, repo_root, ref, path):
+        if self.remote_ledger_text is not None and str(path).endswith("sprint-status-ledger.yaml"):
+            return self.remote_ledger_text
         candidate = Path(repo_root) / path
         if candidate.is_file():
             return candidate.read_text(encoding="utf-8")
@@ -2911,3 +2915,156 @@ def test_land_feed_sync_refusal_catches_dropped_backlog_key() -> None:
     assert label == "drop"
     assert "12-2-b" in detail
     assert "12-3-c" in detail
+
+
+# --- Story 83.22: guard reads the publish target; sync parser everywhere; missing-roll-up WARN ---
+
+
+def _write_tier3_feed(tmp_path: Path, slug: str, body: str) -> Path:
+    path = tmp_path / "_bmad-output" / "projects" / slug / "implementation-artifacts" / "sprint-status.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def test_promote_feed_sync_guard_judges_origin_main_not_stale_local_ledger(tmp_path):
+    """When the primary ledger lags origin/main, a feed that drops a remote-only backlog key is refused."""
+    _write_sprint_ledger(
+        tmp_path,
+        "acme",
+        {"12-1-a": "done"},
+    )
+    remote_twin = "development_status:\n  12-1-a: done\n  12-2-b: backlog\n"
+    _write_tier3_feed(tmp_path, "acme", "development_status:\n  12-1-a: done\n")
+    fs = LocalFs()
+    vcs = _FakeVcs(remote_ledger_text=remote_twin)
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-83-22")
+    findings: list = []
+
+    promoted = land_module._promote_sprint_ledger(
+        fs, vcs, tmp_path, "acme", [StoryKey(12, 1)], deploy_run, findings, base="main"
+    )
+
+    assert promoted == ()
+    assert not vcs.isolated_promote_calls
+    refusal = next(f for f in findings if f.code == "MRS-LAND-011" and "feed would drop" in f.message)
+    assert "12-2-b" in refusal.message
+
+
+def test_promote_feed_sync_guard_mutation_local_ledger_parser_would_sync_the_drop(tmp_path, monkeypatch):
+    remote_twin = "development_status:\n  12-1-a: done\n  12-2-b: backlog\n"
+    local_text = "development_status:\n  12-1-a: done\n"
+    _write_sprint_ledger(tmp_path, "acme", {"12-1-a": "done"})
+    _write_tier3_feed(tmp_path, "acme", "development_status:\n  12-1-a: done\n")
+    fs = LocalFs()
+    vcs = _FakeVcs(remote_ledger_text=remote_twin)
+    deploy_run = deploy_module._DeployRun(fs, tmp_path, "acme", "writer-83-22-mut")
+    findings: list = []
+
+    monkeypatch.setattr(
+        land_module,
+        "_parse_sync_sprint_status_text",
+        lambda _fresh: land_module._parse_sprint_ledger_statuses(local_text),
+    )
+
+    promoted = land_module._promote_sprint_ledger(
+        fs, vcs, tmp_path, "acme", [StoryKey(12, 1)], deploy_run, findings, base="main"
+    )
+
+    assert promoted == ("acme",)
+    assert vcs.isolated_promote_calls
+    published = vcs.isolated_promote_calls[0][3][0][1]
+    assert "12-2-b" not in published
+
+
+def test_promote_feed_sync_refuses_un_finish_against_origin_main(tmp_path):
+    remote_twin = "development_status:\n  12-1-a: done\n"
+    _write_sprint_ledger(tmp_path, "acme", {"12-1-a": "backlog"})
+    _write_tier3_feed(tmp_path, "acme", "development_status:\n  12-1-a: backlog\n")
+    fs = LocalFs()
+    vcs = _FakeVcs(remote_ledger_text=remote_twin)
+    findings: list = []
+
+    land_module._promote_sprint_ledger(
+        fs,
+        vcs,
+        tmp_path,
+        "acme",
+        [StoryKey(12, 1)],
+        deploy_module._DeployRun(fs, tmp_path, "acme", "w"),
+        findings,
+        base="main",
+    )
+
+    refusal = next(f for f in findings if "un-finish" in f.message)
+    assert "12-1-a" in refusal.message
+    assert not vcs.isolated_promote_calls
+
+
+def test_promote_feed_sync_does_not_refuse_done_key_only_on_stale_local(tmp_path):
+    remote_twin = "development_status:\n  12-2-b: backlog\n"
+    _write_sprint_ledger(tmp_path, "acme", {"12-1-a": "done", "12-2-b": "backlog"})
+    _write_tier3_feed(tmp_path, "acme", "development_status:\n  12-2-b: backlog\n")
+    fs = LocalFs()
+    vcs = _FakeVcs(remote_ledger_text=remote_twin)
+    findings: list = []
+
+    land_module._promote_sprint_ledger(
+        fs,
+        vcs,
+        tmp_path,
+        "acme",
+        [StoryKey(12, 2)],
+        deploy_module._DeployRun(fs, tmp_path, "acme", "w"),
+        findings,
+        base="main",
+    )
+
+    drop_refusals = [f for f in findings if "feed would drop" in f.message and "12-1-a" in f.message]
+    assert not drop_refusals
+
+
+def test_roll_up_epic_rows_reads_rows_below_a_column_zero_comment(tmp_path):
+    text = "development_status:\n# wave note\n  epic-4: in-progress\n  4-4-batch: done\n  4-5-other: done\n"
+    promote_mod = land_module._load_promote_sprint_status_module()
+    rollup = land_module._sync_epic_rollup(promote_mod)
+    assert rollup is not None
+    rolled = land_module._roll_up_epic_rows(text, rollup)
+    statuses = land_module._parse_sync_sprint_status_text(rolled)
+    assert statuses["epic-4"] == "done"
+
+
+def test_roll_up_epic_rows_mutation_land_parser_misses_comment_below_rows():
+    text = "development_status:\n# wave note\n  epic-4: in-progress\n  4-4-batch: done\n  4-5-other: done\n"
+    promote_mod = land_module._load_promote_sprint_status_module()
+    rollup = land_module._sync_epic_rollup(promote_mod)
+    assert rollup is not None
+    statuses = {
+        key: value.partition("#")[0].strip() for key, value in land_module._parse_sprint_ledger_statuses(text).items()
+    }
+    rolled = rollup(dict(statuses))
+    assert rolled.get("epic-4") != "done"
+
+
+def test_promote_warns_missing_rollup_when_feed_present_and_nothing_to_publish(tmp_path, monkeypatch):
+    monkeypatch.setattr(land_module, "_load_promote_sprint_status_module", lambda: None)
+    _write_sprint_ledger(tmp_path, "acme", {"4-4-batch": "done", "epic-4": "done"})
+    _write_tier3_feed(tmp_path, "acme", "development_status:\n  4-4-batch: done\n  epic-4: done\n")
+    fs = LocalFs()
+    vcs = _FakeVcs()
+    findings: list = []
+
+    promoted = land_module._promote_sprint_ledger(
+        fs,
+        vcs,
+        tmp_path,
+        "acme",
+        [StoryKey(4, 4)],
+        deploy_module._DeployRun(fs, tmp_path, "acme", "w"),
+        findings,
+        base="main",
+    )
+
+    assert promoted == ()
+    assert not vcs.isolated_promote_calls
+    assert any("apply_epic_rollups" in f.message for f in findings)

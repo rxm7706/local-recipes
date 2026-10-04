@@ -86,6 +86,18 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-04 (later)** — **Found: Story 41.3 made chain-completeness blind to the one-chain fold's citation
+  window.** Since `bc562fc6b8` (41.3, from `26a298ed12`), INV-A reads only the `## Epic N`, `## Capabilities` and
+  `### Story N` sections of a station's PRD and epics (`_DECOMP_SECTION_OPEN_RE`, `sources/board.py`). Each station's
+  `## Fold provenance (2026-09-17)` section, written as "the INV-A citation window" for the reminted CAPs on the
+  one-chain pilot's ruling (`spec-one-chain-per-station` memlog, 2026-09-16 lesson 11), no longer counts. Six station
+  Specs now read `spec-not-decomposed` FAIL on `main`: atlas, doctor, marshal, scribe, steward and warden. The
+  Detectors summary row named only warden's, because it shows the last line. Measured: with that one heading added
+  back, the live tree reports none; whether a CAP shipped plays no part. **What it looks like when fixed:** a fold
+  provenance section counts as decomposition again, so the six FAILs clear; a `## Changelog` section still credits
+  nothing, and an open CAP that no epic, story or fold window cites still fails. **Constraints:** a fix story, no new
+  CAP, no flag. Owner `spec-pyforge-doctor`. Found by the Epic 41 retrospective (`retro-pyforge-doctor-2026-10-04.md`).
+  → Story 41.6, specced 2026-10-04.
 - **2026-10-04** — **Found: a fix story cannot join its own done epic.** The operator expects a done epic to reopen when a
   story is added to it, and the sync's roll-up does that. But `ledger-regression`, blocking in CI, reads `epic-N` keys
   as stories, so the reopen turns Detectors red (marshal 85.4 under Epic 85: `epic-85` `done -> in-progress`, exit 2).

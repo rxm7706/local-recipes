@@ -214,3 +214,11 @@ Regenerating a board view is optional confirmation, not the measure.
   2026-09-18` section documents both the fold and Story 24.4's
   `tools/live_artifactory_transport.py` (as-built confirmation of the already-charted
   `artifactory_downloads` pipeline, no new AD). `updated:`/`currency_review:` bumped.
+
+- **Run 2026-10-04 — 1 finding cleared, single station.** Entry: pyforge-doctor `staleness`, `feeds code→retro`
+  (Story 41.4 edited the package `pyproject.toml` on 2026-10-04; the last retro was 2026-09-20). Exit:
+  `chain_currency_sweep_check.py --project pyforge-doctor` exit 0. Remedy: a real Epic 41 retrospective
+  (`planning-artifacts/retros/retro-pyforge-doctor-2026-10-04.md`); no other edge fired, because the PRD and spine
+  were already dated 2026-10-04. Deviation: the retro found a live defect rather than only clearing the edge
+  (Story 41.3's INV-A allowlist drops the fold-provenance window, six station Specs red), minted as Story 41.6 in
+  the same PR.

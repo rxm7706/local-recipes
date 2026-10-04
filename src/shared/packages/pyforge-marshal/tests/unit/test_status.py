@@ -1870,6 +1870,12 @@ class TestRenderLedgerStatusRewrites:
         assert status.render_ledger_status_rewrites(text, {}) == (text, frozenset())
         assert status.render_ledger_status_rewrites(text, {"epic-99": "done"}) == (text, frozenset())
 
+    def test_rewrites_only_development_status_rows_not_header_comments(self):
+        text = "# 5-9-x: looks-like-a-key\ndevelopment_status:\n  5-9-x: backlog\n"
+        result, matched = status.render_ledger_status_rewrites(text, {"5-9-x": "done"})
+        assert result == ("# 5-9-x: looks-like-a-key\ndevelopment_status:\n  5-9-x: done\n")
+        assert matched == frozenset({"5-9-x"})
+
 
 # =============================================================================
 # Story 5.1: `cli/status.py`'s ``run_status`` -- I/O matrix, fake VcsPort/
