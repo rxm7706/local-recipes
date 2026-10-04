@@ -695,7 +695,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py": "0967f5efb6f9227fd4cc4b20efbdeaf08fd499df",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_frontmatter_parse.py": "3cd034d6b7eda0b699a792080c572195693d1ecb",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_source_spec_resolution.py": "f46129de54b15f4bdec977a714eb1f2c03450f99",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "1d34c95dee122abab538d6681c8beba04aab905b",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "d45eb6925f8118e33d2a7cc72865d6ef77b468f1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_deps_forward_dependency.py": "35331e87d2ff04bd52d664d84150ec321e5b46c6",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_dispatch.py": "acf606a8b2663750946f5fbdf36eae403f8643b5",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_currency.py": "43b304782d565350ab3e2f92dfdf4f21bb4d830f",
@@ -723,7 +723,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_testing_kit_import.py": "3c7d63b2e480144e056fb2d92076ffac9f9b69c1",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "73e7ee1878a3c435be9213d6bb7c3004f8d03101"
   },
-  "memlog": "f044d447203f7e9f63ca14c818708beb43f11781"
+  "memlog": "b917e5321a1241b8f53e505aea598f03feeac4de"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
