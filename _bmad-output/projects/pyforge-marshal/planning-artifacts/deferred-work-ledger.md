@@ -7711,7 +7711,10 @@ status: open
   origin: spec-deferred 177985a6b07e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-29 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 86.4 (spec-86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is) — bounded retry (3) on non-fast-forward in `commit_paths_onto_remote_tip`, recorded on CAP-277.
+  verified: 2026-10-04 — `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py:1573` retries via `_commit_paths_onto_remote_tip_once`; `tests/unit/test_vcs_git.py::test_commit_paths_onto_remote_tip_retries_a_push_rejected_as_non_fast_forward` pins one rejection then success.
+
   verified: 2026-10-01 — NEEDS-DECISION — adapters/vcs_git.py:1340-1470 commit_paths_onto_remote_tip fetches once (~:1377), builds one commit, pushes once (~:1462) and raises VcsCommandError on rejection; its callers (cli/land.py:1506, dispatch_land_finalize/__main__.py:134, dispatch_supervisor/__main__.py:797) each call it once with no retry. (2026-09-30 deferral burn-down triage)
   decision: Should the planning-artifacts publish retry a non-fast-forward rejection with a bounded re-fetch/rebuild (amending spec-pyforge-marshal CAP-277), given parallel drains finalize stations seconds apart and a lost race now REFUSES the landing via MRS-DISP-051?
 
@@ -7847,7 +7850,10 @@ status: open
   origin: spec-deferred 3696226d092d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-30 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: closed
+  resolution: Story 86.4 (spec-86-4-status-drain-plan-and-the-ledger-publish-read-the-station-as-it-is) — serial `plan_station_cycle` reads live dispatch sessions; drain `--plan` reports `would_dispatch` false with an in-flight note.
+  verified: 2026-10-04 — `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py:4803` reads `_live_dispatch_story_keys` when `parallel_cap <= 1`; `tests/unit/test_drain_plan.py::test_serial_station_with_live_session_reads_would_dispatch_false` pins the plan surface.
+
   verified: 2026-10-01 — NEEDS-DECISION — cli/dispatch.py:3890 plan_station_cycle's serial path returns the queue head with no liveness read; cli/drain_plan.py never calls station_in_flight_conflict (grep: no hit), so a busy serial station reads would_dispatch true. (2026-09-30 deferral burn-down triage)
   decision: How should 'factory drain --plan' report a serial station whose head is held only by a live in-flight session (MRS-DISP-011/021): would_dispatch false with an in-flight note, a WARN finding, or unchanged?
 
