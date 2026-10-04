@@ -12,6 +12,15 @@ render empty (never fabricated) and carry a documented data-gap note; 4 pages ar
 FR-9 report-artifact viewers (latest cached run only) and 2 are per-invocation
 live-scan-artifact pages.
 
+Story 27.3 closed the gap between what DESIGN.md specifies and what rendered: each
+page's ``PageDef`` now DECLARES the filter columns and the chart DESIGN.md gives it
+(``app._declared_filters`` / ``app._declared_chart`` build them,
+``tests/integration/dashboard/test_dashboard_controls.py`` reds on drift either way),
+the two live-scan pages really submit their scan (:mod:`.scan_submit`, through the
+sanctioned ``pyforge.core.process`` seam — this package starts a process nowhere
+else), and the page chrome carries ``navigation``/``main`` landmarks that Vizro
+0.1.60 does not ship (``app.LandmarkDashboard``).
+
 ``vizro`` is REPLACEABLE visualization glue (AD-1/AD-6 spirit): only this subpackage may
 import it (enforced by ``tests/catalog/test_no_inline_io.py``), mirroring the C1
 dagster-glue and D1 BSL-in-``semantic/`` scoping.

@@ -291,12 +291,13 @@ def load_adoption_stage(parquet: str | os.PathLike[str] | None = None, *, now: i
 def load_scan_project(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
     """`scan-project` — the LATEST per-invocation scan result (build_scan_result_model).
 
-    The dashboard does not itself submit a NEW scan (no live subprocess invocation is
-    wired from a Dash callback here) — it reads the latest cached result the same
-    honest way every other shell page does. An absent Parquet renders the page's
-    "no scan run yet, submit one from the CLI" state (EXPERIENCE.md § 1.6); wiring an
-    actual in-dashboard submit control is forward-looking work (mirrors the
-    add-handoff/library-futures "not implemented now" notes in DESIGN.md § 4.5/4.6).
+    This is the READ half. Since Story 27.3 the dashboard also SUBMITS a new scan:
+    the page's path field + Run button drive :func:`pyforge.atlas.dashboard.
+    scan_submit.submit_scan`, which runs the CLI through the sanctioned
+    ``pyforge.core.process`` seam and rewrites this very Parquet, so the next read
+    here is that scan. An absent Parquet still renders the page's "no scan run yet"
+    state (EXPERIENCE.md § 1.6) — the submit path never fabricates a row, and a
+    failed submit leaves the previous cached result in place.
     """
     return _bsl_query_or_empty(
         parquet,
@@ -308,7 +309,9 @@ def load_scan_project(parquet: str | os.PathLike[str] | None = None) -> pd.DataF
 
 def load_env_inspect(parquet: str | os.PathLike[str] | None = None) -> pd.DataFrame:
     """`env-inspect` — the LATEST per-invocation environment rollup (same per-invocation
-    shape as `scan-project`; see its loader's docstring)."""
+    read-and-submit shape as `scan-project`; see its loader's docstring). Its submit
+    runs the CLI's two declared modes (``--licenses`` and ``--security``) and joins
+    them on the package name — see ``scan_submit.normalize_env_inspect``."""
     return _bsl_query_or_empty(
         parquet,
         models.build_env_inspect_model,
