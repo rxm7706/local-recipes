@@ -488,14 +488,13 @@ def _reconcile_spec_surface_drift(
                 # a spec's drift ours or foreign).
                 continue
             not_ours = paths - own_paths
+            overlap_paths = paths & own_paths
             if not_ours:
                 foreign[name] = not_ours
-            else:
-                own[name] = paths
+            if overlap_paths:
+                own[name] = overlap_paths
 
-        if foreign:
-            if not foreign_drift_refuses:
-                return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+        if foreign and foreign_drift_refuses:
             detail = "; ".join(f"{name}: {', '.join(sorted(paths))}" for name, paths in sorted(foreign.items()))
             return _SpecSurfaceReconcileOutcome(
                 finding=Finding(

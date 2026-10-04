@@ -577,11 +577,11 @@ def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
         return real_land(**kwargs)
 
     monkeypatch.setattr(supervisor_main, "execute_dispatch_land", _land)
-    monkeypatch.setattr(
-        supervisor_main,
-        "_reconcile_spec_surface_drift",
-        lambda **_kwargs: _SpecSurfaceReconcileOutcome(finding=None, refuse=False),
-    )
+    def _record_reconcile(**_kwargs: object) -> _SpecSurfaceReconcileOutcome:
+        events.append(("reconcile", True))
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+
+    monkeypatch.setattr(supervisor_main, "_reconcile_spec_surface_drift", _record_reconcile)
     fs = loop.FakeFs()
 
     code = loop._run(repo_root, fs=fs, vcs=vcs, process=loop.FakeProcess(alive=False), publisher=loop.FakePublisher())
@@ -592,7 +592,7 @@ def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
     assert launches == [88001]
     assert len(land_calls) == 1
     kinds = [event[0] for event in events]
-    assert kinds == ["push", "verify", "launch", "wait", "commit", "verify", "land"]
+    assert kinds == ["push", "verify", "launch", "wait", "commit", "reconcile", "verify", "land"]
     assert ("commit", _WIP_SUBJECT) in events
     assert ("land", False) in events, "landing must see the fix turn's edits committed"
     assert _finalize_outcome(fs)["verified"] is True
