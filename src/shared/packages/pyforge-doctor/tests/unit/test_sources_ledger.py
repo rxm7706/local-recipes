@@ -848,3 +848,110 @@ def test_rekey_map_already_on_base_is_inert(tmp_path: Path) -> None:
     findings = ledger.gather(repo, base="origin/main", head="HEAD")
     assert [f.check for f in findings] == ["ledger-regression"]
     assert findings[0].status is DoctorStatus.OK
+
+
+# --- Story 41.5: a new story reopens its done epic ------------------------
+#
+# The sync rolls `epic-N` from its stories (`promote_sprint_status.apply_epic_rollups`),
+# so adding a story to a done epic writes `epic-N: in-progress`. That reopen is not a
+# regression; a done epic leaving `done` with no new story (the 2026-10-03 promotions
+# that dropped done epics to `backlog`) still is, and so is every story key.
+
+_DONE_EPIC = {"epic-9": "done", "9-1-first": "done", "9-2-second": "done"}
+
+
+def _regression_after(tmp_path: Path, head: dict[str, str]) -> tuple:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", _DONE_EPIC)
+    _origin_main_at(repo, _commit_all(repo, "seed a done epic"))
+    _write_ledger(repo, "doctor", head)
+    _commit_all(repo, "head")
+    return ledger.gather(repo, base="origin/main", head="HEAD")
+
+
+def test_a_new_story_reopening_its_done_epic_is_not_a_regression(tmp_path: Path) -> None:
+    findings = _regression_after(tmp_path, {**_DONE_EPIC, "epic-9": "in-progress", "9-3-new": "backlog"})
+
+    assert [f.status for f in findings] == [DoctorStatus.OK]
+
+
+def test_a_done_epic_leaving_done_with_no_new_story_is_still_a_regression(tmp_path: Path) -> None:
+    findings = _regression_after(tmp_path, {**_DONE_EPIC, "epic-9": "backlog"})
+
+    assert len(findings) == 1
+    assert findings[0].check == "done-key-regressed"
+    assert findings[0].evidence["keys"] == ["epic-9"]
+    assert findings[0].evidence["transitions"] == [{"key": "epic-9", "from": "done", "to": "backlog"}]
+
+
+def test_a_new_story_never_excuses_another_story_leaving_done(tmp_path: Path) -> None:
+    head = {**_DONE_EPIC, "epic-9": "in-progress", "9-2-second": "in-progress", "9-3-new": "backlog"}
+
+    findings = _regression_after(tmp_path, head)
+
+    assert len(findings) == 1
+    assert findings[0].check == "done-key-regressed"
+    assert findings[0].evidence["keys"] == ["9-2-second"]
+
+
+def test_a_new_story_already_done_does_not_reopen_its_epic(tmp_path: Path) -> None:
+    findings = _regression_after(tmp_path, {**_DONE_EPIC, "epic-9": "in-progress", "9-3-new": "done"})
+
+    assert findings[0].check == "done-key-regressed"
+    assert findings[0].evidence["keys"] == ["epic-9"]
+
+
+def test_a_new_story_of_another_epic_does_not_reopen_this_one(tmp_path: Path) -> None:
+    # `91-1-...` starts with "9" but is epic 91's story, never epic 9's.
+    findings = _regression_after(tmp_path, {**_DONE_EPIC, "epic-9": "in-progress", "91-1-other": "backlog"})
+
+    assert findings[0].check == "done-key-regressed"
+    assert findings[0].evidence["keys"] == ["epic-9"]
+
+
+def test_a_deleted_epic_key_is_still_a_regression(tmp_path: Path) -> None:
+    head = {k: v for k, v in _DONE_EPIC.items() if k != "epic-9"} | {"9-3-new": "backlog"}
+
+    findings = _regression_after(tmp_path, head)
+
+    assert findings[0].check == "done-key-regressed"
+    assert findings[0].evidence["keys"] == ["epic-9"]
+
+
+@pytest.mark.parametrize(
+    ("key", "expected"),
+    [("epic-9", True), ("epic-9-retrospective", False), ("9-1-first", False), ("epic-91", False)],
+)
+def test_only_an_epic_roll_up_key_can_be_reopened(key: str, expected: bool) -> None:
+    before = {"epic-9": "done", "epic-91": "done", "9-1-first": "done", "epic-9-retrospective": "done"}
+    after = {**before, "9-3-new": "backlog"}
+
+    assert ledger.epic_reopened_by_new_story(key, before, after) is expected
+
+
+def _durability_after(tmp_path: Path, working: dict[str, str]) -> tuple:
+    from pyforge.doctor.sources import marshal
+
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    _write_ledger(repo, "doctor", _DONE_EPIC)
+    _commit_all(repo, "seed a done epic")
+    _write_ledger(repo, "doctor", working)  # the working tree, uncommitted
+    return marshal.gather(repo)
+
+
+def test_durability_accepts_a_new_story_reopening_its_done_epic(tmp_path: Path) -> None:
+    findings = _durability_after(tmp_path, {**_DONE_EPIC, "epic-9": "in-progress", "9-3-new": "backlog"})
+
+    regressions = [f for f in findings if f.check == "ledger-regression"]
+    assert [f.status for f in regressions] == [DoctorStatus.OK]
+
+
+def test_durability_still_reports_a_done_epic_leaving_done_with_no_new_story(tmp_path: Path) -> None:
+    findings = _durability_after(tmp_path, {**_DONE_EPIC, "epic-9": "backlog"})
+
+    regressions = [f for f in findings if f.check == "ledger-regression"]
+    assert len(regressions) == 1
+    assert regressions[0].status is DoctorStatus.FAIL
+    assert regressions[0].evidence["keys"] == ["epic-9"]

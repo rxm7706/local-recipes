@@ -88,6 +88,32 @@ _MERGE_SUBJECT_TEMPLATE = "Merge {slug}/{key} into main"
 _REKEY_RE = re.compile(r"^_bmad-output/projects/([^/]+)/planning-artifacts/rekey-[^/]+\.md$")
 TERMINAL = frozenset({"done"})
 
+#: An ``epic-N`` row is not a story: the sync derives it from the epic's stories
+#: (``scripts/promote_sprint_status.py`` ``apply_epic_rollups``), so adding a story
+#: to a done epic rolls the epic back to ``in-progress``. That reopen is not a
+#: regression (Story 41.5). A done epic that leaves ``done`` with no new story is
+#: still one -- the 2026-10-03 promotions that dropped done epics to ``backlog``
+#: while every story stayed done.
+_EPIC_ROLLUP_RE = re.compile(r"^epic-(\d+)$")
+
+
+def epic_reopened_by_new_story(key: str, before: dict[str, str], after: dict[str, str]) -> bool:
+    """True when ``key`` is an ``epic-N`` roll-up and ``after`` holds a story of epic N
+    that ``before`` lacks and that is not ``done`` -- a story just added to the epic.
+
+    The one reopen rule for both ledger guards (this module and ``sources/marshal.py``'s
+    working-tree durability check). A story key is never excused, and a new story never
+    excuses another story's own regression: that story's key is judged on its own.
+    """
+    match = _EPIC_ROLLUP_RE.match(key)
+    if match is None:
+        return False
+    prefix = f"{match.group(1)}-"
+    return any(
+        story.startswith(prefix) and story not in before and status not in TERMINAL for story, status in after.items()
+    )
+
+
 # A story key is `<id>-<kebab-title>`, where `<id>` is either the canonical
 # `<epic>-<num>[suffix]` or a legacy alias (`a1`, `b10`). The TAIL is what
 # survives a convention migration, so it is what identifies a story across one.
@@ -356,7 +382,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                 if _tail(key) in surviving_tails:
                     continue  # renamed, still done — continuity, not regression
                 lost.append((key, old, "<absent>"))
-            elif new not in TERMINAL:
+            elif new not in TERMINAL and not epic_reopened_by_new_story(key, before, after):
                 lost.append((key, old, new))
         if lost:
             findings.append(
@@ -367,7 +393,7 @@ def _check(target: Path, base: str, head: str) -> tuple[list[dict], int]:
                     "count": len(lost),
                     "keys": [k for k, _o, _n in lost],
                     "transitions": [{"key": k, "from": o, "to": n} for k, o, n in lost],
-                    "detail": f"{len(lost)} story key(s) moved out of `done`",
+                    "detail": f"{len(lost)} key(s) moved out of `done`",
                 }
             )
     return findings, compared
