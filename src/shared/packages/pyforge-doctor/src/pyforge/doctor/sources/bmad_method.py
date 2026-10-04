@@ -179,10 +179,11 @@ __all__ = ("gather",)
 #: The dependency name as declared in every ``pixi.toml`` dependencies table.
 DEPENDENCY_NAME = "bmad-method"
 
-#: Matches a plain ``>=X.Y.Z`` floor constraint -- the only form observed in
-#: this repo's own ``pixi.toml`` today (Boundaries: no ``packaging``
-#: dependency is warranted for a single constraint shape).
-_FLOOR_RE = re.compile(r"^>=(\d+\.\d+\.\d+)$")
+#: One ``>=X.Y.Z`` piece of a comma-separated pixi constraint, internal
+#: whitespace allowed (``">= 6.11.0"``). A compound range such as
+#: ``">=6.11.0,<7"`` contributes its floor piece; upper bounds and
+#: wildcard pieces carry no floor and are skipped (DW-FU-10-1-6).
+_FLOOR_RE = re.compile(r"^>=\s*(\d+\.\d+\.\d+)$")
 
 
 def _parse_version(text: str) -> tuple[int, int, int]:
@@ -199,53 +200,101 @@ def _parse_version(text: str) -> tuple[int, int, int]:
     return tuple(int(p) for p in parts)
 
 
-def _dependency_tables(data: dict) -> list[dict]:
+def _named_dependency_tables(data: dict) -> list[tuple[str, dict]]:
     """Every dependencies table in a ``pixi.toml`` document that could
-    plausibly declare ``bmad-method``: the top-level ``[dependencies]``,
-    every ``[feature.*.dependencies]``, and every platform-scoped
-    ``[target.*.dependencies]`` / ``[feature.*.target.*.dependencies]`` --
-    ``pixi.toml`` supports pinning a dependency only for a specific platform
-    target, and a floor declared ONLY there would otherwise go silently
-    unseen (review finding). No occurrence in this repo's own ``pixi.toml``
-    uses a target-scoped table for ``bmad-method`` today, but a source that
-    only reads part of what pixi.toml can declare is a coverage gap waiting
-    to bite the moment one is added."""
-    tables = [data.get("dependencies", {}) or {}]
-    for target in (data.get("target", {}) or {}).values():
-        tables.append(target.get("dependencies", {}) or {})
-    for feature in (data.get("feature", {}) or {}).values():
-        tables.append(feature.get("dependencies", {}) or {})
-        for target in (feature.get("target", {}) or {}).values():
-            tables.append(target.get("dependencies", {}) or {})
+    plausibly declare ``bmad-method``, each with its dotted table name: the
+    top-level ``[dependencies]``, every ``[feature.*.dependencies]``, every
+    platform-scoped ``[target.*.dependencies]`` /
+    ``[feature.*.target.*.dependencies]`` (a floor declared ONLY there would
+    otherwise go silently unseen -- review finding), and the matching
+    ``pypi-dependencies`` tables (DW-FU-10-1-2). The name is what an operator
+    edits to bump the pin (DW-FU-10-1-3)."""
+    kinds = ("dependencies", "pypi-dependencies")
+    tables: list[tuple[str, dict]] = []
+
+    def _add(prefix: str, scope: dict) -> None:
+        for kind in kinds:
+            table = scope.get(kind) or {}
+            if isinstance(table, dict):
+                tables.append((f"{prefix}{kind}", table))
+
+    _add("", data)
+    for name, target in (data.get("target", {}) or {}).items():
+        _add(f"target.{name}.", target or {})
+    for name, feature in (data.get("feature", {}) or {}).items():
+        feature = feature or {}
+        _add(f"feature.{name}.", feature)
+        for target_name, target in (feature.get("target", {}) or {}).items():
+            _add(f"feature.{name}.target.{target_name}.", target or {})
     return tables
 
 
-def _declared_floors(data: dict) -> list[tuple[int, int, int]]:
-    """Every declared ``bmad-method`` floor across every dependencies table
-    ``_dependency_tables`` finds -- ``pixi.toml`` declares it in more than
-    one place today (``feature.python``, ``feature.local-recipes``), so this
-    walks every occurrence rather than assuming exactly one line
-    (Boundaries).
+def _dependency_tables(data: dict) -> list[dict]:
+    """``_named_dependency_tables`` without the names."""
+    return [table for _name, table in _named_dependency_tables(data)]
 
-    Raises ``ValueError`` if ``bmad-method`` is declared nowhere at all, or if
-    any declared constraint does not match the plain ``>=X.Y.Z`` form
-    ``_FLOOR_RE`` expects (e.g. ``==6.11.0``, ``*``, a git URL) -- both are
-    "cannot evaluate", left to the outer ``degrade_on_exception`` to convert
-    into one WARN ``Finding`` rather than handled here.
-    """
-    floors: list[tuple[int, int, int]] = []
-    for table in _dependency_tables(data):
-        constraint = table.get(DEPENDENCY_NAME)
+
+def _constraint_floor(constraint: object) -> tuple[int, int, int] | None:
+    """The ``>=X.Y.Z`` floor a pixi dependency spec declares, or ``None``
+    when it declares none this module can read.
+
+    Accepts a plain string (``">=6.11.0"``), a compound range
+    (``">=6.11.0,<7"``, the highest floor piece wins) and an inline table's
+    ``version`` key (``{ version = ">=6.11.0", channel = "..." }``)
+    (DW-FU-10-1-2, DW-FU-10-1-6)."""
+    if isinstance(constraint, dict):
+        constraint = constraint.get("version")
+    if not isinstance(constraint, str):
+        return None
+    floors = [
+        _parse_version(match.group(1))
+        for piece in constraint.split(",")
+        if (match := _FLOOR_RE.match(piece.strip())) is not None
+    ]
+    return max(floors) if floors else None
+
+
+def _declared_floor_entries(
+    data: dict, package: str = DEPENDENCY_NAME
+) -> tuple[list[tuple[tuple[int, int, int], str]], list[tuple[str, str]]]:
+    """``(floors, unparseable)`` for ``package`` across every table
+    ``_named_dependency_tables`` finds: each readable floor with its table
+    name, and each declared constraint with no readable floor as
+    ``(table, repr(constraint))``. Never raises -- one unreadable table no
+    longer discards a good floor found in another (DW-FU-10-1-4)."""
+    floors: list[tuple[tuple[int, int, int], str]] = []
+    unparseable: list[tuple[str, str]] = []
+    for table_name, table in _named_dependency_tables(data):
+        constraint = table.get(package)
         if constraint is None:
             continue
-        match = _FLOOR_RE.match(str(constraint).strip())
-        if not match:
-            raise ValueError(f"unrecognized {DEPENDENCY_NAME!r} constraint form: {constraint!r}")
-        floors.append(_parse_version(match.group(1)))
+        floor = _constraint_floor(constraint)
+        if floor is None:
+            unparseable.append((table_name, repr(constraint)))
+        else:
+            floors.append((floor, table_name))
+    return floors, unparseable
 
-    if not floors:
-        raise ValueError(f"{DEPENDENCY_NAME!r} is not declared in any dependencies table")
-    return floors
+
+def _declared_floors(data: dict) -> list[tuple[int, int, int]]:
+    """Every readable ``bmad-method`` floor across every dependencies table
+    -- ``pixi.toml`` declares it in more than one place today
+    (``feature.python``, ``feature.local-recipes``).
+
+    Raises ``ValueError`` if ``bmad-method`` is declared nowhere at all, or
+    if no declared constraint carries a readable floor (``==6.11.0``, ``*``,
+    a git URL) -- both are "cannot evaluate", left to the outer
+    ``degrade_on_exception``. A table with an unreadable constraint beside
+    one with a good floor does NOT raise: ``_gather`` compares against the
+    good floor and reports the unreadable one on its own
+    (``bmad-method-floor-unparseable``, DW-FU-10-1-4).
+    """
+    floors, unparseable = _declared_floor_entries(data)
+    if floors:
+        return [floor for floor, _table in floors]
+    if unparseable:
+        raise ValueError(f"unrecognized {DEPENDENCY_NAME!r} constraint form: {unparseable[0][1]}")
+    raise ValueError(f"{DEPENDENCY_NAME!r} is not declared in any dependencies table")
 
 
 #: npm's own public, unauthenticated per-package ``/latest`` endpoint --
