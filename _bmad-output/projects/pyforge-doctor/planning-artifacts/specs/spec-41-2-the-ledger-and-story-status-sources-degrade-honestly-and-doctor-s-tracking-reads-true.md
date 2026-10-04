@@ -10,18 +10,7 @@ context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md
-deferred:
-  - summary: >-
-      DW-FU-23-6-2 and DW-FU-30-3: spec-pyforge-doctor/SPEC.md's CAP-53 annotation and its
-      30.3 realized-state line are re-derived through bmad-spec, not hand-edited.
-    evidence: |-
-      The memlog input is appended (the 41.2 surface reconcile entry and the CAP-53 / 30.3
-      re-derive input note). A faithful bmad-spec render of the 381-line SPEC is the
-      operator's step; both deferred-work rows stay open with a verified line saying so,
-      and scripts/spec_surface_allowlist.txt:112-117 stays until the render lands.
-    location: >-
-      _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
-    severity: low
+deferred: []
 declared_low_risk: false
 ---
 
@@ -113,7 +102,7 @@ Minted 2026-10-03 from the operator's Phase 4+5 rulings (fix every open medium d
 ## Auto Run Result
 
 Status: in-review  
-Open for the operator: `DW-FU-23-6-2` and `DW-FU-30-3` (22 of the 24 deferred-work rows are closed). Both need the `bmad-spec` re-derive of `spec-pyforge-doctor/SPEC.md`, which is never hand-edited; the memlog input for it is appended and each row carries a `verified:` line saying so.
+Open for the operator: `DW-FU-23-6-2` and `DW-FU-30-3` (22 of the 24 deferred-work rows are closed; both stay tracked in `deferred-work-ledger.md`, so the frontmatter `deferred:` list stays empty). Both need the `bmad-spec` re-derive of `spec-pyforge-doctor/SPEC.md`, which is never hand-edited; the memlog input for it is appended and each row carries a `verified:` line saying so.
 
 What landed on top of the earlier core fixes (ledger, story-status, dispatch, frozen-path):
 - `capability_effect.py`: `_surface_field` reads multi-line `**Surface:**` fields (bullet and wrapped inline); `_story_surface_by_cap` joins a CAP to a surface through the story specs under `planning-artifacts/specs/` that cite the parent spec and CAP; `scripts/flag_inventory.py` passes `story_specs_dir`. `flag-inventory` unresolved count: 722 to 682 (doctor 79 to 77), recorded on `DW-doctor-34-4`.

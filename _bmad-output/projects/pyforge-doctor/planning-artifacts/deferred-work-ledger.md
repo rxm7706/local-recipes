@@ -2330,7 +2330,7 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   severity: low
   promoted: 2026-09-24 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
-  verified: 2026-10-04 — STILL OPEN — same boundary as DW-FU-23-6-2: Story 41.2 appended the 30.3 realized-state input to `spec-pyforge-doctor`'s `.memlog.md`; the `bmad-spec` re-derive of `SPEC.md` is the operator's render.
+  verified: 2026-10-04 — STILL OPEN — same boundary as DW-FU-23-6-2: Story 41.2 appended the 30.3 realized-state input to `spec-pyforge-doctor`'s `.memlog.md`; the `bmad-spec` re-derive of `SPEC.md` is the operator's render; the allowlist lines `scripts/spec_surface_allowlist.txt:112-117` stay until it lands.
   verified: 2026-10-01 — STANDS — _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md's surface: list (line 2 onward) still only names scripts/docs_map_render.py (Story 30.2), not Story 30.3's docs_pixi_tasks.py/_docs_gen_common.py/etc. scripts/spec_surface_allowlist.txt:112,117 still carries the interim allowlist entries for these scripts, each explicitly noting 'allowlisted pending SPEC.md re-derivation.' (2026-09-30 deferral burn-down triage)
 
 ## DW-LEDGER-2026-09-25-1 — `capability-ledger` warns "post-PIN Spec without a ledger row" for Specs that are `absorbed` or `draft`
