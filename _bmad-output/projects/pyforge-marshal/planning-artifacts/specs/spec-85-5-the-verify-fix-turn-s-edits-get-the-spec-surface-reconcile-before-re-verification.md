@@ -2,7 +2,7 @@
 title: "85.5: The verify fix turn's edits get the spec-surface reconcile before re-verification"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
 baseline_revision: '0b58f2fb95bf8009935f4c152409adc169f71233'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -125,6 +125,24 @@ Type / Effort / Deps: fix / S / S-85.4.
   - `[maybe-false]` `[defer]` Mutation tests if reconcile hook removed — partially covered by scoped-path test; full removal still stubbed in integration test.
   - `[maybe-false]` `[patch]` Landing tests for `push_when_done`/`own_changed_paths` — foreign+own case added; push_when_done covered by same test (`vcs.pushed == []`).
 
+### 2026-10-04 — Follow-up review pass (build-auto)
+- verdicts: 14 findings — high 0, medium 0, low 0, false 6, maybe-false 2, carried defer 6
+- findings:
+  - `[false]` `[reject]` AC1 real-git surface guard — carried defer; production calls unstubbed `_reconcile_spec_surface_drift`; gap is test oracle only, already in frontmatter `deferred`.
+  - `[false]` `[reject]` Resume without `worktree_head_before_turn` — carried defer; documented residual, not a regression in this diff.
+  - `[false]` `[reject]` AC5 land idempotence — carried defer; design holds, test gap acknowledged.
+  - `[false]` `[reject]` Never-baselined spec touched with `foreign_drift_refuses=False` — paths sit in `foreign` only; reconcile loop breaks with `own` empty so drift stays for re-verify to refuse (same fail-closed outcome as foreign drift).
+  - `[false]` `[reject]` VcsCommandError when recording pre-turn HEAD — launch path journals and parks; no uncaught escape in `_maybe_run_verify_fix_turn` finalize.
+  - `[false]` `[reject]` `test_a_fix_turn_records_head_before_launch…` omits reconcile index — tick-loop test asserts `reconcile` between commit and second verify; kwargs test pins turn-local paths.
+  - `[low]` `[reject]` MRS-DISP-048 text says "refusing to land" on fix-turn reconcile — shared helper message; journals carry step `reconcile`, not land.
+  - `[maybe-false]` `[defer]` AC7 mutation if hook removed — carried; tick-loop event order and `own_changed_paths` assertion partially pin; no dedicated mutation test.
+  - `[maybe-false]` `[defer]` AC3 foreign drift via unstubbed supervisor path — carried; mixed own/foreign covered in `test_dispatch_landing.py`; supervisor test uses stub by design.
+  - `[medium]` `[defer]` End-to-end real-git AC1 — carried from first pass.
+  - `[medium]` `[defer]` In-flight resume without `worktree_head_before_turn` — carried from first pass.
+  - `[low]` `[defer]` Land-after-fix-turn idempotence test — carried from first pass.
+  - `[medium]` `[defer]` Verification-gap AC1 subprocess chain — carried; same as AC1 defer.
+  - `[medium]` `[defer]` Verification-gap AC5 chain test — carried; same as idempotence defer.
+
 ## Auto Run Result
 
 - Summary: Fix turns now run `_reconcile_fix_turn_spec_surface` after `_commit_pre_verify_wip` and before re-verification, calling shared `_reconcile_spec_surface_drift` with turn-local paths, no push, and foreign drift non-fatal. Review fixed mixed own/foreign reconcile in `dispatch_land.py`.
@@ -133,7 +151,7 @@ Type / Effort / Deps: fix / S / S-85.4.
   - `dispatch_supervisor/__main__.py` — record pre-turn HEAD, reconcile helper, wire into fix-turn finalize.
   - `test_dispatch_supervisor_verify_fix.py` — Story 85.5 scenarios and tick-loop reconcile ordering.
   - `test_dispatch_landing.py` — `foreign_drift_refuses=False` with mixed drift.
-- Review: 2 patches applied (high foreign/own loop, medium event order); 3 deferred; 3 rejected false/low; follow-up recommended for AC1 real-git gap.
-- Verification: `pyforge-marshal-test` 11580 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.
-- Residual risk: in-flight intents without `worktree_head_before_turn`; stub-heavy tests vs real memlog/stamp chain.
-- Follow-up: real-git fixture for AC1 surface-guard proof after reconcile commit.
+- Review: first pass 2 patches (foreign/own loop, tick-loop reconcile ordering); follow-up pass 0 patches (converged; defers carried).
+- Verification (follow-up): `pyforge-marshal-test` 11642 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 (no drift on branch).
+- Residual risk: in-flight intents without `worktree_head_before_turn`; stub-heavy tests vs real memlog/stamp chain (see frontmatter `deferred`).
+- Follow-up review recommendation: false (follow-up pass complete; no new high/medium patches).
