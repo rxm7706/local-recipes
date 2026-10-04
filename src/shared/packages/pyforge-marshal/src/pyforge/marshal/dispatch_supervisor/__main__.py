@@ -1259,7 +1259,7 @@ def _maybe_run_verify_fix_turn(
             code=FIX_TURN_REVERIFY_REFUSED_CODE,
             severity=Severity.ERROR,
             message=(
-                f"verification still refused after one fix turn" + (f" ({failed_command!r})" if failed_command else "")
+                "verification still refused after one fix turn" + (f" ({failed_command!r})" if failed_command else "")
             ),
         )
         reverify_entry = build_entry(

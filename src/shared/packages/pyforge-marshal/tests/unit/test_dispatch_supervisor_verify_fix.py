@@ -456,7 +456,7 @@ def test_supervisor_restart_resumes_a_pending_fix_turn_without_launching_again(
     _seed_flag(repo_root, on=True)
     worktree = loop._worktree(repo_root)
     loop._seed_spec(repo_root, worktree, primary=loop._READY_SPEC_TEXT)
-    run_dir = loop._run_dir(repo_root)
+    loop._run_dir(repo_root)
     ver_intent, ver_outcome = _journaled_refusal_with_failed_commands()
     fix_intent = build_entry(
         id=JournalEntryId("dispatch-supervisor-1", 10),
