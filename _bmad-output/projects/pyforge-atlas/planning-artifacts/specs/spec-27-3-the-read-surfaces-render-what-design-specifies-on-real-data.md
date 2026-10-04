@@ -93,3 +93,5 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 ## Review Triage Log
 
 - No review has run yet.
+
+- 2026-10-04, landing regression (hotfix): Story 27.3's `dashboard/scan_submit.py` shelled `env-inspect` through `-e local-recipes`. Steward's `test_no_station_assumes_local_recipes.py` refuses that, because only `pyforge-guild` exists at runtime (spec-pyforge-steward CAP-152). The PR's CI never ran `steward-test`, since 27.3 touched no steward path, so the violation reached main. Atlas 27.4's PR surfaced it. Fixed: `env-inspect` runs `.claude/scripts/conda-forge-expert/env_inspect.py` in `pyforge-guild`, which needs nothing the guild env lacks. The test `test_env_inspect_runs_in_the_guild_env_never_local_recipes` pins it.
