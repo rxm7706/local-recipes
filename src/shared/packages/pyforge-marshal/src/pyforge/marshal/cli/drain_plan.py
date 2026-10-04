@@ -593,10 +593,17 @@ def _plan_station(
     elif queue is not None and head is None:
         payload["outcome"] = queue.outcome.value
     elif cycle.live_stories:
-        payload.update(
-            outcome="in-flight",
-            detail=f"wave in flight: {', '.join(cycle.live_stories)} (waiting for terminal outcomes before next batch)",
-        )
+        if cycle.parallel_cap <= 1:
+            detail = (
+                f"dispatch in flight: {', '.join(cycle.live_stories)} "
+                "(waiting for terminal outcome before next launch)"
+            )
+        else:
+            detail = (
+                f"wave in flight: {', '.join(cycle.live_stories)} "
+                "(waiting for terminal outcomes before next batch)"
+            )
+        payload.update(outcome="in-flight", detail=detail)
     else:
         targets = cycle.stories_to_dispatch
         payload["outcome"] = "dispatch" if targets else "held"

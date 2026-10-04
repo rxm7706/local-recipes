@@ -4801,6 +4801,16 @@ def plan_station_cycle(
     )
     base = replace(base, parallel_cap=parallel_cap)
     if parallel_cap <= 1:
+        live_stories = _live_dispatch_story_keys(
+            fs=fs,
+            vcs=vcs,
+            process=process,
+            repo_root=repo_root,
+            slug=slug,
+            effective_policy=effective_policy,
+        )
+        if live_stories:
+            return replace(base, live_stories=live_stories)
         return replace(base, stories_to_dispatch=(queue.next_story,))
 
     live_stories = _live_dispatch_story_keys(

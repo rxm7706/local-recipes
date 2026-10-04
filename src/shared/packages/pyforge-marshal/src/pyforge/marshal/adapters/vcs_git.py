@@ -70,6 +70,7 @@ path, conflict or CAS failure included."""
 
 from __future__ import annotations
 
+import logging
 import re
 import shutil
 import subprocess
@@ -84,6 +85,15 @@ from ..core.egress import Redacted
 from ..core.refs import ORIGIN_MAIN, local_branch_ref, remote_tracking_ref
 from ..ports.commit import VcsRef
 from ..ports.vcs import WorktreeEntry
+
+_LOGGER = logging.getLogger(__name__)
+_COMMIT_PATHS_ONTO_REMOTE_TIP_MAX_ATTEMPTS = 3
+
+
+def _publish_rejection_is_non_fast_forward(exc: VcsCommandError) -> bool:
+    """True when a publish failed because ``origin/main`` moved after fetch (Story 86.4, CAP-277)."""
+    message = str(exc).lower()
+    return "non-fast-forward" in message or "not a descendant" in message
 
 
 class VcsCommandError(PyforgeError, Exception):
@@ -1535,7 +1545,10 @@ class GitVcs:
 
         Story 82.9 (AD-34): ``message`` and ``preflight_skip_reason`` are ``Redacted`` and
         ``remote``/``ref`` are ``VcsRef``; a bare ``str`` for any of them raises ``TypeError``
-        before any git invocation."""
+        before any git invocation.
+
+        Story 86.4 (CAP-277): when fetch/build/push loses a race to a concurrent publish on
+        ``origin/main``, retry up to three times (re-fetch, rebuild, re-push) before raising."""
         remote_name = _require_vcs_ref(remote, "remote")
         ref_name = _require_vcs_ref(ref, "ref")
         checked_message = _require_redacted(message, "message")
@@ -1557,6 +1570,40 @@ class GitVcs:
                     "refusing the preflight opt-out: written path(s) "
                     f"{outside!r} are not normalized _bmad-output/projects/<slug>/planning-artifacts/ paths"
                 )
+        last_error: VcsCommandError | None = None
+        for attempt in range(1, _COMMIT_PATHS_ONTO_REMOTE_TIP_MAX_ATTEMPTS + 1):
+            try:
+                return self._commit_paths_onto_remote_tip_once(
+                    repo_root,
+                    remote_name=remote_name,
+                    ref_name=ref_name,
+                    writes=writes,
+                    checked_message=checked_message,
+                    skip_reason=skip_reason,
+                )
+            except VcsCommandError as exc:
+                last_error = exc
+                if not _publish_rejection_is_non_fast_forward(exc) or attempt >= _COMMIT_PATHS_ONTO_REMOTE_TIP_MAX_ATTEMPTS:
+                    raise
+                _LOGGER.info(
+                    "commit_paths_onto_remote_tip non-fast-forward on attempt %s/%s: %s",
+                    attempt,
+                    _COMMIT_PATHS_ONTO_REMOTE_TIP_MAX_ATTEMPTS,
+                    exc,
+                )
+        assert last_error is not None
+        raise last_error
+
+    def _commit_paths_onto_remote_tip_once(
+        self,
+        repo_root: Path,
+        *,
+        remote_name: str,
+        ref_name: str,
+        writes: tuple[tuple[str, str], ...],
+        checked_message: Redacted,
+        skip_reason: str | None,
+    ) -> str:
         self.fetch(repo_root, remote_name, ref_name)
         tip_ref = f"{remote_tracking_ref(ref_name, remote_name)}^{{commit}}"
         tip_result = _run(["git", "-C", str(repo_root), "rev-parse", "--verify", "--end-of-options", tip_ref])

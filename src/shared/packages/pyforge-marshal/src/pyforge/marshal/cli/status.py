@@ -2133,6 +2133,17 @@ def run_status(
         # three run dirs).
         for entry in row.get("failed_patches") or ():
             if entry.get("done") is False:
+                # Story 86.4 (DW-FU-4-14-8): a patch for the story this row is
+                # actively re-driving is expected -- skip the per-patch WARN,
+                # keep the patch listed on the row.
+                patch_key = entry.get("story_key")
+                current = row.get("current_story")
+                if (
+                    patch_key is not None
+                    and current is not None
+                    and str(patch_key) == str(current)
+                ):
+                    continue
                 home_findings.append(
                     (
                         slug,
