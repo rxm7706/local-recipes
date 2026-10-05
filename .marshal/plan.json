@@ -1,8 +1,8 @@
 {
   "actions": [],
   "repo_fingerprint": {
-    "git_head": "410e342164c901b24e677cab332eeacd86127d80",
-    "dirty": true,
+    "git_head": "0c49eba525fabfb18a483016cf2e98febdcaa657",
+    "dirty": false,
     "artifact_hashes": [],
     "repo_root": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-marshal-86.2",
     "git_common_dir": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.git"
