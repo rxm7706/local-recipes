@@ -2,9 +2,8 @@
 title: "86.2: local-recipes is genesis-adopted so the seed-adopt oracle goes green"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'blocked'
 baseline_revision: '835894524e63ee69428972aeb5f28fa00d762edc'
-review_loop_iteration: 0
 followup_review_recommended: false
 review_loop_iteration: 1
 context:
@@ -66,6 +65,38 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
 ## Review Triage Log
+
+### 2026-10-05 — Independent review of the send-back (HEAD 148cdbd272): SEND BACK; operator ruling: PARKED
+
+CI went green after the send-back fixes (`marshal-local-recipes-seed-oracle`, `scribe-test`). The independent review against this spec still found five HIGH defects:
+
+1. **AGENTS.md:215-227, 275-293, 314-329.** The seed's inserted regions copy AGENTS.md's own sections and contradict them. Region :292 calls the Dream → spec handoff "Herald's" job, where :311 says "Marshal's". Region :218 allows the spec "via bmad-spec or the planning chain", where :233-234 say the chain "is not a substitute". Two numbered lists now restart under one heading. `seed update` would regenerate the regions, so hand edits cannot fix this.
+2. **CLAUDE.md:50-65 and 70-132.** These copy AGENTS.md § The tiers and restore the 60-line Multi-Project text that Story 21.1 moved out. :97 drops AGENTS.md's ban on `bmad-switch` from a worktree. The scribe parity test compares headings only, so it stays green.
+3. **Execute bits lost.** `scripts/bmad-switch` and `scripts/bmad-loop-worktree` went from 100755 to 100644 in wip commit 37b4bea948.
+4. **AD-57 broken for every adopting repo.** `.marshal/plan.json` is now tracked, and `model-ignores.gitignore.j2` no longer ignores it, against marshal ARCHITECTURE-SPINE.md:1056-1065. The guard at `test_seed_state_store.py:1417` was flipped to match. A dry-run adopt leaves the file modified, and it holds a local absolute path.
+5. **First-claims edited by hand.** The three per-tool files were first-claimed by hand-editing `body_sha` in `.marshal/seed-state.yml`. A `seed update` dry-run in a fresh clone plans 18 actions, including regenerating them.
+
+MEDIUM findings:
+- `adopt.py:870-880` records a repo's own content as tool-written, which affects other adopting repos.
+- No test covers the new behaviour, against the Always boundary.
+- `update.py` still writes `{{ slug }}` literally.
+- `_bmad-output/PROJECTS.md` gains a duplicate Projects table.
+
+LOW findings:
+- The `.gitignore` region duplicates rules that already exist.
+- The `verified:` line for DW-FU-12-2 cites line 1 of three files.
+- The oracle hardcodes `in_loop_home=False`.
+
+**Root cause.** This repo's AGENTS.md, CLAUDE.md and PROJECTS.md already carry the content the seed's hybrid regions insert. A bootstrap adopt that inserts the regions therefore duplicates them, against `spec-pyforge-scribe` CAP-27 (point, don't copy). The Phase 3 ruling assumed the markers could land without that.
+
+**Operator ruling, 2026-10-05: park 86.2.** Marshal's Phases 1–3 close without it. DW-FU-12-2 (high) stays open with this review on record. The options left for a later decision:
+- record the hybrid regions as explicit seed skips;
+- change the templates to wrap the existing text instead of inserting copies;
+- leave it parked.
+
+PR #1872 is closed unmerged so that the station's other stories can dispatch; MRS-DISP-034 treats an open PR with a refused landing as in flight. The branch is kept as it is.
+
+Blocking condition: the operator's decision on how this repo genesis-adopts (above). Do not re-dispatch until it is made.
 
 ### 2026-10-05 — Landing refused: CI red on PR #1872 (operator session); SEND BACK
 
