@@ -135,6 +135,7 @@ from stat import S_ISDIR, S_ISLNK
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..detect.hashes import check_managed_file, check_managed_region
+from ..detect.inventory import _WRITABLE_EXEMPTION_IDS
 from ..errors import PreconditionFailure
 from ..fs import NeverWrite, never_write_match
 from ..plan.types import Action, Plan
@@ -693,6 +694,8 @@ def check_preconditions(
                 ),
             ) from exc
         if S_ISLNK(mode):
+            if action.artifact_id in _WRITABLE_EXEMPTION_IDS:
+                continue
             raise PreconditionFailure(
                 f"symlink-target: action {action.artifact_id!r} targets"
                 f" {action.target_path!r} (resolved: {relative!r}), which is a symlink"

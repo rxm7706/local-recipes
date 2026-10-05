@@ -1,0 +1,258 @@
+{
+  "actions": [
+    {
+      "artifact_id": "agents-md",
+      "artifact_class": "hybrid-managed-region",
+      "current_state": "present-divergent",
+      "target_state": "present-conformant",
+      "target_path": "AGENTS.md",
+      "chosen_anchor": [
+        [
+          "tiers",
+          "## The tiers"
+        ],
+        [
+          "portability-contract",
+          "## Portability contract"
+        ],
+        [
+          "dream-first-workflow",
+          "## Dream-first workflow"
+        ]
+      ],
+      "rationale": "'AGENTS.md' is present but missing one or more declared managed regions; insert them at their resolved anchors"
+    },
+    {
+      "artifact_id": "bmad-loop-worktree",
+      "artifact_class": "copied-managed",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": "scripts/bmad-loop-worktree",
+      "chosen_anchor": [],
+      "rationale": "'scripts/bmad-loop-worktree' already exists but is not yet a tool-owned copied-managed artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "bmad-switch",
+      "artifact_class": "copied-managed",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": "scripts/bmad-switch",
+      "chosen_anchor": [],
+      "rationale": "'scripts/bmad-switch' already exists but is not yet a tool-owned copied-managed artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "claude-md",
+      "artifact_class": "hybrid-managed-region",
+      "current_state": "present-divergent",
+      "target_state": "present-conformant",
+      "target_path": "CLAUDE.md",
+      "chosen_anchor": [
+        [
+          "tiers",
+          "### Spec-driven, framework-neutral layout"
+        ],
+        [
+          "bmad-multiproject",
+          "### Multi-Project Pattern"
+        ]
+      ],
+      "rationale": "'CLAUDE.md' is present but missing one or more declared managed regions; insert them at their resolved anchors"
+    },
+    {
+      "artifact_id": "claude-skills",
+      "artifact_class": "unclassified-deferred",
+      "current_state": "absent",
+      "target_state": "present-conformant",
+      "target_path": ".claude/skills/**",
+      "chosen_anchor": [],
+      "rationale": "'.claude/skills/**' is absent; materialize it as unclassified-deferred"
+    },
+    {
+      "artifact_id": "copilot-instructions",
+      "artifact_class": "generated-derived",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": ".github/copilot-instructions.md",
+      "chosen_anchor": [],
+      "rationale": "'.github/copilot-instructions.md' already exists but is not yet a tool-owned generated-derived artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "cursor-rules",
+      "artifact_class": "generated-derived",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": ".cursor/rules/specs.mdc",
+      "chosen_anchor": [],
+      "rationale": "'.cursor/rules/specs.mdc' already exists but is not yet a tool-owned generated-derived artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "detector-registry",
+      "artifact_class": "copied-managed",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": "scripts/detectors.py",
+      "chosen_anchor": [],
+      "rationale": "'scripts/detectors.py' already exists but is not yet a tool-owned copied-managed artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "detectors-ci-workflow",
+      "artifact_class": "copied-managed",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": ".github/workflows/detectors.yml",
+      "chosen_anchor": [],
+      "rationale": "'.github/workflows/detectors.yml' already exists but is not yet a tool-owned copied-managed artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "dreams-readme",
+      "artifact_class": "copied-managed",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": "docs/dreams/README.md",
+      "chosen_anchor": [],
+      "rationale": "'docs/dreams/README.md' already exists but is not yet a tool-owned copied-managed artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "gemini-md",
+      "artifact_class": "generated-derived",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": "GEMINI.md",
+      "chosen_anchor": [],
+      "rationale": "'GEMINI.md' already exists but is not yet a tool-owned generated-derived artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "gitignore",
+      "artifact_class": "hybrid-managed-region",
+      "current_state": "present-divergent",
+      "target_state": "present-conformant",
+      "target_path": ".gitignore",
+      "chosen_anchor": [
+        [
+          "model-ignores",
+          "<top>"
+        ]
+      ],
+      "rationale": "'.gitignore' is present but missing one or more declared managed regions; insert them at their resolved anchors"
+    },
+    {
+      "artifact_id": "implementation-artifacts-symlink",
+      "artifact_class": "generated-derived",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": "_bmad-output/implementation-artifacts",
+      "chosen_anchor": [],
+      "rationale": "'_bmad-output/implementation-artifacts' already exists but is not yet a tool-owned generated-derived artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "planning-artifacts-symlink",
+      "artifact_class": "generated-derived",
+      "current_state": "present-conformant",
+      "target_state": "present-conformant",
+      "target_path": "_bmad-output/planning-artifacts",
+      "chosen_anchor": [],
+      "rationale": "'_bmad-output/planning-artifacts' already exists but is not yet a tool-owned generated-derived artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+    },
+    {
+      "artifact_id": "projects-index",
+      "artifact_class": "hybrid-managed-region",
+      "current_state": "present-divergent",
+      "target_state": "present-conformant",
+      "target_path": "_bmad-output/PROJECTS.md",
+      "chosen_anchor": [
+        [
+          "projects-table",
+          "## Projects"
+        ]
+      ],
+      "rationale": "'_bmad-output/PROJECTS.md' is present but missing one or more declared managed regions; insert them at their resolved anchors"
+    },
+    {
+      "artifact_id": "readme-badge",
+      "artifact_class": "hybrid-managed-region",
+      "current_state": "present-divergent",
+      "target_state": "present-conformant",
+      "target_path": "README.md",
+      "chosen_anchor": [
+        [
+          "model-badge",
+          "<top>"
+        ]
+      ],
+      "rationale": "'README.md' is present but missing one or more declared managed regions; insert them at their resolved anchors"
+    }
+  ],
+  "repo_fingerprint": {
+    "git_head": "8b1dfde4d695a969128062d0d3dc625073b0c83c",
+    "dirty": true,
+    "artifact_hashes": [
+      [
+        "agents-md",
+        "38897d5b"
+      ],
+      [
+        "bmad-loop-worktree",
+        "ea241146"
+      ],
+      [
+        "bmad-switch",
+        "13b0ddb7"
+      ],
+      [
+        "claude-md",
+        "fdae80a7"
+      ],
+      [
+        "claude-skills",
+        "e3b0c442"
+      ],
+      [
+        "copilot-instructions",
+        "bbfd5ebc"
+      ],
+      [
+        "cursor-rules",
+        "97989aad"
+      ],
+      [
+        "detector-registry",
+        "f73c0e19"
+      ],
+      [
+        "detectors-ci-workflow",
+        "80fc48bd"
+      ],
+      [
+        "dreams-readme",
+        "e32c692d"
+      ],
+      [
+        "gemini-md",
+        "05141171"
+      ],
+      [
+        "gitignore",
+        "f2e70b3e"
+      ],
+      [
+        "implementation-artifacts-symlink",
+        "e3b0c442"
+      ],
+      [
+        "planning-artifacts-symlink",
+        "e3b0c442"
+      ],
+      [
+        "projects-index",
+        "86732684"
+      ],
+      [
+        "readme-badge",
+        "0697cf8c"
+      ]
+    ],
+    "repo_root": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-marshal-86.2",
+    "git_common_dir": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.git"
+  },
+  "skipped": []
+}
