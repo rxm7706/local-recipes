@@ -758,6 +758,9 @@ pixi run -e local-recipes generate-failure-catalog -- --check
 # Offline / fast subset
 pixi run -e local-recipes test
 
+# CI-parity regression suite (spec-surface + CFE meta/unit gates)
+pixi run -e local-recipes test-ci
+
 # Full suite incl. live-network tests
 pixi run -e local-recipes test-all
 

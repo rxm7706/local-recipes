@@ -8,11 +8,13 @@
 # knowledge sections, caller inventory) behind its one-line summary — `slice_map` / `spec`
 # below are exactly those pointers, followed only when the summary here isn't enough.
 #
-# HOW TO RESUME: read `campaign.current_focus`, find that slice under `slices:`, read its
-# `next_action`. That is the whole resume protocol.
+# HOW TO RESUME (2026-10-04): the CFE-rebuild campaign closed in Story 15.1 — this file
+# is historical slice status only; every slice's `next_action` is history, not an active
+# work order. Do not resume via `campaign.current_focus`; use the station epics and
+# deferred-work ledger for live mason/CFE work.
 
 schema_version: 1
-last_updated: "2026-09-11"
+last_updated: "2026-10-04"
 
 spec:
   path: "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
@@ -494,13 +496,15 @@ campaign:
       campaign-state.yaml, the guard detector, the re-scope gates, and the
       endgame/cutover. Atlas owns the Slice-3 (atlas-intelligence) tier: when slices 3-5
       decompose after Story 12.8's checkpoint, Slice 3's brief is authored on and its
-      stories carried by the pyforge-atlas chain, with its Rule-2 retro and equivalence
-      sign-off owned by atlas. Rationale (operator, after full briefing): atlas is the
-      tier's station of competence -- it already rebuilt the cf_atlas orchestrator as the
-      live Kedro/DuckDB estate and owns the CAP-19 query plane this tier's data feeds --
+      stories carried by [reading: brief is authored by atlas and its stories are carried by]
+      the pyforge-atlas chain, with its Rule-2 retro and equivalence sign-off owned by
+      atlas. Rationale (operator, after full briefing): atlas is the tier's station of
+      competence -- it already rebuilt the cf_atlas orchestrator as the live Kedro/DuckDB
+      estate and owns the spec-pyforge-steward CAP-19 query plane this tier's data feeds --
       so atlas ownership forces the legacy-vs-Kedro convergence question into the right
-      hands instead of risking a parallel rebuild of the legacy tier. Precedent: CAP-19's
-      "atlas owns the engine, steward owns the through-line" split, and Phase-T trending
+      hands instead of risking a parallel rebuild of the legacy tier. Precedent:
+      spec-pyforge-steward CAP-19's "atlas owns the engine, steward owns the through-line"
+      split, and Phase-T trending
       landing as atlas Epic 13 despite its mason handoff. Slices 1, 2, 4, and 5 remain
       mason-owned under this ruling -- only the Slice-3 tier moves; slice 2 (order 2,
       Recipe Lifecycle) briefing ownership is therefore unaffected by this decision.

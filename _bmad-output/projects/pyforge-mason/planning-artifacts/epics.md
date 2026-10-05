@@ -1360,6 +1360,15 @@ retrospective (Story 5.5, Rule 2), not by an unrelated effort. The live `python_
 only when conda-forge bumps the floor. Both caveats are why this record is provisional:
 `DW-5-4-1` re-confirms at the next organic CFE MINOR (one produced outside Mason's own chain).
 
+**SM-4 re-verified — CFE v8.91.7, 2026-10-04** (Story 27.2 closes `DW-5-4-1`). Organic CFE
+MINOR/PATCH chain since v8.82.0 includes doctor Story 41.x test-only bumps and mason Story
+27.2's v8.91.6–8.91.7 surface work — all outside `src/shared/packages/pyforge-mason/`.
+Re-ran `pixi run --frozen -e pyforge-mason pyforge mason recipe optimize recipes/ironcalc
+--format json` → `status: ok`, `suggestions_found: 0` (inherits `_paths.get_repo_root()` floor
+read and v8.82.x host-gating with no Mason diff). Same command on `recipes/channels` still
+surfaces STD-002 for the co-located legacy `meta.yaml`, confirming the verb still reads live
+CFE optimizer output without a Mason code change.
+
 ### Story 5.5: Rule-2 conda-forge-expert retrospective
 
 As the **repository owner**,

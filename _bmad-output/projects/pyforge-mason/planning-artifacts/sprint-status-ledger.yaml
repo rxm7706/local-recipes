@@ -79,7 +79,7 @@ development_status:
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: backlog
   26-1-cfe-s-tests-never-ask-github-whether-a-recipe-maintainer-exists: done
   27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals: done
-  27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals: backlog
+  27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals: done
   3-1-engine-protocol-and-provisioning: done
   3-2-mason-package-build: done
   3-3-ship-target-vocabulary-and-dry-run-default: done
@@ -145,7 +145,7 @@ development_status:
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional
-  epic-27: in-progress
+  epic-27: done
   epic-27-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional

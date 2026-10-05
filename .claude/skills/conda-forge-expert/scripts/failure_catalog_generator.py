@@ -71,6 +71,20 @@ _BLANK_LINE_RE = re.compile(r"\n[ \t]*\n")
 _FENCE_RE = re.compile(r"\s*```[^\n]*\n(.*?)```", re.DOTALL)
 
 MAX_SIGNATURE_TOKENS = 8
+# Tokens appearing in more than this many gotcha rows are too generic to diagnose.
+MAX_TOKEN_ROW_OCCURRENCES = 8
+CATALOG_SCHEMA_VERSION = 1
+
+# Ordinary English / diagnostic-poor tokens (not literal error strings).
+_SIGNATURE_STOPWORDS = frozenset({
+    "fails", "fail", "failed", "work", "works", "broken", "wrong", "error",
+    "missing", "bad", "issue", "problem", "something", "anything",
+})
+
+_NEAR_ENFORCED_BY_RE = re.compile(
+    r"The optimizer'?s\s+(?:\*\*)?([A-Z]+-[0-9]+)(?:\*\*)?\s+checks\b",
+    re.IGNORECASE,
+)
 
 CATALOG_HEADER = (
     "# GENERATED FILE — DO NOT HAND-EDIT.\n"
@@ -159,6 +173,47 @@ def extract_optimizer_registry(optimizer_source: str) -> set[str]:
     return set(_REGISTRY_CODE_RE.findall(optimizer_source))
 
 
+def warn_enforced_by_near_miss(body: str, gotcha_id: str) -> None:
+    """stderr hint when prose almost claims optimizer enforcement but misses
+    the exact declarative phrase (Story 27.2 / DW-7-1-3)."""
+    if _ENFORCED_BY_RE.search(body):
+        return
+    m = _NEAR_ENFORCED_BY_RE.search(body)
+    if m:
+        print(
+            f"failure_catalog_generator: {gotcha_id}: near-miss enforced-by "
+            f"phrase for {m.group(1)!r} (expected "
+            "\"The optimizer's **CODE** check\")",
+            file=sys.stderr,
+        )
+
+
+def _token_is_whole_sentence(value: str) -> bool:
+    """A pulled quote that is really an entire reviewer sentence, not a grep
+    target."""
+    if len(value) >= 80:
+        return True
+    if ". " in value or value.endswith("."):
+        words = value.split()
+        return len(words) >= 12
+    return False
+
+
+def _signature_token_allowed(
+    token: str,
+    *,
+    row_occurrence_counts: dict[str, int],
+) -> bool:
+    lowered = token.lower()
+    if lowered in _SIGNATURE_STOPWORDS:
+        return False
+    if _token_is_whole_sentence(token):
+        return False
+    if row_occurrence_counts.get(token, 0) > MAX_TOKEN_ROW_OCCURRENCES:
+        return False
+    return True
+
+
 def extract_enforced_by(body: str, registry: set[str]) -> str | None:
     """`.../recipe_optimizer.py:<CODE>` iff the body contains the exact
     declarative phrase exactly once (or repeated with the SAME code) and
@@ -205,11 +260,29 @@ def _symptom_paragraph(body: str) -> str | None:
     end = min(boundaries) if boundaries else len(rest)
     paragraph = rest[:end]
     tail = rest[end:]
-    if paragraph.strip().endswith(":"):
-        fence = _FENCE_RE.match(tail)
-        if fence:
-            paragraph = paragraph + "\n" + fence.group(1)
+    fence = _FENCE_RE.match(tail.lstrip("\n"))
+    if fence and (
+        paragraph.strip().endswith(":")
+        or not paragraph.strip()
+        or tail.lstrip("\n").startswith("```")
+    ):
+        paragraph = paragraph + "\n" + fence.group(1)
     return paragraph
+
+
+def _relaxed_signature_tokens(text: str) -> list[str]:
+    """Like ``_signature_tokens`` but drops only stopwords — used when
+    quality filtering would otherwise zero a row whose SKILL.md prose is
+    entirely one long quoted error string."""
+    tokens: list[str] = []
+    for m in _SIGNATURE_TOKEN_RE.finditer(text):
+        value = (m.group(1) if m.group(1) is not None else m.group(2)).strip()
+        if not value or value.lower() in _SIGNATURE_STOPWORDS or value in tokens:
+            continue
+        tokens.append(value)
+        if len(tokens) >= MAX_SIGNATURE_TOKENS:
+            break
+    return tokens
 
 
 def extract_symptom_signature(body: str) -> list[str]:
@@ -228,8 +301,51 @@ def extract_symptom_signature(body: str) -> list[str]:
 # --- catalog assembly ---------------------------------------------------
 
 
+def _filter_signatures(
+    raw_rows: list[tuple[int, str, list[str]]],
+) -> list[list[str]]:
+    """Drop stopwords, whole-sentence quotes, and tokens shared across too
+    many rows; preserve order and MAX_SIGNATURE_TOKENS cap per row."""
+    counts: dict[str, int] = {}
+    for _, _, tokens in raw_rows:
+        seen: set[str] = set()
+        for tok in tokens:
+            if tok in seen:
+                continue
+            seen.add(tok)
+            counts[tok] = counts.get(tok, 0) + 1
+
+    filtered: list[list[str]] = []
+    for _, _, tokens in raw_rows:
+        out: list[str] = []
+        for tok in tokens:
+            if not _signature_token_allowed(tok, row_occurrence_counts=counts):
+                continue
+            if tok in out:
+                continue
+            out.append(tok)
+            if len(out) >= MAX_SIGNATURE_TOKENS:
+                break
+        if not out:
+            # Relax the cross-row frequency cap so a row never ships empty
+            # once SKILL.md yields extractable spans.
+            for tok in tokens:
+                if tok.lower() in _SIGNATURE_STOPWORDS:
+                    continue
+                if _token_is_whole_sentence(tok):
+                    continue
+                if tok in out:
+                    continue
+                out.append(tok)
+                if len(out) >= MAX_SIGNATURE_TOKENS:
+                    break
+        filtered.append(out)
+    return filtered
+
+
 def build_catalog(skill_md_text: str, optimizer_source: str) -> dict[str, Any]:
-    """The full catalog dict: {"source_sha256": ..., "rows": [...]}.
+    """The full catalog dict: {"schema_version": 1, "source_sha256": ...,
+    "rows": [...]}.
 
     Raises CatalogError on an unparseable SKILL.md gotcha section.
     """
@@ -237,15 +353,29 @@ def build_catalog(skill_md_text: str, optimizer_source: str) -> dict[str, Any]:
     entries = split_gotcha_entries(section_text)
     registry = extract_optimizer_registry(optimizer_source)
 
-    rows = []
+    raw_rows: list[tuple[int, str, list[str]]] = []
     for number, title, body in entries:
-        signature = extract_symptom_signature(body)
+        gotcha_id = f"G{number}"
+        warn_enforced_by_near_miss(body, gotcha_id)
+        raw_rows.append((number, title, extract_symptom_signature(body)))
+
+    signatures = _filter_signatures(raw_rows)
+    rows = []
+    for (number, title, _raw), signature in zip(raw_rows, signatures, strict=True):
+        body = next(b for n, _, b in entries if n == number)
+        if not signature:
+            signature = _relaxed_signature_tokens(body)
         if not signature:
             raise CatalogError(
-                f"G{number}: extracted zero symptom_signature tokens — "
-                "SKILL.md body may need a quoted/backtick span for grep "
-                "matching."
+                f"G{number}: extracted zero symptom_signature tokens after "
+                "quality filtering — SKILL.md body may need a more specific "
+                "quoted/backtick span for grep matching."
             )
+        if len(signature) == 1 and _token_is_whole_sentence(signature[0]):
+            extra = _relaxed_signature_tokens(body)
+            signature = [t for t in extra if not _token_is_whole_sentence(t)]
+            if not signature:
+                signature = extra[:MAX_SIGNATURE_TOKENS]
         rows.append({
             "id": f"G{number}",
             "title": title,
@@ -254,7 +384,11 @@ def build_catalog(skill_md_text: str, optimizer_source: str) -> dict[str, Any]:
         })
 
     source_sha256 = hashlib.sha256(section_text.encode("utf-8")).hexdigest()
-    return {"source_sha256": source_sha256, "rows": rows}
+    return {
+        "schema_version": CATALOG_SCHEMA_VERSION,
+        "source_sha256": source_sha256,
+        "rows": rows,
+    }
 
 
 def _make_yaml() -> YAML:
@@ -276,6 +410,7 @@ def render_catalog(catalog: dict[str, Any]) -> str:
     ordering — so byte-identical input always yields byte-identical output.
     """
     doc: dict[str, Any] = {
+        "schema_version": catalog["schema_version"],
         "source_sha256": DQ(catalog["source_sha256"]),
         "rows": [
             {
@@ -313,30 +448,33 @@ def main(argv: list[str] | None = None) -> int:
     if repo_root is None:
         print("failure_catalog_generator: could not resolve the repo root "
               "(see _paths.get_repo_root)", file=sys.stderr)
-        return 1
+        return 2 if args.check else 1
 
     skill_md_path = repo_root / SKILL_MD_REL
     optimizer_path = repo_root / OPTIMIZER_REL
     output_path = repo_root / OUTPUT_REL
+
+    def _gen_failure_code() -> int:
+        return 2 if args.check else 1
 
     try:
         skill_md_text = skill_md_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         print(f"failure_catalog_generator: cannot read {skill_md_path}: {exc}",
               file=sys.stderr)
-        return 1
+        return _gen_failure_code()
     try:
         optimizer_source = optimizer_path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
         print(f"failure_catalog_generator: cannot read {optimizer_path}: {exc}",
               file=sys.stderr)
-        return 1
+        return _gen_failure_code()
 
     try:
         catalog = build_catalog(skill_md_text, optimizer_source)
     except CatalogError as exc:
         print(f"failure_catalog_generator: {exc}", file=sys.stderr)
-        return 1
+        return _gen_failure_code()
 
     rendered = render_catalog(catalog)
 
@@ -345,13 +483,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"failure_catalog_generator --check: {output_path} does "
                   "not exist yet — run without --check to create it.",
                   file=sys.stderr)
-            return 1
+            return 2
         try:
             on_disk = output_path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError) as exc:
             print(f"failure_catalog_generator: cannot read {output_path}: {exc}",
                   file=sys.stderr)
-            return 1
+            return 2
         if on_disk == rendered:
             print(f"failure_catalog_generator --check: {output_path.name} "
                   f"is in sync with SKILL.md ({len(catalog['rows'])} rows).")
@@ -373,7 +511,7 @@ def main(argv: list[str] | None = None) -> int:
     except OSError as exc:
         print(f"failure_catalog_generator: cannot write {output_path}: {exc}",
               file=sys.stderr)
-        return 1
+        return _gen_failure_code()
     print(f"failure_catalog_generator: wrote {output_path} "
           f"({len(catalog['rows'])} rows).")
     return 0
