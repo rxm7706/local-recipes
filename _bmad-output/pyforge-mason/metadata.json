@@ -43,8 +43,8 @@
     {
       "url": "src/shared/packages/pyforge-mason/README.md",
       "detected_via": "readme_always",
-      "content_hash": null,
-      "recorded_at": "2026-10-05T17:19:19Z"
+      "content_hash": "sha256:52ac2db1edac9f8ce0d8258b4885917ef0c54692b52f157329c8e6e4d129ff5f",
+      "recorded_at": "2026-10-05T17:21:00Z"
     }
   ],
   "generated_by": "create-skill",
@@ -53,5 +53,6 @@
     "pyforge-core",
     "PyYAML"
   ],
-  "compatibility": "N/A -- internal station CLI, not a published library"
+  "compatibility": "N/A -- internal station CLI, not a published library",
+  "validation_status": "manual-only"
 }
