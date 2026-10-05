@@ -99,9 +99,13 @@ async function walkDocs(root: string, store: { set: (entry: { id: string; data: 
       body = extracted.rest;
     }
     const id = generateId(rel);
+    const entryData: Record<string, unknown> = { ...data, title };
+    if (!Array.isArray(entryData.head)) {
+      entryData.head = [];
+    }
     store.set({
       id,
-      data: { ...data, title },
+      data: entryData,
       body,
     });
   }

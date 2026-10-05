@@ -20,22 +20,29 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'PyForge documentation',
+      defaultLocale: 'root',
+      locales: {
+        root: {
+          label: 'English',
+          lang: 'en',
+        },
+      },
       sidebar: [
         {
           label: 'Tutorials',
-          autogenerate: { directory: 'tutorials' },
+          items: [{ autogenerate: { directory: 'tutorials' } }],
         },
         {
           label: 'How-to',
-          autogenerate: { directory: 'how-to' },
+          items: [{ autogenerate: { directory: 'how-to' } }],
         },
         {
           label: 'Reference',
-          autogenerate: { directory: 'reference' },
+          items: [{ autogenerate: { directory: 'reference' } }],
         },
         {
           label: 'Explanation',
-          autogenerate: { directory: 'explanation' },
+          items: [{ autogenerate: { directory: 'explanation' } }],
         },
       ],
     }),
