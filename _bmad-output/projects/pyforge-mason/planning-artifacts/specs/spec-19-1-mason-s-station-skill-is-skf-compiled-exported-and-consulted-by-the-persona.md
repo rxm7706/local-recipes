@@ -2,7 +2,7 @@
 title: "19.1: Mason's station skill is SKF-compiled, exported and consulted by the persona"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
