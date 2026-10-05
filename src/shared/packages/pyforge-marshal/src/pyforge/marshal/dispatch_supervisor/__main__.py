@@ -234,6 +234,8 @@ def _commit_pre_verify_wip(
             remaining_commit = non_retro_commit_paths(vcs, worktree=worktree, repo_root=repo_root)
             if remaining_commit:
                 return committed, "the worktree still has uncommitted changes after the pre-verify WIP commit"
+            if not vcs.changed_files(repo_root, worktree, base="HEAD"):
+                return committed, "the worktree still has uncommitted changes after the pre-verify WIP commit"
     except VcsCommandError as exc:
         return committed, f"pre-verify WIP commit failed: {exc}"
     return committed, None

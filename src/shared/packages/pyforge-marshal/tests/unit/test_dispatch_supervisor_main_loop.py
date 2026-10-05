@@ -2013,6 +2013,9 @@ class _RealGitWorktreeVcs(FakeVcs):
     def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
         return self._git.changed_files(repo_root, worktree_path, base=base)
 
+    def status_porcelain_z_records(self, worktree_path: Path) -> tuple[tuple[str, str, str | None], ...]:
+        return self._git.status_porcelain_z_records(worktree_path)
+
     def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
         self.commits.append((repo_root, tuple(paths), message.text))
         return self._git.commit_paths(repo_root, paths, message)
