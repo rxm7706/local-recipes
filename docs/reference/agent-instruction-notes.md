@@ -128,10 +128,11 @@ Where each former `CLAUDE.md` section went; the full former text follows the tab
 ### SKF skills block (the line only `CLAUDE.md`'s copy carried)
 
 Story 23.1 (2026-09-26) points the SKF export at `AGENTS.md` only and removes the block from
-`CLAUDE.md`. Every other line of it is in `AGENTS.md`'s copy; this one was not, and its rule
-stands in `AGENTS.md` § *Policy* (never mint a `.claude/skills/pyforge-mason/` path):
-
-|Mason is the eighth PyForge Guild station but deliberately has no SKF skill — recipe work uses `conda-forge-expert` instead (see `AGENTS.md` governance-currency policy on never minting `.claude/skills/pyforge-mason/`).
+`CLAUDE.md`. The `AGENTS.md` SKF block lists eight station skills after mason Story 19.1
+(2026-09-28 operator ruling reversed the interim "no pyforge-mason skill" note; the dated
+`A-only` exception for `.claude/skills/pyforge-mason/` lives in `AGENTS.md` § Policy until
+cutover). Recipe semantics stay in hand-authored `conda-forge-expert`; `pyforge-mason` documents
+grammar and MCP only.
 
 ### Project Overview
 

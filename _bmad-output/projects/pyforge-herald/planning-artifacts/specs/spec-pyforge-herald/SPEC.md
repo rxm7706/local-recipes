@@ -35,6 +35,9 @@ surface:
   - src/shared/packages/pyforge-herald/
   - src/shared/packages/pyforge-herald/src/pyforge/herald/**
   - docsite/**
+  - docs-site/**
+  - docs/index.md
+  - docs/404.md
   - .github/workflows/dashboard.yml
   - docs/dashboard/index.html
 surface-drift-exclude:

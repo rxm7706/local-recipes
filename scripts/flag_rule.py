@@ -26,6 +26,7 @@ import json
 import os
 import re
 from collections.abc import Collection, Mapping, Sequence
+from datetime import date
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -34,6 +35,14 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ROSTER_REL = Path("docs/governance/guild-roster.json")
 BASELINE_REL = Path("docs/governance/flag-rule-baseline.json")
+TREE_REL = Path("src/platform/config/flags.json")
+OVERLAYS_REL = Path("src/platform/config/flag-overlays.json")
+
+ENVIRONMENTS = ("dev", "staging", "production")
+METADATA_FIELDS = ("owner", "story", "created", "on_everywhere", "cleanup_by")
+CLEANUP_DAYS = 90  # spec-feature-flag-governance Q4; steward Story 76.2
+_DISABLED_STATE = "DISABLED"
+_DATE_PATTERN = re.compile(r"[0-9]{4}-[0-9]{2}-[0-9]{2}")
 
 FLAG = "flag"
 EXEMPT = "exempt"
@@ -57,6 +66,14 @@ class RosterUnreadable(FlagRuleError):
 
 class BaselineUnreadable(FlagRuleError):
     """docs/governance/flag-rule-baseline.json is missing, not JSON, or has no `specs` list."""
+
+
+class TreeUnreadable(FlagRuleError):
+    """``src/platform/config/flags.json`` is missing, not JSON, or has no ``flags`` mapping."""
+
+
+class OverlaysUnreadable(FlagRuleError):
+    """``src/platform/config/flag-overlays.json`` is present but not JSON or not shaped by environment."""
 
 
 class Classification(NamedTuple):
@@ -250,3 +267,124 @@ def in_scope(spec: Mapping[str, Any] | str | os.PathLike[str], *, repo_root: Pat
     else:
         frontmatter, _ = _frontmatter(_absolute(spec, repo_root))
     return frontmatter is not None and str(frontmatter.get("type", "")).strip() == "feature"
+
+
+# --- the one tree (Stories 76.1 / 76.2; Story 34.3 reads through here, never a second reader) ---
+
+
+def load_flags(repo_root: Path | None = None) -> dict[str, Any]:
+    """The ``flags`` mapping of the one tree. Raises :class:`TreeUnreadable`."""
+    root = Path(repo_root) if repo_root is not None else REPO_ROOT
+    path = root / TREE_REL
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise TreeUnreadable(f"cannot read {TREE_REL.as_posix()}: {exc}") from exc
+    flags = data.get("flags") if isinstance(data, dict) else None
+    if not isinstance(flags, dict):
+        raise TreeUnreadable(f"{TREE_REL.as_posix()} carries no `flags` mapping")
+    return flags
+
+
+def load_overlays(repo_root: Path | None = None) -> dict[str, Any]:
+    """The overlay document when ``flag-overlays.json`` exists beside the tree, else ``{}``.
+
+    Raises :class:`OverlaysUnreadable` when the file is present but unusable (Story 34.3 matrix row).
+    """
+    root = Path(repo_root) if repo_root is not None else REPO_ROOT
+    path = root / OVERLAYS_REL
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise OverlaysUnreadable(f"cannot read {OVERLAYS_REL.as_posix()}: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise OverlaysUnreadable(f"{OVERLAYS_REL.as_posix()} is not an object keyed by environment")
+    for name, entries in payload.items():
+        if not isinstance(entries, dict):
+            raise OverlaysUnreadable(
+                f"{OVERLAYS_REL.as_posix()} overlay {name!r} is not an object mapping keys to variant names"
+            )
+    return payload
+
+
+def _is_disabled(entry: object) -> bool:
+    state = entry.get("state") if isinstance(entry, dict) else None
+    return isinstance(state, str) and state.upper() == _DISABLED_STATE
+
+
+def rendered_variant(
+    key: str, entry: Mapping[str, Any], overlays: Mapping[str, Any], environment: str
+) -> object:
+    """The variant name ``environment`` renders for ``key`` (steward 76.1 / ``pyforge.core.flags``)."""
+    named = overlays.get(environment)
+    if not _is_disabled(entry) and isinstance(named, dict) and key in named:
+        return named[key]
+    return entry.get("defaultVariant")
+
+
+def renders_on(key: str, entry: Mapping[str, Any], overlays: Mapping[str, Any], environment: str) -> bool:
+    """True when ``environment`` renders ``key`` as a boolean-true variant."""
+    variant = rendered_variant(key, entry, overlays, environment)
+    variants = entry.get("variants")
+    return isinstance(variant, str) and isinstance(variants, dict) and variants.get(variant) is True
+
+
+def parse_run_date(raw: str | None) -> date:
+    """Parse an injectable run date (``YYYY-MM-DD``); today when ``raw`` is None."""
+    if raw is None or not str(raw).strip():
+        return date.today()
+    text = str(raw).strip()
+    if not _DATE_PATTERN.fullmatch(text):
+        raise FlagRuleError(f"run date {text!r} is not YYYY-MM-DD")
+    try:
+        return date.fromisoformat(text)
+    except ValueError as exc:
+        raise FlagRuleError(f"run date {text!r} is not a valid calendar date") from exc
+
+
+def parse_metadata_date(value: str) -> date | None:
+    """``value`` as a date, or None for ``""``."""
+    if value == "":
+        return None
+    if _DATE_PATTERN.fullmatch(value):
+        try:
+            return date.fromisoformat(value)
+        except ValueError:
+            return None
+    return None
+
+
+def normalize_declared_default(value: Any) -> str:
+    """One comparable label for a spec ``flag.default`` entry (YAML may use ``off``/``on`` or booleans)."""
+    if value is True:
+        return "on"
+    if value is False:
+        return "off"
+    if isinstance(value, str):
+        return value.strip().lower()
+    return str(value)
+
+
+def declared_default_for_env(block: Mapping[str, Any], environment: str) -> str | None:
+    """The spec's declared default for ``environment``, or None when the block carries no mapping."""
+    default = block.get("default")
+    if not isinstance(default, Mapping):
+        return None
+    if environment not in default:
+        return None
+    return normalize_declared_default(default[environment])
+
+
+def tree_default_for_env(
+    key: str, entry: Mapping[str, Any], overlays: Mapping[str, Any], environment: str
+) -> str:
+    """The tree's effective default label for ``environment`` (variant name, lowercased when bool-like)."""
+    variant = rendered_variant(key, entry, overlays, environment)
+    if not isinstance(variant, str):
+        return str(variant)
+    variants = entry.get("variants")
+    if isinstance(variants, dict) and variant in variants and isinstance(variants[variant], bool):
+        return "on" if variants[variant] else "off"
+    return variant

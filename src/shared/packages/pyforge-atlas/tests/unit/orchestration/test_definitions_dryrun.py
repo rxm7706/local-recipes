@@ -58,7 +58,11 @@ def test_definitions_are_loadable(defs):
 
 def test_jobs_resolve(defs):
     names = {j.name for j in defs.jobs}
-    expected = {D.BOOTSTRAP_JOB_NAME, D.PHASE_P_JOB_NAME} | {job_name for job_name, *_ in D.SCHEDULED_JOBS}
+    expected = {
+        D.BOOTSTRAP_JOB_NAME,
+        D.PHASE_P_JOB_NAME,
+        D.DEPENDENCY_HISTORY_JOB_NAME,
+    } | {job_name for job_name, *_ in D.SCHEDULED_JOBS}
     assert expected <= names, f"missing jobs: {expected - names}"
     # each kedro op-job actually resolves into a graph of ops (not empty).
     for job in _kedro_jobs(defs):
@@ -255,7 +259,7 @@ def test_single_execution_plane_kedro_run_resource(defs):
 def test_sensors_enumerate_in_definitions(defs):
     """The G3 sensors are declared in ``defs`` (else they do nothing at all)."""
     sensor_names = {s.name for s in defs.sensors}
-    expected = {name for name, *_ in D.UPSTREAM_SENSORS}
+    expected = {name for name, *_ in D.UPSTREAM_SENSORS} | {D.FLEET_INVENTORY_SENSOR_NAME}
     assert expected <= sensor_names, f"missing sensors: {expected - sensor_names}"
 
 

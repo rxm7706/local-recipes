@@ -589,6 +589,16 @@ _SHIPPED_BOOLEANS = {
     "pyforge.three_surfaces": True,
     "pyforge.steward.ghe_fleet_credentials": False,
     "pyforge.steward.object_store_consumer": False,
+    "pyforge.atlas.dependency_history_sensor": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
+    "pyforge.warden.fix_target_resolution": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
     "pyforge.steward.sync_github_only_marker": {
         "dev": True,
         "staging": True,

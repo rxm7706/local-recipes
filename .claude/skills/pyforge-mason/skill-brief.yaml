@@ -1,0 +1,34 @@
+name: pyforge-mason
+version: 0.1.0
+target_version: 0.1.0
+source_type: source
+source_repo: src/shared/packages/pyforge-mason
+source_authority: internal
+language: python
+description: >
+  Mason station CLI for recipe, package, and environment crafts. Agents use
+  pyforge mason grammar rather than importing pyforge.mason internals. Recipe
+  work is consulted from conda-forge-expert; this skill documents grammar
+  only, never recipe knowledge.
+forge_tier: Quick
+created: '2026-10-05'
+created_by: skf-create-skill
+scope:
+  type: specific-modules
+  include:
+    - src/pyforge/mason/cli.py
+    - src/pyforge/mason/__init__.py
+    - README.md
+  exclude:
+    - tests/**
+    - '**/__pycache__/**'
+  notes: >
+    Story 19.1 compile for the mason station. Public contract is the mason CLI
+    (AD-1 recipe wraps CFE by subprocess). Persona + portal are out of scope.
+  rationale:
+    recommended: specific-modules
+    chosen: specific-modules
+    accepted_recommendation: true
+    heuristic: station-package-cli
+    reason: Package __init__ exports only __version__; CLI is the authoring surface.
+    recorded: '2026-10-05'
