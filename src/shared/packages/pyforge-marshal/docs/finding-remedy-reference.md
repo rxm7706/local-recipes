@@ -31,6 +31,7 @@ Severity ladder (AD-54, borrowed from `bmad_drift_check.py`):
 | `kit-instrument-unavailable` | INFO | Advisory -- install the named instrument (or accept the platform gap); the layer stays off and nothing is blocked. |
 | `target-escapes-repo` | HARD | Fix the manifest entry's path, or the in-repo symlink it resolves through, so it stays inside the repository; every other artifact is applied regardless. |
 | `slug-unresolved` | INFO | Pass `--project <slug>` (or set `BMAD_ACTIVE_PROJECT`, or the target's `_bmad/custom/.active-project` marker) so the entry is checked at the path it renders to. |
+| `artifact-skipped` | INFO | The artifact is absent but matches a skip recorded in `.marshal/seed-state.yml` -- remove the skip from state if it should be materialized, or run `marshal seed adopt` with `--skip` unchanged to leave it alone. |
 
 ## Related commands
 

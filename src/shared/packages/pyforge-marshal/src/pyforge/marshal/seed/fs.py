@@ -509,6 +509,27 @@ def replace_span(
     atomic_write_bytes(path, spliced)
 
 
+def ensure_directory(path: Path, *, repo_root: Path, never_write: NeverWrite) -> None:
+    """Create ``path`` as a directory, including parents, after the never-write guard clears.
+
+    Idempotent when the directory already exists. Raises ``NeverWriteViolation`` when the
+    guard refuses the path; propagates ``OSError`` from ``mkdir`` unchanged (Story 70.2)."""
+    _guard(path, repo_root=repo_root, never_write=never_write)
+    path.mkdir(parents=True, exist_ok=True)
+
+
+def remove_directory_tree(path: Path, *, repo_root: Path, never_write: NeverWrite) -> None:
+    """Remove ``path`` and everything beneath it, after the never-write guard clears.
+
+    Uses ``shutil.rmtree`` internally -- the one sanctioned place directory removal lives
+    (Story 70.2). Propagates errors unchanged when ``path`` is not a directory."""
+    import shutil
+
+    _guard(path, repo_root=repo_root, never_write=never_write)
+    if path.is_dir():
+        shutil.rmtree(path)
+
+
 def remove(path: Path, *, repo_root: Path, never_write: NeverWrite) -> None:
     """Remove ``path``, after the never-write guard clears.
 

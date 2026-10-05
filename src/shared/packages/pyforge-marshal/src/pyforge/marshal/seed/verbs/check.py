@@ -217,6 +217,7 @@ from typing import Any
 from pyforge.core.process import PosixProcess
 
 from ..detect.findings import Finding, FindingType, Severity
+from ..detect.skip_match import _normalize_relative_posix, first_match
 from ..detect.hashes import check_managed_file, check_managed_region
 from ..detect.inventory import ArtifactState, classify, escape_findings, legacy_findings
 from ..detect.kit import KitCheck, kit_checks, kit_findings
@@ -374,6 +375,8 @@ def run_check(
     process: PosixProcess | None = None,
     slug: str | None = None,
     in_loop_home: bool | None = None,
+    refused_slug: str | None = None,
+    refused_slug_source: str | None = None,
 ) -> CheckReport:
     """Compose Epic 9's detect/plan primitives into one `CheckReport`
     against `repo_root`, writing nothing (no `.marshal/` creation, no
@@ -434,13 +437,23 @@ def run_check(
     # `referenced_dep_findings` all see one manifest.
     manifest, unresolved = _judged_manifest(manifest, slug)
     for entry in unresolved:
+        if refused_slug is not None and refused_slug_source is not None:
+            message = (
+                f"{entry.path}: {entry.id!r} is templated on the project slug; {refused_slug_source!r}"
+                f" named {refused_slug!r}, which does not render a path the manifest accepts,"
+                " so it was not checked"
+            )
+        else:
+            message = (
+                f"{entry.path}: {entry.id!r} is templated on the project slug and no project resolved,"
+                " so it was not checked"
+            )
         findings.append(
             Finding.new(
                 Severity.INFO,
                 FindingType.SLUG_UNRESOLVED,
                 entry.path,
-                f"{entry.path}: {entry.id!r} is templated on the project slug and no project resolved,"
-                " so it was not checked",
+                message,
             )
         )
 

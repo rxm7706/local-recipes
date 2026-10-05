@@ -98,6 +98,7 @@ class FindingType(StrEnum):
     KIT_INSTRUMENT_UNAVAILABLE = "kit-instrument-unavailable"
     TARGET_ESCAPES_REPO = "target-escapes-repo"
     SLUG_UNRESOLVED = "slug-unresolved"
+    ARTIFACT_SKIPPED = "artifact-skipped"
 
 
 # Read-only, and with NO module-level mutable name behind it -- same reason
@@ -173,6 +174,11 @@ REMEDIES: Mapping[FindingType, str] = MappingProxyType(
             "Pass `--project <slug>` (or set `BMAD_ACTIVE_PROJECT`, or the target's "
             "`_bmad/custom/.active-project` marker) so the entry is checked at the "
             "path it renders to."
+        ),
+        FindingType.ARTIFACT_SKIPPED: (
+            "The artifact is absent but matches a skip recorded in `.marshal/seed-state.yml`"
+            " -- remove the skip from state if it should be materialized, or run"
+            " `marshal seed adopt` with `--skip` unchanged to leave it alone."
         ),
     }
 )
