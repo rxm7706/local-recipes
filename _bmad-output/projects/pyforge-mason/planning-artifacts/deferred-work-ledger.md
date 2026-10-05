@@ -1076,7 +1076,7 @@ status: open
   status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
   resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
-  verified: .claude/skills/conda-forge-expert/scripts/_paths.py:28
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:680
 ### DW-12-7-2: 17 CLI wrapper files named in the brief's scope.include were deliberately not copied into the compiled package (each is a subprocess shim hardcoded to the live CFE tree), a scope interpretation this story made rather than one the brief/spec settled explicitly.
 
 - source_spec: `planning-artifacts/specs/spec-12-7-slice-2-compiled-and-equivalence-validated.md`
@@ -1631,6 +1631,7 @@ status: open
   status: closed
   resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
   verified: _bmad-output/projects/pyforge-marshal/.sync-baseline.json:2
+
 ### DW-17-2-1: Strip-on-push half of CAP-2 was not independently re-checked against a real published feedstock file on the 2026-09-11 realization-gate pass.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-every-local-recipe-carries-its-internal-metadata-stripped-on-push.md`
@@ -1641,7 +1642,10 @@ status: open
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: closed
-## DW-mason-recipe-ci-short-base-ref-2026-09-27 — the recipe CI workflows pick changed recipes from `origin/<base_ref>...HEAD`, a short name a local ref or tag of that name shadows
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: .claude/skills/conda-forge-expert/tests/unit/test_cfe_push_strip.py:56; .claude/skills/conda-forge-expert/scripts/submit_pr.py:251
+
+### DW-mason-recipe-ci-short-base-ref-2026-09-27 — the recipe CI workflows pick changed recipes from `origin/<base_ref>...HEAD`, a short name a local ref or tag of that name shadows
 
 - source_spec: the recipe factory's CI (`.github/workflows/test-{all,linux,macos,windows}.yml`, under the `.github/**` line of `scripts/spec_surface_allowlist.txt`); found by doctor Story 32.1 while fixing the coverage gate's identical base
   summary: each workflow runs `git diff --name-only origin/${{ github.base_ref }}...HEAD -- 'recipes/*'` to choose which recipes to build. `actions/checkout` with `fetch-depth: 0` fetches tags, so a pushed tag named `origin/main` lands as `refs/tags/origin/main` and wins over `refs/remotes/origin/main`: the changed-recipe set comes out empty and the PR builds nothing.
@@ -1651,8 +1655,7 @@ status: open
   fix: `refs/remotes/origin/${{ github.base_ref }}...HEAD` in all four, through the recipe factory's chain.
   status: closed
   resolved: 2026-09-27 (mason Story 18.1, spec-pyforge-mason CAP-28) — all four diff from `refs/remotes/origin/${{ github.base_ref }}...HEAD`. Correction found in review: the branch is dormant today (no recipe workflow runs on `pull_request`; `test-all.yml` is dispatch-only and calls the other three), so no PR could have built nothing from it; this is hardening, kept by pyforge-core:CAP-10's workflow scan.
-  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
-  verified: .claude/skills/conda-forge-expert/scripts/submit_pr.py:52
+  verified: .github/workflows/test-linux.yml:132
 ### DW-FRR-1-3: Follow-up review still recommended for story 1.3
 
 - source_spec: `planning-artifacts/specs/spec-1-3-error-taxonomy-and-exit-code-contract.md`
