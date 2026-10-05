@@ -435,7 +435,11 @@ def _resolve_upgrade_targets(
     scan_target: Path | None,
     solver: FixTargetSolver | None,
 ) -> tuple[dict[str, str], dict[str, FixTargetResolution], str | None]:
-    """Returns ``(target_by_id, resolution_by_id, fatal_detail)``."""
+    """Returns ``(target_by_id, resolution_by_id, fatal_detail)``.
+
+    ``fatal_detail`` is set only for whole-run failures (e.g. pixi out of
+    range). A finding with no acceptable candidate records a resolution with
+    ``target=None`` and is handled per-outcome by the caller."""
     targets: dict[str, str] = {}
     resolutions: dict[str, FixTargetResolution] = {}
     for finding in findings:
@@ -453,10 +457,8 @@ def _resolve_upgrade_targets(
         except PixiVersionOutOfRangeError as exc:
             return {}, {}, str(exc)
         resolutions[finding.id] = resolution
-        if resolution.target is None:
-            detail = resolution.failure_detail or "fix-target resolution failed"
-            return {}, resolutions, f"{finding.id}: {detail}"
-        targets[finding.id] = resolution.target
+        if resolution.target is not None:
+            targets[finding.id] = resolution.target
     return targets, resolutions, None
 
 
@@ -485,6 +487,7 @@ def run_actuator(
     )
     resolution_by_id: dict[str, FixTargetResolution] = {}
     target_by_id: dict[str, str] | None = None
+    resolution_failed_ids: set[str] = set()
     if flag_on:
         target_by_id, resolution_by_id, fatal = _resolve_upgrade_targets(
             findings,
@@ -506,23 +509,41 @@ def run_actuator(
                     ),
                 ),
             )
+        resolution_failed_ids = {
+            finding_id
+            for finding_id, resolution in resolution_by_id.items()
+            if resolution.target is None
+        }
     proposals = plan_remediations(findings, target_by_finding_id=target_by_id)
-    if dry_run:
-        return Actuation(
-            dry_run=True,
-            outcomes=tuple(
-                PROutcome(
-                    finding_id=proposal.finding_id,
-                    action=proposal.action,
-                    subject=proposal.subject,
-                    status="planned",
-                    fix_resolution=resolution_by_id.get(proposal.finding_id),
-                )
-                for proposal in proposals
-            ),
+    if flag_on and resolution_failed_ids:
+        failed_outcomes = tuple(
+            PROutcome(
+                finding_id=finding_id,
+                action=_ACTION_UPGRADE,
+                subject=next((f.subject or "" for f in findings if f.id == finding_id), ""),
+                status="failed",
+                detail=resolution_by_id[finding_id].failure_detail or "fix-target resolution failed",
+                fix_resolution=resolution_by_id[finding_id],
+            )
+            for finding_id in sorted(resolution_failed_ids)
         )
+        proposals = tuple(p for p in proposals if p.finding_id not in resolution_failed_ids)
+    else:
+        failed_outcomes = ()
+    if dry_run:
+        planned = tuple(
+            PROutcome(
+                finding_id=proposal.finding_id,
+                action=proposal.action,
+                subject=proposal.subject,
+                status="planned",
+                fix_resolution=resolution_by_id.get(proposal.finding_id),
+            )
+            for proposal in proposals
+        )
+        return Actuation(dry_run=True, outcomes=failed_outcomes + planned)
     if not proposals:
-        return Actuation(dry_run=False, outcomes=())
+        return Actuation(dry_run=False, outcomes=failed_outcomes)
     if client is None:
         try:
             client = GitHubForgeClient.from_env(env)
@@ -544,17 +565,17 @@ def run_actuator(
         try:
             existing = client.existing_open_pr(proposal.finding_id)
             if existing is not None:
-            outcomes.append(
-                PROutcome(
-                    finding_id=proposal.finding_id,
-                    action=proposal.action,
-                    subject=proposal.subject,
-                    status="skipped",
-                    pr_url=existing or None,
-                    detail="an open PR already exists for this finding id",
-                    fix_resolution=resolution_by_id.get(proposal.finding_id),
+                outcomes.append(
+                    PROutcome(
+                        finding_id=proposal.finding_id,
+                        action=proposal.action,
+                        subject=proposal.subject,
+                        status="skipped",
+                        pr_url=existing or None,
+                        detail="an open PR already exists for this finding id",
+                        fix_resolution=resolution_by_id.get(proposal.finding_id),
+                    )
                 )
-            )
                 continue
             pr_url = client.open_pull_request(proposal)
             outcomes.append(
@@ -591,4 +612,4 @@ def run_actuator(
                     fix_resolution=resolution_by_id.get(proposal.finding_id),
                 )
             )
-    return Actuation(dry_run=False, outcomes=tuple(outcomes))
+    return Actuation(dry_run=False, outcomes=failed_outcomes + tuple(outcomes))
