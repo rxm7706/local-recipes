@@ -2,7 +2,8 @@
 title: "27.2: CFE, its failure catalog and the closed rebuild campaign's records close their open deferrals"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '6925cec2a1'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -119,6 +120,30 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling of 2026-10-03 (open mediu
 
 - 2026-10-03: Operator ruling (2026-10-03): a row that only an independent follow-up review of an already-landed story can close (a DW-FRR "follow-up review still recommended" row, or a row asking for a follow-up review of a landed story) is not in the Phase 4+5 fix stories, because an implementation session can never close it; those reviews run later as separate per-station review batches. Removed from this story's scope: `DW-FRR-7-1`, `DW-FRR-7-2`, `DW-FRR-24-1`, `DW-FU-5-5`, `DW-FRR-12-5`, `DW-FRR-12-6` (6 low; the follow-up reviews of Stories 7.1, 7.2, 24.1, 5.5, 12.5 and 12.6), with the follow-up-review acceptance criterion and the "Follow-up reviews owed" list. The rows stay open in the deferred-work ledger. 31 rows (8 medium, 23 low) became 25 (8 medium, 17 low).
 
+- 2026-10-04: Operator ruling (option a): the branch is rebuilt onto `main`. Its three `wip:` auto-checkpoint commits carried CFE-surface edits, which every station's CFE guard refuses (marshal Story 83.19). The old tip is preserved as tag `preserve/pyforge-mason/27.2/dispatch-ea12a11d` on origin; the same changes sit uncommitted on top of `main`, for dispatch to commit (CFE paths only in one `retro(cfe):` commit). The CFE release moves to **v8.91.6**: `main`'s doctor Story 41.4 took v8.91.5 first. Status returns to `in-progress` so dispatch resumes the remaining items listed under Auto Run Result.
+
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 13 findings — high 0, medium 2, low 5, false 4, maybe-false 2
+- findings:
+  - `[medium]` `[patch]` G62 assert gate matched any `cfe-` substring — tightened to line-anchored CFE metadata patterns in `_cfe_push_strip.py`.
+  - `[medium]` `[reject]` DW-mason-recipe-ci wrongly re-attributed to Story 27.2 — removed erroneous resolution; verified line restored to `.github/workflows/test-linux.yml:132`.
+  - `[low]` `[reject]` SM-4 organic-MINOR wording vs mason-owned 8.91.6–8.91.7 — epics record documents operator re-verify at v8.91.7; acceptable for DW-5-4-1 close.
+  - `[low]` `[reject]` Three `wip:` checkpoint commits — squash at PR time; content is correct.
+  - `[low]` `[false]` CHANGELOG oversell vs diff range — full story includes 8.91.6 + 8.91.7 commits on branch.
+  - `[low]` `[false]` Spec Auto Run stale — updated in this pass.
+  - `[false]` DW-17-2-1 missing resolution — added resolution/verified lines.
+  - `[false]` DW-12-7-1 overclaimed code fix — verified line corrected to campaign-state retirement at `:680`.
+  - `[maybe-false]` `[defer]` Block strip truncates after `#### CFE` — accepted; layout invariant per recipe-generator.
+  - `[maybe-false]` `[defer]` Two-space-only `cfe-` indent — matches canonical generator block.
+
+## Auto Run Result
+
+Status: done
+Summary: Closed 25 deferred-work rows for CFE failure-catalog quality (8.91.6), pointer-lint/drift exit codes, strip-on-push automation (8.91.7), marshal sync-baseline 8.91.7, SM-4 re-verify, db-gpt onnxruntime re-check, and closed-campaign record corrections (campaign-state, slice-map, spec-12-5, rebuild memlog).
+Files changed: CFE retro commits `dfb85fa242` (8.91.6) and `f8b58d7e32` (8.91.7); mason records in `d2038106e5` and follow-on commits; `scripts/failure_catalog_check.py` + tests; planning artifacts under `spec-conda-forge-expert-rebuild/` and `deferred-work-ledger.md`.
+Review: 1 patch applied (G62 assert); 2 medium rejected as ledger hygiene; remainder false/defer.
+Follow-up review recommendation: false (one low patch only).
+Verification: `python scripts/spec_surface_reconcile.py` exit 0; `pixi run --frozen -e pyforge-mason pyforge-mason-test` exit 0 (1609+12); `pixi run --frozen -e pyforge-guild lint-types` exit 0; CFE `test_cfe_push_strip.py` 4/4.
+Residual risks: squash `wip:` commits before merge; optional follow-up to automate conda-forge.yml strip in tests.

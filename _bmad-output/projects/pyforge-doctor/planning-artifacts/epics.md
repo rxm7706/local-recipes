@@ -8,7 +8,7 @@ inputDocuments:
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
 - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-10-04'   # RE-STAMPED 2026-10-04 (later): Story 41.6 added to Epic 41 (fix, no CAP) from the Epic 41 retrospective: INV-A reads the one-chain fold's citation window again; a new story reopens its done epic. Prior: RE-STAMPED 2026-10-04: Story 41.5 added to Epic 41 (fix, no CAP): a new story reopens its done epic. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 41 / Stories 41.1-41.4 minted from the operator's Phase 4+5 rulings (fix stories, no CAP, no flag; 122 of 123 open medium and low deferrals). Prior: RE-STAMPED 2026-09-29 (evening): Epic 37 / Story 37.1 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 36 / Stories 36.1-36.2 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-28 (night, later): arch→epics cascade for FR-20 / CAP-87; Epic 35 / Story 35.1 minted (capability-ledger's post-PIN check reads only live Specs); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-04'   # RE-STAMPED 2026-10-04 (env count): Story 6.12 added to done Epic 6 (fix, no CAP); epic-6 reopens to in-progress. Prior: RE-STAMPED 2026-10-04 (later): Story 41.6 added to Epic 41 (fix, no CAP) from the Epic 41 retrospective: INV-A reads the one-chain fold's citation window again; a new story reopens its done epic. Prior: RE-STAMPED 2026-10-04: Story 41.5 added to Epic 41 (fix, no CAP): a new story reopens its done epic. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 41 / Stories 41.1-41.4 minted from the operator's Phase 4+5 rulings (fix stories, no CAP, no flag; 122 of 123 open medium and low deferrals). Prior: RE-STAMPED 2026-09-29 (evening): Epic 37 / Story 37.1 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 36 / Stories 36.1-36.2 minted (spec-one-chain-per-station CAP-11 relay; no doctor CAP or FR). Prior 2026-09-28 (night, later): arch→epics cascade for FR-20 / CAP-87; Epic 35 / Story 35.1 minted (capability-ledger's post-PIN check reads only live Specs); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28 (night): Epic 34 / Stories 34.1-34.5 minted (spec-feature-flag-governance CAP-1, CAP-2, CAP-4's gate clause, CAP-7's inventory; Doctor as mechanism Smith, the Epic 24 relay; no doctor CAP or FR); 34.3 minted blocked behind steward 76.1/76.2, 34.5 behind marshal 74.1. Prior: RE-STAMPED 2026-09-28: arch→epics cascade for FR-19 / CAP-86; Epic 33 / Story 33.1 minted blocked behind marshal Story 66.2. Prior: RE-STAMPED 2026-09-27 (late, cont.): Epic 32 / Story 32.1 minted (spec-coverage-gate-independence CAP-4, Doctor as mechanism Smith). Earlier: arch→epics cascade for FR-18 / CAP-85; Epic 31 / Story 31.1 minted. Prior: RE-STAMPED 2026-09-24: arch→epics cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — arch→epics cascade (doctor Story 30.3 landing;
   the spine re-dated 2026-09-24 reconciling against the PRD''s same-day bump). No
   epic, story or AD content changed — Story 30.3''s own text already matches its
@@ -843,6 +843,20 @@ fails
 **And** re-running `check_coverage` against the live `pyforge-marshal` tree returns zero
 `uncovered` findings, and `pixi run -e local-recipes detectors-ci` reports clean for
 `bmad-drift`
+
+### Story 6.12: bmad-drift counts every pixi environment, table-form ones too
+
+As the operator who re-grounds the living docs against bmad-drift's ground truth,
+I want the pixi-environment count to include environments declared as their own `[environments.<name>]` table,
+So that the count, the `count-stale` and `surface-changed` checks and the sync baseline agree with `pixi.toml`.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** FR-15 (Story 6.8)
+**Surface:** `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py` (`_env_count`), `scripts/bmad_drift_check.py` (`env_count`), their tests; `_bmad-output/projects/pyforge-marshal/.sync-baseline.json` (restamped)
+**Spec:** `planning-artifacts/specs/spec-6-12-bmad-drift-counts-every-pixi-environment-table-form-ones-too.md`
+**Given** a `pixi.toml` with one environment declared as an `[environments.<name>]` table
+**When** Doctor's ground truth and the script's `env_count` run
+**Then** both count it; the live count reads 36
+**And** a `pixi.toml` that does not parse reads as `None` in Doctor's ground truth, never an uncaught error; reverting either counter to the line scan fails its test (mutation)
 
 ## Epic 7: Deferred-work visibility
 

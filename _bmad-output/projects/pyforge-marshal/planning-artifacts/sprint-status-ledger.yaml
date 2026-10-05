@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 594
+# stories: 595
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -70,6 +70,7 @@ development_status:
   19-2-the-shared-test-support-kit: done
   19-3-coverage-gates-that-name-the-module: done
   19-4-test-architecture-stays-current-as-stories-land: done
+  19-5-the-testing-kit-s-own-suite-runs-in-ci: done
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: done

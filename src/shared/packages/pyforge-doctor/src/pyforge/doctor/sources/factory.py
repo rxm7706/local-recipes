@@ -153,6 +153,7 @@ import os
 import re
 import stat
 import sys
+import tomllib
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -551,18 +552,21 @@ def _gotcha_max(target: Path) -> int | None:
     return max(nums) if nums else None
 
 
-def _env_count(target: Path) -> int:
-    out, in_block = 0, False
-    for line in _read(target / "pixi.toml").splitlines():
-        if line.strip() == "[environments]":
-            in_block = True
-            continue
-        if in_block:
-            if line.startswith("["):
-                break
-            if "=" in line and not line.lstrip().startswith("#"):
-                out += 1
-    return out
+def _env_count(target: Path) -> int | None:
+    """The number of environments ``pixi.toml`` declares, read with ``tomllib``.
+
+    Story 6.12: the origin's line scan stopped at the first header after ``[environments]``,
+    so an environment declared as its own ``[environments.<name>]`` table was never counted
+    (``python-agent-platform``: 35 counted, 36 declared). A manifest that does not parse
+    returns ``None``, the "could not be read" value every other fact uses, instead of raising
+    ``TOMLDecodeError`` past the per-fact ``except OSError``. A missing file still counts 0,
+    and an unreadable one still raises ``OSError`` through ``_read``."""
+    try:
+        data = tomllib.loads(_read(target / "pixi.toml"))
+    except tomllib.TOMLDecodeError:
+        return None
+    envs = data.get("environments", {})
+    return len(envs) if isinstance(envs, dict) else None
 
 
 def _ground_truth(target: Path) -> dict:

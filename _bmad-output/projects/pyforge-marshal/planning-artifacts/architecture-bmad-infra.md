@@ -4,7 +4,7 @@ part_id: bmad-infra
 display_name: BMAD infrastructure
 project_type_id: infra
 date: 2026-09-06
-source_pin: 'BMAD 6.12.0 / conda-forge-expert v8.86.4'
+source_pin: 'BMAD 6.12.0 / conda-forge-expert v8.91.5'
 ---
 
 # Architecture: BMAD Infrastructure (Part 4)
@@ -83,6 +83,8 @@ skill**. The hand that builds is never the gate that judges.
 > corrected, since the surrounding 52/32 totals cannot be recomputed with confidence without
 > the same full re-audit). All of it is known-stale pending a dedicated re-audit, not just the
 > "Installed Skills" section by itself.
+
+> **Re-grounded 2026-10-04** (`source_pin` → **conda-forge-expert v8.91.5**; hand pass per [SYNC-RUNBOOK.md](../SYNC-RUNBOOK.md) Step 2, after the `bmad-drift` `surface-changed` warns pixi_envs 30 → 35, gotcha_max 117 → 120 and skill_version 8.90.5 → 8.91.5 against the 2026-09-12 baseline). One structural change in the window: the default pixi env is now `pyforge-guild` (`pixi.toml`'s `# default-env: pyforge-guild` line, with `default` as its alias), not `local-recipes`. Live factory row (2026-10-04, `python -m pyforge.doctor.sources bmad-drift --groundtruth`): schema **v29** · MCP tools **46** · atlas phases **22** · gotchas **G1–G120** · CFE **v8.91.5**; schema, MCP tools and atlas phases are unchanged. Gotchas added since G113: G114 (a noarch recipe's local build proves only the native leg), G115 (staged-recipes discards the `__win` variant of a noarch recipe), G116 (a noarch recipe with a `build.bat` but no `__unix`/`__win` split ships only the build platform's entry point), G117 (`pixi upgrade --pinning-strategy latest-up` deletes deliberate upper bounds), G118 (one name, a different artifact on another channel), G119 (`pixi lock` keeps a locked record past a new `channel =` pin) and G120 (a Maven source build is not the published jar). pixi **36 environments** across **36 features**: the `[environments]` keys plus the `[environments.python-agent-platform]` table (the drift check counted only the former, and read 35, until doctor Story 6.12). The five added since the baseline are `pyforge-guild` and its alias `default` (the Guild runtime env), `pyforge-foundry-full` and `pyforge-foundry-full-stack` (the laptop SBOM install and its local platform stack, fnd:CAP-12), and `site`. Body figures below that predate this pass (15 / 18 / 20 / 26 / 28 envs, a `local-recipes` default env, G1–G107 / G1–G110 / G1–G113, 3,887 lines) are historical; read them against the live numbers here. Release notes for the window: `.claude/skills/conda-forge-expert/CHANGELOG.md`.
 
 Operationalized:
 - Six-layer TOML config merge (installer team/user → custom team/user → project team/user) resolved
