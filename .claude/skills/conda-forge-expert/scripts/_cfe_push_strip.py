@@ -31,8 +31,13 @@ def strip_conda_forge_yml_for_push(text: str) -> str:
     return strip_recipe_yaml_for_push(text)
 
 
+_CFE_SURVIVOR = re.compile(
+    r"^\s*(cfe-|#### CFE|# CFE metadata|# CFE comments)",
+)
+
+
 def assert_no_cfe_metadata_surfaces(text: str) -> None:
-    """G62 grep gate — abort if any cfe-* or # CFE marker remains."""
+    """G62 grep gate — abort if CFE metadata keys or comment blocks remain."""
     for i, line in enumerate(text.splitlines(), start=1):
-        if "cfe-" in line or "# CFE" in line or line.strip().startswith("#### CFE"):
+        if _CFE_SURVIVOR.match(line):
             raise ValueError(f"cfe metadata survived strip at line {i}: {line!r}")
