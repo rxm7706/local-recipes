@@ -128,5 +128,6 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling of 2026-10-03 (open mediu
 
 ## Auto Run Result
 
-Status: blocked
-Blocking condition: Story 27.2 partially implemented — CFE failure-catalog generator/check, regenerated catalog, cheatsheet `test-ci`, campaign-state HOW TO RESUME header, and semver 8.91.5 landed in the worktree; remaining acceptance items (strip-on-push fixture test DW-17-2-1, SM-4 optimize re-run DW-5-4-1, marshal `.sync-baseline.json` DW-15-1-1, db-gpt re-verify DW-13-2-3, slice-map/spec-12-5/rebuild Spec memlog corrections DW-12-4-1 through DW-12-7-2, all 25 deferred-work ledger closures, spec_surface memlog reconcile, separate retro(cfe) vs records commits, pyforge-mason-test + lint-types verification) still open.
+Status: in-review
+Blocking condition: `retro(cfe): v8.91.7` strip-on-push bundle is staged; commit-msg hook refuses Cursor-injected `Co-authored-by:` — operator must commit locally. Replace the two `wip: 27.2 (auto-checkpoint)` commits with one records/ledger commit per story boundaries. Rebuild `SPEC.md` is absorbed; record corrections live in companion memlog + campaign-state / spec-12-5.
+Verification: `spec_surface_reconcile.py` 0; `lint-types` 0; `pyforge-mason-test` 1 until v8.91.7 retro commit lands; CFE strip tests 4/4; sync-baseline `skill_version` 8.91.7; 25/25 deferred-work rows closed with `resolution: Story 27.2`.
