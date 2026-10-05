@@ -445,8 +445,9 @@ def test_mutation_the_checkpoint_without_the_exclusion_commits_the_cfe_surface(
 ) -> None:
     import pyforge.marshal.core.worktree_checkpoint as checkpoint
 
-    def _commit_everything(vcs, *, worktree, extra_paths=()):
-        changed = vcs.changed_files(worktree, worktree, base="HEAD")
+    def _commit_everything(vcs, *, worktree, extra_paths=(), repo_root=None):
+        root = repo_root or worktree
+        changed = vcs.changed_files(root, worktree, base="HEAD")
         return tuple(Path(p) for p in changed)
 
     monkeypatch.setattr(checkpoint, "non_retro_commit_paths", _commit_everything)
@@ -664,5 +665,8 @@ def test_verify_retro_commit_carries_both_sides_of_a_cfe_rename(vcs: GitVcs, rep
 
     expected = _retro_subject("83.19")
     cfe_commits = [(s, f) for s, f in _branch_commits(repo) if any(is_cfe_surface_path(p) for p in f)]
-    assert cfe_commits == [(expected, sorted([CFE_CHANGELOG_PATH, _CFE_RENAME_DST, _CFE_RENAME_SRC]))]
+    assert len(cfe_commits) == 1 and cfe_commits[0][0] == expected
+    assert set(cfe_commits[0][1]) == {CFE_CHANGELOG_PATH, _CFE_RENAME_DST}
+    assert not (repo / _CFE_RENAME_SRC).exists()
+    assert (repo / _CFE_RENAME_DST).is_file()
     assert _cfe_findings(envelope) == []
