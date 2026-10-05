@@ -1003,3 +1003,8 @@ docs/dashboard/dossier/
 docs/dashboard/infographics/
 docs/dashboard/decks/
 docs/dashboard/artifact/
+
+# Story 27.1: Starlight docs-site build outputs (local-only).
+docs-site/node_modules/
+docs-site/build/
+docs-site/.astro/

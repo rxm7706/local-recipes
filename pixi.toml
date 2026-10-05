@@ -927,6 +927,18 @@ playwright-python = ">=1.62.0"    # check-layout's browser probe (unimportable -
 python = ">=3.12"
 jinja2 = ">=3.1.6"                # renders docsite/templates/*.j2
 pyyaml = ">=6.0.3"                # reads docsite/content/*.yml
+nodejs = ">=24.19.0,<27.0,!=25.*"  # Story 27.1: Astro/Starlight docs-site build (same pin as [feature.python.dependencies])
+
+[feature.site.tasks.docs-site-install]
+description = "Install docs-site npm dependencies (npm ci in docs-site/)."
+cmd = "npm ci"
+cwd = "docs-site"
+
+[feature.site.tasks.docs-site-build]
+description = "Build the Diátaxis shelf Starlight site to docs-site/build/site/."
+cmd = "npm run build"
+cwd = "docs-site"
+depends-on = ["docs-site-install"]
 
 [feature.site.tasks.site]
 description = "Build the PyForge dossier + infographic site into dist/."
