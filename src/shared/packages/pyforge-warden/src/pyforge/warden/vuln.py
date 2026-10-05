@@ -714,6 +714,49 @@ def _own_severity_raw(vuln_record: object) -> str | None:
     return score if isinstance(score, str) and score else None
 
 
+def _extract_fixed_candidates(vuln_record: object, *, pkg_name: str, pkg_ecosystem: str | None) -> tuple[str, ...]:
+    """Story 14.1: every well-formed ``fixed`` version event for the matching
+    ``affected[]`` entry — same tolerant walk and filters as
+    ``_extract_fixed_version``, but collects all events in document order
+    (deduplicated, first occurrence wins)."""
+    if not isinstance(vuln_record, dict):
+        return ()
+    affected = vuln_record.get("affected")
+    if not isinstance(affected, list):
+        return ()
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for entry in affected:
+        if not isinstance(entry, dict):
+            continue
+        package = entry.get("package")
+        if not isinstance(package, dict):
+            continue
+        if package.get("name") != pkg_name:
+            continue
+        if pkg_ecosystem is not None and package.get("ecosystem") != pkg_ecosystem:
+            continue
+        ranges = entry.get("ranges")
+        if not isinstance(ranges, list):
+            continue
+        for one_range in ranges:
+            if not isinstance(one_range, dict):
+                continue
+            if one_range.get("type") not in ("ECOSYSTEM", "SEMVER"):
+                continue
+            events = one_range.get("events")
+            if not isinstance(events, list):
+                continue
+            for event in events:
+                if not isinstance(event, dict):
+                    continue
+                fixed = event.get("fixed")
+                if isinstance(fixed, str) and fixed and fixed not in seen:
+                    seen.add(fixed)
+                    ordered.append(fixed)
+    return tuple(ordered)
+
+
 def _extract_fixed_version(vuln_record: object, *, pkg_name: str, pkg_ecosystem: str | None) -> str | None:
     """Story 5.1 (AC1): the FIRST well-formed ``fixed`` version event found
     in ``vuln_record``'s own ``affected[].ranges[].events[]`` — walked in
@@ -784,9 +827,10 @@ def _extract_fixed_version(vuln_record: object, *, pkg_name: str, pkg_ecosystem:
 
 def _findings_for_package(
     package_entry: object,
-) -> list[tuple[Finding, tuple[str, ...], str | None]]:
+) -> list[tuple[Finding, tuple[str, ...], str | None, tuple[str, ...]]]:
     """One ``(vuln:<advisory-id>:<pkg>@<ver> Finding, kev-match candidates,
-    fixed version)`` triple per ``(group.ids[i], package)`` for one
+    fixed version, fixed-version candidates)`` quadruple per
+    ``(group.ids[i], package)`` for one
     ``results[].packages[]`` entry. Defensive throughout: any shape
     mismatch at any level yields fewer findings, never a crash.
 
@@ -825,7 +869,7 @@ def _findings_for_package(
         _sanitize_id_segment(pkg_version) if isinstance(pkg_version, str) and pkg_version else "unspecified"
     )
 
-    findings: list[tuple[Finding, tuple[str, ...], str | None]] = []
+    findings: list[tuple[Finding, tuple[str, ...], str | None, tuple[str, ...]]] = []
     for group in groups:
         if not isinstance(group, dict):
             continue
@@ -855,8 +899,11 @@ def _findings_for_package(
                 # crash the parse — drop the single malformed entry.
                 continue
             candidates = tuple(dict.fromkeys((advisory_id, *aliases)))
-            fixed_version = _extract_fixed_version(vuln_record, pkg_name=pkg_name, pkg_ecosystem=pkg_ecosystem)
-            findings.append((finding, candidates, fixed_version))
+            fixed_candidates = _extract_fixed_candidates(
+                vuln_record, pkg_name=pkg_name, pkg_ecosystem=pkg_ecosystem
+            )
+            fixed_version = fixed_candidates[0] if fixed_candidates else None
+            findings.append((finding, candidates, fixed_version, fixed_candidates))
     return findings
 
 
@@ -885,12 +932,18 @@ class OsvParse:
     (threaded into ``EngineResult.fixed_versions``) and, from there,
     ``cli.py``'s ``render_text`` remediation lines — never stored ON
     ``Finding`` (Story 6.1 froze the schema; fixed-version was never a
-    reserved slot)."""
+    reserved slot).
+
+    ``fixed_version_candidates`` (Story 14.1, additive): ``finding.id ->
+    tuple of every ``fixed`` event`` for the matching ``affected[]`` entry
+    (document order, deduplicated). Threaded into ``EngineResult`` and
+    ``cli.py``'s ``run_actuator`` for fix-target resolution."""
 
     findings: tuple[Finding, ...]
     errors: tuple[ErrorRecord, ...]
     kev_candidates: Mapping[str, tuple[str, ...]] = MappingProxyType({})
     fixed_versions: Mapping[str, str] = MappingProxyType({})
+    fixed_version_candidates: Mapping[str, tuple[str, ...]] = MappingProxyType({})
 
 
 def parse_osv_output(raw: str) -> OsvParse:
@@ -954,6 +1007,7 @@ def parse_osv_output(raw: str) -> OsvParse:
     by_id: dict[str, Finding] = {}
     candidates_by_id: dict[str, tuple[str, ...]] = {}
     fixed_version_by_id: dict[str, str] = {}
+    fixed_candidates_by_id: dict[str, tuple[str, ...]] = {}
     for result in results:
         if not isinstance(result, dict):
             continue
@@ -961,12 +1015,14 @@ def parse_osv_output(raw: str) -> OsvParse:
         if not isinstance(packages, list):
             continue
         for package_entry in packages:
-            for finding, candidates, fixed_version in _findings_for_package(package_entry):
+            for finding, candidates, fixed_version, fixed_candidates in _findings_for_package(package_entry):
                 if finding.id not in by_id:
                     by_id[finding.id] = finding
                     candidates_by_id[finding.id] = candidates
                     if fixed_version is not None:
                         fixed_version_by_id[finding.id] = fixed_version
+                    if fixed_candidates:
+                        fixed_candidates_by_id[finding.id] = fixed_candidates
     ordered = tuple(sorted(by_id.values(), key=lambda f: f.id))
     return OsvParse(
         findings=ordered,
@@ -974,6 +1030,13 @@ def parse_osv_output(raw: str) -> OsvParse:
         kev_candidates=MappingProxyType({finding.id: candidates_by_id[finding.id] for finding in ordered}),
         fixed_versions=MappingProxyType(
             {finding.id: fixed_version_by_id[finding.id] for finding in ordered if finding.id in fixed_version_by_id}
+        ),
+        fixed_version_candidates=MappingProxyType(
+            {
+                finding.id: fixed_candidates_by_id[finding.id]
+                for finding in ordered
+                if finding.id in fixed_candidates_by_id
+            }
         ),
     )
 

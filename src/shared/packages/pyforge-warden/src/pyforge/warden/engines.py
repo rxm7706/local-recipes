@@ -171,6 +171,9 @@ ENGINE_VERSION_CHECK_TIMEOUT_SECONDS = 10
 # not silently pass).
 DEPTRY_VERSION_RANGE = SpecifierSet(">=0.25.1,<0.26")
 OSV_SCANNER_VERSION_RANGE = SpecifierSet(">=2.4.0,<2.5")
+PIXI_VERSION_RANGE = SpecifierSet(">=0.80.0,<0.81")
+PIXI_VERSION_PATTERN = re.compile(r"pixi (\d+\.\d+\.\d+)")
+PIXI_LOCK_TIMEOUT_SECONDS = 600.0
 
 # ``deptry --version`` prints ``deptry 0.25.1``; ``osv-scanner --version``
 # prints a multi-line block starting ``osv-scanner version: 2.4.0`` — both
@@ -360,6 +363,31 @@ def _engine_env(
             os.unlink(output_path)
         except OSError:
             pass
+
+
+def run_pixi_lock(*, cwd: Path) -> tuple[ErrorRecord | None, int | None]:
+    """Story 14.1: run ``pixi lock`` in ``cwd`` through ``_engine_env`` after
+    a version pre-flight. Returns ``(None, exit_code)`` on spawn success, or
+    ``(ErrorRecord, None)`` when the binary is missing, out of range, or the
+    seam fails before the child completes."""
+    version_error = _check_engine_version(
+        owner="pixi",
+        argv=["pixi", "--version"],
+        version_pattern=PIXI_VERSION_PATTERN,
+        expected=PIXI_VERSION_RANGE,
+        cwd=cwd,
+    )
+    if version_error is not None:
+        return version_error, None
+    _text, error, exit_code = _engine_env(
+        lambda _output_path: ["pixi", "lock"],
+        owner="pixi",
+        cwd=cwd,
+        timeout=PIXI_LOCK_TIMEOUT_SECONDS,
+    )
+    if error is not None:
+        return error, None
+    return None, exit_code
 
 
 def _check_engine_version(
@@ -1642,6 +1670,7 @@ class OsvEngine:
                 # site -- every other return path above/below keeps the
                 # default empty mapping (nothing was actually parsed there).
                 fixed_versions=parse.fixed_versions,
+                fixed_version_candidates=parse.fixed_version_candidates,
             )
 
         if exit_code == 127:

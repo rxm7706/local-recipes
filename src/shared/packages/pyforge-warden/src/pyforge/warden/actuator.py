@@ -34,11 +34,15 @@ import urllib.request
 from collections.abc import Mapping, Sequence
 from contextvars import ContextVar
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 from urllib.error import HTTPError
 from urllib.parse import urlencode
 
 from pyforge.core.errors import PyforgeError
+from pyforge.core.flags import read_boolean
+
+from .fix_solver import FixTargetResolution, FixTargetSolver, PixiVersionOutOfRangeError, resolve_fix_target
 
 if TYPE_CHECKING:
     from .models import Finding
@@ -53,6 +57,7 @@ _EGRESS_ACTIVE: ContextVar[bool] = ContextVar("_EGRESS_ACTIVE", default=False)
 _USER_AGENT = "pyforge-warden-fix-pr-actuator/1.0"
 _DEFAULT_API_URL = "https://api.github.com"
 _BRANCH_PREFIX = "warden/fix/"
+FIX_TARGET_RESOLUTION_FLAG = "pyforge.warden.fix_target_resolution"
 
 # Finding-id family -> action (closed). A hygiene id additionally gates on its
 # DEP-code middle segment: only DEP002 (unused/obsolete dependency) maps.
@@ -86,6 +91,7 @@ class PROutcome:
     status: str
     pr_url: str | None = None
     detail: str | None = None
+    fix_resolution: FixTargetResolution | None = None
 
 
 @dataclass(frozen=True)
@@ -109,6 +115,11 @@ class Actuation:
                     "status": outcome.status,
                     "pr_url": outcome.pr_url,
                     "detail": outcome.detail,
+                    **(
+                        {"fix_resolution": outcome.fix_resolution.to_json_dict()}
+                        if outcome.fix_resolution is not None
+                        else {}
+                    ),
                 }
                 for outcome in sorted(self.outcomes, key=lambda outcome: outcome.finding_id)
             ],
@@ -173,9 +184,15 @@ def _severity_tier(finding: Finding) -> str:
     return severity.tier.value if severity is not None else "none"
 
 
-def _proposal_body(finding: Finding, action: str, advisory: str | None) -> str:
+def _proposal_body(
+    finding: Finding,
+    action: str,
+    advisory: str | None,
+    *,
+    target_version: str | None = None,
+) -> str:
     """The PR body: the finding id + a report excerpt (id, message, severity,
-    advisory) + the recommended action. No computed target version."""
+    advisory) + the recommended action."""
     lines = [
         "Opened by warden's opt-in fix-PR actuator (post-verdict; the scan's status and exit code are unchanged).",
         "",
@@ -188,12 +205,18 @@ def _proposal_body(finding: Finding, action: str, advisory: str | None) -> str:
         lines.append(f"Advisory: {advisory}")
     lines.append("")
     if action == _ACTION_UPGRADE:
-        lines.append(
-            f"Recommended action: upgrade {finding.subject} to a release that "
-            f"resolves {advisory}. Warden does not compute the fixed target "
-            "version (deferred to v1.x); pick a fixed release and update the "
-            "manifest."
-        )
+        if target_version is not None:
+            lines.append(
+                f"Recommended action: upgrade {finding.subject} to {target_version} "
+                f"to resolve {advisory}."
+            )
+        else:
+            lines.append(
+                f"Recommended action: upgrade {finding.subject} to a release that "
+                f"resolves {advisory}. Warden does not compute the fixed target "
+                "version (deferred to v1.x); pick a fixed release and update the "
+                "manifest."
+            )
     else:
         lines.append(
             f"Recommended action: remove the unused dependency "
@@ -204,6 +227,8 @@ def _proposal_body(finding: Finding, action: str, advisory: str | None) -> str:
 
 def plan_remediations(
     findings: Sequence[Finding],
+    *,
+    target_by_finding_id: Mapping[str, str] | None = None,
 ) -> tuple[RemediationProposal, ...]:
     """Map actuatable findings to proposals via the closed mapping; every
     non-actuatable family (missing/transitive/misplaced hygiene, license,
@@ -215,13 +240,24 @@ def plan_remediations(
         subject = finding.subject or ""
         if family == "vuln":
             advisory = finding.id.split(":", 2)[1]
+            target_version = None if target_by_finding_id is None else target_by_finding_id.get(finding.id)
+            title = (
+                f"warden: upgrade {subject} to {target_version} to resolve {advisory}"
+                if target_version is not None
+                else f"warden: upgrade {subject} to resolve {advisory}"
+            )
             proposals.append(
                 RemediationProposal(
                     finding_id=finding.id,
                     action=_ACTION_UPGRADE,
                     subject=subject,
-                    title=f"warden: upgrade {subject} to resolve {advisory}",
-                    body=_proposal_body(finding, _ACTION_UPGRADE, advisory),
+                    title=title,
+                    body=_proposal_body(
+                        finding,
+                        _ACTION_UPGRADE,
+                        advisory,
+                        target_version=target_version,
+                    ),
                 )
             )
         elif family == "hygiene":
@@ -391,12 +427,49 @@ class GitHubForgeClient:
         raise ForgeResponseError("the forge accepted the PR open but returned no url")
 
 
+def _resolve_upgrade_targets(
+    findings: Sequence[Finding],
+    *,
+    dry_run: bool,
+    fixed_version_candidates: Mapping[str, tuple[str, ...]] | None,
+    scan_target: Path | None,
+    solver: FixTargetSolver | None,
+) -> tuple[dict[str, str], dict[str, FixTargetResolution], str | None]:
+    """Returns ``(target_by_id, resolution_by_id, fatal_detail)``."""
+    targets: dict[str, str] = {}
+    resolutions: dict[str, FixTargetResolution] = {}
+    for finding in findings:
+        if not finding.id.startswith("vuln:"):
+            continue
+        raw = () if fixed_version_candidates is None else fixed_version_candidates.get(finding.id, ())
+        try:
+            resolution = resolve_fix_target(
+                finding.id,
+                raw,
+                dry_run=dry_run,
+                scan_target=scan_target,
+                solver=solver,
+            )
+        except PixiVersionOutOfRangeError as exc:
+            return {}, {}, str(exc)
+        resolutions[finding.id] = resolution
+        if resolution.target is None:
+            detail = resolution.failure_detail or "fix-target resolution failed"
+            return {}, resolutions, f"{finding.id}: {detail}"
+        targets[finding.id] = resolution.target
+    return targets, resolutions, None
+
+
 def run_actuator(
     findings: Sequence[Finding],
     *,
     dry_run: bool,
     env: Mapping[str, str] | None = None,
     client: ForgeClient | None = None,
+    fixed_version_candidates: Mapping[str, tuple[str, ...]] | None = None,
+    scan_target: Path | None = None,
+    solver: FixTargetSolver | None = None,
+    fix_target_resolution_enabled: bool | None = None,
 ) -> Actuation:
     """Build the closed-mapping plan and act on it. Dry-run records
     ``planned`` for every proposal and instantiates/calls NO client (no
@@ -405,7 +478,35 @@ def run_actuator(
     proposal dedups via ``existing_open_pr`` (``skipped``) before
     ``open_pull_request`` (``opened``) -- every exception is captured into a
     ``failed`` outcome, never raised, never a rung, never an exit code."""
-    proposals = plan_remediations(findings)
+    flag_on = (
+        fix_target_resolution_enabled
+        if fix_target_resolution_enabled is not None
+        else read_boolean(FIX_TARGET_RESOLUTION_FLAG, default=False)
+    )
+    resolution_by_id: dict[str, FixTargetResolution] = {}
+    target_by_id: dict[str, str] | None = None
+    if flag_on:
+        target_by_id, resolution_by_id, fatal = _resolve_upgrade_targets(
+            findings,
+            dry_run=dry_run,
+            fixed_version_candidates=fixed_version_candidates,
+            scan_target=scan_target,
+            solver=solver,
+        )
+        if fatal is not None:
+            return Actuation(
+                dry_run=dry_run,
+                outcomes=(
+                    PROutcome(
+                        finding_id="",
+                        action="",
+                        subject="",
+                        status="failed",
+                        detail=f"fix-target resolution failed: {fatal}",
+                    ),
+                ),
+            )
+    proposals = plan_remediations(findings, target_by_finding_id=target_by_id)
     if dry_run:
         return Actuation(
             dry_run=True,
@@ -415,6 +516,7 @@ def run_actuator(
                     action=proposal.action,
                     subject=proposal.subject,
                     status="planned",
+                    fix_resolution=resolution_by_id.get(proposal.finding_id),
                 )
                 for proposal in proposals
             ),
@@ -442,16 +544,17 @@ def run_actuator(
         try:
             existing = client.existing_open_pr(proposal.finding_id)
             if existing is not None:
-                outcomes.append(
-                    PROutcome(
-                        finding_id=proposal.finding_id,
-                        action=proposal.action,
-                        subject=proposal.subject,
-                        status="skipped",
-                        pr_url=existing or None,
-                        detail="an open PR already exists for this finding id",
-                    )
+            outcomes.append(
+                PROutcome(
+                    finding_id=proposal.finding_id,
+                    action=proposal.action,
+                    subject=proposal.subject,
+                    status="skipped",
+                    pr_url=existing or None,
+                    detail="an open PR already exists for this finding id",
+                    fix_resolution=resolution_by_id.get(proposal.finding_id),
                 )
+            )
                 continue
             pr_url = client.open_pull_request(proposal)
             outcomes.append(
@@ -461,6 +564,7 @@ def run_actuator(
                     subject=proposal.subject,
                     status="opened",
                     pr_url=pr_url or None,
+                    fix_resolution=resolution_by_id.get(proposal.finding_id),
                 )
             )
         except _BranchExistsError:
@@ -473,6 +577,7 @@ def run_actuator(
                     subject=proposal.subject,
                     status="skipped",
                     detail="a remediation branch already exists (prior actuation; its PR may be closed)",
+                    fix_resolution=resolution_by_id.get(proposal.finding_id),
                 )
             )
         except Exception as exc:  # noqa: BLE001 -- a failed open NEVER raises
@@ -483,6 +588,7 @@ def run_actuator(
                     subject=proposal.subject,
                     status="failed",
                     detail=f"{type(exc).__name__}: {exc}",
+                    fix_resolution=resolution_by_id.get(proposal.finding_id),
                 )
             )
     return Actuation(dry_run=False, outcomes=tuple(outcomes))

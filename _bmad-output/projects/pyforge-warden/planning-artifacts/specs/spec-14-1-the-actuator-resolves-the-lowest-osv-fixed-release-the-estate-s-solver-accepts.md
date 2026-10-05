@@ -2,7 +2,8 @@
 title: "14.1: The actuator resolves the lowest OSV-fixed release the estate's solver accepts"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '0ad6873d2fa3776d51e20c55ad9b67d345ef9884'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
