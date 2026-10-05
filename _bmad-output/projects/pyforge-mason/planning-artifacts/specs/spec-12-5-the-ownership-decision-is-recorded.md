@@ -11,6 +11,8 @@ context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml
+  - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
+  - docs/dreams/pyforge-atlas.md
 warnings: []
 deferred:
   - summary: >-
@@ -128,14 +130,14 @@ not pick a verdict" discipline) rather than silently assuming mason owns everyth
 ## Code Map
 
 - `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md`
-  — § "Open Questions", item 1 (around lines 164-169) — add a dated resolution note beneath
-  it, in the same style this repo uses to annotate a resolved open question in place (e.g.
-  Story 5.4's own recheck-spec resolution-record pattern per CLAUDE.md's Tier-3 promotion
-  convention).
+  — § "Open Questions", item 1 — the dated resolution note lives in `campaign-state.yaml`
+  `campaign.ownership_decision` (Story 12.5) and in this folder's `.memlog.md` after SPEC
+  absorption (2026-09-17); Story 5.4's "## Resolution record" appendix is a different shape
+  from the in-place list annotation this story used.
 - `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml`
-  — mirror the decision; likely a new field near `campaign:` (e.g. alongside
-  `re_scope_gate`) rather than overloading an existing one — naming it is this story's own
-  job, since no such field exists yet.
+  — mirror the decision at `campaign.ownership_decision` and
+  `campaign.re_scope_gate.pre_conditions.d_ownership_decision` (nested field Story 12.4
+  landed — not a top-level sibling key).
 - No code files — this is a planning-artifact-only story (chore, Effort XS).
 
 ## Operator ruling — 2026-08-28 (OQ-1 answered; Block-If cleared)

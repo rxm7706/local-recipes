@@ -8,6 +8,14 @@ specifically; `campaign-state.yaml` (alongside this file) is the fuller CAP-1-th
 tracker that also carries the campaign-state (CAP-4), and the equivalence/audit status later
 slices will populate (CAP-2, CAP-3).
 
+## Spec Change Log
+
+- 2026-10-04 (Story 27.2, `DW-12-6-2`): `test-skill.py` remains an ad-hoc Anaconda API probe,
+  not Slice 2's canonical recipe-lifecycle harness (the real suite entrypoint is
+  `tests/run_skill_suite.py`, outside the counted `scripts/` tree). Names
+  `failure_catalog_generator.py` (Story 7.1, after this map was derived) as catalog tooling
+  adjacent to this slice even though it is not yet listed in the 22-script table below.
+
 ## Method
 
 Read `.claude/skills/skf-analyze-source/SKILL.md` (and its `_bmad/skf/skf-analyze-source/`
