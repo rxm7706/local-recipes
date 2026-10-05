@@ -525,7 +525,7 @@ def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None, vcs
             repo_root,
             manifest,
             strict=args.strict,
-            context_layers=resolve_context_layers(repo_root, slug_raw),
+            context_layers=resolve_context_layers(repo_root, getattr(args, "project", None)),
             slug=check_slug,
             in_loop_home=in_loop_home,
             refused_slug=refused_slug,
