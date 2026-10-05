@@ -166,6 +166,8 @@ def test_finding_type_is_exactly_the_declared_member_set():
         # left unjudged because no project resolved -- INFO, never the HARD
         # `artifact-missing` at a path no repository can hold.
         "slug-unresolved",
+        # Story 70.2: an absent entry matching a recorded skip -- INFO, never HARD.
+        "artifact-skipped",
     }
 
 

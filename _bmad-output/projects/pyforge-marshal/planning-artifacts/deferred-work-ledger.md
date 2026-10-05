@@ -1188,6 +1188,8 @@ status: open
 
   verified: 2026-09-05 — STANDS — `seed/fs.py` still ships no directory-removal primitive (grep `remove_dir`/`rmtree` empty).
 
+  progress: 2026-10-05 — Story 70.2 closes the apply-created-directory half only: `seed/fs.py::remove_directory_tree` and `seed/apply/run.py:251` remove a directory target on rollback after nested files are restored. Parent directories `atomic_write_bytes` creates and a file replaced by a directory remain open here.
+
 ### DW-10-3-4: A symlinked target is snapshotted through the link but restored over it, leaving neither the link nor its referent as they were
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-10-3-the-apply-runner-transactional-guarded.md`
   summary: `run_apply`'s snapshot predicate is `target.is_file()`, which FOLLOWS symlinks, so a symlinked artifact captures its referent's bytes; but `fs.write` -> `atomic_write_bytes` -> `os.replace` replaces the link itself (POSIX `rename(2)` never follows a symlink at its destination -- `seed/fs.py`'s own docstring records this, confirmed by direct execution). Rollback therefore turns the symlink into a regular file holding the referent's old bytes, while the referent keeps whatever `commit` wrote through it: a state that matches neither before nor after.
@@ -8877,7 +8879,9 @@ status: open
   origin: spec-deferred 51d87a4fc837 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-10-04 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  resolution: RESOLVED 2026-10-05 — Story 70.2 (`spec-70-2-seed-check-honours-recorded-skips-and-every-verb-records-directory-entries`) adds `seed/fs.py::ensure_directory`, directory branches in `verbs/adopt.py`, `verbs/init.py` (via `_default_commit`), and `verbs/update.py` commit dispatchers, and records directory entries in `_managed_artifact_after_apply` without reading them as files.
+  verified: 2026-10-05 — `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/fs.py:512` (`ensure_directory`), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/adopt.py:844` (directory `commit` branch), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/verbs/adopt.py:1056` (directory record); `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` (Story 70.2 verification).
+  status: closed
 
 ### DW-marshal-86-8-1: The dead mypy override for the deleted `pyforge.marshal.cli.chain` stays in pyforge-marshal's pyproject.toml until marshal's next epic retrospective.
 

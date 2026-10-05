@@ -282,7 +282,7 @@ def test_an_unanticipated_failure_from_the_verb_is_never_a_traceback(clean_repo,
     ``SeedError`` ancestry) and confirms it is caught and reported as
     ``InternalError`` (10), never re-raised."""
 
-    def _boom(repo_root, manifest, *, strict, context_layers=None, slug=None, in_loop_home=None):
+    def _boom(repo_root, manifest, *, strict, context_layers=None, slug=None, in_loop_home=None, **kwargs):
         raise RuntimeError("simulated unanticipated failure deep in the verb")
 
     monkeypatch.setattr(seed_cli, "_run_check_verb", _boom)
@@ -534,3 +534,58 @@ def test_target_in_loop_home_is_unknown_when_the_branch_cannot_be_read(clean_rep
     assert seed_cli._target_in_loop_home(clean_repo, _FailingVcs()) is None
     _git(clean_repo, "checkout", "-q", "--detach")
     assert seed_cli._target_in_loop_home(clean_repo, vcs) is None
+
+
+def test_target_in_loop_home_follows_a_symlink_to_a_loop_worktree(clean_repo, tmp_path_factory):
+    """Story 70.2 L4: the target reached through a symlink to a `loop/<slug>`
+    worktree reads as a loop home."""
+    home = tmp_path_factory.mktemp("homes") / "demo"
+    _git(clean_repo, "worktree", "add", "-q", "-b", "loop/demo", str(home))
+    alias = clean_repo / "alias-to-home"
+    alias.symlink_to(home, target_is_directory=True)
+    vcs = GitVcs()
+    assert seed_cli._target_in_loop_home(alias, vcs) is True
+
+
+def test_target_in_loop_home_rejects_a_branch_that_only_begins_like_loop(clean_repo):
+    """Story 70.2 L4: `loopback-fix` is not `loop/<slug>`."""
+    _git(clean_repo, "branch", "loopback-fix")
+    _git(clean_repo, "checkout", "-q", "loopback-fix")
+    assert seed_cli._target_in_loop_home(clean_repo, GitVcs()) is False
+
+
+def test_bad_bmad_active_project_is_slug_unresolved_not_usage_error(demo_repo, monkeypatch, capsys):
+    """Story 70.2 L2: a refusing slug from the environment exits on the ordinary
+    verdict with INFO ``slug-unresolved``; explicit ``--project`` still exits 2."""
+    templated_only = _manifest(
+        *(
+            ManifestEntry(
+                id=entry_id,
+                artifact_class=ArtifactClass.COPIED_SEEDED,
+                path=f"templated/{{{{ slug }}}}/{entry_id}.md",
+                applies_to=AppliesTo.BOTH,
+                rationale="test",
+            )
+            for entry_id in _TEMPLATED_IDS
+        )
+    )
+    monkeypatch.setenv("BMAD_ACTIVE_PROJECT", "../escape")
+    code = seed_cli.run_check(
+        _args(repo_root=str(demo_repo), json_flag=True),
+        manifest=templated_only,
+    )
+    result = json.loads(capsys.readouterr().out)["result"]
+    assert code == 0
+    assert result["failing"] is False
+    unresolved = [f for f in result["findings"] if f["type"] == "slug-unresolved"]
+    assert len(unresolved) == len(_TEMPLATED_IDS)
+    assert all("../escape" in f["message"] for f in unresolved)
+    assert all("BMAD_ACTIVE_PROJECT" in f["message"] for f in unresolved)
+
+    code_explicit = seed_cli.run_check(
+        _args(repo_root=str(demo_repo), json_flag=True, project="../escape"),
+        manifest=templated_only,
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert code_explicit == UsageError.exit_code
+    assert payload["error"]["type"] == "UsageError"

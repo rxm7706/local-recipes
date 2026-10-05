@@ -88,7 +88,7 @@ from ..seed.detect.findings import Finding, Severity
 from ..seed.detect.kit import KitCheck
 from ..seed.errors import ConformanceFailure, InternalError, SeedError, UsageError
 from ..seed.migrate import registry as migrate_registry
-from ..seed.model.manifest import Manifest, ManifestError, load_manifest
+from ..seed.model.manifest import Manifest, ManifestError, load_manifest, render_slug_paths
 from ..seed.model.version import ModelVersion
 from ..seed.plan.types import Plan
 from ..seed.verbs.adopt import FIRST_CLAIM_MARKER, AdoptResult
@@ -198,6 +198,28 @@ def _read_toml_or_empty(path: Path) -> Mapping[str, object]:
     return payload if isinstance(payload, Mapping) else {}
 
 
+def _resolve_project_slug_with_source(repo_root: Path, explicit: str | None) -> tuple[str, str | None]:
+    """The project slug and where it came from (Story 70.2).
+
+    Returns ``("", None)`` when nothing resolves. The source string names
+    ``explicit --project``, ``BMAD_ACTIVE_PROJECT``, or the active-project
+    marker path for INFO ``slug-unresolved`` findings when the slug refuses
+    to render."""
+    if explicit is not None:
+        return explicit, "explicit --project"
+    from_env = os.environ.get("BMAD_ACTIVE_PROJECT", "")
+    if from_env:
+        return from_env, "BMAD_ACTIVE_PROJECT"
+    marker = repo_root / _ACTIVE_PROJECT_MARKER_RELPATH
+    try:
+        text = marker.read_text(encoding="utf-8").strip()
+    except OSError, UnicodeDecodeError:
+        return "", None
+    if text:
+        return text, str(_ACTIVE_PROJECT_MARKER_RELPATH)
+    return "", None
+
+
 def _resolve_project_slug(repo_root: Path, explicit: str | None) -> str:
     """The project whose policy layer applies to ``repo_root``.
 
@@ -210,16 +232,8 @@ def _resolve_project_slug(repo_root: Path, explicit: str | None) -> str:
     `scripts/bmad-switch`, so a stale env var must not be the only answer
     available. `is not None`, never `or`: an explicit `--project ""` wins
     over the env var, the same trap `run_config` documents."""
-    if explicit is not None:
-        return explicit
-    from_env = os.environ.get("BMAD_ACTIVE_PROJECT", "")
-    if from_env:
-        return from_env
-    marker = repo_root / _ACTIVE_PROJECT_MARKER_RELPATH
-    try:
-        return marker.read_text(encoding="utf-8").strip()
-    except OSError, UnicodeDecodeError:
-        return ""
+    slug, _source = _resolve_project_slug_with_source(repo_root, explicit)
+    return slug
 
 
 def _target_in_loop_home(repo_root: Path, vcs: VcsPort) -> bool | None:
@@ -480,32 +494,43 @@ def run_check(args: argparse.Namespace, *, manifest: Manifest | None = None, vcs
         repo_root = _resolve_repo_root(args.repo_root)
         if manifest is None:
             manifest = _load_packaged_manifest()
-        slug = _resolve_project_slug(repo_root, getattr(args, "project", None))
+        slug_raw, slug_source = _resolve_project_slug_with_source(repo_root, getattr(args, "project", None))
         in_loop_home = _target_in_loop_home(repo_root, vcs if vcs is not None else GitVcs())
-        try:
-            # Story 28.3: the ONE boundary read this verb owes the pure layer --
-            # the target repo's own `[context]` declaration. Resolved here, never
-            # inside `seed.verbs.check`, matching this module's own established
-            # "the CLI does the file I/O and calls the verb" split. The slug is
-            # resolved once and handed to both (`resolve_context_layers` treats
-            # it as explicit, so its own resolution reaches the same answer).
-            report = _run_check_verb(
-                repo_root,
-                manifest,
-                strict=args.strict,
-                context_layers=resolve_context_layers(repo_root, slug),
-                slug=slug or None,
-                in_loop_home=in_loop_home,
-            )
-        except ManifestError as exc:
-            raise UsageError(
-                f"project slug {slug!r} renders a manifest path the seed refuses: {exc}",
-                remedy=(
-                    "pass --project with a plain project name (or correct BMAD_ACTIVE_PROJECT"
-                    " or the target's _bmad/custom/.active-project marker) -- it must not"
-                    " contain a '..' segment or render one entry's path onto another's"
-                ),
-            ) from exc
+        check_slug: str | None = slug_raw or None
+        refused_slug: str | None = None
+        refused_slug_source: str | None = None
+        if slug_raw:
+            try:
+                render_slug_paths(manifest, slug_raw)
+            except ManifestError as exc:
+                if slug_source == "explicit --project":
+                    raise UsageError(
+                        f"project slug {slug_raw!r} renders a manifest path the seed refuses: {exc}",
+                        remedy=(
+                            "pass --project with a plain project name (or correct BMAD_ACTIVE_PROJECT"
+                            " or the target's _bmad/custom/.active-project marker) -- it must not"
+                            " contain a '..' segment or render one entry's path onto another's"
+                        ),
+                    ) from exc
+                refused_slug = slug_raw
+                refused_slug_source = slug_source
+                check_slug = None
+        # Story 28.3: the ONE boundary read this verb owes the pure layer --
+        # the target repo's own `[context]` declaration. Resolved here, never
+        # inside `seed.verbs.check`, matching this module's own established
+        # "the CLI does the file I/O and calls the verb" split. The slug is
+        # resolved once and handed to both (`resolve_context_layers` treats
+        # it as explicit, so its own resolution reaches the same answer).
+        report = _run_check_verb(
+            repo_root,
+            manifest,
+            strict=args.strict,
+            context_layers=resolve_context_layers(repo_root, getattr(args, "project", None)),
+            slug=check_slug,
+            in_loop_home=in_loop_home,
+            refused_slug=refused_slug,
+            refused_slug_source=refused_slug_source,
+        )
     except ManifestError as exc:
         wrapped = InternalError(
             f"the packaged seed manifest could not be loaded: {exc}",

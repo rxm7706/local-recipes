@@ -1053,3 +1053,77 @@ def test_the_loop_home_scope_never_hides_an_unscoped_entry(clean_repo):
     report = run_check(clean_repo, _manifest(_whole_file("whole", "WHOLE.md")), in_loop_home=False)
 
     assert [finding.path for finding in report.findings if finding.type is FindingType.ARTIFACT_MISSING] == ["WHOLE.md"]
+
+
+# --- Story 70.2: recorded skips in check ------------------------------------
+
+
+def test_a_recorded_skip_suppresses_artifact_missing_for_an_absent_entry(clean_repo):
+    """Story 70.2: ``state.skips`` matching an absent entry yields INFO
+    ``artifact-skipped``, not HARD ``artifact-missing``, and ``failing`` stays false."""
+    manifest = _manifest(_whole_file("whole", "WHOLE.md"), _whole_file("other", "OTHER.md"))
+    _write_state(
+        clean_repo,
+        _state(
+            skips=("OTHER.md",),
+            managed=(
+                ManagedArtifact(
+                    id="whole",
+                    path="WHOLE.md",
+                    artifact_class="copied-managed",
+                    body_sha=hash_content("ok\n"),
+                    inserted_region_spans=(),
+                ),
+            ),
+        ),
+    )
+    (clean_repo / "WHOLE.md").write_text("ok\n", encoding="utf-8")
+
+    report = run_check(clean_repo, manifest)
+
+    skipped = [f for f in report.findings if f.type is FindingType.ARTIFACT_SKIPPED]
+    assert len(skipped) == 1
+    assert skipped[0].path == "OTHER.md"
+    assert skipped[0].severity is Severity.INFO
+    assert not [f for f in report.findings if f.type is FindingType.ARTIFACT_MISSING and f.path == "OTHER.md"]
+    assert report.failing is False
+
+
+def test_removing_the_recorded_skip_restores_artifact_missing(clean_repo):
+    """Mutation guard: without ``state.skips`` the same absent entry is HARD missing."""
+    manifest = _manifest(_whole_file("other", "OTHER.md"))
+    _write_state(clean_repo, _state(skips=("OTHER.md",)))
+    report_with = run_check(clean_repo, manifest)
+    assert [f.type for f in report_with.findings if f.path == "OTHER.md"] == [FindingType.ARTIFACT_SKIPPED]
+
+    _write_state(clean_repo, _state(skips=()))
+    report_without = run_check(clean_repo, manifest)
+    assert [(f.severity, f.type) for f in report_without.findings if f.path == "OTHER.md"] == [
+        (Severity.HARD, FindingType.ARTIFACT_MISSING)
+    ]
+
+
+def test_refused_ambient_slug_yields_slug_unresolved_naming_source(clean_repo):
+    """Story 70.2 L2: a slug from the environment that refuses to render is
+    INFO ``slug-unresolved`` naming the slug and its source -- not exit 2."""
+    manifest = _manifest(
+        ManifestEntry(
+            id="templated-doc",
+            artifact_class=ArtifactClass.COPIED_SEEDED,
+            path="docs/{{ slug }}.md",
+            applies_to=AppliesTo.BOTH,
+            rationale="test",
+        )
+    )
+    report = run_check(
+        clean_repo,
+        manifest,
+        slug=None,
+        refused_slug="../escape",
+        refused_slug_source="BMAD_ACTIVE_PROJECT",
+    )
+    unresolved = [f for f in report.findings if f.type is FindingType.SLUG_UNRESOLVED]
+    assert len(unresolved) == 1
+    assert "../escape" in unresolved[0].message
+    assert "BMAD_ACTIVE_PROJECT" in unresolved[0].message
+    assert report.failing is False

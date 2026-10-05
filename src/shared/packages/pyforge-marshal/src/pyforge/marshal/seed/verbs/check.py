@@ -222,6 +222,7 @@ from ..detect.inventory import ArtifactState, classify, escape_findings, legacy_
 from ..detect.kit import KitCheck, kit_checks, kit_findings
 from ..detect.optout import classify_regions, region_findings
 from ..detect.referenced_deps import referenced_dep_findings
+from ..detect.skip_match import _normalize_relative_posix, first_match
 from ..errors import StateInvalid
 from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry, RequiredIn, render_slug_paths
 from ..plan.build import build_plan
@@ -374,6 +375,8 @@ def run_check(
     process: PosixProcess | None = None,
     slug: str | None = None,
     in_loop_home: bool | None = None,
+    refused_slug: str | None = None,
+    refused_slug_source: str | None = None,
 ) -> CheckReport:
     """Compose Epic 9's detect/plan primitives into one `CheckReport`
     against `repo_root`, writing nothing (no `.marshal/` creation, no
@@ -434,13 +437,23 @@ def run_check(
     # `referenced_dep_findings` all see one manifest.
     manifest, unresolved = _judged_manifest(manifest, slug)
     for entry in unresolved:
+        if refused_slug is not None and refused_slug_source is not None:
+            message = (
+                f"{entry.path}: {entry.id!r} is templated on the project slug; {refused_slug_source!r}"
+                f" named {refused_slug!r}, which does not render a path the manifest accepts,"
+                " so it was not checked"
+            )
+        else:
+            message = (
+                f"{entry.path}: {entry.id!r} is templated on the project slug and no project resolved,"
+                " so it was not checked"
+            )
         findings.append(
             Finding.new(
                 Severity.INFO,
                 FindingType.SLUG_UNRESOLVED,
                 entry.path,
-                f"{entry.path}: {entry.id!r} is templated on the project slug and no project resolved,"
-                " so it was not checked",
+                message,
             )
         )
 
@@ -475,14 +488,29 @@ def run_check(
             # read) never passes on the scope.
             owed_elsewhere = entry.required_in is RequiredIn.LOOP_HOME and in_loop_home is False
             if classification.entry_id in actioned_ids and not applies_to_other_mode and not owed_elsewhere:
-                findings.append(
-                    Finding.new(
-                        Severity.HARD,
-                        FindingType.ARTIFACT_MISSING,
-                        entry.path,
-                        f"{entry.path}: {entry.id!r} is declared by the manifest but absent from the repo",
-                    )
+                skip_patterns = state.skips if state is not None else ()
+                matched_skip = (
+                    first_match(skip_patterns, _normalize_relative_posix(entry.path)) if skip_patterns else None
                 )
+                if matched_skip is not None:
+                    findings.append(
+                        Finding.new(
+                            Severity.INFO,
+                            FindingType.ARTIFACT_SKIPPED,
+                            entry.path,
+                            f"{entry.path}: {entry.id!r} matches recorded skip {matched_skip!r},"
+                            " so it was not reported missing",
+                        )
+                    )
+                else:
+                    findings.append(
+                        Finding.new(
+                            Severity.HARD,
+                            FindingType.ARTIFACT_MISSING,
+                            entry.path,
+                            f"{entry.path}: {entry.id!r} is declared by the manifest but absent from the repo",
+                        )
+                    )
             continue
 
         if classification.state is ArtifactState.ESCAPING:
