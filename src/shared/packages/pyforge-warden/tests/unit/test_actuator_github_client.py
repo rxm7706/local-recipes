@@ -21,8 +21,8 @@ from pyforge.warden.actuator import (
     ForgeResponseError,
     GitHubForgeClient,
     RemediationProposal,
-    _BranchExistsError,
     _branch_name,
+    _BranchExistsError,
     run_actuator,
 )
 from pyforge.warden.models import Finding, Severity, SeverityTier

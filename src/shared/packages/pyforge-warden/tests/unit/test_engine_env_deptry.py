@@ -26,8 +26,6 @@ from pyforge.warden.engines import (
     DEPTRY_TIMEOUT_SECONDS,
     DEPTRY_VERSION_RANGE,
     ENGINE_VERSION_CHECK_TIMEOUT_SECONDS,
-    PIXI_VERSION_PATTERN,
-    PIXI_VERSION_RANGE,
     DeptryEngine,
     _check_engine_version,
     _engine_env,

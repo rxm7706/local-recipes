@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
-
 from pyforge.core.errors import PyforgeError
+
 from pyforge.warden.fix_solver import (
     FixTargetResolution,
     PixiVersionOutOfRangeError,
@@ -21,7 +21,7 @@ from pyforge.warden.fix_solver import (
 )
 
 if TYPE_CHECKING:
-    from pyforge.warden.models import ErrorRecord
+    pass
 
 
 def test_eligible_candidates_unspecified_and_invalid_versions():
@@ -71,7 +71,7 @@ def test_probe_pixi_toml_floor_double_and_single_quotes(tmp_path: Path):
     pixi = tmp_path / "pixi.toml"
     pixi.write_text('dependencies = { python = ">=3.12" }\n"leftpad" = "1.0.0"\n', encoding="utf-8")
     assert _probe_pixi_toml_floor(pixi, "leftpad", "2.0.0") is True
-    assert '>=2.0.0' in pixi.read_text(encoding="utf-8")
+    assert ">=2.0.0" in pixi.read_text(encoding="utf-8")
 
     pixi.write_text("dependencies = { python = '>=3.12' }\nleftpad = '1.0.0'\n", encoding="utf-8")
     assert _probe_pixi_toml_floor(pixi, "leftpad", "3.0.0") is True

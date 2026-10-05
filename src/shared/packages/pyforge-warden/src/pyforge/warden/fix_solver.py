@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from packaging.version import InvalidVersion, Version
-
 from pyforge.core.errors import PyforgeError
 
 from .engines import PIXI_VERSION_RANGE, run_pixi_lock

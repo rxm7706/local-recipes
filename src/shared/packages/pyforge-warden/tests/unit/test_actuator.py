@@ -36,6 +36,12 @@ from pyforge.warden.models import (
 )
 
 
+@pytest.fixture(autouse=True)
+def _legacy_upgrade_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The shipped tree renders fix_target_resolution on in dev (the default environment); these tests pin the flag-off path.
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
+
+
 def _vuln_finding(advisory: str = "PDOS-FIXTURE-0001", pkg: str = "pdos-vuln-fixture") -> Finding:
     return Finding(
         id=f"vuln:{advisory}:{pkg}@1.0.0",
