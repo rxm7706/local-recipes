@@ -927,9 +927,7 @@ class GitVcs:
             ]
         )
         if status_result.returncode != 0:
-            raise VcsCommandError(
-                f"git status --porcelain failed in {worktree_path}: {status_result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git status --porcelain failed in {worktree_path}: {status_result.stderr.strip()}")
         return tuple(_porcelain_z_records(status_result.stdout))
 
     def worktree_unified_patch(self, worktree_path: Path, *, baseline_sha: str) -> str:

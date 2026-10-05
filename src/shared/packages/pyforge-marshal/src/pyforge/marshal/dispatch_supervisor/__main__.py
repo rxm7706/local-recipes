@@ -29,7 +29,6 @@ from ..core.dispatch_cfe_commit import (
     non_retro_commit_paths,
     unsanctioned_cfe_commit_entries,
 )
-from ..dispatch_verify import check_unsanctioned_cfe_commits
 from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
@@ -119,6 +118,7 @@ from ..dispatch_land import _reconcile_spec_surface_drift, execute_dispatch_land
 from ..dispatch_verify import (
     ProcessWaitResult,
     TerminateProcessGroupResult,
+    check_unsanctioned_cfe_commits,
     compose_dispatch_policy,
     dispatch_session_alive,
     evaluate_dispatch_verification,
@@ -885,9 +885,7 @@ def _commit_and_journal_blocked_halt(
     patch_paths = _attempted_change_patch_paths(worktree)
     rel_patch = tuple(p.relative_to(worktree).as_posix() for p in patch_paths)
     try:
-        paths_to_commit = non_retro_commit_paths(
-            vcs, worktree=worktree, extra_paths=rel_patch, repo_root=repo_root
-        )
+        paths_to_commit = non_retro_commit_paths(vcs, worktree=worktree, extra_paths=rel_patch, repo_root=repo_root)
     except VcsCommandError:
         return counter, False
     if not paths_to_commit:
@@ -1723,9 +1721,7 @@ def _run_supervisor_finalize_sequence(
         pass
 
     # Story 83.24: refuse push when the branch already carries an unsanctioned CFE commit.
-    cfe_findings, cfe_report = check_unsanctioned_cfe_commits(
-        worktree=worktree, process=process, base=ORIGIN_MAIN
-    )
+    cfe_findings, cfe_report = check_unsanctioned_cfe_commits(worktree=worktree, process=process, base=ORIGIN_MAIN)
     cfe_unsanctioned = cfe_report.get("unsanctioned")
     if isinstance(cfe_unsanctioned, list) and unsanctioned_cfe_commit_entries(cfe_unsanctioned):
         branch_msg = next(

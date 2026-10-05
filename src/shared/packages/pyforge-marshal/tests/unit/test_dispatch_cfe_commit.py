@@ -26,7 +26,6 @@ from pyforge.marshal.core.dispatch_cfe_commit import (
     findings_for_unsanctioned_cfe_entries,
     is_cfe_surface_path,
     paths_excluding_cfe,
-    pending_cfe_paths,
     pending_cfe_paths_from_status,
     read_cfe_skill_version,
     retro_cfe_commit_subject,
@@ -163,9 +162,7 @@ def _verify(repo: Path, vcs: GitVcs):
 
 def _cfe_findings(envelope) -> list:
     return [
-        finding
-        for finding in envelope.findings
-        if finding.code in (CFE_COMMIT_GATE_CODE, CFE_BRANCH_COMMIT_GATE_CODE)
+        finding for finding in envelope.findings if finding.code in (CFE_COMMIT_GATE_CODE, CFE_BRANCH_COMMIT_GATE_CODE)
     ]
 
 
