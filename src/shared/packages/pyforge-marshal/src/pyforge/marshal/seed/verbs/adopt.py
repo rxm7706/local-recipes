@@ -1113,7 +1113,9 @@ def _managed_artifact_after_apply(
             )
         installed_by_the_tool = prior is not None and prior.path == entry.path
         return _hybrid_record(entry, text, spans, named=named, claim_every_present=installed_by_the_tool)
-    content = target.read_text(encoding="utf-8")
+    # Directories and BMAD artifact symlinks have no readable file body (Story
+    # 86.2); empty hash matches ``test_a_directory_record_is_not_handed_to_rung_6``.
+    content = target.read_text(encoding="utf-8") if target.is_file() else ""
     return ManagedArtifact(
         id=entry.id,
         path=entry.path,
