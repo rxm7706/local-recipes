@@ -20,3 +20,14 @@ from pyforge.marshal.cli.init import ENV_LOOP_HOME_ROOT
 @pytest.fixture(autouse=True)
 def _pin_loop_home_root_under_tmp(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(ENV_LOOP_HOME_ROOT, str(tmp_path_factory.mktemp("loop-home-root")))
+
+
+@pytest.fixture(autouse=True)
+def _pin_cursor_config_dir_under_tmp(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 83.25: every Cursor launch copies the operator's ``cli-config.json`` from ``$CURSOR_CONFIG_DIR``
+    (else ``$XDG_CONFIG_HOME/cursor``, else ``~/.cursor``). A unit test that reaches a Cursor launch must never
+    read the operator's real config, and a CI runner has none, so the launch refused with MRS-DISP-061 there
+    (#1867's first CI run). Point it at a minimal config under tmp; a test of the lookup order overrides it."""
+    config_dir = tmp_path_factory.mktemp("cursor-config")
+    (config_dir / "cli-config.json").write_text('{"version": 1}\n', encoding="utf-8")
+    monkeypatch.setenv("CURSOR_CONFIG_DIR", str(config_dir))
