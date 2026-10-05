@@ -881,6 +881,8 @@ claude_hash.txt
 # toplevel), but an anchored `.marshal/wire/` would silently stop ignoring
 # the store the moment a home sat one directory deeper.
 **/.marshal/wire/
+# Story 83.25: run-scoped Cursor ``cli-config.json`` copies (may hold auth).
+**/.marshal/cursor-config/
 
 # pyforge-marshal Story 28.3 (SPEC-marshal-token-economy CAP-3/CAP-4): the
 # other two per-loop-home token-economy kit artifacts Genesis provisions

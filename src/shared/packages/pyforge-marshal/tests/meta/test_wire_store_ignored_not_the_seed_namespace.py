@@ -37,7 +37,12 @@ import pytest
 #: The store path the packaged claude profile's ``wrapper.store_relpath``
 #: declares, relative to a loop home -- and, one directory deeper, the same
 #: store in a loop home that is not itself a worktree root.
-_IGNORED = (".marshal/wire/ccr_store.db", "homes/acme/.marshal/wire/ccr_store.db")
+_IGNORED = (
+    ".marshal/wire/ccr_store.db",
+    "homes/acme/.marshal/wire/ccr_store.db",
+    # Story 83.25: run-scoped Cursor cli-config copies may hold auth tokens.
+    ".marshal/cursor-config/cli-config.json",
+)
 
 #: The seed subsystem's own files in the same namespace, which must stay
 #: visible to git.

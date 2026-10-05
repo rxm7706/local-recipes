@@ -64,6 +64,7 @@ from ..ports.build_harness import (
     HarnessCandidateSkip,
     HarnessResolution,
 )
+from .cursor_launch_config import CursorLaunchConfigError, cursor_launch_env_overlay
 from .harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 
 
@@ -198,6 +199,11 @@ class BmadBuildHarness:
             "BMAD_ACTIVE_PROJECT": project_slug,
             **dict(budget_env),
         }
+        if profile.name == "cursor":
+            try:
+                child_env.update(cursor_launch_env_overlay(worktree, os.environ))
+            except CursorLaunchConfigError as exc:
+                raise BuildHarnessError(str(exc)) from exc
         if wire.applied and resolution.binary_path is not None:
             # Wrapping replaces the resolved CLI path with the wrapper's
             # prefix, and the wrapper then resolves the CLI itself off

@@ -2,7 +2,9 @@
 title: "83.25: A Cursor dispatch session never attributes its commits to the agent"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: adc14d4b57ddabeb27100d68795365059573d9dc
+followup_review_recommended: false
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -78,4 +80,32 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — blind, edge-case, verification-gap, and intent-alignment passes found no actionable gaps against the diff and AC)
+
+## Auto Run Result
+
+Status: done (implementation complete; working tree uncommitted pending operator PR)
+
+Summary: Cursor harness launches (`BmadBuildHarness.launch_argv` for the `cursor` profile and live `HarnessSkillInvoker`) now copy the operator's effective `cli-config.json` into `worktree/.marshal/cursor-config/` with both attribution flags forced off, set `CURSOR_CONFIG_DIR` to that directory, and refuse launch with `MRS-DISP-061` when the operator config cannot be read. Story 83.17's verification gate is unchanged.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/cursor_launch_config.py` — pure path/attribution helpers (AD-4)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/cursor_launch_config.py` — read/copy/write run-scoped config
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadbuild.py` — apply overlay on cursor launches
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/skill_invoke_harness.py` — same for planning-skill live invoke
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py`, `verdict.py` — register `MRS-DISP-061`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_cursor_launch_config.py` — AC + mutation guard
+- `.gitignore` — ignore `**/.marshal/cursor-config/`
+- Memlogs on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`
+
+Review: no patches; nothing deferred.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass (11680 passed)
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass (130 passed)
+- `pixi run --frozen -e pyforge-guild lint-types` — pass
+- `python scripts/spec_surface_reconcile.py` — pass (exit 0)
