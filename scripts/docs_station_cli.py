@@ -193,14 +193,16 @@ def render(root: Path, stamp: dict[str, str], *, help_capture=capture_help) -> s
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="report staleness; never write")
+    common.configure_root_argument(parser)
     args = parser.parse_args()
 
-    stamp = common.head_stamp(common.REPO_ROOT)
+    root = common.resolve_root(args)
+    stamp = common.head_stamp(root)
     # `capture_help` referenced by name (not via render()'s bound default) so
     # a caller -- or a test -- that monkeypatches the module-level function
     # is honored; render()'s own default is for direct callers of render().
-    content = render(common.REPO_ROOT, stamp, help_capture=capture_help)
-    return common.write_generated_page(common.REPO_ROOT, PAGE_REL, content, check=args.check, stamp=stamp)
+    content = render(root, stamp, help_capture=capture_help)
+    return common.write_generated_page(root, PAGE_REL, content, check=args.check, stamp=stamp)
 
 
 if __name__ == "__main__":

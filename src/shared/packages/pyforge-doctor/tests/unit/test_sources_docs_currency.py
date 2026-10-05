@@ -321,13 +321,53 @@ def test_dead_looking_reference_covered_by_gitignore_is_not_flagged(tmp_path: Pa
 # --- generated-page-stale (Story 30.3, spec-pyforge-doctor CAP-84) -----------
 
 
+def _write_checkout_stub_generator(
+    checkout: Path,
+    rel: str,
+    *,
+    exit_code: int,
+    probe: Path | None = None,
+) -> Path:
+    path = checkout / rel
+    probe_line = ""
+    if probe is not None:
+        probe_line = f"    Path({str(probe)!r}).write_text('executed')\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "import argparse\nimport sys\nfrom pathlib import Path\n"
+        "parser = argparse.ArgumentParser()\n"
+        "parser.add_argument('--check', action='store_true')\n"
+        "parser.add_argument('--root', type=Path, default=None)\n"
+        "args = parser.parse_args()\n"
+        "if args.check:\n"
+        f"{probe_line}"
+        f"    sys.exit({exit_code})\n"
+        "sys.exit(0)\n",
+        encoding="utf-8",
+    )
+    return path
+
+
 def _write_generator_script(repo: Path, rel: str, *, exit_code: int) -> None:
     path = repo / rel
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(f"import sys\nsys.exit({exit_code})\n", encoding="utf-8")
 
 
-def test_generated_page_current_reports_no_finding(tmp_path: Path):
+def test_generated_page_current_reports_no_finding(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    doctor_script = _write_checkout_stub_generator(
+        checkout, "scripts/docs_pixi_tasks.py", exit_code=0
+    )
+    monkeypatch.setattr(
+        docs_currency,
+        "locate_checkout_script",
+        lambda name: doctor_script if name == "docs_pixi_tasks.py" else (_ for _ in ()).throw(
+            FileNotFoundError(f"scripts/{name} not found")
+        ),
+    )
+
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
@@ -342,14 +382,33 @@ def test_generated_page_current_reports_no_finding(tmp_path: Path):
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
     _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="generated content\n")
-    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=0)
+    probe = tmp_path / "probe.txt"
+    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=1)
+    (tmp_path / "scripts" / "docs_pixi_tasks.py").write_text(
+        f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\nimport sys\nsys.exit(1)\n",
+        encoding="utf-8",
+    )
     _commit_all(tmp_path, "seed")
 
     finding = _only(docs_currency.gather(tmp_path))
     assert finding.status == DoctorStatus.OK
+    assert not probe.exists()
 
 
-def test_generated_page_stale_emits_warn(tmp_path: Path):
+def test_generated_page_stale_emits_warn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    doctor_script = _write_checkout_stub_generator(
+        checkout, "scripts/docs_pixi_tasks.py", exit_code=1
+    )
+    monkeypatch.setattr(
+        docs_currency,
+        "locate_checkout_script",
+        lambda name: doctor_script if name == "docs_pixi_tasks.py" else (_ for _ in ()).throw(
+            FileNotFoundError(f"scripts/{name} not found")
+        ),
+    )
+
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
@@ -364,7 +423,7 @@ def test_generated_page_stale_emits_warn(tmp_path: Path):
     _write_map_yaml(tmp_path, pages)
     _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
     _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="stale content\n")
-    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=1)
+    _write_generator_script(tmp_path, "scripts/docs_pixi_tasks.py", exit_code=0)
     _commit_all(tmp_path, "seed")
 
     findings = docs_currency.gather(tmp_path)
@@ -398,7 +457,7 @@ def test_generated_page_with_no_generator_declared_emits_warn(tmp_path: Path):
     assert "declares no" in stale[0].message
 
 
-def test_generated_page_with_missing_generator_script_emits_warn(tmp_path: Path):
+def test_generated_page_with_disallowed_generator_path_emits_warn(tmp_path: Path):
     _init_repo(tmp_path)
     pages = [
         _POINTER_PAGE,
@@ -418,7 +477,73 @@ def test_generated_page_with_missing_generator_script_emits_warn(tmp_path: Path)
     findings = docs_currency.gather(tmp_path)
     stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
     assert len(stale) == 1
-    assert "does not exist" in stale[0].message
+    assert "not an allowed" in stale[0].message
+
+
+def test_generated_page_with_parent_segment_in_generator_is_not_executed(tmp_path: Path):
+    _init_repo(tmp_path)
+    probe = tmp_path / "probe.txt"
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+            "generator": "scripts/../probe.py",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    (tmp_path / "probe.py").write_text(
+        f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\n",
+        encoding="utf-8",
+    )
+    _commit_all(tmp_path, "seed")
+
+    findings = docs_currency.gather(tmp_path)
+    stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
+    assert len(stale) == 1
+    assert "not an allowed" in stale[0].message
+    assert not probe.exists()
+
+
+def test_generated_page_missing_in_doctor_checkout_emits_warn_without_target_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _init_repo(tmp_path)
+    probe = tmp_path / "probe.txt"
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+            "generator": "scripts/docs_pixi_tasks.py",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "docs_pixi_tasks.py").write_text(
+        f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\nimport sys\nsys.exit(0)\n",
+        encoding="utf-8",
+    )
+    _commit_all(tmp_path, "seed")
+
+    def _no_checkout(name: str) -> Path:
+        raise FileNotFoundError(f"scripts/{name} not found above /nowhere")
+
+    monkeypatch.setattr(docs_currency, "locate_checkout_script", _no_checkout)
+
+    findings = docs_currency.gather(tmp_path)
+    stale = [f for f in findings if f.check == "docs-currency-generated-stale"]
+    assert len(stale) == 1
+    assert "could not run generator" in stale[0].message
+    assert not probe.exists()
 
 
 def test_generated_page_never_yet_generated_is_skipped(tmp_path: Path):
@@ -442,6 +567,90 @@ def test_generated_page_never_yet_generated_is_skipped(tmp_path: Path):
 
     finding = _only(docs_currency.gather(tmp_path))
     assert finding.status == DoctorStatus.OK
+
+
+# --- generator trust (Story 40.2, DW-doctor-40-1-2) -------------------------
+
+
+def test_the_judged_trees_declared_generator_is_data_never_executed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    doctor_script = _write_checkout_stub_generator(
+        checkout, "scripts/docs_pixi_tasks.py", exit_code=0
+    )
+    monkeypatch.setattr(
+        docs_currency,
+        "locate_checkout_script",
+        lambda name: doctor_script if name == "docs_pixi_tasks.py" else (_ for _ in ()).throw(
+            FileNotFoundError(f"scripts/{name} not found")
+        ),
+    )
+
+    _init_repo(tmp_path)
+    probe = tmp_path / "probe.txt"
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+            "generator": "scripts/docs_pixi_tasks.py",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="generated content\n")
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "docs_pixi_tasks.py").write_text(
+        f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\nimport sys\nsys.exit(1)\n",
+        encoding="utf-8",
+    )
+    _commit_all(tmp_path, "seed")
+
+    docs_currency.gather(tmp_path)
+
+    assert not probe.exists(), "the judged tree's scripts/docs_pixi_tasks.py was executed"
+
+
+def test_the_probe_runs_when_the_locator_resolves_from_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Sensitivity twin (mutation): re-point the locator at `target` -- the pre-fix
+    behaviour -- and the same planted script runs, so the test above can fail."""
+    _init_repo(tmp_path)
+    probe = tmp_path / "probe.txt"
+    pages = [
+        _POINTER_PAGE,
+        {
+            "path": "how-to/pixi-tasks.md",
+            "quadrant": "how-to",
+            "owner": "steward",
+            "kind": "generated",
+            "generator": "scripts/docs_pixi_tasks.py",
+        },
+    ]
+    _write_map_yaml(tmp_path, pages)
+    _write_map_md(tmp_path, docs_currency.render_map_registry(pages))
+    _write_authored_page(tmp_path, "how-to/pixi-tasks.md", body="content\n")
+    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts" / "docs_pixi_tasks.py").write_text(
+        f"from pathlib import Path\nPath({str(probe)!r}).write_text('executed')\nimport sys\nsys.exit(0)\n",
+        encoding="utf-8",
+    )
+    _commit_all(tmp_path, "seed")
+
+    monkeypatch.setattr(
+        docs_currency,
+        "locate_checkout_script",
+        lambda name: tmp_path / "scripts" / name,
+    )
+
+    docs_currency.gather(tmp_path)
+
+    assert probe.read_text(encoding="utf-8") == "executed"
 
 
 # --- skill-dir-hygiene --------------------------------------------------------
