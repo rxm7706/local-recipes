@@ -216,3 +216,20 @@ class TestSkillMdConsistency:
             "with a justification in the allow-list inside this test:\n"
             f"  {sorted(unwrapped)}"
         )
+
+    def test_commands_cheatsheet_lists_cfe_test_pixi_tasks(self):
+        """Every user-facing `local-recipes` test task must appear in the
+        commands cheatsheet (Story 27.2 / DW-12-2-3)."""
+        cheatsheet = (SKILL_DIR / "quickref" / "commands-cheatsheet.md").read_text()
+        required = (
+            "pixi run -e local-recipes test",
+            "pixi run -e local-recipes test-ci",
+            "pixi run -e local-recipes test-all",
+            "pixi run -e local-recipes test-coverage",
+            "pixi run -e local-recipes test-recipes",
+        )
+        missing = [line for line in required if line not in cheatsheet]
+        assert not missing, (
+            "commands-cheatsheet.md is missing CFE test task lines:\n"
+            + "\n".join(f"  {m}" for m in missing)
+        )
