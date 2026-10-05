@@ -160,6 +160,8 @@ paths:
   vdb_store: ${paths.data_root}/stores/vdb
   osv_offline_store: ${paths.data_root}/stores/osv
   pypi_conda_map: ${paths.data_root}/stores/pypi_conda_map.json
+  # Story 25.2 — Warden fleet inventory export (``WARDEN_FLEET_INVENTORY_PATH``; read via catalog).
+  warden_fleet_inventory: ${env_or:WARDEN_FLEET_INVENTORY_PATH,${paths.data_root}/stores/warden_fleet_inventory.json}
   # Story 21.6 (CAP-3 identity join): the live recipes/ tree LocalRecipesOverlayDataset
   # scans (discovery_local_recipes_raw) — resolves against the process CWD like every
   # other path here, but its REAL invocation differs from data_root/seed_root's: a live

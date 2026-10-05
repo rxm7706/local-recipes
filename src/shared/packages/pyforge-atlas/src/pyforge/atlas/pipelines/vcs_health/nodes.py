@@ -676,3 +676,12 @@ def classify_migration_readiness(
         rank.loc[ranked.index] = ranked
     out["unmigrated_volume_rank"] = rank
     return out[_MIGRATION_READINESS_COLS].reset_index(drop=True)
+
+
+def build_repo_dependency_history() -> pd.DataFrame:
+    """Story 25.1 lands the real dependency-history builder (CAP-61).
+
+    Story 25.2's fleet sensor targets this op by name; until 25.1 ships the body
+    is a no-op placeholder so Dagster job wiring can load offline.
+    """
+    return pd.DataFrame()
