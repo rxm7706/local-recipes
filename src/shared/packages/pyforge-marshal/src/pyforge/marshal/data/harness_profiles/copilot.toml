@@ -28,3 +28,31 @@ fallback_bin_dirs = [".pixi/envs/pyforge-guild/bin"]  # Story 46.12 (spec-pyforg
 authcheck_note ="No cheap non-interactive auth probe in CLI 1.0.80 (no auth subcommand); auth rides GitHub credentials and a failure surfaces at session start in session.log."
 verified = true
 notes = "Verified 2026-08-27: authenticated via GitHub credentials, smoke-tested -p --allow-all-tools shape (COPILOT-OK, exit 0). Same-day later re-probe reached the service but failed rc=1 'You have no quota' -- an account-quota condition, not an argv defect; nothing non-interactive pre-detects it (see authcheck_note), it surfaces in session.log."
+
+# Story 46.10 (spec-pyforge-marshal CAP-197): wire compression at the harness
+# seam, applied ONLY when policy's `[context]` block enables the `wire` layer
+# (Story 28.1) with `"auto"` or `true`. Shape read from `headroom wrap
+# copilot --help` (headroom-ai 0.37.0 class, the version this estate pins,
+# probed live 2026-10-05): `wrap copilot` configures Copilot BYOK routing
+# through the local Headroom proxy and passes everything after `--` through
+# verbatim — the same argv-prefix contract as `wrap claude --`.
+#
+# NOT verified against a live wrapped session on this run: doing so costs a
+# real premium-request quota round-trip (see notes above). The argv shape is
+# read from the installed headroom's own `--help`; the seam is proven by the
+# station tests through the packaged profile + an injectable stub wrapper.
+#
+# Operator caveat (Story 33.8): each dispatch passes a per-worktree
+# ``--port {wire_port}`` (8800--9799, hash-derived) so parallel wrapped
+# launches do not share headroom's default 8787 proxy.
+[wrapper]
+binary = "headroom"
+argv = ["wrap", "copilot", "--port", "{wire_port}", "--"]
+fallback_bin_dirs = [".pixi/envs/pyforge-guild/bin"]
+store_env = "HEADROOM_WORKSPACE_DIR"
+store_relpath = ".marshal/wire"
+reversible = true
+notes = "headroom-ai 0.37.0 (Apache-2.0), conda-forge. Live 2026-10-05: `headroom wrap copilot --help` confirms the subcommand; wrapped launch not smoke-tested (quota)."
+
+[wrapper.env]
+HEADROOM_MODE = "cache"

@@ -2,7 +2,10 @@
 title: '46.10: The matrix tells the truth, copilot wrapper, gemini probe, per-currency cells'
 type: 'feature'
 created: '2026-09-18'
-status: 'backlog'
+status: 'done'
+baseline_revision: '93d945a4315584dba56121846b62f7e3486aa822'
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -58,3 +61,20 @@ Contract recovered from `epics.md` Story 46.10 (Intent + ACs) so `marshal factor
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Packaged `copilot.toml` now declares a reversible headroom `[wrapper]` (`wrap copilot --port {wire_port} --`) so repo-default wire `"auto"` applies compression on copilot dispatches without policy edits. Gemini's wire cell is documented as probed-with-none (no upstream `wrap gemini`). The token-economy companions record output compression as multi-harness (caveman's 21 targets) in `integration-layers.md` and the new `multi-harness-matrix.md` per-harness table. Devin unchanged as the loud unverified stub.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/copilot.toml`
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/gemini.toml`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_harness_profile.py`
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/integration-layers.md`
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-token-economy/multi-harness-matrix.md`
+
+**Verification:** `pyforge-marshal-test` (11718 passed after fix), `pyforge-deps-test` (130 passed), `python scripts/spec_surface_reconcile.py` (exit 0), `pixi run -e pyforge-guild spec-surface-check` (exit 0). Live: `headroom wrap copilot --help` and `headroom wrap gemini` probe on this host (2026-10-05); wrapped copilot launch not smoke-tested (quota — recorded in profile notes).
+
+**Residual risks:** Copilot wrapped dispatch still consumes premium-request quota; no live end-to-end wrapped session on this machine. Gemini wire remains unavailable until headroom adds a target.
