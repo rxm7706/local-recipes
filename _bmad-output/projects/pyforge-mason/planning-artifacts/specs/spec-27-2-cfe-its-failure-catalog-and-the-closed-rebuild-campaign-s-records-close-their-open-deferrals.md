@@ -2,7 +2,7 @@
 title: "27.2: CFE, its failure catalog and the closed rebuild campaign's records close their open deferrals"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
 followup_review_recommended: false
