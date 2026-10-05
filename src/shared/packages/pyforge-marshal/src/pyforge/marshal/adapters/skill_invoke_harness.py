@@ -20,7 +20,7 @@ from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
 
-from ..core.cursor_launch_config import CursorLaunchConfigError, cursor_launch_env_overlay
+from .cursor_launch_config import CursorLaunchConfigError, cursor_launch_env_overlay
 from ..ports.skill_invoke import SkillInvokeResult
 
 

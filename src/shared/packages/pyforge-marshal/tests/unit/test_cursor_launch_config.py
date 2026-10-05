@@ -10,10 +10,12 @@ import pytest
 
 from pyforge.marshal.adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from pyforge.marshal.adapters.skill_invoke_harness import HarnessSkillInvoker
-from pyforge.marshal.core.cursor_launch_config import (
-    CURSOR_ATTRIBUTION_OFF_FINDING,
+from pyforge.marshal.adapters.cursor_launch_config import (
     CursorLaunchConfigError,
     cursor_launch_env_overlay,
+)
+from pyforge.marshal.core.cursor_launch_config import (
+    CURSOR_ATTRIBUTION_OFF_FINDING,
     effective_cursor_config_dir,
     run_scoped_cursor_config_dir,
 )
@@ -136,7 +138,7 @@ def test_launch_argv_cursor_attribution_overlay_mutation_guard(
         return _Proc()
 
     from pyforge.marshal.adapters import harness_bmadbuild
-    from pyforge.marshal.core import cursor_launch_config
+    from pyforge.marshal.adapters import cursor_launch_config
 
     monkeypatch.setattr(harness_bmadbuild.subprocess, "Popen", _popen)
     monkeypatch.setattr(cursor_launch_config, "cursor_launch_env_overlay", lambda _wt, _env: {})
@@ -177,6 +179,9 @@ def test_harness_skill_invoker_applies_cursor_config_overlay(
         env = kwargs["env"]
         assert isinstance(env, dict)
         seen.update(env)
+        log_path = kwargs.get("stdout")
+        if hasattr(log_path, "write"):
+            log_path.write(b"STATUS:complete\n")
 
         class _Completed:
             returncode = 0
