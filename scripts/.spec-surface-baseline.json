@@ -3553,7 +3553,7 @@
    ".claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_parse_audit.py": "441f8b4b96b7024d04f3cbb3f382336805887548",
    ".claude/skills/conda-forge-expert/tests/meta/test_recipe_yaml_schema_header.py": "54b57ab14b4e154515b2a3c0e1cd8e66256d197d",
    ".claude/skills/conda-forge-expert/tests/meta/test_skill_files_tracked.py": "492e8be23f0ac59ff92d836b4238f649587ded1f",
-   ".claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py": "024c55b3381fc2be19cf037374d2b83211f57058",
+   ".claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py": "9cfaf9865975ed44bfac74f24003c897ab99a7a1",
    ".claude/skills/conda-forge-expert/tests/meta/test_spec_surface_check.py": "15fd399438a92a67e7f568520d87a73936ce68e0",
    ".claude/skills/conda-forge-expert/tests/meta/test_unpushed_work_check.py": "36e123f54a48d409640a19e61016aa2c1d0c3130",
    ".claude/tools/conda_forge_server.py": "346074895a81868f9b63aef055cc6fc6b2274889",
@@ -4275,7 +4275,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "bf07b31a2d09283363f316df6aebdf0cbd89f947"
+  "memlog": "2da4bd0e34aa6236674ee127202230d9646f445e"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
