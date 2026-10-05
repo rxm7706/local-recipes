@@ -57,7 +57,7 @@ def commit_worktree_checkpoint(
         changed = vcs.changed_files(repo_root, worktree, base=base)
         if not changed:
             return WorktreeCheckpointResult(committed=False, skipped_reason="clean worktree")
-        to_commit = non_retro_commit_paths(vcs, worktree=worktree)
+        to_commit = non_retro_commit_paths(vcs, worktree=worktree, repo_root=repo_root)
         if not to_commit:
             return WorktreeCheckpointResult(committed=False, skipped_reason="only CFE surface dirty")
         head_sha = vcs.commit_paths(

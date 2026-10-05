@@ -118,10 +118,15 @@ def non_retro_commit_paths(
     *,
     worktree: Path,
     extra_paths: Iterable[str] = (),
+    repo_root: Path | None = None,
 ) -> tuple[Path, ...]:
     """Paths a dispatch non-retro commit may carry, excluding CFE rename pairs."""
-    records = vcs.status_porcelain_z_records(worktree)
-    commit_paths, _ = partition_status_records_for_cfe(records)
+    getter = getattr(vcs, "status_porcelain_z_records", None)
+    if getter is None:
+        root = repo_root if repo_root is not None else worktree
+        commit_paths = paths_excluding_cfe(vcs.changed_files(root, worktree, base="HEAD"))
+    else:
+        commit_paths, _ = partition_status_records_for_cfe(getter(worktree))
     extras: list[Path] = []
     seen = {path.as_posix() for path in commit_paths}
     for path in extra_paths:

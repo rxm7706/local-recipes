@@ -222,7 +222,7 @@ def _commit_pre_verify_wip(
     try:
         if not vcs.has_uncommitted_changes(worktree):
             return False, None
-        to_commit = non_retro_commit_paths(vcs, worktree=worktree)
+        to_commit = non_retro_commit_paths(vcs, worktree=worktree, repo_root=repo_root)
         if to_commit:
             vcs.commit_paths(
                 worktree,
@@ -231,7 +231,7 @@ def _commit_pre_verify_wip(
             )
             committed = True
         if vcs.has_uncommitted_changes(worktree):
-            remaining_commit = non_retro_commit_paths(vcs, worktree=worktree)
+            remaining_commit = non_retro_commit_paths(vcs, worktree=worktree, repo_root=repo_root)
             if remaining_commit:
                 return committed, "the worktree still has uncommitted changes after the pre-verify WIP commit"
     except VcsCommandError as exc:
@@ -883,7 +883,9 @@ def _commit_and_journal_blocked_halt(
     patch_paths = _attempted_change_patch_paths(worktree)
     rel_patch = tuple(p.relative_to(worktree).as_posix() for p in patch_paths)
     try:
-        paths_to_commit = non_retro_commit_paths(vcs, worktree=worktree, extra_paths=rel_patch)
+        paths_to_commit = non_retro_commit_paths(
+            vcs, worktree=worktree, extra_paths=rel_patch, repo_root=repo_root
+        )
     except VcsCommandError:
         return counter, False
     if not paths_to_commit:
@@ -1676,7 +1678,7 @@ def _run_supervisor_finalize_sequence(
     failed_message: str | None = None
     try:
         if vcs.has_uncommitted_changes(worktree):
-            to_commit = non_retro_commit_paths(vcs, worktree=worktree)  # Story 83.19/83.24
+            to_commit = non_retro_commit_paths(vcs, worktree=worktree, repo_root=repo_root)  # Story 83.19/83.24
             if to_commit:
                 vcs.commit_paths(
                     worktree,
