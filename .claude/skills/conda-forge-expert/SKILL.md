@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.91.8
+version: 8.91.9
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4368,6 +4368,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.91.9** (Oct 5, 2026) — **Retired-id guard scans marshal planning docs (PATCH; marshal Story 86.7).** See `CHANGELOG.md`.
 - **v8.91.8** (Oct 4, 2026) — **G62 survivor gate uses anchored line matching (PATCH; mason Story 27.2 review).** See `CHANGELOG.md`.
 - **v8.91.7** (Oct 4, 2026) — **Strip-on-push enforced in `submit_pr.prepare_branch` (PATCH; mason Story 27.2).** See `CHANGELOG.md`.
 - **v8.91.6** (Oct 4, 2026) — **Failure-catalog quality gate + drift exit codes (PATCH; mason Story 27.2).** See `CHANGELOG.md`.
