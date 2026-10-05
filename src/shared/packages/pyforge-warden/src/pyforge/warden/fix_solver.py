@@ -27,8 +27,7 @@ SolverVerdict = str  # "accepted" | "rejected"
 class FixTargetSolver(Protocol):
     """Whether ``floor_version`` is acceptable for ``package`` in ``scan_target``."""
 
-    def __call__(self, *, scan_target: Path, package: str, floor_version: str) -> SolverVerdict:
-        ...
+    def __call__(self, *, scan_target: Path, package: str, floor_version: str) -> SolverVerdict: ...
 
 
 @dataclass(frozen=True)
@@ -163,7 +162,7 @@ def _probe_pixi_toml_floor(pixi_toml: Path, package: str, floor: str) -> bool:
             rf"^(\s*{re.escape(package)}\s*=\s*')([^']*)(')\s*$",
             re.MULTILINE,
         )
-    replacement = rf'\1>={floor}\3'
+    replacement = rf"\1>={floor}\3"
     updated, count = pattern.subn(replacement, text, count=1)
     if count == 0:
         return False

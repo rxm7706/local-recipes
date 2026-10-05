@@ -206,10 +206,7 @@ def _proposal_body(
     lines.append("")
     if action == _ACTION_UPGRADE:
         if target_version is not None:
-            lines.append(
-                f"Recommended action: upgrade {finding.subject} to {target_version} "
-                f"to resolve {advisory}."
-            )
+            lines.append(f"Recommended action: upgrade {finding.subject} to {target_version} to resolve {advisory}.")
         else:
             lines.append(
                 f"Recommended action: upgrade {finding.subject} to a release that "
@@ -510,9 +507,7 @@ def run_actuator(
                 ),
             )
         resolution_failed_ids = {
-            finding_id
-            for finding_id, resolution in resolution_by_id.items()
-            if resolution.target is None
+            finding_id for finding_id, resolution in resolution_by_id.items() if resolution.target is None
         }
     proposals = plan_remediations(findings, target_by_finding_id=target_by_id)
     if flag_on and resolution_failed_ids:

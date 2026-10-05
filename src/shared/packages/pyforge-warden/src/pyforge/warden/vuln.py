@@ -899,9 +899,7 @@ def _findings_for_package(
                 # crash the parse — drop the single malformed entry.
                 continue
             candidates = tuple(dict.fromkeys((advisory_id, *aliases)))
-            fixed_candidates = _extract_fixed_candidates(
-                vuln_record, pkg_name=pkg_name, pkg_ecosystem=pkg_ecosystem
-            )
+            fixed_candidates = _extract_fixed_candidates(vuln_record, pkg_name=pkg_name, pkg_ecosystem=pkg_ecosystem)
             fixed_version = fixed_candidates[0] if fixed_candidates else None
             findings.append((finding, candidates, fixed_version, fixed_candidates))
     return findings

@@ -5,8 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from pyforge.warden.actuator import plan_remediations, run_actuator
 from pyforge.warden.fix_solver import eligible_candidates, selective_solver
 from pyforge.warden.models import Finding, Severity, SeverityTier
