@@ -287,6 +287,7 @@ from ..detect.hashes import hash_content, region_body_text
 from ..detect.inventory import (
     ArtifactState,
     Inventory,
+    _WRITABLE_EXEMPTION_IDS,
     classify,
     effective_never_write,
     escape_findings,
@@ -860,6 +861,24 @@ def _default_commit(
     def commit(action: Action) -> None:
         entry = entries_by_id[action.artifact_id]
         target = repo_root / action.target_path
+        if (
+            FIRST_CLAIM_MARKER in action.rationale
+            and entry.artifact_class is ArtifactClass.COPIED_MANAGED
+            and target.is_file()
+        ):
+            # Brownfield bootstrap (Story 86.2): claim an existing repo file in
+            # state without overwriting -- the packaged template tree carries no
+            # whole-file payload for these script paths.
+            return
+        if entry.id in _WRITABLE_EXEMPTION_IDS:
+            active_slug = str(answers.get("slug") or "").strip()
+            if not active_slug:
+                raise InternalError(
+                    f"cannot materialize {entry.id!r} without a resolved project slug",
+                    remedy="pass --project or set BMAD_ACTIVE_PROJECT / the active-project marker",
+                )
+            derive_projects_index.ensure_symlinks(repo_root, active_slug, never_write=never_write)
+            return
         if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
             assert entry.format is not None  # ManifestEntry.__post_init__ guarantees this
             for region_name, _matched_anchor in action.chosen_anchor:
@@ -1286,6 +1305,7 @@ def run_adopt(
                 "seed_model_version": seed_model_version(),
                 "mode": "adopt",
                 "agents": list(new_agents),
+                **({"slug": slug} if slug else {}),
             },
             template_path=template_path,
         )

@@ -326,11 +326,17 @@ def _check_manifest_boundary(relative_paths: Sequence[str]) -> None:
     )
     deny_patterns = manifest.never_write
 
+    def _template_internal(path: str) -> bool:
+        return path in {"manifest.yaml", "__init__.py"} or path.startswith("files/")
+
     offenders = sorted(
         path
         for path in relative_paths
-        if not any(fnmatchcase(path, pattern) for pattern in allow_patterns)
-        or any(fnmatchcase(path, pattern) for pattern in deny_patterns)
+        if not _template_internal(path)
+        and (
+            not any(fnmatchcase(path, pattern) for pattern in allow_patterns)
+            or any(fnmatchcase(path, pattern) for pattern in deny_patterns)
+        )
     )
     if offenders:
         raise TemplateBoundaryError(
