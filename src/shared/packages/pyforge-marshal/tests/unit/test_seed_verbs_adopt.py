@@ -221,6 +221,8 @@ def _fake_commit(manifest: Manifest, repo_root: Path, calls: list[str] | None = 
                     repo_root=repo_root,
                     never_write=_NO_NEVER_WRITE,
                 )
+        elif entry.is_directory:
+            target.mkdir(parents=True, exist_ok=True)
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(f"materialized {action.artifact_id}\n", encoding="utf-8")

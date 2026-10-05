@@ -488,14 +488,27 @@ def run_check(
             # read) never passes on the scope.
             owed_elsewhere = entry.required_in is RequiredIn.LOOP_HOME and in_loop_home is False
             if classification.entry_id in actioned_ids and not applies_to_other_mode and not owed_elsewhere:
-                findings.append(
-                    Finding.new(
-                        Severity.HARD,
-                        FindingType.ARTIFACT_MISSING,
-                        entry.path,
-                        f"{entry.path}: {entry.id!r} is declared by the manifest but absent from the repo",
+                skip_patterns = state.skips if state is not None else ()
+                matched_skip = first_match(skip_patterns, _normalize_relative_posix(entry.path)) if skip_patterns else None
+                if matched_skip is not None:
+                    findings.append(
+                        Finding.new(
+                            Severity.INFO,
+                            FindingType.ARTIFACT_SKIPPED,
+                            entry.path,
+                            f"{entry.path}: {entry.id!r} matches recorded skip {matched_skip!r},"
+                            " so it was not reported missing",
+                        )
                     )
-                )
+                else:
+                    findings.append(
+                        Finding.new(
+                            Severity.HARD,
+                            FindingType.ARTIFACT_MISSING,
+                            entry.path,
+                            f"{entry.path}: {entry.id!r} is declared by the manifest but absent from the repo",
+                        )
+                    )
             continue
 
         if classification.state is ArtifactState.ESCAPING:

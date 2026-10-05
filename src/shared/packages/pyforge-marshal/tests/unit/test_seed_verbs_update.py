@@ -49,6 +49,7 @@ from pyforge.marshal.seed.model.manifest import (
     ManifestEntry,
     Region,
     load_manifest,
+    render_slug_paths,
 )
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.plan.types import Action, Plan, RepoFingerprint
@@ -186,6 +187,8 @@ def _fake_commit(manifest: Manifest, repo_root: Path, calls: list[str] | None = 
                         repo_root=repo_root,
                         never_write=_NO_NEVER_WRITE,
                     )
+        elif entry.is_directory:
+            target.mkdir(parents=True, exist_ok=True)
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(f"content for {entry.id}\n", encoding="utf-8")
@@ -1595,11 +1598,13 @@ def _shipped_entries_for_slug(slug: str, *entry_ids: str) -> tuple[tuple[str, ..
     with resources.as_file(manifest_ref) as manifest_path:
         shipped = load_manifest(manifest_path)
     by_id = {entry.id: entry for entry in shipped.entries}
-    entries = tuple(
-        dataclasses.replace(by_id[entry_id], path=by_id[entry_id].path.replace("{{ slug }}", slug))
-        for entry_id in entry_ids
+    subset = Manifest(
+        model_version=shipped.model_version,
+        never_write=shipped.never_write,
+        entries=tuple(by_id[entry_id] for entry_id in entry_ids),
     )
-    return shipped.never_write, entries
+    rendered = render_slug_paths(subset, slug)
+    return shipped.never_write, rendered.entries
 
 
 def test_update_leaves_what_sits_beneath_a_directory_entry_to_its_own_class(clean_repo):

@@ -248,6 +248,8 @@ def _restore(
             if snapshot is None:
                 if target.is_file():
                     fs.remove(target, repo_root=repo_root, never_write=never_write)
+                elif target.is_dir():
+                    fs.remove_directory_tree(target, repo_root=repo_root, never_write=never_write)
             else:
                 fs.write(target, snapshot, repo_root=repo_root, never_write=never_write)
         except Exception as failure:  # noqa: BLE001 -- aggregated, never swallowed

@@ -216,6 +216,8 @@ def _fake_commit(manifest: Manifest, repo_root: Path, calls: list[str] | None = 
                     repo_root=repo_root,
                     never_write=_NO_NEVER_WRITE,
                 )
+        elif entry.is_directory:
+            target.mkdir(parents=True, exist_ok=True)
         else:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(f"materialized {action.artifact_id}\n", encoding="utf-8")
@@ -1046,24 +1048,11 @@ def test_check_with_the_init_slug_judges_every_templated_entry_init_wrote_agains
     the five templated entries are conformant: no finding names any of their
     rendered paths, and no finding's path carries ``{{``.
 
-    ``init`` runs over the packaged manifest minus its directory entries, as
-    ``test_run_init_end_to_end_against_the_real_packaged_manifest`` above
-    does: a directory entry that ``commit`` really creates as a directory
-    makes ``adopt._managed_artifact_after_apply`` read it as a file
-    (``IsADirectoryError``, found building this test) -- the same file-shaped
-    handling of a directory entry ``DW-marshal-86-1`` tracks for the commit
-    dispatchers, not this story's. Of the two templated
-    directories, ``_bmad-output/projects/demo/`` already exists beneath the
-    files ``init`` wrote; ``presentations/demo/`` is laid by hand, the
-    create-if-missing step ``init`` would take."""
+    ``init`` runs over the full packaged manifest (Story 70.2): directory
+    entries are created through ``seed/fs.ensure_directory`` and recorded
+    without reading them as files."""
     target = tmp_path / "fresh"
-    without_directories = Manifest(
-        model_version=real_manifest.model_version,
-        never_write=real_manifest.never_write,
-        entries=tuple(entry for entry in real_manifest.entries if not entry.is_directory),
-    )
-    run_init(target, without_directories, slug="demo", commit=_fake_commit(without_directories, target))
-    (target / "presentations" / "demo").mkdir(parents=True)
+    run_init(target, real_manifest, slug="demo", commit=_fake_commit(real_manifest, target))
     _commit_all(target)
 
     report = run_check(target, real_manifest, slug="demo")

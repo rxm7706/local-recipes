@@ -841,6 +841,9 @@ def _default_commit(
     def commit(action: Action) -> None:
         entry = entries_by_id[action.artifact_id]
         target = repo_root / action.target_path
+        if entry.is_directory:
+            fs.ensure_directory(target, repo_root=repo_root, never_write=never_write)
+            return
         if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
             assert entry.format is not None  # ManifestEntry.__post_init__ guarantees this
             for region_name, _matched_anchor in action.chosen_anchor:
@@ -1053,6 +1056,14 @@ def _managed_artifact_after_apply(
     the artifact is no longer claimed (every region was deleted, which FR-112
     makes lawful, not an error), and the caller omits it from state."""
     target = repo_root / action.target_path
+    if entry.is_directory:
+        return ManagedArtifact(
+            id=entry.id,
+            path=entry.path,
+            artifact_class=entry.artifact_class.value,
+            body_sha=hash_content(""),
+            inserted_region_spans=(),
+        )
     if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
         assert entry.format is not None
         text = target.read_text(encoding="utf-8")
