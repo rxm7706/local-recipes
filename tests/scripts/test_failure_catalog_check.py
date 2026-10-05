@@ -229,7 +229,8 @@ def test_check_drift_generator_cannot_run_raises_could_not_run(tmp_path: Path) -
     _install_generator(tmp_path)
     _write(tmp_path, SKILL_MD_REL_PARTS, "# Fixture Skill\n\nno gotcha section here.\n")
     _write(tmp_path, OPTIMIZER_REL_PARTS, FIXTURE_OPTIMIZER)
-    _write(tmp_path, CATALOG_REL_PARTS, "source_sha256: \"x\"\nrows: []\n")
+    _write(tmp_path, CATALOG_REL_PARTS,
+           "schema_version: 1\nsource_sha256: \"x\"\nrows: []\n")
 
     with pytest.raises(fcc.CouldNotRunError):
         fcc.check_drift(tmp_path)
@@ -257,7 +258,7 @@ def test_load_catalog_missing_rows_key_raises_could_not_run(tmp_path: Path) -> N
     """RED-FIRST: valid YAML that simply lacks the top-level 'rows' key
     entirely must not be misread as an empty, clean catalog."""
     catalog_path = _write(tmp_path, CATALOG_REL_PARTS,
-                          'source_sha256: "x"\nnot_rows: []\n')
+                          'schema_version: 1\nsource_sha256: "x"\nnot_rows: []\n')
 
     with pytest.raises(fcc.CouldNotRunError):
         fcc._load_catalog(catalog_path)
@@ -411,7 +412,7 @@ def _write_broken_drift_fixture_with_a_real_pointer_finding(tmp_path: Path) -> N
     _write(tmp_path, OPTIMIZER_REL_PARTS, FIXTURE_OPTIMIZER)
     _write(tmp_path, SKILL_MD_REL_PARTS, "# Fixture Skill\n\nno gotcha section here.\n")
     _write(tmp_path, CATALOG_REL_PARTS,
-           'source_sha256: "x"\n'
+           'schema_version: 1\nsource_sha256: "x"\n'
            "rows:\n"
            "  - id: G99\n"
            f'    enforced_by: "{OPTIMIZER_TARGET_REL}:BOGUS-999"\n')

@@ -2,7 +2,8 @@
 title: "27.2: CFE, its failure catalog and the closed rebuild campaign's records close their open deferrals"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -119,6 +120,13 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling of 2026-10-03 (open mediu
 
 - 2026-10-03: Operator ruling (2026-10-03): a row that only an independent follow-up review of an already-landed story can close (a DW-FRR "follow-up review still recommended" row, or a row asking for a follow-up review of a landed story) is not in the Phase 4+5 fix stories, because an implementation session can never close it; those reviews run later as separate per-station review batches. Removed from this story's scope: `DW-FRR-7-1`, `DW-FRR-7-2`, `DW-FRR-24-1`, `DW-FU-5-5`, `DW-FRR-12-5`, `DW-FRR-12-6` (6 low; the follow-up reviews of Stories 7.1, 7.2, 24.1, 5.5, 12.5 and 12.6), with the follow-up-review acceptance criterion and the "Follow-up reviews owed" list. The rows stay open in the deferred-work ledger. 31 rows (8 medium, 23 low) became 25 (8 medium, 17 low).
 
+- 2026-10-04: Operator ruling (option a): the branch is rebuilt onto `main`. Its three `wip:` auto-checkpoint commits carried CFE-surface edits, which every station's CFE guard refuses (marshal Story 83.19). The old tip is preserved as tag `preserve/pyforge-mason/27.2/dispatch-ea12a11d` on origin; the same changes sit uncommitted on top of `main`, for dispatch to commit (CFE paths only in one `retro(cfe):` commit). The CFE release moves to **v8.91.6**: `main`'s doctor Story 41.4 took v8.91.5 first. Status returns to `in-progress` so dispatch resumes the remaining items listed under Auto Run Result.
+
 ## Review Triage Log
 
 - No review has run yet.
+
+## Auto Run Result
+
+Status: blocked
+Blocking condition: Story 27.2 partially implemented — CFE failure-catalog generator/check, regenerated catalog, cheatsheet `test-ci`, campaign-state HOW TO RESUME header, and semver 8.91.5 landed in the worktree; remaining acceptance items (strip-on-push fixture test DW-17-2-1, SM-4 optimize re-run DW-5-4-1, marshal `.sync-baseline.json` DW-15-1-1, db-gpt re-verify DW-13-2-3, slice-map/spec-12-5/rebuild Spec memlog corrections DW-12-4-1 through DW-12-7-2, all 25 deferred-work ledger closures, spec_surface memlog reconcile, separate retro(cfe) vs records commits, pyforge-mason-test + lint-types verification) still open.
