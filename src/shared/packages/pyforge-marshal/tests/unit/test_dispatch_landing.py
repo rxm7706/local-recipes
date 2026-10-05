@@ -908,6 +908,39 @@ def test_reconcile_spec_surface_drift_refuses_foreign_drift(tmp_path: Path, monk
     assert vcs.committed == []
 
 
+def test_reconcile_spec_surface_drift_reconciles_own_paths_when_foreign_drift_refuses_is_false(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 85.5: foreign drift on the same spec does not block memlog/stamp of the fix turn's own paths."""
+    spec = "pyforge-marshal/spec-alpha"
+    findings = (
+        _SurfaceFinding("drift", f"--write-baseline --spec {spec}", "src/mine.py"),
+        _SurfaceFinding("drift", f"--write-baseline --spec {spec}", "src/not-mine.py"),
+    )
+    process = FakeProcess()
+    _install_fake_spec_surface(monkeypatch, findings, process=process)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    vcs = _ReconcileVcs(changed=("src/mine.py",))
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch=_BRANCH,
+        key=normalize("85-5-example"),
+        run_id="run-85-5",
+        vcs=vcs,
+        process=process,
+        own_changed_paths=frozenset({"src/mine.py"}),
+        push_when_done=False,
+        foreign_drift_refuses=False,
+    )
+    assert outcome.refuse is False
+    assert outcome.finding is not None
+    assert len(_calls(process, "memlog.py")) == 1
+    assert _spec_args(_calls(process, "spec_surface_check.py")[0]) == [spec]
+    assert vcs.pushed == []
+
+
 def test_reconcile_spec_surface_drift_refuses_when_memlog_append_exits_nonzero(tmp_path: Path, monkeypatch) -> None:
     """The memlog append subprocess runs but refuses (locked file, missing
     frontmatter, ...) -- refused (MRS-DISP-048), never silently skipped,

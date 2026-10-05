@@ -8878,3 +8878,47 @@ status: open
   severity: low
   promoted: 2026-10-04 — the 86.8 hand-landing
   status: open
+
+### DW-marshal-85-5: End-to-end real-git fixture proving memlog/stamp before re-verify passes the surface guard (AC1).
+
+- source_spec: `planning-artifacts/specs/spec-85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification.md`
+  summary: End-to-end real-git fixture proving memlog/stamp before re-verify passes the surface guard (AC1).
+  evidence: Story 85.5 tests stub _reconcile_spec_surface_drift; no test runs scripts/spec_surface_reconcile.py on a branch after an unstubbed reconcile.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py
+  origin: spec-deferred 47fe548686b3 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-04 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-85-5-2: Resumed fix-turn intents without worktree_head_before_turn skip pre-reverify reconcile.
+
+- source_spec: `planning-artifacts/specs/spec-85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification.md`
+  summary: Resumed fix-turn intents without worktree_head_before_turn skip pre-reverify reconcile.
+  evidence: _maybe_run_verify_fix_turn only reconciles when head_before_turn is not None; in-flight journals predating 85.5 omit the field.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py:1523
+  origin: spec-deferred ad35406e2829 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-04 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-85-5-3: No test that dispatch land reconcile is idempotent after fix-turn reconcile (AC5).
+
+- source_spec: `planning-artifacts/specs/spec-85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification.md`
+  summary: No test that dispatch land reconcile is idempotent after fix-turn reconcile (AC5).
+  evidence: No test chains fix-turn reconcile then execute_dispatch_land _reconcile_spec_surface_drift for the same paths.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py
+  origin: spec-deferred 46e465b7387f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-04 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-FRR-85-5: Follow-up review still recommended for story 85.5
+
+- source_spec: `planning-artifacts/specs/spec-85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification.md`
+  summary: Story 85.5 landed with `followup_review_recommended: true`; the recommended independent follow-up review has not run and nothing else carries the recommendation.
+  evidence: Story 85.5 landed on origin/main with its tracked spec reading `status: done` and `followup_review_recommended: true`; dispatch-land finalize carried the recommendation.
+  location: _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification.md
+  origin: dispatch-followup-review
+  severity: low
+  promoted: 2026-10-04 — dispatch-land finalize
+  status: open

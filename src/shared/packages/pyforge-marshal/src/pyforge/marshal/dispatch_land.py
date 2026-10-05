@@ -322,6 +322,9 @@ def _reconcile_spec_surface_drift(
     run_id: str | None,
     vcs: CommittingVcs,
     process: ProcessPort,
+    own_changed_paths: frozenset[str] | None = None,
+    push_when_done: bool = True,
+    foreign_drift_refuses: bool = True,
 ) -> _SpecSurfaceReconcileOutcome:
     """Story 53.2 (spec-pyforge-marshal CAP-261b): before ``forge.merge_pr``,
     run the spec-surface verdict over the branch's own tree and reconcile
@@ -427,20 +430,23 @@ def _reconcile_spec_surface_drift(
     if not by_spec and not no_baseline:
         return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
 
-    try:
-        changed = set(vcs.changed_files(git_repo_root, worktree, base=_ORIGIN_MAIN))
-    except VcsCommandError as exc:
-        return _SpecSurfaceReconcileOutcome(
-            finding=Finding(
-                code="MRS-DISP-048",
-                severity=Severity.ERROR,
-                message=(
-                    f"cannot determine {head_branch!r}'s own changed files to "
-                    f"reconcile spec-surface drift: {exc} — refusing to land"
+    if own_changed_paths is not None:
+        changed = set(own_changed_paths)
+    else:
+        try:
+            changed = set(vcs.changed_files(git_repo_root, worktree, base=_ORIGIN_MAIN))
+        except VcsCommandError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot determine {head_branch!r}'s own changed files to "
+                        f"reconcile spec-surface drift: {exc} — refusing to land"
+                    ),
                 ),
-            ),
-            refuse=True,
-        )
+                refuse=True,
+            )
 
     memlog_script = worktree / "_bmad" / "scripts" / "memlog.py"
     stamp_script = worktree / "scripts" / "spec_surface_check.py"
@@ -482,12 +488,13 @@ def _reconcile_spec_surface_drift(
                 # a spec's drift ours or foreign).
                 continue
             not_ours = paths - own_paths
+            overlap_paths = paths & own_paths
             if not_ours:
                 foreign[name] = not_ours
-            else:
-                own[name] = paths
+            if overlap_paths:
+                own[name] = overlap_paths
 
-        if foreign:
+        if foreign and foreign_drift_refuses:
             detail = "; ".join(f"{name}: {', '.join(sorted(paths))}" for name, paths in sorted(foreign.items()))
             return _SpecSurfaceReconcileOutcome(
                 finding=Finding(
@@ -703,19 +710,20 @@ def _reconcile_spec_surface_drift(
     if not reconciled:
         return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
 
-    try:
-        vcs.push(git_repo_root, head_branch)
-    except VcsCommandError as exc:
-        return _SpecSurfaceReconcileOutcome(
-            finding=Finding(
-                code="MRS-DISP-048",
-                severity=Severity.ERROR,
-                message=(
-                    f"cannot commit/push the spec-surface reconcile for {head_branch!r}: {exc} — refusing to land"
+    if push_when_done:
+        try:
+            vcs.push(git_repo_root, head_branch)
+        except VcsCommandError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot commit/push the spec-surface reconcile for {head_branch!r}: {exc} — refusing to land"
+                    ),
                 ),
-            ),
-            refuse=True,
-        )
+                refuse=True,
+            )
 
     summary = "; ".join(f"{name}: {', '.join(sorted(paths))}" for name, paths in sorted(reconciled.items()))
     return _SpecSurfaceReconcileOutcome(

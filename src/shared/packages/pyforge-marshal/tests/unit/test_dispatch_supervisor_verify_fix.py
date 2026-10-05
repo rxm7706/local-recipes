@@ -34,6 +34,7 @@ import pytest
 import test_dispatch_supervisor_main_loop as loop
 from pyforge.testing_kit.flags import flagd_tree
 
+from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_verify_fix import (
     FIX_TURN_START_FAILED_CODE,
@@ -43,6 +44,7 @@ from pyforge.marshal.core.dispatch_verify_fix import (
 from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.model import Finding, Severity, build_envelope
+from pyforge.marshal.dispatch_land import _SpecSurfaceReconcileOutcome
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
 _FLAG_KEY = "pyforge.marshal.verify_fix_loop"
@@ -389,6 +391,14 @@ class _FixTurnVcs(loop.FakeVcs):
         super().__init__(**kwargs)
         self.events = events
         self._commit_cleans = commit_cleans
+        self._recorded_head_before = self.head_sha
+
+    def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
+        if self._changed_files_raises:
+            raise VcsCommandError("git diff failed (test double)")
+        if base == self._recorded_head_before:
+            return self.changed_vs_head
+        return super().changed_files(repo_root, worktree_path, base=base)
 
     def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
         sha = super().commit_paths(repo_root, paths, message)
@@ -548,8 +558,8 @@ def _finalize_with(
 def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Review M6: push -> verify (failed commands offloaded to a sidecar) -> launch -> wait -> commit -> verify ->
-    land, driven through ``run_dispatch_supervisor`` itself."""
+    """Review M6: push -> verify (failed commands offloaded to a sidecar) -> launch -> wait -> commit -> reconcile ->
+    verify -> land, driven through ``run_dispatch_supervisor`` itself."""
     monkeypatch.setattr(supervisor_main, "time", loop._FakeClock())
     repo_root, worktree = _fix_ready_repo(tmp_path)
     run_dir = loop._run_dir(repo_root)
@@ -567,6 +577,12 @@ def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
         return real_land(**kwargs)
 
     monkeypatch.setattr(supervisor_main, "execute_dispatch_land", _land)
+
+    def _record_reconcile(**_kwargs: object) -> _SpecSurfaceReconcileOutcome:
+        events.append(("reconcile", True))
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+
+    monkeypatch.setattr(supervisor_main, "_reconcile_spec_surface_drift", _record_reconcile)
     fs = loop.FakeFs()
 
     code = loop._run(repo_root, fs=fs, vcs=vcs, process=loop.FakeProcess(alive=False), publisher=loop.FakePublisher())
@@ -577,7 +593,7 @@ def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
     assert launches == [88001]
     assert len(land_calls) == 1
     kinds = [event[0] for event in events]
-    assert kinds == ["push", "verify", "launch", "wait", "commit", "verify", "land"]
+    assert kinds == ["push", "verify", "launch", "wait", "commit", "reconcile", "verify", "land"]
     assert ("commit", _WIP_SUBJECT) in events
     assert ("land", False) in events, "landing must see the fix turn's edits committed"
     assert _finalize_outcome(fs)["verified"] is True
@@ -1873,3 +1889,168 @@ def test_the_tick_loop_reads_a_reused_session_pid_as_dead(tmp_path: Path, monkey
     assert code == 0
     assert len(land_calls) == 1
     assert not any("auto-checkpoint" in message for _root, _paths, message in vcs.commits)
+
+
+# --------------------------------------------------------------------------
+# Story 85.5 — spec-surface reconcile between the fix turn's commit and re-verification
+# --------------------------------------------------------------------------
+
+
+def test_a_fix_turn_records_head_before_launch_and_reconciles_only_its_own_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(
+        events,
+        changed=("src/other_story.py",),
+        changed_vs_head=("src/shared/packages/pyforge-marshal/tests/unit/test_query_plane_boot.py",),
+    )
+    reconcile_calls: list[dict[str, object]] = []
+
+    def _reconcile_stub(**kwargs: object) -> _SpecSurfaceReconcileOutcome:
+        reconcile_calls.append(dict(kwargs))
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+
+    monkeypatch.setattr(supervisor_main, "_reconcile_spec_surface_drift", _reconcile_stub)
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+
+    _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    intents = [entry for entry in _verify_fix_entries(fs) if entry["phase"] == "intent"]
+    assert intents[0]["payload"]["worktree_head_before_turn"] == loop._MOVED
+    assert len(reconcile_calls) == 1
+    assert reconcile_calls[0]["own_changed_paths"] == frozenset(
+        {"src/shared/packages/pyforge-marshal/tests/unit/test_query_plane_boot.py"}
+    )
+    assert reconcile_calls[0]["push_when_done"] is False
+    assert reconcile_calls[0]["foreign_drift_refuses"] is False
+    launch_at = events.index(("launch",))
+    commit_at = events.index(("commit", _WIP_SUBJECT))
+    reverify_at = events.index(("verify", 2))
+    assert launch_at < commit_at < reverify_at
+    reconcile_steps = [
+        entry["payload"]
+        for entry in _verify_fix_entries(fs)
+        if entry["payload"].get("step") == "reconcile" and entry["payload"].get("paths")
+    ]
+    assert len(reconcile_steps) == 1
+
+
+def test_a_fix_turn_that_changes_no_paths_skips_reconcile_work(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events, changed_vs_head=())
+    reconcile_calls: list[dict[str, object]] = []
+
+    def _reconcile_stub(**kwargs: object) -> _SpecSurfaceReconcileOutcome:
+        reconcile_calls.append(dict(kwargs))
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+
+    def _launch_no_worktree_edit(*_a: object, **_k: object) -> _Launch:
+        return _Launch(88001)
+
+    monkeypatch.setattr(supervisor_main, "_reconcile_spec_surface_drift", _reconcile_stub)
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "binary_present", lambda *_a, **_k: _NoProfile())
+    monkeypatch.setattr(supervisor_main.BmadBuildHarness, "dispatch_verify_fix", _launch_no_worktree_edit)
+    monkeypatch.setattr(
+        supervisor_main,
+        "wait_for_process",
+        lambda *_a, **_k: __import__(
+            "pyforge.marshal.dispatch_verify", fromlist=["ProcessWaitResult"]
+        ).ProcessWaitResult(exited=True, returncode=0),
+    )
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+
+    _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert reconcile_calls == []
+    skipped = [
+        entry["payload"]
+        for entry in _verify_fix_entries(fs)
+        if entry["payload"].get("step") == "reconcile" and entry["payload"].get("skipped") is True
+    ]
+    assert len(skipped) == 1
+
+
+def test_a_fix_turn_whose_reconcile_cannot_be_applied_parks_without_reverifying(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+
+    def _reconcile_refuse(**_kwargs: object) -> _SpecSurfaceReconcileOutcome:
+        return _SpecSurfaceReconcileOutcome(
+            finding=Finding(code="MRS-DISP-048", severity=Severity.ERROR, message="memlog append refused"),
+            refuse=True,
+        )
+
+    monkeypatch.setattr(supervisor_main, "_reconcile_spec_surface_drift", _reconcile_refuse)
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert ok is False
+    assert [event for event in events if event[0] == "verify"] == [("verify", 1)]
+    outcome = _finalize_outcome(fs)
+    assert (outcome["ok"], outcome["verified"], outcome["failed_step"]) == (False, False, "reconcile")
+
+
+def test_foreign_drift_is_left_for_reverification_to_refuse_with_mrs_disp_060(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.marshal.core.dispatch_verify_fix import FIX_TURN_REVERIFY_REFUSED_CODE
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), _refused_with_output(_SHORT_TAIL))
+
+    def _reconcile_foreign(**_kwargs: object) -> _SpecSurfaceReconcileOutcome:
+        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
+
+    monkeypatch.setattr(supervisor_main, "_reconcile_spec_surface_drift", _reconcile_foreign)
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert ok is True
+    assert [event for event in events if event[0] == "verify"] == [("verify", 1), ("verify", 2)]
+    parks = [
+        entry["payload"]
+        for entry in _verify_fix_entries(fs)
+        if entry["payload"].get("code") == FIX_TURN_REVERIFY_REFUSED_CODE
+    ]
+    assert len(parks) == 1
+
+
+def test_a_fix_turn_reconcile_failure_from_changed_files_parks_without_reverifying(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+
+    def _changed_files(repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
+        if base == vcs._recorded_head_before:
+            raise VcsCommandError("git diff failed (test double)")
+        return _FixTurnVcs.changed_files(vcs, repo_root, worktree_path, base=base)
+
+    vcs.changed_files = _changed_files  # type: ignore[method-assign]
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+
+    _counter, ok = _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    assert ok is False
+    assert [event for event in events if event[0] == "verify"] == [("verify", 1)]
+    outcome = _finalize_outcome(fs)
+    assert outcome["failed_step"] == "reconcile"
