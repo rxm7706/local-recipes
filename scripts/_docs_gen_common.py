@@ -28,6 +28,7 @@ Story 30.3's ``generated-page-stale`` check).
 
 from __future__ import annotations
 
+import argparse
 import re
 import subprocess
 import sys
@@ -36,6 +37,25 @@ from pathlib import Path
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
+def configure_root_argument(parser: argparse.ArgumentParser) -> None:
+    """Optional ``--root`` for Doctor's ``docs_currency`` check (Story 40.2).
+
+    Default behaviour (no ``--root``) keeps every ``pixi run docs-*`` task
+    judging the checkout the generator lives in."""
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="repository root to read and judge (default: the checkout this script lives in)",
+    )
+
+
+def resolve_root(args: argparse.Namespace) -> Path:
+    if args.root is not None:
+        return args.root.resolve()
+    return REPO_ROOT
 
 # A top-level, single-line `description:` value -- the one field a failed
 # frontmatter parse most needs to recover (see parse_frontmatter's fallback).

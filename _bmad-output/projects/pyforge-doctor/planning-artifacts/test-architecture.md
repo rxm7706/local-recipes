@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: c9914e4b1af87b8e
-story_count: 144
+source_fingerprint: b946d7bd789cce07
+story_count: 145
 test_file_count: 93
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 144
+- **Stories parsed:** 145
 - **Epics parsed:** 41
 - **Test files inventoried:** 93 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c9914e4b1af87b8e`
+- **Source fingerprint:** `b946d7bd789cce07`
 
 ## Risk Assessment
 
@@ -318,6 +318,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 38.5 | The detector-aggregate tests run where Doctor's run-deps are installed | none observed |
 | 39.1 | `pr-preflight` runs the detector-aggregate tests where Doctor's run-deps are ... | none observed |
 | 40.1 | Doctor executes no code from the judged tree, and an unresolved head or a fai... | none observed |
+| 40.2 | docs-currency runs Doctor's own generator against the judged tree, never the ... | none observed |
 | 41.1 | The chain sources measure what they claim: spec-surface, dream-chain, the def... | none observed |
 | 41.2 | The ledger, story-status and capability-effect sources degrade honestly, the ... | `src/shared/packages/pyforge-doctor/tests/unit/test_sources_honest_reads_41_2.py` |
 | 41.3 | The board, factory, hygiene and status-body sources read frontmatter one way,... | none observed |

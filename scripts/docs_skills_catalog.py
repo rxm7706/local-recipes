@@ -136,11 +136,13 @@ def render(root: Path, stamp: dict[str, str]) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true", help="report staleness; never write")
+    common.configure_root_argument(parser)
     args = parser.parse_args()
 
-    stamp = common.head_stamp(common.REPO_ROOT)
-    content = render(common.REPO_ROOT, stamp)
-    return common.write_generated_page(common.REPO_ROOT, PAGE_REL, content, check=args.check, stamp=stamp)
+    root = common.resolve_root(args)
+    stamp = common.head_stamp(root)
+    content = render(root, stamp)
+    return common.write_generated_page(root, PAGE_REL, content, check=args.check, stamp=stamp)
 
 
 if __name__ == "__main__":

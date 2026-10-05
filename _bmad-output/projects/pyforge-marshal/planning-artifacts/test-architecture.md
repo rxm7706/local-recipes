@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 7388bb27f9e086a3
+source_fingerprint: 69ebc7393060270a
 story_count: 427
-test_file_count: 239
+test_file_count: 240
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -21,10 +21,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 - **Station:** `pyforge-marshal`
 - **Stories parsed:** 427
 - **Epics parsed:** 85
-- **Test files inventoried:** 239 under `src/shared/packages/pyforge-marshal/tests/`
+- **Test files inventoried:** 240 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7388bb27f9e086a3`
+- **Source fingerprint:** `69ebc7393060270a`
 
 ## Risk Assessment
 
@@ -205,6 +205,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_conformance_schema.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_context.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_context_bundle.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_cursor_launch_config.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_deferred_work.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_deploy.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_deploy_renderers.py` | unit | none observed |

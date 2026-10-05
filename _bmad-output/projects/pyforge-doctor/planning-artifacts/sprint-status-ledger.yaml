@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 226
+# stories: 227
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -123,6 +123,7 @@ development_status:
   4-3-adoption-tracking-watch-axis-fr-12: done
   4-4-safe-upgrade-path-recommendation-fr-13: done
   40-1-doctor-executes-no-code-from-the-judged-tree-and-an-unresolved-head-or-a-failed-gather-reads-as-unevaluable: done
+  40-2-docs-currency-runs-doctor-s-own-generator-against-the-judged-tree-never-the-tree-s: done
   41-1-the-chain-sources-measure-what-they-claim: done
   41-2-the-ledger-and-story-status-sources-degrade-honestly-and-doctor-s-tracking-reads-true: done
   41-3-the-board-factory-hygiene-and-status-body-sources-read-frontmatter-one-way: done
