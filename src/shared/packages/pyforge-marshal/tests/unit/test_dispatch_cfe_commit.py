@@ -162,7 +162,11 @@ def _verify(repo: Path, vcs: GitVcs):
 
 
 def _cfe_findings(envelope) -> list:
-    return [finding for finding in envelope.findings if finding.code == CFE_COMMIT_GATE_CODE]
+    return [
+        finding
+        for finding in envelope.findings
+        if finding.code in (CFE_COMMIT_GATE_CODE, CFE_BRANCH_COMMIT_GATE_CODE)
+    ]
 
 
 # --- one owner: marshal's runtime mirror equals the testing kit's definition -------------------
@@ -637,6 +641,7 @@ def test_auto_checkpoint_leaves_a_cfe_rename_out_of_the_wip_commit(vcs: GitVcs, 
     _write(repo, _STORY_FILE, "x = 2\n")
     _commit_all(repo, "seed helper on the CFE surface")
     _git(repo, "mv", _CFE_RENAME_SRC, _CFE_RENAME_DST)
+    _write(repo, _STORY_FILE, "x = 3\n")
 
     result = commit_worktree_checkpoint(vcs, repo_root=repo, worktree=repo, story_key="83.24")
 
@@ -653,6 +658,7 @@ def test_verify_retro_commit_carries_both_sides_of_a_cfe_rename(vcs: GitVcs, rep
     _write(repo, CFE_CHANGELOG_PATH, "# Changelog\n\n## 9.2.1\n")
     _commit_all(repo, "seed")
     _git(repo, "mv", _CFE_RENAME_SRC, _CFE_RENAME_DST)
+    _write(repo, CFE_CHANGELOG_PATH, "# Changelog\n\n## 9.2.2\n")
 
     envelope = _verify(repo, vcs)
 
