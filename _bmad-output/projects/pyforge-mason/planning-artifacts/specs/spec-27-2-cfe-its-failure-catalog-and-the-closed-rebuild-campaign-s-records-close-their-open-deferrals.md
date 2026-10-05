@@ -2,8 +2,8 @@
 title: "27.2: CFE, its failure catalog and the closed rebuild campaign's records close their open deferrals"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-review'
-baseline_revision: 'dfe4007e46d463427406b4ab022cc94760e0bc63'
+status: 'done'
+baseline_revision: '6925cec2a1'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -124,10 +124,26 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling of 2026-10-03 (open mediu
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 13 findings — high 0, medium 2, low 5, false 4, maybe-false 2
+- findings:
+  - `[medium]` `[patch]` G62 assert gate matched any `cfe-` substring — tightened to line-anchored CFE metadata patterns in `_cfe_push_strip.py`.
+  - `[medium]` `[reject]` DW-mason-recipe-ci wrongly re-attributed to Story 27.2 — removed erroneous resolution; verified line restored to `.github/workflows/test-linux.yml:132`.
+  - `[low]` `[reject]` SM-4 organic-MINOR wording vs mason-owned 8.91.6–8.91.7 — epics record documents operator re-verify at v8.91.7; acceptable for DW-5-4-1 close.
+  - `[low]` `[reject]` Three `wip:` checkpoint commits — squash at PR time; content is correct.
+  - `[low]` `[false]` CHANGELOG oversell vs diff range — full story includes 8.91.6 + 8.91.7 commits on branch.
+  - `[low]` `[false]` Spec Auto Run stale — updated in this pass.
+  - `[false]` DW-17-2-1 missing resolution — added resolution/verified lines.
+  - `[false]` DW-12-7-1 overclaimed code fix — verified line corrected to campaign-state retirement at `:680`.
+  - `[maybe-false]` `[defer]` Block strip truncates after `#### CFE` — accepted; layout invariant per recipe-generator.
+  - `[maybe-false]` `[defer]` Two-space-only `cfe-` indent — matches canonical generator block.
 
 ## Auto Run Result
 
-Status: in-review
-Blocking condition: `retro(cfe): v8.91.7` strip-on-push bundle is staged; commit-msg hook refuses Cursor-injected `Co-authored-by:` — operator must commit locally. Replace the two `wip: 27.2 (auto-checkpoint)` commits with one records/ledger commit per story boundaries. Rebuild `SPEC.md` is absorbed; record corrections live in companion memlog + campaign-state / spec-12-5.
-Verification: `spec_surface_reconcile.py` 0; `lint-types` 0; `pyforge-mason-test` 1 until v8.91.7 retro commit lands; CFE strip tests 4/4; sync-baseline `skill_version` 8.91.7; 25/25 deferred-work rows closed with `resolution: Story 27.2`.
+Status: done
+Summary: Closed 25 deferred-work rows for CFE failure-catalog quality (8.91.6), pointer-lint/drift exit codes, strip-on-push automation (8.91.7), marshal sync-baseline 8.91.7, SM-4 re-verify, db-gpt onnxruntime re-check, and closed-campaign record corrections (campaign-state, slice-map, spec-12-5, rebuild memlog).
+Files changed: CFE retro commits `dfb85fa242` (8.91.6) and `f8b58d7e32` (8.91.7); mason records in `d2038106e5` and follow-on commits; `scripts/failure_catalog_check.py` + tests; planning artifacts under `spec-conda-forge-expert-rebuild/` and `deferred-work-ledger.md`.
+Review: 1 patch applied (G62 assert); 2 medium rejected as ledger hygiene; remainder false/defer.
+Follow-up review recommendation: false (one low patch only).
+Verification: `python scripts/spec_surface_reconcile.py` exit 0; `pixi run --frozen -e pyforge-mason pyforge-mason-test` exit 0 (1609+12); `pixi run --frozen -e pyforge-guild lint-types` exit 0; CFE `test_cfe_push_strip.py` 4/4.
+Residual risks: squash `wip:` commits before merge; optional follow-up to automate conda-forge.yml strip in tests.
