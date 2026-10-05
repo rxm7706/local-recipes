@@ -1757,3 +1757,41 @@ def test_no_checkout_script_is_unevaluable_and_never_falls_back_to_target(
     assert findings[0].status is DoctorStatus.WARN
     assert findings[0].evidence["check"] == "check_pixi_env_matrix"
     assert "scripts/pixi_env_matrix.py not found" in findings[0].message
+
+
+# --- Story 6.12: the env count reads every environment, table-form ones too ----------------------------------------
+
+_TABLE_FORM_PIXI = (
+    '[environments]\ndefault = ["a"]\nbuild = { features = ["b"], no-default-feature = true }\n\n'
+    '[feature.b.tasks]\nt = "true"\n\n'
+    '[environments.platform]\nfeatures = ["c"]\nno-default-feature = true\n'
+)
+
+
+def test_env_count_counts_an_environment_declared_as_its_own_table(tmp_path: Path) -> None:
+    """The origin's line scan stopped at the first header after ``[environments]``, so
+    ``[environments.platform]`` (live: ``python-agent-platform``) was never counted."""
+    (tmp_path / "pixi.toml").write_text(_TABLE_FORM_PIXI, encoding="utf-8")
+    assert factory._env_count(tmp_path) == 3
+
+
+def test_env_count_is_none_for_a_manifest_that_does_not_parse_and_the_other_facts_survive(tmp_path: Path) -> None:
+    _seed_ground_truth(tmp_path)
+    (tmp_path / "pixi.toml").write_text("[environments\ndefault = [\n", encoding="utf-8")
+    assert factory._env_count(tmp_path) is None
+    truth = factory.ground_truth(tmp_path)
+    assert truth["pixi_envs"] is None
+    assert truth["gotcha_max"] == 5
+
+
+def test_env_count_is_zero_for_a_missing_manifest(tmp_path: Path) -> None:
+    assert factory._env_count(tmp_path) == 0
+
+
+def test_env_count_reads_the_live_manifest_like_tomllib() -> None:
+    import tomllib
+
+    repo = Path(__file__).resolve().parents[6]
+    with (repo / "pixi.toml").open("rb") as fh:
+        declared = len(tomllib.load(fh)["environments"])
+    assert factory._env_count(repo) == declared

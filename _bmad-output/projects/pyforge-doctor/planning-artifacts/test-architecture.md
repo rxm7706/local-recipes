@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 678be8decd00cf8c
-story_count: 143
+source_fingerprint: c9914e4b1af87b8e
+story_count: 144
 test_file_count: 93
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 143
+- **Stories parsed:** 144
 - **Epics parsed:** 41
 - **Test files inventoried:** 93 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `678be8decd00cf8c`
+- **Source fingerprint:** `c9914e4b1af87b8e`
 
 ## Risk Assessment
 
@@ -209,6 +209,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 6.9 | The `scripts/` shims retire | none observed |
 | 6.10 | Independence is structural, for every source | none observed |
 | 6.11 | The classifier recognizes a spike report *(added 2026-08-11 — FR-16)* | none observed |
+| 6.12 | bmad-drift counts every pixi environment, table-form ones too | none observed |
 | 7.1 | The emitter mints identity at defer time | none observed |
 | 7.2 | Grandfather the 470 at a dated cut-off | none observed |
 | 7.3 | The detector sees anonymous Tier-3 entries | none observed |

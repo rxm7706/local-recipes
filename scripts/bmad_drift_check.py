@@ -56,6 +56,7 @@ import json
 import re
 import subprocess
 import sys
+import tomllib
 import argparse
 from pathlib import Path
 
@@ -165,17 +166,11 @@ def gotcha_max() -> int | None:
 
 
 def env_count() -> int:
-    out, in_block = 0, False
-    for line in _read(REPO_ROOT / "pixi.toml").splitlines():
-        if line.strip() == "[environments]":
-            in_block = True
-            continue
-        if in_block:
-            if line.startswith("["):
-                break
-            if "=" in line and not line.lstrip().startswith("#"):
-                out += 1
-    return out
+    # Doctor Story 6.12: count the `environments` table's keys with tomllib, so an environment declared as its own
+    # `[environments.<name>]` table counts too (the old line scan stopped at the first header after `[environments]`).
+    # Kept in step with Doctor's `_env_count`: this script writes the baseline Doctor compares against. A manifest
+    # that does not parse raises here, so `--write-baseline` never stamps a count it could not read.
+    return len(tomllib.loads(_read(REPO_ROOT / "pixi.toml")).get("environments", {}))
 
 
 def recipe_split() -> dict[str, int]:

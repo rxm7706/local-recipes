@@ -4,7 +4,7 @@
   "mcp_tools": 46,
   "atlas_phases": 22,
   "gotcha_max": 120,
-  "pixi_envs": 35,
+  "pixi_envs": 36,
   "phase_ids": [
     "B",
     "B.5",
@@ -29,5 +29,5 @@
     "M",
     "N"
   ],
-  "git_head": "1827d8cd92"
+  "git_head": "9f46d66f8b"
 }
