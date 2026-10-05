@@ -585,6 +585,56 @@ def build_upstream_sensor(
     return _sensor
 
 
+def build_fleet_inventory_sensor(
+    *,
+    job: dg.JobDefinition,
+    inventory_source: InventorySource = offline_fleet_inventory_source,
+    run_key_prefix: str = DEPENDENCY_HISTORY_RUN_KEY_PREFIX,
+    flags_path: Path | str | None = None,
+) -> dg.SensorDefinition:
+    """Poll Warden's fleet inventory export and trigger the dependency-history job (Story 25.2)."""
+
+    @dg.sensor(
+        name=FLEET_INVENTORY_SENSOR_NAME,
+        job=job,
+        description=(
+            "Warden fleet inventory head-SHA poll → incremental dependency-history "
+            "refresh (Story 25.1 job; coalesced run per tick, AD-6)."
+        ),
+        default_status=SENSOR_DEFAULT_STATUS,
+    )
+    def _sensor(context: dg.SensorEvaluationContext):
+        if not read_boolean(DEPENDENCY_HISTORY_SENSOR_FLAG, flags_path=flags_path):
+            yield dg.SkipReason("flag off")
+            return
+        try:
+            raw = inventory_source()
+        except Exception as exc:  # noqa: BLE001 — degrade, never crash the daemon
+            yield dg.SkipReason(f"inventory source error: {type(exc).__name__}: {exc}")
+            return
+        decision = evaluate_fleet_inventory_from_raw(
+            raw,
+            context.cursor,
+            run_key_prefix=run_key_prefix,
+        )
+        if decision.run:
+            context.update_cursor(decision.new_cursor)
+            yield dg.RunRequest(
+                run_key=decision.run_key,
+                tags={
+                    "pyforge/trigger": "sensor",
+                    "pyforge/sensor": FLEET_INVENTORY_SENSOR_NAME,
+                    "pyforge/moved_repos": str(len(decision.moved_repos)),
+                },
+            )
+        else:
+            if decision.new_cursor is not None and decision.new_cursor != context.cursor:
+                context.update_cursor(decision.new_cursor)
+            yield dg.SkipReason(decision.skip_reason)
+
+    return _sensor
+
+
 # --------------------------------------------------------------------------- #
 # Wave-H crew assets + factory sensor (Story H4).
 # --------------------------------------------------------------------------- #
@@ -760,6 +810,11 @@ def build_definitions(
     # Phase P job — admin-config-only, NO schedule (AC-6).
     jobs.append(_make_job(PHASE_P_JOB_NAME, list(PHASE_P_OPS)))
 
+    # Story 25.1 dependency-history job (CAP-61) — single-op subset for the fleet sensor.
+    dependency_history_op = "build_repo_dependency_history"
+    if dependency_history_op in node_ops:
+        jobs.append(_make_job(DEPENDENCY_HISTORY_JOB_NAME, [dependency_history_op]))
+
     # Event-driven sensors (Story G3) — each targets an EXISTING job above by
     # object reference (AD-23: same execution plane; the sensor only triggers).
     # The event source is injectable (``event_sources[name]``); it defaults to the
@@ -780,6 +835,11 @@ def build_definitions(
                 description=description,
                 event_source=sources.get(sensor_name) or offline_event_source,
             )
+        )
+
+    if DEPENDENCY_HISTORY_JOB_NAME in jobs_by_name:
+        sensors.append(
+            build_fleet_inventory_sensor(job=jobs_by_name[DEPENDENCY_HISTORY_JOB_NAME])
         )
 
     # Wave-H factory layer (Story H4): the crew ASSETS + their asset-jobs, a weekly LINT schedule,

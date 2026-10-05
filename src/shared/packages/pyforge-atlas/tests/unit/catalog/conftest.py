@@ -239,6 +239,8 @@ PATHS_ENV_VARS = {
     # Story 21.6 (CAP-3 identity join): discovery_local_recipes_raw's live
     # recipes/ tree root (LocalRecipesOverlayDataset).
     "local_recipes_dir": "PYFORGE_ATLAS_LOCAL_RECIPES_DIR",
+    # Story 25.2 — Warden fleet inventory export path (``warden_fleet_inventory`` catalog).
+    "warden_fleet_inventory": "WARDEN_FLEET_INVENTORY_PATH",
 }
 
 # Story 21.1: the three § 3.4 external-refresh store paths — exact key ->
@@ -277,8 +279,8 @@ MEMBER_DIR_RELATIVE_PATHS = {"local_recipes_dir", "seed_root"}
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
 # endpoint_bases 27 (19 live + 1 reserved + 2 Story 21.4 + 5 Story 23.1) +
-# extra_overrides 4 + fetcher_urls 3 + paths 6 = 40. Mirrored by a comment in globals.yml.
-EXPECTED_ENV_OVERRIDE_SURFACE = 40
+# extra_overrides 4 + fetcher_urls 3 + paths 7 = 41. Mirrored by a comment in globals.yml.
+EXPECTED_ENV_OVERRIDE_SURFACE = 41
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential
 # key it may carry. No other entry may carry any credentials key, and the

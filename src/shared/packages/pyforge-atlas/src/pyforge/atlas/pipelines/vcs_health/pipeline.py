@@ -138,7 +138,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             # Story 25.1 (CAP-61) — placeholder until git-pkgs lands; Story 25.2 sensor job target.
             node(
                 func=build_repo_dependency_history,
-                inputs=None,
+                inputs=[],
                 outputs="repo_dependency_history",
                 name="build_repo_dependency_history",
             ),
