@@ -811,3 +811,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
   status: open
+
+### DW-warden-14-1: Default pixi-lock solver seam is not exercised end-to-end in CI; unit tests inject the seam only.
+
+- source_spec: `planning-artifacts/specs/spec-14-1-the-actuator-resolves-the-lowest-osv-fixed-release-the-estate-s-solver-accepts.md`
+  summary: Default pixi-lock solver seam is not exercised end-to-end in CI; unit tests inject the seam only.
+  evidence: Story 14.1 ACs are covered with selective_solver fixtures; real pixi lock in throwaway copy needs a hermetic fixture repo test.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/fix_solver.py
+  origin: spec-deferred 06e7180ee50b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

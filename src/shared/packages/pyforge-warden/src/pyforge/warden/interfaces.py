@@ -220,6 +220,7 @@ class EngineResult:
     epss_data: FeedProvenance | None = None
     currency_data: FeedProvenance | None = None
     fixed_versions: Mapping[str, str] = MappingProxyType({})
+    fixed_version_candidates: Mapping[str, tuple[str, ...]] = MappingProxyType({})
 
 
 @runtime_checkable

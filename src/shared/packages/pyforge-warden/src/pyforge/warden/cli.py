@@ -1572,6 +1572,10 @@ def _run_scan(args: argparse.Namespace) -> int:
     # summary, keeping stdout a single pure document (NFR-I3).
     actuation_payload: dict[str, object] | None = None
     if args.open_fix_prs or args.fix_prs_dry_run:
+        fixed_version_candidates: dict[str, tuple[str, ...]] = {}
+        for result in engine_results:
+            for finding_id, candidates in result.fixed_version_candidates.items():
+                fixed_version_candidates.setdefault(finding_id, candidates)
         # Never actuate a finding the operator already ACCEPTED: baseline
         # (grandfathered debt -- auto-PRs for it would defeat the entire point
         # of grandfathering) and waiver suppressions are excluded, keyed on the
@@ -1588,6 +1592,8 @@ def _run_scan(args: argparse.Namespace) -> int:
                 actuatable,
                 dry_run=args.fix_prs_dry_run or not args.open_fix_prs,
                 env=os.environ,
+                fixed_version_candidates=fixed_version_candidates,
+                scan_target=target,
             )
             actuation_payload = actuation.to_json_dict()
             failed = [outcome for outcome in actuation.outcomes if outcome.status == "failed"]

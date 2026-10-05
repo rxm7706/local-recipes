@@ -104,6 +104,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.warden.fix_target_resolution": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "warden",
+        "story": "14-1-the-actuator-resolves-the-lowest-osv-fixed-release-the-estate-s-solver-accepts",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     }
   }
 }

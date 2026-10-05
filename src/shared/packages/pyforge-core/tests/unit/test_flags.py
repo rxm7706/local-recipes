@@ -877,6 +877,13 @@ _SHIPPED_CLOCKS = {
     "pyforge.steward.object_store_consumer": ("steward", "74-1-", "2026-09-29", "", ""),
     "pyforge.steward.sync_github_only_marker": ("steward", "84-4-", "2026-10-03", "", ""),
     "pyforge.marshal.verify_fix_loop": ("marshal", "85-1-", "2026-10-03", "", ""),
+    "pyforge.warden.fix_target_resolution": (
+        "warden",
+        "14-1-",
+        "2026-09-28",
+        "",
+        "",
+    ),
     "pyforge.atlas.dependency_history_sensor": ("atlas", "25-2-", "2026-09-28", "", ""),
 }
 
@@ -932,6 +939,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.steward.sync_github_only_marker": {"dev": True, "staging": True, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
+        "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},
     }
     assert {k for k, e in payload["flags"].items() if all(isinstance(v, bool) for v in e["variants"].values())} == set(
         expected

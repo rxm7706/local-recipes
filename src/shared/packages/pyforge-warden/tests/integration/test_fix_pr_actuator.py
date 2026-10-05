@@ -25,8 +25,16 @@ from importlib import resources
 from pathlib import Path
 
 import jsonschema
+import pytest
 
 from pyforge.warden.cli import main
+
+
+@pytest.fixture(autouse=True)
+def _legacy_upgrade_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The shipped tree renders fix_target_resolution on in dev (the default environment); these tests pin the flag-off path.
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
+
 
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "projects"
 VULN_CRITICAL = FIXTURES / "vuln_critical"

@@ -2,7 +2,8 @@
 title: "14.1: The actuator resolves the lowest OSV-fixed release the estate's solver accepts"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '0ad6873d2fa3776d51e20c55ad9b67d345ef9884'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -18,7 +19,14 @@ flag:
   scope: global
   fallback: "the upgrade proposal cites the advisory and the current vulnerable version with no target, as today"
   cleanup: 90 days after ON in every environment (Q4)
-deferred: []
+deferred:
+  - summary: >-
+      Default pixi-lock solver seam is not exercised end-to-end in CI; unit tests inject the seam only.
+    evidence: |-
+      Story 14.1 ACs are covered with selective_solver fixtures; real pixi lock in throwaway copy needs a hermetic fixture repo test.
+    location: >-
+      src/shared/packages/pyforge-warden/src/pyforge/warden/fix_solver.py
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 
@@ -110,3 +118,35 @@ Deps: —.
 ## Review Triage Log
 
 - No review yet (minted 2026-09-28). Implementation and review stay separate: the reviewer reads the diff against this spec and CAP-24.
+
+### 2026-10-05 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 2, maybe-false 1
+- findings:
+  - `[low]` `[reject]` Default pixi solver uses a line-scoped TOML probe rather than Story 14.2's manifest_edit module — acceptable for 14.1 solver seam only; 14.2 replaces the probe for PR diffs.
+  - `[false]` `[reject]` Flag-off path might still read candidates — verified `read_boolean` gate skips resolution when off.
+  - `[false]` `[reject]` Dry-run might invoke solver — verified `resolve_fix_target` sets `solver: not-run` when `dry_run=True`.
+  - `[maybe-false]` `[defer]` Real-path default pixi solver not exercised in CI (injectable seam only in unit tests) — severity: medium (unverified); evidence would be a hermetic pixi-lock fixture test.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** OSV fixed-version candidates flow from `vuln.py` through `EngineResult` and `cli.py` into the fix-PR actuator. With `pyforge.warden.fix_target_resolution` on, the actuator picks the lowest candidate at or above the current version that the injectable/default pixi-lock solver accepts; dry-run names the lowest candidate with `solver: not-run` and opens no socket. Resolution metadata rides `PROutcome.fix_resolution` in the actuation payload.
+
+**Files changed:**
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py` — collect all fixed events per finding
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/interfaces.py` — `fixed_version_candidates` on `EngineResult`
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py` — thread candidates; `run_pixi_lock` + `PIXI_VERSION_RANGE`
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/fix_solver.py` — solver seam and resolution logic (new)
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py` — flag-gated target resolution and actuation payload
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py` — merge candidates; pass scan target
+- `src/shared/packages/pyforge-warden/tests/unit/test_fix_target_resolution.py` — AC coverage (new)
+- `src/platform/config/flags.json` — `pyforge.warden.fix_target_resolution` (default off)
+
+**Review:** 0 patches applied; 1 item deferred (default pixi solver CI proof); 3 findings rejected as noted above.
+
+**Follow-up review recommended:** false
+
+**Verification:** `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2139 passed; `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconciles on `spec-pyforge-warden`, `spec-feature-flag-governance`, and co-governor `spec-pyforge-core`.
+
+**Residual risks:** Default production solver depends on throwaway-copy TOML probing until Story 14.2's `manifest_edit.py`; no integration test runs real `pixi lock` in CI.
