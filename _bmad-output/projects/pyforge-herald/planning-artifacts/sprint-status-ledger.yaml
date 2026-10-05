@@ -97,7 +97,7 @@ development_status:
   24-3-the-second-sync-all-run-is-proven-unchanged-on-a-real-deck: done
   25-1-the-deck-pipeline-runs-from-the-guild-env: done
   26-1-the-dossier-reads-the-a-b-cutover-as-control-plane-fact: done
-  27-1-the-docs-shelf-builds-as-a-starlight-site-in-place: backlog
+  27-1-the-docs-shelf-builds-as-a-starlight-site-in-place: done
   27-2-one-pages-artifact-carries-the-docs-site-the-dossier-and-the-dashboard: backlog
   27-3-the-sidebar-is-generated-from-docs-map-yaml-order: backlog
   27-4-the-docs-validators-gate-every-pr: backlog
@@ -176,7 +176,7 @@ development_status:
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional
-  epic-27: backlog
+  epic-27: in-progress
   epic-27-retrospective: optional
   epic-28: backlog
   epic-28-retrospective: optional
