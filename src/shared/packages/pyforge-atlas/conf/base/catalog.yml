@@ -797,6 +797,20 @@ vcs_migration_readiness:
   metadata:
     layer: primary
 
+# Story 25.2 — Warden fleet inventory export (raw JSON; AD-2, no warden import).
+warden_fleet_inventory:
+  type: json.JSONDataset
+  filepath: ${globals:paths.warden_fleet_inventory}
+  metadata:
+    layer: raw
+
+# Story 25.1 (CAP-61) — per-repo dependency history; placeholder dataset until 25.1 lands.
+repo_dependency_history:
+  type: pandas.ParquetDataset
+  filepath: ${globals:paths.data_root}/primary/repo_dependency_history/repo_dependency_history.parquet
+  metadata:
+    layer: primary
+
 # =============================================================================
 # universal_sbom — user-inventory intake + matching (entry-scoped, § 3.4)
 # =============================================================================

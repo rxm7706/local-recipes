@@ -104,7 +104,7 @@ EXPECTED_PIPELINE_COUNTS = {
     "core": 18,  # Story 21.4: + core_anaconda_main_channeldata_raw + core_anaconda_main_packages
     "pypi_intelligence": 21,  # Story 23.1: +5 Tier-3 raw stores + pypi_tier3_channel_flags (+6 nodes)
     "vulnerability": 15,  # Story 23.3: + vulnerability_basilisk_rollup (rollup lives under vulnerability_* prefix)
-    "vcs_health": 25,  # B10: +5 category-list + vcs_migration_detail_raw + vcs_migration_readiness (FR-21; new-signal, AD-14)
+    "vcs_health": 26,  # Story 25.2: + build_repo_dependency_history (25.1 placeholder op for sensor job)
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
     "derived_artifacts": 7,  # Story 23.8: + inventory_universe; Story 23.3: + inventory_priority_assignments; Story 23.4: + inventory_verified_packages + inventory_aoss_free_queue; Story 23.5: + identity_complete_export
@@ -113,7 +113,7 @@ EXPECTED_PIPELINE_COUNTS = {
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 125  # Story 23.5: +1 (identity_complete_export)
+EXPECTED_TOTAL = 127  # Story 25.2: +warden_fleet_inventory +repo_dependency_history
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
