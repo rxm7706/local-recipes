@@ -2,7 +2,7 @@
 title: "19.1: Mason's station skill is SKF-compiled, exported and consulted by the persona"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '0ad6873d2fa3776d51e20c55ad9b67d345ef9884'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -130,5 +130,10 @@ Kinship: steward Story 72.2 (`spec-pyforge-steward:CAP-160`) is minted `blocked`
 - `pixi run --frozen -e pyforge-scribe python -m pytest -q src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` — expected: pass.
 - `pixi run -e pyforge-guild docs-skills-catalog -- --check` — expected: exit 0 after regeneration.
 - `pixi run -e pyforge-guild governance-currency` and `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0.
+
+## Auto Run Result
+
+Status: done  
+Verification: `pyforge-mason-test` green; `skf-rebuild-managed-sections.py AGENTS.md check` ok (`8 skills`); `spec_surface_reconcile.py` ok; `docs-skills-catalog --check`, `governance-currency`, scribe instruction-surface parity green. SKF via headless `skf-create-skill` + `skf-export-skill`. Memlog reconcile on `spec-pyforge-mason`, `spec-pyforge-scribe`, `spec-pyforge-unifying-strategy`.
 
 ## Review Triage Log

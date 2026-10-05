@@ -137,9 +137,13 @@ def test_golden_transcript_is_grammar_and_mcp_only():
     events = json.loads(path.read_text(encoding="utf-8"))
     validate_transcript(events)
     kinds = {event["kind"] for event in events}
-    consult_skills = {
-        event["skill"] for event in events if event.get("kind") == "consult_content_skill"
-    }
+    consult_events = [event for event in events if event.get("kind") == "consult_content_skill"]
+    assert len(consult_events) == 2
+    assert consult_events[0]["skill"] == STATION_SKILL
+    assert consult_events[0]["path"].replace("\\", "/") == STATION_SKILL_MD
+    assert consult_events[1]["skill"] == CONTENT_SKILL
+    assert consult_events[1]["path"].replace("\\", "/") == CONTENT_SKILL_MD
+    consult_skills = {event["skill"] for event in consult_events}
     assert consult_skills == CONSULT_SKILLS
     assert "grammar" in kinds
     assert "mcp" in kinds
@@ -390,6 +394,22 @@ def test_agents_skf_managed_section_well_formed():
     )
     assert result["has_managed_section"]
     assert result["markers_valid"]
+    section = (root / "AGENTS.md").read_text(encoding="utf-8")
+    begin = section.index("<!-- SKF:BEGIN")
+    end = section.index("<!-- SKF:END -->")
+    block = section[begin:end]
+    assert "[SKF Skills]|8 skills|0 stack" in block
+    assert "|[pyforge-mason v0.1.0]|root: .claude/skills/pyforge-mason/" in block
+    for station in (
+        "pyforge-atlas",
+        "pyforge-doctor",
+        "pyforge-herald",
+        "pyforge-marshal",
+        "pyforge-scribe",
+        "pyforge-steward",
+        "pyforge-warden",
+    ):
+        assert f"|[{station} v0.1.0]|" in block
 
 
 def test_does_not_mint_01_portal_mcp_or_persona():
