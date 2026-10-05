@@ -7,6 +7,7 @@ from pathlib import Path
 
 import dagster as dg
 import pytest
+from pyforge.core.flags import read_boolean
 
 from pyforge.atlas.orchestration import definitions as D
 from pyforge.atlas.orchestration.fleet_inventory_sensor import (
@@ -17,7 +18,6 @@ from pyforge.atlas.orchestration.fleet_inventory_sensor import (
     offline_fleet_inventory_source,
     parse_fleet_inventory,
 )
-from pyforge.core.flags import read_boolean
 
 
 @pytest.fixture(scope="module")

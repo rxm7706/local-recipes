@@ -73,7 +73,7 @@ def _decode_cursor(cursor: str | None) -> dict[str, str]:
         return {}
     try:
         data = json.loads(cursor)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return {}
     if not isinstance(data, dict):
         return {}

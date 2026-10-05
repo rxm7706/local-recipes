@@ -61,6 +61,7 @@ from pathlib import Path
 
 import dagster as dg
 from kedro_dagster import KedroProjectTranslator
+from pyforge.core.flags import read_boolean
 
 from pyforge.atlas.factory.crews import CompileCrew, LintCrew
 from pyforge.atlas.factory.wiki import WikiLayout, scaffold_wiki
@@ -71,6 +72,8 @@ from pyforge.atlas.orchestration.event_source import (
 )
 from pyforge.atlas.orchestration.fleet_inventory_sensor import (
     FLAG_KEY as DEPENDENCY_HISTORY_SENSOR_FLAG,
+)
+from pyforge.atlas.orchestration.fleet_inventory_sensor import (
     InventorySource,
     evaluate_fleet_inventory_from_raw,
     offline_fleet_inventory_source,
@@ -80,7 +83,6 @@ from pyforge.atlas.orchestration.wiki_events import (
     evaluate_raw_scan,
     scan_raw_docs,
 )
-from pyforge.core.flags import read_boolean
 
 # --------------------------------------------------------------------------- #
 # Kedro project location (this package's project root — has conf/, settings.py,
@@ -838,9 +840,7 @@ def build_definitions(
         )
 
     if DEPENDENCY_HISTORY_JOB_NAME in jobs_by_name:
-        sensors.append(
-            build_fleet_inventory_sensor(job=jobs_by_name[DEPENDENCY_HISTORY_JOB_NAME])
-        )
+        sensors.append(build_fleet_inventory_sensor(job=jobs_by_name[DEPENDENCY_HISTORY_JOB_NAME]))
 
     # Wave-H factory layer (Story H4): the crew ASSETS + their asset-jobs, a weekly LINT schedule,
     # and the new-raw-file compile SENSOR — all on this same Dagster plane (AD-6/AD-23).
