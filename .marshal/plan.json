@@ -138,20 +138,20 @@
     {
       "artifact_id": "implementation-artifacts-symlink",
       "artifact_class": "generated-derived",
-      "current_state": "present-conformant",
+      "current_state": "absent",
       "target_state": "present-conformant",
       "target_path": "_bmad-output/implementation-artifacts",
       "chosen_anchor": [],
-      "rationale": "'_bmad-output/implementation-artifacts' already exists but is not yet a tool-owned generated-derived artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+      "rationale": "'_bmad-output/implementation-artifacts' is absent; materialize it as generated-derived"
     },
     {
       "artifact_id": "planning-artifacts-symlink",
       "artifact_class": "generated-derived",
-      "current_state": "present-conformant",
+      "current_state": "absent",
       "target_state": "present-conformant",
       "target_path": "_bmad-output/planning-artifacts",
       "chosen_anchor": [],
-      "rationale": "'_bmad-output/planning-artifacts' already exists but is not yet a tool-owned generated-derived artifact (first-claim, tool-owned class); adopt claims and overwrites it"
+      "rationale": "'_bmad-output/planning-artifacts' is absent; materialize it as generated-derived"
     },
     {
       "artifact_id": "projects-index",
@@ -183,7 +183,7 @@
     }
   ],
   "repo_fingerprint": {
-    "git_head": "6fa04ffe0cb24fb1553e72403dfe41e8cdd856c2",
+    "git_head": "f8f6894baea28de897ab206ed6f6c20e596a8bca",
     "dirty": false,
     "artifact_hashes": [
       [
