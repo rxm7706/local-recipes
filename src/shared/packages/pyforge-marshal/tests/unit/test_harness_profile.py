@@ -595,7 +595,9 @@ def test_packaged_gemini_has_no_wrapper_and_records_wire_probe_evidence():
     """Gemini wire cell: probed, none — documented on the profile, not silent."""
     gemini = load_packaged_profiles()["gemini"]
     assert gemini.wrapper is None
-    profile_path = Path(__file__).resolve().parents[3] / "src/pyforge/marshal/data/harness_profiles/gemini.toml"
+    profile_path = (
+        Path(__file__).resolve().parents[2] / "src/pyforge/marshal/data/harness_profiles/gemini.toml"
+    )
     text = profile_path.read_text(encoding="utf-8")
     assert "Story 46.10" in text
     assert "probed, none" in text.lower() or "No such command 'gemini'" in text
