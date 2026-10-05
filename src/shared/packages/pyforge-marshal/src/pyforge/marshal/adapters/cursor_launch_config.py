@@ -30,8 +30,7 @@ def _load_operator_cli_config(source_dir: Path) -> dict[str, Any]:
         raw = path.read_bytes()
     except OSError as exc:
         raise CursorLaunchConfigError(
-            f"{CURSOR_ATTRIBUTION_OFF_FINDING}: cannot read operator Cursor "
-            f"config {path!s}: {exc}"
+            f"{CURSOR_ATTRIBUTION_OFF_FINDING}: cannot read operator Cursor config {path!s}: {exc}"
         ) from exc
     if not raw.strip():
         return {}
@@ -39,13 +38,11 @@ def _load_operator_cli_config(source_dir: Path) -> dict[str, Any]:
         parsed = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise CursorLaunchConfigError(
-            f"{CURSOR_ATTRIBUTION_OFF_FINDING}: operator Cursor config "
-            f"{path!s} is not valid JSON: {exc}"
+            f"{CURSOR_ATTRIBUTION_OFF_FINDING}: operator Cursor config {path!s} is not valid JSON: {exc}"
         ) from exc
     if not isinstance(parsed, dict):
         raise CursorLaunchConfigError(
-            f"{CURSOR_ATTRIBUTION_OFF_FINDING}: operator Cursor config "
-            f"{path!s} must be a JSON object"
+            f"{CURSOR_ATTRIBUTION_OFF_FINDING}: operator Cursor config {path!s} must be a JSON object"
         )
     return parsed
 
@@ -63,8 +60,7 @@ def _write_run_scoped_config(config_dir: Path, config: dict[str, Any]) -> None:
             handle.write(payload)
     except OSError as exc:
         raise CursorLaunchConfigError(
-            f"{CURSOR_ATTRIBUTION_OFF_FINDING}: cannot write run-scoped Cursor "
-            f"config under {config_dir!s}: {exc}"
+            f"{CURSOR_ATTRIBUTION_OFF_FINDING}: cannot write run-scoped Cursor config under {config_dir!s}: {exc}"
         ) from exc
 
 

@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
-from pyforge.marshal.adapters.skill_invoke_harness import HarnessSkillInvoker
 from pyforge.marshal.adapters.cursor_launch_config import (
     CursorLaunchConfigError,
     cursor_launch_env_overlay,
 )
+from pyforge.marshal.adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
+from pyforge.marshal.adapters.skill_invoke_harness import HarnessSkillInvoker
 from pyforge.marshal.core.cursor_launch_config import (
     CURSOR_ATTRIBUTION_OFF_FINDING,
     effective_cursor_config_dir,
@@ -70,9 +70,7 @@ def test_cursor_launch_env_overlay_refuses_unreadable_operator_config(
         cursor_launch_env_overlay(worktree, os.environ)
 
 
-def test_launch_argv_sets_cursor_config_dir_for_cursor_profile(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_launch_argv_sets_cursor_config_dir_for_cursor_profile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     operator_dir = tmp_path / "operator-cursor"
     operator_dir.mkdir()
     (operator_dir / "cli-config.json").write_text(
@@ -116,9 +114,7 @@ def test_launch_argv_sets_cursor_config_dir_for_cursor_profile(
     assert run_cfg["attribution"]["attributeCommitsToAgent"] is False
 
 
-def test_launch_argv_cursor_attribution_overlay_mutation_guard(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_launch_argv_cursor_attribution_overlay_mutation_guard(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Removing the overlay leaves CURSOR_CONFIG_DIR unset on the child env."""
     operator_dir = tmp_path / "operator-cursor"
     operator_dir.mkdir()
@@ -137,8 +133,7 @@ def test_launch_argv_cursor_attribution_overlay_mutation_guard(
 
         return _Proc()
 
-    from pyforge.marshal.adapters import harness_bmadbuild
-    from pyforge.marshal.adapters import cursor_launch_config
+    from pyforge.marshal.adapters import cursor_launch_config, harness_bmadbuild
 
     monkeypatch.setattr(harness_bmadbuild.subprocess, "Popen", _popen)
     monkeypatch.setattr(cursor_launch_config, "cursor_launch_env_overlay", lambda _wt, _env: {})
@@ -162,9 +157,7 @@ def test_launch_argv_cursor_attribution_overlay_mutation_guard(
     assert seen.get("CURSOR_CONFIG_DIR") == str(run_scoped_cursor_config_dir(worktree))
 
 
-def test_harness_skill_invoker_applies_cursor_config_overlay(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_harness_skill_invoker_applies_cursor_config_overlay(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     operator_dir = tmp_path / "operator-cursor"
     operator_dir.mkdir()
     (operator_dir / "cli-config.json").write_text(

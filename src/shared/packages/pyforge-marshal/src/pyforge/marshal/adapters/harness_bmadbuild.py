@@ -47,7 +47,6 @@ from typing import BinaryIO
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError
 
-from .cursor_launch_config import CursorLaunchConfigError, cursor_launch_env_overlay
 from ..core.dispatch_verify_fix import VERIFY_FIX_PROMPT_FILENAME
 from ..core.harness_profile import (
     HarnessProfile,
@@ -65,6 +64,7 @@ from ..ports.build_harness import (
     HarnessCandidateSkip,
     HarnessResolution,
 )
+from .cursor_launch_config import CursorLaunchConfigError, cursor_launch_env_overlay
 from .harness_bmadloop import _SURFACE_RECONCILE_COMMAND
 
 
