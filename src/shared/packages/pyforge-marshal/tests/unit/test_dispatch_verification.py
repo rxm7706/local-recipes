@@ -962,8 +962,7 @@ class FakeProcessCrossStationMetaFails:
 
     def __init__(self, *, stderr: str | None = None) -> None:
         self._stderr = stderr or (
-            "src/shared/packages/pyforge-herald/src/pyforge/herald/unrelated.py: "
-            "names local-recipes env"
+            "src/shared/packages/pyforge-herald/src/pyforge/herald/unrelated.py: names local-recipes env"
         )
 
     def run(self, tokens, *, cwd: Path):
@@ -991,9 +990,7 @@ class FakeProcessDoctorCrossStationMetaFails:
         return ProcessResult(returncode=0, stdout="ok", stderr="")
 
 
-_ATLAS_27_3_CHANGED = (
-    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py",
-)
+_ATLAS_27_3_CHANGED = ("src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py",)
 
 
 def test_evaluate_dispatch_verification_atlas_27_3_replay_derives_steward_meta_and_refuses(
@@ -1053,9 +1050,7 @@ def test_evaluate_dispatch_verification_cross_station_meta_failure_not_reclassif
         process=FakeProcessCrossStationMetaFails(),
     )
     assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings)
-    assert any(
-        f.code == "MRS-GATE-001" and STEWARD_CROSS_STATION_META in f.message for f in envelope.findings
-    )
+    assert any(f.code == "MRS-GATE-001" and STEWARD_CROSS_STATION_META in f.message for f in envelope.findings)
 
 
 def test_evaluate_dispatch_verification_dedupes_declared_cross_station_meta_command(
