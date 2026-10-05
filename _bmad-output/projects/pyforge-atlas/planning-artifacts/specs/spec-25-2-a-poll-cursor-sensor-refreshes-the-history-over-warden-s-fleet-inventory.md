@@ -2,7 +2,8 @@
 title: "25.2: A poll-cursor sensor refreshes the history over Warden's fleet inventory"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '1bba74171d0967232532fd86e1e1f383f0b8e00c'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -108,3 +109,34 @@ Deps: S-25.1.
 ## Review Triage Log
 
 - No review yet (minted 2026-09-28). Implementation and review stay separate.
+
+### 2026-10-05 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (self-review against acceptance criteria and matrix test audit; no subagent findings)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added dagster-free fleet inventory poll-cursor logic, wired `dependency_history_fleet_sensor` to the Story 25.1 job (`vcs_repo_dependency_history` / `build_repo_dependency_history` placeholder op), catalog dataset `warden_fleet_inventory`, flag `pyforge.atlas.dependency_history_sensor`, and offline-default inventory source.
+
+Files changed:
+- `orchestration/fleet_inventory_sensor.py` — pure head-SHA cursor decision + offline source
+- `orchestration/definitions.py` — sensor, job, flag gate via `read_boolean`
+- `pipelines/vcs_health/` — placeholder `build_repo_dependency_history` node for sensor job target
+- `conf/base/catalog.yml`, `conf/base/globals.yml` — `warden_fleet_inventory`, `repo_dependency_history`
+- `src/platform/config/flags.json` — sensor flag (default off)
+- Tests: `test_fleet_inventory_sensor.py`, dryrun/dag/catalog/parity pin updates
+
+Review: 0 patches, 0 deferrals.
+
+Verification:
+- `pixi run -e pyforge-atlas kedro-test` — pass (2145 passed, 20 skipped)
+- `pixi run -e pyforge-atlas kedro-catalog-check` — pass (69 passed)
+- `python scripts/spec_surface_reconcile.py` — pass (memlog reconcile on `spec-pyforge-atlas` and `spec-feature-flag-governance`)
+
+Governed paths reconciled in memlogs:
+- Owning spec `spec-pyforge-atlas`: all atlas package paths above
+- Co-governor `spec-feature-flag-governance`: `src/platform/config/flags.json`
+
+Residual risk: Story 25.1 still replaces the placeholder `build_repo_dependency_history` body; live Warden export wiring follows Story 16.1.
