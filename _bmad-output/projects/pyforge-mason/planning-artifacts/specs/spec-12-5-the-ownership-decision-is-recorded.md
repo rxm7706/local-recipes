@@ -145,15 +145,17 @@ not pick a verdict" discipline) rather than silently assuming mason owns everyth
 **Per-slice station ownership.** Mason owns the campaign through-line — campaign-state.yaml,
 the guard detector, the re-scope gates, and the endgame/cutover. Atlas owns the Slice-3
 (atlas-intelligence) tier: when slices 3–5 decompose after Story 12.8's checkpoint, Slice 3's
-brief is authored on and its stories carried by the pyforge-atlas chain, with its Rule-2 retro
-and equivalence sign-off owned by atlas. Rationale (operator, after full briefing): atlas is
-the tier's station of competence — it already rebuilt the cf_atlas orchestrator as the live
-Kedro/DuckDB estate and owns the CAP-19 query plane this tier's data feeds — so atlas
+brief is authored on and its stories carried by [reading: brief is authored by atlas and its
+stories are carried by] the pyforge-atlas chain, with its Rule-2 retro and equivalence
+sign-off owned by atlas. Rationale (operator, after full briefing): atlas is the tier's
+station of competence — it already rebuilt the cf_atlas orchestrator as the live Kedro/DuckDB
+estate and owns the spec-pyforge-steward CAP-19 query plane this tier's data feeds — so atlas
 ownership forces the legacy-vs-Kedro convergence question into the right hands instead of
-risking a parallel rebuild of the legacy tier. Precedent: CAP-19's "atlas owns the engine,
-steward owns the through-line" split, and Phase-T trending landing as atlas Epic 13 despite
-its mason handoff. This story now records this ruling in campaign-state.yaml and the parent
-SPEC's OQ-1 per its own Acceptance Criteria.
+risking a parallel rebuild of the legacy tier. Precedent: spec-pyforge-steward CAP-19's
+"atlas owns the engine, steward owns the through-line" split, and Phase-T trending landing as
+atlas Epic 13 despite its mason handoff (see Non-goals §3 in the rebuild companion memlog for
+the legacy-vs-Kedro timing frame). This story now records this ruling in campaign-state.yaml
+and the parent SPEC's OQ-1 per its own Acceptance Criteria.
 
 ## Execution record — 2026-08-28
 
@@ -273,6 +275,14 @@ cfe-rebuild-guard-check` exits clean before and after every edit in this run; `g
 
 **Residual risks:** none beyond the 5 deferred cosmetic/sourcing items above, all low
 severity and pre-existing in the operator's own ruling text.
+
+## Spec Change Log
+
+- 2026-10-04 (Story 27.2): Bracketed reading for the operator's "authored on and its stories
+  carried by" phrase; qualified CAP-19 as `spec-pyforge-steward` CAP-19; cross-referenced the
+  legacy-vs-Kedro frame to rebuild Non-goals §3 via companion memlog; corrected Code Map to the
+  nested `campaign.re_scope_gate.pre_conditions.d_ownership_decision` field; expanded `context:`
+  with steward CAP-19 and atlas Dream sources (`DW-12-5-1` … `DW-12-5-5`, `DW-12-4-1`).
 
 ## Verification
 

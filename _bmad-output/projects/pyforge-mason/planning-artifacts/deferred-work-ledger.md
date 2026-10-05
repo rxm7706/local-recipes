@@ -631,12 +631,12 @@ status: open
   summary: Story 5.4 closed using CFE v8.82.0 (2026-08-20) as the "MINOR landing after Mason ships" — but that MINOR was produced by Mason's own closing retrospective (Story 5.5), not an unrelated effort, and the live python_min floor (3.10) currently coincides with the pre-fix hardcoded fallback, so the verb-level output delta is not yet observable. The resolution-layer A/B (old parents[3] never finds the pinning file; new get_repo_root() does) plus a green verb re-run are the recorded evidence.
   evidence: Recorded 2026-08-21 under the operator-chosen hybrid close (record now, re-verify later). Re-confirm when the next CFE MINOR lands from an effort outside Mason's own chain (cadence: v8.79 Jul 18 → v8.80/8.81 Jul 29 → v8.82 Aug 20; the in-flight langflow closure's Rule-2 retro is the likely producer) OR when conda-forge bumps python_min past 3.10, whichever first — re-run `mason recipe optimize` and append the observed verb-level delta to the SM-4 record in epics.md, then close this entry.
   severity: low
-  status: open
-
+  status: closed
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md:1363
 ### DW-7-1-1: symptom_signature tokens are not all meaningfully diagnostic: some rows carry a single generic word (e.g. "fails", "work") or a full sentence pulled verbatim as their entire signature, and common tokens (e.g. "noarch: python", "pip check") repeat across dozens of unrelated rows.
 
 - source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
@@ -646,12 +646,12 @@ status: open
   origin: spec-deferred aee7832915ee — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: .claude/skills/conda-forge-expert/scripts/failure_catalog_generator.py:234
 ### DW-7-1-2: The fenced-code-block inclusion heuristic in _symptom_paragraph only fires when the Symptom paragraph's prose ends in a literal colon.
 
 - source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
@@ -661,12 +661,12 @@ status: open
   origin: spec-deferred 3ae0fb0c3b57 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: .claude/skills/conda-forge-expert/scripts/failure_catalog_generator.py:248
 ### DW-7-1-3: _ENFORCED_BY_RE's exact-phrase match ("The optimizer's **CODE** check") has no fallback signal distinguishing "no check exists yet" from "the phrasing drifted."
 
 - source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
@@ -676,12 +676,12 @@ status: open
   origin: spec-deferred f475fbe29d6f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: .claude/skills/conda-forge-expert/scripts/failure_catalog_generator.py:217
 ### DW-7-1-4: failure-catalog.yaml has no schema_version/format_version field.
 
 - source_spec: `planning-artifacts/specs/spec-7-1-the-failure-catalog-derives-from-the-skill-spec.md`
@@ -691,12 +691,12 @@ status: open
   origin: spec-deferred 59d5d9740e06 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: .claude/skills/conda-forge-expert/config/failure-catalog.yaml:6
 ### DW-7-2-1: _code_present()'s narrow `code="X"`/`code='X'` literal-substring match could miss a check code defined a different way (spaced `code = "X"`, a dict-literal `"code": "X"`, ...), producing a false unresolved-pointer.
 
 - source_spec: `planning-artifacts/specs/spec-7-2-the-pointers-lint-and-the-drift-gates.md`
@@ -706,12 +706,12 @@ status: open
   origin: spec-deferred 938b3367633e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: scripts/failure_catalog_check.py:106
 ### DW-7-2-2: check_drift() decides ordinary drift vs. generator-broke by testing for the literal string "DRIFT DETECTED" in the generator's stderr -- a real but self-detecting coupling to Story 7.1's exact wording.
 
 - source_spec: `planning-artifacts/specs/spec-7-2-the-pointers-lint-and-the-drift-gates.md`
@@ -721,12 +721,12 @@ status: open
   origin: spec-deferred 23eb218e647f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-08-26 — still-open — 2026-08-26 fleet hygiene first CAP-4 stamp at HEAD d7853d7983; ledger status mapped to still-open
 
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: scripts/failure_catalog_check.py:158
 ### DW-7-2-3: Nothing in this repo currently makes a detector finding (this one included) or a tests/scripts/ failure literally block a PR -- .github/workflows/detectors.yml is advisory-only by a pre-existing 2026-07-31 operator decision, and tests/scripts/ (including this story's new test file) is not invoked by any GitHub Actions workflow at all.
 
 - source_spec: `planning-artifacts/specs/spec-7-2-the-pointers-lint-and-the-drift-gates.md`
@@ -798,12 +798,12 @@ status: open
   origin: spec-deferred 236876ec2b22 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
 
   verified: 2026-09-09 — still-open-but-SUPERSEDED-IN-SCOPE — the staleness half of this entry is closed: both compiled slices read equivalence: green again (slice 1 re-verified 2026-09-05 after the v8.84.0 --head re-port; slice 2 fixed at source 2026-09-04 via _paths.get_repo_root()'s marker walk), and cfe-rebuild-guard-check is clean. The remaining half — that clause (a) would pass a future compiled->parallel advancement whose re-port/re-validate gate exists only as prose in next_action — is now the CLOSING story's business, not a future slice's: the endgame was declared over slices 1-2 on 2026-09-09 (fleet-readiness-decision-batch-2026-09-09 § 2.3 C2), so the only remaining status transitions are compiled -> cut-over or compiled -> retired, both carried by mason Story 15.1 with the guard as its acceptance criterion.
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:549
 ### DW-12-1-3: The new "retro-mirror" amendment action is outside skf consumer enums, and skill-brief.v1.json does not constrain scope.amendments at all -- "schema valid" never inspected the new entries.
 
 - source_spec: `planning-artifacts/specs/spec-12-1-landed-retros-are-mirrored-into-the-pilot-brief.md`
@@ -857,10 +857,10 @@ status: open
   origin: spec-deferred cea54654215b — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: .claude/skills/conda-forge-expert/quickref/commands-cheatsheet.md:762
 ### DW-12-3-1: skf-structural-diff.py has a name-collision/dedup bug: exports sharing the same name (e.g. four scripts each exporting `main`) collapse to one entry in the "added" list.
 
 - source_spec: `planning-artifacts/specs/spec-12-3-the-real-audit-tool-backs-the-pilot-zero-drift-claim.md`
@@ -885,10 +885,10 @@ status: open
   origin: spec-deferred 59b5653417e5 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:549
 ### DW-12-4-1: spec-12-5's own Code Map suggests a top-level campaign-state.yaml field for the ownership decision, but Story 12.4 landed a nested field under campaign.re_scope_gate.pre_conditions instead, and the spec's own Block-If "flag for coordination" step wasn't exercised as a written artifact.
 
 - source_spec: `planning-artifacts/specs/spec-12-4-the-re-scope-gate-is-machine-enforced.md`
@@ -898,10 +898,10 @@ status: open
   origin: spec-deferred bdd85f375a8c — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md:130
 ### DW-12-4-2: Clause (d) checks a self-reported campaign.re_scope_gate.pre_conditions.<key>.status field rather than independently verified state, unlike clauses (a)-(c) which each derive their verdict from something other than a hand-set flag.
 
 - source_spec: `planning-artifacts/specs/spec-12-4-the-re-scope-gate-is-machine-enforced.md`
@@ -956,10 +956,10 @@ status: open
   origin: spec-deferred 2477539da6b6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:498
 ### DW-12-5-2: The Operator ruling cites "CAP-19" as precedent without defining it anywhere in this SPEC's own Capabilities section or `sources:` frontmatter.
 
 - source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
@@ -969,10 +969,10 @@ status: open
   origin: spec-deferred 174e934370f7 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:502
 ### DW-12-5-3: The Operator ruling's rationale is not cross-referenced against SPEC.md's own Non-goals §3, which frames the same legacy-vs-Kedro convergence question as "decided then, not now."
 
 - source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
@@ -982,10 +982,10 @@ status: open
   origin: spec-deferred e217e74adbf8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md:149
 ### DW-12-5-4: The Code Map's cited precedent ("Story 5.4's own recheck-spec resolution-record pattern") doesn't structurally match the in-place list-annotation style this story actually used.
 
 - source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
@@ -995,10 +995,10 @@ status: open
   origin: spec-deferred a73767276b6e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md:130
 ### DW-12-5-5: This story's `context:` frontmatter doesn't list the sources the Operator ruling's rationale depends on (the CAP-19 material, the Phase-T/Epic-13 claim).
 
 - source_spec: `planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md`
@@ -1008,10 +1008,10 @@ status: open
   origin: spec-deferred 712eabe8a82d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-12-5-the-ownership-decision-is-recorded.md:10
 ### DW-12-6-1: campaign-state.yaml's top-of-file "HOW TO RESUME" protocol reads only current_focus's own next_action, so a resuming session can miss a still-open next_action on a different slice.
 
 - source_spec: `planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md`
@@ -1021,10 +1021,10 @@ status: open
   origin: spec-deferred 88dafeb4b73e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:11
 ### DW-12-6-2: slice-map.md classifies test-skill.py as one of Slice 2's own canonical scripts, but it is a throwaway ad-hoc script unrelated to recipe lifecycle.
 
 - source_spec: `planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md`
@@ -1034,10 +1034,10 @@ status: open
   origin: spec-deferred 3cba2a495cd8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/slice-map.md:11
 ### DW-12-6-3: Slice 2's brief_path lands inside this ephemeral dispatch worktree's gitignored implementation-artifacts/ with no promotion-to-durable-storage step, mirroring slice 1's own unresolved precedent.
 
 - source_spec: `planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md`
@@ -1047,10 +1047,10 @@ status: open
   origin: spec-deferred 54551e8df924 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:832
 ### DW-12-6-4: Slice 1's own brief_path still points at pyforge-atlas's implementation-artifacts tree rather than pyforge-mason's, a divergence from the parallel-agent physical-path rule that this story's spec explicitly flagged as precedent.
 
 - source_spec: `planning-artifacts/specs/spec-12-6-slice-2-brief-cross-slice-dependencies-re-derived-first.md`
@@ -1060,10 +1060,10 @@ status: open
   origin: spec-deferred 017538d2544a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:659
 ### DW-12-7-1: Five of the 25 tracked scripts compute a repo-root/data-dir path via a hardcoded Path(__file__) parent-hop count that resolves one directory level short of the real repo root at this package's deeper nesting -- a real behavioral divergence risk for relative-path callers, confirmed live and documented, deliberately not patched.
 
 - source_spec: `planning-artifacts/specs/spec-12-7-slice-2-compiled-and-equivalence-validated.md`
@@ -1073,10 +1073,10 @@ status: open
   origin: spec-deferred ba53701027a8 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: .claude/skills/conda-forge-expert/scripts/_paths.py:28
 ### DW-12-7-2: 17 CLI wrapper files named in the brief's scope.include were deliberately not copied into the compiled package (each is a subprocess shim hardcoded to the live CFE tree), a scope interpretation this story made rather than one the brief/spec settled explicitly.
 
 - source_spec: `planning-artifacts/specs/spec-12-7-slice-2-compiled-and-equivalence-validated.md`
@@ -1086,10 +1086,10 @@ status: open
   origin: spec-deferred 5536b0eb1d22 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-08-28 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
   verified: 2026-09-02 — still-open — mechanical re-verification at HEAD 933039db67 (operator-directed fleet-wide refresh 2026-09-02): source_spec path absent at HEAD; no repo paths cited; ledger status mapped to still-open; agent judgment not applied — a re-read against live code is still owed where the claim is semantic
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/campaign-state.yaml:681
 ### DW-12-7-3: Two mason meta-tests (outside this story's own Code Map) were edited to exclude the CFE-rebuild campaign's own sanctioned equivalence-test file pattern from a generic "must not touch CFE" diff guard, to satisfy this story's own pyforge-mason-test verification bar.
 
 - source_spec: `planning-artifacts/specs/spec-12-7-slice-2-compiled-and-equivalence-validated.md`
@@ -1497,10 +1497,10 @@ status: open
   severity: medium
   promoted: 2026-09-03 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   location: recipes/db-gpt/recipe.yaml:16 (patch list), :309 (onnxruntime run-dep), :488 (residual note)
-  status: open
-
+  status: closed
   verified: 2026-09-08 — resolved — RESOLVED. The cap this entry names is gone from the local mirror: `recipes/db-gpt/recipe.yaml:16` applies `patches/0002-loosen-dbgpt-ext-onnxruntime-cap.patch`, and `:309` now declares `onnxruntime >=1.14.1` with NO upper bound -- the `<=1.18.1` ceiling that excluded cp314 is removed. The lock probe this entry said was blocked has also since run green: steward Story 43.6 (`done`) required `python-agent-platform` and `dbgpt-sidecar` to resolve on `python = "3.14.*"` with a re-lock and a regenerated `environment.yaml`, which is exactly the full-solve this entry was waiting on. Residual, recorded not hidden: `recipe.yaml:488` still notes `loosen-numpy-and-onnxruntime-caps-for-py314 (feedstock PR pending)`, so the fix lives in this repo's mirror and the upstream feedstock has not yet taken it. That is a feedstock-submission item, not this entry's blocker.
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: recipes/db-gpt/recipe.yaml:309
 ### DW-PRESENTON-1-6-1: Phase-0 exit 6(a) resolved by documentary evidence — Risk R3 is `infrastructure-only`, the differentiator holds
 
 - source_spec: `planning-artifacts/epics-presenton-pixi-image.md` § Epic 1 / Story 1.6; `planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md:1650` (exit 6(a))
@@ -1628,8 +1628,9 @@ status: open
   severity: low
   reason: Settle by running the next scheduled `python scripts/bmad_drift_check.py --write-baseline` sweep, which will pick up 8.90.2 along with any other accumulated drift.
   promoted: 2026-09-12 — hand-promoted from Tier-3, renamed per operator-directed fleet hygiene sweep
-  status: open
-
+  status: closed
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: _bmad-output/projects/pyforge-marshal/.sync-baseline.json:2
 ### DW-17-2-1: Strip-on-push half of CAP-2 was not independently re-checked against a real published feedstock file on the 2026-09-11 realization-gate pass.
 
 - source_spec: `planning-artifacts/specs/spec-17-2-every-local-recipe-carries-its-internal-metadata-stripped-on-push.md`
@@ -1639,8 +1640,7 @@ status: open
   origin: spec-deferred 458d88df995f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-18 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-
+  status: closed
 ## DW-mason-recipe-ci-short-base-ref-2026-09-27 — the recipe CI workflows pick changed recipes from `origin/<base_ref>...HEAD`, a short name a local ref or tag of that name shadows
 
 - source_spec: the recipe factory's CI (`.github/workflows/test-{all,linux,macos,windows}.yml`, under the `.github/**` line of `scripts/spec_surface_allowlist.txt`); found by doctor Story 32.1 while fixing the coverage gate's identical base
@@ -1651,7 +1651,8 @@ status: open
   fix: `refs/remotes/origin/${{ github.base_ref }}...HEAD` in all four, through the recipe factory's chain.
   status: closed
   resolved: 2026-09-27 (mason Story 18.1, spec-pyforge-mason CAP-28) — all four diff from `refs/remotes/origin/${{ github.base_ref }}...HEAD`. Correction found in review: the branch is dormant today (no recipe workflow runs on `pull_request`; `test-all.yml` is dispatch-only and calls the other three), so no PR could have built nothing from it; this is hardening, kept by pyforge-core:CAP-10's workflow scan.
-
+  resolution: Story 27.2 (27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals)
+  verified: .claude/skills/conda-forge-expert/scripts/submit_pr.py:52
 ### DW-FRR-1-3: Follow-up review still recommended for story 1.3
 
 - source_spec: `planning-artifacts/specs/spec-1-3-error-taxonomy-and-exit-code-contract.md`
