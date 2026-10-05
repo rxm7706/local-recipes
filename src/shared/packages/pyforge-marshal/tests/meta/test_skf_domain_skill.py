@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from pyforge.testing_kit import (
+    cfe_surface,
     changed_paths_since,
     pyforge_import_offenders,
     unsanctioned_commits,
@@ -155,8 +156,11 @@ def test_context_files_not_hand_edited():
             assert opens <= 1, f"{name}: more than one bmad:context block"
 
 
-_CFE_SURFACE = ".claude/skills/conda-forge-expert"
-_CFE_CHANGELOG = f"{_CFE_SURFACE}/CHANGELOG.md"
+def test_cfe_guard_reads_the_one_cfe_surface_owner():
+    """Story 83.24: this guard must use ``pyforge.testing_kit.cfe_surface``, not a hardcoded prefix."""
+    source = Path(__file__).read_text(encoding="utf-8")
+    assert "cfe_surface.CFE_GIT_PATHSPECS" in source
+    assert "cfe_surface.CFE_CHANGELOG_PATH" in source
 
 
 def test_conda_forge_expert_not_replaced():
@@ -172,7 +176,11 @@ def test_conda_forge_expert_not_replaced():
     # `scripts/mason_cfe_surface_check.py` enforces for mason. A station story
     # never touches the surface; a fleet hygiene branch may carry the one
     # sanctioned retro (2026-09-04, PR #1043).
-    bad = unsanctioned_commits(root, pathspec=_CFE_SURFACE, changelog_path=_CFE_CHANGELOG)
+    bad = unsanctioned_commits(
+        root,
+        pathspec=cfe_surface.CFE_GIT_PATHSPECS,
+        changelog_path=cfe_surface.CFE_CHANGELOG_PATH,
+    )
     assert not bad, (
         "conda-forge-expert changed vs origin/main outside a sanctioned `retro:` "
         f"commit that moves its CHANGELOG: {bad}"

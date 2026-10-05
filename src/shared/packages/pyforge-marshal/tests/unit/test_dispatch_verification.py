@@ -47,11 +47,12 @@ _REPO_ROOT = next(
 
 
 def _fake_git_log_empty(tokens: list[str]) -> ProcessResult | None:
-    """Story 83.17: unit fakes are not git worktrees; an empty log is a clean branch.
-
-    Story 83.19: the CFE-surface check's ``git diff --name-only HEAD`` reads empty too -- a
-    clean worktree."""
-    if tokens and tokens[0] == "git" and ("log" in tokens or "diff" in tokens):
+    """Story 83.17/83.24: empty log/diff only for the exact CFE branch-check invocations."""
+    if not tokens or tokens[0] != "git":
+        return None
+    if "log" in tokens and "--no-merges" in tokens and any("..HEAD" in token for token in tokens):
+        return ProcessResult(returncode=0, stdout="", stderr="")
+    if "diff" in tokens and "--name-only" in tokens and any(token == "HEAD" for token in tokens):
         return ProcessResult(returncode=0, stdout="", stderr="")
     return None
 

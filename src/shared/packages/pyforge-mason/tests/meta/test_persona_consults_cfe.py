@@ -8,14 +8,13 @@ import subprocess
 from pathlib import Path
 
 from pyforge.testing_kit import (
+    cfe_surface,
     changed_paths_since,
     commit_files,
     commits_since,
     pyforge_import_offenders,
     unsanctioned_commits,
 )
-
-_CFE_CHANGELOG = ".claude/skills/conda-forge-expert/CHANGELOG.md"
 
 STATION = "mason"
 PERSONA = "bmad-agent-mason"
@@ -291,6 +290,13 @@ def test_persona_is_bmad_launcher_not_skf_compiled():
     assert "skf-create-skill" in customize
 
 
+def test_cfe_guard_reads_the_one_cfe_surface_owner():
+    """Story 83.24: mason guard uses ``pyforge.testing_kit.cfe_surface``."""
+    source = Path(__file__).read_text(encoding="utf-8")
+    assert "cfe_surface.CFE_GIT_PATHSPECS" in source
+    assert "cfe_surface.CFE_CHANGELOG_PATH" in source
+
+
 def test_conda_forge_expert_not_replaced_or_skf_nested():
     root = _repo_root()
     cfe = root / ".claude" / "skills" / CONTENT_SKILL
@@ -306,7 +312,9 @@ def test_conda_forge_expert_not_replaced_or_skf_nested():
             assert "generated_by: create-skill" not in text
             assert '"generated_by": "create-skill"' not in text
     unsanctioned = unsanctioned_commits(
-        root, pathspec=".claude/skills/conda-forge-expert", changelog_path=_CFE_CHANGELOG
+        root,
+        pathspec=cfe_surface.CFE_GIT_PATHSPECS,
+        changelog_path=cfe_surface.CFE_CHANGELOG_PATH,
     )
     dirty = _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
     assert not unsanctioned, (

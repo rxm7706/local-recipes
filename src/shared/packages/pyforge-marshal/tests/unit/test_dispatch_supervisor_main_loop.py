@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import ProcessResult
 
 from pyforge.marshal.adapters.fs_local import FsError, LocalFs
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
@@ -358,6 +359,12 @@ class FakeProcess:
         return None
 
     def run(self, argv, *, cwd=None, env=None, timeout=None):  # pragma: no cover - never reached
+        tokens = list(argv)
+        if tokens and tokens[0] == "git":
+            if "log" in tokens and "--no-merges" in tokens and any("..HEAD" in token for token in tokens):
+                return ProcessResult(returncode=0, stdout="", stderr="")
+            if "diff" in tokens and "--name-only" in tokens and any(token == "HEAD" for token in tokens):
+                return ProcessResult(returncode=0, stdout="", stderr="")
         raise AssertionError("no verify command may run in a unit test")
 
 
@@ -2005,6 +2012,9 @@ class _RealGitWorktreeVcs(FakeVcs):
 
     def changed_files(self, repo_root: Path, worktree_path: Path, *, base: str) -> tuple[str, ...]:
         return self._git.changed_files(repo_root, worktree_path, base=base)
+
+    def status_porcelain_z_records(self, worktree_path: Path) -> tuple[tuple[str, str, str | None], ...]:
+        return self._git.status_porcelain_z_records(worktree_path)
 
     def commit_paths(self, repo_root: Path, paths: tuple[Path, ...], message: Redacted) -> str:
         self.commits.append((repo_root, tuple(paths), message.text))

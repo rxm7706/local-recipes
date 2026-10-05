@@ -706,7 +706,13 @@ def evaluate_dispatch_verification(
             )
             data["cfe_retro_commit"] = {"checked": False, "reason": str(exc)}
         else:
-            cfe_retro = commit_pending_cfe_retro(committing_vcs, worktree=worktree, changed_paths=dirty_paths)
+            cfe_retro = commit_pending_cfe_retro(
+                committing_vcs,
+                worktree=worktree,
+                changed_paths=dirty_paths,
+                story_key=str(story_key),
+                repo_root=repo_root,
+            )
             data["cfe_retro_commit"] = {
                 "checked": True,
                 "committed": cfe_retro.committed,

@@ -348,13 +348,20 @@ class VcsPort(Protocol):
         Every path comes back literally, read from ``-z`` output (Story
         83.16): never C-quoted or escaped, whatever spaces, quotes, tabs,
         newlines, backslashes or non-ASCII characters it holds. A rename or
-        a copy reports only its DESTINATION -- a rename's original path is
-        not in the result, so a caller that commits these paths relies on
-        ``commit_paths`` to commit the original's deletion with it.
+        copy names BOTH its source and destination (Story 83.24); a caller
+        that commits a subset of these paths still relies on ``commit_paths``
+        to stage rename deletions correctly.
 
         Read-only. Raises ``VcsCommandError`` on any git failure (an
         unresolvable ``base``, ``worktree_path`` not inside a git
         repository, a corrupted repo)."""
+        ...
+
+    def status_porcelain_z_records(self, worktree_path: Path) -> tuple[tuple[str, str, str | None], ...]:
+        """Story 83.24: parsed ``git status --porcelain -z`` records for dispatch CFE partitioning.
+
+        Each element is ``(status, path, original)`` where ``original`` is set for renames and copies.
+        Raises ``VcsCommandError`` on git failure."""
         ...
 
     def worktree_unified_patch(self, worktree_path: Path, *, baseline_sha: str) -> str:

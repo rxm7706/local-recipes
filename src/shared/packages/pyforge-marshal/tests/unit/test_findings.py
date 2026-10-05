@@ -436,6 +436,7 @@ def test_registered_codes_contains_the_real_codes():
             # Story 83.17 (spec-83-17): commit-attribution gate on the story branch.
             "MRS-GATE-019",
             "MRS-GATE-020",
+            "MRS-GATE-021",
             # Story 82.9: `marshal factory checkpoint`'s three precondition findings (Story 34.2 never registered them).
             "MRS-CHK-001",
             "MRS-CHK-002",

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from .dispatch_cfe_commit import CFE_BRANCH_COMMIT_GATE_CODE
 from .harness_session import (
     classify_session_log,
     is_transient_harness_session_outcome,
@@ -48,6 +49,7 @@ _TERMINAL_FAILED_GATES: frozenset[str] = frozenset(
         "MRS-GATE-007",
         "MRS-GATE-008",
         "MRS-GATE-014",  # Story 28.22: pre-existing-gate WARN — no transient retry
+        CFE_BRANCH_COMMIT_GATE_CODE,  # Story 83.24: unsanctioned CFE commit already on the branch
         "MRS-DISP-005",
         "MRS-DISP-030",
     }

@@ -1117,30 +1117,24 @@ def test_changed_files_a_path_changed_both_ways_is_deduplicated(vcs, repo, tmp_p
     assert vcs.changed_files(repo, home, base="main") == ("README.md",)
 
 
-def test_changed_files_a_rename_reports_only_the_new_path(vcs, repo, tmp_path):
+def test_changed_files_a_rename_reports_both_sides(vcs, repo, tmp_path):
+    """Story 83.24: scope and CFE partitioning need both sides of a rename."""
     home = tmp_path / "home"
     vcs.add_worktree(repo, home, "loop/x", base="main")
     _git(home, "mv", "README.md", "RENAMED.md")
 
     result = vcs.changed_files(repo, home, base="main")
-    assert "RENAMED.md" in result
-    assert "README.md" not in result
+    assert set(result) == {"README.md", "RENAMED.md"}
 
 
-def test_changed_files_a_committed_rename_reports_only_the_new_path(vcs, repo, tmp_path):
-    """Review finding (Edge Case Hunter): unlike the uncommitted-rename case
-    above (already handled by the porcelain branch's own rename record), a
-    COMMITTED rename is reported by `git diff`, which without rename
-    detection (`-M`) shows BOTH the old (now-nonexistent) and new paths as
-    separate changed entries."""
+def test_changed_files_a_committed_rename_reports_both_sides(vcs, repo, tmp_path):
     home = tmp_path / "home"
     vcs.add_worktree(repo, home, "loop/x", base="main")
     _git(home, "mv", "README.md", "COMMITTED-RENAME.md")
     _git(home, "commit", "-m", "rename README")
 
     result = vcs.changed_files(repo, home, base="main")
-    assert "COMMITTED-RENAME.md" in result
-    assert "README.md" not in result
+    assert set(result) == {"README.md", "COMMITTED-RENAME.md"}
 
 
 def test_changed_files_an_untracked_directory_reports_each_file_individually(vcs, repo, tmp_path):
@@ -1267,7 +1261,7 @@ def test_changed_files_returns_an_awkward_path_literally_from_the_diff_and_the_s
 
 
 @pytest.mark.parametrize("committed", [False, True], ids=["staged-rename", "committed-rename"])
-def test_changed_files_a_rename_of_a_spaced_path_reports_only_the_new_path(vcs, repo, tmp_path, committed):
+def test_changed_files_a_rename_of_a_spaced_path_reports_both_sides(vcs, repo, tmp_path, committed):
     (repo / "old name.md").write_text("content\n", encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-m", "add a spaced file")
@@ -1277,12 +1271,11 @@ def test_changed_files_a_rename_of_a_spaced_path_reports_only_the_new_path(vcs, 
     if committed:
         _git(home, "commit", "-m", "rename the spaced file")
 
-    assert vcs.changed_files(repo, home, base="main") == ("new name.md",)
+    assert vcs.changed_files(repo, home, base="main") == ("new name.md", "old name.md")
 
 
-def test_changed_files_a_committed_rename_reports_only_the_new_path_under_an_operators_renames_off(vcs, repo, tmp_path):
-    """``-M`` on the diff, not git's default ``diff.renames``, is what pairs a committed rename: an operator's
-    ``diff.renames=false`` must not bring the old path back (Story 83.16 landing review, mutant M10)."""
+def test_changed_files_a_committed_rename_reports_both_sides_under_an_operators_renames_off(vcs, repo, tmp_path):
+    """Story 83.24: ``-M`` on the diff pairs a committed rename even when ``diff.renames=false``."""
     (repo / "old name.md").write_text("content\n", encoding="utf-8")
     _git(repo, "add", "-A")
     _git(repo, "commit", "-m", "add a spaced file")
@@ -1292,7 +1285,7 @@ def test_changed_files_a_committed_rename_reports_only_the_new_path_under_an_ope
     _git(home, "mv", "old name.md", "new name.md")
     _git(home, "commit", "-m", "rename the spaced file")
 
-    assert vcs.changed_files(repo, home, base="main") == ("new name.md",)
+    assert vcs.changed_files(repo, home, base="main") == ("new name.md", "old name.md")
 
 
 def test_changed_files_output_commits_every_awkward_path(vcs, repo, tmp_path):
@@ -1314,10 +1307,17 @@ def test_changed_files_output_commits_every_awkward_path(vcs, repo, tmp_path):
     assert sorted(path for path in committed if path) == sorted(("README.md", 'say "hi" café.md', _HERALD_DECK))
 
 
-def test_name_status_z_paths_keeps_only_the_destination_of_a_rename_or_copy():
+def test_name_status_z_paths_keeps_both_sides_of_a_rename_or_copy():
     stdout = "M\0a b.md\0R087\0old name.md\0new name.md\0C075\0src x.md\0dst x.md\0D\0gone.md\0"
 
-    assert vcs_git_module._name_status_z_paths(stdout) == {"a b.md", "new name.md", "dst x.md", "gone.md"}
+    assert vcs_git_module._name_status_z_paths(stdout) == {
+        "a b.md",
+        "old name.md",
+        "new name.md",
+        "src x.md",
+        "dst x.md",
+        "gone.md",
+    }
 
 
 @pytest.mark.parametrize("stdout", ["M\0", "M\0\0", "R100\0old.md\0"], ids=["no-path", "empty-path", "rename-cut"])
@@ -1400,9 +1400,9 @@ def test_commit_paths_commits_a_spaced_renames_source_deletion(vcs, repo, form):
     _rename(repo, "docs/old name.md", "docs/new name.md", form)
 
     changed = vcs.changed_files(repo, repo, base="HEAD")
-    vcs.commit_paths(repo, tuple(Path(path) for path in changed), to_redacted_text("marshal: supervisor finalize"))
+    vcs.commit_paths(repo, (Path("docs/new name.md"),), to_redacted_text("marshal: supervisor finalize"))
 
-    assert changed == ("docs/new name.md",)
+    assert set(changed) == {"docs/new name.md", "docs/old name.md"}
     assert _git(repo, "status", "--porcelain").stdout == ""
     assert _head_paths(repo) == ["README.md", "docs/new name.md"]
 

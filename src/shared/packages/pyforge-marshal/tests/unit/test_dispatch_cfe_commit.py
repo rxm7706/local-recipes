@@ -19,14 +19,16 @@ from pyforge.marshal.adapters.vcs_git import GitVcs
 from pyforge.marshal.core import dispatch_cfe_commit as cfe
 from pyforge.marshal.core import policy
 from pyforge.marshal.core.dispatch_cfe_commit import (
+    CFE_BRANCH_COMMIT_GATE_CODE,
     CFE_CHANGELOG_PATH,
     CFE_COMMIT_GATE_CODE,
-    RETRO_CFE_COMMIT_SUBJECT,
     commit_pending_cfe_retro,
     findings_for_unsanctioned_cfe_entries,
     is_cfe_surface_path,
     paths_excluding_cfe,
-    pending_cfe_paths,
+    pending_cfe_paths_from_status,
+    read_cfe_skill_version,
+    retro_cfe_commit_subject,
     unsanctioned_cfe_entries,
 )
 from pyforge.marshal.core.dispatch_ruff_format import apply_dispatch_ruff_format_before_verify
@@ -49,6 +51,15 @@ _CFE_SCRIPT = ".claude/scripts/conda-forge-expert/native-build.sh"
 _CFE_TOOL = ".claude/tools/conda_forge_server.py"
 _STORY_FILE = "src/story.py"
 _STORY_KEY = normalize("83-19-dispatch-never-commits-the-cfe-surface-outside-a-sanctioned-retro")
+_CFE_RENAME_SRC = ".claude/skills/conda-forge-expert/helper.py"
+_CFE_RENAME_DST = "src/helper.py"
+
+
+def _retro_subject(story_key: str) -> str:
+    return retro_cfe_commit_subject(
+        story_key=story_key,
+        cfe_version=read_cfe_skill_version(_REPO_ROOT),
+    )
 
 
 def _git(repo: Path, *args: str) -> str:
@@ -150,7 +161,9 @@ def _verify(repo: Path, vcs: GitVcs):
 
 
 def _cfe_findings(envelope) -> list:
-    return [finding for finding in envelope.findings if finding.code == CFE_COMMIT_GATE_CODE]
+    return [
+        finding for finding in envelope.findings if finding.code in (CFE_COMMIT_GATE_CODE, CFE_BRANCH_COMMIT_GATE_CODE)
+    ]
 
 
 # --- one owner: marshal's runtime mirror equals the testing kit's definition -------------------
@@ -289,7 +302,7 @@ def test_auto_checkpoint_leaves_the_cfe_surface_uncommitted(vcs: GitVcs, repo: P
 
     assert result.committed is True
     assert _branch_commits(repo) == [("wip: 83.19 (auto-checkpoint)", [_STORY_FILE])]
-    assert pending_cfe_paths(vcs.changed_files(repo, repo, base="HEAD")) == (
+    assert pending_cfe_paths_from_status(vcs, worktree=repo) == (
         ".claude/skills/conda-forge-expert/new_reference.md",
         _CFE_TEST,
     )
@@ -330,7 +343,7 @@ def test_ruff_format_commit_never_carries_the_cfe_surface(vcs: GitVcs, repo: Pat
     subject, files = _branch_commits(repo)[-1]
     assert subject.startswith("marshal: ruff check --fix and format")
     assert files == [story_py]
-    assert pending_cfe_paths(vcs.changed_files(repo, repo, base="HEAD")) == (cfe_py,)
+    assert pending_cfe_paths_from_status(vcs, worktree=repo) == (cfe_py,)
 
 
 # --- AC2: the CFE edit plus its CHANGELOG lands in exactly one retro(cfe): commit ----------------
@@ -344,9 +357,10 @@ def test_verify_commits_the_cfe_surface_once_as_retro_cfe(vcs: GitVcs, repo: Pat
 
     envelope = _verify(repo, vcs)
 
+    expected_subject = _retro_subject("83.19")
     cfe_commits = [(s, f) for s, f in _branch_commits(repo) if any(is_cfe_surface_path(p) for p in f)]
-    assert cfe_commits == [(RETRO_CFE_COMMIT_SUBJECT, sorted([CFE_CHANGELOG_PATH, _CFE_TEST]))]
-    assert RETRO_CFE_COMMIT_SUBJECT.startswith("retro(cfe):")
+    assert cfe_commits == [(expected_subject, sorted([CFE_CHANGELOG_PATH, _CFE_TEST]))]
+    assert expected_subject.startswith("retro(cfe): v")
     assert _kit_verdict(repo) == []
     assert _cfe_findings(envelope) == []
     assert envelope.data["cfe_retro_commit"] == {
@@ -391,6 +405,7 @@ def test_verify_refuses_naming_a_commit_that_already_touched_the_cfe_surface(vcs
 
     findings = _cfe_findings(envelope)
     assert len(findings) == 1
+    assert findings[0].code == CFE_BRANCH_COMMIT_GATE_CODE
     assert f"{sha[:10]} wip: 41.1 (auto-checkpoint)" in findings[0].message
     assert "Rule 2" in findings[0].message
     assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
@@ -427,7 +442,12 @@ def test_mutation_the_checkpoint_without_the_exclusion_commits_the_cfe_surface(
 ) -> None:
     import pyforge.marshal.core.worktree_checkpoint as checkpoint
 
-    monkeypatch.setattr(checkpoint, "paths_excluding_cfe", lambda paths: tuple(Path(p) for p in paths))
+    def _commit_everything(vcs, *, worktree, extra_paths=(), repo_root=None):
+        root = repo_root or worktree
+        changed = vcs.changed_files(root, worktree, base="HEAD")
+        return tuple(Path(p) for p in changed)
+
+    monkeypatch.setattr(checkpoint, "non_retro_commit_paths", _commit_everything)
     _write(repo, _CFE_TEST, "def test_ok():\n    assert False\n")
 
     commit_worktree_checkpoint(vcs, repo_root=repo, worktree=repo, story_key="83.19")
@@ -465,7 +485,9 @@ def test_paths_excluding_cfe_keeps_the_callers_order() -> None:
 def test_commit_pending_cfe_retro_is_a_no_op_without_cfe_paths(vcs: GitVcs, repo: Path) -> None:
     _write(repo, _STORY_FILE, "x = 2\n")
 
-    outcome = commit_pending_cfe_retro(vcs, worktree=repo, changed_paths=(_STORY_FILE,))
+    outcome = commit_pending_cfe_retro(
+        vcs, worktree=repo, changed_paths=(_STORY_FILE,), story_key="83.19", repo_root=_REPO_ROOT
+    )
 
     assert outcome == cfe.CfeRetroCommitResult(committed=False)
     assert _branch_commits(repo) == []
@@ -480,6 +502,8 @@ def test_commit_pending_cfe_retro_reports_a_failed_commit() -> None:
         _FailingCommit(),
         worktree=Path("/nonexistent"),
         changed_paths=(_CFE_TEST, CFE_CHANGELOG_PATH),
+        story_key="83.19",
+        repo_root=_REPO_ROOT,
     )
 
     assert outcome.committed is False
@@ -505,6 +529,10 @@ def test_unsanctioned_cfe_entries_needs_both_the_retro_subject_and_the_changelog
         f"{sha[:10]} not retro: changelog",
     ]
     assert unsanctioned_cfe_entries([], dirty=[_CFE_TOOL]) == [f"uncommitted: {_CFE_TOOL}"]
+    branch_only = findings_for_unsanctioned_cfe_entries([f"{sha[:10]} bad subject"], base=ORIGIN_MAIN)
+    assert len(branch_only) == 1 and branch_only[0].code == CFE_BRANCH_COMMIT_GATE_CODE
+    dirty_only = findings_for_unsanctioned_cfe_entries([f"uncommitted: {_CFE_TOOL}"], base=ORIGIN_MAIN)
+    assert len(dirty_only) == 1 and dirty_only[0].code == CFE_COMMIT_GATE_CODE
     assert findings_for_unsanctioned_cfe_entries([], base=ORIGIN_MAIN) == ()
 
 
@@ -592,8 +620,51 @@ def test_the_retro_commit_subject_passes_the_guards_own_rule(vcs: GitVcs, repo: 
     _write(repo, _CFE_TOOL, "SERVER = 3\n")
     _write(repo, CFE_CHANGELOG_PATH, "# Changelog\n\n## 9.2.0\n")
 
-    outcome = commit_pending_cfe_retro(vcs, worktree=repo, changed_paths=(_CFE_TOOL, CFE_CHANGELOG_PATH))
+    outcome = commit_pending_cfe_retro(
+        vcs,
+        worktree=repo,
+        changed_paths=(_CFE_TOOL, CFE_CHANGELOG_PATH),
+        story_key="83.24",
+        repo_root=_REPO_ROOT,
+    )
 
     assert outcome.committed is True
-    assert _branch_commits(repo) == [(RETRO_CFE_COMMIT_SUBJECT, sorted([CFE_CHANGELOG_PATH, _CFE_TOOL]))]
+    expected = _retro_subject("83.24")
+    assert _branch_commits(repo) == [(expected, sorted([CFE_CHANGELOG_PATH, _CFE_TOOL]))]
     assert _kit_verdict(repo) == [] == _marshal_verdict(repo)
+
+
+def test_auto_checkpoint_leaves_a_cfe_rename_out_of_the_wip_commit(vcs: GitVcs, repo: Path) -> None:
+    _write(repo, _CFE_RENAME_SRC, "helper = 1\n")
+    _write(repo, _STORY_FILE, "x = 2\n")
+    _commit_all(repo, "seed helper on the CFE surface")
+    _git(repo, "mv", _CFE_RENAME_SRC, _CFE_RENAME_DST)
+    _write(repo, _STORY_FILE, "x = 3\n")
+
+    result = commit_worktree_checkpoint(vcs, repo_root=repo, worktree=repo, story_key="83.24")
+
+    assert result.committed is True
+    subject, files = _branch_commits(repo)[-1]
+    assert subject == "wip: 83.24 (auto-checkpoint)"
+    assert files == [_STORY_FILE]
+    assert set(pending_cfe_paths_from_status(vcs, worktree=repo)) == {_CFE_RENAME_DST, _CFE_RENAME_SRC}
+
+
+def test_verify_retro_commit_carries_both_sides_of_a_cfe_rename(vcs: GitVcs, repo: Path) -> None:
+    _write(repo, _STORY_FILE, "x = 2\n")
+    _commit_all(repo, "story progress outside the CFE surface")
+    _write(repo, _CFE_RENAME_SRC, "helper = 1\n")
+    _git(repo, "add", _CFE_RENAME_SRC)
+    _git(repo, "mv", _CFE_RENAME_SRC, _CFE_RENAME_DST)
+    _write(repo, CFE_CHANGELOG_PATH, "# Changelog\n\n## 9.2.2\n")
+
+    envelope = _verify(repo, vcs)
+
+    expected = _retro_subject("83.19")
+    cfe_commits = [(s, f) for s, f in _branch_commits(repo) if s.startswith("retro(cfe):")]
+    assert len(cfe_commits) == 1 and cfe_commits[0][0] == expected
+    assert CFE_CHANGELOG_PATH in cfe_commits[0][1]
+    assert not (repo / _CFE_RENAME_SRC).exists()
+    assert (repo / _CFE_RENAME_DST).is_file()
+    assert _kit_verdict(repo) == []
+    assert _cfe_findings(envelope) == []

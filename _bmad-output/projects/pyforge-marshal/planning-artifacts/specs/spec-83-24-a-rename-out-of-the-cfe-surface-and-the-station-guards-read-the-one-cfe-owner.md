@@ -2,7 +2,8 @@
 title: "83.24: A rename out of the CFE surface is caught, and the station guards read the one CFE owner"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '74235c8884012b55b0e64b830718df0aa41c613d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -87,4 +88,18 @@ Type / Effort / Deps: fix / M / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 0, false 3, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Porcelain rename partitioning might still commit the CFE source path via `commit_paths` pathspec alone — `non_retro_commit_paths` and checkpoint/supervisor call sites use porcelain records first; unit tests cover CFE rename out of surface.
+  - `[false]` `[reject]` Pre-push CFE check might run after push — finalize sequence calls unsanctioned CFE commit check before `git push`; supervisor main-loop test asserts ordering.
+  - `[false]` `[reject]` Station guards might miss `.claude/scripts/conda-forge-expert/` — guards now diff against `cfe_surface.CFE_GIT_PATHSPECS`; kit parity meta-tests pin the shared list.
+
+## Auto Run Result
+
+- **Summary:** Dispatch classifies renames from porcelain (both sides), excludes CFE rename pairs from non-retro commits, retro subject includes story key and live CFE version, MRS-GATE-021 is terminal for on-branch CFE commits, finalize refuses push when branch carries unsanctioned CFE commits; atlas/marshal/steward/mason meta guards import `pyforge.testing_kit.cfe_surface`.
+- **Files changed:** marshal core (`dispatch_cfe_commit`, `vcs_git`, `worktree_checkpoint`, `dispatch_verify`, supervisor finalize, `dispatch_retry`, `findings`, `verdict`, `dispatch_verify_fix`, `ports/vcs`); marshal unit/meta tests; four station SKF meta tests; co-governor `.memlog.md` reconciles (spec-pyforge-core, spec-pyforge-marshal, spec-pyforge-mason, spec-pyforge-steward, spec-pyforge-atlas).
+- **Review:** 0 patches, 0 deferred; 3 false positives rejected (see triage log).
+- **Follow-up review recommended:** false
+- **Verification:** `pyforge-marshal-test` 11683 passed; `pyforge-ci pyforge-deps-test` 130 passed (prior run); `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile.
+- **Residual risks:** VCS test doubles without `status_porcelain_z_records` still fall back to path-only exclusion (documented in `non_retro_commit_paths`).
