@@ -949,7 +949,7 @@ def test_cross_station_meta_test_commands_derived_for_core_src_without_coverage_
 def test_cross_station_meta_test_commands_derived_for_testing_kit_src() -> None:
     changed = ("src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/foo.py",)
     assert coverage_gate_commands_for_changed_files(changed) == ()
-    assert STEWARD_CROSS_STATION_META in cross_station_meta_test_commands_for_changed_files(changed)
+    assert cross_station_meta_test_commands_for_changed_files(changed) == _DEFAULT_CROSS_STATION_META
 
 
 def test_cross_station_meta_test_commands_empty_for_planning_only() -> None:

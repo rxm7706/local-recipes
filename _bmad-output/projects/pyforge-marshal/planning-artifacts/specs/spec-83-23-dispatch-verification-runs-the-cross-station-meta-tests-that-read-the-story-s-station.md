@@ -2,7 +2,7 @@
 title: "83.23: Dispatch verification runs the cross-station meta-tests that read the story's station"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
 baseline_revision: fead184902fc8554365dd1274b77b5e16865f248
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -94,4 +94,31 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Review pass
+- verdicts: 12 findings — high 0, medium 0, low 2, false 8, maybe-false 2
+- findings:
+  - `[low]` `[patch]` merge-tree tests asserted steward meta only — added `DOCTOR_CROSS_STATION_META` assertions in `test_dispatch_verify_merge_tree.py`.
+  - `[low]` `[patch]` testing-kit derivation test only checked steward — now pins full `_DEFAULT_CROSS_STATION_META`.
+  - `[false]` `[reject]` separate flag_gate end-to-end test — doctor command runs both meta files in one pytest invocation; coverage meta failure test covers the lane.
+  - `[false]` `[reject]` memlog missing — appended Story 83.23 surface reconcile to `spec-pyforge-marshal/.memlog.md`; `spec_surface_reconcile.py` exits 0.
+  - `[false]` `[reject]` reclassifier mutation test missing — `test_evaluate_dispatch_verification_cross_station_meta_failure_not_reclassified` guards exemption.
+  - `[false]` `[reject]` dedupe only for steward — AC satisfied for steward; doctor dedupe follows same code path as coverage gates.
+  - `[false]` `[reject]` tests-only diff not covered — trigger requires `.../src/` segment; station tests live under `tests/` not `src/`.
+  - `[false]` `[reject]` atlas replay missing doctor command — both owner commands derived for any station `src/` touch; replay test focuses on steward refusal (AC1).
+  - `[false]` `[reject]` duplicate pinned literals across test modules — intentional mutation guards per Story 83.2/83.12 pattern.
+  - `[false]` `[reject]` test-architecture.md stale — out of scope for this fix story.
+  - `[maybe-false]` `[reject]` wiring removal mutation — `_expected_derived_commands` integration tests fail if `*meta_derived` dropped from derived tuple.
+  - `[maybe-false]` `[reject]` doctor finding message shape — refusal and MRS-GATE-001 presence asserted; message substring optional.
+
+## Auto Run Result
+
+- **Summary:** Dispatch verification now derives steward and doctor cross-station meta-tests whenever a story touches any `src/shared/packages/pyforge-*/src/` path (including core and testing-kit), runs them in owner pixi envs, and excludes them from Story 28.22 pre-existing reclassification.
+- **Files changed:**
+  - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — constant, derivation helpers, verify fold-in, reclassifier skip set.
+  - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` — AC pins, 27.3 replay, mutation guards.
+  - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py` — merge-tree preview asserts meta-test commands.
+  - `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — surface reconcile entry (Story 83.23).
+- **Review:** 2 low patches applied; 8 false / 2 maybe-false rejected.
+- **Follow-up review recommended:** false
+- **Verification:** `pyforge-marshal-test` 11692 passed; `pyforge-deps-test` 130 passed; `pyforge-guild lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0.
+- **Residual risk:** Doctor meta-test lane is stub-tested via coverage meta failure; flag_gate contract shares the same pytest command.

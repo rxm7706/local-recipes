@@ -28,6 +28,11 @@ from pyforge.marshal.core.model import Severity
 from pyforge.marshal.dispatch_verify import run_verify_commands_only
 
 MARSHAL_COVERAGE_GATE = "pixi run --frozen -e pyforge-marshal pyforge-marshal-coverage-gate"
+DOCTOR_CROSS_STATION_META = (
+    "pixi run --frozen -e pyforge-doctor python -m pytest -q "
+    "src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py "
+    "src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py"
+)
 STEWARD_CROSS_STATION_META = (
     "pixi run --frozen -e pyforge-steward python -m pytest -q "
     "src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py"
@@ -147,6 +152,7 @@ def test_run_verify_commands_only_derives_coverage_gate_from_preview_diff(tmp_pa
     )
     commands = [report["command"] for report in reports]
     assert MARSHAL_COVERAGE_GATE in commands
+    assert DOCTOR_CROSS_STATION_META in commands
     assert STEWARD_CROSS_STATION_META in commands
     assert findings == ()
     assert preview_findings == ()
@@ -168,6 +174,7 @@ def test_run_verify_commands_only_falls_back_to_story_changed_files(tmp_path: Pa
     )
     commands = [report["command"] for report in reports]
     assert MARSHAL_COVERAGE_GATE in commands
+    assert DOCTOR_CROSS_STATION_META in commands
     assert STEWARD_CROSS_STATION_META in commands
     assert findings == ()
     assert any(f.code == "MRS-GATE-009" and f.severity is Severity.WARN for f in preview_findings)
