@@ -8877,7 +8877,9 @@ status: open
   origin: landing 2026-10-04 (operator session)
   severity: low
   promoted: 2026-10-04 — the 86.8 hand-landing
-  status: open
+  resolution: RESOLVED 2026-10-04 — marshal's Epic 85 retrospective (`retros/retro-pyforge-marshal-2026-10-04.md`) removes the `[[tool.mypy.overrides]]` entry for `pyforge.marshal.cli.chain` from `src/shared/packages/pyforge-marshal/pyproject.toml`; the retro dated 2026-10-04 keeps the code stage from outrunning it.
+  verified: 2026-10-04 — read `src/shared/packages/pyforge-marshal/pyproject.toml` (no `pyforge.marshal.cli.chain` section left) and `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/` (no `chain.py`); `pixi run -e pyforge-guild lint-types` exit 0 with no unused-section note.
+  status: closed
 
 ### DW-marshal-85-5: End-to-end real-git fixture proving memlog/stamp before re-verify passes the surface guard (AC1).
 
@@ -8921,4 +8923,48 @@ status: open
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-04 — dispatch-land finalize
+  status: open
+
+### DW-marshal-retro-2026-10-04-1: A landing finalize writes the sync's epic roll-ups to the twin but leaves the Tier-3 feed's epic row stale, so the next sprint-ledger-sync refuses.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-marshal-2026-10-04.md`
+  summary: A landing finalize writes the sync's epic roll-ups to the twin but leaves the Tier-3 feed's epic row stale, so the next sprint-ledger-sync refuses.
+  evidence: After doctor 41.6 and marshal 85.5 landed on 2026-10-04, the feeds read `epic-41: in-progress` and `epic-85: in-progress` while the twins read `done`; the next sync for each station refused ("feed would un-finish 1 twin key") until the feed row was set by hand. Story 83.21 made finalize write the roll-ups to the twin; the feed half is missing.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/land.py (finalize's ledger promotion)
+  origin: retrospective 2026-10-04 (Epic 85)
+  severity: medium
+  promoted: 2026-10-04 — marshal's Epic 85 retrospective
+  status: open
+
+### DW-marshal-retro-2026-10-04-2: An operator pause is not a first-class hold: the fleet campaign re-dispatched a story whose PR the operator had paused as a draft.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-marshal-2026-10-04.md`
+  summary: An operator pause is not a first-class hold: the fleet campaign re-dispatched a story whose PR the operator had paused as a draft.
+  evidence: On 2026-10-04 the operator paused #1861 (marshal 85.5) as a draft; the fleet campaign still launched a new Cursor session for 85.5 (run pyforge-marshal-20261004T233754788Z-78c29e09); only GitHub's draft state stopped the merge (MRS-DISP-020, "Pull Request is still a draft").
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_fleet.py, cli/drain_plan.py
+  origin: retrospective 2026-10-04 (Epic 85)
+  severity: medium
+  promoted: 2026-10-04 — marshal's Epic 85 retrospective
+  status: open
+
+### DW-marshal-retro-2026-10-04-3: MRS-GATE-011 (a spec command outside the station's verify_commands) is judged only at verification, after the whole build; it is knowable at dispatch launch.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-marshal-2026-10-04.md`
+  summary: MRS-GATE-011 (a spec command outside the station's verify_commands) is judged only at verification, after the whole build; it is knowable at dispatch launch.
+  evidence: Marshal 86.8's spec listed a manual check under `**Commands:**`; its dispatch built, refused, ran a 477 s fix turn and parked (MRS-DISP-060). A fix turn cannot edit the spec, so the refusal could only park.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/dispatch.py (launch preflight), dispatch_verify.py
+  origin: retrospective 2026-10-04 (Epic 85)
+  severity: low
+  promoted: 2026-10-04 — marshal's Epic 85 retrospective
+  status: open
+
+### DW-marshal-retro-2026-10-04-4: Chain-currency dates a station's code stage from the last commit touching its pyproject.toml, so a dependency added and then removed on a branch moves the stage although main's bytes do not change.
+
+- source_spec: `planning-artifacts/retros/retro-pyforge-marshal-2026-10-04.md`
+  summary: Chain-currency dates a station's code stage from the last commit touching its pyproject.toml, so a dependency added and then removed on a branch moves the stage although main's bytes do not change.
+  evidence: Marshal 83.19's branch added and reverted a pyforge-testing-kit runtime dependency (91f2b9072b, e4107695cd); merging #1860 dated marshal's code stage 2026-10-04 and turned detectors-ci red on `feeds code -> retro` until the 2026-10-04 retro.
+  location: scripts/fleet_scan.py (_build_git_index / the code stage glob) — doctor's chain sources read it
+  origin: retrospective 2026-10-04 (Epic 85)
+  severity: low
+  promoted: 2026-10-04 — marshal's Epic 85 retrospective
   status: open

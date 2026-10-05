@@ -3848,7 +3848,7 @@
    "src/shared/packages/pyforge-marshal/docs/finding-remedy-reference.md": "9dd4ccaff52552a8dbc9c82b57dc6161b601240a",
    "src/shared/packages/pyforge-marshal/docs/managed-region-contract.md": "9c446ae9091cd493ada7cc1f8ba8562e604dca2e",
    "src/shared/packages/pyforge-marshal/pixi.toml": "72fb31ab5b9679e8b3a8b5e51e0dacf465586b0f",
-   "src/shared/packages/pyforge-marshal/pyproject.toml": "0f27f7334f5d8aee70281497e1965b0a62315525",
+   "src/shared/packages/pyforge-marshal/pyproject.toml": "8f349af5c46d6a381d9257f1d45ba21930cf48d9",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/__init__.py": "b9e09847a6e53c11db7d1afdbeefd6fc00ff6c2e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/clock_system.py": "e9b2f6d0cf1b73337cd7fd0dbd3a892bd98f0c70",
@@ -4275,7 +4275,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "b9ffcdc37d034eeaf9f8993a10ee57fcf80728ab"
+  "memlog": "bee7d90b8b282c028cb04f900c91edc41ab6e57e"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},

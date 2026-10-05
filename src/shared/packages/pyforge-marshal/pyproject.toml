@@ -237,10 +237,6 @@ module = "pyforge.marshal.cli.benchmark"
 disable_error_code = ["attr-defined"]
 
 [[tool.mypy.overrides]]
-module = "pyforge.marshal.cli.chain"
-disable_error_code = ["assignment", "attr-defined"]
-
-[[tool.mypy.overrides]]
 module = "pyforge.marshal.cli.config"
 disable_error_code = ["arg-type", "call-overload", "index", "union-attr"]
 
