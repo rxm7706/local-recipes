@@ -22,6 +22,7 @@ from collections.abc import Collection, Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
+from ..ports.vcs import VcsPort
 from .commit_vcs import CommittingVcs
 from .egress import to_redacted_text
 from .model import Finding, Severity
@@ -49,13 +50,16 @@ CFE_GIT_PATHSPECS: tuple[str, ...] = (
 RETRO_SUBJECT = re.compile(r"^retro(\([^)]*\))?:")
 
 CFE_COMMIT_GATE_CODE = "MRS-GATE-020"
+# Story 83.24: an unsanctioned CFE commit already on the branch -- terminal (no fix turn, no retry).
+CFE_BRANCH_COMMIT_GATE_CODE = "MRS-GATE-021"
 
 RULE2_REQUIREMENT = (
     "Rule 2: a commit touching the conda-forge-expert surface must have a subject starting "
     "`retro:` or `retro(<scope>):` and move the CFE CHANGELOG.md in the same commit"
 )
 
-RETRO_CFE_COMMIT_SUBJECT = "retro(cfe): dispatch session CFE changes (Story 83.19)"
+_CFE_SKILL_PATH = ".claude/skills/conda-forge-expert/SKILL.md"
+_CFE_VERSION_RE = re.compile(r"(?m)^version:\s*([0-9]+(?:\.[0-9]+)*+)\s*$")
 
 
 def is_cfe_surface_path(path: str) -> bool:
@@ -65,13 +69,88 @@ def is_cfe_surface_path(path: str) -> bool:
 
 
 def paths_excluding_cfe(paths: Iterable[str]) -> tuple[Path, ...]:
-    """Repo-relative ``Path``s from ``paths`` that a dispatch commit may carry, in order."""
+    """Repo-relative ``Path``s from ``paths`` that a dispatch commit may carry, in order.
+
+    Story 83.24: prefer :func:`non_retro_commit_paths` for porcelain-aware rename pairs."""
     return tuple(Path(path) for path in paths if not is_cfe_surface_path(path))
 
 
 def pending_cfe_paths(paths: Iterable[str]) -> tuple[str, ...]:
-    """The CFE-surface paths among ``paths``, sorted."""
+    """The CFE-surface paths among ``paths``, sorted.
+
+    Story 83.24: prefer :func:`pending_cfe_paths_from_status` when porcelain records are available."""
     return tuple(sorted(path for path in paths if is_cfe_surface_path(path)))
+
+
+def _record_sides(path: str, original: str | None) -> tuple[str, ...]:
+    return (path, original) if original is not None else (path,)
+
+
+def partition_status_records_for_cfe(
+    records: Iterable[tuple[str, str, str | None]],
+) -> tuple[tuple[Path, ...], tuple[str, ...]]:
+    """Split porcelain records into non-retro commit paths and CFE pending paths (Story 83.24).
+
+    A record is CFE when either side is on the CFE surface; the whole record stays out of non-retro
+    commits and every side joins the retro pending set."""
+    commit_paths: list[Path] = []
+    cfe_paths: list[str] = []
+    seen_commit: set[str] = set()
+    seen_cfe: set[str] = set()
+
+    for _status, path, original in records:
+        sides = _record_sides(path, original)
+        if any(is_cfe_surface_path(side) for side in sides):
+            for side in sides:
+                if side not in seen_cfe:
+                    seen_cfe.add(side)
+                    cfe_paths.append(side)
+        else:
+            for side in sides:
+                if side not in seen_commit and side not in seen_cfe:
+                    seen_commit.add(side)
+                    commit_paths.append(Path(side))
+    return tuple(commit_paths), tuple(sorted(cfe_paths))
+
+
+def non_retro_commit_paths(
+    vcs: VcsPort,
+    *,
+    worktree: Path,
+    extra_paths: Iterable[str] = (),
+) -> tuple[Path, ...]:
+    """Paths a dispatch non-retro commit may carry, excluding CFE rename pairs."""
+    records = vcs.status_porcelain_z_records(worktree)
+    commit_paths, _ = partition_status_records_for_cfe(records)
+    extras: list[Path] = []
+    seen = {path.as_posix() for path in commit_paths}
+    for path in extra_paths:
+        if is_cfe_surface_path(path) or path in seen:
+            continue
+        seen.add(path)
+        extras.append(Path(path))
+    return commit_paths + tuple(extras)
+
+
+def pending_cfe_paths_from_status(vcs: VcsPort, *, worktree: Path) -> tuple[str, ...]:
+    """CFE pending paths from porcelain records (both sides of a CFE rename)."""
+    _, cfe_paths = partition_status_records_for_cfe(vcs.status_porcelain_z_records(worktree))
+    return cfe_paths
+
+
+def read_cfe_skill_version(repo_root: Path) -> str:
+    """Read the live ``version:`` from the CFE ``SKILL.md`` (Story 83.24 retro subject)."""
+    skill = repo_root / _CFE_SKILL_PATH
+    text = skill.read_text(encoding="utf-8")
+    match = _CFE_VERSION_RE.search(text)
+    if not match:
+        raise ValueError(f"could not read CFE version from {_CFE_SKILL_PATH}")
+    return match.group(1)
+
+
+def retro_cfe_commit_subject(*, story_key: str, cfe_version: str) -> str:
+    """``retro(cfe): vX.Y.Z -- dispatch session CFE changes (Story N.M)`` (Story 83.24)."""
+    return f"retro(cfe): v{cfe_version} -- dispatch session CFE changes (Story {story_key})"
 
 
 @dataclass(frozen=True)
@@ -86,12 +165,28 @@ def commit_pending_cfe_retro(
     *,
     worktree: Path,
     changed_paths: Iterable[str],
+    story_key: str,
+    repo_root: Path,
 ) -> CfeRetroCommitResult:
     """Commit the uncommitted CFE paths once, as ``retro(cfe):``, when Rule 2 holds.
 
     No CFE path pending: nothing to do. CFE paths pending without the CFE ``CHANGELOG.md``
     among them: refuse naming Rule 2 and commit nothing."""
-    cfe_paths = pending_cfe_paths(changed_paths)
+    try:
+        cfe_paths = pending_cfe_paths_from_status(vcs, worktree=worktree)
+    except AttributeError:
+        cfe_paths = pending_cfe_paths(changed_paths)
+    except Exception as exc:
+        return CfeRetroCommitResult(
+            committed=False,
+            finding=Finding(
+                code=CFE_COMMIT_GATE_CODE,
+                severity=Severity.ERROR,
+                message=f"dispatch CFE retro commit could not read porcelain status: {exc}",
+            ),
+        )
+    if not cfe_paths:
+        cfe_paths = pending_cfe_paths(changed_paths)
     if not cfe_paths:
         return CfeRetroCommitResult(committed=False)
     if CFE_CHANGELOG_PATH not in cfe_paths:
@@ -108,10 +203,23 @@ def commit_pending_cfe_retro(
             ),
         )
     try:
+        cfe_version = read_cfe_skill_version(repo_root)
+        subject = retro_cfe_commit_subject(story_key=story_key, cfe_version=cfe_version)
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        return CfeRetroCommitResult(
+            committed=False,
+            paths=cfe_paths,
+            finding=Finding(
+                code=CFE_COMMIT_GATE_CODE,
+                severity=Severity.ERROR,
+                message=f"dispatch could not build the CFE retro commit subject: {exc}",
+            ),
+        )
+    try:
         vcs.commit_paths(
             worktree,
             tuple(Path(path) for path in cfe_paths),
-            to_redacted_text(RETRO_CFE_COMMIT_SUBJECT),
+            to_redacted_text(subject),
         )
     except Exception as exc:
         return CfeRetroCommitResult(
@@ -120,7 +228,7 @@ def commit_pending_cfe_retro(
             finding=Finding(
                 code=CFE_COMMIT_GATE_CODE,
                 severity=Severity.ERROR,
-                message=f"dispatch could not commit the pending CFE paths as {RETRO_CFE_COMMIT_SUBJECT!r}: {exc}",
+                message=f"dispatch could not commit the pending CFE paths as {subject!r}: {exc}",
             ),
         )
     return CfeRetroCommitResult(committed=True, paths=cfe_paths)
@@ -147,16 +255,42 @@ def unsanctioned_cfe_entries(
 
 
 def findings_for_unsanctioned_cfe_entries(entries: Collection[str], *, base: str) -> tuple[Finding, ...]:
-    """One ``MRS-GATE-020`` naming every offending commit, or nothing."""
+    """One finding per unsanctioned shape -- ``MRS-GATE-021`` on-branch, ``MRS-GATE-020`` uncommitted."""
     if not entries:
         return ()
-    return (
-        Finding(
-            code=CFE_COMMIT_GATE_CODE,
-            severity=Severity.ERROR,
-            message=(
-                f"the conda-forge-expert surface moved on {base}..HEAD outside a sanctioned retro "
-                f"({RULE2_REQUIREMENT}): {'; '.join(entries)}"
-            ),
-        ),
-    )
+    branch_entries = [entry for entry in entries if not entry.startswith("uncommitted:")]
+    dirty_entries = [entry for entry in entries if entry.startswith("uncommitted:")]
+    findings: list[Finding] = []
+    if branch_entries:
+        findings.append(
+            Finding(
+                code=CFE_BRANCH_COMMIT_GATE_CODE,
+                severity=Severity.ERROR,
+                message=(
+                    f"the conda-forge-expert surface moved on {base}..HEAD outside a sanctioned retro "
+                    f"({RULE2_REQUIREMENT}): {'; '.join(branch_entries)}"
+                ),
+            )
+        )
+    if dirty_entries:
+        findings.append(
+            Finding(
+                code=CFE_COMMIT_GATE_CODE,
+                severity=Severity.ERROR,
+                message=(
+                    f"the conda-forge-expert surface has uncommitted changes outside a sanctioned retro "
+                    f"({RULE2_REQUIREMENT}): {'; '.join(dirty_entries)}"
+                ),
+            )
+        )
+    return tuple(findings)
+
+
+def unsanctioned_cfe_commit_entries(entries: Collection[str]) -> tuple[str, ...]:
+    """Committed unsanctioned entries only (not ``uncommitted:`` lines)."""
+    return tuple(entry for entry in entries if not entry.startswith("uncommitted:"))
+
+
+def is_terminal_cfe_verify_refusal(failed_gate: str | None) -> bool:
+    """True when verification refused for an on-branch CFE violation (Story 83.24)."""
+    return failed_gate == CFE_BRANCH_COMMIT_GATE_CODE

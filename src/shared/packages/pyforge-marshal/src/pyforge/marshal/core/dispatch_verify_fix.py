@@ -12,6 +12,7 @@ from datetime import datetime
 from enum import StrEnum
 
 from .dispatch import KIND_DISPATCH_VERIFY_FIX
+from .dispatch_cfe_commit import is_terminal_cfe_verify_refusal
 from .dispatch_verification import DispatchVerificationVerdict, _command_from_gate_001_message
 from .gate import CROSS_SURFACE_GATE_CODE
 from .journal import FoldResult, JournalEntry, JournalEntryId, Phase
@@ -226,8 +227,11 @@ def decide_verify_fix_turn(
     fix_turn_already_ran: bool,
     session_alive: bool,
     has_failed_commands: bool = True,
+    verification_failed_gate: str | None = None,
 ) -> VerifyFixDecision:
     """Whether dispatch may run exactly one fix turn for this refusal."""
+    if is_terminal_cfe_verify_refusal(verification_failed_gate):
+        return VerifyFixDecision(run=False, reason="unsanctioned CFE commit on branch -- terminal")
     if not flag_enabled:
         return VerifyFixDecision(run=False, reason="verify_fix_loop flag off")
     if fix_turn_already_ran:

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .commit_vcs import CommittingVcs
-from .dispatch_cfe_commit import paths_excluding_cfe
+from .dispatch_cfe_commit import non_retro_commit_paths
 from .egress import to_redacted_text
 
 _AUTO_CHECKPOINT_MARKER = "(auto-checkpoint)"
@@ -57,7 +57,7 @@ def commit_worktree_checkpoint(
         changed = vcs.changed_files(repo_root, worktree, base=base)
         if not changed:
             return WorktreeCheckpointResult(committed=False, skipped_reason="clean worktree")
-        to_commit = paths_excluding_cfe(changed)
+        to_commit = non_retro_commit_paths(vcs, worktree=worktree)
         if not to_commit:
             return WorktreeCheckpointResult(committed=False, skipped_reason="only CFE surface dirty")
         head_sha = vcs.commit_paths(

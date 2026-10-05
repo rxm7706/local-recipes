@@ -2046,6 +2046,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 83.19 (spec-83-19): MRS-GATE-020 -- the CFE surface moved outside
         # a sanctioned retro commit or pending CFE edits lack a CHANGELOG change.
         "MRS-GATE-020",
+        # Story 83.24 (spec-83-24): MRS-GATE-021 -- an unsanctioned CFE commit is
+        # already on the story branch (terminal; no fix turn).
+        "MRS-GATE-021",
         # Story 34.2 shipped `marshal factory checkpoint` building these three findings
         # without registering them, so every failure path of that command raised
         # `UnregisteredFindingCodeError` out of `Finding(...)` instead of exiting non-zero

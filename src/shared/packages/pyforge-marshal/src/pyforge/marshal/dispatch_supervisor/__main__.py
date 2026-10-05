@@ -24,7 +24,13 @@ from ..core import gate as gate_core
 from ..core import identity as identity_core
 from ..core import promotion as promotion_core
 from ..core.commit_vcs import CommittingVcs
-from ..core.dispatch_cfe_commit import paths_excluding_cfe
+from ..core.dispatch_cfe_commit import (
+    CFE_BRANCH_COMMIT_GATE_CODE,
+    is_terminal_cfe_verify_refusal,
+    non_retro_commit_paths,
+    unsanctioned_cfe_commit_entries,
+)
+from ..dispatch_verify import check_unsanctioned_cfe_commits
 from ..core.dispatch_completion import (
     DispatchGitFacts,
     DispatchSessionVerdict,
@@ -217,8 +223,7 @@ def _commit_pre_verify_wip(
     try:
         if not vcs.has_uncommitted_changes(worktree):
             return False, None
-        changed = vcs.changed_files(repo_root, worktree, base="HEAD")
-        to_commit = paths_excluding_cfe(changed)
+        to_commit = non_retro_commit_paths(vcs, worktree=worktree)
         if to_commit:
             vcs.commit_paths(
                 worktree,
@@ -227,8 +232,8 @@ def _commit_pre_verify_wip(
             )
             committed = True
         if vcs.has_uncommitted_changes(worktree):
-            remaining = vcs.changed_files(repo_root, worktree, base="HEAD")
-            if not remaining or paths_excluding_cfe(remaining):
+            remaining_commit = non_retro_commit_paths(vcs, worktree=worktree)
+            if remaining_commit:
                 return committed, "the worktree still has uncommitted changes after the pre-verify WIP commit"
     except VcsCommandError as exc:
         return committed, f"pre-verify WIP commit failed: {exc}"
@@ -601,6 +606,15 @@ def _verification_outcome_verdict(folded, run_id: str) -> str | None:
     return None
 
 
+def _verification_failed_gate(folded, run_id: str) -> str | None:
+    for entry in reversed(folded.by_kind(dispatch_core.KIND_DISPATCH_VERIFICATION)):
+        if entry.run_id == run_id and entry.phase == Phase.OUTCOME:
+            gate = entry.payload.get("failed_gate")
+            if isinstance(gate, str):
+                return gate
+    return None
+
+
 def _journal_finalize_attempt(
     *,
     fs: FsPort,
@@ -867,13 +881,12 @@ def _commit_and_journal_blocked_halt(
     caller must not adopt the ``blocked`` verdict unless this returns
     ``True``.
     """
-    try:
-        changed = vcs.changed_files(repo_root, worktree, base="HEAD")
-    except VcsCommandError:
-        return counter, False
     patch_paths = _attempted_change_patch_paths(worktree)
     rel_patch = tuple(p.relative_to(worktree).as_posix() for p in patch_paths)
-    paths_to_commit = paths_excluding_cfe(changed) + paths_excluding_cfe(rel_patch)
+    try:
+        paths_to_commit = non_retro_commit_paths(vcs, worktree=worktree, extra_paths=rel_patch)
+    except VcsCommandError:
+        return counter, False
     if not paths_to_commit:
         return counter, False
     try:
@@ -1328,6 +1341,7 @@ def _maybe_run_verify_fix_turn(
             fix_turn_already_ran=_verify_fix_turn_journaled(folded, run_id),
             session_alive=session_alive,
             has_failed_commands=bool(failed_cmds),
+            verification_failed_gate=_verification_failed_gate(folded, run_id),
         )
         if not decision.run:
             # Final landing review L1: a supervisor killed after the turn's ok OUTCOME but before its re-verify was
@@ -1663,8 +1677,7 @@ def _run_supervisor_finalize_sequence(
     failed_message: str | None = None
     try:
         if vcs.has_uncommitted_changes(worktree):
-            changed = vcs.changed_files(repo_root, worktree, base="HEAD")
-            to_commit = paths_excluding_cfe(changed)  # Story 83.19: verification commits the CFE surface
+            to_commit = non_retro_commit_paths(vcs, worktree=worktree)  # Story 83.19/83.24
             if to_commit:
                 vcs.commit_paths(
                     worktree,
@@ -1705,6 +1718,34 @@ def _run_supervisor_finalize_sequence(
         )
     except VcsCommandError, ValueError:
         pass
+
+    # Story 83.24: refuse push when the branch already carries an unsanctioned CFE commit.
+    cfe_findings, cfe_report = check_unsanctioned_cfe_commits(
+        worktree=worktree, process=process, base=ORIGIN_MAIN
+    )
+    cfe_unsanctioned = cfe_report.get("unsanctioned")
+    if isinstance(cfe_unsanctioned, list) and unsanctioned_cfe_commit_entries(cfe_unsanctioned):
+        branch_msg = next(
+            (finding.message for finding in cfe_findings if finding.code == CFE_BRANCH_COMMIT_GATE_CODE),
+            "unsanctioned conda-forge-expert commit on the story branch",
+        )
+        counter = _journal_finalize_attempt(
+            fs=fs,
+            run_dir=run_dir,
+            run_id=run_id,
+            writer_id=writer_id,
+            counter=counter,
+            story_key=story_key,
+            worktree=worktree,
+            trigger=trigger,
+            committed=committed,
+            pushed=False,
+            verified=False,
+            ok=False,
+            failed_step="push",
+            failed_message=branch_msg,
+        )
+        return counter, False
 
     if not _dispatch_push_already_journaled(folded, run_id):
         counter = _run_and_journal_dispatch_push(

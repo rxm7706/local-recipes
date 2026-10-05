@@ -239,6 +239,8 @@ def _name_status_z_paths(stdout: str) -> set[str]:
         width = 3 if status[0] in "RC" else 2
         if index + width > len(fields) or not fields[index + width - 1]:
             raise VcsCommandError(f"unparseable 'git diff --name-status -z' record: {status!r} without its path")
+        if status[0] in "RC" and width == 3:
+            paths.add(fields[index + 1])
         paths.add(fields[index + width - 1])
         index += width
     return paths
@@ -278,6 +280,16 @@ def _porcelain_z_paths(stdout: str) -> set[str]:
     """Story 83.16: the live paths of ``git status --porcelain -z`` (v1) output -- a rename or copy keeps only
     its new path, its original is consumed and dropped (``_porcelain_z_records``)."""
     return {path for _status, path, _original in _porcelain_z_records(stdout)}
+
+
+def _porcelain_z_all_paths(stdout: str) -> set[str]:
+    """Story 83.24: every path named by porcelain output -- both sides of a rename or copy."""
+    paths: set[str] = set()
+    for _status, path, original in _porcelain_z_records(stdout):
+        paths.add(path)
+        if original is not None:
+            paths.add(original)
+    return paths
 
 
 def _commit_status_facts(stdout: str, named: set[str]) -> tuple[frozenset[str], tuple[str, ...]]:
@@ -895,9 +907,30 @@ class GitVcs:
         )
         if status_result.returncode != 0:
             raise VcsCommandError(f"git status --porcelain failed in {worktree_path}: {status_result.stderr.strip()}")
-        dirty = _porcelain_z_paths(status_result.stdout)
+        dirty = _porcelain_z_all_paths(status_result.stdout)
 
         return tuple(sorted(committed | dirty))
+
+    def status_porcelain_z_records(self, worktree_path: Path) -> tuple[tuple[str, str, str | None], ...]:
+        """Story 83.24: ``git status --porcelain -z`` as parsed records for CFE commit partitioning."""
+        status_result = _run(
+            [
+                "git",
+                "-C",
+                str(worktree_path),
+                "-c",
+                "status.showUntrackedFiles=normal",
+                "status",
+                "--porcelain",
+                "-z",
+                "--untracked-files=all",
+            ]
+        )
+        if status_result.returncode != 0:
+            raise VcsCommandError(
+                f"git status --porcelain failed in {worktree_path}: {status_result.stderr.strip()}"
+            )
+        return tuple(_porcelain_z_records(status_result.stdout))
 
     def worktree_unified_patch(self, worktree_path: Path, *, baseline_sha: str) -> str:
         """Story 22.6: ``git diff baseline..HEAD`` plus dirty overlay vs baseline."""
