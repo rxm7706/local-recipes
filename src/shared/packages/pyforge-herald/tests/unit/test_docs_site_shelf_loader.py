@@ -16,6 +16,15 @@ def _repo_root() -> Path:
     raise AssertionError("repo root not found")
 
 
+def _body_after_frontmatter(raw: str) -> str:
+    if not raw.startswith("---"):
+        return raw
+    end = raw.find("\n---", 3)
+    if end == -1:
+        return raw
+    return raw[end + 4 :].lstrip("\n")
+
+
 def _extract_first_h1(body: str) -> tuple[str | None, str]:
     """Mirror docs-site/src/loaders/shelf-docs-loader.ts extractFirstH1."""
     lines = body.split("\n")
@@ -50,7 +59,7 @@ def test_page_without_frontmatter_uses_first_heading() -> None:
     root = _repo_root()
     raw = (root / "docs/how-to/pixi-tasks.md").read_text(encoding="utf-8")
     assert raw.startswith("<!--")
-    body = raw.split("---", 1)[-1] if raw.startswith("---") else raw
+    body = _body_after_frontmatter(raw)
     title, rest = _extract_first_h1(body)
     assert title == "Pixi tasks"
     assert not rest.lstrip().startswith("# Pixi tasks")
@@ -59,10 +68,10 @@ def test_page_without_frontmatter_uses_first_heading() -> None:
 def test_two_headings_use_first_only() -> None:
     root = _repo_root()
     raw = (root / "docs/how-to/feedstock-failure-remediation.md").read_text(encoding="utf-8")
-    body = raw.split("---", 1)[-1] if raw.startswith("---") else raw
+    body = _body_after_frontmatter(raw)
     title, rest = _extract_first_h1(body)
-    assert title is not None
-    assert rest.count("\n# ") >= 0
+    assert title == "Tech Spec: Feedstock Failure Remediation (parameterized)"
+    assert "## How to use this spec" in rest
     assert not rest.lstrip().startswith(f"# {title}")
 
 
