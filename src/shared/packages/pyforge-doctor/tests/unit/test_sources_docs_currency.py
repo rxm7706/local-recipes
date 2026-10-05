@@ -357,14 +357,14 @@ def _write_generator_script(repo: Path, rel: str, *, exit_code: int) -> None:
 def test_generated_page_current_reports_no_finding(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     checkout = tmp_path / "checkout"
     checkout.mkdir()
-    doctor_script = _write_checkout_stub_generator(
-        checkout, "scripts/docs_pixi_tasks.py", exit_code=0
-    )
+    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_pixi_tasks.py", exit_code=0)
     monkeypatch.setattr(
         docs_currency,
         "locate_checkout_script",
-        lambda name: doctor_script if name == "docs_pixi_tasks.py" else (_ for _ in ()).throw(
-            FileNotFoundError(f"scripts/{name} not found")
+        lambda name: (
+            doctor_script
+            if name == "docs_pixi_tasks.py"
+            else (_ for _ in ()).throw(FileNotFoundError(f"scripts/{name} not found"))
         ),
     )
 
@@ -398,14 +398,14 @@ def test_generated_page_current_reports_no_finding(tmp_path: Path, monkeypatch: 
 def test_generated_page_stale_emits_warn(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     checkout = tmp_path / "checkout"
     checkout.mkdir()
-    doctor_script = _write_checkout_stub_generator(
-        checkout, "scripts/docs_pixi_tasks.py", exit_code=1
-    )
+    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_pixi_tasks.py", exit_code=1)
     monkeypatch.setattr(
         docs_currency,
         "locate_checkout_script",
-        lambda name: doctor_script if name == "docs_pixi_tasks.py" else (_ for _ in ()).throw(
-            FileNotFoundError(f"scripts/{name} not found")
+        lambda name: (
+            doctor_script
+            if name == "docs_pixi_tasks.py"
+            else (_ for _ in ()).throw(FileNotFoundError(f"scripts/{name} not found"))
         ),
     )
 
@@ -577,14 +577,14 @@ def test_the_judged_trees_declared_generator_is_data_never_executed(
 ) -> None:
     checkout = tmp_path / "checkout"
     checkout.mkdir()
-    doctor_script = _write_checkout_stub_generator(
-        checkout, "scripts/docs_pixi_tasks.py", exit_code=0
-    )
+    doctor_script = _write_checkout_stub_generator(checkout, "scripts/docs_pixi_tasks.py", exit_code=0)
     monkeypatch.setattr(
         docs_currency,
         "locate_checkout_script",
-        lambda name: doctor_script if name == "docs_pixi_tasks.py" else (_ for _ in ()).throw(
-            FileNotFoundError(f"scripts/{name} not found")
+        lambda name: (
+            doctor_script
+            if name == "docs_pixi_tasks.py"
+            else (_ for _ in ()).throw(FileNotFoundError(f"scripts/{name} not found"))
         ),
     )
 
@@ -615,9 +615,7 @@ def test_the_judged_trees_declared_generator_is_data_never_executed(
     assert not probe.exists(), "the judged tree's scripts/docs_pixi_tasks.py was executed"
 
 
-def test_the_probe_runs_when_the_locator_resolves_from_target(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_the_probe_runs_when_the_locator_resolves_from_target(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Sensitivity twin (mutation): re-point the locator at `target` -- the pre-fix
     behaviour -- and the same planted script runs, so the test above can fail."""
     _init_repo(tmp_path)

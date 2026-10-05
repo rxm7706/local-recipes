@@ -465,10 +465,7 @@ def _check_generated_page(target: Path, page: dict) -> Finding | None:
             source=Source.DOCS_CURRENCY,
             check=_CHECK_GENERATED_STALE,
             status=DoctorStatus.WARN,
-            message=(
-                f"{rel}: declared generator {generator} is not an allowed "
-                f"scripts/docs_*.py path -- not executed"
-            ),
+            message=(f"{rel}: declared generator {generator} is not an allowed scripts/docs_*.py path -- not executed"),
             evidence={"page": rel, "generator": generator},
         )
 

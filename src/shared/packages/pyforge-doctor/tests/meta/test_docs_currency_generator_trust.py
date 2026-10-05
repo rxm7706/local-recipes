@@ -13,12 +13,7 @@ import ast
 from pathlib import Path
 
 DOCS_CURRENCY_SOURCE = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "pyforge"
-    / "doctor"
-    / "sources"
-    / "docs_currency.py"
+    Path(__file__).resolve().parents[2] / "src" / "pyforge" / "doctor" / "sources" / "docs_currency.py"
 )
 
 
@@ -67,11 +62,14 @@ def test_docs_currency_run_check_script_never_targets_judged_tree_script() -> No
         assert not _expr_uses_target(script_arg), (
             f"run_check_script must not receive a path under target (line {script_arg.lineno})"
         )
-        string_args = [
-            elt.value
-            for elt in call.args
-            if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
-        ]
+        string_args: list[str] = []
+        for arg in call.args:
+            if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+                string_args.append(arg.value)
+            elif isinstance(arg, ast.List):
+                for elt in arg.elts:
+                    if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                        string_args.append(elt.value)
         assert "--root" in string_args, (
             f"run_check_script call at line {call.lineno} must pass --root for the judged tree"
         )
