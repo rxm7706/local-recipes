@@ -9,7 +9,9 @@ from pathlib import Path
 def _repo_root() -> Path:
     here = Path(__file__).resolve()
     for candidate in here.parents:
-        if (candidate / "pixi.toml").is_file():
+        if (candidate / "pixi.toml").is_file() and (
+            candidate / "src" / "shared" / "packages" / "pyforge-herald"
+        ).is_dir():
             return candidate
     raise AssertionError("repo root not found")
 
