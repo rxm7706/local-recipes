@@ -6627,11 +6627,9 @@ status: open
   origin: spec-deferred be9286c74579 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: low
   promoted: 2026-09-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-  verified: 2026-10-01 — NEEDS-DECISION — `.claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py:135-141` `SCAN_GLOB_FLOORS` still only covers `epics.md`/`PRD.md` (glob across all projects), the marshal seed templates, `AGENTS.md` and `CLAUDE.md` -- no entry for `architecture-bmad-infra.md` or `development-guide.md`. (2026-09-30 deferral burn-down triage)
-  decision: Should architecture-bmad-infra.md and development-guide.md be added to the retired-id guard's SCAN_GLOBS to regression-protect them against a retired id being reintroduced, accepting the false-positive risk against normal prose -- the entry's own text frames this as a bigger design decision outside Story 30.1's AC.
-
-  verified: 2026-09-08 — still-open — CONFIRMED. `architecture-bmad-infra.md` and `development-guide.md` are still outside the guard's `SCAN_GLOBS`, so a re-introduced retired id in either doc is not regression-protected.
+  status: resolved
+  resolution: Story 86.7 — widened `SCAN_GLOB_FLOORS` in `.claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py` to include both planning docs and glossed bare retired-id rows so the guard passes on the swept tree.
+  verified: 2026-10-05 — `.claude/skills/conda-forge-expert/tests/meta/test_no_retired_bmad_skill_ids.py:137-138` adds floors for `_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md` and `development-guide.md`; `_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md:579` rename-table row for retired `bmad-checkpoint-preview` carries a same-line allow marker.
 
 ### DW-FU-30-2: architecture-bmad-infra.md, index.md, and PRD.md still describe the retired per-station project-context.md rulebooks as live artifacts in several places.
 
@@ -7569,8 +7567,9 @@ status: open
   origin: spec-deferred f19691fb2515 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-09-25 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
-  verified: 2026-10-01 — STANDS — grep for 'context advisory' finds no hit in AGENTS.md, CLAUDE.md, docs/ or .claude/skills/pyforge-marshal and bmad-agent-marshal; only the 46.6 spec, this ledger and two memlogs mention it. The verb exists (cli/context.py:289 registers 'advisory'). (2026-09-30 deferral burn-down triage)
+  status: resolved
+  resolution: Story 86.7 — named `marshal context advisory` beside `scribe capture` in AGENTS.md's session-close ritual line and in the pyforge-marshal station skill pointer.
+  verified: 2026-10-05 — `AGENTS.md:116` session-close ritual names both `scribe capture` and `marshal context advisory`; `.claude/skills/pyforge-marshal/0.1.0/pyforge-marshal/SKILL.md:69` points at the same ritual without restating it.
 
 ## DW-marshal-baseline-drift-supersession-2026-09-25 — `baseline-drift-check` reports three atlas defers as unrecovered forever, because its recovery rule only recognises the literal story key reading `done`
 
