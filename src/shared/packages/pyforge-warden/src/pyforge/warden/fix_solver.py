@@ -18,6 +18,8 @@ from typing import Protocol, runtime_checkable
 
 from packaging.version import InvalidVersion, Version
 
+from pyforge.core.errors import PyforgeError
+
 from .engines import PIXI_VERSION_RANGE, run_pixi_lock
 
 SolverVerdict = str  # "accepted" | "rejected"
@@ -190,7 +192,7 @@ def default_pixi_lock_solver(*, scan_target: Path, package: str, floor_version: 
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-class PixiVersionOutOfRangeError(RuntimeError):
+class PixiVersionOutOfRangeError(PyforgeError, RuntimeError):
     """Raised when ``pixi`` on PATH is outside ``PIXI_VERSION_RANGE``."""
 
 

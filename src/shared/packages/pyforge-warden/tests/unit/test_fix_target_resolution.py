@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pyforge.warden.actuator import plan_remediations, run_actuator
-from pyforge.warden.fix_solver import eligible_candidates, selective_solver
+from pyforge.warden.actuator import _resolve_upgrade_targets, plan_remediations, run_actuator
+from pyforge.warden.fix_solver import PixiVersionOutOfRangeError, eligible_candidates, selective_solver
 from pyforge.warden.models import Finding, Severity, SeverityTier
 
 
@@ -120,3 +120,57 @@ def test_actuation_json_includes_fix_resolution():
     resolution = payload["outcomes"][0]["fix_resolution"]
     assert resolution["solver"] == "not-run"
     assert resolution["target"] == "1.2.3"
+
+
+def test_dry_run_with_no_candidates_emits_resolution_failed_outcome():
+    finding = _vuln()
+    actuation = run_actuator(
+        [finding],
+        dry_run=True,
+        fix_target_resolution_enabled=True,
+        fixed_version_candidates={finding.id: ()},
+    )
+    (outcome,) = actuation.outcomes
+    assert outcome.status == "failed"
+    assert outcome.fix_resolution is not None
+    assert outcome.fix_resolution.target is None
+
+
+def test_resolve_upgrade_targets_skips_non_vuln_findings():
+    hygiene = Finding(
+        id="hygiene:DEP002:pkg",
+        axis="hygiene",
+        message="unused",
+        subject="pkg",
+        severity=None,
+    )
+    targets, resolutions, fatal = _resolve_upgrade_targets(
+        [hygiene],
+        dry_run=False,
+        fixed_version_candidates=None,
+        scan_target=Path("."),
+        solver=None,
+    )
+    assert targets == {}
+    assert resolutions == {}
+    assert fatal is None
+
+
+def test_pixi_out_of_range_is_a_whole_run_failure():
+    finding = _vuln()
+
+    def _raise(**_kwargs: object) -> str:
+        raise PixiVersionOutOfRangeError("pixi out of range")
+
+    actuation = run_actuator(
+        [finding],
+        dry_run=False,
+        fix_target_resolution_enabled=True,
+        fixed_version_candidates={finding.id: ("1.2.3",)},
+        scan_target=Path("."),
+        solver=_raise,
+    )
+    (outcome,) = actuation.outcomes
+    assert outcome.status == "failed"
+    assert outcome.finding_id == ""
+    assert "pixi out of range" in (outcome.detail or "")

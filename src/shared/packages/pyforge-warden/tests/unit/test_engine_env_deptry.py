@@ -26,14 +26,18 @@ from pyforge.warden.engines import (
     DEPTRY_TIMEOUT_SECONDS,
     DEPTRY_VERSION_RANGE,
     ENGINE_VERSION_CHECK_TIMEOUT_SECONDS,
+    PIXI_VERSION_PATTERN,
+    PIXI_VERSION_RANGE,
     DeptryEngine,
     _check_engine_version,
     _engine_env,
+    run_pixi_lock,
 )
 from pyforge.warden.inventory import ResolvedInventory, merge_components
 from pyforge.warden.models import (
     AXIS_HYGIENE,
     ErrorKind,
+    ErrorRecord,
     ScannedManifest,
 )
 
@@ -971,3 +975,43 @@ def test_deptry_engine_unparseable_version_never_invokes_the_real_subprocess(mon
     (error,) = result.errors
     assert error.kind is ErrorKind.ENGINE_UNAVAILABLE
     assert "could not parse version" in error.message
+
+
+# --- Story 14.1: ``run_pixi_lock`` -----------------------------------------
+
+
+def test_run_pixi_lock_version_out_of_range_returns_error(monkeypatch, tmp_path):
+    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"pixi 0.79.0\n"))
+    error, exit_code = run_pixi_lock(cwd=tmp_path)
+    assert exit_code is None
+    assert error is not None
+    assert error.owner == "pixi"
+
+
+def test_run_pixi_lock_success_returns_exit_code(monkeypatch, tmp_path):
+    calls: list[list[str]] = []
+
+    def fake_run(argv, **kwargs):
+        calls.append(list(argv))
+        if argv[:2] == ["pixi", "--version"]:
+            return types.SimpleNamespace(returncode=0, stdout=b"pixi 0.80.1\n", stderr=b"")
+        return types.SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    error, exit_code = run_pixi_lock(cwd=tmp_path)
+    assert error is None
+    assert exit_code == 0
+    assert ["pixi", "lock"] in calls
+
+
+def test_run_pixi_lock_engine_env_error(monkeypatch, tmp_path):
+    monkeypatch.setattr(subprocess, "run", _fake_run_version(b"pixi 0.80.1\n"))
+
+    def fake_engine_env(*_args, **_kwargs):
+        return "", ErrorRecord(kind=ErrorKind.ENGINE_TIMEOUT, owner="pixi", message="timed out"), None
+
+    monkeypatch.setattr("pyforge.warden.engines._engine_env", fake_engine_env)
+    error, exit_code = run_pixi_lock(cwd=tmp_path)
+    assert exit_code is None
+    assert error is not None
+    assert error.kind is ErrorKind.ENGINE_TIMEOUT
