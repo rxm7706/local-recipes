@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: a506c0cb7134ab14
-story_count: 425
+source_fingerprint: 7388bb27f9e086a3
+story_count: 427
 test_file_count: 239
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 425
+- **Stories parsed:** 427
 - **Epics parsed:** 85
 - **Test files inventoried:** 239 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `a506c0cb7134ab14`
+- **Source fingerprint:** `7388bb27f9e086a3`
 
 ## Risk Assessment
 
@@ -764,6 +764,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 83.21 | Landing finalize writes the epic roll-ups the sync writes | none observed |
 | 83.22 | The landing's ledger guard judges the twin it overwrites | none observed |
 | 83.23 | Dispatch verification runs the cross-station meta-tests that read the story's... | none observed |
+| 83.24 | A rename out of the CFE surface is caught, and the station guards read the on... | none observed |
+| 83.25 | A Cursor dispatch session never attributes its commits to the agent | none observed |
 | 84.1 | An operator-run refresh reads every harness's live model list and reports drift | none observed |
 | 84.2 | The model-list refresh tests can fail, and a partial listing is never complete | none observed |
 | 85.1 | A verification refusal goes back to the session that wrote the change for one... | none observed |

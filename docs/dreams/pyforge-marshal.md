@@ -1043,6 +1043,22 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   **What it looks like when fixed:** a path-form cite that resolves nowhere is counted missing and named; the
   stale links are repaired; no live doc describes the retired verb. **Constraints:** a fix story, no CAP, no flag.
   Owner `spec-pyforge-marshal`. → Story 86.8, specced 2026-10-04.
+- **2026-10-04 (83.19 review)** — **Found: a rename slips out of the CFE surface, and the CFE list has five copies.**
+  Story 83.19's independent review (#1860) showed a `git mv` out of `.claude/skills/conda-forge-expert/` committed in a
+  `wip:` auto-checkpoint, because dispatch judges only a rename's new path; verification then refuses, and the branch
+  needs a history rewrite. The four station guards still hardcode the CFE path instead of reading the kit's list, the
+  retro subject names Story 83.19 for every story, MRS-GATE-020 is retried even when no retry can clear it, and the
+  push precedes the refusal. **What it looks like when fixed:** both sides of a rename stay out of every non-retro
+  commit, every guard reads `pyforge.testing_kit.cfe_surface`, the retro subject names its own story and CFE version,
+  and an unsanctioned commit on the branch is terminal and refused before the push. **Constraints:** a fix story, no
+  CAP, no flag. Owner `spec-pyforge-marshal`. → Story 83.24, specced 2026-10-04.
+- **2026-10-04 (Cursor attribution)** — **Found: Cursor sessions sign their commits.** Mason 27.2's dispatch committed
+  `Co-authored-by: Cursor <cursoragent@cursor.com>`, from the operator's `cli-config.json`
+  (`attribution.attributeCommitsToAgent`, default `true`). Story 83.17's check refused it only at verification, after
+  the build, and the branch needed a message-only rewrite and a force push to land (#1864). A repo `.cursor/cli.json`
+  cannot carry the setting (its schema admits only `permissions`). **What it looks like when fixed:** every Cursor
+  launch marshal makes reads a run-scoped config (`CURSOR_CONFIG_DIR`) with attribution off, the operator's file
+  untouched. **Constraints:** a fix story, no CAP, no flag. Owner `spec-pyforge-marshal`. → Story 83.25, specced 2026-10-04.
 - **2026-10-04 (testing kit CI)** — **Found: the testing kit's own suite runs nowhere.** `pyforge-testing-kit` is the
   seam every station's meta tests import, but no workflow runs `pyforge-testing-kit-test`, and the local
   `pyforge-station-tests` twin skips it too. The kit is only a trigger for the station jobs. Its suite is already red:
