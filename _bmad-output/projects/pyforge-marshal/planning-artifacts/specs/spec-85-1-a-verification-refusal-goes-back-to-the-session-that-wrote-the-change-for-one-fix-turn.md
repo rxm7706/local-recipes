@@ -9,7 +9,7 @@ review_loop_iteration: 0
 flag:
   key: pyforge.marshal.verify_fix_loop
   provider: openfeature-file
-  default: {production: off, staging: off, dev: off}
+  default: {production: off, staging: on, dev: on}
   scope: global
   fallback: "a verification refusal parks the story for the operator (Story 83.10), with no fix turn"
   cleanup: 90 days after ON in every environment (Q4)

@@ -9,7 +9,7 @@ followup_review_recommended: false
 flag:
   key: pyforge.steward.object_store_consumer
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
-  default: {production: off, staging: on, dev: on}   # per-env values need Guild CAP-5 (steward Epic 76); until then the tree default is off
+  default: {production: off, staging: off, dev: off}   # matches src/platform/config/flags.json and flag-overlays.json (Story 76.1)
   scope: global                                # v1 is global only (Q5)
   fallback: put_stream and open_stream raise ObjectStoreDisabled; a consumer keeps its exports in git only, as today
   cleanup: 90 days after ON in every environment (Q4)

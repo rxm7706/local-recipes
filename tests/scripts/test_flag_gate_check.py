@@ -191,6 +191,14 @@ def _landed_root(tmp_path: Path) -> Path:
     """A fixture whose tree holds ``KEY`` and whose ``src/`` reads it: a landed spec has no other finding."""
     root = _fixture(tmp_path, tree_keys=[KEY])
     _write(root, "src/pkg/reader.py", f'flag("{KEY}")\n')
+    _write_overlays(
+        root,
+        {
+            "dev": {KEY: "on"},
+            "staging": {KEY: "on"},
+            "production": {KEY: "off"},
+        },
+    )
     return root
 
 
@@ -430,6 +438,14 @@ def test_the_same_spec_at_backlog_has_no_finding_and_a_done_spec_with_its_key_in
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):
     root = _fixture(tmp_path, tree_keys=["pyforge.test.landed"])
+    _write_overlays(
+        root,
+        {
+            "dev": {"pyforge.test.landed": "on"},
+            "staging": {"pyforge.test.landed": "on"},
+            "production": {"pyforge.test.landed": "off"},
+        },
+    )
     _spec(root, FLAG_BLOCK.format(key="pyforge.test.absent"), name="spec-1-1-backlog.md", status="backlog")
     body = _verification(_write_test(root, "pyforge.test.landed", KIT_TEST))
     _spec(root, FLAG_BLOCK.format(key="pyforge.test.landed"), name="spec-1-2-done.md", status="done", body=body)
@@ -1278,7 +1294,7 @@ def test_a_flag_on_everywhere_91_days_before_the_run_date_is_one_clock_fail_nami
         _boolean_flag_entry(KEY, owner="steward", story="76-1-overlays", on_everywhere="2026-01-01"),
     )
 
-    rc, payload = _tree_json(root, "--run-date", "2026-04-02", capsys=capsys)
+    rc, payload = _tree_json(root, capsys, "--run-date", "2026-04-02")
 
     assert rc == 1
     clock = [f for f in payload["findings"] if f["kind"] == "flag-clock-overdue"]
@@ -1299,7 +1315,7 @@ def test_a_flag_on_everywhere_90_days_before_the_run_date_has_no_clock_finding(
         _boolean_flag_entry(KEY, on_everywhere="2026-01-01"),
     )
 
-    rc, payload = _tree_json(root, "--run-date", "2026-04-01", capsys=capsys)
+    rc, payload = _tree_json(root, capsys, "--run-date", "2026-04-01")
 
     assert rc == 0
     assert "flag-clock-overdue" not in _kinds(payload)
@@ -1324,7 +1340,7 @@ def test_a_flag_off_in_production_never_gets_a_clock_finding_whatever_its_age(
         },
     )
 
-    rc, payload = _tree_json(root, "--run-date", "2026-10-01", capsys=capsys)
+    rc, payload = _tree_json(root, capsys, "--run-date", "2026-10-01")
 
     assert "flag-clock-overdue" not in _kinds(payload)
 
@@ -1423,6 +1439,7 @@ def test_the_live_tree_has_no_unknown_exemption_no_landed_key_missing_and_no_orp
         flag_gate_check.K_NO_TEST,
         flag_gate_check.K_TEST_MISSING,
         flag_gate_check.K_NOT_TWO_STATE,
+        flag_gate_check.K_DEFAULT_ENV,
     }
     inputs = flag_gate_check.load_inputs(REPO_ROOT)
 
