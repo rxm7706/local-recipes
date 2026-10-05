@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.91.6
+version: 8.91.7
 allowed-tools: [conda_forge_server]
 ---
 
@@ -4368,6 +4368,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.91.7** (Oct 4, 2026) — **Strip-on-push enforced in `submit_pr.prepare_branch` (PATCH; mason Story 27.2).** See `CHANGELOG.md`.
 - **v8.91.6** (Oct 4, 2026) — **Failure-catalog quality gate + drift exit codes (PATCH; mason Story 27.2).** See `CHANGELOG.md`.
 - **v8.91.5** (Oct 4, 2026) — **Fleet-picture tests: the bmad-core probe keeps a FAIL finding, and `main()` is driven end to end (PATCH; tests only, no CFE script change).** doctor Story 41.4 dropped `check=True` from `scripts/fleet_picture.py`'s `bmad_core_drift_findings()`: exit 0 and exit 2 are both parsed and every warn and fail finding is returned, so a FAIL no longer collapses into "could not check"; any other exit raises. `test_fleet_picture_bmad_core_drift.py` pins that (DW-FU-10-3), and the new `test_fleet_picture_main_attention.py` runs `main()` with every ATTENTION probe stubbed: each result reaches `needs`/`watch` (DW-FU-10-3-3), including `bmad-channel-drift` and `bmad-recipe-upstream-drift` (DW-FU-15-2-2), and each failing probe degrades to its own line. No CFE script changed. **Files:** `tests/meta/test_fleet_picture_bmad_core_drift.py`, `tests/meta/test_fleet_picture_main_attention.py` (new), `SKILL.md` (version, history), `config/skill-config.yaml` (8.91.4 → 8.91.5), `MANIFEST.yaml`, `CHANGELOG.md`.
 - **v8.91.4** (Oct 3, 2026) — **`test_spec_surface_check.py` covers the stamp script's three refusals and skips its lock tests off POSIX (PATCH; tests only, no CFE script change).** doctor Story 41.1 made `scripts/spec_surface_check.py` refuse rather than launder on a corrupt committed baseline, on a full stamp that discovers zero Specs, and on a Spec whose `surface:` reads as nothing; this file exercises that script and `test-ci` runs it, so it gains `test_a_corrupt_baseline_is_a_diagnostic_refusal_not_an_empty_dict` (DW-FU-12-5), `test_a_full_stamp_that_discovers_nothing_refuses` (DW-FU-12-5-2) and `test_a_spec_whose_surface_is_unreadable_cannot_be_stamped` (DW-FU-6-6-9). The three `fcntl` lock tests gain `_needs_posix` / `_needs_procfs` skip markers, so off Linux they skip instead of erroring. No CFE script changed. **Files:** `tests/meta/test_spec_surface_check.py`, `SKILL.md` (version, history), `config/skill-config.yaml` (8.91.3 → 8.91.4), `MANIFEST.yaml`, `CHANGELOG.md`.
