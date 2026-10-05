@@ -2,8 +2,9 @@
 title: '27.1: The docs shelf builds as a Starlight site in place'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'in-progress'
 difficulty: 'medium'
+baseline_revision: '0ad6873d2fa3776d51e20c55ad9b67d345ef9884'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
