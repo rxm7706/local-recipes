@@ -183,8 +183,8 @@
     }
   ],
   "repo_fingerprint": {
-    "git_head": "8b1dfde4d695a969128062d0d3dc625073b0c83c",
-    "dirty": true,
+    "git_head": "6fa04ffe0cb24fb1553e72403dfe41e8cdd856c2",
+    "dirty": false,
     "artifact_hashes": [
       [
         "agents-md",
