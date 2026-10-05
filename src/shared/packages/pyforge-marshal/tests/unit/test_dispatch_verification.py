@@ -50,9 +50,9 @@ def _fake_git_log_empty(tokens: list[str]) -> ProcessResult | None:
     """Story 83.17/83.24: empty log/diff only for the exact CFE branch-check invocations."""
     if not tokens or tokens[0] != "git":
         return None
-    if "log" in tokens and "--no-merges" in tokens and "..HEAD" in tokens:
+    if "log" in tokens and "--no-merges" in tokens and any("..HEAD" in token for token in tokens):
         return ProcessResult(returncode=0, stdout="", stderr="")
-    if len(tokens) >= 5 and tokens[2:5] == ["diff", "--name-only", "HEAD"]:
+    if "diff" in tokens and "--name-only" in tokens and any(token == "HEAD" for token in tokens):
         return ProcessResult(returncode=0, stdout="", stderr="")
     return None
 

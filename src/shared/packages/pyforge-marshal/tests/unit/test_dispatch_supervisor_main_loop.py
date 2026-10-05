@@ -361,9 +361,9 @@ class FakeProcess:
     def run(self, argv, *, cwd=None, env=None, timeout=None):  # pragma: no cover - never reached
         tokens = list(argv)
         if tokens and tokens[0] == "git":
-            if "log" in tokens and "--no-merges" in tokens and "..HEAD" in tokens:
+            if "log" in tokens and "--no-merges" in tokens and any("..HEAD" in token for token in tokens):
                 return ProcessResult(returncode=0, stdout="", stderr="")
-            if len(tokens) >= 5 and tokens[2:5] == ["diff", "--name-only", "HEAD"]:
+            if "diff" in tokens and "--name-only" in tokens and any(token == "HEAD" for token in tokens):
                 return ProcessResult(returncode=0, stdout="", stderr="")
         raise AssertionError("no verify command may run in a unit test")
 
