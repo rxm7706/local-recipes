@@ -34,9 +34,11 @@ from pyforge.marshal.core.model import Finding, Severity
 from pyforge.marshal.core.status import FleetHomeFacts, build_fleet_row
 from pyforge.marshal.dispatch_verify import (
     PRE_VERIFICATION_DEFERRED_WORK_INTAKE_CODE,
+    _CROSS_STATION_META_TESTS,
     check_branch_commit_attribution,
     compose_dispatch_policy,
     coverage_gate_commands_for_changed_files,
+    cross_station_meta_test_commands_for_changed_files,
     evaluate_dispatch_verification,
     run_pre_verification_deferred_work_intake,
 )
@@ -72,10 +74,23 @@ MARSHAL_COVERAGE_GATE = "pixi run --frozen -e pyforge-marshal pyforge-marshal-co
 SCRIBE_COVERAGE_GATE = "pixi run --frozen -e pyforge-scribe pyforge-scribe-coverage-gate"
 DOCTOR_COVERAGE_GATE = "pixi run --frozen -e pyforge-doctor pyforge-doctor-coverage-gate"
 
+# Story 83.23 (spec-83-23): pinned literals so removing the derivation fails these tests.
+DOCTOR_CROSS_STATION_META = (
+    "pixi run --frozen -e pyforge-doctor python -m pytest -q "
+    "src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py "
+    "src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py"
+)
+STEWARD_CROSS_STATION_META = (
+    "pixi run --frozen -e pyforge-steward python -m pytest -q "
+    "src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py"
+)
+_DEFAULT_CROSS_STATION_META = (DOCTOR_CROSS_STATION_META, STEWARD_CROSS_STATION_META)
+
 
 def _expected_derived_commands(
     *station_commands: str,
     coverage_gates: tuple[str, ...] = (MARSHAL_COVERAGE_GATE,),
+    cross_station_meta: tuple[str, ...] = _DEFAULT_CROSS_STATION_META,
 ) -> list[str]:
     return [
         *station_commands,
@@ -84,6 +99,7 @@ def _expected_derived_commands(
         PYFORGE_CORE_TEST,
         DEFERRED_WORK_CHECK,
         *coverage_gates,
+        *cross_station_meta,
     ]
 
 
@@ -910,7 +926,156 @@ def test_evaluate_dispatch_verification_no_coverage_gate_for_planning_only_diff(
     )
     commands = [report["command"] for report in envelope.data["commands"]]
     assert MARSHAL_COVERAGE_GATE not in commands
-    assert commands == _expected_derived_commands("true", coverage_gates=())
+    assert commands == _expected_derived_commands("true", coverage_gates=(), cross_station_meta=())
+
+
+# --- Story 83.23 (spec-83-23): cross-station meta-test derived commands ---
+
+
+def test_cross_station_meta_test_paths_exist() -> None:
+    """AC: every path in the constant exists on disk."""
+    for _env, rel in _CROSS_STATION_META_TESTS:
+        path = _REPO_ROOT / rel
+        assert path.is_file(), rel
+
+
+def test_cross_station_meta_test_commands_derived_for_core_src_without_coverage_gate() -> None:
+    """AC: core ``src/`` touches derive steward meta-tests but not a coverage gate."""
+    changed = ("src/shared/packages/pyforge-core/src/pyforge/core/process.py",)
+    assert coverage_gate_commands_for_changed_files(changed) == ()
+    assert cross_station_meta_test_commands_for_changed_files(changed) == _DEFAULT_CROSS_STATION_META
+
+
+def test_cross_station_meta_test_commands_derived_for_testing_kit_src() -> None:
+    changed = ("src/shared/packages/pyforge-testing-kit/src/pyforge/testing_kit/foo.py",)
+    assert coverage_gate_commands_for_changed_files(changed) == ()
+    assert STEWARD_CROSS_STATION_META in cross_station_meta_test_commands_for_changed_files(changed)
+
+
+def test_cross_station_meta_test_commands_empty_for_planning_only() -> None:
+    planning = ("_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",)
+    assert cross_station_meta_test_commands_for_changed_files(planning) == ()
+
+
+class FakeProcessCrossStationMetaFails:
+    """Fails steward cross-station meta-test with stderr outside the story diff."""
+
+    def __init__(self, *, stderr: str | None = None) -> None:
+        self._stderr = stderr or (
+            "src/shared/packages/pyforge-herald/src/pyforge/herald/unrelated.py: "
+            "names local-recipes env"
+        )
+
+    def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
+        joined = " ".join(tokens)
+        if "test_no_station_assumes_local_recipes" in joined:
+            return ProcessResult(returncode=1, stdout="", stderr=self._stderr)
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+class FakeProcessDoctorCrossStationMetaFails:
+    def run(self, tokens, *, cwd: Path):
+        git_log = _fake_git_log_empty(list(tokens))
+        if git_log is not None:
+            return git_log
+        joined = " ".join(tokens)
+        if "test_coverage_gate_stays_outside_every_station" in joined:
+            return ProcessResult(
+                returncode=1,
+                stdout="",
+                stderr="src/shared/packages/pyforge-scribe/src/pyforge/scribe/coverage_gate.py",
+            )
+        return ProcessResult(returncode=0, stdout="ok", stderr="")
+
+
+_ATLAS_27_3_CHANGED = (
+    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py",
+)
+
+
+def test_evaluate_dispatch_verification_atlas_27_3_replay_derives_steward_meta_and_refuses(
+    tmp_path: Path,
+) -> None:
+    """AC1: atlas ``src/`` change that breaks steward's meta-test refuses (27.3 replay)."""
+    envelope = _verify_with(
+        tmp_path,
+        slug="pyforge-atlas",
+        verify_commands=["true"],
+        process=FakeProcessCrossStationMetaFails(
+            stderr=(
+                "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py: "
+                "pixi run -e local-recipes"
+            )
+        ),
+        vcs=FakeVcs(changed=_ATLAS_27_3_CHANGED),
+    )
+    commands = [report["command"] for report in envelope.data["commands"]]
+    assert STEWARD_CROSS_STATION_META in commands
+    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
+        DispatchVerificationVerdict.REFUSED
+    )
+    steward_findings = [
+        f for f in envelope.findings if f.code == "MRS-GATE-001" and STEWARD_CROSS_STATION_META in f.message
+    ]
+    assert len(steward_findings) == 1, envelope.findings
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings)
+
+
+def test_evaluate_dispatch_verification_doctor_cross_station_meta_failure_refuses(
+    tmp_path: Path,
+) -> None:
+    """AC2: a ``coverage_gate.py`` under a station ``src/`` fails doctor meta-test and refuses."""
+    changed = ("src/shared/packages/pyforge-scribe/src/pyforge/scribe/coverage_gate.py",)
+    envelope = _verify_with(
+        tmp_path,
+        slug="pyforge-scribe",
+        verify_commands=["true"],
+        process=FakeProcessDoctorCrossStationMetaFails(),
+        vcs=FakeVcs(changed=changed),
+    )
+    assert DOCTOR_CROSS_STATION_META in [r["command"] for r in envelope.data["commands"]]
+    assert judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings)) == (
+        DispatchVerificationVerdict.REFUSED
+    )
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings)
+
+
+def test_evaluate_dispatch_verification_cross_station_meta_failure_not_reclassified(
+    tmp_path: Path,
+) -> None:
+    """AC: cross-station meta-test failure outside blast radius stays MRS-GATE-001."""
+    envelope = _verify_with(
+        tmp_path,
+        verify_commands=["true"],
+        process=FakeProcessCrossStationMetaFails(),
+    )
+    assert not any(f.code == PRE_EXISTING_GATE_CODE for f in envelope.findings)
+    assert any(
+        f.code == "MRS-GATE-001" and STEWARD_CROSS_STATION_META in f.message for f in envelope.findings
+    )
+
+
+def test_evaluate_dispatch_verification_dedupes_declared_cross_station_meta_command(
+    tmp_path: Path,
+) -> None:
+    envelope = _verify_with(
+        tmp_path,
+        verify_commands=["true", STEWARD_CROSS_STATION_META],
+        process=FakeProcess(),
+    )
+    commands = [report["command"] for report in envelope.data["commands"]]
+    assert commands.count(STEWARD_CROSS_STATION_META) == 1
+    assert commands == _expected_derived_commands("true")
+
+
+def test_cross_station_meta_test_commands_mutation_guard_nonempty_constant() -> None:
+    """Mutation: an empty constant would derive nothing for a touched ``src/`` path."""
+    changed = ("src/shared/packages/pyforge-marshal/src/pyforge/marshal/x.py",)
+    derived = cross_station_meta_test_commands_for_changed_files(changed)
+    assert derived == _DEFAULT_CROSS_STATION_META
 
 
 class _CommittingFakeVcs(FakeVcs):

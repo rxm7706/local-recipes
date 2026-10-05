@@ -404,6 +404,61 @@ def coverage_gate_commands_for_changed_files(changed_files: tuple[str, ...]) -> 
     return tuple(_coverage_gate_command_for_station(slug) for slug in sorted(touched_slugs))
 
 
+#: Story 83.23 (spec-83-23): cross-station ``tests/meta/`` contracts that scan
+#: every station's ``src/`` (or all ``pyforge-*/src/``). Each entry is
+#: ``(owning pixi env, repo-relative pytest path)`` -- run in the owner's env
+#: because the doctor contracts import doctor-only fixtures.
+_CROSS_STATION_META_TESTS: tuple[tuple[str, str], ...] = (
+    (
+        "pyforge-steward",
+        "src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py",
+    ),
+    (
+        "pyforge-doctor",
+        "src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py",
+    ),
+    (
+        "pyforge-doctor",
+        "src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py",
+    ),
+)
+
+
+def _touches_any_station_package_src(changed_files: tuple[str, ...]) -> bool:
+    """True when the diff touches any ``src/shared/packages/pyforge-*/src/`` tree.
+
+    Story 83.23: wider than ``coverage_gate_commands_for_changed_files`` --
+    ``pyforge-core`` and ``pyforge-testing-kit`` have no coverage gate but
+    steward's meta-test reads their ``src/`` too."""
+    for path in changed_files:
+        parts = Path(path).parts
+        if len(parts) < 5:
+            continue
+        if parts[0:3] != _STATION_PACKAGE_SRC_PARTS:
+            continue
+        if not parts[3].startswith("pyforge-"):
+            continue
+        if parts[4] != "src":
+            continue
+        return True
+    return False
+
+
+def cross_station_meta_test_commands_for_changed_files(
+    changed_files: tuple[str, ...],
+) -> tuple[str, ...]:
+    """Derive per-owner ``pytest -q`` commands for cross-station meta-tests."""
+    if not _touches_any_station_package_src(changed_files):
+        return ()
+    by_env: dict[str, list[str]] = {}
+    for env, test_path in _CROSS_STATION_META_TESTS:
+        by_env.setdefault(env, []).append(test_path)
+    return tuple(
+        f"pixi run --frozen -e {env} python -m pytest -q {' '.join(sorted(paths))}"
+        for env, paths in sorted(by_env.items())
+    )
+
+
 #: Story 83.2 (spec-83-2): ``deferred_work_intake.py --fix`` refused or could
 #: not run immediately before verification -- GATE_FAILED, naming the script's
 #: own refusal (never the post-merge ``MRS-DISP-047`` WARN tier).
@@ -533,6 +588,11 @@ def _verify_commands_with_surface_guard(
     tuple) when the diff is not yet known -- pre-launch binding in
     ``cli/drain_plan.py`` -- so no coverage gate is derived.
 
+    Story 83.23 (spec-83-23): when the diff touches any
+    ``src/shared/packages/pyforge-*/src/`` path (including ``pyforge-core``
+    and ``pyforge-testing-kit``), append each cross-station meta-test in its
+    owning station's pixi env -- one ``pytest -q`` per owner, sorted by env.
+
     Unlike the loop adapter, this is not a rendered file an operator can
     read before a run starts -- it is folded in at USE time, right before
     the commands actually execute and before ``check_spec_binding`` sees
@@ -540,12 +600,14 @@ def _verify_commands_with_surface_guard(
     session even though nothing in ``marshal-policy.toml`` ever declares
     it."""
     coverage_derived = coverage_gate_commands_for_changed_files(changed_files or ())
+    meta_derived = cross_station_meta_test_commands_for_changed_files(changed_files or ())
     derived = (
         _SURFACE_RECONCILE_COMMAND,
         _LINT_TYPES_COMMAND,
         _PYFORGE_CORE_TEST_COMMAND,
         _DEFERRED_WORK_CHECK_COMMAND,
         *coverage_derived,
+        *meta_derived,
     )
     normalized_derived = {" ".join(command.split()) for command in derived}
     verify = [c for c in effective.verify_commands.value if " ".join(c.split()) not in normalized_derived]
@@ -848,12 +910,15 @@ def evaluate_dispatch_verification(
         # Story 83.12: per-station coverage gates measure touched modules in
         # the station env; their output paths do not belong in blast-radius
         # reclassification either.
+        # Story 83.23: cross-station meta-tests read every station's ``src/``
+        # and must refuse like the other whole-tree derived commands.
         derived_commands = {
             _SURFACE_RECONCILE_COMMAND,
             _LINT_TYPES_COMMAND,
             _PYFORGE_CORE_TEST_COMMAND,
             _DEFERRED_WORK_CHECK_COMMAND,
             *coverage_gate_commands_for_changed_files(scope_changed_files),
+            *cross_station_meta_test_commands_for_changed_files(scope_changed_files),
         }
         reclassifiable_reports = tuple(
             report for report in command_reports if report.get("command") not in derived_commands
