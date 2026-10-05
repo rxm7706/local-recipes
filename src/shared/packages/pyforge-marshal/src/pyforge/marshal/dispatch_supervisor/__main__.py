@@ -26,7 +26,6 @@ from ..core import promotion as promotion_core
 from ..core.commit_vcs import CommittingVcs
 from ..core.dispatch_cfe_commit import (
     CFE_BRANCH_COMMIT_GATE_CODE,
-    is_terminal_cfe_verify_refusal,
     non_retro_commit_paths,
     unsanctioned_cfe_commit_entries,
 )
