@@ -4,20 +4,23 @@
     "pyforge.cutover_root": "local-recipes",
     "pyforge.steward.ghe_fleet_credentials": "off",
     "pyforge.steward.sync_github_only_marker": "on",
-    "pyforge.marshal.verify_fix_loop": "on"
+    "pyforge.marshal.verify_fix_loop": "on",
+    "pyforge.atlas.dependency_history_sensor": "on"
   },
   "staging": {
     "pyforge.three_surfaces": "on",
     "pyforge.cutover_root": "local-recipes",
     "pyforge.steward.ghe_fleet_credentials": "off",
     "pyforge.steward.sync_github_only_marker": "on",
-    "pyforge.marshal.verify_fix_loop": "on"
+    "pyforge.marshal.verify_fix_loop": "on",
+    "pyforge.atlas.dependency_history_sensor": "on"
   },
   "production": {
     "pyforge.three_surfaces": "on",
     "pyforge.cutover_root": "local-recipes",
     "pyforge.steward.ghe_fleet_credentials": "off",
     "pyforge.steward.sync_github_only_marker": "off",
-    "pyforge.marshal.verify_fix_loop": "off"
+    "pyforge.marshal.verify_fix_loop": "off",
+    "pyforge.atlas.dependency_history_sensor": "off"
   }
 }

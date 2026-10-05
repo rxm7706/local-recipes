@@ -26,7 +26,7 @@
 # Total env-override surface of this file (P7 accounting, +1 by P9's
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
 # endpoint_bases 27 (19 live + 1 reserved + 2 Story 21.4 + 5 Story 23.1) +
-# extra_overrides 4 + fetcher_urls 3 + paths 6 = 40. Pinned
+# extra_overrides 4 + fetcher_urls 3 + paths 7 = 41. Pinned
 # by tests/catalog (EXPECTED_ENV_OVERRIDE_SURFACE).
 
 endpoint_bases:
@@ -160,6 +160,8 @@ paths:
   vdb_store: ${paths.data_root}/stores/vdb
   osv_offline_store: ${paths.data_root}/stores/osv
   pypi_conda_map: ${paths.data_root}/stores/pypi_conda_map.json
+  # Story 25.2 — Warden fleet inventory export (under data_root like other § 3.4 stores).
+  warden_fleet_inventory: ${paths.data_root}/stores/warden_fleet_inventory.json
   # Story 21.6 (CAP-3 identity join): the live recipes/ tree LocalRecipesOverlayDataset
   # scans (discovery_local_recipes_raw) — resolves against the process CWD like every
   # other path here, but its REAL invocation differs from data_root/seed_root's: a live

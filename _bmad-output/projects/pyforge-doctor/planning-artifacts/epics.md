@@ -2650,7 +2650,7 @@ per-environment `default` disagrees with the tree's value for that environment
 **And** a flag not yet ON everywhere is never red on the clock; the run date is injectable, so the 90-day boundary is tested
 on both sides; the metadata field names are the ones steward 76.2 lands, never guessed
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 34.4: Each station has a checked-in flag inventory of its runtime capabilities
 

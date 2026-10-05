@@ -10,6 +10,7 @@ from __future__ import annotations
 from kedro.pipeline import Pipeline, node
 
 from .nodes import (
+    build_repo_dependency_history,
     classify_migration_readiness,
     derive_release_velocity,
     detect_archived_feedstocks,
@@ -133,6 +134,13 @@ def create_pipeline(**kwargs) -> Pipeline:
                 ],
                 outputs="vcs_migration_readiness",
                 name="classify_migration_readiness",
+            ),
+            # Story 25.1 (CAP-61) — placeholder until git-pkgs lands; Story 25.2 sensor job target.
+            node(
+                func=build_repo_dependency_history,
+                inputs=[],
+                outputs="repo_dependency_history",
+                name="build_repo_dependency_history",
             ),
         ]
     )

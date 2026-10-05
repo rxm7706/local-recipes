@@ -70,6 +70,8 @@ PREFIX_TO_PIPELINE = {
     "pypi": "pypi_intelligence",
     "vulnerability": "vulnerability",
     "vcs": "vcs_health",
+    "warden": "vcs_health",  # Story 25.2: warden_fleet_inventory export (CAP-26 read path)
+    "repo_dependency": "vcs_health",  # Story 25.1/25.2: repo_dependency_history
     "sbom": "universal_sbom",
     "seed_gaps": "seed_gaps",
     "seed": "seed_gaps",
@@ -104,7 +106,7 @@ EXPECTED_PIPELINE_COUNTS = {
     "core": 18,  # Story 21.4: + core_anaconda_main_channeldata_raw + core_anaconda_main_packages
     "pypi_intelligence": 21,  # Story 23.1: +5 Tier-3 raw stores + pypi_tier3_channel_flags (+6 nodes)
     "vulnerability": 15,  # Story 23.3: + vulnerability_basilisk_rollup (rollup lives under vulnerability_* prefix)
-    "vcs_health": 25,  # B10: +5 category-list + vcs_migration_detail_raw + vcs_migration_readiness (FR-21; new-signal, AD-14)
+    "vcs_health": 27,  # Story 25.2: +warden_fleet_inventory +repo_dependency_history catalog entries
     "universal_sbom": 6,  # F4: + sbom_hygiene_entry + sbom_compliance_report_entry (FR-16/FR-18, AD-12)
     "seed_gaps": 8,
     "derived_artifacts": 7,  # Story 23.8: + inventory_universe; Story 23.3: + inventory_priority_assignments; Story 23.4: + inventory_verified_packages + inventory_aoss_free_queue; Story 23.5: + identity_complete_export
@@ -113,7 +115,7 @@ EXPECTED_PIPELINE_COUNTS = {
     "query_plane_cache": 2,  # Story 34.2 (FR-47): query_plane_estate_source + query_plane_estate
     "semantic_packages": 1,  # Story 20.3 (CAP-6): semantic_packages
 }
-EXPECTED_TOTAL = 125  # Story 23.5: +1 (identity_complete_export)
+EXPECTED_TOTAL = 127  # Story 25.2: +warden_fleet_inventory +repo_dependency_history
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {
@@ -249,6 +251,7 @@ DERIVED_STORE_PATHS = {
     "vdb_store": "stores/vdb",
     "osv_offline_store": "stores/osv",
     "pypi_conda_map": "stores/pypi_conda_map.json",
+    "warden_fleet_inventory": "stores/warden_fleet_inventory.json",
 }
 
 # Story 21.6 (review finding, patch): `data_root`/`seed_root` are repo-root-
@@ -277,8 +280,8 @@ MEMBER_DIR_RELATIVE_PATHS = {"local_recipes_dir", "seed_root"}
 # Total env-override surface (review-pass P7 accounting, adjusted +1 by P9's
 # data_root, +2 by Story 21.4, +1 extra_override +1 path by Story 21.6):
 # endpoint_bases 27 (19 live + 1 reserved + 2 Story 21.4 + 5 Story 23.1) +
-# extra_overrides 4 + fetcher_urls 3 + paths 6 = 40. Mirrored by a comment in globals.yml.
-EXPECTED_ENV_OVERRIDE_SURFACE = 40
+# extra_overrides 4 + fetcher_urls 3 + paths 7 = 41. Mirrored by a comment in globals.yml.
+EXPECTED_ENV_OVERRIDE_SURFACE = 41
 
 # Per-host credential allowlist (FR-1/AD-2): entry -> the ONLY credential
 # key it may carry. No other entry may carry any credentials key, and the
