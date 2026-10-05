@@ -31,6 +31,11 @@ from typing import Any
 # the MCP server). REPO_ROOT is defined by _path_guard so all three surfaces
 # resolve the recipes/ root identically.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _cfe_push_strip import (  # noqa: E402
+    assert_no_cfe_metadata_surfaces,
+    strip_conda_forge_yml_for_push,
+    strip_recipe_yaml_for_push,
+)
 from _cfy_template import render_conda_forge_yml  # noqa: E402
 from _path_guard import (  # noqa: E402
     REPO_ROOT,
@@ -42,6 +47,22 @@ STAGED_RECIPES_FORK_PATH = REPO_ROOT.parent / "staged-recipes"
 UPSTREAM_REPO = "conda-forge/staged-recipes"
 UPSTREAM_URL = "https://github.com/conda-forge/staged-recipes.git"
 DEFAULT_BRANCH_PREFIX = "add-recipe-"
+
+
+def apply_push_strip_to_recipe_dir(recipe_dir: Path) -> None:
+    """Remove local-only CFE metadata from files about to be pushed (G60, G62)."""
+    for name in ("recipe.yaml", "meta.yaml"):
+        path = recipe_dir / name
+        if not path.is_file():
+            continue
+        stripped = strip_recipe_yaml_for_push(path.read_text(encoding="utf-8"))
+        assert_no_cfe_metadata_surfaces(stripped)
+        path.write_text(stripped, encoding="utf-8")
+    cfy = recipe_dir / "conda-forge.yml"
+    if cfy.is_file():
+        stripped = strip_conda_forge_yml_for_push(cfy.read_text(encoding="utf-8"))
+        assert_no_cfe_metadata_surfaces(stripped)
+        cfy.write_text(stripped, encoding="utf-8")
 
 
 def _run(
@@ -227,6 +248,7 @@ def prepare_branch(
     if dest.exists():
         shutil.rmtree(dest)
     shutil.copytree(recipe_dir, dest)
+    apply_push_strip_to_recipe_dir(dest)
 
     # Stage + commit. If nothing was staged, the recipe already matches main —
     # likely already merged upstream.
