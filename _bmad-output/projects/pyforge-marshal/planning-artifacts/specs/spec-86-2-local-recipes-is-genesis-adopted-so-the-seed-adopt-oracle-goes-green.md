@@ -2,7 +2,7 @@
 title: "86.2: local-recipes is genesis-adopted so the seed-adopt oracle goes green"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'in-progress'
 baseline_revision: '835894524e63ee69428972aeb5f28fa00d762edc'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -65,5 +65,29 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 - `pixi run --frozen -e pyforge-guild lint-types` — expected: exit 0.
 
 ## Review Triage Log
+
+### 2026-10-05 — Landing refused: CI red on PR #1872 (operator session); SEND BACK
+
+Verification passed locally, but the landing refused with MRS-DISP-056: two required checks were red at `ea40951d10`. Both are defects of this build, and local verification could not see either.
+
+1. **`marshal-local-recipes-seed-oracle` (job 111708667267): the oracle is not green in a fresh clone.** `tests/integration/test_local_recipes_empty_plan.py` failed with "non-empty adopt plan (2 action(s))":
+   - `implementation-artifacts-symlink (_bmad-output/implementation-artifacts): absent -> present-conformant`;
+   - `planning-artifacts-symlink (_bmad-output/planning-artifacts): absent -> present-conformant`.
+
+   Both are per-checkout symlinks that `scripts/bmad-switch` creates, so they never exist in a CI clone. The oracle passed locally only because the primary checkout has them.
+   - **Required:** the oracle is empty in a fresh clone with no `bmad-switch`, and still empty on a checkout that has the symlinks. Do it through the seed contract, never by special-casing the test. For example, record both as skips in `.marshal/seed-state.yml` with the reason "per-checkout symlinks created by scripts/bmad-switch", honoured by adopt, or give the manifest entries a placement adopt already understands.
+   - **Prove it** from a fresh clone of the branch: `git clone` into a temp dir, then run the oracle there.
+
+2. **`scribe-test` (job 111708667351): the build rewrote three per-tool instruction files.** `GEMINI.md`, `.github/copilot-instructions.md` and `.cursor/rules/specs.mdc` were replaced with seed-rendered copies of AGENTS.md's *Dream-first workflow*, *Portability contract* and *The tiers* sections. `src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` (spec-pyforge-scribe CAP-27, point, don't copy) failed on all three. It also failed on the 60-line addendum cap: `specs.mdc` is now 64 lines.
+   - The Phase 3 ruling's scope was markers in AGENTS.md, CLAUDE.md, `.gitignore`, README.md and `_bmad-output/PROJECTS.md`, plus `.marshal/seed-state.yml`. It never covered the per-tool files.
+   - **Required:**
+     - Restore those three files byte-identical to `main`.
+     - First-claim each one as already conformant, or record a skip. Never rewrite it.
+     - Keep CLAUDE.md's `@AGENTS.md` and `@.claude/memory/MEMORY.md` import lines bare, and repeat no AGENTS.md section in CLAUDE.md.
+     - Before finishing, run `pixi run --frozen -e pyforge-scribe python -m pytest -q src/shared/packages/pyforge-scribe/tests/meta/test_instruction_surface_parity.py` and read its exit code. It is not in marshal's `verify_commands`, so dispatch verification will not run it for you.
+
+3. **`pixi.toml` changed.** It needs `environment.yaml` regenerated in the same PR (`pixi project export conda-environment -e build > environment.yaml`, stderr kept out of the file).
+
+The branch already carries `main` (`f6918a8682`, memlogs unioned, scoped stamps for spec-pyforge-marshal and spec-pyforge-scribe).
 
 - 2026-10-05: Implementation verified locally (`pyforge-marshal-test`, `pyforge-deps-test`, `lint-types`, `pyforge-marshal-test-local-recipes-seed-oracle`, `spec_surface_reconcile.py`). Genesis bootstrap landed; empty-plan oracle green.
