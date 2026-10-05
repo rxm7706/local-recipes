@@ -42,6 +42,13 @@ def test_env_count_raises_on_a_manifest_that_does_not_parse(drift_module, tmp_pa
         drift_module.env_count()
 
 
+def test_env_count_raises_when_environments_is_not_a_table(drift_module, tmp_path, monkeypatch) -> None:
+    (tmp_path / "pixi.toml").write_text('environments = "x"\n', encoding="utf-8")
+    monkeypatch.setattr(drift_module, "REPO_ROOT", tmp_path)
+    with pytest.raises(ValueError, match="not a table"):
+        drift_module.env_count()
+
+
 def test_env_count_matches_tomllib_on_the_live_manifest(drift_module) -> None:
     with (REPO_ROOT / "pixi.toml").open("rb") as fh:
         assert drift_module.env_count() == len(tomllib.load(fh)["environments"])

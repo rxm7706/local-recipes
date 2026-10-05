@@ -1784,6 +1784,23 @@ def test_env_count_is_none_for_a_manifest_that_does_not_parse_and_the_other_fact
     assert truth["gotcha_max"] == 5
 
 
+def test_env_count_is_none_when_environments_is_not_a_table(tmp_path: Path) -> None:
+    (tmp_path / "pixi.toml").write_text('environments = ["a", "b"]\n', encoding="utf-8")
+    assert factory._env_count(tmp_path) is None
+
+
+def test_gather_reports_the_env_count_unreadable_for_a_manifest_that_does_not_parse(tmp_path: Path) -> None:
+    """The gather path: an unparseable manifest is one INFO ``count-source-unreadable`` naming the
+    pixi envs, never an uncaught ``TOMLDecodeError`` that would erase the check's other findings."""
+    repo = tmp_path / "repo"
+    _bootstrap(repo)
+    (repo / "pixi.toml").write_text("[environments\n", encoding="utf-8")
+    findings = factory.gather(repo)
+    unreadable = [f for f in findings if f.check == "count-source-unreadable"]
+    assert "pixi envs" in [f.evidence["subject"] for f in unreadable], findings
+    assert "check_counts" not in _unevaluable_checks(findings), findings
+
+
 def test_env_count_is_zero_for_a_missing_manifest(tmp_path: Path) -> None:
     assert factory._env_count(tmp_path) == 0
 

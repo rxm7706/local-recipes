@@ -24,7 +24,7 @@ declared_low_risk: false
 
 - **Two copies of one line scan.** Doctor's `_env_count` (`src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py`, Story 6.8's port) and the script it was ported from, `env_count` in `scripts/bmad_drift_check.py`, both count `key = value` lines inside the `[environments]` block and stop at the next `[` header.
 - **pixi allows a second form.** `pixi.toml` declares 35 environments inside the block and one more, `python-agent-platform`, as its own `[environments.python-agent-platform]` table (around line 1087). `tomllib.load(...)["environments"]` has 36 keys. Both counters report 35.
-- **Every consumer inherits the miss.** The count feeds bmad-drift's ground truth (`pixi_envs`), `check_counts` (`count-stale`), `check_baseline` (`surface-changed`) and the sync baseline the script's `--write-baseline` writes. PR #1862 re-grounded marshal's living docs on 2026-10-04; its banners state 36 and have to explain why the check says 35. The old baseline's 30 was also one short (31 real).
+- **Every consumer inherits the miss.** The count feeds bmad-drift's ground truth (`pixi_envs`), `check_counts` (`count-stale`), `check_baseline` (`surface-changed`) and the sync baseline the script's `--write-baseline` writes. PR #1862 re-grounded marshal's living docs on 2026-10-04; its banners state 36 and have to explain why the check says 35. The 2026-09-12 baseline's 30 was also one short (31 real), and PR #1862's restamp wrote 35 (36 real).
 
 **Approach:** both counters parse `pixi.toml` with stdlib `tomllib` and count the keys of its `environments` table, which covers both forms.
 - In Doctor, an unreadable file still raises `OSError` for the caller's net. A missing file still counts 0. A `pixi.toml` that does not parse returns `None`, the value every other ground-truth fact uses for "could not be read", rather than raising `TOMLDecodeError` past the per-fact `except OSError`.
@@ -79,4 +79,14 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-04 — Build (hand-built in `chain-doctor-6-12`)
+- Doctor's two counter tests, the two script tests and the live-manifest checks pass; reverting either counter to the line scan fails its table-form test.
+- The doctor feed's `epic-41` row read `in-progress` after Story 41.6's landing promoted the twin to `done`; the sync refused until the feed was reconciled to the twin.
+- The scoped doctor stamp also took in `sources/board.py` and two board tests; the Story 41.6 memlog entry already names them.
+
+### 2026-10-04 — Independent review (against this spec): no HIGH, one MEDIUM, four LOW; all fixed in the branch
+- MEDIUM: the scoped `spec-pyforge-core` stamp absorbed `pixi.toml`'s hash change from marshal Story 19.5 (#1859), which reconciled only `spec-pyforge-marshal`. Fixed: a co-governor catch-up entry on `spec-pyforge-core` names `pixi.toml`, then a re-stamp.
+- LOW: the script counted a non-table `environments` (a string or list) where Doctor reads it as unknown. Fixed: the script raises; a test pins each side.
+- LOW: the script comment claimed `--write-baseline` never stamps a count it could not read, but an unreadable file still reads as `""`. Reworded to "could not parse", naming the old behaviour.
+- LOW: no test covered Doctor's non-table branch or the gather path with an unparseable manifest. Added both.
+- LOW: the spec's baseline figure described the 2026-09-12 baseline, not `main`'s. Both figures are now stated.
