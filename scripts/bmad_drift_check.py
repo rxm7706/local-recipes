@@ -50,12 +50,14 @@ Verdict (the 18 finding kinds, unchanged behavior):
   python -m pyforge.doctor.sources bmad-drift
 See _bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md for the full re-sync procedure.
 """
+
 from __future__ import annotations
 
 import json
 import re
 import subprocess
 import sys
+import tomllib
 import argparse
 from pathlib import Path
 
@@ -102,8 +104,10 @@ TRACKED: list[tuple[str, str]] = [
 ]
 TRACKED_CAT = dict(TRACKED)
 TRACKED_REL = set(TRACKED_CAT)
-CONFIG_FILES = {".bmad-config.toml",            # config, not pin-synced — but must be accounted-for
-                ".bmad-config.user.toml"}       # layer 6 of the config merge; gitignored, per-user
+CONFIG_FILES = {
+    ".bmad-config.toml",  # config, not pin-synced — but must be accounted-for
+    ".bmad-config.user.toml",
+}  # layer 6 of the config merge; gitignored, per-user
 IGNORE_PARTS = {"__pycache__"}
 
 STRAY_SUFFIXES = {".patch", ".diff", ".bak", ".orig", ".tmp", ".rej"}
@@ -165,17 +169,16 @@ def gotcha_max() -> int | None:
 
 
 def env_count() -> int:
-    out, in_block = 0, False
-    for line in _read(REPO_ROOT / "pixi.toml").splitlines():
-        if line.strip() == "[environments]":
-            in_block = True
-            continue
-        if in_block:
-            if line.startswith("["):
-                break
-            if "=" in line and not line.lstrip().startswith("#"):
-                out += 1
-    return out
+    # Doctor Story 6.12: count the `environments` table's keys with tomllib, so an environment declared as its own
+    # `[environments.<name>]` table counts too (the old line scan stopped at the first header after `[environments]`).
+    # Kept in step with Doctor's `_env_count`: this script writes the baseline Doctor compares against. A manifest
+    # that does not parse, or whose `environments` is not a table, raises here (Doctor reads both as unknown), so
+    # `--write-baseline` never stamps a count it could not parse. An unreadable file still reads as "" (`_read`), as
+    # it did before this story.
+    envs = tomllib.loads(_read(REPO_ROOT / "pixi.toml")).get("environments", {})
+    if not isinstance(envs, dict):
+        raise ValueError(f"pixi.toml: `environments` is a {type(envs).__name__}, not a table")
+    return len(envs)
 
 
 def recipe_split() -> dict[str, int]:
@@ -206,14 +209,22 @@ def ground_truth() -> dict:
 # The baseline is the closed-loop anchor: it records the source-of-truth SURFACE the artifacts
 # were last reconciled against, so the detector (now `factory.gather`) trips on ANY
 # out-of-band change (BMAD or not), not just the specific counts the checks hardcode.
-FINGERPRINT_KEYS = ("skill_version", "schema_version", "mcp_tools", "atlas_phases",
-                    "gotcha_max", "pixi_envs", "phase_ids")
+FINGERPRINT_KEYS = (
+    "skill_version",
+    "schema_version",
+    "mcp_tools",
+    "atlas_phases",
+    "gotcha_max",
+    "pixi_envs",
+    "phase_ids",
+)
 
 
 def git_head() -> str | None:
     try:
-        r = subprocess.run(["git", "-C", str(REPO_ROOT), "rev-parse", "--short", "HEAD"],
-                           capture_output=True, text=True, timeout=10)
+        r = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "rev-parse", "--short", "HEAD"], capture_output=True, text=True, timeout=10
+        )
         return r.stdout.strip() or None
     except Exception:
         return None
@@ -253,9 +264,9 @@ def classify(path: Path) -> str:
     # landed as `uncovered` on the first run, which is the coverage rule working: an
     # unclassified file is a hole, not a pass.
     if re.fullmatch(r"planning-artifacts/prds/prd-[a-z0-9-]+-\d{4}-\d{2}-\d{2}/[A-Za-z0-9._-]+", rel):
-        return "tracked:plan"          # bmad-prd run folder: prd.md + memlog + reviews
+        return "tracked:plan"  # bmad-prd run folder: prd.md + memlog + reviews
     if re.fullmatch(r"planning-artifacts/architecture/architecture-[a-z0-9-]+-\d{4}-\d{2}-\d{2}/.*", rel):
-        return "tracked:plan"          # bmad-architecture run folder (incl. reviews/)
+        return "tracked:plan"  # bmad-architecture run folder (incl. reviews/)
     if re.fullmatch(r"planning-artifacts/briefs/brief-[a-z0-9-]+-\d{4}-\d{2}-\d{2}/[A-Za-z0-9._-]+", rel):
         return "tracked:plan"
     if re.fullmatch(r"planning-artifacts/epics(-[a-z0-9-]+)?\.md", rel):
@@ -265,7 +276,7 @@ def classify(path: Path) -> str:
     if re.fullmatch(r"planning-artifacts/product-brief-[a-z0-9-]+\.md", rel):
         return "tracked:plan"
     if re.fullmatch(r"planning-artifacts/research/[A-Za-z0-9._-]+\.md", rel):
-        return "archive:research"      # undated research + briefs filed under research/
+        return "archive:research"  # undated research + briefs filed under research/
     if re.fullmatch(r"planning-artifacts/upstream-report-[a-z0-9-]+\.md", rel):
         return "archive:change-history"  # frozen upstream defect report
     if re.fullmatch(r"planning-artifacts/implementation-readiness-report-\d{4}-\d{2}-\d{2}\.md", rel):
@@ -305,7 +316,7 @@ def classify(path: Path) -> str:
         # the engine per run. Never hand-edited and never pin-gated.
         return "local:run-journal"
     if re.fullmatch(r"implementation-artifacts/epic-\d+-context\.md", rel):
-        return "local:sprint-feed"     # Tier-3 story context, gitignored
+        return "local:sprint-feed"  # Tier-3 story context, gitignored
     if re.fullmatch(r"planning-artifacts/prfaq-[a-z0-9-]+(-distillate)?\.md", rel):
         # PRFAQ kill-test records + distillates (bmad-prfaq): frozen stress-test
         # outputs — no pin gating.
@@ -448,12 +459,17 @@ def cmd_json() -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     g = ap.add_mutually_exclusive_group()
-    g.add_argument("--json", "--groundtruth", action="store_true", dest="json",
-                   help="print live ground-truth facts as JSON")
-    ap.add_argument("--fix", action="store_true",
-                    help="apply safe mechanical remediations (archive moves, stray-file removal)")
-    ap.add_argument("--write-baseline", action="store_true",
-                    help="stamp .sync-baseline.json to the current state (run after a reconciliation)")
+    g.add_argument(
+        "--json", "--groundtruth", action="store_true", dest="json", help="print live ground-truth facts as JSON"
+    )
+    ap.add_argument(
+        "--fix", action="store_true", help="apply safe mechanical remediations (archive moves, stray-file removal)"
+    )
+    ap.add_argument(
+        "--write-baseline",
+        action="store_true",
+        help="stamp .sync-baseline.json to the current state (run after a reconciliation)",
+    )
     args = ap.parse_args(argv)
     if not PROJ.is_dir():
         print(f"BMAD project not found at {PROJ} — nothing to do.", file=sys.stderr)
@@ -476,13 +492,14 @@ def main(argv: list[str] | None = None) -> int:
         # returning 0, matching the pre-Story-6.9 behavior of `cmd_check`.
         remaining = _remaining_after_fix()
         if remaining is None:
-            print("\ncould not re-check after fix (pyforge.doctor unavailable); "
-                  "run `python -m pyforge.doctor.sources bmad-drift` separately.",
-                  file=sys.stderr)
+            print(
+                "\ncould not re-check after fix (pyforge.doctor unavailable); "
+                "run `python -m pyforge.doctor.sources bmad-drift` separately.",
+                file=sys.stderr,
+            )
             return 2
         if remaining:
-            print(f"\n{len(remaining)} finding(s) remain after fix — not "
-                  f"auto-fixable. See SYNC-RUNBOOK.md.")
+            print(f"\n{len(remaining)} finding(s) remain after fix — not auto-fixable. See SYNC-RUNBOOK.md.")
             for f in remaining:
                 print(f"  - [{f.check}] {f.message}")
             return 1

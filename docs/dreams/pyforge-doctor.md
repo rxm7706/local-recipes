@@ -86,6 +86,14 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-04 (env count)** — **Found: bmad-drift counts 35 pixi environments; `pixi.toml` has 36.** Doctor's
+  `_env_count` and the script it came from both scan lines inside the `[environments]` block and stop at the next
+  header, so an environment declared as its own `[environments.<name>]` table (`python-agent-platform`) is never
+  counted. The count feeds the ground truth, `count-stale`, `surface-changed` and the sync baseline; PR #1862's
+  re-ground banners had to explain the gap. **What it looks like when fixed:** both counters read the manifest with
+  `tomllib` and agree with it; a manifest that does not parse reads as unknown, never an uncaught error.
+  **Constraints:** a fix story, no new CAP, no flag. It goes into Epic 6 and reopens it. Owner `spec-pyforge-doctor`.
+  → Story 6.12, specced 2026-10-04.
 - **2026-10-04 (later)** — **Found: Story 41.3 made chain-completeness blind to the one-chain fold's citation
   window.** Since `bc562fc6b8` (41.3, from `26a298ed12`), INV-A reads only the `## Epic N`, `## Capabilities` and
   `### Story N` sections of a station's PRD and epics (`_DECOMP_SECTION_OPEN_RE`, `sources/board.py`). Each station's
