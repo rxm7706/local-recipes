@@ -69,11 +69,18 @@ from pyforge.atlas.orchestration.event_source import (
     evaluate_events,
     offline_event_source,
 )
+from pyforge.atlas.orchestration.fleet_inventory_sensor import (
+    FLAG_KEY as DEPENDENCY_HISTORY_SENSOR_FLAG,
+    InventorySource,
+    evaluate_fleet_inventory_from_raw,
+    offline_fleet_inventory_source,
+)
 from pyforge.atlas.orchestration.wiki_events import (
     WikiScanDecision,
     evaluate_raw_scan,
     scan_raw_docs,
 )
+from pyforge.core.flags import read_boolean
 
 # --------------------------------------------------------------------------- #
 # Kedro project location (this package's project root — has conf/, settings.py,
@@ -277,6 +284,7 @@ NODE_TIMEOUTS: dict[str, int] = {
     "fetch_live_health": 600,  # Phase N
     "derive_release_velocity": 300,  # FR-20
     "classify_migration_readiness": 300,  # FR-21
+    "build_repo_dependency_history": 900,  # Story 25.1 / 25.2 sensor target (CAP-61)
     # -- universal_sbom ---------------------------------------------------- #
     "normalize_intake_to_cyclonedx": 300,
     "match_against_universe": 900,
@@ -334,6 +342,11 @@ JOB_TAGS = {"pyforge/orchestrator": "cf_atlas", "pyforge/phase_state": "observab
 #
 # Each: (sensor_name, target_job_name, run_key_prefix, description).
 # --------------------------------------------------------------------------- #
+# Story 25.2 — fleet inventory poll cursor → Story 25.1 dependency-history job (CAP-61).
+FLEET_INVENTORY_SENSOR_NAME = "dependency_history_fleet_sensor"
+DEPENDENCY_HISTORY_JOB_NAME = "vcs_repo_dependency_history"
+DEPENDENCY_HISTORY_RUN_KEY_PREFIX = "dependency_history"
+
 UPSTREAM_SENSORS: tuple[tuple[str, str, str, str], ...] = (
     (
         "pypi_release_sensor",
