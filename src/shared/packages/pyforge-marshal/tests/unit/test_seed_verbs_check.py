@@ -1098,9 +1098,9 @@ def test_removing_the_recorded_skip_restores_artifact_missing(clean_repo):
 
     _write_state(clean_repo, _state(skips=()))
     report_without = run_check(clean_repo, manifest)
-    assert [
-        (f.severity, f.type) for f in report_without.findings if f.path == "OTHER.md"
-    ] == [(Severity.HARD, FindingType.ARTIFACT_MISSING)]
+    assert [(f.severity, f.type) for f in report_without.findings if f.path == "OTHER.md"] == [
+        (Severity.HARD, FindingType.ARTIFACT_MISSING)
+    ]
 
 
 def test_refused_ambient_slug_yields_slug_unresolved_naming_source(clean_repo):
