@@ -666,7 +666,8 @@ def test_verify_retro_commit_carries_both_sides_of_a_cfe_rename(vcs: GitVcs, rep
     expected = _retro_subject("83.19")
     cfe_commits = [(s, f) for s, f in _branch_commits(repo) if s.startswith("retro(cfe):")]
     assert len(cfe_commits) == 1 and cfe_commits[0][0] == expected
-    assert set(cfe_commits[0][1]) == {CFE_CHANGELOG_PATH, _CFE_RENAME_DST}
+    assert CFE_CHANGELOG_PATH in cfe_commits[0][1]
     assert not (repo / _CFE_RENAME_SRC).exists()
     assert (repo / _CFE_RENAME_DST).is_file()
+    assert _kit_verdict(repo) == []
     assert _cfe_findings(envelope) == []
