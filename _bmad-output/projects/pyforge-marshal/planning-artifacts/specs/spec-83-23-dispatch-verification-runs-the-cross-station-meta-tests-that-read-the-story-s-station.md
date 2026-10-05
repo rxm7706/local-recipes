@@ -2,7 +2,7 @@
 title: "83.23: Dispatch verification runs the cross-station meta-tests that read the story's station"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: fead184902fc8554365dd1274b77b5e16865f248
 review_loop_iteration: 0
 followup_review_recommended: false
