@@ -106,10 +106,10 @@ def partition_status_records_for_cfe(
                     seen_cfe.add(side)
                     cfe_paths.append(side)
         else:
-            for side in sides:
-                if side not in seen_commit and side not in seen_cfe:
-                    seen_commit.add(side)
-                    commit_paths.append(Path(side))
+            live = path
+            if live not in seen_commit and live not in seen_cfe:
+                seen_commit.add(live)
+                commit_paths.append(Path(live))
     return tuple(commit_paths), tuple(sorted(cfe_paths))
 
 

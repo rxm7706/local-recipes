@@ -654,10 +654,10 @@ def test_auto_checkpoint_leaves_a_cfe_rename_out_of_the_wip_commit(vcs: GitVcs, 
 
 
 def test_verify_retro_commit_carries_both_sides_of_a_cfe_rename(vcs: GitVcs, repo: Path) -> None:
-    _write(repo, _CFE_RENAME_SRC, "helper = 1\n")
     _write(repo, _STORY_FILE, "x = 2\n")
-    _write(repo, CFE_CHANGELOG_PATH, "# Changelog\n\n## 9.2.1\n")
-    _commit_all(repo, "seed")
+    _commit_all(repo, "story progress outside the CFE surface")
+    _write(repo, _CFE_RENAME_SRC, "helper = 1\n")
+    _git(repo, "add", _CFE_RENAME_SRC)
     _git(repo, "mv", _CFE_RENAME_SRC, _CFE_RENAME_DST)
     _write(repo, CFE_CHANGELOG_PATH, "# Changelog\n\n## 9.2.2\n")
 

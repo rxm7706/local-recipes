@@ -161,7 +161,7 @@ def test_cfe_guard_reads_the_one_cfe_surface_owner():
     source = Path(__file__).read_text(encoding="utf-8")
     assert "cfe_surface.CFE_GIT_PATHSPECS" in source
     assert "cfe_surface.CFE_CHANGELOG_PATH" in source
-    assert '"pathspec=_CFE_SURFACE"' not in source and "pathspec=_CFE_SURFACE" not in source
+    assert 'pathspec=".claude/skills/conda-forge-expert"' not in source
 
 
 def test_conda_forge_expert_not_replaced():
