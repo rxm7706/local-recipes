@@ -1410,12 +1410,11 @@ def test_state_file_is_not_git_ignored_by_the_packaged_template():
         for line in template.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     ]
-    # The template ships correct and this story does not touch it: the plan
-    # artifact is ignored, state is not (FR-107 -- a clone learns what the
-    # tool owns here from the tracked file). "seed-state" appears in the
-    # template only inside the COMMENT that explains this; a rule naming it
-    # would be the regression.
-    assert ".marshal/plan.json" in rules
+    # Story 86.2: plan.json and seed-state.yml stay tracked (FR-107 -- a clone
+    # learns what Genesis owns from version control). "seed-state" and
+    # "plan.json" appear in the template only inside COMMENT lines; a rule
+    # naming either would be the regression.
+    assert ".marshal/plan.json" not in rules
     assert not [rule for rule in rules if "seed-state" in rule]
     assert not [rule for rule in rules if rule.rstrip("/") == ".marshal"]
 
