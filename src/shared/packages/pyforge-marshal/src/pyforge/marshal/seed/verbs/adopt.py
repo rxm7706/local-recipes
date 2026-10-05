@@ -489,6 +489,8 @@ def _manifest_for_adopt(
     for entry in manifest.entries:
         if entry.applies_to not in (AppliesTo.ADOPT, AppliesTo.BOTH):
             continue
+        if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED:
+            continue
         if entry.required_in is RequiredIn.LOOP_HOME and in_loop_home is False:
             continue
         if slug is None and entry.is_slug_templated:
