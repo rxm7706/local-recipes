@@ -282,7 +282,7 @@ def test_an_unanticipated_failure_from_the_verb_is_never_a_traceback(clean_repo,
     ``SeedError`` ancestry) and confirms it is caught and reported as
     ``InternalError`` (10), never re-raised."""
 
-    def _boom(repo_root, manifest, *, strict, context_layers=None, slug=None, in_loop_home=None):
+    def _boom(repo_root, manifest, *, strict, context_layers=None, slug=None, in_loop_home=None, **kwargs):
         raise RuntimeError("simulated unanticipated failure deep in the verb")
 
     monkeypatch.setattr(seed_cli, "_run_check_verb", _boom)
