@@ -291,6 +291,7 @@ def test_symptom_signature_dedupes_and_caps(mod):
 
 def test_build_catalog_shape(mod):
     catalog = mod.build_catalog(FIXTURE_SKILL_MD, FIXTURE_OPTIMIZER_SOURCE)
+    assert catalog["schema_version"] == mod.CATALOG_SCHEMA_VERSION
     assert [r["id"] for r in catalog["rows"]] == [f"G{i}" for i in range(1, 7)]
     enforced = {r["id"]: r["enforced_by"] for r in catalog["rows"]}
     assert enforced["G1"] == f"{OPTIMIZER_REL}:REAL-001"
@@ -334,6 +335,7 @@ def test_render_catalog_matches_schema_shape(mod):
     catalog = mod.build_catalog(FIXTURE_SKILL_MD, FIXTURE_OPTIMIZER_SOURCE)
     rendered = mod.render_catalog(catalog)
     assert rendered.startswith("# GENERATED FILE — DO NOT HAND-EDIT.\n")
+    assert "schema_version: 1\n" in rendered
     assert 'source_sha256: "' in rendered
     assert "enforced_by: null" in rendered
     assert f'enforced_by: "{OPTIMIZER_REL}:REAL-001"' in rendered

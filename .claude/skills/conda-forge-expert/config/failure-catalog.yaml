@@ -3,6 +3,7 @@
 # Derived deterministically from .claude/skills/conda-forge-expert/SKILL.md's
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
+schema_version: 1
 source_sha256: "643c7efb322b1c7b18dacba991ac240c529ca12c31ab3974dba25782380e45f1"
 rows:
   - id: G1
@@ -70,7 +71,6 @@ rows:
     title: "PyPI → conda-forge name divergence — verify across four spellings before declaring a dep missing"
     symptom_signature:
       - "requirements.run:"
-      - "missing"
       - "-py"
       - "-python"
     enforced_by: null
@@ -82,14 +82,12 @@ rows:
   - id: G12
     title: "Platform-conditional `run:` deps in noarch:python recipes need `noarch_platforms` in `conda-forge.yml`"
     symptom_signature:
-      - "noarch: python"
       - "if: linux / then:"
     enforced_by: null
   - id: G13
     title: "CWD persists across `script:` list entries — and `(cmd)` is not a subshell on Windows cmd.exe"
     symptom_signature:
       - "build.script:"
-      - "Directory '.' is not installable. Neither 'setup.py' nor 'pyproject.toml' found."
       - "cd subdir && ..."
       - "(parens)"
       - "isolate"
@@ -109,7 +107,6 @@ rows:
       - "pkg-1.0.0-h00.conda"
       - "rattler-build build"
       - "changed"
-      - "pixi run -e local-recipes rattler-build build --recipe recipes/X/recipe.yaml ..."
       - "✔ all tests passed!"
       - "pixi run rattler-index"
     enforced_by: null
@@ -182,7 +179,6 @@ rows:
       - "pip_check: true"
       - "<pkg>-<X.Y.Z>-*.conda"
       - "<pkg> >=0.7,<0.9"
-      - "pip check"
     enforced_by: null
   - id: G25
     title: "Conda has no \"extras\" — flatten every `pkg[extra]` upstream dep into `run:`, and resolve each extra to its *actual* conda packages (which may be renamed)"
@@ -204,13 +200,10 @@ rows:
       - "validate_recipe"
       - "optimize_recipe"
       - "check_dependencies"
-      - "pip check"
     enforced_by: null
   - id: G27
     title: "A top-level `import` in a split package can eagerly pull a sibling's submodule whose deps are only declared under an extra"
     symptom_signature:
-      - "noarch: python"
-      - "pip check"
       - "ModuleNotFoundError: No module named 'bs4'"
     enforced_by: null
   - id: G28
@@ -246,7 +239,6 @@ rows:
       - "datetime.UTC"
       - "tomllib"
       - "requires-python >=3.12"
-      - "noarch: python"
       - "python_min"
     enforced_by: null
   - id: G32
@@ -259,8 +251,6 @@ rows:
   - id: G33
     title: "Local rattler-build of a v1 feedstock recipe — don't pass `.ci_support` as a variant config; its strict `channel_sources` excludes the just-built package from its own test"
     symptom_signature:
-      - "rattler-build build --recipe recipe.yaml --variant-config .ci_support/linux_64_.yaml …"
-      - "<pkg> ==<ver> … excluded because due to strict channel priority not using this option from: 'file:///…/<out>/'"
       - "<dep> ==<X>, for which no candidates were found"
     enforced_by: null
   - id: G34
@@ -274,14 +264,12 @@ rows:
     title: "noarch numpy env-marker selector collapse (a G12 refinement) — per-Python numpy run-dep selectors track numpy's *own* wheel-availability floor, not a package feature"
     symptom_signature:
       - "numpy"
-      - "noarch: python"
       - "<3.13"
       - "run:"
     enforced_by: null
   - id: G36
     title: "Stale conda-forge build whose wheel METADATA caps a dep tighter than its conda `run:` dep → `pip check` fails even though the conda solve succeeds"
     symptom_signature:
-      - "pip check"
       - "<outer-pkg> A has requirement <dep> !=…,<X,>=…, but you have <dep> Y"
       - "run:"
     enforced_by: null
@@ -312,7 +300,6 @@ rows:
   - id: G40
     title: "A dependency can DROP a Python version in a newer release — a noarch consumer's declared floor then can't resolve the dep's latest build (refines G38)"
     symptom_signature:
-      - "noarch: python"
       - "python_min: \"3.10\""
     enforced_by: null
   - id: G41
@@ -357,7 +344,6 @@ rows:
     title: "A stale local `meta.yaml`'s `noarch: python` flag can be WRONG for a genuinely-compiled package — the CURRENT sdist is the source of truth (the \"local-meta-is-wrong\" sibling of G42)"
     symptom_signature:
       - "meta.yaml"
-      - "noarch: python"
       - "stdlib"
       - "succeeds"
       - ".so"
@@ -424,7 +410,6 @@ rows:
     title: "Source preference is `sdist > GitHub-source > wheel` — but the source must actually SHIP the module; verify before switching (existence ≠ usable)"
     symptom_signature:
       - "…-py3-none-any.whl"
-      - "Detected pure Python wheel(s) in source … it's preferred to use a source distribution (sdist) if possible."
       - "the sdist"
       - "ModuleNotFoundError"
       - "0.0.0"
@@ -433,6 +418,13 @@ rows:
     title: "\"No valid build backend found for Python recipe … using pip\" → a SOURCE build needs an explicit build backend in `host` (wheel installs do NOT)"
     symptom_signature:
       - "No valid build backend found for Python recipe for package &lt;X&gt; using pip. Python recipes using pip need to explicitly specify a build backend in the host section … you likely should add setuptools to the host section."
+      - "pip install <name>.whl"
+      - "host: [python, pip]"
+      - "pip install ."
+      - "pip install ./src/<sub>"
+      - "[build-system]"
+      - "host"
+      - "pyproject.toml [build-system].requires"
     enforced_by: null
   - id: G56
     title: "Multi-output `noarch: python` build scripts must be cross-platform — bash `cd \"$SRC_DIR/<sub>\"` + `\"$PYTHON\"` fails on win-64; use `${{ PYTHON }} -m pip install ./<sub>`"
@@ -459,13 +451,10 @@ rows:
       - "noarch"
       - "sed -i 'script' file"
       - "sed: 1: \"<file>\": extra characters at the end of p command"
-      - "pip check"
-      - "Can we do this with a patch instead? … it becomes harder to maintain and less readable than a patch."
     enforced_by: null
   - id: G60
     title: "The strip-before-push must remove ONLY `extra.cfe-*` keys + `# CFE …` blocks — never the schema header or `context:` block"
     symptom_signature:
-      - "Jinja template error: Template rendering failed: undefined value (in <string>:1) (template: ${{ version }})"
       - "recipe.yaml:3"
       - "version: ${{ version }}"
     enforced_by: null
@@ -514,24 +503,28 @@ rows:
     title: "After an upstream/feedstock skew resolves, PURGE the obsolete local workaround build — stale higher-build artifacts shadow the real cf package under strict channel priority"
     symptom_signature:
       - "excluded because due to strict channel priority not using this option from `file://…/build_artifacts/`"
+      - "build_artifacts/<subdir>/"
+      - "langchain 1.2.18"
+      - "build_artifacts/<subdir>/<noarch|subdir>/"
+      - "python -m conda_index build_artifacts/<subdir>"
+      - "passes/fails locally but the opposite on CI."
+      - "langchain~=1.3.0"
+      - "excluded"
     enforced_by: null
   - id: G69
     title: "A multi-output / suite version bump can CASCADE to a sibling recipe bump via a tightened cross-dep — bump + rebuild the sibling locally AND flag the submitted PR"
     symptom_signature:
       - "pip_check"
-      - "<output> X.Y.Z has requirement <sibling>>=A.B.C, but you have <sibling> A.B.(C-1)"
     enforced_by: null
   - id: G70
     title: "Reconcile a recipe's OWN `run_constraints` to upstream's real extra pins — it's soft (metadata-only, lint-verified), so it's a safe high-value faithfulness pass"
     symptom_signature:
       - "run_constraints"
       - ">=0.1"
-      - "work"
     enforced_by: null
   - id: G71
     title: "A dependency's event-loop reactor needs libev (Unix-only) or asyncore (removed in py3.12) — on win+py3.12+ `import <pkg>.cluster` raises, failing a noarch consumer's CFEP-25 `*` test (win-only)"
     symptom_signature:
-      - "noarch: python"
       - "cassio"
       - "python_min"
       - "python_version: \"*\""
@@ -554,10 +547,8 @@ rows:
   - id: G73
     title: "A noarch app built from a GitHub monorepo TAG ships NONE of the release-time-generated frontend/web assets (wheel-only) — and `import`/`pip_check` can't catch it (a G51 trap for apps with a UI)"
     symptom_signature:
-      - "noarch: python"
       - "langflow"
       - "import <app>"
-      - "pip check"
       - "<app> run"
       - ".conda"
       - "index.html"
@@ -586,19 +577,16 @@ rows:
   - id: G76
     title: "A Unix-only dependency in a `noarch: python` recipe CANNOT be a hard dep — `noarch` bakes `depends` at build time, so the package becomes unsolvable on Windows; make it OPTIONAL (strip from the wheel + `run_constraints`)"
     symptom_signature:
-      - "noarch: python"
       - "win-64"
       - "noarch"
       - "gunicorn"
       - "uvloop"
       - "nothing provides <dep>"
-      - "pip check"
       - "pip_check:"
     enforced_by: null
   - id: G77
     title: "A TRANSITIVE dep whose conda feedstock dropped a win-only wheel marker breaks `pip check` on Windows — you can't fix it in your noarch recipe; exclude win via `conda-forge.yml noarch_platforms`, or fix the upstream feedstock"
     symptom_signature:
-      - "pip check"
       - "win32"
       - "<your-pkg> → markitdown → magika"
     enforced_by: null
@@ -624,7 +612,6 @@ rows:
       - "Version: 0.0.0"
       - "pdfplumber"
       - "pdfminer.six==<exact>"
-      - "pip check"
       - "cfe-pip-check: false:pdfminer.six"
       - "is there a newer **version** of the dep?"
     enforced_by: null
@@ -675,13 +662,11 @@ rows:
     symptom_signature:
       - "mode=\"native\""
       - "get_build_summary"
-      - "{\"status\": \"unknown\", \"message\": \"No build summary found — build may have crashed\"}"
       - "build.pid"
     enforced_by: null
   - id: G86
     title: "Omit `bot.run_deps_from_wheel` when the recipe PATCHES the wheel's dependency metadata — the bot would regenerate run deps from the wheel and DROP your hand-managed dep"
     symptom_signature:
-      - "pip check"
       - "run:"
       - "bot.run_deps_from_wheel: true"
     enforced_by: null
@@ -691,7 +676,6 @@ rows:
       - "mailpit"
       - "1.30.2"
       - "1.30.3"
-      - "gh api repos/conda-forge/<name>-feedstock/contents/recipe/meta.yaml --jq .content | base64 -d | grep version"
       - "upstream/main"
       - "git remote add upstream …"
       - "git checkout -b migrate-to-v1 upstream/main"
@@ -733,7 +717,6 @@ rows:
       - "uv_build"
       - "host:"
       - "setuptools"
-      - "hatchling.plugin.exceptions.UnknownPluginError: Unknown metadata hook: requirements_txt"
     enforced_by: null
   - id: G92
     title: "Any YAML re-serialization FOLDS the `#### CFE` comment block into plain inline keys — a subsequent stamp append then DUPLICATES them (parse-fatal); strip BOTH forms before stamping"
@@ -747,7 +730,6 @@ rows:
     title: "conda-recipe-manager CRASHES on column-0 comments inside indented blocks — conda-smithy lint calls the recipe unparseable while rattler-build builds it fine; col-0 comments are safe ONLY at the document tail"
     symptom_signature:
       - "validate_recipe"
-      - "Error parsing recipe with conda-recipe-manager: ParsingException('The recipe parser ran into an unexpected issue…')"
       - "RecipeReader"
       - "IndexError: pop from empty list"
       - "_construct_parse_tree"
@@ -786,7 +768,14 @@ rows:
   - id: G98
     title: "Repo-wide cfe-metadata batch edits: line-based rewrites with a parse-gate after EVERY write, `\\g<1>` in re.sub, provenance-check failures against git — and purl-spec normalization keeps DOTS"
     symptom_signature:
-      - "fails"
+      - "yaml.safe_load(p.read_text())"
+      - "re.sub"
+      - "\\g<1>"
+      - "\\1"
+      - "re.sub(r'(key: ).*', r'\\1' + '2026-07-04…', s)"
+      - "\\12026…"
+      - "\\120"
+      - "P"
     enforced_by: null
   - id: G99
     title: "Fixture-scale tests hide O(n²) VALIDATOR behavior — jsonschema's `uniqueItems` makes universe-scale CycloneDX validation intractable; strip + exact O(n) hash check + chunked parallel walk"
@@ -836,6 +825,11 @@ rows:
     title: "Strict channel priority: ANY stale local-channel package shadows every conda-forge version of that name"
     symptom_signature:
       - "package X is excluded because due to strict channel priority not using this option from 'conda-forge'"
+      - "build_artifacts"
+      - ">=2.7,<2.8"
+      - "grep -l <name> recipes/*/recipe.yaml"
+      - "portalocker >=3.2.0"
+      - "<2.8"
     enforced_by: null
   - id: G105
     title: "rattler-build python tests run `pip check` BY DEFAULT — an omitted `pip_check:` means true, and the repo convention is explicit true + dual `python_version`"
@@ -891,7 +885,6 @@ rows:
     title: "A `noarch` recipe whose host/run deps carry `if: unix` / `if: win` selectors NEEDS a per-recipe `conda-forge.yml` with `noarch_platforms` — the lint \"`noarch` packages can't have selectors\" is asking for the yml, not for the selectors to go"
     symptom_signature:
       - "conda-smithy recipe-lint --conda-forge"
-      - "`noarch` packages can't have selectors. If the selectors are necessary, please remove `noarch: generic`"
       - "__unix"
       - "__win"
       - "requirements:"
