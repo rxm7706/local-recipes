@@ -93,12 +93,12 @@ managed:
 - id: gitignore
   path: .gitignore
   class: hybrid-managed-region
-  body_sha: 6dfa035c
+  body_sha: 45ae4a60
   inserted_region_spans:
   - name: model-ignores
     start: 75
     end: 2165
-    body_sha: 6dfa035c
+    body_sha: 45ae4a60
 - id: implementation-artifacts-symlink
   path: _bmad-output/implementation-artifacts
   class: generated-derived

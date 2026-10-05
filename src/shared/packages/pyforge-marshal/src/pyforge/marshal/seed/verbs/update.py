@@ -214,9 +214,9 @@ from ..derive import projects_index as derive_projects_index
 from ..detect.findings import Finding
 from ..detect.hashes import hash_content, region_body_text
 from ..detect.inventory import (
+    _WRITABLE_EXEMPTION_IDS,
     ArtifactState,
     Inventory,
-    _WRITABLE_EXEMPTION_IDS,
     classify,
     effective_never_write,
     escape_findings,

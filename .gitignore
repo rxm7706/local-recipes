@@ -1,4 +1,4 @@
-# marshal-seed:begin region=model-ignores model-version=1.0.0 sha=6dfa035c
+# marshal-seed:begin region=model-ignores model-version=1.0.0 sha=45ae4a60
 # BMAD: personal config (user-scoped) and per-developer artifacts.
 # Note: project-scoped planning-artifacts (PRDs, briefs, ADRs) are committed team artifacts.
 # Note: project-scoped implementation-artifacts are gitignored (per-developer scratch).
