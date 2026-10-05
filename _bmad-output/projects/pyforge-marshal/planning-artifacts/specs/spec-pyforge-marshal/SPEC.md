@@ -61,6 +61,8 @@ covers-dreams:
   - docs/dreams/surface-drift-reconciliation.md
   - docs/dreams/token-economy-claude-session-path.md
 surface:
+  - .marshal/plan.json
+  - .marshal/seed-state.yml
   - src/shared/packages/pyforge-marshal/**
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py

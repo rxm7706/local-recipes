@@ -216,6 +216,7 @@ from ..detect.hashes import hash_content, region_body_text
 from ..detect.inventory import (
     ArtifactState,
     Inventory,
+    _WRITABLE_EXEMPTION_IDS,
     classify,
     effective_never_write,
     escape_findings,
@@ -457,6 +458,8 @@ def _managed_records(
         if entry is not None and entry.is_directory:
             # No content of its own to attest (Story 86.1): the entries beneath
             # it carry their own records. Rung 6 read it as an unreadable file.
+            continue
+        if artifact.id in _WRITABLE_EXEMPTION_IDS:
             continue
         if artifact.inserted_region_spans:
             if entry is None or entry.format is None:

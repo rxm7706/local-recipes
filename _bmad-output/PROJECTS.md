@@ -47,6 +47,18 @@ Higher-numbered layers override lower-numbered layers. Layers 5 and 6 are only
 loaded when an active project resolves.
 
 ## Projects
+<!-- marshal-seed:begin region=projects-table model-version=1.0.0 sha=94d33bd8 -->
+| Slug | Status | Description |
+|------|--------|-------------|
+| `pyforge-atlas` | active | Kedro/Dagster/DuckDB migration of the cf_atlas orchestrator (~10k LOC, 23 cataloged phases) with a Vizro/Vizro-AI read surface, Boring Semantic Layer, and MCP/A2A agent interface. Intake spec: docs/specs/cfe-atlas-datapipeline-kedro-migration.md (v5.6, analysis complete). |
+| `pyforge-doctor` | active | Doctor — ecosystem health & diagnostics CLI (pre-flight checks, fleet monitoring, prescriptions); consolidates atlas health/watch CLIs + warden self-check. dist pyforge-doctor / module pyforge.doctor / CLI doctor |
+| `pyforge-herald` | active | Herald — the pyforge PyForge Guild's visual media & communications engine. First deliverable: the herald CLI formalizing the realized Design↔Code bridge (seed/pull, watch mode). Dream: docs/dreams/design-code-bridge.md. |
+| `pyforge-marshal` | active | Marshal — orchestration CLI productizing the bmad-loop capability (init, factory spin, gates, deploy); wrap-vs-build resolved in PRD. dist pyforge-marshal / module pyforge.marshal / CLI marshal |
+| `pyforge-mason` | active | Mason — packaging CLI productizing the conda-forge-expert capability (recipe build, package ship, environment lock); wrap-vs-build resolved in PRD. dist pyforge-mason / module pyforge.mason / CLI mason |
+| `pyforge-scribe` | active | Scribe — team knowledge CLI (capture, curate, graph compile, recall); adopts team-memory + sentinel knowledge-graph core. dist pyforge-scribe / module pyforge.scribe / CLI scribe |
+| `pyforge-steward` | active | Steward — platform/ops CLI (provision, deploy, keys, budgets, incident response). dist pyforge-steward / module pyforge.steward / CLI steward |
+| `pyforge-warden` | active | Unified dependency-hygiene + vulnerability scanner orchestrating deptry + osv-scanner over Python/Conda/Pixi manifests; schema-validated ComplianceReport + strict CI exit-code gate. In-repo pixi build workspace member at src/shared/packages/pyforge-warden (builds conda + wheel + sdist). Intake spec: docs/specs/pyforge-warden.md. |
+<!-- marshal-seed:end region=projects-table -->
 
 | Slug                   | Status | Description                                                                                                                                                                       |
 |------------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|

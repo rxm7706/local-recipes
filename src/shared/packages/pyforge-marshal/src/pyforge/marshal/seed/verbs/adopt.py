@@ -621,6 +621,10 @@ def _managed_records(state: SeedState | None, manifest: Manifest) -> tuple[Manag
             # (Story 86.1, DW-FU-7-5-2). Handed to rung 6 it read as an
             # unreadable file and refused the run.
             continue
+        if artifact.id in _WRITABLE_EXEMPTION_IDS:
+            # BMAD artifact symlinks are attested by ``ensure_symlinks`` /
+            # ``detect_symlink_desync``, not rung 6 file-body hash (Story 86.2).
+            continue
         if artifact.inserted_region_spans:
             if entry is None or entry.format is None:
                 continue

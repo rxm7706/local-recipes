@@ -1,0 +1,133 @@
+# DO NOT HAND-EDIT -- this file is owned by `marshal seed`.
+#
+# It records what the tool established in this repository, and the tool
+# rewrites it in full on every run, so any edit you make here is lost at
+# the next write. Until that write, the tool BELIEVES what it reads: an
+# edit that still fits the schema is acted on as if the tool had made it
+# -- silently, with no warning that the file and the repository now
+# disagree. Only an edit that breaks the schema is reported (exit 5).
+#
+# To change what is recorded, run the `marshal seed` verb that owns it
+# (init / adopt / update). To stop managing an artifact or a region,
+# use the tool's own opt-out, never a manual deletion below.
+#
+# This file IS meant to be committed: it is how a clone learns what the
+# tool already owns here.
+model_version: 1.0.0
+seed_model_version: 0.1.0
+adopted_at: '2026-10-05T09:11:53Z'
+last_update: '2026-10-05T09:11:53Z'
+mode: adopt
+agents: []
+managed:
+- id: agents-md
+  path: AGENTS.md
+  class: hybrid-managed-region
+  body_sha: 0b632764
+  inserted_region_spans:
+  - name: tiers
+    start: 34143
+    end: 35639
+    body_sha: 0b632764
+  - name: portability-contract
+    start: 31629
+    end: 32804
+    body_sha: 9565ebc7
+  - name: dream-first-workflow
+    start: 26624
+    end: 27543
+    body_sha: 0f14025c
+- id: bmad-loop-worktree
+  path: scripts/bmad-loop-worktree
+  class: copied-managed
+  body_sha: ea241146
+  inserted_region_spans: []
+- id: bmad-switch
+  path: scripts/bmad-switch
+  class: copied-managed
+  body_sha: 13b0ddb7
+  inserted_region_spans: []
+- id: claude-md
+  path: CLAUDE.md
+  class: hybrid-managed-region
+  body_sha: 0b632764
+  inserted_region_spans:
+  - name: tiers
+    start: 3030
+    end: 4526
+    body_sha: 0b632764
+  - name: bmad-multiproject
+    start: 4781
+    end: 8896
+    body_sha: 6a76c959
+- id: copilot-instructions
+  path: .github/copilot-instructions.md
+  class: generated-derived
+  body_sha: 153dca08
+  inserted_region_spans: []
+- id: cursor-rules
+  path: .cursor/rules/specs.mdc
+  class: generated-derived
+  body_sha: '42707824'
+  inserted_region_spans: []
+- id: detector-registry
+  path: scripts/detectors.py
+  class: copied-managed
+  body_sha: f73c0e19
+  inserted_region_spans: []
+- id: detectors-ci-workflow
+  path: .github/workflows/detectors.yml
+  class: copied-managed
+  body_sha: 80fc48bd
+  inserted_region_spans: []
+- id: dreams-readme
+  path: docs/dreams/README.md
+  class: copied-managed
+  body_sha: e32c692d
+  inserted_region_spans: []
+- id: gemini-md
+  path: GEMINI.md
+  class: generated-derived
+  body_sha: dd28dbf7
+  inserted_region_spans: []
+- id: gitignore
+  path: .gitignore
+  class: hybrid-managed-region
+  body_sha: 6dfa035c
+  inserted_region_spans:
+  - name: model-ignores
+    start: 75
+    end: 2165
+    body_sha: 6dfa035c
+- id: implementation-artifacts-symlink
+  path: _bmad-output/implementation-artifacts
+  class: generated-derived
+  body_sha: e3b0c442
+  inserted_region_spans: []
+- id: planning-artifacts-symlink
+  path: _bmad-output/planning-artifacts
+  class: generated-derived
+  body_sha: e3b0c442
+  inserted_region_spans: []
+- id: projects-index
+  path: _bmad-output/PROJECTS.md
+  class: hybrid-managed-region
+  body_sha: 94d33bd8
+  inserted_region_spans:
+  - name: projects-table
+    start: 2883
+    end: 4971
+    body_sha: 94d33bd8
+- id: readme-badge
+  path: README.md
+  class: hybrid-managed-region
+  body_sha: f66b7e29
+  inserted_region_spans:
+  - name: model-badge
+    start: 80
+    end: 396
+    body_sha: f66b7e29
+skips: []
+legacy: []
+migrations_applied: []
+opted_out: []

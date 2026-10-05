@@ -1,3 +1,42 @@
+# marshal-seed:begin region=model-ignores model-version=1.0.0 sha=6dfa035c
+# BMAD: personal config (user-scoped) and per-developer artifacts.
+# Note: project-scoped planning-artifacts (PRDs, briefs, ADRs) are committed team artifacts.
+# Note: project-scoped implementation-artifacts are gitignored (per-developer scratch).
+_bmad/custom/.active-project
+_bmad-output/projects/*/implementation-artifacts/
+# ...and the same path as a SYMLINK. The trailing-slash rule above matches only
+# real directories, so in a bmad-loop home -- where `bmad-loop-worktree` creates
+# implementation-artifacts as a Tier-3 backlink to the main checkout -- the path
+# comes back untracked, and `bmad-loop run` refuses to start on a dirty worktree.
+# No trailing slash = matches the symlink too.
+_bmad-output/projects/*/implementation-artifacts
+
+# bmad-loop / upstream-tooling seam: root artifact dirs are LOCAL symlinks to the
+# active project's dirs (re-point on `bmad-switch`).
+_bmad-output/planning-artifacts
+_bmad-output/implementation-artifacts
+_bmad-output/projects/*/.bmad-config.user.toml
+
+# bmad-loop runtime scratch: run worktrees and their cache, never tracked.
+.bmad-loop/runs/
+.bmad-loop/cache/
+# Derived harness policy: rendered whole from the canonical EffectivePolicy on
+# every `marshal config --write-harness-policy` run (AD-12/AD-35). The model
+# classifies it generated-derived, so leaving it tracked leaves every adopting
+# repo permanently dirty -- the same failure the symlink rule above prevents.
+.bmad-loop/policy.toml
+# Derived artifact (Story 33.3, SPEC-marshal-token-economy CAP-2): the
+# wire-compression bmad-loop profile overlay `factory spin` writes per
+# adapter when the `wire` layer is on. Untracked and not ignored, it makes
+# `bmad-loop run` refuse the loop home with "git worktree is not clean" --
+# the same failure shape `.bmad-loop/policy.toml` above already exists to
+# prevent.
+.bmad-loop/profiles/
+
+# Genesis seed artifacts under `.marshal/` stay visible to git (AD-52 /
+# Story 28.2): `seed-state.yml` and `plan.json` are tracked; adopt excludes
+# the directory from dirty-tree checks via a pathspec, not a blanket ignore.
+# marshal-seed:end region=model-ignores
 django-kedro-src/
 pypi_source_distribution/
 pypi_built_distribution/

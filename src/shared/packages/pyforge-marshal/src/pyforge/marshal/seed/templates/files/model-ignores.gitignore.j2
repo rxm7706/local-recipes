@@ -32,7 +32,6 @@ _bmad-output/projects/*/.bmad-config.user.toml
 # prevent.
 .bmad-loop/profiles/
 
-# The plan artifact (AD-57): derived, cheap to regenerate, and a committed
-# stale plan is a hazard -- so the plan file is ignored, but NOT the whole
-# `.marshal/` directory: `.marshal/seed-state.yml` is git-tracked (AD-52).
-.marshal/plan.json
+# Genesis seed artifacts under `.marshal/` stay visible to git (AD-52 /
+# Story 28.2): `seed-state.yml` and `plan.json` are tracked; adopt excludes
+# the directory from dirty-tree checks via a pathspec, not a blanket ignore.

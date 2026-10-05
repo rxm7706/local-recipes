@@ -1,3 +1,9 @@
+<!-- marshal-seed:begin region=model-badge model-version=1.0.0 sha=f66b7e29 -->
+> **Dream-first repo.** This project follows the Dream → Spec → build model: every
+> non-trivial change starts as a Dream in `docs/dreams/`, BMAD distils it into a spec under
+> `_bmad-output/projects/<slug>/planning-artifacts/`, and the spec drives the build. See
+> `AGENTS.md` for the full cross-tool contract.
+<!-- marshal-seed:end region=model-badge -->
 # local-recipes
 
 [![Test All Platforms](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml/badge.svg)](https://github.com/rxm7706/local-recipes/actions/workflows/test-all.yml)
