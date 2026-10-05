@@ -503,8 +503,7 @@ any two of these three is the standard reading error.
 
 ### Discovery / customization (active)
 
-`bmad-project-context` — **6.11 successor** of the retired ids `bmad-document-project` and
-`bmad-generate-project-context`. It maintains a **verified `AGENTS.md` block only**; it does **not**
+`bmad-project-context` — **6.11 successor** of retired `bmad-document-project` / retired `bmad-generate-project-context`. It maintains a **verified `AGENTS.md` block only**; it does **not**
 produce brownfield living docs (`architecture-*`, `project-overview`, `project-context.md`). Those
 are re-grounded by hand / plain agents on the marshal SYNC-RUNBOOK cadence. Also: `bmad-customize`.
 
