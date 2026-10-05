@@ -2,7 +2,7 @@
 title: "86.2: local-recipes is genesis-adopted so the seed-adopt oracle goes green"
 type: 'fix'
 created: '2026-10-03'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '835894524e63ee69428972aeb5f28fa00d762edc'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -66,4 +66,4 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-05: Implementation verified locally (`pyforge-marshal-test`, `pyforge-deps-test`, `lint-types`, `pyforge-marshal-test-local-recipes-seed-oracle`, `spec_surface_reconcile.py`). Genesis bootstrap landed; empty-plan oracle green.
