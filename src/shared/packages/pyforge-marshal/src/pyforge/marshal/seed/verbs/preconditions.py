@@ -652,7 +652,13 @@ def check_preconditions(
         # target as written AND resolved (a symlinked ancestor no longer
         # hides a pattern), a directory also as `dir/`, and
         # `NeverWrite.exempt` per form (Story 10.8).
-        hit = never_write_match(repo_root / action.target_path, repo_root=repo_root, never_write=never_write)
+        resolve_leaf = action.artifact_id not in _WRITABLE_EXEMPTION_IDS
+        hit = never_write_match(
+            repo_root / action.target_path,
+            repo_root=repo_root,
+            never_write=never_write,
+            resolve_leaf=resolve_leaf,
+        )
         if hit is not None:
             matched, form = hit
             raise PreconditionFailure(

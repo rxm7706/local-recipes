@@ -963,21 +963,6 @@ def test_the_two_declared_symlink_entries_stay_writable_through_exempt_by_declar
     assert (tmp_path / "_bmad-output" / "planning-artifacts").readlink() == Path("projects/demo/planning-artifacts")
 
 
-def test_exempt_symlink_leaf_is_not_refused_via_the_resolved_tier_tree(tmp_path):
-    """Rung 4 and ``_guard`` use ``resolve_leaf=True`` by default; an exempt
-    link at ``_bmad-output/planning-artifacts`` must not fail because the
-    resolved target sits under ``**/planning-artifacts/**``."""
-    real = tmp_path / "_bmad-output" / "projects" / "demo" / "planning-artifacts"
-    real.mkdir(parents=True)
-    link = tmp_path / "_bmad-output" / "planning-artifacts"
-    link.symlink_to("projects/demo/planning-artifacts")
-
-    assert (
-        fs.never_write_match(link, repo_root=tmp_path, never_write=_BMAD_LINK_EXEMPT, resolve_leaf=True)
-        is None
-    )
-
-
 def test_the_exemption_covers_the_link_and_not_what_it_points_at(tmp_path):
     """Per form: written `_bmad-output/planning-artifacts` is exempt, but a
     write THROUGH the link resolves into the real, un-exempt tier tree."""

@@ -350,10 +350,7 @@ def never_write_match(
         return written_hit
     if resolved_form == written_form:
         return None
-    abspath = Path(os.path.abspath(path))
-    same_node_exempt = written_form in never_write.exempt and (
-        not resolve_leaf or abspath.is_symlink()
-    )
+    same_node_exempt = not resolve_leaf and written_form in never_write.exempt
     return _match_form(
         never_write,
         resolved_form,
