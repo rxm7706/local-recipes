@@ -2,7 +2,8 @@
 title: "40.2: docs-currency runs Doctor's own generator against the judged tree, never the tree's"
 type: 'fix'
 created: '2026-10-05'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: db8b73c18caa06a2d5ba1d9a38cbe93c71543be3
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -85,4 +86,31 @@ Type / Effort / Deps: fix / M / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-05 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - (no findings from blind-hunter, edge-case-hunter, verification-gap, or intent-alignment layers after orchestrator verification against acceptance criteria)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Story 40.2 closes DW-doctor-40-1-2. Doc generators accept optional `--root`; `docs_currency` runs Doctor's checkout copy via `locate_checkout_script` with `--check --root <target>`; disallowed generator paths WARN without executing.
+
+Files changed:
+- `scripts/_docs_gen_common.py` — shared `--root` plumbing
+- `scripts/docs_*.py` (five generators) — pass resolved root into render/check
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py` — checkout generator + validation
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_currency.py` — trust and stub checkout tests
+- `src/shared/packages/pyforge-doctor/tests/meta/test_docs_currency_generator_trust.py` — AST conformance pin
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md` — DW-doctor-40-1-2 resolved
+- `_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md` — surface reconcile entry
+
+Review: no patch/defer/intent_gap entries; followup_review_recommended false.
+
+Verification:
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — pass (3429 tests, 1 skipped)
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+
+Residual risks: none identified beyond existing generator timeout and missing-checkout WARN paths already covered by tests.
