@@ -2,7 +2,9 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.91.8** (Oct 4, 2026, current) — **G62 survivor gate uses anchored line matching (PATCH; mason Story 27.2 review).** `_cfe_push_strip.assert_no_cfe_metadata_surfaces` matches `cfe-`, `#### CFE`, and `# CFE metadata` / `# CFE comments` with a line-anchored regex instead of substring scans, so innocuous recipe text does not false-positive.
+**v8.91.9** (Oct 5, 2026, current) — **Retired-id guard scans marshal planning docs (PATCH; marshal Story 86.7).** `test_no_retired_bmad_skill_ids.py` adds `SCAN_GLOB_FLOORS` for `architecture-bmad-infra.md` and `development-guide.md` under pyforge-marshal planning artifacts; living-doc rows carry same-line retired/6.11 glosses so the guard passes on the widened scope.
+
+**v8.91.8** (Oct 4, 2026) — **G62 survivor gate uses anchored line matching (PATCH; mason Story 27.2 review).** `_cfe_push_strip.assert_no_cfe_metadata_surfaces` matches `cfe-`, `#### CFE`, and `# CFE metadata` / `# CFE comments` with a line-anchored regex instead of substring scans, so innocuous recipe text does not false-positive.
 
 **v8.91.7** (Oct 4, 2026) — **Strip-on-push enforced in `submit_pr.prepare_branch` (PATCH; mason Story 27.2).** New `_cfe_push_strip.py` removes `extra.cfe-*` keys and bottom `#### CFE …` blocks from `recipe.yaml` / `meta.yaml` / `conda-forge.yml` on the staged-recipes copy before commit; `assert_no_cfe_metadata_surfaces` aborts if any marker survives. Unit tests pin the path against a read-only copy of `conda-forge/ironcalc-feedstock`'s published `recipe.yaml` plus the local `recipes/ironcalc` CFE block.
 

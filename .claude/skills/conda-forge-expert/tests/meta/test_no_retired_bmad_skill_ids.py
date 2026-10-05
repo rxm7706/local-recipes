@@ -135,6 +135,8 @@ ALLOW_MARKER_RE = re.compile(
 SCAN_GLOB_FLOORS = {
     "_bmad-output/projects/*/planning-artifacts/epics.md": 6,
     "_bmad-output/projects/*/planning-artifacts/PRD.md": 1,
+    "_bmad-output/projects/pyforge-marshal/planning-artifacts/architecture-bmad-infra.md": 1,
+    "_bmad-output/projects/pyforge-marshal/planning-artifacts/development-guide.md": 1,
     "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/templates/**/*": 8,
     "AGENTS.md": 1,
     "CLAUDE.md": 1,

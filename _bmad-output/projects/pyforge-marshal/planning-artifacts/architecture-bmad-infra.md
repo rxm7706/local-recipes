@@ -63,7 +63,7 @@ skill**. The hand that builds is never the gate that judges.
 > v8.86.2 (strict duplicate-mapping-key `recipe.yaml` audit; 31 recipes fixed), v8.86.3 (the
 > retired-BMAD-skill-ID regression guard's tracked-id tuple — which guards bare mentions of an
 > id that is INSTALLED as a live forwarding shim, not one that is gone — gains
-> `bmad-checkpoint-preview` as its 21st tracked id, since 6.12.0 renamed it to forward to
+> the retired shim id `bmad-checkpoint-preview` as its 21st tracked id, since 6.12.0 renamed it to forward to
 > `bmad-walkthrough` — marshal Story 30.1), v8.86.4 (`test_bmad_loop_skills_match_installed.py`
 > proves the three vendored `bmad-loop-*` skills match the installed package — marshal Story
 > 30.4). Live `bmad-groundtruth` 2026-09-06: schema **v29** · MCP **46** · atlas phases **22** ·
@@ -503,8 +503,7 @@ any two of these three is the standard reading error.
 
 ### Discovery / customization (active)
 
-`bmad-project-context` — **6.11 successor** of `bmad-document-project` /
-`bmad-generate-project-context`. It maintains a **verified `AGENTS.md` block only**; it does **not**
+`bmad-project-context` — **6.11 successor** of retired `bmad-document-project` / retired `bmad-generate-project-context`. It maintains a **verified `AGENTS.md` block only**; it does **not**
 produce brownfield living docs (`architecture-*`, `project-overview`, `project-context.md`). Those
 are re-grounded by hand / plain agents on the marshal SYNC-RUNBOOK cadence. Also: `bmad-customize`.
 
@@ -515,8 +514,8 @@ skills (those three IDs survive only as deprecated forwarders).
 
 ### Implementation (active)
 
-`bmad-build` (was `bmad-quick-dev`) — implement any intent against existing conventions.
-`bmad-build-auto` (was `bmad-dev-auto`) — **one iteration of an unattended development loop**.
+`bmad-build` (was the retired `bmad-quick-dev`) — implement any intent against existing conventions.
+`bmad-build-auto` (was the retired `bmad-dev-auto`) — **one iteration of an unattended development loop**.
 `bmad-forge-idea` — persona-driven interrogation that hardens or kills an idea cheaply.
 
 `bmad-build-auto` ends a turn only by halting with an explicit terminal `status`, written either
@@ -556,27 +555,27 @@ same-line gloss (the CAP-1 guard, `test_no_retired_bmad_skill_ids.py`, still enf
 
 | Retired shim (gone) | Forwarded to / note |
 |---|---|
-| `bmad-quick-dev` | `bmad-build` |
-| `bmad-dev-auto` | `bmad-build-auto` |
-| `bmad-create-story` | `bmad-build` |
-| `bmad-dev-story` | `bmad-build` |
-| `bmad-create-prd` | `bmad-prd` (create) |
-| `bmad-edit-prd` | `bmad-prd` (update) |
-| `bmad-validate-prd` | `bmad-prd` (validate) |
-| `bmad-create-architecture` | `bmad-architecture` |
-| `bmad-market-research` | `bmad-deep-recon` |
-| `bmad-domain-research` | `bmad-deep-recon` |
-| `bmad-technical-research` | `bmad-deep-recon` |
-| `bmad-sprint-status` | `bmad-sprint-planning` (status surfaces) |
-| `bmad-document-project` | `bmad-project-context` (AGENTS.md only — not brownfield docs) |
-| `bmad-generate-project-context` | `bmad-project-context` |
-| `bmad-review-adversarial-general` | `bmad-review` |
-| `bmad-review-edge-case-hunter` | `bmad-review` |
-| `bmad-review-verification-gap` | `bmad-review` |
-| `bmad-editorial-review` | `bmad-review` |
-| `bmad-editorial-review-prose` | `bmad-review` |
-| `bmad-editorial-review-structure` | `bmad-review` |
-| `bmad-checkpoint-preview` | `bmad-walkthrough` |
+| retired `bmad-quick-dev` | `bmad-build` |
+| retired `bmad-dev-auto` | `bmad-build-auto` |
+| retired `bmad-create-story` | `bmad-build` |
+| retired `bmad-dev-story` | `bmad-build` |
+| retired `bmad-create-prd` | `bmad-prd` (create) |
+| retired `bmad-edit-prd` | `bmad-prd` (update) |
+| retired `bmad-validate-prd` | `bmad-prd` (validate) |
+| retired `bmad-create-architecture` | `bmad-architecture` |
+| retired `bmad-market-research` | `bmad-deep-recon` |
+| retired `bmad-domain-research` | `bmad-deep-recon` |
+| retired `bmad-technical-research` | `bmad-deep-recon` |
+| retired `bmad-sprint-status` | `bmad-sprint-planning` (status surfaces) |
+| retired `bmad-document-project` | `bmad-project-context` (AGENTS.md only — not brownfield docs) |
+| retired `bmad-generate-project-context` | `bmad-project-context` |
+| retired `bmad-review-adversarial-general` | `bmad-review` |
+| retired `bmad-review-edge-case-hunter` | `bmad-review` |
+| retired `bmad-review-verification-gap` | `bmad-review` |
+| retired `bmad-editorial-review` | `bmad-review` |
+| retired `bmad-editorial-review-prose` | `bmad-review` |
+| retired `bmad-editorial-review-structure` | `bmad-review` |
+| retired `bmad-checkpoint-preview` | `bmad-walkthrough` |
 
 ### Creative Intelligence Suite — `bmad-cis-*` (10 — added since the 2026-09-05 pass)
 

@@ -456,16 +456,15 @@ teardown — pyforge-warden lost 13 of 31 that way before the convention existed
 | `bmad-prd` | Create / update / **validate** a PRD (one skill, three intents) |
 | `bmad-architecture` | Create / update the architecture |
 | `bmad-create-epics-and-stories` | Break the PRD into epics + stories |
-| `bmad-create-story` | Produce one context-filled story file |
-| `bmad-quick-dev` | Implement a story / feature / fix from a spec |
-| `bmad-dev-auto` | One iteration of an unattended dev loop (gained in 6.10) |
-| `bmad-document-project` | Regenerate this doc set from the live repo |
+| `bmad-build` | Implement a story / feature / fix from a spec (6.11; absorbs retired `bmad-quick-dev` / `bmad-create-story`) |
+| `bmad-build-auto` | One iteration of an unattended dev loop (6.11 successor of retired `bmad-dev-auto`) |
+| `bmad-project-context` | Maintain the verified `AGENTS.md` block (6.11; not brownfield doc regen — retired `bmad-document-project`) |
 | `bmad-check-implementation-readiness` | Gate report over PRD + UX + architecture + epics |
 | `bmad-retrospective` | Closeout retro — **mandatory** for any effort that touched conda-forge work |
 
 > **Deprecated, do not invoke:** `bmad-create-prd` and `bmad-create-architecture` are thin
 > deprecated wrappers consolidated into `bmad-prd` and `bmad-architecture`, and are slated for
-> removal in v7. (`bmad-edit-prd` and `bmad-validate-prd` are likewise folded into `bmad-prd`.)
+> removal in v7. (The deprecated `bmad-edit-prd` and `bmad-validate-prd` are likewise folded into `bmad-prd`.)
 > Earlier revisions of this guide recommended the two deprecated names — that was wrong.
 
 ### Multi-project addressing

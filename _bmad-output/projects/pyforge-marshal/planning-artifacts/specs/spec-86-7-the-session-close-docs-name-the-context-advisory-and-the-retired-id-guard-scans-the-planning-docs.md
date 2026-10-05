@@ -2,7 +2,8 @@
 title: "86.7: The session-close docs name the context advisory and the retired-id guard scans the planning docs"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '9867aefc36fcc49864d6175e9aa4cd1409919794'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -65,4 +66,10 @@ Minted 2026-10-03 from the operator's Phase 3 rulings (rulings page `rulings` co
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-05 build-auto pass: AC satisfied — session-close ritual names `marshal context advisory` beside `scribe capture`; guard scans both planning docs; DW-marshal-46-6 and DW-FU-30-1-2 closed in deferred-work-ledger with resolution and verified lines.
+
+## Auto Run Result
+
+Status: done
+Verification: `pyforge-marshal-test` (after retro CFE commit), `pyforge-deps-test`, `lint-types`, `test_no_retired_bmad_skill_ids.py`, `test_instruction_surface_parity` session-close subset, `scripts/spec_surface_reconcile.py` — all green.
+Surface reconcile memlogs: spec-pyforge-marshal, spec-pyforge-scribe, spec-conda-forge-expert-rebuild (paths named in each entry).
