@@ -75,13 +75,20 @@ function generateId(relativePath: string): string {
   return id;
 }
 
-async function walkDocs(root: string, store: { set: (entry: { id: string; data: Record<string, unknown>; body: string }) => void }, prefix = ''): Promise<void> {
+async function walkDocs(
+  root: string,
+  store: {
+    set: (entry: { id: string; data: Record<string, unknown>; body: string; filePath?: string }) => void;
+  },
+  siteRoot: string,
+  prefix = '',
+): Promise<void> {
   const entries = await fs.readdir(root, { withFileTypes: true });
   for (const entry of entries) {
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
     const full = path.join(root, entry.name);
     if (entry.isDirectory()) {
-      await walkDocs(full, store, rel);
+      await walkDocs(full, store, siteRoot, rel);
       continue;
     }
     if (!isIncluded(rel)) {
@@ -99,14 +106,19 @@ async function walkDocs(root: string, store: { set: (entry: { id: string; data: 
       body = extracted.rest;
     }
     const id = generateId(rel);
-    const entryData: Record<string, unknown> = { ...data, title };
+    const entryData: Record<string, unknown> = { ...data, title, draft: false };
     if (!Array.isArray(entryData.head)) {
       entryData.head = [];
+    }
+    const sidebar = entryData.sidebar;
+    if (typeof sidebar !== 'object' || sidebar === null) {
+      entryData.sidebar = { hidden: false };
     }
     store.set({
       id,
       data: entryData,
       body,
+      filePath: path.relative(siteRoot, full).replace(/\\/g, '/'),
     });
   }
 }
@@ -114,9 +126,10 @@ async function walkDocs(root: string, store: { set: (entry: { id: string; data: 
 export function shelfDocsLoader(): Loader {
   return {
     name: 'shelf-docs-loader',
-    async load({ store }) {
+    async load({ store, config }) {
       const root = fileURLToPath(new URL('../content/docs', import.meta.url));
-      await walkDocs(root, store);
+      const siteRoot = fileURLToPath(config.root);
+      await walkDocs(root, store, siteRoot);
     },
   };
 }
