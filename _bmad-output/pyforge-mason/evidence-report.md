@@ -29,15 +29,17 @@ t2_future_count: 0
 - Description sanitizations: 0
 
 ## Validation Results
-- Schema: [PENDING — populated by step 6]
-- Frontmatter: [PENDING — populated by step 6]
-- Body: [PENDING — populated by step 6]
-- Security: [PENDING — populated by step 6]
-- Content Quality (tessl): [PENDING — populated by step 6]
-- Metadata: [PENDING — populated by step 6]
+- Schema: manual fallback — skill-check unavailable (npx refused by the repo session guardrail); validation_status: manual-only
+- Frontmatter: PASS — skf-validate-frontmatter.py --skill-dir-name pyforge-mason: status pass, 0 issues (high 0, medium 0, low 0); manual §3 checklist also passes (name matches dir, description 544 chars, only name + description fields)
+- Body: PASS — 279 body lines (Tier 1: 215), under the 400-line shard budget; no split; tier1_preserved true
+- Output: PASS — skf-validate-output.py --generated-by create-skill: 0 issues (first run flagged 3 medium missing sections Description / Key Exports / Usage; added from source and re-run clean)
+- Citations: 81 [SRC:…] citations, every range inside its file under src/shared/packages/pyforge-mason/
+- Security: skipped — skill-check unavailable; SNYK scan not run
+- Content Quality (tessl): skipped — outward-facing review not authorized in a headless run
+- Metadata: PASS — skf-render-metadata-stats.py --check: coherence ok, 0 violations; spec_version 1.3; scope_type specific-modules
 
 ## Quality Score Breakdown
-- [PENDING — populated by step 6]
+- skipped — skill-check unavailable, no 0-100 score computed
 
 ## Description Guard
 - Restored: false
@@ -52,12 +54,16 @@ t2_future_count: 0
 | load-brief | tier-resolution | apply-brief-tier | forge-tier.yaml tier is null (setup never set it) and tier_override is null; brief declares forge_tier: Quick; all tools null = Quick by definition | 2026-10-05T17:16:39Z |
 | extract | authoritative-files | none | helper reported no-candidates | 2026-10-05T17:17:43Z |
 | extract | extraction-summary | C | headless: auto-approve extraction summary (2 public exports, 17 CLI verbs/leaves, 0 scripts/assets) | 2026-10-05T17:17:43Z |
+| validate | skill-check-availability | manual-fallback | npx skill-check refused by the repo session guardrail (.claude/hooks/pre-shell.py: no ad hoc npx); no pinned skill-check in pixi.toml; validation_status set to manual-only | 2026-10-05T17:22:13Z |
+| validate | tessl-review | skip | tessl 0.98.0 is installed but its review sends SKILL.md to an external LLM judge; an outward-facing send needs operator confirmation, which a headless run cannot obtain | 2026-10-05T17:22:13Z |
 
 ## Auto-Fixed Issues
-- none
+- Added ## Description, ## Key Exports and ## Usage sections (skf-validate-output medium findings), all source-cited
 
 ## Remaining Warnings
 - forge-tier.yaml carries tier null and all tools null ([SF] Setup Forge never completed on this machine); the brief's forge_tier Quick was applied.
 - QMD version unknown (qmd not installed) — expected at Quick tier.
 - The pyforge mason front door and POST /stations/mason/mcp are cited from README.md:L22-L25 only; neither is defined in the in-scope Python sources (the front door is pyforge-core's dispatcher, the route is the platform's station MCP seam).
 - Exit-code integer values beyond 2 and 3 live in exit_codes.py, outside the brief scope; SKILL.md names the constants and points there.
+
+ref_count: 0  # Tier-2 kept inline in SKILL.md (no split performed in step 6)
