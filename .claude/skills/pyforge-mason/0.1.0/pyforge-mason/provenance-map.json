@@ -1,0 +1,58 @@
+{
+  "provenance_version": "2.0",
+  "skill_name": "pyforge-mason",
+  "skill_type": "single",
+  "source_repo": "src/shared/packages/pyforge-mason",
+  "source_commit": "c9e07879721e5a23e74c054383668026f49b0dc7",
+  "source_ref": "local",
+  "generated_at": "2026-10-05T17:19:19Z",
+  "grounding": {
+    "date": "2026-10-05",
+    "commit_short": "c9e07879",
+    "station": "mason",
+    "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-19-1-mason-s-station-skill-is-skf-compiled-exported-and-consulted-by-the-persona.md"
+  },
+  "entries": [
+    {
+      "export_name": "build_parser",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [],
+      "return_type": "argparse.ArgumentParser",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py",
+      "source_line": 523,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "main",
+      "export_type": "function",
+      "source_library": "pyforge-mason",
+      "params": [
+        "argv: Sequence[str] | None = None"
+      ],
+      "return_type": "int",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/cli.py",
+      "source_line": 1080,
+      "confidence": "T1-low",
+      "extraction_method": "skf-extract-public-api",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    },
+    {
+      "export_name": "__version__",
+      "export_type": "constant",
+      "source_library": "pyforge-mason",
+      "params": [],
+      "return_type": "str",
+      "source_file": "src/shared/packages/pyforge-mason/src/pyforge/mason/__init__.py",
+      "source_line": 25,
+      "confidence": "T1-low",
+      "extraction_method": "source-reading",
+      "ast_node_type": null,
+      "signature_source": "T1-low"
+    }
+  ]
+}

@@ -18,3 +18,8 @@ land story-by-story in Epics 2-4.
 The `recipe` verb will **wrap** the `conda-forge-expert` craft by subprocess
 rather than reimplement it — the skill stays canonical for recipe semantics and
 keeps improving through the Rule-2 retro loop. It is never forked.
+
+**Agents:** consult `.claude/skills/conda-forge-expert/SKILL.md` for every recipe
+question; consult this package's compiled station skill (`.claude/skills/pyforge-mason/`)
+for `pyforge mason …` grammar, `package`/`environment` crafts, `doctor`, and
+`POST /stations/mason/mcp` — never import `pyforge.mason` internals.

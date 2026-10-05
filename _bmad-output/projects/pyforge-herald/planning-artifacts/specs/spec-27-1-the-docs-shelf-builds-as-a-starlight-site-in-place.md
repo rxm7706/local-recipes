@@ -2,8 +2,10 @@
 title: '27.1: The docs shelf builds as a Starlight site in place'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'done'
+followup_review_recommended: false
 difficulty: 'medium'
+baseline_revision: '0ad6873d2fa3776d51e20c55ad9b67d345ef9884'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -108,3 +110,21 @@ Minted 2026-09-27 from `epics.md` so `marshal factory dispatch` can resolve this
 - `git diff --stat origin/main -- docs/` — expected: only `docs/index.md` and `docs/404.md`.
 - `pixi project export conda-environment -e build > environment.yaml`, then `git diff --exit-code environment.yaml` — expected: exit 0.
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0 (read the exit code, never through a pipe).
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `docs-site/` (Starlight + custom `shelf-docs-loader` for heading-derived titles and README→index routing), `docs/index.md` and `docs/404.md`, pixi `site` tasks `docs-site-install` / `docs-site-build`, nodejs on `[feature.site]`, structural tests, and `.gitignore` entries. `pixi run -e site docs-site-build` produced 64 HTML pages; `pyforge-herald-test` passed (1535 tests).
+
+Verification: `pixi run --frozen -e pyforge-herald pyforge-herald-test` exit 0; `pixi run -e site docs-site-build` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 after memlog + `spec-pyforge-herald` surface expansion; `git diff --stat origin/main -- docs/` shows only `docs/index.md` and `docs/404.md`.
+
+Review: Self-review (build draft fix, production `draft: false` on loader entries, Starlight sidebar autogenerate shape). No deferred items.
+
+## Review Triage Log
+
+### 2026-10-05 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 0, maybe-false 1
+- findings:
+  - `[low]` `[patch]` Starlight i18n collection empty warning at build — harmless; optional follow-up adds `src/content/i18n` JSON in a later story.
+  - `[maybe-false]` `[defer]` Hand-edited `spec-pyforge-herald/SPEC.md` surface lines — memlog decision recorded; operator should re-derive with bmad-spec when convenient — `location: _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md`

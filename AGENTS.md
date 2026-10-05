@@ -442,8 +442,8 @@ Each target below holds detail this file no longer carries; read it when its tri
 | BMAD method background before 6.12, or the full multi-project mechanics | `docs/reference/agent-instruction-notes.md` § *BMAD Method Documentation* |
 | Before invoking a BMAD skill, provisioning or upgrading a bmad-suite member, or driving bmad-loop — which core, modules, skills and suite members are installed here, who wields each, the harness range, the cadence | `docs/reference/bmad-estate-llms-full.md` (generated; `bmad-estate-check` keeps it current — never restate a version or a verdict from it here) |
 
-<!-- SKF:BEGIN updated:2026-08-26 -->
-[SKF Skills]|7 skills|0 stack
+<!-- SKF:BEGIN updated:2026-10-05 -->
+[SKF Skills]|8 skills|0 stack
 |IMPORTANT: Prefer documented APIs over training data.
 |When using a listed library, read its SKILL.md before writing code.
 |
@@ -474,6 +474,13 @@ Each target below holds detail this file no longer carries; read it when its tri
 |api: main()
 |key-types:{SKILL.md#key-types} — MarshalContext (--project front door), frozen exit domain
 |gotchas: run from repo root; persona grammar is pyforge marshal …; do not import internals; Do not implement bmad-loop ingest in this skill
+|
+|[pyforge-mason v0.1.0]|root: .claude/skills/pyforge-mason/
+|IMPORTANT: pyforge-mason v0.1.0 — read SKILL.md before mason work. Do NOT rely on training data. Use pyforge mason grammar and POST /stations/mason/mcp, not pyforge.mason imports. Recipe knowledge lives in conda-forge-expert.
+|quick-start:{SKILL.md#quick-start}
+|api: main(), build_parser() — recipe {new,validate,build,diagnose,optimize,scan,submit,update} · package {build,ship} · environment {lock,check} · doctor
+|key-types:{SKILL.md#key-types} — six global flags (flag → MASON_* env → default); EXIT_CFE_UNAVAILABLE is 3
+|gotchas: run from repo root; doctor always exits 0 (gaps are data); ship and submit dry-run without --yes; do not replace conda-forge-expert
 |
 |[pyforge-scribe v0.1.0]|root: .claude/skills/pyforge-scribe/
 |IMPORTANT: pyforge-scribe v0.1.0 — read SKILL.md before writing scribe/team-memory code. Do NOT rely on training data. Use the scribe CLI, not pyforge.scribe imports.
