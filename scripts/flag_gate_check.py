@@ -19,12 +19,18 @@ Tree mode (no arguments) walks every tracked
                                 the same, when a test file it names does not exist
     FAIL  flag-test-not-two-state
                                 the same, when no test file it names runs the spec's key in both states
+    FAIL  flag-metadata-missing a tree flag whose ``metadata.owner`` or ``metadata.story`` is missing or empty
+    FAIL  flag-clock-overdue    a tree flag whose ``on_everywhere`` date is more than 90 days before the run date
+    FAIL  flag-default-env-mismatch
+                                a ``done`` flagged spec whose declared ``default`` for an environment disagrees
+                                with the tree's rendered value for that environment (Story 34.3)
     WARN  flag-pre-rule         a pre-rule ``type: feature`` spec that carries neither, grouped
                                 by station (the list Story 34.4's inventory counts); never a FAIL
 
 ``--spec <path>`` judges one story spec and prints one JSON object (``verdict`` ``pass``, ``warn``
 or ``red``, ``findings``, ``rule_date``) -- the interface marshal Story 74.2's dispatch preflight
-consults. The metadata checks (per-environment defaults, the 90-day clock) are Story 34.3's.
+consults. The metadata checks (per-environment defaults, the 90-day clock) are Story 34.3's; ``--run-date``
+injects the clock's run date.
 
 The two-state-test check (Story 34.5, ``spec-feature-flag-governance`` CAP-4's gate clause) judges only a
 ``done``, post-rule spec that carries a complete ``flag:`` block: it reads the spec's ``## Verification``
@@ -59,6 +65,7 @@ import subprocess
 import sys
 from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -89,13 +96,15 @@ K_PRE_RULE = "flag-pre-rule"
 K_NO_TEST = "flag-verification-names-no-test"
 K_TEST_MISSING = "flag-test-file-missing"
 K_NOT_TWO_STATE = "flag-test-not-two-state"
+K_METADATA_MISSING = "flag-metadata-missing"
+K_CLOCK_OVERDUE = "flag-clock-overdue"
+K_DEFAULT_ENV = "flag-default-env-mismatch"
 
 # How many pre-rule specs a station lists by default before `-v` is needed.
 _WARN_LIST_LIMIT = 3
 
 
-class TreeUnreadable(flag_rule.FlagRuleError):
-    """``src/platform/config/flags.json`` is missing, not JSON, or has no ``flags`` mapping."""
+TreeUnreadable = flag_rule.TreeUnreadable  # Story 34.4 imports this symbol from the gate module
 
 
 class ListingFailed(flag_rule.FlagRuleError):
@@ -126,16 +135,8 @@ def _verdict(findings: Iterable[Finding]) -> str:
 
 
 def load_tree(root: Path) -> dict[str, Any]:
-    """The ``flags`` mapping of the one tree, read as JSON. Raises TreeUnreadable."""
-    path = root / TREE_REL
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError) as exc:  # ValueError covers JSON and UTF-8 decode errors
-        raise TreeUnreadable(f"cannot read {TREE_REL.as_posix()}: {exc}") from exc
-    flags = data.get("flags") if isinstance(data, dict) else None
-    if not isinstance(flags, dict):
-        raise TreeUnreadable(f"{TREE_REL.as_posix()} carries no `flags` mapping")
-    return flags
+    """The ``flags`` mapping of the one tree (Story 34.3: through ``flag_rule.load_flags``)."""
+    return flag_rule.load_flags(root)
 
 
 def _list_files(root: Path, prefixes: Sequence[str]) -> list[str]:
@@ -307,6 +308,118 @@ def judge_spec(
     return findings
 
 
+# --- metadata, per-environment defaults, the 90-day clock (Story 34.3) -------------------------
+
+
+def _metadata_strings(entry: Mapping[str, Any]) -> tuple[dict[str, str] | None, str]:
+    """(field values, why unreadable) for a flag entry's ``metadata`` block."""
+    metadata = entry.get("metadata")
+    if not isinstance(metadata, dict):
+        return None, "metadata"
+    values: dict[str, str] = {}
+    for field in ("owner", "story"):
+        raw = metadata.get(field)
+        if not isinstance(raw, str):
+            return None, field
+        values[field] = raw
+    on_raw = metadata.get("on_everywhere")
+    if not isinstance(on_raw, str):
+        return None, "on_everywhere"
+    values["on_everywhere"] = on_raw
+    return values, ""
+
+
+def judge_tree_metadata(flags: Mapping[str, Any], overlays: Mapping[str, Any], *, run_date: date) -> list[Finding]:
+    """Clock and required metadata findings for every flag in the one tree."""
+    findings: list[Finding] = []
+    for key, entry in flags.items():
+        if not isinstance(entry, dict):
+            continue
+        values, missing = _metadata_strings(entry)
+        if values is None:
+            findings.append(
+                Finding(
+                    K_METADATA_MISSING,
+                    FAIL,
+                    f"tree flag `{key}` metadata.{missing} is missing",
+                    path=TREE_REL.as_posix(),
+                    key=key,
+                )
+            )
+            continue
+        for field in ("owner", "story"):
+            if not values[field].strip():
+                findings.append(
+                    Finding(
+                        K_METADATA_MISSING,
+                        FAIL,
+                        f"tree flag `{key}` metadata.{field} is missing",
+                        path=TREE_REL.as_posix(),
+                        key=key,
+                    )
+                )
+        on_date = flag_rule.parse_metadata_date(values["on_everywhere"])
+        if on_date is None:
+            continue
+        if any(not flag_rule.renders_on(key, entry, overlays, env) for env in flag_rule.ENVIRONMENTS):
+            continue
+        if (run_date - on_date).days > flag_rule.CLEANUP_DAYS:
+            findings.append(
+                Finding(
+                    K_CLOCK_OVERDUE,
+                    FAIL,
+                    f"tree flag `{key}` is past its {flag_rule.CLEANUP_DAYS}-day clock "
+                    f"(owner {values['owner']!r}, story {values['story']!r}, on_everywhere {values['on_everywhere']!r})",
+                    path=TREE_REL.as_posix(),
+                    key=key,
+                    station=values["owner"],
+                )
+            )
+    return findings
+
+
+def judge_spec_env_defaults(
+    rel: str,
+    frontmatter: Mapping[str, Any],
+    flags: Mapping[str, Any],
+    overlays: Mapping[str, Any],
+    exemptions: Sequence[str],
+) -> list[Finding]:
+    """Per-environment default mismatch for a ``done`` flagged story spec (Story 34.3)."""
+    if str(frontmatter.get("status", "")).strip().lower() != "done":
+        return []
+    if flag_rule.classify_frontmatter(frontmatter, exemptions).verdict != flag_rule.FLAG:
+        return []
+    block = frontmatter.get("flag")
+    if not isinstance(block, Mapping):
+        return []
+    key = _flag_key(frontmatter)
+    if not key or key not in flags:
+        return []
+    entry = flags[key]
+    if not isinstance(entry, dict):
+        return []
+    station = station_of(rel)
+    findings: list[Finding] = []
+    for environment in flag_rule.ENVIRONMENTS:
+        declared = flag_rule.declared_default_for_env(block, environment)
+        if declared is None:
+            continue
+        rendered = flag_rule.tree_default_for_env(key, entry, overlays, environment)
+        if declared != rendered:
+            findings.append(
+                Finding(
+                    K_DEFAULT_ENV,
+                    FAIL,
+                    f"`done` spec declares `{environment}: {declared}` for flag `{key}` but the tree renders `{rendered}`",
+                    path=rel,
+                    station=station,
+                    key=key,
+                )
+            )
+    return findings
+
+
 # --- the two-state test (Story 34.5) ----------------------------------------------------------
 
 
@@ -465,15 +578,26 @@ class Inputs:
     baseline: frozenset[str]
     rule_date: str | None
     tree: dict[str, Any]
+    overlays: dict[str, Any]
+    run_date: date
 
 
-def load_inputs(root: Path) -> Inputs:
-    """Roster, baseline and tree, in that order; the first that cannot be read raises."""
+def load_inputs(root: Path, *, run_date: date | None = None) -> Inputs:
+    """Roster, baseline, tree and overlays, in that order; the first that cannot be read raises."""
     exemptions = flag_rule.load_exemptions(root)
     document = flag_rule.read_baseline(root)
     tree = load_tree(root)
+    overlays = flag_rule.load_overlays(root)
     rule_date = document.get("rule_date")
-    return Inputs(exemptions, frozenset(document["specs"]), None if rule_date is None else str(rule_date), tree)
+    resolved_run = run_date if run_date is not None else date.today()
+    return Inputs(
+        exemptions,
+        frozenset(document["specs"]),
+        None if rule_date is None else str(rule_date),
+        tree,
+        overlays,
+        resolved_run,
+    )
 
 
 def judge_one(root: Path, inputs: Inputs, rel: str) -> list[Finding]:
@@ -487,6 +611,10 @@ def judge_one(root: Path, inputs: Inputs, rel: str) -> list[Finding]:
         post_rule=post_rule,
         tree_keys=inputs.tree,
     )
+    if frontmatter is not None:
+        findings += judge_spec_env_defaults(
+            rel, frontmatter, inputs.tree, inputs.overlays, inputs.exemptions
+        )
     if post_rule and frontmatter is not None:
         findings += judge_two_state(root, rel, frontmatter, exemptions=inputs.exemptions)
     return findings
@@ -496,6 +624,7 @@ def judge_tree(root: Path, inputs: Inputs) -> tuple[int, list[Finding]]:
     """(story specs judged, findings) for every tracked story spec and the tree."""
     specs = story_specs(root)
     findings = [f for rel in specs for f in judge_one(root, inputs, rel)]
+    findings += judge_tree_metadata(inputs.tree, inputs.overlays, run_date=inputs.run_date)
     for key in orphan_keys(root, inputs.tree):
         findings.append(
             Finding(
@@ -522,12 +651,12 @@ def _emit_json(payload: Mapping[str, Any]) -> None:
     print(json.dumps(payload, indent=2, sort_keys=False))
 
 
-def run_spec(root: Path, raw: str) -> int:
+def run_spec(root: Path, raw: str, *, run_date: date | None = None) -> int:
     """Judge one story spec; print one JSON object; exit 0 (pass, warn) / 1 (red) / 2 (cannot judge)."""
     rel = _resolve_spec(root, raw)
     rule_date: str | None = None
     try:
-        inputs = load_inputs(root)
+        inputs = load_inputs(root, run_date=run_date)
         rule_date = inputs.rule_date
         if not flag_rule.is_story_spec(rel):
             raise flag_rule.FlagRuleError(
@@ -572,9 +701,9 @@ def _print_tree_report(judged: int, findings: Sequence[Finding], rule_date: str 
     )
 
 
-def run_tree(root: Path, *, as_json: bool, verbose: bool) -> int:
+def run_tree(root: Path, *, as_json: bool, verbose: bool, run_date: date | None = None) -> int:
     try:
-        inputs = load_inputs(root)
+        inputs = load_inputs(root, run_date=run_date)
         judged, findings = judge_tree(root, inputs)
     except flag_rule.FlagRuleError as exc:
         if as_json:
@@ -605,6 +734,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--spec", default=None, help="judge one story spec and print one JSON object")
     parser.add_argument("--json", action="store_true", help="tree mode: print one JSON object instead of text")
     parser.add_argument("-v", "--verbose", action="store_true", help="tree mode: list every pre-rule warning")
+    parser.add_argument(
+        "--run-date",
+        default=None,
+        metavar="YYYY-MM-DD",
+        help="injectable run date for the 90-day clock (default: today)",
+    )
     return parser
 
 
@@ -612,9 +747,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(list(argv) if argv is not None else None)
     root = Path(args.root).resolve() if args.root else _SCRIPTS_DIR.parent
     try:
+        run_date = flag_rule.parse_run_date(args.run_date)
+    except flag_rule.FlagRuleError as exc:
+        print(f"[flag-gate] unknown -- {exc}", file=sys.stderr)
+        if args.spec is not None or args.json:
+            _emit_json({"verdict": "unknown", "rule_date": None, "findings": [], "error": str(exc)})
+        return 2
+    try:
         if args.spec is not None:
-            return run_spec(root, args.spec)
-        return run_tree(root, as_json=args.json, verbose=args.verbose)
+            return run_spec(root, args.spec, run_date=run_date)
+        return run_tree(root, as_json=args.json, verbose=args.verbose, run_date=run_date)
     except Exception as exc:  # noqa: BLE001 -- a crash is unknown, never a false green or a false red
         message = f"the gate crashed: {exc.__class__.__name__}: {exc}"
         if args.spec is not None or args.json:

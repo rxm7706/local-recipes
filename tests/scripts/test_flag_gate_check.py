@@ -67,11 +67,45 @@ def _fixture(
     (gov / "flag-rule-baseline.json").write_text(json.dumps(document), encoding="utf-8")
     tree = tmp_path / "src" / "platform" / "config" / "flags.json"
     tree.parent.mkdir(parents=True, exist_ok=True)
-    flags = {
-        key: {"state": "ENABLED", "variants": {"on": True, "off": False}, "defaultVariant": "on"} for key in tree_keys
-    }
-    tree.write_text(json.dumps({"flags": flags}), encoding="utf-8")
+    flags = {key: _boolean_flag_entry(key) for key in tree_keys}
+    tree.write_text(json.dumps({"flags": flags}, indent=2), encoding="utf-8")
     return tmp_path
+
+
+def _boolean_flag_entry(
+    key: str,
+    *,
+    default_variant: str = "on",
+    owner: str = "doctor",
+    story: str = "fixture-story",
+    on_everywhere: str = "",
+) -> dict:
+    """One boolean flag with the Story 76.2 metadata shape the gate reads (Story 34.3)."""
+    return {
+        "state": "ENABLED",
+        "variants": {"on": True, "off": False},
+        "defaultVariant": default_variant,
+        "metadata": {
+            "owner": owner,
+            "story": story,
+            "created": "2026-09-01",
+            "on_everywhere": on_everywhere,
+            "cleanup_by": "",
+        },
+    }
+
+
+def _write_overlays(root: Path, overlays: dict) -> None:
+    path = root / "src" / "platform" / "config" / "flag-overlays.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(overlays, indent=2), encoding="utf-8")
+
+
+def _patch_tree_flag(root: Path, key: str, entry: dict) -> None:
+    path = root / "src" / "platform" / "config" / "flags.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload.setdefault("flags", {})[key] = entry
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
 def _spec(
@@ -1228,6 +1262,144 @@ def test_the_registry_discovers_the_gate_as_a_repo_detector_with_its_pixi_task()
     assert row["scope"] == "repo"
     assert row["task"] == "flag-gate-check"
     assert not [g for g in gaps if "flag_gate_check" in g]
+
+
+# --- metadata, per-environment defaults, the 90-day clock (Story 34.3) -------------------------
+
+
+def test_a_flag_on_everywhere_91_days_before_the_run_date_is_one_clock_fail_naming_owner_and_story(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path, tree_keys=[KEY])
+    _write(root, "src/pkg/reader.py", f'flag("{KEY}")\n')
+    _patch_tree_flag(
+        root,
+        KEY,
+        _boolean_flag_entry(KEY, owner="steward", story="76-1-overlays", on_everywhere="2026-01-01"),
+    )
+
+    rc, payload = _tree_json(root, "--run-date", "2026-04-02", capsys=capsys)
+
+    assert rc == 1
+    clock = [f for f in payload["findings"] if f["kind"] == "flag-clock-overdue"]
+    assert len(clock) == 1
+    assert clock[0]["key"] == KEY
+    assert "steward" in clock[0]["message"]
+    assert "76-1-overlays" in clock[0]["message"]
+
+
+def test_a_flag_on_everywhere_90_days_before_the_run_date_has_no_clock_finding(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path, tree_keys=[KEY])
+    _write(root, "src/pkg/reader.py", f'flag("{KEY}")\n')
+    _patch_tree_flag(
+        root,
+        KEY,
+        _boolean_flag_entry(KEY, on_everywhere="2026-01-01"),
+    )
+
+    rc, payload = _tree_json(root, "--run-date", "2026-04-01", capsys=capsys)
+
+    assert rc == 0
+    assert "flag-clock-overdue" not in _kinds(payload)
+
+
+def test_a_flag_off_in_production_never_gets_a_clock_finding_whatever_its_age(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path, tree_keys=[KEY])
+    _write(root, "src/pkg/reader.py", f'flag("{KEY}")\n')
+    _patch_tree_flag(
+        root,
+        KEY,
+        _boolean_flag_entry(KEY, default_variant="on", on_everywhere="2020-01-01"),
+    )
+    _write_overlays(
+        root,
+        {
+            "dev": {KEY: "on"},
+            "staging": {KEY: "on"},
+            "production": {KEY: "off"},
+        },
+    )
+
+    rc, payload = _tree_json(root, "--run-date", "2026-10-01", capsys=capsys)
+
+    assert "flag-clock-overdue" not in _kinds(payload)
+
+
+def test_a_tree_flag_with_no_owner_metadata_is_one_fail_naming_the_flag_and_the_field(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path, tree_keys=[KEY])
+    _write(root, "src/pkg/reader.py", f'flag("{KEY}")\n')
+    entry = _boolean_flag_entry(KEY)
+    entry["metadata"]["owner"] = ""
+    _patch_tree_flag(root, KEY, entry)
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    missing = [f for f in payload["findings"] if f["kind"] == "flag-metadata-missing"]
+    assert len(missing) == 1
+    assert missing[0]["key"] == KEY
+    assert "metadata.owner" in missing[0]["message"]
+
+
+def test_a_done_flagged_spec_whose_production_default_disagrees_with_the_overlay_is_one_fail(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _landed_root(tmp_path)
+    _write_overlays(root, {"dev": {KEY: "on"}, "staging": {KEY: "on"}, "production": {KEY: "on"}})
+    rel = _landed_spec(root, _verification("tests/test_flagged.py"))
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    env = [f for f in payload["findings"] if f["kind"] == "flag-default-env-mismatch"]
+    assert len(env) == 1
+    assert env[0]["path"] == rel
+    assert env[0]["key"] == KEY
+    assert "production" in env[0]["message"]
+
+
+def test_the_same_spec_at_backlog_has_no_per_environment_finding(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    root = _landed_root(tmp_path)
+    _write_overlays(root, {"dev": {KEY: "on"}, "staging": {KEY: "on"}, "production": {KEY: "on"}})
+    _landed_spec(root, _verification("tests/test_flagged.py"), status="backlog")
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert "flag-default-env-mismatch" not in _kinds(payload)
+
+
+def test_spec_mode_json_carries_the_per_environment_finding_and_verdict_red(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _landed_root(tmp_path)
+    _write_overlays(root, {"production": {KEY: "on"}})
+    rel = _landed_spec(root, _verification("tests/test_flagged.py"))
+    _write_test(root, KEY, KIT_TEST)
+
+    rc, out, _ = _run(root, "--spec", rel, capsys=capsys)
+    payload = json.loads(out)
+
+    assert rc == 1
+    assert payload["verdict"] == "red"
+    assert "flag-default-env-mismatch" in _kinds(payload)
+
+
+def test_a_malformed_overlay_document_is_exit_2_and_names_the_input(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _fixture(tmp_path)
+    _write_overlays(root, {"dev": "not-a-mapping"})
+
+    rc, _out, err = _run(root, capsys=capsys)
+
+    assert rc == 2
+    assert "flag-overlays.json" in err
 
 
 # --- the live tree: what holds whatever stories it carries ---------------------------------------
