@@ -68,7 +68,7 @@ def test_extra_overrides_and_fetcher_urls_are_set_pinned(globals_raw):
 
 
 def test_total_env_override_surface_is_pinned(globals_raw):
-    """P7 accounting (Story 23.1): 27 + 4 + 3 + 6 = 40."""
+    """P7 accounting (Story 25.2): 27 + 4 + 3 + 7 = 41."""
     total = sum(
         len(globals_raw.get(section) or {})
         for section in ("endpoint_bases", "extra_overrides", "fetcher_urls", "paths")
