@@ -295,7 +295,7 @@ from ..detect.inventory import (
 from ..detect.optout import classify_regions, opt_outs_to_record, opted_out_regions
 from ..engine import MaterializeRequest, MaterializeResult, MaterializeVerb, materialize
 from ..errors import InternalError, PreconditionFailure
-from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry
+from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry, RequiredIn, render_slug_paths
 from ..model.version import ModelVersion
 from ..plan.build import build_plan, default_plan_path, write_plan
 from ..plan.types import Action, Plan
@@ -475,13 +475,32 @@ def _unexpected_dirt_since_plan_write(repo_root: Path) -> None:
         )
 
 
-def _manifest_for_adopt(manifest: Manifest) -> Manifest:
+def _manifest_for_adopt(
+    manifest: Manifest,
+    slug: str | None = None,
+    *,
+    in_loop_home: bool | None = None,
+) -> Manifest:
     """``manifest``, scoped to the entries this verb ever touches: ``applies_
-    to in (ADOPT, BOTH)`` -- see the module docstring's own paragraph on
-    why an ``init``-only entry (a ``{{ slug }}``-templated path with no
-    ``--slug`` here) must never reach ``classify``/``build_plan`` at all."""
-    entries = tuple(entry for entry in manifest.entries if entry.applies_to in (AppliesTo.ADOPT, AppliesTo.BOTH))
-    return Manifest(model_version=manifest.model_version, never_write=manifest.never_write, entries=entries)
+    to in (ADOPT, BOTH)``, with Story 70.1's slug rendering and loop-home
+    scope (Story 86.2) applied before ``classify``/``build_plan`` see it."""
+    kept: list[ManifestEntry] = []
+    for entry in manifest.entries:
+        if entry.applies_to not in (AppliesTo.ADOPT, AppliesTo.BOTH):
+            continue
+        if entry.required_in is RequiredIn.LOOP_HOME and in_loop_home is False:
+            continue
+        if slug is None and entry.is_slug_templated:
+            continue
+        kept.append(entry)
+    filtered = Manifest(
+        model_version=manifest.model_version,
+        never_write=manifest.never_write,
+        entries=tuple(kept),
+    )
+    if slug:
+        return render_slug_paths(filtered, slug)
+    return filtered
 
 
 def _read_text_or_blank(target: Path) -> str:
@@ -1162,6 +1181,8 @@ def run_adopt(
     confirm: Callable[[], bool],
     template_path: Path | str | None = None,
     commit: CommitAction | None = None,
+    slug: str | None = None,
+    in_loop_home: bool | None = None,
 ) -> AdoptResult:
     """Compose ``resolve -> detect -> plan -> augment -> confirm -> apply ->
     state-write`` against ``repo_root``, writing ``.marshal/plan.json``
@@ -1189,7 +1210,7 @@ def run_adopt(
     silently treating corrupted state as absent would let this run overwrite
     hand-edited managed content state itself could no longer attest to --
     exactly the class of risk SC-04 exists to prevent."""
-    filtered_manifest = _manifest_for_adopt(manifest)
+    filtered_manifest = _manifest_for_adopt(manifest, slug, in_loop_home=in_loop_home)
     state = read_state(repo_root)
     # The state exactly as read: the post-apply state takes the records it
     # REPLACES from here, after `state` below has had derived opt-outs recorded
