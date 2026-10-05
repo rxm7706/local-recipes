@@ -49,3 +49,10 @@ url = "https://generativelanguage.googleapis.com/v1beta/models"
 credential_env = "GEMINI_API_KEY"
 credential_header = "x-goog-api-key"
 pagination = "gemini"
+
+# Story 46.10 (spec-pyforge-marshal CAP-197): wire seam probed 2026-10-05.
+# `headroom wrap gemini --help` → "No such command 'gemini'" on headroom-ai
+# as pinned here (same probe class as Story 28.29's cursor finding). Wire
+# auto-skips honestly via repo-default `[context.wire] enabled = "auto"`; no
+# `[wrapper]` until upstream headroom ships a headless target. Matrix cell:
+# wire = probed, none (evidence: this comment + operator probe date).

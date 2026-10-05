@@ -561,6 +561,53 @@ def test_every_packaged_wrapper_is_reversible_and_loop_home_scoped():
         assert profile.wrapper.store_env and profile.wrapper.store_relpath, name
 
 
+# --- Story 46.10: packaged copilot + gemini matrix truth ---------------------
+
+
+def test_packaged_copilot_declares_the_headroom_wrapper():
+    """Story 46.10 / CAP-197: copilot is the second headless wrap target."""
+    wrapper = load_packaged_profiles()["copilot"].wrapper
+    assert wrapper is not None
+    assert wrapper.binary == "headroom"
+    assert wrapper.argv[:2] == ("wrap", "copilot")
+    assert "--port" in wrapper.argv
+    assert "{wire_port}" in wrapper.argv
+    assert wrapper.argv[-1] == "--"
+    assert wrapper.reversible is True
+    assert wrapper.store_env == "HEADROOM_WORKSPACE_DIR"
+    assert wrapper.env == {"HEADROOM_MODE": "cache"}
+
+
+def test_packaged_copilot_wire_wrap_applies_with_a_resolved_wrapper(tmp_path: Path):
+    """I/O matrix row: copilot profile + wire on → wrap prefix on the launch."""
+    copilot = load_packaged_profiles()["copilot"]
+    wire = resolve_wire_wrap(
+        copilot,
+        wire_layer={"enabled": True, "aggressiveness": "medium"},
+        home=tmp_path,
+        wrapper_binary_path="/usr/bin/headroom",
+    )
+    assert wire.applied is True
+    assert wire.argv_prefix[1:3] == ("wrap", "copilot")
+
+
+def test_packaged_gemini_has_no_wrapper_and_records_wire_probe_evidence():
+    """Gemini wire cell: probed, none — documented on the profile, not silent."""
+    gemini = load_packaged_profiles()["gemini"]
+    assert gemini.wrapper is None
+    profile_path = Path(__file__).resolve().parents[3] / "src/pyforge/marshal/data/harness_profiles/gemini.toml"
+    text = profile_path.read_text(encoding="utf-8")
+    assert "Story 46.10" in text
+    assert "probed, none" in text.lower() or "No such command 'gemini'" in text
+
+
+def test_packaged_devin_stays_an_unverified_stub():
+    """AC: Devin remains the deliberate loud-absence profile."""
+    devin = load_packaged_profiles()["devin"]
+    assert devin.wrapper is None
+    assert devin.verified is False
+
+
 # --- Story 28.2: resolve_wire_wrap -------------------------------------------
 
 
