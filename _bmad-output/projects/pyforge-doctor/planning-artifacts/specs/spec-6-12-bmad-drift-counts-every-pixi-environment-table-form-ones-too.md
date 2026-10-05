@@ -2,7 +2,7 @@
 title: "6.12: bmad-drift counts every pixi environment, table-form ones too"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
