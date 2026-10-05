@@ -9,8 +9,8 @@ import sys
 from pathlib import Path
 
 from pyforge.testing_kit import (
-    changed_paths_since,
     cfe_surface,
+    changed_paths_since,
     pyforge_import_offenders,
     unsanctioned_commits,
 )
