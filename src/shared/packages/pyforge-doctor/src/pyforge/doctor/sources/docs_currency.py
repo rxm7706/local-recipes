@@ -32,25 +32,19 @@ Three read-only checks over ``docs/map.yaml`` (the new machine registry) and
   frontmatter nor a dead reference is silently fine (coverage grows
   incrementally, per the story's own Design Notes).
 * ``generated-page-stale`` (``docs-currency-generated-stale``, Story 30.3,
-  ``spec-pyforge-doctor`` CAP-84) -- for each ``kind: generated`` page that
-  declares a ``generator:`` (a repo-relative ``scripts/docs_*.py`` path),
-  runs that script's own ``--check`` mode and reads its exit code: 0 means
-  the page is current, anything else -- a source it derives from moved
-  past its stamp, a hand edit, a missing regeneration -- is one WARN naming
-  the page. This is the ONE mechanism for all four staleness classes the
-  story's I/O matrix names (a `pixi.toml` task added, a station CLI verb
-  added, a detector registration added, a `SKILL.md` frontmatter edited)
-  plus a hand edit inside the page itself: rather than duplicating five
-  pages' render logic inside Doctor (which AD-5 forbids for anything that
-  needs `scripts/` -- a generator's real source of truth, like
-  `scripts/detectors.py`'s registry, lives there, not in this installed
-  package), this check treats each generator as an opaque, already-decided
-  verdict and asks it directly via :func:`cli_bridge.run_check_script`.
-  A page with no ``generator:`` declared, or a declared generator that
-  does not exist, is ALSO one WARN (a registry gap, not silently skipped);
-  a missing PAGE (not yet ever generated) is skipped here -- that is
-  ``docs-map-hygiene``'s territory, same discretion the authored-page-stale
-  check above already uses.
+  ``spec-pyforge-doctor`` CAP-84; generator trust Story 40.2) -- for each
+  ``kind: generated`` page that declares a ``generator:`` (a repo-relative
+  ``scripts/docs_*.py`` path with no ``..``), runs **Doctor's own checkout
+  copy** of that script via :func:`.locate_checkout_script` (Story 40.1's
+  pattern -- never ``target / generator``) with ``--check --root <target>``
+  so the judged tree supplies only data. The exit code is the verdict: 0
+  means current, anything else is one WARN naming the page. Declared paths
+  outside ``scripts/docs_*.py`` or carrying ``..`` are one WARN and never
+  run. When Doctor's checkout lacks the script, one WARN reports it and
+  nothing falls back to the target's copy. A page with no ``generator:``
+  declared is ALSO one WARN (a registry gap, not silently skipped); a
+  missing PAGE (not yet ever generated) is skipped here --
+  ``docs-map-hygiene``'s territory.
 * ``skill-dir-hygiene`` (``docs-currency-skill-dir-hygiene``) -- a stray
   file inside a managed ``bmad-*``/``pyforge-*``/``skf-*`` skill
   directory.
@@ -94,7 +88,7 @@ import yaml
 
 from ..cli_bridge import CliBridgeError, run_check_script, run_git
 from ..models import DoctorStatus, Finding, Source
-from . import degrade_on_exception
+from . import degrade_on_exception, locate_checkout_script
 
 __all__ = (
     "gather",
@@ -111,6 +105,23 @@ _CHECK_MAP_UNREADABLE = "docs-currency-map-unreadable"
 _CHECK_OK = "docs-currency-ok"
 
 _GENERATOR_CHECK_TIMEOUT = 60.0
+
+_ALLOWED_DOCS_GENERATOR_DIR = "scripts"
+_ALLOWED_DOCS_GENERATOR_PREFIX = "docs_"
+
+
+def _is_allowed_docs_generator_decl(generator: str) -> bool:
+    """True when ``generator`` is a repo-relative ``scripts/docs_*.py`` with no ``..``."""
+    path = Path(generator)
+    if ".." in path.parts or path.is_absolute():
+        return False
+    if len(path.parts) != 2:
+        return False
+    if path.parts[0] != _ALLOWED_DOCS_GENERATOR_DIR:
+        return False
+    name = path.parts[1]
+    return name.startswith(_ALLOWED_DOCS_GENERATOR_PREFIX) and name.endswith(".py")
+
 
 _MAP_YAML_REL = "docs/map.yaml"
 _MAP_MD_REL = "docs/MAP.md"
@@ -449,21 +460,33 @@ def _check_generated_page(target: Path, page: dict) -> Finding | None:
             message=(f"{rel}: kind: generated page declares no `generator:` in {_MAP_YAML_REL}"),
             evidence={"page": rel},
         )
-    generator_path = target / generator
-    if not generator_path.is_file():
+    if not _is_allowed_docs_generator_decl(generator):
         return Finding(
             source=Source.DOCS_CURRENCY,
             check=_CHECK_GENERATED_STALE,
             status=DoctorStatus.WARN,
-            message=(f"{rel}: declared generator {generator} does not exist"),
+            message=(f"{rel}: declared generator {generator} is not an allowed scripts/docs_*.py path -- not executed"),
             evidence={"page": rel, "generator": generator},
         )
 
+    script_name = Path(generator).name
+    try:
+        generator_path = locate_checkout_script(script_name)
+    except FileNotFoundError as exc:
+        return Finding(
+            source=Source.DOCS_CURRENCY,
+            check=_CHECK_GENERATED_STALE,
+            status=DoctorStatus.WARN,
+            message=(f"{rel}: could not run generator {generator} -- {exc}"),
+            evidence={"page": rel, "generator": generator},
+        )
+
+    checkout_root = generator_path.parent.parent
     try:
         returncode, output = run_check_script(
             generator_path,
-            ["--check"],
-            cwd=target,
+            ["--check", "--root", str(target.resolve())],
+            cwd=checkout_root,
             timeout=_GENERATOR_CHECK_TIMEOUT,
         )
     except CliBridgeError as exc:

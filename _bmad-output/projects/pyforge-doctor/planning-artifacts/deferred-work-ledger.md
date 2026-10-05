@@ -2648,7 +2648,9 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: spec-deferred dcfc6784e513 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high (unverified)
   promoted: 2026-10-02 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: 2026-10-05 — story 40.2 — Doctor runs its own checkout copy of each declared ``scripts/docs_*.py`` generator via ``locate_checkout_script`` with ``--check --root <target>``; declared paths outside that shape or carrying ``..`` are WARN-only and never executed; no fallback to the judged tree's copy.
+  verified: 2026-10-05 — RESOLVED — ``src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/docs_currency.py:463`` passes ``locate_checkout_script``'s path to ``run_check_script`` with ``--root``; pinned by ``src/shared/packages/pyforge-doctor/tests/meta/test_docs_currency_generator_trust.py:58`` and ``src/shared/packages/pyforge-doctor/tests/unit/test_sources_docs_currency.py:575``.
 
 ### DW-doctor-41-1-1: A `--spec`-less full stamp writes a snapshot taken before the lock, so it can revert a scoped stamp that landed in between
 
