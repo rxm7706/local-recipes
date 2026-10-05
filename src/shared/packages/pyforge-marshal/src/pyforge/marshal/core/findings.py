@@ -1970,6 +1970,10 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DISP-058",
         "MRS-DISP-059",
         "MRS-DISP-060",
+        # Story 83.25 (spec-83-25): the operator Cursor ``cli-config.json``
+        # could not be read when building a run-scoped attribution-off copy
+        # for a Cursor harness launch -- ERROR, the launch is refused.
+        "MRS-DISP-061",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no

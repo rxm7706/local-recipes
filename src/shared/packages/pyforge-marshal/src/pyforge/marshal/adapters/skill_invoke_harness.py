@@ -20,6 +20,7 @@ from pathlib import Path
 
 from pyforge.core.errors import PyforgeError
 
+from ..core.cursor_launch_config import CursorLaunchConfigError, cursor_launch_env_overlay
 from ..ports.skill_invoke import SkillInvokeResult
 
 
@@ -122,6 +123,10 @@ class HarnessSkillInvoker:
             prompt,
         ]
         child_env = {**os.environ, "BMAD_ACTIVE_PROJECT": project}
+        try:
+            child_env.update(cursor_launch_env_overlay(root, os.environ))
+        except CursorLaunchConfigError as exc:
+            return SkillInvokeResult(status="failed", detail=str(exc))
         log_path = run_dir / f"phase_{phase}_{skill}.log"
         timeout_s = _skill_timeout_s()
         try:
