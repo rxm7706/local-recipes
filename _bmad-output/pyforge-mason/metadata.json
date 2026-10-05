@@ -1,0 +1,57 @@
+{
+  "name": "pyforge-mason",
+  "version": "0.1.0",
+  "skill_type": "single",
+  "scope_type": "specific-modules",
+  "source_authority": "internal",
+  "source_repo": "src/shared/packages/pyforge-mason",
+  "source_root": "src/shared/packages/pyforge-mason",
+  "source_commit": "c9e07879721e5a23e74c054383668026f49b0dc7",
+  "source_ref": "local",
+  "confidence_tier": "Quick",
+  "spec_version": "1.3",
+  "generation_date": "2026-10-05T17:19:19Z",
+  "description": "Mason station CLI grammar for the recipe, package and environment crafts plus doctor, reached as pyforge mason or POST /stations/mason/mcp. Use when running pyforge mason recipe, package, environment or doctor commands, scripting Mason exit codes or --format json output, or working in src/shared/packages/pyforge-mason/. Do not import pyforge.mason internals; the CLI is the public contract. Do not use for recipe knowledge such as pins, selectors or build fixes; conda-forge-expert owns recipe semantics and Mason's recipe verbs only wrap it.",
+  "language": "python",
+  "exports": [
+    "build_parser",
+    "main",
+    "__version__"
+  ],
+  "tool_versions": {
+    "ast_grep": "0.45.3",
+    "qmd": "unknown",
+    "skf": "2.1.0"
+  },
+  "confidence_distribution": {
+    "t1": 0,
+    "t1_low": 3,
+    "t2": 0,
+    "t3": 0
+  },
+  "stats": {
+    "exports_documented": 3,
+    "exports_public_api": 3,
+    "exports_internal": 0,
+    "exports_total": 3,
+    "public_api_coverage": 1.0,
+    "total_coverage": 1.0,
+    "scripts_count": 0,
+    "assets_count": 0
+  },
+  "doc_sources": [
+    {
+      "url": "src/shared/packages/pyforge-mason/README.md",
+      "detected_via": "readme_always",
+      "content_hash": null,
+      "recorded_at": "2026-10-05T17:19:19Z"
+    }
+  ],
+  "generated_by": "create-skill",
+  "dependencies": [
+    "packaging",
+    "pyforge-core",
+    "PyYAML"
+  ],
+  "compatibility": "N/A -- internal station CLI, not a published library"
+}
