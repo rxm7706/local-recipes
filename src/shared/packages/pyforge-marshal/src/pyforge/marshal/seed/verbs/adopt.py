@@ -861,6 +861,8 @@ def _default_commit(
     def commit(action: Action) -> None:
         entry = entries_by_id[action.artifact_id]
         target = repo_root / action.target_path
+        if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED:
+            return
         if (
             FIRST_CLAIM_MARKER in action.rationale
             and entry.artifact_class is ArtifactClass.COPIED_MANAGED
