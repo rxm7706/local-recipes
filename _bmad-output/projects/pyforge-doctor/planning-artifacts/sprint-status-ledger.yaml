@@ -134,7 +134,7 @@ development_status:
   6-1-profile-doctor-check-and-bring-it-inside-its-budget: done
   6-10-independence-is-structural-for-every-source: done
   6-11-the-classifier-recognizes-a-spike-report: done
-  6-12-bmad-drift-counts-every-pixi-environment-table-form-ones-too: in-progress
+  6-12-bmad-drift-counts-every-pixi-environment-table-form-ones-too: done
   6-2-a-source-registry-doctor-owns: done
   6-3-the-repo-runtime-split-survives-the-move: done
   6-4-the-ledger-verdicts-come-home: done
@@ -232,7 +232,7 @@ development_status:
   epic-41-retrospective: done
   epic-5: done
   epic-5-retrospective: optional
-  epic-6: in-progress
+  epic-6: done
   epic-6-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
