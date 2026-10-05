@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 from pyforge.testing_kit import (
@@ -18,13 +19,15 @@ from pyforge.testing_kit import (
 
 STATION = "mason"
 PERSONA = "bmad-agent-mason"
+STATION_SKILL = "pyforge-mason"
+STATION_SKILL_MD = ".claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md"
 CONTENT_SKILL = "conda-forge-expert"
 CONTENT_SKILL_MD = ".claude/skills/conda-forge-expert/SKILL.md"
+CONSULT_SKILLS = frozenset({STATION_SKILL, CONTENT_SKILL})
 ALLOWED_KINDS = frozenset({"consult_content_skill", "grammar", "mcp"})
 FREELANCE_KINDS = frozenset({"filesystem", "fs", "http", "adhoc_http"})
 MCP_PATH = f"/stations/{STATION}/mcp"
 GOLDEN = "mason-doctor-e2e.json"
-SKF_REPLACEMENT = ".claude/skills/pyforge-mason"
 WORK_CLASS_01_PERSONAS = (
     "bmad-agent-chrome-probe",
     "bmad-agent-infra-probe",
@@ -67,11 +70,13 @@ def validate_transcript(events: list[dict]) -> None:
         if kind not in ALLOWED_KINDS:
             raise PersonaContractError(f"disallowed kind {kind!r}")
         if kind == "consult_content_skill":
-            if event.get("skill") != CONTENT_SKILL:
-                raise PersonaContractError("consult must name conda-forge-expert")
+            skill = event.get("skill")
+            if skill not in CONSULT_SKILLS:
+                raise PersonaContractError("consult must name pyforge-mason or conda-forge-expert")
             path = str(event.get("path") or "").replace("\\", "/")
-            if path != CONTENT_SKILL_MD:
-                raise PersonaContractError("consult path must be conda-forge-expert SKILL.md")
+            expected = STATION_SKILL_MD if skill == STATION_SKILL else CONTENT_SKILL_MD
+            if path != expected:
+                raise PersonaContractError(f"consult path must be {expected}")
         elif kind == "grammar":
             argv = event.get("argv") or []
             if not isinstance(argv, list):
@@ -132,7 +137,14 @@ def test_golden_transcript_is_grammar_and_mcp_only():
     events = json.loads(path.read_text(encoding="utf-8"))
     validate_transcript(events)
     kinds = {event["kind"] for event in events}
-    assert "consult_content_skill" in kinds
+    consult_events = [event for event in events if event.get("kind") == "consult_content_skill"]
+    assert len(consult_events) == 2
+    assert consult_events[0]["skill"] == STATION_SKILL
+    assert consult_events[0]["path"].replace("\\", "/") == STATION_SKILL_MD
+    assert consult_events[1]["skill"] == CONTENT_SKILL
+    assert consult_events[1]["path"].replace("\\", "/") == CONTENT_SKILL_MD
+    consult_skills = {event["skill"] for event in consult_events}
+    assert consult_skills == CONSULT_SKILLS
     assert "grammar" in kinds
     assert "mcp" in kinds
     assert kinds <= ALLOWED_KINDS
@@ -194,20 +206,31 @@ def test_mcp_get_is_not_the_service_face():
     raise AssertionError("GET MCP was accepted as the mason face")
 
 
-def test_consult_of_skf_pyforge_mason_is_not_cfe():
+def test_third_content_skill_consult_fails():
     events = [
         {
             "kind": "consult_content_skill",
-            "skill": "pyforge-mason",
-            "path": ".claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md",
+            "skill": STATION_SKILL,
+            "path": STATION_SKILL_MD,
+        },
+        {
+            "kind": "consult_content_skill",
+            "skill": CONTENT_SKILL,
+            "path": CONTENT_SKILL_MD,
+        },
+        {
+            "kind": "consult_content_skill",
+            "skill": "pyforge-steward",
+            "path": ".claude/skills/pyforge-steward/active/pyforge-steward/SKILL.md",
         },
         {"kind": "grammar", "argv": ["pyforge", "mason", "doctor"]},
     ]
     try:
         validate_transcript(events)
-    except PersonaContractError:
+    except PersonaContractError as exc:
+        assert "pyforge-steward" in str(exc) or "consult" in str(exc)
         return
-    raise AssertionError("SKF pyforge-mason consult was accepted as CFE")
+    raise AssertionError("third skill consult was permitted")
 
 
 def test_consult_path_must_be_exact_cfe_skill_md():
@@ -246,7 +269,9 @@ def test_live_persona_skill_forbids_filesystem_and_adhoc_http():
     root = _repo_root()
     skill = (_persona_dir(root) / "SKILL.md").read_text(encoding="utf-8")
     assert_skill_forbids_freelance(skill)
+    assert STATION_SKILL in skill
     assert CONTENT_SKILL in skill
+    assert STATION_SKILL_MD.replace("\\", "/") in skill.replace("\\", "/")
     assert "pyforge mason" in skill
     assert MCP_PATH in skill
     assert "_bmad/scripts/resolve_customization.py" in skill
@@ -283,6 +308,7 @@ def test_persona_is_bmad_launcher_not_skf_compiled():
     assert not (persona / "provenance-map.json").exists()
     assert not (persona / "active").exists()
     customize = (persona / "customize.toml").read_text(encoding="utf-8")
+    assert STATION_SKILL_MD in customize
     assert CONTENT_SKILL_MD in customize
     assert "pyforge mason" in customize
     assert MCP_PATH in customize
@@ -316,13 +342,13 @@ def test_conda_forge_expert_not_replaced_or_skf_nested():
         pathspec=cfe_surface.CFE_GIT_PATHSPECS,
         changelog_path=cfe_surface.CFE_CHANGELOG_PATH,
     )
-    dirty = _git_dirty_under(".claude/skills/conda-forge-expert", SKF_REPLACEMENT)
+    dirty = _git_dirty_under(".claude/skills/conda-forge-expert")
     assert not unsanctioned, (
         "this story must not edit conda-forge-expert outside a sanctioned `retro:` "
         f"commit that moves its CHANGELOG: {unsanctioned}"
     )
-    assert not dirty, f"untracked CFE/SKF replacement files: {dirty}"
-    assert not (root / SKF_REPLACEMENT).exists()
+    assert not dirty, f"untracked CFE files: {dirty}"
+    assert (root / ".claude" / "skills" / STATION_SKILL / "active").exists()
     assert not list(cfe.rglob("metadata.json"))
 
 
@@ -348,9 +374,42 @@ def _mason_commits_touching(*paths: str) -> list[str]:
     return hits
 
 
-def test_claude_and_agents_unchanged():
-    named = _mason_commits_touching("CLAUDE.md", "AGENTS.md")
-    assert not named, f"Wave A must not edit CLAUDE.md/AGENTS.md: {named}"
+def test_claude_unchanged_by_mason_story_commits():
+    named = _mason_commits_touching("CLAUDE.md")
+    assert not named, f"Wave A must not edit CLAUDE.md: {named}"
+
+
+def test_agents_skf_managed_section_well_formed():
+    root = _repo_root()
+    result = json.loads(
+        subprocess.check_output(
+            [
+                sys.executable,
+                str(root / ".claude" / "skills" / "shared" / "scripts" / "skf-rebuild-managed-sections.py"),
+                str(root / "AGENTS.md"),
+                "check",
+            ],
+            text=True,
+        )
+    )
+    assert result["has_managed_section"]
+    assert result["markers_valid"]
+    section = (root / "AGENTS.md").read_text(encoding="utf-8")
+    begin = section.index("<!-- SKF:BEGIN")
+    end = section.index("<!-- SKF:END -->")
+    block = section[begin:end]
+    assert "[SKF Skills]|8 skills|0 stack" in block
+    assert "|[pyforge-mason v0.1.0]|root: .claude/skills/pyforge-mason/" in block
+    for station in (
+        "pyforge-atlas",
+        "pyforge-doctor",
+        "pyforge-herald",
+        "pyforge-marshal",
+        "pyforge-scribe",
+        "pyforge-steward",
+        "pyforge-warden",
+    ):
+        assert f"|[{station} v0.1.0]|" in block
 
 
 def test_does_not_mint_01_portal_mcp_or_persona():
@@ -360,7 +419,6 @@ def test_does_not_mint_01_portal_mcp_or_persona():
         assert not (skills / name).exists()
     named = _mason_commits_touching(
         "src/shared/packages/django-mason",
-        ".claude/skills/pyforge-mason",
         "src/platform",
     )
     assert not named, f"11.1 must not mint 01 portal/MCP/persona or edit platform: {named}"

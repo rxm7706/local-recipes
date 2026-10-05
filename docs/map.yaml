@@ -203,8 +203,8 @@ pages:
     sources:
       - .claude/skills
     stamp:
-      derived_at: '2026-09-24T08:08:15-05:00'
-      tree: fc452ce5a7694068b8b76c356d3aeefd2e0511d6-dirty
+      derived_at: '2026-10-05T12:25:56-05:00'
+      tree: 29fb00585808b0c60ef291f299162ec1a6e7bdee-dirty
   - path: reference/station-cheat-sheet.md
     quadrant: reference
     owner: fleet
