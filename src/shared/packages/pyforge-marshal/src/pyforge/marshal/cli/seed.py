@@ -634,16 +634,30 @@ def run_adopt(
         repo_root = _resolve_repo_root(args.repo_root)
         if manifest is None:
             manifest = _load_packaged_manifest()
-        result: AdoptResult = _run_adopt_verb(
-            repo_root,
-            manifest,
-            apply=args.apply,
-            yes=args.yes,
-            agents=_parse_agents(args.agents),
-            skip=tuple(args.skip) if args.skip else (),
-            force=args.force,
-            confirm=confirm if confirm is not None else _real_confirm,
-        )
+        slug = _resolve_project_slug(repo_root, getattr(args, "project", None))
+        in_loop_home = _target_in_loop_home(repo_root, GitVcs())
+        try:
+            result: AdoptResult = _run_adopt_verb(
+                repo_root,
+                manifest,
+                apply=args.apply,
+                yes=args.yes,
+                agents=_parse_agents(args.agents),
+                skip=tuple(args.skip) if args.skip else (),
+                force=args.force,
+                confirm=confirm if confirm is not None else _real_confirm,
+                slug=slug or None,
+                in_loop_home=in_loop_home,
+            )
+        except ManifestError as exc:
+            raise UsageError(
+                f"project slug {slug!r} renders a manifest path the seed refuses: {exc}",
+                remedy=(
+                    "pass --project with a plain project name (or correct BMAD_ACTIVE_PROJECT"
+                    " or the target's _bmad/custom/.active-project marker) -- it must not"
+                    " contain a '..' segment or render one entry's path onto another's"
+                ),
+            ) from exc
     except ManifestError as exc:
         wrapped = InternalError(
             f"the packaged seed manifest could not be loaded: {exc}",
@@ -1244,6 +1258,7 @@ def add_seed_subparser(subparsers: argparse._SubParsersAction) -> None:
         default=False,
         help="Bypass the hand-edited-managed-content precondition (rung 6 only).",
     )
+    _add_project_flag(adopt_parser)
     _add_dry_run_flag(adopt_parser)
     _add_json_quiet_flags(adopt_parser)
     adopt_parser.set_defaults(handler=run_adopt)

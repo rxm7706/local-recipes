@@ -160,11 +160,15 @@ def test_local_recipes_adopt_dry_run_yields_empty_plan_excluding_deferred():
         def _unreachable_confirm() -> bool:
             raise AssertionError("dry-run must not confirm")
 
+        marker = repo_root / "_bmad" / "custom" / ".active-project"
+        slug = marker.read_text(encoding="utf-8").strip() if marker.is_file() else "pyforge-marshal"
         result = run_adopt(
             repo_root,
             manifest,
             apply=False,
             confirm=_unreachable_confirm,
+            slug=slug or None,
+            in_loop_home=False,
         )
         filtered = assertable_adopt_actions(result.plan.actions)
         assert filtered == (), format_plan_diff(filtered)
