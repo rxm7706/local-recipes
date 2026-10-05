@@ -86,6 +86,13 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-05 (generator trust)** — **Ruling: Doctor runs no generator from the judged tree.** Story 40.1's review found
+  a third site where a judged tree runs code at Doctor's privileges: `docs_currency` runs the generator script the
+  tree's own `docs/map.yaml` names (`DW-doctor-40-1-2`, high, unverified pending a ruling on the trust model). The
+  operator ruled it a defect. **What it looks like when fixed:** the generated-page check runs Doctor's own copy of
+  each declared `scripts/docs_*.py` generator with `--root <target>`, so the tree supplies only data; a declared path
+  outside that set runs nothing. **Constraints:** a fix story, no new CAP, no flag. It goes into Epic 40 and reopens
+  it. Owner `spec-pyforge-doctor`. → Story 40.2, specced 2026-10-05.
 - **2026-10-04 (env count)** — **Found: bmad-drift counts 35 pixi environments; `pixi.toml` has 36.** Doctor's
   `_env_count` and the script it came from both scan lines inside the `[environments]` block and stop at the next
   header, so an environment declared as its own `[environments.<name>]` table (`python-agent-platform`) is never
