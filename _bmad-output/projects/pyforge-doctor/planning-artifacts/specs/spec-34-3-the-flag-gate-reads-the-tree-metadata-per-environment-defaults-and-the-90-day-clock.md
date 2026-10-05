@@ -2,7 +2,8 @@
 title: '34.3: The flag gate reads the tree metadata — per-environment defaults and the 90-day clock'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '0ad6873d2fa3776d51e20c55ad9b67d345ef9884'
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -118,3 +119,26 @@ Policy: `marshal-policy.toml` `[epic_surfaces]` `"34"`.
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new finding against `main`.
 
 ## Review Triage Log
+
+### 2026-10-05 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - `[false]` `[reject]` No review-layer subagent findings after self-review against the intent contract and verification output.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Extended the flag gate (Story 34.2) with Story 34.3 metadata checks: required tree `metadata.owner`/`metadata.story`, the 90-day clock when a flag is ON in every environment (`--run-date`), and per-environment `flag.default` vs overlay-rendered values for `done` flagged specs. Tree and overlay reads live in `scripts/flag_rule.py` only.
+
+Files changed:
+- `scripts/flag_rule.py` — one-tree reader and default comparison helpers
+- `scripts/flag_gate_check.py` — three new FAIL kinds and `--run-date`
+- `tests/scripts/test_flag_gate_check.py` — AC/matrix coverage and fixture metadata
+- Four `done` story specs — reconciled `flag.default` to the live tree/overlays so `flag-gate-check` exits 0
+
+Review: no patches; no deferrals.
+
+Verification: `pytest tests/scripts/test_flag_gate_check.py` 144 passed; `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` 3431 passed; `pixi run -e pyforge-guild flag-gate-check` exit 0; `python scripts/spec_surface_reconcile.py` OK.
+
+Residual risk: future drift between a `done` spec's `flag.default` and steward overlays will red the gate until the owning Smith reconciles the spec.
