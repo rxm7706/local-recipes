@@ -20,6 +20,12 @@ from pyforge.atlas.orchestration.fleet_inventory_sensor import (
 from pyforge.core.flags import read_boolean
 
 
+@pytest.fixture(scope="module")
+def defs() -> dg.Definitions:
+    assert isinstance(D.defs, dg.Definitions)
+    return D.defs
+
+
 def _export(*repos: tuple[str, str]) -> dict:
     return {"repos": [{"full_name": n, "head_sha": sha} for n, sha in repos]}
 

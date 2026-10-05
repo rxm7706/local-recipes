@@ -70,6 +70,8 @@ PREFIX_TO_PIPELINE = {
     "pypi": "pypi_intelligence",
     "vulnerability": "vulnerability",
     "vcs": "vcs_health",
+    "warden": "vcs_health",  # Story 25.2: warden_fleet_inventory export (CAP-26 read path)
+    "repo_dependency": "vcs_health",  # Story 25.1/25.2: repo_dependency_history
     "sbom": "universal_sbom",
     "seed_gaps": "seed_gaps",
     "seed": "seed_gaps",

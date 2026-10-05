@@ -36,13 +36,14 @@ def test_core_pipeline_has_eight_nodes():
     }
 
 
-def test_vcs_health_pipeline_has_ten_nodes():
+def test_vcs_health_pipeline_has_eleven_nodes():
     # B9 added derive_release_velocity (FR-20); B10 added classify_migration_readiness
     # (FR-21) — both NEW-SIGNAL, not parity-gated (AD-14). Story 21.2 added the three
     # external-refresh trigger nodes (single writers of the GitHub/GitLab/Codeberg/
     # registry live-fetch stores — mirrors refresh_vdb_store/refresh_osv_offline_store).
+    # Story 25.2 added build_repo_dependency_history (25.1 placeholder op for the sensor job).
     vcs = vcs_create()
-    assert len(vcs.nodes) == 10
+    assert len(vcs.nodes) == 11
     assert {n.name for n in vcs.nodes} == {
         "refresh_vcs_github_store",
         "refresh_vcs_host_stores",
@@ -54,6 +55,7 @@ def test_vcs_health_pipeline_has_ten_nodes():
         "fetch_live_health",
         "derive_release_velocity",
         "classify_migration_readiness",
+        "build_repo_dependency_history",
     }
 
 
@@ -68,12 +70,13 @@ def test_combined_dag_resolves_topologically_with_no_procedural_order():
     # derive_release_velocity reads the pypi_intelligence Phase H/Phase C datasets as
     # FREE inputs here (produced in the full 7-pipeline DAG) — Kedro allows free
     # inputs. Story 21.2 added 3 external-refresh trigger nodes to vcs_health (14 -> 17);
-    # Story 21.4 added enumerate_anaconda_main_packages to core (17 -> 18).
+    # Story 21.4 added enumerate_anaconda_main_packages to core (17 -> 18);
+    # Story 25.2 added build_repo_dependency_history (18 -> 19).
     combined = core_create() + vcs_create()
-    assert len(combined.nodes) == 18
+    assert len(combined.nodes) == 19
     # grouped_nodes is the topological grouping the runner uses
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 18
+    assert sum(len(g) for g in grouped) == 19
 
 
 def test_phase_i_output_is_declared_by_name():
@@ -198,11 +201,11 @@ def test_combined_seven_pipeline_dag_resolves_topologically():
     combined = (
         core_create() + vcs_create() + pypi_create() + vuln_create() + seed_create() + sbom_create() + derived_create()
     )
-    # 8 core + 10 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
-    # + 7 derived_artifacts = 59 nodes (Story 23.5: derived_artifacts 6 -> 7).
-    assert len(combined.nodes) == 59
+    # 8 core + 11 vcs + 17 pypi + 9 vuln + 4 seed_gaps + 4 universal_sbom
+    # + 7 derived_artifacts = 60 nodes (Story 25.2: vcs_health 10 -> 11).
+    assert len(combined.nodes) == 60
     grouped = combined.grouped_nodes
-    assert sum(len(g) for g in grouped) == 59
+    assert sum(len(g) for g in grouped) == 60
 
 
 def test_no_dataset_is_written_by_two_pipelines_b7():
