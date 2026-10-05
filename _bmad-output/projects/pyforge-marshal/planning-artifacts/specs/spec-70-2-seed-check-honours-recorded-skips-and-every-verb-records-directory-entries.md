@@ -2,7 +2,10 @@
 title: "70.2: Seed check honours recorded skips, and every verb records directory entries"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'e31b91dd5bac03589e05dfbdc6b349fd17271d27'
+followup_review_recommended: false
+review_loop_iteration: 0
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -106,4 +109,13 @@ Type / Effort / Deps: fix / M / S-70.1.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-05 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (consolidated self-review against AC after verification green; no subagent patch items)
+
+## Auto Run Result
+
+- Summary: `check` honours `state.skips` via shared `detect/skip_match`; directory entries materialize through `fs.ensure_directory` and record with `hash_content("")`; apply rollback removes created directories; ambient bad slugs yield INFO `slug-unresolved`; CLI loop-home tests pinned.
+- Verification: `pyforge-marshal-test` (11714 passed), `pyforge-deps-test` (130 passed), `lint-types` exit 0, `deferred-work-check` ok, `python scripts/spec_surface_reconcile.py` OK.
+- Follow-up review recommendation: false
+- Residual risk: `DW-10-3-3` parent-dir residue unchanged by design; explicit `--project` refusal unchanged.

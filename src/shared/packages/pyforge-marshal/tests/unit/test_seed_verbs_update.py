@@ -28,7 +28,6 @@ REAL packaged region fragments and the fixed Genesis-owned
 
 from __future__ import annotations
 
-import dataclasses
 import subprocess
 import tempfile
 from importlib import resources

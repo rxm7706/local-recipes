@@ -217,12 +217,12 @@ from typing import Any
 from pyforge.core.process import PosixProcess
 
 from ..detect.findings import Finding, FindingType, Severity
-from ..detect.skip_match import _normalize_relative_posix, first_match
 from ..detect.hashes import check_managed_file, check_managed_region
 from ..detect.inventory import ArtifactState, classify, escape_findings, legacy_findings
 from ..detect.kit import KitCheck, kit_checks, kit_findings
 from ..detect.optout import classify_regions, region_findings
 from ..detect.referenced_deps import referenced_dep_findings
+from ..detect.skip_match import _normalize_relative_posix, first_match
 from ..errors import StateInvalid
 from ..model.manifest import AppliesTo, ArtifactClass, Manifest, ManifestEntry, RequiredIn, render_slug_paths
 from ..plan.build import build_plan
