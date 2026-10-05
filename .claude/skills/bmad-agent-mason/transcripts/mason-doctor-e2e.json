@@ -1,6 +1,11 @@
 [
   {
     "kind": "consult_content_skill",
+    "skill": "pyforge-mason",
+    "path": ".claude/skills/pyforge-mason/active/pyforge-mason/SKILL.md"
+  },
+  {
+    "kind": "consult_content_skill",
     "skill": "conda-forge-expert",
     "path": ".claude/skills/conda-forge-expert/SKILL.md"
   },
