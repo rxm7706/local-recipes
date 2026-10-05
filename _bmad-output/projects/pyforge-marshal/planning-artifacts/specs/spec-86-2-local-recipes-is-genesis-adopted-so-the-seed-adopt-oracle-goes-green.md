@@ -2,10 +2,11 @@
 title: "86.2: local-recipes is genesis-adopted so the seed-adopt oracle goes green"
 type: 'fix'
 created: '2026-10-03'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: '835894524e63ee69428972aeb5f28fa00d762edc'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 1
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -91,3 +92,27 @@ Verification passed locally, but the landing refused with MRS-DISP-056: two requ
 The branch already carries `main` (`f6918a8682`, memlogs unioned, scoped stamps for spec-pyforge-marshal and spec-pyforge-scribe).
 
 - 2026-10-05: Implementation verified locally (`pyforge-marshal-test`, `pyforge-deps-test`, `lint-types`, `pyforge-marshal-test-local-recipes-seed-oracle`, `spec_surface_reconcile.py`). Genesis bootstrap landed; empty-plan oracle green.
+
+### 2026-10-05 — PR #1872 follow-up (bmad-build-auto)
+
+Addressed landing review items 1–2: `.marshal/seed-state.yml` skip patterns for per-checkout BMAD symlinks; GEMINI.md, `.github/copilot-instructions.md`, and `.cursor/rules/specs.mdc` restored to main and first-claimed with matching `body_sha` (quoted `05141171` for gemini-md YAML safety). Verified: `pyforge-marshal-test-local-recipes-seed-oracle`, `test_instruction_surface_parity.py`, `spec_surface_reconcile.py`, story verify_commands.
+
+### 2026-10-05 — Review pass (follow-up)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (adversarial re-check against acceptance criteria and PR #1872 triage; no new defects)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Closed PR #1872 landing gaps for Story 86.2: genesis seed state skips per-checkout BMAD symlinks so SC-02 is empty in fresh clones; per-tool instruction addenda restored and first-claimed without seed rewriting.
+
+**Files changed (this pass):** `.marshal/seed-state.yml` (skips + first-claim hashes); `GEMINI.md`, `.github/copilot-instructions.md`, `.cursor/rules/specs.mdc` (restored to main); memlogs on `spec-pyforge-marshal` and `spec-pyforge-scribe`; story spec triage/review metadata.
+
+**Review:** 0 patches; 0 deferred.
+
+**Verification:** `pyforge-marshal-test` pass; `pyforge-deps-test` pass; `lint-types` exit 0; `pyforge-marshal-test-local-recipes-seed-oracle` pass; `test_instruction_surface_parity.py` 32 passed; `python scripts/spec_surface_reconcile.py` OK.
+
+**Follow-up review recommended:** false
+
+**Residual risk:** Symlink skips rely on `state.skips[]` patterns — operators must not delete those entries when re-running adopt without `--skip`.

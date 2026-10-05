@@ -63,12 +63,12 @@ managed:
 - id: copilot-instructions
   path: .github/copilot-instructions.md
   class: generated-derived
-  body_sha: 153dca08
+  body_sha: bbfd5ebc
   inserted_region_spans: []
 - id: cursor-rules
   path: .cursor/rules/specs.mdc
   class: generated-derived
-  body_sha: '42707824'
+  body_sha: 97989aad
   inserted_region_spans: []
 - id: detector-registry
   path: scripts/detectors.py
@@ -88,7 +88,7 @@ managed:
 - id: gemini-md
   path: GEMINI.md
   class: generated-derived
-  body_sha: dd28dbf7
+  body_sha: '05141171'
   inserted_region_spans: []
 - id: gitignore
   path: .gitignore
@@ -127,7 +127,9 @@ managed:
     start: 80
     end: 396
     body_sha: f66b7e29
-skips: []
+skips:
+- _bmad-output/planning-artifacts
+- _bmad-output/implementation-artifacts
 legacy: []
 migrations_applied: []
 opted_out: []

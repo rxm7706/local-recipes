@@ -1,11 +1,22 @@
 {
   "actions": [],
   "repo_fingerprint": {
-    "git_head": "0c49eba525fabfb18a483016cf2e98febdcaa657",
-    "dirty": false,
+    "git_head": "8f8fed0a73506507431d401c4fdeffe85b0cf3d5",
+    "dirty": true,
     "artifact_hashes": [],
     "repo_root": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.worktrees/dispatch-pyforge-marshal-86.2",
     "git_common_dir": "/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.git"
   },
-  "skipped": []
+  "skipped": [
+    {
+      "artifact_id": "implementation-artifacts-symlink",
+      "target_path": "_bmad-output/implementation-artifacts",
+      "pattern": "_bmad-output/implementation-artifacts"
+    },
+    {
+      "artifact_id": "planning-artifacts-symlink",
+      "target_path": "_bmad-output/planning-artifacts",
+      "pattern": "_bmad-output/planning-artifacts"
+    }
+  ]
 }
