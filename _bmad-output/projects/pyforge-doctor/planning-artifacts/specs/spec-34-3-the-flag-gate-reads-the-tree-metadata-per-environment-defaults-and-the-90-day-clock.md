@@ -2,7 +2,7 @@
 title: '34.3: The flag gate reads the tree metadata — per-environment defaults and the 90-day clock'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 flag-exempt: detector-or-gate   # a gated gate reports a silent green (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false
