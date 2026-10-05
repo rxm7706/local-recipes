@@ -2023,7 +2023,9 @@ status: open
   origin: spec-deferred 96f6f96ebc9f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: high
   promoted: 2026-08-23 — ingested from spec frontmatter by scripts/deferred_work_intake.py
-  status: open
+  status: resolved
+  resolution: Story 86.2 (marshal): bootstrap `marshal seed adopt --apply` on local-recipes with slug rendering and loop-home scope on adopt; SC-02 oracle lane `pyforge-marshal-test-local-recipes-seed-oracle` in CI.
+  verified: 2026-10-05 — RESOLVED — `pixi run --frozen -e pyforge-marshal pyforge-marshal-test-local-recipes-seed-oracle` exits 0 after genesis bootstrap; `.marshal/seed-state.yml` tracked at repo root and managed regions present in `AGENTS.md:1`, `CLAUDE.md:1`, `.gitignore:1`, `README.md:1`, `_bmad-output/PROJECTS.md:1`.
   verified: 2026-10-01 — NEEDS-DECISION — Reproduced read-only 2026-09-30 by running run_adopt's own plan pipeline in memory (read_state -> classify -> build_plan -> _augment_plan_with_first_claims, skipping write_plan; seed/verbs/adopt.py:998-1022): state=None (no .marshal/ at the repo root), 22 actions, 21 after the 3 unclassified-deferred ids -- identical to the recorded count. The 21: 5 present-divergent hybrid regions (AGENTS.md, CLAUDE.md, .gitignore, README.md, _bmad-output/PROJECTS.md), 12 first-claims of files that already exist (scripts/bmad-switch, scripts/bmad-loop-worktree, scripts/detectors.py, .github/workflows/detectors.yml, GEMINI.md, .github/copilot-instructions.md, .cursor/rules/specs.mdc, docs/dreams/, docs/drea… (2026-09-30 deferral burn-down triage)
   decision: Should the control-plane repo itself be genesis-adopted (seed adopt --apply inserts managed regions into AGENTS.md/CLAUDE.md/.gitignore/README.md/PROJECTS.md, claims 12 existing files as tool-owned and writes .marshal/seed-state.yml), or should SC-02's oracle be re-scoped for this repo (render {{ slug }} as Story 70.1 does for check, skip loop-home-only entries) -- K-02 forbids simply widening the exclusion set?
 

@@ -45,6 +45,12 @@ on:
       - 'tests/packaging/test_openteams_handoffs.py'
       - 'pixi.toml'
       - 'pixi.lock'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'README.md'
+      - '.gitignore'
+      - '_bmad-output/PROJECTS.md'
+      - '.marshal/seed-state.yml'
       - 'Containerfile'
       - '.dockerignore'
       - 'scripts/container-gates'
@@ -71,6 +77,12 @@ on:
       - 'tests/packaging/test_openteams_handoffs.py'
       - 'pixi.toml'
       - 'pixi.lock'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'README.md'
+      - '.gitignore'
+      - '_bmad-output/PROJECTS.md'
+      - '.marshal/seed-state.yml'
       - 'Containerfile'
       - '.dockerignore'
       - 'scripts/container-gates'
@@ -99,6 +111,7 @@ jobs:
       scribe: ${{ steps.filter.outputs.scribe }}
       steward: ${{ steps.filter.outputs.steward }}
       warden: ${{ steps.filter.outputs.warden }}
+      seed_oracle: ${{ steps.filter.outputs.seed_oracle }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -161,6 +174,14 @@ jobs:
             TESTING_KIT_CHANGED=true
           fi
           echo "testing_kit=$TESTING_KIT_CHANGED" >> "$GITHUB_OUTPUT"
+          SEED_ORACLE_CHANGED="$SHARED_CHANGED"
+          if ! git diff --quiet "$BASE"...HEAD -- \
+              AGENTS.md CLAUDE.md README.md .gitignore \
+              _bmad-output/PROJECTS.md .marshal/seed-state.yml \
+              src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py 2>/dev/null; then
+            SEED_ORACLE_CHANGED=true
+          fi
+          echo "seed_oracle=$SEED_ORACLE_CHANGED" >> "$GITHUB_OUTPUT"
 
   # Story 52.2 (spec-pyforge-core CAP-8): until this job, NO workflow invoked
   # the `pyforge-core-test` pixi task -- `pyforge-core/**` appeared above only
@@ -304,6 +325,22 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
       - run: pixi run --frozen -e pyforge-marshal pyforge-marshal-test
+
+  marshal-local-recipes-seed-oracle:
+    needs: changes
+    if: needs.changes.outputs.marshal == 'true' || needs.changes.outputs.seed_oracle == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          environments: pyforge-marshal
+          cache: true
+      - run: |
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+      - run: pixi run --frozen -e pyforge-marshal pyforge-marshal-test-local-recipes-seed-oracle
 
   mason-test:
     needs: changes

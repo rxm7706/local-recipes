@@ -739,6 +739,10 @@ cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\""
 description = "Run the slow, real-git end-to-end integration tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-warden-test-corpus-oracle's split)."
 cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m slow"
 
+[feature.pyforge-marshal.tasks.pyforge-marshal-test-local-recipes-seed-oracle]
+description = "SC-02 / NFR-M2: the local-recipes empty-plan oracle (Story 12.2, bootstrap in Story 86.2) -- dry-run adopt against this checkout must plan zero manifest-scoped actions."
+cmd = "pytest src/shared/packages/pyforge-marshal/tests/integration/test_local_recipes_empty_plan.py -q -m slow"
+
 [feature.pyforge-marshal.tasks.pyforge-marshal-coverage-gate]
 description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (marshal)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in marshal's own env, against the 80% unit floor. Distinct from pyforge-marshal-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
 cmd = "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit"
