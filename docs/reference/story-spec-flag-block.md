@@ -30,6 +30,21 @@ Only a spec named `spec-<epic>-<story>-*.md` is a story spec under the rule; tha
 puts a spec in the baseline population, and a legacy-named spec (for example
 `spec-land-promote-isolation.md`) is outside it.
 
+## Registering a flag
+
+When a story ships a new flag, register it in all four places before verification passes:
+
+1. **`src/platform/config/flags.json`** — add the flag key, variants, default variant, and metadata.
+2. **`src/platform/config/flag-overlays.json`** — set per-environment variant values; they must follow the
+   story spec's `flag.default` mapping (`production`, `staging`, `dev`).
+3. **`src/shared/packages/pyforge-core/tests/unit/test_flags.py`** — extend `_SHIPPED_CLOCKS`, `expected`, or
+   `per_environment` so core's flag contract covers the new key.
+4. **`src/platform/tests/test_openfeature_file_flags.py`** — extend `_SHIPPED_BOOLEANS` so the platform file
+   provider contract covers the new key.
+
+Marshal's fix-turn prompt points here when verification or the story spec signals flag work; the first dev
+session should use the same checklist.
+
 ## The `flag:` block
 
 Six fields, all present and non-empty:

@@ -194,10 +194,62 @@ def extract_failed_verify_commands(
     return tuple(sorted(ordered, key=lambda item: item.command))
 
 
+_FLAG_OUTPUT_SIGNALS = (
+    "flags.json",
+    "flag-overlays.json",
+    "test_flags.py",
+    "test_openfeature_file_flags.py",
+    "flag-gate-check",
+    "flag-default-env-mismatch",
+)
+
+_FLAG_REGISTRATION_DOC = "docs/reference/story-spec-flag-block.md"
+_FLAG_REGISTRATION_SECTION = "Registering a flag"
+_FLAG_REGISTRATION_PATHS = (
+    "src/platform/config/flags.json",
+    "src/platform/config/flag-overlays.json",
+    "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+    "src/platform/tests/test_openfeature_file_flags.py",
+)
+
+
+def _story_spec_has_flag_block(story_spec_text: str | None) -> bool:
+    if not story_spec_text:
+        return False
+    if not story_spec_text.startswith("---"):
+        return False
+    end = story_spec_text.find("\n---", 3)
+    if end == -1:
+        return False
+    frontmatter = story_spec_text[3:end]
+    return re.search(r"(?m)^flag:\s*$", frontmatter) is not None or re.search(
+        r"(?m)^flag:\s*\S", frontmatter
+    ) is not None
+
+
+def verify_fix_prompt_flag_checklist_applies(
+    failed: tuple[FailedVerifyCommand, ...],
+    *,
+    story_spec_text: str | None = None,
+) -> bool:
+    """Whether the fix-turn prompt should carry the flag registration checklist (Story 85.6)."""
+    if _story_spec_has_flag_block(story_spec_text):
+        return True
+    blob = "\n".join(
+        part
+        for item in failed
+        for part in (item.stdout, item.stderr, item.command)
+        if part
+    )
+    lowered = blob.casefold()
+    return any(signal.casefold() in lowered for signal in _FLAG_OUTPUT_SIGNALS)
+
+
 def build_verify_fix_prompt(
     failed: tuple[FailedVerifyCommand, ...],
     *,
     output_tail_bytes: int,
+    story_spec_text: str | None = None,
 ) -> str:
     """Fix-turn prompt: failed command(s) and bounded output tail only."""
     lines = [
@@ -205,7 +257,26 @@ def build_verify_fix_prompt(
         "Apply the smallest fix that makes the failing command(s) pass, then commit.",
         "Do not run a full story implementation again; fix only what verification named.",
         "",
+        "Reproduce and confirm your fix by re-running exactly the failed command(s) quoted below — "
+        "verbatim, with no substitutions.",
+        "Do not run a package's raw tests directory (for example pytest under "
+        "src/shared/packages/<station>/tests); use the station's pixi verify task instead "
+        "(it applies the correct markers and deselections).",
+        "",
     ]
+    if verify_fix_prompt_flag_checklist_applies(failed, story_spec_text=story_spec_text):
+        lines.extend(
+            [
+                "This failure involves feature-flag registration. Before re-verifying, touch all four "
+                "registration points:",
+                f"- {_FLAG_REGISTRATION_PATHS[0]}",
+                f"- {_FLAG_REGISTRATION_PATHS[1]} (per-environment values follow the story spec's flag.default)",
+                f"- {_FLAG_REGISTRATION_PATHS[2]}",
+                f"- {_FLAG_REGISTRATION_PATHS[3]}",
+                f"See {_FLAG_REGISTRATION_DOC} § *{_FLAG_REGISTRATION_SECTION}* for the full checklist.",
+                "",
+            ]
+        )
     for item in failed:
         lines.append(f"Failed command: {item.command}")
         if item.exit_code is not None:

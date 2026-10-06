@@ -2,8 +2,8 @@
 title: "85.6: A fix turn re-runs only the failing commands and knows the flag checklist"
 type: 'fix'
 created: '2026-10-06'
-status: 'ready-for-dev'
-baseline_revision: '7ab1f2d7b79f4e0c91755c060e902bb3cb1fcc6a'
+status: 'in-progress'
+baseline_revision: 'de5005d2e9e5feabc5fded2faac129b6c6c80603'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

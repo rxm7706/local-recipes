@@ -1373,7 +1373,14 @@ def _maybe_run_verify_fix_turn(
             preference = (profile_name, *(p for p in preference if p != profile_name))
         harness = BmadBuildHarness()
         resolution = harness.binary_present(preference, repo_root=repo_root)
-        prompt = build_verify_fix_prompt(failed_cmds, output_tail_bytes=fix_policy.output_tail_bytes)
+        _spec_relative, story_spec_text = _worktree_story_spec(
+            fs=fs, repo_root=repo_root, slug=slug, story_key=story_key, worktree=worktree
+        )
+        prompt = build_verify_fix_prompt(
+            failed_cmds,
+            output_tail_bytes=fix_policy.output_tail_bytes,
+            story_spec_text=story_spec_text,
+        )
         launch_mode = choose_verify_fix_launch_mode(
             resume_argv=resolution.spec.resume_argv if resolution.spec else None,
             harness_session_id=harness_session_id,
