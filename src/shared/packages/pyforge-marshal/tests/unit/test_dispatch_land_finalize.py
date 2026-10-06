@@ -997,7 +997,7 @@ _STATION_BRANCH_MERGE_79_2 = "Merge pull request #1707 from rxm7706/marshal/79-2
 _SPEC_NAME_79 = "spec-79-1-a-landing-promotes-the-feed-row.md"
 _SPEC_REL_79 = f"_bmad-output/projects/{_SLUG_79}/planning-artifacts/specs/{_SPEC_NAME_79}"
 _EPICS_REL_79 = f"_bmad-output/projects/{_SLUG_79}/planning-artifacts/epics.md"
-_EPICS_79 = f"### Story 79.1: x\n\n**Status:** backlog\n\n### Story 79.2: y\n\n**Status:** backlog\n"
+_EPICS_79 = "### Story 79.1: x\n\n**Status:** backlog\n\n### Story 79.2: y\n\n**Status:** backlog\n"
 # Default fake origin epics: the landed story's section carries no **Status:** line (Story 22.13 no-op).
 _DEFAULT_FAKE_EPICS_79 = "### Story 79.1: x\n\nSection without a status line.\n"
 _TRACKED_SPEC_79 = (
@@ -1411,7 +1411,10 @@ def test_finalize_promotes_a_tracked_spec_the_session_committed_itself(tmp_path:
     assert (publish["remote"], publish["ref"]) == ("origin", "main")
     assert publish["writes"] == (
         (_SPEC_REL_79, _TRACKED_SPEC_79.replace("status: 'backlog'", "status: 'done'")),
-        (_EPICS_REL_79, _EPICS_79.replace("### Story 79.1: x\n\n**Status:** backlog", "### Story 79.1: x\n\n**Status:** done")),
+        (
+            _EPICS_REL_79,
+            _EPICS_79.replace("### Story 79.1: x\n\n**Status:** backlog", "### Story 79.1: x\n\n**Status:** done"),
+        ),
     )
     assert "79.1" in publish["message"] and "tracked spec" in publish["message"]
     assert "79.1" in publish["preflight_skip_reason"]
@@ -1910,7 +1913,10 @@ def test_against_real_git_a_stale_scan_is_corroborated_after_the_gates_own_fetch
     landed_spec = landing / _SPEC_REL_79
     landed_spec.parent.mkdir(parents=True)
     landed_spec.write_text(_TRACKED_SPEC_79, encoding="utf-8")
-    _git_79(landing, "add", _SPEC_REL_79)
+    landed_epics = landing / _EPICS_REL_79
+    landed_epics.parent.mkdir(parents=True, exist_ok=True)
+    landed_epics.write_text(_DEFAULT_FAKE_EPICS_79, encoding="utf-8")
+    _git_79(landing, "add", _SPEC_REL_79, _EPICS_REL_79)
     _git_79(landing, "commit", "-m", _DISPATCH_MERGE_79)
     landing_sha = _git_79(landing, "rev-parse", "HEAD").strip()
     _git_79(landing, "push", "origin", "main")
