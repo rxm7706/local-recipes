@@ -2,8 +2,8 @@
 title: "22.14: The cross-surface gate runs each touched surface's own check"
 type: 'fix'
 created: '2026-10-06'
-status: 'ready-for-dev'
-baseline_revision: '7ab1f2d7b79f4e0c91755c060e902bb3cb1fcc6a'
+status: 'in-progress'
+baseline_revision: '6321ff198deb517ebaabc9dee4399f2b397db4cc'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

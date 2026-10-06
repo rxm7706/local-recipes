@@ -951,37 +951,56 @@ def evaluate_dispatch_verification(
             "violations": len(binding_findings),
         }
 
-    cross_surface_command = gate.shared_surface_verify_command()
-    cross_surface_touched = scope_check_completed and gate.changed_files_touch_shared_surface(scope_changed_files)
-    if cross_surface_touched:
-        cross_report, cross_finding = _run_verify_command(
-            cross_surface_command,
-            process=process,
-            worktree=worktree,
-            failure_prefix="cross-surface verify command",
-        )
-        if cross_finding is not None:
-            if cross_finding.code == "MRS-GATE-001":
-                cross_finding = Finding(
-                    code=gate.CROSS_SURFACE_GATE_CODE,
-                    severity=cross_finding.severity,
-                    message=cross_finding.message.replace("verify command", "cross-surface verify command"),
-                )
-            findings.append(cross_finding)
-        data["cross_surface_check"] = {
-            "checked": True,
-            "command": cross_surface_command,
-            "touched_paths": [
-                path
-                for path in scope_changed_files
-                if path == gate.SHARED_SURFACE_PREFIX.rstrip("/") or path.startswith(gate.SHARED_SURFACE_PREFIX)
-            ],
-            "report": cross_report,
-        }
+    cross_surface_check_entries: list[dict[str, object]] = []
+    if scope_check_completed:
+        matched_cross_rules = gate.cross_surface_rules_for_changed_files(scope_changed_files)
+        for rule in matched_cross_rules:
+            cross_report, cross_finding = _run_verify_command(
+                rule.command,
+                process=process,
+                worktree=worktree,
+                failure_prefix="cross-surface verify command",
+            )
+            if cross_finding is not None:
+                if cross_finding.code == "MRS-GATE-001":
+                    cross_finding = Finding(
+                        code=gate.CROSS_SURFACE_GATE_CODE,
+                        severity=cross_finding.severity,
+                        message=cross_finding.message.replace("verify command", "cross-surface verify command"),
+                    )
+                findings.append(cross_finding)
+            cross_surface_check_entries.append(
+                {
+                    "rule_id": rule.rule_id,
+                    "command": rule.command,
+                    "touched_paths": list(gate.touched_paths_for_cross_surface_rule(scope_changed_files, rule)),
+                    "report": cross_report,
+                }
+            )
+    if cross_surface_check_entries:
+        data["cross_surface_checks"] = cross_surface_check_entries
+        if len(cross_surface_check_entries) == 1:
+            only = cross_surface_check_entries[0]
+            data["cross_surface_check"] = {
+                "checked": True,
+                "command": only["command"],
+                "touched_paths": only["touched_paths"],
+                "report": only["report"],
+            }
+        else:
+            data["cross_surface_check"] = {
+                "checked": True,
+                "commands": [entry["command"] for entry in cross_surface_check_entries],
+                "checks": cross_surface_check_entries,
+            }
     else:
         data["cross_surface_check"] = {
             "checked": False,
-            "reason": ("scope check incomplete" if not scope_check_completed else "diff does not touch shared surface"),
+            "reason": (
+                "scope check incomplete"
+                if not scope_check_completed
+                else "diff does not touch any cross-surface rule"
+            ),
         }
 
     verdict_value = compute_verdict(findings)

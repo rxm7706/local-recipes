@@ -1758,11 +1758,21 @@ def test_evaluate_dispatch_verification_marshal_test_failure_still_refuses(
 
 
 class CrossSurfaceProcess:
-    """Fake process that passes station verify but can fail platform-ci-local."""
+    """Fake process that passes station verify but can fail cross-surface checks."""
 
-    def __init__(self, *, platform_exit: int = 0) -> None:
+    def __init__(
+        self,
+        *,
+        platform_exit: int = 0,
+        bmad_estate_exit: int = 0,
+        flag_gate_exit: int = 0,
+    ) -> None:
         self._platform_exit = platform_exit
+        self._bmad_estate_exit = bmad_estate_exit
+        self._flag_gate_exit = flag_gate_exit
         self.platform_invocations = 0
+        self.bmad_estate_invocations = 0
+        self.flag_gate_invocations = 0
 
     def run(self, tokens, *, cwd: Path):
         git_log = _fake_git_log_empty(list(tokens))
@@ -1775,6 +1785,20 @@ class CrossSurfaceProcess:
                 returncode=self._platform_exit,
                 stdout="",
                 stderr="platform fail" if self._platform_exit else "",
+            )
+        if "bmad-estate-check" in joined:
+            self.bmad_estate_invocations += 1
+            return ProcessResult(
+                returncode=self._bmad_estate_exit,
+                stdout="",
+                stderr="bmad-estate fail" if self._bmad_estate_exit else "",
+            )
+        if "flag-gate-check" in joined:
+            self.flag_gate_invocations += 1
+            return ProcessResult(
+                returncode=self._flag_gate_exit,
+                stdout="",
+                stderr="flag-gate fail" if self._flag_gate_exit else "",
             )
         if tokens and tokens[0] == "false":
             return ProcessResult(returncode=1, stdout="", stderr="fail")
@@ -1909,6 +1933,131 @@ def test_evaluate_dispatch_verification_cross_station_same_cross_surface_bar(
         )
         assert envelope.data["cross_surface_check"]["command"] == (gate.shared_surface_verify_command())
         assert any(f.code == "MRS-GATE-015" for f in envelope.findings)
+
+
+# --- Story 22.14: multi-rule cross-surface gate --------------------------------
+
+
+def test_evaluate_dispatch_verification_skill_diff_runs_bmad_estate_only(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-14-the-cross-surface-gate-runs-each-touched-surface-s-own-check")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    process = CrossSurfaceProcess()
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=_REPO_ROOT,
+        effective=effective,
+        spec_text=None,
+        process=process,
+        vcs=FakeVcs(
+            changed=(".claude/skills/pyforge-mason/0.1.0/pyforge-mason/SKILL.md",),
+        ),
+    )
+    assert process.bmad_estate_invocations == 1
+    assert process.platform_invocations == 0
+    assert process.flag_gate_invocations == 0
+    assert envelope.data["cross_surface_check"]["checked"] is True
+    assert "bmad-estate-check" in envelope.data["cross_surface_check"]["command"]
+
+
+def test_evaluate_dispatch_verification_flags_json_runs_platform_and_flag_gate(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-14-the-cross-surface-gate-runs-each-touched-surface-s-own-check")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    process = CrossSurfaceProcess()
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=_REPO_ROOT,
+        effective=effective,
+        spec_text=None,
+        process=process,
+        vcs=FakeVcs(changed=("src/platform/config/flags.json",)),
+    )
+    assert process.platform_invocations == 1
+    assert process.flag_gate_invocations == 1
+    assert envelope.data["cross_surface_check"]["checked"] is True
+    commands = envelope.data["cross_surface_check"]["commands"]
+    assert len(commands) == 2
+    assert any("platform-ci-local" in cmd for cmd in commands)
+    assert any("flag-gate-check" in cmd for cmd in commands)
+
+
+def test_evaluate_dispatch_verification_atlas_story_spec_runs_flag_gate(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-14-the-cross-surface-gate-runs-each-touched-surface-s-own-check")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    process = CrossSurfaceProcess()
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=_REPO_ROOT,
+        effective=effective,
+        spec_text=None,
+        process=process,
+        vcs=FakeVcs(
+            changed=(
+                "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-25-2-x.md",
+            ),
+        ),
+    )
+    assert process.flag_gate_invocations == 1
+    assert process.platform_invocations == 0
+    assert envelope.data["cross_surface_check"]["checked"] is True
+
+
+def test_evaluate_dispatch_verification_bmad_estate_fail_refuses_mrs_gate_015(
+    tmp_path: Path,
+) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    story_key = normalize("22-14-the-cross-surface-gate-runs-each-touched-surface-s-own-check")
+    effective, _ = policy.compose(
+        project_slug="pyforge-marshal",
+        project={"verify_commands": ["true"]},
+        flags={},
+    )
+    process = CrossSurfaceProcess(bmad_estate_exit=1)
+    envelope = evaluate_dispatch_verification(
+        project_slug="pyforge-marshal",
+        story_key=story_key,
+        worktree=worktree,
+        repo_root=_REPO_ROOT,
+        effective=effective,
+        spec_text=None,
+        process=process,
+        vcs=FakeVcs(changed=(".claude/skills/pyforge-mason/SKILL.md",)),
+    )
+    assert any(f.code == "MRS-GATE-015" for f in envelope.findings)
+    assert (
+        judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
+        == DispatchVerificationVerdict.REFUSED
+    )
 
 
 # --- Story 83.17 (spec-83-17): commit-attribution gate -------------------------

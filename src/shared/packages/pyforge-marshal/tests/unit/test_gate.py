@@ -535,3 +535,38 @@ def test_resolve_review_cycles_rejects_out_of_vocabulary_tier():
     `Finding`."""
     with pytest.raises(ValueError, match="bogus"):
         gate.resolve_review_cycles("bogus", default_max_review_cycles=3)
+
+
+# --- Story 22.14: cross-surface rule table ------------------------------------
+
+
+def test_cross_surface_rules_table_pins_all_three_rules() -> None:
+    """Mutation guard: removing a rule from ``CROSS_SURFACE_RULES`` fails here."""
+    assert len(gate.CROSS_SURFACE_RULES) == 3
+    assert [rule.rule_id for rule in gate.CROSS_SURFACE_RULES] == [
+        "platform",
+        "bmad-estate",
+        "flag-gate",
+    ]
+
+
+def test_cross_surface_rules_for_changed_files_skill_only() -> None:
+    changed = (".claude/skills/pyforge-mason/0.1.0/pyforge-mason/SKILL.md",)
+    rules = gate.cross_surface_rules_for_changed_files(changed)
+    assert len(rules) == 1
+    assert rules[0].rule_id == "bmad-estate"
+
+
+def test_cross_surface_rules_for_changed_files_flags_and_platform() -> None:
+    changed = ("src/platform/config/flags.json", "src/platform/host/urls.py")
+    rules = gate.cross_surface_rules_for_changed_files(changed)
+    assert [rule.rule_id for rule in rules] == ["platform", "flag-gate"]
+
+
+def test_cross_surface_rules_for_changed_files_story_spec_under_projects() -> None:
+    changed = (
+        "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-25-2-x.md",
+    )
+    rules = gate.cross_surface_rules_for_changed_files(changed)
+    assert len(rules) == 1
+    assert rules[0].rule_id == "flag-gate"
