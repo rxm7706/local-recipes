@@ -581,10 +581,11 @@ Drift — orphaned between stations.
     is a **matrix of package × platform**, never one answer per package. An environment is free-threading-ready on
     a platform only when every package it resolves there is ready there.
   - Per environment, per dependency, per platform, one readiness value with its evidence, at two levels:
-    1. **Build availability (cheap, offline, all three platforms from one host):** does the channel publish a
-       free-threaded build for that package in that platform's subdir (conda `python_abi … *_cp313t` /
+    1. **Build availability (cheap, no environment build, all three platforms from one host):** does the channel
+       publish a free-threaded build for that package in that platform's subdir (conda `python_abi … *_cp313t` /
        `*_cp314t`; PyPI wheel tags `cp313t` / `cp314t` with the platform tag), or is it `noarch: python` / pure
-       Python and therefore inherits the interpreter's state?
+       Python and therefore inherits the interpreter's state? It reads channel metadata, so it needs the network
+       but no solve or install, and it matches the version the lock resolves, not only the package name.
     2. **Runtime confirmation (expensive, native per platform):** in a free-threaded environment Steward provisions
        on that platform, does every extension module the package installs keep the GIL off? A `win-64` or
        `osx-arm64` build cannot be imported on a `linux-64` host, so this runs on each platform natively, as part
@@ -632,7 +633,8 @@ Drift — orphaned between stations.
      The report and the library catalog say `gil-free` only where Level 2 evidence exists for that platform.
   2. **Level 2 is per extension module, not per package.** A top-level import misses extensions a package loads
      lazily (`numpy.random._pcg64`, `pandas._libs.*`), and once the GIL comes back the run cannot say which module
-     did it. The probe walks the package's installed extension files (`*.cpython-314t-*.so` / `.pyd`) and imports
+     did it. The probe walks the package's installed extension files (`*.cpython-314t-*.so` on Linux and macOS,
+     `*.cp314t-win_amd64.pyd` on Windows) and imports
      each in a fresh interpreter, with the GIL warning turned into an error. It records CPython's own warning
      ("The global interpreter lock (GIL) has been enabled to load module 'X'") and `sys._is_gil_enabled()` after the
      import. A package is `gil-free` only when every one of its extension modules passes. Import names come from
@@ -660,7 +662,13 @@ Drift — orphaned between stations.
   each platform, fetched 2026-10-06, Python 3.14 free-threaded (`cp314t`) only. It counts compiled Python-extension
   packages (a `python_abi` dependency) per environment and platform. Interpreter packages (`cpython`, `python-gil`)
   are excluded, because switching to `python-freethreading` replaces them. Pure-Python packages (843 in the lock,
-  228 of them direct) need no free-threaded build and are not counted.
+  228 of them direct) need no free-threaded build and are not counted. **The match is by package name, not by
+  locked version:** `current_repodata.json` holds only each package's newest builds, so "ready" below means a
+  `cp314t` build of the package's current release exists. For 28 of the name-ready packages on `linux-64` (22 on
+  `win-64`, 24 on `osx-arm64`) the locked version has no `cp314t` build in that file, for example `psycopg2`
+  2.9.10 (locked) against 2.9.13, `pydantic-core` 2.46.5 against 2.49.0, `pyarrow` 24.0.0 against 25.0.0 on
+  `win-64`. Either an older `cp314t` build exists in the full repodata, or a free-threaded solve would have to
+  move those packages forward; the generator has to settle which, per version.
   - **Estate-wide:** of the compiled packages resolved per platform, `linux-64` 91 of 154, `win-64` 73 of 120,
     `osx-arm64` 83 of 137 publish a `cp314t` build. Of the 41 direct compiled dependencies, 21 are ready wherever
     they are used (among them `numpy`, `pandas`, `matplotlib-base`, `pillow`, `lxml`, `psycopg2`, `zstandard`,
@@ -681,10 +689,12 @@ Drift — orphaned between stations.
     and `pyforge-steward` have 1-3. **Furthest:** `local-recipes` (44-46), `pyforge-foundry-full` (27-30).
   - **Highest-leverage blockers** (environments affected, of 36): `pyyaml` (31), `markupsafe` (23), the conda tooling
     set `conda` / `menuinst` / `libmambapy` / `pycosat` (14 each), `pywin32` (13), `orjson` and `protobuf` (11 each).
-  - **Acceptance use:** given the same lock and repodata, the Level 1 generator reproduces these counts and blocker
-    sets (the per-environment compiled totals were counted by hand to within one or two, so the generator's exact
-    figures become the reference); the report names each blocker's direct dependents, as above. These are Level 1
-    facts only: a `cp314t` build makes a package installable in a free-threaded environment, not proven GIL-free.
+  - **Acceptance use:** given the same lock and repodata, the Level 1 generator reproduces these blocker sets and,
+    run name-level, these counts (the per-environment totals also leave out `python` itself, a step applied by hand
+    after the run, so the generator's exact figures become the reference); run version-level, it reports the
+    version gap above as its own finding. The report names each blocker's direct dependents, as above. These are
+    Level 1 facts only: a `cp314t` build makes a package installable in a free-threaded environment, not proven
+    GIL-free.
 
   **Constraints:**
   - Informational until the operator rules otherwise: readiness is reported, and it gates nothing. It never feeds
@@ -704,8 +714,9 @@ Drift — orphaned between stations.
   **Kinships:** [[pyforge-atlas]] (conda-forge package data), `spec-pyforge-unifying-strategy` (governs
   `pixi.toml`), [[pyforge-marshal]] (`spec-library-catalog-manifest-sync` governs the library catalog and
   `llms-full-check`; Story 22.14's cross-surface rule table), [[pyforge-doctor]] (`spec-pixi-candidate-currency`
-  watches the same lock for currency; ageing of Level 2 results). Owner: steward. → awaiting refinement and operator review, then `bmad-spec` (a new CAP on
-  `spec-pyforge-steward`), after the 2026-10-06 marshal campaign.
+  watches the same lock for currency; ageing of Level 2 results). Owner: steward. → awaiting refinement and
+  operator review, then `bmad-spec` (a new CAP on `spec-pyforge-steward`); the 2026-10-06 marshal campaign it
+  waited on has landed.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
