@@ -557,6 +557,64 @@ Drift — orphaned between stations.
   networks; and sync skips a board item marked GitHub-only (the operator overrode the recommendation to close it,
   amending CAP-60, flagged). Backlog Story 74.2's spec gains the S3 ListBucket requirement.
   Owner: steward. → Epic 84 / Stories 84.1-84.4, specced 2026-10-03.
+- **2026-10-06 — Proposed: the estate's environments know which of their libraries can run free-threaded, on every
+  platform they target.** Source: the operator's 2026-10-06 note *High-performance Python pipelines in Pixi (Apple
+  Silicon & free-threading)* and its verification script (`tools/validate_nogil.py` in the note; not in the tree).
+  The question: if an estate environment moved to a free-threaded interpreter (`python-freethreading`, ABI `cp313t`
+  / `cp314t`), which of the libraries `pixi.toml` gives it would keep the GIL off? CPython re-enables the GIL at
+  import time for any extension module that does not declare free-threading support (with a `RuntimeWarning`, unless
+  `PYTHON_GIL=0` forces it off), so one unready compiled package costs the whole process its threads. This is
+  Steward's: it provisions and verifies the estate's pixi environments (`steward provision --list / --env /
+  --verify`; § *What it owns*: "pixi environments"), and `spec-pyforge-unifying-strategy` governs `pixi.toml`.
+  **What the note's script gets wrong here, measured on this tree:**
+  - It reads only top-level `[dependencies]` and `[pypi-dependencies]`. This `pixi.toml` declares most packages in
+    its 40 `[feature.*.dependencies]` / `[feature.*.pypi-dependencies]` tables.
+  - No environment here carries `python-freethreading`, and on a GIL build `sys._is_gil_enabled()` is always
+    `True`, so the import probe as written reports every package as "forces GIL on".
+  - It runs on one platform. The estate targets three.
+  - Conda package names differ from import names far more often than its three-entry map covers, and its 5 s
+    timeout is shorter than `pixi run`'s own start-up.
+
+  **What it looks like when real:**
+  - **Multi-architecture by construction.** The estate targets `linux-64`, `win-64` and `osx-arm64` (`pixi.toml`'s
+    named entry `osx-arm64-min`, macOS ≥ 14.5), and free-threaded builds are published per platform, so readiness
+    is a **matrix of package × platform**, never one answer per package. An environment is free-threading-ready on
+    a platform only when every package it resolves there is ready there.
+  - Per environment, per dependency, per platform, one readiness value with its evidence, at two levels:
+    1. **Build availability (cheap, offline, all three platforms from one host):** does the channel publish a
+       free-threaded build for that package in that platform's subdir (conda `python_abi … *_cp313t` /
+       `*_cp314t`; PyPI wheel tags `cp313t` / `cp314t` with the platform tag), or is it `noarch: python` / pure
+       Python and therefore inherits the interpreter's state?
+    2. **Runtime confirmation (expensive, native per platform):** in a free-threaded environment Steward provisions
+       on that platform, does importing the package leave `sys._is_gil_enabled()` `False`? A `win-64` or
+       `osx-arm64` build cannot be imported on a `linux-64` host, so this runs on each platform natively, as part
+       of `provision --verify` (a CI matrix runner or an operator machine). Import names come from the package's
+       own metadata (`top_level.txt`, conda `site-packages` files), not a hand map.
+  - The report names, per platform, the packages that block an environment from running free-threaded, so the
+    operator sees what a free-threaded environment would cost on each platform before provisioning one.
+  - **A per-platform BLAS policy for all three platforms.** The note's BLAS advice is `osx-arm64`-only (bind
+    `libblas` / `liblapack` to the `*accelerate*` build). The estate's version names one BLAS choice per target
+    (for example Accelerate on `osx-arm64`, and an OpenBLAS or MKL choice on `linux-64` and `win-64`), expressed per
+    target in `pixi.toml` and checked by `provision --verify`.
+
+  **Constraints:**
+  - Informational until the operator rules otherwise: readiness is reported, and it gates nothing. It never feeds
+    `warden scan`'s verdict.
+  - Level 1 needs no environment build. Level 2 builds a free-threaded environment per platform, so it is opt-in
+    and never part of the default `provision` path.
+  - Engines are consumed, not authored: channel metadata comes through the estate's existing readers (atlas's
+    conda-forge data or rattler), not a new scraper.
+  - A BLAS pin is per target and never breaks a platform's solve; a platform whose BLAS choice cannot solve
+    reports it rather than pinning around it.
+  - The note's performance figures (2x-6x Accelerate speedups, a 2-10% single-thread penalty) are its own claims,
+    unmeasured here; they are context, not acceptance criteria.
+
+  **Not this Dream:** the note's Numba / vectorisation guidance is coding practice for a skill or doc, not a station
+  capability. The note's "action plan for LLMs" is not adopted as instructions.
+
+  **Kinships:** [[pyforge-atlas]] (conda-forge package data), `spec-pyforge-unifying-strategy` (governs
+  `pixi.toml`). Owner: steward. → awaiting refinement and operator review, then `bmad-spec` (a new CAP on
+  `spec-pyforge-steward`), after the 2026-10-06 marshal campaign.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
