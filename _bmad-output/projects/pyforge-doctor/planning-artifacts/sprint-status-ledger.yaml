@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 227
+# stories: 228
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-warden-s-engine-availability-self-check-fr-1: done
@@ -91,6 +91,7 @@ development_status:
   27-2-ledger-direction-reads-the-stations-rekey-map: done
   27-3-a-stations-legacy-template-history-stays-attributed: done
   27-5-a-bare-form-merge-is-attributed-by-the-paths-its-diff-touches: done
+  27-6-a-rekey-map-translates-only-the-merges-that-came-before-it: backlog
   28-1-a-frontmatter-reader-that-stops-at-the-fence-not-at-the-first-dashes: done
   29-1-a-per-dream-acknowledgement-silences-exactly-one-sibling-hash-and-the-sibling-coordinates-are-current: done
   3-1-partition-findings-by-actionability-fr-6-ad-4: done
@@ -197,7 +198,7 @@ development_status:
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional
-  epic-27: done
+  epic-27: in-progress
   epic-27-retrospective: optional
   epic-28: done
   epic-28-retrospective: optional
