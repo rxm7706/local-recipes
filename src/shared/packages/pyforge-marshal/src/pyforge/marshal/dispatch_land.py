@@ -341,6 +341,9 @@ def _own_path_stamp_refusals(worktree: Path, own_paths: frozenset[str]) -> dict[
     uses the same bar as a scoped stamp -- read-only, never ``--write-baseline``."""
     if not own_paths:
         return {}
+    script = worktree / "scripts" / "spec_surface_check.py"
+    if not script.is_file():
+        return {}
     mod = _load_spec_surface_check(worktree)
     unevaluable: dict[str, str] = {}
     current = mod._live_state(unevaluable)
@@ -518,8 +521,7 @@ def _reconcile_spec_surface_drift(
     while True:
         own_paths = changed | written
         try:
-            for name, paths in _own_path_stamp_refusals(worktree, frozenset(own_paths)).items():
-                by_spec.setdefault(name, set()).update(paths)
+            stamp_refusals = _own_path_stamp_refusals(worktree, frozenset(own_paths))
         except OSError as exc:
             return _SpecSurfaceReconcileOutcome(
                 finding=Finding(
@@ -544,6 +546,9 @@ def _reconcile_spec_surface_drift(
                 ),
                 refuse=True,
             )
+        else:
+            for name, paths in stamp_refusals.items():
+                by_spec.setdefault(name, set()).update(paths)
 
         if not by_spec and not no_baseline:
             break
