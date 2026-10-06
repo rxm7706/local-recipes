@@ -222,9 +222,9 @@ def _story_spec_has_flag_block(story_spec_text: str | None) -> bool:
     if end == -1:
         return False
     frontmatter = story_spec_text[3:end]
-    return re.search(r"(?m)^flag:\s*$", frontmatter) is not None or re.search(
-        r"(?m)^flag:\s*\S", frontmatter
-    ) is not None
+    return (
+        re.search(r"(?m)^flag:\s*$", frontmatter) is not None or re.search(r"(?m)^flag:\s*\S", frontmatter) is not None
+    )
 
 
 def verify_fix_prompt_flag_checklist_applies(
@@ -235,12 +235,7 @@ def verify_fix_prompt_flag_checklist_applies(
     """Whether the fix-turn prompt should carry the flag registration checklist (Story 85.6)."""
     if _story_spec_has_flag_block(story_spec_text):
         return True
-    blob = "\n".join(
-        part
-        for item in failed
-        for part in (item.stdout, item.stderr, item.command)
-        if part
-    )
+    blob = "\n".join(part for item in failed for part in (item.stdout, item.stderr, item.command) if part)
     lowered = blob.casefold()
     return any(signal.casefold() in lowered for signal in _FLAG_OUTPUT_SIGNALS)
 
