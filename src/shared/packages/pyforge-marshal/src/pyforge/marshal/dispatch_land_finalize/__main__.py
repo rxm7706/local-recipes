@@ -731,6 +731,7 @@ def _promote_tracked_spec(
     spec_done_text = promotion.set_spec_status(text, promotion.SPEC_STATUS_DONE)
     writes: list[tuple[str, str]] = [(rel, spec_done_text)]
     epics_gap: Finding | None = None
+    epics_text: str | None
     try:
         epics_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, epics_rel)
     except VcsCommandError as exc:
@@ -738,20 +739,22 @@ def _promote_tracked_spec(
             f"story {key}'s tracked spec {rel!r} will be promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
             f"could not be read at {epics_rel!r} to match its **Status:** line: {exc}"
         )
-    elif epics_text is None:
-        epics_gap = _epics_gap(
-            f"story {key}'s tracked spec {rel!r} will be promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
-            f"does not exist at {epics_rel!r}; its **Status:** line was not updated"
-        )
-    elif not promotion.epics_has_story_heading(epics_text, key):
-        epics_gap = _epics_gap(
-            f"story {key}'s tracked spec {rel!r} will be promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
-            f"has no ### Story {key}: heading at {epics_rel!r}; its **Status:** line was not updated"
-        )
-    else:
-        epics_done = promotion.set_epics_story_status(epics_text, key, promotion.SPEC_STATUS_DONE)
-        if epics_done != epics_text:
-            writes.append((epics_rel, epics_done))
+        epics_text = None
+    if epics_gap is None:
+        if epics_text is None:
+            epics_gap = _epics_gap(
+                f"story {key}'s tracked spec {rel!r} will be promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
+                f"does not exist at {epics_rel!r}; its **Status:** line was not updated"
+            )
+        elif not promotion.epics_has_story_heading(epics_text, key):
+            epics_gap = _epics_gap(
+                f"story {key}'s tracked spec {rel!r} will be promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
+                f"has no ### Story {key}: heading at {epics_rel!r}; its **Status:** line was not updated"
+            )
+        else:
+            epics_done = promotion.set_epics_story_status(epics_text, key, promotion.SPEC_STATUS_DONE)
+            if epics_done != epics_text:
+                writes.append((epics_rel, epics_done))
     try:
         vcs.commit_paths_onto_remote_tip(
             root,
