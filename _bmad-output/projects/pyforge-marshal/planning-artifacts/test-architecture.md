@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 69ebc7393060270a
-story_count: 427
+source_fingerprint: 7754b9ff50ecdf57
+story_count: 431
 test_file_count: 240
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 427
+- **Stories parsed:** 431
 - **Epics parsed:** 85
 - **Test files inventoried:** 240 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `69ebc7393060270a`
+- **Source fingerprint:** `7754b9ff50ecdf57`
 
 ## Risk Assessment
 
@@ -530,6 +530,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 22.10 | `branch_merged` requires real divergence, not just ancestry | none observed |
 | 22.11 | Station-scoped drain and an explicit story sequence | none observed |
 | 22.12 | A shared-surface diff also clears its own full suite, not just the station's ... | none observed |
+| 22.13 | A landing sets the story's epics status to match the ledger | none observed |
+| 22.14 | The cross-surface gate runs each touched surface's own check | none observed |
 | 23.1 | Wall-clock fallback derivation from promoted-spec revision fields | none observed |
 | 23.2 | Wall-clock is never blended with active-compute | none observed |
 | 23.3 | The coverage caption partitions by true reason | none observed |
@@ -692,6 +694,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 53.1 | The dispatched session is told and gated like a loop session | none observed |
 | 53.2 | The landing reconciles from git facts and runs intake | none observed |
 | 53.3 | The supervisor entrypoint reaches the floor | none observed |
+| 53.4 | A dispatch landing leaves every Spec it touched stampable | none observed |
 | 54.1 | The hand ledger sync repairs unrelated feed drift instead of refusing | none observed |
 | 55.1 | The 7 non-marshal stations stop overriding `[context]` and inherit the clean ... | none observed |
 | 56.1 | A refused landing whose story has since landed reads as superseded | none observed |
@@ -774,6 +777,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 85.3 | The fix turn is safe to switch on in dev and staging | none observed |
 | 85.4 | The fix turn's redaction never hangs the supervisor or hides what the fix needs | none observed |
 | 85.5 | The verify fix turn's edits get the spec-surface reconcile before re-verifica... | none observed |
+| 85.6 | A fix turn re-runs only the failing commands and knows the flag checklist | none observed |
 | 86.1 | Seed honours recorded skips, refuses shared manifest paths, and pins director... | none observed |
 | 86.2 | local-recipes is genesis-adopted so the seed-adopt oracle goes green | none observed |
 | 86.3 | Spin and the journal clean up a failed launch and record what they ran | none observed |
