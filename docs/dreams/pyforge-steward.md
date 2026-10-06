@@ -557,6 +557,239 @@ Drift — orphaned between stations.
   networks; and sync skips a board item marked GitHub-only (the operator overrode the recommendation to close it,
   amending CAP-60, flagged). Backlog Story 74.2's spec gains the S3 ListBucket requirement.
   Owner: steward. → Epic 84 / Stories 84.1-84.4, specced 2026-10-03.
+- **2026-10-06 — Proposed: the estate's environments know which of their libraries can run free-threaded, on every
+  platform they target.** Source: the operator's 2026-10-06 note *High-performance Python pipelines in Pixi (Apple
+  Silicon & free-threading)* and its verification script (`tools/validate_nogil.py` in the note; not in the tree).
+  The question: if an estate environment moved to a free-threaded interpreter (`python-freethreading`; for the
+  estate's Python 3.14 the ABI is `cp314t`), which of the libraries `pixi.toml` gives it would keep the GIL off?
+  CPython re-enables the GIL at import time for any extension module that does not declare free-threading support
+  (with a `RuntimeWarning`, unless `PYTHON_GIL=0` forces it off), so one unready compiled package costs the whole
+  process its parallel threads. This is Steward's: it provisions and verifies the estate's pixi environments
+  (`steward provision --list / --env / --verify`; § *What it owns*: "pixi environments"), and
+  `spec-pyforge-unifying-strategy` governs `pixi.toml`.
+  **What the note's script gets wrong here, measured on this tree:**
+  - It reads only top-level `[dependencies]` and `[pypi-dependencies]`. This `pixi.toml` declares most packages in
+    its 40 `[feature.*.dependencies]` / `[feature.*.pypi-dependencies]` tables.
+  - No environment here carries `python-freethreading`, and on a GIL build `sys._is_gil_enabled()` is always
+    `True`, so the import probe as written reports every package as "forces GIL on".
+  - It runs on one platform. The estate targets three.
+  - Conda package names differ from import names far more often than its three-entry map covers, and its 5 s
+    timeout is shorter than `pixi run`'s own start-up.
+
+  **What it looks like when real:**
+  - **Multi-architecture by construction.** The estate targets `linux-64`, `win-64` and `osx-arm64` (`pixi.toml`'s
+    named entry `osx-arm64-min`, macOS ≥ 14.5), and free-threaded builds are published per platform, so readiness
+    is a **matrix of package × platform**, never one answer per package. An environment is free-threading-ready on
+    a platform only when every package it resolves there is ready there.
+  - **Tied to the estate's interpreter, not to a tag.** The free-threaded ABI tag is derived from the Python version
+    `pixi.toml` pins: 3.14 gives `cp314t` today, and a move to 3.15 gives `cp315t` with no edit to the generator or
+    the probes. Every `cp314t` in this entry is that derivation for today, never a hard-coded value.
+  - Per environment, per dependency, per platform, one readiness value with its evidence, at two levels:
+    1. **Build availability (cheap, no environment build, all three platforms from one host).** Two checks:
+       - *Metadata match:* does the channel publish a free-threaded build for that package, at the version the
+         lock resolves, in that platform's subdir (conda `python_abi … *_cp314t`; PyPI wheel tag `cp314t` with
+         the platform tag), or is it `noarch: python` / pure Python and therefore inherits the interpreter's state?
+         It reads channel metadata, so it needs the network, but no solve or install.
+       - *Solve probe:* pixi solves for all three platforms from one host without installing anything. For each
+         environment, a throwaway manifest that adds `python-freethreading` to the environment's declared set is
+         solved, not installed. A failed solve names the package with no free-threaded build at any solvable
+         version; a successful one records which locked packages had to move forward to reach one. This settles
+         the version gap the baseline below exposes, per package and per platform.
+    2. **Runtime confirmation (expensive, native per platform):** in a throwaway free-threaded environment Steward
+       generates on that platform (below), does every extension module the package installs keep the GIL off? A
+       `win-64` or `osx-arm64` build cannot be imported on a `linux-64` host, so this runs on each platform
+       natively, as part of `provision --verify` (a CI matrix runner or an operator machine). How it proves that is
+       § *Validation* below.
+  - **Level 2 environments are generated, not tracked.** No `python-freethreading` environment exists in
+    `pixi.toml`, and tracked ones would grow `pixi.lock` and force an `environment.yaml` regeneration for every
+    probe target. The probe generates its manifest at probe time (the environment's declared set plus
+    `python-freethreading`), outside the tracked lock, and discards it afterwards. It probes a named subset, not
+    36 environments on 3 platforms: the closest environments in the baseline below (`pyforge-core`,
+    `pyforge-testing-kit`, `mcp-host`) plus `pyforge-guild`, the one runtime environment. The subset is a list the
+    operator edits.
+  - **The report has a named read.** The report names, per platform, the packages that block an environment from
+    running free-threaded, with each blocker's direct dependents, so the operator sees what a free-threaded
+    environment would cost on each platform before provisioning one. It is read through a steward CLI flag (for
+    example `steward provision --free-threading [--env NAME] [--platform P] [--json]`), human-readable by default
+    and JSON for machines. A dashboard view can come later and reads the same JSON.
+  - **Blockers have a fix path.** A blocker with no free-threaded build on conda-forge (today `pyyaml`,
+    `markupsafe` and `orjson` lead the list) is remediation work for [[pyforge-mason]] and the `conda-forge-expert`
+    skill: the report hands Mason the package and platform, and Mason prepares the feedstock change that publishes
+    a `cp314t` build, locally. Opening a feedstock, staged-recipes or upstream PR still takes the operator's
+    explicit ask.
+
+  **Integration and self-maintenance** (so the matrix stays true as the library estate changes, without hand edits):
+  - **One generated data file is the source of truth**, for example `docs/reference/free-threading-readiness.yaml`.
+    Steward's Level 1 generator builds it from the tracked `pixi.lock`, not `pixi.toml`: every resolved package,
+    direct **and transitive**, on each of the three platforms, with its evidence (a published free-threaded build
+    for the locked version, a solve-probe result, pure Python, or none). The lock is the right input because the
+    GIL comes back if any compiled module in the process lacks support, including transitive ones `pixi.toml` never
+    names. The file also records, per platform, the channel metadata it read (fetch time and digest), so two runs
+    over the same lock and the same recorded metadata produce the same file, and a difference between runs is
+    traceable to the channel, not to the generator.
+  - **The library catalog references it rather than restating it.** `docs/reference/library-llms-full.md` is an
+    LLM-authored derivative of `pixi.toml` whose reconciler is a prose rewrite, so per-platform readiness written
+    into it by hand would go stale when a channel publishes a new build. Each library entry instead carries a
+    one-line per-platform readiness note filled from the data file, and one section explains the matrix.
+    `llms-full-check` (`spec-library-catalog-manifest-sync`) can also flag a catalog library missing from the
+    readiness data.
+  - **A staleness detector keeps it current**, for example `free-threading-readiness-check` in `detectors-ci`
+    (repo scope). It reds when the data file's recorded `pixi.lock` fingerprint differs from the tracked lock and
+    names the regeneration command, the same pattern as `bmad-estate-check`. It checks only that the data matches
+    the lock, never what the data says. Whether it blocks a merge or only warns is an open ruling (below).
+  - **Dispatch enforces it too.** Marshal's cross-surface gate is a rule table since Story 22.14; one more rule
+    (`pixi.toml` / `pixi.lock` → the readiness check) makes a dispatched story regenerate it as part of its own
+    work.
+  - **Level 2 runs on a schedule, not per PR.** The native import probes are expensive, so a scheduled CI matrix
+    (Linux, Windows and macOS runners, `steward provision --verify` per platform) produces dated results, and
+    [[pyforge-doctor]] reports results that have aged past a threshold. How those results reach the tracked file
+    is an open ruling (below): everything lands on `main` through a PR, so a scheduled job cannot simply commit.
+  - **New channel builds are picked up without a dependency change:** the scheduled run re-reads channel metadata,
+    so a package that gains a `cp314t` build moves to `installable` on the next run.
+
+  **Validation (proving GIL-free, not only installable).** A `cp314t` build only means a package can be installed
+  in a free-threaded environment; whether it keeps the GIL off is decided at import time by each extension module.
+  So readiness is a ladder of named evidence, and nothing is called GIL-free without proof:
+  1. **One status per package × platform × build, each tied to its evidence.** The build string, not the version,
+     names the exact artifact the evidence is about. The statuses: `not-installable` (no free-threaded build at any
+     version the environment can solve to); `installable` (Level 1 only: a free-threaded build exists at a
+     solvable version, and the solve probe records whether the lock's version must move forward to reach it;
+     nothing proven at import); `gil-free` (Level 2 proved every extension module keeps the GIL off);
+     `re-enables-gil` (names the exact module that turned it back on); `import-error` (the build is broken under
+     free-threading); `pure-python` (inherits the interpreter's state); `unassessed` (Level 1 cannot reach a
+     verdict from the data it reads: a PyPI sdist built locally, a compiled PyPI wheel it has not matched, or a
+     package from a channel other than conda-forge). An `unassessed` row is listed, never counted as ready or as
+     blocked, so a gap shows instead of disappearing. The report and the library catalog say `gil-free` only where
+     Level 2 evidence exists for that platform and build.
+  2. **Level 2 is per extension module, not per package.** A top-level import misses extensions a package loads
+     lazily (`numpy.random._pcg64`, `pandas._libs.*`), and once the GIL comes back the run cannot say which module
+     did it. The probe walks the package's installed extension files (`*.cpython-314t-*.so` on Linux and macOS,
+     `*.cp314t-win_amd64.pyd` on Windows) and imports each in a fresh interpreter. It records warnings rather than
+     raising them, because a raised warning would make `re-enables-gil` look like `import-error`: it captures
+     CPython's own warning ("The global interpreter lock (GIL) has been enabled to load module 'X'") and reads
+     `sys._is_gil_enabled()` after the import. The probe environment never sets `PYTHON_GIL=0` (or `-X gil=0`),
+     which would force the GIL off and hide the result. A package is `gil-free` only when every one of its extension
+     modules passes. Import names come from the installed files and the package's own metadata (`top_level.txt`,
+     conda `site-packages` listings), never a hand-kept map.
+  3. **An environment-level probe is the final verdict.** In the generated free-threaded environment, import the
+     environment's whole declared set together and assert the GIL is still off and no GIL warning fired; this
+     catches interactions the per-module probes cannot. An environment is free-threading-ready on a platform only
+     when this probe passes there.
+  4. **An opt-in thread-safety smoke rung for a short curated list** (for example `numpy`, `pandas`, `pyarrow`):
+     a small selection of each project's own tests run under `pytest-run-parallel`, the ecosystem's plugin for
+     free-threaded testing. GIL-free proves an extension declares free-threading support, not that it is free of
+     races; this rung reports, it never gates.
+  5. **Evidence is auditable, ages, and never blocks a bump.** Every `gil-free` or `re-enables-gil` record carries
+     the package version, build string, platform, runner and date. When the lock moves a package to a new build,
+     the generator demotes its `gil-free` or `re-enables-gil` row to `installable` (or `not-installable`) and keeps
+     the old evidence as history, until the next Level 2 run proves the new build; a version bump reds nothing.
+     The staleness detector reds only a `gil-free` claim with no Level 2 evidence behind it for that build (a hand
+     edit), and [[pyforge-doctor]] reports evidence older than its threshold.
+
+  Acceptance examples for this section: in a `cp314t` environment on each platform, `numpy` reaches `gil-free` with
+  every extension module passing; a deliberately unready test extension yields `re-enables-gil` naming that module;
+  a lock bump of a `gil-free` package demotes it to `installable` at regeneration and reds nothing; and no
+  `installable` row from the baseline below is promoted to `gil-free` without such a run.
+
+  **Open rulings (operator, before `bmad-spec`):**
+  1. **Does the staleness detector block or warn?** Blocking (red in `detectors-ci`) makes every lock change carry
+     a network-bound regeneration in the same PR. Warning lets the data trail the lock until the next scheduled run.
+  2. **How do scheduled Level 2 results reach the tracked file?** Either the scheduled run opens a PR with the
+     regenerated file when its results changed, which keeps one reviewable source of truth in git; or the results
+     live in a steward or atlas data store and the tracked file keeps only a summary that points at it.
+  3. **Which environments does Level 2 probe?** The proposed subset is `pyforge-core`, `pyforge-testing-kit`,
+     `mcp-host` and `pyforge-guild`; confirm it, or name a different list.
+
+  **Baseline snapshot (2026-10-06), the seed for acceptance examples.** This section is dated and will go stale.
+  At `bmad-spec` time its detail moves into the Spec as acceptance data, and this section shrinks to a short
+  summary; a Dream trim waits for its Spec. A one-off Level 1 run (scratch scripts, not in the tree) over
+  `pixi.lock` as last changed in `acdd200200` and conda-forge's `current_repodata.json` for each platform, fetched
+  2026-10-06, Python 3.14 free-threaded (`cp314t`) only. It counts compiled Python-extension conda packages (a
+  `python_abi` dependency) per environment and platform. Interpreter packages (`cpython`, `python-gil`) are
+  excluded, because switching to `python-freethreading` replaces them. Pure-Python packages (843 in the lock, 228
+  of them direct) need no free-threaded build and are not counted. **PyPI packages are not in these counts.** Today
+  the lock's only platform-specific PyPI wheel is `sqlite_vec` 0.1.9 (`py3-none-<platform>`, in `default`,
+  `pyforge-foundry-full`, `pyforge-guild` and `pyforge-foundry-full-stack`, 10 environment-platform pairs). It ships
+  a SQLite loadable extension, not a CPython extension module, so it cannot re-enable the GIL; a future
+  `cp314`-tagged wheel or sdist would be `unassessed` until matched. **The match is by package name, not by locked
+  version:** `current_repodata.json` holds only each package's newest builds, so "ready" below means a `cp314t`
+  build of the package's current release exists. For 28 of the name-ready packages on `linux-64` (22 on `win-64`,
+  24 on `osx-arm64`) the locked version has no `cp314t` build in that file, for example `psycopg2` 2.9.10 (locked)
+  against 2.9.13, `pydantic-core` 2.46.5 against 2.49.0, `pyarrow` 24.0.0 against 25.0.0 on `win-64`. Either an
+  older `cp314t` build exists in the full repodata, or a free-threaded solve would have to move those packages
+  forward; the solve probe settles which, per version.
+  - **Estate-wide:** of the compiled packages resolved per platform, `linux-64` 91 of 154, `win-64` 73 of 120,
+    `osx-arm64` 83 of 137 publish a `cp314t` build. Of the 41 direct compiled dependencies, 21 are ready wherever
+    they are used (among them `numpy`, `pandas`, `matplotlib-base`, `pillow`, `lxml`, `psycopg2`, `zstandard`,
+    `uvloop`), 2 are partial (`pyarrow` / `pyarrow-all`, no `osx-arm64` build) and 18 are ready nowhere (among them
+    `pyyaml`, `orjson`, `onnxruntime`, `chromadb`, `apsw`, `pymupdf`, `hiredis`).
+  - **`pyforge-guild`:** 8 of 31 compiled packages block on `linux-64` and `osx-arm64`, 9 on `win-64` (`pywin32`).
+    `headroom-ai` and `orjson` (direct), `onnxruntime` ← `magika`, `protobuf` ← `onnxruntime`, `tokenizers` ←
+    `transformers`, `pyyaml` ← `bmad-loop` / `copier` / `pre-commit` / `huggingface_hub` / `headroom-ai`,
+    `markupsafe` ← `jinja2`, `ukkonen` ← `identify`.
+  - **`platform-dev`:** 24 of 71 block on `linux-64`, 22 of 67 on `osx-arm64` (no `win-64` environment). Clusters:
+    the vector / LLM stack (`chromadb` → `grpcio`, `onnxruntime`, `pulsar-client`, `tokenizers`, `orjson`;
+    `litellm` / `opik` → `fastuuid`, `tree_sitter`), Django / Celery (`daphne` → `autobahn` → `py-ubjson`; `celery`
+    → `billiard`; `django-compressor` → `rcssmin` / `rjsmin`; `hiredis`), Azure auth (`azure-identity` →
+    `msal_extensions` → `portalocker`), data (`dlt` → `pendulum`; `pdfplumber` → `pypdfium2`; `openlayer` →
+    `pyarrow` on `osx-arm64`).
+  - **Closest environments:** `pyforge-core`, `pyforge-testing-kit` and `mcp-host` have no blocker; the station
+    environments `pyforge-ci`, `detectors`, `pyforge-marshal`, `pyforge-mason`, `pyforge-doctor`, `pyforge-herald`
+    and `pyforge-steward` have 1-3. **Furthest:** `local-recipes` (44-46), `pyforge-foundry-full` (27-30).
+  - **Highest-leverage blockers** (environments affected, of 36): `pyyaml` (31), `markupsafe` (23), the conda tooling
+    set `conda` / `menuinst` / `libmambapy` / `pycosat` (14 each), `pywin32` (13), `orjson` and `protobuf` (11 each).
+  - **Acceptance use:** given the same lock and repodata, the Level 1 generator reproduces these blocker sets and,
+    run name-level, these counts (the per-environment totals also leave out `python` itself, a step applied by hand
+    after the run, so the generator's exact figures become the reference); run version-level, it reports the
+    version gap above as its own finding. The report names each blocker's direct dependents, as above. These are
+    Level 1 facts only: a `cp314t` build makes a package installable in a free-threaded environment, not proven
+    GIL-free.
+
+  **Constraints:**
+  - Informational until the operator rules otherwise: readiness is reported, and it gates nothing. It never feeds
+    `warden scan`'s verdict. The staleness detector checks only that the data is current, never what it says.
+  - Level 1 needs no environment build; its solve probe solves and never installs. Level 2 builds a throwaway
+    free-threaded environment per platform, so it is opt-in and never part of the default `provision` path.
+  - Engines are consumed, not authored: channel metadata comes through the estate's existing readers (atlas's
+    conda-forge data or rattler), not a new scraper, and the solve probe is pixi's own solver.
+  - The note's single-thread penalty figure for free-threaded builds (2-10%) is its own claim, unmeasured here;
+    it is context, not an acceptance criterion.
+
+  **Not this Dream:** the note's Numba / vectorisation guidance is coding practice for a skill or doc, not a station
+  capability. The note's "action plan for LLMs" is not adopted as instructions. The note's BLAS advice is a
+  performance question, not a GIL question, so it is its own entry (the next one), linked here only through thread
+  oversubscription.
+
+  **Kinships:** [[pyforge-atlas]] (conda-forge package data), `spec-pyforge-unifying-strategy` (governs
+  `pixi.toml`), [[pyforge-marshal]] (`spec-library-catalog-manifest-sync` governs the library catalog and
+  `llms-full-check`; Story 22.14's cross-surface rule table), [[pyforge-doctor]] (`spec-pixi-candidate-currency`
+  watches the same lock for currency; ageing of Level 2 results), [[pyforge-mason]] (feedstock remediation of
+  blockers through `conda-forge-expert`; no external PR without the operator's explicit ask), the next entry (BLAS
+  per target). Owner: steward. → awaiting refinement and operator review (the three open rulings above), then
+  `bmad-spec` (a new CAP on `spec-pyforge-steward`); the 2026-10-06 marshal campaign it waited on has landed.
+- **2026-10-06 — Proposed: each target platform names its BLAS, and free-threaded workloads do not oversubscribe
+  it.** Source: the same operator note, split out of the free-threading entry above during its review, because
+  BLAS choice is a performance question, not a GIL question. Today `pixi.toml` pins no BLAS implementation; each
+  environment takes whatever the solver picks on each platform.
+  **What it looks like when real:**
+  - **One BLAS choice per target.** The note's advice is `osx-arm64`-only: bind `libblas` / `liblapack` to the
+    `*accelerate*` build. The estate's version names one choice per target, for example Accelerate on
+    `osx-arm64` and an OpenBLAS or MKL choice on `linux-64` and `win-64`, expressed per target in `pixi.toml` and
+    checked by `provision --verify`.
+  - **No oversubscription under free-threading.** With the GIL off, N Python threads that each call a multithreaded
+    BLAS can start N × M native threads. The policy names a thread-count default per BLAS for free-threaded
+    workloads (`OPENBLAS_NUM_THREADS`, `MKL_NUM_THREADS`, `VECLIB_MAXIMUM_THREADS` for Accelerate), so moving an
+    environment to a free-threaded interpreter does not slow it down by over-committing cores.
+
+  **Constraints:**
+  - A BLAS pin is per target and never breaks a platform's solve; a platform whose BLAS choice cannot solve
+    reports it rather than pinning around it.
+  - The note's performance figures (2x-6x Accelerate speedups) are its own claims, unmeasured here; they are
+    context, not acceptance criteria.
+
+  **Kinships:** the free-threading entry above (oversubscription), `spec-pyforge-unifying-strategy` (governs
+  `pixi.toml`). Owner: steward. → awaiting operator review, then `bmad-spec` (its own CAP on
+  `spec-pyforge-steward`, separate from the free-threading CAP).
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
