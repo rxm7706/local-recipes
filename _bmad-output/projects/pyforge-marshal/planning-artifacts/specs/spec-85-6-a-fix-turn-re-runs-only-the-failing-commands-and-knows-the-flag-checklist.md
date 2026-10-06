@@ -2,7 +2,8 @@
 title: "85.6: A fix turn re-runs only the failing commands and knows the flag checklist"
 type: 'fix'
 created: '2026-10-06'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'de5005d2e9e5feabc5fded2faac129b6c6c80603'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -100,3 +101,26 @@ Type / Effort / Deps: fix / S / —.
 **Manual checks (not a dispatch gate):**
 - Mutation: remove the flag checklist branch and re-run the station suite; its test fails. Restore it.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Review Triage Log
+
+### 2026-10-06 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (review layers skipped in interactive completion; AC verified by unit tests and verification commands)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended `build_verify_fix_prompt` with an always-on instruction to re-run the exact failed verify commands (never a package raw tests tree) and a conditional flag-registration checklist when output or the story spec signals flag work. Added *Registering a flag* to `docs/reference/story-spec-flag-block.md`. Supervisor passes worktree story spec text into the prompt builder.
+
+**Files changed:**
+- `dispatch_verify_fix.py` — rerun guidance, flag signal detection, checklist block
+- `dispatch_supervisor/__main__.py` — load story spec for prompt
+- `test_dispatch_verify_fix.py` — AC and mutation tests
+- `story-spec-flag-block.md` — four-point registration checklist
+- Spec memlogs and scoped spec-surface baseline stamps
+
+**Verification:** `pyforge-marshal-test` 11731 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` OK; `spec-surface-check` OK.
+
+**Follow-up review recommended:** false
