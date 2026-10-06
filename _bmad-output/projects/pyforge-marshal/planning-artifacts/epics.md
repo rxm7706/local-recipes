@@ -3741,6 +3741,36 @@ diffs both touch `src/platform/` **When** dispatched from different stations **T
 are held to the identical cross-surface bar — the check keys on the diff surface alone,
 never on which station dispatched the story.
 
+### Story 22.13: A landing sets the story's epics status to match the ledger
+
+As the operator who hand-fixed doctor 34.3, herald 27.1 and mason 19.1's `epics.md` after their automatic landings,
+I want `dispatch_land_finalize` to set the story's `**Status:**` line in its station's `epics.md` when it marks the story done,
+So that a landing leaves the epics, the ledger and the story spec agreeing, and doctor's epics meta-test never reds CI for it.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-162 (← spec-marshal-single-story-dispatch CAP-4; Story 22.4) • Dream 2026-10-06 (landing gaps)
+**Flag:** none
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` (beside the `promotion.set_spec_status` publish, about :694-:730), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py` (a pure helper that sets one story's `**Status:**` line); marshal tests
+**Spec:** `planning-artifacts/specs/spec-22-13-a-landing-sets-the-story-s-epics-status-to-match-the-ledger.md`
+**Given** a story whose section in `_bmad-output/projects/<slug>/planning-artifacts/epics.md` (`### Story N.M:` heading) carries a `**Status:** backlog` line, as doctor 34.3, herald 27.1 and mason 19.1 did on 2026-10-05
+**When** `dispatch_land_finalize` publishes the story's `done` onto `origin/main`
+**Then** the same publish sets that line to `**Status:** done`, and doctor's `test_live_tree_every_doctor_epics_status_matches_the_ledger` stays green after a doctor landing
+**And** a story section with no `**Status:**` line is left untouched (most marshal stories carry none); only the landed story's own line changes, never another story's; a missing `epics.md` or story heading is a journaled WARN, never a failed landing; removing the step fails its new test (mutation)
+
+### Story 22.14: The cross-surface gate runs each touched surface's own check
+
+As the operator whose `main` went red on `bmad_estate_check` after mason 19.1 landed a station skill,
+I want the cross-surface gate to map each shared surface to its own check, not only `src/platform/` to `platform-ci-local`,
+So that a story that adds a skill or a feature flag is verified against the check that guards it, and its fix turn sees that check's own remedy.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-170 (← spec-marshal-single-story-dispatch CAP-12; Story 22.12) • Dream 2026-10-06 (landing gaps)
+**Flag:** none
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py` (`SHARED_SURFACE_PREFIX` / `CROSS_SURFACE_VERIFY_COMMAND`, about :621-:639, become a small rule table of path prefixes to commands), `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` (about :954, run every matching rule's command); marshal tests
+**Spec:** `planning-artifacts/specs/spec-22-14-the-cross-surface-gate-runs-each-touched-surface-s-own-check.md`
+**Given** a story diff that touches `.claude/skills/`, or `src/platform/config/flags.json` / `flag-overlays.json`, or a story spec under `_bmad-output/projects/*/planning-artifacts/specs/`
+**When** dispatch verification runs
+**Then** `pixi run -e pyforge-guild bmad-estate-check` runs for a `.claude/skills/` change and `pixi run -e pyforge-guild flag-gate-check` for a flag-tree or story-spec change, each refusing under `MRS-GATE-015` with its own output when it fails; `src/platform/` still runs `platform-ci-local` exactly as today
+**And** a diff touching none of the surfaces runs none of the commands; a command runs once however many of its paths changed; the rule is keyed on the diff alone, never on the dispatching station; removing a rule fails its new test (mutation)
+
 **Epic 22 clears to dispatch sequentially from Story 22.1** — 22.2/22.3 fan out after 22.1;
 22.4 needs both; 22.5/22.6 need only their named deps; **CAP-7 fleet drain** is decomposed
 as Story 22.7 (2026-08-27, backlog), with the companion
@@ -6883,6 +6913,21 @@ So that Epic 53 closes with no named debt and the touched-module gate is whole a
 
 **Outcome (2026-09-20):** landed as PR #1557 (`c19a212727`, `Merge pyforge-marshal/53-3 into main`), module measured at 97% with branch coverage (101+ tests across `test_dispatch_supervisor_main_loop.py` and its review-pass additions); the per-module exception removed from `coverage_thresholds.toml` and its pinning test retired. A review pass (42 findings, 4 layers) found 5 review findings claiming unreachable code were actually reachable and patched them — no production change (`git diff` on `__main__.py` is empty). Ten deferred findings ingested as DW-FU-53-3 through DW-FU-53-3-10. Landing needed a hand-resolved merge conflict: the dispatch worktree's baseline predated PR #1556 (the headroom-ai/caveman pixi.toml fix), so both branches had appended to the same append-only `spec-pyforge-marshal` memlog — resolved by unioning both branches' entries. Ledger row promoted by hand (same shape as 53.2): the hand-resolved merge meant `dispatch_land_finalize` never ran, so the Tier-3 feed needed constructing before `sprint-ledger-sync`. First dispatch attempt (`...2eac5b84`) also hit the pre-existing headroom `[proxy]`-extra crash fixed in PR #1556; the retry after that fix hit Claude Code's 600s background-wait ceiling (fixed with `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0` on the second retry, which succeeded). epic-53 closes: 53.1/53.2/53.3 all done.
 
+### Story 53.4: A dispatch landing leaves every Spec it touched stampable
+
+As the operator who hand-named marshal 46.10 and 70.2's paths on `spec-pyforge-core` before its scoped stamp would run,
+I want a dispatch landing to name every path it changed on every Spec that governs it, co-governors included,
+So that no later landing or hand PR meets an MRS-DISP-048 refusal for a path a dispatch landed.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-261 (Story 53.2) • Dream 2026-10-06 (landing gaps)
+**Flag:** none
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` (`_reconcile_spec_surface_drift` / `_group_surface_findings`, about :274-:470); marshal tests with a real-git fixture
+**Spec:** `planning-artifacts/specs/spec-53-4-a-dispatch-landing-leaves-every-spec-it-touched-stampable.md`
+**Given** marshal 46.10 (`src/shared/packages/pyforge-marshal/src/pyforge/marshal/data/harness_profiles/copilot.toml`) and 70.2 (`seed/apply/run.py`, `seed/detect/skip_match.py`) landed by dispatch on 2026-10-05; their journals carry no `MRS-DISP-047` reconcile row; and on `6b55df1123` `python scripts/spec_surface_check.py --write-baseline --spec pyforge-marshal/spec-pyforge-core` refused naming exactly those three paths, although `spec-pyforge-marshal`'s memlog named them
+**When** the cause is traced (for example, the doctor verdict reports a co-governor's path as `drift-presumed` only in some states, or the reconcile stops once the owning Spec is clean) and fixed
+**Then** a real-git fixture where a branch changes a path governed by its own station Spec and by `spec-pyforge-core`, with core's memlog already moved by another story, lands with both Specs naming the path and both scoped stamps succeeding; the fix names the cause in the story's Auto Run Result
+**And** foreign drift still refuses with `MRS-DISP-048`; a landing that names nothing new records no reconcile; removing the fix fails the fixture (mutation)
+
 ## Epic 54: The hand ledger sync repairs its own feed drift (spec-pyforge-marshal CAP-265)
 
 Minted 2026-09-24 from the station Dream's entry of the same name: doctor 24.2 and 24.3 (PRs #1577/#1578,
@@ -9049,6 +9094,21 @@ So that a fix turn that adds or edits a governed file is judged on what it fixed
 **When** the supervisor commits the turn's edits
 **Then** it runs `dispatch land`'s own memlog reconcile over the paths the turn changed, commits it to the story branch, and re-verification passes the surface guard
 **And** drift that names a path the turn did not change is never absorbed, so re-verification refuses and the story parks with MRS-DISP-060; a reconcile that cannot be applied parks without re-verifying; one reconcile implementation serves both call sites; removing the step fails its new test (mutation)
+
+### Story 85.6: A fix turn re-runs only the failing commands and knows the flag checklist
+
+As the operator whose warden 14.1 fix turn spent its 900 s running slow corpus tests, and whose atlas 25.2 and warden 14.1 both missed flag registrations,
+I want the fix-turn prompt to tell the session to re-run only the failed verify commands, exactly as given, and to carry the flag registration checklist when a flag is involved,
+So that one fix turn is enough for the failures this fleet actually produces.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-marshal CAP-286 (FR-233) • Dream 2026-10-06 (landing gaps)
+**Flag:** none; `pyforge.marshal.verify_fix_loop` is unchanged
+**Surface:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_verify_fix.py` (`build_verify_fix_prompt`, about :197), `docs/reference/story-spec-flag-block.md` (a "Registering a flag" checklist the prompt points to); marshal tests
+**Spec:** `planning-artifacts/specs/spec-85-6-a-fix-turn-re-runs-only-the-failing-commands-and-knows-the-flag-checklist.md`
+**Given** warden 14.1's fix turn ran `pytest src/shared/packages/pyforge-warden/tests` with coverage (slow corpus tests included) and was killed at 900 s (MRS-DISP-059), and atlas 25.2's and warden 14.1's flag stories missed the overlay and test registrations
+**When** `build_verify_fix_prompt` builds a fix turn's prompt
+**Then** the prompt tells the session to reproduce and confirm with the failed commands exactly as quoted (station tasks already deselect `slow`), never a package's raw test directory; and when the failing output or the story's spec names a feature flag (`flag:` block, `flags.json`, `test_flags.py`, `test_openfeature_file_flags.py`, `flag-gate-check`), it adds the four registration points: `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json` per the spec's `flag.default`, core `tests/unit/test_flags.py`, platform `tests/test_openfeature_file_flags.py`
+**And** `docs/reference/story-spec-flag-block.md` carries the same checklist once, and the prompt points to it rather than restating more; a prompt with no flag in play is unchanged apart from the re-run instruction; removing either addition fails its new test (mutation)
 
 ## Epic 86: Phase 3 of the deferral burn-down: marshal's ruled fixes
 

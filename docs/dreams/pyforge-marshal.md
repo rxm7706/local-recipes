@@ -1081,6 +1081,23 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   **What it looks like when fixed:** promotion skips a Tier-3 spec whose key has no ledger row, or whose story already
   has a tracked spec under another key, and reports it as an orphan. **Constraints:** a fix story, no CAP, no flag.
   Owner `spec-pyforge-marshal`. → Story 83.20, specced 2026-10-04.
+- **2026-10-06 (landing gaps)** — **Found: four gaps the 2026-10-05 one-per-station dispatch left for a human.**
+  Seven dispatches ran; five landed and two were refused, and every landing still needed hand bookkeeping after it.
+  (1) Three automatic landings (doctor 34.3, herald 27.1, mason 19.1) flipped the ledger and the story spec but left
+  the story's `**Status:**` line in `epics.md` at `backlog`; doctor's own meta-test then failed CI `doctor-test` on
+  every branch. (2) Warden 14.1's single fix turn ran the warden package's whole test tree, slow corpus tests
+  included, instead of the failing command, and timed out at 900 s (MRS-DISP-059); atlas 25.2's fix turn cleared one
+  gate and the next refused (MRS-DISP-060). Both stories added a feature flag, and neither session knew the four places
+  a flag must be registered (`flags.json`, `flag-overlays.json` per the spec's `flag.default`, core `test_flags.py`,
+  platform `test_openfeature_file_flags.py`). (3) The cross-surface gate is one hardcoded rule (`src/platform/` runs
+  `platform-ci-local`), so mason 19.1 landed a new station skill without `bmad-estate-check` and left it red on `main`,
+  and nothing ran `flag-gate-check` on a flag story. (4) Marshal 46.10 and 70.2 landed by dispatch with
+  `spec-pyforge-core` paths their journals never reconciled, so core's scoped stamp refused until a hand PR named
+  them. **What it looks like when fixed:** a landing leaves `epics.md` matching the ledger; a fix turn re-runs only
+  the failing commands and has the flag checklist; the cross-surface gate runs each touched surface's own check; a
+  landing leaves every Spec it touched stampable. **Constraints:** fix stories, no CAP, no flag (operator,
+  2026-10-06: "do marshal prevention fixes first"). Owner `spec-pyforge-marshal`. → Stories 22.13, 22.14, 53.4,
+  85.6, specced 2026-10-06.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
