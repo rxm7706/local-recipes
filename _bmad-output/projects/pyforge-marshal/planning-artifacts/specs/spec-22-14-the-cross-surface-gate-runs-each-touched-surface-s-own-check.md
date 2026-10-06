@@ -2,8 +2,8 @@
 title: "22.14: The cross-surface gate runs each touched surface's own check"
 type: 'fix'
 created: '2026-10-06'
-status: 'ready-for-dev'
-baseline_revision: '7ab1f2d7b79f4e0c91755c060e902bb3cb1fcc6a'
+status: 'done'
+baseline_revision: '6321ff198deb517ebaabc9dee4399f2b397db4cc'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -101,3 +101,31 @@ Type / Effort / Deps: fix / S / —.
 **Manual checks (not a dispatch gate):**
 - Mutation: drop the `.claude/skills/` rule and re-run the station suite; its test fails. Restore it.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Review Triage Log
+
+### 2026-10-06 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 4, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Rule order might dedupe commands — evidence: each rule has a distinct command; platform and flag-gate both run when flags.json matches both matchers, which AC requires.
+  - `[false]` `[reject]` Story-spec paths under `_bmad-output/projects/` without `spec-` segment could false-positive — evidence: `_path_touched_by_cross_surface_rule` requires `_STORY_SPEC_PATH_MARKER` in path.
+  - `[false]` `[reject]` Backward-compat `cross_surface_check` breaks 22.12 tests — evidence: single-rule diffs still emit the legacy single-command shape; suite green at 11726 passed.
+  - `[false]` `[reject]` Missing run of all rules after first failure — evidence: loop runs every matched rule before verdict; consistent with prior single-command behavior extended.
+
+## Auto Run Result
+
+Status: done
+
+- **Summary:** Replaced the single platform cross-surface check with an ordered three-rule table in `core/gate.py` (platform, bmad-estate, flag-gate). `dispatch_verify.py` runs each matching rule once under `MRS-GATE-015`.
+- **Files changed:**
+  - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py` — rule table and pure matchers
+  - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — iterate matched rules
+  - `src/shared/packages/pyforge-marshal/tests/unit/test_gate.py` — mutation guard + matcher unit tests
+  - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` — integration tests for AC paths
+  - `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — surface reconcile
+  - `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — co-governor reconcile
+  - `scripts/.spec-surface-baseline.json` — scoped stamps for marshal + core specs
+- **Review:** No patches applied; four reviewer findings rejected as false positives.
+- **followup_review_recommended:** false
+- **Verification:** `pyforge-marshal-test` 11726 passed; `pyforge-deps-test` 130 passed; `lint-types` ok after ruff-format; `python scripts/spec_surface_reconcile.py` ok; `spec-surface-check` ok.
+- **Surface reconcile paths named:** `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py`, `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_gate.py`, `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.

@@ -119,6 +119,7 @@ from __future__ import annotations
 
 import fnmatch
 from collections.abc import Mapping
+from dataclasses import dataclass
 
 from pyforge.core.process import ProcessResult
 
@@ -617,7 +618,16 @@ def check_scope_with_mode(
     )
 
 
-# --- Story 22.12: shared-surface cross-suite gate (CAP-12) -------------------
+# --- Story 22.12 / 22.14: cross-surface verify rule table (CAP-12) -----------
+
+
+@dataclass(frozen=True, slots=True)
+class CrossSurfaceRule:
+    """One ordered cross-surface path rule and its pixi verify command (Story 22.14)."""
+
+    rule_id: str
+    command: str
+
 
 SHARED_SURFACE_PREFIX = "src/platform/"
 CROSS_SURFACE_VERIFY_COMMAND = (
@@ -625,19 +635,75 @@ CROSS_SURFACE_VERIFY_COMMAND = (
     # the task moved into guild-tasks (steward 63.6) and provisions the platform envs itself.
     "pixi run -e pyforge-guild platform-ci-local -- --test"
 )
+_BMAD_ESTATE_VERIFY_COMMAND = "pixi run -e pyforge-guild bmad-estate-check"
+_FLAG_GATE_VERIFY_COMMAND = "pixi run -e pyforge-guild flag-gate-check"
+_STORY_SPEC_PATH_MARKER = "/planning-artifacts/specs/spec-"
+_FLAG_EXACT_PATHS = (
+    "src/platform/config/flags.json",
+    "src/platform/config/flag-overlays.json",
+)
 CROSS_SURFACE_GATE_CODE = "MRS-GATE-015"
+
+CROSS_SURFACE_RULES: tuple[CrossSurfaceRule, ...] = (
+    CrossSurfaceRule("platform", CROSS_SURFACE_VERIFY_COMMAND),
+    CrossSurfaceRule("bmad-estate", _BMAD_ESTATE_VERIFY_COMMAND),
+    CrossSurfaceRule("flag-gate", _FLAG_GATE_VERIFY_COMMAND),
+)
+
+
+def _path_starts_with_prefix(path: str, prefix: str) -> bool:
+    return path == prefix.rstrip("/") or path.startswith(prefix)
+
+
+def _path_touched_by_cross_surface_rule(path: str, rule: CrossSurfaceRule) -> bool:
+    if rule.rule_id == "platform":
+        return _path_starts_with_prefix(path, SHARED_SURFACE_PREFIX)
+    if rule.rule_id == "bmad-estate":
+        return _path_starts_with_prefix(path, ".claude/skills/")
+    if rule.rule_id == "flag-gate":
+        if path in _FLAG_EXACT_PATHS:
+            return True
+        return path.startswith("_bmad-output/projects/") and _STORY_SPEC_PATH_MARKER in path
+    raise ValueError(f"unknown cross-surface rule_id: {rule.rule_id!r}")
+
+
+def changed_files_touch_cross_surface_rule(
+    changed_files: tuple[str, ...],
+    rule: CrossSurfaceRule,
+) -> bool:
+    """Return whether any changed path matches ``rule`` (Story 22.14)."""
+    if not isinstance(changed_files, tuple) or not all(isinstance(item, str) for item in changed_files):
+        raise TypeError(f"changed_files must be a tuple of str, got {changed_files!r}")
+    return any(_path_touched_by_cross_surface_rule(path, rule) for path in changed_files)
+
+
+def cross_surface_rules_for_changed_files(
+    changed_files: tuple[str, ...],
+) -> tuple[CrossSurfaceRule, ...]:
+    """Ordered cross-surface rules whose path prefixes match ``changed_files`` (Story 22.14)."""
+    if not isinstance(changed_files, tuple) or not all(isinstance(item, str) for item in changed_files):
+        raise TypeError(f"changed_files must be a tuple of str, got {changed_files!r}")
+    return tuple(rule for rule in CROSS_SURFACE_RULES if changed_files_touch_cross_surface_rule(changed_files, rule))
+
+
+def touched_paths_for_cross_surface_rule(
+    changed_files: tuple[str, ...],
+    rule: CrossSurfaceRule,
+) -> tuple[str, ...]:
+    """Changed paths that matched ``rule``, stable order (Story 22.14)."""
+    return tuple(path for path in changed_files if _path_touched_by_cross_surface_rule(path, rule))
 
 
 def changed_files_touch_shared_surface(changed_files: tuple[str, ...]) -> bool:
-    """Return whether any changed path lies under the shared Django host."""
-    if not isinstance(changed_files, tuple) or not all(isinstance(item, str) for item in changed_files):
-        raise TypeError(f"changed_files must be a tuple of str, got {changed_files!r}")
-    prefix = SHARED_SURFACE_PREFIX
-    return any(path == prefix.rstrip("/") or path.startswith(prefix) for path in changed_files)
+    """Return whether any changed path lies under the shared Django host (Story 22.12)."""
+    return changed_files_touch_cross_surface_rule(
+        changed_files,
+        CROSS_SURFACE_RULES[0],
+    )
 
 
 def shared_surface_verify_command() -> str:
-    """The hardcoded cross-surface verify command (CAP-12, not per-station)."""
+    """The platform cross-surface verify command (CAP-12, not per-station)."""
     return CROSS_SURFACE_VERIFY_COMMAND
 
 
