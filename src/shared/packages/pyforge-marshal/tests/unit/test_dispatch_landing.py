@@ -959,7 +959,9 @@ def test_reconcile_spec_surface_drift_reconciles_co_governor_doctor_cleared_by_o
         encoding="utf-8",
     )
     core_memlog = _co_governor_spec_dir(repo, "spec-core") / ".memlog.md"
-    core_memlog.write_text(core_memlog.read_text(encoding="utf-8") + "- (event) unrelated story moved memlog\n", encoding="utf-8")
+    core_memlog.write_text(
+        core_memlog.read_text(encoding="utf-8") + "- (event) unrelated story moved memlog\n", encoding="utf-8"
+    )
 
     _install_fake_spec_surface(monkeypatch, ())
     process = _RealReconcileProcess()
