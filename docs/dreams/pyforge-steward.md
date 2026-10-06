@@ -597,9 +597,34 @@ Drift — orphaned between stations.
     (for example Accelerate on `osx-arm64`, and an OpenBLAS or MKL choice on `linux-64` and `win-64`), expressed per
     target in `pixi.toml` and checked by `provision --verify`.
 
+  **Integration and self-maintenance** (so the matrix stays true as the library estate changes, without hand edits):
+  - **One generated data file is the source of truth**, for example `docs/reference/free-threading-readiness.yaml`.
+    Steward's Level 1 generator builds it from the tracked `pixi.lock`, not `pixi.toml`: every resolved package,
+    direct **and transitive**, on each of the three platforms, with its evidence (published `cp313t` / `cp314t`
+    build, pure Python, or none). The lock is the right input because the GIL comes back if any compiled module in
+    the process lacks support, including transitive ones `pixi.toml` never names.
+  - **The library catalog references it rather than restating it.** `docs/reference/library-llms-full.md` is an
+    LLM-authored derivative of `pixi.toml` whose reconciler is a prose rewrite, so per-platform readiness written
+    into it by hand would go stale when a channel publishes a new build. Each library entry instead carries a
+    one-line per-platform readiness note filled from the data file, and one section explains the matrix.
+    `llms-full-check` (`spec-library-catalog-manifest-sync`) can also flag a catalog library missing from the
+    readiness data.
+  - **A staleness detector keeps it current**, for example `free-threading-readiness-check` in `detectors-ci`
+    (repo scope). It reds when the data file's recorded `pixi.lock` fingerprint differs from the tracked lock and
+    names the regeneration command, the same pattern as `bmad-estate-check`, so a dependency change cannot merge
+    without regenerated readiness.
+  - **Dispatch enforces it too.** Marshal's cross-surface gate is a rule table since Story 22.14; one more rule
+    (`pixi.toml` / `pixi.lock` → the readiness check) makes a dispatched story regenerate it as part of its own
+    work.
+  - **Level 2 runs on a schedule, not per PR.** The native import probes are expensive, so a scheduled CI matrix
+    (Linux, Windows and macOS runners, `steward provision --verify` per platform) writes dated results into the same
+    data file, and [[pyforge-doctor]] reports results that have aged past a threshold.
+  - **New channel builds are picked up without a dependency change:** the scheduled run re-reads channel metadata,
+    so a package that gains a `cp314t` build moves to "available" on the next run.
+
   **Constraints:**
   - Informational until the operator rules otherwise: readiness is reported, and it gates nothing. It never feeds
-    `warden scan`'s verdict.
+    `warden scan`'s verdict. The staleness detector gates only that the data is current, never what it says.
   - Level 1 needs no environment build. Level 2 builds a free-threaded environment per platform, so it is opt-in
     and never part of the default `provision` path.
   - Engines are consumed, not authored: channel metadata comes through the estate's existing readers (atlas's
@@ -613,7 +638,9 @@ Drift — orphaned between stations.
   capability. The note's "action plan for LLMs" is not adopted as instructions.
 
   **Kinships:** [[pyforge-atlas]] (conda-forge package data), `spec-pyforge-unifying-strategy` (governs
-  `pixi.toml`). Owner: steward. → awaiting refinement and operator review, then `bmad-spec` (a new CAP on
+  `pixi.toml`), [[pyforge-marshal]] (`spec-library-catalog-manifest-sync` governs the library catalog and
+  `llms-full-check`; Story 22.14's cross-surface rule table), [[pyforge-doctor]] (`spec-pixi-candidate-currency`
+  watches the same lock for currency; ageing of Level 2 results). Owner: steward. → awaiting refinement and operator review, then `bmad-spec` (a new CAP on
   `spec-pyforge-steward`), after the 2026-10-06 marshal campaign.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
