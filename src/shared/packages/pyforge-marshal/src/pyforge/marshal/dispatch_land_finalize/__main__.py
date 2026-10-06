@@ -697,14 +697,20 @@ def _promote_tracked_spec(
     (CAP-233). If a publish fails a re-run of finalize repairs it: the gate and the status check are
     idempotent.
 
-    Returns ``(True, None)`` when it published, ``(False, None)`` for a no-op and ``(False, finding)`` for
-    a WARN."""
+    Returns ``(True, None)`` when it published, ``(False, None)`` for a no-op, ``(False, finding)`` when the
+    spec itself could not be promoted, and ``(True, finding)`` when the spec published but ``epics.md`` could
+    not be matched (Story 22.13 -- epics gaps never roll back the spec publish)."""
     rel = _local_spec_rel_path(root, worktree, project_slug, key)
     if rel is None:
         return False, None
 
-    def _warn(message: str) -> tuple[bool, Finding]:
-        return False, Finding(code="MRS-DISP-047", severity=Severity.WARN, message=message, path=rel)
+    epics_rel = f"_bmad-output/projects/{project_slug}/planning-artifacts/epics.md"
+
+    def _warn(message: str, *, path: str | None = None) -> tuple[bool, Finding]:
+        return False, Finding(code="MRS-DISP-047", severity=Severity.WARN, message=message, path=path or rel)
+
+    def _epics_gap(message: str) -> Finding:
+        return Finding(code="MRS-DISP-047", severity=Severity.WARN, message=message, path=epics_rel)
 
     try:
         text = vcs.file_text_at_ref(root, ORIGIN_MAIN, rel)
@@ -722,48 +728,30 @@ def _promote_tracked_spec(
             else f"its status {status!r} is not one a landing advances"
         )
         return _warn(f"story {key}'s tracked spec {rel!r} at {ORIGIN_MAIN_SHORT} was not promoted to done: {detail}")
-    epics_rel = f"_bmad-output/projects/{project_slug}/planning-artifacts/epics.md"
     spec_done_text = promotion.set_spec_status(text, promotion.SPEC_STATUS_DONE)
     writes: list[tuple[str, str]] = [(rel, spec_done_text)]
+    epics_gap: Finding | None = None
     try:
         epics_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, epics_rel)
     except VcsCommandError as exc:
-        return _warn(
-            f"story {key}'s tracked spec {rel!r} was promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
+        epics_gap = _epics_gap(
+            f"story {key}'s tracked spec {rel!r} will be promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
             f"could not be read at {epics_rel!r} to match its **Status:** line: {exc}"
         )
-    if epics_text is None:
-        finding = _warn(
-            f"story {key}'s tracked spec {rel!r} was promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
+    elif epics_text is None:
+        epics_gap = _epics_gap(
+            f"story {key}'s tracked spec {rel!r} will be promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
             f"does not exist at {epics_rel!r}; its **Status:** line was not updated"
         )
-        # Spec promotion already decided; publish the spec alone and surface the epics gap as WARN.
-        try:
-            vcs.commit_paths_onto_remote_tip(
-                root,
-                remote=VcsRef("origin"),
-                ref=VcsRef("main"),
-                writes=tuple(writes),
-                message=to_redacted_text(f"marshal: promote story {key}'s tracked spec to done"),
-                preflight_skip_reason=to_redacted_text(
-                    f"marshal tracked-spec promotion for {project_slug!r}, story {key}"
-                ),
-            )
-        except VcsCommandError as exc:
-            return _warn(
-                f"story {key}'s tracked spec {rel!r} could not be promoted to done on {ORIGIN_MAIN_SHORT}: {exc}"
-            )
-        return finding
-    if not promotion.epics_has_story_heading(epics_text, key):
-        epics_warn = _warn(
-            f"story {key}'s tracked spec {rel!r} was promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
+    elif not promotion.epics_has_story_heading(epics_text, key):
+        epics_gap = _epics_gap(
+            f"story {key}'s tracked spec {rel!r} will be promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
             f"has no ### Story {key}: heading at {epics_rel!r}; its **Status:** line was not updated"
         )
     else:
         epics_done = promotion.set_epics_story_status(epics_text, key, promotion.SPEC_STATUS_DONE)
         if epics_done != epics_text:
             writes.append((epics_rel, epics_done))
-        epics_warn = None
     try:
         vcs.commit_paths_onto_remote_tip(
             root,
@@ -776,8 +764,8 @@ def _promote_tracked_spec(
         )
     except VcsCommandError as exc:
         return _warn(f"story {key}'s tracked spec {rel!r} could not be promoted to done on {ORIGIN_MAIN_SHORT}: {exc}")
-    if epics_warn is not None:
-        return epics_warn
+    if epics_gap is not None:
+        return True, epics_gap
     return True, None
 
 
