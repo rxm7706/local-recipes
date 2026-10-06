@@ -722,18 +722,62 @@ def _promote_tracked_spec(
             else f"its status {status!r} is not one a landing advances"
         )
         return _warn(f"story {key}'s tracked spec {rel!r} at {ORIGIN_MAIN_SHORT} was not promoted to done: {detail}")
+    epics_rel = f"_bmad-output/projects/{project_slug}/planning-artifacts/epics.md"
+    spec_done_text = promotion.set_spec_status(text, promotion.SPEC_STATUS_DONE)
+    writes: list[tuple[str, str]] = [(rel, spec_done_text)]
+    try:
+        epics_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, epics_rel)
+    except VcsCommandError as exc:
+        return _warn(
+            f"story {key}'s tracked spec {rel!r} was promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
+            f"could not be read at {epics_rel!r} to match its **Status:** line: {exc}"
+        )
+    if epics_text is None:
+        finding = _warn(
+            f"story {key}'s tracked spec {rel!r} was promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
+            f"does not exist at {epics_rel!r}; its **Status:** line was not updated"
+        )
+        # Spec promotion already decided; publish the spec alone and surface the epics gap as WARN.
+        try:
+            vcs.commit_paths_onto_remote_tip(
+                root,
+                remote=VcsRef("origin"),
+                ref=VcsRef("main"),
+                writes=tuple(writes),
+                message=to_redacted_text(f"marshal: promote story {key}'s tracked spec to done"),
+                preflight_skip_reason=to_redacted_text(
+                    f"marshal tracked-spec promotion for {project_slug!r}, story {key}"
+                ),
+            )
+        except VcsCommandError as exc:
+            return _warn(
+                f"story {key}'s tracked spec {rel!r} could not be promoted to done on {ORIGIN_MAIN_SHORT}: {exc}"
+            )
+        return finding
+    if not promotion.epics_has_story_heading(epics_text, key):
+        epics_warn = _warn(
+            f"story {key}'s tracked spec {rel!r} was promoted to done on {ORIGIN_MAIN_SHORT}, but epics.md "
+            f"has no ### Story {key}: heading at {epics_rel!r}; its **Status:** line was not updated"
+        )
+    else:
+        epics_done = promotion.set_epics_story_status(epics_text, key, promotion.SPEC_STATUS_DONE)
+        if epics_done != epics_text:
+            writes.append((epics_rel, epics_done))
+        epics_warn = None
     try:
         vcs.commit_paths_onto_remote_tip(
             root,
             remote=VcsRef("origin"),
             ref=VcsRef("main"),
-            writes=((rel, promotion.set_spec_status(text, promotion.SPEC_STATUS_DONE)),),
+            writes=tuple(writes),
             message=to_redacted_text(f"marshal: promote story {key}'s tracked spec to done"),
             # The adapter proves this is a planning-artifacts-only commit before it sets the opt-out.
             preflight_skip_reason=to_redacted_text(f"marshal tracked-spec promotion for {project_slug!r}, story {key}"),
         )
     except VcsCommandError as exc:
         return _warn(f"story {key}'s tracked spec {rel!r} could not be promoted to done on {ORIGIN_MAIN_SHORT}: {exc}")
+    if epics_warn is not None:
+        return epics_warn
     return True, None
 
 
