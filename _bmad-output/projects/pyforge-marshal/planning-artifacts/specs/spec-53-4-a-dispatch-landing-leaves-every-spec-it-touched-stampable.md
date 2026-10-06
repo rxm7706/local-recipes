@@ -2,8 +2,8 @@
 title: "53.4: A dispatch landing leaves every Spec it touched stampable"
 type: 'fix'
 created: '2026-10-06'
-status: 'ready-for-dev'
-baseline_revision: '7ab1f2d7b79f4e0c91755c060e902bb3cb1fcc6a'
+status: 'done'
+baseline_revision: '65637972da9067c5807ec8309e023e0322ef3d7d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -108,3 +108,37 @@ Type / Effort / Deps: fix / S / —.
 - On the landed tree: `python scripts/spec_surface_check.py --write-baseline --spec pyforge-marshal/spec-pyforge-core`
   stamps without refusing (run on a scratch clone, not the shared checkout).
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Review Triage Log
+
+### 2026-10-06 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 4, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Blind hunter: missing cache invalidation when spec_surface_check.py changes on disk — module is reloaded per worktree key; patched copy is content-addressed by worktree path.
+  - `[false]` `[reject]` Edge case: empty own_paths skips expansion — guarded at top of `_own_path_stamp_refusals`.
+  - `[false]` `[reject]` Verification gap: no test for foreign drift on core — existing `test_reconcile_spec_surface_drift_refuses_foreign_drift` unchanged and still passes.
+  - `[false]` `[reject]` Intent: doctor modified — only read-only import of stamp helper; doctor untouched.
+
+## Auto Run Result
+
+Status: done
+
+**Cause found:** Doctor 42.1 overlap tolerance (Story 42.1 / `chain.py` `_drift_findings` per-path collapse): when the session's memlog on `spec-pyforge-marshal` moved and named a path, that path received a clean co-governor row, so `gather_spec_surface` emitted **no** drift row for any spec on that path — including `spec-pyforge-core`. Reconcile only consumed collapsed verdict rows, so 46.10/70.2 recorded no `MRS-DISP-047` for core (candidate cause #3 in the intent, with #1 as the mechanism).
+
+**Summary:** Landing reconcile now merges per-spec stamp refusals from `scripts/spec_surface_check.py`'s read-only `_unreconciled_paths` for the branch's own paths, so co-governors hidden by a clean sibling spec are memlogged and stamped before merge.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` — `_own_path_stamp_refusals` + loop merge; skip when stamp script absent (unit-test worktrees).
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py` — fixture + tests for overlap-tolerance gap and AC2 regression pin.
+
+**Review:** 0 patches; 4 false/reject.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11745 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 (after memlog reconcile on `spec-pyforge-marshal` and `pyforge-marshal/spec-pyforge-core`)
+
+**Residual risk:** Expansion runs only when `scripts/spec_surface_check.py` exists in the worktree (full dispatch checkout); a partial tree skips expansion silently, same as pre-53.4 verdict-only path.
