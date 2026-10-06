@@ -2,9 +2,9 @@
 
 Spawned as a subprocess by ``dispatch_land`` so ``dispatch_supervisor`` never
 imports ``cli/`` (AD-9). Composes ``deploy promote`` + ``land``'s sprint
-ledger promotion machinery, then (Story 79.1) carries the promotion to the two
-files that machinery never reached: the story's Tier-3 feed row and its
-tracked spec.
+ledger promotion machinery, then (Story 79.1) carries the promotion to the files that machinery never
+reached: the story's Tier-3 feed row, its tracked spec, and (Story 22.13)
+its ``epics.md`` ``**Status:**`` line when that section carries one.
 """
 
 from __future__ import annotations
