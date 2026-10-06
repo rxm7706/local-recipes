@@ -622,6 +622,37 @@ Drift — orphaned between stations.
   - **New channel builds are picked up without a dependency change:** the scheduled run re-reads channel metadata,
     so a package that gains a `cp314t` build moves to "available" on the next run.
 
+  **Baseline snapshot (2026-10-06), the seed for acceptance examples.** A one-off Level 1 run (scratch scripts,
+  not in the tree) over `pixi.lock` as last changed in `acdd200200` and conda-forge's `current_repodata.json` for
+  each platform, fetched 2026-10-06, Python 3.14 free-threaded (`cp314t`) only. It counts compiled Python-extension
+  packages (a `python_abi` dependency) per environment and platform. Interpreter packages (`cpython`, `python-gil`)
+  are excluded, because switching to `python-freethreading` replaces them. Pure-Python packages (843 in the lock,
+  228 of them direct) need no free-threaded build and are not counted.
+  - **Estate-wide:** of the compiled packages resolved per platform, `linux-64` 91 of 154, `win-64` 73 of 120,
+    `osx-arm64` 83 of 137 publish a `cp314t` build. Of the 41 direct compiled dependencies, 21 are ready wherever
+    they are used (among them `numpy`, `pandas`, `matplotlib-base`, `pillow`, `lxml`, `psycopg2`, `zstandard`,
+    `uvloop`), 2 are partial (`pyarrow` / `pyarrow-all`, no `osx-arm64` build) and 18 are ready nowhere (among them
+    `pyyaml`, `orjson`, `onnxruntime`, `chromadb`, `apsw`, `pymupdf`, `hiredis`).
+  - **`pyforge-guild`:** 8 of 31 compiled packages block on `linux-64` and `osx-arm64`, 9 on `win-64` (`pywin32`).
+    `headroom-ai` and `orjson` (direct), `onnxruntime` ← `magika`, `protobuf` ← `onnxruntime`, `tokenizers` ←
+    `transformers`, `pyyaml` ← `bmad-loop` / `copier` / `pre-commit` / `huggingface_hub` / `headroom-ai`,
+    `markupsafe` ← `jinja2`, `ukkonen` ← `identify`.
+  - **`platform-dev`:** 24 of 71 block on `linux-64`, 22 of 67 on `osx-arm64` (no `win-64` environment). Clusters:
+    the vector / LLM stack (`chromadb` → `grpcio`, `onnxruntime`, `pulsar-client`, `tokenizers`, `orjson`;
+    `litellm` / `opik` → `fastuuid`, `tree_sitter`), Django / Celery (`daphne` → `autobahn` → `py-ubjson`; `celery`
+    → `billiard`; `django-compressor` → `rcssmin` / `rjsmin`; `hiredis`), Azure auth (`azure-identity` →
+    `msal_extensions` → `portalocker`), data (`dlt` → `pendulum`; `pdfplumber` → `pypdfium2`; `openlayer` →
+    `pyarrow` on `osx-arm64`).
+  - **Closest environments:** `pyforge-core`, `pyforge-testing-kit` and `mcp-host` have no blocker; the station
+    environments `pyforge-ci`, `detectors`, `pyforge-marshal`, `pyforge-mason`, `pyforge-doctor`, `pyforge-herald`
+    and `pyforge-steward` have 1-3. **Furthest:** `local-recipes` (44-46), `pyforge-foundry-full` (27-30).
+  - **Highest-leverage blockers** (environments affected, of 36): `pyyaml` (31), `markupsafe` (23), the conda tooling
+    set `conda` / `menuinst` / `libmambapy` / `pycosat` (14 each), `pywin32` (13), `orjson` and `protobuf` (11 each).
+  - **Acceptance use:** given the same lock and repodata, the Level 1 generator reproduces these counts and blocker
+    sets (the per-environment compiled totals were counted by hand to within one or two, so the generator's exact
+    figures become the reference); the report names each blocker's direct dependents, as above. These are Level 1
+    facts only: a `cp314t` build makes a package installable in a free-threaded environment, not proven GIL-free.
+
   **Constraints:**
   - Informational until the operator rules otherwise: readiness is reported, and it gates nothing. It never feeds
     `warden scan`'s verdict. The staleness detector gates only that the data is current, never what it says.
