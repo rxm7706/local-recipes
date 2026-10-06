@@ -640,6 +640,57 @@ TERMINAL_SPEC_STATUSES = frozenset({SPEC_STATUS_DONE, "blocked", "superseded"})
 _STATUS_TOKEN_RE = re.compile(r"[A-Za-z0-9_-]+")
 
 
+_EPICS_STORY_HEADING_RE = re.compile(r"^### Story (\d+\.\d+[a-z]?):", re.MULTILINE)
+_EPICS_STATUS_LINE_RE = re.compile(r"^(\*\*Status:\*\*[ \t]*)(.*)$", re.MULTILINE)
+
+
+def epics_has_story_heading(text: str, key: StoryKey) -> bool:
+    """Whether ``text`` carries a ``### Story <key>:`` heading (Story 22.13). Pure (AD-4): no I/O."""
+    key_label = str(key)
+    return any(match.group(1) == key_label for match in _EPICS_STORY_HEADING_RE.finditer(text))
+
+
+def set_epics_story_status(text: str, key: StoryKey, status: str = SPEC_STATUS_DONE) -> str:
+    """``text`` with the landed story's ``**Status:**`` first word set to ``status`` (Story 22.13).
+
+    Finds the ``### Story <key>:`` section (the doctor epics/ledger join uses the same heading
+    grammar), rewrites the **last** ``**Status:**`` line in that section's first word only (trailing
+    text after the word is preserved), and leaves every other byte alone. Returns ``text`` unchanged
+    when the story heading is absent, the section has no ``**Status:**`` line, or the first word is
+    already ``status``. ``status`` must be a bare token (``[A-Za-z0-9_-]+``); anything else raises
+    ``ValueError``. Pure (AD-4): no I/O."""
+    if _STATUS_TOKEN_RE.fullmatch(status) is None:
+        raise ValueError(f"an epics status must match [A-Za-z0-9_-]+, got {status!r}")
+    headings = list(_EPICS_STORY_HEADING_RE.finditer(text))
+    section_start: int | None = None
+    section_end: int | None = None
+    key_label = str(key)
+    for idx, heading in enumerate(headings):
+        if heading.group(1) != key_label:
+            continue
+        section_start = heading.start()
+        section_end = headings[idx + 1].start() if idx + 1 < len(headings) else len(text)
+        break
+    if section_start is None:
+        return text
+    section = text[section_start:section_end]
+    status_matches = list(_EPICS_STATUS_LINE_RE.finditer(section))
+    if not status_matches:
+        return text
+    match = status_matches[-1]
+    rest = match.group(2)
+    words = rest.split(None, 1)
+    first = words[0] if words else ""
+    if first == status:
+        return text
+    trailing = words[1] if len(words) > 1 else ""
+    new_rest = f"{status} {trailing}" if trailing else status
+    new_line = f"{match.group(1)}{new_rest}"
+    abs_start = section_start + match.start()
+    abs_end = section_start + match.end()
+    return f"{text[:abs_start]}{new_line}{text[abs_end:]}"
+
+
 def set_spec_status(text: str, status: str) -> str:
     """``text`` with its frontmatter ``status:`` VALUE replaced by ``status`` (Story 79.1) -- the one
     writer of the value ``read_spec_status`` is the one reader of, so it finds the same line (the first

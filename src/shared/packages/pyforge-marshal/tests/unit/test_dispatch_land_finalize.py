@@ -996,6 +996,10 @@ _STATION_BRANCH_MERGE_79 = "Merge pull request #1706 from rxm7706/marshal/79-1-a
 _STATION_BRANCH_MERGE_79_2 = "Merge pull request #1707 from rxm7706/marshal/79-2-another-story"
 _SPEC_NAME_79 = "spec-79-1-a-landing-promotes-the-feed-row.md"
 _SPEC_REL_79 = f"_bmad-output/projects/{_SLUG_79}/planning-artifacts/specs/{_SPEC_NAME_79}"
+_EPICS_REL_79 = f"_bmad-output/projects/{_SLUG_79}/planning-artifacts/epics.md"
+_EPICS_79 = "### Story 79.1: x\n\n**Status:** backlog\n\n### Story 79.2: y\n\n**Status:** backlog\n"
+# Default fake origin epics: the landed story's section carries no **Status:** line (Story 22.13 no-op).
+_DEFAULT_FAKE_EPICS_79 = "### Story 79.1: x\n\nSection without a status line.\n"
 _TRACKED_SPEC_79 = (
     "---\ntitle: \"79.1: x\"\nstatus: 'backlog'\n---\n\n## Review Triage Log\n\n- No independent review has run yet.\n"
 )
@@ -1044,7 +1048,9 @@ class _PublishVcs(_StubVcs):
         self,
         *,
         spec_text: str | None = None,
+        epics_text: str | None = _DEFAULT_FAKE_EPICS_79,
         spec_read_raises: bool = False,
+        epics_read_raises: bool = False,
         publish_raises: bool = False,
         merge_subjects: tuple[str, ...] = (_DISPATCH_MERGE_79,),
         history_raises: bool = False,
@@ -1054,7 +1060,9 @@ class _PublishVcs(_StubVcs):
         super().__init__(**kwargs)
         self.fail_fetch_from = fail_fetch_from
         self.spec_text = spec_text
+        self.epics_text = epics_text
         self.spec_read_raises = spec_read_raises
+        self.epics_read_raises = epics_read_raises
         self.publish_raises = publish_raises
         self.merge_subjects = merge_subjects
         self.history_raises = history_raises
@@ -1080,8 +1088,12 @@ class _PublishVcs(_StubVcs):
         if path.endswith("sprint-status-ledger.yaml"):
             return super().file_text_at_ref(repo_root, ref, path)
         self.read_calls.append((repo_root, ref, path))
-        if self.spec_read_raises:
+        if path.endswith("planning-artifacts/epics.md") and self.epics_read_raises:
             raise VcsCommandError(f"git show {ref}:{path} failed: bad object")
+        if self.spec_read_raises and not path.endswith("planning-artifacts/epics.md"):
+            raise VcsCommandError(f"git show {ref}:{path} failed: bad object")
+        if path.endswith("planning-artifacts/epics.md"):
+            return self.epics_text
         return self.spec_text
 
     def commit_paths_onto_remote_tip(self, repo_root, *, remote, ref, writes, message, preflight_skip_reason=None):
@@ -1390,20 +1402,72 @@ def test_finalize_promotes_a_tracked_spec_the_session_committed_itself(tmp_path:
     checkout's own copy is not written (CAP-233)."""
     local_spec = _write_tracked_spec_79(tmp_path)
     _write_feed_79(tmp_path)
-    vcs = _PublishVcs(ledger_text=_DONE_LEDGER_79, spec_text=_TRACKED_SPEC_79)
+    vcs = _PublishVcs(ledger_text=_DONE_LEDGER_79, spec_text=_TRACKED_SPEC_79, epics_text=_EPICS_79)
     _stub_planned_finalize(monkeypatch, tmp_path, vcs)
 
     assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
 
     [publish] = vcs.publishes
     assert (publish["remote"], publish["ref"]) == ("origin", "main")
-    assert publish["writes"] == ((_SPEC_REL_79, _TRACKED_SPEC_79.replace("status: 'backlog'", "status: 'done'")),)
+    assert publish["writes"] == (
+        (_SPEC_REL_79, _TRACKED_SPEC_79.replace("status: 'backlog'", "status: 'done'")),
+        (
+            _EPICS_REL_79,
+            _EPICS_79.replace("### Story 79.1: x\n\n**Status:** backlog", "### Story 79.1: x\n\n**Status:** done"),
+        ),
+    )
     assert "79.1" in publish["message"] and "tracked spec" in publish["message"]
     assert "79.1" in publish["preflight_skip_reason"]
     assert (tmp_path, ORIGIN_MAIN, _SPEC_REL_79) in vcs.read_calls
     assert local_spec.read_text(encoding="utf-8") == _TRACKED_SPEC_79
     assert _journaled_findings_79(tmp_path) == []
     assert _promotion_flags_79(tmp_path) == (True, True, True)
+
+
+def test_finalize_leaves_epics_out_of_the_publish_when_the_story_section_has_no_status_line(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_tracked_spec_79(tmp_path)
+    _write_feed_79(tmp_path)
+    vcs = _PublishVcs(ledger_text=_DONE_LEDGER_79, spec_text=_TRACKED_SPEC_79, epics_text=_DEFAULT_FAKE_EPICS_79)
+    _stub_planned_finalize(monkeypatch, tmp_path, vcs)
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    [publish] = vcs.publishes
+    assert publish["writes"] == ((_SPEC_REL_79, _TRACKED_SPEC_79.replace("status: 'backlog'", "status: 'done'")),)
+    assert _journaled_findings_79(tmp_path) == []
+
+
+def test_finalize_warns_when_epics_is_missing_but_still_publishes_the_spec(tmp_path: Path, monkeypatch) -> None:
+    _write_tracked_spec_79(tmp_path)
+    _write_feed_79(tmp_path)
+    vcs = _PublishVcs(ledger_text=_DONE_LEDGER_79, spec_text=_TRACKED_SPEC_79, epics_text=None)
+    _stub_planned_finalize(monkeypatch, tmp_path, vcs)
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    [publish] = vcs.publishes
+    assert publish["writes"] == ((_SPEC_REL_79, _TRACKED_SPEC_79.replace("status: 'backlog'", "status: 'done'")),)
+    [finding] = _journaled_findings_79(tmp_path)
+    assert finding["code"] == "MRS-DISP-047" and "epics.md" in finding["message"]
+    assert _promotion_flags_79(tmp_path) == (True, True, True)
+
+
+def test_finalize_warns_when_epics_has_no_story_heading(tmp_path: Path, monkeypatch) -> None:
+    _write_tracked_spec_79(tmp_path)
+    _write_feed_79(tmp_path)
+    vcs = _PublishVcs(
+        ledger_text=_DONE_LEDGER_79,
+        spec_text=_TRACKED_SPEC_79,
+        epics_text="### Story 79.2: only other story\n\n**Status:** backlog\n",
+    )
+    _stub_planned_finalize(monkeypatch, tmp_path, vcs)
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    [finding] = _journaled_findings_79(tmp_path)
+    assert "no ### Story 79.1:" in finding["message"]
 
 
 @pytest.mark.parametrize("status", sorted(PRE_DONE_SPEC_STATUSES))
@@ -1849,7 +1913,10 @@ def test_against_real_git_a_stale_scan_is_corroborated_after_the_gates_own_fetch
     landed_spec = landing / _SPEC_REL_79
     landed_spec.parent.mkdir(parents=True)
     landed_spec.write_text(_TRACKED_SPEC_79, encoding="utf-8")
-    _git_79(landing, "add", _SPEC_REL_79)
+    landed_epics = landing / _EPICS_REL_79
+    landed_epics.parent.mkdir(parents=True, exist_ok=True)
+    landed_epics.write_text(_DEFAULT_FAKE_EPICS_79, encoding="utf-8")
+    _git_79(landing, "add", _SPEC_REL_79, _EPICS_REL_79)
     _git_79(landing, "commit", "-m", _DISPATCH_MERGE_79)
     landing_sha = _git_79(landing, "rev-parse", "HEAD").strip()
     _git_79(landing, "push", "origin", "main")
