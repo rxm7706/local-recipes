@@ -14,6 +14,7 @@ landing wait for CI.
 
 from __future__ import annotations
 
+import importlib.util
 import re
 import shutil
 import sys
@@ -301,6 +302,56 @@ def _group_surface_findings(surface_findings: Iterable[Any]) -> tuple[dict[str, 
     return by_spec, no_baseline
 
 
+_SPEC_SURFACE_CHECK_REPO_ROOT = "REPO_ROOT = Path(__file__).resolve().parent.parent"
+_spec_surface_check_cache: dict[str, object] = {}
+
+
+def _load_spec_surface_check(worktree: Path):
+    """Load ``scripts/spec_surface_check.py`` with ``REPO_ROOT`` pinned to ``worktree``."""
+    key = str(worktree.resolve())
+    cached = _spec_surface_check_cache.get(key)
+    if cached is not None:
+        return cached
+    script = worktree / "scripts" / "spec_surface_check.py"
+    source = script.read_text(encoding="utf-8")
+    if _SPEC_SURFACE_CHECK_REPO_ROOT not in source:
+        msg = "scripts/spec_surface_check.py REPO_ROOT assignment moved; update dispatch_land loader"
+        raise RuntimeError(msg)
+    patched = source.replace(_SPEC_SURFACE_CHECK_REPO_ROOT, f"REPO_ROOT = Path({str(worktree)!r})")
+    spec = importlib.util.spec_from_file_location(f"spec_surface_check_{key}", script)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load spec-surface stamp helper from {script}")
+    module = importlib.util.module_from_spec(spec)
+    exec(compile(patched, str(script), "exec"), module.__dict__)  # noqa: S102 -- trusted repo script
+    _spec_surface_check_cache[key] = module
+    return module
+
+
+def _own_path_stamp_refusals(worktree: Path, own_paths: frozenset[str]) -> dict[str, set[str]]:
+    """Per-spec paths that would refuse ``--write-baseline --spec NAME``, among ``own_paths``.
+
+    Story 53.4 (doctor 42.1 overlap tolerance): when one co-governor's memlog
+    names a path, ``gather_spec_surface`` emits no row for that path at all,
+    so reconcile never saw other co-governors (for example ``spec-pyforge-core``)
+    the session left unnamed. The stamp script's per-spec ``_unreconciled_paths``
+    uses the same bar as a scoped stamp -- read-only, never ``--write-baseline``."""
+    if not own_paths:
+        return {}
+    mod = _load_spec_surface_check(worktree)
+    unevaluable: dict[str, str] = {}
+    current = mod._live_state(unevaluable)
+    merged = mod._read_baseline()
+    by_spec: dict[str, set[str]] = {}
+    for name, cur in current.items():
+        base = merged.get(name)
+        if not isinstance(base, dict) or not isinstance(base.get("memlog"), str):
+            continue
+        for path, _what in mod._unreconciled_paths(name, base, cur, frozenset()):
+            if path in own_paths:
+                by_spec.setdefault(name, set()).add(path)
+    return by_spec
+
+
 @dataclass(frozen=True)
 class _SpecSurfaceReconcileOutcome:
     """Result of ``_reconcile_spec_surface_drift``. ``finding`` is ``None``
@@ -427,9 +478,6 @@ def _reconcile_spec_surface_drift(
 
     by_spec, no_baseline = _group_surface_findings(surface_findings)
 
-    if not by_spec and not no_baseline:
-        return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
-
     if own_changed_paths is not None:
         changed = set(own_changed_paths)
     else:
@@ -465,6 +513,37 @@ def _reconcile_spec_surface_drift(
 
     while True:
         own_paths = changed | written
+        try:
+            for name, paths in _own_path_stamp_refusals(worktree, frozenset(own_paths)).items():
+                by_spec.setdefault(name, set()).update(paths)
+        except OSError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot read the per-spec stamp contract from {worktree} "
+                        f"while reconciling spec-surface drift: {exc} — refusing to land"
+                    ),
+                ),
+                refuse=True,
+            )
+        except Exception as exc:  # noqa: BLE001 -- corrupt baseline, loader drift
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot evaluate co-governor stamp refusals on {worktree} "
+                        f"({exc.__class__.__name__}: {exc}) — refusing to land"
+                    ),
+                ),
+                refuse=True,
+            )
+
+        if not by_spec and not no_baseline:
+            break
+
         foreign: dict[str, set[str]] = {}
         own: dict[str, set[str]] = {}
         for name in no_baseline:

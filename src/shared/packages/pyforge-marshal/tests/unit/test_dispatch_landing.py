@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import time
 import types
@@ -33,6 +34,7 @@ from pyforge.marshal.core.model import Severity, Status, status_for
 from pyforge.marshal.core.refs import ORIGIN_MAIN, ORIGIN_MAIN_SHORT, local_branch_ref
 from pyforge.marshal.dispatch_land import (
     _SPEC_SURFACE_NAME_RE,
+    _own_path_stamp_refusals,
     _reconcile_spec_surface_drift,
     execute_dispatch_land,
 )
@@ -868,6 +870,140 @@ def test_a_chain_of_hidden_co_governors_is_reconciled_one_pass_each(tmp_path: Pa
         path for spec in specs for path in ((Path(_memlog_rel(spec)),), (Path(_BASELINE_PATH),))
     ]
     assert vcs.pushed == [_BRANCH]
+
+
+_CO_GOV_STATION = "proj/spec-station"
+_CO_GOV_CORE = "proj/spec-core"
+_CO_GOV_PATH = "a.py"
+_REPO_ROOT_FOR_STAMP = Path(__file__).resolve().parents[6]
+_STAMP_SCRIPT = _REPO_ROOT_FOR_STAMP / "scripts" / "spec_surface_check.py"
+
+
+def _co_governor_spec_dir(repo: Path, slug: str) -> Path:
+    return repo / "_bmad-output" / "projects" / "proj" / "planning-artifacts" / "specs" / slug
+
+
+def _patched_stamp_script(repo: Path) -> Path:
+    source = _STAMP_SCRIPT.read_text(encoding="utf-8")
+    patched = source.replace(
+        "REPO_ROOT = Path(__file__).resolve().parent.parent",
+        f"REPO_ROOT = Path({str(repo)!r})",
+    )
+    assert patched != source
+    destination = repo / "scripts" / "spec_surface_check.py"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(patched, encoding="utf-8")
+    return destination
+
+
+def _stamp_repo_baseline(repo: Path) -> None:
+    subprocess.run(
+        [sys.executable, str(repo / "scripts" / "spec_surface_check.py"), "--write-baseline"],
+        cwd=repo,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+def _co_governor_fixture_repo(tmp_path: Path) -> Path:
+    """Two specs co-govern ``a.py`` with a stamped baseline."""
+    for slug in ("spec-station", "spec-core"):
+        directory = _co_governor_spec_dir(tmp_path, slug)
+        directory.mkdir(parents=True)
+        (directory / "SPEC.md").write_text(
+            f"---\nsurface:\n  - {_CO_GOV_PATH}\n---\n# {slug}\n",
+            encoding="utf-8",
+        )
+        (directory / ".memlog.md").write_text("- (note) initial\n", encoding="utf-8")
+    (tmp_path / _CO_GOV_PATH).write_text("x = 1\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
+    _patched_stamp_script(tmp_path)
+    _stamp_repo_baseline(tmp_path)
+    return tmp_path
+
+
+def test_reconcile_spec_surface_drift_reconciles_co_governor_doctor_cleared_by_overlap_tolerance(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 53.4: when the session named a path only on its station spec, doctor's overlap
+    tolerance emits no row, but the co-governor still refuses a scoped stamp until its memlog
+    names the path."""
+    repo = _co_governor_fixture_repo(tmp_path)
+    (repo / _CO_GOV_PATH).write_text("x = 2\n", encoding="utf-8")
+    station_memlog = _co_governor_spec_dir(repo, "spec-station") / ".memlog.md"
+    station_memlog.write_text(
+        station_memlog.read_text(encoding="utf-8") + f"- (event) session named {_CO_GOV_PATH}\n",
+        encoding="utf-8",
+    )
+    core_memlog = _co_governor_spec_dir(repo, "spec-core") / ".memlog.md"
+    core_memlog.write_text(core_memlog.read_text(encoding="utf-8") + "- (event) unrelated story moved memlog\n", encoding="utf-8")
+
+    _install_fake_spec_surface(monkeypatch, ())
+    process = FakeProcess()
+    worktree = repo
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=repo,
+        worktree=worktree,
+        head_branch="dispatch/pyforge-marshal/53.4",
+        key=normalize("53-4-example"),
+        run_id="run-53",
+        vcs=_ReconcileVcs(changed=(_CO_GOV_PATH,)),
+        process=process,
+    )
+    assert outcome.refuse is False
+    assert outcome.finding is not None and outcome.finding.code == "MRS-DISP-047"
+    assert _CO_GOV_CORE in outcome.finding.message
+    memlog_targets = [Path(tokens[tokens.index("--path") + 1]).parent.name for tokens in _calls(process, "memlog.py")]
+    assert memlog_targets == ["spec-core"]
+    assert _spec_args(_calls(process, "spec_surface_check.py")[0]) == [_CO_GOV_CORE]
+
+
+def test_reconcile_spec_surface_drift_without_stamp_refusal_expansion_leaves_co_governor_unnamed(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 53.4 AC2: without the stamp-refusal expansion, a doctor-cleared co-governor stays unnamed."""
+    repo = _co_governor_fixture_repo(tmp_path)
+    (repo / _CO_GOV_PATH).write_text("x = 2\n", encoding="utf-8")
+    station_memlog = _co_governor_spec_dir(repo, "spec-station") / ".memlog.md"
+    station_memlog.write_text(
+        station_memlog.read_text(encoding="utf-8") + f"- (event) session named {_CO_GOV_PATH}\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(
+        "pyforge.marshal.dispatch_land._own_path_stamp_refusals",
+        lambda _worktree, _own_paths: {},
+    )
+    _install_fake_spec_surface(monkeypatch, ())
+    process = FakeProcess()
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=repo,
+        worktree=repo,
+        head_branch="dispatch/pyforge-marshal/53.4",
+        key=normalize("53-4-example"),
+        run_id=None,
+        vcs=_ReconcileVcs(changed=(_CO_GOV_PATH,)),
+        process=process,
+    )
+    assert outcome.finding is None
+    assert _calls(process, "memlog.py") == []
+
+
+def test_own_path_stamp_refusals_names_co_governor_when_station_memlog_cleared_doctor_verdict(
+    tmp_path: Path,
+) -> None:
+    repo = _co_governor_fixture_repo(tmp_path)
+    (repo / _CO_GOV_PATH).write_text("x = 2\n", encoding="utf-8")
+    station_memlog = _co_governor_spec_dir(repo, "spec-station") / ".memlog.md"
+    station_memlog.write_text(
+        station_memlog.read_text(encoding="utf-8") + f"- (event) session named {_CO_GOV_PATH}\n",
+        encoding="utf-8",
+    )
+    refusals = _own_path_stamp_refusals(repo, frozenset({_CO_GOV_PATH}))
+    assert refusals == {_CO_GOV_CORE: {_CO_GOV_PATH}}
+    assert _CO_GOV_STATION not in refusals
 
 
 def test_reconcile_spec_surface_drift_refuses_foreign_drift(tmp_path: Path, monkeypatch) -> None:
