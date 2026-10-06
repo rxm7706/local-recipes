@@ -912,13 +912,12 @@ class _DatedSidMap:
 
 def _map_arrival(target: Path, rev: str, path: str) -> int | None:
     """Committer time of the oldest commit that added ``path`` on ``rev``'s
-    first-parent line, else on any line, else ``None``."""
-    for line_scope in (("--first-parent",), ()):
-        out = _git(target, "log", *line_scope, "--diff-filter=A", "--format=%ct", rev, "--", path)
-        stamps = [token for token in (out or "").split() if token.isdigit()]
-        if stamps:
-            return int(stamps[-1])
-    return None
+    first-parent line, following renames, or ``None`` when git cannot say.
+    ``None`` keeps the map for every merge; an earlier side-branch time would
+    narrow it."""
+    out = _git(target, "log", "--first-parent", "--follow", "--diff-filter=A", "--format=%ct", rev, "--", path)
+    stamps = [token for token in (out or "").split() if token.isdigit()]
+    return int(stamps[-1]) if stamps else None
 
 
 def _translate_sid(sid: str, when: int | None, maps: Sequence[_DatedSidMap]) -> str:
@@ -1047,7 +1046,9 @@ def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ..
     station's own ``rekey-*.md`` map(s), if any (``_rekey_sid_maps``) — the
     same reader ``gather()`` already applies. Without it, a station that
     renumbered its stories (a fold PR) reads its own merges, which still
-    name the pre-fold number, as ``landed-but-unpromoted`` forever.
+    name the pre-fold number, as ``landed-but-unpromoted`` forever. Story
+    27.6: only merges committed before a map reached ``base_ref`` are
+    translated by it, one hop per map, maps in arrival order.
     """
     if _git(target, "rev-parse", "--git-dir") is None:
         return (

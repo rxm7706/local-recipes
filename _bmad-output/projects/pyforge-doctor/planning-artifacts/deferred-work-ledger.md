@@ -2959,3 +2959,14 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   promoted: 2026-10-03 — Story 66.2 backfill
   reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
   status: closed
+
+### DW-doctor-27-6: ledger-direction dates a merge by committer time, so a merge committed in the same second as a map, or an old-numbered merge on a branch forked before the fold but merged after it, still reads through or past the map wrongly.
+
+- source_spec: `planning-artifacts/specs/spec-27-6-a-rekey-map-translates-only-the-merges-that-came-before-it.md`
+  summary: ledger-direction dates a merge by committer time, so a merge committed in the same second as a map, or an old-numbered merge on a branch forked before the fold but merged after it, still reads through or past the map wrongly.
+  evidence: Story 27.6 review (2026-10-06) reproduced both as false landed-but-unpromoted FAILs in throwaway repos. The spec mandates committer time (strict <); an ancestry rule (git merge-base --is-ancestor <arrival_sha> <naming_sha>) would cover both. No live merge is affected today.
+  location: src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py
+  origin: spec-deferred 3a36af55769f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-06 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

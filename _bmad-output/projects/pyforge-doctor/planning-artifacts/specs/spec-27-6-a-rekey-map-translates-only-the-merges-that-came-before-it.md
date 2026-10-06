@@ -2,9 +2,9 @@
 title: "27.6: A rekey map translates only the merges that came before it"
 type: 'fix'
 created: '2026-10-06'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '609be7ff82ddb1f30ea6ab2faf076b9086d3920a'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
@@ -13,7 +13,18 @@ context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/rekey-2026-09-17.md
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py
   - src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_direction.py
-deferred: []
+deferred:
+  - summary: >-
+      ledger-direction dates a merge by committer time, so a merge committed in the same second as a map, or an
+      old-numbered merge on a branch forked before the fold but merged after it, still reads through or past the
+      map wrongly.
+    evidence: |-
+      Story 27.6 review (2026-10-06) reproduced both as false landed-but-unpromoted FAILs in throwaway repos. The
+      spec mandates committer time (strict <); an ancestry rule (git merge-base --is-ancestor <arrival_sha>
+      <naming_sha>) would cover both. No live merge is affected today.
+    location: >-
+      src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py
+    severity: low
 declared_low_risk: false
 ---
 
@@ -121,3 +132,48 @@ Type / Effort / Deps: fix / S / S-27.2.
 - `pixi run --frozen -e pyforge-guild detectors-ci`: exit 0.
 - Mutation: make the translation ignore dates and re-run the station suite; the post-map fixture fails. Restore it.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Review Triage Log
+
+### 2026-10-06 — Review pass (independent reviewer, separate session)
+- verdict: approve with nits — high 0, medium 0, low-medium 1, low 3, nit 1
+- low-medium, patched: a renamed or moved map was re-dated to the rename commit (`--diff-filter=A` without
+  `--follow`), which brought the false 24-2 FAIL back in a throwaway repo. `_map_arrival` now passes `--follow`;
+  `test_a_renamed_map_keeps_the_date_it_first_arrived` pins it (fails without `--follow`).
+- low, patched: the any-line fallback in `_map_arrival` picked an earlier side-branch commit, narrowing translation
+  against the spec's "unknown keeps the map". Removed; an unreadable arrival now returns `None`.
+- low, deferred: committer-time limits (same-second merge; a pre-fold fork merged after the fold). The spec mandates
+  `%ct`; an ancestry rule would cover both. Recorded in `deferred:`.
+- low, patched: test gaps. Added `test_a_merge_named_on_both_sides_of_the_map_yields_both_readings`, and
+  `test_two_maps_rename_only_the_merges_older_than_each` now dates the maps in separate commits with a merge older
+  than both.
+- nit, patched: `gather_direction`'s docstring now states the dated rule.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** `ledger-direction` dates each rekey map by the committer time it reached the base ref's first-parent line
+(following renames) and translates a merge-derived id through it only when the naming commit predates it, one hop per
+map, maps in arrival order. Atlas's new Story 25.2 no longer reads as the old fold's blocked 24-2.
+
+**Measured:** `gather_direction` on the live tree: before, one FAIL
+(`pyforge-atlas/24-2-materialize-cap-8-s-canonical-parquets-one-recorded-run`); after, none (8 ledgers OK). The
+reviewer's comparison also found the old fixed-point walk had mis-chained 22 atlas ids (for example 15-1, 16-1 and
+22-1 all read as 11-1); they now resolve one hop.
+
+**Files changed:**
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py` — `_DatedSidMap`, `_map_arrival`,
+  `_translate_sid`; `_rekey_sid_maps` dated per-map entries; `_merged_ids_for_project` `named_by`; `gather_direction`
+  per-commit translation.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_sources_ledger_direction.py` — Story 27.2 fixtures re-dated;
+  seven Story 27.6 tests.
+
+**Verification:**
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 3442 passed, 1 skipped (after the review patches).
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0.
+- `pyforge-doctor-coverage-gate` — OK for `pyforge.doctor.sources.ledger`.
+- Mutations: ignoring dates fails 3 tests; dropping `--follow` fails the rename test.
+- `detectors-ci` — exit 0.
+
+**followup_review_recommended:** false

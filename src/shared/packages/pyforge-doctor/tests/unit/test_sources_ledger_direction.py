@@ -753,12 +753,49 @@ def test_a_shift_map_renames_a_pre_map_merge_one_hop(tmp_path: Path) -> None:
     assert [f for f in findings if f.status == DoctorStatus.FAIL] == []
 
 
+def test_a_merge_named_on_both_sides_of_the_map_yields_both_readings(tmp_path: Path) -> None:
+    """An id named once before the fold (the old 25-2) and once after it (the
+    new 25-2) is two stories: the old one reads 24-2, the new one stays."""
+    repo = tmp_path / "r"
+    _seed_atlas_25_2(repo)
+    _commit(repo, "Merge pyforge-atlas/25-2 into main", allow_empty=True, date=_BEFORE_MAP)
+    _commit(repo, "Merge pyforge-atlas/25-2 into main", allow_empty=True, date="2026-10-05T19:25:00+00:00")
+
+    fails = [f for f in ledger.gather_direction(repo) if f.status == DoctorStatus.FAIL]
+
+    assert len(fails) == 1
+    assert fails[0].evidence["story_id"] == "24-2"
+
+
+def test_a_renamed_map_keeps_the_date_it_first_arrived(tmp_path: Path) -> None:
+    """Moving a map later must not re-date it: a merge made between its
+    arrival and the rename names the new 25-2, not the fold's old one."""
+    repo = tmp_path / "r"
+    _seed_atlas_25_2(repo)
+    _commit(repo, "Merge pyforge-atlas/25-2 into main", allow_empty=True, date="2026-09-18T10:00:00+00:00")
+    planning = "_bmad-output/projects/pyforge-atlas/planning-artifacts"
+    _git(repo, "mv", f"{planning}/rekey-2026-09-17.md", f"{planning}/rekey-2026-09-17-fold.md")
+    _commit(repo, "rename the fold map", date="2026-09-20T10:00:00+00:00")
+
+    findings = ledger.gather_direction(repo)
+
+    assert [f for f in findings if f.status == DoctorStatus.FAIL] == []
+
+
 def test_two_maps_rename_only_the_merges_older_than_each(tmp_path: Path) -> None:
-    """Maps apply in arrival order: a merge between them takes only the
-    second; a merge after both keeps its own number."""
+    """Maps apply in arrival order: a merge older than both takes both, a
+    merge between them takes only the second, and a merge after both keeps
+    its own number."""
     repo = tmp_path / "r"
     _init_repo(repo)
     _write_ledger(repo, "pyforge-atlas", {"11-5-handoff-final": "done"})
+    _commit(repo, "seed ledger", date=_BEFORE_MAP)
+    _commit(
+        repo,
+        "Merge bmad-loop/run-1/13-5-handoff into loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+        date="2026-08-11T10:00:00+00:00",
+    )
     _write_rekey(repo, "pyforge-atlas", "13-5-handoff -> 12-5-handoff\n", name="rekey-2026-09-17.md")
     _commit(repo, "first fold", date=_MAP_LANDED)
     _commit(
