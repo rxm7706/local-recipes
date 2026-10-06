@@ -222,3 +222,10 @@ Regenerating a board view is optional confirmation, not the measure.
   were already dated 2026-10-04. Deviation: the retro found a live defect rather than only clearing the edge
   (Story 41.3's INV-A allowlist drops the fold-provenance window, six station Specs red), minted as Story 41.6 in
   the same PR.
+
+- **Run 2026-10-05 — 1 finding cleared, single station.** Entry: pyforge-mason `staleness`, `feeds spec→prd` (the Spec's
+  memlog moved to 2026-10-05T12:27 with the Story 19.1 landing; the PRD sat at 2026-10-02). Exit:
+  `chain_currency_sweep_check.py --project pyforge-mason` current. Remedy: PRD and spine `## Currency reconciliation —
+  2026-10-05` sections folding the six memlog entries (Epic 27 rulings and Story 27.1, the 83.24 guard, Story 19.1); no FR
+  or AD change. Epics stayed at 2026-10-03, inside the 2-day window. Deviation: the Spec stage was dated by its memlog's
+  git last-touch, not by `SPEC.md`'s `updated:` (2026-09-29), so a landing that only appends to the memlog moves it.

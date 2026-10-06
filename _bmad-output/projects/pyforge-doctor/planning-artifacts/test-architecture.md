@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: b946d7bd789cce07
-story_count: 145
-test_file_count: 93
+source_fingerprint: 9e121403aea884ba
+story_count: 146
+test_file_count: 94
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 145
+- **Stories parsed:** 146
 - **Epics parsed:** 41
-- **Test files inventoried:** 93 under `src/shared/packages/pyforge-doctor/tests/`
+- **Test files inventoried:** 94 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b946d7bd789cce07`
+- **Source fingerprint:** `9e121403aea884ba`
 
 ## Risk Assessment
 
@@ -85,6 +85,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-doctor/tests/meta/test_atlas_sole_mcp_import.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_cli_bridge_sole_subprocess.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_coverage_gate_stays_outside_every_station.py` | meta | none observed |
+| `src/shared/packages/pyforge-doctor/tests/meta/test_docs_currency_generator_trust.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_env_hygiene_no_execution.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_epics_status_tracks_the_ledger.py` | meta | none observed |
 | `src/shared/packages/pyforge-doctor/tests/meta/test_flag_gate_stays_outside_every_station.py` | meta | none observed |
@@ -294,6 +295,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 27.2 | `ledger-direction` reads the station's rekey map | none observed |
 | 27.3 | A station's legacy-template history stays attributed after its template changes | none observed |
 | 27.5 | A bare-form merge is attributed by the paths its diff touches | none observed |
+| 27.6 | A rekey map translates only the merges that came before it | none observed |
 | 28.1 | A frontmatter reader that stops at the fence, not at the first dashes | none observed |
 | 29.1 | A per-Dream acknowledgement silences exactly one sibling hash, and the siblin... | none observed |
 | 30.1 | The map is enforced within its scope, the stubs are gone, and the new pages a... | none observed |

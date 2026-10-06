@@ -10,12 +10,12 @@
 > from steward's adoption register (AD-2), and a version the sources disagree on is shown
 > as a disagreement, never resolved here.
 >
-> Generated: 2026-09-29. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
+> Generated: 2026-10-05. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
 > Drift detector: `pixi run -e pyforge-guild bmad-estate-check` (structured: a section reds when
 > its derived facts move, prose is exempt).
 
 <!-- bmad-estate-digest: installed=58220a6d9490 -->
-<!-- bmad-estate-digest: skills=2036acf58e2b -->
+<!-- bmad-estate-digest: skills=2b9a771be7d3 -->
 <!-- bmad-estate-digest: phases=b74a30513e46 -->
 <!-- bmad-estate-digest: suite=99320657c0ef -->
 <!-- bmad-estate-digest: pins=4c42a2caf3a4 -->
@@ -39,7 +39,7 @@ Source: `_bmad/_config/manifest.yaml`, `_bmad/_config/skf-manifest.yaml`.
 ## 2. Skills by family
 
 Source: `.claude/skills/*/SKILL.md` frontmatter (`name`, `description`); the
-core/bmm split comes from `_bmad/_config/bmad-help.csv`. 128 skills.
+core/bmm split comes from `_bmad/_config/bmad-help.csv`. 129 skills.
 
 ### BMAD core (8)
 
@@ -85,7 +85,7 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 128 skills.
 | `bmad-agent-doctor` | Doctor station persona. Acts only through pyforge doctor grammar and POST /stations/doctor/mcp. Findings stay advisory — not a second PR gate. Use when the operator addresses the doctor station as a persona. |
 | `bmad-agent-herald` | Herald station persona. Acts only through pyforge herald grammar and POST /stations/herald/mcp. Use when the operator addresses the herald station as a persona. |
 | `bmad-agent-marshal` | Marshal station persona. Acts only through pyforge marshal grammar and POST /stations/marshal/mcp. Use when the operator addresses the marshal station as a persona. |
-| `bmad-agent-mason` | Mason station persona. Consults conda-forge-expert and acts only through pyforge mason grammar and POST /stations/mason/mcp. Use when the operator addresses the mason station as a persona. |
+| `bmad-agent-mason` | Mason station persona. Consults pyforge-mason (grammar/MCP) and conda-forge-expert (recipe). Acts only through pyforge mason grammar and POST /stations/mason/mcp. Use when the operator addresses the mason station as a pe |
 | `bmad-agent-pm` | Product manager for PRD creation and requirements discovery. Use when the user asks to talk to John or requests the product manager |
 | `bmad-agent-scribe` | Scribe station persona. Acts only through pyforge scribe grammar and POST /stations/scribe/mcp. Use when the operator addresses the scribe station as a persona. |
 | `bmad-agent-steward` | Steward station persona. Acts only through pyforge steward grammar and POST /stations/steward/mcp. Use when the operator addresses the steward station as a persona. |
@@ -186,7 +186,7 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 128 skills.
 | `release-please` | Set up and configure Google's release-please for automated versioning, changelog generation, and publishing via GitHub Actions. Covers pipeline creation, Conventional Commits formatting, pre-release workflows, monorepo c |
 | `slides-generator` | Generate interactive presentation slides using React + Tailwind, and export to standalone single-file HTML. Triggers on keywords like "slides", "presentation", "PPT", "demo", "benchmark", or when user requests export. Us |
 
-### PyForge station skills (pyforge-*) (7)
+### PyForge station skills (pyforge-*) (8)
 
 | Skill | Description |
 |---|---|
@@ -194,6 +194,7 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 128 skills.
 | `pyforge-doctor` | Pre-flight and fleet-watch diagnostics via the doctor CLI (check, monitor, diagnose, backlog-intake). Use when running pyforge doctor grammar, POST /stations/doctor/mcp, or working in src/shared/packages/pyforge-doctor/. |
 | `pyforge-herald` | Seeds, pulls, and reports Claude Design deck bridge state via the herald CLI. Use when running herald deck seed / pull / status, or working in src/shared/packages/pyforge-herald/. Do not import pyforge.herald internals; |
 | `pyforge-marshal` | Deterministic BMAD-loop supervisor: fleet status, loop homes, detector check, and Genesis seed via the marshal CLI. Use when running marshal status / homes / check / seed, or working in src/shared/packages/pyforge-marsha |
+| `pyforge-mason` | Mason station CLI grammar for the recipe, package and environment crafts plus doctor, reached as pyforge mason or POST /stations/mason/mcp. Use when running pyforge mason recipe, package, environment or doctor commands, |
 | `pyforge-scribe` | Captures team-memory decisions into .claude/memory, compiles the scribe knowledge graph, and recalls cited answers via the scribe CLI. Use when writing or retrieving team memory, running scribe capture / graph compile / |
 | `pyforge-steward` | Provisioner's station CLI — keys, deploy, provision, budget, sync, workspace, upgrade, suite, and machine bootstrap. Use when running steward duties, pyforge steward grammar, or working in src/shared/packages/pyforge-ste |
 | `pyforge-warden` | Runs the warden dependency-hygiene and vulnerability gate via the warden CLI (scan / scan --doctor). Use when scanning Python/Conda/Pixi manifests, checking the scanner environment, or working in src/shared/packages/pyfo |

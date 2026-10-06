@@ -956,7 +956,7 @@ So that upstream's docs tooling applies here and the shelf is readable somewhere
 **When** `pixi run -e site docs-site-build` runs on a clean checkout
 **Then** it exits 0 and `docs-site/build/site/` holds `index.html`, `404.html`, and one page per `docs/map.yaml` entry, each titled from its heading with that heading rendered once; the quadrant indexes are served at `/tutorials/`, `/how-to/`, `/reference/` and `/explanation/`; no page from `docs/{dreams,specs,governance,intake,foundry,dashboard}/` is built
 **And** `git diff --stat origin/main -- docs/` lists only `docs/index.md` and `docs/404.md` as added; `pixi project export conda-environment -e build` leaves `environment.yaml` byte-identical; `test_docs_site.py` passes in `pyforge-herald-test`
-**Status:** backlog
+**Status:** done
 
 ### Story 27.2: One Pages artifact carries the docs site, the dossier and the dashboard
 

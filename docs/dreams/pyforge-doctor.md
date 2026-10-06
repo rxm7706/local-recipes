@@ -86,6 +86,17 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-06 (rekey dating)** — **Found: `ledger-direction` reads a new story through an old fold's rekey map.**
+  `gather_direction` passes every merge-derived story id through every rekey map the station tracks (Story 27.2),
+  whenever the merge happened. Atlas's 2026-09-17 fold shifted Epics 12..25 to 11..24, so `rekey-2026-09-17.md` maps
+  the OLD `25-2` to `24-2`. When atlas's NEW Story 25.2 landed (`3f2744da9e Merge pyforge-atlas/25-2 into main`,
+  2026-10-05), the detector read it as 24.2, which is `blocked`, and failed `landed-but-unpromoted` on `main`; every
+  local `pr-preflight` then stopped at `detectors-ci`. The same reader also walks each entry to a fixed point across
+  the union of maps, so a shift map holding both `13-1 -> 12-1` and `12-1 -> 11-1` would carry a pre-fold `13-1` to
+  `11-1`. **What it looks like when fixed:** a map applies only to merges committed before it reached the base ref's
+  first-parent line, one hop per map, maps in the order they arrived; a map whose arrival cannot be read keeps today's
+  translation. Story 27.2's live atlas rows (13-5, 14-4, 15-3) stay clean. **Constraints:** a fix story, no new CAP,
+  no flag. It goes into Epic 27 and reopens it. Owner `spec-pyforge-doctor`. → Story 27.6, specced 2026-10-06.
 - **2026-10-05 (generator trust)** — **Ruling: Doctor runs no generator from the judged tree.** Story 40.1's review found
   a third site where a judged tree runs code at Doctor's privileges: `docs_currency` runs the generator script the
   tree's own `docs/map.yaml` names (`DW-doctor-40-1-2`, high, unverified pending a ruling on the trust model). The

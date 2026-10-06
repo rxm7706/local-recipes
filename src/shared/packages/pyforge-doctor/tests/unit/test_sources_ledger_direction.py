@@ -4,6 +4,7 @@ FR-137 / FR-138) — ledger-vs-git drift WITH DIRECTION, never the feed.
 
 from __future__ import annotations
 
+import os
 import subprocess
 from pathlib import Path
 
@@ -57,12 +58,24 @@ def _write_ledger(repo: Path, project: str, statuses: dict[str, str]) -> Path:
     return ledger_path
 
 
-def _commit(repo: Path, message: str, *, allow_empty: bool = False) -> None:
+def _commit(repo: Path, message: str, *, allow_empty: bool = False, date: str | None = None) -> None:
+    """``date`` (ISO 8601) sets both the author and committer time -- Story
+    27.6's rekey translation is dated against each map's arrival."""
     _git(repo, "add", "-A")
     args = ["commit", "-q", "-m", message]
     if allow_empty:
         args.insert(1, "--allow-empty")
-    _git(repo, *args)
+    if date is None:
+        _git(repo, *args)
+        return
+    subprocess.run(
+        ["git", *args],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+        env={**os.environ, "GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date},
+    )
 
 
 def _write_rekey(repo: Path, project: str, text: str, name: str = "rekey-2026-09-17.md") -> Path:
@@ -527,6 +540,11 @@ def test_bare_form_merge_touching_own_paths_but_key_absent_from_ledger_does_not_
 
 # --- Story 27.2: gather_direction reads the station's rekey map -----------
 
+# The live dates (Story 27.6): atlas's 13-5 bmad-loop merge (7156c2b66f) and the
+# fold that added rekey-2026-09-17.md to main's first-parent line (93bcba96dc).
+_BEFORE_MAP = "2026-08-10T07:40:00+00:00"
+_MAP_LANDED = "2026-09-17T11:32:53+00:00"
+
 
 def test_rekey_map_translates_old_key_before_comparison(tmp_path: Path) -> None:
     """The live incident: atlas's own ``rekey-2026-09-17.md`` renumbered
@@ -545,11 +563,12 @@ def test_rekey_map_translates_old_key_before_comparison(tmp_path: Path) -> None:
         "pyforge-atlas",
         "13-5-downstream-handoff-to-mason -> 12-5-downstream-handoff-to-mason-fr-68\n",
     )
-    _commit(repo, "seed ledger with rekey map")
+    _commit(repo, "seed ledger with rekey map", date=_MAP_LANDED)
     _commit(
         repo,
         "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into loop/pyforge-atlas (bmad-loop)",
         allow_empty=True,
+        date=_BEFORE_MAP,
     )
 
     findings = ledger.gather_direction(repo)
@@ -583,11 +602,12 @@ def test_chained_rekey_maps_resolve_to_current_key(tmp_path: Path) -> None:
         "12-5-downstream-handoff-to-mason-fr-68 -> 11-5-downstream-handoff-to-mason-final\n",
         name="rekey-2026-09-20.md",
     )
-    _commit(repo, "seed ledger with two chained rekey maps")
+    _commit(repo, "seed ledger with two chained rekey maps", date=_MAP_LANDED)
     _commit(
         repo,
         "Merge bmad-loop/run-1/13-5-downstream-handoff-to-mason into loop/pyforge-atlas (bmad-loop)",
         allow_empty=True,
+        date=_BEFORE_MAP,
     )
 
     findings = ledger.gather_direction(repo)
@@ -655,3 +675,158 @@ def test_unreadable_rekey_map_never_crashes(tmp_path: Path) -> None:
     assert len(warns) == 1
     assert warns[0].status == DoctorStatus.WARN
     assert "rekey-2026-09-17.md" in warns[0].message
+
+
+# --- Story 27.6: a rekey map translates only the merges that came before it -
+
+
+def _seed_atlas_25_2(repo: Path) -> None:
+    """Atlas's live shape: the fold renamed the old 25-2 to 24-2 (now blocked),
+    and a later, new Story 25.2 is done."""
+    _init_repo(repo)
+    _write_ledger(
+        repo,
+        "pyforge-atlas",
+        {
+            "24-2-materialize-cap-8-s-canonical-parquets-one-recorded-run": "blocked",
+            "25-2-a-poll-cursor-sensor-refreshes-the-history": "done",
+        },
+    )
+    _write_rekey(
+        repo,
+        "pyforge-atlas",
+        "25-2-materialize-cap-8-s-canonical-parquets-one-recorded-run -> "
+        "24-2-materialize-cap-8-s-canonical-parquets-one-recorded-run\n",
+    )
+    _commit(repo, "fold: atlas rekey", date=_MAP_LANDED)
+
+
+def test_a_merge_after_the_map_keeps_the_new_story_it_names(tmp_path: Path) -> None:
+    """The live failure: `3f2744da9e Merge pyforge-atlas/25-2 into main`
+    (2026-10-05) names atlas's NEW 25.2; renaming it to the old fold's 24-2
+    read a blocked story as landed-but-unpromoted."""
+    repo = tmp_path / "r"
+    _seed_atlas_25_2(repo)
+    _commit(repo, "Merge pyforge-atlas/25-2 into main", allow_empty=True, date="2026-10-05T19:25:00+00:00")
+
+    findings = ledger.gather_direction(repo)
+
+    assert [f for f in findings if f.status == DoctorStatus.FAIL] == []
+
+
+def test_a_merge_before_the_map_is_still_renamed_by_it(tmp_path: Path) -> None:
+    """Mutation companion: the same subject, committed before the fold, names
+    the OLD 25-2 -- it still resolves to 24-2, which is not done."""
+    repo = tmp_path / "r"
+    _seed_atlas_25_2(repo)
+    _commit(repo, "Merge pyforge-atlas/25-2 into main", allow_empty=True, date=_BEFORE_MAP)
+
+    findings = ledger.gather_direction(repo)
+
+    fails = [f for f in findings if f.status == DoctorStatus.FAIL]
+    assert len(fails) == 1
+    assert fails[0].evidence["story_id"] == "24-2"
+    assert fails[0].evidence["direction"] == ledger.DIRECTION_LANDED_UNPROMOTED
+
+
+def test_a_shift_map_renames_a_pre_map_merge_one_hop(tmp_path: Path) -> None:
+    """A one-epic shift map holds both `13-1 -> 12-1` and `12-1 -> 11-1`; an
+    old merge naming 13-1 is today's 12-1, not 11-1."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-atlas", {"12-1-trending-ingest": "done", "11-1-kedro-audit": "backlog"})
+    _write_rekey(
+        repo,
+        "pyforge-atlas",
+        "13-1-trending-ingest -> 12-1-trending-ingest\n12-1-kedro-audit -> 11-1-kedro-audit\n",
+    )
+    _commit(repo, "fold: atlas rekey", date=_MAP_LANDED)
+    _commit(
+        repo,
+        "Merge bmad-loop/run-1/13-1-trending-ingest into loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+        date=_BEFORE_MAP,
+    )
+
+    findings = ledger.gather_direction(repo)
+
+    assert [f for f in findings if f.status == DoctorStatus.FAIL] == []
+
+
+def test_a_merge_named_on_both_sides_of_the_map_yields_both_readings(tmp_path: Path) -> None:
+    """An id named once before the fold (the old 25-2) and once after it (the
+    new 25-2) is two stories: the old one reads 24-2, the new one stays."""
+    repo = tmp_path / "r"
+    _seed_atlas_25_2(repo)
+    _commit(repo, "Merge pyforge-atlas/25-2 into main", allow_empty=True, date=_BEFORE_MAP)
+    _commit(repo, "Merge pyforge-atlas/25-2 into main", allow_empty=True, date="2026-10-05T19:25:00+00:00")
+
+    fails = [f for f in ledger.gather_direction(repo) if f.status == DoctorStatus.FAIL]
+
+    assert len(fails) == 1
+    assert fails[0].evidence["story_id"] == "24-2"
+
+
+def test_a_renamed_map_keeps_the_date_it_first_arrived(tmp_path: Path) -> None:
+    """Moving a map later must not re-date it: a merge made between its
+    arrival and the rename names the new 25-2, not the fold's old one."""
+    repo = tmp_path / "r"
+    _seed_atlas_25_2(repo)
+    _commit(repo, "Merge pyforge-atlas/25-2 into main", allow_empty=True, date="2026-09-18T10:00:00+00:00")
+    planning = "_bmad-output/projects/pyforge-atlas/planning-artifacts"
+    _git(repo, "mv", f"{planning}/rekey-2026-09-17.md", f"{planning}/rekey-2026-09-17-fold.md")
+    _commit(repo, "rename the fold map", date="2026-09-20T10:00:00+00:00")
+
+    findings = ledger.gather_direction(repo)
+
+    assert [f for f in findings if f.status == DoctorStatus.FAIL] == []
+
+
+def test_two_maps_rename_only_the_merges_older_than_each(tmp_path: Path) -> None:
+    """Maps apply in arrival order: a merge older than both takes both, a
+    merge between them takes only the second, and a merge after both keeps
+    its own number."""
+    repo = tmp_path / "r"
+    _init_repo(repo)
+    _write_ledger(repo, "pyforge-atlas", {"11-5-handoff-final": "done"})
+    _commit(repo, "seed ledger", date=_BEFORE_MAP)
+    _commit(
+        repo,
+        "Merge bmad-loop/run-1/13-5-handoff into loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+        date="2026-08-11T10:00:00+00:00",
+    )
+    _write_rekey(repo, "pyforge-atlas", "13-5-handoff -> 12-5-handoff\n", name="rekey-2026-09-17.md")
+    _commit(repo, "first fold", date=_MAP_LANDED)
+    _commit(
+        repo,
+        "Merge bmad-loop/run-2/12-5-handoff into loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+        date="2026-09-18T10:00:00+00:00",
+    )
+    _write_rekey(repo, "pyforge-atlas", "12-5-handoff -> 11-5-handoff-final\n", name="rekey-2026-09-20.md")
+    _commit(repo, "second fold", date="2026-09-20T10:00:00+00:00")
+
+    between = ledger.gather_direction(repo)
+    assert [f for f in between if f.status == DoctorStatus.FAIL] == []
+
+    _commit(
+        repo,
+        "Merge bmad-loop/run-3/12-5-handoff into loop/pyforge-atlas (bmad-loop)",
+        allow_empty=True,
+        date="2026-09-21T10:00:00+00:00",
+    )
+    after = [f for f in ledger.gather_direction(repo) if f.status == DoctorStatus.FAIL]
+    assert len(after) == 1
+    assert after[0].evidence["story_id"] == "12-5"
+
+
+def test_an_unknown_time_keeps_the_map() -> None:
+    """When git cannot date the map or the merge, the map still applies --
+    Story 27.2's translation, never a new false row."""
+    undated = ledger._DatedSidMap("rekey.md", None, {"13-5": "12-5"})
+    dated = ledger._DatedSidMap("rekey.md", 1_000, {"13-5": "12-5"})
+
+    assert ledger._translate_sid("13-5", 2_000, [undated]) == "12-5"
+    assert ledger._translate_sid("13-5", None, [dated]) == "12-5"
+    assert ledger._translate_sid("13-5", 2_000, [dated]) == "13-5"

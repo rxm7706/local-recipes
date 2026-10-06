@@ -2059,7 +2059,7 @@ SKF block reads `8 skills`
 **And** the persona consults `pyforge-mason` for the grammar and CFE for recipe work; the mason meta-tests still assert CFE
 is hand-authored and not version-nested, and no longer assert `.claude/skills/pyforge-mason` is absent; the notes line that
 says Mason has no SKF skill is replaced; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 19.2: The package craft skill teaches mason package build and ship
 
