@@ -314,10 +314,14 @@ def _load_spec_surface_check(worktree: Path):
         return cached
     script = worktree / "scripts" / "spec_surface_check.py"
     source = script.read_text(encoding="utf-8")
-    if _SPEC_SURFACE_CHECK_REPO_ROOT not in source:
+    repointed = f"REPO_ROOT = Path({str(worktree)!r})"
+    if _SPEC_SURFACE_CHECK_REPO_ROOT in source:
+        patched = source.replace(_SPEC_SURFACE_CHECK_REPO_ROOT, repointed)
+    elif repointed in source:
+        patched = source
+    else:
         msg = "scripts/spec_surface_check.py REPO_ROOT assignment moved; update dispatch_land loader"
         raise RuntimeError(msg)
-    patched = source.replace(_SPEC_SURFACE_CHECK_REPO_ROOT, f"REPO_ROOT = Path({str(worktree)!r})")
     spec = importlib.util.spec_from_file_location(f"spec_surface_check_{key}", script)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load spec-surface stamp helper from {script}")

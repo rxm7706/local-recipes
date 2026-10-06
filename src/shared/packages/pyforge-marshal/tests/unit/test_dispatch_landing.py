@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 import time
@@ -915,13 +916,33 @@ def _co_governor_fixture_repo(tmp_path: Path) -> Path:
             f"---\nsurface:\n  - {_CO_GOV_PATH}\n---\n# {slug}\n",
             encoding="utf-8",
         )
-        (directory / ".memlog.md").write_text("- (note) initial\n", encoding="utf-8")
+        (directory / ".memlog.md").write_text(
+            "---\ntopic: test\nupdated: 2026-10-06T00:00\n---\n\n- (note) initial\n",
+            encoding="utf-8",
+        )
     (tmp_path / _CO_GOV_PATH).write_text("x = 1\n", encoding="utf-8")
+    memlog_dest = tmp_path / "_bmad" / "scripts" / "memlog.py"
+    memlog_dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(_REPO_ROOT_FOR_STAMP / "_bmad" / "scripts" / "memlog.py", memlog_dest)
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
     subprocess.run(["git", "add", "-A"], cwd=tmp_path, check=True)
     _patched_stamp_script(tmp_path)
     _stamp_repo_baseline(tmp_path)
     return tmp_path
+
+
+class _RealReconcileProcess:
+    """Runs memlog and spec_surface_check subprocesses against the fixture repo."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[list[str], Path]] = []
+
+    def run(self, tokens, *, cwd: Path):
+        self.calls.append((list(tokens), cwd))
+        if len(tokens) > 1 and ("memlog.py" in tokens[1] or "spec_surface_check.py" in tokens[1]):
+            completed = subprocess.run(tokens, cwd=cwd, capture_output=True, text=True, check=False)
+            return ProcessResult(completed.returncode, completed.stdout, completed.stderr)
+        return ProcessResult(returncode=0, stdout="", stderr="")
 
 
 def test_reconcile_spec_surface_drift_reconciles_co_governor_doctor_cleared_by_overlap_tolerance(
@@ -941,7 +962,7 @@ def test_reconcile_spec_surface_drift_reconciles_co_governor_doctor_cleared_by_o
     core_memlog.write_text(core_memlog.read_text(encoding="utf-8") + "- (event) unrelated story moved memlog\n", encoding="utf-8")
 
     _install_fake_spec_surface(monkeypatch, ())
-    process = FakeProcess()
+    process = _RealReconcileProcess()
     worktree = repo
     outcome = _reconcile_spec_surface_drift(
         git_repo_root=repo,
