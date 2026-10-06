@@ -2,7 +2,7 @@
 title: "27.6: A rekey map translates only the merges that came before it"
 type: 'fix'
 created: '2026-10-06'
-status: 'ready-for-dev'
+status: 'in-progress'
 baseline_revision: '609be7ff82ddb1f30ea6ab2faf076b9086d3920a'
 review_loop_iteration: 0
 followup_review_recommended: false

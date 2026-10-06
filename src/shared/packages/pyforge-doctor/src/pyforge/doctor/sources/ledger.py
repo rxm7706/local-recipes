@@ -53,7 +53,8 @@ from __future__ import annotations
 
 import re
 import tomllib
-from collections.abc import Collection
+from collections.abc import Collection, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from pyforge.core.landing_evidence import parse_templated_merge_subject
@@ -777,8 +778,12 @@ def _merged_ids_for_project(
     *,
     diff_cache: DiffCache,
     unreadable_diff_shas: list[str] | None = None,
+    named_by: dict[str, set[str]] | None = None,
 ) -> set[str]:
     """Story ids durably named in ``commits`` for ``project_slug``.
+
+    ``named_by``, when given, records which commit shas named each id (Story 27.6:
+    the rekey translation is per naming commit, dated against each map).
 
     Covers GitHub PR-merge, bmad-loop native, and templated merge subjects.
     The first two are scoped to the station short name / ``loop/<slug>``
@@ -819,10 +824,16 @@ def _merged_ids_for_project(
     template = _project_merge_subject_template(target, project_slug)
     known_keys = known_story_keys(target, project_slug)
     out: set[str] = set()
+
+    def _record(sid: str, sha: str) -> None:
+        out.add(sid)
+        if named_by is not None:
+            named_by.setdefault(sid, set()).add(sha)
+
     for sha, subject in commits:
         templated = parse_templated_merge_subject(subject, template, project_slug)
         if templated is not None:
-            out.add(templated.hyphen_form())
+            _record(templated.hyphen_form(), sha)
             continue
         gh = _GITHUB_MERGE_SUBJECT_RE.match(subject)
         if gh is not None:
@@ -831,13 +842,13 @@ def _merged_ids_for_project(
                 segment = branch.rsplit("/", 1)[-1]
                 sid = _story_id(segment)
                 if sid:
-                    out.add(sid)
+                    _record(sid, sha)
             continue
         bl = _BMADLOOP_MERGE_SUBJECT_RE.match(subject)
         if bl is not None and bl.group("target") == f"loop/{project_slug}":
             sid = _story_id(bl.group("key_slug"))
             if sid:
-                out.add(sid)
+                _record(sid, sha)
             continue
         attribution = attribute_bare_merge(
             subject,
@@ -848,7 +859,7 @@ def _merged_ids_for_project(
             cache=diff_cache,
         )
         if attribution.key is not None:
-            out.add(attribution.key.hyphen_form())
+            _record(attribution.key.hyphen_form(), sha)
         elif attribution.diff_unreadable_sha is not None and unreadable_diff_shas is not None:
             unreadable_diff_shas.append(attribution.diff_unreadable_sha)
     return out
@@ -889,10 +900,47 @@ def _base_done_ids(target: Path, rel_path: str, base_ref: str) -> set[str] | Non
     return out
 
 
-def _rekey_sid_maps(target: Path, rev: str) -> tuple[dict[str, dict[str, str]], list[Finding]]:
-    """Per-project ``{old_story_id: new_story_id}`` from every re-key map
-    tracked at ``rev`` (Story 27.2 / spec-27-2-ledger-direction-reads-the-
-    stations-rekey-map).
+@dataclass(frozen=True)
+class _DatedSidMap:
+    """One re-key map at the ``<epic>-<seq>`` grain, with the committer time of
+    the commit that added it at the ref (``None`` when git cannot say)."""
+
+    path: str
+    arrived: int | None
+    mapping: dict[str, str]
+
+
+def _map_arrival(target: Path, rev: str, path: str) -> int | None:
+    """Committer time of the oldest commit that added ``path`` on ``rev``'s
+    first-parent line, else on any line, else ``None``."""
+    for line_scope in (("--first-parent",), ()):
+        out = _git(target, "log", *line_scope, "--diff-filter=A", "--format=%ct", rev, "--", path)
+        stamps = [token for token in (out or "").split() if token.isdigit()]
+        if stamps:
+            return int(stamps[-1])
+    return None
+
+
+def _translate_sid(sid: str, when: int | None, maps: Sequence[_DatedSidMap]) -> str:
+    """``sid`` as the current ledger names it: each map, in arrival order,
+    renames it once, and only when the naming commit predates that map. An
+    unknown time on either side keeps the map (Story 27.2's translation)."""
+    for dated in maps:
+        if dated.arrived is None or when is None or when < dated.arrived:
+            sid = dated.mapping.get(sid, sid)
+    return sid
+
+
+def _rekey_sid_maps(target: Path, rev: str) -> tuple[dict[str, list[_DatedSidMap]], list[Finding]]:
+    """Per-project re-key maps tracked at ``rev``, each ``{old_story_id:
+    new_story_id}`` with its arrival time, in arrival order (Story 27.2 /
+    spec-27-2-ledger-direction-reads-the-stations-rekey-map; dated by Story 27.6).
+
+    Story 27.6: a map renames only the merges that predate it, one hop per map.
+    Applying every map to every merge read atlas's new Story 25.2 (landed
+    2026-10-05) as the old 25-2 its 2026-09-17 fold renamed to 24-2, and walking
+    entries to a fixed point carried a shift map's ``13-1 -> 12-1`` on through
+    ``12-1 -> 11-1``.
 
     ``gather_direction`` compares at the ``<epic>-<seq>`` grain (``_story_id``
     ), never the full ledger key — a templated merge subject's ``{key}``
@@ -920,7 +968,7 @@ def _rekey_sid_maps(target: Path, rev: str) -> tuple[dict[str, dict[str, str]], 
     that has other evidence (a merge subject, or the base-ref ledger) to
     fall back on.
     """
-    maps: dict[str, dict[str, str]] = {}
+    maps: dict[str, list[_DatedSidMap]] = {}
     problems: list[Finding] = []
     for path in _rekey_paths(target, rev):
         # `_rekey_paths` already filtered every entry through `_REKEY_RE`,
@@ -961,26 +1009,19 @@ def _rekey_sid_maps(target: Path, rev: str) -> tuple[dict[str, dict[str, str]], 
                     evidence={"project": project, "path": path, "count": len(bad)},
                 )
             )
-        project_map = maps.setdefault(project, {})
+        mapping: dict[str, str] = {}
         for old, new in parsed.mapping.items():
             old_sid = _story_id(old)
             new_sid = _story_id(new)
             if old_sid and new_sid:
-                project_map[old_sid] = new_sid
+                mapping[old_sid] = new_sid
+        maps.setdefault(project, []).append(_DatedSidMap(path, _map_arrival(target, rev, path), mapping))
 
-    # A station can ship a SECOND rekey map that renumbers an already
-    # renumbered sid (13-5 -> 12-5 in one file, 12-5 -> 11-5 in a later
-    # one). Resolve every entry to its fixed point through its own map --
-    # same hop-walk, same cap, as ``rekey.reverse_map`` -- so a merge naming
-    # the OLDEST spelling still lands on the CURRENT one, not an
-    # intermediate one that itself moved on.
-    for project_map in maps.values():
-        for old_sid in project_map:
-            cur, hops = project_map[old_sid], 0
-            while cur in project_map and hops < 64:
-                cur = project_map[cur]
-                hops += 1
-            project_map[old_sid] = cur
+    # A station can ship a SECOND rekey map that renumbers an already renumbered
+    # sid (13-5 -> 12-5, then 12-5 -> 11-5). `_translate_sid` applies the maps in
+    # this order, so a merge older than both still reaches the current key.
+    for dated_maps in maps.values():
+        dated_maps.sort(key=lambda dated: (dated.arrived is None, dated.arrived or 0, dated.path))
     return maps, problems
 
 
@@ -1027,7 +1068,7 @@ def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ..
     # Story 31.1: `base_ref` defaults to `refs/heads/main` -- a tag named `main` would otherwise
     # stand in for the branch; findings name it as people read it.
     shown = display_ref(base_ref)
-    commits_raw = _git(target, "log", "--format=%H%x00%s", base_ref)
+    commits_raw = _git(target, "log", "--format=%H%x00%ct%x00%s", base_ref)
     if commits_raw is None:
         return (
             Finding(
@@ -1039,12 +1080,16 @@ def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ..
             ),
         )
     commits: list[tuple[str, str]] = []
+    commit_time: dict[str, int] = {}
     for line in commits_raw.splitlines():
         if not line:
             continue
-        sha, _, subject = line.partition("\0")
+        sha, _, rest = line.partition("\0")
+        stamp, _, subject = rest.partition("\0")
         if sha and subject:
             commits.append((sha, subject))
+            if stamp.isdigit():
+                commit_time[sha] = int(stamp)
     # Shared across every project audited below -- a given sha's touched
     # station paths do not depend on which project is asking (see
     # ``bare_merge.DiffCache``'s own docstring).
@@ -1096,12 +1141,14 @@ def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ..
                 done_ids.add(sid)
 
         unreadable_diff_shas: list[str] = []
+        named_by: dict[str, set[str]] = {}
         merged_ids = _merged_ids_for_project(
             target,
             commits,
             project,
             diff_cache=diff_cache,
             unreadable_diff_shas=unreadable_diff_shas,
+            named_by=named_by,
         )
         for sha in sorted(set(unreadable_diff_shas)):
             # Story 27.5: the bare-form fallback's `git diff` failed for
@@ -1129,10 +1176,16 @@ def gather_direction(target: Path, *, base_ref: str = MAIN) -> tuple[Finding, ..
         # through the station's own map before comparing, so a merge that
         # still names the pre-fold number resolves to what the CURRENT
         # ledger actually calls it, instead of reading as a phantom
-        # landed-but-unpromoted row forever.
-        sid_map = rekey_maps.get(project)
-        if sid_map:
-            merged_ids = {sid_map.get(sid, sid) for sid in merged_ids}
+        # landed-but-unpromoted row forever. Story 27.6: only a merge older
+        # than the map is renamed by it, so a NEW story that reuses an old
+        # number keeps its own.
+        dated_maps = rekey_maps.get(project)
+        if dated_maps:
+            merged_ids = {
+                _translate_sid(sid, commit_time.get(sha), dated_maps)
+                for sid in merged_ids
+                for sha in named_by.get(sid) or {""}
+            }
 
         for sid in sorted(merged_ids - done_ids):
             # A merged key absent from the twin entirely OR present but not
