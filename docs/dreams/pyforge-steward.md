@@ -586,10 +586,10 @@ Drift — orphaned between stations.
        `*_cp314t`; PyPI wheel tags `cp313t` / `cp314t` with the platform tag), or is it `noarch: python` / pure
        Python and therefore inherits the interpreter's state?
     2. **Runtime confirmation (expensive, native per platform):** in a free-threaded environment Steward provisions
-       on that platform, does importing the package leave `sys._is_gil_enabled()` `False`? A `win-64` or
+       on that platform, does every extension module the package installs keep the GIL off? A `win-64` or
        `osx-arm64` build cannot be imported on a `linux-64` host, so this runs on each platform natively, as part
-       of `provision --verify` (a CI matrix runner or an operator machine). Import names come from the package's
-       own metadata (`top_level.txt`, conda `site-packages` files), not a hand map.
+       of `provision --verify` (a CI matrix runner or an operator machine). How it proves that is § *Validation*
+       below.
   - The report names, per platform, the packages that block an environment from running free-threaded, so the
     operator sees what a free-threaded environment would cost on each platform before provisioning one.
   - **A per-platform BLAS policy for all three platforms.** The note's BLAS advice is `osx-arm64`-only (bind
@@ -621,6 +621,39 @@ Drift — orphaned between stations.
     data file, and [[pyforge-doctor]] reports results that have aged past a threshold.
   - **New channel builds are picked up without a dependency change:** the scheduled run re-reads channel metadata,
     so a package that gains a `cp314t` build moves to "available" on the next run.
+
+  **Validation (proving GIL-free, not only installable).** A `cp314t` build only means a package can be installed
+  in a free-threaded environment; whether it keeps the GIL off is decided at import time by each extension module.
+  So readiness is a ladder of named evidence, and nothing is called GIL-free without proof:
+  1. **One status per package × platform × version, each tied to its evidence:** `not-installable` (no `cp314t`
+     build); `installable` (Level 1 only, a build exists, nothing proven at import); `gil-free` (Level 2 proved
+     every extension module keeps the GIL off); `re-enables-gil` (names the exact module that turned it back on);
+     `import-error` (the build is broken under free-threading); `pure-python` (inherits the interpreter's state).
+     The report and the library catalog say `gil-free` only where Level 2 evidence exists for that platform.
+  2. **Level 2 is per extension module, not per package.** A top-level import misses extensions a package loads
+     lazily (`numpy.random._pcg64`, `pandas._libs.*`), and once the GIL comes back the run cannot say which module
+     did it. The probe walks the package's installed extension files (`*.cpython-314t-*.so` / `.pyd`) and imports
+     each in a fresh interpreter, with the GIL warning turned into an error. It records CPython's own warning
+     ("The global interpreter lock (GIL) has been enabled to load module 'X'") and `sys._is_gil_enabled()` after the
+     import. A package is `gil-free` only when every one of its extension modules passes. Import names come from
+     the installed files and the package's own metadata (`top_level.txt`, conda `site-packages` listings), never
+     a hand-kept map.
+  3. **An environment-level probe is the final verdict.** In the provisioned free-threaded environment, import the
+     environment's whole declared set together and assert the GIL is still off and no GIL warning fired; this
+     catches interactions the per-module probes cannot. An environment is free-threading-ready on a platform only
+     when this probe passes there.
+  4. **An opt-in thread-safety smoke rung for a short curated list** (for example `numpy`, `pandas`, `pyarrow`):
+     a small selection of each project's own tests run under `pytest-run-parallel`, the ecosystem's plugin for
+     free-threaded testing. GIL-free proves an extension declares free-threading support, not that it is free of
+     races; this rung reports, it never gates.
+  5. **Evidence is auditable and ages.** Every `gil-free` or `re-enables-gil` record carries the package version,
+     build string, platform, runner and date. The staleness detector reds a record that claims `gil-free` without
+     Level 2 evidence, or whose evidence is for a different build than the lock now resolves, and
+     [[pyforge-doctor]] reports evidence older than its threshold.
+
+  Acceptance examples for this section: in a `cp314t` environment on each platform, `numpy` reaches `gil-free` with
+  every extension module passing; a deliberately unready test extension yields `re-enables-gil` naming that module;
+  and no `installable` row from the baseline below is promoted to `gil-free` without such a run.
 
   **Baseline snapshot (2026-10-06), the seed for acceptance examples.** A one-off Level 1 run (scratch scripts,
   not in the tree) over `pixi.lock` as last changed in `acdd200200` and conda-forge's `current_repodata.json` for
