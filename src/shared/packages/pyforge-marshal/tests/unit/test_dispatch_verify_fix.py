@@ -25,6 +25,7 @@ from pyforge.marshal.core.dispatch_verify_fix import (
     scrub_fix_turn_exposure,
     scrub_then_tail_bytes,
     tail_bytes,
+    verify_fix_prompt_flag_checklist_applies,
 )
 from pyforge.marshal.core.harness_profile import parse_profile
 from pyforge.marshal.core.harness_profile import render_verify_fix_argv as render_fix
@@ -85,6 +86,67 @@ def test_build_verify_fix_prompt_uses_tail_only():
     assert "bmad-build-auto" not in prompt
     assert "pixi run -e pyforge-guild lint-types" in prompt
     assert "AAAA" not in prompt or len(prompt) < 300
+
+
+def test_build_verify_fix_prompt_always_instructs_exact_rerun_not_raw_test_dir():
+    failed = (
+        FailedVerifyCommand(
+            command="pixi run --frozen -e pyforge-warden pyforge-warden-test",
+            stdout="FAILED",
+            stderr="",
+            exit_code=1,
+        ),
+    )
+    prompt = build_verify_fix_prompt(failed, output_tail_bytes=500)
+    assert "re-running exactly the failed command(s)" in prompt
+    assert "raw tests directory" in prompt
+    assert "feature-flag registration" not in prompt
+
+
+def test_build_verify_fix_prompt_adds_flag_checklist_when_output_signals_flags():
+    failed = (
+        FailedVerifyCommand(
+            command="pixi run -e pyforge-guild platform-ci-local",
+            stdout="AssertionError in test_flags.py",
+            stderr="",
+            exit_code=1,
+        ),
+    )
+    prompt = build_verify_fix_prompt(failed, output_tail_bytes=500)
+    assert "src/platform/config/flags.json" in prompt
+    assert "flag-overlays.json" in prompt
+    assert "pyforge-core/tests/unit/test_flags.py" in prompt
+    assert "test_openfeature_file_flags.py" in prompt
+    assert "story-spec-flag-block.md" in prompt
+    assert "Registering a flag" in prompt
+
+
+def test_build_verify_fix_prompt_adds_flag_checklist_when_spec_has_flag_block():
+    spec = "---\ntitle: x\ntype: feature\nflag:\n  key: pyforge.atlas.example\n---\n"
+    failed = (FailedVerifyCommand(command="pixi run test", stdout="fail", stderr="", exit_code=1),)
+    prompt = build_verify_fix_prompt(failed, output_tail_bytes=200, story_spec_text=spec)
+    assert "feature-flag registration" in prompt
+
+
+def test_verify_fix_prompt_flag_checklist_absent_without_signal():
+    failed = (FailedVerifyCommand(command="pixi run test", stdout="E501 line too long", stderr="", exit_code=1),)
+    assert verify_fix_prompt_flag_checklist_applies(failed) is False
+    assert verify_fix_prompt_flag_checklist_applies(failed, story_spec_text="---\ntype: fix\n---\n") is False
+
+
+def test_the_fix_turn_prompt_flag_checklist_mutation():
+    """Removing flag detection fails this test (Story 85.6 mutation guard)."""
+    failed = (
+        FailedVerifyCommand(
+            command="pixi run test",
+            stdout="flag-gate-check refused",
+            stderr="",
+            exit_code=1,
+        ),
+    )
+    assert verify_fix_prompt_flag_checklist_applies(failed) is True
+    prompt = build_verify_fix_prompt(failed, output_tail_bytes=200)
+    assert "flags.json" in prompt
 
 
 def test_tail_bytes_bounds_output():

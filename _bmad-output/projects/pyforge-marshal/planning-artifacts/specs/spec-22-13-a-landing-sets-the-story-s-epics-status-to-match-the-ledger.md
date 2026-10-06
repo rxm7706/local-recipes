@@ -2,8 +2,8 @@
 title: "22.13: A landing sets the story's epics status to match the ledger"
 type: 'fix'
 created: '2026-10-06'
-status: 'ready-for-dev'
-baseline_revision: '7ab1f2d7b79f4e0c91755c060e902bb3cb1fcc6a'
+status: 'done'
+baseline_revision: '8747d9b343262d86c3aa1a806bb2a8ba9b420634'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -95,3 +95,9 @@ Type / Effort / Deps: fix / S / —.
 **Manual checks (not a dispatch gate):**
 - Mutation: remove the helper call and re-run the station suite; the new tests fail. Restore it.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pyforge-marshal-test`, `pyforge-deps-test`, and `lint-types` passed locally; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.

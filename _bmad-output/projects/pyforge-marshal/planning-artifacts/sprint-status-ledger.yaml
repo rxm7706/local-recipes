@@ -100,7 +100,7 @@ development_status:
   22-10-branch-merged-requires-real-divergence-not-just-ancestry: done
   22-11-station-scoped-drain-and-an-explicit-story-sequence: done
   22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-stations-bound-gate: done
-  22-13-a-landing-sets-the-story-s-epics-status-to-match-the-ledger: backlog
+  22-13-a-landing-sets-the-story-s-epics-status-to-match-the-ledger: done
   22-14-the-cross-surface-gate-runs-each-touched-surface-s-own-check: done
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
@@ -311,7 +311,7 @@ development_status:
   53-1-the-dispatched-session-is-told-and-gated-like-a-loop-session: done
   53-2-the-landing-reconciles-from-git-facts-and-runs-intake: done
   53-3-the-supervisor-entrypoint-reaches-the-floor: done
-  53-4-a-dispatch-landing-leaves-every-spec-it-touched-stampable: backlog
+  53-4-a-dispatch-landing-leaves-every-spec-it-touched-stampable: done
   54-1-the-landing-repairs-its-own-feed-drift-before-it-gives-up: backlog
   55-1-the-7-non-marshal-stations-stop-overriding-context-and-inherit-the-clean-default: done
   56-1-a-refused-landing-whose-story-has-since-landed-reads-as-superseded: done
@@ -414,7 +414,7 @@ development_status:
   85-3-the-fix-turn-is-safe-to-switch-on-in-dev-and-staging: done
   85-4-the-fix-turn-s-redaction-never-hangs-the-supervisor-or-hides-what-the-fix-needs: done
   85-5-the-verify-fix-turn-s-edits-get-the-spec-surface-reconcile-before-re-verification: done
-  85-6-a-fix-turn-re-runs-only-the-failing-commands-and-knows-the-flag-checklist: backlog
+  85-6-a-fix-turn-re-runs-only-the-failing-commands-and-knows-the-flag-checklist: done
   86-1-seed-honours-recorded-skips-refuses-shared-manifest-paths-and-pins-directory-entries: done
   86-2-local-recipes-is-genesis-adopted-so-the-seed-adopt-oracle-goes-green: backlog
   86-3-spin-and-the-journal-clean-up-a-failed-launch-and-record-what-they-ran: done
@@ -473,7 +473,7 @@ development_status:
   epic-20-retrospective: optional
   epic-21: done
   epic-21-retrospective: optional
-  epic-22: in-progress
+  epic-22: done
   epic-22-retrospective: optional
   epic-23: done
   epic-23-retrospective: optional
@@ -537,7 +537,7 @@ development_status:
   epic-51-retrospective: optional
   epic-52: done
   epic-52-retrospective: optional
-  epic-53: in-progress
+  epic-53: done
   epic-53-retrospective: optional
   epic-54: backlog
   epic-54-retrospective: optional
@@ -607,7 +607,7 @@ development_status:
   epic-83-retrospective: optional
   epic-84: done
   epic-84-retrospective: optional
-  epic-85: in-progress
+  epic-85: done
   epic-85-retrospective: done
   epic-86: in-progress
   epic-86-retrospective: optional

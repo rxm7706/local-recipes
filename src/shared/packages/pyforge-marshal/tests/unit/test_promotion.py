@@ -18,12 +18,14 @@ from pyforge.marshal.core.promotion import (
     classify_promotion_candidates,
     corroborated_merged_story_keys,
     count_conforming_subjects,
+    epics_has_story_heading,
     extract_story_key_from_bmadloop_merge_subject,
     extract_story_key_from_github_merge_subject,
     is_valid_spec_text,
     marshal_native_merged_keys,
     merged_story_keys,
     read_spec_status,
+    set_epics_story_status,
     set_spec_status,
     spec_full_key,
     spec_title_slug,
@@ -810,6 +812,52 @@ def test_set_spec_status_returns_text_unchanged_when_there_is_nothing_to_rewrite
 def test_set_spec_status_refuses_a_value_that_would_corrupt_the_frontmatter(bad):
     with pytest.raises(ValueError):
         set_spec_status("---\nstatus: backlog\n---\n", bad)
+
+
+# --- set_epics_story_status (Story 22.13) --------------------------------------
+
+
+def test_set_epics_story_status_rewrites_only_the_landed_story_status_line():
+    key = StoryKey(34, 3)
+    epics = (
+        "### Story 34.2: other\n\n**Status:** backlog\n\n"
+        "### Story 34.3: target\n\n**Status:** backlog\n\n"
+        "### Story 34.4: next\n\n**Status:** backlog\n"
+    )
+    assert set_epics_story_status(epics, key) == epics.replace(
+        "### Story 34.3: target\n\n**Status:** backlog", "### Story 34.3: target\n\n**Status:** done"
+    )
+
+
+def test_set_epics_story_status_preserves_trailing_text_after_the_first_word():
+    key = StoryKey(34, 3)
+    epics = "### Story 34.3: x\n\n**Status:** backlog — waiting on 76.1\n"
+    assert set_epics_story_status(epics, key) == "### Story 34.3: x\n\n**Status:** done — waiting on 76.1\n"
+
+
+def test_set_epics_story_status_leaves_epics_unchanged_when_the_section_has_no_status_line():
+    key = StoryKey(22, 13)
+    epics = "### Story 22.13: x\n\nNo status here.\n"
+    assert set_epics_story_status(epics, key) == epics
+
+
+def test_set_epics_story_status_does_not_touch_an_adjacent_story_in_the_same_epic():
+    key = StoryKey(34, 3)
+    epics = "### Story 34.3: a\n\n**Status:** backlog\n\n### Story 34.4: b\n\n**Status:** backlog\n"
+    updated = set_epics_story_status(epics, key)
+    assert "**Status:** backlog" in updated.split("### Story 34.4:")[1]
+    assert "### Story 34.3:" in updated and "**Status:** done" in updated.split("### Story 34.4:")[0]
+
+
+def test_epics_has_story_heading_matches_the_story_key_token():
+    assert epics_has_story_heading("### Story 79.1: x\n", StoryKey(79, 1))
+    assert not epics_has_story_heading("### Story 79.2: x\n", StoryKey(79, 1))
+
+
+@pytest.mark.parametrize("bad", ["", "do ne", "done:extra"])
+def test_set_epics_story_status_refuses_a_value_that_would_corrupt_the_line(bad: str):
+    with pytest.raises(ValueError):
+        set_epics_story_status("### Story 1.1: x\n\n**Status:** backlog\n", StoryKey(1, 1), bad)
 
 
 def test_pre_done_and_terminal_spec_statuses_are_disjoint_and_pre_done_is_every_status_a_landing_advances():
