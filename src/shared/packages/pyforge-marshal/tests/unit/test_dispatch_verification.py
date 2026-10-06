@@ -2021,9 +2021,7 @@ def test_evaluate_dispatch_verification_atlas_story_spec_runs_flag_gate(
         spec_text=None,
         process=process,
         vcs=FakeVcs(
-            changed=(
-                "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-25-2-x.md",
-            ),
+            changed=("_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-25-2-x.md",),
         ),
     )
     assert process.flag_gate_invocations == 1

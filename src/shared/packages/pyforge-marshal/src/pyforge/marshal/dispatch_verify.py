@@ -997,9 +997,7 @@ def evaluate_dispatch_verification(
         data["cross_surface_check"] = {
             "checked": False,
             "reason": (
-                "scope check incomplete"
-                if not scope_check_completed
-                else "diff does not touch any cross-surface rule"
+                "scope check incomplete" if not scope_check_completed else "diff does not touch any cross-surface rule"
             ),
         }
 

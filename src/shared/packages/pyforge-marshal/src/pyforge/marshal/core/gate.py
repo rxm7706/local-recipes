@@ -620,6 +620,7 @@ def check_scope_with_mode(
 
 # --- Story 22.12 / 22.14: cross-surface verify rule table (CAP-12) -----------
 
+
 @dataclass(frozen=True, slots=True)
 class CrossSurfaceRule:
     """One ordered cross-surface path rule and its pixi verify command (Story 22.14)."""

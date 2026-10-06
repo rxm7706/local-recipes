@@ -564,9 +564,7 @@ def test_cross_surface_rules_for_changed_files_flags_and_platform() -> None:
 
 
 def test_cross_surface_rules_for_changed_files_story_spec_under_projects() -> None:
-    changed = (
-        "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-25-2-x.md",
-    )
+    changed = ("_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-25-2-x.md",)
     rules = gate.cross_surface_rules_for_changed_files(changed)
     assert len(rules) == 1
     assert rules[0].rule_id == "flag-gate"
