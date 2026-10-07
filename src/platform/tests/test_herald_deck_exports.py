@@ -50,8 +50,10 @@ def _session_cookies(*, sub: str, groups: list[str]) -> dict[str, str]:
     store = SessionStore()
     store[IDP_TOKEN_CLAIMS_SESSION_KEY] = {"sub": sub, "groups": groups}
     store.save()
+    session_key = store.session_key
+    assert session_key is not None
     name = getattr(settings, "SESSION_COOKIE_NAME", "sessionid")
-    return {name: store.session_key}
+    return {str(name): session_key}
 
 
 def _herald_get(
