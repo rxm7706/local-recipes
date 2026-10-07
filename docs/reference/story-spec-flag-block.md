@@ -78,6 +78,10 @@ The checker reads that a field is there, not what it holds: the value checks (a 
 in the tree, a flag past its cleanup date) belong to the gate, not to the story author. An
 unquoted `off` is a value; YAML reads it as false, and the checker does not treat it as empty.
 
+When several stories of one station share a flag key, each spec's `default` records what that
+story shipped; the gate compares the tree to the highest-numbered `done` story spec of that
+station only, and an earlier spec is never rewritten to match.
+
 ## The `flag-exempt:` value
 
 A story with no behaviour to flag names why, with one value from the closed list in
