@@ -61,7 +61,15 @@ def test_warn_token_is_warn_not_warnings():
 
 
 def test_ecosystem_closed_set():
-    assert {member.value for member in Ecosystem} == {"pypi", "conda"}
+    assert {member.value for member in Ecosystem} == {
+        "pypi",
+        "conda",
+        "npm",
+        "golang",
+        "cargo",
+        "gem",
+        "composer",
+    }
 
 
 def test_error_kind_tokens_exact():

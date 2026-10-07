@@ -50,3 +50,6 @@ pillow = ">=12.3.0"              # render_gate's contact-sheet compositing
 # [feature.pyforge-herald.dependencies], just missing from this package's
 # own run-dependencies (the table that actually feeds the built .conda).
 python-pptx = ">=1.0.2"
+# Story 29.1 (CAP-54): deck_store's S3 adapter imports boto3. Floor matches
+# pyproject.toml and root pixi.toml's [feature.pyforge-herald.dependencies].
+boto3 = ">=1.43.75"

@@ -628,6 +628,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.warden.non_python_ecosystems": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
 }
 _METADATA_FIELDS = ("owner", "story", "created", "on_everywhere", "cleanup_by")
 

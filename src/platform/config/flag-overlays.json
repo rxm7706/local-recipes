@@ -10,7 +10,8 @@
     "pyforge.warden.fix_target_resolution": "on",
     "pyforge.warden.fix_manifest_edit": "on",
     "pyforge.herald.deck_publish": "on",
-    "pyforge.warden.fix_draft_pr_estate": "on"
+    "pyforge.warden.fix_draft_pr_estate": "on",
+    "pyforge.warden.non_python_ecosystems": "on"
   },
   "staging": {
     "pyforge.three_surfaces": "on",
@@ -23,7 +24,8 @@
     "pyforge.warden.fix_target_resolution": "on",
     "pyforge.warden.fix_manifest_edit": "on",
     "pyforge.herald.deck_publish": "on",
-    "pyforge.warden.fix_draft_pr_estate": "on"
+    "pyforge.warden.fix_draft_pr_estate": "on",
+    "pyforge.warden.non_python_ecosystems": "on"
   },
   "production": {
     "pyforge.three_surfaces": "on",
@@ -36,6 +38,7 @@
     "pyforge.warden.fix_target_resolution": "off",
     "pyforge.warden.fix_manifest_edit": "off",
     "pyforge.herald.deck_publish": "off",
-    "pyforge.warden.fix_draft_pr_estate": "off"
+    "pyforge.warden.fix_draft_pr_estate": "off",
+    "pyforge.warden.non_python_ecosystems": "off"
   }
 }

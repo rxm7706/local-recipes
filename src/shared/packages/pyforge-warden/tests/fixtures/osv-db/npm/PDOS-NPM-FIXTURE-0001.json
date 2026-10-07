@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.6.0",
+  "id": "PDOS-NPM-FIXTURE-0001",
+  "modified": "2026-01-01T00:00:00Z",
+  "published": "2026-01-01T00:00:00Z",
+  "aliases": [],
+  "summary": "Synthetic HIGH vulnerability in pdos-npm-vuln-fixture 1.0.0 (test fixture).",
+  "details": "Hermetic npm OSV advisory for Story 16.4.",
+  "severity": [
+    {
+      "type": "CVSS_V3",
+      "score": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N"
+    }
+  ],
+  "affected": [
+    {
+      "package": {
+        "ecosystem": "npm",
+        "name": "pdos-npm-vuln-fixture",
+        "purl": "pkg:npm/pdos-npm-vuln-fixture"
+      },
+      "versions": ["1.0.0"],
+      "ranges": [
+        {
+          "type": "SEMVER",
+          "events": [{"introduced": "0"}, {"fixed": "2.0.0"}]
+        }
+      ]
+    }
+  ],
+  "references": []
+}
