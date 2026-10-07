@@ -872,7 +872,7 @@ So that a landing reds `chain-currency` only when the Spec's contract moved past
 **When** the chain audit dates the Spec for the `spec → prd` edge
 **Then** it reads the Spec's contract date: the newer of `SPEC.md`'s date and the memlog's newest contract entry (any entry that is not bookkeeping), the memlog's frontmatter `updated:` when its last entry is a contract entry, and otherwise the commit date `git blame` gives the newest contract entry line at the judged tree (an uncommitted line dates to the run date); so the fixture reads current, while a `(capability)`, `(decision)` or other contract entry, or a re-derived `SPEC.md`, dated more than 2 days past the PRD still fires `feeds spec→prd`
 **And** a memlog `git blame` cannot read falls back to its frontmatter `updated:` (today's reading); the spec stage's displayed date, `behind-code`, shelf life, `backfilled`, the 2-day grace, every other feeds edge and the sweep's exit codes `{0, 1, 2}` are unchanged; the runbook's audit mechanics name the rule; treating every entry as a contract entry fails the new fixture (mutation)
-**Status:** backlog
+**Status:** done
 
 ## Epic 7: Deferred-work visibility
 
