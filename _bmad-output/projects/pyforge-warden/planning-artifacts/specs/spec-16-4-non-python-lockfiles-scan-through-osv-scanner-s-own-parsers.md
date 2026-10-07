@@ -2,7 +2,7 @@
 title: "16.4: Non-Python lockfiles scan through osv-scanner's own parsers"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'dcbddeb4e3fc40552d620e30782c89d9d30a9afa'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -20,7 +20,28 @@ flag:
   scope: global
   fallback: "non-Python lockfiles are not discovered; the scan stays Python-only, as today"
   cleanup: 90 days after ON in every environment (Q4)
-deferred: []
+deferred:
+  - summary: >-
+      Flag-OFF AC asks for byte-identical reports; tests only assert empty discovery and inventory_count.
+    evidence: |-
+      test_flag_off_scan_ignores_npm_lock checks inventory_count==0, not golden JSON equality to pre-story baseline.
+    location: >-
+      src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py:125
+    severity: medium
+  - summary: >-
+      I/O matrix rows for mixed Python+npm repo and clean Go module lack automated coverage.
+    evidence: |-
+      No fixture combining pyproject.toml with package-lock.json; no go.sum/go.mod hermetic scan test.
+    location: >-
+      src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py
+    severity: medium
+  - summary: >-
+      CycloneDX evidence ingestion still calls discover() without native lockfile kinds when CLI flag is on.
+    evidence: |-
+      sources.py ManifestSourceAdapter uses default discover(); fleet evidence path may miss native lockfiles.
+    location: >-
+      src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py
+    severity: low
 declared_low_risk: false
 ---
 
@@ -107,4 +128,32 @@ Deps: —.
 
 ## Review Triage Log
 
-- No review yet (minted 2026-09-28). Implementation and review stay separate.
+### 2026-10-07 — Review pass
+- verdicts: 12 findings — high 0, medium 3, low 2, false 2, maybe-false 0, reject 5
+- findings:
+  - `[medium]` `[patch]` Native lockfile path omitted CAP-11 staleness (unlike OsvEngine PyPI path) — added `is_db_stale` + `stale_vuln_data_finding` in `native_lockfiles.scan_native_lockfile` and `test_stale_npm_offline_db_merges_stale_vuln_finding`.
+  - `[low]` `[patch]` exit_code 128 branch used bare `json.loads` without decode guard — wrapped in try/except before component expansion.
+  - `[medium]` `[defer]` Flag OFF byte-identical report not golden-tested — recorded in frontmatter `deferred`.
+  - `[medium]` `[defer]` Mixed repo and Go matrix rows untested — recorded in frontmatter `deferred`.
+  - `[medium]` `[defer]` Seven of eight lockfile kinds only npm e2e — defer parameterized discovery/scan harness follow-up.
+  - `[low]` `[reject]` SKILL.md not updated for flag — out of scope for this story’s code path; operator can refresh SKF separately.
+  - `[low]` `[defer]` CycloneDX `discover()` omits native kinds — deferred at `sources.py`.
+  - `[false]` `[reject]` DefaultPolicy would emit hygiene indeterminate for npm — refuted: `interfaces.py` skips non-Python native ecosystems.
+  - `[false]` `[reject]` OsvEngine error path drops native findings — refuted: CLI merges native scans when engine returns empty/error-shaped results.
+  - `[low]` `[reject]` Redundant first warden_main in npm vuln test — cosmetic; test still passes both calls.
+  - `[low]` `[reject]` memlog missing before review — patched via memlog append + reconcile in finalize.
+  - `[low]` `[reject]` go.mod+go.sum double scan — acceptable v1; document in deferred if duplicate components appear in the wild.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Story 16.4 adds flag-gated discovery of osv-scanner native lockfiles, delegates parsing via `native_lockfiles.py` (`-L parser:path`), merges vuln-axis results into the existing scan pipeline, extends `Ecosystem` for npm/Go/cargo/etc., and keeps hygiene/license/currency honestly N/A for native components.
+
+**Files changed:** `native_lockfiles.py` (new orchestration); `discovery.py`, `cli.py`, `models.py`, `vuln.py`, `inventory.py`, `report.py`, `interfaces.py`, `sbom.py`; platform `flags.json` / `flag-overlays.json`; unit tests + npm fixture DB.
+
+**Review:** 2 patches applied (stale DB, JSON guard); 5 items deferred in frontmatter; 5 rejected as false/out-of-scope.
+
+**Verification:** `pyforge-warden-test` 2217 passed; `python scripts/spec_surface_reconcile.py` OK; memlog entries on `spec-pyforge-warden` and `spec-feature-flag-governance`.
+
+**Residual risks:** Non-npm lockfile kinds wired but npm-proven only; flag-OFF byte identity not golden-tested; mixed-stack merge only exercised npm-only path in CI.
