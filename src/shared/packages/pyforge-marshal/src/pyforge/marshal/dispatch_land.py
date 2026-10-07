@@ -35,6 +35,7 @@ from .core import identity, promotion
 from .core.commit_vcs import CommittingVcs
 from .core.dispatch_harness_done import FollowupReview, resolve_hold_dispatch_landing
 from .core.dispatch_landing import (
+    SPEC_SURFACE_BASELINE_REL,
     DispatchLandingVerdict,
     may_attempt_dispatch_landing,
     merge_subject_is_marshal_native,
@@ -383,6 +384,7 @@ def _reconcile_spec_surface_drift(
     own_changed_paths: frozenset[str] | None = None,
     push_when_done: bool = True,
     foreign_drift_refuses: bool = True,
+    branch_stamp_specs: frozenset[str] | None = None,
 ) -> _SpecSurfaceReconcileOutcome:
     """Story 53.2 (spec-pyforge-marshal CAP-261b): before ``forge.merge_pr``,
     run the spec-surface verdict over the branch's own tree and reconcile
@@ -514,7 +516,7 @@ def _reconcile_spec_surface_drift(
     # paths. `changed` is read once, before any commit; what the loop itself
     # writes (each memlog it appends and the baseline) counts as the branch's own
     # too, so a spec governing those files never reads as foreign on a re-read.
-    baseline_rel = (Path("scripts") / ".spec-surface-baseline.json").as_posix()
+    baseline_rel = SPEC_SURFACE_BASELINE_REL
     written: set[str] = {baseline_rel}
     reconciled: dict[str, set[str]] = {}
 
@@ -723,7 +725,10 @@ def _reconcile_spec_surface_drift(
         # branch did not touch is not, so the stamp itself refuses hidden
         # foreign drift.
         stamp_argv = [sys.executable, str(stamp_script), "--write-baseline"]
-        for name in sorted(own):
+        specs_for_stamp = set(own)
+        if branch_stamp_specs:
+            specs_for_stamp |= branch_stamp_specs - set(reconciled)
+        for name in sorted(specs_for_stamp):
             stamp_argv.extend(["--spec", name])
         for path in sorted(changed | written):
             stamp_argv.extend(["--accept", path])
@@ -794,6 +799,57 @@ def _reconcile_spec_surface_drift(
                 refuse=True,
             )
         by_spec, no_baseline = _group_surface_findings(surface_findings)
+
+    pending_branch_stamp = (branch_stamp_specs or frozenset()) - set(reconciled)
+    if pending_branch_stamp:
+        stamp_argv = [sys.executable, str(stamp_script), "--write-baseline"]
+        for name in sorted(pending_branch_stamp):
+            stamp_argv.extend(["--spec", name])
+        for path in sorted(changed | written):
+            stamp_argv.extend(["--accept", path])
+        try:
+            stamp_result = process.run(stamp_argv, cwd=worktree)
+        except ProcessError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(f"scoped spec-surface baseline stamp failed on {head_branch!r}: {exc} — refusing to land"),
+                ),
+                refuse=True,
+            )
+        if stamp_result.returncode != 0:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"scoped spec-surface baseline stamp refused on "
+                        f"{head_branch!r} (exit {stamp_result.returncode}): "
+                        f"{stamp_result.stderr.strip()} — refusing to land"
+                    ),
+                ),
+                refuse=True,
+            )
+        try:
+            vcs.commit_paths(
+                worktree,
+                (Path(baseline_rel),),
+                to_redacted_text(f"marshal: reconcile spec-surface drift for {key}"),
+            )
+        except VcsCommandError as exc:
+            return _SpecSurfaceReconcileOutcome(
+                finding=Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"cannot commit/push the spec-surface reconcile for {head_branch!r}: {exc} — refusing to land"
+                    ),
+                ),
+                refuse=True,
+            )
+        for name in pending_branch_stamp:
+            reconciled[name] = set()
 
     if not reconciled:
         return _SpecSurfaceReconcileOutcome(finding=None, refuse=False)
@@ -1579,6 +1635,24 @@ def execute_dispatch_land(
             heal = DispatchLandHealResult(healed=False)
             heal_skipped = f" (heal skipped: could not fetch {ORIGIN_MAIN_SHORT}: {fetch_exc})"
         else:
+
+            def _heal_reconcile_spec_surface(
+                *,
+                branch_stamp_specs: frozenset[str],
+                push_when_done: bool,
+            ) -> _SpecSurfaceReconcileOutcome:
+                return _reconcile_spec_surface_drift(
+                    git_repo_root=git_repo_root,
+                    worktree=worktree,
+                    head_branch=head_branch,
+                    key=key,
+                    run_id=run_id,
+                    vcs=vcs,
+                    process=process,
+                    branch_stamp_specs=branch_stamp_specs,
+                    push_when_done=push_when_done,
+                )
+
             heal = try_heal_dispatch_land_merge(
                 project_slug=project_slug,
                 git_repo_root=git_repo_root,
@@ -1596,6 +1670,7 @@ def execute_dispatch_land(
                 forge=forge,
                 probe_ref=_ORIGIN_MAIN,
                 await_checks=_await_healed_head_checks,
+                reconcile_spec_surface=_heal_reconcile_spec_surface,
             )
         if heal_waits:
             data[LANDING_CHECKS_FIELD] = {**checks.record, "heal": heal_waits[-1].record}
@@ -1612,6 +1687,23 @@ def execute_dispatch_land(
                     ),
                 )
             )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
+        if heal.reconcile_refusal is not None:
+            findings.append(heal.reconcile_refusal)
             envelope = build_envelope(
                 command="dispatch land",
                 verdict=compute_verdict(tuple(findings)),

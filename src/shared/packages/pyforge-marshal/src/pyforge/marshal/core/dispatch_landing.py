@@ -7,6 +7,7 @@ self-report without passing independent verification (Story 22.3).
 
 from __future__ import annotations
 
+import json
 import re
 from collections import Counter
 from collections.abc import Mapping
@@ -151,6 +152,7 @@ def three_way_ledger_statuses(
 MEMLOG_BASENAME = ".memlog.md"
 DEFERRED_WORK_BASENAME = "deferred-work-ledger.md"
 TEAM_MEMORY_INDEX_REL = ".claude/memory/MEMORY.md"
+SPEC_SURFACE_BASELINE_REL = "scripts/.spec-surface-baseline.json"
 
 
 def is_memlog_path(path: str) -> bool:
@@ -170,6 +172,27 @@ def is_team_memory_index_path(path: str) -> bool:
     return path.replace("\\", "/") == TEAM_MEMORY_INDEX_REL
 
 
+def _baseline_entries(text: str) -> dict[str, object]:
+    """Parse committed baseline JSON, or ``{}`` when empty."""
+    stripped = text.strip()
+    if not stripped:
+        return {}
+    return json.loads(stripped)
+
+
+def specs_whose_baseline_entries_differ(base_text: str, branch_text: str) -> frozenset[str]:
+    """Spec names whose baseline entries differ between merge-base and branch head texts.
+
+    Story 22.18: the set of Specs the dispatch branch scoped-stamped since the merge base."""
+    base = _baseline_entries(base_text)
+    branch = _baseline_entries(branch_text)
+    names: set[str] = set()
+    for name in set(base) | set(branch):
+        if base.get(name) != branch.get(name):
+            names.add(name)
+    return frozenset(names)
+
+
 def is_mechanical_conflict_path(
     path: str, *, ledger_rel: str | None = None, deferred_work_rel: str | None = None
 ) -> bool:
@@ -180,6 +203,8 @@ def is_mechanical_conflict_path(
     project's ledger is not this landing's to resolve (Story 59.1). Similarly for
     ``deferred_work_rel`` - only the project's own deferred work ledger."""
     normalized = path.replace("\\", "/")
+    if normalized == SPEC_SURFACE_BASELINE_REL:
+        return True
     if is_team_memory_index_path(normalized):
         return True
     if is_memlog_path(normalized):
