@@ -20,7 +20,6 @@ from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from ..adapters.publisher_host import HostPublisher
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
-from ..core import gate as gate_core
 from ..core import identity as identity_core
 from ..core import promotion as promotion_core
 from ..core.commit_vcs import CommittingVcs
@@ -68,10 +67,7 @@ from ..core.dispatch_survival import (
     timing_record_payload,
 )
 from ..core.dispatch_verification import (
-    DispatchVerificationInput,
     DispatchVerificationVerdict,
-    judge_dispatch_verification,
-    primary_gate_failure,
 )
 from ..core.dispatch_verify_fix import (
     FIX_TURN_REVERIFY_REFUSED_CODE,
@@ -81,21 +77,17 @@ from ..core.dispatch_verify_fix import (
     build_verify_fix_prompt,
     choose_verify_fix_launch_mode,
     decide_verify_fix_turn,
-    extract_failed_verify_commands,
     fix_intent_ref,
     fix_turn_park_message,
     fix_turn_remaining_budget_s,
     in_flight_verify_fix_turn,
     pending_verify_fix_intent,
-    scrub_then_tail_bytes,
 )
-from ..core.egress import redact_raw_text, to_redacted_text
+from ..core.egress import to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
     LAND_FINDINGS_FIELD,
     LANDING_CHECKS_FIELD,
-    SCOPE_VIOLATION_ADVISORIES_FIELD,
-    VERIFY_FAILED_COMMANDS_FIELD,
     JournalEntryId,
     Phase,
     build_entry,
@@ -115,6 +107,7 @@ from ..core.worktree_checkpoint import (
     should_checkpoint_on_idle,
 )
 from ..dispatch_land import _reconcile_spec_surface_drift, execute_dispatch_land
+from ..dispatch_verification_journal import build_dispatch_verification_journal_entries_from_envelope
 from ..dispatch_verify import (
     ProcessWaitResult,
     TerminateProcessGroupResult,
@@ -2383,82 +2376,19 @@ def _run_and_journal_verification(
             # The stop event ends the loop at once; the join only waits out a heartbeat already in flight, so no
             # publisher call of this thread can overlap the supervisor's next one.
             progress_thread.join()
-    verification_verdict = judge_dispatch_verification(DispatchVerificationInput(findings=envelope.findings))
-    failed = primary_gate_failure(envelope.findings)
-    # Story 85.1 (spec-pyforge-marshal:CAP-286, dormant): the failed commands
-    # and their output tails are recorded only when the fix-turn flag reads
-    # on. With it off -- every environment until Story 85.3 -- the OUTCOME
-    # keeps main's shape and main's offload set (an unreadable or invalid
-    # flag tree reads off here; the fix-turn step journals its warning).
-    record_failed_commands = (
-        verification_verdict == DispatchVerificationVerdict.REFUSED and verify_fix_loop_enabled(repo_root=repo_root)[0]
-    )
-    failed_commands_payload: list[dict[str, object]] = []
-    if record_failed_commands:
-        command_reports = envelope.data.get("commands")
-        reports_tuple = tuple(command_reports) if isinstance(command_reports, list) else ()
-        fix_settings = resolve_verify_fix_settings(effective)
-        for item in extract_failed_verify_commands(reports_tuple, envelope.findings):
-            combined = "\n".join(part for part in (item.stdout, item.stderr) if part.strip())
-            redacted_tail = scrub_then_tail_bytes(
-                redact_raw_text(combined) or "",
-                max_bytes=fix_settings.output_tail_bytes,
-            )
-            failed_commands_payload.append(
-                {
-                    "command": item.command,
-                    "exit_code": item.exit_code,
-                    "output_tail": redacted_tail,
-                }
-            )
-    # Story 28.15 (CAP-17): a `warn`-mode scope-violation advisory never
-    # becomes `failed` above (it classifies Verdict.WARN, ok-status) -- so
-    # without this it would be invisible outside the raw journal, exactly
-    # the "unless anyone reads findings" risk CAP-17's own Gates named.
-    # Named codes only (never the raw MRS-GATE-007/008, which `warn` mode
-    # never emits in the first place): a plain, JSON-safe list threaded to
-    # `marshal status`/`fleet-picture` via `gather_dispatch_journal_facts`.
-    scope_advisories = [
-        {"code": finding.code, "path": finding.path}
-        for finding in envelope.findings
-        if finding.code in gate_core._SCOPE_VIOLATION_ADVISORY_CODES.values()
-    ]
-    intent_entry = build_entry(
-        id=JournalEntryId(writer_id, counter),
-        ts=_format_entry_ts(_now_utc()),
+    built = build_dispatch_verification_journal_entries_from_envelope(
+        envelope=envelope,
+        repo_root=repo_root,
+        effective=effective,
         run_id=run_id,
-        kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-        phase=Phase.INTENT,
-        payload={
-            "verdict": verification_verdict.value,
-            "gate_verdict": envelope.verdict.value,
-            "failed_gate": failed.code if failed is not None else None,
-            "finding_count": len(envelope.findings),
-        },
-    )
-    counter += 1
-    outcome_entry = build_entry(
-        id=JournalEntryId(writer_id, counter),
+        writer_id=writer_id,
+        counter=counter,
         ts=_format_entry_ts(_now_utc()),
-        run_id=run_id,
-        kind=dispatch_core.KIND_DISPATCH_VERIFICATION,
-        phase=Phase.OUTCOME,
-        intent_id=intent_entry.id,
-        payload={
-            "verdict": verification_verdict.value,
-            "ok": verification_verdict == DispatchVerificationVerdict.VERIFIED,
-            "failed_gate": failed.code if failed is not None else None,
-            "failed_message": failed.message if failed is not None else None,
-            "scope_violation_advisories": scope_advisories,
-            **({VERIFY_FAILED_COMMANDS_FIELD: failed_commands_payload} if record_failed_commands else {}),
-        },
     )
-    counter += 1
-    offload_fields = (
-        frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD, VERIFY_FAILED_COMMANDS_FIELD})
-        if record_failed_commands
-        else frozenset({SCOPE_VIOLATION_ADVISORIES_FIELD})
-    )
+    intent_entry = built.intent_entry
+    outcome_entry = built.outcome_entry
+    counter = built.next_counter
+    offload_fields = built.offload_fields
     try:
         _append_entry(fs, run_dir, intent_entry, fsync=True)
         _append_entry(
