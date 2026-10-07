@@ -1913,6 +1913,7 @@ def test_heal_escalates_baseline_conflict_without_reconcile(tmp_path: Path) -> N
             SPEC_SURFACE_BASELINE_REL: _baseline_json(
                 **{
                     _SPEC_A: _baseline_entry("branch"),
+                    _SPEC_B: _baseline_entry("base"),
                     _SPEC_C: _baseline_entry("branch"),
                 }
             ),
@@ -1922,6 +1923,7 @@ def test_heal_escalates_baseline_conflict_without_reconcile(tmp_path: Path) -> N
         main_files={
             SPEC_SURFACE_BASELINE_REL: _baseline_json(
                 **{
+                    _SPEC_A: _baseline_entry("base"),
                     _SPEC_B: _baseline_entry("main"),
                     _SPEC_C: _baseline_entry("main"),
                 }
@@ -1945,6 +1947,7 @@ def test_heal_resolves_baseline_to_main_and_calls_reconcile_once_before_push(tmp
             SPEC_SURFACE_BASELINE_REL: _baseline_json(
                 **{
                     _SPEC_A: _baseline_entry("branch"),
+                    _SPEC_B: _baseline_entry("base"),
                     _SPEC_C: _baseline_entry("branch"),
                 }
             ),
@@ -1954,6 +1957,7 @@ def test_heal_resolves_baseline_to_main_and_calls_reconcile_once_before_push(tmp
         main_files={
             SPEC_SURFACE_BASELINE_REL: _baseline_json(
                 **{
+                    _SPEC_A: _baseline_entry("base"),
                     _SPEC_B: _baseline_entry("main"),
                     _SPEC_C: _baseline_entry("main"),
                 }
@@ -1993,10 +1997,24 @@ def test_heal_reconcile_refusal_pushes_nothing_and_never_retries_merge(tmp_path:
     _, clone, wt = _22_18_landing(
         tmp_path,
         branch_files={
-            SPEC_SURFACE_BASELINE_REL: _baseline_json(**{_SPEC_A: _baseline_entry("branch")}),
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("branch"),
+                    _SPEC_B: _baseline_entry("base"),
+                    _SPEC_C: _baseline_entry("base"),
+                }
+            ),
             _MEMLOG_A: _memlog(_A, _B1, updated=_T1),
         },
-        main_files={SPEC_SURFACE_BASELINE_REL: _baseline_json(**{_SPEC_B: _baseline_entry("main")})},
+        main_files={
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("base"),
+                    _SPEC_B: _baseline_entry("main"),
+                    _SPEC_C: _baseline_entry("base"),
+                }
+            ),
+        },
     )
     head_before = _run_git(clone, "rev-parse", _HEAD).strip()
     forge = _HonestForge(clone)
@@ -2032,11 +2050,23 @@ def test_heal_escalates_non_mechanical_path_beside_baseline(tmp_path: Path) -> N
     _, clone, wt = _22_18_landing(
         tmp_path,
         branch_files={
-            SPEC_SURFACE_BASELINE_REL: _baseline_json(**{_SPEC_A: _baseline_entry("branch")}),
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("branch"),
+                    _SPEC_B: _baseline_entry("base"),
+                    _SPEC_C: _baseline_entry("base"),
+                }
+            ),
             "README.md": "branch\n",
         },
         main_files={
-            SPEC_SURFACE_BASELINE_REL: _baseline_json(**{_SPEC_B: _baseline_entry("main")}),
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("base"),
+                    _SPEC_B: _baseline_entry("main"),
+                    _SPEC_C: _baseline_entry("base"),
+                }
+            ),
             "README.md": "main\n",
         },
     )

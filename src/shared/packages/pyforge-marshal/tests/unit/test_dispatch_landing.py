@@ -375,6 +375,35 @@ class _RecordingForge(FakeForge):
         return None
 
 
+def test_reconcile_spec_surface_drift_stamps_branch_specs_when_verdict_is_clean(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 22.18: after a heal merge, branch_stamp_specs alone can drive one scoped stamp."""
+    process = FakeProcess()
+    _install_fake_spec_surface(monkeypatch, (), process=process)
+    vcs = _ReconcileVcs(changed=("src/a.py",))
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+
+    outcome = _reconcile_spec_surface_drift(
+        git_repo_root=tmp_path,
+        worktree=worktree,
+        head_branch=_BRANCH,
+        key=normalize("22-18-example"),
+        run_id="run-22-18",
+        vcs=vcs,
+        process=process,
+        branch_stamp_specs=frozenset({_CORE_SPEC, _STATION_SPEC}),
+        push_when_done=False,
+    )
+
+    assert outcome.refuse is False
+    stamps = [c for c in process.calls if "spec_surface_check.py" in c[0][1]]
+    assert len(stamps) == 1
+    assert set(_spec_args(stamps[0][0])) == {_CORE_SPEC, _STATION_SPEC}
+    assert vcs.pushed == []
+
+
 def test_reconcile_spec_surface_drift_noop_when_no_drift_findings(tmp_path: Path, monkeypatch) -> None:
     """No 'drift'/'drift-presumed' findings at all -- nothing to reconcile,
     no side effects."""
