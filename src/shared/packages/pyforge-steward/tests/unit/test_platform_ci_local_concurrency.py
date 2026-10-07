@@ -65,7 +65,6 @@ def _prepare_stub_root(root: Path) -> Path:
             if [[ "$*" == *start* ]]; then
               echo "start pg $$" >> "$log"
               if [ -n "$work" ]; then echo "$$" > "$work/.active"; fi
-              if [ "${PLATFORM_CI_STUB_SLOW:-0}" = 1 ]; then sleep 6; fi
             fi
             ;;
           pg_isready)
@@ -86,6 +85,7 @@ def _prepare_stub_root(root: Path) -> Path:
         """\
         #!/usr/bin/env bash
         log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
+        if [ "${PLATFORM_CI_STUB_SLOW:-0}" = 1 ]; then sleep 8; fi
         echo "python $@ $$" >> "$log"
         exit 0
         """
