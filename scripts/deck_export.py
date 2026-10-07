@@ -37,7 +37,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from pyforge.herald import stamps
+from pyforge.herald import deck_versions, stamps
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VALID_TARGETS = {"html", "deck-pptx", "infographic-pptx"}
@@ -189,6 +189,7 @@ def stamp_marp_source(src: Path, dest: Path, facts: dict[str, str]) -> None:
         text = text.rstrip() + slide
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(text, encoding="utf-8")
+    deck_versions.retire_superseded(dest)
 
 
 def find_exec_summary(deck_dir: Path) -> Path | None:
@@ -286,7 +287,9 @@ def main() -> None:
         )
         run_marp([info_md, "-o", out])
         produced.append(out)
-        stamps.write_stamp(Path(out), repo_root=Path(ROOT), slug=args.slug)
+        out_path = Path(out)
+        stamps.write_stamp(out_path, repo_root=Path(ROOT), slug=args.slug)
+        deck_versions.retire_superseded(out_path)
     if "infographic-pptx" in targets:
         if not info_md:
             sys.exit("error: no infographic .md source for 'infographic-pptx'")
@@ -296,7 +299,9 @@ def main() -> None:
             out = os.path.join(pptx_dir, f"{args.slug}_infographic_deck-{info_date}.pptx")
             run_marp(["--pptx", info_md, "-o", out])
             produced.append(out)
-            stamps.write_stamp(Path(out), repo_root=Path(ROOT), slug=args.slug)
+            out_path = Path(out)
+            stamps.write_stamp(out_path, repo_root=Path(ROOT), slug=args.slug)
+            deck_versions.retire_superseded(out_path)
     if "deck-pptx" in targets:
         if not deck_md:
             sys.exit("error: no deck .md source for the 'deck-pptx' target")
@@ -306,7 +311,9 @@ def main() -> None:
             out = os.path.join(pptx_dir, f"{args.slug}-deck-{deck_date}.pptx")
             run_marp(["--pptx", deck_md, "-o", out])
             produced.append(out)
-            stamps.write_stamp(Path(out), repo_root=Path(ROOT), slug=args.slug)
+            out_path = Path(out)
+            stamps.write_stamp(out_path, repo_root=Path(ROOT), slug=args.slug)
+            deck_versions.retire_superseded(out_path)
 
     print(f"\n{args.slug}: regenerated {len(produced)} artifact(s):")
     for p in produced:

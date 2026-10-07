@@ -618,6 +618,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.herald.deck_publish": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
 }
 _METADATA_FIELDS = ("owner", "story", "created", "on_everywhere", "cleanup_by")
 
