@@ -2,8 +2,8 @@
 title: "22.17: A land-only refusal names the gate that refused it"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
+status: 'done'
+baseline_revision: 'fe00e7ce581bd7ceab7d147105ba9b67b860406b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -127,3 +127,9 @@ Type / Effort / Deps: fix / S / —.
 - Mutation: drop the findings pass-through in `_verification_verdict_for_cap4` and re-run the station suite. The CLI-output test fails. Restore it.
 - On the next real land-only refusal: the CLI output names the failing gate, and the run dir's `journal.jsonl` ends with its `dispatch-verification` OUTCOME.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pyforge-marshal-test`, `pyforge-deps-test`, and `lint-types` passed locally; `python scripts/spec_surface_reconcile.py` reported no drift on staged changes.

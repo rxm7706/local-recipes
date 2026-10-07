@@ -119,6 +119,7 @@ from ..core.journal import (
     fold,
     mint_run_id,
     prepare_for_write,
+    prepare_for_write_offloading_fields,
     resolve_land_findings_from_payload,
     resolve_scope_violation_advisories_from_payload,
     sidecar_texts_for_lines,
@@ -137,6 +138,7 @@ from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_
 from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
+from ..dispatch_verification_journal import build_dispatch_verification_journal_entries
 from ..dispatch_verify import evaluate_dispatch_verification, run_dispatch_ruff_format_before_verify
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
@@ -291,6 +293,23 @@ def _writer_id() -> str:
     return f"dispatch-{os.getpid()}"
 
 
+def _land_only_verification_writer_id() -> str:
+    return f"dispatch-land-{os.getpid()}"
+
+
+_CAP4_VERIFICATION_EVAL_FAILED = "MRS-DISP-062"
+
+
+@dataclass(frozen=True)
+class Cap4VerificationResult:
+    """Independent verify outcome for the harness-done land-only path (Story 22.17)."""
+
+    verdict: DispatchVerificationVerdict
+    findings: tuple[Finding, ...]
+    gate_envelope_verdict: str
+    verify_data: dict[str, object]
+
+
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -381,8 +400,18 @@ def _seed_dispatch_worktree_scope(*, fs: FsPort, worktree: Path, slug: str) -> F
     return None
 
 
-def _append_entry(fs: FsPort, run_dir: Path, entry, *, fsync: bool) -> None:
-    prepared = prepare_for_write(entry)
+def _append_entry(
+    fs: FsPort,
+    run_dir: Path,
+    entry,
+    *,
+    fsync: bool,
+    offload_fields: frozenset[str] | None = None,
+) -> None:
+    if offload_fields:
+        prepared = prepare_for_write_offloading_fields(entry, offload_fields=offload_fields)
+    else:
+        prepared = prepare_for_write(entry)
     if prepared.sidecar_relative_path is not None:
         fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
     fs.append_line(run_dir / _JOURNAL_FILENAME, prepared.line, fsync=fsync)
@@ -1038,7 +1067,7 @@ def _verification_verdict_for_cap4(
     spec_text: str,
     process: ProcessPort,
     vcs: CommittingVcs,
-) -> DispatchVerificationVerdict:
+) -> Cap4VerificationResult:
     """Independent verify only — never a harness self-report (CAP-3)."""
     if callable(getattr(vcs, "commit_paths", None)):
         run_dispatch_ruff_format_before_verify(
@@ -1059,9 +1088,64 @@ def _verification_verdict_for_cap4(
             vcs=vcs,
             committing_vcs=vcs,
         )
-    except ProcessError, VcsCommandError, OSError, TypeError, AttributeError:
-        return DispatchVerificationVerdict.REFUSED
-    return judge_dispatch_verification(DispatchVerificationInput(findings=tuple(envelope.findings)))
+    except (ProcessError, VcsCommandError, OSError, TypeError, AttributeError) as exc:
+        finding = Finding(
+            code=_CAP4_VERIFICATION_EVAL_FAILED,
+            severity=Severity.ERROR,
+            message=f"{type(exc).__name__}: {exc}",
+        )
+        return Cap4VerificationResult(
+            verdict=DispatchVerificationVerdict.REFUSED,
+            findings=(finding,),
+            gate_envelope_verdict="gate-failed",
+            verify_data={},
+        )
+    verdict = judge_dispatch_verification(DispatchVerificationInput(findings=tuple(envelope.findings)))
+    return Cap4VerificationResult(
+        verdict=verdict,
+        findings=tuple(envelope.findings),
+        gate_envelope_verdict=envelope.verdict.value,
+        verify_data=dict(envelope.data),
+    )
+
+
+def _journal_cap4_verification(
+    fs: FsPort,
+    run_dir: Path,
+    run_id: str,
+    *,
+    cap4: Cap4VerificationResult,
+    repo_root: Path,
+    effective_policy: policy.EffectivePolicy,
+) -> Finding | None:
+    """Append land-only ``dispatch-verification`` to the story's latest run dir (Story 22.17)."""
+    built = build_dispatch_verification_journal_entries(
+        findings=cap4.findings,
+        gate_envelope_verdict=cap4.gate_envelope_verdict,
+        verify_data=cap4.verify_data,
+        repo_root=repo_root,
+        effective=effective_policy,
+        run_id=run_id,
+        writer_id=_land_only_verification_writer_id(),
+        counter=0,
+        ts=_format_entry_ts(_now_utc()),
+    )
+    try:
+        _append_entry(fs, run_dir, built.intent_entry, fsync=True)
+        _append_entry(
+            fs,
+            run_dir,
+            built.outcome_entry,
+            fsync=False,
+            offload_fields=built.offload_fields,
+        )
+    except FsError as exc:
+        return Finding(
+            code="MRS-DISP-025",
+            severity=Severity.WARN,
+            message=f"harness-done verification completed but operator journal failed: {exc}",
+        )
+    return None
 
 
 def _attempt_harness_done_cap4(
@@ -1078,14 +1162,15 @@ def _attempt_harness_done_cap4(
     followup_review: FollowupReview | None = None,
     hold_landing_cli: bool = False,
     story_spec_text: str | None = None,
-) -> tuple[DispatchLandingVerdict, str, object]:
+    latest_run_dir: Path | None = None,
+) -> tuple[DispatchLandingVerdict, str, Envelope]:
     """Compose with the existing CAP-4 land path — never a second lander.
 
     ``followup_review`` (Story 73.1, CAP-281) is the marker of the story's latest run when that run was a
     follow-up review: the landing then judges ALREADY_LANDED by the run's own head and closes its row,
     exactly as the supervisor's landing does -- never by the story's first merge. ``None`` (a normal run)
     hands the landing nothing."""
-    verification = _verification_verdict_for_cap4(
+    cap4 = _verification_verdict_for_cap4(
         slug=slug,
         story_key=story_key,
         worktree=worktree,
@@ -1095,12 +1180,24 @@ def _attempt_harness_done_cap4(
         process=process,
         vcs=vcs,
     )
+    journal_findings: list[Finding] = []
+    if latest_run_dir is not None:
+        journal_warn = _journal_cap4_verification(
+            fs,
+            latest_run_dir,
+            latest_run_dir.name,
+            cap4=cap4,
+            repo_root=repo_root,
+            effective_policy=effective_policy,
+        )
+        if journal_warn is not None:
+            journal_findings.append(journal_warn)
     result, envelope = execute_dispatch_land(
         project_slug=slug,
         story_key=render_feed_key(story_key),
         worktree=worktree,
         repo_root=repo_root,
-        verification_verdict=verification,
+        verification_verdict=cap4.verdict,
         effective=effective_policy,
         fs=fs,
         vcs=vcs,
@@ -1114,7 +1211,14 @@ def _attempt_harness_done_cap4(
         named = f"PR #{result.pr_number}"
     if named is None:
         named = str(worktree)
-    return result.verdict, str(named), envelope
+    merged_findings = tuple(cap4.findings) + tuple(journal_findings) + tuple(envelope.findings)
+    merged = build_envelope(
+        command=envelope.command,
+        verdict=compute_verdict(merged_findings),
+        data=envelope.data,
+        findings=merged_findings,
+    )
+    return result.verdict, str(named), merged
 
 
 def _latest_story_run_dir(fs: FsPort, repo_root: Path, slug: str, story_key: str) -> Path | None:
@@ -3009,6 +3113,7 @@ def dispatch_once(
             process=process,
             hold_landing_cli=hold_landing,
             story_spec_text=live_spec_text,
+            latest_run_dir=latest_run_dir,
             # Story 73.1 (CAP-281): a story whose latest run was a follow-up review lands as one.
             **_followup_review_kwargs(_latest_story_followup_review(fs, repo_root, slug, render_feed_key(story_key))),
         )
@@ -3024,6 +3129,8 @@ def dispatch_once(
             DispatchLandingVerdict.HELD_FOR_REVIEW,
         }:
             return _done()
+        if isinstance(land_envelope, Envelope):
+            findings.extend(land_envelope.findings)
         findings.append(
             Finding(
                 code="MRS-DISP-040",
