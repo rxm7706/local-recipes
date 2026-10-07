@@ -50,7 +50,7 @@ def _bool_flag_entry(default: str) -> dict[str, object]:
     return {
         "state": "ENABLED",
         "variants": {"on": True, "off": False},
-        "defaultVariant": default,
+        "defaultVariant": "off",
         "metadata": {
             "owner": "warden",
             "story": "14-3-the-actuator-opens-the-fix-as-a-draft-pr-on-an-estate-repo",
@@ -70,10 +70,13 @@ def _flag_tree(tmp_path: Path, *, draft_on: bool) -> Path:
     }
     path = tmp_path / "flags.json"
     path.write_text(json.dumps(tree), encoding="utf-8")
-    (tmp_path / core_flags.OVERLAYS_FILE_NAME).write_text(
-        json.dumps({"dev": {}, "staging": {}, "production": {}}),
-        encoding="utf-8",
-    )
+    variant = "on" if draft_on else "off"
+    overlays = {
+        "dev": {FIX_DRAFT_PR_ESTATE_FLAG: variant},
+        "staging": {FIX_DRAFT_PR_ESTATE_FLAG: variant},
+        "production": {FIX_DRAFT_PR_ESTATE_FLAG: "off"},
+    }
+    (tmp_path / core_flags.OVERLAYS_FILE_NAME).write_text(json.dumps(overlays), encoding="utf-8")
     return path
 
 
@@ -172,9 +175,11 @@ def test_flag_off_uses_non_draft_empty_tree_open() -> None:
 def test_read_boolean_follows_rendered_flag_tree(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     on_tree = _flag_tree(tmp_path / "on", draft_on=True)
     off_tree = _flag_tree(tmp_path / "off", draft_on=False)
-    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
     assert read_boolean(FIX_DRAFT_PR_ESTATE_FLAG, flags_path=on_tree) is True
     assert read_boolean(FIX_DRAFT_PR_ESTATE_FLAG, flags_path=off_tree) is False
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
+    assert read_boolean(FIX_DRAFT_PR_ESTATE_FLAG, flags_path=on_tree) is False
 
 
 class _Response:
