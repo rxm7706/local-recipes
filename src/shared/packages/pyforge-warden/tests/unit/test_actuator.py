@@ -75,7 +75,13 @@ class _FakeForge:
         self.dedup_calls.append(finding_id)
         return self._existing
 
-    def open_pull_request(self, proposal: RemediationProposal) -> str:
+    def open_pull_request(
+        self,
+        proposal: RemediationProposal,
+        *,
+        manifest_fix: object = None,
+        draft: bool = False,
+    ) -> str:
         self.open_calls.append(proposal)
         if self._open_error is not None:
             raise self._open_error

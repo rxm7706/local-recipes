@@ -2,8 +2,9 @@
 title: "14.3: The actuator opens the fix as a draft PR on an estate repo"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: 'b36482389641efd2591a9d5b5c8a883bcafcf746'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
@@ -102,4 +103,26 @@ Deps: S-14.2.
 
 ## Review Triage Log
 
-- No review yet (minted 2026-09-28). Implementation and review stay separate.
+### 2026-10-07 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — AC and I/O matrix audited against `pyforge-warden-test` and new unit coverage)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Story 14.3 wires `pyforge.warden.fix_draft_pr_estate`: on estate repos with a Story 14.2 manifest diff, the actuator opens a **draft** PR whose commit carries Git Data blobs/trees; non-estate repos skip with `not an estate repo`; flag OFF keeps the empty-tree, non-draft PR.
+
+**Files changed:**
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py` — draft estate path, allowlist skip, enriched PR body
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/config.py` — `fix-pr-estate-repos` config key
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py` — pass allowlist from `EffectiveConfig`
+- `src/platform/config/flags.json` / `flag-overlays.json` — register flag (on in dev/staging, off in production)
+- `tests/unit/test_actuator_draft_pr_estate.py` — flag, allowlist, blob/draft forge shapes
+- Adjusted forge fakes in existing actuator tests
+
+**Review:** No patch/defer items. Matrix rows covered by new/updated unit tests.
+
+**Verification:** `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2204 passed; `python scripts/spec_surface_reconcile.py` — OK after memlog reconciles.
+
+**Residual risks:** Attended real-repo draft PR check remains operator-only per spec. Q4 flag cleanup date not set until flag is ON everywhere per metadata clock rules.
