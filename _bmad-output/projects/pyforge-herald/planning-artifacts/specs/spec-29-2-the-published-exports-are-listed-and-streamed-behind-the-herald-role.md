@@ -164,7 +164,7 @@ Flag: `pyforge.herald.deck_publish` (`feature-flag-governance:CAP-1`).
 
 **Manual checks:**
 - ON/OFF: the flag test writes two flagd trees (one with `pyforge.herald.deck_publish` ON, one OFF), like `src/platform/tests/test_openfeature_file_flags.py`, and asserts the routes answer ON and 404 OFF. Replace it with the testing-kit fixture once `feature-flag-governance:CAP-4` lands.
-- `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: pass, including `src/platform/tests/test_herald_deck_exports.py`, `tests/policy/test_sqlmigrate_extraction.py` and `tests/policy/test_liquibase_ddl_governance.py`.
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: pass, including `src/platform/tests/test_herald_deck_exports.py`, `src/platform/tests/policy/test_sqlmigrate_extraction.py` and `src/platform/tests/policy/test_liquibase_ddl_governance.py`.
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the reconcile and the scoped stamps.
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
 
