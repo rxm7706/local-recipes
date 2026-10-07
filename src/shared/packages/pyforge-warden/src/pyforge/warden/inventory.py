@@ -110,18 +110,20 @@ class Component:
             raise ValueError("Component.name must be a non-empty string")
         if self.version == "":
             object.__setattr__(self, "version", None)
+        if (
+            self.vuln_matchable
+            and self.pypi_identity is None
+            and self.ecosystem in (Ecosystem.PYPI, Ecosystem.CONDA)
+        ):
+            raise ValueError(
+                "vuln_matchable=True requires a resolved pypi_identity AND a "
+                "concrete version (the Gap-C predicate) — got "
+                f"pypi_identity={self.pypi_identity!r}, version={self.version!r}"
+            )
         if self.vuln_matchable and self.version is None:
             raise ValueError(
                 "vuln_matchable=True requires a concrete version — got "
                 f"version={self.version!r}"
-            )
-        if self.vuln_matchable and self.pypi_identity is None and self.ecosystem in (
-            Ecosystem.PYPI,
-            Ecosystem.CONDA,
-        ):
-            raise ValueError(
-                "vuln_matchable=True for a Python-scoped component requires a "
-                f"resolved pypi_identity (Gap-C) — got ecosystem={self.ecosystem!r}"
             )
         if self.vuln_matchable and self.indeterminate_reason is not None:
             raise ValueError(
