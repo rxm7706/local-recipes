@@ -2,8 +2,8 @@
 title: "63.7: Two `platform-ci-local` runs at once never share services or a work dir"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: 'b36482389641efd2591a9d5b5c8a883bcafcf746'
+status: 'in-progress'
+baseline_revision: 'adea658e758cf460f11e78e484ed3ce80a51df18'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
