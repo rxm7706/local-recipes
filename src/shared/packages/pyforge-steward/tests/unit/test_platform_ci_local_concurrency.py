@@ -35,23 +35,23 @@ def _write_executable(path: Path, body: str) -> None:
     path.chmod(0o755)
 
 
-def _stub_bin(root: Path, *, stub_log: Path, slow: bool = False, fail_ruff: bool = False) -> Path:
-    """Return ``root/bin`` prepended to PATH: docker + pixi env stubs."""
+def _prepare_stub_root(root: Path) -> Path:
+    """One-time layout: ``bin/``, pixi env stubs, minimal ``src/platform``."""
     bin_dir = root / "bin"
-    log = stub_log
-    slow_flag = "1" if slow else "0"
-    fail_ruff_flag = "1" if fail_ruff else "0"
 
     service_stub = textwrap.dedent(
-        f"""\
+        """\
         #!/usr/bin/env bash
-        log="{log}"
+        log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
         name="$(basename "$0")"
         echo "$name $*" >> "$log"
         case "$name" in
           pg_ctl)
             if [[ "$*" == *stop* ]]; then echo "stop pg $$" >> "$log"; fi
-            if [[ "$*" == *start* ]]; then echo "start pg $$" >> "$log"; fi
+            if [[ "$*" == *start* ]]; then
+              echo "start pg $$" >> "$log"
+              if [ "${{PLATFORM_CI_STUB_SLOW:-0}}" = 1 ]; then sleep 6; fi
+            fi
             ;;
           redis-server) echo "start redis $$" >> "$log" ;;
           initdb) echo "initdb $$" >> "$log" ;;
@@ -64,14 +64,9 @@ def _stub_bin(root: Path, *, stub_log: Path, slow: bool = False, fail_ruff: bool
         _write_executable(bin_dir / name, service_stub)
 
     python_stub = textwrap.dedent(
-        f"""\
+        """\
         #!/usr/bin/env bash
-        log="{log}"
-        if [ "{slow_flag}" = 1 ]; then sleep 3; fi
-        if [[ "$1" == *manage.py* ]] || [[ "$1" == *pytest* ]] || [[ "$1" == *db.sqlmigrate* ]]; then
-          echo "python-test $$" >> "$log"
-          exit 0
-        fi
+        log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
         echo "python $@ $$" >> "$log"
         exit 0
         """
@@ -81,9 +76,9 @@ def _stub_bin(root: Path, *, stub_log: Path, slow: bool = False, fail_ruff: bool
         _write_executable(env_bin / "python", python_stub)
         if env == "platform-ci-test":
             ruff_stub = textwrap.dedent(
-                f"""\
+                """\
                 #!/usr/bin/env bash
-                if [ "{fail_ruff_flag}" = 1 ]; then exit 1; fi
+                if [ "${PLATFORM_CI_STUB_FAIL_RUFF:-0}" = 1 ]; then exit 1; fi
                 exit 0
                 """
             )
@@ -91,44 +86,39 @@ def _stub_bin(root: Path, *, stub_log: Path, slow: bool = False, fail_ruff: bool
             _write_executable(env_bin / "mypy", "#!/usr/bin/env bash\nexit 0\n")
 
     docker_stub = textwrap.dedent(
-        f"""\
+        """\
         #!/usr/bin/env bash
-        echo "docker $*" >> "{log}"
+        log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
+        echo "docker $*" >> "$log"
         exit 0
         """
     )
     _write_executable(bin_dir / "docker", docker_stub)
-    return bin_dir
 
-
-def _minimal_platform(root: Path) -> None:
     plat = root / "src" / "platform"
-    plat.mkdir(parents=True)
-    _write_executable(
-        plat / "manage.py",
-        "#!/usr/bin/env bash\nexit 0\n",
-    )
-    (plat / "tests").mkdir()
-    (plat / "tests" / "policy").mkdir()
+    plat.mkdir(parents=True, exist_ok=True)
+    _write_executable(plat / "manage.py", "#!/usr/bin/env bash\nexit 0\n")
+    (plat / "tests" / "policy").mkdir(parents=True, exist_ok=True)
+    return bin_dir
 
 
 def _run_platform_ci_local(
     root: Path,
+    bin_dir: Path,
     *,
     stub_log: Path,
     env: dict[str, str] | None = None,
-    slow: bool = False,
-    fail_ruff: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     assert _SCRIPT is not None
-    bin_dir = _stub_bin(root, stub_log=stub_log, slow=slow, fail_ruff=fail_ruff)
-    _minimal_platform(root)
     run_env = os.environ.copy()
     run_env["PIXI_PROJECT_ROOT"] = str(root)
     run_env["PATH"] = f"{bin_dir}:{run_env.get('PATH', '')}"
     run_env["PLATFORM_CI_LOCAL_ENGINE"] = "docker"
+    run_env["PLATFORM_CI_STUB_LOG"] = str(stub_log)
     if env:
         run_env.update(env)
+    stub_log.parent.mkdir(parents=True, exist_ok=True)
+    stub_log.write_text("", encoding="utf-8")
     return subprocess.run(
         ["bash", str(_SCRIPT), "--test"],
         cwd=root,
@@ -140,7 +130,6 @@ def _run_platform_ci_local(
 
 
 def _parse_service_events(log_text: str) -> list[tuple[str, str]]:
-    """Return (event, pid) tuples for postgres lifecycle lines."""
     out: list[tuple[str, str]] = []
     for line in log_text.splitlines():
         if line.startswith("start pg "):
@@ -153,26 +142,26 @@ def _parse_service_events(log_text: str) -> list[tuple[str, str]]:
 def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
     lock = tmp_path / "platform-ci-local.lock"
     work = tmp_path / "work"
-    log1 = tmp_path / "run1.log"
-    log2 = tmp_path / "run2.log"
+    bin_dir = _prepare_stub_root(tmp_path)
     results: list[subprocess.CompletedProcess[str]] = []
 
-    def runner(log: Path, slow: bool) -> None:
+    def runner(log: Path, *, slow: bool) -> None:
         results.append(
             _run_platform_ci_local(
                 tmp_path,
+                bin_dir,
                 stub_log=log,
-                slow=slow,
                 env={
                     "PLATFORM_CI_LOCAL_LOCK": str(lock),
                     "PLATFORM_CI_LOCAL_WORK": str(work),
                     "PLATFORM_CI_LOCAL_LOCK_WAIT": "120",
+                    "PLATFORM_CI_STUB_SLOW": "1" if slow else "0",
                 },
             )
         )
 
-    t1 = threading.Thread(target=runner, args=(log1, True))
-    t2 = threading.Thread(target=runner, args=(log2, False))
+    t1 = threading.Thread(target=runner, args=(tmp_path / "run1.log",), kwargs={"slow": True})
+    t2 = threading.Thread(target=runner, args=(tmp_path / "run2.log",), kwargs={"slow": False})
     t1.start()
     time.sleep(1)
     t2.start()
@@ -184,8 +173,8 @@ def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
         assert proc.returncode == 0, proc.stdout + proc.stderr
         assert "RESULT: PASS" in proc.stdout
 
-    ev1 = _parse_service_events(log1.read_text())
-    ev2 = _parse_service_events(log2.read_text())
+    log1 = (tmp_path / "run1.log").read_text()
+    ev1 = _parse_service_events(log1)
     assert ev1 and ev1[0][0] == "start"
     if any(e[0] == "stop" for e in ev1):
         stop_pid = next(e[1] for e in ev1 if e[0] == "stop")
@@ -195,27 +184,35 @@ def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
 def test_one_run_fails_other_passes_under_lock(tmp_path: Path) -> None:
     lock = tmp_path / "platform-ci-local.lock"
     work = tmp_path / "work"
-    log_ok = tmp_path / "ok.log"
-    log_fail = tmp_path / "fail.log"
+    bin_dir = _prepare_stub_root(tmp_path)
     results: list[subprocess.CompletedProcess[str]] = []
 
     def runner(log: Path, *, fail_ruff: bool, slow: bool) -> None:
         results.append(
             _run_platform_ci_local(
                 tmp_path,
+                bin_dir,
                 stub_log=log,
-                slow=slow,
-                fail_ruff=fail_ruff,
                 env={
                     "PLATFORM_CI_LOCAL_LOCK": str(lock),
                     "PLATFORM_CI_LOCAL_WORK": str(work),
                     "PLATFORM_CI_LOCAL_LOCK_WAIT": "120",
+                    "PLATFORM_CI_STUB_FAIL_RUFF": "1" if fail_ruff else "0",
+                    "PLATFORM_CI_STUB_SLOW": "1" if slow else "0",
                 },
             )
         )
 
-    t1 = threading.Thread(target=runner, kwargs={"log": log_fail, "fail_ruff": True, "slow": True})
-    t2 = threading.Thread(target=runner, kwargs={"log": log_ok, "fail_ruff": False, "slow": False})
+    t1 = threading.Thread(
+        target=runner,
+        args=(tmp_path / "fail.log",),
+        kwargs={"fail_ruff": True, "slow": True},
+    )
+    t2 = threading.Thread(
+        target=runner,
+        args=(tmp_path / "ok.log",),
+        kwargs={"fail_ruff": False, "slow": False},
+    )
     t1.start()
     time.sleep(1)
     t2.start()
@@ -233,19 +230,20 @@ def test_one_run_fails_other_passes_under_lock(tmp_path: Path) -> None:
 def test_lock_wait_timeout_names_holder(tmp_path: Path) -> None:
     lock = tmp_path / "platform-ci-local.lock"
     work = tmp_path / "work"
-    log_holder = tmp_path / "holder.log"
+    bin_dir = _prepare_stub_root(tmp_path)
     holder_done: list[subprocess.CompletedProcess[str]] = []
 
     def hold() -> None:
         holder_done.append(
             _run_platform_ci_local(
                 tmp_path,
-                stub_log=log_holder,
-                slow=True,
+                bin_dir,
+                stub_log=tmp_path / "holder.log",
                 env={
                     "PLATFORM_CI_LOCAL_LOCK": str(lock),
                     "PLATFORM_CI_LOCAL_WORK": str(work),
                     "PLATFORM_CI_LOCAL_LOCK_WAIT": "120",
+                    "PLATFORM_CI_STUB_SLOW": "1",
                 },
             )
         )
@@ -255,6 +253,7 @@ def test_lock_wait_timeout_names_holder(tmp_path: Path) -> None:
     time.sleep(1)
     waiter = _run_platform_ci_local(
         tmp_path,
+        bin_dir,
         stub_log=tmp_path / "waiter.log",
         env={
             "PLATFORM_CI_LOCAL_LOCK": str(lock),
@@ -273,9 +272,7 @@ def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
         pytest.skip("SIGKILL holder test is POSIX-only")
     lock = tmp_path / "platform-ci-local.lock"
     work = tmp_path / "work"
-    log_holder = tmp_path / "holder.log"
-    bin_dir = _stub_bin(tmp_path, stub_log=log_holder, slow=True)
-    _minimal_platform(tmp_path)
+    bin_dir = _prepare_stub_root(tmp_path)
     env = os.environ.copy()
     env.update(
         {
@@ -285,8 +282,10 @@ def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
             "PLATFORM_CI_LOCAL_WORK": str(work),
             "PLATFORM_CI_LOCAL_LOCK_WAIT": "120",
             "PLATFORM_CI_LOCAL_ENGINE": "docker",
+            "PLATFORM_CI_STUB_SLOW": "1",
         }
     )
+    assert _SCRIPT is not None
     holder = subprocess.Popen(
         ["bash", str(_SCRIPT), "--test"],
         cwd=tmp_path,
@@ -297,6 +296,7 @@ def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
     holder.wait(timeout=10)
     follow = _run_platform_ci_local(
         tmp_path,
+        bin_dir,
         stub_log=tmp_path / "follow.log",
         env={
             "PLATFORM_CI_LOCAL_LOCK": str(lock),
@@ -310,25 +310,25 @@ def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
 
 def test_without_lock_overlapping_runs_do_not_both_pass(tmp_path: Path) -> None:
     work = tmp_path / "shared-work"
-    log1 = tmp_path / "run1.log"
-    log2 = tmp_path / "run2.log"
+    bin_dir = _prepare_stub_root(tmp_path)
     results: list[subprocess.CompletedProcess[str]] = []
 
-    def runner(log: Path, slow: bool) -> None:
+    def runner(log: Path, *, slow: bool) -> None:
         results.append(
             _run_platform_ci_local(
                 tmp_path,
+                bin_dir,
                 stub_log=log,
-                slow=slow,
                 env={
                     "PLATFORM_CI_LOCAL_NO_LOCK": "1",
                     "PLATFORM_CI_LOCAL_WORK": str(work),
+                    "PLATFORM_CI_STUB_SLOW": "1" if slow else "0",
                 },
             )
         )
 
-    t1 = threading.Thread(target=runner, args=(log1, True))
-    t2 = threading.Thread(target=runner, args=(log2, False))
+    t1 = threading.Thread(target=runner, args=(tmp_path / "run1.log",), kwargs={"slow": True})
+    t2 = threading.Thread(target=runner, args=(tmp_path / "run2.log",), kwargs={"slow": False})
     t1.start()
     time.sleep(0.5)
     t2.start()
@@ -341,10 +341,11 @@ def test_without_lock_overlapping_runs_do_not_both_pass(tmp_path: Path) -> None:
 
 
 def test_single_run_summary_unchanged(tmp_path: Path) -> None:
-    log = tmp_path / "solo.log"
+    bin_dir = _prepare_stub_root(tmp_path)
     proc = _run_platform_ci_local(
         tmp_path,
-        stub_log=log,
+        bin_dir,
+        stub_log=tmp_path / "solo.log",
         env={
             "PLATFORM_CI_LOCAL_LOCK": str(tmp_path / "solo.lock"),
             "PLATFORM_CI_LOCAL_WORK": str(tmp_path / "solo-work"),
