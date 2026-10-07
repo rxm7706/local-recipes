@@ -2,7 +2,7 @@
 title: '28.1: Each deck keeps one current version of each export'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'a16ab7f7e2a65d81814987c7698ace76d65ad16e'
 difficulty: 'medium'
 review_loop_iteration: 0
@@ -187,3 +187,24 @@ Minted 2026-09-28 from `epics.md` so `marshal factory dispatch` can resolve this
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the reconcile and the
   scoped stamps.
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
+
+## Review Triage Log
+
+### 2026-10-07 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 0, false 3, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Sidecar `.stamp.json` files on pruned exports are not explicitly removed — only one sidecar existed on a kept current file; superseded exports had no sidecars in the tree.
+  - `[false]` `[reject]` `deck_versions.main` print format differs from matrix wording — output includes `(current …)` suffix; tests assert exit codes and superseded paths only.
+  - `[false]` `[reject]` CI `core-test` might run on presentations-only diffs — workflow loop sets `CORE_CHANGED` only from station package paths, not `presentations/`.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Pruned 74 superseded dated exports under `presentations/*/src/{pptx,marp}/` (944→870 tracked files, ~134.69→80.55 MB). Added stdlib `pyforge.herald.deck_versions` with meta enforcement, reworked Story 19.4 warden tests to regenerate pipeline PPTX into `tmp_path`, extended herald CI triggers for `presentations/**` without widening `core-test`, and reconciled spec surfaces via memlogs (no `--write-baseline`).
+
+Verification: `pyforge-herald-test` 1547 passed; `python -m pyforge.herald.deck_versions` exit 0; `spec_surface_reconcile.py` OK; `test_workflow_path_filters_match` passed; memlogs appended on `spec-pyforge-herald`, `spec-pyforge-doctor`, `spec-pyforge-core`.
+
+Review: 0 patches; `followup_review_recommended: false`.
+
+Residual: `site-check` / full `pr-preflight` not run in this auto pass — run before PR merge.
