@@ -11,16 +11,19 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
 from .adapters.vcs_git import VcsCommandError
 from .core.chain_regen import parse_ledger_statuses, render_ledger_statuses
 from .core.commit_vcs import CommittingVcs
 from .core.dispatch_landing import (
     DEFERRED_WORK_BASENAME,
+    SPEC_SURFACE_BASELINE_REL,
     TEAM_MEMORY_INDEX_REL,
     is_deferred_work_path,
     is_mechanical_conflict_path,
     is_memlog_path,
+    specs_whose_baseline_entries_differ,
     sprint_ledger_rel_path,
     three_way_ledger_statuses,
     union_deferred_work_texts,
@@ -29,7 +32,7 @@ from .core.dispatch_landing import (
     unknown_conflict_paths,
 )
 from .core.egress import to_redacted_text
-from .core.model import Finding
+from .core.model import Finding, Severity
 from .core.refs import local_branch_ref
 from .ports.commit import VcsRef
 from .ports.forge import ForgeCommandError, ForgePort, ForgeRef, PrInfo
@@ -40,6 +43,14 @@ from .ports.vcs import VcsPort
 # mergeability only (PR #985 DIRTY path). Excludes ``BLOCKED`` (red CI) and
 # ``BEHIND`` (branch lag); those must not bypass gates via local merge.
 _STALE_GITHUB_MERGE_STATES = frozenset({"CONFLICTING", "DIRTY"})
+
+
+class _ReconcileSpecSurfaceOutcome(Protocol):
+    finding: Finding | None
+    refuse: bool
+
+
+ReconcileSpecSurface = Callable[..., _ReconcileSpecSurfaceOutcome]
 
 
 @dataclass(frozen=True)
@@ -55,6 +66,8 @@ class DispatchLandHealResult:
     # (a red run or runs still pending) -- the retried merge never ran, so the caller reports THIS
     # finding, never the first merge's failure.
     checks_refusal: Finding | None = None
+    # Story 22.18: ``MRS-DISP-048`` from the heal's scoped re-stamp -- nothing pushed, merge not retried.
+    reconcile_refusal: Finding | None = None
 
 
 def _ledger_path(project_slug: str) -> str:
@@ -84,6 +97,7 @@ def try_heal_dispatch_land_merge(
     forge: ForgePort,
     probe_ref: str | None = None,
     await_checks: Callable[[str], Finding | None] | None = None,
+    reconcile_spec_surface: ReconcileSpecSurface | None = None,
 ) -> DispatchLandHealResult:
     """Attempt a ledger and memlog union or a local main advance after ``merge_pr`` fails.
 
@@ -121,11 +135,30 @@ def try_heal_dispatch_land_merge(
     # reading `probe`'s memlog and ledger text and `merge_ref_resolving` resolving `probe` stays what
     # Story 59.1 left it -- never wider by a forge call.
     unknown = unknown_conflict_paths(conflict_paths, ledger_rel=ledger_rel, deferred_work_rel=deferred_work_rel)
+    baseline_in_conflict = SPEC_SURFACE_BASELINE_REL in conflict_paths
+    if baseline_in_conflict and reconcile_spec_surface is None:
+        unknown = tuple(sorted({*unknown, SPEC_SURFACE_BASELINE_REL}))
     memlog_paths = tuple(sorted(p for p in conflict_paths if is_memlog_path(p)))
     deferred_work_paths = tuple(sorted(p for p in conflict_paths if is_deferred_work_path(p)))
     team_memory_in_conflict = TEAM_MEMORY_INDEX_REL in conflict_paths
+    branch_stamp_specs: frozenset[str] = frozenset()
+    if baseline_in_conflict and reconcile_spec_surface is not None:
+        try:
+            head_ref = local_branch_ref(head_branch)
+            base_sha = vcs.merge_base(git_repo_root, probe, head_ref)
+            base_text = vcs.file_text_at_ref(git_repo_root, base_sha, SPEC_SURFACE_BASELINE_REL) or ""
+            branch_text = vcs.file_text_at_ref(git_repo_root, head_ref, SPEC_SURFACE_BASELINE_REL) or ""
+            branch_stamp_specs = specs_whose_baseline_entries_differ(base_text, branch_text)
+        except VcsCommandError:
+            return DispatchLandHealResult(healed=False)
     resolutions: dict[str, str] = {}
-    if memlog_paths or ledger_rel in conflict_paths or deferred_work_paths or team_memory_in_conflict:
+    if (
+        memlog_paths
+        or ledger_rel in conflict_paths
+        or deferred_work_paths
+        or team_memory_in_conflict
+        or baseline_in_conflict
+    ):
         resolved = _resolve_mechanical_conflicts(
             git_repo_root=git_repo_root,
             probe=probe,
@@ -153,7 +186,7 @@ def try_heal_dispatch_land_merge(
         # pre-heal read, so falling through to the local-`main` advance would land the branch
         # on `main` past whatever made the forge refuse (a red check, a rejected push). The
         # #985 recovery still runs on the NEXT landing attempt, with a fresh probe and state.
-        healed, checks_refusal = _try_union_heal(
+        healed, checks_refusal, reconcile_refusal = _try_union_heal(
             project_slug=project_slug,
             git_repo_root=git_repo_root,
             worktree=worktree,
@@ -169,15 +202,19 @@ def try_heal_dispatch_land_merge(
             has_memlogs=bool(memlog_paths),
             has_deferred_work=bool(deferred_work_paths and any(p in resolutions for p in deferred_work_paths)),
             has_team_memory=TEAM_MEMORY_INDEX_REL in resolutions,
+            has_baseline=SPEC_SURFACE_BASELINE_REL in resolutions,
             vcs=vcs,
             forge=forge,
             await_checks=await_checks,
+            reconcile_spec_surface=reconcile_spec_surface,
+            branch_stamp_specs=branch_stamp_specs,
         )
         return DispatchLandHealResult(
             healed=healed,
             retried_forge_merge=healed,
             healed_memlog_paths=memlog_paths if healed else (),
             checks_refusal=checks_refusal,
+            reconcile_refusal=reconcile_refusal,
         )
 
     if not conflict_paths and merge_state in _STALE_GITHUB_MERGE_STATES:
@@ -268,6 +305,10 @@ def _resolve_mechanical_conflicts(
             else:
                 resolutions[TEAM_MEMORY_INDEX_REL] = union
 
+        if SPEC_SURFACE_BASELINE_REL in conflict_paths:
+            _base_text, main_text, _branch_text = texts(SPEC_SURFACE_BASELINE_REL)
+            resolutions[SPEC_SURFACE_BASELINE_REL] = main_text
+
         # Add unresolved deferred work to the unresolved list
         unresolved.extend(unresolved_deferred_work)
     except VcsCommandError:
@@ -292,10 +333,13 @@ def _try_union_heal(
     has_memlogs: bool,
     has_deferred_work: bool,
     has_team_memory: bool = False,
+    has_baseline: bool = False,
     vcs: CommittingVcs,
     forge: ForgePort,
     await_checks: Callable[[str], Finding | None] | None = None,
-) -> tuple[bool, Finding | None]:
+    reconcile_spec_surface: ReconcileSpecSurface | None = None,
+    branch_stamp_specs: frozenset[str] = frozenset(),
+) -> tuple[bool, Finding | None, Finding | None]:
     """Story 59.1 (CAP-269): heal a ledger-only conflict with a real merge of ``probe`` into the
     dispatch branch -- a single-parent union commit (the Story 28.20 original) cleared a same-row
     status conflict but never adjacent added rows, since the retried three-way merge still saw
@@ -313,21 +357,41 @@ def _try_union_heal(
             ("memlogs", has_memlogs),
             ("deferred work", has_deferred_work),
             ("team memory index", has_team_memory),
+            ("spec-surface baseline", has_baseline),
         )
         if present
     )
     message = f"marshal: union {what} for {project_slug!r} while merging the base (CAP-4 heal)"
     try:
         vcs.merge_ref_resolving(worktree, VcsRef(probe), resolutions=resolutions, message=to_redacted_text(message))
+    except VcsCommandError:
+        return False, None, None
+
+    if reconcile_spec_surface is not None and has_baseline:
+        reconcile_outcome = reconcile_spec_surface(
+            branch_stamp_specs=branch_stamp_specs,
+            push_when_done=False,
+        )
+        if reconcile_outcome.refuse:
+            finding = reconcile_outcome.finding
+            if finding is None:
+                finding = Finding(
+                    code="MRS-DISP-048",
+                    severity=Severity.ERROR,
+                    message=f"spec-surface re-stamp refused on {head_branch!r} — refusing to land",
+                )
+            return False, None, finding
+
+    try:
         vcs.push(git_repo_root, head_branch)
         new_sha = vcs.resolve_ref(git_repo_root, head_branch)
     except VcsCommandError:
-        return False, None
+        return False, None, None
 
     if await_checks is not None:
         refusal = await_checks(new_sha)
         if refusal is not None:
-            return False, refusal
+            return False, refusal, None
 
     try:
         forge.merge_pr(
@@ -339,8 +403,8 @@ def _try_union_heal(
             subject=ForgeRef(subject),
         )
     except ForgeCommandError:
-        return False, None
-    return True, None
+        return False, None, None
+    return True, None, None
 
 
 def _try_local_main_advance(

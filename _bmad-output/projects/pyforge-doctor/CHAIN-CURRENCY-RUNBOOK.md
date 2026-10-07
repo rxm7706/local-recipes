@@ -35,11 +35,16 @@ generator). Get them wrong and the sweep mints findings instead of clearing them
    last-touch, never `max()`. A re-commit moves nothing; the reconcile must bump
    `updated:`. Conversely: **a stamp without a genuine reconcile is lying to the
    board** — forbidden.
-4. **`behind-code`** (spec/PRD/arch older than last code motion) is **suppressed once
+4. **Spec contract date for `spec→prd` only** — the edge compares the PRD to the
+   later of `SPEC.md`'s date and the memlog's *contract* date: bookkeeping appends
+   (`(event…)` lines beginning `Surface reconcile` or `Story N.M landed`) are ignored
+   when trailing; otherwise the memlog reads like any other artifact. The spec stage's
+   displayed date, `behind-code`, shelf life and every other feeds pair are unchanged.
+5. **`behind-code`** (spec/PRD/arch older than last code motion) is **suppressed once
    the Dream is `realized`** — that flag is aimed at chains still being built.
-5. **`overtaken`** = the spec's `open_questions` list is non-empty while its PRD and
+6. **`overtaken`** = the spec's `open_questions` list is non-empty while its PRD and
    arch already exist. Only emptying the list clears it.
-6. **Shelf life** — 90 days default per stage (dream/spec/context/tea/retro exempt);
+7. **Shelf life** — 90 days default per stage (dream/spec/context/tea/retro exempt);
    the sweep's cadence above keeps this from ever firing alone.
 
 ## Finding → remedy map

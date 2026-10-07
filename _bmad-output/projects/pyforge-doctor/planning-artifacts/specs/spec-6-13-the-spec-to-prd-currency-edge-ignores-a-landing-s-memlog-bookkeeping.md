@@ -2,21 +2,15 @@
 title: "6.13: The spec-to-PRD currency edge ignores a landing's memlog bookkeeping"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
+status: 'done'
+baseline_revision: 'dcbddeb4e3'
+followup_review_recommended: false
 review_loop_iteration: 0
 followup_review_recommended: false
-context:
-  - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
-  - _bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md
-  - _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md
-  - scripts/fleet_scan.py
-  - scripts/chain_currency_sweep_check.py
-  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py
-  - src/shared/packages/pyforge-doctor/tests/unit/test_fleet_scan_currency_feeds.py
-  - _bmad/scripts/memlog.py
+context: 
 deferred: []
 declared_low_risk: false
+updated: 2026-10-07T13:42
 ---
 
 <intent-contract>
@@ -175,4 +169,28 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-07 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches intent-contract and matrix tests pass)
+
+## Auto Run Result
+
+Status: done
+
+Summary: The `spec→prd` feeds edge in `scripts/fleet_scan.py` now compares the PRD to the Spec contract date (`_spec_feeds_updated`): bookkeeping memlog appends are ignored when trailing; contract entries still move the edge. Stage `updatedAt`, `behind-code`, grace, and other feeds pairs are unchanged.
+
+Files changed:
+- `scripts/fleet_scan.py` — contract-date helpers and `_currency` / `scan_fleet` wiring
+- `src/shared/packages/pyforge-doctor/tests/unit/test_fleet_scan_currency_feeds.py` — Story 6.13 fixtures
+- `_bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md` — audit mechanics item 4
+- Co-governor memlogs on `spec-pyforge-marshal` and `spec-pyforge-doctor`
+
+Review: no patch/defer/intent_gap items.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 3464 passed, 1 skipped
+- `pixi run --frozen -e pyforge-guild python scripts/chain_currency_sweep_check.py` — exit 0, all eight stations current
+- Atlas probe: append Surface reconcile then `chain_currency_sweep_check.py --project pyforge-atlas` — exit 0 (probe memlog restored)
+- `python scripts/spec_surface_reconcile.py` — exit 0
