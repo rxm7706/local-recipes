@@ -274,6 +274,7 @@ force-single-line = true
 "tests/test_start_get_survives_disconnect.py" = ["E501"]
 "tests/test_station_api_seam.py" = ["E501", "PLC0415"]
 "tests/test_station_port_no_loopback.py" = ["E501", "EM101", "PLC0415", "TC002", "TRY003"]
+"tests/test_herald_deck_exports.py" = ["E501", "I001", "PLC0415", "PLR2004", "TC003"]
 "tests/test_warden_portal_audit_start_get.py" = ["E501", "S607"]
 
 # ==== import-linter ====

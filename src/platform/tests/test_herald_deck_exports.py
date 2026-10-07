@@ -40,11 +40,18 @@ def _flag_tree(tmp_path: Path, *, enabled: bool) -> Path:
     return path
 
 
-def _herald_get(path: str, *, headers: dict[str, str] | None = None, cookies: dict[str, str] | None = None):
+def _herald_get(
+    path: str,
+    *,
+    headers: dict[str, str] | None = None,
+    cookies: dict[str, str] | None = None,
+):
     async def _call():
         app = station_application("herald", 1)
         transport = ASGITransport(app=app)
-        async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        async with AsyncClient(
+            transport=transport, base_url="http://testserver"
+        ) as client:
             return await client.get(path, headers=headers or {}, cookies=cookies or {})
 
     return asyncio.run(_call())
@@ -69,7 +76,9 @@ def deck_export_row(db) -> DeckExport:
     PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
     PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
 )
-def test_list_requires_identity(deck_export_row, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_list_requires_identity(
+    deck_export_row, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path, enabled=True)))
     response = _herald_get("/stations/herald/api/v1/deck-exports")
     assert response.status_code == HTTPStatus.UNAUTHORIZED
@@ -79,7 +88,9 @@ def test_list_requires_identity(deck_export_row, tmp_path: Path, monkeypatch: py
     PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
     PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
 )
-def test_list_forbidden_without_herald_role(deck_export_row, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_list_forbidden_without_herald_role(
+    deck_export_row, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path, enabled=True)))
     token = PortalClient().emit(
         "other-user",
@@ -125,7 +136,9 @@ def test_list_returns_projection_with_bearer(
     PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
     PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
 )
-def test_routes_answer_404_when_flag_off(deck_export_row, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_routes_answer_404_when_flag_off(
+    deck_export_row, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path, enabled=False)))
     token = PortalClient().emit(
         "herald-operator",
@@ -134,9 +147,14 @@ def test_routes_answer_404_when_flag_off(deck_export_row, tmp_path: Path, monkey
         private_pem=GOLDEN_PRIVATE_PEM,
     )
     headers = {"Authorization": f"Bearer {token}"}
-    assert _herald_get("/stations/herald/api/v1/deck-exports", headers=headers).status_code == HTTPStatus.NOT_FOUND
     assert (
-        _herald_get(f"/stations/herald/api/v1/deck-exports/{'b' * 64}", headers=headers).status_code
+        _herald_get("/stations/herald/api/v1/deck-exports", headers=headers).status_code
+        == HTTPStatus.NOT_FOUND
+    )
+    assert (
+        _herald_get(
+            f"/stations/herald/api/v1/deck-exports/{'b' * 64}", headers=headers
+        ).status_code
         == HTTPStatus.NOT_FOUND
     )
 
@@ -199,7 +217,9 @@ def test_stream_uses_memory_store(
     assert "filename=" in response.headers.get("content-disposition", "")
 
 
-def test_refresh_writes_nothing_when_flag_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, db) -> None:
+def test_refresh_writes_nothing_when_flag_off(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, db
+) -> None:
     from django.core.management import call_command
 
     from django_pyforge.flags import configure_file_provider
@@ -211,7 +231,9 @@ def test_refresh_writes_nothing_when_flag_off(tmp_path: Path, monkeypatch: pytes
     assert DeckExport.objects.count() == 0
 
 
-def test_refresh_upserts_from_portal_runner(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, db) -> None:
+def test_refresh_upserts_from_portal_runner(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, db
+) -> None:
     from django.core.management import call_command
 
     from django_pyforge.flags import configure_file_provider
@@ -234,7 +256,9 @@ def test_refresh_upserts_from_portal_runner(monkeypatch: pytest.MonkeyPatch, tmp
         ]
     )
 
-    def _fake_runner(*, station: str, argv: list[str], token: str, **_: object) -> dict[str, str]:
+    def _fake_runner(
+        *, station: str, argv: list[str], token: str, **_: object
+    ) -> dict[str, str]:
         assert station == "herald"
         assert argv[:3] == ["deck", "exports", "pyforge-herald"]
         return {"stdout": sample}
