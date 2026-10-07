@@ -2,7 +2,7 @@
 title: '28.2: A new export replaces the version it supersedes'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 difficulty: 'easy'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -133,3 +133,34 @@ Minted 2026-09-28 from `epics.md` so `marshal factory dispatch` can resolve this
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the reconcile and the
   scoped stamps.
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
+
+## Review Triage Log
+
+### 2026-10-07 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `deck_versions.retire_superseded` (CAP-53 D3) and call it from every dated export writer so a newer pull or re-export removes strictly older files of the same kind and their stamp sidecars; backdated writes leave newer files in place and set `written_superseded`.
+
+Files changed:
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_versions.py` — `RetireSupersededResult` and `retire_superseded`
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py` — retire after marp/standalone/pptx-fill writes
+- `scripts/deck_export.py` — retire after stamp and marp outputs
+- `src/shared/packages/pyforge-herald/tests/unit/test_deck_versions.py` — matrix unit tests (new)
+- `src/shared/packages/pyforge-herald/tests/unit/test_deck_pipeline.py` — pull retires older marp
+- `tests/scripts/test_deck_export.py` — stamp retires older marp
+- `spec-pyforge-herald/.memlog.md` and `spec-pyforge-core/.memlog.md` — surface reconcile (no baseline stamp in this run)
+
+Review: no patch/defer items; `followup_review_recommended: false`.
+
+Verification:
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — 1580 passed, 4 skipped
+- `pixi run -e pyforge-ci pyforge-doctor-scripts-test` — 1210 passed, 11 skipped
+- `python scripts/spec_surface_reconcile.py` — exit 0
+- `pixi run -e pyforge-herald python -m pyforge.herald.deck_versions` — exit 0 on live tree
+
+Residual: scoped `spec-surface-check` baseline stamp and `pr-preflight` left for the landing PR (memlog reconcile done; operator stamps per AGENTS.md checklist).
