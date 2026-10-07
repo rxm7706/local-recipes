@@ -6,6 +6,7 @@ kind. This module is the single definition of that rule for enforcement — stdl
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from collections import defaultdict
@@ -110,12 +111,33 @@ def _sidecar(export_path: Path) -> Path:
     return export_path.parent / f"{export_path.name}.stamp.json"
 
 
+def _presentations_dir(root: Path) -> Path | None:
+    """``root`` is the ``presentations/`` directory itself or a directory that holds one."""
+    root = root.resolve()
+    if (root / "presentations").is_dir():
+        return root / "presentations"
+    if root.is_dir() and root.name == "presentations":
+        return root
+    return None
+
+
 def main(argv: list[str] | None = None) -> int:
-    root = Path.cwd()
-    if argv is None:
-        argv = sys.argv[1:]
-    if argv:
-        root = Path(argv[0]).resolve()
+    parser = argparse.ArgumentParser(
+        prog="python -m pyforge.herald.deck_versions",
+        description="Print each superseded dated export; exit 1 if there is any, 0 otherwise.",
+    )
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=Path.cwd(),
+        help="the presentations/ directory, or a directory that holds one (default: the current directory)",
+    )
+    args = parser.parse_args(argv)
+    presentations_dir = _presentations_dir(args.root)
+    if presentations_dir is None:
+        print(f"deck_versions: no presentations/ directory at {args.root}", file=sys.stderr)
+        return 2
+    root = presentations_dir.parent
     pairs = superseded(root)
     if not pairs:
         return 0

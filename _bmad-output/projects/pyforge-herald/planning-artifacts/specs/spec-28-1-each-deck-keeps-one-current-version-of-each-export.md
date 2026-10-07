@@ -197,6 +197,20 @@ Minted 2026-09-28 from `epics.md` so `marshal factory dispatch` can resolve this
   - `[false]` `[reject]` `deck_versions.main` print format differs from matrix wording — output includes `(current …)` suffix; tests assert exit codes and superseded paths only.
   - `[false]` `[reject]` CI `core-test` might run on presentations-only diffs — workflow loop sets `CORE_CHANGED` only from station package paths, not `presentations/`.
 
+### 2026-10-07 — Operator re-verify after the dispatch's verification refusal
+- The dispatch run `pyforge-herald-20261007T055516715Z-20c28cc4` was refused at MRS-GATE-002: `python` was not on the
+  supervisor's PATH because the dispatch was launched outside `pixi run`. The refusal was environmental; the work was not
+  judged.
+- Re-run on this branch, each verdict read from its exit code: `pyforge-herald-test` (1547 passed), `pyforge-core-test`
+  (2251 passed), `spec_surface_reconcile.py` OK, `spec-surface-check` 0, `pixi run -e site site-check` 0 with 69
+  downloads under `dist/decks`, `test_workflow_path_filters_match` passed, `deck_versions` exit 0.
+- `pr-preflight` red on `chain_currency_sweep_check`: this story's memlog entries moved the herald and doctor Specs more
+  than 2 days past their PRDs. Fixed by the runbook cascade on this branch (herald PRD, spine and epics; doctor PRD and
+  spine, each with a `## Currency reconciliation — 2026-10-07` section). No FR or AD changed.
+- `deck_versions` took a positional path, so the Surface line's `--root presentations` was read as a directory named
+  `--root`, found no `presentations/`, and exited 0 on any tree. `main()` now parses `--root` (the `presentations/`
+  directory or a directory that holds one) and exits 2 when neither exists. Two tests cover both forms and the refusal.
+
 ## Auto Run Result
 
 Status: done

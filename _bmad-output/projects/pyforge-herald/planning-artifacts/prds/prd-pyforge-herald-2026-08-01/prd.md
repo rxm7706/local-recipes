@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-07"   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
@@ -1283,3 +1283,47 @@ capabilities that already carry it and closes the station's open medium and low 
 metric changes.
 
 **Content changed:** this section only. `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-10-07
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-herald`'s `.memlog.md` moved to 2026-10-07T00:59 with Story
+28.1's surface reconcile, while this PRD sat at 2026-10-03. The memlog gained 13 entries after the Phase 4+5 re-stamp.
+`SPEC.md` gained three `surface:` globs on 2026-10-05 and no CAP.*
+
+### What the Spec's memlog carries
+
+- **2026-10-03, Stories 35.1 and 35.2 (both `done`).** Nine entries record the surface reconciles and landing
+  bookkeeping, the operator's ruling that chained 35.2 after 35.1 auto-landed before its send-back review, 35.2's mint,
+  a correction naming deck paths 35.1 did not change, and the dependabot `dashboard.yml` bump that 35.2's stamp
+  accepted. Both stories are `fix` type with no CAP. They repair shipped behaviour under the FRs that already carry it:
+  the Design transport, `deck sync-all`'s read-back, the python-pptx fill, `deck-trio` and the dossier build's tests.
+  DW-FU-23-6-1 (sync-all never publishes the standalone poster) stays open until a live proof exists.
+- **2026-10-04, marshal Story 86.8 (co-governor).** `docsite/content/dossier.yml` and the marshal infographic now name
+  `marshal planning chain-regenerate`, not the retired `marshal chain regenerate`. A text fix; no herald behaviour moves.
+- **2026-10-05, Story 27.1 (`done`) and its surface decision.** The Starlight shelf landed as FR-8.1 describes:
+  `docs-site/src/content/docs` is a symlink to `docs/`, titles and quadrant indexes resolve at build time, and `nodejs`
+  is in pixi's `site` feature. The Spec's `surface:` gained `docs-site/**`, `docs/index.md` and `docs/404.md`, so the
+  files FR-8.1 creates are governed here.
+- **2026-10-07, Story 28.1 (CAP-53, in flight on its dispatch branch).** It removes the 74 superseded dated exports (944
+  → 870 tracked files under `presentations/`, 134.69 → 80.55 MB) and adds `pyforge.herald.deck_versions`,
+  `tests/meta/test_deck_working_set.py` and the `presentations/**` trigger on herald's CI job. That is FR-9.1 as written;
+  `python -m pyforge.herald.deck_versions` exits 0 on this tree. The co-governed edits are `docs/how-to/presentation-deck.md`
+  (`spec-pyforge-doctor`) and the station-tests lane (`spec-pyforge-core`).
+
+### One divergence, recorded and not repaired (FR-8.1)
+
+FR-8.1 says the shelf builds in place, and Story 27.1's acceptance runs `pixi run -e site docs-site-build` on a clean
+checkout. `docs-site/astro.config.mjs` imports `./src/lib/site-url.mjs`, and `docs-site/README.md` lists that file. The
+root `.gitignore` rule `lib/` (line 40) ignores the path, and git has never tracked the file. So a clean checkout cannot
+load the site config. The herald meta tests check the symlink, the Node pin and the vendored hashes, but nothing resolves
+the config's imports. The repair is a tracked file plus a `.gitignore` exception. That needs a fix story; this section
+only records the gap.
+
+### The FR space: no FR registered
+
+None of these entries adds or changes a requirement. Epic 35 is fix work, Story 27.1 realizes FR-8.1, and Story 28.1
+realizes FR-9.1.
+
+**ONE FR space still Feature Groups 1–10** (FR-11.1 is the next free id).
+
+**Content changed:** this section added. No FR added, renumbered or removed. `updated:` bumped.

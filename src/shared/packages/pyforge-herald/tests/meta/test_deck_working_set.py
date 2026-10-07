@@ -71,7 +71,7 @@ def test_module_main_exit_code(tmp_path: Path, capsys):
     pptx_dir.mkdir(parents=True)
     (pptx_dir / "x-deck-2026-07-24.pptx").write_bytes(b"1")
     (pptx_dir / "x-deck-2026-09-15.pptx").write_bytes(b"2")
-    assert deck_versions.main([str(tmp_path)]) == 1
+    assert deck_versions.main(["--root", str(tmp_path)]) == 1
     out = capsys.readouterr().out
     assert "x-deck-2026-07-24.pptx" in out
     assert "x-deck-2026-09-15.pptx" in out
@@ -81,4 +81,17 @@ def test_module_main_clean_tree(tmp_path: Path):
     marp_dir = tmp_path / "presentations" / "demo" / "src" / "marp"
     marp_dir.mkdir(parents=True)
     (marp_dir / "x-deck-2026-09-15.md").write_text("only", encoding="utf-8")
-    assert deck_versions.main([str(tmp_path)]) == 0
+    assert deck_versions.main(["--root", str(tmp_path)]) == 0
+
+
+def test_module_main_root_names_the_presentations_dir(tmp_path: Path):
+    pptx_dir = tmp_path / "presentations" / "demo" / "src" / "pptx"
+    pptx_dir.mkdir(parents=True)
+    (pptx_dir / "x-deck-2026-07-24.pptx").write_bytes(b"1")
+    (pptx_dir / "x-deck-2026-09-15.pptx").write_bytes(b"2")
+    assert deck_versions.main(["--root", str(tmp_path / "presentations")]) == 1
+
+
+def test_module_main_refuses_a_root_without_presentations(tmp_path: Path, capsys):
+    assert deck_versions.main(["--root", str(tmp_path / "missing")]) == 2
+    assert "no presentations/ directory" in capsys.readouterr().err
