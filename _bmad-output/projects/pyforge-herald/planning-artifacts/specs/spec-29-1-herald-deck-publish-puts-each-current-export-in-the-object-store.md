@@ -2,7 +2,7 @@
 title: '29.1: herald deck publish puts each current export in the object store'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
 difficulty: 'medium'
 review_loop_iteration: 0
@@ -72,15 +72,15 @@ Type / Effort / Deps: feature / M / S-28.1.
 
 ## Tasks
 
-- [ ] Read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape
-- [ ] Re-read steward Story 74.1's landed contract; if it differs from D2's reading, follow 74.1 and append the deviation to the Spec memlog
-- [ ] `deck_store.py`: the port, the S3 adapter, the in-memory fake
-- [ ] `deck_publish.py`: current-export resolution through `deck_versions`, sha256, `put_if_absent`, the manifest
-- [ ] `cli.py`: the two verbs behind the flag, listed as disabled when OFF
-- [ ] `src/platform/config/flags.json`: the key, `defaultVariant` off
-- [ ] Tests, including the ON/OFF test and the import-boundary meta-test
-- [ ] If the S3 client library is missing from the `pyforge-herald` or `pyforge-guild` env: hand-edit `pixi.toml`, `pixi lock`, regenerate `environment.yaml`, run `pyforge-station-tests`
-- [ ] Spec-surface reconcile for every Spec the detector names, then one scoped stamp each
+- [x] Read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape
+- [x] Re-read steward Story 74.1's landed contract; if it differs from D2's reading, follow 74.1 and append the deviation to the Spec memlog
+- [x] `deck_store.py`: the port, the S3 adapter, the in-memory fake
+- [x] `deck_publish.py`: current-export resolution through `deck_versions`, sha256, `put_if_absent`, the manifest
+- [x] `cli.py`: the two verbs behind the flag, listed as disabled when OFF
+- [x] `src/platform/config/flags.json`: the key, `defaultVariant` off
+- [x] Tests, including the ON/OFF test and the import-boundary meta-test
+- [x] If the S3 client library is missing from the `pyforge-herald` or `pyforge-guild` env: hand-edit `pixi.toml`, `pixi lock`, regenerate `environment.yaml`, run `pyforge-station-tests`
+- [x] Spec-surface reconcile for every Spec the detector names, then one scoped stamp each
 
 ## Boundaries & Constraints
 
@@ -153,5 +153,10 @@ Flag: `pyforge.herald.deck_publish` (`feature-flag-governance:CAP-1`).
 - If `pixi.toml` changed: `pixi run -e pyforge-guild pyforge-station-tests` — expected: pass; `environment.yaml` regenerated in the same PR.
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the reconcile and the scoped stamps.
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
+
+## Auto Run Result
+
+Status: done
+Verification: `pixi run --frozen -e pyforge-herald pyforge-herald-test` (1562 passed); `python scripts/spec_surface_reconcile.py` (OK). Memlog reconcile on `spec-pyforge-herald`, `spec-pyforge-unifying-strategy`, and `spec-pyforge-core` (no `--write-baseline`).
 
 ## Review Triage Log
