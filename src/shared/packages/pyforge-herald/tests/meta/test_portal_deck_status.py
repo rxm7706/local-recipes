@@ -88,7 +88,8 @@ def test_portal_uses_portal_client_invoke_only() -> None:
     refresh = (
         _portal_root(root) / "management" / "commands" / "refresh_deck_exports.py"
     ).read_text(encoding="utf-8")
-    assert "PortalClient().invoke(" in refresh
+    assert "client.invoke(" in refresh
+    assert "PortalClient()" in refresh
     assert "deck_exports_json_runner" in refresh
     offenders: list[str] = []
     for path in _iter_py(_portal_root(root)):
