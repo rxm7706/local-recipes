@@ -1595,6 +1595,7 @@ def _run_scan(args: argparse.Namespace) -> int:
                 fixed_version_candidates=fixed_version_candidates,
                 scan_target=target,
                 manifest_locations=manifest_locations,
+                estate_repos=frozenset(config.fix_pr_estate_repos),
             )
             actuation_payload = actuation.to_json_dict()
             failed = [outcome for outcome in actuation.outcomes if outcome.status == "failed"]

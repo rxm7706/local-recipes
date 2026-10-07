@@ -134,6 +134,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.warden.fix_draft_pr_estate": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "warden",
+        "story": "14-3-the-actuator-opens-the-fix-as-a-draft-pr-on-an-estate-repo",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": "2026-12-26"
+      }
     }
   }
 }

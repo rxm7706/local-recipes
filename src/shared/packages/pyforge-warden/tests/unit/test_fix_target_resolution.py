@@ -14,7 +14,7 @@ class _AcceptAllForge:
     def existing_open_pr(self, finding_id: str) -> None:
         return None
 
-    def open_pull_request(self, proposal):  # noqa: ANN001
+    def open_pull_request(self, proposal, *, manifest_fix=None, draft=False):  # noqa: ANN001
         return "https://example.test/pr/1"
 
 

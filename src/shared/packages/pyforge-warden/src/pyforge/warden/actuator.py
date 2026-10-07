@@ -42,6 +42,7 @@ from urllib.parse import urlencode
 from pyforge.core.errors import PyforgeError
 from pyforge.core.flags import read_boolean
 
+from .config import _DEFAULT_FIX_PR_ESTATE_REPOS
 from .fix_solver import FixTargetResolution, FixTargetSolver, PixiVersionOutOfRangeError, resolve_fix_target
 from .manifest_fixup import ManifestFixPlan, prepare_manifest_fix, tree_content_digest
 from .report import _canonical_subject_key
@@ -419,7 +420,13 @@ class GitHubForgeClient:
             return ""
         return None
 
-    def open_pull_request(self, proposal: RemediationProposal) -> str:
+    def open_pull_request(
+        self,
+        proposal: RemediationProposal,
+        *,
+        manifest_fix: ManifestFixPlan | None = None,
+        draft: bool = False,
+    ) -> str:
         branch = _branch_name(proposal.finding_id)
         repo_info = self._api("GET", f"/repos/{self._repo}")
         base = "main"
@@ -431,15 +438,37 @@ class GitHubForgeClient:
         inner = commit.get("commit", {}) if isinstance(commit, dict) else {}
         tree = inner.get("tree", {}) if isinstance(inner, dict) else {}
         base_tree = tree.get("sha") if isinstance(tree, dict) else None
-        # An empty remediation commit (same tree as base) so the branch is one
-        # commit ahead and the PR can open -- the actionable content rides in
-        # the PR body, not a manifest diff (deferred to v1.x).
+        commit_tree = base_tree
+        if manifest_fix is not None and manifest_fix.files:
+            tree_entries: list[dict[str, object]] = []
+            for change in manifest_fix.files:
+                blob = self._api(
+                    "POST",
+                    f"/repos/{self._repo}/git/blobs",
+                    payload={"content": change.content, "encoding": "utf-8"},
+                )
+                blob_sha = blob.get("sha") if isinstance(blob, dict) else None
+                tree_entries.append(
+                    {"path": change.path, "mode": "100644", "type": "blob", "sha": blob_sha},
+                )
+            new_tree = self._api(
+                "POST",
+                f"/repos/{self._repo}/git/trees",
+                payload={"base_tree": base_tree, "tree": tree_entries},
+            )
+            if isinstance(new_tree, dict) and new_tree.get("sha") is not None:
+                commit_tree = new_tree.get("sha")
+        elif manifest_fix is None:
+            # An empty remediation commit (same tree as base) so the branch is one
+            # commit ahead and the PR can open -- the actionable content rides in
+            # the PR body when Story 14.3's estate draft path is off.
+            pass
         new_commit = self._api(
             "POST",
             f"/repos/{self._repo}/git/commits",
             payload={
                 "message": proposal.title,
-                "tree": base_tree,
+                "tree": commit_tree,
                 "parents": [base_sha] if base_sha is not None else [],
             },
         )
@@ -457,15 +486,18 @@ class GitHubForgeClient:
             if exc.code == 422:
                 raise _BranchExistsError(branch) from exc
             raise
+        pull_payload: dict[str, object] = {
+            "title": proposal.title,
+            "head": branch,
+            "base": base,
+            "body": proposal.body,
+        }
+        if draft:
+            pull_payload["draft"] = True
         pull = self._api(
             "POST",
             f"/repos/{self._repo}/pulls",
-            payload={
-                "title": proposal.title,
-                "head": branch,
-                "base": base,
-                "body": proposal.body,
-            },
+            payload=pull_payload,
         )
         if isinstance(pull, dict):
             url = pull.get("html_url") or pull.get("url")
@@ -556,7 +588,9 @@ def run_actuator(
     solver: FixTargetSolver | None = None,
     fix_target_resolution_enabled: bool | None = None,
     fix_manifest_edit_enabled: bool | None = None,
+    fix_draft_pr_estate_enabled: bool | None = None,
     manifest_locations: Mapping[str, Sequence[str]] | None = None,
+    estate_repos: frozenset[str] | None = None,
 ) -> Actuation:
     """Build the closed-mapping plan and act on it. Dry-run records
     ``planned`` for every proposal and instantiates/calls NO client (no
@@ -574,6 +608,16 @@ def run_actuator(
         fix_manifest_edit_enabled
         if fix_manifest_edit_enabled is not None
         else read_boolean(FIX_MANIFEST_EDIT_FLAG, default=False)
+    )
+    draft_estate_flag_on = (
+        fix_draft_pr_estate_enabled
+        if fix_draft_pr_estate_enabled is not None
+        else read_boolean(FIX_DRAFT_PR_ESTATE_FLAG, default=False)
+    )
+    allowed_estate_repos = (
+        estate_repos
+        if estate_repos is not None
+        else frozenset(_DEFAULT_FIX_PR_ESTATE_REPOS)
     )
     resolution_by_id: dict[str, FixTargetResolution] = {}
     target_by_id: dict[str, str] | None = None
@@ -672,6 +716,20 @@ def run_actuator(
                 )
                 continue
             manifest_fix = plan
+        forge_repo: str | None = getattr(client, "repo_slug", None)
+        if draft_estate_flag_on and forge_repo is not None and forge_repo not in allowed_estate_repos:
+            outcomes.append(
+                PROutcome(
+                    finding_id=proposal.finding_id,
+                    action=proposal.action,
+                    subject=proposal.subject,
+                    status="skipped",
+                    detail="not an estate repo",
+                    fix_resolution=resolution_by_id.get(proposal.finding_id),
+                    manifest_fix=manifest_fix,
+                )
+            )
+            continue
         try:
             existing = client.existing_open_pr(proposal.finding_id)
             if existing is not None:
@@ -688,7 +746,23 @@ def run_actuator(
                     )
                 )
                 continue
-            pr_url = client.open_pull_request(proposal)
+            open_proposal = proposal
+            open_manifest_fix: ManifestFixPlan | None = None
+            open_draft = False
+            if draft_estate_flag_on and forge_repo is not None and forge_repo in allowed_estate_repos:
+                open_draft = True
+                open_manifest_fix = manifest_fix
+                open_proposal = _enrich_proposal_for_estate_pr(
+                    proposal,
+                    forge_repo=forge_repo,
+                    fix_resolution=resolution_by_id.get(proposal.finding_id),
+                    manifest_fix=manifest_fix,
+                )
+            pr_url = client.open_pull_request(
+                open_proposal,
+                manifest_fix=open_manifest_fix,
+                draft=open_draft,
+            )
             outcomes.append(
                 PROutcome(
                     finding_id=proposal.finding_id,
