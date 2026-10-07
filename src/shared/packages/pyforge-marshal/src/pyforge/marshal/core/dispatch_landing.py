@@ -650,7 +650,7 @@ def _merge_registry_members(
     merged: dict[str, object] = {}
     for key in [*main, *(k for k in branch if k not in main)]:
         was, ours, theirs = base.get(key, _MISSING), main.get(key, _MISSING), branch.get(key, _MISSING)
-        dotted = f"{prefix}.{key}" if prefix else key
+        dotted = ".".join(part for part in (prefix, key) if part)
         value: object
         if ours == theirs:
             value = ours

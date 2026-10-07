@@ -93,6 +93,9 @@ _NOT_A_REF = {
     ("commit_worktree_checkpoint", "story_key"),
     ("commit_paths_onto_remote_tip", "writes"),  # (path, text) pairs
     ("merge_ref_resolving", "resolutions"),  # path -> text
+    ("merge_file_diff3", "base_text"),  # file contents (Story 22.19), never a revision
+    ("merge_file_diff3", "main_text"),
+    ("merge_file_diff3", "branch_text"),
 }
 #: The ports a method may be declared on: reads and ref operations on `VcsPort`, commit text on `CommitPort`.
 _PORTS = (VcsPort, CommitPort)
