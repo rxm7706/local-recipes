@@ -23,6 +23,9 @@ from config.station_api import station_application
 
 DECK_PUBLISH_FLAG = "pyforge.herald.deck_publish"
 
+# ASGI route handlers use sync_to_async for ORM; committed rows are visible across threads.
+pytestmark = pytest.mark.django_db(transaction=True)
+
 
 def _flag_tree(tmp_path: Path, *, enabled: bool) -> Path:
     variant = "on" if enabled else "off"
@@ -54,7 +57,12 @@ def _herald_get(
         ) as client:
             return await client.get(path, headers=headers or {}, cookies=cookies or {})
 
-    return asyncio.run(_call())
+    try:
+        return asyncio.run(_call())
+    finally:
+        from django.db import connections
+
+        connections.close_all()
 
 
 @pytest.fixture
