@@ -148,7 +148,7 @@ from .models import CurrencyVerdict, LicenseVerdict, SeverityTier, Status
 _PYPROJECT_FILENAME = "pyproject.toml"
 _PIXI_FILENAME = "pixi.toml"
 
-# The 12 recognized [tool.pyforge-warden] keys (hyphenated only — an
+# The 13 recognized [tool.pyforge-warden] keys (hyphenated only — an
 # underscore-spelled variant of any of these is UNRECOGNIZED, never
 # silently accepted as an alias).
 _RECOGNIZED_KEYS = frozenset(
@@ -165,8 +165,11 @@ _RECOGNIZED_KEYS = frozenset(
         "fail-on-eol",
         "warn-as-error",
         "min-epss",
+        "fix-pr-estate-repos",
     }
 )
+
+_DEFAULT_FIX_PR_ESTATE_REPOS = ("rxm7706/local-recipes", "rxm7706/python-foundry")
 
 _FAIL_ON_CHOICES = ("critical", "high", "medium", "low", "none")
 
@@ -256,6 +259,7 @@ class EffectiveConfig:
     fail_on_eol: bool = False
     warn_as_error: bool = False
     min_epss: float | None = None
+    fix_pr_estate_repos: tuple[str, ...] = _DEFAULT_FIX_PR_ESTATE_REPOS
 
     def __post_init__(self) -> None:
         """Fail at construction, not at first use (review finding: without
@@ -308,6 +312,12 @@ class EffectiveConfig:
             raise ValueError(f"fail_on_eol must be a bool, got {self.fail_on_eol!r}")
         if not isinstance(self.warn_as_error, bool):
             raise ValueError(f"warn_as_error must be a bool, got {self.warn_as_error!r}")
+        if not isinstance(self.fix_pr_estate_repos, tuple) or not all(
+            isinstance(item, str) and "/" in item and item.strip() == item for item in self.fix_pr_estate_repos
+        ):
+            raise ValueError(
+                f"fix_pr_estate_repos must be a tuple of owner/name slugs, got {self.fix_pr_estate_repos!r}"
+            )
         if self.min_epss is not None and (
             isinstance(self.min_epss, bool)
             or not isinstance(self.min_epss, (int, float))
@@ -693,6 +703,29 @@ def _coerce_deny_licenses(value: object) -> tuple[str, ...]:
     return _coerce_license_list(value, key="deny-licenses")
 
 
+def _coerce_fix_pr_estate_repos(value: object) -> tuple[str, ...]:
+    if isinstance(value, str):
+        candidates: list[str] = value.split(",")
+    elif isinstance(value, list) and all(isinstance(item, str) for item in value):
+        candidates = value
+    else:
+        raise ConfigValidationError(
+            f"'fix-pr-estate-repos' must be a comma-separated string or a list of strings, got {value!r}"
+        )
+    tokens = tuple(token.strip() for token in candidates if token.strip())
+    if not tokens:
+        raise ConfigValidationError(
+            f"'fix-pr-estate-repos' was configured but resolved to zero usable entries "
+            f"(got {value!r}) — omit the key entirely to use the estate default"
+        )
+    invalid = [token for token in tokens if "/" not in token]
+    if invalid:
+        raise ConfigValidationError(
+            f"'fix-pr-estate-repos' entries {invalid!r} are not owner/name slugs (expected 'owner/name')"
+        )
+    return tokens
+
+
 class ConfigLoader:
     """Loads + merges ``[tool.pyforge-warden]`` from ``pyproject.toml``
     (primary) and ``pixi.toml`` (secondary) into one ``EffectiveConfig``
@@ -811,6 +844,11 @@ class ConfigLoader:
             _coerce_warn_as_error(merged["warn-as-error"]) if "warn-as-error" in merged else defaults.warn_as_error
         )
         min_epss = _coerce_min_epss(merged["min-epss"]) if "min-epss" in merged else defaults.min_epss
+        fix_pr_estate_repos = (
+            _coerce_fix_pr_estate_repos(merged["fix-pr-estate-repos"])
+            if "fix-pr-estate-repos" in merged
+            else defaults.fix_pr_estate_repos
+        )
 
         # CLI flags win over both files. Routed through the SAME _coerce_*
         # helpers the TOML-sourced values use (review finding: a bare
@@ -851,6 +889,7 @@ class ConfigLoader:
             fail_on_eol=fail_on_eol,
             warn_as_error=warn_as_error,
             min_epss=min_epss,
+            fix_pr_estate_repos=fix_pr_estate_repos,
         )
         return config, tuple(warnings)
 

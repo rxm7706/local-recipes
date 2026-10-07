@@ -1061,6 +1061,22 @@ removal refuses while any member is dirty (naming it), `--merged-only` honors th
 archive-not-delete discipline per member, and the own-worktrees-only HARD rule holds
 set-wide (loop homes invisible, test-planted).
 
+### Story 13.5: `workspace clean --delete` removes a gone or landed workspace without a prompt or an archive
+
+As the operator who ruled on 2026-10-06 that an abandoned scratch workspace is deleted, not archived, and whose `.steward/workspaces.yaml` lists 34 workspaces that no longer exist,
+I want a non-interactive `steward workspace clean --delete` that deletes a workspace git proves landed and drops a record whose worktree is already gone, leaving no tarball, note or tag,
+So that the bookkeeping lists only open workspaces and no agent hand-edits it.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-107, CAP-108 (← spec-scratch-worktree-lifecycle CAP-4, CAP-5; Story 13.1), CAP-155, CAP-157 and CAP-158 unchanged • reopens Epic 13 (doctor Story 41.5) • Dream 2026-10-07 (tooling gaps)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` (`clean_workspaces`, the removal half of `_archive_worktree`, `format_clean`, the clean branch of `WorkspaceDuty.run`), `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` (the `clean` subparser gains `--delete`), `src/shared/packages/pyforge-steward/tests/unit/test_workspace_delete.py` (new), `docs/how-to/manage-worktrees-with-bmad.md` (its one sentence on steward's scratch worktrees; governed by `spec-pyforge-doctor`)
+**Spec:** `planning-artifacts/specs/spec-13-5-workspace-clean-delete-removes-a-gone-or-landed-workspace-without-a-prompt-or-an-archive.md`
+**Given** no TTY on stdin and bookkeeping holding (a) a record whose worktree and branch are both gone, (b) a clean worktree whose HEAD and branch are on its source, (c) a worktree with a commit not on its source, (d) a worktree with an uncommitted edit or an untracked file, and (e) a record whose worktree is gone but whose branch exists and is not on its source (measured on `b364823896`: 34 of the primary checkout's 38 rows are (a); `clean <slug>` reports them `declined`, and `--merged-only` reports each as an error, keeps it and exits 1)
+**When** `steward workspace clean --delete` runs over the fleet, or `steward workspace clean <slug> --delete` for one record
+**Then** (a) loses its record; (b) loses its worktree, its local branch and its record; neither leaves a tarball, a `.landed.txt` note, a `.missing.txt` marker or a tag; (c), (d) and (e) keep their worktree, branch and record and are reported with the reason (`not-merged`, `dirty`, `branch <b> not on <source>`); the proof for (b) is CAP-157's, with the source and branch read by full ref (CAP-158); a gone worktree whose branch is on its source loses the branch and the record
+**And** no prompt is asked; a slug-targeted `--delete` that refuses exits 1 naming why, and a fleet run exits 0 unless a row errored (CAP-155); `--json` carries a `deleted` list beside `archived` and `skipped`; `--delete` with `--merged-only`, or with a repo-set feature, is a usage error; the default `clean`, `--merged-only`, `ls` and `status` are unchanged; dropping the refusal of an unmerged or dirty workspace fails a new test (mutation)
+**Status:** backlog
+
 ## Epic 14: The BMAD core upgrades repeatably
 
 **Spec binding.** Decomposes `spec-bmad-method-core-upgrade` (this station's specs/ dir;
@@ -2388,7 +2404,7 @@ I want ``feature.bmad-suite-full`` to depend on ``bmad-suite`` instead of 13 pin
 So that pixi.toml stays thin for full-suite installs.
 
 **Type:** feature • **Effort:** S • **Deps:** S-39.3 • **FR/AD:** suite:CAP-4
-**Status:** backlog
+**Status:** done
 
 ## Epic 40: Red-team CRITICALs — verified mint, durable broker (spec-pyforge-unifying-strategy CAP-6 / CAP-11)
 
@@ -3306,7 +3322,7 @@ channel*), so it is pixi-installable immediately without waiting on upstream
 `conda-forge/staged-recipes` review
 **And** submitting to `conda-forge/staged-recipes` for long-term community packaging is named as
 the normal follow-up, not a blocker for this story
-**Status:** backlog
+**Status:** done
 
 ### Story 50.2: Local-dev object storage — Silo default, Garage alternative, pixi-provisioned
 
@@ -3329,7 +3345,7 @@ S3-compatible server, idempotently, with data under gitignored `var/`
 against Garage instead, with an honest note that Garage lacks a win-64 build (refuses cleanly
 on that platform, never a silent no-op)
 **And** a fresh `pixi install -e platform-object-storage` resolves cleanly
-**Status:** backlog
+**Status:** done
 
 ### Story 50.3: A minimal S3-client seam proves the exception end-to-end
 
@@ -3347,7 +3363,7 @@ configuration (env vars / settings, never hardcoded) and performs a put/get roun
 **And** no existing feature (Lane 1 media, CycloneDX SBOM handling, or anything else) is wired
 to consume it in this story — the seam exists and is proven; consumption is separate, future,
 story-by-story work
-**Status:** backlog
+**Status:** done
 
 ## Epic 51: PostgreSQL and Redis become consumable, without pyforge mandating self-hosting
 
@@ -3708,7 +3724,7 @@ repo keeps the Spec companion. Do not rsync `_bmad-output`.
 has `PIN.md` pointing at this Spec SHA, a case-list stub, and operator
 docs that do not say "replay 44.4"
 **And** A does not receive a copy of B's slim chain
-**Status:** backlog
+**Status:** done
 
 ## Epic 55: Foundry capability ledger (spec-foundry-capability-ledger fcl:CAP-1..145)
 
@@ -3945,7 +3961,7 @@ key. Do not retro-rename existing slugs or `DW-` ids.
 `shipped` remains Spec-terminal
 **And** the enum is recommended, not required; unknown values are preserved
 and warned, never reset
-**Status:** backlog
+**Status:** done
 
 ### Story 59.2: Detectors read one declaration; in-progress is grandfathered
 
@@ -3961,7 +3977,7 @@ exit-code domains named in the same declaration file (different key;
 **And** new Specs are not written `in-progress`; live `in-progress` files stay
 open until next edited
 **And** Doctor⊂Warden remains a declared subset
-**Status:** backlog
+**Status:** done
 
 ### Story 59.3: The Charter carries the BMAD cross-walk and pitched stays optional
 
@@ -3972,7 +3988,7 @@ open until next edited
 **Then** the Charter maps Epic / Story / Sprint / PRD / Retrospective (never
 join) and records Spec `shipped` ≠ story `done` ≠ Dream `realized`
 **And** `pitched` remains declared and optional; no Dream is backfilled
-**Status:** backlog
+**Status:** done
 
 ### Story 59.4: Design teaching is named; the pull cannot silently rot
 
@@ -4023,7 +4039,7 @@ except `type(scope):` under `recipes/` and the CFE changelog
 **Given** six sites put runtime data in the finding-code field
 **When** this story lands
 **Then** those sites put the data in `evidence` and `check=` stays a kebab code
-**Status:** backlog
+**Status:** done
 
 ## Epic 60: Estate BMAD catalog (spec-self-hosted-bmad-marketplace CAP-1..145)
 
@@ -4042,7 +4058,7 @@ a config the installer and Claude/Codex `extraKnownMarketplaces` can point at.
 **When** this story lands
 **Then** git is the edit store and backends/sources are declared in config
 **And** a new backend or source is a plugin, not a rewrite
-**Status:** backlog
+**Status:** done
 
 ### Story 60.2: Publish uses tools we wield; steward records the review
 
@@ -4095,7 +4111,7 @@ the existing Postgres app / a steward load duty.
 **When** this story lands
 **Then** inbound and outbound files load by batch sha + waybill
 **And** default transport is app upload; email and share-folder are plugins
-**Status:** backlog
+**Status:** done
 
 ### Story 61.2: Work passport and core schema
 
@@ -4105,7 +4121,7 @@ the existing Postgres app / a steward load duty.
 **When** this story lands
 **Then** identity is a UUID we mint; keys and numbers are nicknames
 **And** `vendor_id` is on inbound rows; v1 operates one vendor
-**Status:** backlog
+**Status:** done
 
 ### Story 61.3: As-of glass and mailed query
 
@@ -4115,7 +4131,7 @@ the existing Postgres app / a steward load duty.
 **When** this story lands
 **Then** standup cites a waybill; empty on-time file fails; late drop leaves yesterday stale; unborn before first waybill
 **And** a mailed/export of the same table is a switchable plugin
-**Status:** backlog
+**Status:** done
 
 ### Story 61.4: Signed outbound slice
 
@@ -4125,7 +4141,7 @@ the existing Postgres app / a steward load duty.
 **When** this story lands
 **Then** default deny; a named slice plus recorded signer is required
 **And** the vendor loads our file — we do not PAT into their org
-**Status:** backlog
+**Status:** done
 
 ### Story 61.5: Quarantine — mint then reject
 
@@ -4154,7 +4170,7 @@ empty later slot — no story. Do not invent weights. Do not flip any Epic 44
 **When** this story lands
 **Then** the eight ids are published with dimension, source, and state
 **And** first cut is all `on`; no consumer invents a substitute
-**Status:** backlog
+**Status:** done
 
 ### Story 62.2: Add, switch, and archive without a rewrite
 
@@ -4200,7 +4216,7 @@ and run `pyforge-station-tests` (shared surface, all eight fire in CI).
 **And** every moved task still runs as `pixi run -e local-recipes <task>` because `local-recipes` includes `pyforge-guild`; no task name exists in two features
 **And** `pyforge-station-tests` and `pr-preflight` pass from `pyforge-guild`; `environment.yaml` is regenerated
 **And** the token-economy kit is on the floor, not assumed: `headroom` and `node` resolve on PATH in `pyforge-guild`, `marshal seed check` reports the headroom kit item present, and a dispatch dry-run raises no `MRS-DISP-033` (the 2026-09-01 silent no-op shape)
-**Status:** backlog
+**Status:** done
 
 ### Story 63.2: Every agent surface names `pyforge-guild` as the session default
 
@@ -4210,7 +4226,7 @@ and run `pyforge-station-tests` (shared surface, all eight fire in CI).
 **When** this story lands
 **Then** the planning/detector invocations read `-e pyforge-guild`; recipe invocations still read `-e local-recipes`; scribe recall still reads `-e pyforge-scribe`
 **And** `governance-currency`, `general-docs-consistency-check` and `llms-full-check` are green
-**Status:** backlog
+**Status:** done
 
 ### Story 63.3: One deny list, one hook — the Guild session guardrails are enforced, not asserted
 
@@ -4232,7 +4248,7 @@ and run `pyforge-station-tests` (shared surface, all eight fire in CI).
 **When** `pyforge steward session check` runs
 **Then** it reports, as findings not prose: pixi present and `pyforge-guild` materialised at the frozen lock; `bmad-method` at the pinned version (reuse doctor's drift verdict, do not re-implement); the token kit — `headroom` on PATH, this harness's caveman skill installed, the three context layers not `layer-off` (reuse `marshal seed check`); `gh auth status` and `gh api rate_limit` (an unauthenticated session is a finding, because drift probes fail open); the codegraph index present (absent in every fresh clone); **the Tier-3 feed present for the project in hand — and when absent, the one sanctioned remedy: seed it by copying the tracked twin (`cp planning-artifacts/sprint-status-ledger.yaml implementation-artifacts/sprint-status.yaml`; verified 2026-09-16 in a fresh clone: `sprint-ledger-sync` then reports `unchanged`, tree clean)**; scribe recall reachability (absent by design in `pyforge-guild` — reported, not failed)
 **And** the four entry points call this one command and nothing else for preconditions (vocabulary-one-name-one-job: one mechanism, many surfaces); a cloud clone with no feed can land a ledger flip by following the printed remedy
-**Status:** backlog
+**Status:** done
 
 ### Story 63.5: `pyforge-foundry-full` — the fleet's whole dependency closure is one locked artifact
 
@@ -4256,6 +4272,22 @@ and run `pyforge-station-tests` (shared surface, all eight fire in CI).
 **Status:** done
 **Outcome (2026-09-20):** landed in PR #1551 with marshal 46.12 and herald 25.1 — see the tracked spec's Auto Run Result.
 
+### Story 63.7: Two `platform-ci-local` runs at once never share services or a work dir
+
+As the operator whose warden 14.2 and steward 74.2 landings both came back `skipped-unverified` on 2026-10-07 because their dispatch verifications ran `platform-ci-local` at the same time,
+I want a second concurrent `platform-ci-local` run either to wait for the first under a bounded lock or to take its own ports and work dir,
+So that two dispatch verifications that touch `src/platform/` each report their own verdict.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-152 (`platform-ci-local`, a task a station shells to; Story 63.6) • reopens Epic 63 (doctor Story 41.5) • Dream 2026-10-07 (tooling gaps)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `scripts/platform-ci-local.sh` (`PG_PORT`, `REDIS_PORT`, `TAG`, `WORK`, `APP`, about :48-:57; `start_services`, `stop_services` and the EXIT trap, about :82-:103; the summary), `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` (new: it runs the real script against stub service binaries under a temporary `PIXI_PROJECT_ROOT`), `docs/how-to/recipe-testing-and-builds.md` (§ Platform CI's "Logs land under" line, only if the work dir moves; governed by `spec-pyforge-doctor`)
+**Spec:** `planning-artifacts/specs/spec-63-7-two-platform-ci-local-runs-at-once-never-share-services-or-a-work-dir.md`
+**Given** two `platform-ci-local -- --test` runs that overlap, as two dispatch verifications do when stories touching `src/platform/` land together; on `b364823896` both take PostgreSQL on 15432, Redis on 16379 and the one work dir `${TMPDIR:-/tmp}/platform-ci-local`, and the second run's `start_services` stops the first's services, deletes its data dir and truncates its `results.tsv`
+**When** the second run starts while the first still holds its services
+**Then** it never shares the first's ports, work dir, container name or image tag: either it waits on an exclusive machine-wide lock and then runs, failing after a bounded wait (`PLATFORM_CI_LOCAL_LOCK_WAIT`) with exit 2 and a message naming the holder (pid, checkout root, stages, start time), or each run takes its own free ports, work dir, container name and tag; the story records its choice in its Spec Change Log; a run's EXIT trap stops only the services that run started
+**And** the test runs two overlapping invocations and each reports its own `RESULT:` line and exit code (a failing stub step in one never changes the other's verdict); a holder that died never blocks a later run; the `PLATFORM_CI_LOCAL_*` overrides, the stage flags, the step names, the exit codes and marshal's command are unchanged; the `container` stage, which binds 8000 by the image's contract, is serialised or refused naming the holder; removing the lock or the per-run allocation fails the new test (mutation)
+**Status:** backlog
+
 ## Epic 64: Frame draft re-grounding at frame-spec#28 `d7213c1` / #29 `4596579` (spec-pyforge-steward CAP-6)
 
 Minted 2026-09-16 Dream-append-first from `docs/dreams/pyforge-steward.md` § *2026-09-16 — Frame
@@ -4276,7 +4308,7 @@ and `frame-upstream-check` never join `detectors-ci`; Warden stays the sole PR v
 **When** this story lands
 **Then** all nine read `type: frame`; `frame-preflight` is green; the README names the #28 and #29 SHAs we conform to
 **And** `pixi run -e pyforge-steward frame-upstream-check` clones frame-spec at the pinned SHA into a temp dir and reports 9/9 OK, exiting non-zero on any FAIL; it is opt-in and appears in no aggregate
-**Status:** backlog
+**Status:** done
 
 ### Story 64.2: PyForge publishes its Frame conformance profile
 
@@ -4286,7 +4318,7 @@ and `frame-upstream-check` never join `detectors-ci`; Warden stays the sole PR v
 **When** this story lands
 **Then** the profile states all ten §7 items for the in-repo reader (reads Markdown, writes none, resolves no composition, `visibility` is declared intent, `specification: draft-mcandrew-frame-spec-00`) and declares under §9 that no trust configuration exists yet
 **And** upstream `validate_frame.py --check-profile` at the pinned SHA accepts it via `frame-upstream-check`
-**Status:** backlog
+**Status:** done
 
 ## Epic 65: The estate sprint-ledger query engine (spec-pyforge-steward CAP-146..149; partially CAP-140)
 
@@ -4398,7 +4430,7 @@ So that one install runs everything I do, and the SBOM is a bill of materials in
 **When** this story lands
 **Then** `pixi lock` solves `pyforge-foundry-full` on linux-64, osx-arm64 and win-64 with the three added features; the layer environment solves on every platform its features declare; every `postgresql` pin in `pixi.toml` is `>=17.11,<18` and no feature resolves libpq 18; `pixi run -e pyforge-scribe-pg scribe-pg-up` then scribe's Postgres-backed tests pass on PG17; `pyforge-station-tests`, `llms-full-check` and `pixi-version-check` are green; `environment.yaml` is regenerated with `pixi project export conda-environment -e build`
 **And** neither `local-recipes` nor any `desktop-lab` feature is composed; `pixi.toml` is verified as the full manifest after every write; if scribe cannot run below the libpq-18 boundary, the story halts `blocked: intent gap` and Postgres is not bumped; the red `doctor-test` on #1564 is explained in the story's triage log; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec, never a bare `--write-baseline`
-**Status:** backlog
+**Status:** done
 
 ### Story 67.2: One laptop gate proves the laptop needs nothing beyond the SBOM
 
@@ -4854,7 +4886,7 @@ no detail says "unparseable"
 and message; stdout that is not JSON still reads "unparseable output"; a JSON document without `result.kit` reads "no kit
 report"; restoring the top-level `payload["kit"]` read fails the recorded-document test;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 74: The object-storage seam gets its first consumer (spec-pyforge-steward CAP-163)
 
@@ -4914,7 +4946,7 @@ still as `secretKeyRef` only; enabled with either value empty fails the render n
 endpoint; no rendered manifest runs an object-store image (silo, garage, minio); disabled, the render is byte-identical to
 today's; the values file states the `s3:ListBucket` (bucket, conditioned to the prefix), `s3:GetObject` and `s3:PutObject`
 (prefix) permissions the mounted credential needs (DW-steward-74-1-2); `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 75: `steward keys` reaches GitHub Enterprise with scoped identities (spec-pyforge-steward CAP-164)
 
@@ -4962,7 +4994,7 @@ nothing, and with one runs and journals the reference, never the token, to `.ste
 `keys audit` never print a value, and `audit` reports a payload serving both scopes; `keys rotate --scope` re-encrypts each;
 with the flag OFF `keys exec` is listed as disabled and exits 2, and the resolver resolves no enterprise host;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 76: The one flag tree can say what the flag rule needs (spec-feature-flag-governance CAP-5)
 
@@ -5010,7 +5042,7 @@ provider, `evaluate_from_source` and `pyforge.core.flags.read_boolean` all read 
 variant name fails with a named error; the chart refuses a release without `flags.environment`; the production and dev
 ConfigMaps differ exactly by the overlay values; no evaluated value changes on landing;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 76.2: Every flag in the tree carries its owner, story and cleanup clock in flagd metadata
 
@@ -5034,7 +5066,7 @@ while any environment's rendered value is not ON (or empty while every one is), 
 to remove it, and Story 76.4 does so after this story, so the result names it as owed to 76.4, and any other flag whose
 `cleanup_by` has passed at landing as owing a removal story or a keep decision (Q4); the FILE provider evaluates the same
 values as before; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 76.3: The ledger query's flags fold into the one tree and evaluate through OpenFeature
 
@@ -5132,7 +5164,7 @@ frontmatter reads `status: archived`
 present in both places is listed once
 **And** `pixi run -e pyforge-guild platform-ci-local -- --test` and
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 78: Two platform auth controls stop failing open (security hotfix)
 
@@ -5471,6 +5503,22 @@ So that a cleaned workspace's work lives in git, offline included.
 **When** `steward workspace clean` removes it
 **Then** a local `preserve/<slug>/<N.M>/workspace-<sha8>` (or `preserve/unbound/workspace-<sha8>`) tag exists first and the result names it; its push goes through the content gate or is reported as debt
 **And** a tag that cannot be written keeps the worktree, reported `branch_kept` with the reason; a landed worktree keeps its `.landed.txt` note; the tarball keeps only git-ignored bytes; no station module imports `pyforge.marshal`
+
+### Story 85.6: Every command a session denial names as the sanctioned form exists
+
+As the agent the session hook stopped from deleting a branch and sent to `python scripts/worktree_sweep.py --retire <branch>`, which the sweeper rejects,
+I want every `session_denials` reason to name only commands that exist, with a test over the roster that proves it,
+So that following the hook's own advice never fails.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-165 (FR-38; the reasons Stories 85.1 and 85.4 wrote), CAP-5 (Story 63.3: "a one-line reason naming the sanctioned form") • Dream 2026-10-07 (tooling gaps)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `docs/governance/guild-roster.json` (`session_denials`: the `protected-ref-deletion` reason, about :390, and the `unreachable-ref-deletion` reasons, about :397; reason text only), `tests/scripts/test_pre_shell_hook.py` (the reason assertions about :608, :709 and :754), `tests/scripts/test_session_denial_forms.py` (new)
+**Spec:** `planning-artifacts/specs/spec-85-6-every-command-a-session-denial-names-as-the-sanctioned-form-exists.md`
+**Given** the roster on `b364823896`: the `protected-ref-deletion` and `unreachable-ref-deletion` reasons name `python scripts/worktree_sweep.py --retire <branch>`, which exits 2 ("unrecognized arguments: --retire"), and the second also names `pyforge marshal preserve tag`, which no CLI registers; both forms belong to marshal Stories 87.1 and 87.3, `backlog`
+**When** the new test reads every `session_denials` reason, every string of a reason object included
+**Then** every repo-owned command a reason names in backticks resolves: a `python scripts/<x>.py` or `uv run _bmad/scripts/<x>.py` path exists and its parser accepts every flag the reason names; a `pixi run -e <env> <task>` names an environment and a task `pixi.toml` declares; a `pyforge <station> …` form names a verb path that station's parser accepts; a placeholder (`<branch>`, `{task}`) stands for an argument; a command the test cannot classify fails it, so a new reason cannot slip past; and the two reasons name what exists today (until marshal 87.1 and 87.3 ship their forms, the operator act: hand the operator the command)
+**And** only reason text changes: the ids, triggers, `applies_to`, the hook's `MATCHERS` and their parity check are untouched, so no denial is added or removed; third-party commands (`git`, `gh`, `pixi lock`, `npx skills add`) are outside the test; no reason prints a tag-minting remedy (marshal Story 87.2's rule); the hook tests that pinned `--retire` assert the new text; marshal 87.1 and 87.3 may name their forms again once they resolve, and the same test then admits them; putting `--retire` back into a reason fails the new test (mutation)
+**Status:** backlog
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
