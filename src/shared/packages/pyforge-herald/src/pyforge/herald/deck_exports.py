@@ -121,10 +121,20 @@ def attach_deck_export_routes(
                 return HTTPException(status_code=code, detail=str(exc))
         return HTTPException(status_code=401, detail=str(exc))
 
-    @app.get(_LIST_PREFIX)
-    async def list_deck_exports(request: Request) -> JSONResponse:
+    def _header_map(request: Request) -> dict[str, str]:
+        return {k.decode() if isinstance(k, bytes) else str(k): v for k, v in request.headers.items()}
+
+    def _cookie_map(request: Request) -> dict[str, str]:
+        return dict(request.cookies)
+
+    @app.get(_LIST_PREFIX, response_model=None)
+    async def list_deck_exports(request: Request):
         try:
-            await asyncio.to_thread(gate, request.headers, request.cookies)
+            await asyncio.to_thread(
+                gate,
+                _header_map(request),
+                _cookie_map(request),
+            )
             payload = await asyncio.to_thread(list_exports_json, list_records=list_records)
         except NotFound as exc:
             raise HTTPException(status_code=404, detail="Not Found") from exc
@@ -132,10 +142,14 @@ def attach_deck_export_routes(
             raise _http_for_auth(exc) from exc
         return JSONResponse(payload)
 
-    @app.get(_STREAM_PREFIX + "{sha256}")
-    async def stream_deck_export(sha256: str, request: Request) -> StreamingResponse:
+    @app.get(_STREAM_PREFIX + "{sha256}", response_model=None)
+    async def stream_deck_export(sha256: str, request: Request):
         try:
-            await asyncio.to_thread(gate, request.headers, request.cookies)
+            await asyncio.to_thread(
+                gate,
+                _header_map(request),
+                _cookie_map(request),
+            )
             row, chunks = await asyncio.to_thread(
                 stream_export_chunks,
                 sha256,
