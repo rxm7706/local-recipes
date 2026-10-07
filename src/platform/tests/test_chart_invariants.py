@@ -1756,6 +1756,17 @@ def test_mcp_host_values_have_no_enabled_knob() -> None:
         assert "mcpHost.enabled" not in text
 
 
+def test_object_storage_values_name_the_credential_permissions() -> None:
+    """Story 74.2 / DW-steward-74-1-2: the values file states what the mounted key must allow.
+
+    Without s3:ListBucket a head_object on an absent key answers 403, not 404, and the seam reads it as failure.
+    """
+    values_text = (_CORE_CHART / "values.yaml").read_text(encoding="utf-8")
+    preamble = values_text.split("\nobjectStorage:\n", 1)[0].rsplit("\n\n", 1)[1]
+    for permission in ("s3:ListBucket", "s3:GetObject", "s3:PutObject"):
+        assert permission in preamble, permission
+
+
 @requires_helm
 def test_redis_uses_existing_secret_password_and_wires_redis_url():
     """AC (Story 12.6): redis Deployment and platform pods consume

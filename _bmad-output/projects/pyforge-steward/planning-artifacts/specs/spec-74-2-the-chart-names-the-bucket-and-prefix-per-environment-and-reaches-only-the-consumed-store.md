@@ -64,6 +64,7 @@ Type / Effort / Deps: feature / S / S-74.1.
 - Given `objectStorage.enabled: false` When the chart renders Then the output is byte-identical to the render before this story
 - Given `networkPolicy.enabled: true`, `objectStorage.enabled: true` and `networkPolicy.objectStorage` set When the chart renders Then the web and worker egress policies allow that CIDR and port and no other workload's policy does
 - Given any values When the chart renders Then no manifest runs an object-store image (`silo`, `garage`, `minio`)
+- Given the chart's `values.yaml` When an operator reads the `objectStorage` block Then it states that the mounted credential must allow `s3:ListBucket` on the bucket (conditioned to the prefix) and `s3:GetObject` and `s3:PutObject` on the prefix (operator ruling DW-steward-74-1-2, Spec Change Log 2026-10-03)
 - Given the change When `pixi run --frozen -e pyforge-steward pyforge-steward-test` runs Then it passes
 
 ## Boundaries & Constraints
@@ -114,7 +115,7 @@ Deps: S-74.1 (the settings the chart feeds).
 - ON/OFF: render the chart with `objectStorage.enabled` true and false (the flag's two deployment states) and compare
   against two flagd trees (key on, key off), the way `src/platform/tests/test_openfeature_file_flags.py` does, until the
   testing-kit fixture of `spec-feature-flag-governance` CAP-4 lands.
-- `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: `test_chart_invariants.py` passes with `helm` on `PATH`.
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: `src/platform/tests/test_chart_invariants.py` passes with `helm` on `PATH`.
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings.
 
 ## Spec Change Log (amendment)
@@ -131,6 +132,27 @@ Deps: S-74.1 (the settings the chart feeds).
 - verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
 - findings:
   - (implementer self-check against diff and AC matrix; no separate reviewer subagent findings recorded this pass)
+
+### 2026-10-07 — Operator re-verify after the dispatch's verification refusal
+- The dispatch run `pyforge-steward-20261007T055444723Z-4d4c948e` was refused at MRS-GATE-002: `python` was not on the
+  supervisor's PATH because the dispatch was launched outside `pixi run`. The refusal was environmental; the work was not
+  judged.
+- `pr-preflight` on this branch was red on two detectors. Both are fixed here:
+  - `flag_gate_check`: the flag's dev and staging values were not registered. `flag-overlays.json` now carries
+    `pyforge.steward.object_store_consumer` on in dev and staging and off in production. `_SHIPPED_BOOLEANS` and core's
+    `test_flags.py` carry the per-environment values. The Verification line names `src/platform/tests/test_chart_invariants.py`
+    by path. Story 74.1's spec shares the key, so its `flag.default` is amended to the tree's current values (its Spec
+    Change Log records why).
+  - `chain_currency_sweep_check`: this story's memlog entries moved the steward Spec more than 2 days past its PRD. Fixed
+    by the runbook cascade (PRD, spine and epics, each with a `## Currency reconciliation — 2026-10-07` section). No FR
+    or AD changed.
+- The operator ruling of 2026-10-03 (Spec Change Log) asked for the `s3:ListBucket` prerequisite in the chart values
+  docs and in this story's acceptance criteria. The values docs had it; the acceptance criteria now do too, and
+  `test_object_storage_values_name_the_credential_permissions` guards the values text. A stale `values.yaml` comment
+  ("no feature calls it yet") now names Story 74.1's store and this story's `objectStorage` block. epics.md marks Story
+  74.1 `done`, matching the ledger.
+- Re-run, each verdict read from its exit code: `flag-gate-check` 0, core `test_flags.py` (161 passed),
+  `platform-ci-local -- --test` PASS with `helm` on PATH.
 
 ## Auto Run Result
 

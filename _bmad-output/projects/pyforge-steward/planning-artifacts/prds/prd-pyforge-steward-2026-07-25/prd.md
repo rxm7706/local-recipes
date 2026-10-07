@@ -2,7 +2,7 @@
 fr-derivation-from: "2026-09-17"
 title: Steward (pyforge-steward)
 created: 2026-07-25
-updated: "2026-10-04"   # RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-07"   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-04..07 entries (Stories 85.1-85.4 landed under FR-38; Story 74.2, the chart, under FR-36, and the flag on in dev and staging); no FR registered. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-165 (Epic 85, preserved-work refs; CAP-156 and CAP-157 amended); FR-38 registered. Earlier: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for the Phase 3 rulings (CAP-60 amended, Epic 84); no FR registered. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec memlog -> PRD) for Epic 78 (security hotfix; defects of CAP-99, CAP-86 and unifying CAP-12; no FR registered). Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-163 (Epic 74) and CAP-164 (Epic 75); FR-36 and FR-37 registered; the Guild's spec-feature-flag-governance CAP-5 routed to Epic 76 with no FR. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # AMENDED 2026-09-28 (operator rulings): FR-34 amended in place -- CAP-5's size bound restated 1 GB -> 2 GB, the Guild's pixi does not move (spec-pyforge-mason:CAP-30); virtualenv 21 -> 20 accepted. See § Currency reconciliation — 2026-09-28 (operator rulings). Earlier: RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD) for CAP-162 (Epic 73); FR-35 registered; FR-34 gains a dated note (atlas stays out of the Guild; the Guild's cold install measured 1.5 GB). See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-160 / CAP-161 (Epic 72); FR-33 and FR-34 registered; § 4.13's 2026-08-26 mason clause marked superseded. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD) for CAP-159 (Epic 71); FR-32 registered, the first kernel FR minted under FR <- CAP. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2515,3 +2515,59 @@ new shape). Story 85.5 is minted `blocked` on marshal's Story 87.3, which ships 
 **ONE kernel FR space now FR-1..FR-38** (FR-39 = next free id).
 
 **Content changed:** this section added (FR-38 registered). No FR renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-07
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-steward`'s memlog gained thirteen entries after this PRD's
+2026-10-04 re-stamp; the last two are dated 2026-10-07 (Story 74.2). `SPEC.md` gained only two surface paths, Story
+85.2's ruleset scripts. No CAP is added or amended.*
+
+### What the Spec's memlog carries
+
+- **2026-10-04, Stories 85.1–85.4 landed (`done` in the ledger).** `docs/governance/guild-roster.json` declares five
+  `protected_refs` (refname, kind, scope) and two `session_denials` entries, `protected-ref-deletion` and
+  `unreachable-ref-deletion`. `docs/governance/rulesets/protected-refs.json` is rendered from the roster.
+  `scripts/protected_refs_ruleset_check.py` (task `protected-refs-ruleset-check`) compares it with the live rulesets and
+  exits 0, 1 or 2. A landing fix removed the check's comparison with marshal's policy, so the roster is the one list it
+  reads. `scripts/pre_push_preflight.sh` skips, and journals, a push proved tag-only under `preserve/` or `archive/`; the
+  pre-commit form needs `PYFORGE_PREFLIGHT_PRESERVE_TAGS_PROOF=1`. The hook's reachability guard calls
+  `git merge-base --is-ancestor` and `git for-each-ref --contains`. Story 85.5 stays `blocked` on marshal Story 87.3.
+- **2026-10-04, reconciles from other stations.** Atlas Story 27.4 tightened `tests/meta/test_adoption_register.py`: a
+  persona routes a suite member only when it also carries the register row's grammar constraint. Doctor Story 41.3
+  repaired the collapsed frontmatter of two archived steward Dreams (`mcp-era-isolation.md`,
+  `mcp-host-real-station-tools.md`). Marshal Story 83.24 points steward's skill guard at `pyforge.testing_kit.cfe_surface`.
+- **2026-10-07, Story 74.2, the chart.** `values.yaml` gains `objectStorage.enabled` (default `false`),
+  `objectStorage.bucket`, `objectStorage.prefix` and `networkPolicy.objectStorage` (CIDRs and a port). When enabled, web
+  and the general worker carry `OBJECT_STORAGE_BUCKET` and `OBJECT_STORAGE_PREFIX` as plain env, each through `required`.
+  The store's egress rule renders on those two policies only, and only when `networkPolicy.enabled` is also set;
+  worker-builds, beat, migrate and consume-events get neither. Disabled, the render is byte-identical to the render
+  before the story. The values comment carries the operator's 2026-10-03 ruling: the mounted credential needs
+  `s3:ListBucket` as well as `s3:GetObject` and `s3:PutObject`.
+- **2026-10-07, the flag.** `src/platform/config/flag-overlays.json` sets `pyforge.steward.object_store_consumer` on in
+  dev and staging and off in production; `flags.json` keeps `defaultVariant: off`. Story 74.1's spec amends its declared
+  `flag.default` to match. Story 76.1, which gave the tree per-environment values, is `done`; that is the condition
+  CAP-163 set for leaving all-off.
+
+### The FR space: no FR registered
+
+None of these entries adds or changes a requirement.
+
+- Stories 85.1–85.4 realize FR-38 as written: one declared list, a rendered ruleset document, a fail-closed parity
+  check, the two hook denials and the journaled tag-only skip. FR-38 says the pre-commit form needs the pushing tool's
+  proof. The tool that supplies it, `pyforge.core.preserve_refs`, is not shipped yet (marshal Stories 87.3 and 87.15 are
+  `backlog`), so that skip has no producer today and never fires without one.
+- Story 74.2 realizes FR-36's chart consequence as written: bucket and prefix per release, credentials as secret
+  references only (canopy:AD-19), no object-store workload, and egress from web and worker only. The ListBucket note is a
+  prerequisite on the consumed store, not a requirement on the platform.
+- The flag change sets per-environment values for FR-36's existing flag consequence. FR-36 names the OFF behaviour and no
+  default, so its text stands.
+- The reconciles from other stations are test and frontmatter fixes.
+
+**One coupling, recorded, not a divergence.** The flag gates the code path and `objectStorage.enabled` gates the chart
+wiring; a release sets the two apart. With the flag on and the chart value off, a call raises `ImproperlyConfigured`
+naming `OBJECT_STORAGE_BUCKET`, the named failure FR-36 asks for. No code calls the seam yet: herald's Stories 29.1 and
+29.2 are `backlog`.
+
+**ONE kernel FR space still FR-1..FR-38** (FR-39 = next free id).
+
+**Content changed:** this section added. No FR added, renumbered or removed. `updated:` bumped.

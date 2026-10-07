@@ -83,8 +83,9 @@ resources:
 # object-storage consumption seam (Story 50.3, pap:AD-1's 2026-09-10 dated
 # exception -- consumed only, production target NetApp StorageGRID,
 # ops-provided). Without them, config.object_storage.object_storage_client()
-# raises ImproperlyConfigured -- harmless today, since no feature calls it
-# yet (that module's own docstring: "future, story-by-story work").
+# raises ImproperlyConfigured. Story 74.1's store calls it behind the flag
+# pyforge.steward.object_store_consumer; the objectStorage block below names
+# the bucket and prefix (Story 74.2).
 existingSecret: platform-secrets
 
 # Non-secret Django settings surface (mirrors compose.yml's env wiring).
