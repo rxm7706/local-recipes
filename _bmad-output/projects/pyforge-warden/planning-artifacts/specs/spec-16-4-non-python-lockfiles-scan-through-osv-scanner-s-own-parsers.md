@@ -2,7 +2,7 @@
 title: "16.4: Non-Python lockfiles scan through osv-scanner's own parsers"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'dcbddeb4e3fc40552d620e30782c89d9d30a9afa'
 review_loop_iteration: 0
 followup_review_recommended: false
