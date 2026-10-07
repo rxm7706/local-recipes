@@ -138,7 +138,7 @@ def attach_deck_export_routes(
             payload = await sync_to_async(_list_payload)(request)
         except NotFound as exc:
             raise HTTPException(status_code=404, detail="Not Found") from exc
-        except auth_errors as exc:  # type: ignore[misc]
+        except auth_errors as exc:
             raise _http_for_auth(exc) from exc
         return JSONResponse(payload)
 
@@ -152,7 +152,7 @@ def attach_deck_export_routes(
             row, chunks = await sync_to_async(_stream_open)(sha256, request)
         except NotFound as exc:
             raise HTTPException(status_code=404, detail="Not Found") from exc
-        except auth_errors as exc:  # type: ignore[misc]
+        except auth_errors as exc:
             raise _http_for_auth(exc) from exc
         except StoreError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
