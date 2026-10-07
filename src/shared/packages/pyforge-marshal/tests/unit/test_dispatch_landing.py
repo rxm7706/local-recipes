@@ -375,9 +375,7 @@ class _RecordingForge(FakeForge):
         return None
 
 
-def test_reconcile_spec_surface_drift_stamps_branch_specs_when_verdict_is_clean(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_reconcile_spec_surface_drift_stamps_branch_specs_when_verdict_is_clean(tmp_path: Path, monkeypatch) -> None:
     """Story 22.18: after a heal merge, branch_stamp_specs alone can drive one scoped stamp."""
     process = FakeProcess()
     _install_fake_spec_surface(monkeypatch, (), process=process)

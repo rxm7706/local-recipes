@@ -1871,9 +1871,7 @@ class _RecordingReconcile:
         outcome = _Outcome()
         outcome.refuse = self.refuse
         outcome.finding = self.finding or (
-            Finding(code="MRS-DISP-048", severity=Severity.ERROR, message="reconcile refused")
-            if self.refuse
-            else None
+            Finding(code="MRS-DISP-048", severity=Severity.ERROR, message="reconcile refused") if self.refuse else None
         )
         return outcome
 
