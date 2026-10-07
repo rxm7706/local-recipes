@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 604
+# stories: 605
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -105,6 +105,7 @@ development_status:
   22-15-a-landing-matches-the-epics-status-even-when-the-spec-is-already-done: backlog
   22-16-a-launch-without-the-env-on-path-never-wastes-a-finished-session: backlog
   22-17-a-land-only-refusal-names-the-gate-that-refused-it: backlog
+  22-18-a-landing-heals-a-spec-surface-baseline-conflict-by-re-stamping-on-main-s-baseline: backlog
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done
