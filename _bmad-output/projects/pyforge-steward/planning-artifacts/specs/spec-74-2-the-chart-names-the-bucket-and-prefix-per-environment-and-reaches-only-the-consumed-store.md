@@ -2,7 +2,7 @@
 title: "74.2: The chart names the bucket and prefix per environment and reaches only the consumed store"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: a16ab7f7e2a65d81814987c7698ace76d65ad16e
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -126,3 +126,34 @@ Deps: S-74.1 (the settings the chart feeds).
   dispatched.
 
 ## Review Triage Log
+
+### 2026-10-07 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - (implementer self-check against diff and AC matrix; no separate reviewer subagent findings recorded this pass)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Helm chart gains optional consumed object storage: `objectStorage.enabled` wires plain `OBJECT_STORAGE_BUCKET` / `OBJECT_STORAGE_PREFIX` on web and worker only; optional store egress on those two NetworkPolicies; default-off render stays byte-identical.
+
+Files changed:
+- `src/platform/deploy/charts/platform/values.yaml` — objectStorage defaults and ListBucket IAM note; networkPolicy.objectStorage
+- `src/platform/deploy/charts/platform/templates/_helpers.tpl` — objectStorageEnv + egressToObjectStorage helpers
+- `src/platform/deploy/charts/platform/templates/platform-deployment.yaml` — objectStorageEnv on web
+- `src/platform/deploy/charts/platform/templates/worker-deployment.yaml` — objectStorageEnv on worker
+- `src/platform/deploy/charts/platform/templates/networkpolicy-egress.yaml` — store egress on web/worker only
+- `src/platform/tests/test_chart_invariants.py` — Story 74.2 I/O matrix tests
+
+Review: no patch/defer entries; self-check only.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — pass (2028 passed, 3 skipped)
+- `tests/test_chart_invariants.py -k test_story_74_2` — 6 passed (platform-ci-test env)
+- `python scripts/spec_surface_reconcile.py` (pyforge-doctor env) — OK after memlog reconcile on spec-pyforge-steward and spec-pyforge-unifying-strategy
+- `bash scripts/platform-ci-local.sh --test` — chart/ruff/mypy/policy pass; full Django suite had pre-existing ERRORs on unrelated warden/supervisor tests in this local run
+
+Residual risks: operators must set `networkPolicy.objectStorage.cidrs` when enabling object storage with default-deny policies; per-env flag overlay (Epic 76) still pending for production ON.
