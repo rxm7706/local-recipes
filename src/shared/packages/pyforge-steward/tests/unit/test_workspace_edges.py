@@ -98,6 +98,7 @@ def test_format_clean_renders_nothing_archived_and_skipped_rows_with_members():
             {"slug": "a", "archive": "/arch/a.tar.gz"},
             {"slug": "b", "archive": "/arch/b.tar.gz", "member": "api"},
         ],
+        "deleted": [],
         "skipped": [{"slug": "c", "reason": "not-merged"}, {"slug": "d", "member": "web"}],
     }
     assert format_clean(result, as_json=False).splitlines() == [

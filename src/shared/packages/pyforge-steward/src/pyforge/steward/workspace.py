@@ -977,6 +977,11 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
 
     if _worktree_dirty(wt):
         return "dirty"
+    flags = _git_ok("ls-files", "-v", cwd=wt)
+    if flags.returncode != 0 or any(
+        line[:1].islower() or line[:1] == "S" for line in (flags.stdout or "").splitlines()
+    ):
+        return "dirty"
     if not _branch_merged_into(root, record.branch, record.source):
         return "not-merged"
     if _landed_note_body(record, wt=wt, root=root, stamp="") is None:

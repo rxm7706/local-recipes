@@ -88,7 +88,14 @@ def test_delete_landed_worktree_without_archive(repo: Path, tmp_path: Path):
 
     assert [row["slug"] for row in result["deleted"]] == ["landed"]
     assert not dest.exists()
-    assert _git("rev-parse", "--verify", "landed", cwd=repo).returncode != 0
+    assert (
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "landed"],
+            cwd=repo,
+            capture_output=True,
+        ).returncode
+        != 0
+    )
     assert load_bookkeeping(bookkeeping) == ()
     assert not list(archive_dir.iterdir()) if archive_dir.is_dir() else True
 
@@ -107,6 +114,19 @@ def test_delete_refuses_not_merged(repo: Path, tmp_path: Path):
     assert result["skipped"][0]["reason"] == "not-merged"
     assert dest.is_dir()
     assert len(load_bookkeeping(bookkeeping)) == 1
+
+
+def test_delete_refuses_skip_worktree(repo: Path, tmp_path: Path):
+    bookkeeping = repo / ".steward" / "workspaces.yaml"
+    dest = tmp_path / "skip-wt"
+    start_workspace("skip-wt", root=repo, bookkeeping=bookkeeping, path=dest, from_ref="origin/main")
+    _git("update-index", "--skip-worktree", "README.md", cwd=dest)
+    (dest / "README.md").write_text("local override\n", encoding="utf-8")
+
+    result = clean_workspaces(delete=True, slug="skip-wt", **_kwargs(repo, tmp_path, bookkeeping))
+
+    assert result["skipped"][0]["reason"] == "dirty"
+    assert dest.is_dir()
 
 
 def test_delete_refuses_dirty(repo: Path, tmp_path: Path):
@@ -148,7 +168,14 @@ def test_delete_gone_worktree_branch_on_source_drops_branch(repo: Path, tmp_path
     result = clean_workspaces(delete=True, slug="merged-gone", **_kwargs(repo, tmp_path, bookkeeping))
 
     assert result["deleted"][0]["slug"] == "merged-gone"
-    assert _git("rev-parse", "--verify", "merged-gone", cwd=repo).returncode != 0
+    assert (
+        subprocess.run(
+            ["git", "rev-parse", "--verify", "merged-gone"],
+            cwd=repo,
+            capture_output=True,
+        ).returncode
+        != 0
+    )
     assert load_bookkeeping(bookkeeping) == ()
 
 
