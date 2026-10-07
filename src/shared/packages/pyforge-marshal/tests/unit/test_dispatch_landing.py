@@ -3879,7 +3879,9 @@ def test_execute_dispatch_land_refuses_with_mrs_disp_038_when_a_flag_check_fails
     assert "flag-gate-check" in finding.message and "exited 1" in finding.message
     assert "FAIL flag-gate: pyforge.k2 has no owner" in finding.message
     assert forge.merge_calls == 1  # the first merge only: the heal never retried
-    assert vcs.pushed == ["dispatch/pyforge-marshal/22.19"]  # only the landing's own pre-merge push: the heal pushed nothing
+    assert vcs.pushed == [
+        "dispatch/pyforge-marshal/22.19"
+    ]  # only the landing's own pre-merge push: the heal pushed nothing
     assert len([c for c in process.calls if c[0][0] == "pixi"]) == 1  # the first failure stopped the check
 
 
@@ -3892,6 +3894,6 @@ def test_execute_dispatch_land_names_the_registry_file_and_key_it_cannot_union(t
     assert result.verdict == DispatchLandingVerdict.REFUSED
     finding = next(f for f in envelope.findings if f.code == "MRS-DISP-038")
     assert "src/platform/config/flags.json (key flags.k1)" in finding.message
-    print('DBG', vcs.pushed, vcs.calls, [f.message for f in envelope.findings])
-    assert forge.merge_calls == 1 and vcs.merges == [] and vcs.pushed == []
+    assert forge.merge_calls == 1 and vcs.merges == []
+    assert vcs.pushed == ["dispatch/pyforge-marshal/22.19"]  # the landing's own pre-merge push only
     assert [c for c in process.calls if c[0][0] == "pixi"] == []
