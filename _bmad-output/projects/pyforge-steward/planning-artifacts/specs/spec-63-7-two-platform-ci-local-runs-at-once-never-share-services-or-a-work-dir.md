@@ -2,10 +2,11 @@
 title: "63.7: Two `platform-ci-local` runs at once never share services or a work dir"
 type: 'fix'
 created: '2026-10-07'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'adea658e758cf460f11e78e484ed3ce80a51df18'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/epics.md
@@ -152,4 +153,31 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-07 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added a machine-wide `flock` lock to `scripts/platform-ci-local.sh` so concurrent `platform-ci-local` runs serialize instead of sharing PostgreSQL/Redis ports, work dir, image tag, and container name. Steward unit tests exercise overlap, lock timeout, SIGKILL release, and mutation (`PLATFORM_CI_LOCAL_NO_LOCK`) against stub service binaries.
+
+Files changed:
+- `scripts/platform-ci-local.sh` — acquire/release run lock with bounded wait and holder metadata
+- `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` — overlap oracle tests
+- `spec-pyforge-steward/.memlog.md` — surface reconcile for the paths above
+
+Review: no patch/defer/intent_gap items.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2032 passed, 5 skipped
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile for `scripts/platform-ci-local.sh` and `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` on `spec-pyforge-steward/.memlog.md`
+
+Governed paths reconciled on `spec-pyforge-steward/.memlog.md`:
+- `scripts/platform-ci-local.sh`
+- `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py`
+
+Residual risk: default lock wait (7200 s) is conservative; a holder longer than that still exits 2 without starting services (by design).
