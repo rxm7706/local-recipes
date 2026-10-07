@@ -4,7 +4,8 @@ Spawned as a subprocess by ``dispatch_land`` so ``dispatch_supervisor`` never
 imports ``cli/`` (AD-9). Composes ``deploy promote`` + ``land``'s sprint
 ledger promotion machinery, then (Story 79.1) carries the promotion to the files that machinery never
 reached: the story's Tier-3 feed row, its tracked spec, and (Story 22.13)
-its ``epics.md`` ``**Status:**`` line when that section carries one.
+its ``epics.md`` ``**Status:**`` line when that section carries one, including when the tracked spec
+is already ``done`` on ``origin/main`` (Story 22.15).
 """
 
 from __future__ import annotations
@@ -675,6 +676,79 @@ def _followup_review_carry(
     return _FollowupReviewCarry(candidate=candidate, promoted_date=clock.now().date().isoformat())
 
 
+def _promote_landed_story_epics_status(
+    vcs: CommittingVcs, root: Path, project_slug: str, key: StoryKey, worktree: Path | None
+) -> tuple[bool, Finding | None]:
+    """Story 22.15: match the landed story's ``epics.md`` ``**Status:**`` line to ``done`` even when the
+    tracked spec already reads ``done`` at ``ORIGIN_MAIN``, or when the Tier-3 route promoted the spec this
+    run. A ``blocked`` or ``superseded`` tracked spec leaves ``epics.md`` alone. Idempotent when the line
+    already reads ``done``."""
+    epics_rel = f"_bmad-output/projects/{project_slug}/planning-artifacts/epics.md"
+    rel = _local_spec_rel_path(root, worktree, project_slug, key)
+    if rel is not None:
+        try:
+            spec_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, rel)
+        except VcsCommandError:
+            spec_text = None
+        if spec_text is not None:
+            spec_status = promotion.read_spec_status(spec_text)
+            if spec_status in ("blocked", "superseded"):
+                return False, None
+
+    def _epics_gap(message: str) -> Finding:
+        return Finding(code="MRS-DISP-047", severity=Severity.WARN, message=message, path=epics_rel)
+
+    epics_gap: Finding | None = None
+    epics_text: str | None
+    try:
+        epics_text = vcs.file_text_at_ref(root, ORIGIN_MAIN, epics_rel)
+    except VcsCommandError as exc:
+        epics_gap = _epics_gap(
+            f"story {key}'s epics.md could not be read at {epics_rel!r} on {ORIGIN_MAIN_SHORT} to match its "
+            f"**Status:** line: {exc}"
+        )
+        epics_text = None
+    writes: list[tuple[str, str]] = []
+    if epics_gap is None:
+        if epics_text is None:
+            epics_gap = _epics_gap(
+                f"story {key}'s epics.md does not exist at {epics_rel!r} on {ORIGIN_MAIN_SHORT}; its "
+                f"**Status:** line was not updated"
+            )
+        elif not promotion.epics_has_story_heading(epics_text, key):
+            epics_gap = _epics_gap(
+                f"story {key}'s epics.md has no ### Story {key}: heading at {epics_rel!r} on "
+                f"{ORIGIN_MAIN_SHORT}; its **Status:** line was not updated"
+            )
+        else:
+            epics_done = promotion.set_epics_story_status(epics_text, key, promotion.SPEC_STATUS_DONE)
+            if epics_done != epics_text:
+                writes.append((epics_rel, epics_done))
+    if not writes:
+        if epics_gap is not None:
+            return False, epics_gap
+        return False, None
+    try:
+        vcs.commit_paths_onto_remote_tip(
+            root,
+            remote=VcsRef("origin"),
+            ref=VcsRef("main"),
+            writes=tuple(writes),
+            message=to_redacted_text(f"marshal: promote story {key}'s epics status to done"),
+            preflight_skip_reason=to_redacted_text(
+                f"marshal epics-status promotion for {project_slug!r}, story {key}"
+            ),
+        )
+    except VcsCommandError as exc:
+        gap = _epics_gap(
+            f"story {key}'s epics.md **Status:** line could not be promoted to done on {ORIGIN_MAIN_SHORT}: {exc}"
+        )
+        return False, gap
+    if epics_gap is not None:
+        return True, epics_gap
+    return True, None
+
+
 def _promote_tracked_spec(
     vcs: CommittingVcs, root: Path, project_slug: str, key: StoryKey, worktree: Path | None
 ) -> tuple[bool, Finding | None]:
@@ -719,7 +793,9 @@ def _promote_tracked_spec(
     if text is None:
         return _warn(f"story {key}'s tracked spec {rel!r} does not exist at {ORIGIN_MAIN_SHORT}; it was not promoted")
     status = promotion.read_spec_status(text)
-    if status in promotion.TERMINAL_SPEC_STATUSES:
+    if status == promotion.SPEC_STATUS_DONE:
+        return _promote_landed_story_epics_status(vcs, root, project_slug, key, worktree)
+    if status in ("blocked", "superseded"):
         return False, None
     if status not in promotion.PRE_DONE_SPEC_STATUSES:
         detail = (
@@ -883,10 +959,16 @@ def finalize_dispatch_land(
             # `specs/` and committed locally (`_execute_promotion_plan`), so the local path resolves while
             # `origin/main` may not hold the copy yet -- a misleading "absent" WARN, or a second status-only
             # publish. That route owns the spec; the tracked-spec step is for the session that left no twin.
+            # Story 22.15: epics still matches even when the spec step is skipped or the spec already reads
+            # `done` on `origin/main`.
             if key not in tier3_promoted_keys:
                 tracked_spec_promoted, step_finding = _promote_tracked_spec(vcs, root, project_slug, key, worktree)
-                if step_finding is not None:
-                    findings.append(step_finding)
+            else:
+                tracked_spec_promoted, step_finding = _promote_landed_story_epics_status(
+                    vcs, root, project_slug, key, worktree
+                )
+            if step_finding is not None:
+                findings.append(step_finding)
     # Story 51.9 (re-mint of 51.3): `_promote_sprint_ledger` deliberately
     # never touches the primary checkout's own working tree (CAP-5) -- so
     # nothing else picked up that promotion either, and the fleet
