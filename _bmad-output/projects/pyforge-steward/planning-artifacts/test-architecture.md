@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: c9982304aa6f2bae
-story_count: 327
+source_fingerprint: 2fb3b3fd77499af0
+story_count: 330
 test_file_count: 96
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 327
+- **Stories parsed:** 330
 - **Epics parsed:** 85
 - **Test files inventoried:** 96 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `c9982304aa6f2bae`
+- **Source fingerprint:** `2fb3b3fd77499af0`
 
 ## Risk Assessment
 
@@ -291,6 +291,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 13.2 | Status and the feed-mirror decision | none observed |
 | 13.3 | A repo set opens as one workspace | none observed |
 | 13.4 | The set reports and tears down safely | none observed |
+| 13.5 | `workspace clean --delete` removes a gone or landed workspace without a promp... | none observed |
 | 14.1 | The pre-flight diff retrodicts a real upgrade | none observed |
 | 14.2 | Apply is deliberate, branched, and never clobbers custom | none observed |
 | 14.3 | Clobbered custom surfaces are caught and re-applied | none observed |
@@ -500,6 +501,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 63.4 | `steward session check` — one verdict for the session preconditions, run from... | none observed |
 | 63.5 | `pyforge-foundry-full` — the fleet's whole dependency closure is one locked a... | none observed |
 | 63.6 | No station code assumes the `local-recipes` environment at runtime | none observed |
+| 63.7 | Two `platform-ci-local` runs at once never share services or a work dir | none observed |
 | 64.1 | The nine Frames go bare `type: frame` and the README pins the upstream heads | none observed |
 | 64.2 | PyForge publishes its Frame conformance profile | none observed |
 | 65.1 | Reusable, pluggable, feature-flagged estate sprint ledger query module & BMAD... | none observed |
@@ -554,6 +556,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 85.3 | The pre-push gate skips a push it can prove carries only preserve or archive ... | none observed |
 | 85.4 | The hook denies every protected-ref deletion and any deletion that orphans co... | none observed |
 | 85.5 | Workspace clean parks unlanded commits as a preserve tag before removing the ... | none observed |
+| 85.6 | Every command a session denial names as the sanctioned form exists | none observed |
 
 ## Quality Gates
 
