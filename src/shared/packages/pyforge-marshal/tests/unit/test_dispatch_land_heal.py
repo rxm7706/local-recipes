@@ -2,19 +2,24 @@
 
 from __future__ import annotations
 
+import ast
 import json
 import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.core.process import ProcessError, ProcessResult
 
+from pyforge.marshal import dispatch_land
 from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core import dispatch_landing as _dispatch_landing
 from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core.dispatch_landing import (
+    FLAG_REGISTRY_REL_PATHS,
     SPEC_SURFACE_BASELINE_REL,
     TEAM_MEMORY_INDEX_REL,
     is_deferred_work_path,
+    is_flag_registry_path,
     is_mechanical_conflict_path,
     is_memlog_path,
     is_team_memory_index_path,
@@ -22,6 +27,8 @@ from pyforge.marshal.core.dispatch_landing import (
     specs_whose_baseline_entries_differ,
     three_way_ledger_statuses,
     union_deferred_work_texts,
+    union_flag_registry_json_texts,
+    union_flag_registry_python_texts,
     union_memlog_texts,
     union_sprint_ledger_maps,
     union_team_memory_index_texts,
