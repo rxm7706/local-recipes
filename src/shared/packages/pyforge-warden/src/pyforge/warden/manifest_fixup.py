@@ -45,8 +45,7 @@ def tree_content_digest(root: Path) -> str:
 
 
 def _select_manifest_paths(locations: Sequence[str]) -> tuple[str, ...] | None:
-    manifests = {parse_manifest_path_from_location(loc) for loc in locations}
-    manifests.discard(None)
+    manifests = {path for loc in locations if (path := parse_manifest_path_from_location(loc)) is not None}
     if not manifests:
         return None
     if len(manifests) > 1:

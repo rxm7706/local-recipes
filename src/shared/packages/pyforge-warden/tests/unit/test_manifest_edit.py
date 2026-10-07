@@ -57,7 +57,7 @@ def test_jinja_declared_requirement_fails(tmp_path: Path) -> None:
 def test_duplicate_declarations_fail(tmp_path: Path) -> None:
     manifest = tmp_path / "pixi.toml"
     manifest.write_text(
-        "[pypi-dependencies]\nleftpad = \">=1.0\"\nleftpad = \">=1.2\"\n",
+        '[pypi-dependencies]\nleftpad = ">=1.0"\nleftpad = ">=1.2"\n',
         encoding="utf-8",
     )
     result = edit_requirement_to_floor(manifest, package="leftpad", floor="1.3.0")

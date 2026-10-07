@@ -70,7 +70,7 @@ def _edit_pyproject_toml(text: str, package: str, floor: str) -> tuple[str, int]
     )
 
     def _repl(match: re.Match[str]) -> str:
-        return f'{match.group(1)}{match.group(2)}>={floor}{match.group(4)}'
+        return f"{match.group(1)}{match.group(2)}>={floor}{match.group(4)}"
 
     updated, count = pattern.subn(_repl, text, count=1)
     return updated, count
@@ -102,7 +102,9 @@ def _line_declares_package(line: str, package: str, *, kind: str) -> bool:
     if kind == "pixi":
         return bool(re.match(rf'^\s*"?{re.escape(package)}"?\s*=', line))
     if kind == "pyproject":
-        return package in line and ("dependencies" in line or re.search(rf'["\']{re.escape(package)}', line))
+        return package in line and (
+            "dependencies" in line or re.search(rf'["\']{re.escape(package)}', line) is not None
+        )
     return False
 
 

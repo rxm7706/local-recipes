@@ -138,9 +138,7 @@ def test_resolve_failure_is_failed_outcome(monkeypatch: pytest.MonkeyPatch, tmp_
     assert "manifest edit failed" in (outcome.detail or "")
 
 
-def test_forced_failure_still_leaves_scan_tree_unchanged(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_forced_failure_still_leaves_scan_tree_unchanged(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _write_pixi_repo(repo)
     digest_before = tree_content_digest(repo)
