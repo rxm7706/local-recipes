@@ -20,7 +20,7 @@ import pytest
 from pptx import Presentation
 
 from pyforge.herald import deck_pipeline as deck_pipeline_module
-from pyforge.herald import registry, stamps, state
+from pyforge.herald import deck_versions, registry, stamps, state
 from pyforge.herald.deck_pipeline import (
     PILOT_SUPPORT_SOURCE_PROJECT_ID,
     PROTOTYPE_ARTIFACT_KEY,
@@ -897,6 +897,27 @@ def test_pull_marp_source_lands_at_the_dated_src_marp_path_and_calls_no_prover(
     assert exporter.calls == [("pyforge-warden", tmp_path)]
     recorded = state.read(tmp_path / state.DEFAULT_STATE_PATH, "pyforge-warden")
     assert recorded.etags["marp:infographic"] == "M3"
+
+
+def test_pull_marp_source_retires_older_dated_marp_of_same_kind(tmp_path: Path) -> None:
+    _seed_state(tmp_path, "pyforge-warden")
+    marp_dir = tmp_path / "presentations" / "pyforge-warden" / "src" / "marp"
+    marp_dir.mkdir(parents=True, exist_ok=True)
+    older = marp_dir / "pyforge-warden-infographic-2026-07-01.md"
+    older.write_text("# old\n", encoding="utf-8")
+    transport = FakePullTransport(
+        answers=FileRead(path="x", etag="M4", body="# Infographic", unchanged=False)
+    )
+    pull_marp_source(
+        transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        kind="infographic",
+        exporter=FakeExporter(),
+        now=lambda: _FIXED_NOW,
+    )
+    assert not older.is_file()
+    assert deck_versions.superseded(tmp_path) == []
 
 
 def test_pull_marp_source_refuses_an_unknown_kind(tmp_path: Path):

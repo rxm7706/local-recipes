@@ -2,10 +2,11 @@
 title: '28.2: A new export replaces the version it supersedes'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
 difficulty: 'easy'
 review_loop_iteration: 0
 followup_review_recommended: false
+baseline_revision: '6b6608b0a0d2a6974efa23b166d1a3971195e67b'
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-28-1-each-deck-keeps-one-current-version-of-each-export.md
