@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
+updated: "2026-10-07"   # RE-STAMPED 2026-10-07: prd->arch cascade for the PRD's 2026-10-07 re-stamp (Stories 35.1-35.2, marshal 86.8, Story 27.1, Story 28.1); lands on AD-2, AD-3, AD-4 and AD-21 as written, no AD amended; one FR-8.1 / AD-21 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
@@ -879,5 +879,34 @@ the deck list and the viewer instead of only linking out. Story 30.2.
 against every AD: each fix lands inside the module that already owns the behaviour, behind the ports and boundaries
 the spine already draws; no port, adapter or package boundary moves, and `src/platform/` still imports no
 `pyforge.*`.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-07
+
+*`prd→arch` cascade for the PRD's 2026-10-07 re-stamp: Stories 35.1 and 35.2 (fix), marshal Story 86.8's co-governor
+edit, Story 27.1 (FR-8.1, `done`) and Story 28.1 (FR-9.1, in flight on its dispatch branch).* Checked against every AD.
+They land as written:
+
+- **AD-2 (etagged transfers).** Story 35.1 changes only the post-push read-back in `deck_pipeline.push_exports`. An
+  `.html` body that differs from the pushed body only in line endings or trailing newlines now counts as the pushed
+  body; every other path still needs byte identity. The write side is unchanged: a push still needs a matching etag and
+  fails loudly on a conflict. This is a comparison rule, not a merge.
+- **AD-3 (export pipeline).** Story 35.1's `pptx_pipeline._resolve_layout` refuses an ambiguous layout name inside the
+  python-pptx fill. The formats and their owners do not change.
+- **AD-4 (one dated version per kind, amended 2026-09-28).** Story 28.1 realizes the amendment: `pyforge.herald.deck_versions`
+  is the one stdlib-only rule, `tests/meta/test_deck_working_set.py` checks the live tree, and herald's CI job runs on
+  `presentations/**`. A `.stamp.json` sidecar is not a kind and is reported with its file. `docsite/build.py` changes
+  only its `_listed_files` docstring, so the published downloads do not move.
+- **AD-21 (one Pages artifact).** Story 27.1 lands rules 3 and 4: `docs-site/src/content/docs` is a symlink to `docs/`,
+  `src/loaders/shelf-docs-loader.ts` resolves titles and quadrant indexes at build time, and `docs-site/build/`,
+  `docs-site/node_modules/` and `docs-site/.astro/` are gitignored.
+
+**One divergence, recorded and not repaired (AD-21, FR-8.1).** `docs-site/astro.config.mjs` imports
+`./src/lib/site-url.mjs`. The root `.gitignore` rule `lib/` (line 40) ignores that path, and git has never tracked the
+file. A clean checkout therefore cannot load the site config, so the docs site AD-21 places at the root cannot build
+there. No herald test resolves the config's imports. The repair is a fix story, not a decision change; AD-21 stands.
+
+No port, adapter or package boundary moves, and `src/platform/` still imports no `pyforge.*`.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

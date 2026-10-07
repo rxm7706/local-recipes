@@ -512,6 +512,11 @@ is uniform and every non-React format is **reproducible from a Marp source**, ne
 hand-massaged. (The React deck — `prototype → fragments → dist/` — remains the
 *primary* artifact; these six are the portable, offline-friendly companions.)
 
+**One current version per export kind:** under `src/marp/` and `src/pptx/`, each
+dated filename kind (`<stem>-YYYY-MM-DD.<ext>`) keeps only the newest ISO date in
+the tracked tree; older exports live in git history, not on disk. Herald enforces
+this with `python -m pyforge.herald.deck_versions` (Story 28.1).
+
 **Marp sources** (hand/Claude-Design-authored — the source of truth for exports),
 in `src/marp/`:
 1. `<slug>-deck-<YYYY-MM-DD>.md` — the full Marp deck (mirrors the prototype narrative)
@@ -532,8 +537,10 @@ in `src/marp/`:
    — real `<a:t>` text runs via `pptx_pipeline.py` (CAP-1/CAP-2), including
    dense slides through the shape API (`add_card` / `add_metric_box` /
    `add_table` / `add_section_label`). Exemplar:
-   `presentations/pyforge-warden/src/content_plan.json` →
-   `pyforge-warden-deck-2026-09-10.pptx`. **Interim fallback:** `marp --pptx`
+   `presentations/pyforge-warden/src/content_plan.json` → regenerate with
+   `pixi run -e pyforge-herald pyforge herald deck pptx-fill
+   presentations/pyforge-warden/src/content_plan.json -o
+   src/pptx/<slug>-deck-<YYYY-MM-DD>.pptx`. **Interim fallback:** `marp --pptx`
    (renders image-slides, not editable text). **Future:** deckcraft /
    pptxgenjs when it delivers.
 6. `src/pptx/<slug>_infographic_deck-<YYYY-MM-DD>.pptx` — same engine rule as #5
@@ -656,8 +663,9 @@ superseded per-deck as deckcraft (editable PPTX) and Design-authored bundles
 - **Display brand vs. slug.** Slide *content* uses the product's display brand;
   *file/dir* names use the repo slug (e.g. **Warden** on the slides,
   `pyforge-warden` in paths). Keep the display name in the prototype/marp copy.
-- **`.pptx` is a binary blob** — git can't diff it; updates replace the whole
-  file. Date the filename so revisions are distinguishable.
+- **`.pptx` is a binary blob** — git can't diff it; a new export replaces the
+  prior dated file of the same kind (git history keeps the old bytes). Date the
+  filename so revisions are distinguishable.
 - **Not a conda recipe.** This deck lives under `presentations/`, unrelated to
   `recipes/`; the conda-forge tooling and its `**/[Pp]ackages/*` ignore rules do
   not apply here.
