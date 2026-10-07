@@ -1676,9 +1676,10 @@ def test_a_key_the_tier3_route_promoted_this_run_is_not_promoted_again_as_a_trac
     assert copied.read_text(encoding="utf-8") == twin.read_text(encoding="utf-8")
     [(targets, _message)] = vcs.local_commits
     assert targets == (copied,)
-    # The tracked-spec step reads nothing here; the one read is Story 66.1's follow-up carry, which finds no
-    # spec at origin/main yet and says nothing.
-    assert [path for _root, _ref, path in vcs.read_calls if path == _SPEC_REL_79] == [_SPEC_REL_79]
+    # No tracked-spec publish; Story 66.1's follow-up carry and Story 22.15's epics gate may read the spec
+    # at origin/main (absent here) without promoting it.
+    spec_reads = [path for _root, _ref, path in vcs.read_calls if path == _SPEC_REL_79]
+    assert spec_reads == [_SPEC_REL_79, _SPEC_REL_79]
     assert vcs.publishes == []
     assert _journaled_findings_79(tmp_path) == []
     assert feed.read_text(encoding="utf-8") == _FEED_DONE_79
