@@ -2,7 +2,7 @@
 title: "22.15: A landing matches the epics status even when the spec is already done"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -120,3 +120,17 @@ Type / Effort / Deps: fix / S / —.
 - Mutation: remove the epics step for an already-`done` spec and re-run the station suite. The new test fails. Restore it.
 - After the next real landing: the landed story's `**Status:**` line in its station's `epics.md` reads `done` on `main`.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `_promote_landed_story_epics_status` so corroborated landings still publish an epics-only commit when the tracked spec is already `done` at `origin/main`, and Tier-3-promoted keys call the same path instead of skipping epics matching.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_finalize/__main__.py` — epics-only finalize step and call-site routing
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_land_finalize.py` — Story 22.15 acceptance tests
+
+Verification: `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` (11777 passed); `python scripts/spec_surface_reconcile.py` OK; `pixi run --frozen -e pyforge-guild lint-types` (marshal ruff leg pre-existing red in this worktree).
+
+Follow-up review recommendation: false
