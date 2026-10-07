@@ -208,6 +208,36 @@ def test_npm_lock_without_npm_db_is_indeterminate(
     assert eco_findings
 
 
+def test_stale_npm_offline_db_merges_stale_vuln_finding(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import time
+
+    builder = _load_builder()
+    cache = tmp_path / "cache"
+    builder.build_offline_db(OSV_NPM_RECORDS, cache, ecosystem="npm")
+    zip_path = cache / "osv-scanner" / "npm" / "all.zip"
+    stale_mtime = time.time() - (10 * 86400)
+    import os
+
+    os.utime(zip_path, (stale_mtime, stale_mtime))
+    on_tree = _flag_tree(tmp_path / "flags", enabled=True)
+    monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on_tree))
+    monkeypatch.setenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(cache))
+    from io import StringIO
+    import sys
+
+    buffer = StringIO()
+    monkeypatch.setattr(sys, "stdout", buffer)
+    exit_code = warden_main(["scan", str(NPM_PROJECT), "--format", "json"])
+    assert exit_code != 0
+    report = json.loads(buffer.getvalue())
+    assert report["status"] != "clean"
+    assert any(f["id"].startswith("indeterminate:vuln-data-stale:") for f in report["findings"])
+
+
 def test_sbom_emits_pkg_npm_purl(component_factory) -> None:
     from pyforge.warden.inventory import ResolvedInventory, merge_components
     from pyforge.warden.models import ComplianceReport, VulnData

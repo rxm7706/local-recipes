@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 
 from .inventory import Component, Provenance, derive_purl
@@ -22,13 +23,16 @@ from .models import (
     ScannedManifest,
 )
 from .vuln import (
+    DB_MAX_AGE_DAYS,
     OsvParse,
     db_snapshot_at,
     db_zip_path,
     ecosystem_db_unavailable_finding,
+    is_db_stale,
     offline_db_unavailable_finding,
     parse_osv_output,
     resolve_cache_dir,
+    stale_vuln_data_finding,
 )
 from .vuln import _db_has_valid_advisory as db_has_valid_advisory
 
@@ -200,6 +204,12 @@ def scan_native_lockfile(target: Path, manifest: ScannedManifest) -> NativeLockf
     zip_path = db_zip_path(cache_dir, ecosystem) if cache_dir is not None else None
     db_ok = zip_path is not None and db_has_valid_advisory(zip_path, ecosystem)
     snapshot_at = db_snapshot_at(zip_path) if db_ok and zip_path is not None else None
+    stale = (
+        db_ok
+        and snapshot_at is not None
+        and is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC))
+    )
+    stale_findings = (stale_vuln_data_finding(),) if stale else ()
 
     if cache_dir is None or not db_ok:
         withheld = (
@@ -261,14 +271,26 @@ def scan_native_lockfile(target: Path, manifest: ScannedManifest) -> NativeLockf
     raw = text or ""
     parse = parse_osv_output(raw)
     findings = parse.findings
+    if stale_findings:
+        findings = tuple(sorted((*findings, *stale_findings), key=lambda f: f.id))
     if exit_code == 128:
+        try:
+            exit128_document = json.loads(raw) if raw.strip() else {}
+        except json.JSONDecodeError:
+            exit128_document = {}
         findings = tuple(
             sorted(
-                (*findings, *tuple(offline_db_unavailable_finding(c) for c in _components_from_osv_document(
-                    json.loads(raw) if raw.strip() else {},
-                    manifest_path=manifest.path,
-                    default_ecosystem=ecosystem,
-                ))),
+                (
+                    *findings,
+                    *tuple(
+                        offline_db_unavailable_finding(c)
+                        for c in _components_from_osv_document(
+                            exit128_document,
+                            manifest_path=manifest.path,
+                            default_ecosystem=ecosystem,
+                        )
+                    ),
+                ),
                 key=lambda f: f.id,
             )
         )
@@ -356,10 +378,16 @@ def merge_native_scans_into_vuln_result(
         native_errors.extend(scan.parse.errors)
         native_assessed += sum(1 for c in scan.components if c.vuln_matchable)
         if scan.db_consulted and scan.db_zip is not None:
+            native_max_age_ok = True
+            if scan.snapshot_at is not None:
+                native_max_age_ok = not is_db_stale(
+                    scan.snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC)
+                )
+            prior_ok = result.vuln_data.max_age_ok if result.vuln_data else True
             vuln_data = VulnData(
                 source=str(scan.db_zip),
                 snapshot_at=scan.snapshot_at,
-                max_age_ok=result.vuln_data.max_age_ok if result.vuln_data else None,
+                max_age_ok=prior_ok and native_max_age_ok,
             )
     findings = tuple(
         sorted(
