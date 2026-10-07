@@ -1049,6 +1049,107 @@ def _wait_for_landing_checks(
         )
 
 
+# Story 22.19: the healed-tree check's three commands, each `(display name, argv, cwd relative to the
+# worktree)`. The platform test runs with the interpreter and cwd `scripts/platform-ci-local.sh`'s test
+# stage uses (the `platform-ci-test` env, `src/platform`), with `PYTHONSAFEPATH` unset (it breaks
+# `config.settings.*` imports there).
+_FLAG_REGISTRY_CHECK_COMMANDS: tuple[tuple[str, tuple[str, ...], str], ...] = (
+    (
+        "flag-gate-check",
+        ("pixi", "run", "--frozen", "-e", "pyforge-guild", "flag-gate-check"),
+        ".",
+    ),
+    (
+        "test_flags.py",
+        (
+            "pixi",
+            "run",
+            "--frozen",
+            "-e",
+            "pyforge-core",
+            "pytest",
+            "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+            "-q",
+        ),
+        ".",
+    ),
+    (
+        "test_openfeature_file_flags.py",
+        (
+            "pixi",
+            "run",
+            "--frozen",
+            "-e",
+            "platform-ci-test",
+            "env",
+            "-u",
+            "PYTHONSAFEPATH",
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_openfeature_file_flags.py",
+            "-q",
+            "-p",
+            "no:cacheprovider",
+        ),
+        "src/platform",
+    ),
+)
+_FLAG_REGISTRY_CHECK_TIMEOUT_S = 1800.0
+_FLAG_REGISTRY_CHECK_DETAIL_LINES = 8
+_FLAG_REGISTRY_CHECK_DETAIL_CHARS = 1200
+
+
+def _flag_check_detail(output: str) -> str:
+    """The gate's own FAIL lines (else the output's tail), bounded."""
+    lines = [line.strip() for line in output.splitlines() if line.strip()]
+    chosen = [line for line in lines if "FAIL" in line] or lines
+    detail = " | ".join(chosen[-_FLAG_REGISTRY_CHECK_DETAIL_LINES:])
+    if len(detail) > _FLAG_REGISTRY_CHECK_DETAIL_CHARS:
+        detail = "..." + detail[-_FLAG_REGISTRY_CHECK_DETAIL_CHARS:]
+    return detail
+
+
+def _healed_tree_flag_registry_check(worktree: Path, process: ProcessPort) -> Callable[[], Finding | None]:
+    """Story 22.19: the check ``try_heal_dispatch_land_merge`` runs on a flag-registry heal's merged
+    commit, before it pushes -- `flag-gate-check` and the two flag test modules, in ``worktree``.
+
+    Each command's exit code is read directly: non-zero (``flag-gate-check`` exits 1 or 2 on a red
+    verdict; 0 may carry warnings), a timeout or an env that will not run is ``MRS-DISP-038``, naming
+    the command and its exit code and carrying the gate's own FAIL lines, bounded. The first failure
+    stops the check. ``None`` means all three passed."""
+
+    def check() -> Finding | None:
+        for name, argv, cwd_rel in _FLAG_REGISTRY_CHECK_COMMANDS:
+            cwd = worktree / cwd_rel if cwd_rel != "." else worktree
+            try:
+                result = process.run(list(argv), cwd=cwd, timeout_s=_FLAG_REGISTRY_CHECK_TIMEOUT_S)
+            except ProcessError as exc:
+                return Finding(
+                    code="MRS-DISP-038",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"flag-registry heal refused: `{' '.join(argv)}` ({name}) could not run on the merged "
+                        f"tree: {exc} — nothing pushed (Story 22.19)"
+                    ),
+                )
+            if result.returncode != 0:
+                detail = _flag_check_detail(f"{result.stdout or ''}\n{result.stderr or ''}")
+                return Finding(
+                    code="MRS-DISP-038",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"flag-registry heal refused: `{' '.join(argv)}` ({name}) exited {result.returncode} on "
+                        f"the merged tree"
+                        + (f": {detail}" if detail else "")
+                        + " — nothing pushed (Story 22.19)"
+                    ),
+                )
+        return None
+
+    return check
+
+
 def execute_dispatch_land(
     *,
     project_slug: str,
@@ -1671,6 +1772,7 @@ def execute_dispatch_land(
                 probe_ref=_ORIGIN_MAIN,
                 await_checks=_await_healed_head_checks,
                 reconcile_spec_surface=_heal_reconcile_spec_surface,
+                healed_tree_check=_healed_tree_flag_registry_check(worktree, process),
             )
         if heal_waits:
             data[LANDING_CHECKS_FIELD] = {**checks.record, "heal": heal_waits[-1].record}
@@ -1687,6 +1789,25 @@ def execute_dispatch_land(
                     ),
                 )
             )
+            envelope = build_envelope(
+                command="dispatch land",
+                verdict=compute_verdict(tuple(findings)),
+                data=data,
+                findings=tuple(findings),
+            )
+            return (
+                DispatchLandingResult(
+                    verdict=DispatchLandingVerdict.REFUSED,
+                    pr_number=pr.number,
+                    subject=subject,
+                    marshal_native=True,
+                ),
+                envelope,
+            )
+        if heal.healed_tree_refusal is not None:
+            # Story 22.19: a flag check failed on the merged commit -- nothing was pushed, and the merge
+            # is not retried. The finding names the command and its exit code.
+            findings.append(heal.healed_tree_refusal)
             envelope = build_envelope(
                 command="dispatch land",
                 verdict=compute_verdict(tuple(findings)),
