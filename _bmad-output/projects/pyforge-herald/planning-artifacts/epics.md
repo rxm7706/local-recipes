@@ -1101,7 +1101,7 @@ So that 54 MB of superseded exports stop riding in every working tree and copy w
 **When** the superseded exports are pruned and the rule, its meta test and the CI trigger land
 **Then** `python -m pyforge.herald.deck_versions` exits 0 on the story's tree and exits 1 naming each planted superseded file and its current version; `git ls-files presentations | wc -l` and the tree's bytes drop by the pruned count and size, both recorded before and after in the story's Verification notes (944 → 870 and 134.69 → 80.55 MB on the 2026-09-28 tree); `pixi run -e site site-check` exits 0 and publishes the same 69 family downloads; the Story 19.4 tests pass against the regenerated deck
 **And** `pyforge-station-tests.yml` selects `herald-test` for a `presentations/**`-only diff and steward's `test_workflow_path_filters_match.py` stays green; `spec-surface-check` is green after the memlog reconcile and one scoped stamp per Spec it names; `pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 28.2: A new export replaces the version it supersedes
 
@@ -1130,7 +1130,7 @@ So that the one-version rule Story 28.1 checks holds after every sync, without a
 **When** a writer writes `<stem>-<newer date>.<ext>` beside `<stem>-<older date>.<ext>`
 **Then** only the newer file of that kind remains, its sidecar with it; a failed write retires nothing; a backdated write (`DECK_EXPORT_DATE` older than the current file) removes nothing and is reported; other kinds and undated files are untouched; `python -m pyforge.herald.deck_versions` exits 0 after a fixture `sync-all`
 **And** a second `sync-all` run still reports every deck `unchanged` with zero writes (CAP-36/CAP-50); `test_deck_versions.py` and the writer tests pass in `pyforge-herald-test`
-**Status:** backlog
+**Status:** done
 
 ## Epic 29: Each current export is also kept in object storage (spec-pyforge-herald CAP-54)
 
@@ -1190,7 +1190,7 @@ So that git stops being the only place the exports live, and the portal has some
 **When** `herald deck publish <slug>` runs with the flag ON against a local store (the `platform-object-storage` silo server)
 **Then** it exits 0; each current export sits at `<prefix>/sha256/<hex>` and reads back byte-identical; the manifest carries topic, kind, date, size, content type, sha256 and source commit for each; a second run uploads nothing; `herald deck exports <slug> --json` prints the records
 **And** with the flag OFF both verbs are listed as disabled and exit 2 with a "flag off" message; the boundary test finds no `django` or `config` import in the base package; `pyforge-herald-test` is green
-**Status:** blocked
+**Status:** done
 
 ### Story 29.2: The published exports are listed and streamed behind the herald role
 

@@ -57,7 +57,7 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 from pyforge.core.atomic_write import atomic_write_text as core_atomic_write_text
 
-from . import errors, pptx_pipeline, registry, stamps, state
+from . import deck_versions, errors, pptx_pipeline, registry, stamps, state
 
 if TYPE_CHECKING:
     from .transport.base import DesignTransport, FileRead, ListedFile, ProjectRef
@@ -602,6 +602,7 @@ class PptxTemplateExporter:
         pptx_pipeline.run_fill(template_path, content_plan_path, out_path)
         self._html_exporter.export(slug=slug, repo_root=repo_root)
         stamps.write_stamp(out_path, repo_root=repo_root, slug=slug)
+        deck_versions.retire_superseded(out_path)
 
 
 def select_exporter(slug: str, repo_root: Path) -> DeckExporter:
@@ -859,6 +860,8 @@ def pull_marp_source(
             committed=False,
         )
 
+    deck_versions.retire_superseded(local_path)
+
     (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: see `pull_prototype`'s own note -- record only after
     # export succeeds.
@@ -953,6 +956,8 @@ def pull_standalone_bundle(
             etag=existing.etags.get(STANDALONE_BUNDLE_ARTIFACT_KEY),
             committed=False,
         )
+
+    deck_versions.retire_superseded(local_path)
 
     (exporter or select_exporter(slug=slug, repo_root=repo_root)).export(slug=slug, repo_root=repo_root)
     # Review finding: see `pull_prototype`'s own note -- record only after

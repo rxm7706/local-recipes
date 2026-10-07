@@ -1406,6 +1406,294 @@ def test_spec_mode_json_carries_the_per_environment_finding_and_verdict_red(
     assert "flag-default-env-mismatch" in _kinds(payload)
 
 
+# --- shared flag key: latest done declaration judged (Story 34.6) ---------------------------------
+
+
+SHARED_KEY = "pyforge.test.shared_cap"
+
+
+def _env_flag_block(*, production: str = "off", staging: str = "on", dev: str = "on") -> str:
+    return f"""flag:
+  key: {SHARED_KEY}
+  provider: openfeature-file
+  default: {{production: {production}, staging: {staging}, dev: {dev}}}
+  scope: global
+  fallback: "the legacy behaviour"
+  cleanup: 90 days after ON in every environment (Q4)
+"""
+
+
+def _shared_key_fixture(tmp_path: Path) -> Path:
+    root = _fixture(tmp_path, tree_keys=[SHARED_KEY])
+    _write(root, "src/pkg/reader.py", f'flag("{SHARED_KEY}")\n')
+    _write_test(root, SHARED_KEY, KIT_TEST, rel="tests/test_shared_key.py")
+    return root
+
+
+_SHARED_LANDED_BODY = _verification("tests/test_shared_key.py")
+
+
+def test_two_done_specs_sharing_a_key_judge_only_the_latest_when_the_tree_matches_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _shared_key_fixture(tmp_path)
+    _write_overlays(
+        root,
+        {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "off"}},
+    )
+    _spec(
+        root,
+        _env_flag_block(production="off", staging="off", dev="off"),
+        name="spec-74-1-first-ship.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+    _spec(
+        root,
+        _env_flag_block(production="off", staging="on", dev="on"),
+        name="spec-74-2-second-ship.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 0
+    assert "flag-default-env-mismatch" not in _kinds(payload)
+
+
+def test_mismatch_findings_name_the_latest_declaration_not_an_earlier_one(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _shared_key_fixture(tmp_path)
+    _write_overlays(
+        root,
+        {"dev": {SHARED_KEY: "off"}, "staging": {SHARED_KEY: "off"}, "production": {SHARED_KEY: "off"}},
+    )
+    rel_1 = _spec(
+        root,
+        _env_flag_block(production="off", staging="off", dev="off"),
+        name="spec-74-1-first-ship.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+    rel_2 = _spec(
+        root,
+        _env_flag_block(production="off", staging="on", dev="on"),
+        name="spec-74-2-second-ship.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    env = [f for f in payload["findings"] if f["kind"] == "flag-default-env-mismatch"]
+    assert {f["path"] for f in env} == {rel_2}
+    assert {f["path"] for f in env}.isdisjoint({rel_1})
+    assert len(env) == 2
+    messages = " ".join(f["message"] for f in env)
+    assert "dev" in messages and "staging" in messages
+
+
+def test_spec_mode_skips_env_mismatch_on_the_earlier_declaration_and_matches_tree_on_the_latest(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _shared_key_fixture(tmp_path)
+    _write_overlays(
+        root,
+        {"dev": {SHARED_KEY: "off"}, "staging": {SHARED_KEY: "off"}, "production": {SHARED_KEY: "off"}},
+    )
+    rel_1 = _spec(
+        root,
+        _env_flag_block(production="off", staging="off", dev="off"),
+        name="spec-74-1-first-ship.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+    rel_2 = _spec(
+        root,
+        _env_flag_block(production="off", staging="on", dev="on"),
+        name="spec-74-2-second-ship.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+
+    rc_1, out_1, _ = _run(root, "--spec", rel_1, capsys=capsys)
+    payload_1 = json.loads(out_1)
+    rc_2, out_2, _ = _run(root, "--spec", rel_2, capsys=capsys)
+    payload_2 = json.loads(out_2)
+    _rc_tree, payload_tree = _tree_json(root, capsys)
+
+    assert rc_1 == 0
+    assert "flag-default-env-mismatch" not in _kinds(payload_1)
+    assert rc_2 == 1
+    tree_env = [f for f in payload_tree["findings"] if f["path"] == rel_2 and f["kind"] == "flag-default-env-mismatch"]
+    spec_env = [f for f in payload_2["findings"] if f["kind"] == "flag-default-env-mismatch"]
+    assert spec_env == tree_env
+
+
+def test_story_key_order_is_numeric_so_87_11_beats_87_3(tmp_path: Path, capsys: pytest.CaptureFixture[str]):
+    root = _shared_key_fixture(tmp_path)
+    _write_overlays(
+        root,
+        {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "off"}},
+    )
+    _spec(
+        root,
+        _env_flag_block(production="off", staging="off", dev="off"),
+        name="spec-87-3-earlier.md",
+        project="pyforge-marshal",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+    _spec(
+        root,
+        _env_flag_block(production="off", staging="on", dev="on"),
+        name="spec-87-11-later.md",
+        project="pyforge-marshal",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 0
+    assert "flag-default-env-mismatch" not in _kinds(payload)
+
+
+def test_a_single_done_declaration_keeps_todays_mismatch_message(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _shared_key_fixture(tmp_path)
+    _write_overlays(root, {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "on"}})
+    rel = _spec(
+        root,
+        _env_flag_block(production="off", staging="on", dev="on"),
+        name="spec-74-1-only-declaration.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    env = [f for f in payload["findings"] if f["kind"] == "flag-default-env-mismatch"]
+    assert len(env) == 1
+    assert env[0]["path"] == rel
+    assert env[0]["message"] == (
+        f"`done` spec declares `production: off` for flag `{SHARED_KEY}` but the tree renders `on`"
+    )
+
+
+def test_cross_station_same_key_still_reports_each_station_that_disagrees(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _shared_key_fixture(tmp_path)
+    _write_overlays(root, {"dev": {SHARED_KEY: "off"}, "staging": {SHARED_KEY: "off"}, "production": {SHARED_KEY: "off"}})
+    rel_steward = _spec(
+        root,
+        _env_flag_block(production="off", staging="on", dev="on"),
+        name="spec-10-1-steward.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+    rel_herald = _spec(
+        root,
+        _env_flag_block(production="off", staging="on", dev="on"),
+        name="spec-10-1-herald.md",
+        project="pyforge-herald",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    env = [f for f in payload["findings"] if f["kind"] == "flag-default-env-mismatch"]
+    assert {f["path"] for f in env} == {rel_steward, rel_herald}
+
+
+def test_a_not_done_later_spec_does_not_supersede_the_done_declaration(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    root = _shared_key_fixture(tmp_path)
+    rel_1 = _spec(
+        root,
+        _env_flag_block(production="off", staging="off", dev="off"),
+        name="spec-74-1-done.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+    _spec(
+        root,
+        _env_flag_block(production="off", staging="on", dev="on"),
+        name="spec-74-2-backlog.md",
+        project="pyforge-steward",
+        status="backlog",
+        body=_SHARED_LANDED_BODY,
+    )
+    _write_overlays(
+        root,
+        {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "off"}},
+    )
+
+    rc, payload = _tree_json(root, capsys)
+
+    assert rc == 1
+    env = [f for f in payload["findings"] if f["kind"] == "flag-default-env-mismatch"]
+    assert {f["path"] for f in env} == {rel_1}
+    assert len(env) == 2
+
+
+def test_judging_every_done_spec_for_env_defaults_would_red_the_shared_key_fixture(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+):
+    """Mutation guard (Story 34.6): reverting the latest-only rule fails this test."""
+    root = _shared_key_fixture(tmp_path)
+    _write_overlays(
+        root,
+        {"dev": {SHARED_KEY: "on"}, "staging": {SHARED_KEY: "on"}, "production": {SHARED_KEY: "off"}},
+    )
+    rel_1 = _spec(
+        root,
+        _env_flag_block(production="off", staging="off", dev="off"),
+        name="spec-74-1-first-ship.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+    _spec(
+        root,
+        _env_flag_block(production="off", staging="on", dev="on"),
+        name="spec-74-2-second-ship.md",
+        project="pyforge-steward",
+        status="done",
+        body=_SHARED_LANDED_BODY,
+    )
+    inputs = flag_gate_check.load_inputs(root)
+    frontmatter, _ = flag_rule.read_frontmatter(rel_1, repo_root=root)
+    assert frontmatter is not None
+    naive = flag_gate_check.judge_spec_env_defaults(
+        rel_1,
+        frontmatter,
+        inputs.tree,
+        inputs.overlays,
+        inputs.exemptions,
+        env_default_targets=frozenset({rel_1}),
+    )
+    assert naive
+
+
 def test_a_malformed_overlay_document_is_exit_2_and_names_the_input(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ):

@@ -100,6 +100,9 @@ K_METADATA_MISSING = "flag-metadata-missing"
 K_CLOCK_OVERDUE = "flag-clock-overdue"
 K_DEFAULT_ENV = "flag-default-env-mismatch"
 
+# Story 34.6: epic and story numbers from ``spec-<epic>-<story>-*.md`` (integer order, not text).
+_STORY_KEY_RE = re.compile(r"^spec-(\d+)-(\d+)-")
+
 # How many pre-rule specs a station lists by default before `-v` is needed.
 _WARN_LIST_LIMIT = 3
 
@@ -234,6 +237,49 @@ def _flag_key(frontmatter: Mapping[str, Any]) -> str:
     block = frontmatter.get("flag")
     key = block.get("key") if isinstance(block, Mapping) else None
     return key.strip() if isinstance(key, str) else ""
+
+
+def _story_key_tuple(rel: str) -> tuple[int, int] | None:
+    """Epic and story numbers from a story-spec filename, for ordering declarations (Story 34.6)."""
+    name = rel.rsplit("/", 1)[-1]
+    match = _STORY_KEY_RE.match(name)
+    if match is None:
+        return None
+    return int(match.group(1)), int(match.group(2))
+
+
+def env_default_judge_targets(
+    root: Path,
+    exemptions: Sequence[str],
+    spec_rels: Sequence[str],
+) -> frozenset[str]:
+    """Story specs whose per-environment ``flag.default`` the gate compares to the tree (Story 34.6).
+
+    Within one station, several ``done`` specs may declare the same key; only the highest story key
+    is judged. Cross-station keys are grouped per station, so each station's latest is judged.
+    """
+    groups: dict[tuple[str, str], list[tuple[tuple[int, int], str]]] = {}
+    for rel in spec_rels:
+        frontmatter, _ = flag_rule.read_frontmatter(rel, repo_root=root)
+        if frontmatter is None:
+            continue
+        if str(frontmatter.get("status", "")).strip().lower() != "done":
+            continue
+        if flag_rule.classify_frontmatter(frontmatter, exemptions).verdict != flag_rule.FLAG:
+            continue
+        key = _flag_key(frontmatter)
+        if not key:
+            continue
+        story_key = _story_key_tuple(rel)
+        if story_key is None:
+            continue
+        station = station_of(rel)
+        groups.setdefault((station, key), []).append((story_key, rel))
+    winners: set[str] = set()
+    for entries in groups.values():
+        _story_key, latest_rel = max(entries, key=lambda item: item[0])
+        winners.add(latest_rel)
+    return frozenset(winners)
 
 
 def judge_spec(
@@ -384,8 +430,12 @@ def judge_spec_env_defaults(
     flags: Mapping[str, Any],
     overlays: Mapping[str, Any],
     exemptions: Sequence[str],
+    *,
+    env_default_targets: frozenset[str],
 ) -> list[Finding]:
     """Per-environment default mismatch for a ``done`` flagged story spec (Story 34.3)."""
+    if rel not in env_default_targets:
+        return []
     if str(frontmatter.get("status", "")).strip().lower() != "done":
         return []
     if flag_rule.classify_frontmatter(frontmatter, exemptions).verdict != flag_rule.FLAG:
@@ -600,7 +650,13 @@ def load_inputs(root: Path, *, run_date: date | None = None) -> Inputs:
     )
 
 
-def judge_one(root: Path, inputs: Inputs, rel: str) -> list[Finding]:
+def judge_one(
+    root: Path,
+    inputs: Inputs,
+    rel: str,
+    *,
+    env_default_targets: frozenset[str],
+) -> list[Finding]:
     frontmatter, why = flag_rule.read_frontmatter(rel, repo_root=root)
     post_rule = flag_rule.is_post_rule(rel, baseline=inputs.baseline, repo_root=root)
     findings = judge_spec(
@@ -613,7 +669,12 @@ def judge_one(root: Path, inputs: Inputs, rel: str) -> list[Finding]:
     )
     if frontmatter is not None:
         findings += judge_spec_env_defaults(
-            rel, frontmatter, inputs.tree, inputs.overlays, inputs.exemptions
+            rel,
+            frontmatter,
+            inputs.tree,
+            inputs.overlays,
+            inputs.exemptions,
+            env_default_targets=env_default_targets,
         )
     if post_rule and frontmatter is not None:
         findings += judge_two_state(root, rel, frontmatter, exemptions=inputs.exemptions)
@@ -623,7 +684,8 @@ def judge_one(root: Path, inputs: Inputs, rel: str) -> list[Finding]:
 def judge_tree(root: Path, inputs: Inputs) -> tuple[int, list[Finding]]:
     """(story specs judged, findings) for every tracked story spec and the tree."""
     specs = story_specs(root)
-    findings = [f for rel in specs for f in judge_one(root, inputs, rel)]
+    env_targets = env_default_judge_targets(root, inputs.exemptions, specs)
+    findings = [f for rel in specs for f in judge_one(root, inputs, rel, env_default_targets=env_targets)]
     findings += judge_tree_metadata(inputs.tree, inputs.overlays, run_date=inputs.run_date)
     for key in orphan_keys(root, inputs.tree):
         findings.append(
@@ -665,7 +727,8 @@ def run_spec(root: Path, raw: str, *, run_date: date | None = None) -> int:
             )
         if not (root / rel).is_file():
             raise flag_rule.FlagRuleError(f"cannot read {rel}: no such file")
-        findings = judge_one(root, inputs, rel)
+        env_targets = env_default_judge_targets(root, inputs.exemptions, story_specs(root))
+        findings = judge_one(root, inputs, rel, env_default_targets=env_targets)
     except flag_rule.FlagRuleError as exc:
         _emit_json({"verdict": "unknown", "spec": rel, "rule_date": rule_date, "findings": [], "error": str(exc)})
         print(f"[flag-gate] unknown -- {exc}", file=sys.stderr)

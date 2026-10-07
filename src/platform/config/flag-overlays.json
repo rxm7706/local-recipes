@@ -9,6 +9,7 @@
     "pyforge.atlas.dependency_history_sensor": "on",
     "pyforge.warden.fix_target_resolution": "on",
     "pyforge.warden.fix_manifest_edit": "on",
+    "pyforge.herald.deck_publish": "on",
     "pyforge.warden.fix_draft_pr_estate": "on"
   },
   "staging": {
@@ -21,6 +22,7 @@
     "pyforge.atlas.dependency_history_sensor": "on",
     "pyforge.warden.fix_target_resolution": "on",
     "pyforge.warden.fix_manifest_edit": "on",
+    "pyforge.herald.deck_publish": "on",
     "pyforge.warden.fix_draft_pr_estate": "on"
   },
   "production": {
@@ -33,6 +35,7 @@
     "pyforge.atlas.dependency_history_sensor": "off",
     "pyforge.warden.fix_target_resolution": "off",
     "pyforge.warden.fix_manifest_edit": "off",
+    "pyforge.herald.deck_publish": "off",
     "pyforge.warden.fix_draft_pr_estate": "off"
   }
 }

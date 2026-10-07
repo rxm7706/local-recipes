@@ -59,13 +59,17 @@ from dataclasses import asdict
 from datetime import UTC, date, datetime
 from pathlib import Path
 
+from pyforge.core.flags import FlagOff, disabled_help, require
+
 from . import (
     __version__,
     auth,
     bridge,
     claims,
     deck_pipeline,
+    deck_publish,
     deck_qa,
+    deck_store,
     errors,
     notices,
     pptx_pipeline,
@@ -331,6 +335,41 @@ def _build_parser() -> _HeraldArgumentParser:
             "read every file pushed this run back through Design and assert "
             "byte-identity, appending a Ledger row per proven file (CAP-6)"
         ),
+    )
+    _publish_help = disabled_help(
+        "publish each current export of a deck to object storage (CAP-54)",
+        deck_publish.DECK_PUBLISH_FLAG,
+    )
+    publish = deck_subparsers.add_parser("publish", help=_publish_help, description=_publish_help)
+    publish.add_argument("slug", help="deck slug, e.g. pyforge-herald")
+    publish.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    publish.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="print what would upload; write nothing to the store",
+    )
+    _exports_help = disabled_help(
+        "read a deck's published export records from the store (CAP-54)",
+        deck_publish.DECK_PUBLISH_FLAG,
+    )
+    exports = deck_subparsers.add_parser("exports", help=_exports_help, description=_exports_help)
+    exports.add_argument("slug", help="deck slug, e.g. pyforge-herald")
+    exports.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    exports.add_argument(
+        "--json",
+        "-j",
+        action="store_true",
+        help="machine-readable JSON output (required today)",
     )
     sync_all_parser = deck_subparsers.add_parser(
         "sync-all",
@@ -761,6 +800,10 @@ def _route(args: argparse.Namespace) -> int:
         return _run_deck_watch(args)
     if args.command == "deck" and args.deck_command == "push":
         return _run_deck_push(args)
+    if args.command == "deck" and args.deck_command == "publish":
+        return _run_deck_publish(args)
+    if args.command == "deck" and args.deck_command == "exports":
+        return _run_deck_exports(args)
     if args.command == "deck" and args.deck_command == "sync-all":
         return _run_deck_sync_all(args)
     if args.command == "deck" and args.deck_command == "qa":
@@ -1004,6 +1047,79 @@ def _run_deck_push(args: argparse.Namespace) -> int:
             print(f"pushed {args.slug}: {len(result.pushed)} file(s) pushed, {len(result.skipped)} unchanged")
         for filename in result.proven:
             print(f"proved {args.slug}: {filename} read back byte-identical")
+
+    return dispatch(operation)
+
+
+def _deck_publish_flag_or_exit() -> int | None:
+    try:
+        require(deck_publish.DECK_PUBLISH_FLAG)
+    except FlagOff as exc:
+        print(f"{TOOL_NAME}: {exc}", file=sys.stderr)
+        return 2
+    return None
+
+
+def _run_deck_publish(args: argparse.Namespace) -> int:
+    blocked = _deck_publish_flag_or_exit()
+    if blocked is not None:
+        return blocked
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        try:
+            store = deck_store.open_deck_store()
+        except deck_store.DeckStoreConfigurationError as exc:
+            raise errors.DeckPublishError(str(exc)) from exc
+        try:
+            report = deck_publish.publish_deck(
+                args.slug,
+                repo_root=repo_root,
+                store=store,
+                dry_run=args.dry_run,
+            )
+        except FileNotFoundError as exc:
+            raise errors.DeckUsageError(str(exc)) from exc
+        except OSError as exc:
+            raise errors.DeckPublishError(str(exc)) from exc
+        verb = "would upload" if args.dry_run else "uploaded"
+        manifest_note = (
+            "manifest would change"
+            if args.dry_run and report.manifest_written
+            else "manifest updated"
+            if report.manifest_written
+            else "manifest unchanged"
+        )
+        print(
+            f"publish {args.slug}: {report.uploads} object(s) {verb}, "
+            f"{report.skipped_objects} unchanged; {manifest_note}"
+        )
+
+    return dispatch(operation)
+
+
+def _run_deck_exports(args: argparse.Namespace) -> int:
+    blocked = _deck_publish_flag_or_exit()
+    if blocked is not None:
+        return blocked
+    if not args.json:
+        print(f"{TOOL_NAME}: deck exports requires --json", file=sys.stderr)
+        return 2
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+    _ = repo_root  # reserved for a future repo-relative manifest check
+
+    def operation() -> None:
+        try:
+            store = deck_store.open_deck_store()
+        except deck_store.DeckStoreConfigurationError as exc:
+            raise errors.DeckPublishError(str(exc)) from exc
+        try:
+            text = deck_publish.exports_as_json(args.slug, store=store)
+        except FileNotFoundError as exc:
+            raise errors.HeraldError(str(exc)) from exc
+        except OSError as exc:
+            raise errors.DeckPublishError(str(exc)) from exc
+        print(text, end="")
 
     return dispatch(operation)
 
