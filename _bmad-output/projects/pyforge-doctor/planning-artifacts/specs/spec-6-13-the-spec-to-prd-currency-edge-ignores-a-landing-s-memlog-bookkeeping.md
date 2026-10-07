@@ -2,8 +2,8 @@
 title: "6.13: The spec-to-PRD currency edge ignores a landing's memlog bookkeeping"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
+status: 'in-progress'
+baseline_revision: 'dcbddeb4e3'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
