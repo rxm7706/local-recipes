@@ -103,6 +103,7 @@ from ..core.dispatch_verification import (
     DispatchVerificationVerdict,
     judge_dispatch_verification,
 )
+from ..core.dispatch_verification_journal import build_dispatch_verification_journal_entries
 from ..core.dispatch_verify_fix import in_flight_verify_fix_turn
 from ..core.identity import (
     MalformedStoryKeyError,
@@ -119,6 +120,7 @@ from ..core.journal import (
     fold,
     mint_run_id,
     prepare_for_write,
+    prepare_for_write_offloading_fields,
     resolve_land_findings_from_payload,
     resolve_scope_violation_advisories_from_payload,
     sidecar_texts_for_lines,
@@ -291,6 +293,23 @@ def _writer_id() -> str:
     return f"dispatch-{os.getpid()}"
 
 
+def _land_only_verification_writer_id() -> str:
+    return f"dispatch-land-{os.getpid()}"
+
+
+_CAP4_VERIFICATION_EVAL_FAILED = "MRS-DISP-062"
+
+
+@dataclass(frozen=True)
+class Cap4VerificationResult:
+    """Independent verify outcome for the harness-done land-only path (Story 22.17)."""
+
+    verdict: DispatchVerificationVerdict
+    findings: tuple[Finding, ...]
+    gate_envelope_verdict: str
+    verify_data: dict[str, object]
+
+
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -381,8 +400,18 @@ def _seed_dispatch_worktree_scope(*, fs: FsPort, worktree: Path, slug: str) -> F
     return None
 
 
-def _append_entry(fs: FsPort, run_dir: Path, entry, *, fsync: bool) -> None:
-    prepared = prepare_for_write(entry)
+def _append_entry(
+    fs: FsPort,
+    run_dir: Path,
+    entry,
+    *,
+    fsync: bool,
+    offload_fields: frozenset[str] | None = None,
+) -> None:
+    if offload_fields:
+        prepared = prepare_for_write_offloading_fields(entry, offload_fields=offload_fields)
+    else:
+        prepared = prepare_for_write(entry)
     if prepared.sidecar_relative_path is not None:
         fs.write_text_atomic(run_dir / prepared.sidecar_relative_path, prepared.sidecar_content)
     fs.append_line(run_dir / _JOURNAL_FILENAME, prepared.line, fsync=fsync)
