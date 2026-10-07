@@ -6,10 +6,8 @@ import hashlib
 import json
 import mimetypes
 import subprocess
-from dataclasses import asdict
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
 
 from . import deck_versions
 from .deck_store import DeckStore
@@ -172,7 +170,7 @@ def publish_deck(
         try:
             current = b"".join(store.open_stream(manifest_key))
             unchanged = current == new_manifest
-        except (KeyError, OSError):
+        except KeyError, OSError:
             unchanged = False
     if not unchanged:
         manifest_written = True

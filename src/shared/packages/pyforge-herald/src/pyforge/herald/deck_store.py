@@ -11,10 +11,7 @@ import os
 import re
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any
-from typing import BinaryIO
-from typing import Final
-from typing import Protocol
+from typing import Any, BinaryIO, Final, Protocol
 
 __all__ = [
     "ACCESS_KEY_ENV",

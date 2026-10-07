@@ -5,12 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit.cli_runner import invoke_cli
+from pyforge.testing_kit.flags import flagd_tree
 
 from pyforge.herald.cli import main
 from pyforge.herald.deck_publish import DECK_PUBLISH_FLAG
 from pyforge.herald.deck_store import MemoryDeckStore
-from pyforge.testing_kit.cli_runner import invoke_cli
-from pyforge.testing_kit.flags import flagd_tree
 
 
 @pytest.fixture
