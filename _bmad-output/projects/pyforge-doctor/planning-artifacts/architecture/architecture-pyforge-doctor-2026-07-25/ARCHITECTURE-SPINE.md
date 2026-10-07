@@ -9,7 +9,7 @@ scope: pyforge-doctor v1 — the doctor CLI (check/monitor/diagnose verbs) as an
   pixi workspace member consolidating pyforge-warden + cf_atlas
 status: final
 created: '2026-07-25'
-updated: '2026-10-04'   # RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-07'   # RE-STAMPED 2026-10-07: prd→arch cascade for the PRD's 2026-10-07 re-stamp (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3, 27.6 and co-governor regenerations); lands on AD-2, AD-3, AD-5, AD-6, AD-7, AD-11 and AD-12 as written, no AD amended; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: prd→arch cascade for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; lands on AD-2 and AD-11 as written, no AD amended; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: prd→arch cascade for FR-21 / CAP-88 (Epic 38). Prior: RE-STAMPED 2026-09-28 (night): prd→arch cascade for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. No AD amended. Prior: RE-STAMPED 2026-09-28: prd→arch cascade for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. No AD amended. Prior: RE-STAMPED 2026-09-27 (late): prd→arch cascade for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. No AD amended. Prior: RE-STAMPED 2026-09-24: prd→arch cascade (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 currency_review: 'Reviewed 2026-09-24 — prd→arch cascade (doctor Story 30.3 landing;
   the PRD re-dated 2026-09-24 reconciling against spec-pyforge-doctor''s 2026-09-24T06:55
   memlog move). No AD added or changed — the five reference-page generators are
@@ -614,3 +614,31 @@ sources, `sources/ledger.py` (`ledger-regression`) and `sources/marshal.py` (`MA
 predicate, `epic_reopened_by_new_story`. **AD-11** holds: both still read only the tracked ledgers, through git or the
 working tree, and never ask Marshal. **AD-2** holds: the verdict's exit domain is unchanged, and fewer findings is not a
 new exit. No component, port or station boundary moves. No AD added or changed. `updated:` bumped.*
+
+## Currency reconciliation — 2026-10-07
+
+*`prd→arch` cascade for the PRD's 2026-10-07 re-stamp: Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6,
+Story 41.5's review fixes, and four co-governor regenerations.* Checked against every AD and the code under
+`src/shared/packages/pyforge-doctor/`. They land as written:
+
+- **AD-5 and AD-12 (one subprocess site).** No module outside `cli_bridge.py` calls `subprocess`. Story 40.2 runs a docs
+  generator through `cli_bridge.run_check_script`, and Story 27.6 reads each rekey map's arrival time through
+  `run_git`.
+- **AD-11 (the verdict reads artifacts, never the station).** Story 41.2's new `sources/feed_status.py` is a pure
+  parser of the Tier-3 feed that `ledger.py` and `marshal.py` share; it imports no station. Story 40.2 applies the same
+  rule to generators: `docs-currency` runs Doctor's own checkout copy of an allowed `scripts/docs_*.py` in `--check`
+  mode, never the judged tree's copy.
+- **AD-6 (MCP first, CLI fallback).** Story 41.2's `behind-upstream` axis uses the same `_call_mcp` and `run_cli_json`
+  pair as the other axes. It emits `Source.BEHIND_UPSTREAM`, a member AD-3 already lists. The default `--watch` set
+  stays `staleness` and `cve`.
+- **AD-3 and AD-7 (closed taxonomy; the score never overstates).** Story 41.4 adds no `Source` member. It adds one
+  evidence marker, `models.UNEVALUABLE_EVIDENCE_KEY`, and `score.grade` reads a marked axis as `incomplete`.
+- **AD-2 (exit domain).** No story touches `verdict.py`; the domain stays `{0, 2, 130}`.
+
+Stories 41.3, 41.5, 41.6, 6.12 and 27.6 change rules inside existing sources, among them `board.py`, `chain.py`,
+`factory.py`, `hygiene.py`, `ledger.py` and `marshal.py`. Story 34.3 changes the flag gate under `scripts/`, outside the
+package. `feed_status.py` is a helper behind
+the dispatcher, not a dispatched source, so the growth the 2026-08-26 section records stays quantitative. No component,
+port or station boundary moves.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
