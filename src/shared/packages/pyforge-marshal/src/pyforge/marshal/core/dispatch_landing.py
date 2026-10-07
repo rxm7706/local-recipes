@@ -7,10 +7,12 @@ self-report without passing independent verification (Story 22.3).
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from collections import Counter
 from collections.abc import Mapping
+from dataclasses import dataclass
 from enum import StrEnum
 
 from . import promotion
@@ -154,6 +156,24 @@ DEFERRED_WORK_BASENAME = "deferred-work-ledger.md"
 TEAM_MEMORY_INDEX_REL = ".claude/memory/MEMORY.md"
 SPEC_SURFACE_BASELINE_REL = "scripts/.spec-surface-baseline.json"
 
+# Story 22.19: the four tracked files every flag story registers its key in, always by appending at the
+# same place. Only these exact repo-relative paths are mechanical flag-registry conflicts.
+FLAG_REGISTRY_JSON_REL_PATHS: tuple[str, ...] = (
+    "src/platform/config/flags.json",
+    "src/platform/config/flag-overlays.json",
+)
+# Each Python registry's named dict literals: the only places an addition-only hunk may sit.
+FLAG_REGISTRY_PYTHON_TARGETS: Mapping[str, frozenset[str]] = {
+    "src/shared/packages/pyforge-core/tests/unit/test_flags.py": frozenset(
+        {"_SHIPPED_CLOCKS", "expected", "per_environment"}
+    ),
+    "src/platform/tests/test_openfeature_file_flags.py": frozenset({"_SHIPPED_BOOLEANS"}),
+}
+FLAG_REGISTRY_REL_PATHS: tuple[str, ...] = (
+    *FLAG_REGISTRY_JSON_REL_PATHS,
+    *FLAG_REGISTRY_PYTHON_TARGETS,
+)
+
 
 def is_memlog_path(path: str) -> bool:
     """True when ``path`` is a Spec memlog: its basename is ``.memlog.md``, in any project --
@@ -170,6 +190,11 @@ def is_deferred_work_path(path: str) -> bool:
 def is_team_memory_index_path(path: str) -> bool:
     """True when ``path`` is the checked-in team-memory index (Story 83.11)."""
     return path.replace("\\", "/") == TEAM_MEMORY_INDEX_REL
+
+
+def is_flag_registry_path(path: str) -> bool:
+    """True when ``path`` is exactly one of the four flag-registry files (Story 22.19)."""
+    return path.replace("\\", "/") in FLAG_REGISTRY_REL_PATHS
 
 
 def _baseline_entries(text: str) -> dict[str, object]:
@@ -198,12 +223,15 @@ def is_mechanical_conflict_path(
 ) -> bool:
     """True when ``path`` is a known mechanical-only merge conflict: a Spec memlog (Story 78.1;
     the heal still escalates one that is not append-only), a sprint ledger, a deferred-work
-    ledger (Story 83.3), or ``.claude/memory/MEMORY.md`` (Story 83.11). Given ``ledger_rel``
+    ledger (Story 83.3), ``.claude/memory/MEMORY.md`` (Story 83.11), the spec-surface baseline
+    (Story 22.18) or one of the four flag-registry files (Story 22.19). Given ``ledger_rel``
     (the landing project's own ledger), only that exact path is a mechanical ledger -- another
     project's ledger is not this landing's to resolve (Story 59.1). Similarly for
     ``deferred_work_rel`` - only the project's own deferred work ledger."""
     normalized = path.replace("\\", "/")
     if normalized == SPEC_SURFACE_BASELINE_REL:
+        return True
+    if is_flag_registry_path(normalized):
         return True
     if is_team_memory_index_path(normalized):
         return True
