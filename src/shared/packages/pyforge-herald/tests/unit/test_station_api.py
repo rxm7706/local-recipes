@@ -40,6 +40,7 @@ def test_attach_webhook_asgi_wires_deck_exports_and_mounts_webhook(monkeypatch: 
 
 def test_lazy_webhook_builds_application_once(monkeypatch: pytest.MonkeyPatch) -> None:
     import asyncio
+
     build_calls = 0
 
     class _Inner:
