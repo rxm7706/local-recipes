@@ -166,9 +166,8 @@ def test_memlog_contract_date_uses_blame_when_trailing_bookkeeping(
     mem = repo / "spec" / ".memlog.md"
     mem.parent.mkdir(parents=True)
     mem.write_text(
-        "---\nupdated: 2026-10-07T09:00\n---\n\n"
-        "- (capability) 2026-10-04 contract moved\n"
-        "- (event) Surface reconcile 2026-10-07 (probe): no path\n",
+        "---\nupdated: 2026-10-04T12:00\n---\n\n"
+        "- (capability) 2026-10-04 contract moved\n",
         encoding="utf-8",
     )
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)

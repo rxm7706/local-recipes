@@ -6,17 +6,10 @@ status: 'in-progress'
 baseline_revision: 'dcbddeb4e3'
 review_loop_iteration: 0
 followup_review_recommended: false
-context:
-  - _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/SPEC.md
-  - _bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md
-  - _bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md
-  - scripts/fleet_scan.py
-  - scripts/chain_currency_sweep_check.py
-  - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py
-  - src/shared/packages/pyforge-doctor/tests/unit/test_fleet_scan_currency_feeds.py
-  - _bmad/scripts/memlog.py
+context: 
 deferred: []
 declared_low_risk: false
+updated: 2026-10-07T13:42
 ---
 
 <intent-contract>

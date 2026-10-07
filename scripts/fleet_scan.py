@@ -1746,10 +1746,10 @@ def _git_blame_line_dates(rel: str, line_numbers: list[int]) -> dict[int, str]:
             num += 1
             if num in line_numbers and committer_time:
                 try:
-                    from datetime import datetime
+                    from datetime import UTC, datetime
 
                     ts = int(committer_time)
-                    dates[num] = datetime.utcfromtimestamp(ts).strftime("%Y-%m-%d")
+                    dates[num] = datetime.fromtimestamp(ts, UTC).strftime("%Y-%m-%d")
                 except (ValueError, OSError):
                     pass
             committer_time = None
