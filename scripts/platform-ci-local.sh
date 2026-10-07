@@ -19,6 +19,11 @@
 #   pixi run -e pyforge-guild platform-ci-local -- --test        # one stage
 #   pixi run -e pyforge-guild platform-ci-local -- --images --container --engine podman
 #
+# Overlap: one machine-wide flock lock (PLATFORM_CI_LOCAL_LOCK,
+# PLATFORM_CI_LOCAL_LOCK_WAIT) so concurrent runs never share ports, work dir,
+# tag or container name (Story 63.7). Set PLATFORM_CI_LOCAL_NO_LOCK=1 to skip
+# (tests only).
+#
 # Services: an ephemeral PostgreSQL 17 (+pgvector) and Redis 7 from the
 # platform-dev env, TCP only, on PLATFORM_CI_LOCAL_PG_PORT (15432) and
 # PLATFORM_CI_LOCAL_REDIS_PORT (16379); torn down on exit. The app container

@@ -148,7 +148,7 @@ Type / Effort / Deps: fix / S / —.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-07: **Lock design** (not per-run allocation). Marshal dispatch runs `platform-ci-local -- --test` only; serializing the whole run with `flock` on `${TMPDIR}/platform-ci-local.lock` (override `PLATFORM_CI_LOCAL_LOCK`) preserves default ports/work dir/tag for uncontended runs, bounds wait with `PLATFORM_CI_LOCAL_LOCK_WAIT` (default **7200** s — above measured full four-stage local replay; `--test`-only dispatch fits with margin), and exits **2** naming the holder metadata file (pid, checkout, stages, start time). Container port 8000 contention is covered by the same lock when `--container` is included.
 
 ## Review Triage Log
 
