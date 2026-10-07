@@ -164,6 +164,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.warden.non_python_ecosystems": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "warden",
+        "story": "16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": "2026-12-31"
+      }
     }
   }
 }

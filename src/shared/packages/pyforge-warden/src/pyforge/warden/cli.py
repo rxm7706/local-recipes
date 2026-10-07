@@ -335,6 +335,7 @@ from .inventory import Component, ResolvedInventory, merge_components
 from .models import (
     AXIS_HYGIENE,
     AXIS_INGESTION,
+    AXIS_VULNERABILITY,
     EMPTY_EXTRACTION_DRIVER_ID,
     ErrorKind,
     ErrorRecord,
@@ -1399,7 +1400,7 @@ def _run_scan(args: argparse.Namespace) -> int:
             for future in futures:
                 result, error_args = future.result()
                 if result is not None:
-                    if result.axis == "vulnerability" and native_scans:
+                    if result.axis == AXIS_VULNERABILITY and native_scans:
                         result = merge_native_scans_into_vuln_result(
                             result,
                             tuple(native_scans),
