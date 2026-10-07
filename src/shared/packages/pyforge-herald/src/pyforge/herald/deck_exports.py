@@ -11,6 +11,7 @@ from typing import Any, Protocol
 from asgiref.sync import sync_to_async
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
+from pyforge.core.errors import PyforgeError
 from pyforge.core.flags import read_boolean
 
 from pyforge.herald.deck_publish import DECK_PUBLISH_FLAG
@@ -33,11 +34,11 @@ class ExportRow:
     published_at: str
 
 
-class NotFound(Exception):
+class NotFound(PyforgeError, Exception):
     """Route or object missing (404)."""
 
 
-class StoreError(Exception):
+class StoreError(PyforgeError, Exception):
     """Object store refused mid-stream (502)."""
 
 
