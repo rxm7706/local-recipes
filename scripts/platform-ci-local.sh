@@ -19,6 +19,11 @@
 #   pixi run -e pyforge-guild platform-ci-local -- --test        # one stage
 #   pixi run -e pyforge-guild platform-ci-local -- --images --container --engine podman
 #
+# Overlap: one machine-wide flock lock (PLATFORM_CI_LOCAL_LOCK,
+# PLATFORM_CI_LOCAL_LOCK_WAIT) so concurrent runs never share ports, work dir,
+# tag or container name (Story 63.7). Set PLATFORM_CI_LOCAL_NO_LOCK=1 to skip
+# (tests only).
+#
 # Services: an ephemeral PostgreSQL 17 (+pgvector) and Redis 7 from the
 # platform-dev env, TCP only, on PLATFORM_CI_LOCAL_PG_PORT (15432) and
 # PLATFORM_CI_LOCAL_REDIS_PORT (16379); torn down on exit. The app container
@@ -44,6 +49,36 @@ while [ $# -gt 0 ]; do
   shift
 done
 [ ${#STAGES[@]} -eq 0 ] && STAGES=(test images container promotion)
+
+# Exclusive machine-wide lock so overlapping runs never share ports, work dir or
+# services (steward Story 63.7). A holder that exits (including SIGKILL) releases
+# the flock; a waiter that exceeds PLATFORM_CI_LOCAL_LOCK_WAIT exits 2 and names
+# the holder recorded beside the lock file.
+acquire_run_lock() {
+  [ "${PLATFORM_CI_LOCAL_NO_LOCK:-0}" = 1 ] && return 0
+  local lock_file="${PLATFORM_CI_LOCAL_LOCK:-${TMPDIR:-/tmp}/platform-ci-local.lock}"
+  local lock_meta="${lock_file}.holder"
+  local wait_sec="${PLATFORM_CI_LOCAL_LOCK_WAIT:-7200}"
+  mkdir -p "$(dirname "$lock_file")"
+  exec 9>"$lock_file"
+  if ! flock -w "$wait_sec" 9; then
+    echo "platform-ci-local: lock held longer than ${wait_sec}s — not starting services" >&2
+    if [ -f "$lock_meta" ]; then
+      echo "holder (from ${lock_meta}):" >&2
+      cat "$lock_meta" >&2
+    else
+      echo "holder: (no metadata file at ${lock_meta})" >&2
+    fi
+    exit 2
+  fi
+  {
+    echo "pid=$$"
+    echo "checkout=$ROOT"
+    echo "stages=${STAGES[*]}"
+    echo "started=$(date -Iseconds 2>/dev/null || date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } >"$lock_meta"
+}
+acquire_run_lock
 
 PG_PORT="${PLATFORM_CI_LOCAL_PG_PORT:-15432}"
 REDIS_PORT="${PLATFORM_CI_LOCAL_REDIS_PORT:-16379}"
