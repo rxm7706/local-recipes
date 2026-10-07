@@ -76,6 +76,11 @@ ENVIRONMENT_YML_KIND = "environment.yml"
 ENVIRONMENT_YAML_KIND = "environment.yaml"
 PIXI_TOML_KIND = "pixi.toml"
 
+# Story 16.4: non-Python lockfiles (osv-scanner parsers) — appended only when
+# ``discover(..., include_non_python_lockfiles=True)``; flag OFF keeps today's
+# discovery byte-identical (these kinds are never checked).
+from .native_lockfiles import NATIVE_LOCKFILE_KINDS  # noqa: E402
+
 # Checked in this fixed order at every visited directory; the returned tuple
 # preserves it within each directory (the walk visits directories in sorted,
 # deterministic DFS-preorder — see discover()).
@@ -145,11 +150,20 @@ def _discover_one(target: Path, kind: str) -> ScannedManifest | None:
 
 
 def _visit_directory(directory: Path, root: Path, manifests: list[ScannedManifest]) -> None:
+    _visit_directory_with_kinds(directory, root, manifests, _DISCOVERED_KINDS)
+
+
+def _visit_directory_with_kinds(
+    directory: Path,
+    root: Path,
+    manifests: list[ScannedManifest],
+    kinds: tuple[str, ...],
+) -> None:
     """Run the per-kind stat-honesty check (``_discover_one``, unchanged)
     against ``directory``, appending every hit to ``manifests`` with its
     path rewritten relative to ``root`` when ``directory`` is not ``root``
     itself (the root case keeps the pre-1.9 bare-kind path, byte-for-byte)."""
-    for kind in _DISCOVERED_KINDS:
+    for kind in kinds:
         manifest = _discover_one(directory, kind)
         if manifest is None:
             continue
@@ -159,7 +173,7 @@ def _visit_directory(directory: Path, root: Path, manifests: list[ScannedManifes
         manifests.append(manifest)
 
 
-def discover(target: Path) -> tuple[ScannedManifest, ...]:
+def discover(target: Path, *, include_non_python_lockfiles: bool = False) -> tuple[ScannedManifest, ...]:
     """Return the resolved scan set for ``target``: a bounded, deterministic
     recursive walk of the FULL tree under ``target`` (Story 1.9), checking
     every one of the fixed manifest kinds at every visited directory —
@@ -190,8 +204,9 @@ def discover(target: Path) -> tuple[ScannedManifest, ...]:
     reported as "nothing there" — and found-but-refused states (dangling
     symlink, non-regular file, non-directory/replaced/vanished target,
     symlinked subdirectory) fail closed the same way, at any depth."""
+    kinds = _DISCOVERED_KINDS + (NATIVE_LOCKFILE_KINDS if include_non_python_lockfiles else ())
     manifests: list[ScannedManifest] = []
-    _visit_directory(target, target, manifests)
+    _visit_directory_with_kinds(target, target, manifests, kinds)
 
     entries_visited = 0
 
@@ -229,5 +244,5 @@ def discover(target: Path) -> tuple[ScannedManifest, ...]:
             )
         if current == target:
             continue  # root already handled above
-        _visit_directory(current, target, manifests)
+        _visit_directory_with_kinds(current, target, manifests, kinds)
     return tuple(manifests)
