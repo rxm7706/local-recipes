@@ -154,3 +154,5 @@ Flag: `pyforge.herald.deck_publish` (`feature-flag-governance:CAP-1`).
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
 
 ## Review Triage Log
+
+- 2026-10-07 — Portal browser session auth for deck-export routes: `django_herald_portal.deck_export_routes.resolve_herald_roles` loads the Django session by `SESSION_COOKIE_NAME`, reads `IDP_TOKEN_CLAIMS` from session storage, and passes claims through `roles_from_request` (same herald-role gate as bearer assertions via `verify_assertion`). Route handlers live in `pyforge.herald.deck_exports`; Django wiring is lazy from `station_api.attach_webhook_asgi`.
