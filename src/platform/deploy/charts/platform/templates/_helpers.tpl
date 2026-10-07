@@ -414,6 +414,19 @@ Story 12.6 AUTH + Story 20.2 cache≠broker.
 {{- end }}
 
 {{/*
+Story 74.2 / CAP-163: bucket and prefix as plain env on web and worker only
+(when objectStorage.enabled). Credentials stay in djangoEnv above.
+*/}}
+{{- define "platform.objectStorageEnv" -}}
+{{- if .Values.objectStorage.enabled }}
+- name: OBJECT_STORAGE_BUCKET
+  value: {{ required "objectStorage.bucket is required when objectStorage.enabled is true" .Values.objectStorage.bucket | quote }}
+- name: OBJECT_STORAGE_PREFIX
+  value: {{ required "objectStorage.prefix is required when objectStorage.enabled is true" .Values.objectStorage.prefix | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
 Story 48.9 / CAP-1: OIDC env wired for every platform-image pod. Bundled
 profile computes issuer/JWKS from in-cluster Keycloak; BYO reads values.
 */}}
@@ -627,6 +640,22 @@ in-cluster Services.
 {{ include "platform.networkPolicy.egressToRedis" . }}
 {{- end }}
 
+{{- define "platform.networkPolicy.egressToObjectStorage" -}}
+{{- if and .Values.networkPolicy.enabled .Values.objectStorage.enabled }}
+{{- if not .Values.networkPolicy.objectStorage.cidrs }}
+{{- fail "networkPolicy.objectStorage.cidrs must not be empty when objectStorage.enabled is true" }}
+{{- end }}
+{{- range $cidr := .Values.networkPolicy.objectStorage.cidrs }}
+- to:
+    - ipBlock:
+        cidr: {{ $cidr | quote }}
+  ports:
+    - protocol: TCP
+      port: {{ $.Values.networkPolicy.objectStorage.port }}
+{{- end }}
+{{- end }}
+{{- end }}
+
 {{- define "platform.networkPolicy.webEgressRules" -}}
 {{ include "platform.networkPolicy.platformDataPlaneEgress" . }}
 {{ include "platform.networkPolicy.egressToMcpHost" . }}
@@ -634,6 +663,7 @@ in-cluster Services.
 {{- if eq .Values.oidc.profile "bundled" }}
 {{ include "platform.networkPolicy.egressToKeycloak" . }}
 {{- end }}
+{{ include "platform.networkPolicy.egressToObjectStorage" . }}
 {{ include "platform.networkPolicy.dnsEgress" . }}
 {{- end }}
 
@@ -643,6 +673,7 @@ in-cluster Services.
 {{- if eq .Values.oidc.profile "bundled" }}
 {{ include "platform.networkPolicy.egressToKeycloak" . }}
 {{- end }}
+{{ include "platform.networkPolicy.egressToObjectStorage" . }}
 {{ include "platform.networkPolicy.dnsEgress" . }}
 {{- end }}
 

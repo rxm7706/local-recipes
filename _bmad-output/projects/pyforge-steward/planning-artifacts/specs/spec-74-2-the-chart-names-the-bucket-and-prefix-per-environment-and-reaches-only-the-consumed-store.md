@@ -2,7 +2,8 @@
 title: "74.2: The chart names the bucket and prefix per environment and reaches only the consumed store"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: a16ab7f7e2a65d81814987c7698ace76d65ad16e
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
