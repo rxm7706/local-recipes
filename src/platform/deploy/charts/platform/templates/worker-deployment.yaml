@@ -63,6 +63,7 @@ spec:
           args: ["celery", "-A", "config", "worker", "-l", "info", "-Q", {{ join "," $queues | quote }}]
           env:
             {{- include "platform.djangoEnv" . | nindent 12 }}
+            {{- include "platform.objectStorageEnv" . | nindent 12 }}
           volumeMounts:
             - name: wagtail-media
               mountPath: {{ .Values.media.mountPath | quote }}

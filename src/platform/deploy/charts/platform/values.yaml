@@ -83,8 +83,9 @@ resources:
 # object-storage consumption seam (Story 50.3, pap:AD-1's 2026-09-10 dated
 # exception -- consumed only, production target NetApp StorageGRID,
 # ops-provided). Without them, config.object_storage.object_storage_client()
-# raises ImproperlyConfigured -- harmless today, since no feature calls it
-# yet (that module's own docstring: "future, story-by-story work").
+# raises ImproperlyConfigured. Story 74.1's store calls it behind the flag
+# pyforge.steward.object_store_consumer; the objectStorage block below names
+# the bucket and prefix (Story 74.2).
 existingSecret: platform-secrets
 
 # Non-secret Django settings surface (mirrors compose.yml's env wiring).
@@ -496,6 +497,19 @@ keycloak:
       cpu: "1"
       memory: 1Gi
 
+# Story 74.2 / CAP-163: consumed object storage — the chart names bucket and
+# prefix per environment (one bucket per env, or one bucket with a prefix per
+# env) and never deploys a store. Ops provision the S3-compatible endpoint;
+# credentials stay in existingSecret (canopy:AD-19). IAM on the mounted key
+# must allow s3:ListBucket on the bucket (conditioned to the prefix when
+# using a shared bucket), plus s3:GetObject and s3:PutObject on keys under
+# the prefix — without ListBucket, head_object on a missing key returns 403
+# instead of 404 and the seam reads that as failure rather than absent.
+objectStorage:
+  enabled: false
+  bucket: ""
+  prefix: ""
+
 # Story 48.3 / R-19: default-deny NetworkPolicy envelope with explicit allows.
 networkPolicy:
   enabled: true
@@ -541,3 +555,9 @@ networkPolicy:
   dbgpt:
     # When sidecar.llm.apiBase points at an external LLM, allow HTTPS egress.
     allowLlmEgress: true
+  # Story 74.2: when objectStorage.enabled is true, web and worker egress
+  # allow these CIDR(s) and port — never in-cluster podSelectors (the store
+  # is outside the cluster).
+  objectStorage:
+    cidrs: []
+    port: 443
