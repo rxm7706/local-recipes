@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import re
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from typing import Any, Protocol
+
+from fastapi import HTTPException, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from pyforge.core.flags import read_boolean
 from pyforge.herald.deck_publish import DECK_PUBLISH_FLAG
@@ -109,10 +113,6 @@ def attach_deck_export_routes(
     auth_errors: tuple[type[Exception], ...],
 ) -> None:
     """Register list/stream routes; ``auth_errors`` maps gate failures to HTTP status."""
-    import asyncio
-
-    from fastapi import HTTPException, Request  # noqa: PLC0415
-    from fastapi.responses import JSONResponse, StreamingResponse  # noqa: PLC0415
 
     def _http_for_auth(exc: Exception) -> HTTPException:
         for kind in auth_errors:
