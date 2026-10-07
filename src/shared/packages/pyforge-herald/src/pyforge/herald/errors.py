@@ -156,6 +156,14 @@ class ClaimStateError(HeraldError):
     through to the default exit code (``1``)."""
 
 
+class DeckPublishError(HeraldError):
+    """``herald deck publish`` / ``herald deck exports`` could not reach the store."""
+
+
+class DeckUsageError(HeraldError):
+    """``herald deck publish`` / ``herald deck exports`` usage problem (unknown slug, etc.)."""
+
+
 class PptxTemplateError(HeraldError):
     """``herald deck pptx-spec``/``pptx-fill``'s ``--template`` path does
     not exist, or python-pptx could not open it as a ``.pptx``/``.potx``
@@ -192,6 +200,7 @@ class PaginationStalledError(HeraldError):
 
 
 _EXIT_BY_ERROR: tuple[tuple[type[HeraldError], int], ...] = (
+    (DeckUsageError, 2),
     (SeedConflictError, 3),
     (PullConflictError, 3),
     (ExportConflictError, 3),
