@@ -615,7 +615,7 @@ def run_actuator(
     outcomes: list[PROutcome] = []
     for proposal in proposals:
         manifest_fix: ManifestFixPlan | None = None
-        if manifest_edit_on and proposal.action == _ACTION_UPGRADE:
+        if manifest_edit_on and manifest_locations is not None and proposal.action == _ACTION_UPGRADE:
             target_version = None if target_by_id is None else target_by_id.get(proposal.finding_id)
             plan, fix_error = _prepare_manifest_fix_for_proposal(
                 proposal,
