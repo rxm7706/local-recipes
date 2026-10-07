@@ -1880,8 +1880,12 @@ def _assert_object_storage_plain_env_on_web_and_worker(
         env = _collect_env_by_name(by_component[component])
         bucket_entry = env.get(_OBJECT_STORAGE_BUCKET_ENV)
         prefix_entry = env.get(_OBJECT_STORAGE_PREFIX_ENV)
-        assert bucket_entry is not None, f"{component} missing {_OBJECT_STORAGE_BUCKET_ENV}"
-        assert prefix_entry is not None, f"{component} missing {_OBJECT_STORAGE_PREFIX_ENV}"
+        assert bucket_entry is not None, (
+            f"{component} missing {_OBJECT_STORAGE_BUCKET_ENV}"
+        )
+        assert prefix_entry is not None, (
+            f"{component} missing {_OBJECT_STORAGE_PREFIX_ENV}"
+        )
         assert bucket_entry.get("value") == bucket, bucket_entry
         assert prefix_entry.get("value") == prefix, prefix_entry
         assert "valueFrom" not in bucket_entry, bucket_entry
@@ -2025,7 +2029,9 @@ def test_story_74_2_network_policy_without_object_storage_adds_no_store_egress()
             if doc.get("kind") == "NetworkPolicy"
             and doc["metadata"]["name"].endswith(suffix)
         )
-        assert "ipBlock" not in str(policy["spec"].get("egress")), policy["metadata"]["name"]
+        assert "ipBlock" not in str(policy["spec"].get("egress")), policy["metadata"][
+            "name"
+        ]
 
 
 @requires_helm
