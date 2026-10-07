@@ -1788,7 +1788,10 @@ def _memlog_contract_updated(rel: str, today) -> str:
             contract_lines.append((i, line))
     if not contract_lines:
         return fm_updated or _artifact_dates(rel)[1]
-    blame = _git_blame_line_dates(rel, [ln for ln, _ in contract_lines])
+    line_nums = [ln for ln, _ in contract_lines]
+    blame = _git_blame_line_dates(rel, line_nums)
+    if not blame:
+        return fm_updated or _artifact_dates(rel)[1]
     best = ""
     for ln, _ in contract_lines:
         when = blame.get(ln)
