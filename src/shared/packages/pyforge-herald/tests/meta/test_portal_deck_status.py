@@ -85,9 +85,7 @@ def test_portal_uses_portal_client_invoke_only() -> None:
     assert "PortalClient().invoke(" in views
     assert PORTAL_SLUG in views
     assert "deck" in views and "status" in views
-    refresh = (
-        _portal_root(root) / "management" / "commands" / "refresh_deck_exports.py"
-    ).read_text(encoding="utf-8")
+    refresh = (_portal_root(root) / "management" / "commands" / "refresh_deck_exports.py").read_text(encoding="utf-8")
     assert "client.invoke(" in refresh
     assert "PortalClient()" in refresh
     assert "deck_exports_json_runner" in refresh
