@@ -43,7 +43,7 @@ development_status:
   13-2-status-and-the-feed-mirror-decision: done
   13-3-a-repo-set-opens-as-one-workspace: done
   13-4-the-set-reports-and-tears-down-safely: done
-  13-5-workspace-clean-delete-removes-a-gone-or-landed-workspace-without-a-prompt-or-an-archive: backlog
+  13-5-workspace-clean-delete-removes-a-gone-or-landed-workspace-without-a-prompt-or-an-archive: done
   14-1-the-pre-flight-diff-retrodicts-a-real-upgrade: done
   14-10-the-next-rehearsal-exercises-cap-6s-fallback-and-cap-8s-conflict-path-report-only: done
   14-2-apply-is-deliberate-branched-and-never-clobbers-custom: done
@@ -352,7 +352,7 @@ development_status:
   epic-11-retrospective: optional
   epic-12: done
   epic-12-retrospective: optional
-  epic-13: in-progress
+  epic-13: done
   epic-13-retrospective: optional
   epic-14: done
   epic-14-retrospective: optional
