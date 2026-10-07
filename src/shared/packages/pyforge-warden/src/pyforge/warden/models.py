@@ -118,10 +118,20 @@ class WithholdReason(StrEnum):
 
 class Ecosystem(StrEnum):
     """Closed set — pixi is a manifest format, not an ecosystem (that fact
-    lives in ``Component.provenance``)."""
+    lives in ``Component.provenance``).
+
+    Story 16.4 (CAP-26): ``npm``, ``go``, ``crates.io``, ``rubygems``, and
+    ``packagist`` name osv-scanner's non-Python lockfile ecosystems; purl
+    types follow the Package URL spec (``pkg:npm/…``, ``pkg:golang/…``, …).
+    """
 
     PYPI = "pypi"
     CONDA = "conda"
+    NPM = "npm"
+    GO = "golang"
+    CRATES_IO = "cargo"
+    RUBYGEMS = "gem"
+    PACKAGIST = "composer"
 
 
 class CveMatchLevel(StrEnum):

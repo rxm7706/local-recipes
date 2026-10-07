@@ -445,10 +445,17 @@ class DefaultPolicy:
                     )
                 )
 
+        from .native_lockfiles import is_non_python_native_ecosystem
+
         for component in inventory.components:
             subject = _sanitize_id_segment(component.name)
             # (rung, id token, finding axis, message) per deficiency.
             derived: list[tuple[Status, str, str, str]] = []
+            if is_non_python_native_ecosystem(component.ecosystem):
+                # Story 16.4: native lockfile components are vuln-axis only;
+                # hygiene/license/currency are honestly N/A (report coverage
+                # rows use deps_total=0 for those axes).
+                continue
             if component.indeterminate_reason is not None:
                 derived.append(
                     (

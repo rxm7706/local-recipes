@@ -167,6 +167,11 @@ OSV_DB_CACHE_ENV_VAR = "OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY"
 # components (Epic 2 adds conda).
 _OSV_ECOSYSTEM_DIR: dict[Ecosystem, str] = {
     Ecosystem.PYPI: "PyPI",
+    Ecosystem.NPM: "npm",
+    Ecosystem.GO: "Go",
+    Ecosystem.CRATES_IO: "crates.io",
+    Ecosystem.RUBYGEMS: "RubyGems",
+    Ecosystem.PACKAGIST: "Packagist",
 }
 
 # NFR-S6 purity guard: a manifest-derived name/version must be exactly this
@@ -373,6 +378,23 @@ def offline_db_unavailable_finding(component: Component) -> Finding:
         component,
         f"{component.name}: not checked against the offline OSV database — "
         "no usable local database found (absent, empty, or content-corrupt)",
+    )
+
+
+def ecosystem_db_unavailable_finding(ecosystem: Ecosystem) -> Finding:
+    """Whole-ecosystem withhold when no offline DB exists for a native
+    lockfile scan (Story 16.4) — names the ecosystem, never ``clean``."""
+    label = _OSV_ECOSYSTEM_DIR.get(ecosystem, ecosystem.value)
+    return Finding(
+        id=f"indeterminate:offline-db-unavailable-ecosystem:{_sanitize_id_segment(label)}",
+        axis=AXIS_VULNERABILITY,
+        message=(
+            f"no usable offline OSV database for the {label} ecosystem — "
+            "vulnerability coverage for native lockfiles in this ecosystem "
+            "cannot be claimed"
+        ),
+        subject=label,
+        severity=None,
     )
 
 

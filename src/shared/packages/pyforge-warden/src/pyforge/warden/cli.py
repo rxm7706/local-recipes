@@ -303,7 +303,16 @@ from .config import (
     ConfigValidationError,
     EffectiveConfig,
 )
+from pyforge.core.flags import read_boolean
+
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
+from .native_lockfiles import (
+    NON_PYTHON_ECOSYSTEMS_FLAG,
+    NATIVE_LOCKFILE_KINDS,
+    is_native_lockfile_kind,
+    merge_native_scans_into_vuln_result,
+    scan_native_lockfile,
+)
 from .engines import (
     CurrencyEngine,
     DeptryEngine,
@@ -1101,8 +1110,9 @@ def _run_scan(args: argparse.Namespace) -> int:
     else:
         for warning in config_warnings:
             _stderr(f"{TOOL_NAME}: {warning}")
+    non_python_lockfiles_enabled = read_boolean(NON_PYTHON_ECOSYSTEMS_FLAG, default=False)
     try:
-        manifests = discover(target)
+        manifests = discover(target, include_non_python_lockfiles=non_python_lockfiles_enabled)
     except OSError as exc:
         # Discovery propagates non-absence stat failures: a permission-denied
         # target must never read as "no manifest" (a false green). Report
@@ -1151,7 +1161,44 @@ def _run_scan(args: argparse.Namespace) -> int:
                 # pure.
                 _stderr(f"{TOOL_NAME}: no manifest found under {args.path!r}; nothing to scan")
     router = DefaultRouter()
+    native_scans: list = []
     for manifest in manifests:
+        if is_native_lockfile_kind(manifest.kind):
+            if not non_python_lockfiles_enabled:
+                continue
+            try:
+                scan = scan_native_lockfile(target, manifest)
+            except OSError as exc:
+                code = (
+                    errno_module.errorcode.get(exc.errno, str(exc.errno))
+                    if exc.errno is not None
+                    else exc.__class__.__name__
+                )
+                _record_error(
+                    errors,
+                    rungs,
+                    kind=ErrorKind.UNPARSABLE_MANIFEST,
+                    owner="native-lockfiles",
+                    subject=manifest.path,
+                    message=(f"unreadable native lockfile {manifest.path}: [errno {code}] {exc.__class__.__name__}"),
+                    axis=AXIS_INGESTION,
+                )
+            except (SystemExit, Exception) as exc:  # noqa: BLE001
+                _record_error(
+                    errors,
+                    rungs,
+                    kind=ErrorKind.INTERNAL_ERROR,
+                    owner="native-lockfiles",
+                    subject=manifest.path,
+                    message=f"internal error scanning native lockfile {manifest.path}: {exc!r}",
+                    axis=AXIS_INGESTION,
+                )
+            else:
+                native_scans.append(scan)
+                components.extend(scan.components)
+                manifests_parsed += 1
+                parsed_kinds.add(manifest.kind)
+            continue
         try:
             # extractor_for lives INSIDE the guarded region: an unknown
             # manifest kind is an internal-error report, never a crash.
@@ -1352,6 +1399,12 @@ def _run_scan(args: argparse.Namespace) -> int:
             for future in futures:
                 result, error_args = future.result()
                 if result is not None:
+                    if result.axis == "vulnerability" and native_scans:
+                        result = merge_native_scans_into_vuln_result(
+                            result,
+                            tuple(native_scans),
+                            inventory_count=inventory.count,
+                        )
                     engine_results.append(result)
                 elif error_args is not None:  # always true here — see the
                     # helper's own docstring: exactly one of the two return
@@ -1675,7 +1728,10 @@ def _run_scan(args: argparse.Namespace) -> int:
         manifests_parsed=manifests_parsed,
         vuln_data=vuln_data,
         engine_results=engine_results,
-        has_locked_closure=bool(parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND}),
+        has_locked_closure=bool(
+            parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND}
+            or parsed_kinds.intersection(set(NATIVE_LOCKFILE_KINDS))
+        ),
         hygiene_applicable=hygiene_applicable,
         allow_empty=args.allow_empty,
         empty_extraction=empty_extraction,
