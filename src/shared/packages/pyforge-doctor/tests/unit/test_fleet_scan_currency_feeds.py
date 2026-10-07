@@ -134,13 +134,9 @@ def test_non_bookkeeping_event_is_a_contract_entry(fleet_scan) -> None:
 
 def test_memlog_bookkeeping_entry_classifier(fleet_scan) -> None:
     assert fleet_scan._memlog_entry_is_bookkeeping("event", "Surface reconcile 2026-10-07: x")
-    assert fleet_scan._memlog_entry_is_bookkeeping(
-        "event by marshal", "Story 25.2 landed (run abc): done"
-    )
+    assert fleet_scan._memlog_entry_is_bookkeeping("event by marshal", "Story 25.2 landed (run abc): done")
     assert not fleet_scan._memlog_entry_is_bookkeeping("decision", "Surface reconcile noop")
-    assert not fleet_scan._memlog_entry_is_bookkeeping(
-        "event", "2026-10-05 spec-surface: stamp only"
-    )
+    assert not fleet_scan._memlog_entry_is_bookkeeping("event", "2026-10-05 spec-surface: stamp only")
 
 
 def test_memlog_contract_date_uses_blame_when_trailing_bookkeeping(
@@ -166,8 +162,7 @@ def test_memlog_contract_date_uses_blame_when_trailing_bookkeeping(
     mem = repo / "spec" / ".memlog.md"
     mem.parent.mkdir(parents=True)
     mem.write_text(
-        "---\nupdated: 2026-10-04T12:00\n---\n\n"
-        "- (capability) 2026-10-04 contract moved\n",
+        "---\nupdated: 2026-10-04T12:00\n---\n\n- (capability) 2026-10-04 contract moved\n",
         encoding="utf-8",
     )
     subprocess.run(["git", "add", "."], cwd=repo, check=True, capture_output=True)
@@ -201,8 +196,7 @@ def test_memlog_contract_date_no_git_falls_back_to_frontmatter(
 ) -> None:
     mem = tmp_path / ".memlog.md"
     mem.write_text(
-        "---\nupdated: 2026-10-07T09:00\n---\n\n"
-        "- (capability) still the contract\n",
+        "---\nupdated: 2026-10-07T09:00\n---\n\n- (capability) still the contract\n",
         encoding="utf-8",
     )
     monkeypatch.setattr(fleet_scan, "REPO_ROOT", tmp_path)
