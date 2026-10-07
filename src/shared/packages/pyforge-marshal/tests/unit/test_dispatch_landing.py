@@ -3741,3 +3741,157 @@ def test_mutation_without_hold_path_merges_when_landing_review_required(tmp_path
     )
 
     assert result.verdict == DispatchLandingVerdict.LANDED
+
+
+# --- Story 22.19: the landing builds and passes the flag-registry healed-tree check -------------------
+
+_FLAG_PATHS = (
+    "src/platform/config/flag-overlays.json",
+    "src/platform/config/flags.json",
+    "src/platform/tests/test_openfeature_file_flags.py",
+    "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+)
+
+
+def _flags_doc(*keys: str, story: str = "s") -> str:
+    import json
+
+    entry = {
+        "state": "ENABLED",
+        "variants": {"on": True, "off": False},
+        "defaultVariant": "off",
+        "metadata": {"story": story},
+    }
+    return json.dumps({"flags": {k: dict(entry) for k in keys}}, indent=2) + "\n"
+
+
+class _FlagRegistryVcs(HealCapableVcs):
+    """Main added one flag key and the branch another (or the same one, differently): the four registry
+    files conflict. The Python registries merge to one clean text through ``merge_file_diff3``."""
+
+    def __init__(self, *, main_story: str = "s", branch_story: str = "s", same_key: bool = False) -> None:
+        super().__init__(conflict_paths=_FLAG_PATHS, main_ledger="", branch_ledger="")
+        self.main_story, self.branch_story, self.same_key = main_story, branch_story, same_key
+
+    def file_text_at_ref(self, repo_root: Path, ref: str, path: str):
+        if path != "src/platform/config/flags.json":
+            if path == "src/platform/config/flag-overlays.json":
+                import json
+
+                keys = {"base000": [], "refs/remotes/origin/main": ["k1"]}.get(ref, ["k1" if self.same_key else "k2"])
+                return (
+                    json.dumps({e: {k: "on" for k in keys} for e in ("dev", "staging", "production")}, indent=2) + "\n"
+                )
+            return ""
+        if ref == "base000":
+            return _flags_doc()
+        if ref == "refs/remotes/origin/main":
+            return _flags_doc("k1", story=self.main_story)
+        return _flags_doc("k1" if self.same_key else "k2", story=self.branch_story)
+
+    def merge_file_diff3(self, repo_root: Path, base_text: str, main_text: str, branch_text: str) -> str:
+        return "_SHIPPED_BOOLEANS = {\n    'k1': True,\n    'k2': True,\n}\nexpected = {}\n"
+
+
+class _FlagCheckProcess:
+    """Records every command with its cwd; ``fail_on`` makes the command whose argv holds that word exit 1."""
+
+    def __init__(self, *, fail_on: str | None = None) -> None:
+        self.calls: list[tuple[list[str], Path, float | None]] = []
+        self.fail_on = fail_on
+
+    def run(self, tokens, *, cwd: Path, timeout_s: float | None = None):
+        self.calls.append((list(tokens), cwd, timeout_s))
+        if self.fail_on is not None and self.fail_on in tokens:
+            return ProcessResult(returncode=1, stdout="FAIL flag-gate: pyforge.k2 has no owner\n", stderr="")
+        return ProcessResult(returncode=0, stdout="", stderr="")
+
+
+def _flag_land(tmp_path: Path, vcs: _FlagRegistryVcs, process: _FlagCheckProcess):
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    forge = HealRetryForge()
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key="22-19-example",
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=forge,
+        process=process,
+    )
+    return result, envelope, forge, worktree
+
+
+def test_execute_dispatch_land_heals_the_flag_registry_and_runs_the_three_checks_before_the_push(
+    tmp_path: Path,
+) -> None:
+    vcs, process = _FlagRegistryVcs(), _FlagCheckProcess()
+    pushes_at_check: list[list[str]] = []
+    run = process.run
+
+    def recording_run(tokens, *, cwd, timeout_s=None):
+        if tokens[0] == "pixi":
+            pushes_at_check.append(list(vcs.pushed))
+        return run(tokens, cwd=cwd, timeout_s=timeout_s)
+
+    process.run = recording_run  # type: ignore[method-assign]
+
+    result, envelope, forge, worktree = _flag_land(tmp_path, vcs, process)
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert not any(f.code == "MRS-DISP-038" for f in envelope.findings)
+    assert forge.merge_calls == 2
+    assert [sorted(res) for _, _, res in vcs.merges] == [sorted(_FLAG_PATHS)]  # one merge resolves all four
+    pixi = [(argv, cwd) for argv, cwd, _t in process.calls if argv[0] == "pixi"]
+    assert [argv[4:] for argv, _ in pixi] == [
+        ["pyforge-guild", "flag-gate-check"],
+        ["pyforge-core", "pytest", "src/shared/packages/pyforge-core/tests/unit/test_flags.py", "-q"],
+        [
+            "platform-ci-test",
+            "env",
+            "-u",
+            "PYTHONSAFEPATH",
+            "python",
+            "-m",
+            "pytest",
+            "tests/test_openfeature_file_flags.py",
+            "-q",
+            "-p",
+            "no:cacheprovider",
+        ],
+    ]
+    assert [cwd for _, cwd in pixi] == [worktree, worktree, worktree / "src" / "platform"]
+    branch = "dispatch/pyforge-marshal/22.19"
+    # the landing's own pre-merge push is the only one when each check runs; the heal's push comes after
+    assert pushes_at_check == [[branch]] * 3
+    assert vcs.pushed == [branch, branch]
+
+
+def test_execute_dispatch_land_refuses_with_mrs_disp_038_when_a_flag_check_fails(tmp_path: Path) -> None:
+    vcs, process = _FlagRegistryVcs(), _FlagCheckProcess(fail_on="flag-gate-check")
+
+    result, envelope, forge, _worktree = _flag_land(tmp_path, vcs, process)
+
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    finding = next(f for f in envelope.findings if f.code == "MRS-DISP-038")
+    assert "flag-gate-check" in finding.message and "exited 1" in finding.message
+    assert "FAIL flag-gate: pyforge.k2 has no owner" in finding.message
+    assert forge.merge_calls == 1  # the first merge only: the heal never retried
+    assert vcs.pushed == ["dispatch/pyforge-marshal/22.19"]  # only the landing's own pre-merge push: the heal pushed nothing
+    assert len([c for c in process.calls if c[0][0] == "pixi"]) == 1  # the first failure stopped the check
+
+
+def test_execute_dispatch_land_names_the_registry_file_and_key_it_cannot_union(tmp_path: Path) -> None:
+    vcs = _FlagRegistryVcs(main_story="main's", branch_story="branch's", same_key=True)
+    process = _FlagCheckProcess()
+
+    result, envelope, forge, _worktree = _flag_land(tmp_path, vcs, process)
+
+    assert result.verdict == DispatchLandingVerdict.REFUSED
+    finding = next(f for f in envelope.findings if f.code == "MRS-DISP-038")
+    assert "src/platform/config/flags.json (key flags.k1)" in finding.message
+    print('DBG', vcs.pushed, vcs.calls, [f.message for f in envelope.findings])
+    assert forge.merge_calls == 1 and vcs.merges == [] and vcs.pushed == []
+    assert [c for c in process.calls if c[0][0] == "pixi"] == []
