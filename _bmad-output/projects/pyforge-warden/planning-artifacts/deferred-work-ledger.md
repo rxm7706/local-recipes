@@ -822,3 +822,36 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: medium (unverified)
   promoted: 2026-10-05 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-warden-16-4: Flag-OFF AC asks for byte-identical reports; tests only assert empty discovery and inventory_count.
+
+- source_spec: `planning-artifacts/specs/spec-16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers.md`
+  summary: Flag-OFF AC asks for byte-identical reports; tests only assert empty discovery and inventory_count.
+  evidence: test_flag_off_scan_ignores_npm_lock checks inventory_count==0, not golden JSON equality to pre-story baseline.
+  location: src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py:125
+  origin: spec-deferred 943f3ca4ea90 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-warden-16-4-2: I/O matrix rows for mixed Python+npm repo and clean Go module lack automated coverage.
+
+- source_spec: `planning-artifacts/specs/spec-16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers.md`
+  summary: I/O matrix rows for mixed Python+npm repo and clean Go module lack automated coverage.
+  evidence: No fixture combining pyproject.toml with package-lock.json; no go.sum/go.mod hermetic scan test.
+  location: src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py
+  origin: spec-deferred 95114e710134 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-warden-16-4-3: CycloneDX evidence ingestion still calls discover() without native lockfile kinds when CLI flag is on.
+
+- source_spec: `planning-artifacts/specs/spec-16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers.md`
+  summary: CycloneDX evidence ingestion still calls discover() without native lockfile kinds when CLI flag is on.
+  evidence: sources.py ManifestSourceAdapter uses default discover(); fleet evidence path may miss native lockfiles.
+  location: src/shared/packages/pyforge-warden/src/pyforge/warden/sources.py
+  origin: spec-deferred c3e8260a722f — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

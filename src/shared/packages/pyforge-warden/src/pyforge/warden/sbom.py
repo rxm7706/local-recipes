@@ -164,7 +164,9 @@ def _component_purl(component: Component) -> PackageURL:
             version=component.version,
             qualifiers={"channel": _CONDA_CHANNEL},
         )
-    return PackageURL(type="pypi", name=component.name, version=component.version)
+    if component.ecosystem is Ecosystem.PYPI:
+        return PackageURL(type="pypi", name=component.name, version=component.version)
+    return PackageURL(type=component.ecosystem.value, name=component.name, version=component.version)
 
 
 def _cfe_properties(component: Component) -> list[Property]:
