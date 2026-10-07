@@ -2,7 +2,9 @@
 title: "14.2: The actuator edits the manifest and re-solves the lock in a throwaway copy"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+followup_review_recommended: false
+baseline_revision: 'a16ab7f7e2a65d81814987c7698ace76d65ad16e'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -106,3 +108,42 @@ Deps: S-14.1.
 ## Review Triage Log
 
 - No review yet (minted 2026-09-28). Implementation and review stay separate.
+
+### 2026-10-07 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 2, maybe-false 1
+- findings:
+  - `[low]` `[reject]` Pixi.toml unquoted-key edit path duplicates quoted patterns — evidence: tests cover the shipped quote style; unquoted keys are rare in estate pixi.toml.
+  - `[false]` `[reject]` Manifest edit runs on dry-run — evidence: `run_actuator` gates on `not dry_run` before the real-path client loop; manifest branch only runs when `dry_run` is false.
+  - `[false]` `[reject]` Scanned tree can change on success — evidence: `tree_content_digest` before/after in `_prepare_manifest_fix_for_proposal`; tests assert unchanged digest.
+  - `[maybe-false]` `[defer]` Flag ON/OFF test via flagd tree shape from platform test — evidence: actuator tests pin `fix_manifest_edit_enabled`; platform flagd fixture deferred to spec-feature-flag-governance CAP-4.
+
+### 2026-10-07 — Operator re-verify after the dispatch's verification refusal
+- The dispatch run `pyforge-warden-20261007T055413377Z-abbfa51f` was refused at MRS-GATE-002: `python` was not on the
+  supervisor's PATH because the dispatch was launched outside `pixi run`. The refusal was environmental; the work was not
+  judged.
+- `pr-preflight` on this branch was red on `chain_currency_sweep_check` only: this story's memlog entry moved the warden
+  Spec more than 2 days past its PRD. Fixed by the runbook cascade (warden PRD, spine and epics, each with a
+  `## Currency reconciliation — 2026-10-07` section). No FR or AD changed.
+- The cascade found that the AC clause "the copy is gone after success and after a forced failure" had no test.
+  `test_manifest_fixup.py` gains `test_throwaway_copy_is_removed_after_the_outcome` (re-solve succeeds, re-solve fails)
+  and `test_throwaway_copy_is_removed_when_the_re_solve_raises`.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Story 14.2 adds `manifest_edit.py` and `manifest_fixup.py`, wires the actuator to prepare manifest+lock diffs in a `0700` throwaway copy when `pyforge.warden.fix_manifest_edit` is on (and `manifest_locations` is supplied from the CLI), and registers the flag in platform config.
+
+**Files changed:**
+- `manifest_edit.py` / `manifest_fixup.py` — scoped requirement edits and throwaway re-solve
+- `actuator.py` / `cli.py` — flag, `manifest_fix` on outcomes, CLI passes inventory locations
+- `flags.json` / `flag-overlays.json` — new flag defaults
+- Unit/meta tests for edits, fixup, and no-execution guard
+
+**Review:** 0 patches applied; 1 low rejected; 2 false; 1 deferred (flagd platform test).
+
+**Follow-up review recommended:** false
+
+**Verification:** `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2195 passed; `pixi run -e pyforge-guild python scripts/spec_surface_reconcile.py` — OK; memlogs updated on `spec-pyforge-warden` and `spec-pyforge-unifying-strategy` (no `--write-baseline`).
+
+**Residual risks:** Production solver still uses 14.1 TOML probe for target resolution; manifest edit is separate on the PR path. Real `pixi lock` not exercised in CI (mocked in unit tests).

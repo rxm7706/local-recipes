@@ -884,6 +884,13 @@ _SHIPPED_CLOCKS = {
         "",
         "",
     ),
+    "pyforge.warden.fix_manifest_edit": (
+        "warden",
+        "14-2-",
+        "2026-09-28",
+        "",
+        "",
+    ),
     "pyforge.atlas.dependency_history_sensor": ("atlas", "25-2-", "2026-09-28", "", ""),
 }
 
@@ -940,6 +947,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},
+        "pyforge.warden.fix_manifest_edit": {"dev": True, "staging": True, "production": False},
     }
     assert {k for k, e in payload["flags"].items() if all(isinstance(v, bool) for v in e["variants"].values())} == set(
         expected

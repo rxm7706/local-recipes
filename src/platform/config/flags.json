@@ -119,6 +119,21 @@
         "on_everywhere": "",
         "cleanup_by": ""
       }
+    },
+    "pyforge.warden.fix_manifest_edit": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "warden",
+        "story": "14-2-the-actuator-edits-the-manifest-and-re-solves-the-lock-in-a-throwaway-copy",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
     }
   }
 }
