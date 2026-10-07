@@ -3083,7 +3083,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_cutover_root.py": "101475d65160b49c9ef311d035b38af01e85b6b1",
    "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py": "fe3f4b9797c6bcc59a3058ac7f3574988e268376",
    "src/shared/packages/pyforge-core/tests/unit/test_errors.py": "cb0d234990797d401f15f4b59a247a96537648a9",
-   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "59a1b39fc8d38b96dc8b4883ad0d1ce19e1c2b15",
+   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "220b2b1c5e008e972e5475b70e3fdad390ed25d0",
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
    "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "115c10aa12674d205a1d76dc560c0fde5996d098",
    "src/shared/packages/pyforge-core/tests/unit/test_process.py": "a4bff2aafc3b0711ddc3980a5bd4677a4ca8efb6",
@@ -3144,6 +3144,7 @@
    "src/shared/packages/pyforge-herald/src/pyforge/herald/db.py": "cdaae0f906f7f631277eaf4cef6d4cc102c624f5",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_pipeline.py": "a46585328fc18fddf697b59b6ed701c2f4629311",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_qa.py": "a03fb0e2dfa73740162544d8abc3c258811f7b41",
+   "src/shared/packages/pyforge-herald/src/pyforge/herald/deck_versions.py": "a101d32e825fdcc6a8d6e405d62e2e25245f059c",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/errors.py": "f8d5407af6e45963baedf18673ad8f44fc013a06",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/evidence.py": "ab1f97aa4839f6a393bc18e4f06444c304a50122",
    "src/shared/packages/pyforge-herald/src/pyforge/herald/exporters.py": "a5ef6cc94c130b69e5698328114782fe06bc4e06",
@@ -3475,9 +3476,9 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "412e34d1ded77ef38aa411e384ca734550c3684f",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "4bbed1ffe9d1d98b1121207f58008377e20bd53c",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/__init__.py": "82c91c1197d2778d72eadbe6dee2ac33bdd74626",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py": "7f7356dbd770e28019f48e9530989a2ec951686d",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py": "5f9f833afba55a25c8b12d301b2491b8b5979c5a",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/config.py": "673ab9f10080877b3f5c8f2e886f2b6c3772a6ab",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py": "a164f357bb02baa9b273ea247bbd677ff0818c29",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py": "421954c02ef5b2ac991837b92632a363419c948b",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/config.py": "2e0ccf3ee10edac3ea30b1c4b7b78cd3cc4a63aa",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/currency.py": "a09993bf25f257e718b771928a71bc0b0311157a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/data/conda_pypi_map.json": "04cbdf9d20d8e827adff06fc0a05a96e11660ce4",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/data/lts-registry.yaml": "417da2918cdb3004d11ec5d2c41f267063d346b6",
@@ -3516,7 +3517,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "6e2c359877306c21b302dbf462525e3704ae01ed",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "ff473b7056a30b9cacc73f3826fea509914d2077"
+  "memlog": "6b7c0a43c5582f5d9c842f0b9f0bd8420d53f527"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
