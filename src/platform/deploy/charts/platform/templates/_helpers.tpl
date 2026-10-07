@@ -663,7 +663,6 @@ in-cluster Services.
 {{- if eq .Values.oidc.profile "bundled" }}
 {{ include "platform.networkPolicy.egressToKeycloak" . }}
 {{- end }}
-{{ include "platform.networkPolicy.egressToObjectStorage" . }}
 {{ include "platform.networkPolicy.dnsEgress" . }}
 {{- end }}
 
@@ -673,7 +672,6 @@ in-cluster Services.
 {{- if eq .Values.oidc.profile "bundled" }}
 {{ include "platform.networkPolicy.egressToKeycloak" . }}
 {{- end }}
-{{ include "platform.networkPolicy.egressToObjectStorage" . }}
 {{ include "platform.networkPolicy.dnsEgress" . }}
 {{- end }}
 
