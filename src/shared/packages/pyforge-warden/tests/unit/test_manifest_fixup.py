@@ -162,3 +162,56 @@ def test_forced_failure_still_leaves_scan_tree_unchanged(monkeypatch: pytest.Mon
     (outcome,) = actuation.outcomes
     assert outcome.status == "failed"
     assert tree_content_digest(repo) == digest_before
+
+
+@pytest.mark.parametrize(
+    ("lock_exit", "expect_plan"),
+    [(0, True), (1, False)],
+    ids=["re-solve-succeeds", "re-solve-fails"],
+)
+def test_throwaway_copy_is_removed_after_the_outcome(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, lock_exit: int, expect_plan: bool
+) -> None:
+    repo = tmp_path / "repo"
+    _write_pixi_repo(repo)
+    seen: list[Path] = []
+
+    def _fake_lock(*, cwd: Path):  # noqa: ANN001
+        seen.append(cwd)
+        assert cwd.is_dir()
+        (cwd / "pixi.lock").write_text("lock-version = 2\n", encoding="utf-8")
+        return None, lock_exit
+
+    monkeypatch.setattr("pyforge.warden.manifest_fixup.run_pixi_lock", _fake_lock)
+    outcome = prepare_manifest_fix(
+        scan_target=repo,
+        package="leftpad",
+        floor="1.3.0",
+        manifest_locations={"leftpad": ("pixi.toml [pypi-dependencies]",)},
+        location_keys=("leftpad",),
+    )
+    assert (outcome.plan is not None) is expect_plan
+    (copy,) = seen
+    assert not copy.exists()
+
+
+def test_throwaway_copy_is_removed_when_the_re_solve_raises(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = tmp_path / "repo"
+    _write_pixi_repo(repo)
+    seen: list[Path] = []
+
+    def _raising_lock(*, cwd: Path):  # noqa: ANN001
+        seen.append(cwd)
+        raise RuntimeError("solver crashed")
+
+    monkeypatch.setattr("pyforge.warden.manifest_fixup.run_pixi_lock", _raising_lock)
+    with pytest.raises(RuntimeError, match="solver crashed"):
+        prepare_manifest_fix(
+            scan_target=repo,
+            package="leftpad",
+            floor="1.3.0",
+            manifest_locations={"leftpad": ("pixi.toml [pypi-dependencies]",)},
+            location_keys=("leftpad",),
+        )
+    (copy,) = seen
+    assert not copy.exists()

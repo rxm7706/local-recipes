@@ -117,6 +117,17 @@ Deps: S-14.1.
   - `[false]` `[reject]` Scanned tree can change on success — evidence: `tree_content_digest` before/after in `_prepare_manifest_fix_for_proposal`; tests assert unchanged digest.
   - `[maybe-false]` `[defer]` Flag ON/OFF test via flagd tree shape from platform test — evidence: actuator tests pin `fix_manifest_edit_enabled`; platform flagd fixture deferred to spec-feature-flag-governance CAP-4.
 
+### 2026-10-07 — Operator re-verify after the dispatch's verification refusal
+- The dispatch run `pyforge-warden-20261007T055413377Z-abbfa51f` was refused at MRS-GATE-002: `python` was not on the
+  supervisor's PATH because the dispatch was launched outside `pixi run`. The refusal was environmental; the work was not
+  judged.
+- `pr-preflight` on this branch was red on `chain_currency_sweep_check` only: this story's memlog entry moved the warden
+  Spec more than 2 days past its PRD. Fixed by the runbook cascade (warden PRD, spine and epics, each with a
+  `## Currency reconciliation — 2026-10-07` section). No FR or AD changed.
+- The cascade found that the AC clause "the copy is gone after success and after a forced failure" had no test.
+  `test_manifest_fixup.py` gains `test_throwaway_copy_is_removed_after_the_outcome` (re-solve succeeds, re-solve fails)
+  and `test_throwaway_copy_is_removed_when_the_re_solve_raises`.
+
 ## Auto Run Result
 
 Status: done

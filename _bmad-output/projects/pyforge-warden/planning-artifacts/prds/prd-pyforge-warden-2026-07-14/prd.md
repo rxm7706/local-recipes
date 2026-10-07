@@ -15,7 +15,7 @@ stepsCompleted:
   - step-10-nonfunctional
   - step-11-polish
   - step-12-complete
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 17, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-10-07"   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 surface-reconcile entries (Story 17.1 landing, Story 14.1 landing, Story 14.2); no FR registered. See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 17, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for CAP-24..26 (Epics 14-16); FR-41..FR-43 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (the TEA advisory's base is the remote-tracking ref); § Currency reconciliation — 2026-09-27 appended; no FR delta. Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 — chain-currency sweep. spec-pyforge-warden moved to 2026-09-12 (a 2-path surface-drift-exclude block; twelve dated verified: CAP lines from the 2026-09-11 sweep; three open_questions hoisted into frontmatter 2026-09-11; the story-set Assumption re-grounded from 31/6 to 43 keys/11 epics) while this PRD sat at 2026-09-07. Reconciled in § Currency reconciliation — 2026-09-14. ONE REAL GAP RECORDED, independently re-verified: `review_required` — named in FR9, in the acceptance matrix and in the bypass success criteria — occurs ZERO times in shipped src/ or tests/. Recorded, NOT repaired: adding the field is a behaviour + schema change needing its own Dream/Spec. The Spec's three open questions remain OPERATOR-OWNED and unanswered; the station's coherence checkpoint stays red by design until they are answered. Prior — Reviewed 2026-09-07 — reconciled against Epic 11 (bmad-os-review-pr/findings-triage + tea-test-review, both advisory lenses, landed since the 2026-08-26 pass) and the DW-FU-11-2 fail-closed judgment call. v1 FR1-FR40 content verified unchanged; post-v1 growth recorded in § Currency reconciliation — 2026-09-07 (and the 2026-08-26 entry above it)."
 classification:
   projectType: cli_tool
@@ -993,3 +993,49 @@ capabilities that already carry it and closes the station's open medium and low 
 metric changes.
 
 **Content changed:** this section only. `updated:` bumped to record that the check ran.
+
+## Currency reconciliation — 2026-10-07
+
+*Trigger: the chain-currency `spec→prd` edge. `spec-pyforge-warden`'s `.memlog.md` gained nine surface-reconcile
+entries from 2026-10-03 to 2026-10-07, after this PRD's 2026-10-03 (Phase 4+5) re-stamp. `SPEC.md` itself is unchanged
+since 2026-09-28. No CAP is added.*
+
+### What the Spec's memlog carries
+
+- **2026-10-03, Story 17.1 landed (five entries).** Each `EligibilityResult` now records
+  `effective_required_authority_sources`, and `status_from_eligibility_result` re-derives the status from the result
+  alone (`eligibility.py`). The SBOM carries the same set as the `cfe:required_authority_sources` property
+  (`eligibility_sbom.py`). `sources.py` refuses a CycloneDX `specVersion` outside `1.6`. Four deferred-work rows
+  closed; seven follow-up-review rows went to review batches. One entry corrects an earlier one: grouping stays Story
+  7.2's `PackageIdentity`, because the merge-by-group-key change was reverted.
+- **2026-10-05, Story 14.1 landed (three entries).** `vuln.py` keeps every OSV `fixed` candidate, `EngineResult`
+  carries them, and `fix_solver.py` tries them in ascending order against `pixi lock` in a throwaway copy.
+  `engines.run_pixi_lock` checks `pixi --version` against `PIXI_VERSION_RANGE` and then runs `pixi lock` through
+  `_engine_env()`. The flag `pyforge.warden.fix_target_resolution` is on in dev and staging and off in production. The
+  older actuator unit and integration test modules now pin production, so the flag-off path stays covered.
+- **2026-10-07, Story 14.2.** `manifest_edit.py` sets one requirement in `pixi.toml`, `pyproject.toml` or a recipe to
+  `>=<target>`. It refuses a requirement declared twice or written as a template expression, and it renders nothing.
+  `manifest_fixup.py` copies the scanned tree into a `mkdtemp` (`0700`) directory, edits there, re-solves `pixi.lock`
+  when the repo has one, and removes the copy in a `finally` block. The actuator hashes the scanned tree before and
+  after and fails the outcome if the hash moved. The plan is reported in `actuation.outcomes[].manifest_fix`. The flag
+  `pyforge.warden.fix_manifest_edit` is on in dev and staging and off in production.
+
+### Checked against the FRs: no FR registered
+
+- **Story 17.1** is a `fix` under the eligibility capabilities (CAP-13..15, recorded in § Currency reconciliation —
+  2026-08-26 item 1) and the TEA lens (Epic 11). It changes no requirement.
+- **Stories 14.1 and 14.2 realize FR-41 (← CAP-24) as written.** Checked against its consequences: candidates are
+  ascending and the first one the solver accepts wins; `--fix-prs-dry-run` returns before any solver or edit runs and
+  reports `solver: not-run`; pixi runs only on the real path, as a named engine subprocess under a tested range; the
+  edit and the re-solve happen in the `mkdtemp` copy; a failed resolve, edit or solve is a `failed` outcome in
+  `actuation`, never a rung or an exit code. The `actuation` slot is an open object, so `ComplianceReport` stays 1.1.0.
+- **Still open under FR-41, as planned:** the draft PR that carries the diff on a `warden/fix/` branch, and the estate
+  allowlist. Both are Story 14.3 (`backlog`). Until it lands, `open_pull_request` still commits the empty tree.
+- **One verification gap, closed on the same branch.** FR-41 says the copy "is gone after success and failure". The
+  code removes it in `finally`, but `test_manifest_fixup.py` checked only that the scanned tree's digest is unchanged.
+  The operator re-verify of 2026-10-07 added tests that the copy is gone after a successful re-solve, a failed one, and
+  one that raises.
+
+**ONE FR space still FR-1..FR-43** (FR-44 = next free id; `canopy:FR-44` is a different space).
+
+**Content changed:** this section added. No FR added, renumbered or removed. `updated:` bumped.
