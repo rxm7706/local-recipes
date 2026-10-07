@@ -2,7 +2,8 @@
 title: '29.2: The published exports are listed and streamed behind the herald role'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
+followup_review_recommended: true
 baseline_revision: 'dcbddeb4e3fc40552d620e30782c89d9d30a9afa'
 difficulty: 'medium'
 review_loop_iteration: 0
@@ -22,7 +23,21 @@ context:
   - src/shared/packages/django-herald/src/django_herald_portal/views.py
   - src/platform/tests/policy/test_sqlmigrate_extraction.py
   - src/platform/tests/policy/test_liquibase_ddl_governance.py
-deferred: []
+deferred:
+  - summary: >-
+      Real ``deck_exports_json_runner`` subprocess argv and JSON validation are only mocked in platform refresh tests.
+    evidence: |-
+      Both refresh tests patch ``deck_exports_json_runner``; no test executes ``portal_runner.deck_exports_json_runner`` with a controlled subprocess.
+    location: >-
+      src/shared/packages/django-herald/src/django_herald_portal/portal_runner.py
+    severity: medium
+  - summary: >-
+      ``refresh_deck_exports`` does not validate malformed manifest rows before ORM upsert.
+    evidence: |-
+      Missing keys or bad dates can raise ``KeyError``/``ValueError`` mid-slug; no structured command error or test pins the behavior.
+    location: >-
+      src/shared/packages/django-herald/src/django_herald_portal/deck_export_sync.py
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 
