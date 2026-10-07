@@ -58,6 +58,7 @@ def test_sidecar_listed_with_superseded_export(tmp_path: Path):
 
 def test_undated_files_never_grouped(tmp_path: Path):
     topic = tmp_path / "presentations" / "demo"
+    topic.mkdir(parents=True)
     (topic / "facts.yaml").write_text("{}", encoding="utf-8")
     marp = topic / "src" / "marp"
     marp.mkdir(parents=True)

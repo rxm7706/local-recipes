@@ -237,13 +237,11 @@ _DATE_SUFFIX_RE = re.compile(r"-\d{4}-\d{2}-\d{2}$")
 
 def _listed_files(dir_path: Path, suffix: str) -> list[Path]:
     """The current file per product directly under ``dir_path`` ending in
-    ``suffix``, newest-dated first. The export set's own
-    ``<product>-YYYY-MM-DD`` naming leaves every superseded export on disk
-    (verified live: pyforge-atlas alone carries 3 dated copies each of its
-    ``-deck-`` and ``_infographic_deck-`` PPTX) -- grouping by the filename
-    with its trailing date suffix stripped and keeping only the
-    newest-dated file per group surfaces the current export(s), not the
-    full history."""
+    ``suffix``, newest-dated first. Grouping by the filename with its trailing
+    ``-YYYY-MM-DD`` stripped and keeping only the newest-dated file per group
+    surfaces the current export(s). The tracked tree enforces one dated file
+    per kind (``pyforge.herald.deck_versions``); git history retains older
+    exports."""
     if not dir_path.is_dir():
         return []
     newest_per_product: dict[str, Path] = {}

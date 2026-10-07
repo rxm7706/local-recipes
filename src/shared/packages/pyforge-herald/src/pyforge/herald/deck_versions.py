@@ -77,6 +77,35 @@ def superseded(root: Path | None = None) -> list[tuple[Path, Path]]:
     return out
 
 
+def newest_export(
+    presentations_root: Path,
+    topic: str,
+    subdir: str,
+    product: str,
+    suffix: str,
+) -> Path | None:
+    """The current dated export for one kind (newest ISO date), or ``None``."""
+    if subdir not in _EXPORT_SUBDIRS:
+        msg = f"subdir must be one of {_EXPORT_SUBDIRS}, got {subdir!r}"
+        raise ValueError(msg)
+    export_dir = presentations_root / topic / subdir
+    if not export_dir.is_dir():
+        return None
+    kind = (f"{topic}/{subdir}", product, suffix)
+    dated: list[tuple[str, Path]] = []
+    for path in export_dir.iterdir():
+        if not path.is_file():
+            continue
+        if _kind_key(path, presentations_root) != kind:
+            continue
+        iso = _DATE_SUFFIX.search(path.stem).group("iso")  # type: ignore[union-attr]
+        dated.append((iso, path))
+    if not dated:
+        return None
+    dated.sort(key=lambda pair: pair[0])
+    return dated[-1][1]
+
+
 def _sidecar(export_path: Path) -> Path:
     return export_path.parent / f"{export_path.name}.stamp.json"
 

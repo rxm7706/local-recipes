@@ -26,13 +26,13 @@ project/
   PyForge Unifying Strategy Infographic standalone.html  same body as ★, no x-dc wrapper, styles in <head>
   PyForge Story.dc.html                                  narrative <doc-page> write-up of the Dream (Grounding 2026-08-30 · Epic 40 red-team 2026-09-02) — NOT part of the five-file family contract above; added 2026-09-13 alongside the Design-side pull, no facts.yaml coverage, no deck-facts/deck-export surface
 src/marp/
-  pyforge-unifying-strategy-deck-2026-08-26.md
-  pyforge-unifying-strategy-executive-summary-2026-08-26.md
-  pyforge-unifying-strategy-infographic-2026-08-26.md
-  pyforge-unifying-strategy-infographic-standalone-2026-08-26.html   (generated — marp)
+  pyforge-unifying-strategy-deck-2026-09-15.md
+  pyforge-unifying-strategy-executive-summary-2026-09-15.md
+  pyforge-unifying-strategy-infographic-2026-09-15.md
+  pyforge-unifying-strategy-infographic-standalone-2026-09-15.html   (generated — marp)
 src/pptx/
-  pyforge-unifying-strategy-deck-2026-08-26.pptx                     (generated — marp --pptx)
-  pyforge-unifying-strategy_infographic_deck-2026-08-26.pptx         (generated — marp --pptx)
+  pyforge-unifying-strategy-deck-2026-09-15.pptx                     (generated — marp --pptx)
+  pyforge-unifying-strategy_infographic_deck-2026-09-15.pptx         (generated — marp --pptx)
 ```
 
 Regenerate the derived exports (never hand-edit them):
