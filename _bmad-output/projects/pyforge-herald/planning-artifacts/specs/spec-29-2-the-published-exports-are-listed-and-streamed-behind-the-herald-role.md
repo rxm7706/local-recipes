@@ -2,7 +2,8 @@
 title: '29.2: The published exports are listed and streamed behind the herald role'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'dcbddeb4e3fc40552d620e30782c89d9d30a9afa'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
