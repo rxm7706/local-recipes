@@ -910,7 +910,7 @@ So that `bmad-estate-check` reads the same on my checkout as it does in CI, and 
 **When** the catalog is derived from a root that is a git work tree
 **Then** a directory under `.claude/skills/` counts, as a skill or as a no-`SKILL.md` directory, only when git lists at least one file in it that it does not ignore (tracked, or untracked and not ignored); an ignored directory and a directory holding only ignored files are skipped; a new, not-yet-added skill still counts; when the root is not a work tree or git is unavailable, the disk walk is today's
 **And** on a clean checkout `scribe catalog bmad-estate --check` exits 0 and `--write` changes no byte; on the primary checkout with `caveman` deployed it exits 0; the new tests build a temporary work tree with an ignored skill, an ignored-files-only directory, a tracked skill and an untracked skill, and fail when the filter is removed (mutation); `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green; co-governor reconcile: a memlog entry on every Spec `spec-surface-check` names, then a scoped stamp per Spec
-**Status:** backlog
+**Status:** done
 
 ## Epic 26: Phase 4+5 of the deferral burn-down: scribe's open medium and low deferrals
 
@@ -929,7 +929,7 @@ So that recall answers with the current statement and the deferral burn-down clo
 **Then** recall breaks an overlap tie by recency, transcript node ids no longer collide across subdirectories, the timer and the freshness period cannot drift apart silently, `governance-currency` reads the per-tool pointer files, and the Epic 3 surface is reconciled
 **And** each of the five rows is closed with a `resolution:` naming this story and a `verified:` line citing the `path:line` it fixed; the five operator-bound or capability rows stay open; `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` green
 **Spec:** `planning-artifacts/specs/spec-26-1-recall-breaks-ties-by-recency-and-scribe-s-other-open-deferrals-close.md`
-**Status:** backlog
+**Status:** done
 
 ## Platform floor addendum — 2026-09-07
 

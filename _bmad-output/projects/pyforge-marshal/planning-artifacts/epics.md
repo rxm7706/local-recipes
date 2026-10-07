@@ -3433,7 +3433,7 @@ next spin)
 **And** the check live-fetches before measuring and degrades silently on any fetch/rev-list
 failure (network error, no `origin` remote, detached HEAD) — the same fault-tolerant idiom
 `loop_home_staleness()` already uses, never a hard failure of the read-only, never-gating report
-**Status:** backlog
+**Status:** done
 
 ## Epic 21: The planning chain regenerates itself, and audits whether it's coherent
 
@@ -4589,7 +4589,7 @@ So that landing a missing spec (or a mergeable flip) does not require a new camp
 **Given** a station refused on `MRS-DISP-005` **When** a unique `spec-<e>-<n>-*.md` appears on the specs path the campaign uses **Then** the next eligible tick dispatches that story without `MRS-DRAIN-005` permanent block
 **And** an unchanged refuse predicate is rate-limited and journaled, not silently looped
 **And** expensive `verify_commands` re-run only when the refuse predicate-hash changes
-**Status:** backlog
+**Status:** done
 
 ### Story 28.19: Missing-spec escalates, never idle-with-backlog
 
@@ -4712,7 +4712,7 @@ So that marshal's `derived-context` layer (Story 28.8) — plumbing already buil
 **And** a `derive()` no-op means `refresh_incremental()` only ever reports an artifact `refreshed` (first-seen or source-changed) or `skipped` (unchanged) — it never fails from a derive-side exception
 **And** an unparseable or missing manifest exits non-zero with a clear message — `ScribeCli.refresh()`'s existing degrade-to-off handling on the marshal side already covers that failure shape, unchanged
 **And** `marshal context refresh --project pyforge-marshal --epic 20 --format json` (the exact live-verification command from this story's own Note) returns `"mode": "incremental"` with no `MRS-CTX-*` finding, proving the fix end-to-end
-**Status:** backlog
+**Status:** done
 
 ### Story 28.29: Wire is dead for cursor specifically — copilot is a real but uncertain alternative, documented either way
 
@@ -4725,7 +4725,7 @@ So that a future operator does not re-discover either finding from scratch, and 
 **Given** a station whose `harness_preference` resolves to `cursor` (all eight, today) **When** a dispatch session launches **Then** `wire.reason` names the structural cause explicitly for cursor ("cursor-agent has no headless wire-compression path; headroom's cursor support is Cursor-IDE-only") rather than the current generic "declares no [wrapper]" message, which reads as an oversight
 **And** `cursor.toml`'s own `[wrapper]`-absence is annotated with a comment citing this story, so a future harness-profile author does not attempt to add one
 **And** the copilot alternative is recorded as an operator decision point, not silently pursued or silently dropped — a real go/no-go given the quota history and the wrap-composition rework cost, not this story's own call to make
-**Status:** backlog
+**Status:** done
 
 ### Story 28.30: Output (caveman) compresses dispatch sessions too, not just spin
 
@@ -4738,7 +4738,7 @@ So that a dispatched story's own dev-session speech compresses the same way a sp
 **Given** a dispatch worktree for a project with `[context].output.enabled = true` **When** the worktree is created (`dispatch_once`'s existing worktree-seed step) **Then** `<worktree>/.claude/skills/caveman/SKILL.md` is deployed from the same packaged payload `seed/verbs/kit.py` uses, and `bmad-build-auto`'s own skill files reference it the way `step-01-clarify-and-route.md` already references `derived-context`/`planning-graph` (a new instruction block, same file)
 **And** a project with the layer declared off deploys nothing — today's behavior, byte-identical
 **And** an unavailable/unresolvable caveman payload disables the layer with a named finding (matching Story 28.3's own degrade contract) and dispatch proceeds unwrapped
-**Status:** backlog
+**Status:** done
 
 ### Story 28.31: Structure-graph (codegraph) for dispatch — provisioning cost weighed against a single-story session
 
@@ -4764,7 +4764,7 @@ So that every station's dispatch sessions get the token savings both layers now 
 **Note:** Both prerequisite stories are done and live-verified against `pyforge-marshal` (the canary, same pattern as 28.27's own precedent): 28.28 closed the `scribe index refresh --declare` gap (plus a `cocoindex` packaging fix), 28.30 closed the dispatch-worktree caveman deployment gap. No further engineering is needed to roll either out — this is the same "flip the policy, verify live per station" shape 28.27 already proved. A real, previously-undiscovered bug was found and fixed in the same pass before this rollout: `seed/detect/kit.py::_carve_out_state` string-sliced a Python `str` using BYTE offsets (`RegionSpan.body_span`'s documented contract), which desynced whenever non-ASCII content preceded the region — exactly what the real packaged caveman `SKILL.md` carries. This silently made `marshal seed kit`/`run_preflight` re-deploy the caveman skill on EVERY single preflight forever (never idempotent) and reported a false `MRS-PREFLIGHT-015` carve-out-mismatch WARN even on a byte-correct, freshly-deployed file. Fixed by using the already-correct, already-tested `detect/hashes.py::region_body_text` (proper byte-slice-then-decode) instead of the naive `str` slice — this bug would have reproduced identically on all 7 stations' loop homes the moment `output` was enabled for them, so fixing it first (rather than rolling out onto broken detection) was load-bearing for this story, not a side quest.
 **Given** the 7 non-marshal stations' `marshal-policy.toml` **When** each gets `[context."derived-context"]` and `[context.output]` `enabled = true` overrides, mirroring marshal's own **Then** `marshal context refresh --project <slug> --epic <N> --format json` returns `mode: incremental` with zero findings for at least one real epic per station, and `marshal preflight <slug>` provisions the caveman skill cleanly (idempotent on a second run — `already-present`, not `applied`)
 **And** `wire`/`structure-graph` stay exactly as they are for these stations — this story touches only the two proven-working layers
-**Status:** backlog
+**Status:** done
 
 ### Story 28.33: The structure-graph reference is wired for spin, unblocking the already-built loop-home index
 
@@ -4814,7 +4814,7 @@ authorizes another pass, no spec commit
 follow-up review, then the flag is forced `false`
 **And** a review pass that applies 0 patches does not commit
 **And** the vendored `bmad_loop` package is not modified
-**Status:** backlog
+**Status:** done
 
 ### Story 29.2: Harness `done` is CAP-4 only — never another session
 
@@ -6065,7 +6065,7 @@ marshal (fetch-or-rebuild; rebuild is loud and attributable, never silent).
 **Then** it fetches the latest published artifacts and verifies their digests,
 or rebuilds locally with a named finding
 **And** the fetched substrate is byte-identical to what a loop home produced
-**Status:** backlog
+**Status:** done
 
 ### Story 46.2: The canonical context bundle is digest-pinned
 
@@ -6082,7 +6082,7 @@ with a recorded digest; a compare surface two harnesses can be checked against.
 **When** each assembles its opening context
 **Then** the bundles compare byte-identical by digest
 **And** a drift in either assembly is a named finding, not a silent divergence
-**Status:** backlog
+**Status:** done
 
 ### Story 46.3: `scribe capture` is the blessed session-close ritual
 
@@ -6100,7 +6100,7 @@ that name the front door — plus one line in each harness profile's notes.
 **Then** the close ritual is `scribe capture` with decision-grade facts, and the
 docs say so in one place
 **And** capture hygiene is stated: no secrets, decision-grade facts only
-**Status:** backlog
+**Status:** done
 
 ### Story 46.4: Wire auto resolves against the declared wrapper
 
@@ -6123,7 +6123,7 @@ iff the profile declares a `[wrapper]`
 cannot perform (28.29)
 **And** wrapper declared but binary missing stays a WARN (`MRS-DISP-033` class),
 never silent
-**Status:** backlog
+**Status:** done
 
 ### Story 46.5: The journal splits silent saves from configured layers, and the rollup speaks per-harness currency
 
@@ -6142,7 +6142,7 @@ report surface.
 **Then** each harness's savings appear in their own currency with no blended
 total
 **And** silent saves and configured layers are distinguishable per journal row
-**Status:** backlog
+**Status:** done
 
 ### Story 46.6: An interactive session whose layers lapse gets a persistence advisory
 
@@ -6155,7 +6155,7 @@ So that silent savings do not silently stop.
 **Given** an interactive session whose `[context]` layers were active
 **When** the session ends or the layers lapse
 **Then** the journal carries a persistence advisory naming what lapsed
-**Status:** backlog
+**Status:** done
 
 ### Story 46.7: The docs name marshal dispatch and spin the execution front door
 
@@ -6174,7 +6174,7 @@ advisory (never gating) doctor detector may flag a bare dispatch.
 **Then** the docs point at marshal dispatch/spin as default and explain what the
 bare path forgoes (the layers, the journal, the benchmark)
 **And** nothing new turns red in CI because of this story
-**Status:** backlog
+**Status:** done
 
 ### Story 46.8: The interactive Claude session path is one documented invocation
 
@@ -6192,7 +6192,7 @@ the one invocation; dispatch remains the measured path.
 **Then** the session is demonstrably wrapped or seeded per the declared
 `[context]` layers, and wholesale `epics.md` / PRD loads are a miss against
 retrieve/recall
-**Status:** backlog
+**Status:** done
 
 ### Story 46.9: Benchmark legs run per layer with cache-hit rates
 
@@ -6233,7 +6233,7 @@ multi-harness).
 layer — or the profile carries a dated finding and `auto` skips honestly
 **And** gemini's wire cell reads "probed, none" with evidence or gains a target
 **And** Devin stays the deliberate unverified stub (loud absence)
-**Status:** backlog
+**Status:** done
 
 ### Story 46.11: The dispatched Claude session is launched with the instruction-file mode pinned
 

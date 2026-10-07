@@ -2730,7 +2730,7 @@ So that a later story can change its key's per-environment value without turning
 **When** the gate runs, in tree mode or with `--spec`
 **Then** for a key that more than one `done` flagged story spec of one station declares, it judges the tree against the declaration with the highest story key only (the `spec-<epic>-<story>-` filename's epic number, then story number, compared as integers, so `87-11` follows `87-3`), and an earlier `done` spec's `flag.default` is history, never a finding; the 74.1/74.2 case reads zero FAIL, and reverting the overlay to off reds 74.2's spec alone
 **And** a key one `done` spec declares is judged exactly as today, a key declared by `done` specs of more than one station has each declaration judged as today, a spec not yet `done` never supersedes one; the `flag-default-env-mismatch` message, every other finding, the rule-date baseline and `flag_inventory.py`'s reports are unchanged; `docs/reference/story-spec-flag-block.md` states the shared-key rule in one sentence; judging every `done` spec again fails the new fixture (mutation)
-**Status:** backlog
+**Status:** done
 
 
 ## Epic 35: Capability-ledger's post-PIN check reads only live Specs (spec-pyforge-doctor CAP-87)
