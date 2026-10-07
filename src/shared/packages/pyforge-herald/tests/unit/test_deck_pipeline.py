@@ -905,9 +905,7 @@ def test_pull_marp_source_retires_older_dated_marp_of_same_kind(tmp_path: Path) 
     marp_dir.mkdir(parents=True, exist_ok=True)
     older = marp_dir / "pyforge-warden-infographic-2026-07-01.md"
     older.write_text("# old\n", encoding="utf-8")
-    transport = FakePullTransport(
-        answers=FileRead(path="x", etag="M4", body="# Infographic", unchanged=False)
-    )
+    transport = FakePullTransport(answers=FileRead(path="x", etag="M4", body="# Infographic", unchanged=False))
     pull_marp_source(
         transport,
         slug="pyforge-warden",
