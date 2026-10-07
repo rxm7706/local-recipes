@@ -1696,7 +1696,7 @@ def test_finalize_publishes_epics_for_a_tier3_promoted_key_when_the_line_is_stil
     ledger = tmp_path / "_bmad-output" / "projects" / _SLUG_79 / "planning-artifacts" / "sprint-status-ledger.yaml"
     ledger.parent.mkdir(parents=True)
     ledger.write_text(_DONE_LEDGER_79, encoding="utf-8")
-    feed = _write_feed_79(tmp_path)
+    _write_feed_79(tmp_path)
     vcs = _Tier3Vcs(ledger_text=_DONE_LEDGER_79, spec_text=None, epics_text=_EPICS_79)
     _stub_real_scan_finalize(monkeypatch, tmp_path, vcs)
 
