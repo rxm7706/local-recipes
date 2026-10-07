@@ -17,7 +17,7 @@ from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
-from pyforge.marshal.core.promotion import PRE_DONE_SPEC_STATUSES, TERMINAL_SPEC_STATUSES
+from pyforge.marshal.core.promotion import PRE_DONE_SPEC_STATUSES
 from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.core.status import render_ledger_advancements
 from pyforge.marshal.dispatch_land_finalize.__main__ import (
@@ -1486,8 +1486,10 @@ def test_finalize_promotes_a_tracked_spec_at_every_pre_done_status(tmp_path: Pat
     assert _promotion_flags_79(tmp_path) == (True, True, True)
 
 
-@pytest.mark.parametrize("status", sorted(TERMINAL_SPEC_STATUSES))
-def test_finalize_leaves_a_terminal_tracked_spec_untouched(tmp_path: Path, monkeypatch, status: str) -> None:
+@pytest.mark.parametrize("status", ("blocked", "superseded"))
+def test_finalize_leaves_a_blocked_or_superseded_tracked_spec_untouched(
+    tmp_path: Path, monkeypatch, status: str
+) -> None:
     _write_tracked_spec_79(tmp_path)
     _write_feed_79(tmp_path)
     vcs = _PublishVcs(
@@ -1499,6 +1501,43 @@ def test_finalize_leaves_a_terminal_tracked_spec_untouched(tmp_path: Path, monke
 
     assert vcs.publishes == []
     assert _journaled_findings_79(tmp_path) == []
+    assert _promotion_flags_79(tmp_path) == (True, True, False)
+
+
+def test_finalize_publishes_only_epics_when_the_tracked_spec_already_reads_done(tmp_path: Path, monkeypatch) -> None:
+    """Story 22.15: spec ``done`` at origin/main, epics **Status:** still backlog -> one epics-only publish."""
+    _write_tracked_spec_79(tmp_path)
+    _write_feed_79(tmp_path)
+    done_spec = _TRACKED_SPEC_79.replace("status: 'backlog'", "status: 'done'")
+    vcs = _PublishVcs(ledger_text=_DONE_LEDGER_79, spec_text=done_spec, epics_text=_EPICS_79)
+    _stub_planned_finalize(monkeypatch, tmp_path, vcs)
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    [publish] = vcs.publishes
+    assert publish["writes"] == (
+        (
+            _EPICS_REL_79,
+            _EPICS_79.replace("### Story 79.1: x\n\n**Status:** backlog", "### Story 79.1: x\n\n**Status:** done"),
+        ),
+    )
+    assert "epics status" in publish["message"]
+    assert _promotion_flags_79(tmp_path) == (True, True, True)
+
+
+def test_finalize_leaves_epics_untouched_when_the_tracked_spec_already_reads_done_and_the_line_matches(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_tracked_spec_79(tmp_path)
+    _write_feed_79(tmp_path)
+    done_spec = _TRACKED_SPEC_79.replace("status: 'backlog'", "status: 'done'")
+    epics_done = _EPICS_79.replace("**Status:** backlog", "**Status:** done", 1)
+    vcs = _PublishVcs(ledger_text=_DONE_LEDGER_79, spec_text=done_spec, epics_text=epics_done)
+    _stub_planned_finalize(monkeypatch, tmp_path, vcs)
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    assert vcs.publishes == []
     assert _promotion_flags_79(tmp_path) == (True, True, False)
 
 
@@ -1637,13 +1676,40 @@ def test_a_key_the_tier3_route_promoted_this_run_is_not_promoted_again_as_a_trac
     assert copied.read_text(encoding="utf-8") == twin.read_text(encoding="utf-8")
     [(targets, _message)] = vcs.local_commits
     assert targets == (copied,)
-    # The tracked-spec step reads nothing here; the one read is Story 66.1's follow-up carry, which finds no
-    # spec at origin/main yet and says nothing.
-    assert [path for _root, _ref, path in vcs.read_calls if path == _SPEC_REL_79] == [_SPEC_REL_79]
+    # No tracked-spec publish; Story 66.1's follow-up carry and Story 22.15's epics gate may read the spec
+    # at origin/main (absent here) without promoting it.
+    spec_reads = [path for _root, _ref, path in vcs.read_calls if path == _SPEC_REL_79]
+    assert spec_reads == [_SPEC_REL_79, _SPEC_REL_79]
     assert vcs.publishes == []
     assert _journaled_findings_79(tmp_path) == []
     assert feed.read_text(encoding="utf-8") == _FEED_DONE_79
     assert _promotion_flags_79(tmp_path) == (True, True, False)
+
+
+def test_finalize_publishes_epics_for_a_tier3_promoted_key_when_the_line_is_still_backlog(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Story 22.15: Tier-3 owns the spec copy; epics still matches on ``origin/main``."""
+    twin = tmp_path / "_bmad-output" / "projects" / _SLUG_79 / "implementation-artifacts" / _SPEC_NAME_79
+    twin.parent.mkdir(parents=True)
+    twin.write_text(_TRACKED_SPEC_79.replace("'backlog'", "'done'"), encoding="utf-8")
+    ledger = tmp_path / "_bmad-output" / "projects" / _SLUG_79 / "planning-artifacts" / "sprint-status-ledger.yaml"
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(_DONE_LEDGER_79, encoding="utf-8")
+    _write_feed_79(tmp_path)
+    vcs = _Tier3Vcs(ledger_text=_DONE_LEDGER_79, spec_text=None, epics_text=_EPICS_79)
+    _stub_real_scan_finalize(monkeypatch, tmp_path, vcs)
+
+    assert finalize_dispatch_land(_SLUG_79, "79.1") == 0
+
+    [publish] = vcs.publishes
+    assert publish["writes"] == (
+        (
+            _EPICS_REL_79,
+            _EPICS_79.replace("### Story 79.1: x\n\n**Status:** backlog", "### Story 79.1: x\n\n**Status:** done"),
+        ),
+    )
+    assert _promotion_flags_79(tmp_path) == (True, True, True)
 
 
 # -- the gate (AC 5): fed FRESH evidence --------------------------------------------------------
