@@ -243,9 +243,7 @@ def test_attach_routes_store_error_is_502(tmp_path: Path, _patch_deck_flag_path)
     assert "broken pipe" in response.text
 
 
-def test_attach_routes_mid_stream_store_error_closes_body(
-    tmp_path: Path, _patch_deck_flag_path
-) -> None:
+def test_attach_routes_mid_stream_store_error_closes_body(tmp_path: Path, _patch_deck_flag_path) -> None:
     def _open(_sha: str) -> tuple[ExportRow, Iterator[bytes]]:
         def _chunks() -> Iterator[bytes]:
             yield b"partial"
