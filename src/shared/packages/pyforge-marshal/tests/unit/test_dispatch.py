@@ -3077,10 +3077,17 @@ def test_the_cap4_retry_hands_a_follow_up_runs_marker_to_the_landing(
         )
 
     monkeypatch.setattr(dispatch_module, "execute_dispatch_land", _fake_land)
+    from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
+
     monkeypatch.setattr(
         dispatch_module,
         "_verification_verdict_for_cap4",
-        lambda **_kwargs: dispatch_module.DispatchVerificationVerdict.VERIFIED,
+        lambda **_kwargs: dispatch_module.Cap4VerificationResult(
+            verdict=DispatchVerificationVerdict.VERIFIED,
+            findings=(),
+            gate_envelope_verdict="clean",
+            verify_data={},
+        ),
     )
     common = {
         "slug": _FOLLOWUP_SLUG,
