@@ -61,6 +61,7 @@ _DEFAULT_API_URL = "https://api.github.com"
 _BRANCH_PREFIX = "warden/fix/"
 FIX_TARGET_RESOLUTION_FLAG = "pyforge.warden.fix_target_resolution"
 FIX_MANIFEST_EDIT_FLAG = "pyforge.warden.fix_manifest_edit"
+FIX_DRAFT_PR_ESTATE_FLAG = "pyforge.warden.fix_draft_pr_estate"
 
 # Finding-id family -> action (closed). A hygiene id additionally gates on its
 # DEP-code middle segment: only DEP002 (unused/obsolete dependency) maps.
@@ -176,7 +177,13 @@ class ForgeClient(Protocol):
         """The url of an already-open PR for this finding id, else ``None``."""
         ...
 
-    def open_pull_request(self, proposal: RemediationProposal) -> str:
+    def open_pull_request(
+        self,
+        proposal: RemediationProposal,
+        *,
+        manifest_fix: ManifestFixPlan | None = None,
+        draft: bool = False,
+    ) -> str:
         """Open one PR for the proposal; return its url."""
         ...
 
@@ -236,6 +243,31 @@ def _proposal_body(
             f"{finding.subject} from the project's manifest (deptry DEP002)."
         )
     return "\n".join(lines)
+
+
+def _enrich_proposal_for_estate_pr(
+    proposal: RemediationProposal,
+    *,
+    forge_repo: str,
+    fix_resolution: FixTargetResolution | None,
+    manifest_fix: ManifestFixPlan | None,
+) -> RemediationProposal:
+    """Append forge target, resolution candidates, and changed paths (Story 14.3)."""
+    extra: list[str] = ["", f"Forge repo: {forge_repo}"]
+    if fix_resolution is not None:
+        if fix_resolution.target is not None:
+            extra.append(f"Resolved target: {fix_resolution.target}")
+        if fix_resolution.candidates:
+            extra.append(f"Candidates tried: {', '.join(fix_resolution.candidates)}")
+    if manifest_fix is not None and manifest_fix.files:
+        extra.append(f"Changed paths: {', '.join(change.path for change in manifest_fix.files)}")
+    return RemediationProposal(
+        finding_id=proposal.finding_id,
+        action=proposal.action,
+        subject=proposal.subject,
+        title=proposal.title,
+        body=proposal.body + "\n".join(extra),
+    )
 
 
 def plan_remediations(
@@ -328,6 +360,10 @@ class GitHubForgeClient:
         self._owner = repo.split("/", 1)[0]
         self._api_url = api_url.rstrip("/")
         self._timeout = timeout
+
+    @property
+    def repo_slug(self) -> str:
+        return self._repo
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> GitHubForgeClient:

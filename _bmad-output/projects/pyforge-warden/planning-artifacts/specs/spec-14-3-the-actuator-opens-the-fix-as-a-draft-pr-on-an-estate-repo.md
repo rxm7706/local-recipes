@@ -2,7 +2,8 @@
 title: "14.3: The actuator opens the fix as a draft PR on an estate repo"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'b36482389641efd2591a9d5b5c8a883bcafcf746'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
