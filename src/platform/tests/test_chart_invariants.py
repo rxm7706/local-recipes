@@ -1861,6 +1861,194 @@ def test_platform_pods_wire_optional_object_storage_consumption_seam():
             )
 
 
+_OBJECT_STORAGE_BUCKET_ENV = "OBJECT_STORAGE_BUCKET"
+_OBJECT_STORAGE_PREFIX_ENV = "OBJECT_STORAGE_PREFIX"
+_OBJECT_STORAGE_PLAIN_ENV = frozenset(
+    {_OBJECT_STORAGE_BUCKET_ENV, _OBJECT_STORAGE_PREFIX_ENV},
+)
+_OBJECT_STORAGE_STORE_IMAGES = ("silo", "garage", "minio")
+
+
+def _assert_object_storage_plain_env_on_web_and_worker(
+    docs: list[dict[str, Any]],
+    *,
+    bucket: str,
+    prefix: str,
+) -> None:
+    by_component = _pod_specs_by_component(docs)
+    for component in ("web", "worker"):
+        env = _collect_env_by_name(by_component[component])
+        bucket_entry = env.get(_OBJECT_STORAGE_BUCKET_ENV)
+        prefix_entry = env.get(_OBJECT_STORAGE_PREFIX_ENV)
+        assert bucket_entry is not None, f"{component} missing {_OBJECT_STORAGE_BUCKET_ENV}"
+        assert prefix_entry is not None, f"{component} missing {_OBJECT_STORAGE_PREFIX_ENV}"
+        assert bucket_entry.get("value") == bucket, bucket_entry
+        assert prefix_entry.get("value") == prefix, prefix_entry
+        assert "valueFrom" not in bucket_entry, bucket_entry
+        assert "valueFrom" not in prefix_entry, prefix_entry
+    for component in sorted(_PLATFORM_COMPONENTS - {"web", "worker"}):
+        env = _collect_env_by_name(by_component[component])
+        for name in _OBJECT_STORAGE_PLAIN_ENV:
+            assert name not in env, f"{component} must not carry plain {name}"
+
+
+def _assert_object_storage_egress_on_web_and_worker_only(
+    docs: list[dict[str, Any]],
+    *,
+    cidr: str,
+    port: int,
+) -> None:
+    def _policy_egress(component: str) -> str:
+        suffix = f"-egress-{component}"
+        matches = [
+            doc
+            for doc in docs
+            if doc.get("kind") == "NetworkPolicy"
+            and doc["metadata"]["name"].endswith(suffix)
+        ]
+        assert len(matches) == 1, (component, matches)
+        return str(matches[0]["spec"].get("egress"))
+
+    web_blob = _policy_egress("web")
+    worker_blob = _policy_egress("worker")
+    assert cidr in web_blob and str(port) in web_blob, web_blob
+    assert cidr in worker_blob and str(port) in worker_blob, worker_blob
+    other_policies = [
+        doc
+        for doc in docs
+        if doc.get("kind") == "NetworkPolicy"
+        and doc["metadata"]["name"].endswith("-egress")
+        and not doc["metadata"]["name"].endswith("-egress-web")
+        and not doc["metadata"]["name"].endswith("-egress-worker")
+    ]
+    for policy in other_policies:
+        blob = str(policy["spec"].get("egress"))
+        assert cidr not in blob, policy["metadata"]["name"]
+
+
+@requires_helm
+def test_story_74_2_object_storage_enabled_wires_bucket_and_prefix_on_web_worker():
+    """Matrix row enabled: plain bucket/prefix on web and worker; credentials stay secretKeyRef."""
+    docs = _render(
+        _CORE_CHART,
+        "--set",
+        "objectStorage.enabled=true",
+        "--set",
+        "objectStorage.bucket=env-bucket",
+        "--set",
+        "objectStorage.prefix=env/prefix/",
+        "--set",
+        "networkPolicy.objectStorage.cidrs={10.0.0.0/8}",
+        release="platform",
+    )
+    _assert_object_storage_plain_env_on_web_and_worker(
+        docs,
+        bucket="env-bucket",
+        prefix="env/prefix/",
+    )
+    by_component = _pod_specs_by_component(docs)
+    for key_name in (
+        "OBJECT_STORAGE_ENDPOINT_URL",
+        "OBJECT_STORAGE_ACCESS_KEY",
+        "OBJECT_STORAGE_SECRET_KEY",
+    ):
+        for component in ("web", "worker"):
+            env = _collect_env_by_name(by_component[component])
+            entry = env[key_name]
+            assert entry.get("value") in (None, ""), entry
+            assert "secretKeyRef" in (entry.get("valueFrom") or {}), entry
+
+
+@requires_helm
+def test_story_74_2_object_storage_enabled_empty_prefix_fails_render():
+    """Matrix row missing value: render fails naming objectStorage.prefix."""
+    with pytest.raises(AssertionError, match="objectStorage.prefix"):
+        _helm(
+            "template",
+            "platform",
+            str(_CORE_CHART),
+            "--set",
+            "objectStorage.enabled=true",
+            "--set",
+            "objectStorage.bucket=env-bucket",
+            "--set",
+            "objectStorage.prefix=",
+        )
+
+
+@requires_helm
+def test_story_74_2_object_storage_disabled_matches_default_render():
+    """Matrix row disabled: byte-identical to the pre-story default render."""
+    default_stdout = _helm("template", "platform", str(_CORE_CHART))
+    disabled_stdout = _helm(
+        "template",
+        "platform",
+        str(_CORE_CHART),
+        "--set",
+        "objectStorage.enabled=false",
+    )
+    assert default_stdout == disabled_stdout
+
+
+@requires_helm
+def test_story_74_2_object_storage_egress_on_web_worker_only():
+    """Matrix row egress: CIDR/port on web and worker policies only."""
+    docs = _render(
+        _CORE_CHART,
+        "--set",
+        "objectStorage.enabled=true",
+        "--set",
+        "objectStorage.bucket=env-bucket",
+        "--set",
+        "objectStorage.prefix=env/prefix/",
+        "--set",
+        "networkPolicy.objectStorage.cidrs={203.0.113.0/24}",
+        "--set",
+        "networkPolicy.objectStorage.port=9000",
+        release="platform",
+    )
+    _assert_object_storage_egress_on_web_and_worker_only(
+        docs,
+        cidr="203.0.113.0/24",
+        port=9000,
+    )
+
+
+@requires_helm
+def test_story_74_2_network_policy_without_object_storage_adds_no_store_egress():
+    """Matrix row egress, store disabled: web/worker policies have no ipBlock."""
+    docs = _render(_CORE_CHART, release="platform")
+    for suffix in ("-egress-web", "-egress-worker"):
+        policy = next(
+            doc
+            for doc in docs
+            if doc.get("kind") == "NetworkPolicy"
+            and doc["metadata"]["name"].endswith(suffix)
+        )
+        assert "ipBlock" not in str(policy["spec"].get("egress")), policy["metadata"]["name"]
+
+
+@requires_helm
+def test_story_74_2_render_never_runs_object_store_images():
+    """Matrix row self-hosting: no silo/garage/minio workload images."""
+    docs = _render(
+        _CORE_CHART,
+        "--set",
+        "objectStorage.enabled=true",
+        "--set",
+        "objectStorage.bucket=env-bucket",
+        "--set",
+        "objectStorage.prefix=env/prefix/",
+        "--set",
+        "networkPolicy.objectStorage.cidrs={10.0.0.0/8}",
+        release="platform",
+    )
+    rendered = str(docs).lower()
+    for needle in _OBJECT_STORAGE_STORE_IMAGES:
+        assert f"image: {needle}" not in rendered, needle
+        assert f"/{needle}:" not in rendered, needle
+
+
 _LANGFLOW_PASSWORD_ENV = "LANGFLOW_SUPERUSER_PASSWORD"  # noqa: S105 -- an env var NAME
 
 
