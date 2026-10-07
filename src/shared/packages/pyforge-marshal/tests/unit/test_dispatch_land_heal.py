@@ -1884,10 +1884,10 @@ def _22_18_landing(
 
 
 class _RecordingReconcile:
-    def __init__(self) -> None:
+    def __init__(self, *, refuse: bool = False, finding: Finding | None = None) -> None:
         self.calls: list[tuple[frozenset[str], bool]] = []
-        self.refuse = False
-        self.finding: Finding | None = None
+        self.refuse = refuse
+        self.finding = finding
 
     def __call__(self, *, branch_stamp_specs: frozenset[str], push_when_done: bool):
         self.calls.append((branch_stamp_specs, push_when_done))
@@ -1994,29 +1994,30 @@ def test_heal_resolves_baseline_to_main_and_calls_reconcile_once_before_push(tmp
 
 
 def test_heal_reconcile_refusal_pushes_nothing_and_never_retries_merge(tmp_path: Path) -> None:
-    _, clone, wt = _22_18_landing(
+    remote, clone, wt = _22_18_landing(
         tmp_path,
         branch_files={
             SPEC_SURFACE_BASELINE_REL: _baseline_json(
                 **{
                     _SPEC_A: _baseline_entry("branch"),
                     _SPEC_B: _baseline_entry("base"),
-                    _SPEC_C: _baseline_entry("base"),
+                    _SPEC_C: _baseline_entry("branch"),
                 }
             ),
             _MEMLOG_A: _memlog(_A, _B1, updated=_T1),
+            _MEMLOG_C: _memlog(_A, _B1, updated=_T1),
         },
         main_files={
             SPEC_SURFACE_BASELINE_REL: _baseline_json(
                 **{
                     _SPEC_A: _baseline_entry("base"),
                     _SPEC_B: _baseline_entry("main"),
-                    _SPEC_C: _baseline_entry("base"),
+                    _SPEC_C: _baseline_entry("main"),
                 }
             ),
         },
     )
-    head_before = _run_git(clone, "rev-parse", _HEAD).strip()
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
     forge = _HonestForge(clone)
     reconcile = _RecordingReconcile(refuse=True)
 
@@ -2043,7 +2044,7 @@ def test_heal_reconcile_refusal_pushes_nothing_and_never_retries_merge(tmp_path:
     assert result.reconcile_refusal is not None
     assert result.reconcile_refusal.code == "MRS-DISP-048"
     assert forge.merge_calls == 0
-    assert _run_git(clone, "rev-parse", _HEAD).strip() == head_before
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
 
 
 def test_heal_escalates_non_mechanical_path_beside_baseline(tmp_path: Path) -> None:
