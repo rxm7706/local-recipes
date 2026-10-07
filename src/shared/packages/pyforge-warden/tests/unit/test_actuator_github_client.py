@@ -28,6 +28,8 @@ from pyforge.warden.actuator import (
 from pyforge.warden.models import Finding, Severity, SeverityTier
 
 _REPO = "owner/name"
+
+
 @pytest.fixture(autouse=True)
 def _production_flags(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")

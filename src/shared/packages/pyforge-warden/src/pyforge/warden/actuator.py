@@ -614,11 +614,7 @@ def run_actuator(
         if fix_draft_pr_estate_enabled is not None
         else read_boolean(FIX_DRAFT_PR_ESTATE_FLAG, default=False)
     )
-    allowed_estate_repos = (
-        estate_repos
-        if estate_repos is not None
-        else frozenset(_DEFAULT_FIX_PR_ESTATE_REPOS)
-    )
+    allowed_estate_repos = estate_repos if estate_repos is not None else frozenset(_DEFAULT_FIX_PR_ESTATE_REPOS)
     resolution_by_id: dict[str, FixTargetResolution] = {}
     target_by_id: dict[str, str] | None = None
     resolution_failed_ids: set[str] = set()

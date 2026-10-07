@@ -316,8 +316,7 @@ class EffectiveConfig:
             isinstance(item, str) and "/" in item and item.strip() == item for item in self.fix_pr_estate_repos
         ):
             raise ValueError(
-                "fix_pr_estate_repos must be a tuple of owner/name slugs, "
-                f"got {self.fix_pr_estate_repos!r}"
+                f"fix_pr_estate_repos must be a tuple of owner/name slugs, got {self.fix_pr_estate_repos!r}"
             )
         if self.min_epss is not None and (
             isinstance(self.min_epss, bool)
@@ -722,8 +721,7 @@ def _coerce_fix_pr_estate_repos(value: object) -> tuple[str, ...]:
     invalid = [token for token in tokens if "/" not in token]
     if invalid:
         raise ConfigValidationError(
-            f"'fix-pr-estate-repos' entries {invalid!r} are not owner/name slugs "
-            "(expected 'owner/name')"
+            f"'fix-pr-estate-repos' entries {invalid!r} are not owner/name slugs (expected 'owner/name')"
         )
     return tokens
 

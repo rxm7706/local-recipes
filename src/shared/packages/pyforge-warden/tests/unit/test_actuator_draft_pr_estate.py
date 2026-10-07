@@ -9,9 +9,9 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-
 from pyforge.core import flags as core_flags
 from pyforge.core.flags import read_boolean
+
 from pyforge.warden.actuator import (
     FIX_DRAFT_PR_ESTATE_FLAG,
     GitHubForgeClient,
@@ -126,9 +126,7 @@ def test_non_estate_repo_is_skipped_when_draft_flag_on() -> None:
     assert forge.opens == []
 
 
-def test_estate_flag_on_records_draft_open_with_manifest_fix(
-    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
-) -> None:
+def test_estate_flag_on_records_draft_open_with_manifest_fix(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _write_pixi_repo(repo)
     monkeypatch.setattr(
