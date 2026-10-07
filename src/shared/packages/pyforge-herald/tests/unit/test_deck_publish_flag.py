@@ -30,7 +30,7 @@ def test_publish_flag_off_lists_disabled_and_exits_usage(deck_tree: Path, tmp_pa
     assert "disabled" in help_out.lower()
     result = invoke_cli(main, ["deck", "publish", "demo-deck", "--repo-root", str(deck_tree)])
     assert result.exit_code == 2
-    assert "flag" in result.err.lower()
+    assert "flag" in result.output.lower()
 
 
 def test_publish_succeeds_when_flag_on(deck_tree: Path, tmp_path: Path, monkeypatch):
