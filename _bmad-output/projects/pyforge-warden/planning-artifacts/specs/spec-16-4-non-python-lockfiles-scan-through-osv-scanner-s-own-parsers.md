@@ -144,6 +144,15 @@ Deps: —.
   - `[low]` `[reject]` memlog missing before review — patched via memlog append + reconcile in finalize.
   - `[low]` `[reject]` go.mod+go.sum double scan — acceptable v1; document in deferred if duplicate components appear in the wild.
 
+### 2026-10-07 — Operator re-verify after the dispatch's verification refusal
+- The dispatch run `pyforge-warden-20261007T183626594Z-5b9ed0c7` was first refused in core's `test_flags.py` (the new
+  key `pyforge.warden.non_python_ecosystems` was not in `_SHIPPED_CLOCKS` or `per_environment`), which the fix commit
+  982e9038a6 resolved. Its second verification was refused on `pixi run --frozen -e pyforge-guild lint-types` (exit 1)
+  with no failing check recorded in the run.
+- Re-run on this branch head, each verdict read from its exit code: `lint-types` 0, `pyforge-warden-test` 0 (2223
+  passed), `pyforge-core-test` 0 (2270 passed), `flag-gate-check` 0, `spec-surface-check` 0. The `lint-types` refusal
+  did not reproduce; five dispatch sessions were verifying on this host at the time.
+
 ## Auto Run Result
 
 Status: done
