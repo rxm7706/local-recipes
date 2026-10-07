@@ -588,13 +588,22 @@ def test_the_shipped_tree_and_overlay_agree_across_the_three_readers(
 _SHIPPED_BOOLEANS = {
     "pyforge.three_surfaces": True,
     "pyforge.steward.ghe_fleet_credentials": False,
-    "pyforge.steward.object_store_consumer": False,
+    "pyforge.steward.object_store_consumer": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
     "pyforge.atlas.dependency_history_sensor": {
         "dev": True,
         "staging": True,
         "production": False,
     },
     "pyforge.warden.fix_target_resolution": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
+    "pyforge.warden.fix_manifest_edit": {
         "dev": True,
         "staging": True,
         "production": False,

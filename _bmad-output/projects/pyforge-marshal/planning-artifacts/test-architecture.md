@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 7754b9ff50ecdf57
-story_count: 431
+source_fingerprint: d2050f56dd87b1fa
+story_count: 434
 test_file_count: 240
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 431
+- **Stories parsed:** 434
 - **Epics parsed:** 85
 - **Test files inventoried:** 240 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `7754b9ff50ecdf57`
+- **Source fingerprint:** `d2050f56dd87b1fa`
 
 ## Risk Assessment
 
@@ -532,6 +532,9 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 22.12 | A shared-surface diff also clears its own full suite, not just the station's ... | none observed |
 | 22.13 | A landing sets the story's epics status to match the ledger | none observed |
 | 22.14 | The cross-surface gate runs each touched surface's own check | none observed |
+| 22.15 | A landing matches the epics status even when the spec is already done | none observed |
+| 22.16 | A launch without the env on PATH never wastes a finished session | none observed |
+| 22.17 | A land-only refusal names the gate that refused it | none observed |
 | 23.1 | Wall-clock fallback derivation from promoted-spec revision fields | none observed |
 | 23.2 | Wall-clock is never blended with active-compute | none observed |
 | 23.3 | The coverage caption partitions by true reason | none observed |

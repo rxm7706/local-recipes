@@ -9,7 +9,7 @@ followup_review_recommended: false
 flag:
   key: pyforge.steward.object_store_consumer
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
-  default: {production: off, staging: off, dev: off}   # matches src/platform/config/flags.json and flag-overlays.json (Story 76.1)
+  default: {production: off, staging: on, dev: on}   # amended 2026-10-07: Story 74.2 (same key) turns the consumer on in dev and staging; was off everywhere (Story 76.1). See Spec Change Log.
   scope: global                                # v1 is global only (Q5)
   fallback: put_stream and open_stream raise ObjectStoreDisabled; a consumer keeps its exports in git only, as today
   cleanup: 90 days after ON in every environment (Q4)
@@ -188,6 +188,11 @@ Type / Effort / Deps: feature / M / —.
 - Given the I/O matrix, when the seam test runs, then each row (first put, repeat put, large put, get, bad key, unset setting, flag OFF, store down) has a test that fails if the row's behaviour is removed.
 
 ## Spec Change Log
+
+- 2026-10-07 — Story 74.2 shares this story's flag key (`pyforge.steward.object_store_consumer`, one flag per CAP) and
+  declares it on in dev and staging. Story 74.2 registered those values in `src/platform/config/flag-overlays.json`, so
+  `flag.default` above now states the tree's current values. The code this story shipped is unchanged. While the key was
+  off everywhere, the declared default was off in every environment.
 
 ## Source
 

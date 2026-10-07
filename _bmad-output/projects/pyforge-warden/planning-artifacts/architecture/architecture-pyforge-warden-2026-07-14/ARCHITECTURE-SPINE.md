@@ -41,7 +41,7 @@ completedAt: '2026-07-11'
 project_name: 'pyforge-warden'
 user_name: 'rxm7706'
 date: '2026-07-11'
-updated: "2026-10-03"   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 17, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
+updated: "2026-10-07"   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD -> arch) for Story 17.1's landing and Stories 14.1-14.2 (FR-41 / CAP-24); lands on the 2026-09-28 Decision 1 and the subprocess, temp-file and no-execution rules as written, no AD amended; one older divergence recorded (tea_advisory.py spawns its own subprocess). See § Currency reconciliation — 2026-10-07. Prior 2026-10-03 (Phase 4+5)   # RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 17, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> arch) for FR-41..FR-43 / CAP-24..26 (Epics 14-16); § Currency reconciliation — 2026-09-28 appended (two boundary decisions recorded, no prior decision reversed). Prior 2026-09-27   # RE-STAMPED 2026-09-27: chain-currency cascade for CAP-23 (prd -> arch), no AD delta; the dead first `updated:` key (2026-09-20, fleet consistency pass) removed -- YAML last-wins read only this one. Prior 2026-09-20   # RE-STAMPED 2026-09-20: chain-currency cascade (py-rattler floor, foundry-full union solve), no AD delta; prior 2026-09-17: one-chain warden fold cascade (PRD -> spine). Duplicate `updated:` key removed so YAML last-wins matches the 2026-09-17 front-matter stamp. No AD added, changed or removed.
 currency_review: "Reviewed 2026-09-07 — cascade from the PRD's 2026-09-07 reconciliation (Epic 11 landed: two advisory lenses registered in the existing pyforge.core.hooks plugin bundle, no new architectural surface; DW-FU-11-2's fail-closed roster-missing posture resolved inside the existing plugin-error seam). v1 body and the 2026-08-26 entry below remain accurate. See § Currency reconciliation — 2026-09-07."
 ---
 
@@ -587,5 +587,41 @@ since the v1 close, and `updated:`. No prior decision reversed.
 against every AD: each fix lands inside the module that already owns the behaviour, behind the ports and boundaries
 the spine already draws; no port, adapter or package boundary moves, and `src/platform/` still imports no
 `pyforge.*`.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-07
+
+*Trigger: the PRD's re-stamp for the Spec memlog's 2026-10-03..07 entries (`prd→arch`): Story 17.1 landed, and
+Stories 14.1 and 14.2 realize most of FR-41 (CAP-24).* Checked against every decision above. They land as written:
+
+- **Decision 1 (2026-09-28): pixi runs at runtime only inside the actuator's real path.** Story 14.1's solver
+  (`fix_solver.py`) and Story 14.2's re-solve (`manifest_fixup.py`) both call `engines.run_pixi_lock`. It runs a fixed
+  argv, `pixi lock`, through `_engine_env()` after the Story 6.6 `--version` pre-flight against `PIXI_VERSION_RANGE`.
+  The working directory is always the throwaway copy. Under `--fix-prs-dry-run` the actuator returns before either
+  runs. Any network pixi needs happens in pixi's own process, a named engine subprocess (NFR-S2).
+- **`engines.py` is the only module that spawns subprocesses.** Neither new module imports `subprocess`.
+- **Temp files via `mkdtemp` (`0700`).** Both copies are `mkdtemp` directories, removed in a `finally` block. The
+  actuator also compares a digest of the scanned tree before and after the edit and fails the outcome if it moved.
+- **The extractor stays a no-execution zone.** `manifest_edit.py` sits outside `extract/`, but the same AST denylist
+  now covers it (`tests/meta/test_extract_no_execution.py`). The rule gains a module and loses nothing.
+- **The actuator is the only forge egress, and it stays post-verdict.** Story 14.2 adds no forge call. The edit plan
+  rides in the open `actuation` slot, so the `ComplianceReport` stays at 1.1.0.
+- **Story 17.1** fixes `eligibility.py`, `eligibility_sbom.py` and `sources.py` inside their own modules. Its
+  merge-by-group-key change was reverted, so identity grouping is still Story 7.2's `PackageIdentity`.
+
+**As-built module additions (recorded, accepted).** `fix_solver.py` (14.1) and `manifest_fixup.py` (14.2) join
+`actuator.py` in § Module structure. Story 14.2's surface named only `manifest_edit.py`.
+
+**Sequencing note.** The estate allowlist and the draft-PR commit are Story 14.3 (`backlog`). Until then, the edit and
+the re-solve run for whatever repo `GITHUB_REPOSITORY` names, whenever both flags are on (dev and staging) and
+`--open-fix-prs` is set. Both flags are off in production.
+
+**One older divergence, recorded and not repaired.** `tea_advisory.py` (Story 11.2, 2026-09-07) calls
+`subprocess.run` directly in `_default_runner`, not through `_engine_env()`. That breaks the rule restated above, and
+neither § Currency reconciliation — 2026-09-07 nor — 2026-09-28 recorded it. The call uses an argv list and no shell,
+and it writes into its own scratch directory. It is not part of this fold.
+
+No port, adapter or package boundary moves.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.

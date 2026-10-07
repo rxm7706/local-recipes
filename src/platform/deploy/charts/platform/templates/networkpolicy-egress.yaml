@@ -24,6 +24,7 @@ spec:
     - Egress
   egress:
     {{- include "platform.networkPolicy.webEgressRules" . | nindent 4 }}
+    {{- include "platform.networkPolicy.egressToObjectStorage" . | nindent 4 }}
 
 {{- /* worker + beat + migrate + consume-events: data plane + dbgpt + DNS */}}
 {{- range $component := list "worker" "beat" "migrate" }}
@@ -44,6 +45,9 @@ spec:
     - Egress
   egress:
     {{- include "platform.networkPolicy.workerEgressRules" $root | nindent 4 }}
+    {{- if eq $component "worker" }}
+    {{- include "platform.networkPolicy.egressToObjectStorage" $root | nindent 4 }}
+    {{- end }}
 {{- end }}
 
 {{- range $station := uniq $root.Values.events.consumers }}

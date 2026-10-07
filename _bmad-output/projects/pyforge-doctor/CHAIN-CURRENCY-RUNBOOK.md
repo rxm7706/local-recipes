@@ -229,3 +229,11 @@ Regenerating a board view is optional confirmation, not the measure.
   2026-10-05` sections folding the six memlog entries (Epic 27 rulings and Story 27.1, the 83.24 guard, Story 19.1); no FR
   or AD change. Epics stayed at 2026-10-03, inside the 2-day window. Deviation: the Spec stage was dated by its memlog's
   git last-touch, not by `SPEC.md`'s `updated:` (2026-09-29), so a landing that only appends to the memlog moves it.
+
+- **Run 2026-10-07 — 1 finding cleared, single station.** Entry: pyforge-marshal `staleness`, `feeds spec→prd` (the
+  Spec's memlog moved to 2026-10-07 with the Story 22.15-22.17 mint event; the PRD and spine sat at 2026-10-04).
+  Exit: `chain_currency_sweep_check.py --project pyforge-marshal` current. Remedy: PRD § 38 and the spine's
+  `## Currency reconciliation — 2026-10-07` fold the 34 memlog entries since the 2026-10-04 re-stamp (four fix mints
+  that day, the 2026-10-04..06 landings and surface reconciles, the 2026-10-06 and 2026-10-07 landing-gap mints); no
+  FR or AD change. Epics re-stamped 2026-10-07 in the same commit so `arch→epics` stays inside the window. Deviation:
+  the 2026-10-06 mint (22.13, 22.14, 53.4, 85.6) had not re-stamped epics, so this stamp names those stories too.

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: doctor
-source_fingerprint: 9e121403aea884ba
-story_count: 146
+source_fingerprint: 10daf13e13b9ed21
+story_count: 148
 test_file_count: 94
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-doctor`
-- **Stories parsed:** 146
+- **Stories parsed:** 148
 - **Epics parsed:** 41
 - **Test files inventoried:** 94 under `src/shared/packages/pyforge-doctor/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `9e121403aea884ba`
+- **Source fingerprint:** `10daf13e13b9ed21`
 
 ## Risk Assessment
 
@@ -211,6 +211,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 6.10 | Independence is structural, for every source | none observed |
 | 6.11 | The classifier recognizes a spike report *(added 2026-08-11 — FR-16)* | none observed |
 | 6.12 | bmad-drift counts every pixi environment, table-form ones too | none observed |
+| 6.13 | The spec-to-PRD currency edge ignores a landing's memlog bookkeeping | none observed |
 | 7.1 | The emitter mints identity at defer time | none observed |
 | 7.2 | Grandfather the 470 at a dated cut-off | none observed |
 | 7.3 | The detector sees anonymous Tier-3 entries | none observed |
@@ -309,6 +310,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 34.3 | The flag gate reads the tree metadata — per-environment defaults and the 90-d... | none observed |
 | 34.4 | Each station has a checked-in flag inventory of its runtime capabilities | none observed |
 | 34.5 | The flag gate reds a landed flagged story whose test does not run both states | none observed |
+| 34.6 | A flag key shared by several done stories is judged against the latest one | none observed |
 | 35.1 | capability-ledger's post-PIN check reads only live Specs | none observed |
 | 36.1 | A fold-complete check proves each archived Dream's body is in its station Dream | none observed |
 | 36.2 | The sibling-drift check reads acknowledged Dreams under the archive | none observed |
