@@ -128,7 +128,7 @@ def attach_deck_export_routes(
     def _cookie_map(request: Request) -> dict[str, str]:
         return dict(request.cookies)
 
-    async def _list_payload(request: Request) -> list[dict[str, Any]]:
+    def _list_payload(request: Request) -> list[dict[str, Any]]:
         gate(_header_map(request), _cookie_map(request))
         return list_exports_json(list_records=list_records)
 
