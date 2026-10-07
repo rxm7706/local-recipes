@@ -166,9 +166,14 @@ def attach_deck_export_routes(
                     return next(it)
                 except StopIteration:
                     return None
+                except OSError as exc:
+                    raise StoreError(str(exc)) from exc
 
             while True:
-                block = await asyncio.to_thread(_next)
+                try:
+                    block = await asyncio.to_thread(_next)
+                except StoreError:
+                    break
                 if block is None:
                     break
                 yield block

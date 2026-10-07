@@ -10,11 +10,14 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
+from django.conf import settings
+from django.contrib.sessions.backends.db import SessionStore
 from django.test import override_settings
 from django_herald_portal.models import DeckExport
 from django_pyforge.assertion.client import PortalClient
 from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
 from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
+from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import prefixed_station
 from httpx import ASGITransport
 from httpx import AsyncClient
@@ -41,6 +44,14 @@ def _flag_tree(tmp_path: Path, *, enabled: bool) -> Path:
     path = tmp_path / "flags.json"
     path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return path
+
+
+def _session_cookies(*, sub: str, groups: list[str]) -> dict[str, str]:
+    store = SessionStore()
+    store[IDP_TOKEN_CLAIMS_SESSION_KEY] = {"sub": sub, "groups": groups}
+    store.save()
+    name = getattr(settings, "SESSION_COOKIE_NAME", "sessionid")
+    return {name: store.session_key}
 
 
 def _herald_get(
@@ -138,6 +149,49 @@ def test_list_returns_projection_with_bearer(
     assert len(body) == 1
     assert body[0]["sha256"] == "b" * 64
     assert "access-control-allow-origin" not in {k.lower() for k in response.headers}
+
+
+@override_settings(
+    PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
+    PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
+)
+def test_list_returns_projection_with_portal_session(
+    deck_export_row,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path, enabled=True)))
+    cookies = _session_cookies(
+        sub="herald-operator",
+        groups=[prefixed_station("herald")],
+    )
+    response = _herald_get(
+        "/stations/herald/api/v1/deck-exports",
+        cookies=cookies,
+    )
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()[0]["sha256"] == "b" * 64
+
+
+@override_settings(
+    PYFORGE_ASSERTION_PRIVATE_KEY=GOLDEN_PRIVATE_PEM,
+    PYFORGE_ASSERTION_PUBLIC_KEY=GOLDEN_PUBLIC_PEM,
+)
+def test_list_forbidden_with_portal_session_wrong_role(
+    deck_export_row,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path, enabled=True)))
+    cookies = _session_cookies(
+        sub="other-user",
+        groups=[prefixed_station("steward")],
+    )
+    response = _herald_get(
+        "/stations/herald/api/v1/deck-exports",
+        cookies=cookies,
+    )
+    assert response.status_code == HTTPStatus.FORBIDDEN
 
 
 @override_settings(
@@ -281,3 +335,54 @@ def test_refresh_upserts_from_portal_runner(
     row = DeckExport.objects.get(sha256="d" * 64)
     assert row.slug == "pyforge-herald"
     assert row.size == 9
+
+
+def test_refresh_removes_stale_rows_for_slug(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, db
+) -> None:
+    from django.core.management import call_command
+
+    DeckExport.objects.create(
+        slug="pyforge-herald",
+        topic="pyforge-herald",
+        kind="html",
+        export_date="2026-09-27",
+        size=1,
+        content_type="text/html",
+        sha256="e" * 64,
+        source_commit="old",
+        published_at=datetime(2026, 9, 27, tzinfo=UTC),
+    )
+    on = _flag_tree(tmp_path, enabled=True)
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
+    monkeypatch.setattr(
+        "django_herald_portal.management.commands.refresh_deck_exports.evaluate_boolean",
+        lambda _key, default=False: True,
+    )
+
+    sample = json.dumps(
+        [
+            {
+                "topic": "pyforge-herald",
+                "kind": "html",
+                "date": "2026-09-28",
+                "size": 9,
+                "content_type": "text/html",
+                "sha256": "d" * 64,
+                "source_commit": "abc",
+            }
+        ]
+    )
+
+    def _fake_runner(
+        *, station: str, argv: list[str], token: str, **_: object
+    ) -> dict[str, str]:
+        return {"stdout": sample}
+
+    monkeypatch.setattr(
+        "django_herald_portal.management.commands.refresh_deck_exports.deck_exports_json_runner",
+        _fake_runner,
+    )
+    call_command("refresh_deck_exports", slug=["pyforge-herald"])
+    assert not DeckExport.objects.filter(sha256="e" * 64).exists()
+    assert DeckExport.objects.get(sha256="d" * 64).size == 9

@@ -241,3 +241,26 @@ def test_attach_routes_store_error_is_502(tmp_path: Path, _patch_deck_flag_path)
     response = _run_async(_call())
     assert response.status_code == 502
     assert "broken pipe" in response.text
+
+
+def test_attach_routes_mid_stream_store_error_closes_body(
+    tmp_path: Path, _patch_deck_flag_path
+) -> None:
+    def _open(_sha: str) -> tuple[ExportRow, Iterator[bytes]]:
+        def _chunks() -> Iterator[bytes]:
+            yield b"partial"
+            raise OSError("store refused mid-stream")
+
+        return _SAMPLE, _chunks()
+
+    app = _herald_app(tmp_path, list_records=lambda: [_SAMPLE], open_stream=_open)
+    _patch_deck_flag_path(app)
+
+    async def _call():
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            return await client.get(f"/stations/herald/api/v1/deck-exports/{'a' * 64}")
+
+    response = _run_async(_call())
+    assert response.status_code == 200
+    assert response.content == b"partial"
