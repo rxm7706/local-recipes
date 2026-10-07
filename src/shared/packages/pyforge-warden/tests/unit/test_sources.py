@@ -238,7 +238,7 @@ def test_cyclonedx_adapter_unrecognized_purl_type_is_skipped(tmp_path):
         "bomFormat": "CycloneDX",
         "specVersion": "1.6",
         "components": [
-            {"name": "leftpad", "purl": "pkg:npm/leftpad@1.0.0"},
+            {"name": "libc", "purl": "pkg:deb/debian/libc6@2.36"},
             {
                 "name": "requests",
                 "version": "2.31.0",

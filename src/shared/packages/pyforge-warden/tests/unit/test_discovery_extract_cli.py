@@ -781,7 +781,7 @@ def test_nonexistent_target_is_early_fatal(capsys, tmp_path):
 
 
 def test_keyboard_interrupt_returns_sigint_with_no_report(capsys, monkeypatch, tmp_path):
-    def interrupted(target: Path):
+    def interrupted(target: Path, **_kwargs: object):
         raise KeyboardInterrupt
 
     monkeypatch.setattr(cli, "discover", interrupted)
@@ -1138,7 +1138,7 @@ def test_unknown_manifest_kind_is_internal_error_not_a_crash(capsys, tmp_path, m
     # "meta.yaml" gained an extractor in Story 2.2 -- a genuinely-fictional
     # kind token is the sentinel now.
     unknown = ScannedManifest(path="pyproject.toml", kind="some-unknown-manifest.kind")
-    monkeypatch.setattr(cli, "discover", lambda target: (unknown,))
+    monkeypatch.setattr(cli, "discover", lambda target, **_: (unknown,))
     rc, document, err = scan_json(capsys, tmp_path)
     assert rc == 2
     assert document["status"]["value"] == "error"
@@ -1264,7 +1264,7 @@ def test_system_exit_from_the_scan_region_projects_as_error(capsys, tmp_path, mo
     sys.exit(0) mid-scan would read as a green gate with no report. It is
     projected to exit_code_for(error), stdout stays empty."""
 
-    def exiting_discover(target):
+    def exiting_discover(target, **_kwargs: object):
         raise SystemExit(0)
 
     monkeypatch.setattr(cli, "discover", exiting_discover)
@@ -1283,7 +1283,7 @@ def test_closed_stderr_does_not_escape_the_exception_nets(monkeypatch, tmp_path)
     would escape main() as an uncaught traceback with interpreter exit 1 —
     the exact exit-1 collision the module docstring forbids."""
 
-    def exploding_discover(target):
+    def exploding_discover(target, **_kwargs: object):
         raise RuntimeError("sentinel internal failure")
 
     monkeypatch.setattr(cli, "discover", exploding_discover)
