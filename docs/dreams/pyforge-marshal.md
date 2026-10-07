@@ -1098,6 +1098,29 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   landing leaves every Spec it touched stampable. **Constraints:** fix stories, no CAP, no flag (operator,
   2026-10-06: "do marshal prevention fixes first"). Owner `spec-pyforge-marshal`. → Stories 22.13, 22.14, 53.4,
   85.6, specced 2026-10-06.
+- **2026-10-07 (landing gaps, again)** — **Found: Story 22.13's epics flip misses the usual case, a launch outside
+  pixi wastes every session it starts, and a land-only refusal does not say why.** (1) Herald 28.1 landed on 2026-10-07 (PR #1892, merge `6b3a1c4c30`). Its
+  ledger promotion (`966b166f76`) touched only the ledger, and herald's `epics.md` still reads `**Status:** backlog`
+  under `### Story 28.1:`. Story 22.13 put the flip inside `_promote_tracked_spec`, after the early return for a spec
+  that is already `done` on `origin/main`. A dispatch session normally sets its own spec to `done` on the branch, so
+  after the merge the flip never runs. (2) Three dispatches launched as
+  `.pixi/envs/pyforge-guild/bin/marshal factory dispatch …` instead of through `pixi run` (herald
+  `…20261007T055516715Z-20c28cc4`, steward `…20261007T055444723Z-4d4c948e`, warden `…20261007T055413377Z-abbfa51f`)
+  ran their full sessions and were then refused at `MRS-GATE-002`. The S-13.7 guard
+  `python scripts/spec_surface_reconcile.py` looks up `python` on the supervisor's PATH, and that PATH had none. The
+  same launch also lost the caveman and codegraph layers (`MRS-DISP-042`, `MRS-DISP-054`). Each session's work waited
+  until an operator re-verified it by hand and re-dispatched it land-only. (3) That land-only path then hid its own
+  refusals. Warden 14.2 and steward 74.2, re-dispatched land-only at the same time, both answered
+  `skipped-unverified` with only `MRS-DISP-014` and `MRS-DISP-040`. `_verification_verdict_for_cap4` keeps the verdict
+  and drops the verification's findings, turns any caught exception into `refused` with no message, and journals
+  nothing in the run dir. A hand replay on warden's worktree minutes later read `warn`. The likely cause, two
+  `platform-ci-local` runs colliding on fixed ports and a fixed work dir, had to be reconstructed by hand. **What it
+  looks like when fixed:** every landing leaves the story's epics line at `done`, whether or not the spec still
+  needed its own publish. A dispatch either refuses before its session starts when verification could not find its
+  interpreter, or runs the guard with the supervisor's own interpreter. A land-only refusal names its failing gate,
+  command or exception in the dispatch output and journals a `dispatch-verification` outcome the way the supervisor
+  does. **Constraints:** fix stories, no CAP, no flag; the `platform-ci-local` lock belongs to the script's owner and
+  is chained separately. Owner `spec-pyforge-marshal`. → Stories 22.15, 22.16, 22.17, specced 2026-10-07.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
