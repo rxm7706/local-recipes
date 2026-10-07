@@ -6,6 +6,7 @@ status: 'done'
 baseline_revision: '8ef4a6aa7950d8491852344209b60cdbc8765ac0'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle/.memlog.md
