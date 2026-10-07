@@ -369,7 +369,18 @@ def test_bridge_core_sweep_covers_every_non_excluded_package_module():
     ``_BRIDGE_CORE_MODULES``'s own docstring)."""
     package_modules = {module.name for module in pkgutil.iter_modules(herald_pkg.__path__)}
     swept = {module.__name__.rsplit(".", 1)[-1] for module in _BRIDGE_CORE_MODULES}
-    assert package_modules - {"cli", "transport", "pptx_pipeline", "station_api"} == swept
+    assert (
+        package_modules
+        - {
+            "cli",
+            "transport",
+            "pptx_pipeline",
+            "station_api",
+            "deck_store",  # Story 29.1 (CAP-54): object-store port, not bridge-core
+            "deck_publish",  # Story 29.1 (CAP-54): publish orchestration, not bridge-core
+        }
+        == swept
+    )
 
 
 def _import_statements(source: str) -> list[tuple[str, tuple[str, ...]]]:

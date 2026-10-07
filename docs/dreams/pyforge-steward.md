@@ -829,6 +829,100 @@ Drift — orphaned between stations.
   conda-forge `python314t` migration at all; `pyforge-guild`, the one runtime environment, is the destination
   the read measures against, not a move to make. Owner: steward. → `bmad-spec` when the operator says so.
 
+- **2026-10-07 — Proposed: the gates use every core.** Source: the operator's 2026-10-07 question, asked after the
+  free-threading review above: what makes `pyforge-guild` foundationally able to use every CPU core, to cut wall time
+  and token cost? The review's answer, measured on this tree, is that the cores are there and idle: the estate's own
+  gates run one thing at a time, and a fresh workspace spends most of a gate run rebuilding environments.
+  Free-threading is the last lever, not the first. This entry orders three capabilities; the third is the readiness read already
+  ruled above.
+  **What is measured (2026-10-07, this tree, a 16-core host):**
+  - Every station test task is a plain `pytest … -q`: 29 `cmd = "pytest …"` tasks, none with `-n`. `pytest-xdist`
+    is declared only in `feature.local-recipes` (`pixi.toml:2269`); no station environment carries it, so the
+    station test features gain it in the same story. The eight station suites run serially inside `pr-preflight`.
+  - `pr-preflight` and `pyforge-station-tests` are `depends-on` chains, and pixi runs `depends-on` legs one after
+    another: two `sleep 3` legs behind one task take 6.0 s wall (probe manifest, 2026-10-07). A green local run
+    therefore costs the sum of every leg.
+  - `scripts/detectors.py` launches each detector with `subprocess.run` in a loop (`:408`) and threads the doctor
+    sources through `_DOCTOR_SOURCE_TASKS` the same way; no pool. `detectors-ci` is the first leg of `pr-preflight`.
+  - A fresh workspace builds every station environment before a single test runs: 11 environments, 02:05 → 02:47 on
+    2026-10-07, dominated by `pixi-build-python` compiling the nine `pyforge-*` path packages once per environment.
+    The whole pre-push run took 45 minutes under a load of 26; the longest single suite is a fraction of that.
+  - In-process thread parallelism is almost absent: doctor, scribe and steward have none; warden fans its engines
+    out in a `ThreadPoolExecutor` (`cli.py:1347`, I/O-bound); marshal's threads are an OIDC callback and a progress
+    ticker; mason's forward subprocess pipes; atlas's is an HTTP fetch pool. Nothing CPU-bound in pure Python runs
+    on more than one core today, so a free-threaded interpreter would change nothing until such code exists.
+  **What it looks like when real** (three capabilities, in this order; each its own CAP on `spec-pyforge-steward`):
+  1. **Parallel gates.** The legs of `pr-preflight` and `pyforge-station-tests` run concurrently across cores, each
+     station suite in its own environment, with the verdict still read from exit codes, never a pipe. Each station
+     suite runs under `pytest -n auto` where its tests are process-safe, with `pytest-cov` combining so the
+     per-station coverage floors (`scripts/coverage_gates_ci.py`, each in its own environment) still hold. The
+     detectors runner and the doctor-source leg run through a process pool sized to `os.cpu_count()`, output
+     captured per detector and printed in registry order so the sweep reads as it does today. Acceptance: on the
+     16-core host a fresh-workspace `pr-preflight` finishes in roughly the longest leg plus environment builds, with
+     the same verdict and the same registry gaps as the serial run; a deliberately failing detector still reds the
+     sweep; a suite that is not process-safe is listed by name and runs serially rather than being skipped. The
+     runner stays one script with one exit-code domain (steward's `pre_push_preflight.sh` calls it; marshal's
+     `dispatch_verify` legs can call the same entry point). The detectors runner is governed by doctor's Spec among
+     others, so its pool is a doctor story (twin) and the preflight fan-out is steward's.
+  2. **Environment reuse.** A workspace does not rebuild the nine station packages per environment. Two shapes for
+     the operator to choose between at `bmad-spec`: (a) `steward workspace start` offers the primary checkout's
+     already-built `.pixi/envs` to the worktree when its `pixi.lock` is byte-identical (pixi's
+     `detached-environments` keys on the manifest path, so it does not share across worktrees by itself); or (b) the
+     test features install the station packages as editable `pypi-dependencies` while the conda build stays for the
+     foundry SBOM (fnd:CAP-12 chose pixi-build conda packages deliberately, so (b) is a ruling, not a default).
+     Acceptance: a second workspace's `pr-preflight` spends under two minutes on environments when its lock matches
+     the primary's; a lock change still builds. Never a hand-copied environment, never a `pip install -e` outside
+     the manifest.
+  3. **The free-threading readiness read**, as ruled in the 2026-10-06 entry and its 2026-10-07 review: measured
+     against `pyforge-guild`, a read and not a move, after 1 and 2 land. Its blockers in the guild today:
+     `headroom-ai` and `orjson` direct; `onnxruntime` and `protobuf` through `magika`; `tokenizers` through
+     `transformers`; `pyyaml` through bmad-loop, copier, pre-commit and huggingface_hub; `markupsafe` through
+     jinja2; `ukkonen` through identify; `pywin32` on win-64; six abi3 (`cryptography`, `hf-xet`, `watchfiles`,
+     `wcwidth`, `ast-serialize`, `python-abi3`). `magika → onnxruntime → protobuf` and `transformers → tokenizers`
+     are heavy and worth questioning as guild dependencies on their own; dropping them removes blockers and
+     shrinks the runtime environment.
+  **Token cost is a separate axis.** Cores do not change tokens. What does: the realized token-economy layers
+  (`spec-marshal-token-economy`, Wave 1 of 2026-09-30) and fewer verify-fix turns, which capability 1 buys by
+  shortening every gate a dispatch waits on.
+  **Carried for `bmad-spec`** (from the 2026-10-07 review,
+  `research/free-threading-readiness-dream-review-2026-10-07.md`, not restated in the entries above):
+  - `ProvisionDuty.run` resolves flags in a fixed precedence (`provision.py:1668-1692`) and `--env NAME` alone
+    installs (`:1588-1600`); a new `--free-threading` flag sits above `--env`, or `--free-threading --env X` installs
+    X. `_PROVISION_HELP` and `tests/unit/test_provision_plugin.py:299` pin the flag list; the duty count (25) is
+    untouched by a flag. The report's JSON schema ships frozen under `src/pyforge/steward/data/` (the doctor and
+    warden shape, additive changes only).
+  - At CAP mint: re-stamp brief, PRD, spine and epics to the mint date in the same commit (the 2-day
+    `chain-currency` gate fires on the memlog touch alone); add the `pyforge-steward:CAP-<n>` row to
+    `docs/foundry/capability-ledger.yaml` (mode `rebuild`); a flag block on every `type: feature` story (rule date
+    2026-09-28), none on the `python-gil` fix; never cite an unminted CAP by number in `research/` or `.memlog.md`
+    (`ad-citation-check` reds it).
+  - `python-gil` pin sites: `[feature.python.dependencies]` (`pixi.toml:36`) and `[dependencies]` (`:2443`); the
+    env-scoped pins at `:190, 359, 380, 411` inherit or restate it. Lock meta-test: no tracked environment resolves
+    `python_abi * *_cp314t` on any platform. The accidental `pyforge-testing-kit` / osx-arm64 case
+    (`pixi.lock:19643-19665`) is the acceptance example that must flip.
+  - Readiness-read acceptance seeds: the lock-reproduced counts (compiled names per platform linux-64 153,
+    osx-arm64 136, win-64 119; `pyforge-guild` 31 on every platform; `pyforge-core` 0; 35 abi3 names, 6 in the
+    guild); `cryptography` on linux-64 as the abi3 case (and its `*_cp314t` variant on osx-arm64 as the
+    cp314t-specific escape hatch); `mcp-host` reporting linux-64 only; `sqlite_vec` as the one platform-specific
+    PyPI wheel (`unassessed` if it ever ships a `cp314` tag). The review's two reproduction scripts regenerate these.
+  - abi3 mechanics: `_python_abi3_support-1.0` depends on `cpython` and `python-gil` (`pixi.lock:32653-32658`), so
+    an abi3 package is unsolvable under `python-freethreading` by construction; PEP 803's `abi3t` arrives with 3.15.
+    conda-forge's `python314t` migrator is `longterm`, allowlist-only, capped at 20 open PRs and depends on the
+    `python314` migrator; `pyyaml`, `markupsafe`, `pyarrow`, `protobuf`, `tokenizers`, `numpy`, `pandas`,
+    `psycopg2` and `pydantic-core` were not in it on 2026-10-07; `onnxruntime` had a dirty PR (#210, 2026-09-18).
+  - Doctor twin for Level 2: evidence ageing, warn-only, the `DUE_FOR_VERIFICATION_STALENESS_DAYS` shape.
+  **Open rulings (operator, before `bmad-spec`):** (1) environment reuse shape, (a) shared built environments or
+  (b) editable test installs beside the conda build; (2) whether `-n auto` is the default for every station suite
+  or opt-in per suite with a named process-safety reason; (3) whether the detectors-runner pool is minted on
+  doctor's chain first or lands as the steward story's twin.
+  **Constraints:** verdicts come from exit codes, never pipes; the parallel runner changes no detector's own exit
+  domain and no finding code; environment reuse never bypasses the lock; nothing here moves an environment to a
+  free-threaded interpreter. **Kinships:** [[pyforge-doctor]] (`scripts/detectors.py` and the doctor sources),
+  [[pyforge-marshal]] (`dispatch_verify` legs, `spec-marshal-token-economy`), `spec-pyforge-unifying-strategy`
+  (governs `pixi.toml`), `spec-coverage-gate-independence` (the floors stay per station, in that station's
+  environment), the two 2026-10-06 entries and the 2026-10-07 review above. Owner: steward. → awaiting the three
+  rulings, then `bmad-spec` (three CAPs on `spec-pyforge-steward`, in the order above).
+
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
 Steward rebases to one Dream, one Spec, one PRD, one spine, one epic chain. Folded topic Dreams are archived in place with `Consolidated into [[pyforge-steward]]` banners. Exempted chains (Guild unifying-strategy; foundry regenerate / capability-ledger / cutover) keep their folders with `fold-exemption`.

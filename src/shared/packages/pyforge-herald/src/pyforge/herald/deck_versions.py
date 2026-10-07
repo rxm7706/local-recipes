@@ -38,6 +38,52 @@ def _kind_key(path: Path, presentations_root: Path) -> tuple[str, str, str] | No
     return (rel_dir, product, path.suffix)
 
 
+def current_exports(root: Path, topic: str) -> list[Path]:
+    """Every dated export that is the newest of its kind for one deck topic."""
+    presentations = root / "presentations"
+    topic_dir = presentations / topic
+    if not topic_dir.is_dir():
+        return []
+
+    by_kind: dict[tuple[str, str, str], list[tuple[str, Path]]] = defaultdict(list)
+    for sub in _EXPORT_SUBDIRS:
+        export_dir = topic_dir / sub
+        if not export_dir.is_dir():
+            continue
+        for path in export_dir.iterdir():
+            if not path.is_file():
+                continue
+            kind = _kind_key(path, presentations)
+            if kind is None:
+                continue
+            iso = _DATE_SUFFIX.search(path.stem).group("iso")  # type: ignore[union-attr]
+            by_kind[kind].append((iso, path))
+
+    currents: list[Path] = []
+    for entries in by_kind.values():
+        entries.sort(key=lambda pair: pair[0])
+        currents.append(entries[-1][1])
+    currents.sort(key=lambda p: p.as_posix())
+    return currents
+
+
+def export_kind(path: Path, presentations_root: Path) -> str | None:
+    """Stable kind id for a dated export path, or ``None`` when not an export."""
+    kind = _kind_key(path, presentations_root)
+    if kind is None:
+        return None
+    rel_dir, product, suffix = kind
+    return f"{rel_dir}/{product}{suffix}"
+
+
+def export_date(path: Path) -> str | None:
+    """ISO date suffix from a dated export filename, or ``None``."""
+    match = _DATE_SUFFIX.search(path.stem)
+    if match is None:
+        return None
+    return match.group("iso")
+
+
 def superseded(root: Path | None = None) -> list[tuple[Path, Path]]:
     """Every dated export that is not the newest of its kind.
 
