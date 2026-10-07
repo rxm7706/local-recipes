@@ -64,6 +64,7 @@ spec:
               protocol: TCP
           env:
             {{- include "platform.djangoEnv" . | nindent 12 }}
+            {{- include "platform.objectStorageEnv" . | nindent 12 }}
             - name: ANYIO_MAX_THREADS
               value: {{ required "web.anyioMaxThreads is required" .Values.web.anyioMaxThreads | quote }}
           volumeMounts:

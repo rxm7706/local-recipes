@@ -35,7 +35,7 @@ development_status:
   12-6-deploy-gates-on-the-verdict-preserve-the-clean-only-promotion-gate: done
   13-1-the-tea-advisory-diffs-from-the-remote-tracking-ref: done
   14-1-the-actuator-resolves-the-lowest-osv-fixed-release-the-estate-s-solver-accepts: done
-  14-2-the-actuator-edits-the-manifest-and-re-solves-the-lock-in-a-throwaway-copy: backlog
+  14-2-the-actuator-edits-the-manifest-and-re-solves-the-lock-in-a-throwaway-copy: done
   14-3-the-actuator-opens-the-fix-as-a-draft-pr-on-an-estate-repo: backlog
   15-1-opengrep-is-an-optional-sast-scanner-that-informs-never-publishes-the-verdict: blocked
   16-1-warden-inventories-a-ghe-organisation-s-repos: blocked

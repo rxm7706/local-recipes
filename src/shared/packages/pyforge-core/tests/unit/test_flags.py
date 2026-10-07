@@ -884,6 +884,13 @@ _SHIPPED_CLOCKS = {
         "",
         "",
     ),
+    "pyforge.warden.fix_manifest_edit": (
+        "warden",
+        "14-2-",
+        "2026-09-28",
+        "",
+        "",
+    ),
     "pyforge.atlas.dependency_history_sensor": ("atlas", "25-2-", "2026-09-28", "", ""),
 }
 
@@ -932,14 +939,16 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
     expected = {
         "pyforge.three_surfaces": True,
         "pyforge.steward.ghe_fleet_credentials": False,
-        "pyforge.steward.object_store_consumer": False,
     }
-    # Story 84.4 / 85.3: per-environment booleans (sync_github_only_marker; verify_fix_loop on in dev/staging, off in production).
+    # Story 84.4 / 85.3 / 74.2: per-environment booleans (object_store_consumer, sync_github_only_marker and
+    # verify_fix_loop on in dev/staging, off in production).
     per_environment = {
+        "pyforge.steward.object_store_consumer": {"dev": True, "staging": True, "production": False},
         "pyforge.steward.sync_github_only_marker": {"dev": True, "staging": True, "production": False},
         "pyforge.marshal.verify_fix_loop": {"dev": True, "staging": True, "production": False},
         "pyforge.atlas.dependency_history_sensor": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_target_resolution": {"dev": True, "staging": True, "production": False},
+        "pyforge.warden.fix_manifest_edit": {"dev": True, "staging": True, "production": False},
     }
     assert {k for k, e in payload["flags"].items() if all(isinstance(v, bool) for v in e["variants"].values())} == set(
         expected

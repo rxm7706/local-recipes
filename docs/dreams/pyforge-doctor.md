@@ -86,6 +86,31 @@ forward. That dream is archived; this one is the real record.
 
 ## Realization log
 
+- **2026-10-07 (detector gaps)** — **Found: two detectors red a landing when no requirement and no flag changed.**
+  (1) `chain-currency` dates a station Spec by its `SPEC.md` and its `.memlog.md` (`scripts/fleet_scan.py`
+  `_stage_globs`), and the `spec → prd` feeds edge fires once that date is more than 2 days past the PRD's
+  (`_FEEDS_GRACE_DAYS`). Every landing appends a surface-reconcile entry to its station's Spec memlog (AGENTS.md
+  pre-PR item 5), and marshal's `dispatch land` appends a `Story N.M landed` entry; each append moves the memlog's
+  `updated:` to the landing date. So any landing on a station whose PRD is three or more days old reds
+  `chain_currency_sweep_check` in `pr-preflight` and `detectors-ci`, though no requirement moved. On 2026-10-07 it held
+  herald 28.1 (the herald Spec, and the doctor Spec through a co-governor reconcile), steward 74.2 and warden 14.2
+  until each got a hand PRD, spine and epics cascade; mason hit it on 2026-10-05 (the runbook's last Worked Example:
+  "a landing that only appends to the memlog moves it"). Measured on `966b166f76`: one `(event) Surface reconcile`
+  append to atlas's memlog (PRD 2026-10-03) turns `chain_currency_sweep_check.py --project pyforge-atlas` from exit 0
+  to exit 1. (2) The flag gate's per-environment check (`scripts/flag_gate_check.py` `judge_spec_env_defaults`,
+  Story 34.3) judges every `done` flagged story spec against the tree. Story specs are permanent records and one flag
+  serves one CAP, so stories share keys: steward 74.1 and 74.2 both declare `pyforge.steward.object_store_consumer`;
+  74.1 shipped it off everywhere, 74.2 turns it on in dev and staging. With 74.2's overlay values in the tree the gate
+  reports two `flag-default-env-mismatch` FAILs on 74.1's `done` spec (reproduced on `966b166f76`), and the 74.2 branch
+  cleared them only by rewriting 74.1's historical `flag.default` (`37800e84e5`). Herald's `deck_publish` and
+  `deck_viewer` and marshal's `verify_fix_loop` and `preserve_refs` (seven 87.x specs) are shared the same way.
+  **What it looks like when fixed:** the `spec → prd` edge reads the Spec's contract date, `SPEC.md` and the memlog's
+  newest contract entry, so a surface reconcile or a landing record does not move it while a CAP mint, a decision or a
+  re-derived `SPEC.md` still does; and for a key that several `done` specs of one station declare, the gate judges the
+  tree against the highest-numbered one, the earlier declarations being history. **Constraints:** fix stories, no new
+  CAP, no flag; the 2-day grace, the rule-date baseline and every other rule stay. Owners `spec-pyforge-doctor`
+  (CAP-20, CAP-21) and `spec-feature-flag-governance` (CAP-2). They go into Epics 6 and 34 and reopen them. → Stories
+  6.13 and 34.6, specced 2026-10-07.
 - **2026-10-06 (rekey dating)** — **Found: `ledger-direction` reads a new story through an old fold's rekey map.**
   `gather_direction` passes every merge-derived story id through every rekey map the station tracks (Story 27.2),
   whenever the merge happened. Atlas's 2026-09-17 fold shifted Epics 12..25 to 11..24, so `rekey-2026-09-17.md` maps

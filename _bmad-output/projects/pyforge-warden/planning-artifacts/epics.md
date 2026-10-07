@@ -14,7 +14,7 @@ replan:
   story: "0.1"
   note: "Story-0.1 replan executed: Epic 6 (multi-axis expansion) added from the spec's v1 tier; the spec (docs/specs/pyforge-warden.md) is upstream and wins conflicts."
   rebaseline: "2026-07-16 (D12 + reviewer gates): v1 absorbs the axis gates (flag-activated), EPSS, baseline & grandfathering, fix-PR actuator — Epic 6 = stories 6.1-6.10 (FR32-FR40); story 2.6 split from 2.1; 31 stories total."
-updated: '2026-10-03'   # AMENDED 2026-10-03 (Phase 4+5 landing): Story 17.1's seven follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 4 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 17 / Story 17.1 minted (fix, no CAP): warden's 11 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-28: Epics 14-16 / Stories 14.1-14.3, 15.1, 16.1-16.4 minted (spec-pyforge-warden CAP-24..26, FR-41..FR-43); § Currency reconciliation — 2026-09-28 appended; Epic 9's canopy FR citations qualified. Prior 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
+updated: '2026-10-07'   # RE-STAMPED 2026-10-07: chain-currency cascade (arch->epics edge) after the spine's 2026-10-07 re-stamp (Story 17.1 landing, Stories 14.1-14.2); validation note appended (§ Currency reconciliation — 2026-10-07); no epic or story restructured, no status changed. Prior: AMENDED 2026-10-03 (Phase 4+5 landing): Story 17.1's seven follow-up-review rows withdrawn by operator ruling (they run as review batches); it closes 4 rows. Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 17 / Story 17.1 minted (fix, no CAP): warden's 11 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-28: Epics 14-16 / Stories 14.1-14.3, 15.1, 16.1-16.4 minted (spec-pyforge-warden CAP-24..26, FR-41..FR-43); § Currency reconciliation — 2026-09-28 appended; Epic 9's canopy FR citations qualified. Prior 2026-09-27 (night): Epic 13 / Story 13.1 minted (spec-pyforge-warden CAP-23). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (py-rattler test-oracle floor 0.26.0 → 0.25.0 for the pyforge-foundry-full union solve; surface reconcile); no requirement/AD/story delta. Prior 2026-09-17   # 2026-09-14 chain-currency sweep cascade (arch->epics edge); validation note appended, no epic or story restructured
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge, fired by the spine's 2026-09-14 re-stamp) — validation note appended at end of file (§ Currency validation — 2026-09-14): ledger re-measured with the real parser at 49/49 stories done across 12/12 epics, which supersedes the Spec's own dated 43-key/11-epic snapshot; the PRD's newly recorded `review_required` gap is deliberately NOT minted as a story here because it is a schema/behaviour change owing a Dream/Spec; the station's coherence checkpoint stays red on three operator-owned open questions. No epic or story restructured. Prior: Reviewed 2026-09-09 (Epic 12 added: spec-golden-path-conda-blind-spot CAP-1..5 decomposed after the operator answered its five open questions in the fleet readiness decision batch, plus Story 12.1 minted FIRST as the missing regression guard on the deploy verifier's clean-only refusal; gate verdict invariant unchanged — Warden stays the sole verdict). Reviewed 2026-09-06 (Epic 11 added: spec-bmad-suite-lifecycle warden relays — two advisory lenses, Stories 11.1–11.2; gate verdict invariant unchanged). Reviewed 2026-08-26 — validated against the architecture's 2026-08-26 reconciliation (post-v1 surfaces + as-built divergences). Epics 1-10 / 41 stories confirmed 1:1 with sprint-status-ledger.yaml, all done; Canopy/operating-model obligation sections re-verified as landed. Validation note appended; no story headings or statuses changed."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -1048,3 +1048,30 @@ ecosystems* Non-goal, the one CAP-26 clause that is core-scan work rather than `
 station's new FR-43. Every Story heading still maps 1:1 to a `sprint-status-ledger.yaml` key (`14-1`..`14-3`, `15-1`,
 `16-1`..`16-4`, and `epic-14`..`epic-16` with their `-retrospective` rows at `optional`, through the Tier-3 feed and
 `sprint-ledger-sync`). `updated:` bumped.
+
+## Currency reconciliation — 2026-10-07
+
+`arch→epics` edge after the spine's 2026-10-07 re-stamp (§ Currency reconciliation — 2026-10-07: Story 17.1 and
+Stories 14.1–14.2 land on the 2026-09-28 Decision 1 and the subprocess, temp-file and no-execution rules as written).
+Validated Epics 14 and 17 against that section:
+
+- **Epic 14's HARD boundaries hold as built.** The actuator stays post-verdict. The scanned tree is never written: the
+  edit and the re-solve run in a `mkdtemp` copy, and a digest check fails the outcome if the tree moves. Dry-run returns
+  before any solver or edit runs. pixi runs only on the real path, through `_engine_env()`. The `ComplianceReport`
+  stays 1.1.0. Story 14.1 ships behind `pyforge.warden.fix_target_resolution` and Story 14.2 behind
+  `pyforge.warden.fix_manifest_edit`, each on in dev and staging and off in production.
+- **Story 14.2's Surface line differs from the build, and the story text is left as minted.** The copy and the
+  re-solve live in a new `manifest_fixup.py`. `engines.py` did not change in 14.2, because `run_pixi_lock` came with
+  14.1. The spine records the module addition.
+- **Story 14.2's AC clause "the copy is gone after success and after a forced failure" now has a test.** The code
+  removes the copy in a `finally` block. The cascade found no test for it, so the operator re-verify of 2026-10-07 added
+  `test_throwaway_copy_is_removed_after_the_outcome` (re-solve succeeds, re-solve fails) and
+  `test_throwaway_copy_is_removed_when_the_re_solve_raises` to `test_manifest_fixup.py`. This note does not change the story.
+- **Story 14.3 is unchanged.** It still owes the estate allowlist and the draft-PR commit (the spine's sequencing note).
+- **Epic 17 / Story 17.1 (`done`) fits the spine as written.** The reverted identity-merge change leaves grouping on
+  Story 7.2's `PackageIdentity`.
+- **Ledger agreement.** 59 `### Story` headings and 17 `## Epic` headings map 1:1 to the ledger's 59 story keys and
+  17 `epic-<n>` keys. Story 14.2's row moves at its landing, through the Tier-3 feed; this note does not touch it.
+
+No epic or story content above was restructured and no status changed; this section and the frontmatter `updated:`
+bump are the whole edit.
