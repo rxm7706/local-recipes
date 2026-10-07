@@ -27,6 +27,15 @@ def _production_flags(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
 
 
+def _write_pixi_repo(root: Path) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "pixi.toml").write_text(
+        '[project]\nname = "demo"\n\n[pypi-dependencies]\nleftpad = ">=1.2"\n',
+        encoding="utf-8",
+    )
+    (root / "pixi.lock").write_text("lock-version = 1\n", encoding="utf-8")
+
+
 def _vuln() -> Finding:
     return Finding(
         id="vuln:GHSA-estate:leftpad@1.2.0",
@@ -53,6 +62,7 @@ def _bool_flag_entry(default: str) -> dict[str, object]:
 
 
 def _flag_tree(tmp_path: Path, *, draft_on: bool) -> Path:
+    tmp_path.mkdir(parents=True, exist_ok=True)
     tree = {
         "flags": {
             FIX_DRAFT_PR_ESTATE_FLAG: _bool_flag_entry("on" if draft_on else "off"),
@@ -117,8 +127,7 @@ def test_estate_flag_on_records_draft_open_with_manifest_fix(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     repo = tmp_path / "repo"
-    repo.mkdir()
-    (repo / "pixi.toml").write_text('[project]\nname = "demo"\n', encoding="utf-8")
+    _write_pixi_repo(repo)
     monkeypatch.setattr(
         "pyforge.warden.manifest_fixup.run_pixi_lock",
         lambda *, cwd: (None, 0),
