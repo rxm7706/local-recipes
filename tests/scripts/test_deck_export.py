@@ -111,6 +111,20 @@ def test_stamp_exec_is_idempotent(tmp_path: Path) -> None:
     assert first.count(deck_export.BAND_ATTR) == second.count(deck_export.BAND_ATTR) == 1
 
 
+def test_stamp_marp_source_retires_older_dated_kind(tmp_path: Path) -> None:
+    marp = tmp_path / "presentations" / "demo" / "src" / "marp"
+    marp.mkdir(parents=True)
+    older = marp / "demo-infographic-2026-07-15.md"
+    older.write_text(_marp_md(), encoding="utf-8")
+    src = marp / "demo-infographic-2026-07-20.md"
+    src.write_text(_marp_md(), encoding="utf-8")
+    dest = marp / "demo-infographic-2026-09-15.md"
+    facts = {"tree_commit_date": "2026-09-01", "cfe_skill_version": "8.90.5"}
+    deck_export.stamp_marp_source(src, dest, facts)
+    assert not older.is_file()
+    assert dest.is_file()
+
+
 def test_stamp_marp_then_fact_change(tmp_path: Path) -> None:
     src = tmp_path / "demo-infographic-2026-07-15.md"
     dest = tmp_path / "demo-infographic-2026-09-15.md"
