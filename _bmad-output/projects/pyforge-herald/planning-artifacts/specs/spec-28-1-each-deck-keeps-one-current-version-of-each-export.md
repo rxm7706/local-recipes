@@ -2,7 +2,8 @@
 title: '28.1: Each deck keeps one current version of each export'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: 'a16ab7f7e2a65d81814987c7698ace76d65ad16e'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -175,7 +176,8 @@ Minted 2026-09-28 from `epics.md` so `marshal factory dispatch` can resolve this
 - Before the prune and after it: run `git ls-files presentations | wc -l`, then
   `python3 -c "import pathlib;print(sum(p.stat().st_size for p in pathlib.Path('presentations').rglob('*') if p.is_file())/2**20)"`,
   and record both numbers here. On 2026-09-28 they were 944 / 134.69 MB before and 870 /
-  80.55 MB after.
+  80.55 MB after. Measured 2026-10-07 on this branch after the prune: 870 files / 80.55 MB
+  (before figures taken at baseline `a16ab7f7e2`: 944 / 134.69 MB).
 - `pixi run -e pyforge-herald python -m pyforge.herald.deck_versions` — expected: exit 0, no output.
 - `pixi run -e site site-check` — expected: exit 0. Then
   `find dist/decks -path '*/downloads/*' -type f | wc -l` — expected: 69, the same names as a
@@ -185,3 +187,38 @@ Minted 2026-09-28 from `epics.md` so `marshal factory dispatch` can resolve this
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the reconcile and the
   scoped stamps.
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
+
+## Review Triage Log
+
+### 2026-10-07 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 0, false 3, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Sidecar `.stamp.json` files on pruned exports are not explicitly removed — only one sidecar existed on a kept current file; superseded exports had no sidecars in the tree.
+  - `[false]` `[reject]` `deck_versions.main` print format differs from matrix wording — output includes `(current …)` suffix; tests assert exit codes and superseded paths only.
+  - `[false]` `[reject]` CI `core-test` might run on presentations-only diffs — workflow loop sets `CORE_CHANGED` only from station package paths, not `presentations/`.
+
+### 2026-10-07 — Operator re-verify after the dispatch's verification refusal
+- The dispatch run `pyforge-herald-20261007T055516715Z-20c28cc4` was refused at MRS-GATE-002: `python` was not on the
+  supervisor's PATH because the dispatch was launched outside `pixi run`. The refusal was environmental; the work was not
+  judged.
+- Re-run on this branch, each verdict read from its exit code: `pyforge-herald-test` (1547 passed), `pyforge-core-test`
+  (2251 passed), `spec_surface_reconcile.py` OK, `spec-surface-check` 0, `pixi run -e site site-check` 0 with 69
+  downloads under `dist/decks`, `test_workflow_path_filters_match` passed, `deck_versions` exit 0.
+- `pr-preflight` red on `chain_currency_sweep_check`: this story's memlog entries moved the herald and doctor Specs more
+  than 2 days past their PRDs. Fixed by the runbook cascade on this branch (herald PRD, spine and epics; doctor PRD and
+  spine, each with a `## Currency reconciliation — 2026-10-07` section). No FR or AD changed.
+- `deck_versions` took a positional path, so the Surface line's `--root presentations` was read as a directory named
+  `--root`, found no `presentations/`, and exited 0 on any tree. `main()` now parses `--root` (the `presentations/`
+  directory or a directory that holds one) and exits 2 when neither exists. Two tests cover both forms and the refusal.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Pruned 74 superseded dated exports under `presentations/*/src/{pptx,marp}/` (944→870 tracked files, ~134.69→80.55 MB). Added stdlib `pyforge.herald.deck_versions` with meta enforcement, reworked Story 19.4 warden tests to regenerate pipeline PPTX into `tmp_path`, extended herald CI triggers for `presentations/**` without widening `core-test`, and reconciled spec surfaces via memlogs (no `--write-baseline`).
+
+Verification: `pyforge-herald-test` 1547 passed; `python -m pyforge.herald.deck_versions` exit 0; `spec_surface_reconcile.py` OK; `test_workflow_path_filters_match` passed; memlogs appended on `spec-pyforge-herald`, `spec-pyforge-doctor`, `spec-pyforge-core`.
+
+Review: 0 patches; `followup_review_recommended: false`.
+
+Residual: `site-check` / full `pr-preflight` not run in this auto pass — run before PR merge.

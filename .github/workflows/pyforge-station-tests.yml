@@ -30,6 +30,7 @@ on:
       - 'src/shared/packages/pyforge-atlas/**'
       - 'src/shared/packages/pyforge-doctor/**'
       - 'src/shared/packages/pyforge-herald/**'
+      - 'presentations/**'
       - 'src/shared/packages/pyforge-marshal/**'
       - 'src/shared/packages/pyforge-mason/**'
       - 'src/shared/packages/pyforge-scribe/**'
@@ -56,6 +57,7 @@ on:
       - 'src/shared/packages/pyforge-atlas/**'
       - 'src/shared/packages/pyforge-doctor/**'
       - 'src/shared/packages/pyforge-herald/**'
+      - 'presentations/**'
       - 'src/shared/packages/pyforge-marshal/**'
       - 'src/shared/packages/pyforge-mason/**'
       - 'src/shared/packages/pyforge-scribe/**'
@@ -143,9 +145,14 @@ jobs:
           for s in atlas doctor herald marshal mason scribe steward warden; do
             extra=()
             if [ "$s" = "atlas" ]; then extra=("${ATLAS_EXTRA[@]}"); fi
-            if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "src/shared/packages/pyforge-$s" "${extra[@]}" 2>/dev/null; then
+            station_path="src/shared/packages/pyforge-$s"
+            job_paths=("$station_path")
+            if [ "$s" = "herald" ]; then job_paths=("$station_path" presentations); fi
+            if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "${job_paths[@]}" "${extra[@]}" 2>/dev/null; then
               echo "$s=true" >> "$GITHUB_OUTPUT"
-              CORE_CHANGED=true
+              if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "$station_path" "${extra[@]}" 2>/dev/null; then
+                CORE_CHANGED=true
+              fi
             else
               echo "$s=false" >> "$GITHUB_OUTPUT"
             fi

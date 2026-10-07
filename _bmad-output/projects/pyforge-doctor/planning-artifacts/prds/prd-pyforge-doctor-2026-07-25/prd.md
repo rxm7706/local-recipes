@@ -1,7 +1,7 @@
 ---
 title: Doctor (pyforge-doctor)
 created: 2026-07-25
-updated: '2026-10-04'   # RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
+updated: '2026-10-07'   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 26 entries of 2026-10-04..07 (Stories 41.2, 41.3, 41.4, 41.6, 6.12, 40.2, 34.3 and 27.6, Story 41.5's review fixes, four co-governor regenerations, herald 28.1); no FR registered; § Currency reconciliation — 2026-10-07 appended. Prior: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for Story 41.5 (Epic 41), a fix under FR-15 / CAP-78; no FR registered; § Currency reconciliation — 2026-10-04 appended. Prior: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for FR-21 / CAP-88 (Epic 38); § Currency reconciliation — 2026-10-01 appended. Prior: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for FR-20 / CAP-87 (Epic 35); § Currency reconciliation — 2026-09-28 (night) appended. Prior: RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD) for FR-19 / CAP-86 (Epic 33); § Currency reconciliation — 2026-09-28 appended. Prior: RE-STAMPED 2026-09-27 (late): chain-currency cascade (spec -> PRD) for FR-18 / CAP-85 (Epic 31); § Currency reconciliation — 2026-09-27 appended. Prior: RE-STAMPED 2026-09-24: chain-currency sweep (doctor Story 30.3 landing, spec-pyforge-doctor CAP-84 realized in full — the .memlog''s 2026-09-24 entry moved spec ahead of this PRD past the 2-day feeds grace window); § Currency reconciliation — 2026-09-24 appended. Prior 2026-09-20
 status: final
 currency_review: 'Reviewed 2026-09-24 — chain-currency sweep (doctor Story 30.3 landing).
   Story 30.2 (docs/map.yaml + the three docs-currency checks, hand-landed ''Merge
@@ -998,3 +998,46 @@ epic's stories, so it reopens a done epic when a story is added. The verdict rea
 reopen as a regression. From 41.5 on, an epic leaving `done` is accepted when a new, not-done story of that epic arrives
 in the same change. Every story key leaving `done`, and every epic leaving `done` without a new story, is still a FAIL.
 FR-15's text is unchanged; no FR or CAP is added. `updated:` bumped.*
+
+## Currency reconciliation — 2026-10-07
+
+*Chain-currency cascade (spec → PRD). `spec-pyforge-doctor`'s `.memlog.md` moved to 2026-10-07T00:59 while this PRD
+sat at 2026-10-04, past the 2-day grace window. It gained 26 entries after the Story 41.5 re-stamp. `SPEC.md` is
+unchanged, and no CAP is added.*
+
+**What the memlog carries, and where each lands.** Each story below is a `fix` (34.3 is a `feature` of a Guild Spec).
+Each was checked against its FR and the code under `src/shared/packages/pyforge-doctor/`.
+- **Story 41.5, review fixes (2026-10-04).** The reopen excuse now also needs the epic to read `in-progress`, and a
+  renumbering chain inside a fold map is never `rekey-map-dangling`. This narrows the rule in the 2026-10-04 section
+  above. FR-15, CAP-78.
+- **Story 41.2.** The ledger, marshal, story-status and capability-effect sources degrade honestly. A new
+  `sources/feed_status.py` is the one Tier-3 feed parser that `ledger.py` and `marshal.py` share. `monitor --watch`
+  gains an opt-in `behind-upstream` axis. FR-4 names its axes "at minimum", and its default set stays `staleness` and
+  `cve`, so the new axis fits FR-4 as written. FR-14, FR-15, FR-17, FR-19. Two Spec edits wait on the next `bmad-spec`
+  render: CAP-53's annotation reads realized (DW-FU-23-6-2), and the five docs generators and their shared
+  `scripts/_docs_gen_common.py` join `surface:` (DW-FU-30-3). Neither is an FR change.
+- **Story 41.3.** The board, factory, hygiene and status-body sources read frontmatter one way, and 34 Dreams had a
+  glued opener split. FR-15, FR-17.
+- **Story 41.4.** The check CLI, the env and engines checks, the score and the bmad-method source report every
+  degradation they meet. A finding that cannot be evaluated carries `evidence["unevaluable"]`, and `score.grade` reads
+  its axis as `incomplete`. That is FR-10's own consequence: a grade never overstates confidence. FR-1..FR-4, FR-10,
+  FR-19.
+- **Story 41.6.** INV-A counts the `## Fold provenance` heading as a decomposition section again, so six station Specs
+  stop reading `spec-not-decomposed`. FR-15, CAP-57.
+- **Story 6.12.** `bmad-drift` counts table-form pixi environments too (35 → 36). FR-15 (Story 6.8).
+- **Story 40.2.** `docs-currency` runs Doctor's own checkout copy of an allowed `scripts/docs_*.py` generator with
+  `--check --root <target>`, never the judged tree's copy. FR-15, FR-17 (CAP-84).
+- **Story 34.3.** The flag gate reads per-environment defaults and the 90-day clock. It decomposes
+  `spec-feature-flag-governance` CAP-2 directly, under the decompose-directly convention (§ Currency reconciliation —
+  2026-08-26).
+- **Story 27.6.** `ledger-direction` applies a rekey map only to merges committed before the map arrived. CAP-79,
+  under FR-15.
+- **Co-governor entries.** marshal 86.8, steward 85.2 and marshal 86.6 regenerated
+  `docs/reference/station-cheat-sheet.md`, `docs/reference/detectors.md` and `docs/how-to/pixi-tasks.md` through their
+  generators, as FR-17 requires. herald Story 28.1 edits the authored how-to `docs/how-to/presentation-deck.md` for its
+  one-version rule; `docs/map.yaml` names no `sources:` for that page, so `docs-currency` does not judge it.
+
+**The FR space: no FR registered.** Every story above repairs or realizes an existing FR or CAP. None adds, changes or
+removes a requirement. The FR space stays FR-1..FR-21 (FR-22 is the next free id).
+
+**Content changed:** this section only. `updated:` bumped.
