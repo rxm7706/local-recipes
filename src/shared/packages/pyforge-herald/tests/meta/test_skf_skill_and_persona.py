@@ -366,6 +366,7 @@ _DJANGO_HERALD_DECK_EXPORT_MARKERS = (
     "portal_runner",
     "django_herald_portal/models.py",
     "django_herald_portal/migrations/0001_initial.py",
+    "django_herald_portal/management/",
 )
 
 

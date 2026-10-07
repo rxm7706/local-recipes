@@ -173,7 +173,9 @@ def test_stream_uses_memory_store(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from pyforge.herald import deck_store
+    import importlib
+
+    deck_store = importlib.import_module("pyforge.herald.deck_store")
 
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_flag_tree(tmp_path, enabled=True)))
     mem = deck_store.MemoryDeckStore()

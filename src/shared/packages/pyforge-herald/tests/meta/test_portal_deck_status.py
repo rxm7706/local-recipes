@@ -69,6 +69,15 @@ def _pyforge_imports(tree: ast.AST) -> list[str]:
     return found
 
 
+# Story 29.2 (CAP-54): station API wiring may import ``pyforge.herald.*``; chrome home may not.
+_PORTAL_PYFORGE_IMPORT_ALLOWED = frozenset(
+    {
+        "deck_export_routes.py",
+        "deck_export_sync.py",
+    }
+)
+
+
 def test_portal_uses_portal_client_invoke_only() -> None:
     root = _repo_root()
     views = (_portal_root(root) / "views.py").read_text(encoding="utf-8")
@@ -76,8 +85,15 @@ def test_portal_uses_portal_client_invoke_only() -> None:
     assert "PortalClient().invoke(" in views
     assert PORTAL_SLUG in views
     assert "deck" in views and "status" in views
+    refresh = (
+        _portal_root(root) / "management" / "commands" / "refresh_deck_exports.py"
+    ).read_text(encoding="utf-8")
+    assert "PortalClient().invoke(" in refresh
+    assert "deck_exports_json_runner" in refresh
     offenders: list[str] = []
     for path in _iter_py(_portal_root(root)):
+        if path.name in _PORTAL_PYFORGE_IMPORT_ALLOWED:
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         offenders.extend(f"{path}: {hit}" for hit in _pyforge_imports(tree))
         offenders.extend(f"{path}: {hit}" for hit in _raw_http_imports(tree))
