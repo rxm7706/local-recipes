@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import os
 import re
-from collections.abc import BinaryIO
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
+from typing import BinaryIO
 from typing import Final
 from typing import Protocol
 
