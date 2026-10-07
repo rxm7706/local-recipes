@@ -7,7 +7,7 @@ paradigm: 'hexagonal (ports-and-adapters): CLI as driving adapter, each duty a t
 scope: 'Steward v1 — pyforge-steward CLI (keys, deploy, provision, budget duties; FR-1..FR-18), packaged as a pixi workspace member mirroring pyforge-warden'
 status: final
 created: '2026-07-25'
-updated: '2026-10-04'   # RE-STAMPED 2026-10-04: prd->arch cascade for FR-38 / CAP-165 (Epic 85, preserved-work refs); lands on AD-1, AD-8 and canopy:AD-11 as written, no AD amended. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: '2026-10-07'   # RE-STAMPED 2026-10-07: prd->arch cascade after the PRD's 2026-10-07 re-stamp (independent review of the free-threading Dream entry; no CAP, no FR); no AD added, amended or removed. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-04: prd->arch cascade for FR-38 / CAP-165 (Epic 85, preserved-work refs); lands on AD-1, AD-8 and canopy:AD-11 as written, no AD amended. Earlier: RE-STAMPED 2026-10-03: prd->arch cascade for the Phase 3 rulings (CAP-60 amended, Epic 84); no AD amended. Earlier: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD -> spine) for Epic 78 (security hotfix); lands on canopy:AD-19 and AD-8 as written, no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-36 / CAP-163 (Epic 74) and FR-37 / CAP-164 (Epic 75), and spec-feature-flag-governance CAP-5 (Epic 76). AD-2 and canopy:AD-11 amended (dated); the Deferred row 'FILE flag env promotion overlays' taken up by Story 76.1. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28 (later): chain-currency cascade (spec -> PRD -> spine) for FR-35 / CAP-162 (Epic 73). No AD added, amended or removed; lands on AD-1 and AD-8. See § Currency reconciliation — 2026-09-28 (later). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED 2026-09-28: chain-currency cascade (spec -> PRD -> spine) for FR-33 / CAP-160 and FR-34 / CAP-161 (Epic 72). No AD added, amended or removed; lands on canopy:AD-14, canopy:AD-17 and AD-5; the CAP-15 row's mason note updated in place. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED 2026-09-27: chain-currency cascade (spec -> PRD -> spine) for FR-32 / CAP-159 (Epic 71). No AD added, amended or removed; lands on AD-1, AD-5 and AD-8. See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
@@ -2270,5 +2270,16 @@ to match, and no session deletes what would orphan commits.* Checked against eve
 
 The pre-push gate (CAP-154, CAP-156) keeps its boundary: the new skip is one more journaled case inside
 `scripts/pre_push_preflight.sh`. No port or adapter boundary moves; `src/platform/` still imports no `pyforge.*`.
+
+**Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-07
+
+*`prd→arch` cascade after the PRD's 2026-10-07 re-stamp: the independent review of the free-threading readiness
+Dream entry (`research/free-threading-readiness-dream-review-2026-10-07.md`). No FR and no CAP moved.* Checked
+against the ADs the review touches by name: the readiness read will wrap pixi's own solver (`pixi lock` on a
+throwaway manifest) and never re-implement channel resolution (AD-1); its `main()` will own its exit code and the
+read gates nothing (AD-8); the read ships behind a flag in the one tree (canopy:AD-11). Nothing binds until the
+CAP exists.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
