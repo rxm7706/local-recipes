@@ -9,27 +9,27 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..dispatch_verify import verify_fix_loop_enabled
-from . import dispatch as dispatch_core
-from . import gate as gate_core
-from . import policy
-from .dispatch_verification import (
+from .core import dispatch as dispatch_core
+from .core import gate as gate_core
+from .core import policy
+from .core.dispatch_verification import (
     DispatchVerificationInput,
     DispatchVerificationVerdict,
     judge_dispatch_verification,
     primary_gate_failure,
 )
-from .dispatch_verify_fix import extract_failed_verify_commands, scrub_then_tail_bytes
-from .egress import redact_raw_text
-from .journal import (
+from .core.dispatch_verify_fix import extract_failed_verify_commands, scrub_then_tail_bytes
+from .core.egress import redact_raw_text
+from .core.journal import (
     SCOPE_VIOLATION_ADVISORIES_FIELD,
     VERIFY_FAILED_COMMANDS_FIELD,
     JournalEntryId,
     Phase,
     build_entry,
 )
-from .model import Envelope, Finding
-from .policy import resolve_verify_fix_settings
+from .core.model import Envelope, Finding
+from .core.policy import resolve_verify_fix_settings
+from .dispatch_verify import verify_fix_loop_enabled
 
 
 @dataclass(frozen=True)

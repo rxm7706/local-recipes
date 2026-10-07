@@ -103,7 +103,6 @@ from ..core.dispatch_verification import (
     DispatchVerificationVerdict,
     judge_dispatch_verification,
 )
-from ..core.dispatch_verification_journal import build_dispatch_verification_journal_entries
 from ..core.dispatch_verify_fix import in_flight_verify_fix_turn
 from ..core.identity import (
     MalformedStoryKeyError,
@@ -139,6 +138,7 @@ from ..core.supervise import count_unified_diff_lines, resolve_terminal_session_
 from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
+from ..dispatch_verification_journal import build_dispatch_verification_journal_entries
 from ..dispatch_verify import evaluate_dispatch_verification, run_dispatch_ruff_format_before_verify
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
@@ -3129,7 +3129,8 @@ def dispatch_once(
             DispatchLandingVerdict.HELD_FOR_REVIEW,
         }:
             return _done()
-        findings.extend(land_envelope.findings)
+        if isinstance(land_envelope, Envelope):
+            findings.extend(land_envelope.findings)
         findings.append(
             Finding(
                 code="MRS-DISP-040",

@@ -20,7 +20,6 @@ from ..adapters.harness_bmadbuild import BmadBuildHarness, BuildHarnessError
 from ..adapters.publisher_host import HostPublisher
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import dispatch as dispatch_core
-from ..core import gate as gate_core
 from ..core import identity as identity_core
 from ..core import promotion as promotion_core
 from ..core.commit_vcs import CommittingVcs
@@ -68,11 +67,8 @@ from ..core.dispatch_survival import (
     timing_record_payload,
 )
 from ..core.dispatch_verification import (
-    DispatchVerificationInput,
     DispatchVerificationVerdict,
-    judge_dispatch_verification,
 )
-from ..core.dispatch_verification_journal import build_dispatch_verification_journal_entries_from_envelope
 from ..core.dispatch_verify_fix import (
     FIX_TURN_REVERIFY_REFUSED_CODE,
     FIX_TURN_START_FAILED_CODE,
@@ -81,21 +77,17 @@ from ..core.dispatch_verify_fix import (
     build_verify_fix_prompt,
     choose_verify_fix_launch_mode,
     decide_verify_fix_turn,
-    extract_failed_verify_commands,
     fix_intent_ref,
     fix_turn_park_message,
     fix_turn_remaining_budget_s,
     in_flight_verify_fix_turn,
     pending_verify_fix_intent,
-    scrub_then_tail_bytes,
 )
-from ..core.egress import redact_raw_text, to_redacted_text
+from ..core.egress import to_redacted_text
 from ..core.identity import MalformedStoryKeyError, StoryKey, normalize, resolve_feed
 from ..core.journal import (
     LAND_FINDINGS_FIELD,
     LANDING_CHECKS_FIELD,
-    SCOPE_VIOLATION_ADVISORIES_FIELD,
-    VERIFY_FAILED_COMMANDS_FIELD,
     JournalEntryId,
     Phase,
     build_entry,
@@ -115,6 +107,7 @@ from ..core.worktree_checkpoint import (
     should_checkpoint_on_idle,
 )
 from ..dispatch_land import _reconcile_spec_surface_drift, execute_dispatch_land
+from ..dispatch_verification_journal import build_dispatch_verification_journal_entries_from_envelope
 from ..dispatch_verify import (
     ProcessWaitResult,
     TerminateProcessGroupResult,
