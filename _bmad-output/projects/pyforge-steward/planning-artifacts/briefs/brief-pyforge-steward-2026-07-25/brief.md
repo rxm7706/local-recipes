@@ -2,7 +2,7 @@
 title: Product Brief — Steward
 status: draft
 created: 2026-07-25
-updated: "2026-09-25"   # RE-STAMPED 2026-09-25: currency reconciliation — research->brief: the 2026-09-25 BMAD-method whitepaper verification landed in research/; no change to Steward's charter. Prior 2026-09-14
+updated: "2026-10-07"   # RE-STAMPED 2026-10-07: currency reconciliation — research->brief: the independent review of the free-threading readiness Dream entry (research/free-threading-readiness-dream-review-2026-10-07.md) landed in research/; no change to Steward's charter. See § Currency reconciliation — 2026-10-07. Prior 2026-09-25. Earlier: RE-STAMPED 2026-09-25: currency reconciliation — research->brief: the 2026-09-25 BMAD-method whitepaper verification landed in research/; no change to Steward's charter. Prior 2026-09-14
 ---
 
 # Product Brief: Steward (`pyforge-steward`)
@@ -220,3 +220,15 @@ one strategic reading — the three BMAD execution modes are already this estate
 not here. The same consolidation adds cutover capabilities (`fnd:CAP-12..15`) that Steward owns
 as the cutover's through-line, which is already this brief's scope. Vision, users and success
 criteria are unchanged.
+
+## Currency reconciliation — 2026-10-07
+
+*Trigger: the chain-currency `research→brief` edge. `research/free-threading-readiness-dream-review-2026-10-07.md`
+landed: the independent review of the 2026-10-06 free-threading readiness Dream entry, with four operator rulings
+(an on-demand decision read; Level 1 computed, never tracked; Level 2 operator-run and PR-landed; `python-gil`
+pinned estate-wide as a fix story). Read against this brief: the review changes nothing in Steward's charter.
+Provisioning and verifying the estate's pixi environments already sits under § What it owns; a readiness read is
+one more way of verifying an environment, not a new duty. No problem statement, success criterion or scope line
+moves. Same-day reconcile.*
+
+**Content changed:** this section only. `updated:` bumped.
