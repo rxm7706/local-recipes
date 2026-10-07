@@ -2,7 +2,8 @@
 title: '28.1: Each deck keeps one current version of each export'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-review'
+baseline_revision: 'a16ab7f7e2a65d81814987c7698ace76d65ad16e'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -175,7 +176,8 @@ Minted 2026-09-28 from `epics.md` so `marshal factory dispatch` can resolve this
 - Before the prune and after it: run `git ls-files presentations | wc -l`, then
   `python3 -c "import pathlib;print(sum(p.stat().st_size for p in pathlib.Path('presentations').rglob('*') if p.is_file())/2**20)"`,
   and record both numbers here. On 2026-09-28 they were 944 / 134.69 MB before and 870 /
-  80.55 MB after.
+  80.55 MB after. Measured 2026-10-07 on this branch after the prune: 870 files / 80.55 MB
+  (before figures taken at baseline `a16ab7f7e2`: 944 / 134.69 MB).
 - `pixi run -e pyforge-herald python -m pyforge.herald.deck_versions` — expected: exit 0, no output.
 - `pixi run -e site site-check` — expected: exit 0. Then
   `find dist/decks -path '*/downloads/*' -type f | wc -l` — expected: 69, the same names as a
