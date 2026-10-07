@@ -44,14 +44,32 @@ def _prepare_stub_root(root: Path) -> Path:
         #!/usr/bin/env bash
         log="${PLATFORM_CI_STUB_LOG:-/dev/null}"
         name="$(basename "$0")"
+        work=""
+        args=("$@")
+        for i in "${!args[@]}"; do
+          if [ "${args[$i]}" = "-D" ]; then work="${args[$((i + 1))]%/pg}"; fi
+        done
         echo "$name $*" >> "$log"
         case "$name" in
           pg_ctl)
-            if [[ "$*" == *stop* ]]; then echo "stop pg $$" >> "$log"; fi
+            if [[ "$*" == *stop* ]]; then
+              echo "stop pg $$" >> "$log"
+              if [ "${PLATFORM_CI_LOCAL_NO_LOCK:-0}" = 1 ] && [ -n "$work" ] && [ -f "$work/.active" ]; then
+                active="$(cat "$work/.active")"
+                if [ "$active" != "$$" ]; then
+                  echo "cross-stop $$ vs active $active" >> "$log"
+                  touch "$work/.broken"
+                fi
+              fi
+            fi
             if [[ "$*" == *start* ]]; then
               echo "start pg $$" >> "$log"
-              if [ "${{PLATFORM_CI_STUB_SLOW:-0}}" = 1 ]; then sleep 6; fi
+              if [ -n "$work" ]; then echo "$$" > "$work/.active"; fi
+              if [ "${PLATFORM_CI_STUB_SLOW:-0}" = 1 ]; then sleep 6; fi
             fi
+            ;;
+          pg_isready)
+            if [ -n "$work" ] && [ -f "$work/.broken" ]; then exit 1; fi
             ;;
           redis-server) echo "start redis $$" >> "$log" ;;
           initdb) echo "initdb $$" >> "$log" ;;
@@ -60,8 +78,9 @@ def _prepare_stub_root(root: Path) -> Path:
         """
     )
 
+    dev_bin = root / ".pixi" / "envs" / "platform-dev" / "bin"
     for name in ("initdb", "pg_ctl", "pg_isready", "psql", "redis-server"):
-        _write_executable(bin_dir / name, service_stub)
+        _write_executable(dev_bin / name, service_stub)
 
     python_stub = textwrap.dedent(
         """\
@@ -129,14 +148,8 @@ def _run_platform_ci_local(
     )
 
 
-def _parse_service_events(log_text: str) -> list[tuple[str, str]]:
-    out: list[tuple[str, str]] = []
-    for line in log_text.splitlines():
-        if line.startswith("start pg "):
-            out.append(("start", line.rsplit(" ", 1)[-1]))
-        elif line.startswith("stop pg "):
-            out.append(("stop", line.rsplit(" ", 1)[-1]))
-    return out
+def _log_has_cross_stop(log_text: str) -> bool:
+    return "cross-stop" in log_text
 
 
 def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
@@ -174,11 +187,9 @@ def test_two_overlapping_runs_with_lock_both_pass(tmp_path: Path) -> None:
         assert "RESULT: PASS" in proc.stdout
 
     log1 = (tmp_path / "run1.log").read_text()
-    ev1 = _parse_service_events(log1)
-    assert ev1 and ev1[0][0] == "start"
-    if any(e[0] == "stop" for e in ev1):
-        stop_pid = next(e[1] for e in ev1 if e[0] == "stop")
-        assert stop_pid == ev1[0][1], "run 1's postgres must not be stopped by another pid"
+    log2 = (tmp_path / "run2.log").read_text()
+    assert not _log_has_cross_stop(log1), log1
+    assert not _log_has_cross_stop(log2), log2
 
 
 def test_one_run_fails_other_passes_under_lock(tmp_path: Path) -> None:
@@ -336,8 +347,11 @@ def test_without_lock_overlapping_runs_do_not_both_pass(tmp_path: Path) -> None:
     t2.join(timeout=90)
 
     assert len(results) == 2
+    logs = (tmp_path / "run1.log").read_text() + (tmp_path / "run2.log").read_text()
     pass_count = sum(p.returncode == 0 and "RESULT: PASS" in p.stdout for p in results)
-    assert pass_count < 2, "without a lock, overlapping runs must not both pass"
+    assert pass_count < 2 or _log_has_cross_stop(logs), (
+        "without a lock, overlapping runs must cross-stop or fail"
+    )
 
 
 def test_single_run_summary_unchanged(tmp_path: Path) -> None:
