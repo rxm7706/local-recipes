@@ -735,9 +735,7 @@ def _promote_landed_story_epics_status(
             ref=VcsRef("main"),
             writes=tuple(writes),
             message=to_redacted_text(f"marshal: promote story {key}'s epics status to done"),
-            preflight_skip_reason=to_redacted_text(
-                f"marshal epics-status promotion for {project_slug!r}, story {key}"
-            ),
+            preflight_skip_reason=to_redacted_text(f"marshal epics-status promotion for {project_slug!r}, story {key}"),
         )
     except VcsCommandError as exc:
         gap = _epics_gap(

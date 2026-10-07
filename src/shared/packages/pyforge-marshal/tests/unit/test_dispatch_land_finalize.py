@@ -17,7 +17,7 @@ from pyforge.marshal.core.egress import Redacted
 from pyforge.marshal.core.identity import normalize
 from pyforge.marshal.core.journal import Phase
 from pyforge.marshal.core.model import Finding, Severity
-from pyforge.marshal.core.promotion import PRE_DONE_SPEC_STATUSES, TERMINAL_SPEC_STATUSES
+from pyforge.marshal.core.promotion import PRE_DONE_SPEC_STATUSES
 from pyforge.marshal.core.refs import ORIGIN_MAIN
 from pyforge.marshal.core.status import render_ledger_advancements
 from pyforge.marshal.dispatch_land_finalize.__main__ import (
@@ -1487,7 +1487,9 @@ def test_finalize_promotes_a_tracked_spec_at_every_pre_done_status(tmp_path: Pat
 
 
 @pytest.mark.parametrize("status", ("blocked", "superseded"))
-def test_finalize_leaves_a_blocked_or_superseded_tracked_spec_untouched(tmp_path: Path, monkeypatch, status: str) -> None:
+def test_finalize_leaves_a_blocked_or_superseded_tracked_spec_untouched(
+    tmp_path: Path, monkeypatch, status: str
+) -> None:
     _write_tracked_spec_79(tmp_path)
     _write_feed_79(tmp_path)
     vcs = _PublishVcs(
@@ -1502,9 +1504,7 @@ def test_finalize_leaves_a_blocked_or_superseded_tracked_spec_untouched(tmp_path
     assert _promotion_flags_79(tmp_path) == (True, True, False)
 
 
-def test_finalize_publishes_only_epics_when_the_tracked_spec_already_reads_done(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_finalize_publishes_only_epics_when_the_tracked_spec_already_reads_done(tmp_path: Path, monkeypatch) -> None:
     """Story 22.15: spec ``done`` at origin/main, epics **Status:** still backlog -> one epics-only publish."""
     _write_tracked_spec_79(tmp_path)
     _write_feed_79(tmp_path)
