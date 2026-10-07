@@ -13,15 +13,22 @@ from pyforge.core.flags import read_boolean
 
 from pyforge.warden.cli import main as warden_main
 from pyforge.warden.discovery import discover
-from pyforge.warden.models import Ecosystem
+from pyforge.warden.interfaces import AxisCoverage, EngineResult
+from pyforge.warden.models import AXIS_VULNERABILITY, Ecosystem, ScannedManifest
 from pyforge.warden.native_lockfiles import (
     NON_PYTHON_ECOSYSTEMS_FLAG,
+    NativeLockfileScan,
     _components_from_osv_document,
+    _lockfile_scan_path,
+    inventory_count_for_axis,
     is_native_lockfile_kind,
     is_non_python_native_ecosystem,
+    merge_native_scans_into_vuln_result,
+    scan_native_lockfile,
 )
 from pyforge.warden.report import assemble_report
 from pyforge.warden.sbom import render_cyclonedx
+from pyforge.warden.vuln import OsvParse
 
 TESTS_ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = TESTS_ROOT / "fixtures"
@@ -90,6 +97,121 @@ def test_native_ecosystem_predicate() -> None:
     assert is_non_python_native_ecosystem(Ecosystem.NPM)
     assert not is_non_python_native_ecosystem(Ecosystem.PYPI)
     assert is_native_lockfile_kind("package-lock.json")
+
+
+def test_lockfile_scan_path_uses_go_mod_for_go_sum(tmp_path: Path) -> None:
+    project = tmp_path / "repo"
+    subdir = project / "subdir"
+    subdir.mkdir(parents=True)
+    (subdir / "go.mod").write_text("module example.com/foo\n", encoding="utf-8")
+    (subdir / "go.sum").write_text("", encoding="utf-8")
+    manifest = ScannedManifest(path="subdir/go.sum", kind="go.sum")
+    assert _lockfile_scan_path(project, manifest) == subdir / "go.mod"
+
+
+def test_components_from_osv_document_skips_malformed_entries() -> None:
+    assert _components_from_osv_document(None, manifest_path="x", default_ecosystem=Ecosystem.NPM) == ()
+    assert _components_from_osv_document({"results": "nope"}, manifest_path="x", default_ecosystem=Ecosystem.NPM) == ()
+    document = {
+        "results": [
+            "skip",
+            {"packages": "nope"},
+            {
+                "packages": [
+                    "skip",
+                    {"package": "nope"},
+                    {"package": {"name": "", "version": "1"}},
+                    {"package": {"name": "dup", "version": "1.0.0", "ecosystem": "npm"}},
+                    {"package": {"name": "dup", "version": "1.0.0", "ecosystem": "npm"}},
+                    {"package": {"name": "noversion", "ecosystem": "npm"}},
+                ]
+            },
+        ]
+    }
+    components = _components_from_osv_document(
+        document,
+        manifest_path="package-lock.json",
+        default_ecosystem=Ecosystem.NPM,
+    )
+    assert len(components) == 2
+    noversion = next(c for c in components if c.name == "noversion")
+    assert noversion.vuln_matchable is False
+
+
+def test_inventory_count_for_axis_excludes_native_on_hygiene(component_factory) -> None:
+    npm = component_factory(name="a", version="1", ecosystem=Ecosystem.NPM)
+    pypi = component_factory(name="b", version="1", ecosystem=Ecosystem.PYPI)
+    inventory = (npm, pypi)
+    assert inventory_count_for_axis(inventory, AXIS_VULNERABILITY) == 2
+    assert inventory_count_for_axis(inventory, "hygiene") == 1
+
+
+def test_merge_native_scans_empty_returns_unchanged() -> None:
+    base = EngineResult(findings=(), errors=(), coverage=(), axis=AXIS_VULNERABILITY)
+    assert merge_native_scans_into_vuln_result(base, (), inventory_count=0) is base
+
+
+def test_merge_native_scans_merges_findings_and_stale_db(component_factory, tmp_path: Path) -> None:
+    import time
+
+    from pyforge.warden.interfaces import VulnData
+
+    component = component_factory(name="leftpad", version="1.0.0", ecosystem=Ecosystem.NPM)
+    stale_mtime = time.time() - (10 * 86400)
+    zip_path = tmp_path / "npm.zip"
+    zip_path.write_bytes(b"pk")
+    os.utime(zip_path, (stale_mtime, stale_mtime))
+    scan = NativeLockfileScan(
+        components=(component,),
+        parse=OsvParse(findings=(), errors=()),
+        ecosystem=Ecosystem.NPM,
+        db_consulted=True,
+        db_zip=zip_path,
+        snapshot_at="2020-01-01T00:00:00Z",
+    )
+    base = EngineResult(
+        findings=(),
+        errors=(),
+        coverage=(
+            AxisCoverage(
+                axis=AXIS_VULNERABILITY,
+                manifests_found=1,
+                manifests_parsed=1,
+                deps_total=2,
+                deps_assessed=1,
+                resolution_depth="locked-closure",
+            ),
+        ),
+        axis=AXIS_VULNERABILITY,
+        vuln_data=VulnData(source="/pypi.zip", snapshot_at="2026-01-01T00:00:00Z", max_age_ok=True),
+    )
+    merged = merge_native_scans_into_vuln_result(base, (scan,), inventory_count=2)
+    assert merged.vuln_data is not None
+    assert merged.vuln_data.max_age_ok is False
+    assert merged.coverage[0].deps_assessed == 2
+
+
+def test_scan_native_lockfile_version_mismatch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    builder = _load_builder()
+    cache = tmp_path / "cache"
+    builder.build_offline_db(OSV_NPM_RECORDS, cache, ecosystem="npm")
+    monkeypatch.setenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", str(cache))
+    project = tmp_path / "proj"
+    project.mkdir()
+    (project / "package-lock.json").write_text("{}", encoding="utf-8")
+    manifest = ScannedManifest(path="package-lock.json", kind="package-lock.json")
+
+    from pyforge.warden.models import ErrorKind, ErrorRecord
+
+    version_error = ErrorRecord(kind=ErrorKind.ENGINE_UNAVAILABLE, owner="osv-scanner", message="bad version")
+    monkeypatch.setattr(
+        "pyforge.warden.engines._check_engine_version",
+        lambda **kwargs: version_error,
+    )
+
+    scan = scan_native_lockfile(project, manifest)
+    assert scan.parse.errors == (version_error,)
+    assert scan.components == ()
 
 
 def test_components_from_osv_document_npm() -> None:

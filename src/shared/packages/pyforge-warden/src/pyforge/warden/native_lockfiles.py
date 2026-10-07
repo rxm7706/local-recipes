@@ -12,6 +12,7 @@ import json
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .inventory import Component, Provenance, derive_purl
 from .models import (
@@ -35,6 +36,9 @@ from .vuln import (
     stale_vuln_data_finding,
 )
 from .vuln import _db_has_valid_advisory as db_has_valid_advisory
+
+if TYPE_CHECKING:
+    from .interfaces import EngineResult
 
 NON_PYTHON_ECOSYSTEMS_FLAG = "pyforge.warden.non_python_ecosystems"
 
@@ -355,11 +359,11 @@ def inventory_count_for_axis(inventory_components: tuple[Component, ...], axis: 
 
 
 def merge_native_scans_into_vuln_result(
-    result: object,
+    result: EngineResult,
     native_scans: tuple[NativeLockfileScan, ...],
     *,
     inventory_count: int,
-) -> object:
+) -> EngineResult:
     """Merge pre-scanned native lockfile outcomes into ``OsvEngine``'s result."""
     from .engines import EngineResult
     from .interfaces import AxisCoverage, VulnData
