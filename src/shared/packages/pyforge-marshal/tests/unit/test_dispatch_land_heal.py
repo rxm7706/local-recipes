@@ -1795,9 +1795,6 @@ def test_heal_unions_team_memory_index_conflict_and_retries_merge(tmp_path: Path
 _SPEC_A = "pyforge-marshal/spec-pyforge-marshal"
 _SPEC_B = "pyforge-steward/spec-pyforge-steward"
 _SPEC_C = "pyforge-core/spec-pyforge-core"
-_BRANCH_PATH_A = "src/shared/packages/pyforge-marshal/src/pyforge/marshal/heal_fixture_a.py"
-_BRANCH_PATH_C = "src/shared/packages/pyforge-core/src/pyforge/core/heal_fixture_c.py"
-_MAIN_PATH_B = "src/shared/packages/pyforge-steward/src/pyforge/steward/heal_fixture_b.py"
 _MEMLOG_A = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md"
 _MEMLOG_C = "_bmad-output/projects/pyforge-core/planning-artifacts/specs/spec-pyforge-core/.memlog.md"
 
@@ -1834,30 +1831,6 @@ def test_mutation_mechanical_set_includes_spec_surface_baseline() -> None:
     ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
     dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
     assert is_mechanical_conflict_path(SPEC_SURFACE_BASELINE_REL, ledger_rel=ledger, deferred_work_rel=dw)
-
-
-def _22_18_fixture_files(
-    *,
-    baseline_base: str,
-    baseline_main: str,
-    baseline_branch: str,
-    branch_memlog_append: dict[str, str] | None = None,
-) -> dict[str, str]:
-    branch_memlog_append = branch_memlog_append or {}
-    memlog_a = _memlog(_A, updated=_T2)
-    if _MEMLOG_A in branch_memlog_append:
-        memlog_a = memlog_a.rstrip("\n") + "\n" + branch_memlog_append[_MEMLOG_A] + "\n"
-    memlog_c = _memlog(_A, updated=_T2)
-    if _MEMLOG_C in branch_memlog_append:
-        memlog_c = memlog_c.rstrip("\n") + "\n" + branch_memlog_append[_MEMLOG_C] + "\n"
-    return {
-        SPEC_SURFACE_BASELINE_REL: baseline_base,
-        _MEMLOG_A: _memlog(_A, updated=_T0),
-        _MEMLOG_C: _memlog(_A, updated=_T0),
-        _BRANCH_PATH_A: "# branch A\n",
-        _BRANCH_PATH_C: "# branch C\n",
-        _MAIN_PATH_B: "# main B\n",
-    }
 
 
 def _22_18_landing(
