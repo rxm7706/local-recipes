@@ -9,15 +9,11 @@ from pathlib import Path
 import pytest
 
 from pyforge.herald.deck_exports import ExportRow
-from pyforge.herald.deck_exports import Forbidden
 from pyforge.herald.deck_exports import NotFound
-from pyforge.herald.deck_exports import Unauthorized
-from pyforge.herald.deck_exports import assert_herald_access
 from pyforge.herald.deck_exports import deck_publish_enabled
 from pyforge.herald.deck_exports import export_filename
 from pyforge.herald.deck_exports import list_exports_json
 from pyforge.herald.deck_exports import normalize_sha256
-from pyforge.herald.deck_exports import require_herald_role
 from pyforge.herald.deck_exports import stream_export_chunks
 from pyforge.herald.deck_publish import DECK_PUBLISH_FLAG
 from pyforge.testing_kit.flags import flagd_tree
@@ -80,16 +76,6 @@ def test_stream_yields_chunks_from_fake_store(tmp_path: Path, monkeypatch: pytes
 def test_normalize_sha256_rejects_bad_hex() -> None:
     with pytest.raises(NotFound):
         normalize_sha256("not-hex")
-
-
-def test_require_herald_role_forbids_other_stations() -> None:
-    with pytest.raises(Forbidden):
-        require_herald_role(frozenset({"steward"}))
-
-
-def test_anonymous_headers_raise_unauthorized() -> None:
-    with pytest.raises(Unauthorized):
-        assert_herald_access({}, {})
 
 
 def test_list_json_shape(tmp_path: Path) -> None:

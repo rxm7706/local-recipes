@@ -3,16 +3,14 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from typing import Any, Protocol
 
 from pyforge.core.flags import read_boolean
 from pyforge.herald.deck_publish import DECK_PUBLISH_FLAG
-from pyforge.herald.deck_store import DeckStore
 
 _SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
-_CHUNK_BYTES = 1024 * 1024
 _LIST_PREFIX = "/stations/herald/api/v1/deck-exports"
 _STREAM_PREFIX = f"{_LIST_PREFIX}/"
 
@@ -30,20 +28,6 @@ class ExportRow:
     published_at: str
 
 
-class AuthError(Exception):
-    """Base for deck-export auth failures."""
-
-    status_code: int = 401
-
-
-class Unauthorized(AuthError):
-    status_code = 401
-
-
-class Forbidden(AuthError):
-    status_code = 403
-
-
 class NotFound(Exception):
     """Route or object missing (404)."""
 
@@ -58,6 +42,9 @@ class ListRecords(Protocol):
 
 class OpenStoreStream(Protocol):
     def __call__(self, sha256: str) -> tuple[ExportRow, Iterator[bytes]]: ...
+
+
+AccessGate = Callable[[Mapping[str, str], Mapping[str, str]], None]
 
 
 def deck_publish_enabled(*, flags_path: str | None = None) -> bool:
@@ -113,149 +100,51 @@ def stream_export_chunks(
     return row, chunks
 
 
-def default_list_records() -> list[ExportRow]:
-    from django_herald_portal.models import DeckExport  # noqa: PLC0415
-
-    rows: list[ExportRow] = []
-    for item in DeckExport.objects.all().order_by("slug", "kind", "-export_date"):
-        rows.append(
-            ExportRow(
-                slug=item.slug,
-                topic=item.topic,
-                kind=item.kind,
-                date=item.export_date.isoformat(),
-                size=int(item.size),
-                content_type=item.content_type,
-                sha256=item.sha256,
-                source_commit=item.source_commit,
-                published_at=item.published_at.isoformat(),
-            )
-        )
-    return rows
-
-
-def default_open_store_stream(sha256: str) -> tuple[ExportRow, Iterator[bytes]]:
-    from django_herald_portal.models import DeckExport  # noqa: PLC0415
-
-    from pyforge.herald import deck_store  # noqa: PLC0415
-
-    try:
-        item = DeckExport.objects.get(sha256=sha256)
-    except DeckExport.DoesNotExist as exc:
-        raise KeyError(sha256) from exc
-    row = ExportRow(
-        slug=item.slug,
-        topic=item.topic,
-        kind=item.kind,
-        date=item.export_date.isoformat(),
-        size=int(item.size),
-        content_type=item.content_type,
-        sha256=item.sha256,
-        source_commit=item.source_commit,
-        published_at=item.published_at.isoformat(),
-    )
-    store: DeckStore = deck_store.open_deck_store()
-    key = f"sha256/{sha256}"
-
-    def _iter() -> Iterator[bytes]:
-        try:
-            yield from store.open_stream(key)
-        except KeyError as exc:
-            raise StoreError(str(exc)) from exc
-        except OSError as exc:
-            raise StoreError(str(exc)) from exc
-
-    return row, _iter()
-
-
-def resolve_herald_roles(headers: Mapping[str, str], cookies: Mapping[str, str]) -> frozenset[str]:
-    """Bearer service assertion or portal session ``IDP_TOKEN_CLAIMS`` (Story 29.2)."""
-    from django_pyforge.assertion.crypto import verify_assertion  # noqa: PLC0415
-    from django_pyforge.assertion.exceptions import AssertionRefusedError  # noqa: PLC0415
-    from django_pyforge.assertion.schema import audience_for  # noqa: PLC0415
-    from django_pyforge.roles import (  # noqa: PLC0415
-        IDP_TOKEN_CLAIMS_SESSION_KEY,
-        parse_role_claims,
-        role_names,
-        roles_from_request,
-        station_roles_from_parsed,
-    )
-
-    auth = headers.get("authorization") or headers.get("Authorization")
-    if isinstance(auth, str) and auth.lower().startswith("bearer "):
-        token = auth[7:].strip()
-        if token:
-            try:
-                claims = verify_assertion(token, audience=audience_for("herald"))
-            except AssertionRefusedError as exc:
-                raise Unauthorized(str(exc)) from exc
-            roles_raw = claims.get("roles")
-            parsed = parse_role_claims(role_names(roles_raw))
-            return station_roles_from_parsed(parsed)
-
-    from django.conf import settings  # noqa: PLC0415
-    from django.contrib.sessions.backends.db import SessionStore  # noqa: PLC0415
-
-    cookie_name = getattr(settings, "SESSION_COOKIE_NAME", "sessionid")
-    session_key = cookies.get(cookie_name)
-    if not session_key:
-        raise Unauthorized("identity required")
-    store = SessionStore(session_key=session_key)
-    claims = store.get(IDP_TOKEN_CLAIMS_SESSION_KEY)
-    if not isinstance(claims, dict):
-        raise Unauthorized("identity required")
-
-    class _Req:
-        idp_token_claims = claims
-
-    return roles_from_request(_Req())  # type: ignore[arg-type]
-
-
-def require_herald_role(roles: frozenset[str]) -> None:
-    if "herald" not in roles:
-        raise Forbidden("herald role required")
-
-
-def assert_herald_access(headers: Mapping[str, str], cookies: Mapping[str, str]) -> None:
-    roles = resolve_herald_roles(headers, cookies)
-    require_herald_role(roles)
-
-
-def attach_deck_export_routes(app: Any) -> None:
-    """Register list/stream routes on herald's FastAPI sub-app."""
+def attach_deck_export_routes(
+    app: Any,
+    *,
+    gate: AccessGate,
+    list_records: ListRecords,
+    open_stream: OpenStoreStream,
+    auth_errors: tuple[type[Exception], ...],
+) -> None:
+    """Register list/stream routes; ``auth_errors`` maps gate failures to HTTP status."""
     import asyncio
 
     from fastapi import HTTPException, Request  # noqa: PLC0415
     from fastapi.responses import JSONResponse, StreamingResponse  # noqa: PLC0415
 
+    def _http_for_auth(exc: Exception) -> HTTPException:
+        for kind in auth_errors:
+            if isinstance(exc, kind):
+                code = getattr(kind, "status_code", 401)
+                return HTTPException(status_code=code, detail=str(exc))
+        return HTTPException(status_code=401, detail=str(exc))
+
     @app.get(_LIST_PREFIX)
     async def list_deck_exports(request: Request) -> JSONResponse:
         try:
-            await asyncio.to_thread(assert_herald_access, request.headers, request.cookies)
-            payload = await asyncio.to_thread(list_exports_json, list_records=default_list_records)
+            await asyncio.to_thread(gate, request.headers, request.cookies)
+            payload = await asyncio.to_thread(list_exports_json, list_records=list_records)
         except NotFound as exc:
             raise HTTPException(status_code=404, detail="Not Found") from exc
-        except Forbidden as exc:
-            raise HTTPException(status_code=403, detail=str(exc)) from exc
-        except Unauthorized as exc:
-            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except auth_errors as exc:  # type: ignore[misc]
+            raise _http_for_auth(exc) from exc
         return JSONResponse(payload)
 
     @app.get(_STREAM_PREFIX + "{sha256}")
     async def stream_deck_export(sha256: str, request: Request) -> StreamingResponse:
         try:
-            await asyncio.to_thread(assert_herald_access, request.headers, request.cookies)
+            await asyncio.to_thread(gate, request.headers, request.cookies)
             row, chunks = await asyncio.to_thread(
                 stream_export_chunks,
                 sha256,
-                open_stream=default_open_store_stream,
+                open_stream=open_stream,
             )
         except NotFound as exc:
             raise HTTPException(status_code=404, detail="Not Found") from exc
-        except Forbidden as exc:
-            raise HTTPException(status_code=403, detail=str(exc)) from exc
-        except Unauthorized as exc:
-            raise HTTPException(status_code=401, detail=str(exc)) from exc
+        except auth_errors as exc:  # type: ignore[misc]
+            raise _http_for_auth(exc) from exc
         except StoreError as exc:
             raise HTTPException(status_code=502, detail=str(exc)) from exc
 

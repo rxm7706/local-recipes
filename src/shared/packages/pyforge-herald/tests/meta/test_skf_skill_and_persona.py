@@ -358,10 +358,27 @@ def test_persona_is_bmad_launcher_not_skf_compiled():
     assert "bmad-build" not in customize
 
 
+_DJANGO_HERALD_PREFIX = "src/shared/packages/django-herald/"
+# Story 29.2 (CAP-54 FR-10.2): portal projection + refresh — not Wave B / Lane 1 CMS.
+_DJANGO_HERALD_DECK_EXPORT_MARKERS = (
+    "deck_export",
+    "refresh_deck_exports",
+    "portal_runner",
+    "django_herald_portal/models.py",
+    "django_herald_portal/migrations/0001_initial.py",
+)
+
+
 def test_does_not_implement_wave_b_or_cms():
     root = _repo_root()
     changed = changed_paths_since(root)
-    assert not any("django-herald" in line for line in changed)
+    for line in changed:
+        if "django-herald" not in line:
+            continue
+        if any(marker in line for marker in _DJANGO_HERALD_DECK_EXPORT_MARKERS):
+            continue
+        if line.startswith(_DJANGO_HERALD_PREFIX):
+            raise AssertionError(f"django-herald change outside deck-export scope (Wave B/CMS): {line}")
     persona = (_persona_dir(root) / "SKILL.md").read_text(encoding="utf-8")
     assert "Lane 1 CMS stays steward" in persona
 

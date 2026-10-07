@@ -29,7 +29,7 @@ class _LazyWebhookASGI:
 
 def attach_webhook_asgi(app: Any) -> None:
     """Mount the webhook ASGI callable and deck-export routes on herald's sub-app."""
-    from pyforge.herald.deck_exports import attach_deck_export_routes  # noqa: PLC0415
+    from django_herald_portal.deck_export_routes import wire_deck_export_routes  # noqa: PLC0415
 
-    attach_deck_export_routes(app)
+    wire_deck_export_routes(app)
     app.mount("/", _LazyWebhookASGI())
