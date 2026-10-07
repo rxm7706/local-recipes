@@ -858,6 +858,22 @@ So that the count, the `count-stale` and `surface-changed` checks and the sync b
 **Then** both count it; the live count reads 36
 **And** a `pixi.toml` that does not parse reads as `None` in Doctor's ground truth, never an uncaught error; reverting either counter to the line scan fails its test (mutation)
 
+### Story 6.13: The spec-to-PRD currency edge ignores a landing's memlog bookkeeping
+
+As the operator who hand-cascaded the herald, doctor, steward and warden PRDs on 2026-10-07 so that landings with no requirement change could pass `pr-preflight`,
+I want the `spec → prd` feeds edge to date the Spec by its contract, not by the surface-reconcile and landing entries every landing appends to its memlog,
+So that a landing reds `chain-currency` only when the Spec's contract moved past its PRD.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-doctor CAP-20, CAP-21 (← spec-chain-currency-sweep CAP-1, CAP-2); FR-15 (Story 6.5, the chain-layers audit's staleness checkpoint) • reopens Epic 6 (Story 41.5) • Dream 2026-10-07 (detector gaps)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `scripts/fleet_scan.py` (the `spec` stage's memlog date as the `("spec", "prd")` pair reads it, about :1849-:1854 and :2112-:2135; governed by `spec-pyforge-marshal`), `src/shared/packages/pyforge-doctor/tests/unit/test_fleet_scan_currency_feeds.py` (fixtures; it loads the real `scripts/fleet_scan.py`), `_bmad-output/projects/pyforge-doctor/CHAIN-CURRENCY-RUNBOOK.md` (§ *The audit mechanics you must not fight*, one line)
+**Spec:** `planning-artifacts/specs/spec-6-13-the-spec-to-prd-currency-edge-ignores-a-landing-s-memlog-bookkeeping.md`
+**Given** a station whose PRD is dated three or more days before today and whose Spec memlog's last entry is a bookkeeping entry, an `(event)` or `(event by <anyone>)` entry whose text begins `Surface reconcile` or `Story <N>.<M> landed`, as every landing writes (measured on `966b166f76`: one such append to atlas's memlog turns `chain_currency_sweep_check.py --project pyforge-atlas` from exit 0 to exit 1)
+**When** the chain audit dates the Spec for the `spec → prd` edge
+**Then** it reads the Spec's contract date: the newer of `SPEC.md`'s date and the memlog's newest contract entry (any entry that is not bookkeeping), the memlog's frontmatter `updated:` when its last entry is a contract entry, and otherwise the commit date `git blame` gives the newest contract entry line at the judged tree (an uncommitted line dates to the run date); so the fixture reads current, while a `(capability)`, `(decision)` or other contract entry, or a re-derived `SPEC.md`, dated more than 2 days past the PRD still fires `feeds spec→prd`
+**And** a memlog `git blame` cannot read falls back to its frontmatter `updated:` (today's reading); the spec stage's displayed date, `behind-code`, shelf life, `backfilled`, the 2-day grace, every other feeds edge and the sweep's exit codes `{0, 1, 2}` are unchanged; the runbook's audit mechanics name the rule; treating every entry as a contract entry fails the new fixture (mutation)
+**Status:** backlog
+
 ## Epic 7: Deferred-work visibility
 
 > **CONFIRMED by the operator, 2026-08-10 (in-session)** — the Phase-3 hold is lifted:
@@ -2699,6 +2715,22 @@ spec's `flag.key` through the kit's ON/OFF helper nor write two flagd trees for 
 **And** a spec still in backlog is never judged on this (its test does not exist yet), nor is an exempt one
 **And** `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` green
 **Status:** done
+
+### Story 34.6: A flag key shared by several done stories is judged against the latest one
+
+As the operator who had to rewrite steward 74.1's historical `flag.default` before Story 74.2 could land,
+I want the per-environment check to judge a flag key that several `done` stories declare against the latest of them only,
+So that a later story can change its key's per-environment value without turning an earlier story's permanent record into a finding.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-feature-flag-governance CAP-2 (Story 34.3's per-environment clause) • reopens Epic 34 (Story 41.5) • Dream 2026-10-07 (detector gaps)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `scripts/flag_gate_check.py` (`judge_spec_env_defaults`, about :381-:417, and the `judge_one` / `run_spec` path that feeds it), `tests/scripts/test_flag_gate_check.py`, `docs/reference/story-spec-flag-block.md` (one sentence for a shared key)
+**Spec:** `planning-artifacts/specs/spec-34-6-a-flag-key-shared-by-several-done-stories-is-judged-against-the-latest-one.md`
+**Given** steward 74.1 (`done`, `pyforge.steward.object_store_consumer` off everywhere) and 74.2 (`done`, the same key on in dev and staging), and `src/platform/config/flag-overlays.json` carrying 74.2's values (`37800e84e5`), which today reports two `flag-default-env-mismatch` FAILs on 74.1's spec (reproduced on `966b166f76`)
+**When** the gate runs, in tree mode or with `--spec`
+**Then** for a key that more than one `done` flagged story spec of one station declares, it judges the tree against the declaration with the highest story key only (the `spec-<epic>-<story>-` filename's epic number, then story number, compared as integers, so `87-11` follows `87-3`), and an earlier `done` spec's `flag.default` is history, never a finding; the 74.1/74.2 case reads zero FAIL, and reverting the overlay to off reds 74.2's spec alone
+**And** a key one `done` spec declares is judged exactly as today, a key declared by `done` specs of more than one station has each declaration judged as today, a spec not yet `done` never supersedes one; the `flag-default-env-mismatch` message, every other finding, the rule-date baseline and `flag_inventory.py`'s reports are unchanged; `docs/reference/story-spec-flag-block.md` states the shared-key rule in one sentence; judging every `done` spec again fails the new fixture (mutation)
+**Status:** backlog
 
 
 ## Epic 35: Capability-ledger's post-PIN check reads only live Specs (spec-pyforge-doctor CAP-87)
