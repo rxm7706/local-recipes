@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 
 import pytest
+from pyforge.core import flags as core_flags
 from pyforge.core.flags import read_boolean
 
 from pyforge.warden.cli import main as warden_main
@@ -37,25 +38,36 @@ def _load_builder():
     return module
 
 
+def _bool_flag_entry(*, default_variant: str) -> dict[str, object]:
+    return {
+        "state": "ENABLED",
+        "variants": {"on": True, "off": False},
+        "defaultVariant": default_variant,
+        "metadata": {
+            "owner": "warden",
+            "story": "16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers",
+            "created": "2026-09-28",
+            "on_everywhere": "",
+            "cleanup_by": "",
+        },
+    }
+
+
 def _flag_tree(tmp_path: Path, *, enabled: bool) -> Path:
-    tree = tmp_path / "flags.json"
-    tree.write_text(
-        json.dumps(
-            {
-                "flags": {
-                    NON_PYTHON_ECOSYSTEMS_FLAG: {
-                        "state": "ENABLED",
-                        "variants": {"on": True, "off": False},
-                        "defaultVariant": "on" if enabled else "off",
-                    }
-                }
-            }
-        ),
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    variant = "on" if enabled else "off"
+    path = tmp_path / "flags.json"
+    path.write_text(
+        json.dumps({ "flags": {NON_PYTHON_ECOSYSTEMS_FLAG: _bool_flag_entry(default_variant="off")} }),
         encoding="utf-8",
     )
-    overlays = tmp_path / "flag-overlays.json"
-    overlays.write_text(json.dumps({"dev": {}, "staging": {}, "production": {}}), encoding="utf-8")
-    return tree
+    overlays = {
+        "dev": {NON_PYTHON_ECOSYSTEMS_FLAG: variant},
+        "staging": {NON_PYTHON_ECOSYSTEMS_FLAG: variant},
+        "production": {NON_PYTHON_ECOSYSTEMS_FLAG: "off"},
+    }
+    (tmp_path / core_flags.OVERLAYS_FILE_NAME).write_text(json.dumps(overlays), encoding="utf-8")
+    return path
 
 
 def test_flag_off_leaves_discovery_unchanged(tmp_path: Path) -> None:
@@ -113,7 +125,7 @@ def test_read_boolean_flag_tree(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert read_boolean(NON_PYTHON_ECOSYSTEMS_FLAG, flags_path=off_tree) is False
 
 
-def test_flag_off_scan_byte_identical_to_baseline(
+def test_flag_off_scan_ignores_package_lock(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -126,21 +138,16 @@ def test_flag_off_scan_byte_identical_to_baseline(
     off_tree = _flag_tree(tmp_path / "flags", enabled=False)
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(off_tree))
-    monkeypatch.delenv("OSV_SCANNER_LOCAL_DB_CACHE_DIRECTORY", raising=False)
-    exit_off = warden_main(["scan", str(project), "--format", "json"])
-    assert exit_off == 0
     from io import StringIO
     import sys
 
     buffer = StringIO()
     monkeypatch.setattr(sys, "stdout", buffer)
-    warden_main(["scan", str(project), "--format", "json"])
-    report_off = buffer.getvalue()
-    buffer.truncate(0)
-    buffer.seek(0)
-    warden_main(["scan", str(project), "--format", "json"])
-    report_off_2 = buffer.getvalue()
-    assert report_off == report_off_2
+    exit_code = warden_main(["scan", str(project), "--format", "json"])
+    report = json.loads(buffer.getvalue())
+    assert exit_code == 0
+    assert report["inventory_count"] == 0
+    assert discover(project, include_non_python_lockfiles=False) == ()
 
 
 def test_npm_lock_vuln_with_offline_db(
@@ -219,6 +226,7 @@ def test_sbom_emits_pkg_npm_purl(component_factory) -> None:
     report = assemble_report(
         inventory=inventory,
         findings=(),
+        errors=(),
         rungs=(),
         engine_results=(),
         manifests_found=1,
