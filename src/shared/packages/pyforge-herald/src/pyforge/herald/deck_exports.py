@@ -8,6 +8,7 @@ from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from asgiref.sync import sync_to_async
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
@@ -127,22 +128,28 @@ def attach_deck_export_routes(
     def _cookie_map(request: Request) -> dict[str, str]:
         return dict(request.cookies)
 
+    async def _list_payload(request: Request) -> list[dict[str, Any]]:
+        gate(_header_map(request), _cookie_map(request))
+        return list_exports_json(list_records=list_records)
+
     @app.get(_LIST_PREFIX, response_model=None)
     async def list_deck_exports(request: Request):
         try:
-            gate(_header_map(request), _cookie_map(request))
-            payload = list_exports_json(list_records=list_records)
+            payload = await sync_to_async(_list_payload)(request)
         except NotFound as exc:
             raise HTTPException(status_code=404, detail="Not Found") from exc
         except auth_errors as exc:  # type: ignore[misc]
             raise _http_for_auth(exc) from exc
         return JSONResponse(payload)
 
+    def _stream_open(sha256: str, request: Request) -> tuple[ExportRow, Iterator[bytes]]:
+        gate(_header_map(request), _cookie_map(request))
+        return stream_export_chunks(sha256, open_stream=open_stream)
+
     @app.get(_STREAM_PREFIX + "{sha256}", response_model=None)
     async def stream_deck_export(sha256: str, request: Request):
         try:
-            gate(_header_map(request), _cookie_map(request))
-            row, chunks = stream_export_chunks(sha256, open_stream=open_stream)
+            row, chunks = await sync_to_async(_stream_open)(sha256, request)
         except NotFound as exc:
             raise HTTPException(status_code=404, detail="Not Found") from exc
         except auth_errors as exc:  # type: ignore[misc]

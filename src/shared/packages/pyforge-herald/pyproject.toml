@@ -49,6 +49,8 @@ dependencies = [
     # Story 29.2 (CAP-54): attach_deck_export_routes registers FastAPI handlers on
     # herald's v1 sub-app; floor matches pixi.toml's platform/guild fastapi pin.
     "fastapi>=0.141.1",
+    # Story 29.2: sync ORM/stream open from async FastAPI handlers (sync_to_async).
+    "asgiref>=3.8.0",
 ]
 
 [project.optional-dependencies]
