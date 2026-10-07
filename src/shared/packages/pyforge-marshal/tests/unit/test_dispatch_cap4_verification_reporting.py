@@ -6,16 +6,15 @@ import json
 from pathlib import Path
 
 import pytest
+import test_dispatch as dispatch_test_helpers
 from pyforge.core.process import ProcessError
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
 from pyforge.marshal.cli import dispatch as dispatch_module
 from pyforge.marshal.cli.dispatch import dispatch_once, gather_dispatch_journal_facts
 from pyforge.marshal.core import dispatch as dispatch_core
-from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.model import Finding, Severity, build_envelope
-import test_dispatch as dispatch_test_helpers
 
 FakeFs = dispatch_test_helpers.FakeFs
 FakeProcess = dispatch_test_helpers.FakeProcess

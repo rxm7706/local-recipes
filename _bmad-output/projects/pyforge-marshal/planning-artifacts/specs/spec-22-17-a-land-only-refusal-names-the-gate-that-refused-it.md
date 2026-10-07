@@ -2,8 +2,8 @@
 title: "22.17: A land-only refusal names the gate that refused it"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
+status: 'in-review'
+baseline_revision: 'fe00e7ce581bd7ceab7d147105ba9b67b860406b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
