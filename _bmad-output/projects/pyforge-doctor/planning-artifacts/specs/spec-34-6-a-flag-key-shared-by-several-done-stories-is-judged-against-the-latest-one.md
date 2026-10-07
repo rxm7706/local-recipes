@@ -2,8 +2,8 @@
 title: "34.6: A flag key shared by several done stories is judged against the latest one"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
+status: 'in-progress'
+baseline_revision: 'b36482389641efd2591a9d5b5c8a883bcafcf746'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
