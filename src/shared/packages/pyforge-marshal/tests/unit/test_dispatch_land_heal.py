@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import subprocess
 from pathlib import Path
 
@@ -11,12 +12,14 @@ from pyforge.marshal.adapters.vcs_git import GitVcs, VcsCommandError
 from pyforge.marshal.core import dispatch_landing as _dispatch_landing
 from pyforge.marshal.core.chain_regen import render_ledger_statuses
 from pyforge.marshal.core.dispatch_landing import (
+    SPEC_SURFACE_BASELINE_REL,
     TEAM_MEMORY_INDEX_REL,
     is_deferred_work_path,
     is_mechanical_conflict_path,
     is_memlog_path,
     is_team_memory_index_path,
     ledger_status_precedence,
+    specs_whose_baseline_entries_differ,
     three_way_ledger_statuses,
     union_deferred_work_texts,
     union_memlog_texts,
@@ -1785,3 +1788,283 @@ def test_heal_unions_team_memory_index_conflict_and_retries_merge(tmp_path: Path
     written = (worktree / TEAM_MEMORY_INDEX_REL).read_text(encoding="utf-8")
     assert _MAIN_INDEX_LINE in written
     assert _BRANCH_INDEX_LINE in written
+
+
+# --- Story 22.18: spec-surface baseline heal -------------------------------------------------------
+
+_SPEC_A = "pyforge-marshal/spec-pyforge-marshal"
+_SPEC_B = "pyforge-steward/spec-pyforge-steward"
+_SPEC_C = "pyforge-core/spec-pyforge-core"
+_MEMLOG_A = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md"
+_MEMLOG_C = "_bmad-output/projects/pyforge-core/planning-artifacts/specs/spec-pyforge-core/.memlog.md"
+
+
+def _baseline_entry(memlog: str = "aaa") -> dict[str, object]:
+    return {"files": {}, "memlog": memlog}
+
+
+def _baseline_json(**specs: dict[str, object]) -> str:
+    return json.dumps({name: entry for name, entry in specs.items()}, indent=1) + "\n"
+
+
+def test_specs_whose_baseline_entries_differ_names_changed_specs_only() -> None:
+    base = _baseline_json(
+        alpha=_baseline_entry("1"),
+        beta=_baseline_entry("2"),
+    )
+    branch = _baseline_json(
+        alpha=_baseline_entry("1"),
+        beta=_baseline_entry("3"),
+        gamma=_baseline_entry("4"),
+    )
+    assert specs_whose_baseline_entries_differ(base, branch) == frozenset({"beta", "gamma"})
+
+
+def test_mechanical_conflict_path_recognizes_spec_surface_baseline() -> None:
+    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    assert is_mechanical_conflict_path(SPEC_SURFACE_BASELINE_REL, ledger_rel=ledger, deferred_work_rel=dw)
+
+
+def test_mutation_mechanical_set_includes_spec_surface_baseline() -> None:
+    """Removing the baseline from the mechanical set breaks this test (Story 22.18 AC)."""
+    ledger = "_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml"
+    dw = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+    assert is_mechanical_conflict_path(SPEC_SURFACE_BASELINE_REL, ledger_rel=ledger, deferred_work_rel=dw)
+
+
+def _22_18_landing(
+    tmp_path: Path,
+    *,
+    branch_files: dict[str, str],
+    main_files: dict[str, str],
+    base_files: dict[str, str] | None = None,
+) -> tuple[Path, Path, Path]:
+    base = base_files or {
+        SPEC_SURFACE_BASELINE_REL: _baseline_json(
+            **{
+                _SPEC_A: _baseline_entry("base"),
+                _SPEC_B: _baseline_entry("base"),
+                _SPEC_C: _baseline_entry("base"),
+            }
+        ),
+        _MEMLOG_A: _memlog(_A, updated=_T0),
+        _MEMLOG_C: _memlog(_A, updated=_T0),
+    }
+    branch = {**base, **branch_files}
+    main = {**base, **main_files}
+    return _landing(tmp_path, base=base, main=main, branch=branch)
+
+
+class _RecordingReconcile:
+    def __init__(self, *, refuse: bool = False, finding: Finding | None = None) -> None:
+        self.calls: list[tuple[frozenset[str], bool]] = []
+        self.refuse = refuse
+        self.finding = finding
+
+    def __call__(self, *, branch_stamp_specs: frozenset[str], push_when_done: bool):
+        self.calls.append((branch_stamp_specs, push_when_done))
+
+        class _Outcome:
+            pass
+
+        outcome = _Outcome()
+        outcome.refuse = self.refuse
+        outcome.finding = self.finding or (
+            Finding(code="MRS-DISP-048", severity=Severity.ERROR, message="reconcile refused") if self.refuse else None
+        )
+        return outcome
+
+
+def test_heal_escalates_baseline_conflict_without_reconcile(tmp_path: Path) -> None:
+    """Direct callers with no reconcile still get MRS-DISP-038 on the baseline."""
+    _, clone, wt = _22_18_landing(
+        tmp_path,
+        branch_files={
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("branch"),
+                    _SPEC_B: _baseline_entry("base"),
+                    _SPEC_C: _baseline_entry("branch"),
+                }
+            ),
+            _MEMLOG_A: _memlog(_A, _B1, updated=_T1),
+            _MEMLOG_C: _memlog(_A, _B1, updated=_T1),
+        },
+        main_files={
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("base"),
+                    _SPEC_B: _baseline_entry("main"),
+                    _SPEC_C: _baseline_entry("main"),
+                }
+            ),
+        },
+    )
+    head_before = _run_git(clone, "rev-parse", _HEAD).strip()
+    forge = _HonestForge(clone)
+
+    result = _heal(clone, wt, forge)
+
+    assert result == DispatchLandHealResult(healed=False, escalated_paths=(SPEC_SURFACE_BASELINE_REL,))
+    assert forge.merge_calls == 0
+    assert _run_git(clone, "rev-parse", _HEAD).strip() == head_before
+
+
+def test_heal_resolves_baseline_to_main_and_calls_reconcile_once_before_push(tmp_path: Path) -> None:
+    _, clone, wt = _22_18_landing(
+        tmp_path,
+        branch_files={
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("branch"),
+                    _SPEC_B: _baseline_entry("base"),
+                    _SPEC_C: _baseline_entry("branch"),
+                }
+            ),
+            _MEMLOG_A: _memlog(_A, _B1, updated=_T1),
+            _MEMLOG_C: _memlog(_A, _B1, updated=_T1),
+        },
+        main_files={
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("base"),
+                    _SPEC_B: _baseline_entry("main"),
+                    _SPEC_C: _baseline_entry("main"),
+                }
+            ),
+        },
+    )
+    forge = _HonestForge(clone)
+    reconcile = _RecordingReconcile()
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=clone,
+        worktree=wt,
+        base="main",
+        head_branch=_HEAD,
+        head_sha="unused",
+        subject="Merge 22.18 into main",
+        merge_strategy="merge",
+        delete_branch=False,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=PrInfo(number=2218, url="https://example/pr/2218", state="open", base="main"),
+        fs=FakeFsHeal(),
+        vcs=GitVcs(),
+        forge=forge,
+        probe_ref=_ORIGIN_MAIN,
+        reconcile_spec_surface=reconcile,
+    )
+
+    assert result.healed is True and result.retried_forge_merge is True
+    assert reconcile.calls == [(frozenset({_SPEC_A, _SPEC_C}), False)]
+    merged_baseline = _run_git(clone, "show", f"{_HEAD}:{SPEC_SURFACE_BASELINE_REL}")
+    assert _SPEC_B in merged_baseline and '"memlog": "main"' in merged_baseline
+    assert forge.merge_calls == 1
+
+
+def test_heal_reconcile_refusal_pushes_nothing_and_never_retries_merge(tmp_path: Path) -> None:
+    remote, clone, wt = _22_18_landing(
+        tmp_path,
+        branch_files={
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("branch"),
+                    _SPEC_B: _baseline_entry("base"),
+                    _SPEC_C: _baseline_entry("branch"),
+                }
+            ),
+            _MEMLOG_A: _memlog(_A, _B1, updated=_T1),
+            _MEMLOG_C: _memlog(_A, _B1, updated=_T1),
+        },
+        main_files={
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("base"),
+                    _SPEC_B: _baseline_entry("main"),
+                    _SPEC_C: _baseline_entry("main"),
+                }
+            ),
+        },
+    )
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    forge = _HonestForge(clone)
+    reconcile = _RecordingReconcile(refuse=True)
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=clone,
+        worktree=wt,
+        base="main",
+        head_branch=_HEAD,
+        head_sha="unused",
+        subject="Merge 22.18 into main",
+        merge_strategy="merge",
+        delete_branch=False,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=PrInfo(number=2218, url="https://example/pr/2218", state="open", base="main"),
+        fs=FakeFsHeal(),
+        vcs=GitVcs(),
+        forge=forge,
+        probe_ref=_ORIGIN_MAIN,
+        reconcile_spec_surface=reconcile,
+    )
+
+    assert result.healed is False
+    assert result.reconcile_refusal is not None
+    assert result.reconcile_refusal.code == "MRS-DISP-048"
+    assert forge.merge_calls == 0
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+
+
+def test_heal_escalates_non_mechanical_path_beside_baseline(tmp_path: Path) -> None:
+    _, clone, wt = _22_18_landing(
+        tmp_path,
+        branch_files={
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("branch"),
+                    _SPEC_B: _baseline_entry("base"),
+                    _SPEC_C: _baseline_entry("base"),
+                }
+            ),
+            "README.md": "branch\n",
+        },
+        main_files={
+            SPEC_SURFACE_BASELINE_REL: _baseline_json(
+                **{
+                    _SPEC_A: _baseline_entry("base"),
+                    _SPEC_B: _baseline_entry("main"),
+                    _SPEC_C: _baseline_entry("base"),
+                }
+            ),
+            "README.md": "main\n",
+        },
+    )
+    head_before = _run_git(clone, "rev-parse", _HEAD).strip()
+    forge = _HonestForge(clone)
+    reconcile = _RecordingReconcile()
+
+    result = try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=clone,
+        worktree=wt,
+        base="main",
+        head_branch=_HEAD,
+        head_sha="unused",
+        subject="Merge 22.18 into main",
+        merge_strategy="merge",
+        delete_branch=False,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=PrInfo(number=2218, url="https://example/pr/2218", state="open", base="main"),
+        fs=FakeFsHeal(),
+        vcs=GitVcs(),
+        forge=forge,
+        probe_ref=_ORIGIN_MAIN,
+        reconcile_spec_surface=reconcile,
+    )
+
+    assert result == DispatchLandHealResult(healed=False, escalated_paths=("README.md",))
+    assert reconcile.calls == []
+    assert _run_git(clone, "rev-parse", _HEAD).strip() == head_before

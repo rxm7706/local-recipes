@@ -1691,6 +1691,147 @@ def _stage_dates(paths: list[str]) -> tuple[str, str]:
     return (min(created) if created else "", max(updated) if updated else "")
 
 
+_MEMLOG_ITEM = re.compile(r"^-\s+\(([^)]+)\)\s+(.*)$")
+_STORY_LANDED = re.compile(r"Story \d+\.\d+ landed")
+
+
+def _memlog_entry_is_bookkeeping(tag_inner: str, text: str) -> bool:
+    """True for surface-reconcile and marshal landing `(event…)` lines only (Story 6.13)."""
+    kind = tag_inner.split(" by ", 1)[0].strip()
+    if kind != "event":
+        return False
+    body = text.lstrip()
+    return body.startswith("Surface reconcile") or bool(_STORY_LANDED.match(body))
+
+
+def _parse_memlog_body(body: str) -> list[tuple[str, str, str]]:
+    """Each memlog bullet as `(full_line, tag_inner, text)`."""
+    out: list[tuple[str, str, str]] = []
+    for line in body.splitlines():
+        m = _MEMLOG_ITEM.match(line.strip())
+        if m:
+            out.append((line, m.group(1), m.group(2)))
+    return out
+
+
+def _later_iso(a: str, b: str) -> str:
+    """The later of two ISO-ish date strings; empty string is never chosen over a date."""
+    if not a:
+        return b
+    if not b:
+        return a
+    return a if a[:10] >= b[:10] else b
+
+
+def _git_blame_line_dates(rel: str, line_numbers: list[int]) -> dict[int, str]:
+    """Map 1-based line numbers in `rel` to commit dates (`YYYY-MM-DD`), or {} on failure."""
+    if not line_numbers:
+        return {}
+    lo, hi = min(line_numbers), max(line_numbers)
+    r = subprocess.run(
+        ["git", "blame", "--line-porcelain", "-L", f"{lo},{hi}", "--", rel],
+        capture_output=True,
+        text=True,
+        cwd=REPO_ROOT,
+    )
+    if r.returncode != 0:
+        return {}
+    dates: dict[int, str] = {}
+    num = lo - 1
+    committer_time: str | None = None
+    for line in r.stdout.splitlines():
+        if line.startswith("committer-time "):
+            committer_time = line.split(" ", 1)[1].strip()
+        elif line.startswith("\t"):
+            num += 1
+            if num in line_numbers and committer_time:
+                try:
+                    from datetime import UTC, datetime
+
+                    ts = int(committer_time)
+                    dates[num] = datetime.fromtimestamp(ts, UTC).strftime("%Y-%m-%d")
+                except (ValueError, OSError):
+                    pass
+            committer_time = None
+    return dates
+
+
+def _memlog_contract_updated(rel: str, today) -> str:
+    """Memlog date for the spec→prd edge: contract entries only (Story 6.13)."""
+    from datetime import date
+
+    p = REPO_ROOT / rel
+    fm_updated = _artifact_dates(rel)[1]
+    if not p.is_file():
+        return fm_updated
+    try:
+        raw = p.read_text(encoding="utf-8")
+    except OSError:
+        return fm_updated
+    try:
+        meta, body = _split_memlog(raw)
+    except ValueError:
+        return fm_updated
+    fm_updated = (meta.get("updated") or fm_updated or "").strip()
+    entries = _parse_memlog_body(body)
+    if not entries:
+        return fm_updated or _artifact_dates(rel)[1]
+    _full, tag, text = entries[-1]
+    if not _memlog_entry_is_bookkeeping(tag, text):
+        return fm_updated or _artifact_dates(rel)[1]
+    run_day = today.isoformat() if isinstance(today, date) else str(today)[:10]
+    contract_lines: list[tuple[int, str]] = []
+    lines = raw.splitlines()
+    for i, line in enumerate(lines, start=1):
+        m = _MEMLOG_ITEM.match(line.strip())
+        if m and not _memlog_entry_is_bookkeeping(m.group(1), m.group(2)):
+            contract_lines.append((i, line))
+    if not contract_lines:
+        return fm_updated or _artifact_dates(rel)[1]
+    line_nums = [ln for ln, _ in contract_lines]
+    blame = _git_blame_line_dates(rel, line_nums)
+    if not blame:
+        return fm_updated or _artifact_dates(rel)[1]
+    best = ""
+    for ln, _ in contract_lines:
+        when = blame.get(ln)
+        if when is None:
+            when = run_day
+        best = _later_iso(best, when)
+    return best or fm_updated or _artifact_dates(rel)[1]
+
+
+def _split_memlog(text: str) -> tuple[dict[str, str], str]:
+    """Frontmatter dict and body for a `.memlog.md` file."""
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        raise ValueError("no frontmatter")
+    end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
+    if end is None:
+        raise ValueError("unterminated frontmatter")
+    meta: dict[str, str] = {}
+    for line in lines[1:end]:
+        if ":" in line:
+            k, v = line.split(":", 1)
+            meta[k.strip()] = v.strip()
+    body = "\n".join(lines[end + 1:]).lstrip("\n")
+    return meta, body
+
+
+def _spec_feeds_updated(spec_paths: list[str], today) -> str:
+    """Spec stage date for the `spec→prd` feeds pair only (Story 6.13)."""
+    spec_md = ""
+    memlog = ""
+    for rel in spec_paths:
+        if rel.endswith("/SPEC.md") or rel.endswith("SPEC.md"):
+            spec_md = rel
+        elif rel.endswith(".memlog.md"):
+            memlog = rel
+    spec_date = _artifact_dates(spec_md)[1] if spec_md else ""
+    mem_date = _memlog_contract_updated(memlog, today) if memlog else ""
+    return _later_iso(spec_date, mem_date)
+
+
 def _last_touched(prefixes: list[str]) -> str:
     """Most recent commit date (ISO) under any of the given path prefixes."""
     _build_git_index()
@@ -2038,8 +2179,10 @@ def scan_fleet(projects: dict, pitch_cards: list[dict] | None = None) -> dict:
         backfilled = seq != sorted(seq)
         open_q = _spec_open_questions(project, slug)
         overtaken = bool(open_q) and bool(stages["prd"]) and bool(stages["arch"])
+        spec_feeds = _spec_feeds_updated(files.get("spec") or [], today)
         stale_by = _currency(slug, stages, updated_at, na, today,
-                             realized=(dstatus == "realized"))
+                             realized=(dstatus == "realized"),
+                             spec_feeds_updated=spec_feeds)
         if (sub.get("research") or {}).get("inherited"):
             unattributed.append(slug)
         row = {
@@ -2118,12 +2261,14 @@ _FEEDS_GRACE_DAYS = 2
 
 
 def _currency(slug: str, stages: dict, updated_at: dict, na: set, today,
-              realized: bool = False) -> list[dict]:
+              realized: bool = False, *, spec_feeds_updated: str = "") -> list[dict]:
     """Every way this chain's artifacts are out of date. Empty list when current."""
     from datetime import date
     out = []
     for up, down in _FEEDS:
         u, d = updated_at.get(up, ""), updated_at.get(down, "")
+        if up == "spec" and down == "prd" and spec_feeds_updated:
+            u = spec_feeds_updated
         if u and d and u > d and up not in na and down not in na:
             try:
                 uy, um, ud = (int(x) for x in u[:10].split("-"))

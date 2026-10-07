@@ -922,6 +922,37 @@ Drift — orphaned between stations.
   (governs `pixi.toml`), `spec-coverage-gate-independence` (the floors stay per station, in that station's
   environment), the two 2026-10-06 entries and the 2026-10-07 review above. Owner: steward. → awaiting the three
   rulings, then `bmad-spec` (three CAPs on `spec-pyforge-steward`, in the order above).
+- **2026-10-07 (tooling gaps) — Found: three steward tools fail the agent that follows them.** Measured on
+  `b364823896`. (1) **`platform-ci-local` has no lock.** `scripts/platform-ci-local.sh` takes fixed ports
+  (`PLATFORM_CI_LOCAL_PG_PORT` 15432, `PLATFORM_CI_LOCAL_REDIS_PORT` 16379) and one fixed work dir
+  (`${TMPDIR:-/tmp}/platform-ci-local`). Its `start_services` first runs `stop_services`, which stops the PostgreSQL
+  and kills the Redis whose data and pid files sit in that dir, then deletes the data dir; `results.tsv` is truncated
+  at start. Marshal's dispatch verification runs `pixi run -e pyforge-guild platform-ci-local -- --test` for any story
+  that touches `src/platform/` (marshal Story 22.14's rule table, MRS-GATE-015). On 2026-10-07 the warden 14.2 and
+  steward 74.2 landings, both touching `src/platform/config/`, ran it at once and both came back `skipped-unverified`;
+  each passed when re-run alone. (2) **The session hook names commands that do not exist.** In
+  `docs/governance/guild-roster.json` `session_denials`, the `protected-ref-deletion` and `unreachable-ref-deletion`
+  reasons send the agent to `python scripts/worktree_sweep.py --retire <branch>`, and the second also to
+  `pyforge marshal preserve tag`. The sweeper's parser rejects `--retire` (exit 2, "unrecognized arguments"), and no
+  CLI registers `preserve`: both forms are marshal Stories 87.1 and 87.3, still `backlog`. An agent that follows the
+  hook's own advice fails. (3) **No non-interactive verb drops a dead workspace record.** On the primary checkout,
+  34 of the 38 rows in `.steward/workspaces.yaml` name a worktree and a branch that no longer exist
+  (`worktree_sweep.py` and hand cleanup removed them), and `steward workspace ls` lists all 38 as open.
+  `steward workspace clean <slug>` asks only on a TTY and records every other caller as `declined`. `--merged-only`
+  cannot run `merge-base` on a missing branch, so CAP-155 reports each such row as an error and keeps it, and every
+  fleet `clean --merged-only` now exits non-zero. Where `clean` does remove a workspace, it writes a `.landed.txt` note
+  or a tarball; the operator ruled on 2026-10-06 that an abandoned scratch workspace is deleted outright: no archive,
+  no tarball, no preserve tag. **What it looks like when fixed:** two overlapping `platform-ci-local` runs never share
+  ports, a work dir or a container, so each reports its own verdict; every command a session denial names as the
+  sanctioned form exists, and a test over the roster proves it; `steward workspace clean` has a non-interactive form
+  that deletes a workspace git proves landed (worktree, local branch and record, nothing archived) and drops a record
+  whose worktree is already gone, and refuses an unmerged or dirty one, naming why. **Constraints:** fix stories, no
+  new CAP, no flag. The `session_denials` matcher list does not change, only the text of two reasons: adding or
+  changing a denial is a governance act, and the operator rulings of 2026-10-04 stand. Archive-not-delete (CAP-107,
+  CAP-155, CAP-157) still holds for the default `clean` and `--merged-only`; the new form deletes only what git proves
+  landed or what is already gone. Owners `spec-pyforge-steward` CAP-152 (`platform-ci-local`, a task a station shells
+  to), CAP-165 with CAP-5 (the session hook's reasons) and CAP-107 / CAP-108 (workspace clean and its bookkeeping).
+  → Stories 63.7, 85.6 and 13.5, specced 2026-10-07; 63.7 and 13.5 reopen Epics 63 and 13.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
