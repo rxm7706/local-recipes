@@ -2,7 +2,7 @@
 title: "34.6: A flag key shared by several done stories is judged against the latest one"
 type: 'fix'
 created: '2026-10-07'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'b36482389641efd2591a9d5b5c8a883bcafcf746'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -156,4 +156,37 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-07 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - (no actionable findings after self-review against intent contract and matrix audit)
+
+## Auto Run Result
+
+Status: done
+
+**Summary.** The flag gate now compares per-environment `flag.default` to the tree only for the latest `done` declaration of each `(station, flag key)` pair (highest `spec-<epic>-<story>-` numeric key). Earlier `done` specs on the same key are historical; cross-station keys are still judged per station; non-`done` specs never supersede.
+
+**Files changed**
+- `scripts/flag_gate_check.py` — `env_default_judge_targets`, wiring in tree and `--spec` mode
+- `scripts/flag_inventory.py` — same target set when reusing `judge_one`
+- `tests/scripts/test_flag_gate_check.py` — Story 34.6 AC and I/O matrix coverage
+- `docs/reference/story-spec-flag-block.md` — shared-key sentence for authors
+- `docs/governance/spec-feature-flag-governance/.memlog.md` — surface reconcile entry
+
+**Review.** No patches, deferrals, or rejections.
+
+**Follow-up review recommendation:** false
+
+**Verification**
+- `pytest tests/scripts/test_flag_gate_check.py` — 152 passed
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 3448 passed, 1 skipped
+- `pixi run -e pyforge-guild flag-gate-check` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0
+- Two consecutive `flag_inventory` runs — byte-identical (steward report spot-check)
+
+**Governed paths reconciled (memlog)**
+- `scripts/flag_gate_check.py`
+- `scripts/flag_inventory.py`
+- `tests/scripts/test_flag_gate_check.py`
+- `docs/reference/story-spec-flag-block.md` (co-governor: spec-34-1 story spec surface; guild memlog names both)
