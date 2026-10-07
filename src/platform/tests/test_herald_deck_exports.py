@@ -222,11 +222,12 @@ def test_refresh_writes_nothing_when_flag_off(
 ) -> None:
     from django.core.management import call_command
 
-    from django_pyforge.flags import configure_file_provider
-
     off = _flag_tree(tmp_path, enabled=False)
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(off))
-    configure_file_provider(off)
+    monkeypatch.setattr(
+        "django_herald_portal.management.commands.refresh_deck_exports.evaluate_boolean",
+        lambda _key, default=False: False,
+    )
     call_command("refresh_deck_exports", slug=["pyforge-herald"])
     assert DeckExport.objects.count() == 0
 
@@ -236,11 +237,12 @@ def test_refresh_upserts_from_portal_runner(
 ) -> None:
     from django.core.management import call_command
 
-    from django_pyforge.flags import configure_file_provider
-
     on = _flag_tree(tmp_path, enabled=True)
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(on))
-    configure_file_provider(on)
+    monkeypatch.setattr(
+        "django_herald_portal.management.commands.refresh_deck_exports.evaluate_boolean",
+        lambda _key, default=False: True,
+    )
 
     sample = json.dumps(
         [

@@ -90,7 +90,7 @@ def list_deck_export_rows() -> list[ExportRow]:
 
 
 def open_deck_export_stream(sha256: str) -> tuple[ExportRow, Iterator[bytes]]:
-    from pyforge.herald import deck_store  # noqa: PLC0415
+    from pyforge.herald.deck_store import open_deck_store  # noqa: PLC0415
 
     try:
         item = DeckExport.objects.get(sha256=sha256)
@@ -107,7 +107,7 @@ def open_deck_export_stream(sha256: str) -> tuple[ExportRow, Iterator[bytes]]:
         source_commit=item.source_commit,
         published_at=item.published_at.isoformat(),
     )
-    store = deck_store.open_deck_store()
+    store = open_deck_store()
     key = f"sha256/{sha256}"
 
     def _iter() -> Iterator[bytes]:

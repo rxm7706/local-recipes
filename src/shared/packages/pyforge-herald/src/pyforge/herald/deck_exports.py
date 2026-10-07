@@ -130,12 +130,8 @@ def attach_deck_export_routes(
     @app.get(_LIST_PREFIX, response_model=None)
     async def list_deck_exports(request: Request):
         try:
-            await asyncio.to_thread(
-                gate,
-                _header_map(request),
-                _cookie_map(request),
-            )
-            payload = await asyncio.to_thread(list_exports_json, list_records=list_records)
+            gate(_header_map(request), _cookie_map(request))
+            payload = list_exports_json(list_records=list_records)
         except NotFound as exc:
             raise HTTPException(status_code=404, detail="Not Found") from exc
         except auth_errors as exc:  # type: ignore[misc]
@@ -145,16 +141,8 @@ def attach_deck_export_routes(
     @app.get(_STREAM_PREFIX + "{sha256}", response_model=None)
     async def stream_deck_export(sha256: str, request: Request):
         try:
-            await asyncio.to_thread(
-                gate,
-                _header_map(request),
-                _cookie_map(request),
-            )
-            row, chunks = await asyncio.to_thread(
-                stream_export_chunks,
-                sha256,
-                open_stream=open_stream,
-            )
+            gate(_header_map(request), _cookie_map(request))
+            row, chunks = stream_export_chunks(sha256, open_stream=open_stream)
         except NotFound as exc:
             raise HTTPException(status_code=404, detail="Not Found") from exc
         except auth_errors as exc:  # type: ignore[misc]
