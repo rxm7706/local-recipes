@@ -427,3 +427,14 @@ def test_detector_fires_on_network_module_imports():
     assert _violations(ast.parse("from urllib.parse import quote\n"))
     assert not _violations(ast.parse("import json\nimport tomllib\n"))
     assert not _violations(ast.parse("from packaging.requirements import Requirement\n"))
+
+
+MANIFEST_EDIT_MODULE = Path(_PACKAGE_FILE).resolve().parent / "manifest_edit.py"
+
+
+def test_manifest_edit_module_has_no_execution_primitives():
+    """Story 14.2: ``manifest_edit.py`` is a no-execution edit zone."""
+    assert MANIFEST_EDIT_MODULE.is_file()
+    tree = ast.parse(MANIFEST_EDIT_MODULE.read_text(encoding="utf-8"), str(MANIFEST_EDIT_MODULE))
+    violations = _violations(tree)
+    assert not violations, f"manifest_edit.py violates the no-execution zone: {violations}"
