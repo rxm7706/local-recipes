@@ -1465,3 +1465,25 @@ deployment.
   promoted: 2026-10-03 — Story 66.2 backfill
   reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
   status: closed
+
+### DW-herald-29-2: Real ``deck_exports_json_runner`` subprocess argv and JSON validation are only mocked in platform refresh tests.
+
+- source_spec: `planning-artifacts/specs/spec-29-2-the-published-exports-are-listed-and-streamed-behind-the-herald-role.md`
+  summary: Real ``deck_exports_json_runner`` subprocess argv and JSON validation are only mocked in platform refresh tests.
+  evidence: Both refresh tests patch ``deck_exports_json_runner``; no test executes ``portal_runner.deck_exports_json_runner`` with a controlled subprocess.
+  location: src/shared/packages/django-herald/src/django_herald_portal/portal_runner.py
+  origin: spec-deferred 8516821d40a4 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-herald-29-2-2: ``refresh_deck_exports`` does not validate malformed manifest rows before ORM upsert.
+
+- source_spec: `planning-artifacts/specs/spec-29-2-the-published-exports-are-listed-and-streamed-behind-the-herald-role.md`
+  summary: ``refresh_deck_exports`` does not validate malformed manifest rows before ORM upsert.
+  evidence: Missing keys or bad dates can raise ``KeyError``/``ValueError`` mid-slug; no structured command error or test pins the behavior.
+  location: src/shared/packages/django-herald/src/django_herald_portal/deck_export_sync.py
+  origin: spec-deferred cc6e2260084e — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
