@@ -2,7 +2,8 @@
 title: '29.1: herald deck publish puts each current export in the object store'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false

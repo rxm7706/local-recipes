@@ -45,6 +45,7 @@ dependencies = [
     "playwright>=1.62.1",
     "pillow>=12.3.0",
     "python-pptx>=1.0.2",
+    "boto3>=1.43.75",
 ]
 
 [project.optional-dependencies]
