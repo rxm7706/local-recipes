@@ -19,6 +19,7 @@ from pyforge.marshal.core.model import Finding, Severity, build_envelope
 FakeFs = dispatch_test_helpers.FakeFs
 FakeProcess = dispatch_test_helpers.FakeProcess
 FakeVcs = dispatch_test_helpers.FakeVcs
+FakeBuildHarness = dispatch_test_helpers.FakeBuildHarness
 _DONE_SPEC = dispatch_test_helpers._DONE_SPEC
 _init_git_repo = dispatch_test_helpers._init_git_repo
 _write_worktree_spec = dispatch_test_helpers._write_worktree_spec
@@ -81,6 +82,7 @@ def test_land_only_cli_names_the_failing_verify_command(tmp_path: Path, monkeypa
         fs=FakeFs(),
         vcs=FakeVcs(tmp_path),
         process=FakeProcess(),
+        build_harness=FakeBuildHarness(),
     )
     messages = " ".join(f.message for f in attempt.findings)
     assert _PLATFORM_CI in messages
@@ -120,6 +122,7 @@ def test_land_only_exception_becomes_a_named_error_finding(
         fs=FakeFs(),
         vcs=FakeVcs(tmp_path),
         process=FakeProcess(),
+        build_harness=FakeBuildHarness(),
     )
     assert attempt.data["land_verdict"] == "skipped-unverified"
     error_findings = [f for f in attempt.findings if f.code == "MRS-DISP-062"]
@@ -147,6 +150,7 @@ def test_land_only_journals_dispatch_verification_on_prior_run_dir(
         fs=fs,
         vcs=FakeVcs(tmp_path),
         process=FakeProcess(),
+        build_harness=FakeBuildHarness(),
     )
     journal_path = run_dir / "journal.jsonl"
     journal_text = fs.read_text(journal_path) or ""
@@ -187,6 +191,7 @@ def test_land_only_without_run_dir_still_reports_findings(tmp_path: Path, monkey
         fs=FakeFs(),
         vcs=FakeVcs(tmp_path),
         process=FakeProcess(),
+        build_harness=FakeBuildHarness(),
     )
     assert any(f.code == "MRS-GATE-001" for f in attempt.findings)
     assert not any(f.code == "MRS-DISP-025" and "journal" in f.message.lower() for f in attempt.findings)
@@ -218,5 +223,6 @@ def test_land_only_pass_through_mutation_guard(tmp_path: Path, monkeypatch: pyte
         fs=FakeFs(),
         vcs=FakeVcs(tmp_path),
         process=FakeProcess(),
+        build_harness=FakeBuildHarness(),
     )
     assert not any(f.code == "MRS-GATE-001" for f in attempt.findings)
