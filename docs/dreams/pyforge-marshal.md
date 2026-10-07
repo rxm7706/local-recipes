@@ -1138,6 +1138,19 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   Foreign drift still refuses (`MRS-DISP-048`), and any other unknown path still escalates (`MRS-DISP-038`).
   **Constraints:** a fix story, no CAP, no flag; never a bare stamp, never a `--spec` for a Spec the branch did not
   touch. Owner `spec-pyforge-marshal`. → Story 22.18, specced 2026-10-07.
+- **2026-10-07 (flag registry conflict)** — **Found: two flag stories cannot land one after the other either.**
+  Every flag story registers its key in the same four files, at the same place each time:
+  `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json` (one line at the end of each
+  environment), core's `tests/unit/test_flags.py` (`_SHIPPED_CLOCKS`, `expected`, `per_environment`) and the
+  platform's `tests/test_openfeature_file_flags.py` (`_SHIPPED_BOOLEANS`). So the second of two flag landings always
+  conflicts there, and the heal escalates those files the way it escalated the baseline. Warden 14.3 (PR #1903, run
+  `pyforge-warden-20261007T093623012Z-77c754d3`) was refused with `MRS-DISP-038` naming the baseline, both JSON files
+  and `test_flags.py`, after herald 29.1 and steward 74.2 landed. Herald 29.1 itself had needed an operator merge
+  (`e5432aa8d6`): the JSON files unioned key by key, `main`'s keys first, and `per_environment` kept both entries.
+  **What it looks like when fixed:** the heal unions the registry the way that operator did. A key both sides set to
+  different values, or a change that is not a pure addition of entries, still escalates. The landing re-runs the flag
+  gate and both flag test modules on the healed tree before it pushes. **Constraints:** a fix story on 22.18's heal
+  path, no CAP, no flag. Owner `spec-pyforge-marshal`. → Story 22.19, specced 2026-10-07.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
