@@ -122,7 +122,7 @@ def attach_deck_export_routes(
         return HTTPException(status_code=401, detail=str(exc))
 
     def _header_map(request: Request) -> dict[str, str]:
-        return {k.decode() if isinstance(k, bytes) else str(k): v for k, v in request.headers.items()}
+        return dict(request.headers)
 
     def _cookie_map(request: Request) -> dict[str, str]:
         return dict(request.cookies)

@@ -263,6 +263,7 @@ force-single-line = true
 "tests/test_django_pyforge_assertion.py" = ["E501", "PLC0415", "PLR0913", "PLR2004", "SLF001"]
 "tests/test_estate_dsn_is_plane.py" = ["BLE001", "PLC0415"]
 "tests/test_host_board_row_isolation.py" = ["E501"]
+"tests/test_station_portal_shells.py" = ["E501"]
 "tests/test_liquibase_update.py" = ["PT018"]
 "tests/test_marshal_loop_homes_portal.py" = ["TC002"]
 "tests/test_mason_portal_last_diagnose.py" = ["E501"]
