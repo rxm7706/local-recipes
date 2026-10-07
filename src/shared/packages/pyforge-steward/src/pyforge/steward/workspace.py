@@ -963,9 +963,7 @@ def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
     except OSError as exc:
         raise WorkspaceError(f"could not read {record.path}: {exc}") from exc
 
-    branch_exists = (
-        _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0
-    )
+    branch_exists = _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0
 
     if not wt_is_dir and not branch_exists:
         return None
@@ -1265,9 +1263,7 @@ class WorkspaceDuty:
             else:
                 cleaned = clean_workspaces(merged_only=merged_only, delete=delete, slug=slug)
             errored = any(row.get("reason", "").startswith("error: ") for row in cleaned["skipped"])
-            refused = any(
-                not row.get("reason", "").startswith("error: ") for row in cleaned["skipped"]
-            )
+            refused = any(not row.get("reason", "").startswith("error: ") for row in cleaned["skipped"])
             if delete and slug is not None:
                 ok = not errored and not refused
             else:

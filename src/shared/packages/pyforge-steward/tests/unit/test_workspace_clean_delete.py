@@ -10,7 +10,6 @@ import pytest
 
 from pyforge.steward.cli import EXIT_FAILED, EXIT_OK, EXIT_USAGE, main
 from pyforge.steward.workspace import (
-    WorkspaceError,
     WorkspaceRecord,
     clean_workspaces,
     load_bookkeeping,
@@ -234,7 +233,9 @@ def test_cli_slug_delete_refusal_exits_one(repo: Path, tmp_path: Path, monkeypat
 
 def test_cli_delete_usage_errors(repo: Path, monkeypatch, capsys):
     monkeypatch.setattr("pyforge.steward.workspace.repo_root", lambda: repo)
-    monkeypatch.setattr("pyforge.steward.workspace.default_bookkeeping_path", lambda: repo / ".steward" / "workspaces.yaml")
+    monkeypatch.setattr(
+        "pyforge.steward.workspace.default_bookkeeping_path", lambda: repo / ".steward" / "workspaces.yaml"
+    )
     monkeypatch.setattr("pyforge.steward.workspace.load_repo_sets", lambda: {"fleet-feature": object()})
 
     rc = main(["workspace", "clean", "--delete", "--merged-only"])
