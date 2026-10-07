@@ -614,12 +614,14 @@ def build_reports(root: Path) -> dict[str, str]:
 
     stories: dict[str, list[Story]] = {}
     warned: dict[str, list[Warned]] = {}
-    for rel in flag_gate_check.story_specs(root):
+    spec_rels = flag_gate_check.story_specs(root)
+    env_targets = flag_gate_check.env_default_judge_targets(root, inputs.exemptions, spec_rels)
+    for rel in spec_rels:
         station = flag_gate_check.station_of(rel)
         frontmatter, _why = flag_rule.read_frontmatter(rel, repo_root=root)
         status = str(frontmatter.get("status", "")).strip() if frontmatter else ""
         stories.setdefault(station, []).append(Story(rel, status or UNKNOWN, _flag_key(frontmatter)))
-        for finding in flag_gate_check.judge_one(root, inputs, rel):
+        for finding in flag_gate_check.judge_one(root, inputs, rel, env_default_targets=env_targets):
             if finding.kind == flag_gate_check.K_PRE_RULE:
                 warned.setdefault(station, []).append(Warned(story_key(rel), status or UNKNOWN, rel))
 
