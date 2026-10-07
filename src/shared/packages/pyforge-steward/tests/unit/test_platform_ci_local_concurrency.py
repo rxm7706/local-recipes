@@ -71,7 +71,16 @@ def _prepare_stub_root(root: Path) -> Path:
             if [ -n "$work" ] && [ -f "$work/.broken" ]; then exit 1; fi
             ;;
           redis-server) echo "start redis $$" >> "$log" ;;
-          initdb) echo "initdb $$" >> "$log" ;;
+          initdb)
+            data=""
+            prev=""
+            for arg in "$@"; do
+              if [ "$prev" = "-D" ]; then data="$arg"; fi
+              prev="$arg"
+            done
+            [ -n "$data" ] && mkdir -p "$data"
+            echo "initdb $$" >> "$log"
+            ;;
         esac
         exit 0
         """
@@ -301,10 +310,12 @@ def test_sigkilled_holder_does_not_block_next_run(tmp_path: Path) -> None:
         ["bash", str(_SCRIPT), "--test"],
         cwd=tmp_path,
         env=env,
+        start_new_session=True,
     )
     time.sleep(1)
-    os.kill(holder.pid, signal.SIGKILL)
+    os.killpg(holder.pid, signal.SIGKILL)
     holder.wait(timeout=10)
+    time.sleep(0.5)
     follow = _run_platform_ci_local(
         tmp_path,
         bin_dir,
@@ -341,7 +352,7 @@ def test_without_lock_overlapping_runs_do_not_both_pass(tmp_path: Path) -> None:
     t1 = threading.Thread(target=runner, args=(tmp_path / "run1.log",), kwargs={"slow": True})
     t2 = threading.Thread(target=runner, args=(tmp_path / "run2.log",), kwargs={"slow": False})
     t1.start()
-    time.sleep(0.5)
+    time.sleep(2)
     t2.start()
     t1.join(timeout=90)
     t2.join(timeout=90)
@@ -350,7 +361,7 @@ def test_without_lock_overlapping_runs_do_not_both_pass(tmp_path: Path) -> None:
     logs = (tmp_path / "run1.log").read_text() + (tmp_path / "run2.log").read_text()
     pass_count = sum(p.returncode == 0 and "RESULT: PASS" in p.stdout for p in results)
     assert pass_count < 2 or _log_has_cross_stop(logs), (
-        "without a lock, overlapping runs must cross-stop or fail"
+        f"without a lock, overlapping runs must cross-stop or fail; logs:\n{logs}"
     )
 
 
