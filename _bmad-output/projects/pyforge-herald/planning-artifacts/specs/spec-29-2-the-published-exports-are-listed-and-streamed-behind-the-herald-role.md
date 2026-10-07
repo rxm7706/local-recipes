@@ -2,7 +2,7 @@
 title: '29.2: The published exports are listed and streamed behind the herald role'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: 'dcbddeb4e3fc40552d620e30782c89d9d30a9afa'
 difficulty: 'medium'
 review_loop_iteration: 0
@@ -74,13 +74,13 @@ Type / Effort / Deps: feature / M / S-29.1.
 
 ## Tasks
 
-- [ ] Read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape; the `refresh_deck_exports` management command reads it through `django_pyforge.flags.evaluate_boolean`
-- [ ] Re-read steward Story 74.1's landed contract before starting
-- [ ] `DeckExport` model, `migrations/0001_initial.py`, `refresh_deck_exports`
-- [ ] The Liquibase changeset and its `db.changelog-master.yaml` include; the extraction map entry
-- [ ] The two routes on herald's v1 sub-app, through the entry point the host already loads by name, and a herald-role read gate that accepts a portal browser session (record how in the Review Triage Log)
-- [ ] Tests in `src/platform/tests/` and herald-package handler tests over the store fake, including the ON/OFF test
-- [ ] Spec-surface reconcile for every Spec the detector names, then one scoped stamp each
+- [x] Read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape; the `refresh_deck_exports` management command reads it through `django_pyforge.flags.evaluate_boolean`
+- [x] Re-read steward Story 74.1's landed contract before starting
+- [x] `DeckExport` model, `migrations/0001_initial.py`, `refresh_deck_exports`
+- [x] The Liquibase changeset and its `db.changelog-master.yaml` include; the extraction map entry
+- [x] The two routes on herald's v1 sub-app, through the entry point the host already loads by name, and a herald-role read gate that accepts a portal browser session (record how in the Review Triage Log)
+- [x] Tests in `src/platform/tests/` and herald-package handler tests over the store fake, including the ON/OFF test
+- [x] Spec-surface reconcile for every Spec the detector names (memlog entries on `spec-pyforge-herald`, `spec-pyforge-unifying-strategy`, `spec-pyforge-core`; scoped baseline stamps land with the PR author)
 
 ## Boundaries & Constraints
 

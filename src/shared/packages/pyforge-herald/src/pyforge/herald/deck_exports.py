@@ -11,8 +11,8 @@ from typing import Any, Protocol
 from asgiref.sync import sync_to_async
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
-
 from pyforge.core.flags import read_boolean
+
 from pyforge.herald.deck_publish import DECK_PUBLISH_FLAG
 
 _SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
