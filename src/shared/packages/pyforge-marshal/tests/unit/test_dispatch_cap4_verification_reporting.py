@@ -15,14 +15,14 @@ from pyforge.marshal.core import dispatch as dispatch_core
 from pyforge.marshal.core.dispatch_verification import DispatchVerificationVerdict
 from pyforge.marshal.core.journal import JournalEntryId, Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.model import Finding, Severity, build_envelope
-from .test_dispatch import (
-    FakeFs,
-    FakeProcess,
-    FakeVcs,
-    _DONE_SPEC,
-    _init_git_repo,
-    _write_worktree_spec,
-)
+import test_dispatch as dispatch_test_helpers
+
+FakeFs = dispatch_test_helpers.FakeFs
+FakeProcess = dispatch_test_helpers.FakeProcess
+FakeVcs = dispatch_test_helpers.FakeVcs
+_DONE_SPEC = dispatch_test_helpers._DONE_SPEC
+_init_git_repo = dispatch_test_helpers._init_git_repo
+_write_worktree_spec = dispatch_test_helpers._write_worktree_spec
 
 _PLATFORM_CI = "pixi run -e pyforge-guild platform-ci-local -- --test"
 
@@ -95,7 +95,7 @@ def test_land_only_cli_names_the_failing_verify_command(tmp_path: Path, monkeypa
 @pytest.mark.parametrize(
     "exc",
     [
-        ProcessError("boom", returncode=1),
+        ProcessError("boom"),
         VcsCommandError("boom"),
         OSError("boom"),
         TypeError("boom"),
@@ -153,8 +153,10 @@ def test_land_only_journals_dispatch_verification_on_prior_run_dir(
     journal_text = fs.read_text(journal_path) or ""
     for path, line, _ in fs.appended:
         if path == journal_path:
+            if journal_text and not journal_text.endswith("\n"):
+                journal_text += "\n"
             journal_text += line if line.endswith("\n") else line + "\n"
-    fs.files[journal_path] = journal_text
+    fs.files[journal_path] = journal_text.rstrip("\n") + "\n"
     lines = [json.loads(line) for line in journal_text.splitlines() if line.strip()]
     verification_outcomes = [
         line

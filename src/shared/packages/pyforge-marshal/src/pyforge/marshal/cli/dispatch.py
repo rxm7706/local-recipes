@@ -1088,7 +1088,7 @@ def _verification_verdict_for_cap4(
             vcs=vcs,
             committing_vcs=vcs,
         )
-    except ProcessError, VcsCommandError, OSError, TypeError, AttributeError as exc:
+    except (ProcessError, VcsCommandError, OSError, TypeError, AttributeError) as exc:
         finding = Finding(
             code=_CAP4_VERIFICATION_EVAL_FAILED,
             severity=Severity.ERROR,
