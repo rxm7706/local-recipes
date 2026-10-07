@@ -96,6 +96,16 @@ def _manifest_kind(path: Path) -> str | None:
     return None
 
 
+def _line_declares_package(line: str, package: str, *, kind: str) -> bool:
+    if kind == "recipe":
+        return bool(re.match(rf"^\s*-\s*{re.escape(package)}\s+", line))
+    if kind == "pixi":
+        return bool(re.match(rf'^\s*"?{re.escape(package)}"?\s*=', line))
+    if kind == "pyproject":
+        return package in line and ("dependencies" in line or re.search(rf'["\']{re.escape(package)}', line))
+    return False
+
+
 def edit_requirement_to_floor(
     manifest_path: Path,
     *,
@@ -111,6 +121,9 @@ def edit_requirement_to_floor(
     text = manifest_path.read_text(encoding="utf-8")
     if _count_package_occurrences(text, package, kind=kind) > 1:
         return ManifestEditResult(ok=False, failure_reason="requirement appears in more than one place")
+    for line in text.splitlines():
+        if _line_declares_package(line, package, kind=kind) and _RE_JINJA.search(line):
+            return ManifestEditResult(ok=False, failure_reason="requirement uses a template expression")
     if kind == "pixi":
         updated, count = _edit_pixi_toml(text, package, floor)
     elif kind == "pyproject":
@@ -119,8 +132,6 @@ def edit_requirement_to_floor(
         updated, count = _edit_recipe_requirement_line(text, package, floor)
     if count == 0:
         return ManifestEditResult(ok=False, failure_reason="could not scope edit to one requirement")
-    if _RE_JINJA.search(updated):
-        return ManifestEditResult(ok=False, failure_reason="requirement uses a template expression")
     manifest_path.write_text(updated, encoding="utf-8")
     return ManifestEditResult(ok=True)
 

@@ -43,6 +43,8 @@ from pyforge.core.errors import PyforgeError
 from pyforge.core.flags import read_boolean
 
 from .fix_solver import FixTargetResolution, FixTargetSolver, PixiVersionOutOfRangeError, resolve_fix_target
+from .manifest_fixup import ManifestFixPlan, prepare_manifest_fix, tree_content_digest
+from .report import _canonical_subject_key
 
 if TYPE_CHECKING:
     from .models import Finding
@@ -58,6 +60,7 @@ _USER_AGENT = "pyforge-warden-fix-pr-actuator/1.0"
 _DEFAULT_API_URL = "https://api.github.com"
 _BRANCH_PREFIX = "warden/fix/"
 FIX_TARGET_RESOLUTION_FLAG = "pyforge.warden.fix_target_resolution"
+FIX_MANIFEST_EDIT_FLAG = "pyforge.warden.fix_manifest_edit"
 
 # Finding-id family -> action (closed). A hygiene id additionally gates on its
 # DEP-code middle segment: only DEP002 (unused/obsolete dependency) maps.
@@ -92,6 +95,7 @@ class PROutcome:
     pr_url: str | None = None
     detail: str | None = None
     fix_resolution: FixTargetResolution | None = None
+    manifest_fix: ManifestFixPlan | None = None
 
 
 @dataclass(frozen=True)
@@ -118,6 +122,18 @@ class Actuation:
                     **(
                         {"fix_resolution": outcome.fix_resolution.to_json_dict()}
                         if outcome.fix_resolution is not None
+                        else {}
+                    ),
+                    **(
+                        {
+                            "manifest_fix": {
+                                "files": [
+                                    {"path": change.path, "content": change.content}
+                                    for change in outcome.manifest_fix.files
+                                ]
+                            }
+                        }
+                        if outcome.manifest_fix is not None
                         else {}
                     ),
                 }
@@ -459,6 +475,40 @@ def _resolve_upgrade_targets(
     return targets, resolutions, None
 
 
+def _prepare_manifest_fix_for_proposal(
+    proposal: RemediationProposal,
+    *,
+    scan_target: Path | None,
+    target_version: str | None,
+    manifest_locations: Mapping[str, Sequence[str]] | None,
+) -> tuple[ManifestFixPlan | None, str | None]:
+    if scan_target is None or not scan_target.is_dir():
+        return None, "no scan target directory for manifest edit"
+    if target_version is None:
+        return None, "no target version for manifest edit"
+    if manifest_locations is None:
+        return None, "no manifest location map"
+    subject = proposal.subject or ""
+    keys = [_canonical_subject_key(subject)]
+    digest_before = tree_content_digest(scan_target)
+    try:
+        outcome = prepare_manifest_fix(
+            scan_target=scan_target,
+            package=subject,
+            floor=target_version,
+            manifest_locations=manifest_locations,
+            location_keys=keys,
+        )
+    except Exception as exc:  # noqa: BLE001 -- captured as failed actuation
+        return None, f"{type(exc).__name__}: {exc}"
+    digest_after = tree_content_digest(scan_target)
+    if digest_before != digest_after:
+        return None, "scanned tree changed during manifest edit"
+    if outcome.failure_detail is not None:
+        return None, outcome.failure_detail
+    return outcome.plan, None
+
+
 def run_actuator(
     findings: Sequence[Finding],
     *,
@@ -469,6 +519,8 @@ def run_actuator(
     scan_target: Path | None = None,
     solver: FixTargetSolver | None = None,
     fix_target_resolution_enabled: bool | None = None,
+    fix_manifest_edit_enabled: bool | None = None,
+    manifest_locations: Mapping[str, Sequence[str]] | None = None,
 ) -> Actuation:
     """Build the closed-mapping plan and act on it. Dry-run records
     ``planned`` for every proposal and instantiates/calls NO client (no
@@ -481,6 +533,11 @@ def run_actuator(
         fix_target_resolution_enabled
         if fix_target_resolution_enabled is not None
         else read_boolean(FIX_TARGET_RESOLUTION_FLAG, default=False)
+    )
+    manifest_edit_on = (
+        fix_manifest_edit_enabled
+        if fix_manifest_edit_enabled is not None
+        else read_boolean(FIX_MANIFEST_EDIT_FLAG, default=False)
     )
     resolution_by_id: dict[str, FixTargetResolution] = {}
     target_by_id: dict[str, str] | None = None
@@ -557,6 +614,28 @@ def run_actuator(
             )
     outcomes: list[PROutcome] = []
     for proposal in proposals:
+        manifest_fix: ManifestFixPlan | None = None
+        if manifest_edit_on and proposal.action == _ACTION_UPGRADE:
+            target_version = None if target_by_id is None else target_by_id.get(proposal.finding_id)
+            plan, fix_error = _prepare_manifest_fix_for_proposal(
+                proposal,
+                scan_target=scan_target,
+                target_version=target_version,
+                manifest_locations=manifest_locations,
+            )
+            if fix_error is not None:
+                outcomes.append(
+                    PROutcome(
+                        finding_id=proposal.finding_id,
+                        action=proposal.action,
+                        subject=proposal.subject,
+                        status="failed",
+                        detail=f"manifest edit failed: {fix_error}",
+                        fix_resolution=resolution_by_id.get(proposal.finding_id),
+                    )
+                )
+                continue
+            manifest_fix = plan
         try:
             existing = client.existing_open_pr(proposal.finding_id)
             if existing is not None:
@@ -569,6 +648,7 @@ def run_actuator(
                         pr_url=existing or None,
                         detail="an open PR already exists for this finding id",
                         fix_resolution=resolution_by_id.get(proposal.finding_id),
+                        manifest_fix=manifest_fix,
                     )
                 )
                 continue
@@ -581,6 +661,7 @@ def run_actuator(
                     status="opened",
                     pr_url=pr_url or None,
                     fix_resolution=resolution_by_id.get(proposal.finding_id),
+                    manifest_fix=manifest_fix,
                 )
             )
         except _BranchExistsError:
@@ -594,6 +675,7 @@ def run_actuator(
                     status="skipped",
                     detail="a remediation branch already exists (prior actuation; its PR may be closed)",
                     fix_resolution=resolution_by_id.get(proposal.finding_id),
+                    manifest_fix=manifest_fix,
                 )
             )
         except Exception as exc:  # noqa: BLE001 -- a failed open NEVER raises
@@ -605,6 +687,7 @@ def run_actuator(
                     status="failed",
                     detail=f"{type(exc).__name__}: {exc}",
                     fix_resolution=resolution_by_id.get(proposal.finding_id),
+                    manifest_fix=manifest_fix,
                 )
             )
     return Actuation(dry_run=False, outcomes=failed_outcomes + tuple(outcomes))
