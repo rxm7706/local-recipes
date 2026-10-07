@@ -6,8 +6,8 @@ import io
 from typing import Any
 
 import pytest
-
 from pyforge.core.errors import PyforgeError
+
 from pyforge.herald.deck_store import (
     DeckStoreConfigurationError,
     MemoryDeckStore,
