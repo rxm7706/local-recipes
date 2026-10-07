@@ -118,10 +118,7 @@ class Component:
                     f"pypi_identity={self.pypi_identity!r}, version={self.version!r}"
                 )
         elif self.vuln_matchable and self.version is None:
-            raise ValueError(
-                "vuln_matchable=True requires a concrete version — got "
-                f"version={self.version!r}"
-            )
+            raise ValueError(f"vuln_matchable=True requires a concrete version — got version={self.version!r}")
         if self.vuln_matchable and self.indeterminate_reason is not None:
             raise ValueError(
                 "vuln_matchable=True contradicts indeterminate_reason="

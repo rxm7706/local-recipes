@@ -392,18 +392,18 @@ def assemble_report(
         from .native_lockfiles import inventory_count_for_axis
 
         axis_inventory_total = inventory_count_for_axis(inventory.components, axis)
-        not_applicable = (axis == AXIS_HYGIENE and not hygiene_applicable) or (
-            axis in (AXIS_LICENSE, AXIS_CURRENCY) and axis not in assessed_by_axis
-        ) or (axis in (AXIS_LICENSE, AXIS_CURRENCY, AXIS_HYGIENE) and axis_inventory_total == 0)
+        not_applicable = (
+            (axis == AXIS_HYGIENE and not hygiene_applicable)
+            or (axis in (AXIS_LICENSE, AXIS_CURRENCY) and axis not in assessed_by_axis)
+            or (axis in (AXIS_LICENSE, AXIS_CURRENCY, AXIS_HYGIENE) and axis_inventory_total == 0)
+        )
         coverage.append(
             AxisCoverage(
                 axis=axis,
                 manifests_found=manifests_found,
                 manifests_parsed=manifests_parsed,
                 deps_total=0 if not_applicable else axis_inventory_total,
-                deps_assessed=(
-                    0 if not_applicable else min(assessed_by_axis.get(axis, 0), axis_inventory_total)
-                ),
+                deps_assessed=(0 if not_applicable else min(assessed_by_axis.get(axis, 0), axis_inventory_total)),
                 resolution_depth=None if not_applicable else resolution_depth,
                 # Fix 8 (review finding, 2026-07-18): gate `gating` the SAME
                 # way `not_applicable` already gates deps_total/deps_assessed/

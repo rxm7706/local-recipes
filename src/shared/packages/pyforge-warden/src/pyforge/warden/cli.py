@@ -295,6 +295,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime
 from pathlib import Path
 
+from pyforge.core.flags import read_boolean
+
 from . import __version__
 from .actuator import run_actuator
 from .config import (
@@ -303,16 +305,7 @@ from .config import (
     ConfigValidationError,
     EffectiveConfig,
 )
-from pyforge.core.flags import read_boolean
-
 from .discovery import CONDA_LOCK_KIND, PIXI_LOCK_KIND, discover
-from .native_lockfiles import (
-    NON_PYTHON_ECOSYSTEMS_FLAG,
-    NATIVE_LOCKFILE_KINDS,
-    is_native_lockfile_kind,
-    merge_native_scans_into_vuln_result,
-    scan_native_lockfile,
-)
 from .engines import (
     CurrencyEngine,
     DeptryEngine,
@@ -344,6 +337,13 @@ from .models import (
     StatusDriver,
     SuppressedFinding,
     VulnData,
+)
+from .native_lockfiles import (
+    NATIVE_LOCKFILE_KINDS,
+    NON_PYTHON_ECOSYSTEMS_FLAG,
+    is_native_lockfile_kind,
+    merge_native_scans_into_vuln_result,
+    scan_native_lockfile,
 )
 from .report import (
     TOOL_NAME,
@@ -1730,8 +1730,7 @@ def _run_scan(args: argparse.Namespace) -> int:
         vuln_data=vuln_data,
         engine_results=engine_results,
         has_locked_closure=bool(
-            parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND}
-            or parsed_kinds.intersection(set(NATIVE_LOCKFILE_KINDS))
+            parsed_kinds & {PIXI_LOCK_KIND, CONDA_LOCK_KIND} or parsed_kinds.intersection(set(NATIVE_LOCKFILE_KINDS))
         ),
         hygiene_applicable=hygiene_applicable,
         allow_empty=args.allow_empty,

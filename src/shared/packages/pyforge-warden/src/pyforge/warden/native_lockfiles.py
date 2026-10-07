@@ -194,7 +194,13 @@ def _components_from_osv_document(
 
 def scan_native_lockfile(target: Path, manifest: ScannedManifest) -> NativeLockfileScan:
     """Run osv-scanner on one native lockfile (subprocess owned by ``engines``)."""
-    from .engines import OSV_TIMEOUT_SECONDS, _engine_env, _check_engine_version, OSV_SCANNER_VERSION_RANGE, _OSV_SCANNER_VERSION_PATTERN
+    from .engines import (
+        _OSV_SCANNER_VERSION_PATTERN,
+        OSV_SCANNER_VERSION_RANGE,
+        OSV_TIMEOUT_SECONDS,
+        _check_engine_version,
+        _engine_env,
+    )
 
     kind = manifest.kind
     ecosystem = osv_ecosystem_for_kind(kind)
@@ -204,17 +210,11 @@ def scan_native_lockfile(target: Path, manifest: ScannedManifest) -> NativeLockf
     zip_path = db_zip_path(cache_dir, ecosystem) if cache_dir is not None else None
     db_ok = zip_path is not None and db_has_valid_advisory(zip_path, ecosystem)
     snapshot_at = db_snapshot_at(zip_path) if db_ok and zip_path is not None else None
-    stale = (
-        db_ok
-        and snapshot_at is not None
-        and is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC))
-    )
+    stale = db_ok and snapshot_at is not None and is_db_stale(snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC))
     stale_findings = (stale_vuln_data_finding(),) if stale else ()
 
     if cache_dir is None or not db_ok:
-        withheld = (
-            ecosystem_db_unavailable_finding(ecosystem),
-        )
+        withheld = (ecosystem_db_unavailable_finding(ecosystem),)
         return NativeLockfileScan(
             components=(),
             parse=OsvParse(findings=withheld, errors=()),
@@ -348,7 +348,6 @@ def scan_native_lockfile(target: Path, manifest: ScannedManifest) -> NativeLockf
 
 def inventory_count_for_axis(inventory_components: tuple[Component, ...], axis: str) -> int:
     """Per-axis denominator: Python-scoped deps only on non-vuln axes."""
-    from .models import AXIS_VULNERABILITY
 
     if axis == AXIS_VULNERABILITY:
         return len(inventory_components)
@@ -363,8 +362,8 @@ def merge_native_scans_into_vuln_result(
 ) -> object:
     """Merge pre-scanned native lockfile outcomes into ``OsvEngine``'s result."""
     from .engines import EngineResult
-    from .models import AXIS_VULNERABILITY, ResolutionDepth
     from .interfaces import AxisCoverage, VulnData
+    from .models import ResolutionDepth
 
     if not native_scans:
         return result
@@ -380,9 +379,7 @@ def merge_native_scans_into_vuln_result(
         if scan.db_consulted and scan.db_zip is not None:
             native_max_age_ok = True
             if scan.snapshot_at is not None:
-                native_max_age_ok = not is_db_stale(
-                    scan.snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC)
-                )
+                native_max_age_ok = not is_db_stale(scan.snapshot_at, DB_MAX_AGE_DAYS, now=datetime.now(UTC))
             prior_ok = result.vuln_data.max_age_ok if result.vuln_data else True
             vuln_data = VulnData(
                 source=str(scan.db_zip),
