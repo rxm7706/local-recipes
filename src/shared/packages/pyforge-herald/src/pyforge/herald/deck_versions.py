@@ -10,6 +10,7 @@ import argparse
 import re
 import sys
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
@@ -155,6 +156,70 @@ def newest_export(
 
 def _sidecar(export_path: Path) -> Path:
     return export_path.parent / f"{export_path.name}.stamp.json"
+
+
+def _presentations_root_for_export(export_path: Path) -> Path | None:
+    for parent in export_path.resolve().parents:
+        if parent.name == "presentations":
+            return parent
+    return None
+
+
+@dataclass(frozen=True)
+class RetireSupersededResult:
+    """Outcome of retiring older dated exports after a successful write."""
+
+    retired: tuple[Path, ...]
+    written_superseded: bool
+
+
+def retire_superseded(written: Path) -> RetireSupersededResult:
+    """Remove strictly older dated versions of ``written``'s kind and their sidecars.
+
+    When a newer dated file of the same kind already exists, nothing is removed
+    and ``written_superseded`` is true (backdated re-export).
+    """
+    presentations = _presentations_root_for_export(written)
+    if presentations is None:
+        return RetireSupersededResult((), False)
+    written = written.resolve()
+    if not written.is_file():
+        return RetireSupersededResult((), False)
+    kind = _kind_key(written, presentations)
+    written_iso = export_date(written)
+    if kind is None or written_iso is None:
+        return RetireSupersededResult((), False)
+
+    export_dir = written.parent
+    newer_exists = False
+    to_remove: list[Path] = []
+    for path in export_dir.iterdir():
+        if not path.is_file():
+            continue
+        if _kind_key(path, presentations) != kind:
+            continue
+        if path == written:
+            continue
+        iso = export_date(path)
+        if iso is None:
+            continue
+        if iso > written_iso:
+            newer_exists = True
+        elif iso < written_iso:
+            to_remove.append(path)
+
+    if newer_exists:
+        return RetireSupersededResult((), True)
+
+    retired: list[Path] = []
+    for path in sorted(to_remove, key=lambda p: p.as_posix()):
+        path.unlink()
+        retired.append(path)
+        sidecar = _sidecar(path)
+        if sidecar.is_file():
+            sidecar.unlink()
+            retired.append(sidecar)
+    return RetireSupersededResult(tuple(retired), False)
 
 
 def _presentations_dir(root: Path) -> Path | None:
