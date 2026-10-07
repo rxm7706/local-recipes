@@ -143,6 +143,27 @@ the host or the source.
   story, no CAP, no flag; a row closes only with a `resolution:` and a cited `verified:` line; `warden
   scan` stays the sole PR verdict and the report schema changes additively only.
   Owner `spec-pyforge-warden`. → Epic 17 / Story 17.1, specced 2026-10-03.
+- **2026-10-07 (subprocess seam) — Found: the TEA advisory spawns its own subprocess, outside `engines.py`.**
+  The spine's security boundary names `engines.py` the only module that spawns subprocesses, always through
+  `_engine_env()` (§ Boundary contracts; the ownership decision at `engines.py:3-12`). Since Story 11.2
+  (2026-09-07, `9f2bfd9057`), `tea_advisory.py` imports `subprocess` (`:62`) and its `_default_runner` calls
+  `subprocess.run` itself (`:150-:174`), so the one process warden starts for TEA skips the seam's normalized
+  environment (`NO_COLOR=1`, `stdin=DEVNULL`, the typed `ErrorRecord` for a missing binary, a timeout or an OS
+  failure). Measured on `8ef4a6aa79`: across `src/pyforge/warden/` only `engines.py` (`:91`) and `tea_advisory.py`
+  import `subprocess`, and no module calls `os.system`, `os.popen` or `asyncio.create_subprocess_*`. The argv is a
+  list and there is no shell, so it is not an injection risk. It is a breach of the rule that no test catches:
+  `tests/meta/test_extract_no_execution.py` scans `extract/` only, and nothing scans the rest of the package for a
+  second spawn site. The chain-currency cascade of 2026-10-07 recorded it in the spine and left it (§ Currency
+  reconciliation — 2026-10-07, "One older divergence, recorded and not repaired"). **What it looks like when
+  fixed:** the TEA runner spawns through an `engines.py` entry point over `_engine_env()`, as `run_pixi_lock` does
+  for pixi; `tea_advisory.py` imports no `subprocess`; a meta test reds any `pyforge.warden` module other than
+  `engines.py` that imports `subprocess` or calls `os.system`, `os.popen` or `asyncio.create_subprocess_*`.
+  **Constraints:** a `fix` story, no new CAP, no flag. The advisory behaves as today: a note, never a finding, a
+  rung or the exit code (suite:AD-4); fail-open on an environmental problem and fail-closed when the roster lacks
+  `tea` (suite:AD-10); the base `refs/remotes/origin/main` (CAP-23); the injected-runner seam stays. No TEA version
+  range is added (`pixi.toml` pins TEA `>=1.27.2`, open-ended, so there is no tested range to mirror). Owner:
+  warden; the shipped behaviour is Story 11.2's (`spec-bmad-suite-lifecycle` CAP-4, folded on 2026-09-17 into
+  `pyforge-steward:CAP-33`). → Epic 11 / Story 11.3, specced 2026-10-07; Epic 11 reopens.
 
 ## Folded Dreams (2026-09-17)
 
