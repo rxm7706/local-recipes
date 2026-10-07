@@ -13,6 +13,8 @@ from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any, BinaryIO, Final, Protocol
 
+from pyforge.core.errors import PyforgeError
+
 __all__ = [
     "ACCESS_KEY_ENV",
     "BUCKET_ENV",
@@ -39,7 +41,7 @@ _HTTP_NOT_FOUND: Final[int] = 404
 _REGION_NAME: Final[str] = "us-east-1"
 
 
-class DeckStoreConfigurationError(RuntimeError):
+class DeckStoreConfigurationError(PyforgeError, RuntimeError):
     """A required object-storage setting is missing or empty."""
 
 
