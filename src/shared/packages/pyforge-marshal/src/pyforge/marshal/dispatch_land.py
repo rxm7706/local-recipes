@@ -1140,9 +1140,7 @@ def _healed_tree_flag_registry_check(worktree: Path, process: ProcessPort) -> Ca
                     severity=Severity.ERROR,
                     message=(
                         f"flag-registry heal refused: `{' '.join(argv)}` ({name}) exited {result.returncode} on "
-                        f"the merged tree"
-                        + (f": {detail}" if detail else "")
-                        + " — nothing pushed (Story 22.19)"
+                        f"the merged tree" + (f": {detail}" if detail else "") + " — nothing pushed (Story 22.19)"
                     ),
                 )
         return None

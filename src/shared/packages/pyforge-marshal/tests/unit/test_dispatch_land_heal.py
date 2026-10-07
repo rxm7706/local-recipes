@@ -2075,3 +2075,833 @@ def test_heal_escalates_non_mechanical_path_beside_baseline(tmp_path: Path) -> N
     assert result == DispatchLandHealResult(healed=False, escalated_paths=("README.md",))
     assert reconcile.calls == []
     assert _run_git(clone, "rev-parse", _HEAD).strip() == head_before
+
+
+# --- Story 22.19: a landing unions the flag registry when two flag stories land in turn ---------------
+
+_FLAGS_JSON = "src/platform/config/flags.json"
+_OVERLAYS_JSON = "src/platform/config/flag-overlays.json"
+_TEST_FLAGS_PY = "src/shared/packages/pyforge-core/tests/unit/test_flags.py"
+_TEST_OPENFEATURE_PY = "src/platform/tests/test_openfeature_file_flags.py"
+_REGISTRY_PATHS = (_FLAGS_JSON, _OVERLAYS_JSON, _TEST_FLAGS_PY, _TEST_OPENFEATURE_PY)
+_ENVIRONMENTS = ("dev", "staging", "production")
+_BASE_KEYS = ("pyforge.three_surfaces", "pyforge.base_two")
+_K1, _K2 = "pyforge.herald.k_one", "pyforge.warden.k_two"
+
+
+def _flag_definition(key: str, story: str | None = None) -> dict[str, object]:
+    return {
+        "state": "ENABLED",
+        "variants": {"on": True, "off": False},
+        "defaultVariant": "off",
+        "metadata": {
+            "owner": "warden",
+            "story": story or f"story-{key}",
+            "created": "2026-10-07",
+            "on_everywhere": "",
+            "cleanup_by": "",
+        },
+    }
+
+
+def _flags_json(*keys: str, stories: dict[str, str] | None = None) -> str:
+    stories = stories or {}
+    return json.dumps({"flags": {k: _flag_definition(k, stories.get(k)) for k in keys}}, indent=2) + "\n"
+
+
+def _overlays_doc(*keys: str, values: dict[str, str] | None = None) -> dict[str, dict[str, str]]:
+    values = values or {}
+    return {env: {k: values.get(k, "on") for k in keys} for env in _ENVIRONMENTS}
+
+
+def _overlays_json(*keys: str, values: dict[str, str] | None = None) -> str:
+    return json.dumps(_overlays_doc(*keys, values=values), indent=2) + "\n"
+
+
+def _clock_entry(key: str, tag: str = "14-3-") -> str:
+    return f'    "{key}": ("warden", "{tag}", "2026-10-07", "", ""),\n'
+
+
+def _test_flags_py(
+    *keys: str, comment: str = "# the per-environment booleans", tags: dict[str, str] | None = None
+) -> str:
+    """The three named dicts of core's ``test_flags.py`` (module-level ``_SHIPPED_CLOCKS``, then two
+    function-local dicts), one entry per key, with a comment line above ``per_environment``."""
+    tags = tags or {}
+    clocks = "".join(_clock_entry(k, tags.get(k, "14-3-")) for k in keys)
+    expected = "".join(f'        "{k}": True,\n' for k in keys)
+    per_env = "".join(f'        "{k}": {{"dev": True, "staging": True, "production": False}},\n' for k in keys)
+    return (
+        "_SHIPPED_CLOCKS = {\n"
+        + clocks
+        + "}\n\n\ndef test_values():\n    expected = {\n"
+        + expected
+        + "    }\n    "
+        + comment
+        + "\n    per_environment = {\n"
+        + per_env
+        + "    }\n    assert expected and per_environment\n"
+    )
+
+
+def _test_openfeature_py(*keys: str) -> str:
+    entries = "".join(
+        f'    "{k}": {{\n        "dev": True,\n        "staging": True,\n        "production": False,\n    }},\n'
+        for k in keys
+    )
+    return "_SHIPPED_BOOLEANS = {\n" + entries + "}\n_METADATA_FIELDS = ('owner',)\n"
+
+
+def _registry_files(*keys: str) -> dict[str, str]:
+    return {
+        _FLAGS_JSON: _flags_json(*keys),
+        _OVERLAYS_JSON: _overlays_json(*keys),
+        _TEST_FLAGS_PY: _test_flags_py(*keys),
+        _TEST_OPENFEATURE_PY: _test_openfeature_py(*keys),
+    }
+
+
+def _named_dict_keys(text: str, name: str) -> list[list[str]]:
+    """The keys of every dict literal in ``text`` assigned to ``name``, in source order."""
+    out: list[list[str]] = []
+    for node in ast.walk(ast.parse(text)):
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name for t in node.targets):
+            assert isinstance(node.value, ast.Dict)
+            out.append([ast.literal_eval(k) for k in node.value.keys if k is not None])
+    return out
+
+
+class _RecordingCheck:
+    """A healed-tree check that records what git looked like when it ran."""
+
+    def __init__(self, wt: Path, remote: Path, *, finding: Finding | None = None, events=None) -> None:
+        self.wt, self.remote, self.finding = wt, remote, finding
+        self.events = events if events is not None else []
+        self.calls = 0
+        self.head_when_called = ""
+        self.remote_head_when_called = ""
+        self.parents_when_called: list[str] = []
+
+    def __call__(self) -> Finding | None:
+        self.calls += 1
+        self.events.append("check")
+        self.head_when_called = _run_git(self.wt, "rev-parse", "HEAD").strip()
+        self.parents_when_called = _run_git(self.wt, "rev-list", "--parents", "-n", "1", "HEAD").split()[1:]
+        self.remote_head_when_called = _run_git(self.remote, "rev-parse", _HEAD).strip()
+        return self.finding
+
+
+def _heal_registry(clone: Path, wt: Path, forge: _HonestForge, *, check=None, reconcile=None, await_checks=None):
+    return try_heal_dispatch_land_merge(
+        project_slug="pyforge-marshal",
+        git_repo_root=clone,
+        worktree=wt,
+        base="main",
+        head_branch=_HEAD,
+        head_sha="unused",
+        subject="Merge 22.19 into main",
+        merge_strategy="merge",
+        delete_branch=False,
+        repo_ref=type("R", (), {"value": "rxm7706/local-recipes"})(),
+        pr=PrInfo(number=2219, url="https://example/pr/2219", state="open", base="main"),
+        fs=FakeFsHeal(),
+        vcs=GitVcs(),
+        forge=forge,
+        probe_ref=_ORIGIN_MAIN,
+        await_checks=await_checks,
+        reconcile_spec_surface=reconcile,
+        healed_tree_check=check,
+    )
+
+
+def _two_key_landing(tmp_path: Path):
+    return _landing(
+        tmp_path,
+        base=_registry_files(*_BASE_KEYS),
+        main=_registry_files(*_BASE_KEYS, _K1),
+        branch=_registry_files(*_BASE_KEYS, _K2),
+    )
+
+
+# --- the constant and the classifiers ---
+
+
+def test_the_flag_registry_is_exactly_the_four_paths() -> None:
+    assert set(FLAG_REGISTRY_REL_PATHS) == set(_REGISTRY_PATHS)
+    assert len(FLAG_REGISTRY_REL_PATHS) == 4
+
+
+def test_is_flag_registry_path_takes_exactly_those_paths() -> None:
+    assert all(is_flag_registry_path(p) for p in _REGISTRY_PATHS)
+    assert is_flag_registry_path(_FLAGS_JSON.replace("/", "\\"))
+    for other in (
+        "src/platform/config/flags.json.bak",
+        "src/platform/config/other.json",
+        "flags.json",
+        "src/shared/packages/pyforge-core/tests/unit/test_other.py",
+        "src/platform/tests/test_flags.py",
+        "x/" + _FLAGS_JSON,
+    ):
+        assert not is_flag_registry_path(other)
+
+
+def test_the_registry_paths_are_mechanical_and_no_longer_unknown() -> None:
+    for path in _REGISTRY_PATHS:
+        assert is_mechanical_conflict_path(path)
+    assert unknown_conflict_paths((*_REGISTRY_PATHS, "recipes/foo/recipe.yaml")) == ("recipes/foo/recipe.yaml",)
+
+
+def test_mutation_mechanical_set_includes_the_flag_registry(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 22.19 AC: remove the registry paths from the mechanical set and this fails."""
+    assert is_mechanical_conflict_path(_FLAGS_JSON)
+    monkeypatch.setattr(_dispatch_landing, "FLAG_REGISTRY_REL_PATHS", ())
+    assert not is_mechanical_conflict_path(_FLAGS_JSON)
+    assert unknown_conflict_paths(_REGISTRY_PATHS) == tuple(sorted(_REGISTRY_PATHS))
+
+
+# --- the JSON union (pure) ---
+
+
+def test_json_union_takes_mains_keys_then_the_branchs() -> None:
+    base = _flags_json(*_BASE_KEYS)
+    result = union_flag_registry_json_texts(base, _flags_json(*_BASE_KEYS, _K1), _flags_json(*_BASE_KEYS, _K2))
+    assert result.refusal is None
+    assert result.text == _flags_json(*_BASE_KEYS, _K1, _K2)
+    assert result.text == json.dumps(json.loads(result.text), indent=2) + "\n"
+
+
+def test_json_union_of_overlays_unions_every_environment() -> None:
+    base = _overlays_json(*_BASE_KEYS)
+    result = union_flag_registry_json_texts(base, _overlays_json(*_BASE_KEYS, _K1), _overlays_json(*_BASE_KEYS, _K2))
+    assert result.text == _overlays_json(*_BASE_KEYS, _K1, _K2)
+    assert [list(env) for env in json.loads(result.text).values()] == [[*_BASE_KEYS, _K1, _K2]] * 3
+
+
+def test_json_union_takes_a_key_only_one_side_changed_and_honours_deletions() -> None:
+    base = _flags_json("a", "b", "c", stories={"a": "old"})
+    main = _flags_json("a", "b", "c", stories={"a": "new"})  # main edits a
+    branch = _flags_json("a", "c", stories={"a": "old"})  # branch removes b
+    result = union_flag_registry_json_texts(base, main, branch)
+    assert result.text == _flags_json("a", "c", stories={"a": "new"})
+
+
+def test_json_union_takes_a_key_both_sides_set_to_an_equal_value() -> None:
+    base = _flags_json("a")
+    side = _flags_json("a", "same")
+    assert union_flag_registry_json_texts(base, side, side).text == side
+
+
+def test_json_union_refuses_a_key_both_sides_set_to_different_values_naming_the_dotted_key() -> None:
+    base = _flags_json(*_BASE_KEYS)
+    main = _flags_json(*_BASE_KEYS, _K1, stories={_K1: "main's story"})
+    branch = _flags_json(*_BASE_KEYS, _K1, stories={_K1: "branch's story"})
+    result = union_flag_registry_json_texts(base, main, branch)
+    assert result.text is None
+    assert result.refusal == f"key flags.{_K1}"
+
+
+def test_json_union_refuses_an_overlay_variant_set_two_ways_naming_the_environment_and_key() -> None:
+    base = _overlays_json(*_BASE_KEYS)
+    main = _overlays_doc(*_BASE_KEYS, _K1, values={_K1: "on"})
+    branch = _overlays_doc(*_BASE_KEYS, _K1, values={_K1: "off"})
+    result = union_flag_registry_json_texts(
+        base, json.dumps(main, indent=2) + "\n", json.dumps(branch, indent=2) + "\n"
+    )
+    assert result.refusal == f"key dev.{_K1}"
+
+
+def test_json_union_refuses_a_deleted_key_the_other_side_changed() -> None:
+    base = _flags_json("a", "b")
+    result = union_flag_registry_json_texts(base, _flags_json("a"), _flags_json("a", "b", stories={"b": "edited"}))
+    assert result.refusal == "key flags.b"
+
+
+@pytest.mark.parametrize("which", ["main", "branch"])
+def test_json_union_never_reformats_a_side_that_is_not_in_the_canonical_form(which: str) -> None:
+    base = _flags_json(*_BASE_KEYS)
+    canonical_main, canonical_branch = _flags_json(*_BASE_KEYS, _K1), _flags_json(*_BASE_KEYS, _K2)
+    odd = json.dumps(json.loads(canonical_main if which == "main" else canonical_branch), indent=4) + "\n"
+    main, branch = (odd, canonical_branch) if which == "main" else (canonical_main, odd)
+    result = union_flag_registry_json_texts(base, main, branch)
+    assert result.text is None and which in (result.refusal or "")
+
+
+def test_json_union_refuses_a_missing_trailing_newline() -> None:
+    base = _flags_json(*_BASE_KEYS)
+    result = union_flag_registry_json_texts(base, _flags_json(*_BASE_KEYS, _K1).rstrip("\n"), _flags_json(*_BASE_KEYS))
+    assert result.text is None and "main" in (result.refusal or "")
+
+
+@pytest.mark.parametrize(
+    "bad",
+    ["", "{not json", "[]", '{"flags": []}', '{"flags": {"a": 1}, "extra": 2}'],
+)
+def test_json_union_refuses_a_side_that_does_not_parse_or_has_a_non_object_member(bad: str) -> None:
+    good = _flags_json(*_BASE_KEYS)
+    for texts in ((good, bad, good), (good, good, bad), (bad, good, good)):
+        assert union_flag_registry_json_texts(*texts).text is None
+
+
+# --- the Python union (pure, over handwritten diff3 text) ---
+
+
+def _hunk(ours: str, theirs: str, base: str = "") -> str:
+    return f"<<<<<<< main\n{ours}||||||| base\n{base}=======\n{theirs}>>>>>>> branch\n"
+
+
+def _marked_clocks(ours: str, theirs: str, *, base: str = "", tail: str = "") -> str:
+    return "_SHIPPED_CLOCKS = {\n" + _clock_entry("a") + _hunk(ours, theirs, base) + "}\n" + tail
+
+
+def test_python_union_keeps_mains_section_then_the_branchs_verbatim() -> None:
+    result = union_flag_registry_python_texts(_TEST_FLAGS_PY, _marked_clocks(_clock_entry("m"), _clock_entry("b")))
+    assert result.refusal is None
+    assert result.text == "_SHIPPED_CLOCKS = {\n" + _clock_entry("a") + _clock_entry("m") + _clock_entry("b") + "}\n"
+
+
+def test_python_union_resolves_several_hunks_in_three_named_dicts() -> None:
+    marked = (
+        "_SHIPPED_CLOCKS = {\n"
+        + _hunk(_clock_entry("m"), _clock_entry("b"))
+        + "}\n\n\ndef f():\n    expected = {\n"
+        + _hunk('        "m": True,\n', '        "b": True,\n')
+        + "    }\n    per_environment = {\n"
+        + _hunk('        "m": {"dev": True},\n', '        "b": {"dev": False},\n')
+        + "    }\n"
+    )
+    result = union_flag_registry_python_texts(_TEST_FLAGS_PY, marked)
+    assert result.refusal is None and result.text is not None
+    assert [_named_dict_keys(result.text, n) for n in ("_SHIPPED_CLOCKS", "expected", "per_environment")] == [
+        [["m", "b"]],
+        [["m", "b"]],
+        [["m", "b"]],
+    ]
+
+
+def test_python_union_accepts_a_clean_merge_with_no_hunks() -> None:
+    clean = "_SHIPPED_BOOLEANS = {\n    'a': True,\n    'b': False,\n}\n"
+    assert union_flag_registry_python_texts(_TEST_OPENFEATURE_PY, clean).text == clean
+
+
+def test_python_union_refuses_a_hunk_with_a_base_section() -> None:
+    marked = _marked_clocks(_clock_entry("m"), _clock_entry("b"), base=_clock_entry("old"))
+    result = union_flag_registry_python_texts(_TEST_FLAGS_PY, marked)
+    assert result.text is None and "hunk 1" in (result.refusal or "")
+
+
+def test_python_union_refuses_a_changed_comment_above_per_environment() -> None:
+    marked = (
+        "def f():\n"
+        + _hunk("    # main's note\n", "    # branch's note\n", base="    # the per-environment booleans\n")
+        + "    per_environment = {\n        'a': 1,\n    }\n"
+    )
+    result = union_flag_registry_python_texts(_TEST_FLAGS_PY, marked)
+    assert result.text is None and result.refusal
+
+
+def test_python_union_refuses_an_added_comment_that_is_not_a_dict_entry() -> None:
+    marked = (
+        "def f():\n"
+        + _hunk("    # main's note\n", "    # branch's note\n")
+        + "    per_environment = {\n        'a': 1,\n    }\n"
+    )
+    assert union_flag_registry_python_texts(_TEST_FLAGS_PY, marked).text is None
+
+
+def test_python_union_refuses_a_side_that_is_not_complete_dict_entries() -> None:
+    half = '    "m": (\n        "warden",\n'
+    result = union_flag_registry_python_texts(_TEST_FLAGS_PY, _marked_clocks(half, _clock_entry("b")))
+    assert result.text is None and "pure addition" in (result.refusal or "")
+
+
+def test_python_union_refuses_an_empty_side() -> None:
+    assert union_flag_registry_python_texts(_TEST_FLAGS_PY, _marked_clocks("", _clock_entry("b"))).text is None
+
+
+def test_python_union_refuses_a_hunk_outside_the_named_dicts() -> None:
+    marked = "_OTHER = {\n" + _hunk(_clock_entry("m"), _clock_entry("b")) + "}\n"
+    result = union_flag_registry_python_texts(_TEST_FLAGS_PY, marked)
+    assert result.text is None and "not inside a named dict" in (result.refusal or "")
+
+
+def test_python_union_refuses_the_wrong_files_named_dict() -> None:
+    """The platform module's one target is ``_SHIPPED_BOOLEANS``; core's dict names do not count there."""
+    marked = _marked_clocks(_clock_entry("m"), _clock_entry("b"))
+    assert union_flag_registry_python_texts(_TEST_OPENFEATURE_PY, marked).text is None
+
+
+def test_python_union_refuses_a_hunk_inside_an_entrys_nested_dict() -> None:
+    marked = "per_environment = {\n    'a': {\n" + _hunk('        "m": 1,\n', '        "b": 2,\n') + "    },\n}\n"
+    assert union_flag_registry_python_texts(_TEST_FLAGS_PY, marked).text is None
+
+
+def test_python_union_refuses_the_same_key_added_with_different_text_naming_it() -> None:
+    ours = _clock_entry("pyforge.x", "1-1-")
+    theirs = _clock_entry("pyforge.x", "2-2-")
+    result = union_flag_registry_python_texts(_TEST_FLAGS_PY, _marked_clocks(ours, theirs))
+    assert result.text is None and result.refusal == "key pyforge.x"
+
+
+def test_python_union_refuses_a_resolution_that_does_not_parse() -> None:
+    no_comma = '    "m": 1\n'  # a complete entry on its own, but not once the branch's follows it
+    result = union_flag_registry_python_texts(_TEST_FLAGS_PY, _marked_clocks(no_comma, _clock_entry("b")))
+    assert result.text is None and "does not parse" in (result.refusal or "")
+
+
+@pytest.mark.parametrize(
+    "marked",
+    [
+        "<<<<<<< main\nx\n",  # never closed
+        "=======\n",  # a stray separator
+        "<<<<<<< main\nx\n=======\ny\n>>>>>>> branch\n",  # a hunk without its diff3 base section
+    ],
+)
+def test_python_union_refuses_malformed_markers(marked: str) -> None:
+    assert union_flag_registry_python_texts(_TEST_FLAGS_PY, marked).text is None
+
+
+def test_python_union_refuses_a_path_that_is_not_a_python_registry() -> None:
+    assert union_flag_registry_python_texts(_FLAGS_JSON, "x = 1\n").text is None
+
+
+# --- merge_file_diff3 (the real git adapter) ---
+
+
+def test_git_vcs_merge_file_diff3_returns_git_s_marked_three_way_merge(tmp_path: Path) -> None:
+    marked = GitVcs().merge_file_diff3(tmp_path, "a\nb\nc\n", "a\nb\nmain\nc\n", "a\nb\nbranch\nc\n")
+    assert marked == "a\nb\n<<<<<<< main\nmain\n||||||| base\n=======\nbranch\n>>>>>>> branch\nc\n"
+
+
+def test_git_vcs_merge_file_diff3_merges_a_non_conflicting_pair_cleanly(tmp_path: Path) -> None:
+    assert GitVcs().merge_file_diff3(tmp_path, "a\nb\nc\n", "A\nb\nc\n", "a\nb\nC\n") == "A\nb\nC\n"
+
+
+# --- the heal, over real git ---
+
+
+def test_real_heal_unions_two_flag_keys_across_all_four_registry_files(tmp_path: Path) -> None:
+    """Story 22.19 AC 1: herald 29.1's key on main, warden 14.3's on the branch."""
+    remote, clone, wt = _two_key_landing(tmp_path)
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    forge = _HonestForge(clone)
+    check = _RecordingCheck(wt, remote)
+
+    result = _heal_registry(clone, wt, forge, check=check)
+
+    assert result == DispatchLandHealResult(healed=True, retried_forge_merge=True)  # no MRS-DISP-038 escalation
+    # the check ran once, on the merged commit (a real merge of origin/main), before anything was pushed
+    assert check.calls == 1
+    origin_main = _run_git(clone, "rev-parse", _ORIGIN_MAIN).strip()
+    assert check.parents_when_called[1] == origin_main
+    assert check.remote_head_when_called == head_before
+    # one merge, one push, one retried merge
+    pushed = _run_git(remote, "rev-parse", _HEAD).strip()
+    assert pushed == check.head_when_called != head_before
+    assert forge.merge_calls == 1
+    assert _run_git(clone, "rev-list", "--count", f"{origin_main}..{pushed}").strip() == "2"  # branch + merge
+    # the four files hold both keys, main's first
+    assert _run_git(clone, "show", f"{pushed}:{_FLAGS_JSON}") == _flags_json(*_BASE_KEYS, _K1, _K2)
+    assert _run_git(clone, "show", f"{pushed}:{_OVERLAYS_JSON}") == _overlays_json(*_BASE_KEYS, _K1, _K2)
+    clocks = _run_git(clone, "show", f"{pushed}:{_TEST_FLAGS_PY}")
+    assert [_named_dict_keys(clocks, n) for n in ("_SHIPPED_CLOCKS", "expected", "per_environment")] == [
+        [[*_BASE_KEYS, _K1, _K2]]
+    ] * 3
+    booleans = _run_git(clone, "show", f"{pushed}:{_TEST_OPENFEATURE_PY}")
+    assert _named_dict_keys(booleans, "_SHIPPED_BOOLEANS") == [[*_BASE_KEYS, _K1, _K2]]
+    assert "_METADATA_FIELDS" in booleans  # the rest of the file is git's own merge, untouched
+    assert _run_git(wt, "status", "--porcelain").strip() == ""
+
+
+def test_real_heal_checks_the_tree_when_only_one_registry_file_conflicts(tmp_path: Path) -> None:
+    """A registry path resolved is enough to run the check."""
+    base = _registry_files(*_BASE_KEYS)
+    main = {**base, _TEST_FLAGS_PY: _test_flags_py(*_BASE_KEYS, _K1)}
+    branch = {**base, _TEST_FLAGS_PY: _test_flags_py(*_BASE_KEYS, _K2)}
+    remote, clone, wt = _landing(tmp_path, base=base, main=main, branch=branch)
+    check = _RecordingCheck(wt, remote)
+
+    result = _heal_registry(clone, wt, _HonestForge(clone), check=check)
+
+    assert result.healed is True and check.calls == 1
+
+
+def test_real_heal_escalates_the_same_flag_key_with_different_values_naming_it(tmp_path: Path) -> None:
+    """Story 22.19 AC 2: nothing is committed, pushed or merged."""
+    base = _registry_files(*_BASE_KEYS)
+    main = {**base, _FLAGS_JSON: _flags_json(*_BASE_KEYS, _K1, stories={_K1: "main's"})}
+    branch = {**base, _FLAGS_JSON: _flags_json(*_BASE_KEYS, _K1, stories={_K1: "branch's"})}
+    remote, clone, wt = _landing(tmp_path, base=base, main=main, branch=branch)
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    wt_head_before = _run_git(wt, "rev-parse", "HEAD").strip()
+    forge = _HonestForge(clone)
+    check = _RecordingCheck(wt, remote)
+
+    result = _heal_registry(clone, wt, forge, check=check)
+
+    assert result == DispatchLandHealResult(healed=False, escalated_paths=(f"{_FLAGS_JSON} (key flags.{_K1})",))
+    assert check.calls == 0 and forge.merge_calls == 0
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+    assert _run_git(wt, "rev-parse", "HEAD").strip() == wt_head_before
+    assert _run_git(wt, "status", "--porcelain").strip() == ""
+
+
+def test_real_heal_escalates_the_same_overlay_key_in_one_environment(tmp_path: Path) -> None:
+    base = _registry_files(*_BASE_KEYS)
+    main_overlays = _overlays_doc(*_BASE_KEYS, _K1)
+    branch_overlays = _overlays_doc(*_BASE_KEYS, _K1)
+    branch_overlays["production"][_K1] = "off"
+    main = {**base, _OVERLAYS_JSON: json.dumps(main_overlays, indent=2) + "\n"}
+    branch = {**base, _OVERLAYS_JSON: json.dumps(branch_overlays, indent=2) + "\n"}
+    _remote, clone, wt = _landing(tmp_path, base=base, main=main, branch=branch)
+    forge = _HonestForge(clone)
+
+    result = _heal_registry(clone, wt, forge, check=lambda: None)
+
+    assert result == DispatchLandHealResult(healed=False, escalated_paths=(f"{_OVERLAYS_JSON} (key production.{_K1})",))
+    assert forge.merge_calls == 0
+
+
+def test_real_heal_escalates_a_python_entry_added_on_both_sides_with_different_text(tmp_path: Path) -> None:
+    base = _registry_files(*_BASE_KEYS)
+    main = {**base, _TEST_FLAGS_PY: _test_flags_py(*_BASE_KEYS, _K1, tags={_K1: "main-"})}
+    branch = {**base, _TEST_FLAGS_PY: _test_flags_py(*_BASE_KEYS, _K1, tags={_K1: "branch-"})}
+    _remote, clone, wt = _landing(tmp_path, base=base, main=main, branch=branch)
+    forge = _HonestForge(clone)
+
+    result = _heal_registry(clone, wt, forge, check=lambda: None)
+
+    assert result.healed is False and forge.merge_calls == 0
+    assert result.escalated_paths == (f"{_TEST_FLAGS_PY} (key {_K1})",)
+
+
+def test_real_heal_escalates_a_hunk_that_is_not_an_addition_and_merges_nothing(tmp_path: Path) -> None:
+    """Story 22.19 AC 3: both sides edit the comment above `per_environment`."""
+    base = _registry_files(*_BASE_KEYS)
+    main = {**base, _TEST_FLAGS_PY: _test_flags_py(*_BASE_KEYS, comment="# main's note")}
+    branch = {**base, _TEST_FLAGS_PY: _test_flags_py(*_BASE_KEYS, comment="# branch's note")}
+    remote, clone, wt = _landing(tmp_path, base=base, main=main, branch=branch)
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    wt_head_before = _run_git(wt, "rev-parse", "HEAD").strip()
+    forge = _HonestForge(clone)
+    check = _RecordingCheck(wt, remote)
+
+    result = _heal_registry(clone, wt, forge, check=check)
+
+    assert result.healed is False
+    assert len(result.escalated_paths) == 1 and result.escalated_paths[0].startswith(f"{_TEST_FLAGS_PY} (")
+    assert check.calls == 0 and forge.merge_calls == 0
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+    assert _run_git(wt, "rev-parse", "HEAD").strip() == wt_head_before
+
+
+def test_real_heal_escalates_a_comment_added_beside_the_entries(tmp_path: Path) -> None:
+    base = _registry_files(*_BASE_KEYS)
+    text = base[_TEST_OPENFEATURE_PY]
+    main = {**base, _TEST_OPENFEATURE_PY: text.replace("}\n_META", "    # main's note\n}\n_META", 1)}
+    branch = {**base, _TEST_OPENFEATURE_PY: text.replace("}\n_META", "    # branch's note\n}\n_META", 1)}
+    _remote, clone, wt = _landing(tmp_path, base=base, main=main, branch=branch)
+
+    result = _heal_registry(clone, wt, _HonestForge(clone), check=lambda: None)
+
+    assert result.healed is False
+    assert result.escalated_paths and result.escalated_paths[0].startswith(_TEST_OPENFEATURE_PY)
+
+
+@pytest.mark.parametrize("side", ["main", "branch"])
+def test_real_heal_escalates_a_flags_json_that_is_not_canonical_and_never_reformats_it(
+    tmp_path: Path, side: str
+) -> None:
+    """Story 22.19 AC 6."""
+    base = _registry_files(*_BASE_KEYS)
+    odd = json.dumps(json.loads(_flags_json(*_BASE_KEYS, _K1 if side == "main" else _K2)), indent=4) + "\n"
+    main = {**base, _FLAGS_JSON: odd if side == "main" else _flags_json(*_BASE_KEYS, _K1)}
+    branch = {**base, _FLAGS_JSON: odd if side == "branch" else _flags_json(*_BASE_KEYS, _K2)}
+    remote, clone, wt = _landing(tmp_path, base=base, main=main, branch=branch)
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    forge = _HonestForge(clone)
+
+    result = _heal_registry(clone, wt, forge, check=lambda: None)
+
+    assert result.healed is False and forge.merge_calls == 0
+    assert len(result.escalated_paths) == 1 and result.escalated_paths[0].startswith(f"{_FLAGS_JSON} (")
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+    assert (wt / _FLAGS_JSON).read_text(encoding="utf-8") == (
+        odd if side == "branch" else _flags_json(*_BASE_KEYS, _K2)
+    )
+
+
+def test_real_heal_without_a_healed_tree_check_escalates_the_registry_and_resolves_nothing(tmp_path: Path) -> None:
+    """Story 22.19 AC 5: a direct caller (no check) gets MRS-DISP-038's plain paths, as before."""
+    remote, clone, wt = _two_key_landing(tmp_path)
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    wt_head_before = _run_git(wt, "rev-parse", "HEAD").strip()
+    forge = _HonestForge(clone)
+
+    result = _heal_registry(clone, wt, forge, check=None)
+
+    assert result == DispatchLandHealResult(healed=False, escalated_paths=tuple(sorted(_REGISTRY_PATHS)))
+    assert forge.merge_calls == 0
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+    assert _run_git(wt, "rev-parse", "HEAD").strip() == wt_head_before
+
+
+def test_real_heal_pushes_nothing_when_the_healed_tree_check_fails(tmp_path: Path) -> None:
+    """Story 22.19 AC 4: the merge is committed locally, then refused before the push."""
+    remote, clone, wt = _two_key_landing(tmp_path)
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    refusal = Finding(
+        code="MRS-DISP-038",
+        severity=Severity.ERROR,
+        message="`pixi run --frozen -e pyforge-guild flag-gate-check` exited 1",
+    )
+    forge = _HonestForge(clone)
+    check = _RecordingCheck(wt, remote, finding=refusal)
+    await_calls: list[str] = []
+
+    def await_checks(sha: str) -> None:
+        await_calls.append(sha)
+
+    result = _heal_registry(clone, wt, forge, check=check, await_checks=await_checks)
+
+    assert result == DispatchLandHealResult(healed=False, healed_tree_refusal=refusal)
+    assert result.healed_tree_refusal is refusal
+    assert check.calls == 1
+    assert len(check.parents_when_called) == 2  # the merge commit existed when the check ran
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before  # nothing pushed
+    assert await_calls == [] and forge.merge_calls == 0  # no wait, no retried merge
+
+
+def test_real_heal_refuses_an_unrelated_conflict_beside_the_registry(tmp_path: Path) -> None:
+    """Never newly mechanical: every other unknown path still escalates, and nothing is merged."""
+    base = {**_registry_files(*_BASE_KEYS), "README.md": "base\n"}
+    main = {**_registry_files(*_BASE_KEYS, _K1), "README.md": "main\n"}
+    branch = {**_registry_files(*_BASE_KEYS, _K2), "README.md": "branch\n"}
+    remote, clone, wt = _landing(tmp_path, base=base, main=main, branch=branch)
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    check = _RecordingCheck(wt, remote)
+
+    result = _heal_registry(clone, wt, _HonestForge(clone), check=check)
+
+    assert result == DispatchLandHealResult(healed=False, escalated_paths=("README.md",))
+    assert check.calls == 0
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+
+
+def test_real_heal_does_not_resolve_a_look_alike_path(tmp_path: Path) -> None:
+    other = "src/platform/config/flags.json.orig"
+    _remote, clone, wt = _landing(
+        tmp_path,
+        base={other: _flags_json(*_BASE_KEYS)},
+        main={other: _flags_json(*_BASE_KEYS, _K1)},
+        branch={other: _flags_json(*_BASE_KEYS, _K2)},
+    )
+
+    result = _heal_registry(clone, wt, _HonestForge(clone), check=lambda: None)
+
+    assert result == DispatchLandHealResult(healed=False, escalated_paths=(other,))
+
+
+def test_mutation_real_two_key_landing_is_refused_without_the_registry_in_the_mechanical_set(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 22.19 AC (mutation): with the registry paths removed, the first criterion's landing is refused
+    (the heal escalates every registry path; ``execute_dispatch_land`` raises MRS-DISP-038 on that)."""
+    remote, clone, wt = _two_key_landing(tmp_path)
+    monkeypatch.setattr(_dispatch_landing, "FLAG_REGISTRY_REL_PATHS", ())
+    check = _RecordingCheck(wt, remote)
+
+    result = _heal_registry(clone, wt, _HonestForge(clone), check=check)
+
+    assert result.healed is False and result.escalated_paths == tuple(sorted(_REGISTRY_PATHS))
+    assert check.calls == 0
+
+
+def _baseline_of(**memlogs: str) -> str:
+    return _baseline_json(**{name: _baseline_entry(memlog) for name, memlog in memlogs.items()})
+
+
+def test_real_heal_resolves_registry_and_baseline_in_one_merge_then_stamps_then_checks_then_pushes(
+    tmp_path: Path,
+) -> None:
+    """Story 22.19 AC: the warden 14.3 shape -- registry and `.spec-surface-baseline.json` together."""
+    base_files = {
+        **_registry_files(*_BASE_KEYS),
+        SPEC_SURFACE_BASELINE_REL: _baseline_of(**{_SPEC_A: "base", _SPEC_B: "base"}),
+        _MEMLOG_A: _memlog(_A, updated=_T0),
+    }
+    main_files = {
+        **_registry_files(*_BASE_KEYS, _K1),
+        SPEC_SURFACE_BASELINE_REL: _baseline_of(**{_SPEC_A: "main", _SPEC_B: "main"}),
+    }
+    branch_files = {
+        **_registry_files(*_BASE_KEYS, _K2),
+        SPEC_SURFACE_BASELINE_REL: _baseline_of(**{_SPEC_A: "branch", _SPEC_B: "base"}),
+        _MEMLOG_A: _memlog(_A, _B1, updated=_T1),
+    }
+    remote, clone, wt = _landing(tmp_path, base=base_files, main=main_files, branch=branch_files)
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    events: list[str] = []
+    forge = _HonestForge(clone)
+    check = _RecordingCheck(wt, remote, events=events)
+    reconcile = _RecordingReconcile()
+
+    def ordered_reconcile(*, branch_stamp_specs, push_when_done):
+        events.append("reconcile")
+        # at the re-stamp the merge is committed, the registry already unioned, and nothing is pushed
+        assert _run_git(wt, "show", f"HEAD:{_FLAGS_JSON}") == _flags_json(*_BASE_KEYS, _K1, _K2)
+        assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+        return reconcile(branch_stamp_specs=branch_stamp_specs, push_when_done=push_when_done)
+
+    result = _heal_registry(clone, wt, forge, check=check, reconcile=ordered_reconcile)
+
+    assert result == DispatchLandHealResult(healed=True, retried_forge_merge=True)
+    assert events == ["reconcile", "check"]  # re-stamp, then the check, then (below) one push
+    assert reconcile.calls == [(frozenset({_SPEC_A}), False)]
+    assert check.calls == 1 and check.remote_head_when_called == head_before
+    pushed = _run_git(remote, "rev-parse", _HEAD).strip()
+    assert pushed == check.head_when_called and pushed != head_before
+    assert len(check.parents_when_called) == 2  # one merge resolved the registry AND the baseline
+    assert forge.merge_calls == 1
+    merged_baseline = _run_git(clone, "show", f"{pushed}:{SPEC_SURFACE_BASELINE_REL}")
+    assert '"memlog": "main"' in merged_baseline  # the baseline resolves to main's, for the re-stamp
+
+
+def test_real_heal_does_not_check_or_push_when_the_restamp_refuses_beside_the_registry(tmp_path: Path) -> None:
+    base_files = {**_registry_files(*_BASE_KEYS), SPEC_SURFACE_BASELINE_REL: _baseline_of(**{_SPEC_A: "base"})}
+    main_files = {**_registry_files(*_BASE_KEYS, _K1), SPEC_SURFACE_BASELINE_REL: _baseline_of(**{_SPEC_A: "main"})}
+    branch_files = {
+        **_registry_files(*_BASE_KEYS, _K2),
+        SPEC_SURFACE_BASELINE_REL: _baseline_of(**{_SPEC_A: "branch"}),
+    }
+    remote, clone, wt = _landing(tmp_path, base=base_files, main=main_files, branch=branch_files)
+    head_before = _run_git(remote, "rev-parse", _HEAD).strip()
+    check = _RecordingCheck(wt, remote)
+    forge = _HonestForge(clone)
+
+    result = _heal_registry(clone, wt, forge, check=check, reconcile=_RecordingReconcile(refuse=True))
+
+    assert result.healed is False and result.reconcile_refusal is not None
+    assert check.calls == 0 and forge.merge_calls == 0
+    assert _run_git(remote, "rev-parse", _HEAD).strip() == head_before
+
+
+def test_a_heal_with_no_registry_conflict_never_runs_the_healed_tree_check(tmp_path: Path) -> None:
+    remote, clone, wt = _landing(
+        tmp_path,
+        base={_LEDGER: _generated_ledger(("57-1-a", "done"))},
+        main={_LEDGER: _generated_ledger(("57-1-a", "done"), ("58-1-x", "backlog"))},
+        branch={_LEDGER: _generated_ledger(("57-1-a", "done"), ("59-1-y", "done"))},
+    )
+    check = _RecordingCheck(wt, remote)
+
+    result = _heal_registry(clone, wt, _HonestForge(clone), check=check)
+
+    assert result.healed is True and check.calls == 0
+
+
+# --- the landing's own healed-tree check (dispatch_land._healed_tree_flag_registry_check) ---
+
+_OK = ProcessResult(returncode=0, stdout="", stderr="")
+
+
+class _ScriptedProcess:
+    """A ``ProcessPort`` double: records ``(argv, cwd, timeout_s)``; ``outcomes[i]`` answers call ``i``."""
+
+    def __init__(self, *outcomes: ProcessResult | Exception) -> None:
+        self.outcomes = list(outcomes)
+        self.calls: list[tuple[list[str], Path, float | None]] = []
+
+    def run(self, argv, *, cwd: Path, timeout_s: float | None = None) -> ProcessResult:
+        self.calls.append((list(argv), cwd, timeout_s))
+        outcome = self.outcomes[len(self.calls) - 1] if len(self.calls) <= len(self.outcomes) else _OK
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+
+def test_the_landing_builds_the_check_that_runs_exactly_the_three_commands(tmp_path: Path) -> None:
+    """Story 22.19 AC: the three commands of "The union rules", the platform one in `src/platform`."""
+    process = _ScriptedProcess(ProcessResult(returncode=0, stdout="WARN something", stderr=""), _OK, _OK)
+
+    finding = dispatch_land._healed_tree_flag_registry_check(tmp_path, process)()
+
+    assert finding is None
+    assert [(argv, cwd) for argv, cwd, _t in process.calls] == [
+        (["pixi", "run", "--frozen", "-e", "pyforge-guild", "flag-gate-check"], tmp_path),
+        (
+            [
+                "pixi",
+                "run",
+                "--frozen",
+                "-e",
+                "pyforge-core",
+                "pytest",
+                "src/shared/packages/pyforge-core/tests/unit/test_flags.py",
+                "-q",
+            ],
+            tmp_path,
+        ),
+        (
+            [
+                "pixi",
+                "run",
+                "--frozen",
+                "-e",
+                "platform-ci-test",
+                "env",
+                "-u",
+                "PYTHONSAFEPATH",
+                "python",
+                "-m",
+                "pytest",
+                "tests/test_openfeature_file_flags.py",
+                "-q",
+                "-p",
+                "no:cacheprovider",
+            ],
+            tmp_path / "src" / "platform",
+        ),
+    ]
+    assert all(timeout is not None for _a, _c, timeout in process.calls)
+
+
+@pytest.mark.parametrize("failing", [0, 1, 2])
+@pytest.mark.parametrize("code", [1, 2])
+def test_a_failing_command_refuses_with_mrs_disp_038_naming_it_and_its_exit_code(
+    tmp_path: Path, failing: int, code: int
+) -> None:
+    outcomes: list[ProcessResult | Exception] = [_OK, _OK, _OK]
+    outcomes[failing] = ProcessResult(
+        returncode=code, stdout="ok line\nFAIL flag-x: cleanup_by passed\nFAIL flag-y: bad story\n", stderr=""
+    )
+    process = _ScriptedProcess(*outcomes)
+
+    finding = dispatch_land._healed_tree_flag_registry_check(tmp_path, process)()
+
+    assert finding is not None and finding.code == "MRS-DISP-038" and finding.severity == Severity.ERROR
+    name = ("flag-gate-check", "test_flags.py", "test_openfeature_file_flags.py")[failing]
+    assert name in finding.message and f"exited {code}" in finding.message
+    assert "FAIL flag-x: cleanup_by passed" in finding.message and "ok line" not in finding.message
+    assert len(process.calls) == failing + 1  # the first failure stops the check
+
+
+def test_a_failure_detail_is_bounded(tmp_path: Path) -> None:
+    noisy = "".join(f"FAIL flag-{i}: {'x' * 200}\n" for i in range(100))
+    process = _ScriptedProcess(ProcessResult(returncode=1, stdout=noisy, stderr=""))
+    finding = dispatch_land._healed_tree_flag_registry_check(tmp_path, process)()
+    assert finding is not None and len(finding.message) < 2000
+
+
+def test_a_failing_test_module_with_no_fail_lines_carries_the_output_tail(tmp_path: Path) -> None:
+    process = _ScriptedProcess(
+        _OK, ProcessResult(returncode=1, stdout="E assert 1 == 2\n1 failed in 0.1s\n", stderr="")
+    )
+    finding = dispatch_land._healed_tree_flag_registry_check(tmp_path, process)()
+    assert finding is not None and "1 failed in 0.1s" in finding.message
+
+
+def test_a_timeout_or_an_env_that_will_not_run_refuses_with_mrs_disp_038(tmp_path: Path) -> None:
+    process = _ScriptedProcess(ProcessError("command timed out after 1800.0s: pixi run"))
+    finding = dispatch_land._healed_tree_flag_registry_check(tmp_path, process)()
+    assert finding is not None and finding.code == "MRS-DISP-038"
+    assert "flag-gate-check" in finding.message and "timed out" in finding.message

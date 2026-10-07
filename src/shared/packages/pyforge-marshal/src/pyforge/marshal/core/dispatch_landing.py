@@ -689,9 +689,7 @@ def union_flag_registry_json_texts(base_text: str, main_text: str, branch_text: 
         if label != "merge-base" and _canonical_json(doc) != text:
             return _refused(f"the {label} text is not in json.dumps(indent=2) form")
         docs[label] = doc
-    merged, detail = _merge_registry_members(
-        docs["merge-base"], docs["main"], docs["branch"], prefix="", descend=True
-    )
+    merged, detail = _merge_registry_members(docs["merge-base"], docs["main"], docs["branch"], prefix="", descend=True)
     if detail is not None:
         return _refused(detail)
     return FlagRegistryResolution(text=_canonical_json(merged))
@@ -767,7 +765,7 @@ def _dict_entries_of(section: tuple[str, ...]) -> list[ast.expr] | None:
 def _key_label(key: ast.expr) -> str:
     try:
         return str(ast.literal_eval(key))
-    except (ValueError, SyntaxError):
+    except ValueError, SyntaxError:
         return ast.unparse(key)
 
 
