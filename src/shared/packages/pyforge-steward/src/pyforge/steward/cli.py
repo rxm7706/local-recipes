@@ -90,9 +90,10 @@ _HELP = {
         "(Story 61.3)"
     ),
     "catalog": (
-        "estate BMAD catalog — check/list/render/pointers over catalog.yaml "
+        "estate BMAD catalog — check/list/render/pointers/publish over catalog.yaml "
         "(backends + sources declared in config, git is the edit store; "
-        "generated Claude/Codex marketplace manifests; Story 60.1)"
+        "generated Claude/Codex marketplace manifests; publish requires a review record; "
+        "Stories 60.1–60.2)"
     ),
     "load": (
         "extract corridor -- idempotent inbound/outbound file loads keyed by "
@@ -555,7 +556,9 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     json_help = "emit JSON instead of human-readable text"
     catalog_parser.add_argument("--catalog", default=None, metavar="DIR", help=catalog_help)
     catalog_parser.add_argument("--json", action="store_true", default=False, help=json_help)
-    catalog_subs = catalog_parser.add_subparsers(dest="catalog_verb", metavar="{check,list,render,pointers}")
+    catalog_subs = catalog_parser.add_subparsers(
+        dest="catalog_verb", metavar="{check,list,render,pointers,publish}"
+    )
     check = catalog_subs.add_parser(
         "check",
         help="bind declared backends/sources to plugins, validate listings, detect manifest drift (default)",
@@ -574,7 +577,28 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
         "pointers",
         help="print how the installer, Claude and Codex point at this catalog (edits nothing)",
     )
-    for sub in (check, listing, render, pointers):
+    publish = catalog_subs.add_parser(
+        "publish",
+        help="append a reviewed module row to registry/estate.yaml (Story 60.2)",
+    )
+    publish.add_argument(
+        "--listing",
+        required=True,
+        metavar="PATH",
+        help="YAML listing draft (one upstream-format module row)",
+    )
+    publish.add_argument(
+        "--review",
+        required=True,
+        metavar="PATH",
+        help="steward review record YAML for the module",
+    )
+    publish.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="validate listing + review without writing registry/estate.yaml",
+    )
+    for sub in (check, listing, render, pointers, publish):
         sub.add_argument("--catalog", default=argparse.SUPPRESS, metavar="DIR", help=catalog_help)
         sub.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=json_help)
 
