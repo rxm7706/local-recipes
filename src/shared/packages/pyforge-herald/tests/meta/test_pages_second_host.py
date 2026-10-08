@@ -108,6 +108,11 @@ def _minimal_artifact(artifact: Path, site_url: str, *, herald_index_body: str) 
     (herald / "dossier").mkdir(parents=True)
     (herald / "dossier" / "index.html").write_text("<html></html>", encoding="utf-8")
     (herald / "index.html").write_text(herald_index_body, encoding="utf-8")
+    (artifact / "dossier").mkdir(parents=True, exist_ok=True)
+    (artifact / "dossier" / "index.html").write_text(
+        assemble_pages.redirect_html("herald/dossier/index.html"),
+        encoding="utf-8",
+    )
     dashboard = artifact / "dashboard" / "kedro-viz"
     dashboard.mkdir(parents=True)
     (dashboard / "index.html").write_text("<html></html>", encoding="utf-8")
