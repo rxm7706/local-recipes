@@ -165,6 +165,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.herald.pages_second_host": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "herald",
+        "story": "31-1-the-pages-artifact-builds-for-the-host-that-deploys-it",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.herald.deck_export_native": {
       "state": "ENABLED",
       "variants": {
