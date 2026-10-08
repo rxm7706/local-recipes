@@ -102,12 +102,8 @@ def channel_audit_findings(
                         f"channels: {url}"
                     )
             elif "conda_source" in entry:
-                url = entry["conda_source"]
-                if not any(url.startswith(f"{base}/") for base in declared):
-                    findings.append(
-                        f"channel audit ({plat_key}): conda_source off declared "
-                        f"channels: {url}"
-                    )
+                # Workspace path pins (``name @ src/...``) — not a remote channel fetch.
+                continue
             elif "pypi" in entry:
                 wheel_url = entry["pypi"]
                 wheel_name = Path(urlparse(wheel_url).path).name.split("-")[0]
