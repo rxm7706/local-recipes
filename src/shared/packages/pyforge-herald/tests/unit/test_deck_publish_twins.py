@@ -27,17 +27,9 @@ def _minimal_deck(tmp_path: Path, slug: str = "demo-deck") -> Path:
 def test_publish_refuses_planted_external_origin(tmp_path: Path):
     slug = "demo-deck"
     _minimal_deck(tmp_path, slug)
-    standalone = (
-        tmp_path
-        / "presentations"
-        / slug
-        / "src"
-        / "marp"
-        / f"{slug}-infographic-standalone-2026-09-01.html"
-    )
+    standalone = tmp_path / "presentations" / slug / "src" / "marp" / f"{slug}-infographic-standalone-2026-09-01.html"
     standalone.write_text(
-        '<html><head><link href="https://fonts.googleapis.com/css" rel="stylesheet"></head>'
-        "<body></body></html>",
+        '<html><head><link href="https://fonts.googleapis.com/css" rel="stylesheet"></head><body></body></html>',
         encoding="utf-8",
     )
     store = MemoryDeckStore()

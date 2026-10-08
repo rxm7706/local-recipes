@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from pyforge.testing_kit.cli_runner import invoke_cli
 from pyforge.testing_kit.flags import flagd_tree
 
 from pyforge.herald.cli import main

@@ -238,9 +238,7 @@ def publish_deck(
 
     twins_section: dict[str, object] | None = None
     if include_twins:
-        twins_section, twin_up, twin_skip = _publish_twins(
-            slug, repo_root=repo_root, store=store, dry_run=dry_run
-        )
+        twins_section, twin_up, twin_skip = _publish_twins(slug, repo_root=repo_root, store=store, dry_run=dry_run)
         uploads += twin_up
         skipped += twin_skip
         if not twins_section:
@@ -255,7 +253,7 @@ def publish_deck(
         try:
             current = b"".join(store.open_stream(manifest_key))
             unchanged = current == new_manifest
-        except (KeyError, OSError):
+        except KeyError, OSError:
             unchanged = False
     if not unchanged:
         manifest_written = True
