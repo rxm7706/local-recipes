@@ -457,6 +457,27 @@ def test_terminal_summary_matches_both_docs_exactly(
         assert _line_pattern(want).match(got), f"{doc_name}: {got!r} does not match {want!r}"
 
 
+def test_empty_verified_export_omits_timestamp_from_summary(tmp_path: Path, capsys, monkeypatch):
+    """Prompt section 7: the timestamp line appears only when verified export has rows."""
+    monkeypatch.chdir(tmp_path)
+    catalog_root = tmp_path / "catalog"
+    _make_catalog_root(catalog_root, verified_rows=[])
+    argv = [
+        "metrics",
+        "--live-catalog",
+        str(catalog_root),
+        "--output-csv",
+        str(tmp_path / "out.csv"),
+        "--output-md",
+        str(tmp_path / "out.md"),
+    ]
+    with mock.patch.object(sys, "argv", argv):
+        assert metrics.main() == 0
+    printed = capsys.readouterr().out
+    assert "Verification timestamp (UTC)" not in printed
+    assert "Total final unique packages processed: 0" in printed
+
+
 def test_default_run_leaves_the_tracked_prompt_doc_unchanged(tmp_path: Path, capsys, monkeypatch):
     """A run without --output-revised-prompt writes no revised prompt -- least of all over
     the tracked prompt doc, which the retired default path resolved to from the repo root."""
