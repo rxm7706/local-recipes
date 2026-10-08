@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: warden
-source_fingerprint: 3d70ea17572fb509
-story_count: 59
-test_file_count: 68
+source_fingerprint: e37c61ac23413248
+story_count: 60
+test_file_count: 76
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-warden`
-- **Stories parsed:** 59
+- **Stories parsed:** 60
 - **Epics parsed:** 17
-- **Test files inventoried:** 68 under `src/shared/packages/pyforge-warden/tests/`
+- **Test files inventoried:** 76 under `src/shared/packages/pyforge-warden/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `3d70ea17572fb509`
+- **Source fingerprint:** `e37c61ac23413248`
 
 ## Risk Assessment
 
@@ -89,9 +89,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/meta/test_verdict_sole_ownership.py` | meta | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_actuator.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_actuator_draft_pr_estate.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_actuator_github_client.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_advisory_lenses.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_bypass.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_doctor.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_cli_fix_target_candidates.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_cli_sbom.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_config.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_currency.py` | unit | none observed |
@@ -103,6 +106,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_engine_env_deptry.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_environment_yml_extractor.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_feeds.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_fix_solver_seam.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_fix_target_resolution.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_hooks.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_hygiene.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_identity.py` | unit | none observed |
@@ -110,9 +115,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-warden/tests/unit/test_inventory.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_license.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_lockfiles_extractor.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_manifest_edit.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_manifest_fixup.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_mapping.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_meta_v0_extractor.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_models.py` | unit | none observed |
+| `src/shared/packages/pyforge-warden/tests/unit/test_non_python_lockfiles.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_osv_engine_exit_codes.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_pixi_extractor.py` | unit | none observed |
 | `src/shared/packages/pyforge-warden/tests/unit/test_recipe_v1_extractor.py` | unit | none observed |
@@ -176,6 +184,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 10.2 | First portal slice — start/get one audit | none observed |
 | 11.1 | `bmad-os-review-pr` and `findings-triage` are warden-wielded advisory lenses | none observed |
 | 11.2 | `tea-test-review` is a warden advisory finding | none observed |
+| 11.3 | The TEA advisory spawns through `engines.py`, like every other subprocess | none observed |
 | 12.1 | Regression test — the promotion verifier's clean-only refusal cannot be remov... | none observed |
 | 12.2 | Environment-scoped lockfile extraction | none observed |
 | 12.3 | The promotion scans the shipped closure | none observed |
