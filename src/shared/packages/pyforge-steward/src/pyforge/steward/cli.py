@@ -555,9 +555,7 @@ def _add_measure_subparsers(measure_parser: argparse.ArgumentParser) -> None:
     """Story 62.2: ``check`` (default) / ``list``; ``--measures-dir DIR`` overrides the tracked config."""
     measures_help = "directory holding measures.yaml (default: the tracked Build League catalog)"
     json_help = "emit JSON instead of human-readable text"
-    measure_parser.add_argument(
-        "--measures-dir", default=None, metavar="DIR", help=measures_help
-    )
+    measure_parser.add_argument("--measures-dir", default=None, metavar="DIR", help=measures_help)
     measure_parser.add_argument("--json", action="store_true", default=False, help=json_help)
     measure_subs = measure_parser.add_subparsers(
         dest="measure_verb",
@@ -567,13 +565,9 @@ def _add_measure_subparsers(measure_parser: argparse.ArgumentParser) -> None:
         "check",
         help="validate measure declarations (new rows off, no archived id reuse)",
     )
-    listing = measure_subs.add_parser(
-        "list", help="every measure with dimension, source, and state"
-    )
+    listing = measure_subs.add_parser("list", help="every measure with dimension, source, and state")
     for sub in (check, listing):
-        sub.add_argument(
-            "--measures-dir", default=argparse.SUPPRESS, metavar="DIR", help=measures_help
-        )
+        sub.add_argument("--measures-dir", default=argparse.SUPPRESS, metavar="DIR", help=measures_help)
         sub.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=json_help)
 
 

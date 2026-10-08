@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from pyforge.steward.measures import (
     FIRST_CUT_IDS,
     MeasureConfigError,

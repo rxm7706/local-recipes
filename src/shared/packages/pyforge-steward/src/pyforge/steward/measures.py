@@ -91,18 +91,14 @@ def _normalize_state(document_path: Path, raw: object, where: str) -> str:
     if isinstance(raw, bool):
         raw = STATE_ON if raw else STATE_OFF
     if not isinstance(raw, str) or raw.strip() not in STATES:
-        raise MeasureConfigError(
-            f"{document_path}: '{where}.state' = {raw!r} is not one of {STATES!r}"
-        )
+        raise MeasureConfigError(f"{document_path}: '{where}.state' = {raw!r} is not one of {STATES!r}")
     return raw.strip()
 
 
 def _require_str(document_path: Path, body: dict[str, Any], key: str, where: str) -> str:
     raw = body.get(key)
     if not isinstance(raw, str) or not raw.strip():
-        raise MeasureConfigError(
-            f"{document_path}: '{where}.{key}' is required and must be a non-empty string"
-        )
+        raise MeasureConfigError(f"{document_path}: '{where}.{key}' is required and must be a non-empty string")
     return raw.strip()
 
 
@@ -113,8 +109,7 @@ def load_config(path: str | Path) -> MeasureConfig:
     unknown = sorted(str(k) for k in document if k not in _TOP_LEVEL_KEYS)
     if unknown:
         raise MeasureConfigError(
-            f"{document_path}: unknown top-level key(s) {unknown!r}; only "
-            f"{sorted(_TOP_LEVEL_KEYS)!r} are recognized"
+            f"{document_path}: unknown top-level key(s) {unknown!r}; only {sorted(_TOP_LEVEL_KEYS)!r} are recognized"
         )
 
     catalog = document.get("catalog")
@@ -132,9 +127,7 @@ def load_config(path: str | Path) -> MeasureConfig:
     archived_ids: list[str] = []
     for index, item in enumerate(archived_raw):
         if not isinstance(item, str) or not item.strip():
-            raise MeasureConfigError(
-                f"{document_path}: 'archived_ids[{index}]' must be a non-empty string"
-            )
+            raise MeasureConfigError(f"{document_path}: 'archived_ids[{index}]' must be a non-empty string")
         archived_ids.append(item.strip())
 
     section = document.get("measures")
@@ -146,9 +139,7 @@ def load_config(path: str | Path) -> MeasureConfig:
     decls: list[MeasureDecl] = []
     for measure_id, body in section.items():
         if not isinstance(measure_id, str) or not measure_id.strip():
-            raise MeasureConfigError(
-                f"{document_path}: 'measures' key {measure_id!r} must be a non-empty string"
-            )
+            raise MeasureConfigError(f"{document_path}: 'measures' key {measure_id!r} must be a non-empty string")
         mid = measure_id.strip()
         where = f"measures.{mid}"
         if not isinstance(body, dict):
@@ -174,9 +165,7 @@ def load_config(path: str | Path) -> MeasureConfig:
 
     overlap = sorted(set(archived_ids) & {d.measure_id for d in decls})
     if overlap:
-        raise MeasureConfigError(
-            f"{document_path}: id(s) {overlap!r} appear in both 'measures' and 'archived_ids'"
-        )
+        raise MeasureConfigError(f"{document_path}: id(s) {overlap!r} appear in both 'measures' and 'archived_ids'")
 
     return MeasureConfig(
         name=name,
@@ -195,9 +184,7 @@ def validate_add_rules(config: MeasureConfig) -> list[str]:
             findings.append(f"id {mid!r} is listed in archived_ids and measures")
     for decl in config.measures:
         if decl.measure_id not in FIRST_CUT_IDS and decl.state != STATE_OFF:
-            findings.append(
-                f"measures.{decl.measure_id}: new measures must start with state 'off', got {decl.state!r}"
-            )
+            findings.append(f"measures.{decl.measure_id}: new measures must start with state 'off', got {decl.state!r}")
     return findings
 
 
@@ -217,9 +204,7 @@ def format_list(config: MeasureConfig) -> str:
     lines = [f"catalog {config.name!r} — {len(config.measures)} measure(s)"]
     for decl in sorted(config.measures, key=lambda d: d.measure_id):
         note = f" — {decl.notes}" if decl.notes else ""
-        lines.append(
-            f"  {decl.measure_id}: {decl.state} ({decl.dimension}) {decl.source}{note}"
-        )
+        lines.append(f"  {decl.measure_id}: {decl.state} ({decl.dimension}) {decl.source}{note}")
     if config.archived_ids:
         lines.append(f"  archived_ids (reserved): {', '.join(config.archived_ids)}")
     return "\n".join(lines)
@@ -268,11 +253,7 @@ class MeasureDuty:
             "ok": ok,
             "findings": [{"code": "measure-policy", "message": msg} for msg in findings],
         }
-        text = (
-            "measure check: ok"
-            if ok
-            else "measure check: " + "; ".join(findings)
-        )
+        text = "measure check: ok" if ok else "measure check: " + "; ".join(findings)
         return DutyResult(
             ok=ok,
             summary=json.dumps(payload, indent=2) if as_json else text,
