@@ -2,7 +2,7 @@
 title: '31.2: How to deploy the docs site to GitHub Enterprise Pages'
 type: 'docs'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '055bc4cf3f55d00cee885b9a4814eb437bece3bb'
 difficulty: 'easy'
 review_loop_iteration: 0
@@ -119,3 +119,26 @@ Flag: exempt, `docs-only`.
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
 
 ## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (no subagent findings; docs-only change verified against acceptance criteria)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added enterprise GitHub Pages deployment how-to; registered it in `docs/map.yaml`, re-rendered `docs/MAP.md`, and linked it from `docs/how-to/README.md`. Spec-surface reconciled on `spec-pyforge-herald` and `spec-pyforge-doctor`.
+
+**Files changed:**
+- `docs/how-to/deploy-the-docs-site-to-github-enterprise-pages.md` — procedural steps (sync, Pages source, mirror link, flag ON, `pages-check`, air-gapped browser network check).
+- `docs/map.yaml` — one how-to row (`owner: herald`, `kind: authored`).
+- `docs/MAP.md` — `docs-map-render`.
+- `docs/how-to/README.md` — index link.
+- `spec-pyforge-herald/.memlog.md` and `spec-pyforge-doctor/.memlog.md` — surface reconcile events.
+
+**Verification:** `python scripts/spec_surface_reconcile.py` exit 0; `docs-map-hygiene-check` exit 0; `docs-currency-check` exit 0 (warn-only stale pages pre-existing); `pyforge-herald-test` 1720 passed; `pr-preflight` exit 1 (`docs-site-validate-links` task missing in this pixi manifest — pre-existing env gap, not introduced by this story).
+
+**Follow-up review recommendation:** false
+
+**Residual risks:** Operator must flip `pyforge.herald.pages_second_host` only on the enterprise clone, not on public `main`.
