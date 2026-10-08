@@ -2,8 +2,8 @@
 title: "85.6: Every command a session denial names as the sanctioned form exists"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: 'b36482389641efd2591a9d5b5c8a883bcafcf746'
+status: 'in-progress'
+baseline_revision: '5c1ff88e5a60bee67e66c10b721fa8fabff0a091'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
