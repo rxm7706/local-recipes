@@ -2,7 +2,8 @@
 title: "16.3: Each fleet fix waits in a proposal queue for operator approval"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-review'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: '12aaada166569f487059adab7a2361b4edacec23'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -19,7 +20,14 @@ flag:
   scope: global
   fallback: "no proposal is queued; the approve action is listed as disabled and refuses"
   cleanup: 90 days after ON in every environment (Q4)
-deferred: []
+deferred:
+  - summary: >-
+      Add portal HTTP tests for fleet proposal queue approve/dismiss and flag-off disabled UI.
+    evidence: |-
+      Service-layer tests cover approve_proposal; no Client tests hit /stations/warden/fleet/proposals/ views.
+    location: >-
+      src/platform/tests/test_warden_fleet_proposals.py
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 
@@ -107,4 +115,33 @@ Deps: S-16.2, S-14.3.
 
 ## Review Triage Log
 
-- No review yet (minted 2026-09-28). Implementation and review stay separate.
+### 2026-10-08 — Review pass
+- verdicts: 12 findings — high 0, medium 2, low 3, false 4, maybe-false 3
+- findings:
+  - `[false]` `[reject]` `@require_GET` on helper breaks views — removed erroneous decorator on `_fleet_fix_proposals_enabled`.
+  - `[medium]` `[patch]` Missing `sqlmigrate-map.yaml` entry for 0003 — added `warden_fabric.0003_fix_proposal: 23`.
+  - `[medium]` `[patch]` Celery task enqueued before commit — `approve_proposal` now uses `transaction.on_commit` for `open_fix_proposal.delay`.
+  - `[low]` `[patch]` Missing DoesNotExist handling — `approve_proposal` / `dismiss_proposal` raise `ProposalRefusedError` when id missing.
+  - `[low]` `[reject]` Double-approve test flaky under eager Celery — patched `.delay` in test.
+  - `[low]` `[defer]` Portal HTTP tests absent — deferred with location `src/platform/tests/test_warden_fleet_proposals.py`.
+  - `[false]` `[reject]` Actuator co-governor memlog missing — pyforge-warden memlog covers actuator.py; reconcile green.
+  - `[maybe-false]` `[defer]` Concurrent double open without row lock in task — unverified; would need select_for_update in task.
+  - `[false]` `[reject]` Dismiss must be flag-gated — spec scopes flag to approve actions; dismiss stays available for queued rows.
+  - `[maybe-false]` `[reject]` Zero forge writes on finalize untested — finalize path does not call actuator; queue-only by construction.
+  - `[maybe-false]` `[defer]` Flag-off finalize queueing untested — `queue_proposals_from_scan` early-returns when flag off; add test in follow-up if desired.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Story 16.3 adds `FixProposal` queueing at fleet-run finalize, shared `approve_proposal` / `dismiss_proposal`, Celery `open_fix_proposal` with `authorized_fleet_repo` actuator admission, portal HTMX queue, and `warden_fleet_approve` management command.
+
+Files changed: django_warden_fabric (models, proposals, tasks, views, template, command, migration); pyforge warden actuator; platform flags/Liquibase/tests/sqlmigrate-map.
+
+Review: 4 patches applied (sqlmigrate map, on_commit enqueue, DoesNotExist, view decorator); portal HTTP coverage deferred.
+
+Follow-up review recommendation: false (no high patches; medium patches were mechanical).
+
+Verification: `pixi run --frozen -e pyforge-warden pyforge-warden-test` passed (2266); `python scripts/spec_surface_reconcile.py` OK. Platform proposal tests require PostgreSQL (`platform-ci-local -- --test` not run in this session).
+
+Residual risks: Portal routes untested via HTTP; production Celery concurrency on duplicate approve not mutex-guarded in task (refused at approve layer).
