@@ -59,32 +59,26 @@ from __future__ import annotations
 import json
 import math
 import shutil
-import subprocess
 import tempfile
 import tomllib
+import types
 from collections.abc import Callable, Mapping, MutableMapping
 from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol
 
 from pyforge.core.errors import PyforgeError
 
+from .engines import run_tea_test_review_engine
 from .hooks import PR_GATE_SCAN
 
 TEA_TEST_REVIEW_BINARY = "tea-test-review"
 
-# steward 46.3's own pixi task defaults ("tea-test-review --base
-# refs/remotes/origin/main --min-score 80") -- this module never gates on
-# --min-score (AD-4: the advisory contributes a note, never a verdict), so it
-# is deliberately not passed here. --agent claude mirrors the CLI's own
-# documented default. The base is the full refname, never the short
-# `origin/main`: TEA diffs `<base>...HEAD`, and a short name resolves to a
-# local branch or tag of that name first, so a stray `origin/main` at HEAD
-# emptied the review (warden Story 13.1, spec-pyforge-warden CAP-23).
-_DEFAULT_BASE_REF = "refs/remotes/origin/main"
-_DEFAULT_AGENT = "claude"
-_DEFAULT_TIMEOUT_SECONDS = 1800  # mirrors the CLI's own --timeout-ms default
+# argv defaults (--base, --agent, timeout) live in ``engines.run_tea_test_
+# review_engine`` (Story 11.3); warden Story 13.1 / CAP-23 documents the
+# full remote-tracking ref for ``--base``.
+
 
 class TeaRunOutcome(Protocol):
     """Structural return type for the default runner seam — only ``returncode``
