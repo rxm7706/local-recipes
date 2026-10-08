@@ -2,7 +2,8 @@
 title: '69.1: The switch script runs where it is documented to run'
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '7b9b194f93a0cfb905998c960c57518cfc3b4e64'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md

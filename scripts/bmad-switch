@@ -30,6 +30,11 @@ Usage:
     bmad-switch --current       # print the active project (hard-fails on marker/symlink drift)
     bmad-switch --clear         # remove the marker (no active project)
 
+Requires Python 3.14 with ``pyforge-marshal`` importable for ``--current`` and
+``--list``. When the running interpreter cannot load the scope primitive, the
+script re-executes itself once under ``pixi run -e pyforge-guild`` (if ``pixi``
+is on ``PATH``); otherwise it exits 8 with the exact guild command to run.
+
 The slug must be lowercase alphanumeric + hyphens/underscores. The corresponding
 project directory `_bmad-output/projects/<slug>/` must exist.
 """
@@ -37,17 +42,25 @@ project directory `_bmad-output/projects/<slug>/` must exist.
 import argparse
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
+_REEXEC_GUARD = "PYFORGE_BMAD_SWITCH_REEXEC"
+
 
 def _load_verify_scope(root: Path):
-    """Import the sole Story 20.6 primitive (never a local reimplementation)."""
+    """Import the sole Story 20.6 primitive (never a local reimplementation).
+
+    Returns ``(verify_scope, ScopeDrift)`` or ``None`` when neither the installed
+    package nor the source-tree fallback is loadable in this interpreter.
+    """
     try:
         from pyforge.marshal.scope import ScopeDrift, verify_scope
+
         return verify_scope, ScopeDrift
-    except ImportError:
+    except (ImportError, SyntaxError):
         # The primitive lives in THIS repo's marshal source tree. `root` may be a
         # fixture tree (the Story 20.7 tests point it at tmp_path), so fall back
         # to the checkout this script sits in before giving up.
@@ -58,8 +71,58 @@ def _load_verify_scope(root: Path):
                 if str(src) not in sys.path:
                     sys.path.insert(0, str(src))
                 break
-        from pyforge.marshal.scope import ScopeDrift, verify_scope
-        return verify_scope, ScopeDrift
+        try:
+            from pyforge.marshal.scope import ScopeDrift, verify_scope
+
+            return verify_scope, ScopeDrift
+        except (ImportError, SyntaxError):
+            return None
+
+
+def _unloadable_stderr_line(root: Path, forwarded_argv: list[str]) -> str:
+    verb = " ".join(forwarded_argv) if forwarded_argv else ""
+    guild_cmd = f"pixi run -e pyforge-guild python scripts/bmad-switch {verb}".rstrip()
+    py_ver = sys.version.split()[0]
+    return (
+        f"bmad-switch: {sys.executable} (Python {py_ver}) cannot load "
+        f"pyforge.marshal.scope (requires Python 3.14 with pyforge-marshal "
+        f"importable); run: {guild_cmd}\n"
+    )
+
+
+def _reexec_under_guild(root: Path, script: Path, forwarded_argv: list[str]) -> int:
+    env = os.environ.copy()
+    env[_REEXEC_GUARD] = "1"
+    cmd = [
+        "pixi",
+        "run",
+        "--manifest-path",
+        str(root / "pixi.toml"),
+        "--frozen",
+        "-e",
+        "pyforge-guild",
+        "python",
+        str(script),
+        *forwarded_argv,
+    ]
+    return subprocess.run(cmd, env=env).returncode
+
+
+def _ensure_scope_primitive_or_exit(root: Path, *, need_scope: bool) -> int | None:
+    """Return an exit code when the caller must stop, else ``None`` to continue."""
+    if not need_scope:
+        return None
+    if _load_verify_scope(root) is not None:
+        return None
+    forwarded = sys.argv[1:]
+    if os.environ.get(_REEXEC_GUARD):
+        sys.stderr.write(_unloadable_stderr_line(root, forwarded))
+        return 8
+    if shutil.which("pixi") is None:
+        sys.stderr.write(_unloadable_stderr_line(root, forwarded))
+        return 8
+    script = Path(__file__).resolve()
+    return _reexec_under_guild(root, script, forwarded)
 
 
 def format_scope_drift(drift) -> str:
@@ -204,7 +267,9 @@ def cmd_list(root: Path) -> int:
     else:
         print("\nactive: (none)")
     if current:
-        verify_scope, _ScopeDrift = _load_verify_scope(root)
+        loaded = _load_verify_scope(root)
+        assert loaded is not None  # main() gates --list before cmd_list runs
+        verify_scope, _ScopeDrift = loaded
         drift = verify_scope(root, current)
         if drift is not None:
             sys.stderr.write(f"\nerror: {format_scope_drift(drift)}\n")
@@ -229,7 +294,9 @@ def cmd_current(root: Path) -> int:
     if not current:
         sys.stderr.write("no active project (marker file empty or missing)\n")
         return 1
-    verify_scope, _ScopeDrift = _load_verify_scope(root)
+    loaded = _load_verify_scope(root)
+    assert loaded is not None  # main() gates --current before cmd_current runs
+    verify_scope, _ScopeDrift = loaded
     drift = verify_scope(root, current)
     if drift is not None:
         # Print claimed marker then hard-fail naming the drift (CAP-3).
@@ -301,6 +368,11 @@ def main() -> int:
     args = parser.parse_args()
 
     root = repo_root()
+
+    need_scope = args.list or args.current
+    scope_exit = _ensure_scope_primitive_or_exit(root, need_scope=need_scope)
+    if scope_exit is not None:
+        return scope_exit
 
     if args.list:
         return cmd_list(root)
