@@ -335,7 +335,8 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  resolved: 2026-10-08 (dispatch-land finalize: Merge pyforge-scribe/4-1 into main)
+  status: closed
 
 ### DW-FRR-6-2: Follow-up review still recommended for story 6.2
 
