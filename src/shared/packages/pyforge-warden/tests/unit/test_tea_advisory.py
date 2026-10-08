@@ -94,6 +94,32 @@ def test_roster_missing_never_calls_runner(tmp_path):
 # --- run_tea_test_review: TEA provisioned but unreachable (fail-open) -----
 
 
+def test_default_runner_engine_error_is_fail_open(monkeypatch, tmp_path):
+    """Story 11.3: typed ``ErrorRecord`` from ``run_tea_test_review_engine`` degrades fail-open."""
+    from pyforge.warden.models import ErrorKind, ErrorRecord
+
+    _write_tea_roster(tmp_path)
+    monkeypatch.setattr(tea_advisory.shutil, "which", lambda name: "/bin/tea-test-review")
+    monkeypatch.setattr(
+        tea_advisory,
+        "run_tea_test_review_engine",
+        lambda **_: (
+            None,
+            ErrorRecord(
+                kind=ErrorKind.ENGINE_UNAVAILABLE,
+                owner="tea-test-review",
+                message="engine binary for 'tea-test-review' not found on PATH",
+            ),
+            None,
+        ),
+    )
+
+    result = run_tea_test_review(tmp_path)
+
+    assert result.ran is False
+    assert "not found on PATH" in (result.skipped_reason or "")
+
+
 def test_fail_open_when_binary_absent(monkeypatch, tmp_path):
     """Roster present (provisioned) but the binary is not on THIS
     process's PATH -- an environmental blip, not a governance gap (AD-10
@@ -648,15 +674,31 @@ def test_tea_roster_missing_error_is_a_pyforge_error_and_a_runtime_error():
 
 def test_the_default_runner_passes_the_remote_tracking_ref_as_the_base(tmp_path: Path, monkeypatch) -> None:
     """TEA diffs ``<base>...HEAD``; a short ``origin/main`` would resolve to a local branch or tag of that name
-    first and empty the review. The real binary is never run: ``subprocess.run`` is replaced and the argv kept."""
-    seen: list[list[str]] = []
+    first and empty the review. The real binary is never run: ``engines._engine_env``'s spawn is replaced."""
+    from pyforge.warden import engines
 
-    def fake_run(argv: list[str], **_: Any) -> subprocess.CompletedProcess[str]:
-        seen.append(list(argv))
+    captured: dict[str, Any] = {}
+
+    def fake_run(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+        captured["argv"] = list(argv)
+        captured["kwargs"] = kwargs
+        json_out = argv[argv.index("--json") + 1]
+        Path(json_out).write_text(
+            '{"qualityScore": 90, "recommendation": "Approve"}',
+            encoding="utf-8",
+        )
         return subprocess.CompletedProcess(argv, 0, "", "")
 
-    monkeypatch.setattr(tea_advisory.subprocess, "run", fake_run)
-    tea_advisory._default_runner("tea-test-review", tmp_path, tmp_path / "verdict.json")
+    monkeypatch.setattr(engines.subprocess, "run", fake_run)
+    json_path = tmp_path / "verdict.json"
+    tea_advisory._default_runner("tea-test-review", tmp_path, json_path)
 
-    (argv,) = seen
+    argv = captured["argv"]
+    kwargs = captured["kwargs"]
     assert argv[argv.index("--base") + 1] == "refs/remotes/origin/main"
+    assert kwargs["cwd"] == str(tmp_path)
+    assert kwargs["stdin"] is subprocess.DEVNULL
+    assert kwargs["env"]["NO_COLOR"] == "1"
+    assert kwargs["timeout"] == engines.TEA_TEST_REVIEW_TIMEOUT_SECONDS
+    assert str(tmp_path) not in argv[argv.index("--output") + 1]
+    assert json_path.read_text(encoding="utf-8")

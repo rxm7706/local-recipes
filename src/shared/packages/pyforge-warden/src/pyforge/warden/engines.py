@@ -175,6 +175,13 @@ PIXI_VERSION_RANGE = SpecifierSet(">=0.80.0,<0.81")
 PIXI_VERSION_PATTERN = re.compile(r"pixi (\d+\.\d+\.\d+)")
 PIXI_LOCK_TIMEOUT_SECONDS = 600.0
 
+# Story 11.3: ``tea-test-review`` advisory spawn budget — mirrors the CLI's
+# own ``--timeout-ms`` default (1800 s). Not in {1, 2, 130}, same sole-
+# ownership exit-literal guard rationale as ``DEPTRY_TIMEOUT_SECONDS``.
+TEA_TEST_REVIEW_TIMEOUT_SECONDS = 1800.0
+_TEA_DEFAULT_BASE_REF = "refs/remotes/origin/main"
+_TEA_DEFAULT_AGENT = "claude"
+
 # ``deptry --version`` prints ``deptry 0.25.1``; ``osv-scanner --version``
 # prints a multi-line block starting ``osv-scanner version: 2.4.0`` — both
 # verified live against the currently-provisioned pixi environment during
@@ -388,6 +395,55 @@ def run_pixi_lock(*, cwd: Path) -> tuple[ErrorRecord | None, int | None]:
     if error is not None:
         return error, None
     return None, exit_code
+
+
+def run_tea_test_review_engine(
+    *,
+    binary: str,
+    cwd: Path,
+) -> tuple[str | None, ErrorRecord | None, int | None]:
+    """Story 11.3: run ``tea-test-review`` through ``_engine_env`` (the sole
+    subprocess seam). ``--json`` names ``_engine_env``'s machine-output
+    tempfile; ``--output`` names a scratch markdown report in system temp
+    that this call creates and removes — never ``cwd``. Returns the decoded
+    ``--json`` text, a typed ``ErrorRecord`` (or ``None``), and the child's
+    exit code — same triple shape as ``_engine_env`` itself."""
+    try:
+        handle, report_path = tempfile.mkstemp(suffix=".md", prefix="pdos-tea-report-")
+    except OSError as exc:
+        return (
+            None,
+            ErrorRecord(
+                kind=ErrorKind.ENGINE_EXECUTION_FAILED,
+                owner="tea-test-review",
+                message=f"could not create a temp report file: {exc.__class__.__name__}",
+            ),
+            None,
+        )
+    try:
+        os.close(handle)
+        text, error, exit_code = _engine_env(
+            lambda json_output_path: [
+                binary,
+                "--base",
+                _TEA_DEFAULT_BASE_REF,
+                "--output",
+                report_path,
+                "--json",
+                json_output_path,
+                "--agent",
+                _TEA_DEFAULT_AGENT,
+            ],
+            owner="tea-test-review",
+            cwd=cwd,
+            timeout=TEA_TEST_REVIEW_TIMEOUT_SECONDS,
+        )
+        return text, error, exit_code
+    finally:
+        try:
+            os.unlink(report_path)
+        except OSError:
+            pass
 
 
 def _check_engine_version(

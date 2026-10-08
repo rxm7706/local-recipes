@@ -2,7 +2,7 @@
 title: "11.3: The TEA advisory spawns through `engines.py`, like every other subprocess"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: '8ef4a6aa7950d8491852344209b60cdbc8765ac0'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -188,4 +188,33 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-07 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 3, reject 1
+- findings:
+  - `[false]` `[reject]` Claim that `--output` might land under `target` — Story 13.1 test asserts report path is outside `target`; engines uses mkstemp in system temp.
+  - `[false]` `[reject]` Claim that ErrorRecord paths bypass fail-open — `_default_runner` raises `RuntimeError(error.message)` caught by existing broad handler; unit test added.
+  - `[false]` `[reject]` Claim meta test misses TYPE_CHECKING imports — detector walks all `ast.Import` nodes with no branch filter; spec bounds match extract guard.
+  - `[low]` `[reject]` Prefer returning real `CompletedProcess` from `_default_runner` — cosmetic; `TeaRunOutcome` protocol preserves injected fakes; no named developer harm.
+
+## Auto Run Result
+
+Status: done
+
+Summary: TEA advisory spawning moved to `engines.run_tea_test_review_engine` over `_engine_env`; `tea_advisory.py` no longer imports `subprocess`; new `test_subprocess_sole_site.py` meta guard.
+
+Files changed:
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/engines.py` — TEA engine entry point and constants
+- `src/shared/packages/pyforge-warden/src/pyforge/warden/tea_advisory.py` — delegate spawn to engines; protocol-based runner seam
+- `src/shared/packages/pyforge-warden/tests/meta/test_subprocess_sole_site.py` — package-wide subprocess sole-site AST guard
+- `src/shared/packages/pyforge-warden/tests/unit/test_tea_advisory.py` — argv/env seam test and ErrorRecord fail-open coverage
+
+Review: 0 patches applied; 1 low finding rejected (cosmetic return type).
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2265 passed
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+- Manual grep: only `engines.py` imports `subprocess` under `pyforge/warden/`
+
+Residual risk: static meta guard does not catch dynamic import indirection (documented bounds, same as extract guard).
