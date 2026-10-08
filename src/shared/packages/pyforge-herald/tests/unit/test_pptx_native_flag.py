@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -9,7 +10,19 @@ from pyforge.testing_kit.cli_runner import invoke_cli
 from pyforge.testing_kit.flags import flagd_tree
 
 from pyforge.herald.cli import main
-from pyforge.herald.pptx_native import DECK_EXPORT_NATIVE_FLAG
+from pyforge.herald.pptx_native import DECK_EXPORT_NATIVE_FLAG, MODERNIST_DESIGN_SYSTEM_REL
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[6]
+
+
+def _copy_modernist_tokens(dest_root: Path) -> None:
+    src = _repo_root() / MODERNIST_DESIGN_SYSTEM_REL
+    dst = dest_root / MODERNIST_DESIGN_SYSTEM_REL
+    if dst.exists():
+        shutil.rmtree(dst)
+    shutil.copytree(src, dst)
 
 
 def _deck_tree(tmp_path: Path) -> Path:
@@ -34,15 +47,17 @@ def test_pptx_native_flag_off_lists_disabled_and_exits_usage(tmp_path: Path, mon
 
 
 def test_pptx_native_writes_when_flag_on(tmp_path: Path, monkeypatch):
-    import shutil
-
+    monkeypatch.setattr("pyforge.herald.stamps.write_stamp", lambda *_a, **_k: None)
     if shutil.which("node") is None:
         pytest.skip("node not on PATH")
+    prefix = __import__("os").environ.get("CONDA_PREFIX", "")
+    if not prefix or not (Path(prefix) / "lib" / "node_modules" / "pptxgenjs-plus").is_dir():
+        pytest.skip("pptxgenjs-plus unavailable in this env")
     tree = _deck_tree(tmp_path)
+    _copy_modernist_tokens(tree)
     monkeypatch.chdir(tree)
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(tmp_path, {DECK_EXPORT_NATIVE_FLAG: "on"})))
     code = main(["deck", "pptx-native", "demo-deck", "--repo-root", str(tree)])
-    if code != 0:
-        pytest.skip("pptxgenjs-plus unavailable in this env")
+    assert code == 0
     out_dir = tree / "presentations" / "demo-deck" / "src" / "pptx"
     assert list(out_dir.glob("demo-deck-deck-native-*.pptx"))

@@ -116,7 +116,7 @@ development_status:
   31-3-the-public-pages-build-loads-no-third-party-resource-from-herald-s-own-pages: done
   32-1-a-deck-exports-as-a-native-editable-pptx-through-pptxgenjs-plus: done
   32-2-the-native-pptx-export-carries-every-speaker-note-and-every-text-block: done
-  32-3-the-native-pptx-export-takes-its-fonts-colours-and-spacing-from-the-design-tokens: backlog
+  32-3-the-native-pptx-export-takes-its-fonts-colours-and-spacing-from-the-design-tokens: done
   33-1-deck-facts-counts-dreams-under-the-archive-too: done
   34-1-herald-cites-the-deck-how-to-not-the-intake-stub: done
   35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals: done
@@ -192,7 +192,7 @@ development_status:
   epic-30-retrospective: optional
   epic-31: done
   epic-31-retrospective: optional
-  epic-32: in-progress
+  epic-32: done
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional

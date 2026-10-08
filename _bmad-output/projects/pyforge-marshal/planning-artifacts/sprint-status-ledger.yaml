@@ -279,7 +279,7 @@ development_status:
   46-6-an-interactive-session-whose-layers-lapse-gets-a-persistence-advisory: done
   46-7-the-docs-name-marshal-dispatch-and-spin-the-execution-front-door: done
   46-8-the-interactive-claude-session-path-is-one-documented-invocation: done
-  46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: backlog
+  46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: done
   47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: blocked
   47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw: done
   47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: done
@@ -532,7 +532,7 @@ development_status:
   epic-44-retrospective: optional
   epic-45: done
   epic-45-retrospective: optional
-  epic-46: in-progress
+  epic-46: done
   epic-46-retrospective: optional
   epic-47: in-progress
   epic-47-retrospective: optional
