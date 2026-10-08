@@ -139,7 +139,11 @@ from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from ..dispatch_land import execute_dispatch_land
 from ..dispatch_supervisor.__main__ import gather_dispatch_git_facts
 from ..dispatch_verification_journal import build_dispatch_verification_journal_entries
-from ..dispatch_verify import evaluate_dispatch_verification, run_dispatch_ruff_format_before_verify
+from ..dispatch_verify import (
+    _verify_commands_with_surface_guard,
+    evaluate_dispatch_verification,
+    run_dispatch_ruff_format_before_verify,
+)
 from ..ports.build_harness import BuildHarnessPort
 from ..ports.fs import FsPort
 from ..ports.harness import HarnessPort
@@ -2696,6 +2700,16 @@ def dispatch_once(
             return _done()
 
     effective_policy = _compose_policy(slug, flags=policy_flags)
+    # Story 65.2 (CAP-274): refuse before harness or worktree when the tracked
+    # spec cannot bind -- same predicate and guard-appended commands as the
+    # post-session gate (`dispatch_verify.evaluate_dispatch_verification`).
+    verify_commands = _verify_commands_with_surface_guard(effective_policy)
+    binding_refusal = dispatch_prelaunch.spec_binding_refusal_finding(
+        dispatch_prelaunch.spec_binding_findings(spec_text, verify_commands)
+    )
+    if binding_refusal is not None:
+        findings.append(binding_refusal)
+        return _done()
     difficulty = dispatch_core.read_declared_difficulty(spec_text)
     session_log = _last_failed_dispatch_session_log(fs, repo_root, slug, render_feed_key(story_key))
     prior_failed_attempts = _count_prior_failed_dispatch_attempts(fs, repo_root, slug, render_feed_key(story_key))

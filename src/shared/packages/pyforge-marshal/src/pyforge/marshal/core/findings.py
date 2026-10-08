@@ -1927,6 +1927,12 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # the promotion's publish failed, and the landing is not a clean one.
         # ERROR: finalize exits 1, `dispatch land` refuses (MRS-DISP-020).
         "MRS-DISP-051",
+        # Story 65.2 (spec-pyforge-marshal CAP-274): ``dispatch_once`` refused
+        # before launch because the tracked spec's Success signal cannot bind
+        # against the station's guard-appended verify commands (``MRS-GATE-010``
+        # or ``011`` from the shared prelaunch predicate). No worktree, harness,
+        # run directory or journal entry.
+        "MRS-DISP-050",
         # Story 77.1 (spec-pyforge-marshal CAP-282): the dispatch half of the
         # `structure-graph` layer gave a worktree its codegraph index the slow
         # way -- 053: no base index on the primary checkout (or the copied one
