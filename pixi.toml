@@ -934,11 +934,16 @@ description = "Install docs-site npm dependencies (npm ci in docs-site/)."
 cmd = "npm ci"
 cwd = "docs-site"
 
+[feature.site.tasks.docs-site-sidebar]
+description = "Generate Starlight sidebar JSON from docs/map.yaml (Story 27.3)."
+cmd = "python scripts/sidebar_from_map.py"
+cwd = "docs-site"
+
 [feature.site.tasks.docs-site-build]
 description = "Build the Diátaxis shelf Starlight site to docs-site/build/site/."
 cmd = "npm run build"
 cwd = "docs-site"
-depends-on = ["docs-site-install"]
+depends-on = ["docs-site-install", "docs-site-sidebar"]
 
 [feature.site.tasks.pages-build]
 description = "Build the unified GitHub Pages artifact (Starlight + herald + dashboard mounts and legacy redirects)."

@@ -999,5 +999,6 @@ forge-data/
 docs-site/node_modules/
 docs-site/build/
 docs-site/.astro/
+docs-site/src/sidebar.generated.json
 # Override repo-root `lib/` (Python packaging) so vendored upstream helper is tracked.
 !docs-site/src/lib/
