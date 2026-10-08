@@ -21,6 +21,19 @@ from .errors import HeraldError
 
 DECK_EXPORT_NATIVE_FLAG = "pyforge.herald.deck_export_native"
 
+MODERNIST_DESIGN_SYSTEM_REL = Path("presentations") / "_design-systems" / "modernist"
+DESIGN_TOKEN_CANVAS_WIDTH_PX = 1920
+DESIGN_TOKEN_CANVAS_HEIGHT_PX = 1080
+
+_CSS_CUSTOM_PROPERTY_PX = re.compile(
+    r"--(?P<name>[\w-]+)\s*:\s*(?P<value>\d+(?:\.\d+)?)\s*px",
+    re.IGNORECASE,
+)
+_FONT_HEADING_WEIGHT = re.compile(
+    r"--font-heading-weight\s*:\s*(?P<value>\d+(?:\.\d+)?)\s*;",
+    re.IGNORECASE,
+)
+
 _IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.+)$")
 _NUMBERED_RE = re.compile(r"^(\d+)\.\s+(.*)$")
@@ -133,6 +146,160 @@ class DeckNativeExportResult:
     output_path: Path
     marp_source: Path
     slide_count: int
+
+
+@dataclass(frozen=True, slots=True)
+class ModernistDesignTokens:
+    heading_family: str
+    body_family: str
+    heading_bold: bool
+    palette_bg: str
+    palette_surface: str
+    palette_text: str
+    palette_accent: str
+    type_title_px: int
+    type_subtitle_px: int
+    type_body_px: int
+    type_small_px: int
+    type_kicker_px: int
+    pad_x_px: int
+    pad_top_px: int
+    pad_bottom_px: int
+    baseline_px: int
+    canvas_width_px: int = DESIGN_TOKEN_CANVAS_WIDTH_PX
+    canvas_height_px: int = DESIGN_TOKEN_CANVAS_HEIGHT_PX
+
+
+def _require_key(data: dict[str, Any], key: str, *, path: Path) -> Any:
+    if key not in data:
+        raise HeraldError(f"pptx-native: design token key {key!r} missing in {path}")
+    return data[key]
+
+
+def _parse_css_px_variable(text: str, name: str, *, path: Path) -> int:
+    for match in _CSS_CUSTOM_PROPERTY_PX.finditer(text):
+        if match.group("name") == name:
+            raw = match.group("value")
+            try:
+                value = float(raw)
+            except ValueError as exc:
+                raise HeraldError(f"pptx-native: design token key {name!r} unparsable in {path}: {raw!r}") from exc
+            if value != int(value):
+                raise HeraldError(
+                    f"pptx-native: design token key {name!r} must be an integer px value in {path}: {raw!r}"
+                )
+            return int(value)
+    raise HeraldError(f"pptx-native: design token key {name!r} missing in {path}")
+
+
+def _parse_font_heading_weight(styles_css: str, *, path: Path) -> int:
+    match = _FONT_HEADING_WEIGHT.search(styles_css)
+    if not match:
+        raise HeraldError(f"pptx-native: design token key 'font-heading-weight' missing in {path}")
+    raw = match.group("value")
+    try:
+        return int(float(raw))
+    except ValueError as exc:
+        raise HeraldError(f"pptx-native: design token key 'font-heading-weight' unparsable in {path}: {raw!r}") from exc
+
+
+def load_modernist_design_tokens(
+    repo_root: Path,
+    *,
+    design_system_dir: Path | None = None,
+) -> ModernistDesignTokens:
+    """Load Modernist tokens from tracked design-system files (Story 32.3)."""
+    base = design_system_dir if design_system_dir is not None else repo_root / MODERNIST_DESIGN_SYSTEM_REL
+    theme_path = base / "theme.json"
+    styles_path = base / "styles.css"
+    template_path = base / "templates" / "deck" / "index.html"
+
+    if not theme_path.is_file():
+        raise HeraldError(f"pptx-native: design token file missing: {theme_path}")
+    if not styles_path.is_file():
+        raise HeraldError(f"pptx-native: design token file missing: {styles_path}")
+    if not template_path.is_file():
+        raise HeraldError(f"pptx-native: design token file missing: {template_path}")
+
+    try:
+        theme = json.loads(theme_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise HeraldError(f"pptx-native: design token file malformed: {theme_path}") from exc
+
+    fonts = _require_key(theme, "fonts", path=theme_path)
+    heading = _require_key(fonts, "heading", path=theme_path)
+    body = _require_key(fonts, "body", path=theme_path)
+    heading_family = str(_require_key(heading, "family", path=theme_path))
+    body_family = str(_require_key(body, "family", path=theme_path))
+
+    palette = _require_key(theme, "palette", path=theme_path)
+    palette_bg = str(_require_key(palette, "bg", path=theme_path))
+    palette_surface = str(_require_key(palette, "surface", path=theme_path))
+    palette_text = str(_require_key(palette, "text", path=theme_path))
+    palette_accent = str(_require_key(palette, "accent", path=theme_path))
+
+    styles_text = styles_path.read_text(encoding="utf-8")
+    heading_weight = _parse_font_heading_weight(styles_text, path=styles_path)
+
+    template_text = template_path.read_text(encoding="utf-8")
+    type_title = _parse_css_px_variable(template_text, "type-title", path=template_path)
+    type_subtitle = _parse_css_px_variable(template_text, "type-subtitle", path=template_path)
+    type_body = _parse_css_px_variable(template_text, "type-body", path=template_path)
+    type_small = _parse_css_px_variable(template_text, "type-small", path=template_path)
+    type_kicker = _parse_css_px_variable(template_text, "type-kicker", path=template_path)
+    pad_x = _parse_css_px_variable(template_text, "pad-x", path=template_path)
+    pad_top = _parse_css_px_variable(template_text, "pad-top", path=template_path)
+    pad_bottom = _parse_css_px_variable(template_text, "pad-bottom", path=template_path)
+    baseline = _parse_css_px_variable(template_text, "baseline", path=template_path)
+
+    return ModernistDesignTokens(
+        heading_family=heading_family,
+        body_family=body_family,
+        heading_bold=heading_weight >= 600,
+        palette_bg=palette_bg,
+        palette_surface=palette_surface,
+        palette_text=palette_text,
+        palette_accent=palette_accent,
+        type_title_px=type_title,
+        type_subtitle_px=type_subtitle,
+        type_body_px=type_body,
+        type_small_px=type_small,
+        type_kicker_px=type_kicker,
+        pad_x_px=pad_x,
+        pad_top_px=pad_top,
+        pad_bottom_px=pad_bottom,
+        baseline_px=baseline,
+    )
+
+
+def design_tokens_to_json(tokens: ModernistDesignTokens) -> dict[str, Any]:
+    return {
+        "canvas": {"width": tokens.canvas_width_px, "height": tokens.canvas_height_px},
+        "fonts": {
+            "heading": tokens.heading_family,
+            "body": tokens.body_family,
+            "headingBold": tokens.heading_bold,
+        },
+        "palette": {
+            "bg": tokens.palette_bg,
+            "surface": tokens.palette_surface,
+            "text": tokens.palette_text,
+            "accent": tokens.palette_accent,
+        },
+        "type": {
+            "title": tokens.type_title_px,
+            "subtitle": tokens.type_subtitle_px,
+            "body": tokens.type_body_px,
+            "small": tokens.type_small_px,
+            "kicker": tokens.type_kicker_px,
+        },
+        "spacing": {
+            "padX": tokens.pad_x_px,
+            "padTop": tokens.pad_top_px,
+            "padBottom": tokens.pad_bottom_px,
+            "baseline": tokens.baseline_px,
+        },
+    }
 
 
 def deck_export_native_enabled(*, flags_path: Path | str | None = None) -> bool:
@@ -445,8 +612,13 @@ def _body_block_to_json(block: BodyBlock) -> dict[str, Any]:
     raise TypeError(f"unknown body block: {type(block)!r}")
 
 
-def slide_model_to_json(slides: tuple[SlideModel, ...]) -> dict[str, Any]:
+def slide_model_to_json(
+    slides: tuple[SlideModel, ...],
+    *,
+    tokens: ModernistDesignTokens,
+) -> dict[str, Any]:
     return {
+        "tokens": design_tokens_to_json(tokens),
         "slides": [
             {
                 "title": slide.title,
@@ -457,7 +629,7 @@ def slide_model_to_json(slides: tuple[SlideModel, ...]) -> dict[str, Any]:
                 "blocks": [_body_block_to_json(block) for block in slide.blocks],
             }
             for slide in slides
-        ]
+        ],
     }
 
 
@@ -508,12 +680,14 @@ def export_native_pptx(
     if not slides:
         raise HeraldError(f"pptx-native: Marp source {marp_path} produced no slides")
 
+    tokens = load_modernist_design_tokens(repo_root)
+
     when = now or datetime.now(timezone.utc)
     date_str = export_date or when.strftime("%Y-%m-%d")
     out_dir = repo_root / "presentations" / slug / "src" / "pptx"
     out_path = out_dir / f"{slug}-deck-native-{date_str}.pptx"
 
-    model = slide_model_to_json(slides)
+    model = slide_model_to_json(slides, tokens=tokens)
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as handle:
         json.dump(model, handle)
         model_path = Path(handle.name)
