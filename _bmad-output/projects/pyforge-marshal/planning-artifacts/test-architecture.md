@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: marshal
-source_fingerprint: 01e91fcb9f255b41
-story_count: 436
-test_file_count: 240
+source_fingerprint: 5f113c933d61b5e4
+story_count: 438
+test_file_count: 241
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-marshal`
-- **Stories parsed:** 436
+- **Stories parsed:** 438
 - **Epics parsed:** 85
-- **Test files inventoried:** 240 under `src/shared/packages/pyforge-marshal/tests/`
+- **Test files inventoried:** 241 under `src/shared/packages/pyforge-marshal/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `01e91fcb9f255b41`
+- **Source fingerprint:** `5f113c933d61b5e4`
 
 ## Risk Assessment
 
@@ -211,6 +211,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-marshal/tests/unit/test_deploy_renderers.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_derived_context.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch.py` | unit | none observed |
+| `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cap4_verification_reporting.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_cfe_commit.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_completion.py` | unit | none observed |
 | `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_flag_gate.py` | unit | none observed |
@@ -537,6 +538,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 22.17 | A land-only refusal names the gate that refused it | none observed |
 | 22.18 | A landing heals a spec-surface baseline conflict by re-stamping on main's bas... | none observed |
 | 22.19 | A landing unions the flag registry when two flag stories land in turn | none observed |
+| 22.20 | A formatting-only change never reaches verification unnamed | none observed |
+| 22.21 | A story that recommends a follow-up review lands with its row | none observed |
 | 23.1 | Wall-clock fallback derivation from promoted-spec revision fields | none observed |
 | 23.2 | Wall-clock is never blended with active-compute | none observed |
 | 23.3 | The coverage caption partitions by true reason | none observed |
