@@ -154,9 +154,7 @@ def test_route_sets_csp_and_streams(tmp_path: Path, monkeypatch: pytest.MonkeyPa
     assert "access-control-allow-origin" not in {k.lower() for k in response.headers}
 
 
-def test_route_streams_twin_root_without_path_segment(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_route_streams_twin_root_without_path_segment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     tree = _tree(tmp_path, enabled=True)
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
     app = FastAPI()
