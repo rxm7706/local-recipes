@@ -1,8 +1,11 @@
 """Serial ``pr-preflight`` runner with per-lane journaling (Story 71.1, CAP-159).
 
 Reads ``pr-preflight-lanes`` from ``pixi.toml``, flattens nested ``depends-on``
-graphs into leaf lanes, runs each as ``pixi run --frozen -e <env> <task>``, stops
-on the first non-zero exit, and appends one JSON line to ``.steward/preflight-runs.jsonl``.
+graphs into leaf lanes, selects the lanes CI would run for the diff (Story 71.2,
+``preflight_ci``: read from ``.github/workflows/*.yml`` at run time), runs each
+selected lane as ``pixi run --frozen -e <env> <task>``, stops on the first non-zero
+exit, and appends one JSON line to ``.steward/preflight-runs.jsonl`` carrying the
+selection and the workflow rule that skipped each skipped lane.
 Not a steward CLI duty — ``main()`` owns the exit code (AD-8).
 """
 
@@ -20,6 +23,8 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from pyforge.steward import preflight_ci
 
 ROOT_AGGREGATE = "pr-preflight-lanes"
 DEFAULT_INVOKING_ENV = "pyforge-guild"
@@ -164,7 +169,7 @@ def run_preflight(
     invoking_env: str | None = None,
     run_lane: Callable[[Lane], int] | None = None,
 ) -> int:
-    """Run all lanes; return exit code 0 / 1 / 2."""
+    """Run CI-selected lanes; return exit code 0 / 1 / 2."""
     repo_root = repo_root.resolve()
     pixi_file = pixi_path or (repo_root / "pixi.toml")
     if not pixi_file.is_file():
@@ -177,6 +182,16 @@ def run_preflight(
     except PreflightConfigError as exc:
         print(f"preflight: {exc}", file=sys.stderr)
         return EXIT_CONFIG
+
+    selection = preflight_ci.select_lanes(repo_root, lanes, pixi_data)
+    lanes = [lane for lane in lanes if selection.is_selected(lane)]
+    skipped_count = len(selection.verdicts) - len(lanes)
+    note = f" ({selection.all_reason})" if selection.all_reason else ""
+    print(
+        f"preflight: running {len(lanes)} of {len(selection.verdicts)} lanes, "
+        f"{skipped_count} skipped by their workflow's own rules{note}",
+        file=sys.stderr,
+    )
 
     lane_runner = run_lane or (lambda lane: _default_run_lane(repo_root, lane))
     run_id = str(uuid.uuid4())
@@ -249,6 +264,7 @@ def run_preflight(
         "total_seconds": total_seconds,
         "verdict": verdict,
         "invoking_environment": env,
+        "selection": selection.to_journal(),
         "lanes": [asdict(r) for r in results],
     }
     _append_journal(repo_root, record)

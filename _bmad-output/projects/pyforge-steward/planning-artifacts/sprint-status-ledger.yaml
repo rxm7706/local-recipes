@@ -294,7 +294,7 @@ development_status:
   7-5-the-image-proves-itself-at-build-time: done
   70-1-steward-reads-the-workspace-source-and-branch-and-origin-main-by-their-full-refs: done
   71-1-every-preflight-run-journals-each-lane-s-wall-time-and-exit-code: done
-  71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files: backlog
+  71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files: done
   71-3-selected-lanes-run-concurrently-and-share-no-mutable-state: backlog
   71-4-a-station-s-coverage-gate-reuses-its-own-suite-s-run: backlog
   71-5-the-two-lanes-every-branch-runs-fit-the-budget: backlog
