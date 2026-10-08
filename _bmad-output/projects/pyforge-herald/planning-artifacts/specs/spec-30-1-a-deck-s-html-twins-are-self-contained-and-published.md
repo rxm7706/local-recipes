@@ -2,7 +2,8 @@
 title: "30.1: A deck's HTML twins are self-contained and published"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '5b5951211ecf10c1b01c5fd49f0ebf51e85c82fd'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
