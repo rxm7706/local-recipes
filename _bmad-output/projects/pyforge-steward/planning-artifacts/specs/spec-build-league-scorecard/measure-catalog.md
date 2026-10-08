@@ -5,8 +5,11 @@ file; do not invent a ninth steering number here.
 
 ## Registry
 
-Config names every measure. A new source is a new row. A dead source is
-**archived** (id kept; never reused). States:
+Config names every measure. **Authoritative state** lives in
+`src/shared/packages/pyforge-steward/measures/measures.yaml` (Story 62.2);
+this companion documents dimension and source prose. A new source is a new
+row starting **off**. A dead source is **archived** (id kept; never reused).
+States:
 
 | State | Steers work? |
 |---|---|
@@ -17,7 +20,7 @@ Config names every measure. A new source is a new row. A dead source is
 A new row starts `off` until the operator flips it `on`. Consumers may cite
 only `on` rows. They must not invent a substitute for `off` or `archived`.
 
-## First cut (all `on`, 2026-09-15)
+## First cut (2026-09-15)
 
 | id | Dimension | Source (already counted) | State | Notes |
 |---|---|---|---|---|

@@ -1,0 +1,46 @@
+# Build League measure catalog config (Story 62.2, spec-build-league-scorecard CAP-2).
+# Git is the edit store — flip state here; companion prose lives in measure-catalog.md.
+
+catalog:
+  name: build-league-measures
+  companion: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md
+
+# Ids retired and removed from `measures` stay listed here so the id can never be reused.
+archived_ids: []
+
+measures:
+  warden-verdict:
+    dimension: human
+    source: Warden verdict rungs
+    state: on
+    notes: Q8 remains the PR gate
+  owner-work-class:
+    dimension: human
+    source: steward discovery owner / work_class
+    state: on
+    notes: 03 work only
+  gate-record-outcomes:
+    dimension: agent
+    source: gate-record.json per-story commands
+    state: on
+  journal-timing:
+    dimension: agent
+    source: journal.json run/phase timing
+    state: on
+  run-cost-usd:
+    dimension: agent
+    source: driver.py per-run total_cost_usd
+    state: on
+  ledger-throughput:
+    dimension: team
+    source: sprint ledger stories to done
+    state: on
+  detector-pass-fail:
+    dimension: team
+    source: detector / detectors-ci vector
+    state: on
+  five-tier-completeness:
+    dimension: team
+    source: five-tier 8x5 ladder
+    state: on
+    notes: never score 01/02 work
