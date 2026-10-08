@@ -13,7 +13,7 @@ from unittest.mock import patch
 import pytest
 from django.core.management import call_command
 from django.test.utils import override_settings
-from pyforge.core.flags import read_boolean
+from django_pyforge.flags import evaluate_from_source
 
 from django_warden_fabric.fleet import FLEET_SCAN_FLAG
 from django_warden_fabric.models import FleetRepo
@@ -109,7 +109,7 @@ def fleet_flags_on(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     tree = tmp_path / "flags-on.json"
     tree.write_text(json.dumps(_flag_tree(on=True)), encoding="utf-8")
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
-    assert read_boolean(FLEET_SCAN_FLAG, flags_path=tree) is True
+    assert evaluate_from_source(key=FLEET_SCAN_FLAG, source=tree) is True
     return tree
 
 
@@ -118,7 +118,7 @@ def fleet_flags_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     tree = tmp_path / "flags-off.json"
     tree.write_text(json.dumps(_flag_tree(on=False)), encoding="utf-8")
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
-    assert read_boolean(FLEET_SCAN_FLAG, flags_path=tree) is False
+    assert evaluate_from_source(key=FLEET_SCAN_FLAG, source=tree) is False
     return tree
 
 
