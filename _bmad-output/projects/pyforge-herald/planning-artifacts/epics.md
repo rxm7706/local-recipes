@@ -1313,7 +1313,7 @@ So that I can see the current deck without a download or a desktop application.
 **When** the deck list, the twin route and the viewer land
 **Then** `/stations/herald/decks/` lists every published deck, and `/stations/herald/decks/<slug>/view/` renders its twin with every asset request answered by the portal's own origin, which the Playwright run proves by recording zero requests to another origin; a `.pptx` is offered only as a download
 **And** an anonymous call is refused and a caller without the herald role gets 403; with the flag OFF the list and viewer answer 404 and the home page is unchanged; `platform-ci-local -- --test` and `pyforge-herald-test` are green
-**Status:** backlog
+**Status:** done
 
 ## Epic 31: The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56)
 
