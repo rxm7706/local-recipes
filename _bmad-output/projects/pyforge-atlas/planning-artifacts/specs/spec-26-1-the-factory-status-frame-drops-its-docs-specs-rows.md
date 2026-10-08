@@ -2,7 +2,8 @@
 title: "26.1: The factory-status frame drops its docs/specs rows"
 type: 'chore'
 created: '2026-09-29'
-status: 'backlog'
+status: 'done'
+baseline_revision: '8a2da2c010aec6578d6b6546a321affac249bb1d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -108,4 +109,33 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - (layers: blind-hunter, edge-case-hunter, verification-gap, intent-alignment) No defects against acceptance criteria; diff matches CAP-11 relay intent.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Removed the legacy `docs/specs` source from the factory-status frame (`read_spec_statuses`, `specs_dir`, and related rows), updated factory-status page copy, and aligned unit/integration tests so dry-run asserts zero `docs/specs` rows.
+
+**Files changed:**
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py` — two-artifact frame only (sprint + epics).
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py` — dropped `specs_dir` wiring; page text no longer names `docs/specs/`.
+- `src/shared/packages/pyforge-atlas/tests/unit/test_dashboard_factory_status.py` — removed spec-reader tests; assert no `docs/specs` rows.
+- `src/shared/packages/pyforge-atlas/tests/integration/dashboard/conftest.py` — BMAD fixture no longer builds temp `docs/specs`.
+- `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_dryrun.py` — assertions and calls updated for Story 26.1.
+- `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_e2e.py` — `build_dashboard` no longer takes `specs_dir`.
+- `src/shared/packages/pyforge-atlas/tests/integration/dashboard/test_dashboard_provenance.py` — same.
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md` — surface reconcile (Story 26.1 paths).
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` — co-governor surface reconcile.
+
+**Review:** 0 patches; nothing deferred.
+
+**Verification:**
+- `pixi run -e pyforge-atlas kedro-test` — exit 0.
+- `pixi run -e pyforge-atlas kedro-catalog-check` — exit 0 (69 passed).
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog entries (no `--write-baseline`).
+
+**Residual risk:** None for this relay; doctor Story 37.1 still owns emptying `docs/specs/` on disk.
