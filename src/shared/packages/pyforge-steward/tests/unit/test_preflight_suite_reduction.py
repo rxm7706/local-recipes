@@ -293,9 +293,7 @@ def test_derive_suite_lane_override_happy_path(tmp_path: Path) -> None:
             }
         }
     }
-    override = psr.derive_suite_lane_override(
-        repo, station="happy", pixi_data=pixi, gate_plan=gate_plan
-    )
+    override = psr.derive_suite_lane_override(repo, station="happy", pixi_data=pixi, gate_plan=gate_plan)
     assert isinstance(override, psr.SuiteLaneOverride)
     assert override.journal["suite_reduction"] is True
 
