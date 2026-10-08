@@ -563,16 +563,18 @@ def _add_measure_subparsers(measure_parser: argparse.ArgumentParser) -> None:
         dest="measure_verb",
         metavar="{check,list}",
     )
-    measure_subs.add_parser(
+    check = measure_subs.add_parser(
         "check",
         help="validate measure declarations (new rows off, no archived id reuse)",
     )
-    measure_subs.add_parser("list", help="every measure with dimension, source, and state")
-    for sub in measure_subs.choices.values():
+    listing = measure_subs.add_parser(
+        "list", help="every measure with dimension, source, and state"
+    )
+    for sub in (check, listing):
         sub.add_argument(
             "--measures-dir", default=argparse.SUPPRESS, metavar="DIR", help=measures_help
         )
-        sub.add_argument("--json", action=argparse.SUPPRESS, help=json_help)
+        sub.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=json_help)
 
 
 def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
