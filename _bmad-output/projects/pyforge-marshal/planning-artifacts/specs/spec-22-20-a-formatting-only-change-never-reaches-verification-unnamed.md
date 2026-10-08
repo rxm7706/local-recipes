@@ -2,7 +2,8 @@
 title: "22.20: A formatting-only change never reaches verification unnamed"
 type: 'fix'
 created: '2026-10-08'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'ce29e073d3375a852b194f034613d4f249a67d10'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -160,3 +161,24 @@ Type / Effort / Deps: fix / S / none.
 - Mutation: move the ruff pass back after `_reconcile_fix_turn_spec_surface` in `_maybe_run_verify_fix_turn` and re-run the station suite. The 29.2-order test fails, and re-verification refuses at `MRS-GATE-001`. Restore it.
 - On the next fix turn that leaves a story file unformatted, the run journal shows `dispatch-ruff-format` before the turn's `step: reconcile` observation, and re-verification passes the surface guard with no hand memlog edit.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (review layers consolidated; no actionable defects on the diff)
+
+## Auto Run Result
+
+Status: done
+
+- **Summary:** After a verify fix turn commits WIP edits, the supervisor now runs the pre-verify ruff pass before Story 85.5 spec-surface reconcile, so formatting commits are named and stamped together with the turn's paths before re-verification runs `spec_surface_reconcile.py`.
+- **Files changed:**
+  - `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_supervisor/__main__.py` — insert `_run_and_journal_ruff_format` between WIP commit and reconcile in `_maybe_run_verify_fix_turn`.
+  - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_supervisor_verify_fix.py` — order oracle and Herald 29.2 journal-shape tests.
+  - `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_ruff_format.py` — pins finalize and CAP-4 verification order (ruff then verify, no reconcile).
+  - `spec-pyforge-marshal/.memlog.md` and `spec-pyforge-core/.memlog.md` — surface reconcile entries for governed paths (no baseline stamp in this run).
+- **Review:** No patches applied; nothing deferred.
+- **Verification:** `pyforge-marshal-test` pass; `lint-types` pass; `python scripts/spec_surface_reconcile.py` exit 0 after memlog appends. `pyforge-deps-test` fails on pre-existing `pyforge-herald` pixi run-deps gap (`asgiref`, `fastapi`) — not introduced by this story.
+- **Residual risk:** None beyond the existing herald packaging drift noted above.
