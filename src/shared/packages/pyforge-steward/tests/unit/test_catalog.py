@@ -1,5 +1,5 @@
-"""Story 60.1 — the catalog config names backends and sources
-(spec-self-hosted-bmad-marketplace CAP-1 / spec-pyforge-steward CAP-117).
+"""Story 60.1 / 60.4 — estate catalog config and thin browse indexes
+(spec-self-hosted-bmad-marketplace CAP-1 CAP-4 CAP-7 / spec-pyforge-steward CAP-117).
 
 Git is the edit store; backends and sources are declared in ``catalog.yaml``
 and bound to plugins; a new backend or source is a plugin, not a rewrite.
@@ -13,12 +13,15 @@ import textwrap
 from pathlib import Path
 
 import pytest
+import yaml
 
 from pyforge.steward.bootstrap import repo_root
 from pyforge.steward.catalog import (
+    BROWSE_INDEX_RELATIVE,
     CATALOG_RELATIVE,
     CLAUDE_MANIFEST_RELATIVE,
     CODEX_MANIFEST_RELATIVE,
+    FRAME_INDEX_RELATIVE,
     KIND_FRAME,
     KIND_MODULE,
     STATES,
@@ -774,11 +777,14 @@ def test_render_writes_both_manifests_with_required_keys(tmp_path: Path) -> None
     )
     rendered = engine.render(write=True)
     assert rendered.ok
-    assert set(rendered.manifests) == {CLAUDE_MANIFEST_RELATIVE.as_posix(), CODEX_MANIFEST_RELATIVE.as_posix()}
-    assert rendered.written == (
-        str(engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE),
-        str(engine.catalog_dir / CODEX_MANIFEST_RELATIVE),
-    )
+    assert set(rendered.manifests) == {
+        CLAUDE_MANIFEST_RELATIVE.as_posix(),
+        CODEX_MANIFEST_RELATIVE.as_posix(),
+        FRAME_INDEX_RELATIVE.as_posix(),
+        BROWSE_INDEX_RELATIVE.as_posix(),
+    }
+    assert str(engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE) in rendered.written
+    assert str(engine.repo_root / FRAME_INDEX_RELATIVE) in rendered.written
     claude = json.loads((engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE).read_text(encoding="utf-8"))
     assert claude["name"] == "test-catalog"
     assert claude["owner"] == {"name": "tester"}
@@ -813,6 +819,42 @@ def test_a_module_listing_without_a_repository_is_a_finding_not_a_silent_omissio
     rendered = engine.render(write=True)
     assert rendered.ok is False and rendered.written == ()
     assert not (engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE).exists()
+
+
+def test_render_writes_frame_index_and_browse_yaml(tmp_path: Path) -> None:
+    engine = _engine(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
+    engine.sources.register(
+        _CustomSource(
+            [
+                _row("mod-a", "extra", kind=KIND_MODULE),
+                _row("pyforge/x", "extra", kind=KIND_FRAME, link="docs/foundry/frames/x.frame.md"),
+            ]
+        )
+    )
+    assert engine.render(write=True).ok
+    frame_index = yaml.safe_load((tmp_path / FRAME_INDEX_RELATIVE).read_text(encoding="utf-8"))
+    browse = yaml.safe_load((tmp_path / BROWSE_INDEX_RELATIVE).read_text(encoding="utf-8"))
+    assert frame_index["generated_by"] == "steward catalog render"
+    assert len(frame_index["frames"]) == 1
+    assert frame_index["frames"][0]["name"] == "pyforge/x"
+    assert frame_index["frames"][0]["trust_tier"] == TIER_UNVERIFIED
+    assert browse["listings"][0]["kind"] == KIND_FRAME
+    assert any(row["name"] == "mod-a" and row["kind"] == KIND_MODULE for row in browse["listings"])
+
+
+def test_io_matrix_new_frame_listing_appears_on_browse_after_render(tmp_path: Path) -> None:
+    """Story 60.4 — a new Frame listing → row on the browse list after render."""
+    engine = _engine(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
+    source = _CustomSource([_row("pyforge/first", "extra", kind=KIND_FRAME)], plugin_name="x")
+    engine.sources.register(source)
+    assert engine.render(write=True).ok
+    browse_before = yaml.safe_load((tmp_path / BROWSE_INDEX_RELATIVE).read_text(encoding="utf-8"))
+    assert len(browse_before["listings"]) == 1
+    source._rows.append(_row("pyforge/second", "extra", kind=KIND_FRAME))
+    assert engine.render(write=True).ok
+    browse_after = yaml.safe_load((tmp_path / BROWSE_INDEX_RELATIVE).read_text(encoding="utf-8"))
+    names = {row["name"] for row in browse_after["listings"]}
+    assert names == {"pyforge/first", "pyforge/second"}
 
 
 def test_a_listing_change_without_rerender_is_manifest_drift(tmp_path: Path) -> None:
@@ -1130,8 +1172,16 @@ def test_real_tree_pointers_use_the_repo_relative_directory_form(capsys) -> None
     assert payload["catalog_dir"] == str((repo_root() / CATALOG_RELATIVE).resolve())
 
 
-def test_real_tree_estate_registry_is_empty_and_names_its_source() -> None:
-    import yaml
+def test_real_tree_browse_indexes_are_in_sync() -> None:
+    root = repo_root()
+    assert main(["catalog", "render", "--check"]) == EXIT_OK
+    frame_index = yaml.safe_load((root / FRAME_INDEX_RELATIVE).read_text(encoding="utf-8"))
+    browse = yaml.safe_load((root / BROWSE_INDEX_RELATIVE).read_text(encoding="utf-8"))
+    assert len(frame_index["frames"]) == EXPECTED_COUNT
+    assert len(browse["listings"]) == _WIELDED_MODULE_COUNT + EXPECTED_COUNT
+    assert all(row.get("trust_tier") and (row.get("link") or row.get("install_hint")) for row in browse["listings"])
 
+
+def test_real_tree_estate_registry_is_empty_and_names_its_source() -> None:
     registry = yaml.safe_load((default_catalog_dir() / "registry" / "estate.yaml").read_text(encoding="utf-8"))
     assert registry == {"source": "estate-listings", "modules": []}
