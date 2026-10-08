@@ -22,8 +22,13 @@ def _node_and_pptxgenjs_available() -> bool:
     return (Path(prefix) / "lib" / "node_modules" / "pptxgenjs-plus").is_dir()
 
 
+@pytest.fixture
+def _no_stamp_git(monkeypatch):
+    monkeypatch.setattr("pyforge.herald.stamps.write_stamp", lambda *_a, **_k: None)
+
+
 @pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")
-def test_fixture_render_read_back_with_python_pptx(tmp_path: Path, monkeypatch) -> None:
+def test_fixture_render_read_back_with_python_pptx(tmp_path: Path, monkeypatch, _no_stamp_git) -> None:
     slug = "fixture-deck"
     marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
     marp_dir.mkdir(parents=True)
@@ -70,7 +75,7 @@ marp: true
 
 
 @pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")
-def test_second_run_retires_older_native_kind(tmp_path: Path) -> None:
+def test_second_run_retires_older_native_kind(tmp_path: Path, _no_stamp_git) -> None:
     slug = "retire-deck"
     marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
     marp_dir.mkdir(parents=True)

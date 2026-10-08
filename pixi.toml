@@ -897,7 +897,7 @@ jsonschema = ">=4.26.0"
 # (no tomli: python 3.14's stdlib tomllib serves detectors.py / index_freshness_check.py; tomli is their <3.11 fallback only)
 pytest = ">=9.1.1"                # pyforge-station-coverage-gates' scripts/coverage_gates_ci.py
 pytest-cov = ">=7.1.0"
-pptxgenjs-plus = "4.2.1"          # Story 32.1 (CAP-57): SelfExplainML build (node 24); >=4.2.1 would pull 4.3.4/node 26 and break codegraph's node 24 pin
+pptxgenjs-plus = "4.2.1.*"        # Story 32.1 (CAP-57): SelfExplainML build (node 24); >=4.2.1 would pull 4.3.4/node 26 and break codegraph's node 24 pin
 
 [feature.pyforge-guild.pypi-dependencies]
 sqlite-vec = ">=0.1.9"            # headroom-ai's [proxy] extra; not on conda-forge
