@@ -28,6 +28,7 @@ __all__ = (
     "RECALL_FEEDBACK_HEADER",
     "RECALL_LAYER",
     "build_recall_query",
+    "format_recall_feedback_for_injection",
     "layer_enabled",
     "recall_feedback_output_relpath",
     "render_recall_feedback_block",
@@ -59,6 +60,24 @@ def recall_feedback_output_relpath(project_slug: str) -> str:
     ``epic-<N>-context.md`` in the same Tier-3 ``implementation-artifacts``
     directory step-01 already reads derived artifacts from."""
     return f"{implementation_artifacts_relpath(project_slug)}/recall-feedback.md"
+
+
+def format_recall_feedback_for_injection(
+    *,
+    ok: bool,
+    grounded: bool,
+    text: str = "",
+    citation: str | None = None,
+) -> str:
+    """Story 47.4 (CAP-4): map one parsed ``scribe recall`` outcome to injected text.
+
+    A genuine grounded miss (``ok`` and not ``grounded``) and every fail-open
+    shape (``ok=False``, query skipped upstream) both produce zero injected
+    text — never a synthesized "no relevant corrections found" line. Only a
+    grounded hit reaches ``render_recall_feedback_block``."""
+    if ok and grounded:
+        return render_recall_feedback_block(text=text, citation=citation)
+    return ""
 
 
 def render_recall_feedback_block(*, text: str, citation: str | None) -> str:

@@ -1,5 +1,5 @@
-"""Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1): the pure query/format
-half of pre-launch recall injection -- ``core/recall_feedback.py``.
+"""Stories 47.1/47.4 (SPEC-marshal-recall-in-the-loop CAP-1/CAP-4): the pure
+query/format half of pre-launch recall injection -- ``core/recall_feedback.py``.
 
 No filesystem, no subprocess (AD-4): every assertion here is a plain
 string/path computation. The honesty guarantee (CAP-4: a grounded miss is
@@ -36,6 +36,34 @@ class TestRecallFeedbackOutputRelpath:
         assert acme != widget
         assert "acme" in acme
         assert "widget" in widget
+
+
+class TestFormatRecallFeedbackForInjection:
+    """Story 47.4 (CAP-4): grounded miss → zero injected text; hit → labeled block."""
+
+    def test_grounded_miss_recall_answer_produces_empty_injected_text(self) -> None:
+        block = recall_feedback.format_recall_feedback_for_injection(ok=True, grounded=False)
+        assert block == ""
+
+    def test_grounded_hit_produces_a_non_empty_labeled_block(self) -> None:
+        block = recall_feedback.format_recall_feedback_for_injection(
+            ok=True,
+            grounded=True,
+            text="always run X before Y",
+            citation=".claude/memory/feedback/example.md",
+        )
+        assert block.startswith(recall_feedback.RECALL_FEEDBACK_HEADER)
+        assert "always run X before Y" in block
+        assert "Source: .claude/memory/feedback/example.md" in block
+
+    def test_scribe_unavailable_produces_empty_injected_text(self) -> None:
+        assert recall_feedback.format_recall_feedback_for_injection(ok=False, grounded=False) == ""
+
+    def test_miss_and_hit_are_distinguishable(self) -> None:
+        miss = recall_feedback.format_recall_feedback_for_injection(ok=True, grounded=False)
+        hit = recall_feedback.format_recall_feedback_for_injection(ok=True, grounded=True, text="correction body")
+        assert miss == ""
+        assert hit != ""
 
 
 class TestRenderRecallFeedbackBlock:

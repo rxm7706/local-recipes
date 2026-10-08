@@ -2,8 +2,8 @@
 title: '47.4: A genuine recall miss injects nothing, never a fabricated confidence claim'
 type: 'feature' # feature | bugfix | refactor | chore
 created: '2026-09-18'
-status: 'ready-for-dev' # draft | ready-for-dev | in-progress | in-review | done | blocked
-baseline_revision: ''
+status: 'done' # draft | ready-for-dev | in-progress | in-review | done | blocked
+baseline_revision: 'e8d2da55642b04eefe38398166dbadd65bcb99d8'
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
 followup_review_recommended: false # set by step-04 on status: done; step-01 READS this — false HALTs, true allows one follow-up then forces false
 context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md']
@@ -55,4 +55,29 @@ sentence, not a "checked, nothing found" note. Absence of a block is itself the 
   the formatting helper a grounded-miss `RecallAnswer` and asserts the injected text is empty/
   absent, contrasted against a grounded-hit case in the same test module
 
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — diff reviewed against intent-contract and matrix rows)
+
 ## Auto Run Result
+
+Status: done
+
+Summary: Added `format_recall_feedback_for_injection` in `core/recall_feedback.py` so the CAP-4 empty-answer branch is explicit (grounded miss and fail-open → `""`; grounded hit → labeled block). `inject_recall_feedback` delegates to it.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/recall_feedback.py` — new formatter with empty miss branch
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` — call site uses formatter
+- `src/shared/packages/pyforge-marshal/tests/unit/test_recall_feedback.py` — Story 47.4 matrix tests
+- `spec-marshal-recall-in-the-loop/.memlog.md` and `spec-pyforge-marshal/.memlog.md` — surface reconcile entries
+
+Review: no patches, deferrals, or rejections.
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test -k recall` — 61 passed, 1 skipped
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped
+- `python scripts/spec_surface_reconcile.py` — OK
+
+Residual risk: none identified; harness integration for grounded miss remains covered by existing `test_harness_bmadloop_recall.py` rows.
