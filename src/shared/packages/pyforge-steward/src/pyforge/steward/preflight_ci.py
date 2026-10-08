@@ -944,7 +944,7 @@ def _service_mutex_key_from_states(states: Sequence[_State], lane: LaneLike) -> 
     services = job.get("services")
     if not isinstance(services, dict) or not services:
         return None
-    return f"{site.workflow}:{site.job}:{','.join(sorted(str(k) for k in services))}"
+    return f"services:{','.join(sorted(str(k) for k in services))}"
 
 
 def lane_service_mutex_key(
@@ -959,6 +959,48 @@ def lane_service_mutex_key(
     return keys.get((lane.task, lane.environment))
 
 
+def _static_service_mutex_key(
+    lane: LaneLike,
+    workflows: Sequence[Workflow],
+    pixi_data: Mapping[str, Any],
+) -> str | None:
+    for workflow in workflows:
+        if workflow.pull_request is None:
+            continue
+        for job_id, job in workflow.jobs.items():
+            if not isinstance(job, dict):
+                continue
+            steps = job.get("steps")
+            if not isinstance(steps, list):
+                continue
+            if not any(
+                isinstance(step, dict)
+                and isinstance(step.get("run"), str)
+                and _step_matches(lane, step["run"], pixi_data)
+                for step in steps
+            ):
+                continue
+            services = job.get("services")
+            if isinstance(services, dict) and services:
+                return f"services:{','.join(sorted(str(k) for k in services))}"
+    return None
+
+
+def static_service_mutex_keys(
+    repo_root: Path,
+    lanes: Sequence[LaneLike],
+    pixi_data: Mapping[str, Any],
+) -> dict[tuple[str, str], str | None]:
+    """Map ``(task, environment)`` to a service mutex key by reading workflow YAML only."""
+    try:
+        workflows = load_workflows(repo_root.resolve())
+    except _SelectAll:
+        return {(lane.task, lane.environment): None for lane in lanes}
+    return {
+        (lane.task, lane.environment): _static_service_mutex_key(lane, workflows, pixi_data) for lane in lanes
+    }
+
+
 def service_mutex_keys(
     repo_root: Path,
     lanes: Sequence[LaneLike],
@@ -966,7 +1008,11 @@ def service_mutex_keys(
     *,
     process: PosixProcess | None = None,
 ) -> dict[tuple[str, str], str | None]:
-    """Map ``(task, environment)`` to a service mutex key (or ``None``)."""
+    """Map ``(task, environment)`` to a service mutex key (or ``None``).
+
+    Uses the same firing-site logic as lane selection (runs workflow ``changes`` jobs).
+    ``run_preflight`` prefers :func:`static_service_mutex_keys` to avoid a second evaluation pass.
+    """
     repo_root = repo_root.resolve()
     proc = process or PosixProcess()
     try:

@@ -357,7 +357,7 @@ def run_preflight(
     if worker_count < 1:
         worker_count = 1
 
-    mutex_keys = preflight_ci.service_mutex_keys(repo_root, lanes, pixi_data)
+    mutex_keys = preflight_ci.static_service_mutex_keys(repo_root, lanes, pixi_data)
 
     use_subprocess = run_lane_ctx is None and run_lane is None
     injected_runner: Callable[[LaneRunContext], int] | None
