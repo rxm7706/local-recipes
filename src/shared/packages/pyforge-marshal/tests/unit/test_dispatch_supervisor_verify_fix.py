@@ -558,8 +558,7 @@ def _finalize_with(
 def test_a_green_fix_turn_commits_reverifies_and_lands_through_the_tick_loop(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Review M6: push -> verify (failed commands offloaded to a sidecar) -> launch -> wait -> commit -> reconcile ->
-    verify -> land, driven through ``run_dispatch_supervisor`` itself."""
+    """Review M6: push -> verify -> launch -> wait -> commit -> ruff -> reconcile -> verify -> land."""
     monkeypatch.setattr(supervisor_main, "time", loop._FakeClock())
     repo_root, worktree = _fix_ready_repo(tmp_path)
     run_dir = loop._run_dir(repo_root)
@@ -2054,3 +2053,94 @@ def test_a_fix_turn_reconcile_failure_from_changed_files_parks_without_reverifyi
     assert [event for event in events if event[0] == "verify"] == [("verify", 1)]
     outcome = _finalize_outcome(fs)
     assert outcome["failed_step"] == "reconcile"
+
+
+# --------------------------------------------------------------------------
+# Story 22.20 — ruff format before reconcile on the fix turn
+# --------------------------------------------------------------------------
+
+_FORMAT_PATH = "src/shared/packages/pyforge-marshal/tests/unit/test_query_plane_boot.py"
+
+
+def test_a_fix_turn_runs_ruff_format_before_reconcile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Mutation oracle: ruff must run after the WIP commit and before reconcile."""
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(events)
+    order: list[str] = []
+    real_ruff = supervisor_main._run_and_journal_ruff_format
+    real_reconcile = supervisor_main._reconcile_fix_turn_spec_surface
+
+    def _track_ruff(**kwargs: object) -> int:
+        order.append("ruff")
+        return real_ruff(**kwargs)  # type: ignore[arg-type]
+
+    def _track_reconcile(**kwargs: object) -> tuple[bool, str | None]:
+        order.append("reconcile")
+        return real_reconcile(**kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(supervisor_main, "_run_and_journal_ruff_format", _track_ruff)
+    monkeypatch.setattr(supervisor_main, "_reconcile_fix_turn_spec_surface", _track_reconcile)
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+
+    _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    reconcile_at = order.index("reconcile")
+    assert reconcile_at > 0
+    assert order[reconcile_at - 1] == "ruff", "fix turn must journal ruff immediately before reconcile"
+
+
+def test_a_fix_turn_journals_ruff_format_before_reconcile_and_reverify_skips_ruff_journal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Herald 29.2 shape: one ruff journal before reconcile; re-verification does not journal ruff again."""
+    from pyforge.marshal.core.dispatch_ruff_format import DispatchRuffFormatResult
+
+    repo_root, worktree = _fix_ready_repo(tmp_path)
+    events: list[tuple] = []
+    vcs = _FixTurnVcs(
+        events,
+        changed_vs_head=(_FORMAT_PATH,),
+    )
+    ruff_invocations = {"n": 0}
+
+    def _ruff(**_kwargs: object) -> DispatchRuffFormatResult:
+        ruff_invocations["n"] += 1
+        if ruff_invocations["n"] == 1:
+            return DispatchRuffFormatResult((_FORMAT_PATH,), True)
+        return DispatchRuffFormatResult((), False)
+
+    monkeypatch.setattr(supervisor_main, "run_dispatch_ruff_format_before_verify", _ruff)
+    _fake_fix_session(monkeypatch, vcs)
+    _scripted_verification(monkeypatch, events, _refused_with_output(_SHORT_TAIL), loop._clean_envelope())
+    fs = loop.FakeFs()
+
+    _finalize(fs, repo_root, worktree, vcs=vcs)
+
+    entries = _entries(fs)
+    ruff_outcomes = [
+        entry
+        for entry in entries
+        if entry.get("kind") == dispatch_core.KIND_DISPATCH_RUFF_FORMAT and entry.get("phase") == "outcome"
+    ]
+    assert len(ruff_outcomes) == 1
+    assert ruff_outcomes[0]["payload"]["committed"] is True
+    assert ruff_outcomes[0]["payload"]["paths"] == [_FORMAT_PATH]
+    reconcile_idx = next(
+        i
+        for i, entry in enumerate(entries)
+        if entry.get("kind") == dispatch_core.KIND_DISPATCH_VERIFY_FIX
+        and entry.get("payload", {}).get("step") == "reconcile"
+    )
+    ruff_idx = next(
+        i for i, entry in enumerate(entries) if entry.get("kind") == dispatch_core.KIND_DISPATCH_RUFF_FORMAT
+    )
+    assert ruff_idx < reconcile_idx
+    reconcile_paths = [
+        entry["payload"]["paths"]
+        for entry in _verify_fix_entries(fs)
+        if entry["payload"].get("step") == "reconcile" and entry["payload"].get("paths")
+    ]
+    assert reconcile_paths == [[_FORMAT_PATH]]
