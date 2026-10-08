@@ -199,6 +199,10 @@ def test_render_applies_modernist_tokens_read_back(tmp_path: Path, _no_stamp_git
 
 Body line one.
 
+```
+snippet()
+```
+
 | K | V |
 |---|---|
 | a | 1 |
@@ -220,6 +224,7 @@ Body line one.
     title_run = _first_run_with_text(slide, "Title slide")
     assert title_run is not None
     assert title_run.font.name == tokens.heading_family
+    assert title_run.font.bold is True
     assert title_run.font.size.pt == pytest.approx(_expected_title_pt(tokens, prs), rel=0.02)
     assert _rgb_hex(title_run.font.color.rgb).lower() == tokens.palette_text.lower()
 
@@ -228,6 +233,12 @@ Body line one.
     assert body_run.font.name == tokens.body_family
     body_pt = tokens.type_body_px * (_slide_width_pt(prs) / tokens.canvas_width_px)
     assert body_run.font.size.pt == pytest.approx(body_pt, rel=0.02)
+
+    code_run = _first_run_with_text(slide, "snippet")
+    assert code_run is not None
+    assert code_run.font.name == tokens.body_family
+    small_pt = tokens.type_small_px * (_slide_width_pt(prs) / tokens.canvas_width_px)
+    assert code_run.font.size.pt == pytest.approx(small_pt, rel=0.02)
 
     table_font_pt = None
     for shape in slide.shapes:
@@ -238,6 +249,25 @@ Body line one.
                 break
     small_pt = tokens.type_small_px * (_slide_width_pt(prs) / tokens.canvas_width_px)
     assert table_font_pt == pytest.approx(small_pt, rel=0.02)
+
+
+@pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")
+def test_render_title_not_bold_when_heading_weight_below_600(tmp_path: Path, _no_stamp_git) -> None:
+    base = _copy_modernist_tokens(tmp_path)
+    styles = base / "styles.css"
+    styles.write_text(
+        styles.read_text(encoding="utf-8").replace("--font-heading-weight: 800;", "--font-heading-weight: 400;"),
+        encoding="utf-8",
+    )
+    slug = "light-head"
+    marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
+    marp_dir.mkdir(parents=True)
+    (marp_dir / f"{slug}-deck-2026-09-01.md").write_text("# Light weight\n", encoding="utf-8")
+    result = pptx_native.export_native_pptx(slug, tmp_path, export_date="2026-09-22")
+    prs = Presentation(str(result.output_path))
+    title_run = _first_run_with_text(prs.slides[0], "Light weight")
+    assert title_run is not None
+    assert title_run.font.bold is False
 
 
 @pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")

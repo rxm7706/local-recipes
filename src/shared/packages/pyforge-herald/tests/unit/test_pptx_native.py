@@ -38,6 +38,7 @@ def test_load_modernist_design_tokens_live_modernist() -> None:
     assert tokens.type_subtitle_px == 40
     assert tokens.type_body_px == 34
     assert tokens.type_small_px == 28
+    assert tokens.type_kicker_px == 24
     assert tokens.pad_x_px == 120
     assert tokens.pad_top_px == 96
     assert tokens.pad_bottom_px == 120
@@ -280,6 +281,21 @@ code line
     assert kinds[6] == "QuoteBlock"
     assert kinds[7] == "ParagraphBlock"
     assert slide.blocks[7].text == "Inline HTML"
+
+
+def test_export_native_pptx_missing_modernist_raises_and_leaves_stub(tmp_path: Path, monkeypatch) -> None:
+    slug = "no-tokens"
+    marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
+    marp_dir.mkdir(parents=True)
+    (marp_dir / f"{slug}-deck-2026-09-01.md").write_text("# One\n", encoding="utf-8")
+    older = tmp_path / "presentations" / slug / "src" / "pptx" / f"{slug}-deck-native-2026-09-01.pptx"
+    older.parent.mkdir(parents=True, exist_ok=True)
+    older.write_bytes(b"keep-me")
+    monkeypatch.setattr("pyforge.herald.stamps.write_stamp", lambda *_a, **_k: None)
+    with pytest.raises(HeraldError, match="theme.json"):
+        pptx_native.export_native_pptx(slug, tmp_path, export_date="2026-09-20")
+    assert older.read_bytes() == b"keep-me"
+    assert not (older.parent / f"{slug}-deck-native-2026-09-20.pptx").exists()
 
 
 def test_run_node_driver_refuses_missing_node(tmp_path: Path, monkeypatch) -> None:
