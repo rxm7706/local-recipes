@@ -4740,7 +4740,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  resolved: 2026-10-08 (bmad-build-auto follow-up review on dispatch/pyforge-atlas/20.4)
+  status: closed
 
 ### DW-FRR-20-7: Follow-up review still recommended for story 20.7
 
