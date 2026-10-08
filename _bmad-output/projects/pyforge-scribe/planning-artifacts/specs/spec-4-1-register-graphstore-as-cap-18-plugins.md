@@ -2,7 +2,7 @@
 title: 'Register GraphStore as CAP-18 plugins (Story 4.1)'
 type: 'feature'
 created: '2026-08-24'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -107,23 +107,50 @@ Do not wrap `FlatFileGraphStore` in a second persistence format. The plugin is a
   - `[low]` `[patch]` extend no-`publish_verdict` source scan to `compile.py` and `graph_store.py`
   - `[low]` `[patch]` Code Map no longer documents `invoke` for store resolution
 
+### 2026-10-08 — Review pass (follow-up)
+- verdicts: 28 findings — high 0, medium 2, low 3, false 2, maybe-false 0; routed: patch 2, defer 18, reject 6
+- findings:
+  - `[medium]` `[patch]` `PYFORGE_GRAPHSTORE_OWNER` unset in tests when `owner=` omitted — added `test_open_graph_store_honors_pyforge_graphstore_owner_env`.
+  - `[medium]` `[patch]` No test that scribe-owner flatfile is not double-registered — added `test_open_graph_store_skips_flatfile_when_scribe_plugin_present`.
+  - `[medium]` `[defer]` Runtime `load_entry_points()` + register-if-missing guard still untested — evidence: no `load_entry_points` in scribe tests; in-process guard now covered.
+  - `[medium]` `[defer]` Diff bundles PG/plane entry points and protocol/format changes beyond Story 4.1 — pre-existing on main from Stories 28.1+ / semantic recall; not introduced by this follow-up.
+  - `[medium]` `[defer]` CLI `graph compile` stale_count line untested at CLI boundary — location: `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py`.
+  - `[medium]` `[defer]` CLI `capture --transcripts` warning forwarding untested — location: `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py`.
+  - `[low]` `[defer]` Empty `PYFORGE_GRAPHSTORE_OWNER` could select wrong owner — location: `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py`.
+  - `[low]` `[defer]` Duplicate hook_spec+owner plugins pick first match — location: `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py`.
+  - `[low]` `[defer]` DSN injected into context for all owners — location: `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py`.
+  - `[low]` `[reject]` SKILL.md not updated for env vars — fix adds docs surface beyond 4.1; agent contract lives in AGENTS.md / station skill elsewhere.
+  - `[low]` `[reject]` Index build lacks compile store lock — separate concurrency story; compile lock already landed elsewhere.
+  - `[false]` `[reject]` `_IN_FLIGHT_STORY_STATUSES` `"review"` vs `"in-review"` — ledger uses `in-review`; compile module includes it (verified in tree).
+  - `[false]` `[reject]` `_index_refresh_declared` paths not anchored — out of 4.1 graph-store scope.
+  - `[medium]` `[defer]` `query_similar` on protocol vs spec Never — steward/semantic stories; spec 4.1 frozen as historical contract.
+  - `[medium]` `[defer]` `compiled_at` JSON field vs spec Never — staleness story scope.
+  - `[medium]` `[defer]` `scribe-graphstore-pg` in pyproject vs spec Code Map — S-28.1 shipped PG plugin; test encodes current estate.
+  - `[low]` `[defer]` `_RecordingStore` omits `query_similar` — tests do not call semantic path on double; defer until double needs semantic matrix row.
+  - `[low]` `[defer]` PluginError uncaught in compile/cli — acceptable fail-fast for misconfigured hooks.
+  - `[low]` `[defer]` Non-ISO `compiled_at` in persisted JSON — flat-file robustness, not 4.1 plugin registration.
+  - `[low]` `[defer]` Failed entry-point load aborts default store — core hooks loading policy, not scribe-specific.
+  - `[medium]` `[reject]` Split entire branch diff to 4.1-only — retrospective; work already merged incrementally on main.
+  - `[low]` `[reject]` Concurrent index vs compile on graph.json — operational concern, not CAP-18 registration defect.
+  - `[low]` `[reject]` Atlas owner undocumented in factory docstring — plane driver is Story 2.6+ scope.
+  - `[medium]` `[reject]` Staleness doc vs `_apply_staleness` implementation — compile staleness story, not factory.
+  - `[low]` `[reject]` Source-text-only `publish_verdict` scan — runtime test `test_factory_and_recall_do_not_publish_verdict_as_pr_gate` covers primary path.
+
 ## Auto Run Result
 
 Status: done
 
-Summary: Registered `FlatFileGraphStore` as the default CAP-18 plugin on `pyforge.core.hooks`. Compile and CLI recall open the store through `open_graph_store`. Reserved steward owner for S-28.1 with an in-process test double only — no PostgreSQL/pgvector.
+Summary: Follow-up review on already-landed CAP-18 graph-store wiring. Closed two verification gaps: env-driven owner selection and in-process “register flatfile only if no scribe plugin” guard.
 
-Files changed:
-- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store.py` — HookSpec constants + `FlatFileGraphStorePlugin`
-- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/graph_store_plugins.py` — owner-selecting factory
-- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py` — default store via factory
-- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py` — recall via factory
-- `src/shared/packages/pyforge-scribe/pyproject.toml` — `scribe-graphstore-flatfile` on `pyforge.core.hooks`
-- `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plugins.py` — I/O matrix + factory spies
-- this spec
+Files changed (this run):
+- `src/shared/packages/pyforge-scribe/tests/unit/test_graph_store_plugins.py` — env owner + duplicate-registration guards
+- `_bmad-output/projects/pyforge-scribe/planning-artifacts/specs/spec-pyforge-scribe/.memlog.md` — surface reconcile for test path
+- this spec — follow-up triage log and run result
 
-Review: 6 patches applied (3 medium, 3 low; follow-up score 12). 0 deferred. Rejected CLI owner flag, production PG stub, `recall.py` factory (library already takes `GraphStore`), README/epics.md drift, first-match races beyond register-if-missing, and `invoke` as the resolution API.
+Review: 2 medium patches applied; 18 deferred (mostly later-story scope on main); 6 rejected as out of scope or false. Prior pass (2026-08-24) patches remain in tree.
 
-Verification: `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — 152 passed.
+Follow-up review recommendation: false (follow-up pass; no high patches).
 
-Residual: production compile/recall CLI always open owner `scribe`. Selecting steward remains a factory `owner=` / injected `store=` concern until S-28.1 ships a real plugin. `followup_review_recommended: true` (score 12).
+Verification: `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — 424 passed, 11 skipped; `python scripts/spec_surface_reconcile.py` — OK.
+
+Residual: Entry-point load + conditional flatfile registration at runtime is still unintegration-tested; PG/plane/protocol evolution intentionally lives in later stories (28.1, semantic recall). Production CLI compile/recall default owner `scribe` unless `PYFORGE_GRAPHSTORE_OWNER` is set.
