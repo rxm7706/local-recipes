@@ -61,9 +61,7 @@ class TestFormatRecallFeedbackForInjection:
 
     def test_miss_and_hit_are_distinguishable(self) -> None:
         miss = recall_feedback.format_recall_feedback_for_injection(ok=True, grounded=False)
-        hit = recall_feedback.format_recall_feedback_for_injection(
-            ok=True, grounded=True, text="correction body"
-        )
+        hit = recall_feedback.format_recall_feedback_for_injection(ok=True, grounded=True, text="correction body")
         assert miss == ""
         assert hit != ""
 
