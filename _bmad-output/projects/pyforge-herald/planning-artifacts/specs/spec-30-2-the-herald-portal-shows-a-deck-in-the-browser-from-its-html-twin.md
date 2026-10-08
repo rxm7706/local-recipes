@@ -2,7 +2,8 @@
 title: '30.2: The herald portal shows a deck in the browser from its HTML twin'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '7b8d08144bd5fa5edff952a6f5382ffdbd490970'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
