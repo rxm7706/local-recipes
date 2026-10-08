@@ -153,8 +153,8 @@
     "pyforge.herald.deck_viewer": {
       "state": "ENABLED",
       "variants": {
-        "on": true,
-        "off": false
+        "off": false,
+        "on": true
       },
       "defaultVariant": "off",
       "metadata": {
