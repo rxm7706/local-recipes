@@ -2081,7 +2081,7 @@ links CFE, which owns the recipe and the submission
 **And** `test_mason_skills.py` asserts the skill exists, names the verbs it teaches, links `.claude/skills/conda-forge-expert/`,
 and carries no CFE gotcha heading (`### G<n>.`), with a planted heading proving the check is not vacuous;
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 19.3: The environment craft skill teaches mason environment lock and check
 
