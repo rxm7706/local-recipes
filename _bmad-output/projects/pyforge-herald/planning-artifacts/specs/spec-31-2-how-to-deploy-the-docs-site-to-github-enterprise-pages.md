@@ -2,7 +2,7 @@
 title: '31.2: How to deploy the docs site to GitHub Enterprise Pages'
 type: 'docs'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 difficulty: 'easy'
 review_loop_iteration: 0
 followup_review_recommended: false
