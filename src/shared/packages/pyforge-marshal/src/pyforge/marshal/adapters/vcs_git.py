@@ -1461,6 +1461,44 @@ class GitVcs:
             raise VcsCommandError(f"git show {ref}:{path} failed: {result.stderr.strip()}")
         return result.stdout
 
+    def merge_file_diff3(self, repo_root: Path, base_text: str, main_text: str, branch_text: str) -> str:
+        """Story 22.19: ``git merge-file -p --diff3 <main> <base> <branch>`` over three scratch files.
+        Exit status is the number of conflicts (capped at 127), so 0..127 is a merge, conflicted or
+        not; anything higher is git's own failure."""
+        scratch = Path(tempfile.mkdtemp(prefix="marshal-merge-file-"))
+        try:
+            files = []
+            for name, text in (("main", main_text), ("base", base_text), ("branch", branch_text)):
+                path = scratch / name
+                path.write_bytes(text.encode("utf-8"))
+                files.append(str(path))
+            result = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "merge-file",
+                    "-p",
+                    "--diff3",
+                    "-L",
+                    "main",
+                    "-L",
+                    "base",
+                    "-L",
+                    "branch",
+                    *files,
+                ]
+            )
+        except OSError as exc:
+            raise VcsCommandError(f"git merge-file could not stage its inputs: {exc}") from exc
+        finally:
+            shutil.rmtree(scratch, ignore_errors=True)
+        if result.returncode < 0 or result.returncode > 127:
+            raise VcsCommandError(
+                f"git merge-file failed (exit {result.returncode}): {result.stderr.strip() or result.stdout.strip()}"
+            )
+        return result.stdout
+
     def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
         """Story 51.1: the modern two-arg ``--write-tree`` form (git computes
         the merge base itself), with the messages section left on so a

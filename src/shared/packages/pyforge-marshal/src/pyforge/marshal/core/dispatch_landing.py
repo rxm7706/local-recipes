@@ -7,10 +7,12 @@ self-report without passing independent verification (Story 22.3).
 
 from __future__ import annotations
 
+import ast
 import json
 import re
 from collections import Counter
 from collections.abc import Mapping
+from dataclasses import dataclass
 from enum import StrEnum
 
 from . import promotion
@@ -154,6 +156,24 @@ DEFERRED_WORK_BASENAME = "deferred-work-ledger.md"
 TEAM_MEMORY_INDEX_REL = ".claude/memory/MEMORY.md"
 SPEC_SURFACE_BASELINE_REL = "scripts/.spec-surface-baseline.json"
 
+# Story 22.19: the four tracked files every flag story registers its key in, always by appending at the
+# same place. Only these exact repo-relative paths are mechanical flag-registry conflicts.
+FLAG_REGISTRY_JSON_REL_PATHS: tuple[str, ...] = (
+    "src/platform/config/flags.json",
+    "src/platform/config/flag-overlays.json",
+)
+# Each Python registry's named dict literals: the only places an addition-only hunk may sit.
+FLAG_REGISTRY_PYTHON_TARGETS: Mapping[str, frozenset[str]] = {
+    "src/shared/packages/pyforge-core/tests/unit/test_flags.py": frozenset(
+        {"_SHIPPED_CLOCKS", "expected", "per_environment"}
+    ),
+    "src/platform/tests/test_openfeature_file_flags.py": frozenset({"_SHIPPED_BOOLEANS"}),
+}
+FLAG_REGISTRY_REL_PATHS: tuple[str, ...] = (
+    *FLAG_REGISTRY_JSON_REL_PATHS,
+    *FLAG_REGISTRY_PYTHON_TARGETS,
+)
+
 
 def is_memlog_path(path: str) -> bool:
     """True when ``path`` is a Spec memlog: its basename is ``.memlog.md``, in any project --
@@ -170,6 +190,11 @@ def is_deferred_work_path(path: str) -> bool:
 def is_team_memory_index_path(path: str) -> bool:
     """True when ``path`` is the checked-in team-memory index (Story 83.11)."""
     return path.replace("\\", "/") == TEAM_MEMORY_INDEX_REL
+
+
+def is_flag_registry_path(path: str) -> bool:
+    """True when ``path`` is exactly one of the four flag-registry files (Story 22.19)."""
+    return path.replace("\\", "/") in FLAG_REGISTRY_REL_PATHS
 
 
 def _baseline_entries(text: str) -> dict[str, object]:
@@ -198,12 +223,15 @@ def is_mechanical_conflict_path(
 ) -> bool:
     """True when ``path`` is a known mechanical-only merge conflict: a Spec memlog (Story 78.1;
     the heal still escalates one that is not append-only), a sprint ledger, a deferred-work
-    ledger (Story 83.3), or ``.claude/memory/MEMORY.md`` (Story 83.11). Given ``ledger_rel``
+    ledger (Story 83.3), ``.claude/memory/MEMORY.md`` (Story 83.11), the spec-surface baseline
+    (Story 22.18) or one of the four flag-registry files (Story 22.19). Given ``ledger_rel``
     (the landing project's own ledger), only that exact path is a mechanical ledger -- another
     project's ledger is not this landing's to resolve (Story 59.1). Similarly for
     ``deferred_work_rel`` - only the project's own deferred work ledger."""
     normalized = path.replace("\\", "/")
     if normalized == SPEC_SURFACE_BASELINE_REL:
+        return True
+    if is_flag_registry_path(normalized):
         return True
     if is_team_memory_index_path(normalized):
         return True
@@ -570,6 +598,258 @@ def union_deferred_work_texts(base: str, main: str, branch: str) -> str | None:
     if not result.endswith("\n"):
         result += "\n"
     return result
+
+
+# --- Story 22.19: flag-registry union ---------------------------------------
+
+
+@dataclass(frozen=True)
+class FlagRegistryResolution:
+    """One flag-registry file's merge: its resolved ``text``, or a ``refusal`` detail (``key flags.x``,
+    ``hunk 2 is not ...``) the heal appends to the path as ``path (detail)`` -- exactly one is set."""
+
+    text: str | None = None
+    refusal: str | None = None
+
+
+def _refused(detail: str) -> FlagRegistryResolution:
+    return FlagRegistryResolution(refusal=detail)
+
+
+_MISSING = object()
+
+
+def _canonical_json(doc: object) -> str:
+    """The form ``pyforge.core.flags.render`` emits and both registry files are committed in."""
+    return json.dumps(doc, indent=2) + "\n"
+
+
+def _parse_registry_json(label: str, text: str) -> tuple[dict[str, dict[str, object]] | None, str | None]:
+    """``(document, None)`` or ``(None, refusal detail)``: an object whose every member is an object."""
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        return None, f"the {label} text does not parse as JSON"
+    if not isinstance(doc, dict) or not all(isinstance(member, dict) for member in doc.values()):
+        return None, f"the {label} text has a top-level member that is not an object"
+    return doc, None
+
+
+def _merge_registry_members(
+    base: Mapping[str, object],
+    main: Mapping[str, object],
+    branch: Mapping[str, object],
+    *,
+    prefix: str,
+    descend: bool,
+) -> tuple[dict[str, object], str | None]:
+    """Three-way, key-wise merge of one object level: ``main``'s keys in ``main``'s order, then each
+    key only the branch added. A key one side changed (a deletion counts) takes that side; one both
+    sides set equally takes that value; one both changed differently recurses a level when
+    ``descend`` (the top-level members) and is otherwise unresolved, named by its dotted key."""
+    merged: dict[str, object] = {}
+    for key in [*main, *(k for k in branch if k not in main)]:
+        was, ours, theirs = base.get(key, _MISSING), main.get(key, _MISSING), branch.get(key, _MISSING)
+        dotted = ".".join(part for part in (prefix, key) if part)
+        value: object
+        if ours == theirs:
+            value = ours
+        elif ours == was:
+            value = theirs
+        elif theirs == was:
+            value = ours
+        elif descend and isinstance(ours, dict) and isinstance(theirs, dict):
+            value, refusal = _merge_registry_members(
+                was if isinstance(was, dict) else {}, ours, theirs, prefix=dotted, descend=False
+            )
+            if refusal is not None:
+                return {}, refusal
+        else:
+            return {}, f"key {dotted}"
+        if value is not _MISSING:
+            merged[key] = value
+    return merged, None
+
+
+def union_flag_registry_json_texts(base_text: str, main_text: str, branch_text: str) -> FlagRegistryResolution:
+    """Story 22.19: the three-way, key-wise union of one flag-registry JSON file (``flags.json`` or
+    ``flag-overlays.json``) against its merge base.
+
+    Two levels deep: the top-level members (``flags``; one per environment) are objects whose own
+    members -- a flag definition, an overlay variant -- compare as whole parsed values. The result
+    is ``json.dumps(doc, indent=2) + "\\n"``. Refused (with the dotted key named) when both sides
+    set a key to different values; refused too when a side does not parse, a top-level member is
+    not an object, or ``main``'s or the branch's text does not round-trip byte for byte through
+    that form -- the heal never reformats a file."""
+    docs: dict[str, dict[str, dict[str, object]]] = {}
+    for label, text in (("merge-base", base_text), ("main", main_text), ("branch", branch_text)):
+        doc, detail = _parse_registry_json(label, text)
+        if doc is None:
+            return _refused(detail or f"the {label} text is unusable")
+        if label != "merge-base" and _canonical_json(doc) != text:
+            return _refused(f"the {label} text is not in json.dumps(indent=2) form")
+        docs[label] = doc
+    merged, detail = _merge_registry_members(docs["merge-base"], docs["main"], docs["branch"], prefix="", descend=True)
+    if detail is not None:
+        return _refused(detail)
+    return FlagRegistryResolution(text=_canonical_json(merged))
+
+
+_DIFF3_OURS = re.compile(r"^<{7}(?: |$)")
+_DIFF3_BASE = re.compile(r"^\|{7}(?: |$)")
+_DIFF3_SPLIT = re.compile(r"^={7}$")
+_DIFF3_THEIRS = re.compile(r"^>{7}(?: |$)")
+
+
+@dataclass(frozen=True)
+class _ConflictHunk:
+    number: int
+    main: tuple[str, ...]
+    base: tuple[str, ...]
+    branch: tuple[str, ...]
+    first_line: int  # 1-based line, in the resolved text, of the first line the resolution inserts
+
+
+def _resolve_diff3(marked_text: str) -> tuple[str, tuple[_ConflictHunk, ...]] | None:
+    """Split git's ``--diff3`` merge into the text with each hunk resolved as ``main``'s lines then the
+    branch's (verbatim), and the hunks. ``None`` when the markers are not well formed."""
+    out: list[str] = []
+    hunks: list[_ConflictHunk] = []
+    state = "text"
+    ours: list[str] = []
+    base: list[str] = []
+    theirs: list[str] = []
+    for line in marked_text.split("\n"):
+        if state == "text":
+            if _DIFF3_OURS.match(line):
+                state, ours, base, theirs = "ours", [], [], []
+            elif _DIFF3_BASE.match(line) or _DIFF3_SPLIT.match(line) or _DIFF3_THEIRS.match(line):
+                return None
+            else:
+                out.append(line)
+        elif state == "ours":
+            if _DIFF3_BASE.match(line):
+                state = "base"
+            elif _DIFF3_SPLIT.match(line):
+                return None  # a diff3 hunk always carries its base section
+            else:
+                ours.append(line)
+        elif state == "base":
+            if _DIFF3_SPLIT.match(line):
+                state = "theirs"
+            else:
+                base.append(line)
+        elif _DIFF3_THEIRS.match(line):
+            hunks.append(_ConflictHunk(len(hunks) + 1, tuple(ours), tuple(base), tuple(theirs), len(out) + 1))
+            out.extend(ours)
+            out.extend(theirs)
+            state = "text"
+        else:
+            theirs.append(line)
+    if state != "text":
+        return None
+    return "\n".join(out), tuple(hunks)
+
+
+def _dict_entries_of(section: tuple[str, ...]) -> list[ast.expr] | None:
+    """The keys of ``section`` read as one or more complete dict entries, or ``None``."""
+    try:
+        node = ast.parse("{\n" + "\n".join(section) + "\n}", mode="eval").body
+    except SyntaxError:
+        return None
+    if not isinstance(node, ast.Dict) or not node.keys or any(key is None for key in node.keys):
+        return None
+    return [key for key in node.keys if key is not None]
+
+
+def _key_label(key: ast.expr) -> str:
+    try:
+        return str(ast.literal_eval(key))
+    except ValueError, SyntaxError:
+        return ast.unparse(key)
+
+
+def _named_dicts(tree: ast.AST, targets: frozenset[str]) -> list[ast.Dict]:
+    """Every dict literal assigned to one of ``targets`` anywhere in ``tree``."""
+    found: list[ast.Dict] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict):
+            names = {t.id for t in node.targets if isinstance(t, ast.Name)}
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.value, ast.Dict) and isinstance(node.target, ast.Name):
+            names = {node.target.id}
+        else:
+            continue
+        if names & targets:
+            found.append(node.value)
+    return found
+
+
+def _hunk_sits_in_named_dict(hunk: _ConflictHunk, dicts: list[ast.Dict]) -> bool:
+    """True when the hunk's inserted lines sit strictly inside one named dict, between two of its own
+    entries: no entry of that dict straddles the inserted block's edge."""
+    first = hunk.first_line
+    last = first + len(hunk.main) + len(hunk.branch) - 1
+    for node in dicts:
+        end = node.end_lineno
+        if end is None or not node.lineno < first <= last < end:
+            continue
+        straddles = False
+        for key, value in zip(node.keys, node.values, strict=True):
+            if key is None or value.end_lineno is None:
+                straddles = True
+                break
+            start, stop = key.lineno, value.end_lineno
+            overlaps = start <= last and stop >= first
+            inside = first <= start and stop <= last
+            if overlaps and not inside:
+                straddles = True
+                break
+        if not straddles:
+            return True
+    return False
+
+
+def union_flag_registry_python_texts(rel_path: str, marked_text: str) -> FlagRegistryResolution:
+    """Story 22.19: resolve one Python flag registry from git's own three-way merge of it, written with
+    diff3 conflict markers (``VcsPort.merge_file_diff3``).
+
+    The file resolves only when every conflict hunk (a) has an empty merge-base section, so both
+    sides only added lines, (b) holds on each side one or more complete dict entries, and (c) sits
+    inside one dict literal assigned to one of ``rel_path``'s named targets
+    (``FLAG_REGISTRY_PYTHON_TARGETS``). The resolution keeps ``main``'s section, then the branch's,
+    verbatim; it must parse, and no named dict may hold a key twice (both sides adding one key with
+    different text is refused, naming it). Any other shape -- a changed or removed line, a comment
+    edited on both sides, an entry outside the named dicts -- is refused."""
+    targets = FLAG_REGISTRY_PYTHON_TARGETS.get(rel_path.replace("\\", "/"))
+    if targets is None:
+        return _refused("not a flag-registry Python file")
+    resolved = _resolve_diff3(marked_text)
+    if resolved is None:
+        return _refused("git's conflict markers are not well formed")
+    text, hunks = resolved
+    for hunk in hunks:
+        if hunk.base:
+            return _refused(f"conflict hunk {hunk.number} changes or removes existing lines")
+        if _dict_entries_of(hunk.main) is None or _dict_entries_of(hunk.branch) is None:
+            return _refused(f"conflict hunk {hunk.number} is not a pure addition of complete dict entries")
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return _refused("the union does not parse")
+    dicts = _named_dicts(tree, targets)
+    for hunk in hunks:
+        if not _hunk_sits_in_named_dict(hunk, dicts):
+            return _refused(f"conflict hunk {hunk.number} is not inside a named dict ({', '.join(sorted(targets))})")
+    for node in dicts:
+        seen: set[str] = set()
+        for key in node.keys:
+            if key is None:
+                continue
+            identity = ast.dump(key)
+            if identity in seen:
+                return _refused(f"key {_key_label(key)}")
+            seen.add(identity)
+    return FlagRegistryResolution(text=text)
 
 
 # --- Story 51.11 (CAP-258): blocked-twin promotion --------------------------

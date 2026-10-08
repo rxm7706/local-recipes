@@ -2,10 +2,11 @@
 title: "13.5: `workspace clean --delete` removes a gone or landed workspace without a prompt or an archive"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: 'b36482389641efd2591a9d5b5c8a883bcafcf746'
+status: 'done'
+baseline_revision: '8ef4a6aa7950d8491852344209b60cdbc8765ac0'
 review_loop_iteration: 0
 followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle/.memlog.md
@@ -170,4 +171,33 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-07 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 0, false 2, maybe-false 1
+- findings:
+  - `[false]` `[reject]` Lazy `EXIT_USAGE` import in `WorkspaceDuty.run` risks circular import — verified: import runs only after `cli` finished loading `workspace`; no cycle at runtime.
+  - `[false]` `[reject]` `--delete` fleet exit should fail on refusals — verified against spec: fleet exits 0 on refusals; slug-targeted form exits 1; tests assert both.
+  - `[maybe-false]` `[reject]` Repo-set `--delete` usage error when slug is unknown — not exercised without monkeypatch; duty checks `slug in load_repo_sets()` before clean; rejected as unverified low harm.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `steward workspace clean [--delete]` to drop gone or CAP-157-proven-landed workspaces without TTY prompt, archive artifacts, or tags; refusals keep worktree/branch/record with named reasons.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py` — `_delete_eligibility`, `_execute_delete`, `clean_workspaces(delete=)`, `format_clean` `deleted` list, duty exit rules
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/cli.py` — `--delete` flag
+- `src/shared/packages/pyforge-steward/tests/unit/test_workspace_clean_delete.py` — Story 13.5 matrix + mutation guard
+- `src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py` — `format_clean` JSON includes `deleted`
+- `docs/how-to/manage-worktrees-with-bmad.md` — document `--delete`
+- Memlogs: `spec-pyforge-steward`, `spec-pyforge-core` (marshal project), `spec-pyforge-doctor`
+
+Review: 0 patches applied; 3 findings rejected after verification.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — pass (2044 tests)
+- `python scripts/spec_surface_reconcile.py` — exit 0
+
+Residual risk: merged branch with Tier-3 ignored non-symlink work refuses with `not-merged` when landed proof fails (same safety posture as archive path).

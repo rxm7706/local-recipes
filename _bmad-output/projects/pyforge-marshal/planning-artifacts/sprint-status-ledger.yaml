@@ -102,11 +102,11 @@ development_status:
   22-12-a-shared-surface-diff-also-clears-its-own-full-suite-not-just-the-stations-bound-gate: done
   22-13-a-landing-sets-the-story-s-epics-status-to-match-the-ledger: done
   22-14-the-cross-surface-gate-runs-each-touched-surface-s-own-check: done
-  22-15-a-landing-matches-the-epics-status-even-when-the-spec-is-already-done: backlog
+  22-15-a-landing-matches-the-epics-status-even-when-the-spec-is-already-done: done
   22-16-a-launch-without-the-env-on-path-never-wastes-a-finished-session: backlog
   22-17-a-land-only-refusal-names-the-gate-that-refused-it: done
   22-18-a-landing-heals-a-spec-surface-baseline-conflict-by-re-stamping-on-main-s-baseline: done
-  22-19-a-landing-unions-the-flag-registry-when-two-flag-stories-land-in-turn: backlog
+  22-19-a-landing-unions-the-flag-registry-when-two-flag-stories-land-in-turn: done
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done

@@ -955,16 +955,65 @@ def _confirm_archive(slug: str) -> bool:
     return answer.strip().lower() in ("y", "yes")
 
 
+def _delete_eligibility(record: WorkspaceRecord, *, root: Path) -> str | None:
+    """Return a skip reason, or ``None`` when ``--delete`` may drop the record."""
+    wt = Path(record.path)
+    try:
+        wt_is_dir = wt.is_dir()
+    except OSError as exc:
+        raise WorkspaceError(f"could not read {record.path}: {exc}") from exc
+
+    branch_exists = _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0
+
+    if not wt_is_dir and not branch_exists:
+        return None
+
+    if not wt_is_dir and branch_exists:
+        if _branch_merged_into(root, record.branch, record.source):
+            return None
+        return f"branch {record.branch} not on {record.source}"
+
+    if _worktree_dirty(wt):
+        return "dirty"
+    flags = _git_ok("ls-files", "-v", cwd=wt)
+    if flags.returncode != 0 or any(
+        line[:1].islower() or line[:1] == "S" for line in (flags.stdout or "").splitlines()
+    ):
+        return "dirty"
+    if not _branch_merged_into(root, record.branch, record.source):
+        return "not-merged"
+    if _landed_note_body(record, wt=wt, root=root, stamp="") is None:
+        return "not-merged"
+    return None
+
+
+def _execute_delete(record: WorkspaceRecord, *, root: Path) -> None:
+    """Remove a deletable worktree and its branch; never writes an archive artifact."""
+    wt = Path(record.path)
+    if wt.is_dir():
+        result = _git_ok("worktree", "remove", "--force", str(wt), cwd=root)
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip()
+            raise WorkspaceError(f"could not remove worktree {record.path}: {detail}")
+    else:
+        _git_ok("worktree", "prune", cwd=root)
+
+    if _git_ok("rev-parse", "--verify", "--quiet", _branch_ref(record.branch), cwd=root).returncode == 0:
+        if _branch_merged_into(root, record.branch, record.source):
+            _git_ok("branch", "-D", record.branch, cwd=root)
+
+
 def clean_workspaces(
     *,
     merged_only: bool = False,
+    delete: bool = False,
     slug: str | None = None,
     root: Path | None = None,
     bookkeeping: Path | None = None,
     archive_dir: Path | None = None,
     confirm=None,
 ) -> dict[str, list[dict[str, str]]]:
-    """CAP-4: archive-not-delete owned worktrees; optional ``--merged-only`` / slug."""
+    """CAP-4: archive-not-delete owned worktrees; optional ``--merged-only`` / ``--delete`` / slug."""
     root = root if root is not None else repo_root()
     bookkeeping = bookkeeping if bookkeeping is not None else default_bookkeeping_path()
     archive_dir = archive_dir if archive_dir is not None else default_archive_dir()
@@ -986,6 +1035,7 @@ def clean_workspaces(
         others = []
 
     archived: list[dict[str, str]] = []
+    deleted: list[dict[str, str]] = []
     skipped: list[dict[str, str]] = []
     remaining: list[WorkspaceRecord] = list(others)
     pending = list(records)
@@ -1003,34 +1053,46 @@ def clean_workspaces(
             # goes on -- it used to abort here, and the `finally` below then
             # saved bookkeeping without the popped record, silently dropping it.
             try:
-                if merged_only and not _branch_merged_into(root, record.branch, record.source):
-                    skipped.append({**record.to_dict(), "reason": "not-merged"})
-                    remaining.append(record)
-                    in_flight = None
-                    continue
-                if not merged_only and not confirm_fn(record.slug):
-                    skipped.append({**record.to_dict(), "reason": "declined"})
-                    remaining.append(record)
-                    in_flight = None
-                    continue
-                archive_path, branch_kept = _archive_worktree(record, root=root, archive_dir=archive_dir)
+                if delete:
+                    reason = _delete_eligibility(record, root=root)
+                    if reason is not None:
+                        skipped.append({**record.to_dict(), "reason": reason})
+                        remaining.append(record)
+                        in_flight = None
+                        continue
+                    _execute_delete(record, root=root)
+                else:
+                    if merged_only and not _branch_merged_into(root, record.branch, record.source):
+                        skipped.append({**record.to_dict(), "reason": "not-merged"})
+                        remaining.append(record)
+                        in_flight = None
+                        continue
+                    if not merged_only and not confirm_fn(record.slug):
+                        skipped.append({**record.to_dict(), "reason": "declined"})
+                        remaining.append(record)
+                        in_flight = None
+                        continue
+                    archive_path, branch_kept = _archive_worktree(record, root=root, archive_dir=archive_dir)
             except WorkspaceError as exc:
                 skipped.append({**record.to_dict(), "reason": f"error: {exc}"})
                 remaining.append(record)
                 in_flight = None
                 continue
             in_flight = None
-            row = {**record.to_dict(), "archive": str(archive_path)}
-            if branch_kept:
-                row["branch_kept"] = record.branch  # unmerged: its commits exist nowhere else (Story 69.1)
-            archived.append(row)
+            if delete:
+                deleted.append(record.to_dict())
+            else:
+                row = {**record.to_dict(), "archive": str(archive_path)}
+                if branch_kept:
+                    row["branch_kept"] = record.branch  # unmerged: its commits exist nowhere else (Story 69.1)
+                archived.append(row)
     finally:
         # Persist removals already archived even if a later record fails —
         # otherwise archived trees stay listed in bookkeeping.
         kept_in_flight = [in_flight] if in_flight is not None else []
         save_bookkeeping(bookkeeping, tuple(remaining + kept_in_flight + pending))
 
-    return {"archived": archived, "skipped": skipped}
+    return {"archived": archived, "deleted": deleted, "skipped": skipped}
 
 
 def format_start(record: WorkspaceRecord, *, as_json: bool) -> str:
@@ -1099,11 +1161,17 @@ def format_repo_set_status(statuses: tuple[RepoSetMemberStatus, ...], *, as_json
 
 
 def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> str:
+    payload = {
+        "archived": result.get("archived", []),
+        "deleted": result.get("deleted", []),
+        "skipped": result.get("skipped", []),
+    }
     if as_json:
-        return json.dumps(result, indent=2)
-    archived = result["archived"]
-    skipped = result["skipped"]
-    if not archived and not skipped:
+        return json.dumps(payload, indent=2)
+    archived = payload["archived"]
+    deleted = payload["deleted"]
+    skipped = payload["skipped"]
+    if not archived and not deleted and not skipped:
         return "workspace clean: nothing to do"
     lines: list[str] = []
     for item in archived:
@@ -1111,6 +1179,10 @@ def format_clean(result: dict[str, list[dict[str, str]]], *, as_json: bool) -> s
         prefix = f"archived {member}/" if member else "archived "
         kept = f" (branch {item['branch_kept']} kept: not on its source)" if item.get("branch_kept") else ""
         lines.append(f"{prefix}{item['slug']} -> {item['archive']}{kept}")
+    for item in deleted:
+        member = item.get("member")
+        prefix = f"deleted {member}/" if member else "deleted "
+        lines.append(f"{prefix}{item['slug']}")
     for item in skipped:
         member = item.get("member")
         prefix = f"skipped {member}/" if member else "skipped "
@@ -1162,15 +1234,41 @@ class WorkspaceDuty:
             # clean — optional slug targets a repo set or a single owned worktree
             slug = getattr(ns, "slug", None)
             merged_only = bool(getattr(ns, "merged_only", False))
+            delete = bool(getattr(ns, "delete", False))
+            from .cli import EXIT_USAGE
+
+            if delete and merged_only:
+                return DutyResult(
+                    ok=False,
+                    summary=self._render_error(
+                        ns,
+                        "workspace clean: --delete cannot be combined with --merged-only",
+                    ),
+                    details={"exit_code": EXIT_USAGE},
+                )
+            if delete and slug is not None and slug in load_repo_sets():
+                return DutyResult(
+                    ok=False,
+                    summary=self._render_error(
+                        ns,
+                        f"workspace clean: --delete does not apply to repo-set feature {slug!r}",
+                    ),
+                    details={"exit_code": EXIT_USAGE},
+                )
             # Story 68.1 review 1/2: a sweep finishes past a record it could not
             # decide, but that record is still a failure -- the exit code says so,
             # for a repo-set feature as for a single worktree or the fleet.
             if slug is not None and slug in load_repo_sets():
                 cleaned = clean_repo_set(slug, merged_only=merged_only)
             else:
-                cleaned = clean_workspaces(merged_only=merged_only, slug=slug)
+                cleaned = clean_workspaces(merged_only=merged_only, delete=delete, slug=slug)
             errored = any(row.get("reason", "").startswith("error: ") for row in cleaned["skipped"])
-            return DutyResult(ok=not errored, summary=format_clean(cleaned, as_json=as_json))
+            refused = any(not row.get("reason", "").startswith("error: ") for row in cleaned["skipped"])
+            if delete and slug is not None:
+                ok = not errored and not refused
+            else:
+                ok = not errored
+            return DutyResult(ok=ok, summary=format_clean(cleaned, as_json=as_json))
         except WorkspaceError as exc:
             return DutyResult(ok=False, summary=self._render_error(ns, str(exc)))
         except RuntimeError as exc:
