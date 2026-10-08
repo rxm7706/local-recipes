@@ -169,7 +169,7 @@ def run_preflight(
     invoking_env: str | None = None,
     run_lane: Callable[[Lane], int] | None = None,
 ) -> int:
-    """Run all lanes; return exit code 0 / 1 / 2."""
+    """Run CI-selected lanes; return exit code 0 / 1 / 2."""
     repo_root = repo_root.resolve()
     pixi_file = pixi_path or (repo_root / "pixi.toml")
     if not pixi_file.is_file():

@@ -2,8 +2,10 @@
 title: '71.2: The preflight runs the lanes CI would run for the diff, read from the workflow files'
 type: 'feature'
 created: '2026-09-27'
-status: 'in-review'
+status: 'done'
 baseline_revision: '55178370efd04ed67215393fb3ea4f27acf21ce0'
+followup_review_recommended: false
+review_loop_iteration: 0
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
