@@ -35,3 +35,6 @@ distributions:
     # back-fill) -- the runtime driver asserts those exist and never creates
     # them (CAP-9 / Story 41.3).
     migrations: {}
+  django-herald:
+    migrations:
+      herald_portal.0001_initial: 1

@@ -92,3 +92,7 @@ databaseChangeLog:
   - include:
       file: changes/pyforge-mybmad-2-app-role-grants.sql
       relativeToChangelogFile: true
+  # Story 29.2: herald portal DeckExport projection (CAP-54 D3).
+  - include:
+      file: changes/django-herald-1-herald-portal-0001-initial.sql
+      relativeToChangelogFile: true
