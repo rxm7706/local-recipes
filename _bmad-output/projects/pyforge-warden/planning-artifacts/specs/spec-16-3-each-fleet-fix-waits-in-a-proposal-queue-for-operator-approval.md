@@ -2,7 +2,7 @@
 title: "16.3: Each fleet fix waits in a proposal queue for operator approval"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
