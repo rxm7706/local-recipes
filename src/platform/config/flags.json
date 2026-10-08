@@ -210,6 +210,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.warden.fleet_scan": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "warden",
+        "story": "16-2-a-fleet-run-scans-each-inventoried-repo-one-verdict-per-repo",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.warden.non_python_ecosystems": {
       "state": "ENABLED",
       "variants": {

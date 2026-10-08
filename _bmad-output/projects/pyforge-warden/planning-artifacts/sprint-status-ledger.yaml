@@ -40,7 +40,7 @@ development_status:
   14-3-the-actuator-opens-the-fix-as-a-draft-pr-on-an-estate-repo: done
   15-1-opengrep-is-an-optional-sast-scanner-that-informs-never-publishes-the-verdict: blocked
   16-1-warden-inventories-a-ghe-organisation-s-repos: blocked
-  16-2-a-fleet-run-scans-each-inventoried-repo-one-verdict-per-repo: backlog
+  16-2-a-fleet-run-scans-each-inventoried-repo-one-verdict-per-repo: done
   16-3-each-fleet-fix-waits-in-a-proposal-queue-for-operator-approval: backlog
   16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers: done
   17-1-eligibility-records-its-policy-and-warden-s-other-open-deferrals-close: done
