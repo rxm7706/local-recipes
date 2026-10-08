@@ -3,7 +3,7 @@ name: Herald Pitch Orchestration Architecture
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-07"   # RE-STAMPED 2026-10-07: prd->arch cascade for the PRD's 2026-10-07 re-stamp (Stories 35.1-35.2, marshal 86.8, Story 27.1, Story 28.1); lands on AD-2, AD-3, AD-4 and AD-21 as written, no AD amended; one FR-8.1 / AD-21 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
+updated: "2026-10-08"   # RE-STAMPED 2026-10-08: chain-currency behind-code (code -> spine) and prd->arch cascade for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; lands on AD-3, AD-4, AD-22 and canopy:AD-21 as written; the AD-3 amendment line corrected in place (the formats are plugins on the hook, each producer runs from its own verb); no AD added or amended; one PPTX-invariant divergence recorded (the native driver is not token-driven). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: prd->arch cascade for the PRD's 2026-10-07 re-stamp (Stories 35.1-35.2, marshal 86.8, Story 27.1, Story 28.1); lands on AD-2, AD-3, AD-4 and AD-21 as written, no AD amended; one FR-8.1 / AD-21 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): prd->arch cascade for the Phase 4+5 deferral rulings (Epic 35, a fix story); no AD amended. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD -> spine) for FR-10.1..FR-10.6 / CAP-54..CAP-57 (Epics 29-32). AD-22 added (a current export's second home in object storage); AD-3, AD-12 and AD-21 amended (AD-21: one artifact, N hosts); AD-4 untouched. Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-9.1..FR-9.2 / CAP-53 (Epic 28). AD-4 amended (one dated version per export kind); AD-21 untouched. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> spine) for FR-8.1..FR-8.4 / CAP-52 (Epic 27). AD-21 added (one Pages artifact); lands beside AD-4; no existing AD amended. AD-21's mount (/herald/) and redirect rule amended the same day for operator ruling D7. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (prd -> spine) after the 2026-09-25 PRD re-stamp; no AD change. Prior 2026-09-20
@@ -96,10 +96,15 @@ altitude: feature
 
 **[ADOPTED]** — Workflow stages defined in spec companions; proven on deckcraft (PPTX) and existing deck engines (HTML).
 
-**Amended 2026-09-28 (night) (CAP-57; FR-10.6):** the PPTX format has three producers, each an
-export plugin on `DECK_EXPORT_HOOK_SPEC`, and none retires: `marp --pptx` (image slides), the
-python-pptx fill (Story 15.1, from a content plan) and `pptxgenjs-plus` (native text boxes, tables
-and notes, from the deck's current Marp source). The `pptxgenjs-plus` output is its own dated kind,
+**Amended 2026-09-28 (night) (CAP-57; FR-10.6):** the PPTX format has three producers, and none
+retires: `marp --pptx` (image slides, `scripts/deck_export.py`), the python-pptx fill (Story 15.1,
+from a content plan, `herald deck pptx-fill`) and `pptxgenjs-plus` (native text boxes, tables and
+notes, from the deck's current Marp source, `herald deck pptx-native` behind
+`pyforge.herald.deck_export_native`). On `DECK_EXPORT_HOOK_SPEC` the formats are plugins (`marp`,
+`pptx`, `dc.html` and `pptxgenjs`) that record an export and run a backend only when one is
+injected; each producer runs from its own verb or script. *(Corrected 2026-10-08: the amendment read
+"three producers, each an export plugin on `DECK_EXPORT_HOOK_SPEC`"; see § Currency reconciliation —
+2026-10-08.)* The `pptxgenjs-plus` output is its own dated kind,
 `<slug>-deck-native-<date>.pptx`, so it never supersedes the Marp export under AD-4's one-version
 rule. See § Currency reconciliation — 2026-09-28 (night).
 
@@ -910,3 +915,45 @@ there. No herald test resolves the config's imports. The repair is a fix story, 
 No port, adapter or package boundary moves, and `src/platform/` still imports no `pyforge.*`.
 
 **Content changed:** this section only. `updated:` bumped. No AD added, amended or removed.
+
+## Currency reconciliation — 2026-10-08
+
+*`behind-code` and `prd→arch` cascade for Story 32.1 (CAP-57, FR-10.6, `done` on its dispatch branch
+`dispatch/pyforge-herald/32.1`): the package `pyproject.toml` moved to 2026-10-08 while this spine sat at 2026-10-07, and
+the PRD's § Currency reconciliation — 2026-10-08 corrects FR-10.6 in place.* Checked against every AD. The story lands as
+written on these:
+
+- **AD-3 (export pipeline, amended 2026-09-28 (night)).** The third PPTX producer is `pyforge.herald.pptx_native`: a stdlib
+  parser derives a slide model from the deck's current Marp source, and a Node driver shipped as package data
+  (`node/pptx_native.mjs`, force-included in the wheel) renders it with `pptxgenjs-plus` into native text boxes, tables,
+  notes and picture shapes. `herald deck pptx-native <slug>` runs it behind `pyforge.herald.deck_export_native`, read
+  through `pyforge.core.flags.read_boolean` (tree default off; on in dev and staging), and exits 2 with the flag off.
+  `marp --pptx` and the python-pptx fill are unchanged. **One line corrected in place:** the amendment said each
+  producer is an export plugin on `DECK_EXPORT_HOOK_SPEC`. As built, the hook carries four format plugins (`marp`,
+  `pptx`, `dc.html` and, from this story, `pptxgenjs` through the `herald-deck-export-pptxgenjs` entry point). Each
+  records its format and runs a backend only when one is injected, and no production caller injects one, so each
+  producer runs from its own verb or script. That matches canopy:AD-21 (a new format is another plugin), and the
+  amendment now says so.
+- **AD-4 (one dated version per kind).** `<slug>-deck-native-<date>.pptx` is its own kind under `deck_versions` (directory,
+  product stem, suffix), so it never supersedes `<slug>-deck-<date>.pptx`. `retire_superseded` runs only after a
+  successful write and its `.stamp.json` sidecar, and retires only the older native version.
+- **AD-22 (the store as a second home).** `herald deck publish` reads `deck_versions.current_exports`, so a current native
+  export is published as one more kind, under the same one-writer rule. No new store path or writer.
+- **The dependency decision (operator, 2026-10-08).** `pptxgenjs-plus` is `4.2.1.*`, channel-pinned to `SelfExplainML`, in
+  the `pyforge-guild` and `pyforge-herald` features, and the herald feature gains `nodejs`. `>=4.2.1` would resolve 4.3.4,
+  which needs Node 26, while `codegraph`'s conda build holds the Guild env on Node 24. The story's first
+  `channel-priority = "flexible"` on both features was rejected the same day, because any re-lock with it re-solves every
+  environment that carries the feature. The re-lock adds only `pptxgenjs-plus 4.2.1` to six environments.
+
+**One divergence, recorded and not repaired (the PPTX Generation invariants).** § Invariants by Slice says PPTX is
+token-driven: every font, colour and spacing comes from `design-tokens.json`, never hardcoded. The native driver reads no
+tokens. It hardcodes its 16:9 geometry and its font sizes (32, 18 and 14 pt) and takes pptxgenjs-plus's default face and
+colours. Story 32.1's contract asked for native, editable slides, not themed ones, so the gap is new with this producer
+rather than a regression in the other two. The repair (the driver reads the Modernist tokens) changes behaviour and needs
+a fix story. The PRD records a second gap in the same story: multi-line speaker notes and paragraph text are not carried.
+
+No port, adapter or package boundary moves. `pptx_native` imports neither Django nor the host, `src/platform/` changes
+only `config/flags.json`, `config/flag-overlays.json` and its flag test, and still imports no `pyforge.*`.
+
+**Content changed:** this section, and the AD-3 amendment line corrected in place. `updated:` bumped. No AD added,
+amended or removed.

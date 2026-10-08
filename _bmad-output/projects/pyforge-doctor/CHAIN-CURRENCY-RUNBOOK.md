@@ -242,3 +242,12 @@ Regenerating a board view is optional confirmation, not the measure.
   that day, the 2026-10-04..06 landings and surface reconciles, the 2026-10-06 and 2026-10-07 landing-gap mints); no
   FR or AD change. Epics re-stamped 2026-10-07 in the same commit so `arch→epics` stays inside the window. Deviation:
   the 2026-10-06 mint (22.13, 22.14, 53.4, 85.6) had not re-stamped epics, so this stamp names those stories too.
+
+- **Run 2026-10-08 — 1 finding cleared, single station.** Entry: pyforge-herald `staleness`, `behind-code` on the PRD and
+  the spine (dated 2026-10-07; Story 32.1, CAP-57, moved the package `pyproject.toml` to 2026-10-08 on
+  `dispatch/pyforge-herald/32.1`). Exit: `chain_currency_sweep_check.py --project pyforge-herald` exit 0. Remedy: PRD and
+  spine `## Currency reconciliation — 2026-10-08` fold the as-built native `.pptx` export; FR-10.6 and the AD-3 amendment
+  line corrected in place (the operator's 2026-10-08 `4.2.1.*` channel pin, the flag gate, the hook's record-only
+  plugins); a decision entry on the Spec memlog for CAP-57's stale `>=4.2.1`. Deviation: the truth-up found two gaps the
+  finding did not name (multi-line speaker notes and paragraph text are not carried; the native driver is not
+  token-driven), recorded for a fix story, not repaired. Epics already sat at 2026-10-08, so `arch→epics` did not fire.

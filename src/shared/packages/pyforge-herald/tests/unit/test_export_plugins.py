@@ -32,9 +32,11 @@ from pyforge.herald.exporters import (
     FORMAT_DC_HTML,
     FORMAT_MARP,
     FORMAT_PPTX,
+    FORMAT_PPTXGENJS,
     DcHtmlExportPlugin,
     MarpExportPlugin,
     PptxExportPlugin,
+    PptxgenjsExportPlugin,
     export_via_hooks,
     register_default_export_plugins,
 )
@@ -62,11 +64,12 @@ def _recording_backends() -> tuple[dict[str, list[str]], dict[str, Any]]:
         FORMAT_MARP: _backend_for(FORMAT_MARP),
         FORMAT_PPTX: _backend_for(FORMAT_PPTX),
         FORMAT_DC_HTML: _backend_for(FORMAT_DC_HTML),
+        FORMAT_PPTXGENJS: _backend_for(FORMAT_PPTXGENJS),
     }
     return ran, backends
 
 
-def test_default_plugins_register_the_three_format_ids():
+def test_default_plugins_register_the_four_format_ids():
     registry = _registry_with_defaults()
     ids = sorted(
         getattr(plugin, "format_id") for plugin in registry.plugins if plugin.hook_spec == DECK_EXPORT_HOOK_SPEC_NAME
@@ -110,7 +113,7 @@ def test_unknown_format_yields_empty_exported_and_no_error():
     assert exported == []
 
 
-def test_star_format_runs_all_three_defaults():
+def test_star_format_runs_all_four_defaults():
     ran, backends = _recording_backends()
     exported = export_via_hooks(
         "*",
@@ -157,14 +160,16 @@ def test_pyproject_declares_defaults_on_the_canonical_group_only():
     assert "pyforge.herald.exporters:MarpExportPlugin" in text
     assert "pyforge.herald.exporters:PptxExportPlugin" in text
     assert "pyforge.herald.exporters:DcHtmlExportPlugin" in text
+    assert "pyforge.herald.exporters:PptxgenjsExportPlugin" in text
     assert "pyforge.herald.hooks" not in text
 
 
-def test_installed_entry_points_include_the_three_defaults():
+def test_installed_entry_points_include_the_four_defaults():
     values = {ep.value for ep in entry_points(group=ENTRY_POINT_GROUP)}
     assert "pyforge.herald.exporters:MarpExportPlugin" in values
     assert "pyforge.herald.exporters:PptxExportPlugin" in values
     assert "pyforge.herald.exporters:DcHtmlExportPlugin" in values
+    assert "pyforge.herald.exporters:PptxgenjsExportPlugin" in values
 
 
 def test_publish_verdict_on_a_warden_pr_gate_raises_second_verdict_error():
@@ -225,5 +230,6 @@ def test_plugin_classes_are_distinct_format_handlers():
     assert MarpExportPlugin.format_id == FORMAT_MARP
     assert PptxExportPlugin.format_id == FORMAT_PPTX
     assert DcHtmlExportPlugin.format_id == FORMAT_DC_HTML
+    assert PptxgenjsExportPlugin.format_id == FORMAT_PPTXGENJS
     assert MarpExportPlugin.hook_spec == DECK_EXPORT_HOOK_SPEC_NAME
     assert PptxExportPlugin.owner == DECK_EXPORT_OWNER

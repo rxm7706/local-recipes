@@ -909,6 +909,7 @@ _SHIPPED_CLOCKS = {
     "pyforge.herald.deck_publish": ("herald", "29-1-", "2026-09-28", "", ""),
     # CAP-55 deck_viewer: Story 30.1 publish/twins; Story 30.2 portal + deck-twins API routes.
     "pyforge.herald.deck_viewer": ("herald", "30-1-", "2026-09-28", "", ""),
+    "pyforge.herald.deck_export_native": ("herald", "32-1-", "2026-09-28", "", ""),
 }
 
 
@@ -968,6 +969,7 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         "pyforge.warden.fix_manifest_edit": {"dev": True, "staging": True, "production": False},
         "pyforge.herald.deck_publish": {"dev": True, "staging": True, "production": False},
         "pyforge.herald.deck_viewer": {"dev": True, "staging": True, "production": False},
+        "pyforge.herald.deck_export_native": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.fix_draft_pr_estate": {"dev": True, "staging": True, "production": False},
         "pyforge.warden.non_python_ecosystems": {"dev": True, "staging": True, "production": False},
     }
