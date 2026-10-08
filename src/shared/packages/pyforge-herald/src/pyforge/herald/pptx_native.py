@@ -21,6 +21,19 @@ from .errors import HeraldError
 
 DECK_EXPORT_NATIVE_FLAG = "pyforge.herald.deck_export_native"
 
+MODERNIST_DESIGN_SYSTEM_REL = Path("presentations") / "_design-systems" / "modernist"
+DESIGN_TOKEN_CANVAS_WIDTH_PX = 1920
+DESIGN_TOKEN_CANVAS_HEIGHT_PX = 1080
+
+_CSS_CUSTOM_PROPERTY_PX = re.compile(
+    r"--(?P<name>[\w-]+)\s*:\s*(?P<value>\d+(?:\.\d+)?)\s*px",
+    re.IGNORECASE,
+)
+_FONT_HEADING_WEIGHT = re.compile(
+    r"--font-heading-weight\s*:\s*(?P<value>\d+(?:\.\d+)?)\s*;",
+    re.IGNORECASE,
+)
+
 _IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.+)$")
 _NUMBERED_RE = re.compile(r"^(\d+)\.\s+(.*)$")

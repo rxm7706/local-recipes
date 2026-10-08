@@ -2,9 +2,9 @@
 title: '32.3: The native pptx export takes its fonts, colours and spacing from the design tokens'
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
+status: 'in-progress'
 difficulty: 'medium'
-baseline_revision: '063fecf553893b0b6d63524558b74ba65674bb54'
+baseline_revision: 'da076933eb0480b13b02181f1d0964f729dae726'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
