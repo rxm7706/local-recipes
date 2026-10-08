@@ -1490,7 +1490,7 @@ So that the editable export is the whole deck, not its bullets.
 **When** the parser keeps every non-directive comment as a note and every text block in source order, and the driver draws each one
 **Then** a fixture deck rendered and read back with python-pptx carries each slide's full notes (multi-line, several per slide) and every block's text in a text frame or table cell, in order; `<!-- _class: … -->` and `<!-- paginate: false -->` are not notes; no picture shape stands in for text
 **And** `tests/meta/test_pptx_native_live_decks.py` finds zero lost notes and zero lost text lines across the current decks; Story 32.1's assertions still hold; the Marp and pptx-fill paths are unchanged; `pyforge-herald-test` is green with the render tests run, not skipped
-**Status:** backlog
+**Status:** done
 
 ### Story 32.3: The native pptx export takes its fonts, colours and spacing from the design tokens
 
