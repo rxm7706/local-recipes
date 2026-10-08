@@ -2,7 +2,8 @@
 title: "19.3: The environment craft skill teaches mason environment lock and check"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '25ca417bb3478a91008d79fbbdc5cd4f2fa2c3b6'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -87,4 +88,27 @@ Deps: S-19.2.
 **Manual checks:**
 - `pixi run -e pyforge-guild docs-skills-catalog -- --check` — expected: exit 0 after regeneration.
 
+## Auto Run Result
+
+Status: done
+
+Summary: Added hand-authored `mason-environment` skill for `pyforge mason environment lock` and `check` (manifest discovery vs explicit paths, `--platform`, conda-lock engine provenance, no Mason resolution rules). Extended `test_mason_skills.py` with the mason-environment row; regenerated skills catalog and Skill Reference row.
+
+Files changed:
+- `.claude/skills/mason-environment/SKILL.md` — operating procedure for the environment craft
+- `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` — mason-environment contract row
+- `docs/reference/agent-instruction-notes.md` — Skill Reference row
+- `docs/reference/skills-catalog.md` — regenerated catalog
+- Memlog surface reconcile on `spec-pyforge-mason`, `spec-pyforge-doctor`, `spec-pyforge-scribe`
+
+Review: 0 patches; acceptance criteria verified locally.
+
+Verification: `pyforge-mason-test` 1620 passed; `docs-skills-catalog --check` 0; `governance-currency` 0; `python scripts/spec_surface_reconcile.py` 0.
+
+Follow-up review recommended: false
+
 ## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — intent-aligned documentation and meta-test extension only)
