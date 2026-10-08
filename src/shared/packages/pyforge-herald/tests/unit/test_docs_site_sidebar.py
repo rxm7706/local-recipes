@@ -29,6 +29,7 @@ def sidebar_mod():
 
 
 def _write_map(tmp_path: Path, pages: list[dict]) -> Path:
+    tmp_path.mkdir(parents=True, exist_ok=True)
     map_path = tmp_path / "map.yaml"
     map_path.write_text(
         yaml.safe_dump({"schema_version": 1, "pages": pages}, sort_keys=False),

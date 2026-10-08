@@ -183,6 +183,10 @@ pages:
     quadrant: reference
     owner: doctor
     kind: authored
+  - path: reference/bmad-estate-llms-full.md
+    quadrant: reference
+    owner: scribe
+    kind: generated
   - path: reference/library-llms-full.md
     quadrant: reference
     owner: fleet
