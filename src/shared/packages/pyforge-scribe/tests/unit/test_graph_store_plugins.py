@@ -114,6 +114,28 @@ def _scaffold_memory(repo_root: Path) -> Path:
 # --- Default plugin ----------------------------------------------------------
 
 
+def test_open_graph_store_skips_flatfile_when_scribe_plugin_present(tmp_path: Path) -> None:
+    registry = PluginRegistry()
+    registry.register(FlatFileGraphStorePlugin())
+    scribe_plugins_before = [
+        p for p in registry.plugins if p.hook_spec == GRAPHSTORE_HOOK_SPEC.name and p.owner == "scribe"
+    ]
+    store = open_graph_store(tmp_path / "graph.json", registry=registry)
+    scribe_plugins_after = [
+        p for p in registry.plugins if p.hook_spec == GRAPHSTORE_HOOK_SPEC.name and p.owner == "scribe"
+    ]
+    assert len(scribe_plugins_before) == len(scribe_plugins_after) == 1
+    assert isinstance(store, FlatFileGraphStore)
+
+
+def test_open_graph_store_honors_pyforge_graphstore_owner_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PYFORGE_GRAPHSTORE_OWNER", PG_GRAPHSTORE_OWNER)
+    registry = PluginRegistry()
+    registry.register(_StewardGraphStorePlugin())
+    store = open_graph_store(tmp_path / "graph.json", registry=registry)
+    assert isinstance(store, _RecordingStore)
+
+
 def test_default_plugin_returns_flatfile_at_given_path(tmp_path: Path) -> None:
     store_path = tmp_path / "graph.json"
     registry = PluginRegistry()
