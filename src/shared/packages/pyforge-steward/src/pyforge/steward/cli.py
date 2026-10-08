@@ -555,7 +555,10 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     json_help = "emit JSON instead of human-readable text"
     catalog_parser.add_argument("--catalog", default=None, metavar="DIR", help=catalog_help)
     catalog_parser.add_argument("--json", action="store_true", default=False, help=json_help)
-    catalog_subs = catalog_parser.add_subparsers(dest="catalog_verb", metavar="{check,list,render,pointers}")
+    catalog_subs = catalog_parser.add_subparsers(
+        dest="catalog_verb",
+        metavar="{check,list,render,pointers,ship}",
+    )
     check = catalog_subs.add_parser(
         "check",
         help="bind declared backends/sources to plugins, validate listings, detect manifest drift (default)",
@@ -574,7 +577,23 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
         "pointers",
         help="print how the installer, Claude and Codex point at this catalog (edits nothing)",
     )
-    for sub in (check, listing, render, pointers):
+    ship = catalog_subs.add_parser(
+        "ship",
+        help="materialize the vendored snapshot and run the default (conda) ship backend",
+    )
+    ship.add_argument(
+        "--backend",
+        default=None,
+        metavar="NAME",
+        help="ship backend row from catalog.yaml (default: the one backend with state on)",
+    )
+    ship.add_argument(
+        "--output",
+        default=None,
+        metavar="DIR",
+        help=f"snapshot output directory (default: catalog/{'snapshot'})",
+    )
+    for sub in (check, listing, render, pointers, ship):
         sub.add_argument("--catalog", default=argparse.SUPPRESS, metavar="DIR", help=catalog_help)
         sub.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=json_help)
 
