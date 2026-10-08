@@ -204,3 +204,72 @@ def test_mutation_verification_without_ruff_format_journal_partner(
 
     assert counter == 2
     assert not any("dispatch-ruff-format" in line for _, line, _ in fs.appended)
+
+
+def test_finalize_verification_order_is_ruff_then_verify_without_reconcile(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 22.20: first verification still runs ruff, then verify — no reconcile between them."""
+    import importlib
+
+    loop_tests = importlib.import_module("test_dispatch_supervisor_main_loop")
+
+    repo_root = loop_tests._repo(tmp_path)
+    worktree = loop_tests._worktree(repo_root)
+    loop_tests._seed_spec(repo_root, worktree, primary=loop_tests._READY_SPEC_TEXT)
+    order: list[str] = []
+
+    def _ruff(**_kwargs: object) -> DispatchRuffFormatResult:
+        order.append("ruff")
+        return DispatchRuffFormatResult((), False)
+
+    def _evaluate(**_kwargs: object):
+        order.append("verify")
+        return loop_tests._clean_envelope()
+
+    monkeypatch.setattr(supervisor_main, "run_dispatch_ruff_format_before_verify", _ruff)
+    monkeypatch.setattr(supervisor_main, "evaluate_dispatch_verification", _evaluate)
+    fs = loop_tests.FakeFs()
+
+    loop_tests._verify(fs, repo_root, worktree)
+
+    assert order == ["ruff", "verify"]
+
+
+def test_cap4_verification_order_is_ruff_then_verify(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Story 22.20: land-only CAP-4 verification still runs ruff, then verify — no reconcile."""
+    import test_dispatch as dispatch_test_helpers
+
+    from pyforge.marshal.cli import dispatch as dispatch_module
+    from pyforge.marshal.core.model import build_envelope
+    from pyforge.marshal.core.policy import compose
+
+    order: list[str] = []
+    repo_root = tmp_path / "repo"
+    worktree = tmp_path / "wt"
+    worktree.mkdir(parents=True)
+    effective_policy = compose(project_slug="pyforge-marshal", project={}, flags={})[0]
+
+    def _ruff(**_kwargs: object) -> DispatchRuffFormatResult:
+        order.append("ruff")
+        return DispatchRuffFormatResult((), False)
+
+    def _evaluate(**_kwargs: object):
+        order.append("verify")
+        return build_envelope(command="dispatch verify", verdict="ok", data={}, findings=())
+
+    monkeypatch.setattr(dispatch_module, "run_dispatch_ruff_format_before_verify", _ruff)
+    monkeypatch.setattr(dispatch_module, "evaluate_dispatch_verification", _evaluate)
+
+    dispatch_module._verification_verdict_for_cap4(
+        slug="pyforge-marshal",
+        story_key="22-20-test",
+        worktree=worktree,
+        repo_root=repo_root,
+        effective_policy=effective_policy,
+        spec_text="---\nstatus: done\n---\n",
+        process=dispatch_test_helpers.FakeProcess(),
+        vcs=dispatch_test_helpers.FakeVcs(repo_root),
+    )
+
+    assert order == ["ruff", "verify"]
