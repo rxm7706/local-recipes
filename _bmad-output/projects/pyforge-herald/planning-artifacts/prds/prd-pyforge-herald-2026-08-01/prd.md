@@ -4,7 +4,7 @@ title: Herald's Pitch Deck Family Expansion — PRD
 slug: herald-pitch
 status: final
 created: 2026-08-01
-updated: "2026-10-07"   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
+updated: "2026-10-08"   # RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) for Story 32.1 as built (CAP-57, FR-10.6, flag pyforge.herald.deck_export_native) on dispatch/pyforge-herald/32.1; FR-10.6 corrected in place (the pptxgenjs-plus pin is 4.2.1.* channel-pinned to SelfExplainML; the flag gate; no slide is rendered as an image); no FR registered; one FR-10.6 divergence recorded (multi-line speaker notes and paragraph text are not carried). See § Currency reconciliation — 2026-10-08. Earlier: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 2026-10-03..07 entries (Stories 35.1-35.2 records, the marshal 86.8 co-governor edit, Story 27.1 and its surface decision, Story 28.1 / CAP-53); no FR registered; one FR-8.1 divergence recorded. See § Currency reconciliation — 2026-10-07. Earlier: RE-STAMPED 2026-10-03 (Phase 4+5): chain-currency cascade (spec -> PRD) for the Phase 4+5 deferral rulings (Epic 35, a fix story); no FR registered. Earlier: RE-STAMPED 2026-09-28 (night): chain-currency cascade (spec -> PRD) for CAP-54..CAP-57 (Epics 29-32): Feature Group 10, FR-10.1..FR-10.6 registered. See § Currency reconciliation — 2026-09-28 (night). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-53 (Epic 28): Feature Group 9, FR-9.1..FR-9.2 registered. See § Currency reconciliation — 2026-09-28. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD) for CAP-52 (Epic 27): Feature Group 8, FR-8.1..FR-8.5 registered (FR-8.2 amended and FR-8.5 added the same day for the operator rulings D7/D8). See § Currency reconciliation — 2026-09-27. Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency (spec->prd) — spec-pyforge-herald memlog moved 2026-09-25T04:02 (steward 59.6 surface reconcile); no FR change. Prior 2026-09-20
@@ -1259,10 +1259,16 @@ someone without PowerPoint reads one.
 
 **FR-10.6: A deck exports as a native, editable `.pptx`** ← CAP-57
 - `herald deck pptx-native <slug>` renders the deck's current Marp source with `pptxgenjs-plus`
-  into native text boxes, tables and notes, with no slide images, as its own dated kind
-  (`<slug>-deck-native-<date>.pptx`).
+  into native text boxes, tables and notes, with no slide rendered as an image, as its own dated
+  kind (`<slug>-deck-native-<date>.pptx`). An image the Marp source places on a slide becomes a
+  picture shape on that native slide. *(Corrected 2026-10-08: the line read "with no slide images".)*
+- The verb is behind the flag `pyforge.herald.deck_export_native` (tree default off; on in dev
+  and staging). With the flag off it is listed as disabled and exits 2. *(Added 2026-10-08.)*
 - `marp --pptx` and the python-pptx fill are unchanged.
-- It runs from the Guild env, where `pptxgenjs-plus >=4.2.1` joins the dependencies. Story 32.1.
+- It runs from the Guild env, where `pptxgenjs-plus` 4.2.1 (`4.2.1.*`, channel-pinned to
+  `SelfExplainML`) joins the dependencies; the `pyforge-herald` env carries it and `nodejs` too,
+  so the station tests run the driver. Story 32.1. *(Corrected 2026-10-08: the line read
+  `pptxgenjs-plus >=4.2.1`; see § Currency reconciliation — 2026-10-08.)*
 
 **ONE FR space now Feature Groups 1–10** (FR-11.1 is the next free id).
 
@@ -1327,3 +1333,70 @@ realizes FR-9.1.
 **ONE FR space still Feature Groups 1–10** (FR-11.1 is the next free id).
 
 **Content changed:** this section added. No FR added, renumbered or removed. `updated:` bumped.
+
+## Currency reconciliation — 2026-10-08
+
+*Trigger: the chain-currency `behind-code` edge. Story 32.1 (CAP-57, FR-10.6, `done`) moved herald's code on its dispatch
+branch `dispatch/pyforge-herald/32.1`, so the code stage (the package `pyproject.toml`) is dated 2026-10-08 while this PRD
+sat at 2026-10-07. The Spec's memlog already carries the story's 2026-10-08 surface reconcile.*
+
+### What Story 32.1 built
+
+- **The verb.** `herald deck pptx-native <slug> [--repo-root <dir>]` (`cli.py`) reads the newest
+  `presentations/<slug>/src/marp/<slug>-deck-<date>.md` and writes `presentations/<slug>/src/pptx/<slug>-deck-native-<date>.pptx`
+  with its `.stamp.json` sidecar. Only after that write does `deck_versions.retire_superseded` retire the older version of
+  the `-deck-native` kind (FR-9.1's rule); the Marp export is a different kind and is never touched. A slug with no Marp
+  source, a missing `node` and a failing driver each exit 1 with a named error, and nothing is retired.
+- **The flag.** `pyforge.herald.deck_export_native`, read through `pyforge.core.flags.read_boolean`. `src/platform/config/flags.json`
+  declares it with `defaultVariant` off; `flag-overlays.json` turns it on for dev and staging and off for production. With
+  it off, `herald --help` lists the verb as disabled and the verb exits 2.
+- **The slide model and the driver.** `pyforge.herald.pptx_native` is a stdlib parser. Per Marp slide it keeps the first
+  heading, the `-` and `*` bullets, a Markdown table (the last one, if a slide has several), the single-line `<!-- … -->`
+  comments that are not `_`-prefixed Marp directives (as notes) and the image references. It hands the model to
+  `node/pptx_native.mjs` as JSON. The driver loads `pptxgenjs-plus` through `NODE_PATH=$CONDA_PREFIX/lib/node_modules` and
+  writes native text boxes, tables, notes and picture shapes on a 16:9 layout. The `.mjs` ships as package data through
+  `[tool.hatch.build.targets.wheel.force-include]`.
+- **The plugin.** `PptxgenjsExportPlugin` (format id `pptxgenjs`) is the fourth plugin on `DECK_EXPORT_HOOK_SPEC`,
+  registered by the `herald-deck-export-pptxgenjs` entry point. Like marp, pptx and dc.html, it records the format and
+  runs a backend only when one is injected. The verb calls `pptx_native.export_native_pptx` directly.
+- **The dependency decision (operator, 2026-10-08).** `pptxgenjs-plus` is pinned `4.2.1.*` and channel-pinned to
+  `SelfExplainML` in the `pyforge-guild` and `pyforge-herald` features. The herald feature also gains `nodejs` at the python
+  feature's spec. `>=4.2.1` would resolve 4.3.4, which needs Node 26, and `codegraph`'s conda build holds the Guild env on
+  Node 24. The story first reached the package with `channel-priority = "flexible"` on both features. The operator rejected
+  that on 2026-10-08, because any re-lock with it re-solves every environment that carries the feature. The re-lock from
+  main adds only `pptxgenjs-plus 4.2.1` (`h59285b8_0`, noarch) to six environments: default, pyforge-guild, pyforge-herald,
+  pyforge-container, pyforge-foundry-full and pyforge-foundry-full-stack.
+
+### FR-10.6 checked against the code: two lines corrected, one added
+
+- The pin line read `pptxgenjs-plus >=4.2.1`. It now names `4.2.1.*` channel-pinned to `SelfExplainML`, and the herald env.
+- "with no slide images" now says no slide is rendered as an image, and that an image the Marp source places becomes a
+  picture shape. That is what the story's edge-case matrix asked for and what the driver does.
+- Added: the flag gate and its exit 2.
+
+The rest holds as written. The source is the deck's current Marp file, the output is its own dated kind and never
+supersedes the Marp export, and `marp --pptx` and the python-pptx fill are unchanged (`exporters.py` gains a plugin;
+`pptx_pipeline.py` is untouched).
+
+### One divergence, recorded and not repaired (FR-10.6, notes)
+
+FR-10.6 says the export carries a deck's notes. The parser carries a note only when its comment opens and closes on one
+line. Measured on 2026-10-08 across the 15 current Marp decks: `agentic-sdlc` writes all 50 of its speaker notes as
+multi-line `<!--` blocks, and the native export carries none of them. Paragraph text, numbered lists and a second heading
+on a slide are dropped too. Story 32.1's acceptance names titles, bullets, tables and notes, and its own residual-risk
+line calls the parser intentionally minimal. The repair (multi-line notes, and the body text the model drops) changes
+behaviour, so it needs a fix story; this section only records the gap.
+
+### Recorded on the Spec, not repaired here
+
+CAP-57's intent and success text in `SPEC.md` still say `pptxgenjs-plus >=4.2.1`, and the memlog's Story 32.1
+surface-reconcile entry names `channel-priority flexible`. Both predate the operator's 2026-10-08 decision. A dated
+decision entry on the Spec memlog records the as-built pin for the next `bmad-spec` re-derive. `SPEC.md` is not
+hand-edited.
+
+### The FR space: no FR registered
+
+Story 32.1 realizes FR-10.6. **ONE FR space still Feature Groups 1–10** (FR-11.1 is the next free id).
+
+**Content changed:** this section added; FR-10.6 corrected in place (two lines) and one line added. No FR added,
+renumbered or removed. `updated:` bumped.
