@@ -23,7 +23,7 @@ After any disaster that touches more than one store, reconcile in this order
 may write authoritative state first):
 
 1. **Restore PostgreSQL** from the latest verified base backup + WAL archive
-   (see [restore.md](restore.md)).
+   (see [restore-operations.md](restore-operations.md)).
 2. **Run Liquibase hook** (`liquibase update`) then **`migrate --fake`** so
    Django migration history matches the restored schema without emitting DDL.
 3. **Restore redis-broker** from PVC snapshot or accept broker loss; run

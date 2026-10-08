@@ -1,0 +1,5 @@
+{
+  "type": "commonjs",
+  "private": true,
+  "description": "CommonJS scope for byte-identical upstream validator scripts (Story 27.4)."
+}

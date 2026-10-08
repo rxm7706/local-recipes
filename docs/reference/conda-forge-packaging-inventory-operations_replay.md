@@ -1,8 +1,8 @@
 # MASTER PROMPT V3.0 — Consolidated Inventory Replay (Reusable)
 
-**Canonical runner script:** [`scripts/conda-forge-packaging-inventory-operations_metrics.py`](../../scripts/conda-forge-packaging-inventory-operations_metrics.py)  
+**Canonical runner script:** [`scripts/conda-forge-packaging-inventory-operations_metrics.py`](https://github.com/rxm7706/local-recipes/blob/main/scripts/conda-forge-packaging-inventory-operations_metrics.py)  
 **Prompt:** [`docs/reference/conda-forge-packaging-inventory-operations_prompt.md`](conda-forge-packaging-inventory-operations_prompt.md)  
-**Curated groups config:** [`conf/conda-forge-packaging-inventory-operations_curated_groups.json`](../../conf/conda-forge-packaging-inventory-operations_curated_groups.json)
+**Curated groups config:** [`conf/conda-forge-packaging-inventory-operations_curated_groups.json`](https://github.com/rxm7706/local-recipes/blob/main/conf/conda-forge-packaging-inventory-operations_curated_groups.json)
 
 ## Prompt ↔ Script sync contract (required)
 
