@@ -120,6 +120,8 @@ _STATION_PYFORGE_ALLOWED: dict[str, tuple[str, ...]] = {
     # dependency here (see config/settings/base.py's sys.path fallback
     # comment); the boundary exception is the same shape as atlas's own.
     "mason": ("pyforge.mason.boot",),
+    # Story 29.2 (CAP-54 D3): deck-export projection + route wiring in the portal app.
+    "herald": ("pyforge.herald.deck_exports", "pyforge.herald.deck_store"),
 }
 
 
@@ -196,8 +198,13 @@ def test_naming_triples() -> None:
         assert cfg.label == f"{station}_portal"
         assert cfg.station_name == station
         module_root = pkg / "src" / f"django_{station}_portal"
-        assert module_root.joinpath("models.py").is_file() is False
-        assert not list(module_root.rglob("migrations/*.py"))
+        if station == "herald":
+            # Story 29.2: DeckExport projection (AD-18); other portals stay model-free.
+            assert module_root.joinpath("models.py").is_file()
+            assert list(module_root.rglob("migrations/*.py"))
+        else:
+            assert module_root.joinpath("models.py").is_file() is False
+            assert not list(module_root.rglob("migrations/*.py"))
 
 
 def test_new_portals_are_client_only_and_projection() -> None:
@@ -210,9 +217,10 @@ def test_new_portals_are_client_only_and_projection() -> None:
                 f"{path}: {hit}" for hit in _disallowed_pyforge_imports(station, tree)
             )
             offenders.extend(f"{path}: {hit}" for hit in _raw_http_imports(tree))
-            offenders.extend(
-                f"{path}: Model subclass {hit}" for hit in _model_subclasses(tree)
-            )
+            if station != "herald":
+                offenders.extend(
+                    f"{path}: Model subclass {hit}" for hit in _model_subclasses(tree)
+                )
     assert offenders == []
 
 

@@ -263,6 +263,7 @@ force-single-line = true
 "tests/test_django_pyforge_assertion.py" = ["E501", "PLC0415", "PLR0913", "PLR2004", "SLF001"]
 "tests/test_estate_dsn_is_plane.py" = ["BLE001", "PLC0415"]
 "tests/test_host_board_row_isolation.py" = ["E501"]
+"tests/test_station_portal_shells.py" = ["E501"]
 "tests/test_liquibase_update.py" = ["PT018"]
 "tests/test_marshal_loop_homes_portal.py" = ["TC002"]
 "tests/test_mason_portal_last_diagnose.py" = ["E501"]
@@ -274,6 +275,7 @@ force-single-line = true
 "tests/test_start_get_survives_disconnect.py" = ["E501"]
 "tests/test_station_api_seam.py" = ["E501", "PLC0415"]
 "tests/test_station_port_no_loopback.py" = ["E501", "EM101", "PLC0415", "TC002", "TRY003"]
+"tests/test_herald_deck_exports.py" = ["E501", "I001", "PLC0415", "PLR2004", "TC003"]
 "tests/test_warden_portal_audit_start_get.py" = ["E501", "S607"]
 
 # ==== import-linter ====

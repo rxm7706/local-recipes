@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: warden
-# stories: 93
+# stories: 94
 development_status:
   1-1-frozen-contract-verdict-lattice-projection-safety: done
   1-2-interfaces-null-engine-regression-harness-socket-deny: done
@@ -27,6 +27,7 @@ development_status:
   10-2-first-portal-slice-start-get-one-audit: done
   11-1-bmad-os-review-pr-and-findings-triage-are-warden-wielded-advisory-lenses: done
   11-2-tea-test-review-is-a-warden-advisory-finding: done
+  11-3-the-tea-advisory-spawns-through-engines-py-like-every-other-subprocess: done
   12-1-regression-test-the-promotion-verifier-s-clean-only-refusal-cannot-be-removed-silently: done
   12-2-environment-scoped-lockfile-extraction: done
   12-3-the-promotion-scans-the-shipped-closure: done

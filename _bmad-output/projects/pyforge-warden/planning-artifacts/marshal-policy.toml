@@ -162,6 +162,9 @@ verify_commands = [
   "scripts/.spec-surface-baseline.json",
   ".claude/skills/bmad-agent-warden/**",
   "AGENTS.md",
+  # Story 11.3 (2026-10-07, fix): engines.py and tea_advisory.py are co-governed by spec-pyforge-core, whose
+  # memlog lives under pyforge-marshal -- every Spec memlog, for the co-governor reconcile
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
 ]
 
 "12" = [  # A promotion gate that has seen what it ships (spec-golden-path-conda-blind-spot, reminted CAP-18..22), added 2026-09-28:
