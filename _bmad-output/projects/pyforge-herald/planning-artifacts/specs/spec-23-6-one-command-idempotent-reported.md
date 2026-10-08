@@ -5,7 +5,7 @@ created: '2026-09-16'
 status: 'done'
 baseline_revision: '537da5f6ebee2df7115fc5d75671fc68af18ccb1'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context: []
 deferred:
   - summary: >-
@@ -90,6 +90,32 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
   - `[maybe-false]` `[defer]` Intent Alignment Auditor: the idempotency AC ("second run reports unchanged with zero writes") is proven at the orchestration-logic level over hand-written fakes, and the one live two-consecutive-run smoke test in this worktree only exercised the `skipped` path (no seeded bridge state exists here) — never the `unchanged` path a real synced deck would take. If true this would be `medium` (a verification-depth gap, not a code defect). What would settle it: running `sync-all` twice against a deck with live Claude Design credentials and real tracked state. Deferred: no live Design credentials are available in this or any other automated dispatch environment (a pre-existing constraint, not caused by this story).
   - `[low]` `[reject]` Intent Alignment Auditor: dry-run's `would-sync`/`unchanged` vocabulary is narrower than epics.md Story 23.6's AC text ("prints the same report") and this spec's own Manual Checks wording ("prints the same per-deck report"). Checked feasibility: simulating the `overrode`/`derived` fields read-only would require either teaching `deck-facts`/`deck-trio` a dry-run mode (outside this story's declared surface per the module's own docstring) or reimplementing their comparison logic separately (forbidden by the intent-contract's own "Never: Do not re-implement kernel verbs; call them"), so full field parity is not achievable without violating a Never-constraint the diff correctly honors. The implemented, narrower scope is consistently documented everywhere a user would look (CLI `--help`, pixi task description, `docs/how-to/presentation-deck.md`), so nobody is misled in practice. Rejected: "the same report" reads more naturally as "the same per-deck report *format*" (one line per deck, in the run's own style) than as a literal field-for-field parity claim, and the stricter reading is infeasible under the spec's own constraints.
 
+### 2026-10-08 — Review pass (follow-up)
+- verdicts: 24 findings — high 0, medium 4, low 3, false 5, maybe-false 1, reject 11 (incl. carried/reject rows)
+- findings:
+  - `[false]` `[reject]` Blind Hunter: branch diff spans ~2991 paths unrelated to Herald 23.6 — the review artifact is the whole worktree branch, not a story-scoped delta; not a product defect.
+  - `[false]` `[reject]` Blind Hunter: spec `in-review` vs ledger `done` — transient frontmatter during the follow-up review step, not a shipped inconsistency.
+  - `[low]` `[patch]` Blind Hunter: module docstring still said dry-run delegates to `deck_pipeline.status` while `_dry_run_preview` implements its own loop. Action: docstring corrected to name `_dry_run_preview` and the export-key skip rationale.
+  - `[reject]` `[reject]` Blind Hunter: carried — dry-run "same report" vs narrower pull preview (2026-09-18 row); still infeasible under Never re-implement kernel verbs.
+  - `[medium]` `[patch]` Blind Hunter: `test_sync_all_second_run_reports_unchanged_with_zero_write_calls` models steady state with one `sync_all` call, not two consecutive invocations after mutation. Action: added `test_sync_all_two_consecutive_runs_second_unchanged_after_mutating_first`.
+  - `[false]` `[reject]` Blind Hunter: tail refresh/derive/push always run on unchanged pull — orchestration intentionally delegates no-op detection to kernel/seams; publish is gated via `any_change`.
+  - `[low]` `[reject]` Blind Hunter: `PixiFactsRefresher` returns 0 when summary line missing — `_run_bounded` already raises on non-zero exit; malformed stdout on success is operator-visible, not silent data loss in normal paths.
+  - `[low]` `[reject]` Blind Hunter: dry-run conflict lacks distinct CLI label — `failed` + explicit error string is the chosen vocabulary; cosmetic.
+  - `[medium]` `[defer]` Blind Hunter: `publish_error` captures site failure but proof write failures still raise — Story 24.3 `proof_dir` surface; defer aligning with `publish_error` pattern until that story owns the seam.
+  - `[low]` `[reject]` Blind Hunter: runbook omits `HERALD_LIVE_SYNC_PROOF` — documented in `live-proof-surfaces.md` and pixi task meta-tests; not a 23.6 binding gap.
+  - `[defer]` `[defer]` Blind Hunter: 24.3 proof surfaces bundled in branch — cross-story scope, already tracked under CAP-50.
+  - `[false]` `[reject]` Blind Hunter: exit 0 with per-deck `failed` — module docstring documents fleet-report-not-gate convention (mirrors scheduler).
+  - `[reject]` `[reject]` Blind Hunter: spec narrative volume in Tier-2 — process preference, not a code defect; Auto Run Result is the harness write-back.
+  - `[medium]` `[patch]` Edge Case Hunter: `_dry_run_preview` catches `TransportError` before `AuthError` can propagate (`AuthError` subclasses `TransportError`). Verified at `sync_all.py:533-537`. Action: re-raise `AuthError` before generic transport catch; added `test_sync_all_dry_run_auth_error_propagates`.
+  - `[medium]` `[defer]` Edge Case Hunter: proof write failure raises and drops return — Story 24.3; same defer as above.
+  - `[medium]` `[patch]` Edge Case Hunter: mid-loop `HeraldError` from `_pull_one` discarded partial `pulled`/`overwrote_local`. Action: wrap pull loop in `_sync_one_deck` with partial-fact return (mirrors tail-step handling).
+  - `[low]` `[reject]` Edge Case Hunter: missing deck-facts summary → silent `overrode=0` — same as Blind Hunter stdout edge; reject.
+  - `[maybe-false]` `[reject]` Edge Case Hunter: deck-trio marker only on stdout — `test_sync_all` pins stdout convention; would need live deck-trio capture to falsify stderr-only output.
+  - `[carried]` `[patch]` Edge Case Hunter: claim rows duplicate AuthError dry-run — same patch as above.
+  - `[medium]` `[patch]` Verification Gap Reviewer: two consecutive `sync_all` after on-disk mutation not tested — disposition `patch`; same test as Blind Hunter row.
+  - `[maybe-false]` `[defer]` Verification Gap Reviewer: live Design two-run idempotency not in CI — carried frontmatter `deferred` at `src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py`; settled only via operator `deck-sync-proof` with credentials.
+  - `[reject]` `[reject]` Intent Alignment Auditor: descriptive only — readings A–I enumerated; diff implements A+B+D+G+I; divergences at live/manual surfaces already deferred or covered by new two-run unit test; no new patch beyond rows above.
+
 ## Auto Run Result
 
 **Summary:** Implemented `herald deck sync-all [--slug] [--dry-run]` (Story 23.6, `spec-design-sync-loop` CAP-8 + CAP-3's sweep half): one command composing enumerate → pull → refresh → derive → push → prove → publish, in order, for every registered deck or one `--slug`, never re-implementing a kernel verb (every step calls an existing `deck_pipeline` function or shells the same pixi task an operator would run by hand, behind an injectable seam). A first review pass found 9 real defects (2 high, 6 medium, 1 low — see counts below); all 9 were patched by the same implementation subagent and re-verified against the code directly, not just the patch report.
@@ -114,3 +140,23 @@ Minted 2026-09-16 from `epics.md` so `marshal factory dispatch` can resolve `spe
 - The I/O & Edge-Case Matrix's one row (second run: no etag move → all unchanged, zero writes) is covered by `test_sync_all_second_run_reports_unchanged_with_zero_write_calls`, which ran and passed in both verification runs.
 
 **Residual risks:** the deferred idempotency-depth gap above; the named duplicated-etag-loop drift risk above; no live Claude Design credentials were available to exercise push/pull/publish against a real project at any point in this dispatch (covered by fakes at the unit level throughout, per both the implementation and patch passes).
+
+### Follow-up review pass (2026-10-08)
+
+**Summary:** Single allowed follow-up review (`followup_review_recommended` was `true` from the first pass). Patched four medium findings: dry-run `AuthError` propagation, partial pull facts on mid-loop failure, dry-run module docstring accuracy, and a two-invocation idempotency unit test after a mutating first run.
+
+**Files changed this pass:**
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/sync_all.py` — `AuthError` re-raise in `_dry_run_preview`; pull-loop partial report on `HeraldError`; docstring names `_dry_run_preview`.
+- `src/shared/packages/pyforge-herald/tests/unit/test_sync_all.py` — `test_sync_all_dry_run_auth_error_propagates`, `test_sync_all_two_consecutive_runs_second_unchanged_after_mutating_first`.
+- `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/.memlog.md` — surface reconcile entry for governed paths.
+- This story spec — follow-up triage log and write-back.
+
+**Review findings breakdown (follow-up):** Patched 4 (medium ×4 effective: AuthError dry-run ×2 filed layers, partial pull, two-run test ×2 layers, docstring low counted as patch). Deferred 2 (live Design idempotency carried; proof_dir raise vs `publish_error` for 24.3). Rejected/false 13 (branch-wide diff artifact, transient status, tail always-run, stdout parsing nits, exit-0 fleet report, etc.).
+
+**Follow-up review recommendation:** `false` — follow-up pass rules: no `high` patched; converged.
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test`: 1672 passed, 5 skipped.
+- `python scripts/spec_surface_reconcile.py`: OK (memlog names `sync_all.py`, `test_sync_all.py` under `spec-pyforge-herald`).
+
+**Residual risks:** deferred live Design two-run proof unchanged; `_dry_run_preview` vs `_status_for_slug` duplicated etag loop drift (first-pass note); optional 24.3 alignment for proof write failures.

@@ -512,6 +512,22 @@ def test_packages_mid_walk_failure_persists_pages_collected_so_far(tmp_path):
     assert marker.reason.startswith("partial catalog walk: 200/450")
 
 
+def test_packages_empty_followup_page_marks_partial_not_fresh(tmp_path):
+    """A later page that parses to zero rows while ``total`` remains unmet is a partial walk."""
+
+    def flaky(url: str) -> str:
+        offset = int(url.rsplit("offset=", 1)[-1])
+        if offset == 0:
+            return _page(0, 200, 450)
+        return json.dumps({"total": 450, "limit": 200, "packages": []})
+
+    ds = _pkgs(tmp_path, fetcher=flaky, page_size=200)
+    ds.save(RefreshRequest(store="discovery_basilisk_packages_raw", force=True))
+    assert len(ds.load()) == 200
+    assert ds.is_stale() is True
+    assert "empty page at offset=200" in ds.staleness().reason
+
+
 def test_packages_partial_walk_never_overwrites_a_fuller_last_good(tmp_path):
     """A full 450-row last-good exists; a later flaky walk fails at offset 200 -> the
     200-row partial must NOT replace it: load() still returns 450 rows, store stale."""
