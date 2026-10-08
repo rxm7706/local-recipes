@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -53,9 +52,7 @@ def _assemble_pages():
 
 def test_public_site_url_default() -> None:
     psh = _pages_second_host()
-    assert psh.public_site_url(github_repository="rxm7706/local-recipes") == (
-        "https://rxm7706.github.io/local-recipes"
-    )
+    assert psh.public_site_url(github_repository="rxm7706/local-recipes") == ("https://rxm7706.github.io/local-recipes")
 
 
 def test_combine_pages_host() -> None:
@@ -129,7 +126,7 @@ def _minimal_artifact(artifact: Path, site_url: str, *, herald_index_body: str) 
     [
         ('<script src="https://cdn.example/x.js"></script>', "script"),
         ('<link rel="stylesheet" href="https://cdn.example/x.css">', "stylesheet"),
-        ('@font-face { src: url(https://fonts.gstatic.com/font.woff2); }', "font"),
+        ("@font-face { src: url(https://fonts.gstatic.com/font.woff2); }", "font"),
         ('<img src="https://cdn.example/x.png">', "image"),
         ('fetch("https://platform.example/api")', "fetch"),
         ('xhr.open("GET", "https://platform.example/api")', "xhr"),
