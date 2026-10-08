@@ -69,3 +69,25 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Manual checks:**
 - `pixi run -e pyforge-guild sbom-gaps-check` — expected: exit 0 on the landed list.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added derived SBOM gap tracking — `scripts/sbom_gap_derive.py` compares `pixi.toml` to `docs/foundry/sbom-gaps.md`; `sbom-gaps-check` fails on missing, stale, or incomplete rows. The tracked file lists 19 feature gaps outside `pyforge-foundry-full-stack` and 162 fat-only `local-recipes` pins, each with disposition, reason, and owner.
+
+Files changed:
+- `docs/foundry/sbom-gaps.md` — tracked gap list (new)
+- `scripts/sbom_gap_derive.py` — derivation and check (new)
+- `tests/scripts/test_sbom_gap_derive.py` — matrix coverage tests (new)
+- `pixi.toml` — `[feature.guild-tasks.tasks.sbom-gaps-check]`
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` — surface entries
+- memlog entries on `spec-python-foundry-cutover` and `spec-pyforge-steward`
+
+Verification:
+- `pixi run -e pyforge-guild sbom-gaps-check` — exit 0
+- `pixi run -e pyforge-ci pytest tests/scripts/test_sbom_gap_derive.py` — 8 passed
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — passed
+- `pixi run -e pyforge-guild python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile (no baseline stamp)
+
+followup_review_recommended: false
