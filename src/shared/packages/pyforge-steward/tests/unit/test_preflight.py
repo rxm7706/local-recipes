@@ -74,8 +74,7 @@ def test_missing_aggregate_exits_2(tmp_path: Path) -> None:
 def test_unknown_task_exits_2(tmp_path: Path) -> None:
     pixi_path = tmp_path / "pixi.toml"
     pixi_path.write_text(
-        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
-        'depends-on = ["missing-task"]\n',
+        '[feature.guild-tasks.tasks.pr-preflight-lanes]\ndepends-on = ["missing-task"]\n',
         encoding="utf-8",
     )
     assert preflight.run_preflight(tmp_path, pixi_path=pixi_path) == preflight.EXIT_CONFIG

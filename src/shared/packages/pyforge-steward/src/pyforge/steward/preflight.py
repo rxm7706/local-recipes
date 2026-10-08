@@ -13,14 +13,13 @@ import os
 import subprocess
 import sys
 import time
+import tomllib
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-
-import tomllib
 
 ROOT_AGGREGATE = "pr-preflight-lanes"
 DEFAULT_INVOKING_ENV = "pyforge-guild"
@@ -118,7 +117,7 @@ def list_preflight_lanes(
 def _logical_core_count() -> int:
     try:
         return len(os.sched_getaffinity(0))
-    except (AttributeError, NotImplementedError):
+    except AttributeError, NotImplementedError:
         return os.cpu_count() or 1
 
 
@@ -139,7 +138,7 @@ def _git_head(repo_root: Path) -> tuple[str, str]:
             text=True,
         ).stdout.strip()
         return sha, branch or "(detached)"
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except subprocess.CalledProcessError, FileNotFoundError:
         return "unknown", "unknown"
 
 
