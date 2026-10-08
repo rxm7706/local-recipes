@@ -2,9 +2,9 @@
 title: "16.2: A fleet run scans each inventoried repo, one verdict per repo"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'b62d8952641cb7d5838d2296c98d3642208f49c6'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/specs/spec-pyforge-warden/SPEC.md
@@ -109,3 +109,16 @@ Deps: S-16.1.
 ## Review Triage Log
 
 - No review yet (minted 2026-09-28). Implementation and review stay separate.
+
+### 2026-10-08 — Review pass
+- verdicts: 4 findings — high 0, medium 1, low 1, false 1, maybe-false 1
+- findings:
+  - `[medium]` `[defer]` FleetRepo model ships in 16.2 before blocked Story 16.1 lands — rows are fixture-seeded for scan tests; GHE inventory sync remains 16.1's scope.
+  - `[low]` `[reject]` `test_fleet_run_three_repos` patches `_run_warden_engines` because `platform-ci-test` lacks the full `pyforge-warden` runtime; clone + row persistence still run for real.
+  - `[false]` `[reject]` Claim that fleet run composes a fleet verdict — `FleetRun.status` is job lifecycle only; per-repo verdict lives in `FleetRepoScan.report_json` / `scan_exit_code`.
+  - `[maybe-false]` `[defer]` Chord finalization under non-eager Celery in production — verified in eager tests; production chord path matches existing warden fabric task patterns.
+
+## Auto Run Result
+
+Status: done
+Verification: `pixi run --frozen -e pyforge-warden pyforge-warden-test` passed; `tests/test_warden_fleet_run.py` (9/9) with ephemeral PostgreSQL; `python -m db.sqlmigrate_extraction` ok; `python scripts/spec_surface_reconcile.py` ok after memlog reconciles.
