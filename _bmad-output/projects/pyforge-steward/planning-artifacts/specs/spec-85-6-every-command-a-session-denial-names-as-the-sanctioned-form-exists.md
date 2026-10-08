@@ -2,7 +2,7 @@
 title: "85.6: Every command a session denial names as the sanctioned form exists"
 type: 'fix'
 created: '2026-10-07'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '5c1ff88e5a60bee67e66c10b721fa8fabff0a091'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -166,8 +166,32 @@ Type / Effort / Deps: fix / S / —.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-07: Story 85.6 landed — session_denials reason text names operator acts until marshal 87.1/87.3; `tests/scripts/test_session_denial_forms.py` guards every backticked form.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-07 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation review found no patch, defer, or intent_gap items)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `tests/scripts/test_session_denial_forms.py` to resolve every backticked command in `session_denials` reasons; updated `protected-ref-deletion` and `unreachable-ref-deletion` reason strings to name operator acts instead of nonexistent `--retire` / `marshal preserve tag` forms; aligned `tests/scripts/test_pre_shell_hook.py` assertions.
+
+Files changed:
+- `docs/governance/guild-roster.json` — reason text only (ids/triggers unchanged)
+- `tests/scripts/test_session_denial_forms.py` — new roster backtick resolver tests
+- `tests/scripts/test_pre_shell_hook.py` — operator-act reason assertions
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/.memlog.md` — surface reconcile entry
+
+Review: 0 patches applied; 0 deferred; follow-up review not recommended.
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — pass (2044 passed, 5 skipped)
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — pass (1225 passed, 11 skipped)
+- `pixi run --frozen -e pyforge-guild python -m pytest tests/scripts/test_session_denial_forms.py tests/scripts/test_pre_shell_hook.py -q` — pass (100 passed)
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+
+Residual risk: when marshal Stories 87.1 and 87.3 land, reasons may name their CLI forms again; the new test will admit them once parsers accept those verbs.
