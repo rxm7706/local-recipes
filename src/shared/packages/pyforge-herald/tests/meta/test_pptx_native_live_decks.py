@@ -83,6 +83,7 @@ def test_live_decks_zero_lost_notes_and_body_lines() -> None:
     slide_total = 0
     lost_notes = 0
     lost_lines = 0
+    lost_line_samples: list[str] = []
     for path in paths:
         text = path.read_text(encoding="utf-8")
         body = pptx_native._strip_front_matter(text)
@@ -98,14 +99,29 @@ def test_live_decks_zero_lost_notes_and_body_lines() -> None:
                 if frag and frag not in model_blob and frag not in slide.notes:
                     lost_notes += 1
             first_heading = True
+            in_fence = False
             for line in body_lines:
+                stripped = line.strip()
+                if _FENCE.match(stripped):
+                    in_fence = not in_fence
+                    continue
+                if in_fence:
+                    if stripped and stripped not in model_blob:
+                        lost_lines += 1
+                        if len(lost_line_samples) < 5:
+                            lost_line_samples.append(f"{path.name}: {stripped!r}")
+                    continue
                 frags = _text_fragments_from_body_line(line, first_heading=first_heading)
-                if _HEADING.match(line.strip()) and first_heading:
+                if _HEADING.match(stripped) and first_heading:
                     first_heading = False
                 for frag in frags:
                     if frag in model_blob or frag == slide.title:
                         continue
                     lost_lines += 1
+                    if len(lost_line_samples) < 5:
+                        lost_line_samples.append(f"{path.name}: {frag!r}")
     assert lost_notes == 0, f"lost {lost_notes} note fragments across live decks"
-    assert lost_lines == 0, f"lost {lost_lines} body text fragments across live decks"
+    assert lost_lines == 0, (
+        f"lost {lost_lines} body text fragments across live decks: {lost_line_samples}"
+    )
     assert slide_total >= 200
