@@ -276,7 +276,7 @@ def test_registered_data_functions_are_callable_and_return_frames(dashboard):
 
 def test_factory_status_reads_the_sprint_status_it_is_pointed_at(bmad_fixture):
     """The factory-status frame surfaces every story key + status from the
-    sprint-status.yaml it is GIVEN, alongside epics.md and the spec statuses.
+    sprint-status.yaml it is GIVEN, alongside epics.md frontmatter status.
 
     Pointed at the ``bmad_fixture`` file through the injectable parameter, not at
     ``_default_paths()``: that default is the gitignored, locally-generated Tier-3
@@ -288,7 +288,6 @@ def test_factory_status_reads_the_sprint_status_it_is_pointed_at(bmad_fixture):
         build_stamp=STAMP,
         sprint_status_path=bmad_fixture["sprint"],
         epics_path=bmad_fixture["epics"],
-        specs_dir=bmad_fixture["specs"],
     )
     sprint = frame[frame["source"] == "sprint-status.yaml"]
     keyed = dict(zip(sprint["key"], sprint["status"]))
@@ -297,9 +296,8 @@ def test_factory_status_reads_the_sprint_status_it_is_pointed_at(bmad_fixture):
         "d1-define-the-boring-semantic-layer-bsl-models": "done",
         "d2-build-the-vizro-dashboard-port-the-28-clis-to-pages": "in-progress",
     }
-    # epics.md frontmatter + spec statuses are surfaced too.
     assert (frame["source"] == "epics.md").any()
-    assert (frame["source"] == "docs/specs").sum() >= 1
+    assert (frame["source"] == "docs/specs").sum() == 0
 
 
 def test_factory_status_defaults_to_the_tracked_bmad_locations():
@@ -312,7 +310,6 @@ def test_factory_status_defaults_to_the_tracked_bmad_locations():
         "sprint-status.yaml",
     )
     assert defaults["epics_path"].parts[-2:] == ("planning-artifacts", "epics.md")
-    assert defaults["specs_dir"].parts[-2:] == ("docs", "specs")
 
 
 def test_factory_status_of_an_absent_sprint_feed_is_empty_never_fabricated(tmp_path):
@@ -321,7 +318,6 @@ def test_factory_status_of_an_absent_sprint_feed_is_empty_never_fabricated(tmp_p
         build_stamp=STAMP,
         sprint_status_path=tmp_path / "absent-sprint-status.yaml",
         epics_path=tmp_path / "absent-epics.md",
-        specs_dir=tmp_path / "absent-specs",
     )
     assert (frame["source"] == "sprint-status.yaml").sum() == 0
     # row 0 (the AD-17 stamp) is always there -- the frame is never empty.
@@ -364,7 +360,6 @@ def test_factory_status_reads_injected_fixture_artifacts(bmad_fixture):
         build_stamp=STAMP,
         sprint_status_path=bmad_fixture["sprint"],
         epics_path=bmad_fixture["epics"],
-        specs_dir=bmad_fixture["specs"],
     )
     sprint = dict(
         zip(
@@ -374,14 +369,7 @@ def test_factory_status_reads_injected_fixture_artifacts(bmad_fixture):
     )
     assert sprint["d1-define-the-boring-semantic-layer-bsl-models"] == "done"
     assert frame.loc[frame["source"] == "epics.md", "status"].iloc[0] == "final"
-    specs = dict(
-        zip(
-            frame.loc[frame["source"] == "docs/specs", "artifact"],
-            frame.loc[frame["source"] == "docs/specs", "status"],
-        )
-    )
-    # two.md/one.md have status; no-fm.md has no frontmatter → omitted (not fabricated).
-    assert specs == {"one": "ready", "two": "shipped"}
+    assert (frame["source"] == "docs/specs").sum() == 0
 
 
 def test_factory_status_degrades_on_missing_and_malformed_artifacts(tmp_path):
@@ -392,7 +380,6 @@ def test_factory_status_degrades_on_missing_and_malformed_artifacts(tmp_path):
         build_stamp=STAMP,
         sprint_status_path=str(tmp_path / "absent.yaml"),
         epics_path=str(tmp_path / "absent.md"),
-        specs_dir=str(tmp_path / "absent-dir"),
     )
     # ONLY the build-stamp row survives: a missing epics.md contributes ZERO rows, exactly
     # like the other two sources — never a fabricated literal "None" status (Reviewer-B S1).

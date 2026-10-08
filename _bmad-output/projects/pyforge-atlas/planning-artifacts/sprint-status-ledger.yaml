@@ -83,7 +83,7 @@ development_status:
   24-4-a-live-artifactory-transport-exists-for-the-attended-operator-to-plug-in: done
   25-1-a-per-repo-dependency-history-dataset-from-git-pkgs-and-an-estate-pixi-parser: blocked
   25-2-a-poll-cursor-sensor-refreshes-the-history-over-warden-s-fleet-inventory: done
-  26-1-the-factory-status-frame-drops-its-docs-specs-rows: backlog
+  26-1-the-factory-status-frame-drops-its-docs-specs-rows: done
   27-1-inventory-exports-refuse-hollow-sets-and-the-quartet-fails-loud: done
   27-2-the-data-plane-honours-its-data-root-and-fetches-what-it-claims: done
   27-3-the-read-surfaces-render-what-design-specifies-on-real-data: done
@@ -153,7 +153,7 @@ development_status:
   epic-24-retrospective: optional
   epic-25: in-progress
   epic-25-retrospective: optional
-  epic-26: backlog
+  epic-26: done
   epic-26-retrospective: optional
   epic-27: done
   epic-27-retrospective: optional

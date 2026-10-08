@@ -2878,9 +2878,9 @@
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/artifactory/identity_join.py": "a7f9838442326174526446f412d2ef3dee00c595",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/cap18.py": "73d001987c12e1ae182df497c743258778522b41",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/__init__.py": "b820fed5271a78dc512e6a201d87955cc9c8f572",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "81989e4a0dde9e8f0f139d28f549dc1613d4fa59",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/app.py": "2762a800bbdf0f959e8b684b9e18c2f12f8669a2",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/data.py": "e3bce9c0bd472c747cfa35c1149a89c1172d618e",
-   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py": "24ad964cbb46a987faef32df13f6424dd7686abe",
+   "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/factory_status.py": "cb42ce78717602c898f5fa0cbea950fc8ae6e9f3",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/identity_gist.py": "ab2469a2e117525d2dc5970e0e8da6eac0e35016",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/dashboard/scan_submit.py": "ccbc5deb4c6fa2d3da0033dbf102065234f96189",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/__init__.py": "dfeeaabb6b4ee20c1746a8b0a540a4892a939dbc",
@@ -3010,6 +3010,7 @@
    "src/shared/packages/pyforge-core/src/pyforge/core/flags.py": "b17618fa7d12aae967f9091aa7cb266657cf88a4",
    "src/shared/packages/pyforge-core/src/pyforge/core/hooks.py": "03294772e3802e8a37154c16d660e9827ec25385",
    "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py": "fee98170c10c2a59d864a0dd354539693a3141a1",
+   "src/shared/packages/pyforge-core/src/pyforge/core/league_measure.py": "ef915e9354af32eb0dfa3cdf0060dc0211ca7e97",
    "src/shared/packages/pyforge-core/src/pyforge/core/process.py": "c046d7262783d7c24b83a721ea5310888a3f6ee3",
    "src/shared/packages/pyforge-core/src/pyforge/core/published_loop.py": "0469d13dfe9a236fae8a748f5b27eecf672d9506",
    "src/shared/packages/pyforge-core/src/pyforge/core/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -3036,6 +3037,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "75f99efccbb5310b8e5e648aab994a85c0a080e9",
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
    "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "115c10aa12674d205a1d76dc560c0fde5996d098",
+   "src/shared/packages/pyforge-core/tests/unit/test_league_measure.py": "9bd6766e602674c54cb06dd67647707f0c442fdd",
    "src/shared/packages/pyforge-core/tests/unit/test_process.py": "a4bff2aafc3b0711ddc3980a5bd4677a4ca8efb6",
    "src/shared/packages/pyforge-core/tests/unit/test_report.py": "8fc7d80039bc741d9b5cc54a8452d7bcfda3a9fd",
    "src/shared/packages/pyforge-core/tests/unit/test_roster.py": "1b2280e6e7323e397d3e46a4a1a2593f8a516e08",
@@ -3479,7 +3481,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "96950fd22a7a1f61321314e67e15fdb032663370"
+  "memlog": "c9c616a5072bb33ec6e78381ce6d3566d5c70a17"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
