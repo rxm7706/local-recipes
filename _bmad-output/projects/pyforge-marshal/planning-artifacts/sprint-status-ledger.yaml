@@ -109,7 +109,7 @@ development_status:
   22-19-a-landing-unions-the-flag-registry-when-two-flag-stories-land-in-turn: done
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-20-a-formatting-only-change-never-reaches-verification-unnamed: backlog
-  22-21-a-story-that-recommends-a-follow-up-review-lands-with-its-row: backlog
+  22-21-a-story-that-recommends-a-follow-up-review-lands-with-its-row: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done
   22-5-one-story-in-flight-per-station-stations-in-parallel-overlap-is-loud: done
@@ -480,7 +480,7 @@ development_status:
   epic-20-retrospective: optional
   epic-21: done
   epic-21-retrospective: optional
-  epic-22: done
+  epic-22: in-progress
   epic-22-retrospective: optional
   epic-23: done
   epic-23-retrospective: optional

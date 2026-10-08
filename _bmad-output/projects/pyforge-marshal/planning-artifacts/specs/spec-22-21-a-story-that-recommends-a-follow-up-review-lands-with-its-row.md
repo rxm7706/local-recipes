@@ -2,8 +2,8 @@
 title: "22.21: A story that recommends a follow-up review lands with its row"
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
-baseline_revision: '5b5951211ecf10c1b01c5fd49f0ebf51e85c82fd'
+status: 'done'
+baseline_revision: '998c231f2fa072bca46bfb31f8ae98e63afff370'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -172,3 +172,29 @@ Type / Effort / Deps: fix / S / none.
 - Mutation: remove the branch write from `execute_dispatch_land` and re-run the station suite. The done-and-flagged landing test fails on the orphan. Restore it.
 - On the next dispatch of a story whose review pass recommends a follow-up review, the PR head carries `DW-FRR-<story>`, `marshal-test` is green, the landing merges without a hand row, and `main` heads exactly one open `DW-FRR-<story>`.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches acceptance criteria; review performed against diff and AC)
+
+## Auto Run Result
+
+Status: done
+
+Summary: `execute_dispatch_land` now appends `DW-FRR-<story>` to the station deferred-work ledger on the dispatch branch and commits it after `may_attempt_dispatch_landing` and before the landing push, using the Story 66.1 pure helpers in `core/deferred_work.py`. Finalize carry remains the post-merge backstop.
+
+Files changed:
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` — pre-push follow-up row carry
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_landing.py` — Story 22.21 acceptance fixtures
+
+Review: 0 patches; nothing deferred.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11852 passed
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 1 pre-existing failure (`pyforge-herald` conda run-deps vs pyproject; unrelated to this diff)
