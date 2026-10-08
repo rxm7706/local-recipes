@@ -4900,7 +4900,7 @@ _VERIFIED_PATH_LINE_RE = re.compile(
 _VERIFIED_COMMAND_EXIT_RE = re.compile(
     r"`[^`\n]+`[^`\n]{0,24}?\b"
     r"(?:(?i:exit(?:ed\s+with(?:\s+code)?|ed|s)?(?:[ _-]?(?:code|status))?)|rc|returncode)"
-    r"\b\s*[=:]?\s*\d+"
+    r"\b\s*[=:]?\s*\d+(?!\s+(?:retries|times|attempts|more)\b)"
 )
 
 
