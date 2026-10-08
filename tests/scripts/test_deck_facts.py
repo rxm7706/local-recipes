@@ -14,10 +14,12 @@ run is offline and independent of the live tree.
 from __future__ import annotations
 
 import ast
+import importlib.util
+import itertools
 import shlex
 import sys
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 
 import pytest
 import tomllib
@@ -252,6 +254,8 @@ def test_genesis_rows_and_omissions_for_a_non_station_deck(root, capsys):
     assert rows["guild_stations"]["value"] == "3"
     assert rows["dreams_total"]["value"] == "1"  # README.md has no frontmatter
     assert rows["dreams_dreamt"]["value"] == "1"
+    assert rows["dreams_total"]["source"] == deck_facts.GENESIS_DREAMS_SOURCE
+    assert rows["dreams_dreamt"]["source"] == deck_facts.GENESIS_DREAMS_SOURCE
     assert "omitted spec_status, spec_capabilities: 0 SPEC.md match" in err  # spec_hits != 1
     assert "omitted tests_collected: pyforge-genesis is not a station" in err
     assert "omitted dream_log_*" in err
@@ -262,6 +266,126 @@ def test_genesis_rows_and_omissions_for_a_non_station_deck(root, capsys):
     deck_facts.main(["pyforge-genesis"])
     assert "2 SPEC.md match" in capsys.readouterr().err
     assert "spec_status" not in _rows(root, "pyforge-genesis")
+
+
+# --- pyforge-genesis Dream archive (herald Story 33.1; CHAIN-STANDARD §11)
+
+_ARCHIVED_AT_75_1 = {
+    "deckcraft",
+    "design-code-bridge",
+    "herald-pitch-deck-family-expansion",
+    "modernist-identity",
+    "pyforge-genesis",
+    "video-scripts",
+}
+_ARCHIVE_READ = "    if archive.is_dir():"
+_LIVE_ONLY = "    if False:  # archive read removed for mutation test"
+_DF_NAMES = itertools.count()
+
+
+def _load_deck_facts(path: Path, monkeypatch: pytest.MonkeyPatch) -> ModuleType:
+    name = f"_deck_facts_archive_{next(_DF_NAMES)}"
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    monkeypatch.setitem(sys.modules, name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _live_only_deck_facts_source() -> str:
+    source = (REPO_ROOT / "scripts/deck_facts.py").read_text(encoding="utf-8")
+    assert source.count(_ARCHIVE_READ) == 1, "archive read moved; update the mutation anchor"
+    return source.replace(_ARCHIVE_READ, _LIVE_ONLY)
+
+
+def _genesis_dream_rows(root: Path) -> dict[str, dict]:
+    deck_facts.main(["pyforge-genesis"])
+    return _rows(root, "pyforge-genesis")
+
+
+def _assert_moved_dream_keeps_genesis_counts(df: ModuleType, root: Path) -> None:
+    _write(
+        root / "docs/dreams/old-idea.md",
+        "---\ntitle: Old\nstatus: archived\n---\n",
+    )
+    before = df.genesis_dream_status_counts(root)
+    moved = root / "archive/docs/dreams/old-idea.md"
+    moved.parent.mkdir(parents=True, exist_ok=True)
+    (root / "docs/dreams/old-idea.md").rename(moved)
+    assert df.genesis_dream_status_counts(root) == before
+
+
+def test_genesis_todays_tree_keeps_live_buckets_and_adds_archive_as_archived() -> None:
+    archive = REPO_ROOT / "archive/docs/dreams"
+    if not archive.is_dir():
+        pytest.skip("archive/docs/dreams/ not present")
+    live_stems = {p.stem for p in (REPO_ROOT / "docs/dreams").glob("*.md")}
+    archive_only = [
+        p.stem
+        for p in sorted(archive.glob("*.md"))
+        if p.stem not in live_stems and deck_facts.frontmatter_scalar(p, "status")
+    ]
+    assert _ARCHIVED_AT_75_1 <= set(archive_only)
+    live_only = {}
+    for md in sorted((REPO_ROOT / "docs/dreams").glob("*.md")):
+        st = deck_facts.frontmatter_scalar(md, "status")
+        if st:
+            live_only[st] = live_only.get(st, 0) + 1
+    full = deck_facts.genesis_dream_status_counts(REPO_ROOT)
+    assert sum(full.values()) == sum(live_only.values()) + len(archive_only)
+    for st, n in live_only.items():
+        if st == "archived":
+            assert full[st] == n + len(archive_only)
+        else:
+            assert full[st] == n
+
+
+def test_genesis_moved_archived_dream_keeps_counts(root):
+    _assert_moved_dream_keeps_genesis_counts(deck_facts, root)
+
+
+def test_genesis_archive_dream_without_status_is_not_counted(root):
+    _write(root / "archive/docs/dreams/no-status.md", "# no frontmatter\n")
+    rows = _genesis_dream_rows(root)
+    assert rows["dreams_total"]["value"] == "1"
+    assert "dreams_archived" not in rows
+
+
+def test_genesis_archive_dream_counts_as_archived_not_its_frontmatter_status(root):
+    _write(
+        root / "archive/docs/dreams/straggler.md",
+        "---\ntitle: S\nstatus: specified\n---\n",
+    )
+    rows = _genesis_dream_rows(root)
+    assert rows["dreams_total"]["value"] == "2"
+    assert rows["dreams_archived"]["value"] == "1"
+    assert "dreams_specified" not in rows
+
+
+def test_genesis_slug_in_both_directories_is_counted_once_from_live(root):
+    _write(
+        root / "docs/dreams/twin.md",
+        "---\ntitle: Live\nstatus: dreamt\n---\n",
+    )
+    _write(
+        root / "archive/docs/dreams/twin.md",
+        "---\ntitle: Archive\nstatus: archived\n---\n",
+    )
+    counts = deck_facts.genesis_dream_status_counts(root)
+    assert counts == {"dreamt": 2}  # pyforge-alpha + twin, archive copy ignored
+
+
+def test_genesis_mutation_removing_archive_read_fails_moved_dream_check(
+    tmp_path, monkeypatch, root
+):
+    script = tmp_path / "deck_facts.py"
+    script.write_text(_live_only_deck_facts_source(), encoding="utf-8")
+    df = _load_deck_facts(script, monkeypatch)
+    monkeypatch.setattr(df, "ROOT", root)
+    with pytest.raises(AssertionError):
+        _assert_moved_dream_keeps_genesis_counts(df, root)
 
 
 def test_unsourceable_facts_are_omitted_and_named_on_stderr(root, capsys):
