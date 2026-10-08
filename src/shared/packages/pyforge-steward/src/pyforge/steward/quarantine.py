@@ -42,9 +42,7 @@ def admit_inbound_without_passport(
     if not vendor_id or not vendor_id.strip():
         raise QuarantineAdmitError("vendor_id is required")
     if not (jira_key or "").strip() and not (github_item_id or "").strip():
-        raise QuarantineAdmitError(
-            "an inbound row must carry at least one nickname (--jira-key or --github-item-id)"
-        )
+        raise QuarantineAdmitError("an inbound row must carry at least one nickname (--jira-key or --github-item-id)")
 
     if config is not None:
         config_path = config / CONFIG_FILENAME if config.is_dir() else config

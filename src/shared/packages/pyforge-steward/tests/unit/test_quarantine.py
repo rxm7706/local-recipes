@@ -43,7 +43,11 @@ from pyforge.steward.cli import build_parser  # noqa: E402
 from pyforge.steward.dashboard import quarantine_admit as quarantine_admit_module  # noqa: E402
 from pyforge.steward.dashboard.models import QuarantineShelfRow, WorkPassport  # noqa: E402
 from pyforge.steward.dashboard.views_htmx import quarantine_htmx_view  # noqa: E402
-from pyforge.steward.quarantine import QuarantineAdmitError, QuarantineDuty, admit_inbound_without_passport  # noqa: E402
+from pyforge.steward.quarantine import (  # noqa: E402
+    QuarantineAdmitError,
+    QuarantineDuty,
+    admit_inbound_without_passport,
+)
 
 _NOW = datetime(2026, 9, 20, 12, 0, 0, tzinfo=timezone.utc)
 _WINDOW = 14
