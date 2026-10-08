@@ -1384,11 +1384,13 @@ def inject_recall_feedback(
         query=recall_feedback.build_recall_query(station_slug),
         scope=station_slug,
     )
-    content = ""
-    injected = False
-    if outcome.ok and outcome.grounded:
-        content = recall_feedback.render_recall_feedback_block(text=outcome.text, citation=outcome.citation)
-        injected = True
+    content = recall_feedback.format_recall_feedback_for_injection(
+        ok=outcome.ok,
+        grounded=outcome.grounded,
+        text=outcome.text,
+        citation=outcome.citation,
+    )
+    injected = bool(content)
     marker = _recall_query_marker_path(target)
     try:
         fs.ensure_dir(target.parent)

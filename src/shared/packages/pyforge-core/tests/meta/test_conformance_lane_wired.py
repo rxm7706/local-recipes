@@ -170,7 +170,7 @@ def pixi_leg_problems(pixi_data: dict) -> list[str]:
             f"pyforge-station-tests' first depends-on leg is {legs[:1]!r}, "
             f"not {{task = {CORE_TASK!r}, environment = {CORE_ENV!r}}}"
         )
-    preflight = [d if isinstance(d, str) else d["task"] for d in tasks["pr-preflight"].get("depends-on", [])]
+    preflight = [d if isinstance(d, str) else d["task"] for d in tasks["pr-preflight-lanes"].get("depends-on", [])]
     if "pyforge-station-tests" not in preflight:
         problems.append(
             "pr-preflight no longer depends on pyforge-station-tests, so it no longer inherits the core leg"
