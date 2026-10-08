@@ -113,7 +113,7 @@ development_status:
   30-2-the-herald-portal-shows-a-deck-in-the-browser-from-its-html-twin: done
   31-1-the-pages-artifact-builds-for-the-host-that-deploys-it: backlog
   31-2-how-to-deploy-the-docs-site-to-github-enterprise-pages: backlog
-  32-1-a-deck-exports-as-a-native-editable-pptx-through-pptxgenjs-plus: backlog
+  32-1-a-deck-exports-as-a-native-editable-pptx-through-pptxgenjs-plus: done
   33-1-deck-facts-counts-dreams-under-the-archive-too: done
   34-1-herald-cites-the-deck-how-to-not-the-intake-stub: done
   35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals: done
@@ -189,7 +189,7 @@ development_status:
   epic-30-retrospective: optional
   epic-31: backlog
   epic-31-retrospective: optional
-  epic-32: backlog
+  epic-32: done
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional

@@ -2,7 +2,9 @@
 title: '32.1: A deck exports as a native, editable pptx through pptxgenjs-plus'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '1bf6c5a138cb55ad4da80598789eaf5ef917e056'
+followup_review_recommended: false
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -153,3 +155,27 @@ Flag: `pyforge.herald.deck_export_native` (`feature-flag-governance:CAP-1`).
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
 
 ## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (self-review after implementation; no subagent layers this pass)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Native editable deck export via `pptxgenjs-plus`: Marp slide model in Python, Node driver in package data, `herald deck pptx-native <slug>` behind `pyforge.herald.deck_export_native`, fourth export plugin `pptxgenjs`, and Guild/Herald env pins for `pptxgenjs-plus` 4.2.1.*.
+
+Files changed:
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_native.py` — parse Marp, call Node, retire superseded native kind
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/node/pptx_native.mjs` — pptxgenjs-plus renderer
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/exporters.py` — `PptxgenjsExportPlugin`
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/cli.py` — `deck pptx-native` verb and flag gate
+- `src/platform/config/flags.json` and `flag-overlays.json` — `pyforge.herald.deck_export_native`
+- `src/platform/tests/test_openfeature_file_flags.py` — shipped boolean expectations
+- `pixi.toml` / `pixi.lock` — Guild and Herald deps + flexible channel for SelfExplainML package
+- Tests under `pyforge-herald/tests/{unit,integration}/test_pptx_native*.py` and export plugin updates
+
+Verification: `pixi run --frozen -e pyforge-herald pyforge-herald-test` — 1648 passed, 5 skipped; `python scripts/spec_surface_reconcile.py` — OK.
+
+Residual risks: Marp parsing is intentionally minimal (not full Marp/HTML); image-only slides place a picture shape (allowed by matrix). Driver failure and missing-node paths covered in unit tests.
