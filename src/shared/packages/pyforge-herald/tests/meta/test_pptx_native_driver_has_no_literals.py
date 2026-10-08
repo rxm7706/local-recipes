@@ -5,14 +5,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-_DRIVER = (
-    Path(__file__).resolve().parents[2]
-    / "src"
-    / "pyforge"
-    / "herald"
-    / "node"
-    / "pptx_native.mjs"
-)
+_DRIVER = Path(__file__).resolve().parents[2] / "src" / "pyforge" / "herald" / "node" / "pptx_native.mjs"
 
 _HEX_COLOR = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 _FONT_FACE_STRING = re.compile(r"""fontFace\s*:\s*['"][^'"]+['"]""")

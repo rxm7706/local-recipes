@@ -183,9 +183,7 @@ def _parse_css_px_variable(text: str, name: str, *, path: Path) -> int:
             try:
                 value = float(raw)
             except ValueError as exc:
-                raise HeraldError(
-                    f"pptx-native: design token key {name!r} unparsable in {path}: {raw!r}"
-                ) from exc
+                raise HeraldError(f"pptx-native: design token key {name!r} unparsable in {path}: {raw!r}") from exc
             if value != int(value):
                 raise HeraldError(
                     f"pptx-native: design token key {name!r} must be an integer px value in {path}: {raw!r}"
@@ -202,9 +200,7 @@ def _parse_font_heading_weight(styles_css: str, *, path: Path) -> int:
     try:
         return int(float(raw))
     except ValueError as exc:
-        raise HeraldError(
-            f"pptx-native: design token key 'font-heading-weight' unparsable in {path}: {raw!r}"
-        ) from exc
+        raise HeraldError(f"pptx-native: design token key 'font-heading-weight' unparsable in {path}: {raw!r}") from exc
 
 
 def load_modernist_design_tokens(
