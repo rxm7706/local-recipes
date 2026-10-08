@@ -2,7 +2,8 @@
 title: "71.4: A station's coverage gate reuses its own suite's run"
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'in-review'
+baseline_revision: '2d4fb7a1aa80c20ace4231f5a98a62bc15e337de'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
