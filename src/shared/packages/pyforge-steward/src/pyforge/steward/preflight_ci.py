@@ -468,7 +468,9 @@ def _git_env() -> dict[str, str]:
     return env
 
 
-def _snapshot_env(process: PosixProcess, root: Path, scratch: Path, env: dict[str, str], base_sha: str) -> dict[str, str]:
+def _snapshot_env(
+    process: PosixProcess, root: Path, scratch: Path, env: dict[str, str], base_sha: str
+) -> dict[str, str]:
     """A git dir whose ``HEAD`` is a snapshot commit of the working tree (tracked + untracked
     files, ignores honoured) on top of ``HEAD``, and whose ``refs/remotes/origin/main`` is the
     real one -- so a workflow's ``git diff "$BASE"...HEAD`` sees the dirty tree too. The real
@@ -765,7 +767,9 @@ def _outcome(sites: Sequence[_Site]) -> tuple[bool, str, list[_Site]]:
     return False, "", list(sites)
 
 
-def _select_all(lanes: Sequence[LaneLike], reason: str, changed: Sequence[str] = (), dirty: Sequence[str] = ()) -> Selection:
+def _select_all(
+    lanes: Sequence[LaneLike], reason: str, changed: Sequence[str] = (), dirty: Sequence[str] = ()
+) -> Selection:
     return Selection(
         base_ref=BASE_REF,
         all_reason=reason,
@@ -831,7 +835,9 @@ def _select(
         ["diff", "--name-only", "-z", "--no-renames"],
         ["ls-files", "-z", "--others", "--exclude-standard"],
     ):
-        dirty.extend(p for p in _nul_paths(_git_ok(process, root, args, env, "reading the working tree")) if p not in dirty)
+        dirty.extend(
+            p for p in _nul_paths(_git_ok(process, root, args, env, "reading the working tree")) if p not in dirty
+        )
 
     states = [_State(root, process, workflows, pixi_data, tuple(changed), env, scratch)]
     if dirty:

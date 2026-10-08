@@ -167,7 +167,11 @@ def all_tasks() -> set[str]:
         (["**.md"], "a/b.md", True),
         (["src/shared/packages/pyforge-*/**"], "src/shared/packages/pyforge-marshal/x/y.py", True),
         (["src/shared/packages/pyforge-*/**"], "src/shared/packages/django-pyforge/x.py", False),
-        (["scripts/conda-forge-packaging-inventory-operations_*.py"], "scripts/conda-forge-packaging-inventory-operations_a.py", True),
+        (
+            ["scripts/conda-forge-packaging-inventory-operations_*.py"],
+            "scripts/conda-forge-packaging-inventory-operations_a.py",
+            True,
+        ),
         (["scripts/*"], "scripts/container-gates/x", False),
         (["pixi.toml"], "pixi.toml", True),
         (["pixi.toml"], "sub/pixi.toml", False),
@@ -222,7 +226,12 @@ cmd = "pytest a/tests -q && pytest b/tests -q"
         ("child", INVOKING_ENV, "python scripts/tool.py --list", False),  # same script, other flags
         ("child", INVOKING_ENV, "python scripts/tool.py --scope other", False),  # same flag, other value
         ("gate", "s", 'pixi run -e s python scripts/gate.py \\\n --base "$BASE" --suites unit', True),  # dynamic value
-        ("gate", "s", "pixi run -e other python scripts/gate.py --base x --suites unit", False),  # env must equal the lane's
+        (
+            "gate",
+            "s",
+            "pixi run -e other python scripts/gate.py --base x --suites unit",
+            False,
+        ),  # env must equal the lane's
         ("two-step", INVOKING_ENV, "pytest a/tests -q", False),  # every `&&` segment must be there
         ("two-step", INVOKING_ENV, "pytest a/tests -q\npytest b/tests -q", True),
     ],
@@ -316,7 +325,11 @@ def _oracle_match(pattern: list[str], segments: list[str]) -> bool:
         if len(pattern) == 1:
             return bool(segments)
         return any(_oracle_match(pattern[1:], segments[i:]) for i in range(len(segments) + 1))
-    return bool(segments) and bool(_oracle_segment(pattern[0]).fullmatch(segments[0])) and _oracle_match(pattern[1:], segments[1:])
+    return (
+        bool(segments)
+        and bool(_oracle_segment(pattern[0]).fullmatch(segments[0]))
+        and _oracle_match(pattern[1:], segments[1:])
+    )
 
 
 def _oracle_fires(repo: Path, workflow: str, changed: list[str]) -> bool:
@@ -351,7 +364,11 @@ def oracle_selection(repo: Path, tmp_path: Path) -> set[str]:
     chosen: set[str] = set()
     if _oracle_fires(repo, "lint-types.yml", changed):
         chosen |= LINT
-    chosen |= {"detectors-ci", "pyforge-doctor-scripts-test", "pyforge-doctor-aggregate-scripts-test"}  # no paths filter
+    chosen |= {
+        "detectors-ci",
+        "pyforge-doctor-scripts-test",
+        "pyforge-doctor-aggregate-scripts-test",
+    }  # no paths filter
     if _oracle_fires(repo, "cfe-regression-net.yml", changed):
         chosen.add("test-ci")
     if _oracle_fires(repo, "docsite-check.yml", changed):
@@ -498,7 +515,13 @@ def test_a_job_output_that_is_not_a_run_step_output_is_unevaluable(tmp_path: Pat
     repo = make_repo(
         tmp_path,
         {"src/shared/packages/pyforge-warden/src/x.py": "x\n"},
-        edits=[("coverage-gates.yml", "stations: ${{ steps.filter.outputs.stations }}", "stations: ${{ steps.nope.outputs.stations }}")],
+        edits=[
+            (
+                "coverage-gates.yml",
+                "stations: ${{ steps.filter.outputs.stations }}",
+                "stations: ${{ steps.nope.outputs.stations }}",
+            )
+        ],
     )
     selection = select(repo)
     assert GATES <= selected_tasks(selection)
@@ -526,7 +549,9 @@ def _dirty_unstaged(repo: Path) -> None:
     _write(repo, STEWARD_PLACEHOLDER, "changed\n")
 
 
-@pytest.mark.parametrize("dirty", [_dirty_untracked, _dirty_staged, _dirty_unstaged], ids=["untracked", "staged", "unstaged"])
+@pytest.mark.parametrize(
+    "dirty", [_dirty_untracked, _dirty_staged, _dirty_unstaged], ids=["untracked", "staged", "unstaged"]
+)
 def test_dirty_steward_file_adds_the_steward_lanes(tmp_path: Path, dirty: Callable[[Path], None]) -> None:
     repo = make_repo(tmp_path, MARSHAL_ONLY)
     clean = selected_tasks(select(repo))
