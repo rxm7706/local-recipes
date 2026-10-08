@@ -400,3 +400,6 @@ handled the PR push.*
 
 ---
 
+## Worked Examples
+
+Completed cases append in [references/worked-examples.md](references/worked-examples.md).

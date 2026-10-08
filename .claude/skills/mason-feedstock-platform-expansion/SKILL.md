@@ -527,3 +527,6 @@ go in the Worked Example.
 
 ---
 
+## Worked Examples
+
+Completed cases append in [references/worked-examples.md](references/worked-examples.md).
