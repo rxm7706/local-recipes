@@ -112,7 +112,7 @@ POSTER_SUFFIX = " Infographic standalone.html"
 HEAD_SUFFIX = " - Infographic.dc.html"
 DECK_SUFFIX = " - Infographic Deck.dc.html"
 EXEC_SUMMARY_SUFFIX = " - Executive Summary.dc.html"
-# The three Standard-export-set marp sources (docs/specs/presentation-deck.md
+# The three Standard-export-set marp sources (docs/how-to/presentation-deck.md
 # "Marp sources"), in report order.
 MARP_SOURCE_KINDS = ("deck", "executive-summary", "infographic")
 STATION_PREFIX = "pyforge-"

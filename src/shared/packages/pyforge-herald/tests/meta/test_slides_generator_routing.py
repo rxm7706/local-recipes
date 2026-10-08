@@ -33,7 +33,7 @@ from pathlib import Path
 
 SKILL_NAME = "slides-generator"
 PERSONA_SKILL = "bmad-agent-herald"
-DECK_PIPELINE_SPEC = "docs/specs/presentation-deck.md"
+DECK_PIPELINE_SPEC = "docs/how-to/presentation-deck.md"
 STEWARD_ROUTING_TEST = "src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py"
 
 

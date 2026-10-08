@@ -10,7 +10,7 @@ but do not follow the deck-family build pipeline; see each one's own
 `README.md` for what it actually contains.
 
 **Before editing anything here, read
-[`docs/specs/presentation-deck.md`](../docs/specs/presentation-deck.md)
+[`docs/how-to/presentation-deck.md`](../docs/how-to/presentation-deck.md)
 § *Artifact dependency tree & editing surfaces*** — it defines which file is
 each branch's head, where text vs. visual design gets edited, how edits
 propagate, and the pull-to-git discipline. Per-deck `README.md`s hold the
