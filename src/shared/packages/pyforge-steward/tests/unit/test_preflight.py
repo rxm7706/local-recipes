@@ -10,7 +10,7 @@ import pytest
 
 from pyforge.steward import preflight
 
-REPO_ROOT = Path(__file__).resolve().parents[5]
+REPO_ROOT = Path(__file__).resolve().parents[6]
 
 
 FIXTURE_TOML = """
@@ -29,6 +29,9 @@ cmd = "echo bare"
 
 [feature.guild-tasks.tasks.pinned]
 cmd = "echo pinned"
+
+[feature.guild-tasks.tasks.combo-dep]
+cmd = "echo dep"
 
 [feature.guild-tasks.tasks.combo]
 depends-on = ["combo-dep"]
