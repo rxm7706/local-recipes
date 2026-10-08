@@ -2,7 +2,8 @@
 title: "19.4: The two feedstock campaigns become Mason skills"
 type: 'docs'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '915e6292e3c103c2b22a73266eb52a4b92e9e600'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
