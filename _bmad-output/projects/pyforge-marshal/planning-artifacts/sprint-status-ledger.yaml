@@ -106,7 +106,7 @@ development_status:
   22-16-a-launch-without-the-env-on-path-never-wastes-a-finished-session: backlog
   22-17-a-land-only-refusal-names-the-gate-that-refused-it: done
   22-18-a-landing-heals-a-spec-surface-baseline-conflict-by-re-stamping-on-main-s-baseline: done
-  22-19-a-landing-unions-the-flag-registry-when-two-flag-stories-land-in-turn: backlog
+  22-19-a-landing-unions-the-flag-registry-when-two-flag-stories-land-in-turn: done
   22-2-completion-is-judged-from-git-and-process-facts-and-a-zombie-is-never-redispatched: done
   22-3-verification-is-the-product-no-landing-on-a-self-report: done
   22-4-a-verified-story-lands-through-the-existing-machinery-classified-marshal-native: done
