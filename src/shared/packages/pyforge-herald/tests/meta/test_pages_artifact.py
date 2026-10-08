@@ -79,9 +79,7 @@ def test_assemble_writes_redirect_per_herald_html(tmp_path: Path) -> None:
 
     herald = artifact / "herald"
     (herald / "dossier").mkdir(parents=True)
-    (herald / "dossier" / "index.html").write_text(
-        '<html><a href="../index.html">home</a></html>', encoding="utf-8"
-    )
+    (herald / "dossier" / "index.html").write_text('<html><a href="../index.html">home</a></html>', encoding="utf-8")
     (herald / "index.html").write_text("<html></html>", encoding="utf-8")
 
     dashboard = artifact / "dashboard" / "kedro-viz"
