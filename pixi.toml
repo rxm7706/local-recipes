@@ -840,6 +840,9 @@ cmd = "python -m pytest tests/scripts -q"
 # here explicitly so wire `auto` never degrades to MRS-DISP-033 for want of a binary.
 # Scribe capture/recall run here too since 2026-09-19 (Story 19.2, the core package only); `scribe graph compile` with the graphify/cocoindex/postgres extras stays `-e pyforge-scribe` (those are heavy and already per-env).
 # Foundry mode: rebuild -- python-foundry re-derives the same split.
+[feature.pyforge-guild]
+channel-priority = "flexible"  # Story 32.1: pptxgenjs-plus 4.2.1 ships on SelfExplainML only (same fallthrough as feature.python-agent-platform)
+
 [feature.pyforge-guild.dependencies]
 pyforge-core = { path = "src/shared/packages/pyforge-core" }
 pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }      # run-deps bring jsonschema, pyyaml, mcp, pyforge-core
@@ -894,6 +897,7 @@ jsonschema = ">=4.26.0"
 # (no tomli: python 3.14's stdlib tomllib serves detectors.py / index_freshness_check.py; tomli is their <3.11 fallback only)
 pytest = ">=9.1.1"                # pyforge-station-coverage-gates' scripts/coverage_gates_ci.py
 pytest-cov = ">=7.1.0"
+pptxgenjs-plus = "4.2.1"          # Story 32.1 (CAP-57): SelfExplainML build (node 24); >=4.2.1 would pull 4.3.4/node 26 and break codegraph's node 24 pin
 
 [feature.pyforge-guild.pypi-dependencies]
 sqlite-vec = ">=0.1.9"            # headroom-ai's [proxy] extra; not on conda-forge
@@ -2907,6 +2911,9 @@ cmd = "python scripts/platform_object_storage.py down"
 description = "Report whether the selected backend's local object-storage server is listening on 127.0.0.1:9000. Read-only; always exits 0 (except Garage's clean Windows refusal)."
 cmd = "python scripts/platform_object_storage.py status"
 
+[feature.pyforge-herald]
+channel-priority = "flexible"  # Story 32.1: pptxgenjs-plus 4.2.1 (SelfExplainML) beside conda-forge nodejs
+
 [feature.pyforge-herald.dependencies]
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # -> built conda pkg
 pyforge-core = { path = "src/shared/packages/pyforge-core" }  # Story 14.2, CAP-2: claims.py/deck_pipeline.py/notices.py/progress.py/registry.py/state.py's mandatory run-dep
@@ -2930,6 +2937,8 @@ playwright = ">=1.63.0"           # CLI + browser driver
 playwright-python = ">=1.62.0"    # the `import playwright` bindings
 pillow = ">=12.3.0"               # Pillow -- render_gate's contact-sheet compositing
 python-pptx = ">=1.0.2"           # Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never hand-written OOXML)
+nodejs = ">=24.19.0,<27.0,!=25.*"  # Story 32.1 (CAP-57): pptx_native.mjs driver (same pin as [feature.python.dependencies])
+pptxgenjs-plus = "4.2.1"          # Story 32.1 (CAP-57): SelfExplainML build matched to pyforge-guild (node 24)
 boto3 = ">=1.43.75"               # Story 29.1 (CAP-54): deck_store's S3 adapter (env-only; same floor as platform object_storage)
 fastapi = ">=0.141.1"             # Story 29.2 (CAP-54): deck_exports route registration on herald v1 sub-app (package run-dep)
 # --- pyforge-core (Core): pixi build workspace member (pyforge-scribe mirror, Story 14.1) --

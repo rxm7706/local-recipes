@@ -1265,6 +1265,28 @@ def _run_deck_pptx_fill(args: argparse.Namespace) -> int:
     return dispatch(operation)
 
 
+def _deck_pptx_native_flag_or_exit() -> int | None:
+    try:
+        require(pptx_native.DECK_EXPORT_NATIVE_FLAG)
+    except FlagOff as exc:
+        print(f"{TOOL_NAME}: {exc}", file=sys.stderr)
+        return 2
+    return None
+
+
+def _run_deck_pptx_native(args: argparse.Namespace) -> int:
+    blocked = _deck_pptx_native_flag_or_exit()
+    if blocked is not None:
+        return blocked
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        result = pptx_native.export_native_pptx(args.slug, repo_root)
+        print(f"wrote {result.output_path} ({result.slide_count} slide(s) from {result.marp_source.name})")
+
+    return dispatch(operation)
+
+
 def _parse_date_range(raw: str) -> tuple[date, date]:
     """``<start>..<end>`` (``YYYY-MM-DD`` each) -> a ``(start, end)`` pair.
 
