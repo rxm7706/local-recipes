@@ -15,6 +15,7 @@ Task-oriented documentation: "how do I do X?" operational instructions.
 | [`manticore-studio.md`](manticore-studio.md) | Herald manticore studio install and render |
 | [`driving-a-pyforge-station-backlog.md`](driving-a-pyforge-station-backlog.md) | Dispatching, verifying, and landing BMAD station work |
 | [`detect-concurrent-agent-activity.md`](detect-concurrent-agent-activity.md) | Checking for other agents/sessions before you dispatch |
+| [`deploy-the-docs-site-to-github-enterprise-pages.md`](deploy-the-docs-site-to-github-enterprise-pages.md) | Internal GitHub Enterprise Pages deploy for the unified docs artifact (Story 31.1 flag + `dashboard.yml`) |
 | [`one-chain-station-ops.md`](one-chain-station-ops.md) | Keep one Dream / Spec / PRD / spine / epic chain per station (lock, rewrite, mop) |
 | [`feedstock-failure-remediation.md`](feedstock-failure-remediation.md) | Red feedstock-PR remediation loop: triage FLAKE/REAL_FIX/BLOCKED, execute-locally-first, rerender-after-push |
 | [`feedstock-platform-expansion.md`](feedstock-platform-expansion.md) | Refresh a feedstock to the latest CFE shape and widen its build matrix in one PR |
