@@ -651,7 +651,7 @@ def test_run_dispatch_surfaces_the_context_payload(
 
 def test_compose_policy_on_real_repo_enables_all_context_layers_for_dispatch() -> None:
     """Story 33.2 (CAP-1): factory dispatch reads the tracked marshal-policy.toml
-    and resolves all five context layers enabled via the single composition site.
+    and resolves all six context layers enabled via the single composition site.
 
     Story 46.4: pyforge-marshal's own marshal-policy.toml no longer declares a
     `[context]` block at all -- the 4 harness-agnostic layers now come from
