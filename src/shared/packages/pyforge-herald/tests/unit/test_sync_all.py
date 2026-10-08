@@ -1032,9 +1032,7 @@ def test_sync_all_two_consecutive_runs_second_unchanged_after_mutating_first(
 
     first = sync_all(
         FakeSyncTransport(
-            read_file_answers=FileRead(
-                path="x", etag="E2", body="<html>new</html>", unchanged=False
-            ),
+            read_file_answers=FileRead(path="x", etag="E2", body="<html>new</html>", unchanged=False),
             rendered_bytes={filename: b"<html>v1</html>"},
         ),
         slug="pyforge-warden",
