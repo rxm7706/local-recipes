@@ -2190,9 +2190,9 @@ _FRR_SPEC_TEXT = "---\nstatus: done\nfollowup_review_recommended: true\n---\n\nb
 _FRR_ROW_ID = "DW-FRR-51-2"
 
 
-class _FollowupCarryVcs(FakeVcs):
-    def __init__(self, **kwargs) -> None:
-        super().__init__(merged=False, **kwargs)
+class _FollowupCarryVcs(_OwnHeadVcs):
+    def __init__(self, *, own_head_on_origin_main: bool = False, **kwargs) -> None:
+        super().__init__(merged=False, own_head_on_origin_main=own_head_on_origin_main, **kwargs)
         self.ledger_commits: list[tuple[Path, tuple[Path, ...], str]] = []
         self.events: list[str] = []
 
@@ -2302,9 +2302,13 @@ def test_a_done_flagged_landing_with_no_ledger_warns_and_continues(tmp_path: Pat
     )
 
     assert result.verdict == DispatchLandingVerdict.LANDED
-    warns = [f for f in envelope.findings if f.code == "MRS-DISP-047"]
-    assert len(warns) == 1
-    assert _FRR_LEDGER_REL in warns[0].message
+    ledger_warns = [
+        f
+        for f in envelope.findings
+        if f.code == "MRS-DISP-047" and f.path == _FRR_LEDGER_REL
+    ]
+    assert len(ledger_warns) == 1
+    assert _FRR_ROW_ID in ledger_warns[0].message
     assert vcs.pushed == ["dispatch/pyforge-marshal/51.2"]
 
 
