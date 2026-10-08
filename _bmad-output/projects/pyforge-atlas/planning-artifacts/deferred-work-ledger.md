@@ -4798,7 +4798,8 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-04 — dispatch-land finalize
-  status: open
+  resolved: 2026-10-08 (dispatch-land finalize: Merge pyforge-atlas/27-1 into main)
+  status: closed
 
 ### DW-atlas-27-3-1: The distribution-breakdown facet filter's container intermittently renders empty, so its e2e test is quarantined.
 
