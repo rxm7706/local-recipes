@@ -1333,9 +1333,11 @@ def inject_recall_feedback(
     if outcome.ok and outcome.grounded:
         content = recall_feedback.render_recall_feedback_block(text=outcome.text, citation=outcome.citation)
         injected = True
+    marker = _recall_query_marker_path(target)
     try:
         fs.ensure_dir(target.parent)
         fs.write_text_atomic(target, content)
+        fs.write_text_atomic(marker, "")
     except (OSError, PyforgeError) as exc:
         return RecallInjectionResult(
             attempted=True,
@@ -1346,6 +1348,63 @@ def inject_recall_feedback(
     if not outcome.ok:
         return RecallInjectionResult(attempted=True, ok=False, reason=outcome.reason, target=target)
     return RecallInjectionResult(attempted=True, ok=True, injected=injected, target=target)
+
+
+def _recall_feedback_target(loop_home: Path, station_slug: str) -> Path:
+    return loop_home / recall_feedback.recall_feedback_output_relpath(station_slug)
+
+
+def _recall_query_marker_path(feedback_target: Path) -> Path:
+    """Sibling marker proving ``inject_recall_feedback`` already ran for this
+    dispatch (Story 47.2, CAP-2): the review pass reads the cached block
+    from ``feedback_target`` and must never shell ``scribe recall`` again."""
+    return feedback_target.with_name(f"{feedback_target.name}.query-ran")
+
+
+def read_cached_recall_feedback_block(*, fs: FsPort, loop_home: Path, station_slug: str) -> str | None:
+    """Load the formatted block Story 47.1 wrote for this dispatch, if any."""
+    target = _recall_feedback_target(loop_home, station_slug)
+    text = fs.read_text(target)
+    if text is None or not text.strip():
+        return None
+    return text
+
+
+def augment_bmad_loop_session_prompt_with_recall(
+    prompt: str,
+    *,
+    role: str,
+    fs: FsPort,
+    loop_home: Path,
+    repo_root: Path,
+    station_slug: str | None,
+    scribe: ScribeCli | None = None,
+) -> tuple[str, RecallInjectionResult | None]:
+    """Review-pass launch path (Story 47.2, CAP-2): fold the same scoped
+    feedback block the dev pass received into ``prompt``.
+
+    Exactly one ``scribe recall`` subprocess runs per story dispatch: the
+    first ``dev`` session calls ``inject_recall_feedback`` when the query
+    marker is absent; every ``review`` session (and later ``dev`` retries
+    in the same dispatch) read the cached ``recall-feedback.md`` only."""
+    if not station_slug:
+        return prompt, None
+    target = _recall_feedback_target(loop_home, station_slug)
+    marker = _recall_query_marker_path(target)
+    injection: RecallInjectionResult | None = None
+    if role == "dev" and fs.read_text(marker) is None:
+        injection = inject_recall_feedback(
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug=station_slug,
+            scribe=scribe,
+        )
+    block = read_cached_recall_feedback_block(fs=fs, loop_home=loop_home, station_slug=station_slug)
+    if block is None:
+        return prompt, injection
+    separator = "\n\n" if prompt and not prompt.endswith("\n\n") else ""
+    return f"{prompt}{separator}{block}", injection
 
 
 class BmadLoopHarness:

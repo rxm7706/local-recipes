@@ -1,10 +1,8 @@
-"""``adapters/harness_bmadloop.py::inject_recall_feedback`` (Story 47.1,
-SPEC-marshal-recall-in-the-loop CAP-1) -- the pre-launch ``scribe recall``
-attempt itself, driven entirely through FAKE ``FsPort``/``ScribeCli``
-doubles (never a live ``scribe`` subprocess -- the spec's own manual check
-and this file's fakes are the two allowed ways to exercise this behavior).
+"""``adapters/harness_bmadloop.py`` recall injection (Stories 47.1/47.2,
+SPEC-marshal-recall-in-the-loop CAP-1/CAP-2) -- driven entirely through
+FAKE ``FsPort``/``ScribeCli`` doubles (never a live ``scribe`` subprocess).
 
-Covers all four rows of the story's I/O & Edge-Case Matrix:
+Story 47.1 covers all four rows of the dev-pass I/O & Edge-Case Matrix:
 
 1. grounded hit -> labeled block written, ``injected=True``, no error.
 2. grounded miss -> empty string written, ``injected=False``, ``ok=True``.
@@ -21,7 +19,12 @@ from pathlib import Path
 
 import pytest
 
-from pyforge.marshal.adapters.harness_bmadloop import RecallInjectionResult, inject_recall_feedback
+from pyforge.marshal.adapters.harness_bmadloop import (
+    RecallInjectionResult,
+    augment_bmad_loop_session_prompt_with_recall,
+    inject_recall_feedback,
+)
+from pyforge.marshal.core import recall_feedback as recall_feedback_core
 from pyforge.marshal.adapters.scribe_cli import ScribeRecallOutcome
 from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER
 
@@ -46,6 +49,9 @@ class _FakeFs:
         if self.fail_write:
             raise OSError("disk full")
         self.writes[path] = content
+
+    def read_text(self, path: Path) -> str | None:
+        return self.writes.get(path)
 
 
 class _FakeScribeCli:
@@ -176,3 +182,91 @@ class TestNoResolvableStationSlug:
         assert fs.ensure_dir_calls == []
         assert fs.writes == {}
         assert scribe.calls == []
+
+
+class TestReviewPassReusesCachedRecall:
+    """Story 47.2 (CAP-2): one ``scribe recall`` per story dispatch; review reads cache."""
+
+    def test_dev_then_review_shares_one_scribe_call_and_identical_block(
+        self, loop_home: Path, repo_root: Path
+    ) -> None:
+        fs = _FakeFs()
+        scribe = _FakeScribeCli(
+            ScribeRecallOutcome(ok=True, grounded=True, text="never skip memlog reconcile", citation="memlog/x.md")
+        )
+        base_prompt = "Implement story 47.2."
+
+        dev_prompt, dev_injection = augment_bmad_loop_session_prompt_with_recall(
+            base_prompt,
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            scribe=scribe,
+        )
+        review_prompt, review_injection = augment_bmad_loop_session_prompt_with_recall(
+            base_prompt,
+            role="review",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            scribe=scribe,
+        )
+
+        assert len(scribe.calls) == 1
+        assert dev_injection is not None and dev_injection.injected is True
+        assert review_injection is None
+        assert "never skip memlog reconcile" in dev_prompt
+        assert dev_prompt == review_prompt
+        assert RECALL_FEEDBACK_HEADER in dev_prompt
+
+    def test_review_with_no_prior_query_does_not_call_scribe(self, loop_home: Path, repo_root: Path) -> None:
+        fs = _FakeFs()
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="body"))
+
+        prompt, injection = augment_bmad_loop_session_prompt_with_recall(
+            "Review the diff.",
+            role="review",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            scribe=scribe,
+        )
+
+        assert scribe.calls == []
+        assert injection is None
+        assert prompt == "Review the diff."
+
+    def test_dev_pass_received_no_block_review_also_gets_no_block(
+        self, loop_home: Path, repo_root: Path
+    ) -> None:
+        fs = _FakeFs()
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=False))
+
+        dev_prompt, _ = augment_bmad_loop_session_prompt_with_recall(
+            "Dev.",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            scribe=scribe,
+        )
+        review_prompt, _ = augment_bmad_loop_session_prompt_with_recall(
+            "Review.",
+            role="review",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            scribe=scribe,
+        )
+
+        assert len(scribe.calls) == 1
+        assert dev_prompt == "Dev."
+        assert review_prompt == "Review."
+        target = loop_home / recall_feedback_core.recall_feedback_output_relpath("pyforge-marshal")
+        assert fs.writes[target] == ""
