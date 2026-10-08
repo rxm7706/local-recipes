@@ -5,12 +5,22 @@ from __future__ import annotations
 
 import argparse
 import html
+import os
 import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from pages_second_host import (  # noqa: E402
+    SITE_URL_MARKER,
+    is_navigation_link,
+    resolve_from_process_environment,
+    site_origin,
+)
 
 HERALD_PREFIX = "herald"
 DASHBOARD_PREFIX = "dashboard"
@@ -19,6 +29,18 @@ KEDRO_VIZ_REDIRECT = "kedro-viz/index.html"
 
 _HREF_SRC = re.compile(
     r"""(?:href|src)\s*=\s*["']([^"']+)["']""",
+    re.IGNORECASE,
+)
+_STYLE_URL = re.compile(
+    r"""url\(\s*["']?(https?://[^"')]+)["']?\s*\)""",
+    re.IGNORECASE,
+)
+_FETCH_URL = re.compile(
+    r"""\bfetch\s*\(\s*["'](https?://[^"']+)["']""",
+    re.IGNORECASE,
+)
+_XHR_OPEN = re.compile(
+    r"""\.open\s*\(\s*["'][A-Z]+["']\s*,\s*["'](https?://[^"']+)["']""",
     re.IGNORECASE,
 )
 
@@ -67,6 +89,28 @@ def _refuses_collision(artifact_root: Path, rel_path: str) -> None:
         raise SystemExit(1)
 
 
+def _run_docs_site_build(repo_root: Path, site_url: str) -> None:
+    env = os.environ.copy()
+    env["SITE_URL"] = site_url
+    subprocess.run(
+        ["npm", "run", "build"],
+        cwd=repo_root / "docs-site",
+        env=env,
+        check=True,
+    )
+
+
+def _write_site_url_marker(artifact_root: Path, site_url: str) -> None:
+    (artifact_root / SITE_URL_MARKER).write_text(site_url.strip() + "\n", encoding="utf-8")
+
+
+def _read_site_url_for_check(artifact_root: Path) -> str:
+    marker = artifact_root / SITE_URL_MARKER
+    if marker.is_file():
+        return marker.read_text(encoding="utf-8").strip()
+    return resolve_from_process_environment()
+
+
 def _copy_dashboard(dashboard_src: Path, artifact_root: Path) -> None:
     dest = artifact_root / DASHBOARD_PREFIX
     mount = f"{DASHBOARD_PREFIX}/"
@@ -97,6 +141,15 @@ def _build_herald(herald_out: Path, repo_root: Path) -> None:
 def _iter_herald_html(artifact_root: Path) -> list[Path]:
     herald_root = artifact_root / HERALD_PREFIX
     return sorted(p for p in herald_root.rglob("*.html") if p.is_file())
+
+
+def _iter_checkable_files(artifact_root: Path) -> list[Path]:
+    exts = {".html", ".css", ".js", ".mjs"}
+    return sorted(
+        p
+        for p in artifact_root.rglob("*")
+        if p.is_file() and p.suffix.lower() in exts and p.name != SITE_URL_MARKER
+    )
 
 
 def _old_path_for_herald_page(artifact_root: Path, herald_html: Path) -> str | None:
@@ -177,6 +230,78 @@ def _should_check_page_links(rel_posix: str) -> bool:
     return True
 
 
+def _report_cross_origin(rel_file: str, kind: str, url: str, origin: str) -> None:
+    print(
+        f"assemble_pages: cross-origin {kind}: {rel_file} -> {url!r} (expected origin {origin})",
+        file=sys.stderr,
+    )
+    raise SystemExit(1)
+
+
+def _check_absolute_internal_href(
+    rel_file: str, href: str, configured_origin: str, public_origin: str
+) -> None:
+    if is_navigation_link(href):
+        return
+    parsed = urlparse(href)
+    if parsed.scheme not in ("http", "https"):
+        return
+    href_origin = site_origin(href)
+    if href_origin == configured_origin:
+        return
+    if href_origin == public_origin and configured_origin != public_origin:
+        print(
+            f"assemble_pages: absolute internal link to other host: {rel_file} -> {href!r}",
+            file=sys.stderr,
+        )
+        raise SystemExit(1)
+
+
+def _check_cross_origin_and_hosts(artifact_root: Path, site_url: str) -> None:
+    from pages_second_host import public_site_url
+
+    configured_origin = site_origin(site_url)
+    public_origin = site_origin(public_site_url())
+
+    for path in _iter_checkable_files(artifact_root):
+        rel_file = _artifact_path(path, artifact_root)
+        text = path.read_text(encoding="utf-8", errors="replace")
+
+        for match in _HREF_SRC.finditer(text):
+            raw = match.group(1)
+            if not raw.startswith(("http://", "https://")):
+                continue
+            if is_navigation_link(raw):
+                continue
+            token = match.group(0).lower()
+            href_origin = site_origin(raw)
+            if href_origin == configured_origin:
+                continue
+            if "href" in token:
+                _check_absolute_internal_href(rel_file, raw, configured_origin, public_origin)
+            kind = "stylesheet" if path.suffix.lower() == ".css" else "script"
+            if "href" in token and path.suffix.lower() == ".html":
+                kind = "stylesheet"
+            elif "src" in token:
+                kind = "image" if path.suffix.lower() in {".html", ".js"} else "script"
+            _report_cross_origin(rel_file, kind, raw, configured_origin)
+
+        for match in _STYLE_URL.finditer(text):
+            url = match.group(1)
+            if site_origin(url) != configured_origin:
+                _report_cross_origin(rel_file, "font", url, configured_origin)
+
+        for match in _FETCH_URL.finditer(text):
+            url = match.group(1)
+            if site_origin(url) != configured_origin:
+                _report_cross_origin(rel_file, "fetch", url, configured_origin)
+
+        for match in _XHR_OPEN.finditer(text):
+            url = match.group(1)
+            if site_origin(url) != configured_origin:
+                _report_cross_origin(rel_file, "xhr", url, configured_origin)
+
+
 def _check_href_resolution(artifact_root: Path) -> None:
     for page in _iter_herald_html(artifact_root):
         rel_page = _artifact_path(page, artifact_root)
@@ -223,7 +348,8 @@ def _required_paths() -> list[str]:
     ]
 
 
-def check(artifact_root: Path) -> None:
+def check(artifact_root: Path, *, site_url: str | None = None) -> None:
+    site_url = site_url or _read_site_url_for_check(artifact_root)
     for rel in _required_paths():
         if not (artifact_root / rel).is_file():
             print(f"assemble_pages: missing required path {rel}", file=sys.stderr)
@@ -244,6 +370,7 @@ def check(artifact_root: Path) -> None:
             raise SystemExit(1)
 
     _check_href_resolution(artifact_root)
+    _check_cross_origin_and_hosts(artifact_root, site_url)
 
 
 def assemble(
@@ -252,11 +379,18 @@ def assemble(
     repo_root: Path | None = None,
     dashboard_src: Path | None = None,
     skip_herald_build: bool = False,
-) -> None:
+    skip_docs_site_build: bool = False,
+    site_url: str | None = None,
+) -> str:
     repo_root = repo_root or _repo_root()
     dashboard_src = dashboard_src or (repo_root / "docs" / "dashboard")
     artifact_root = artifact_root.resolve()
     herald_out = artifact_root / HERALD_PREFIX
+    site_url = site_url or resolve_from_process_environment()
+
+    if not skip_docs_site_build:
+        _run_docs_site_build(repo_root, site_url)
+    _write_site_url_marker(artifact_root, site_url)
 
     for mount in (f"{HERALD_PREFIX}/", f"{DASHBOARD_PREFIX}/"):
         existing = artifact_root / mount.rstrip("/")
@@ -269,6 +403,7 @@ def assemble(
     _copy_dashboard(dashboard_src, artifact_root)
     _write_dossier_redirects(artifact_root)
     _ensure_kedro_viz_redirect(artifact_root)
+    return site_url
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -289,6 +424,11 @@ def main(argv: list[str] | None = None) -> None:
         action="store_true",
         help="Skip docsite/build.py (tests only)",
     )
+    parser.add_argument(
+        "--skip-docs-site-build",
+        action="store_true",
+        help="Skip Starlight npm build (tests only)",
+    )
     args = parser.parse_args(argv)
     repo_root = _repo_root()
     artifact_root = (repo_root / args.artifact_root).resolve()
@@ -297,12 +437,13 @@ def main(argv: list[str] | None = None) -> None:
         check(artifact_root)
         return
 
-    assemble(
+    site_url = assemble(
         artifact_root,
         repo_root=repo_root,
         skip_herald_build=args.skip_herald_build,
+        skip_docs_site_build=args.skip_docs_site_build,
     )
-    check(artifact_root)
+    check(artifact_root, site_url=site_url)
 
 
 if __name__ == "__main__":
