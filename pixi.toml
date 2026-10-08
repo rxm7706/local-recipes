@@ -2938,7 +2938,7 @@ playwright-python = ">=1.62.0"    # the `import playwright` bindings
 pillow = ">=12.3.0"               # Pillow -- render_gate's contact-sheet compositing
 python-pptx = ">=1.0.2"           # Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never hand-written OOXML)
 nodejs = ">=24.19.0,<27.0,!=25.*"  # Story 32.1 (CAP-57): pptx_native.mjs driver (same pin as [feature.python.dependencies])
-pptxgenjs-plus = "4.2.1"          # Story 32.1 (CAP-57): SelfExplainML build matched to pyforge-guild (node 24)
+pptxgenjs-plus = "4.2.1.*"        # Story 32.1 (CAP-57): SelfExplainML build matched to pyforge-guild (node 24)
 boto3 = ">=1.43.75"               # Story 29.1 (CAP-54): deck_store's S3 adapter (env-only; same floor as platform object_storage)
 fastapi = ">=0.141.1"             # Story 29.2 (CAP-54): deck_exports route registration on herald v1 sub-app (package run-dep)
 # --- pyforge-core (Core): pixi build workspace member (pyforge-scribe mirror, Story 14.1) --
