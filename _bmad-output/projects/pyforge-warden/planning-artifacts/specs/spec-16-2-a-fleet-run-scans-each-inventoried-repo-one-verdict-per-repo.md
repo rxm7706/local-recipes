@@ -2,7 +2,8 @@
 title: "16.2: A fleet run scans each inventoried repo, one verdict per repo"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'b62d8952641cb7d5838d2296c98d3642208f49c6'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
