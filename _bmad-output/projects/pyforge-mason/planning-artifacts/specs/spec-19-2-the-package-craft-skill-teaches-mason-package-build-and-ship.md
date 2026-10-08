@@ -2,7 +2,7 @@
 title: "19.2: The package craft skill teaches mason package build and ship"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '8a2da2c010aec6578d6b6546a321affac249bb1d'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -100,4 +100,29 @@ Deps: S-19.1.
 - `pixi run -e pyforge-guild docs-skills-catalog -- --check` — expected: exit 0 after regeneration.
 - `pixi run -e pyforge-guild governance-currency` — expected: exit 0.
 
+## Auto Run Result
+
+Status: done
+
+Summary: Added hand-authored `mason-package` skill documenting `pyforge mason package build` and `ship` (four targets, dry-run/`--yes`, TestPyPI gate, CFE link for `conda-forge` only). Introduced `test_mason_skills.py` meta-test table (mason-package row) with non-vacuous gotcha detection. Regenerated skills catalog and Skill Reference row.
+
+Files changed:
+- `.claude/skills/mason-package/SKILL.md` — operating procedure for the package craft
+- `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` — contract tests for hand-authored Mason skills
+- `docs/reference/agent-instruction-notes.md` — Skill Reference row
+- `docs/reference/skills-catalog.md` and `docs/map.yaml` — regenerated catalog stamp
+- Memlog surface reconcile on `spec-pyforge-mason`, `spec-pyforge-doctor`, `spec-pyforge-scribe`
+
+Review: 0 patches; all acceptance criteria verified locally.
+
+Verification: `pyforge-mason-test` 1619 passed; `docs-skills-catalog --check` 0; `governance-currency` 0; `python scripts/spec_surface_reconcile.py` 0.
+
+Follow-up review recommended: false
+
 ## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[reject]` Meta-test `gate_phrases` only requires substring presence, not strict ordering prose — acceptable for Story 19.2; skill body documents gate explicitly; not worth extra assertion complexity.
+  - `[false]` `[reject]` Claim that skill omits `channel:<name>` example — disproved: SKILL.md table lists `channel:<name>` and body includes `channel:` token.
