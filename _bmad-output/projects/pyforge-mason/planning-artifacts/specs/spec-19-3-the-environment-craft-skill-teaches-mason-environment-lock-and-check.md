@@ -2,7 +2,8 @@
 title: "19.3: The environment craft skill teaches mason environment lock and check"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '25ca417bb3478a91008d79fbbdc5cd4f2fa2c3b6'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
