@@ -121,9 +121,7 @@ def _strip_js_comments(source: str) -> str:
     return "".join(out)
 
 
-_REL_IMPORT_RE = re.compile(
-    r"""(?:import\s+(?:[^'"]+\s+from\s+)?|export\s+[^'"]+\s+from\s+)['"](\.\.?/[^'"]+)['"]"""
-)
+_REL_IMPORT_RE = re.compile(r"""(?:import\s+(?:[^'"]+\s+from\s+)?|export\s+[^'"]+\s+from\s+)['"](\.\.?/[^'"]+)['"]""")
 _SIDE_EFFECT_IMPORT_RE = re.compile(r"""import\s+['"](\.\.?/[^'"]+)['"]""")
 _DYNAMIC_IMPORT_RE = re.compile(r"""import\s*\(\s*['"](\.\.?/[^'"]+)['"]\s*\)""")
 _REQUIRE_RE = re.compile(r"""require\s*\(\s*['"](\.\.?/[^'"]+)['"]\s*\)""")
@@ -171,9 +169,10 @@ def _git_ls_files(root: Path, pathspec: str) -> set[str]:
         check=False,
     )
     if proc.returncode != 0:
-        detail = proc.stderr.decode("utf-8", errors="replace").strip() or proc.stdout.decode(
-            "utf-8", errors="replace"
-        ).strip()
+        detail = (
+            proc.stderr.decode("utf-8", errors="replace").strip()
+            or proc.stdout.decode("utf-8", errors="replace").strip()
+        )
         raise RuntimeError(f"git ls-files failed: {detail}")
     raw = proc.stdout
     if not raw:
@@ -252,11 +251,7 @@ def test_gitignore_lib_exception_for_docs_site_helper() -> None:
     root = _repo_root()
     ignore = (root / ".gitignore").read_text(encoding="utf-8")
     assert "lib/" in ignore.splitlines()
-    negations = [
-        line.strip()
-        for line in ignore.splitlines()
-        if line.strip().startswith("!") and "docs-site" in line
-    ]
+    negations = [line.strip() for line in ignore.splitlines() if line.strip().startswith("!") and "docs-site" in line]
     assert negations == ["!docs-site/src/lib/"]
     assert _git_check_ignore(root, "-q", "docs-site/src/lib/site-url.mjs") == 1
     assert _git_check_ignore(root, "--no-index", "-q", "lib/probe.py") == 0
@@ -305,4 +300,6 @@ def test_synthetic_untracked_and_unresolved_imports(tmp_path: Path) -> None:
     findings2, checked2 = docs_site_relative_import_findings(tmp_path)
     assert not any(f.kind == "untracked" and f.resolved == "docs-site/src/lib/site-url.mjs" for f in findings2)
     assert checked2 >= 2
-    assert not any(f.kind == "untracked" and f.resolved == "docs-site/src/loaders/shelf-docs-loader.ts" for f in findings2)
+    assert not any(
+        f.kind == "untracked" and f.resolved == "docs-site/src/loaders/shelf-docs-loader.ts" for f in findings2
+    )
