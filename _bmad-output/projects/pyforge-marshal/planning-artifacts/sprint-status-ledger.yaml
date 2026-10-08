@@ -319,7 +319,7 @@ development_status:
   53-2-the-landing-reconciles-from-git-facts-and-runs-intake: done
   53-3-the-supervisor-entrypoint-reaches-the-floor: done
   53-4-a-dispatch-landing-leaves-every-spec-it-touched-stampable: done
-  54-1-the-landing-repairs-its-own-feed-drift-before-it-gives-up: backlog
+  54-1-the-landing-repairs-its-own-feed-drift-before-it-gives-up: done
   55-1-the-7-non-marshal-stations-stop-overriding-context-and-inherit-the-clean-default: done
   56-1-a-refused-landing-whose-story-has-since-landed-reads-as-superseded: done
   57-1-a-refresh-pushes-its-own-fast-forward-to-main-with-the-journaled-preflight-opt-out: done
@@ -546,7 +546,7 @@ development_status:
   epic-52-retrospective: optional
   epic-53: done
   epic-53-retrospective: optional
-  epic-54: backlog
+  epic-54: done
   epic-54-retrospective: optional
   epic-55: done
   epic-55-retrospective: optional
