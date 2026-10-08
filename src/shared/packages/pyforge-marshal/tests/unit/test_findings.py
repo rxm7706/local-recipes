@@ -126,6 +126,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-SUPV-008",
             "MRS-SUPV-009",
             "MRS-SUPV-010",
+            "MRS-SUPV-014",
+            "MRS-SUPV-015",
             "MRS-GATE-007",
             "MRS-GATE-008",
             "MRS-GATE-009",
@@ -207,6 +209,9 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-SMOKE-005",
             "MRS-SMOKE-006",
             "MRS-SMOKE-007",
+            "MRS-MDL-001",
+            "MRS-MDL-002",
+            "MRS-MDL-003",
             "MRS-MATRIX-001",
             "MRS-MATRIX-002",
             "MRS-ENTRY-001",
@@ -220,12 +225,14 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-LAND-011",
             "MRS-STATUS-010",
             "MRS-STATUS-011",
+            "MRS-STATUS-014",
             "MRS-STATUS-012",
             "MRS-STATUS-013",
             "MRS-DEPLOY-024",
             "MRS-DEPLOY-025",
             "MRS-DEPLOY-026",
             "MRS-DEPLOY-027",
+            "MRS-DEPLOY-028",
             "MRS-SPIN-016",
             "MRS-REFRESH-001",
             "MRS-REFRESH-002",
@@ -349,8 +356,48 @@ def test_registered_codes_contains_the_real_codes():
             # the reconcile commit/push) -- refuses the landing.
             "MRS-DISP-047",
             "MRS-DISP-048",
+            # Story 63.4 (spec-pyforge-steward CAP-5): dispatch_once shells
+            # `steward session check --json` right after repo_root resolves
+            # and folds a non-ok session-precondition verdict into a WARN
+            # finding -- non-blocking, mirroring MRS-DISP-036's worktree-WIP
+            # surfacing shape.
+            "MRS-DISP-049",
+            # Story 68.1 (spec-pyforge-marshal CAP-277): after its ledger promotion,
+            # finalize read `origin/main`'s tracked ledger and the landed story's
+            # key does not read `done` there (absent, another status, unreadable) --
+            # ERROR: finalize exits 1 and `dispatch land` refuses (MRS-DISP-020).
+            "MRS-DISP-051",
+            # Story 77.1 (spec-pyforge-marshal CAP-282, dispatch half of the
+            # `structure-graph` layer): 053 the worktree's codegraph index was
+            # built with `init -y` (no base index, or the copied one would not
+            # sync) and the message names `marshal context bootstrap`; 054 no
+            # index was seeded at all. Both WARN, never blocking.
+            "MRS-DISP-053",
+            "MRS-DISP-054",
+            # Story 74.2 (spec-feature-flag-governance CAP-3, the pre-session flag-gate
+            # consult): 052 ERROR the gate reds the spec or could not judge it (the
+            # dispatch is refused); 055 WARN the gate warned (a pre-rule spec) or its
+            # script is absent (the dispatch proceeds).
+            "MRS-DISP-052",
+            "MRS-DISP-055",
+            # Story 80.1 (spec-pyforge-marshal CAP-284): the dispatch landing's check
+            # wait -- 056 a check run on the PR head concluded red, 057 runs still
+            # pending at `dispatch.landing_check_timeout_minutes`. Both ERROR: the
+            # landing refuses before `forge.merge_pr` and leaves the PR open.
+            "MRS-DISP-056",
+            "MRS-DISP-057",
+            "MRS-DISP-058",
+            "MRS-DISP-059",
+            "MRS-DISP-060",
+            "MRS-DISP-061",
+            "MRS-DISP-062",
             "MRS-DRAIN-016",
             "MRS-DRAIN-017",
+            # Story 73.2 (spec-pyforge-marshal CAP-281): follow-up review scheduling -- 018
+            # WARN (stale row, unreadable ledger/history, a station layer's ignored cap), 019
+            # INFO-severity (follow-ups waiting on the per-campaign cap), both classified WARN.
+            "MRS-DRAIN-018",
+            "MRS-DRAIN-019",
             "MRS-DRAIN-013",
             "MRS-DRAIN-014",
             "MRS-DRAIN-015",
@@ -381,6 +428,24 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-GATE-014",
             # Story 22.12 (shared-surface cross-suite gate, CAP-12).
             "MRS-GATE-015",
+            # Story 82.1 (DW-FU-2-1-7): the repository root could not be resolved.
+            "MRS-GATE-016",
+            # Story 82.9 (FR-25, DW-FU-2-6-2): the redacted gate record could not be written.
+            "MRS-GATE-017",
+            # Story 83.2 (spec-83-2): pre-verification deferred-work intake.
+            "MRS-GATE-018",
+            # Story 83.17 (spec-83-17): commit-attribution gate on the story branch.
+            "MRS-GATE-019",
+            "MRS-GATE-020",
+            "MRS-GATE-021",
+            # Story 82.9: `marshal factory checkpoint`'s three precondition findings (Story 34.2 never registered them).
+            "MRS-CHK-001",
+            "MRS-CHK-002",
+            "MRS-CHK-003",
+            "MRS-SUPV-011",
+            "MRS-SUPV-012",
+            "MRS-SUPV-013",
+            "MRS-SPIN-018",
             # Story 28.8 (derived context recomputes only on source change,
             # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
             # own area. 001 UNEVALUABLE (the derived-context declaration
@@ -391,6 +456,27 @@ def test_registered_codes_contains_the_real_codes():
             # and MRS-PREFLIGHT-015).
             "MRS-CTX-001",
             "MRS-CTX-002",
+            # Story 46.1 (a bare clone bootstraps the substrate,
+            # spec-pyforge-marshal CAP-192): 003 WARN rebuilt locally, 004
+            # UNEVALUABLE neither fetched nor rebuilt, 005 WARN fetched pack
+            # refused, 006 WARN pack with a gap, 007 UNEVALUABLE nothing
+            # packable.
+            "MRS-CTX-003",
+            "MRS-CTX-004",
+            "MRS-CTX-005",
+            "MRS-CTX-006",
+            "MRS-CTX-007",
+            # Story 46.2 (the canonical context bundle is digest-pinned,
+            # spec-pyforge-marshal CAP-192): `marshal context bundle`'s own
+            # code -- 008 WARN, a second harness's `--expect-digest` does
+            # not match the freshly assembled bundle's digest; never blocks.
+            "MRS-CTX-008",
+            # Story 46.6 (a persistence advisory for a lapsed [context]
+            # layer, spec-pyforge-marshal CAP-193, fold-remint of
+            # spec-marshal-token-economy CAP-20): `marshal context
+            # advisory`'s own code -- 009 WARN, a declared-active layer's
+            # kit item or scribe binary no longer resolves; never blocks.
+            "MRS-CTX-009",
             # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
             # `marshal context retrieve`'s degradation code -- WARN, never
             # blocking; falls back to Story 28.8's epic-context file.
@@ -417,10 +503,16 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-WATCH-002",
             "MRS-WATCH-003",
             "MRS-WATCH-004",
-            # Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1): a
-            # pre-launch `scribe recall` attempt that degraded (CLI
-            # unresolved/non-zero/timeout, or the artifact write failed).
-            "MRS-SPIN-018",
+            # Story 65.1 (spec-pyforge-marshal CAP-274, `marshal factory drain
+            # --plan`): 001 ERROR next story would not dispatch cleanly; 002
+            # WARN queued story / unmirrored prose park; 003 WARN inert
+            # order_overrides; 004 WARN unmet Deps; 005 UNEVALUABLE plan
+            # could not be computed.
+            "MRS-DRAINPLAN-001",
+            "MRS-DRAINPLAN-002",
+            "MRS-DRAINPLAN-003",
+            "MRS-DRAINPLAN-004",
+            "MRS-DRAINPLAN-005",
         }
     )
 
@@ -483,3 +575,65 @@ def test_require_registered_still_rejects_other_codes_after_monkeypatch(monkeypa
 
 def test_unregistered_finding_code_error_is_a_value_error():
     assert issubclass(findings.UnregisteredFindingCodeError, ValueError)
+
+
+def test_mrs_disp_051_is_registered_at_the_error_tier():
+    """Story 68.1 (CAP-277): the landed story's ledger key does not read `done` on `origin/main` -- a code
+    finalize's exit rule (ERROR only) must be able to act on, so it is registered AND classified ERROR."""
+    from pyforge.marshal.core import verdict
+    from pyforge.marshal.core.model import Finding, Severity
+
+    assert "MRS-DISP-051" in findings.REGISTERED_CODES
+    assert verdict.classify("MRS-DISP-051") is verdict.Verdict.ERROR
+    assert (
+        verdict.compute_verdict(
+            (Finding(code="MRS-DISP-051", severity=Severity.ERROR, message="not done on origin/main"),)
+        )
+        is verdict.Verdict.ERROR
+    )
+
+
+def test_mrs_disp_052_is_registered_once_at_the_error_tier_and_055_at_warn():
+    """Story 74.2 (spec-feature-flag-governance CAP-3): the flag-gate refusal is ERROR; the
+    proceeds-with-a-warning half takes its own code because ``compute_verdict`` classifies by
+    code alone (AD-31 -- one code, one rung). ``052`` appears exactly once in the registry
+    source AND the classification table (AD-15), so it cannot sit on two rungs."""
+    import inspect
+    import re
+
+    from pyforge.marshal.core import verdict
+    from pyforge.marshal.core.model import Finding, Severity
+
+    assert "MRS-DISP-052" in findings.REGISTERED_CODES
+    assert "MRS-DISP-055" in findings.REGISTERED_CODES
+    assert verdict.classify("MRS-DISP-052") is verdict.Verdict.ERROR
+    assert verdict.classify("MRS-DISP-055") is verdict.Verdict.WARN
+    registry_source = inspect.getsource(findings)
+    table_source = inspect.getsource(verdict)
+    assert len(re.findall(r'^\s+"MRS-DISP-052",\s*$', registry_source, re.MULTILINE)) == 1
+    assert len(re.findall(r'^\s+"MRS-DISP-052":', table_source, re.MULTILINE)) == 1
+    refused = Finding(code="MRS-DISP-052", severity=Severity.ERROR, message="the gate reds the spec")
+    warned = Finding(code="MRS-DISP-055", severity=Severity.WARN, message="a pre-rule spec")
+    assert verdict.compute_verdict((refused,)) is verdict.Verdict.ERROR
+    assert verdict.compute_verdict((warned,)) is verdict.Verdict.WARN
+
+
+def test_mrs_disp_056_and_057_are_registered_once_at_the_error_tier():
+    """Story 80.1 (spec-pyforge-marshal CAP-284): a red check run and a check run still pending at
+    the timeout are two codes (AD-31 -- classified by code alone), both ERROR so the landing
+    refuses; each appears exactly once in the registry source and the classification table (AD-15)."""
+    import inspect
+    import re
+
+    from pyforge.marshal.core import verdict
+    from pyforge.marshal.core.model import Finding, Severity
+
+    registry_source = inspect.getsource(findings)
+    table_source = inspect.getsource(verdict)
+    for code in ("MRS-DISP-056", "MRS-DISP-057"):
+        assert code in findings.REGISTERED_CODES
+        assert verdict.classify(code) is verdict.Verdict.ERROR
+        assert len(re.findall(rf'^\s+"{code}",\s*$', registry_source, re.MULTILINE)) == 1
+        assert len(re.findall(rf'^\s+"{code}":', table_source, re.MULTILINE)) == 1
+        refused = Finding(code=code, severity=Severity.ERROR, message="a check run blocks the landing")
+        assert verdict.compute_verdict((refused,)) is verdict.Verdict.ERROR

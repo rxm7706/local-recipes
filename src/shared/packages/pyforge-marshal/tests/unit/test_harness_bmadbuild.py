@@ -400,13 +400,21 @@ def _wired_resolution(
     return BmadBuildHarness().binary_present(("fakecli",), repo_root=tmp_path)
 
 
-def _await_file(path: Path, *, tries: int = 200) -> str:
+def _await_file(path: Path, *, tries: int = 200, containing: str | None = None) -> str:
+    """``path``'s text once it exists with content -- and, with ``containing``, once it carries that text. The
+    launcher creates the session log before the detached child runs, so a log read as soon as it exists can still
+    be empty, or not yet hold the line a test waits for, under load (seen under CI load on the wrapped fallback-dir
+    reachability test)."""
     for _ in range(tries):
         if path.is_file():
-            content = path.read_text(encoding="utf-8")
-            if content:
-                return content
+            time.sleep(0.05)
+            text = path.read_text(encoding="utf-8")
+            if text and (containing is None or containing in text):
+                return text
+            continue
         time.sleep(0.05)
+    if path.is_file():
+        return path.read_text(encoding="utf-8")
     raise AssertionError(f"{path} never appeared")
 
 
@@ -488,7 +496,7 @@ def test_dispatch_wraps_the_launch_and_scopes_the_store_to_the_worktree(tmp_path
     # ...without the wrapper's env displacing marshal's per-invocation pin
     assert "PROJ=pyforge-marshal" in seen_env
     # and the wrapped CLI actually ran underneath it
-    assert "session output" in _await_file(tmp_path / "session.log")
+    assert "session output" in _await_file(tmp_path / "session.log", containing="session output")
 
 
 def test_dispatch_ccr_store_round_trip_is_byte_exact(tmp_path: Path, bare_path: Path) -> None:
@@ -689,7 +697,8 @@ def test_wrapped_launch_keeps_a_fallback_dir_cli_reachable(tmp_path: Path, bare_
         log_path=tmp_path / "session.log",
         wire_layer=_WIRE_ON,
     )
-    assert "session output from the fallback dir" in _await_file(tmp_path / "session.log")
+    expected = "session output from the fallback dir"
+    assert expected in _await_file(tmp_path / "session.log", containing=expected)
 
 
 def test_dispatch_child_survives_via_new_session(tmp_path: Path, bare_path: Path) -> None:
@@ -697,7 +706,10 @@ def test_dispatch_child_survives_via_new_session(tmp_path: Path, bare_path: Path
     returned pid IS the session process (no CLI self-backgrounding
     double-detach), so the dispatch supervisor's liveness probe is
     meaningful."""
-    _write_script(bare_path, "sleeper", "sleep 5")
+    # A Python sleeper, not ``sleep``: ``bare_path`` holds only ``bin/`` under tmp, so a bare ``sleep`` is "not found"
+    # there and the shell exits at once (final landing review L5) -- the probe below then met an exited, unreaped
+    # child. ``sys.executable`` also runs where ``/bin/sleep`` does not exist (NixOS, Guix).
+    _write_python_script(bare_path, "sleeper", "import time\ntime.sleep(5)\n")
     _write_overlay(
         tmp_path,
         "sleeper",
@@ -732,4 +744,72 @@ def test_dispatch_child_survives_via_new_session(tmp_path: Path, bare_path: Path
             f"(reaped before the liveness check) -- dispatch log:\n{log_text}"
         )
     assert os.getsid(result.pid) != os.getsid(0)
+    # The first probe can win the race against a session that exits at once, and ``kill(pid, 0)`` also succeeds on
+    # an exited child this process never reaped -- so the session must still be running (neither gone nor a zombie)
+    # a moment later.
+    time.sleep(0.5)
+    log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.exists() else "<no log file>"
+    assert _session_running(result.pid), f"dispatched pid {result.pid} exited at once -- dispatch log:\n{log_text}"
     os.kill(result.pid, 15)
+
+
+def _session_running(pid: int) -> bool:
+    """Whether ``pid`` is running -- present and not a zombie awaiting its parent's reap. ``/proc`` where it exists;
+    elsewhere (macOS) a non-blocking ``waitpid``, since this test process is the session's Popen parent."""
+    if Path("/proc/self/stat").exists():
+        try:
+            stat = Path(f"/proc/{pid}/stat").read_text(encoding="utf-8")
+        except OSError:
+            return False
+        return stat[stat.rfind(")") + 2] != "Z"
+    try:
+        reaped, _status = os.waitpid(pid, os.WNOHANG)
+    except ChildProcessError:
+        return False
+    return reaped == 0
+
+
+# --- Story 85.1: launch_argv pins the project unconditionally ----------------
+
+
+class _RecordedPopen:
+    pid = 4242
+
+
+def test_launch_argv_pins_an_empty_project_over_the_inherited_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Story 85.1 (narrowed criterion; review L1): ``launch_argv`` -- the one
+    launcher behind ``dispatch`` and the fix turn -- sets ``BMAD_ACTIVE_PROJECT``
+    unconditionally, as ``dispatch`` always did. An empty ``project_slug`` reaches
+    the child as ``""``; it never inherits the operator shell's project (setting
+    it only for a non-empty slug makes this fail)."""
+    from pyforge.marshal.adapters import harness_bmadbuild
+    from pyforge.marshal.core.harness_profile import WireWrap, parse_profile
+
+    seen: dict[str, str] = {}
+
+    def _popen(argv: list[str], **kwargs: object) -> _RecordedPopen:
+        env = kwargs["env"]
+        assert isinstance(env, dict)
+        seen.update(env)
+        return _RecordedPopen()
+
+    monkeypatch.setattr(harness_bmadbuild.subprocess, "Popen", _popen)
+    monkeypatch.setenv("BMAD_ACTIVE_PROJECT", "operator-shell-project")
+    profile = parse_profile({"name": "fake", "binary": "fake", "argv": ["{prompt}"]}, source="test")
+    resolution = HarnessResolution(profile="fake", spec=profile, binary_path="/bin/true")
+
+    pid, command = BmadBuildHarness().launch_argv(
+        ["/bin/true"],
+        worktree=tmp_path,
+        profile=profile,
+        resolution=resolution,
+        log_path=tmp_path / "log",
+        wire=WireWrap(applied=False, reason=None),
+        budget_env={},
+        project_slug="",
+    )
+
+    assert (pid, command) == (4242, ("/bin/true",))
+    assert seen["BMAD_ACTIVE_PROJECT"] == ""
