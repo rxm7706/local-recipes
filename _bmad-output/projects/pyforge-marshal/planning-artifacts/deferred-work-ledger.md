@@ -8994,3 +8994,14 @@ status: open
   severity: medium (unverified)
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-47-3: Live bmad-loop launch paths do not yet pass resolve_context_layers into augment_bmad_loop_session_prompt_with_recall (pre-existing 47.1/47.2 seam).
+
+- source_spec: `planning-artifacts/specs/spec-47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline.md`
+  summary: Live bmad-loop launch paths do not yet pass resolve_context_layers into augment_bmad_loop_session_prompt_with_recall (pre-existing 47.1/47.2 seam).
+  evidence: Layer gate is implemented when context_layers is supplied; None keeps backward-compatible enabled behavior until spin/dispatch wires the payload.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
+  origin: spec-deferred 4dfe6b79d429 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
