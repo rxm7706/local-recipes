@@ -3,7 +3,8 @@ title: '54.1: The hand ledger sync repairs unrelated feed drift instead of refus
 type: 'feature'
 created: '2026-09-24'
 updated: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '01de79a0b9b7fbcea7169d7aadbd6282c7433fec'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md

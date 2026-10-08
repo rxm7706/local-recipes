@@ -27,7 +27,7 @@ pixi run -e pyforge-guild sprint-ledger-sync -- --project pyforge-<s>
 pixi run -e pyforge-guild story-status-check
 ```
 
-Never hand-edit `sprint-status-ledger.yaml`. Use `--repair-feed` only when you mean to pull a stale feed toward the tracked twin. A bare sync refuses when the feed would drop twin-only keys or overwrite `done` or `blocked` rows.
+Never hand-edit `sprint-status-ledger.yaml`. A bare `sprint-ledger-sync` repairs feed-behind-twin drift and names each repaired key; use `--allow-regression` only when the tracked twin is genuinely wrong.
 
 On a mop, the re-key map (`planning-artifacts/rekey-<date>.md`) and the feed use the same keys. If the map says `3-1-foo` became `1-1-foo`, the feed row is the new key at the old status. That is how a `done` row moves as `done` instead of drop-plus-add.
 
