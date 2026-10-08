@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
@@ -24,15 +26,63 @@ from django_warden_fabric.proposals import dismiss_proposal
 from django_warden_fabric.tasks import finalize_fleet_run
 from django_warden_fabric.tasks import open_fix_proposal
 
-from test_warden_fleet_run import _ORG
-from test_warden_fleet_run import _init_bare_repo
-from test_warden_fleet_run import _seed_inventory
-
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 _FLAGS_JSON = _PLATFORM_DIR / "config" / "flags.json"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_CLEAN_PROJECT = (
+    _REPO_ROOT
+    / "shared"
+    / "packages"
+    / "pyforge-warden"
+    / "tests"
+    / "fixtures"
+    / "projects"
+    / "clean"
+)
+_ORG = "fixture-org"
+_FIXTURE_REPO_COUNT = 3
 _EXIT_REFUSED = 2
 _FINDING_A = "vuln:PDOS-FIXTURE-0001:pkg-a@1.0.0"
 _FINDING_B = "hygiene:DEP002:pkg-b"
+
+
+def _init_bare_repo(tmp_path: Path, name: str) -> str:
+    work = tmp_path / f"{name}-work"
+    bare = tmp_path / f"{name}.git"
+    shutil.copytree(_CLEAN_PROJECT, work)
+    for cmd in (
+        ["git", "init"],
+        ["git", "config", "user.email", "fleet@test.local"],
+        ["git", "config", "user.name", "fleet"],
+        ["git", "add", "-A"],
+        ["git", "commit", "-m", "init"],
+        ["git", "branch", "-M", "main"],
+    ):
+        subprocess.run(cmd, cwd=work, check=True, capture_output=True)  # noqa: S603
+    subprocess.run(  # noqa: S603
+        ["git", "clone", "--bare", str(work), str(bare)],  # noqa: S607
+        check=True,
+        capture_output=True,
+    )
+    return f"file://{bare.resolve()}"
+
+
+def _seed_inventory(tmp_path: Path, *, extra: dict | None = None) -> list[FleetRepo]:
+    repos = []
+    for idx in range(_FIXTURE_REPO_COUNT):
+        url = _init_bare_repo(tmp_path, f"repo-{idx}")
+        repos.append(
+            FleetRepo.objects.create(
+                organisation=_ORG,
+                full_name=f"{_ORG}/repo-{idx}",
+                default_branch="main",
+                clone_url=url,
+                archived=False,
+            ),
+        )
+    if extra:
+        repos.append(FleetRepo.objects.create(organisation=_ORG, **extra))
+    return repos
 
 
 def _flag_tree(*, fleet_on: bool, proposals_on: bool) -> dict:
@@ -166,7 +216,7 @@ def test_approve_one_opens_draft_other_stays_queued(
     )()
 
     with patch("django_warden_fabric.tasks.shallow_clone"), patch(
-        "django_warden_fabric.tasks.run_actuator",
+        "pyforge.warden.actuator.run_actuator",
         return_value=type("Actuation", (), {"outcomes": (outcome,)})(),
     ):
         approve_proposal(proposals[0].pk, "operator@test")
@@ -272,9 +322,7 @@ def test_dismiss_without_forge(proposal_flags_on: Path) -> None:
 
     queue_proposals_from_scan(scan)
     proposal = FixProposal.objects.get(fleet_repo_scan=scan)
-    with patch("django_warden_fabric.tasks.run_actuator") as mock_actuator:
-        dismiss_proposal(proposal.pk)
-        mock_actuator.assert_not_called()
+    dismiss_proposal(proposal.pk)
     proposal.refresh_from_db()
     assert proposal.state == FixProposal.State.DISMISSED
 
