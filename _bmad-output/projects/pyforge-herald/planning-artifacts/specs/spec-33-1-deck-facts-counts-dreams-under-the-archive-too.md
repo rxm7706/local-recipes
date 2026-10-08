@@ -2,7 +2,8 @@
 title: "33.1: deck-facts counts Dreams under the archive too"
 type: 'chore'
 created: '2026-09-29'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '1bf6c5a138cb55ad4da80598789eaf5ef917e056'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
