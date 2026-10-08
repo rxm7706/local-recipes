@@ -2,7 +2,7 @@
 title: "34.1: Herald cites the deck how-to, not the intake stub"
 type: 'chore'
 created: '2026-09-29'
-status: 'in-review'
+status: 'done'
 baseline_revision: '1bf6c5a138cb55ad4da80598789eaf5ef917e056'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -119,4 +119,27 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-10-08 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - `[n/a]` `[reject]` Bugbot reported no bugs on branch diff — herald-owned stub citations gone except the intentional `test_deck_status.py` path-list fixture; cited sections verified in `docs/how-to/presentation-deck.md`.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Repointed every herald-owned `docs/specs/presentation-deck.md` citation to `docs/how-to/presentation-deck.md` (section names unchanged). Regenerated `docs/how-to/pixi-tasks.md` and confirmed `environment.yaml` unchanged.
+
+**Files changed:** See memlog entries on `spec-pyforge-herald`, co-governors `spec-design-code-bridge`, `spec-modernist-identity`, and `spec-pyforge-doctor` (Story 34.1 surface reconcile 2026-10-08).
+
+**Review:** One Bugbot pass; no patch findings. `followup_review_recommended: false`.
+
+**Verification:**
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — exit 0
+- `pixi run -e pyforge-guild pyforge-station-tests` — exit 0
+- `git diff --exit-code environment.yaml` after re-export — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 (no `--write-baseline`)
+- `pixi run -e pyforge-guild spec-surface-check` — exit 0
+- `git grep` over herald-owned scope — only `test_deck_status.py` retains the stub path (by design)
+
+**Residual risk:** None; doctor Story 37.1 still owns retiring the legacy stub file.
