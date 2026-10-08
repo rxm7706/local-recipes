@@ -1420,7 +1420,7 @@ So that the artifact meets AD-21's no-cross-origin rule on every host, and Story
 **When** the faces are vendored under `docsite/assets/fonts/` and every herald page points at them, and `build.py --check` fails a page that names another origin
 **Then** the scan over a fresh build returns 0 findings; no herald page carries a stylesheet, preconnect or font load from any third-party origin; `git grep -E 'fonts\.(googleapis|gstatic)\.com' -- docsite/` prints nothing; and, with Story 31.1's check, `pages-check` reports 0 findings under `herald/`
 **And** every `@font-face` `url()` resolves inside the output or is a `data:` URI; every vendored file's sha256 matches its README row; `build.py --check` exits 1 on a planted stylesheet, preconnect, `@import` or `url()`; no file under `presentations/` changes; `pyforge-herald-test` and `site-check` are green
-**Status:** backlog
+**Status:** done
 
 ## Epic 32: A deck exports as a native, editable .pptx through pptxgenjs-plus (spec-pyforge-herald CAP-57)
 
