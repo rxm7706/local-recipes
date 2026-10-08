@@ -52,28 +52,32 @@ ordered tuple of profile names declared and validated here, consumed by
 ``[adapter].name`` derivation, never narrowed by a journal entry, and
 (Story 28.1) ``context`` -- SPEC-marshal-token-economy CAP-1's declared
 context pipeline: ``Mapping[str, {enabled: bool, aggressiveness?: str}]``
-keyed by one of the companion's own closed 5-layer matrix (``wire``,
-``output``, ``structure-graph``, ``derived-context``, ``planning-graph``),
+keyed by one of the companion's own closed 6-layer matrix (``wire``,
+``output``, ``structure-graph``, ``derived-context``, ``planning-graph``,
+``recall``),
 STATIC for the identical structural-declaration reason ``epic_surfaces``/
 ``mcp_servers`` are: a project/policy-declared shape, never narrowed at
 runtime by a journal entry. Absent, or a layer omitted from the declared
 mapping, means that layer is OFF -- ``resolve_context_layers()`` below is
-the ONE place that expands a possibly-partial declaration into all 5 layer
+the ONE place that expands a possibly-partial declaration into all 6 layer
 states, so ``adapters/harness_bmadloop.py::render_policy_toml`` (bmad-loop
 spin) and ``cli/dispatch.py::dispatch_once`` (factory dispatch) resolve the
 identical payload from the identical function rather than each re-deriving
-"layer absent = off" on its own. Three of the five layers are load-bearing
+"layer absent = off" on its own. Four of the six layers are load-bearing
 today: ``wire`` (Story 28.2, the harness-seam wrapper), ``output``/
 ``structure-graph`` (Story 28.3, the per-loop-home kit Genesis provisions
-and ``marshal seed check`` verifies), and ``derived-context`` (Story 28.8 --
+and ``marshal seed check`` verifies), ``derived-context`` (Story 28.8 --
 ``core/derived_context.py`` + ``cli/context.py`` declare an epic's derived
 planning artifacts and their sources, and ``adapters/scribe_cli.py`` asks
 Scribe's ``compile_surface`` cocoindex extra, through the ``scribe index
 refresh`` grammar, whether those sources moved; marshal renders the flag,
-the extra owns freshness). ``planning-graph`` (Story 28.9 --
-``core/planning_graph.py`` + ``cli/context.py retrieve``) binds scoped
-planning retrieval through the ``scribe recall`` grammar with Story 28.8's
-epic-context file as the proven fallback. Also (Story 28.15) ``scope_violation_mode``
+the extra owns freshness), and ``recall`` (Story 47.3 --
+``core/recall_feedback.py`` + ``adapters/harness_bmadloop.py`` inject scoped
+scribe feedback before dev/review passes when enabled). ``planning-graph``
+(Story 28.9 -- ``core/planning_graph.py`` + ``cli/context.py retrieve``)
+binds scoped planning retrieval through the ``scribe recall`` grammar with
+Story 28.8's epic-context file as the proven fallback. Also (Story 28.15)
+``scope_violation_mode``
 -- SPEC-marshal-token-economy CAP-17's per-station scope-violation
 enforcement mode for ``core/gate.py``'s ``MRS-GATE-007``/``008`` check: one
 of ``hard`` (today's non-waivable refuse)/``warn`` (the new default: the
@@ -379,19 +383,20 @@ _SCOPE_VIOLATION_MODES: frozenset[str] = frozenset({"hard", "warn", "off"})
 _REVIEW_ON_TIMEOUT_MODES: frozenset[str] = frozenset({"retry", "salvage-if-done", "defer"})
 _REVIEW_ON_STATUS_CONTRADICTION_MODES: frozenset[str] = frozenset({"escalate", "retry"})
 # Story 28.1's `context` block (SPEC-marshal-token-economy CAP-1): the
-# companion's own closed 5-layer matrix (`integration-layers.md`'s Layer
+# companion's own closed 6-layer matrix (`integration-layers.md`'s Layer
 # matrix table), in the exact order this story's own Design Notes name
-# them -- wire, output, structure-graph, derived-context, planning-graph.
+# them -- wire, output, structure-graph, derived-context, planning-graph,
+# recall (Story 47.3, SPEC-marshal-recall-in-the-loop CAP-3).
 # Public: `resolve_context_layers` (below) and both rendering consumers
 # (`adapters/harness_bmadloop.py`, `cli/dispatch.py`) iterate it, so a
-# future 6th layer is added here once, never independently in either
-# consumer.
+# future layer is added here once, never independently in either consumer.
 CONTEXT_LAYER_NAMES: tuple[str, ...] = (
     "wire",
     "output",
     "structure-graph",
     "derived-context",
     "planning-graph",
+    "recall",
 )
 # A closed 3-rung vocabulary for a layer's declared `aggressiveness` --
 # CAP-8's later graduated ladder escalates a story through these rungs as
@@ -2012,7 +2017,7 @@ def resolve_context_layers(effective: EffectivePolicy) -> dict[str, dict[str, ob
     CAP-1's AC: "both resolve the same declaration from one composition
     site -- no second parser, no engine-specific fork"): expands
     ``effective.context.value`` -- the possibly-partial declared
-    ``[context]`` block -- into ALL 5 of ``CONTEXT_LAYER_NAMES``, each a
+    ``[context]`` block -- into ALL 6 of ``CONTEXT_LAYER_NAMES``, each a
     plain ``{"enabled": bool, "aggressiveness": str}`` dict (JSON-safe: a
     fresh plain ``dict`` on every call, never a ``PolicyField``-style frozen
     proxy, so both callers below can hand this straight to ``json.dumps``

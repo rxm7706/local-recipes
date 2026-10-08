@@ -2,8 +2,8 @@
 title: '47.3: The recall-injection layer composes with the existing [context] pipeline'
 type: 'feature' # feature | bugfix | refactor | chore
 created: '2026-09-18'
-status: 'ready-for-dev' # draft | ready-for-dev | in-progress | in-review | done | blocked
-baseline_revision: ''
+status: 'in-progress' # draft | ready-for-dev | in-progress | in-review | done | blocked
+baseline_revision: '5ba7fef72cf8210d6eb1ed62a827330ba4b82bc8'
 review_loop_iteration: 0 # incremented by step-04 before each review loopback
 followup_review_recommended: false # set by step-04 on status: done; step-01 READS this — false HALTs, true allows one follow-up then forces false
 context: ['{project-root}/_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-recall-in-the-loop/SPEC.md', '{project-root}/docs/dreams/marshal-token-economy.md']
