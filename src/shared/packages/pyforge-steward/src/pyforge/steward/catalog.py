@@ -864,19 +864,13 @@ class CatalogEngine:
             return []
         try:
             document = _load_yaml_mapping(registry_path, what="estate listings")
-        except CatalogConfigError as exc:
-            return [CatalogFinding("config-source", "estate-listings", str(exc))]
+        except CatalogConfigError:
+            return []
         modules = document.get("modules")
         if modules is None:
             modules = []
         if not isinstance(modules, list):
-            return [
-                CatalogFinding(
-                    "config-source",
-                    "estate-listings",
-                    f"{registry_path}: 'modules' must be a list",
-                )
-            ]
+            return []
         reviews_dir = self.catalog_dir / DEFAULT_REVIEWS_DIR
         wielded = _wielded_module_names()
         findings: list[CatalogFinding] = []
@@ -894,6 +888,12 @@ class CatalogEngine:
             if not isinstance(name, str) or not name.strip():
                 continue
             name = name.strip()
+            row_source = row.get("source", "estate-listings")
+            if row_source != "estate-listings":
+                continue
+            tier_raw = row.get("trust_tier", TIER_UNVERIFIED)
+            if tier_raw not in TRUST_TIERS:
+                continue
             if name in wielded:
                 findings.append(
                     CatalogFinding(
@@ -904,7 +904,7 @@ class CatalogEngine:
                     )
                 )
                 continue
-            row_tier = row.get("trust_tier", TIER_UNVERIFIED)
+            row_tier = tier_raw
             if row_tier == TIER_BMAD_CERTIFIED:
                 findings.append(
                     CatalogFinding(

@@ -22,6 +22,7 @@ from pyforge.steward.catalog import (
     KIND_FRAME,
     KIND_MODULE,
     STATES,
+    PUBLISH_TRUST_TIERS,
     TIER_BMAD_CERTIFIED,
     TIER_UNVERIFIED,
     TRUST_TIERS,
@@ -438,6 +439,44 @@ def test_a_raising_source_refuses_render_and_render_check(tmp_path: Path) -> Non
 # ---------------------------------------------------------------------------
 
 
+def _write_review(reviews_dir: Path, name: str, *, tier: str = "community-reviewed") -> Path:
+    reviews_dir.mkdir(parents=True, exist_ok=True)
+    path = reviews_dir / f"{name}.yaml"
+    path.write_text(
+        f'module: {name}\ntrust_tier: {tier}\nreviewed: "2026-10-08"\nreviewer: steward-test\n',
+        encoding="utf-8",
+    )
+    return path
+
+
+def _seed_estate_reviews(registry: Path, estate_yaml: str) -> None:
+    import yaml
+
+    doc = yaml.safe_load(textwrap.dedent(estate_yaml))
+    modules = doc.get("modules") if isinstance(doc, dict) else None
+    if not isinstance(modules, list):
+        return
+    wielded = {p.name for p in SUITE_PACKAGES if p.install_class == INSTALL_CLASS_MODULE}
+    reviews = registry / "reviews"
+    seen: set[str] = set()
+    for row in modules:
+        if not isinstance(row, dict):
+            continue
+        if row.get("source", "estate-listings") != "estate-listings":
+            continue
+        name = row.get("name")
+        if not isinstance(name, str) or not name.strip():
+            continue
+        name = name.strip()
+        if name in wielded or name in seen:
+            continue
+        tier = row.get("trust_tier", TIER_UNVERIFIED)
+        if tier not in TRUST_TIERS or tier not in PUBLISH_TRUST_TIERS:
+            continue
+        _write_review(reviews, name, tier=str(tier))
+        seen.add(name)
+
+
 def _estate_engine(tmp_path: Path, estate_yaml: str, extra_sources: str = "") -> CatalogEngine:
     engine = _engine(
         tmp_path,
@@ -450,6 +489,7 @@ def _estate_engine(tmp_path: Path, estate_yaml: str, extra_sources: str = "") ->
     registry = engine.catalog_dir / "registry"
     registry.mkdir()
     (registry / "estate.yaml").write_text(textwrap.dedent(estate_yaml), encoding="utf-8")
+    _seed_estate_reviews(registry, estate_yaml)
     return engine
 
 
@@ -642,6 +682,7 @@ def test_two_listings_with_the_same_kind_and_name_are_a_duplicate(tmp_path: Path
     )
     findings = engine.check().findings
     assert [(f.code, f.subject) for f in findings] == [
+        ("listing-certified-wielded", "bmad-builder"),
         ("listing-duplicate", "twice"),
         ("listing-duplicate", "bmad-builder"),
     ]
@@ -1142,16 +1183,6 @@ def test_real_tree_estate_registry_is_empty_and_names_its_source() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _write_review(reviews_dir: Path, name: str, *, tier: str = "community-reviewed") -> Path:
-    reviews_dir.mkdir(parents=True, exist_ok=True)
-    path = reviews_dir / f"{name}.yaml"
-    path.write_text(
-        f"module: {name}\ntrust_tier: {tier}\nreviewed: 2026-10-08\nreviewer: steward-test\n",
-        encoding="utf-8",
-    )
-    return path
-
-
 def _write_listing_draft(tmp_path: Path, name: str) -> Path:
     path = tmp_path / f"{name}-listing.yaml"
     path.write_text(
@@ -1192,13 +1223,21 @@ def test_publish_with_review_appends_estate_row(tmp_path: Path) -> None:
     assert row["name"] == "probe-mod"
     assert row["trust_tier"] == "community-reviewed"
     assert row["source"] == "estate-listings"
-    report = engine.check()
-    assert report.ok
+    assert engine.render(write=True).ok
+    assert engine.check().ok
 
 
 def test_check_lists_hand_edited_module_without_review(tmp_path: Path) -> None:
-    engine = _estate_engine(
+    engine = _engine(
         tmp_path,
+        """
+        sources:
+          estate-listings: {plugin: estate-listings, state: "on", path: registry/estate.yaml}
+        """,
+    )
+    registry = engine.catalog_dir / "registry"
+    registry.mkdir(parents=True)
+    (registry / "estate.yaml").write_text(
         textwrap.dedent(
             """\
             modules:
@@ -1207,6 +1246,7 @@ def test_check_lists_hand_edited_module_without_review(tmp_path: Path) -> None:
                 trust_tier: unverified
             """
         ),
+        encoding="utf-8",
     )
     report = engine.check()
     assert not report.ok
