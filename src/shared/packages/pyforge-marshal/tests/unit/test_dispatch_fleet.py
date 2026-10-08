@@ -582,8 +582,7 @@ def _seed_fleet(tmp_path: Path, *, stories: dict[str, list[str]]) -> None:
         specs.mkdir(parents=True, exist_ok=True)
         for key in keys:
             (specs / f"spec-{key}.md").write_text(
-                '---\ndifficulty: medium\nsurface: ["src/%s/**"]\n---\n'
-                % slug
+                '---\ndifficulty: medium\nsurface: ["src/%s/**"]\n---\n' % slug
                 + "\n## Verification\n\n**Commands:**\n\n**Manual checks:**\n- none\n",
                 encoding="utf-8",
             )
@@ -1086,7 +1085,7 @@ def test_unbound_spec_refuse_re_preflights_when_the_spec_gains_verification(
     specs = dispatch_core.planning_specs_dir(tmp_path, "pyforge-marshal")
     specs.mkdir(parents=True)
     spec = specs / "spec-22-7-fleet.md"
-    spec.write_text('---\ndifficulty: medium\n---\n# no verification\n', encoding="utf-8")
+    spec.write_text("---\ndifficulty: medium\n---\n# no verification\n", encoding="utf-8")
     monkeypatch.chdir(tmp_path)
     ledgers = {"pyforge-marshal": (("22-7-fleet", "backlog"),)}
 
@@ -1108,7 +1107,7 @@ def test_unbound_spec_refuse_re_preflights_when_the_spec_gains_verification(
     assert "MRS-DRAIN-017" in out
 
     spec.write_text(
-        '---\ndifficulty: medium\n---\n# spec\n\n## Verification\n\n**Commands:**\n\n**Manual checks:**\n- none\n',
+        "---\ndifficulty: medium\n---\n# spec\n\n## Verification\n\n**Commands:**\n\n**Manual checks:**\n- none\n",
         encoding="utf-8",
     )
     edited = FakeBuildHarness()
@@ -3313,6 +3312,7 @@ def test_dependency_ordering_never_crashes_on_small_backlogs(
 
 def _seed_done_worktree_spec(repo: Path, slug: str, story: str) -> Path:
     from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
+
     from pyforge.marshal.core.identity import normalize, render_feed_key
 
     specs = dispatch_core.planning_specs_dir(repo, slug)

@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL as _BV
 from pyforge.core.process import ProcessResult
 from scope_triangle import point_scope_triangle
 
@@ -31,8 +32,6 @@ from pyforge.marshal.core.journal import (
 from pyforge.marshal.core.verdict import EXIT_OK
 from pyforge.marshal.dispatch_supervisor.__main__ import _verification_outcome_verdict
 from pyforge.marshal.ports.build_harness import DispatchLaunchResult, HarnessResolution
-
-from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL as _BV
 
 
 def _init_git_repo(path: Path) -> None:

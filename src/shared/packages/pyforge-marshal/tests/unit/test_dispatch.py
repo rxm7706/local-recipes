@@ -4460,7 +4460,7 @@ def test_removing_the_flag_gate_consult_lets_the_red_fixture_dispatch(
 # --- Story 65.2 (CAP-274): pre-launch spec binding refusal -----------------------------------------
 
 _UNBOUND_SPEC_BODY = "\n## Intent\n\nNo verification section at all.\n"
-_OUT_OF_POLICY_SPEC = f"""\
+_OUT_OF_POLICY_SPEC = """\
 ---
 difficulty: medium
 ---
