@@ -1508,7 +1508,7 @@ So that retiring `docs/specs/` leaves no Herald file pointing at an archived stu
 **And** `environment.yaml` regenerates unchanged; `spec-surface-check` exits 0 after a memlog entry and a scoped stamp for each
 Spec it names (`spec-pyforge-herald`, `spec-design-code-bridge`, `spec-modernist-identity`); `pixi run --frozen -e
 pyforge-herald pyforge-herald-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 35: Phase 4+5 of the deferral burn-down: herald's open medium and low deferrals
 
