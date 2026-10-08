@@ -523,6 +523,28 @@ def test_no_module_outside_dashboard_imports_dashboard_django_or_channels():
         "the sanctioned lazy reach into glass_query is expected to exist"
     )
 
+    # Story 61.5's quarantine.py added a fifth sanctioned lazy reach, into
+    # dashboard/quarantine_admit.py — same shape, same narrower claim pinned.
+    quarantine_module = ast.parse((steward_dir / "quarantine.py").read_text(encoding="utf-8"))
+    quarantine_top_level: list[str] = []
+    for node in quarantine_module.body:
+        if isinstance(node, ast.Import):
+            quarantine_top_level += [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            quarantine_top_level.append(node.module)
+    banned_quarantine_top_level = [
+        name
+        for name in quarantine_top_level
+        if name.split(".")[0] in _DASHBOARD_BANNED_MODULES or _is_banned_dashboard_dotted(name)
+    ]
+    assert not banned_quarantine_top_level, (
+        f"quarantine.py imports {banned_quarantine_top_level} at module level -- the "
+        f"dashboard extra may only be reached lazily, inside admit_inbound_without_passport"
+    )
+    assert "pyforge.steward.dashboard.quarantine_admit" in (steward_dir / "quarantine.py").read_text(
+        encoding="utf-8"
+    ), "the sanctioned lazy reach into quarantine_admit is expected to exist"
+
 
 def test_dashboard_middleware_and_declarations_stay_django_free():
     """Review pass 3: the guard above SKIPS everything under `dashboard/`, so
@@ -628,6 +650,7 @@ def test_the_dashboard_module_split_is_pinned_not_merely_documented():
         "models.py",
         "passport_mint.py",
         "passport_sync.py",
+        "quarantine_admit.py",
         "routing.py",
         "views.py",
         "views_htmx.py",
