@@ -229,6 +229,34 @@ def frontmatter_scalar(path: Path, key: str) -> str | None:
     return None
 
 
+GENESIS_DREAMS_SOURCE = "docs/dreams/*.md + archive/docs/dreams/*.md"
+
+
+def genesis_dream_status_counts(root: Path) -> dict[str, int]:
+    """Status buckets for the pyforge-genesis deck (CHAIN-STANDARD §11).
+
+    Live ``docs/dreams/*.md`` files count by frontmatter ``status``. Archive-only
+    slugs under ``archive/docs/dreams/`` count toward ``archived`` when they carry
+    a status, never toward their frontmatter status bucket. A slug present in both
+    directories is counted once from ``docs/dreams/``.
+    """
+    counts: dict[str, int] = {}
+    live_slugs: set[str] = set()
+    for md in sorted((root / "docs/dreams").glob("*.md")):
+        st = frontmatter_scalar(md, "status")
+        if st:
+            live_slugs.add(md.stem)
+            counts[st] = counts.get(st, 0) + 1
+    archive = root / "archive/docs/dreams"
+    if archive.is_dir():
+        for md in sorted(archive.glob("*.md")):
+            if md.stem in live_slugs:
+                continue
+            if frontmatter_scalar(md, "status"):
+                counts["archived"] = counts.get("archived", 0) + 1
+    return counts
+
+
 def ledger_counts(path: Path) -> tuple[str, str]:
     """('done/total' stories, 'done/total' epics) via the real parser.
 
@@ -622,16 +650,19 @@ def derive(root: Path, slug: str, with_tests: bool = False) -> tuple[dict, list[
     if slug == "pyforge-genesis":
         roster = root / "docs/governance/guild-roster.json"
         facts.append(fact("guild_stations", str(len(guild)), rel(roster), "length of stations"))
-        counts: dict[str, int] = {}
-        for md in sorted((root / "docs/dreams").glob("*.md")):
-            st = frontmatter_scalar(md, "status")
-            if st:
-                counts[st] = counts.get(st, 0) + 1
-        facts.append(fact("dreams_total", str(sum(counts.values())), "docs/dreams/*.md",
-                          "count of files with a frontmatter status"))
+        counts = genesis_dream_status_counts(root)
+        facts.append(fact("dreams_total", str(sum(counts.values())), GENESIS_DREAMS_SOURCE,
+                          "count of Dreams with a frontmatter status (live by status; "
+                          "archive-only slugs toward archived)"))
         for st in sorted(counts):
-            facts.append(fact(f"dreams_{st}", str(counts[st]), "docs/dreams/*.md",
-                              f"count of files whose frontmatter status is {st}"))
+            if st == "archived":
+                method = (
+                    "count of Dreams under archive/docs/dreams/ with a frontmatter status "
+                    "(archive location; not frontmatter status buckets)"
+                )
+            else:
+                method = f"count of files whose frontmatter status is {st}"
+            facts.append(fact(f"dreams_{st}", str(counts[st]), GENESIS_DREAMS_SOURCE, method))
 
     doc = {
         "deck": slug,
