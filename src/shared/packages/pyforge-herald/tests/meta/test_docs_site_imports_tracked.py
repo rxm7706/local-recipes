@@ -32,6 +32,7 @@ def _repo_root() -> Path:
 
 
 def _strip_js_comments(source: str) -> str:
+    """Remove ``//`` and ``/* */`` comments; leave string literals intact."""
     out: list[str] = []
     i = 0
     n = len(source)
@@ -47,18 +48,23 @@ def _strip_js_comments(source: str) -> str:
             if ch == "\n":
                 in_line = False
                 out.append(ch)
+            else:
+                out.append(" ")
             i += 1
             continue
         if in_block:
             if ch == "*" and nxt == "/":
                 in_block = False
+                out.append("  ")
                 i += 2
             else:
+                out.append(" ")
                 i += 1
             continue
         if in_single:
-            out.append(" ")
+            out.append(ch)
             if ch == "\\" and i + 1 < n:
+                out.append(nxt)
                 i += 2
                 continue
             if ch == "'":
@@ -66,8 +72,9 @@ def _strip_js_comments(source: str) -> str:
             i += 1
             continue
         if in_double:
-            out.append(" ")
+            out.append(ch)
             if ch == "\\" and i + 1 < n:
+                out.append(nxt)
                 i += 2
                 continue
             if ch == '"':
@@ -75,8 +82,9 @@ def _strip_js_comments(source: str) -> str:
             i += 1
             continue
         if in_template:
-            out.append(" ")
+            out.append(ch)
             if ch == "\\" and i + 1 < n:
+                out.append(nxt)
                 i += 2
                 continue
             if ch == "`":
@@ -85,25 +93,27 @@ def _strip_js_comments(source: str) -> str:
             continue
         if ch == "/" and nxt == "/":
             in_line = True
+            out.append("  ")
             i += 2
             continue
         if ch == "/" and nxt == "*":
             in_block = True
+            out.append("  ")
             i += 2
             continue
         if ch == "'":
             in_single = True
-            out.append(" ")
+            out.append(ch)
             i += 1
             continue
         if ch == '"':
             in_double = True
-            out.append(" ")
+            out.append(ch)
             i += 1
             continue
         if ch == "`":
             in_template = True
-            out.append(" ")
+            out.append(ch)
             i += 1
             continue
         out.append(ch)
@@ -278,7 +288,12 @@ def test_synthetic_untracked_and_unresolved_imports(tmp_path: Path) -> None:
         "import loader from './loaders/shelf-docs-loader';\nexport { loader };\n",
         encoding="utf-8",
     )
-    subprocess.run(["git", "add", "docs-site"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "add", str(config), str(content_cfg), str(loader)],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
     findings, _ = docs_site_relative_import_findings(tmp_path)
     kinds = {(f.kind, f.resolved or f.specifier) for f in findings}
     assert ("untracked", "docs-site/src/lib/site-url.mjs") in kinds
