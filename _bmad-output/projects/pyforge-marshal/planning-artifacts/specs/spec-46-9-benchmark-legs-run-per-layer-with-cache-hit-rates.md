@@ -2,8 +2,10 @@
 title: '46.9: Benchmark legs run per layer with cache-hit rates'
 type: 'feature'
 created: '2026-09-18'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '8a2da2c010aec6578d6b6546a321affac249bb1d'
+followup_review_recommended: false
+review_loop_iteration: 1
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -59,3 +61,29 @@ Contract recovered from `epics.md` Story 46.9 (Intent + ACs) so `marshal factory
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding added 2026-09-19).
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — self-review of diff against intent-contract; AC covered by new unit tests)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Extended the token-economy benchmark with per-layer leg artifacts (Story 46.9 / CAP-196): each of the five context layers compares an isolated-on leg against a shared baseline via `marshal benchmark compare --per-layer`, reporting weighted tokens, optional USD estimates, and prompt-cache hit rate; the 28.5 equivalence gate voids individual layer rows without voiding siblings.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/token_economy_benchmark.py` — per-layer artifact builder, cache-hit rate helper, leg schema field
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/benchmark.py` — `--per-layer` / `--layer-legs` compare mode; cache-hit rate from harness state
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/findings.py` / `verdict.py` — register `MRS-BENCH-005`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_token_economy_benchmark.py` / `test_cli_benchmark.py` / `test_findings.py` — AC and matrix coverage
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/.memlog.md` — surface reconcile for governed paths
+
+**Verification:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11859 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
+- `python scripts/spec_surface_reconcile.py` — OK after memlog reconcile
+
+**Residual risks:** Live orchestration of five isolated harness runs remains operator-driven (same as CAP-9 off/on); per-layer mode assumes `--layer-legs` JSON maps every `CONTEXT_LAYER_NAMES` entry to a recorded leg.
