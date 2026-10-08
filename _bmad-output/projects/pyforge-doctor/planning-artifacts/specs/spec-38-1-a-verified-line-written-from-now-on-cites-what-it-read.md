@@ -2,7 +2,7 @@
 title: "38.1: A `verified:` line written from now on cites what it read"
 type: 'fix'
 created: '2026-10-01'
-status: 'in-review'
+status: 'done'
 baseline_revision: '731f299611bd290e1d3d7040e7a30d864b00b6b1'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -171,6 +171,41 @@ Minted 2026-10-01 by operator ruling: the deferral burn-down's "stop the inflow"
     - `[low]` `[reject]` The command grammar is looser than the intent (a 24-character gap, extra spellings) and syntactic only — the intent leaves the spellings open; the gap is pinned by a reject row; same root cause as the proximity row.
     - `[false]` `[reject]` The diff goes beyond the intent's list (judges every line, one FAIL per entry, memlog and story-spec edits) — the Design Notes record the every-line choice, the task requires the memlog reconcile, and none of it fails or changes a line the intent protects.
 
+### 2026-10-08 — Review pass (follow-up)
+- verdicts: 28 findings — high 0, medium 3, low 18, false 0, maybe-false 0 (plus intent-auditor descriptive report, not triaged as findings)
+- findings:
+  - Blind Hunter
+    - `[low]` `[reject]` Story deferral #2 stale vs shipped DW-doctor-38-1-2 grammar — carried: extensionless/dotfile/`::` acceptance is intentional on head; deferral text is historical, not a code defect in this pass.
+    - `[low]` `[reject]` Intent cutoff wording vs 2026-10-02 constant — carried from 2026-10-01 pass (forced feasibility reading).
+    - `[medium]` `[reject]` Writer lacks citation check — disproved on head: `scripts/apply_verification_verdicts.py` imports `verified_line_cites` in `_validate_project_batch` (Story 41.1); frontmatter deferral #1 is stale narrative, not an open gap in the tree under review.
+    - `[low]` `[reject]` Diff bundles Epic 41.1 chain work — true of cumulative branch diff, not introduced by this follow-up patch; 41.1 carries its own tests elsewhere.
+    - `[low]` `[reject]` Memlog 373 vs 374 — append-only history; later entries and code agree on 374.
+    - `[low]` `[reject]` Design Notes still say 373 — planning-time figure; Auto Run Result records 374.
+    - `[low]` `[reject]` No baseline stamped in first pass — reconcile guard and memlog are the contract; this pass ran `spec_surface_reconcile.py` exit 0 without `--write-baseline`.
+    - `[low]` `[reject]` FAIL message omits every accepted citation shape — message stays minimal; predicate and tests are the oracle.
+    - `[low]` `[reject]` Grandfather count hidden on red runs — carried from 2026-10-01 reject row.
+    - `[low]` `[reject]` Deferral #3 stale vs pixi task text — disproved: `pixi.toml` / docs now mention `VERIFIED_CITATION_CUTOFF` and `verified-line-uncited` (Story 41.1).
+    - `[low]` `[reject]` Spec `done` vs ledger `backlog` — harness-owned ledger reconciliation, not this build-auto pass.
+    - `[low]` `[reject]` `` `pytest -q` -> exits 2 `` accepted — comment at `_VERIFIED_COMMAND_EXIT_RE` documents `-> exit` as intentional proximity; not a regression.
+    - `[low]` `[reject]` No test that writer calls `verified_line_cites` — covered in `tests/scripts/test_apply_verification_verdicts.py` on head (outside this story diff).
+    - `[low]` `[reject]` Live-ledger coupling — carried intentional AC pin from first pass.
+  - Edge Case Hunter
+    - `[medium]` `[reject]` Citation skipped when deferred-work raises — carried: unevaluable WARN, pinned by existing isolation test.
+    - `[low]` `[reject]` Grandfather count absent when other findings exist — carried.
+    - `[medium]` `[patch]` Proximity false accept `` `cmd` exited with 3 retries `` — verified on head before patch; `_VERIFIED_COMMAND_EXIT_RE` now rejects digits followed by `retries|times|attempts|more`; reject parametrize pins the case.
+    - `[low]` `[reject]` `` helper() never reaches exit 1 `` — deliberate proximity limit; tightening further rejected in first pass.
+    - `[medium]` `[reject]` Writer/reader mismatch — same as Blind Hunter writer row; 41.1 aligned writer.
+    - `[medium]` `[reject]` Cutoff vs landing date — carried claim finding.
+    - `[medium]` `[reject]` Strict path.ext vs widened grammar — carried; DW-doctor-38-1-2 shipped.
+    - `[low]` `[reject]` `_parse_verified_date` docstring extended — due-selector behavior unchanged for valid ledger lines.
+  - Verification Gap Reviewer
+    - `[medium]` `[defer]` Writer adoption not in four-file diff — carried: 41.1 landed separately; deferral remains for traceability only.
+    - `[medium]` `[patch]` Exit-code prose false accept — same root as Edge Case proximity row; patched in this pass.
+    - `[low]` `[defer]` Pixi task text — carried; fixed on head via 41.1.
+    - `[low]` `[reject]` Other chain.py hunks lack tests in diff — cumulative diff artifact; station suites cover 41.1 on head.
+  - Intent Alignment Auditor (descriptive)
+    - No separate triage rows — auditor confirms the diff implements the feasibility-constrained cutoff and expanded citation grammar documented in Design Notes; divergences from literal intent bullets were already accepted in the first pass.
+
 ## Auto Run Result
 
 Status: done
@@ -194,10 +229,17 @@ Status: done
 - `pixi run --frozen -e pyforge-guild spec-surface-check` — exit 0; `python scripts/spec_surface_reconcile.py` — exit 0. No baseline stamped.
 - Mutation, by hand, tree restored after each: rule removed from the loop (6 tests failed), predicate always true (15), no grandfathering (3), command citation ignored (8); after the review, hoisting the per-entry counter, `+=` to `=`, dropping the count from the message, a case-sensitive `exit`, and dropping the new spellings each failed only their new test.
 
-**Follow-up review recommended: true.** Two medium findings were patched (the per-entry reset test gap, the exit-code grammar). The unverified risk: the exit-code regex widening (`exited with code N`, `exit_code N`, scoped `(?i:...)`) and the OK-message change landed after the review layers ran and have had no second reviewer; the tests pin each spelling and both mutations, but a false accept in prose such as `` `cmd` exited with 3 retries `` is not covered.
+**Follow-up review recommended: false.** Single allowed follow-up pass (step-01) closed the exit-code proximity gap flagged after the first pass.
+
+**Follow-up pass (2026-10-08).** One medium patch: `_VERIFIED_COMMAND_EXIT_RE` rejects exit digits immediately followed by `retries`, `times`, `attempts`, or `more`; `test_verified_line_cites_rejects_a_bare_verdict` pins `` `cmd` exited with 3 retries ``. Surface reconcile memlog on `spec-pyforge-doctor` names `src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py` and `src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py`.
+
+**Verification (follow-up, exit codes only).**
+- `pixi run --frozen -e pyforge-doctor pytest src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py` — exit 0, 191 passed, 1 skipped.
+- `pixi run --frozen -e pyforge-guild deferred-work-check` — exit 0.
+- `python scripts/spec_surface_reconcile.py` — exit 0. No `--write-baseline`.
 
 **Residual risks.**
-- From 2026-10-02 the sanctioned writer (`scripts/apply_verification_verdicts.py`) and the `due-for-verification-check` guidance can produce a bare line that reds `deferred-work-check`; the deferral list records both. The burn-down's Phase 2 is the likely first writer.
-- The grammar is a syntactic heuristic: it accepts `host:port` and proximity-matched exit tokens, and rejects extensionless paths.
-- The earlier memlog line still says 373; the later entry gives 374.
-- `pr-preflight`, `story-status-check` and the other planning detectors were not run; the ledger row stays `backlog` for the harness to reconcile.
+- Proximity heuristic still accepts some contrived exit prose (e.g. `` `helper()` never reaches exit 1 ``); first pass accepted that trade-off.
+- The grammar remains syntactic: `host:port` and path shapes without extensions outside the closed list are edge cases documented in deferrals.
+- Frontmatter deferrals #1–#3 describe pre-41.1 gaps; writer and pixi guidance are aligned on head — deferrals kept for audit trail until a planning edit retires them.
+- Ledger row reconciliation and full `pr-preflight` remain for the landing harness.
