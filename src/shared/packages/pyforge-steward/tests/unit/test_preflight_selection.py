@@ -39,6 +39,15 @@ from pyforge.steward import preflight, preflight_ci
 REPO_ROOT = Path(__file__).resolve().parents[6]
 INVOKING_ENV = "pyforge-guild"
 
+_NOOP_INSTALL = lambda _env: 0  # noqa: E731
+_SERIAL = {"jobs": 1, "install_environment": _NOOP_INSTALL}
+
+
+def _run_journal_record(repo: Path) -> dict:
+    lines = (repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").strip().splitlines()
+    records = [json.loads(line) for line in lines if line.strip()]
+    return next(record for record in reversed(records) if "lanes" in record)
+
 STATIONS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
 LINT = {"ruff", "ruff-format", "mypy", "target-version-check", "precommit-config-check"}
 SPEC_ALWAYS_ON = {"detectors-ci", "pyforge-doctor-scripts-test", "docs-map-render-test", "docs-gen-test"}
@@ -604,13 +613,13 @@ def test_run_preflight_runs_selected_lanes_in_order_and_journals_the_selection(t
         ran.append(lane.task)
         return 0
 
-    code = preflight.run_preflight(repo, invoking_env=INVOKING_ENV, run_lane=fake_run)
+    code = preflight.run_preflight(repo, invoking_env=INVOKING_ENV, run_lane=fake_run, **_SERIAL)
     assert code == preflight.EXIT_OK
     expected = LINT | SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC | {"pyforge-core-test", suite("marshal"), gate("marshal")}
     assert set(ran) == expected
     assert ran == [lane.task for lane in lanes if lane.task in expected]  # declaration order kept
 
-    record = json.loads((repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").strip())
+    record = _run_journal_record(repo)
     assert [entry["task"] for entry in record["lanes"]] == ran
     selection = record["selection"]
     assert selection["mode"] == "diff"
@@ -623,10 +632,12 @@ def test_run_preflight_with_no_base_ref_runs_every_lane(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, MARSHAL_ONLY, with_base=False)
     lanes, _ = lanes_and_pixi(repo)
     ran: list[str] = []
-    code = preflight.run_preflight(repo, invoking_env=INVOKING_ENV, run_lane=lambda lane: ran.append(lane.task) or 0)
+    code = preflight.run_preflight(
+        repo, invoking_env=INVOKING_ENV, run_lane=lambda lane: ran.append(lane.task) or 0, **_SERIAL
+    )
     assert code == preflight.EXIT_OK
     assert ran == [lane.task for lane in lanes]
-    record = json.loads((repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").strip())
+    record = _run_journal_record(repo)
     assert record["selection"]["mode"] == "all"
     assert "refs/remotes/origin/main" in record["selection"]["all_reason"]
 
@@ -640,5 +651,10 @@ def test_a_repository_without_workflows_still_selects_every_lane(tmp_path: Path)
         encoding="utf-8",
     )
     ran: list[str] = []
-    assert preflight.run_preflight(tmp_path, pixi_path=pixi_path, run_lane=lambda lane: ran.append(lane.task) or 0) == 0
+    assert (
+        preflight.run_preflight(
+            tmp_path, pixi_path=pixi_path, run_lane=lambda lane: ran.append(lane.task) or 0, **_SERIAL
+        )
+        == 0
+    )
     assert ran == ["a", "b"]

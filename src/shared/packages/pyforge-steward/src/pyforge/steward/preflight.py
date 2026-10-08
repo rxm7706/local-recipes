@@ -183,46 +183,6 @@ def _default_install(repo_root: Path, environment: str) -> int:
     return int(proc.returncode)
 
 
-def _subprocess_lane(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
-    ctx.log_path.parent.mkdir(parents=True, exist_ok=True)
-    with ctx.log_path.open("wb") as log_handle:
-        proc = subprocess.Popen(
-            ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task],
-            cwd=coord.repo_root,
-            env=ctx.env,
-            stdout=log_handle,
-            stderr=subprocess.STDOUT,
-            start_new_session=True,
-        )
-        coord.register_proc(proc)
-        try:
-            return int(proc.wait())
-        finally:
-            coord.unregister_proc(proc)
-
-
-def _default_run_lane_ctx(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
-    return _subprocess_lane(coord, ctx)
-
-
-def _append_journal(repo_root: Path, record: dict[str, Any]) -> None:
-    path = repo_root / JOURNAL_RELATIVE
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, sort_keys=True) + "\n")
-
-
-def _print_lane_log(log_path: Path) -> None:
-    if not log_path.is_file():
-        return
-    text = log_path.read_text(encoding="utf-8", errors="replace")
-    if text:
-        sys.stdout.write(text)
-        if not text.endswith("\n"):
-            sys.stdout.write("\n")
-        sys.stdout.flush()
-
-
 @dataclass
 class _RunCoordinator:
     repo_root: Path
@@ -269,6 +229,46 @@ class _RunCoordinator:
                     os.killpg(proc.pid, signal.SIGKILL)
                 except ProcessLookupError, PermissionError:
                     proc.kill()
+
+
+def _subprocess_lane(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
+    ctx.log_path.parent.mkdir(parents=True, exist_ok=True)
+    with ctx.log_path.open("wb") as log_handle:
+        proc = subprocess.Popen(
+            ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task],
+            cwd=coord.repo_root,
+            env=ctx.env,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        coord.register_proc(proc)
+        try:
+            return int(proc.wait())
+        finally:
+            coord.unregister_proc(proc)
+
+
+def _default_run_lane_ctx(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
+    return _subprocess_lane(coord, ctx)
+
+
+def _append_journal(repo_root: Path, record: dict[str, Any]) -> None:
+    path = repo_root / JOURNAL_RELATIVE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, sort_keys=True) + "\n")
+
+
+def _print_lane_log(log_path: Path) -> None:
+    if not log_path.is_file():
+        return
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    if text:
+        sys.stdout.write(text)
+        if not text.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
 
 
 def _run_lane_in_pool(
