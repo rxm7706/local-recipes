@@ -38,11 +38,21 @@ def _quadrant_index_path(quadrant: str) -> str:
 
 
 def _path_to_slug(docs_relative: str) -> str:
-    if docs_relative.endswith("/README.md"):
-        return docs_relative[: -len("/README.md")]
-    if docs_relative.endswith(".md"):
-        return docs_relative[: -len(".md")]
-    return docs_relative
+    """Match docs-site/src/loaders/shelf-docs-loader.ts ``generateId``."""
+    path = docs_relative
+    if path.endswith(".md"):
+        path = path[: -len(".md")]
+    elif path.endswith(".mdx"):
+        path = path[: -len(".mdx")]
+    if path.endswith("/README"):
+        return f"{path[: -len('/README')]}/index"
+    return path
+
+
+def _index_link_path(index_slug: str) -> str:
+    if index_slug.endswith("/index"):
+        return f"/{index_slug[: -len('/index')]}/"
+    return f"/{index_slug}/"
 
 
 def _quadrant_pages_on_disk(docs_dir: Path) -> set[str]:
@@ -111,10 +121,17 @@ def _validate_and_build(
             if path == index_path:
                 continue
             items.append({"slug": _path_to_slug(path)})
+        index_slug = _path_to_slug(index_path)
         group: dict[str, Any] = {
             "label": _QUADRANT_LABELS[quadrant],
-            "link": f"/{_path_to_slug(index_path)}/",
-            "items": items,
+            "collapsed": False,
+            "items": [
+                {
+                    "link": _index_link_path(index_slug),
+                    "label": _QUADRANT_LABELS[quadrant],
+                },
+                *items,
+            ],
         }
         sidebar.append(group)
     return sidebar, []

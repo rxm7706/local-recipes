@@ -65,7 +65,7 @@ def test_order_preserved_in_fixture(sidebar_mod, tmp_path: Path):
     map_path = _write_map(tmp_path, pages)
     sidebar, errors = sidebar_mod.build_sidebar(map_path, docs)
     assert errors == []
-    slugs = [item["slug"] for item in sidebar[0]["items"]]
+    slugs = [item["slug"] for item in sidebar[0]["items"] if "slug" in item]
     assert slugs == ["tutorials/alpha", "tutorials/beta"]
 
 
@@ -85,8 +85,8 @@ def test_swapping_two_entries_swaps_output(sidebar_mod, tmp_path: Path):
     )
     side_a, _ = sidebar_mod.build_sidebar(map_a, docs)
     side_b, _ = sidebar_mod.build_sidebar(map_b, docs)
-    slugs_a = [i["slug"] for i in side_a[0]["items"]]
-    slugs_b = [i["slug"] for i in side_b[0]["items"]]
+    slugs_a = [i["slug"] for i in side_a[0]["items"] if "slug" in i]
+    slugs_b = [i["slug"] for i in side_b[0]["items"] if "slug" in i]
     assert slugs_a == ["how-to/first", "how-to/second"]
     assert slugs_b == ["how-to/second", "how-to/first"]
 
@@ -151,5 +151,6 @@ def test_quadrant_readme_is_group_index_not_sibling(sidebar_mod, tmp_path: Path)
     sidebar, errors = sidebar_mod.build_sidebar(map_path, docs)
     assert errors == []
     group = sidebar[0]
-    assert group["link"] == "/how-to/"
-    assert group["items"] == [{"slug": "how-to/step"}]
+    assert group["collapsed"] is False
+    assert group["items"][0] == {"link": "/how-to/", "label": "How-to"}
+    assert group["items"][1:] == [{"slug": "how-to/step"}]
