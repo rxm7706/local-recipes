@@ -1467,7 +1467,7 @@ So that moving archived Dreams to one archive home does not make the deck report
 **When** a fixture archived Dream moves to `archive/docs/dreams/`
 **Then** `dreams_total` and `dreams_archived` keep their values, and each fact's source names both globs
 **And** on today's tree every count derived from `docs/dreams/` is unchanged and the six Dreams already under `archive/docs/dreams/` (`deckcraft`, `design-code-bridge`, `herald-pitch-deck-family-expansion`, `modernist-identity`, `pyforge-genesis`, `video-scripts`) are added to `dreams_total` and `dreams_archived`, counted as archived whatever their frontmatter `status` *(amended 2026-09-30, operator ruling: location is the archive signal, CHAIN-STANDARD §11)*; the test covers a moved Dream and an archive with no status; `pixi run --frozen -e pyforge-herald pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done
 
 ## Epic 34: Herald cites the deck how-to, not the retiring intake stub (spec-one-chain-per-station CAP-11)
 
