@@ -194,7 +194,11 @@ def test_deck_list_404_when_flag_off(
         herald_views.deck_list(_herald_request())
 
 
-def test_deck_list_forbidden_without_role() -> None:
+def test_deck_list_forbidden_without_role(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "django_herald_portal.views.evaluate_boolean",
+        lambda _key, default=False: True,
+    )
     denied = RequestFactory().get("/stations/herald/decks/")
     denied.idp_roles = [prefixed_station("steward")]
     response = herald_views.deck_list(denied)
