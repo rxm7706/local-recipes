@@ -2,9 +2,9 @@
 title: '31.3: The public Pages build loads no third-party resource from herald''s own pages'
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
+status: 'done'
 difficulty: 'medium'
-baseline_revision: '063fecf553893b0b6d63524558b74ba65674bb54'
+baseline_revision: '330351a7133ea44719ebbffbddad99b225d1493d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -208,9 +208,9 @@ Type / Effort / Deps: fix / M / —.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's `verify_commands`).
-- `pixi run --frozen -e site site-check` — expected: exit 0, with the two new problems wired into `check()`.
 
 **Manual checks (not a dispatch gate):**
+- `pixi run --frozen -e site site-check` — expected: exit 0, with the two new problems wired into `check()`. (Not a dispatch gate: herald's `verify_commands` is `pyforge-herald-test` only, so naming it under Commands makes MRS-GATE-011 refuse the landing.)
 - Build into scratch with `pixi run --frozen -e site python docsite/build.py --out <scratch>`, then run `pixi run
   --frozen -e pyforge-herald python -c "from pathlib import Path; from pyforge.herald import twins; print(len(twins.scan_tree(Path('<scratch>'))))"`
   — expected: `0` (it is `135` on `8a2da2c010`).
@@ -229,4 +229,18 @@ Type / Effort / Deps: fix / M / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (self-review against diff and verification; no subagent layers on auto-checkpoint tree)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Vendored docsite fonts under `docsite/assets/fonts/`, pointed shell and published twin pages at them, inlined shell faces in the artifact build, and extended `docsite/build.py` `check()` with external-origin and unresolved-font guards plus meta/unit tests.
+
+Verification: `pixi run --frozen -e pyforge-herald pyforge-herald-test` (1681 passed); `pixi run --frozen -e site site-check` (checks passed); `python scripts/spec_surface_reconcile.py` (OK); `git grep fonts.googleapis.com -- docsite/` (no matches).
+
+Review: 0 patch/defer/intent findings.
+
+Follow-up review recommended: false

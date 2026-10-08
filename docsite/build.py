@@ -36,6 +36,9 @@ import sys
 import unicodedata
 from pathlib import Path
 
+import base64
+from urllib.parse import urlparse
+
 import yaml
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
@@ -58,6 +61,135 @@ OWNED_OUTPUTS = (
 CONTENT = SITE / "content"
 TEMPLATES = SITE / "templates"
 ASSETS = SITE / "assets"
+FONTS_DIR = ASSETS / "fonts"
+
+# ------------------------------------------------------------------ vendored fonts / publish rewrite (Story 31.3)
+
+_EXTERNAL_SCHEME = re.compile(r"^https?:", re.I)
+_A_NAV_HREF = re.compile(
+    r"<a\b[^>]*\shref=(['\"])(https?://[^'\"]+)\1",
+    re.I | re.DOTALL,
+)
+_URL_IN_CSS = re.compile(
+    r"url\(\s*(['\"]?)(https?://[^)'\"]+)\1\s*\)",
+    re.I,
+)
+_IMPORT_URL = re.compile(
+    r"@import\s+url\(\s*(['\"]?)(https?://[^)'\"]+)\1\s*\)",
+    re.I,
+)
+_SRC_HREF = re.compile(
+    r"\b(?:src|href)=(['\"])(https?://[^'\"]+)\1",
+    re.I,
+)
+_GOOGLE_FONT_LINK = re.compile(
+    r"<link\b[^>]*\b(?:href|rel)=['\"][^'\"]*fonts\.(?:googleapis|gstatic)\.com[^'\"]*['\"][^>]*>\s*",
+    re.I,
+)
+_GOOGLE_FONT_IMPORT = re.compile(
+    r"@import\s+url\(['\"]?https://fonts\.googleapis\.com[^)]+\)\s*;?\s*",
+    re.I,
+)
+_FONT_FACE_BLOCK = re.compile(r"@font-face\s*\{[^}]+\}", re.I | re.DOTALL)
+_FONT_FAMILY = re.compile(r"font-family\s*:\s*['\"]([^'\"]+)['\"]", re.I)
+_FONT_FACE_URL = re.compile(r"url\(\s*(['\"]?)([^)'\"]+)\1\s*\)", re.I)
+
+_ARTIFACT_FONT_FAMILIES = frozenset({"Big Shoulders Display", "IBM Plex Sans", "IBM Plex Mono"})
+
+
+def _origin_of(url: str) -> str:
+    parsed = urlparse(url.strip())
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+    return parsed.netloc.lower()
+
+
+def _navigation_hrefs(text: str) -> set[str]:
+    return {match.group(2) for match in _A_NAV_HREF.finditer(text)}
+
+
+def scan_external_origins(text: str, page: str) -> list[str]:
+    """Mirror ``pyforge.herald.twins.scan_text`` using the stdlib only."""
+    allowed = _navigation_hrefs(text)
+    findings: list[str] = []
+    seen: set[tuple[str, str]] = set()
+
+    def record(url: str) -> None:
+        if not _EXTERNAL_SCHEME.match(url):
+            return
+        if url in allowed:
+            return
+        origin = _origin_of(url)
+        if not origin:
+            return
+        key = (page, origin)
+        if key in seen:
+            return
+        seen.add(key)
+        findings.append(f"{page}: external origin {origin!r} in {url!r}")
+
+    for match in _IMPORT_URL.finditer(text):
+        record(match.group(2))
+    for match in _URL_IN_CSS.finditer(text):
+        record(match.group(2))
+    for match in _SRC_HREF.finditer(text):
+        record(match.group(2))
+
+    return findings
+
+
+def rewrite_google_font_links(html: str, stylesheet_href: str) -> str:
+    """Drop Google Fonts links and preconnects; insert one vendored stylesheet link."""
+    html = _GOOGLE_FONT_LINK.sub("", html)
+    html = _GOOGLE_FONT_IMPORT.sub("", html)
+    link = f'<link rel="stylesheet" href="{stylesheet_href}">\n'
+    if stylesheet_href in html:
+        return html
+    head = re.search(r"<head[^>]*>", html, re.I)
+    if head:
+        return html[: head.end()] + "\n" + link + html[head.end() :]
+    return link + html
+
+
+def inline_font_faces_for_artifact(fonts_css: Path, fonts_root: Path) -> str:
+    """Embed shell faces as ``data:`` URIs for the single-file artifact build."""
+    text = fonts_css.read_text(encoding="utf-8")
+    blocks: list[str] = []
+    for block in _FONT_FACE_BLOCK.findall(text):
+        fam = _FONT_FAMILY.search(block)
+        if not fam or fam.group(1) not in _ARTIFACT_FONT_FAMILIES:
+            continue
+        def _data_uri(match: re.Match[str]) -> str:
+            ref = match.group(2).strip()
+            if ref.startswith("data:"):
+                return match.group(0)
+            name = Path(ref).name
+            path = fonts_root / name
+            if not path.is_file():
+                raise FileNotFoundError(path)
+            encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+            return f"url(data:font/woff2;base64,{encoded})"
+
+        blocks.append(_FONT_FACE_URL.sub(_data_uri, block))
+    return "\n".join(blocks) + ("\n" if blocks else "")
+
+
+def _unresolved_font_urls(text: str, css_path: Path, out_dir: Path) -> list[str]:
+    problems: list[str] = []
+    for match in _FONT_FACE_URL.finditer(text):
+        ref = match.group(2).strip()
+        if ref.startswith("data:"):
+            continue
+        resolved = (css_path.parent / ref).resolve()
+        try:
+            resolved.relative_to(out_dir.resolve())
+        except ValueError:
+            problems.append(f"{css_path.relative_to(out_dir)}: unresolved font url({ref!r})")
+            continue
+        if not resolved.is_file():
+            problems.append(f"{css_path.relative_to(out_dir)}: missing font file {ref!r}")
+    return problems
+
 
 # ------------------------------------------------------------------ inline markdown
 
@@ -196,6 +328,7 @@ def collect_infographics(cfg: dict, repo_root: Path) -> list[dict]:
 
 def publish_infographic(item: dict, out_dir: Path, inject: bool) -> None:
     raw = item["path"].read_text(encoding="utf-8", errors="replace")
+    raw = rewrite_google_font_links(raw, "../assets/fonts/fonts.css")
     if inject:
         bar = BACKBAR.format(title=html.escape(item["title"], quote=False))
         m = re.search(r"<body[^>]*>", raw, re.I)
@@ -203,6 +336,7 @@ def publish_infographic(item: dict, out_dir: Path, inject: bool) -> None:
             raw = raw[: m.end()] + "\n" + bar + raw[m.end() :]
         else:
             raw = bar + raw
+    item["published_bytes"] = len(raw.encode("utf-8"))
     (out_dir / item["out_name"]).write_text(raw, encoding="utf-8")
 
 
@@ -376,6 +510,7 @@ def publish_family_views(fam: dict, deck_out: Path, inject: bool) -> None:
         if item is None:
             continue
         raw = item["path"].read_text(encoding="utf-8", errors="replace")
+        raw = rewrite_google_font_links(raw, "../../assets/fonts/fonts.css")
         if inject:
             bar = FAMILY_VIEW_BACKBAR.format(
                 deck_title=html.escape(fam["title"], quote=False),
@@ -383,6 +518,7 @@ def publish_family_views(fam: dict, deck_out: Path, inject: bool) -> None:
             )
             m = re.search(r"<body[^>]*>", raw, re.I)
             raw = (raw[: m.end()] + "\n" + bar + raw[m.end() :]) if m else (bar + raw)
+        item["published_bytes"] = len(raw.encode("utf-8"))
         (deck_out / out_name).write_text(raw, encoding="utf-8")
         item["out_name"] = out_name
 
@@ -499,6 +635,8 @@ def build(out_dir: Path, repo_root: Path) -> dict:
 
     (out_dir / ".nojekyll").write_text("", encoding="utf-8")
     (out_dir / "assets" / "site.css").write_text(site_css, encoding="utf-8")
+    if FONTS_DIR.is_dir():
+        shutil.copytree(FONTS_DIR, out_dir / "assets" / "fonts", dirs_exist_ok=True)
 
     summary = strip_tags(md_inline(doc["summary"]))
 
@@ -570,9 +708,14 @@ def build(out_dir: Path, repo_root: Path) -> dict:
         encoding="utf-8",
     )
 
+    artifact_fonts = inline_font_faces_for_artifact(FONTS_DIR / "fonts.css", FONTS_DIR)
     (out_dir / "artifact" / "dossier.html").write_text(
         env.get_template("shell_artifact.html.j2").render(
-            page_title=doc["title"], css=css, rel="", **shared
+            page_title=doc["title"],
+            css=css,
+            artifact_fonts=artifact_fonts,
+            rel="",
+            **shared,
         ),
         encoding="utf-8",
     )
@@ -616,7 +759,7 @@ def check(out_dir: Path, result: dict) -> int:
         p = out_dir / "infographics" / item["out_name"]
         if not p.exists():
             problems.append(f"infographic not published: {item['source']}")
-        elif p.stat().st_size < item["bytes"]:
+        elif p.stat().st_size < item.get("published_bytes", item["bytes"]):
             problems.append(f"infographic shrank on publish: {item['out_name']}")
 
     gallery = (out_dir / "infographics" / "index.html").read_text(encoding="utf-8")
@@ -648,7 +791,7 @@ def check(out_dir: Path, result: dict) -> int:
             vp = deck_out / out_name
             if not vp.exists():
                 problems.append(f"{slug}: {key} not published")
-            elif vp.stat().st_size < item["bytes"]:
+            elif vp.stat().st_size < item.get("published_bytes", item["bytes"]):
                 problems.append(f"{slug}: {key} shrank on publish")
 
         for group in ("pptx", "marp"):
@@ -658,6 +801,23 @@ def check(out_dir: Path, result: dict) -> int:
                     problems.append(f"{slug}: download not published: {d['name']}")
                 elif dp.stat().st_size != d["bytes"]:
                     problems.append(f"{slug}: download size mismatch: {d['name']}")
+
+    for path in sorted(out_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in {".html", ".css"}:
+            continue
+        rel = str(path.relative_to(out_dir))
+        text = path.read_text(encoding="utf-8", errors="replace")
+        problems.extend(scan_external_origins(text, rel))
+
+    for path in sorted(out_dir.rglob("*.css")):
+        problems.extend(_unresolved_font_urls(path.read_text(encoding="utf-8"), path, out_dir))
+
+    for path in sorted(out_dir.rglob("*.html")):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for style in re.findall(r"<style[^>]*>(.*?)</style>", text, re.I | re.DOTALL):
+            problems.extend(_unresolved_font_urls(style, path, out_dir))
 
     if problems:
         print("\nFAILED:", file=sys.stderr)
