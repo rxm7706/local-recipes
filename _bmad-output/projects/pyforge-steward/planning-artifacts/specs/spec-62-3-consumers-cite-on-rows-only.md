@@ -3,7 +3,7 @@ title: '62.3: Consumers cite on rows only'
 type: 'feature'
 created: '2026-09-16'
 status: 'done'
-baseline_revision: 'ca4cc7f7d1c8f8e8e8e8e8e8e8e8e8e8e8e8e8e8'
+baseline_revision: 'ca4cc7f7d1823db2f6931bf7ca27dc098624a4b9'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
