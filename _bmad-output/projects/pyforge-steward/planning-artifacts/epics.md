@@ -4444,7 +4444,7 @@ So that "the SBOM is complete" is a verdict, and a missing dependency is a named
 **When** this story lands
 **Then** `pixi run -e pyforge-foundry-full sbom-laptop-gate` runs `lint-types`, every station suite, the platform bring-up smoke from the layer environment, and a channel audit (every locked package comes from the declared channels; no PyPI-only entry) and exits 0 on `main`; exit codes follow `docs/reference/judgement-vocabulary.md`
 **And** a fixture that removes one dependency a station imports makes the gate exit non-zero and name that dependency as a gap; the gate never falls back to `-e local-recipes`
-**Status:** backlog
+**Status:** done
 
 ### Story 67.3: Every gap and every fat-only pin has a disposition and an owner
 
@@ -4458,7 +4458,7 @@ So that each one is promoted, dropped or sent upstream on purpose, and Mason's c
 **When** this story lands
 **Then** `docs/foundry/sbom-gaps.md` lists every feature declared in `pixi.toml` that is in neither the SBOM nor its layer environment (the residual solve gaps — `conda-smithy` and `python-agent-platform` today) and every package declared in `[feature.local-recipes.dependencies]` and in no SBOM feature, each with a disposition — `promote`, `won't-do` or `upstream` — a one-line reason and an owner station
 **And** `sbom-gaps-check` reds when the derivation finds a row the file lacks (a feature outside the SBOM and layer, or a fat-only pin), or the file keeps a row the derivation no longer finds; rows whose fix is conda-forge packaging name Mason as owner and become Mason stories in a later mint
-**Status:** backlog
+**Status:** done
 
 ### Story 67.4: Upstream tickets for the gaps that need one
 

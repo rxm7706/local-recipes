@@ -1563,6 +1563,20 @@ depends-on = [
   { task = "pyforge-warden-coverage-gate", environment = "pyforge-warden" },
 ]
 
+[feature.guild-tasks.tasks.sbom-laptop-gate]
+description = "Story 67.2 (fnd:CAP-13): prove the laptop needs nothing beyond pyforge-foundry-full — lint-types, every station suite, platform bring-up smoke (manifest policy subset + requirements retirement guard), then a pixi.lock channel audit and import probes. Never -e local-recipes. Exit 0 pass / 1 findings / 2 could-not-run (docs/reference/judgement-vocabulary.md)."
+cmd = "python scripts/sbom_laptop_gate.py"
+depends-on = [
+  "lint-types",
+  "pyforge-station-tests",
+  "platform-ci-test-requirements-check",
+  "platform-policy-suite-check",
+]
+
+[feature.guild-tasks.tasks.sbom-gaps-check]
+description = "Story 67.3 (fnd:CAP-13): read-only check that docs/foundry/sbom-gaps.md lists every feature outside pyforge-foundry-full and pyforge-foundry-full-stack and every fat-only local-recipes pin, each with promote / won't-do / upstream, a reason and an owner — derived from pixi.toml via scripts/sbom_gap_derive.py. Exit 0 pass / 1 findings (docs/reference/judgement-vocabulary.md)."
+cmd = "python scripts/sbom_gap_derive.py"
+
 [feature.guild-tasks.tasks.pr-preflight]
 description = """Run locally, before pushing, everything a PR to rxm7706/local-recipes actually gates on. One command, so a green local run means a green CI run.
 

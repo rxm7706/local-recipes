@@ -282,6 +282,75 @@ def test_check_flags_each_problem_predicate(build_mod, tmp_path: Path, capsys, m
     assert needle in capsys.readouterr().err
 
 
+@pytest.mark.parametrize(
+    "plant,needle",
+    [
+        (
+            lambda od: (od / "index.html").write_text(
+                (od / "index.html").read_text(encoding="utf-8")
+                + '<link rel="preconnect" href="https://fonts.gstatic.com">',
+                encoding="utf-8",
+            ),
+            "external origin 'fonts.gstatic.com'",
+        ),
+        (
+            lambda od: (
+                (od / "assets/planted.css").write_text(
+                    "@import url('https://fonts.googleapis.com/css2?family=Archivo');",
+                    encoding="utf-8",
+                )
+                or (od / "index.html").write_text(
+                    (od / "index.html").read_text(encoding="utf-8")
+                    + '<link rel="stylesheet" href="assets/planted.css">',
+                    encoding="utf-8",
+                )
+            ),
+            "external origin 'fonts.googleapis.com'",
+        ),
+        (
+            lambda od: (od / "dossier/index.html").write_text(
+                (od / "dossier/index.html").read_text(encoding="utf-8")
+                + '<a href="https://github.com/example/repo">repo</a>',
+                encoding="utf-8",
+            ),
+            None,
+        ),
+        (
+            lambda od: (
+                (od / "assets/fonts").mkdir(parents=True, exist_ok=True),
+                (od / "assets/fonts/bad.css").write_text(
+                    "@font-face{font-family:X;src:url('./missing.woff2');}",
+                    encoding="utf-8",
+                ),
+            ),
+            "missing font file",
+        ),
+    ],
+)
+def test_check_external_origin_and_font_face(build_mod, tmp_path: Path, capsys, plant, needle):
+    out_dir, result = _green_check_tree(tmp_path)
+    plant(out_dir)
+    code = build_mod.check(out_dir, result)
+    err = capsys.readouterr().err
+    if needle is None:
+        assert code == 0
+    else:
+        assert code == 1
+        assert needle in err
+
+
+def test_rewrite_google_font_links_inserts_vendored_stylesheet(build_mod):
+    raw = (
+        "<html><head>"
+        '<link rel="preconnect" href="https://fonts.googleapis.com">'
+        '<link href="https://fonts.googleapis.com/css2?family=Archivo" rel="stylesheet">'
+        "</head><body></body></html>"
+    )
+    out = build_mod.rewrite_google_font_links(raw, "../assets/fonts/fonts.css")
+    assert "fonts.googleapis.com" not in out
+    assert "../assets/fonts/fonts.css" in out
+
+
 def test_check_skips_family_views_when_executive_summary_is_none(build_mod, tmp_path: Path, capsys):
     out_dir, result = _green_check_tree(tmp_path)
     (out_dir / "decks/pyforge-alpha/executive-summary.html").unlink()
