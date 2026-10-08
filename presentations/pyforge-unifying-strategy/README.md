@@ -4,7 +4,7 @@ Herald-station presentation family for the **pyforge-unifying-strategy** chain
 (*PyForge Unifying Strategy — The Canopy & 8-Station Hub-and-Spoke Enterprise
 Architecture*). Steward's chain; display brand **The Canopy** on the slides,
 slug `pyforge-unifying-strategy` in paths, per the display-brand-vs-slug rule
-in `docs/specs/presentation-deck.md`.
+in `docs/how-to/presentation-deck.md`.
 
 **Content grounding** (all facts derived, none recalled):
 

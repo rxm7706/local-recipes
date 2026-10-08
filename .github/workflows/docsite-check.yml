@@ -1,35 +1,18 @@
 name: Docsite check
 
-# Story 24.2 (spec-pyforge-herald CAP-49, closes DW-FU-23-5): until now the
-# only workflow that ever ran docsite/build.py was dashboard.yml, triggered on
-# `push: branches: [main]` only -- so a PR could merge a broken family-page
-# template (an unrendered Jinja tag, a shrunk infographic, a missing download)
-# with every other gate green, and one did: Story 23.5's 296-line family-page
-# change landed exactly that way (verified 2026-09-18, DW-FU-23-5).
+# Story 24.2 (spec-pyforge-herald CAP-49): PR-time twin of dashboard.yml's build
+# step — it builds and checks, it never deploys. Story 27.2 reshaped both lanes
+# to `pixi run -e site pages-check`, which assembles Starlight + herald +
+# dashboard into docs-site/build/site/ and verifies redirects and links.
 #
-# This workflow is the PR-time twin of dashboard.yml's build step -- it builds
-# and checks, it never deploys. `dashboard.yml` stays the only `deploy-pages`
-# caller; a second one would race it and intermittently wipe the Kedro-Viz
-# export (see that workflow's own header comment).
-#
-# Two independent checks, deliberately not collapsed into one:
-#   1. `docsite/build.py --check` with the exact same pip-installed deps
-#      dashboard.yml itself uses (not the pixi `site` feature -- see that
-#      workflow's "own python/deps" comment), so a PR predicts whether that
-#      build + check step would pass. It does NOT run dashboard.yml's
-#      separate `verify_claims.py` (`site-verify`) step -- that step is
-#      already `continue-on-error` there (advisory, never blocks a deploy),
-#      so it stays out of this gate too. Builds into the default `./dist/`,
-#      never `docs/dashboard/` -- a PR job must never write into that
-#      tracked, shared Pages-publish root.
-#   2. `pixi run -e site site-check` -- the pixi `site` feature's own task,
-#      the one `docsite/README.md` and every developer's local loop actually
-#      run. Reused here, not re-minted. `pixi.toml`'s `pr-preflight` gains the
-#      same leg so a local run predicts this lane.
+# `dashboard.yml` stays the only `deploy-pages` caller; a second one would race
+# it and intermittently wipe the Kedro-Viz export (see that workflow's header).
 
 on:
   pull_request:
     paths:
+      - 'docs/**'
+      - 'docs-site/**'
       - 'docsite/**'
       - 'docs/dashboard/**'
       - 'presentations/**'
@@ -38,6 +21,8 @@ on:
   push:
     branches: [main]
     paths:
+      - 'docs/**'
+      - 'docs-site/**'
       - 'docsite/**'
       - 'docs/dashboard/**'
       - 'presentations/**'
@@ -50,25 +35,16 @@ permissions:
 
 concurrency:
   group: docsite-check-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  # Only cancel superseded PR runs -- never a push:main run, so main always
-  # keeps one full, uncancelled CI result per commit to bisect against
-  # (same convention as platform-ci.yml).
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-
-      - uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
-      - name: Install site build dependencies
-        run: python -m pip install --disable-pip-version-check jinja2 pyyaml
-      - name: Build + check the PyForge site (predicts dashboard.yml)
-        run: python docsite/build.py --check
+          fetch-depth: 0
 
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
@@ -76,5 +52,9 @@ jobs:
           environments: site
           locked: true
           cache: true
-      - name: pixi run -e site site-check
-        run: pixi run --frozen -e site site-check
+
+      - name: pixi run -e site pages-check
+        run: pixi run --frozen -e site pages-check
+
+      - name: pixi run -e site docs-site-validate
+        run: pixi run --frozen -e site docs-site-validate

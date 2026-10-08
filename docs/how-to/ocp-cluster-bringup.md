@@ -394,7 +394,7 @@ postgres/redis under arbitrary UID is **Story 12.7** — not claimed here.
 
 After the platform Postgres pod is reachable (port-forward or in-cluster), load
 board data with the dlt pipeline documented in
-[`src/platform/ingest/github_projects/README.md`](../../../ingest/github_projects/README.md).
+[`src/platform/ingest/github_projects/README.md`](https://github.com/rxm7706/local-recipes/tree/main/src/platform/ingest/github_projects).
 
 Quick path:
 

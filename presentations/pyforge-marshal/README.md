@@ -14,7 +14,7 @@ A self-contained React + Vite slide deck for **PyForge-Marshal** — the Command
 `docs/dreams/pyforge-charter.md`). Motto: *"Enforce the spec. Guard the boundaries. Run the line."*
 
 Built with the reusable **Design-to-Deck** workflow
-(`docs/specs/presentation-deck.md` — read it first; it defines the prototype
+(`docs/how-to/presentation-deck.md` — read it first; it defines the prototype
 contract, the pipeline, and the § Standard export set this deck must ship).
 
 ## Wiring the deck (when the prototype lands)
@@ -67,7 +67,7 @@ https://claude.ai/design/p/ad84d4f6-c292-42c8-98bf-ede78a567773?file=PyForge%20M
 Authored repo-side this generation (inverted from the usual Design-first flow);
 pushed byte-for-byte via the DesignSync localPath pipeline. On the next
 Design-side edit session, finish with a byte-exact pull per
-`docs/specs/presentation-deck.md` § the MCP bridge.
+`docs/how-to/presentation-deck.md` § the MCP bridge.
 
 ## Ledger — 2026-09-13 standard rebuild (Story 20.6)
 

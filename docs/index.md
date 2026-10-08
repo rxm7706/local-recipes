@@ -4,12 +4,12 @@ This site publishes the Diátaxis shelf from the repository's `docs/` tree: task
 
 ## Quadrants
 
-- [Tutorials](/tutorials/) — learning-oriented walkthroughs
-- [How-to guides](/how-to/) — step-by-step operational instructions
-- [Reference](/reference/) — factual lookup material
-- [Explanation](/explanation/) — background and design context
+- [Tutorials](/tutorials/README.md) — learning-oriented walkthroughs
+- [How-to guides](/how-to/README.md) — step-by-step operational instructions
+- [Reference](/reference/README.md) — factual lookup material
+- [Explanation](/explanation/README.md) — background and design context
 
 ## Related sites on Pages
 
-- [Herald dossier and deck families](/herald/) — infographics, dossier, and presentation tooling
-- [Kedro-Viz dashboard](/dashboard/kedro-viz/) — pipeline visualization served from the platform artifact
+- [Herald dossier and deck families](dreams/pyforge-herald.md) — infographics, dossier, and presentation tooling
+- [Kedro-Viz dashboard](/dashboard/README.md) — pipeline visualization served from the platform artifact

@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.10.8"
+
+package:
+  name: pyforge-estate-catalog
+  version: ${{ version }}
+
+source:
+  path: ../..
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - bash ${RECIPE_DIR}/build.sh
+
+requirements:
+  build:
+    - python >=3.10
+    - bmad-builder
+    - bmad-creative-intelligence-suite
+    - bmad-utility-skills
+    - bmad-method-test-architecture-enterprise
+  host:
+    - python >=3.10
+  run:
+    - python >=3.10
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - pyforge-estate-catalog-install --help
+          - test -f "${CONDA_PREFIX}/share/pyforge-estate-catalog/.claude-plugin/marketplace.json"
+          - test -d "${CONDA_PREFIX}/share/pyforge-estate-catalog/plugins"
+      - if: win
+        then:
+          - pyforge-estate-catalog-install.bat --help
+          - if not exist "%CONDA_PREFIX%\\share\\pyforge-estate-catalog\\.claude-plugin\\marketplace.json" exit 1
+
+about:
+  homepage: https://github.com/rxm7706/local-recipes
+  repository: https://github.com/rxm7706/local-recipes
+  license: MIT
+  summary: Vendored PyForge estate BMAD catalog snapshot for air-gapped installs (SelfExplainML channel)
+  description: |
+    pyforge-estate-catalog packages the vendored BMAD marketplace snapshot produced by
+    ``steward catalog ship``: local plugin trees under ``plugins/`` and a
+    ``.claude-plugin/marketplace.json`` that does not require github.com at install time.
+
+    After installation, run ``pyforge-estate-catalog-install`` or point
+    ``bmad-method install --custom-source`` at ``$CONDA_PREFIX/share/pyforge-estate-catalog``.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyforge-estate-catalog
+  cfe-upstream-registry: github
+  cfe-upstream-name: rxm7706/local-recipes
+  cfe-purls:
+    - pkg:conda/pyforge-estate-catalog@${{ version }}?channel=SelfExplainML
+  cfe-upstream-repo: https://github.com/rxm7706/local-recipes
+  cfe-upstream-homepage: https://github.com/rxm7706/local-recipes
+  cfe-import-names: []
+  cfe-source-kind: monorepo-path
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: local-channel-only
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "SelfExplainML channel index for estate catalog; not conda-forge"
+  cfe-last-checked: "2026-10-08T00:00:00Z"
+  cfe-generated-by-version: 8.84.0
+  cfe-generated-at-datetime: "2026-10-08T00:00:00Z"
+  cfe-local-build-status: pending
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
