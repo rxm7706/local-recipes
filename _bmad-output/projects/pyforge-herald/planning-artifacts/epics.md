@@ -1404,7 +1404,7 @@ So that the enterprise deploy is repeatable and does not live in one person's he
 **When** the how-to lands
 **Then** it names each enterprise-side step with its command or setting, links the air-gapped mirror how-to instead of restating it, and ends with the check that the deployed site makes no request to another origin
 **And** `docs-map-hygiene-check` and `docs-currency-check` exit 0, and `pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 31.3: The public Pages build loads no third-party resource from herald's own pages
 
