@@ -1,25 +1,28 @@
-"""Serial ``pr-preflight`` runner with per-lane journaling (Story 71.1, CAP-159).
+"""Concurrent ``pr-preflight`` runner with per-lane journaling (Stories 71.1–71.3, CAP-159).
 
 Reads ``pr-preflight-lanes`` from ``pixi.toml``, flattens nested ``depends-on``
 graphs into leaf lanes, selects the lanes CI would run for the diff (Story 71.2,
-``preflight_ci``: read from ``.github/workflows/*.yml`` at run time), runs each
-selected lane as ``pixi run --frozen -e <env> <task>``, stops on the first non-zero
-exit, and appends one JSON line to ``.steward/preflight-runs.jsonl`` carrying the
-selection and the workflow rule that skipped each skipped lane.
+``preflight_ci``: read from ``.github/workflows/*.yml`` at run time), installs
+each needed environment serially, runs selected lanes in a pool bounded by
+``--jobs``, and appends JSON lines to ``.steward/preflight-runs.jsonl``.
 Not a steward CLI duty — ``main()`` owns the exit code (AD-8).
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
+import signal
 import subprocess
 import sys
+import threading
 import time
 import tomllib
 import uuid
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
+from dataclasses import asdict, dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -29,10 +32,12 @@ from pyforge.steward import preflight_ci
 ROOT_AGGREGATE = "pr-preflight-lanes"
 DEFAULT_INVOKING_ENV = "pyforge-guild"
 JOURNAL_RELATIVE = Path(".steward") / "preflight-runs.jsonl"
+RUN_SCRATCH_RELATIVE = Path(".steward") / "preflight"
 
 EXIT_OK = 0
 EXIT_LANE_RED = 1
 EXIT_CONFIG = 2
+EXIT_INTERRUPT = 130
 
 
 @dataclass(frozen=True)
@@ -42,12 +47,21 @@ class Lane:
 
 
 @dataclass(frozen=True)
+class LaneRunContext:
+    lane: Lane
+    scratch_dir: Path
+    log_path: Path
+    env: dict[str, str]
+
+
+@dataclass(frozen=True)
 class LaneResult:
     task: str
     environment: str
     seconds: float
     exit_code: int
-    status: str  # ok | red | not-run
+    status: str  # ok | red | cancelled | not-run
+    start_offset: float = 0.0
 
 
 class PreflightConfigError(Exception):
@@ -147,12 +161,48 @@ def _git_head(repo_root: Path) -> tuple[str, str]:
         return "unknown", "unknown"
 
 
-def _default_run_lane(repo_root: Path, lane: Lane) -> int:
+def _lane_scratch_env(scratch_dir: Path) -> dict[str, str]:
+    scratch_dir.mkdir(parents=True, exist_ok=True)
+    basetemp = scratch_dir / "pytest-basetemp"
+    cache_dir = scratch_dir / "pytest-cache"
+    coverage = scratch_dir / ".coverage"
+    env = os.environ.copy()
+    env["TMPDIR"] = str(scratch_dir)
+    env["COVERAGE_FILE"] = str(coverage)
+    prior = env.get("PYTEST_ADDOPTS", "").strip()
+    extra = f"--basetemp={basetemp} -o cache_dir={cache_dir}"
+    env["PYTEST_ADDOPTS"] = f"{prior} {extra}".strip() if prior else extra
+    return env
+
+
+def _default_install(repo_root: Path, environment: str) -> int:
     proc = subprocess.run(
-        ["pixi", "run", "--frozen", "-e", lane.environment, lane.task],
+        ["pixi", "install", "--frozen", "-e", environment],
         cwd=repo_root,
     )
     return int(proc.returncode)
+
+
+def _subprocess_lane(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
+    ctx.log_path.parent.mkdir(parents=True, exist_ok=True)
+    with ctx.log_path.open("wb") as log_handle:
+        proc = subprocess.Popen(
+            ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task],
+            cwd=coord.repo_root,
+            env=ctx.env,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        coord.register_proc(proc)
+        try:
+            return int(proc.wait())
+        finally:
+            coord.unregister_proc(proc)
+
+
+def _default_run_lane_ctx(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
+    return _subprocess_lane(coord, ctx)
 
 
 def _append_journal(repo_root: Path, record: dict[str, Any]) -> None:
@@ -162,14 +212,124 @@ def _append_journal(repo_root: Path, record: dict[str, Any]) -> None:
         handle.write(json.dumps(record, sort_keys=True) + "\n")
 
 
+def _print_lane_log(log_path: Path) -> None:
+    if not log_path.is_file():
+        return
+    text = log_path.read_text(encoding="utf-8", errors="replace")
+    if text:
+        sys.stdout.write(text)
+        if not text.endswith("\n"):
+            sys.stdout.write("\n")
+        sys.stdout.flush()
+
+
+@dataclass
+class _RunCoordinator:
+    repo_root: Path
+    run_id: str
+    run_start: float
+    jobs: int
+    keep_going: bool
+    cancel: threading.Event = field(default_factory=threading.Event)
+    stop_on_red: threading.Event = field(default_factory=threading.Event)
+    service_locks: dict[str, threading.Lock] = field(default_factory=dict)
+    active_procs: list[tuple[subprocess.Popen[Any], int]] = field(default_factory=list)
+    proc_lock: threading.Lock = field(default_factory=threading.Lock)
+    red_lanes: list[str] = field(default_factory=list)
+
+    def service_lock(self, key: str | None) -> threading.Lock | None:
+        if key is None:
+            return None
+        if key not in self.service_locks:
+            self.service_locks[key] = threading.Lock()
+        return self.service_locks[key]
+
+    def register_proc(self, proc: subprocess.Popen[Any]) -> None:
+        with self.proc_lock:
+            self.active_procs.append((proc, proc.pid))
+
+    def unregister_proc(self, proc: subprocess.Popen[Any]) -> None:
+        with self.proc_lock:
+            self.active_procs = [(p, pid) for p, pid in self.active_procs if p is not proc]
+
+    def terminate_children(self) -> None:
+        with self.proc_lock:
+            procs = list(self.active_procs)
+        for proc, _pid in procs:
+            if proc.poll() is not None:
+                continue
+            try:
+                os.killpg(proc.pid, signal.SIGTERM)
+            except ProcessLookupError, PermissionError:
+                proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError, PermissionError:
+                    proc.kill()
+
+
+def _run_lane_in_pool(
+    coord: _RunCoordinator,
+    lane: Lane,
+    scratch_root: Path,
+    service_key: str | None,
+    runner: Callable[[LaneRunContext], int],
+    use_subprocess: bool,
+) -> LaneResult:
+    if coord.cancel.is_set():
+        return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
+    if coord.stop_on_red.is_set() and not coord.keep_going:
+        return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
+
+    service_lock = coord.service_lock(service_key)
+    if service_lock is not None:
+        service_lock.acquire()
+    try:
+        if coord.cancel.is_set() or (coord.stop_on_red.is_set() and not coord.keep_going):
+            return LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
+
+        lane_dir = scratch_root / lane.task
+        log_path = scratch_root / f"{lane.task}.log"
+        env = _lane_scratch_env(lane_dir)
+        ctx = LaneRunContext(lane=lane, scratch_dir=lane_dir, log_path=log_path, env=env)
+        start_offset = time.monotonic() - coord.run_start
+        lane_start = time.monotonic()
+
+        if use_subprocess:
+            code = _subprocess_lane(coord, ctx)
+        else:
+            code = runner(ctx)
+
+        elapsed = time.monotonic() - lane_start
+        _print_lane_log(log_path)
+
+        if code == 0:
+            return LaneResult(lane.task, lane.environment, elapsed, 0, "ok", start_offset)
+        coord.red_lanes.append(lane.task)
+        if not coord.keep_going:
+            coord.stop_on_red.set()
+            coord.terminate_children()
+        return LaneResult(lane.task, lane.environment, elapsed, code, "red", start_offset)
+    finally:
+        if service_lock is not None:
+            service_lock.release()
+
+
 def run_preflight(
     repo_root: Path,
     *,
     pixi_path: Path | None = None,
     invoking_env: str | None = None,
     run_lane: Callable[[Lane], int] | None = None,
+    run_lane_ctx: Callable[[LaneRunContext], int] | None = None,
+    jobs: int | None = None,
+    keep_going: bool = False,
+    install_environment: Callable[[str], int] | None = None,
 ) -> int:
-    """Run CI-selected lanes; return exit code 0 / 1 / 2."""
+    """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130."""
     repo_root = repo_root.resolve()
     pixi_file = pixi_path or (repo_root / "pixi.toml")
     if not pixi_file.is_file():
@@ -193,88 +353,224 @@ def run_preflight(
         file=sys.stderr,
     )
 
-    lane_runner = run_lane or (lambda lane: _default_run_lane(repo_root, lane))
+    worker_count = jobs if jobs is not None else _logical_core_count()
+    if worker_count < 1:
+        worker_count = 1
+
+    mutex_keys = preflight_ci.service_mutex_keys(repo_root, lanes, pixi_data)
+
+    use_subprocess = run_lane_ctx is None and run_lane is None
+    injected_runner: Callable[[LaneRunContext], int] | None
+    if run_lane_ctx is not None:
+        injected_runner = run_lane_ctx
+    elif run_lane is not None:
+        injected_runner = lambda ctx: run_lane(ctx.lane)
+    else:
+        injected_runner = None
+
+    install_fn = install_environment or (lambda environment: _default_install(repo_root, environment))
     run_id = str(uuid.uuid4())
     started = datetime.now(tz=UTC)
     head_sha, branch = _git_head(repo_root)
-    t0 = time.monotonic()
-    results: list[LaneResult] = []
-    exit_code = EXIT_OK
+    run_start = time.monotonic()
+    t0 = run_start
 
-    for index, lane in enumerate(lanes):
-        if exit_code != EXIT_OK:
-            results.append(
-                LaneResult(
-                    task=lane.task,
-                    environment=lane.environment,
-                    seconds=0.0,
-                    exit_code=0,
-                    status="not-run",
-                )
+    unique_envs = list(dict.fromkeys(lane.environment for lane in lanes))
+    install_t0 = time.monotonic()
+    for environment in unique_envs:
+        code = install_fn(environment)
+        if code != 0:
+            install_seconds = time.monotonic() - install_t0
+            _append_journal(
+                repo_root,
+                {
+                    "phase": "install",
+                    "run_id": run_id,
+                    "started_at": started.isoformat(),
+                    "seconds": install_seconds,
+                    "environment": environment,
+                    "exit_code": code,
+                    "verdict": "red",
+                },
             )
-            continue
-        lane_start = time.monotonic()
-        code = lane_runner(lane)
-        elapsed = time.monotonic() - lane_start
-        if code == 0:
-            results.append(
-                LaneResult(
-                    task=lane.task,
-                    environment=lane.environment,
-                    seconds=elapsed,
-                    exit_code=0,
-                    status="ok",
-                )
-            )
+            print(f"preflight: pixi install for {environment!r} exited {code}", file=sys.stderr)
+            return EXIT_LANE_RED
+    install_seconds = time.monotonic() - install_t0
+    _append_journal(
+        repo_root,
+        {
+            "phase": "install",
+            "run_id": run_id,
+            "started_at": started.isoformat(),
+            "seconds": install_seconds,
+            "environments": unique_envs,
+            "verdict": "ok",
+        },
+    )
+
+    scratch_root = repo_root / RUN_SCRATCH_RELATIVE / run_id
+    scratch_root.mkdir(parents=True, exist_ok=True)
+
+    coord = _RunCoordinator(
+        repo_root=repo_root,
+        run_id=run_id,
+        run_start=run_start,
+        jobs=worker_count,
+        keep_going=keep_going,
+    )
+    runner: Callable[[LaneRunContext], int]
+    if injected_runner is not None:
+        runner = injected_runner
+    else:
+        runner = lambda ctx: _default_run_lane_ctx(coord, ctx)
+
+    prior_sigint = signal.getsignal(signal.SIGINT)
+
+    def _on_sigint(_signum: int, _frame: object | None) -> None:
+        coord.cancel.set()
+        coord.terminate_children()
+
+    signal.signal(signal.SIGINT, _on_sigint)
+
+    results_by_task: dict[str, LaneResult] = {}
+    try:
+        with ThreadPoolExecutor(max_workers=worker_count) as pool:
+            futures: dict[Future[LaneResult], Lane] = {}
+            lane_iter = iter(lanes)
+            pending = set(futures.keys())
+
+            while True:
+                if coord.cancel.is_set():
+                    break
+                while len(futures) < worker_count and not (coord.stop_on_red.is_set() and not coord.keep_going):
+                    try:
+                        lane = next(lane_iter)
+                    except StopIteration:
+                        break
+                    fut = pool.submit(
+                        _run_lane_in_pool,
+                        coord,
+                        lane,
+                        scratch_root,
+                        mutex_keys.get((lane.task, lane.environment)),
+                        runner,
+                        use_subprocess,
+                    )
+                    futures[fut] = lane
+                if not futures:
+                    break
+                done, _ = wait(futures.keys(), return_when=FIRST_COMPLETED)
+                for fut in done:
+                    lane = futures.pop(fut)
+                    try:
+                        result = fut.result()
+                    except Exception:  # noqa: BLE001
+                        result = LaneResult(lane.task, lane.environment, 0.0, 1, "red", 0.0)
+                    results_by_task[lane.task] = result
+                if coord.stop_on_red.is_set() and not coord.keep_going:
+                    for fut in list(futures):
+                        futures[fut].cancel()
+                    futures.clear()
+                    break
+    finally:
+        signal.signal(signal.SIGINT, prior_sigint)
+        coord.terminate_children()
+
+    if coord.cancel.is_set():
+        total_seconds = time.monotonic() - t0
+        ordered: list[LaneResult] = []
+        for lane in lanes:
+            if lane.task in results_by_task:
+                ordered.append(results_by_task[lane.task])
+            else:
+                ordered.append(LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0))
+        _append_journal(
+            repo_root,
+            {
+                "run_id": run_id,
+                "started_at": started.isoformat(),
+                "head_sha": head_sha,
+                "branch": branch,
+                "logical_cores": _logical_core_count(),
+                "jobs": worker_count,
+                "keep_going": keep_going,
+                "total_seconds": total_seconds,
+                "verdict": "interrupted",
+                "invoking_environment": env,
+                "selection": selection.to_journal(),
+                "lanes": [asdict(r) for r in ordered],
+            },
+        )
+        return EXIT_INTERRUPT
+
+    ordered_results: list[LaneResult] = []
+    exit_code = EXIT_OK
+    for lane in lanes:
+        if lane.task in results_by_task:
+            result = results_by_task[lane.task]
+        elif coord.stop_on_red.is_set() and not coord.keep_going:
+            result = LaneResult(lane.task, lane.environment, 0.0, 0, "cancelled", 0.0)
         else:
-            results.append(
-                LaneResult(
-                    task=lane.task,
-                    environment=lane.environment,
-                    seconds=elapsed,
-                    exit_code=code,
-                    status="red",
-                )
-            )
+            result = LaneResult(lane.task, lane.environment, 0.0, 0, "not-run", 0.0)
+        ordered_results.append(result)
+        if result.status == "red":
+            exit_code = EXIT_LANE_RED
             print(
-                f"preflight: lane {lane.task!r} in environment {lane.environment!r} exited {code}",
+                f"preflight: lane {lane.task!r} in environment {lane.environment!r} exited {result.exit_code}",
                 file=sys.stderr,
             )
-            exit_code = EXIT_LANE_RED
-            for rest in lanes[index + 1 :]:
-                results.append(
-                    LaneResult(
-                        task=rest.task,
-                        environment=rest.environment,
-                        seconds=0.0,
-                        exit_code=0,
-                        status="not-run",
-                    )
-                )
-            break
+
+    if keep_going and coord.red_lanes:
+        exit_code = EXIT_LANE_RED
+        for name in coord.red_lanes:
+            print(f"preflight: red lane {name!r}", file=sys.stderr)
 
     total_seconds = time.monotonic() - t0
     verdict = "ok" if exit_code == EXIT_OK else "red"
-    record = {
-        "run_id": run_id,
-        "started_at": started.isoformat(),
-        "head_sha": head_sha,
-        "branch": branch,
-        "logical_cores": _logical_core_count(),
-        "total_seconds": total_seconds,
-        "verdict": verdict,
-        "invoking_environment": env,
-        "selection": selection.to_journal(),
-        "lanes": [asdict(r) for r in results],
-    }
-    _append_journal(repo_root, record)
+    _append_journal(
+        repo_root,
+        {
+            "run_id": run_id,
+            "started_at": started.isoformat(),
+            "head_sha": head_sha,
+            "branch": branch,
+            "logical_cores": _logical_core_count(),
+            "jobs": worker_count,
+            "keep_going": keep_going,
+            "total_seconds": total_seconds,
+            "verdict": verdict,
+            "invoking_environment": env,
+            "selection": selection.to_journal(),
+            "lanes": [asdict(r) for r in ordered_results],
+        },
+    )
     return exit_code
 
 
+def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog="pyforge.steward.preflight")
+    parser.add_argument(
+        "--jobs",
+        type=int,
+        default=None,
+        help="maximum concurrent lanes (default: logical CPU count)",
+    )
+    parser.add_argument(
+        "--keep-going",
+        action="store_true",
+        help="run every selected lane even when one exits non-zero",
+    )
+    return parser.parse_args(list(argv))
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    _ = argv
+    args = _parse_args(argv or [])
     repo_root = Path(os.environ.get("PIXI_PROJECT_ROOT", ".")).resolve()
-    return run_preflight(repo_root)
+    return run_preflight(
+        repo_root,
+        jobs=args.jobs,
+        keep_going=args.keep_going,
+    )
 
 
 if __name__ == "__main__":

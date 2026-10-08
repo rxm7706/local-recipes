@@ -2,7 +2,8 @@
 title: '71.3: Selected lanes run concurrently and share no mutable state'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: '61253849842913b8d2bbe7548547d61a7af4d5e0'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

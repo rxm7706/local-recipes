@@ -872,3 +872,101 @@ def _select(
         dirty_paths=tuple(dirty),
         verdicts=tuple(verdicts),
     )
+
+
+def _evaluation_states(
+    root: Path,
+    pixi_data: Mapping[str, Any],
+    process: PosixProcess,
+    scratch: Path,
+) -> list[_State]:
+    """Build the same workflow-evaluation states ``_select`` uses (for service mutex keys)."""
+    changed: list[str] = []
+    dirty: list[str] = []
+    env = _git_env()
+    probe = _git(process, root, ["rev-parse", "--verify", "--quiet", BASE_REF], env)
+    if probe.returncode != 0:
+        raise _SelectAll(f"{BASE_REF} does not exist")
+    base_sha = probe.stdout.strip()
+    workflows = load_workflows(root)
+    changed.extend(
+        _nul_paths(
+            _git_ok(
+                process,
+                root,
+                ["diff", "--name-only", "-z", "--no-renames", f"{BASE_REF}...HEAD"],
+                env,
+                "reading the diff",
+            )
+        )
+    )
+    for args in (
+        ["diff", "--name-only", "-z", "--no-renames", "--cached"],
+        ["diff", "--name-only", "-z", "--no-renames"],
+        ["ls-files", "-z", "--others", "--exclude-standard"],
+    ):
+        dirty.extend(
+            p for p in _nul_paths(_git_ok(process, root, args, env, "reading the working tree")) if p not in dirty
+        )
+    states = [_State(root, process, workflows, pixi_data, tuple(changed), env, scratch)]
+    if dirty:
+        snapshot_env = _snapshot_env(process, root, scratch, env, base_sha)
+        union = tuple(dict.fromkeys([*changed, *dirty]))
+        states.append(_State(root, process, workflows, pixi_data, union, snapshot_env, scratch))
+    return states
+
+
+def _firing_site(states: Sequence[_State], lane: LaneLike) -> _Site | None:
+    for state in states:
+        sites = state.sites_for(lane)
+        selected, _, _ = _outcome(sites)
+        if not selected:
+            continue
+        firing = next((s for s in sites if s.outcome == "run"), None)
+        if firing is not None:
+            return firing
+        if not sites:
+            return None
+    return None
+
+
+def lane_service_mutex_key(
+    repo_root: Path,
+    lane: LaneLike,
+    pixi_data: Mapping[str, Any],
+    *,
+    process: PosixProcess | None = None,
+) -> str | None:
+    """Mutex key when the lane's CI counterpart job declares ``services:``, else ``None``."""
+    repo_root = repo_root.resolve()
+    proc = process or PosixProcess()
+    try:
+        with tempfile.TemporaryDirectory(prefix="preflight-services-") as scratch_name:
+            states = _evaluation_states(repo_root, pixi_data, proc, Path(scratch_name))
+    except _SelectAll:
+        return None
+    site = _firing_site(states, lane)
+    if site is None:
+        return None
+    workflows = states[0].workflows
+    workflow = next((w for w in workflows if w.file == site.workflow), None)
+    if workflow is None:
+        return None
+    job = workflow.jobs.get(site.job)
+    if not isinstance(job, dict):
+        return None
+    services = job.get("services")
+    if not isinstance(services, dict) or not services:
+        return None
+    return f"{site.workflow}:{site.job}:{','.join(sorted(str(k) for k in services))}"
+
+
+def service_mutex_keys(
+    repo_root: Path,
+    lanes: Sequence[LaneLike],
+    pixi_data: Mapping[str, Any],
+    *,
+    process: PosixProcess | None = None,
+) -> dict[tuple[str, str], str | None]:
+    """Map ``(task, environment)`` to a service mutex key (or ``None``)."""
+    return {(lane.task, lane.environment): lane_service_mutex_key(repo_root, lane, pixi_data, process=process) for lane in lanes}
