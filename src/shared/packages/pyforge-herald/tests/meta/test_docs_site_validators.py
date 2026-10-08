@@ -56,7 +56,7 @@ def test_docsite_check_runs_docs_site_validate() -> None:
 def test_pr_preflight_carries_docs_site_validate_leg() -> None:
     root = _repo_root()
     pixi = tomllib.loads((root / "pixi.toml").read_text(encoding="utf-8"))
-    preflight = pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight"]
+    preflight = pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight-lanes"]
     legs = preflight["depends-on"]
     validate_legs = [leg for leg in legs if isinstance(leg, dict) and leg.get("task") == "docs-site-validate"]
     assert validate_legs == [{"task": "docs-site-validate", "environment": "site"}]

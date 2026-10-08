@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from pyforge.marshal.cli import benchmark as benchmark_cli
+from pyforge.marshal.core import policy
 from pyforge.marshal.core import structure_graph_dispatch_benchmark as sg_bench
 from pyforge.marshal.core import token_economy_benchmark as bench
 from pyforge.marshal.core.model import Verdict
@@ -30,8 +31,7 @@ def _leg_dict(*, layers_mode: str, tokens: int, savings: dict | None = None) -> 
         "cache_read_weight": 0.1,
         "layer_savings": savings,
         "context_layers": {
-            name: {"enabled": layers_mode == "on", "aggressiveness": "medium"}
-            for name in ("wire", "output", "structure-graph", "derived-context", "planning-graph")
+            name: {"enabled": layers_mode == "on", "aggressiveness": "medium"} for name in policy.CONTEXT_LAYER_NAMES
         },
     }
     return payload
@@ -85,7 +85,10 @@ def test_compare_from_json_files_writes_artifact(tmp_path, monkeypatch):
     assert artifact["void"] is False
     assert artifact["equivalence_gate"]["passed"] is True
     assert artifact["totals"]["weighted_tokens_delta"] == -1400
-    assert len(artifact["layer_comparison"]) == 5
+    # Only layers with a LayerSavings field get a comparison row (the recall layer has none).
+    assert len(artifact["layer_comparison"]) == len(
+        [n for n in policy.CONTEXT_LAYER_NAMES if n in bench._LAYER_SAVINGS_ATTR]
+    )
 
 
 def test_compare_voids_artifact_when_equivalence_fails(tmp_path, monkeypatch):
@@ -176,7 +179,7 @@ def test_compare_per_layer_from_json_files(tmp_path, monkeypatch):
         encoding="utf-8",
     )
     layer_specs = {}
-    for layer in ("wire", "output", "structure-graph", "derived-context", "planning-graph"):
+    for layer in policy.CONTEXT_LAYER_NAMES:
         leg_path = tmp_path / f"{layer}.json"
         leg_path.write_text(
             json.dumps(
@@ -205,7 +208,7 @@ def test_compare_per_layer_from_json_files(tmp_path, monkeypatch):
     assert benchmark_cli.run_benchmark_compare(args) == EXIT_OK
     artifact = json.loads(out_path.read_text(encoding="utf-8"))
     assert artifact["schema"] == bench.PER_LAYER_ARTIFACT_SCHEMA
-    assert len(artifact["layer_legs"]) == 5
+    assert len(artifact["layer_legs"]) == len(policy.CONTEXT_LAYER_NAMES)
     assert all("prompt_cache_hit_rate_isolated" in row for row in artifact["layer_legs"])
 
 
@@ -213,7 +216,7 @@ def test_compare_per_layer_from_json_files(tmp_path, monkeypatch):
 
 STORY = bench.PINNED_BENCHMARK_STORY_KEY
 EXIT_ERROR = exit_code_for(Verdict.ERROR)
-_LAYERS = ("wire", "output", "structure-graph", "derived-context", "planning-graph")
+_LAYERS = policy.CONTEXT_LAYER_NAMES
 
 
 class _ClosedStdout(io.StringIO):
@@ -310,7 +313,7 @@ def _write_compare_legs(tmp_path: Path) -> tuple[str, str]:
 
 
 def _write_per_layer_legs(tmp_path: Path, *, phases: dict[str, str] | None = None) -> tuple[str, str]:
-    """A baseline leg (cache-hit 0.2) and a layer map of five isolated legs
+    """A baseline leg (cache-hit 0.2) and a layer map of one isolated leg per context layer
     (cache-hit 0.4, 1000 weighted tokens cheaper); ``phases`` overrides one
     isolated leg's landing phase."""
     baseline = _write_leg(

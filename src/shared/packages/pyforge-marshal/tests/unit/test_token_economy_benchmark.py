@@ -195,7 +195,7 @@ def test_build_per_layer_artifact_voids_one_leg_only():
         generated_at=__import__("datetime").datetime(2026, 10, 8, 12, 0, 0, tzinfo=__import__("datetime").UTC),
     )
     assert artifact.schema == bench.PER_LAYER_ARTIFACT_SCHEMA
-    assert len(artifact.layer_legs) == 5
+    assert len(artifact.layer_legs) == len(policy.CONTEXT_LAYER_NAMES)
     wire_row = next(r for r in artifact.layer_legs if r["layer"] == "wire")
     output_row = next(r for r in artifact.layer_legs if r["layer"] == "output")
     assert wire_row["void"] is False

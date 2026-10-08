@@ -950,6 +950,7 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 .steward/workspaces.yaml
 # Story 66.2: the pre-push hook journals every PYFORGE_PREFLIGHT_SKIP=1 here.
 .steward/preflight-skips.log
+.steward/preflight-runs.jsonl
 .steward/workspace-archive/
 # pyforge-steward `deck-drift` duty (Story 59.4): the machine-local baseline
 # sidecar fingerprinting a pulled Design deck artifact (size + sha256) at
