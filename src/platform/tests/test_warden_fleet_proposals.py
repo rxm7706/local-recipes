@@ -218,7 +218,7 @@ def test_approve_one_opens_draft_other_stays_queued(
     with patch("django_warden_fabric.tasks.shallow_clone"), patch(
         "pyforge.warden.actuator.run_actuator",
         return_value=type("Actuation", (), {"outcomes": (outcome,)})(),
-    ):
+    ), patch("django_warden_fabric.tasks.open_fix_proposal.delay"):
         approve_proposal(proposals[0].pk, "operator@test")
         open_fix_proposal(str(proposals[0].pk))
 
@@ -297,9 +297,10 @@ def test_double_approve_refused(proposal_flags_on: Path) -> None:
 
     queue_proposals_from_scan(scan)
     proposal = FixProposal.objects.get(fleet_repo_scan=scan)
-    approve_proposal(proposal.pk, "op")
-    with pytest.raises(ProposalRefusedError, match="already approved"):
+    with patch("django_warden_fabric.tasks.open_fix_proposal.delay"):
         approve_proposal(proposal.pk, "op")
+        with pytest.raises(ProposalRefusedError, match="already approved"):
+            approve_proposal(proposal.pk, "op")
 
 
 @pytest.mark.django_db
