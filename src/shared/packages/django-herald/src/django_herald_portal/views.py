@@ -8,9 +8,9 @@ from django_pyforge.flags import evaluate_boolean
 from django_pyforge.roles import claims_from_request, roles_from_request
 
 from django_herald_portal.deck_viewer import list_published_decks, viewer_context
-from pyforge.herald.twins import DECK_VIEWER_FLAG
 
 PORTAL_DECK_SLUG = "pyforge-herald"
+DECK_VIEWER_FLAG = "pyforge.herald.deck_viewer"
 DECK_STATUS_ARGV = ("deck", "status", PORTAL_DECK_SLUG)
 
 
