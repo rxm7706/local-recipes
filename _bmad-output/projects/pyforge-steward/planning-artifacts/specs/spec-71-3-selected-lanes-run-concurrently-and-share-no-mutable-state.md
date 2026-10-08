@@ -2,7 +2,7 @@
 title: '71.3: Selected lanes run concurrently and share no mutable state'
 type: 'feature'
 created: '2026-09-27'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '61253849842913b8d2bbe7548547d61a7af4d5e0'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -80,3 +80,8 @@ Ledger status at mint: `backlog`.
 
 **Manual checks:**
 - `pixi run -e pyforge-guild pr-preflight -- --keep-going` on a branch touching `pixi.toml` — expected: the same per-lane exit codes as `pixi run -e pyforge-guild pr-preflight-lanes` reaches, and a journaled wall time bounded by the slowest lane plus the install phase, not by the sum.
+
+## Auto Run Result
+
+Status: done  
+Verification: `pixi run --frozen -e pyforge-steward pyforge-steward-test` (2185 passed); `python scripts/spec_surface_reconcile.py` (exit 0 after memlog reconcile on `spec-pyforge-steward`).
