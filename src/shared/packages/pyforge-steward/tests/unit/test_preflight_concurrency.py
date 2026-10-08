@@ -134,7 +134,16 @@ def test_install_phase_runs_before_lanes_and_is_journaled(tmp_path: Path) -> Non
         order.append(f"lane:{ctx.lane.task}")
         return 0
 
-    assert preflight.run_preflight(repo, jobs=2, install_environment=install, run_lane_ctx=run_ctx) == 0
+    assert (
+        preflight.run_preflight(
+            repo,
+            jobs=2,
+            invoking_env="pyforge-guild",
+            install_environment=install,
+            run_lane_ctx=run_ctx,
+        )
+        == 0
+    )
     assert order.index("install:pyforge-guild") < order.index("lane:a")
     assert order.index("install:other-env") < order.index("lane:b")
     install_calls = [item for item in order if item.startswith("install:")]

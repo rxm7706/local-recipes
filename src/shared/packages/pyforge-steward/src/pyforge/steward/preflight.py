@@ -469,7 +469,7 @@ def run_preflight(
                     results_by_task[lane.task] = result
                 if coord.stop_on_red.is_set() and not coord.keep_going:
                     for fut in list(futures):
-                        futures[fut].cancel()
+                        fut.cancel()
                     futures.clear()
                     break
     finally:

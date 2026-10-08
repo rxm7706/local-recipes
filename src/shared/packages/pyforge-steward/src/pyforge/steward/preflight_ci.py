@@ -930,21 +930,7 @@ def _firing_site(states: Sequence[_State], lane: LaneLike) -> _Site | None:
     return None
 
 
-def lane_service_mutex_key(
-    repo_root: Path,
-    lane: LaneLike,
-    pixi_data: Mapping[str, Any],
-    *,
-    process: PosixProcess | None = None,
-) -> str | None:
-    """Mutex key when the lane's CI counterpart job declares ``services:``, else ``None``."""
-    repo_root = repo_root.resolve()
-    proc = process or PosixProcess()
-    try:
-        with tempfile.TemporaryDirectory(prefix="preflight-services-") as scratch_name:
-            states = _evaluation_states(repo_root, pixi_data, proc, Path(scratch_name))
-    except _SelectAll:
-        return None
+def _service_mutex_key_from_states(states: Sequence[_State], lane: LaneLike) -> str | None:
     site = _firing_site(states, lane)
     if site is None:
         return None
@@ -961,6 +947,18 @@ def lane_service_mutex_key(
     return f"{site.workflow}:{site.job}:{','.join(sorted(str(k) for k in services))}"
 
 
+def lane_service_mutex_key(
+    repo_root: Path,
+    lane: LaneLike,
+    pixi_data: Mapping[str, Any],
+    *,
+    process: PosixProcess | None = None,
+) -> str | None:
+    """Mutex key when the lane's CI counterpart job declares ``services:``, else ``None``."""
+    keys = service_mutex_keys(repo_root, [lane], pixi_data, process=process)
+    return keys.get((lane.task, lane.environment))
+
+
 def service_mutex_keys(
     repo_root: Path,
     lanes: Sequence[LaneLike],
@@ -969,4 +967,11 @@ def service_mutex_keys(
     process: PosixProcess | None = None,
 ) -> dict[tuple[str, str], str | None]:
     """Map ``(task, environment)`` to a service mutex key (or ``None``)."""
-    return {(lane.task, lane.environment): lane_service_mutex_key(repo_root, lane, pixi_data, process=process) for lane in lanes}
+    repo_root = repo_root.resolve()
+    proc = process or PosixProcess()
+    try:
+        with tempfile.TemporaryDirectory(prefix="preflight-services-") as scratch_name:
+            states = _evaluation_states(repo_root, pixi_data, proc, Path(scratch_name))
+    except _SelectAll:
+        return {(lane.task, lane.environment): None for lane in lanes}
+    return {(lane.task, lane.environment): _service_mutex_key_from_states(states, lane) for lane in lanes}

@@ -116,7 +116,7 @@ def test_third_lane_red_stops_and_journals(tmp_path: Path) -> None:
     record = _run_journal_record(tmp_path)
     assert record["verdict"] == "red"
     statuses = [entry["status"] for entry in record["lanes"]]
-    assert statuses == ["ok", "ok", "red", "not-run"]
+    assert statuses == ["ok", "ok", "red", "cancelled"]
 
 
 def test_all_green_journals_ok(tmp_path: Path) -> None:
