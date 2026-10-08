@@ -173,7 +173,7 @@ def _write_status_file(path: Path, statuses: dict[str, str]) -> None:
     path.write_text("development_status:\n" + body, encoding="utf-8")
 
 
-def test_main_refuses_missing_twin_key(tmp_path, promote, monkeypatch):
+def test_main_repairs_missing_twin_key_on_bare_sync(tmp_path, promote, monkeypatch, capsys):
     slug = "pyforge-acme"
     feed = tmp_path / "feed.yaml"
     twin_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
@@ -187,10 +187,12 @@ def test_main_refuses_missing_twin_key(tmp_path, promote, monkeypatch):
     monkeypatch.setattr(promote, "REPO_ROOT", tmp_path, raising=False)
     monkeypatch.setattr(promote, "_load_generate", lambda: stub)
 
-    before = twin.read_text(encoding="utf-8")
     rc = promote.main(["--project", "acme"])
-    assert rc == 1
-    assert twin.read_text(encoding="utf-8") == before
+    assert rc == 0
+    assert "1-2-missing" in feed.read_text(encoding="utf-8")
+    out = capsys.readouterr().out
+    assert "REPAIRED" in out
+    assert "1-2-missing: feed <absent> -> twin optional" in out
 
 
 def test_repair_feed_restores_done_lost_to_blocked(tmp_path, promote):
@@ -210,7 +212,7 @@ def test_repair_feed_restores_done_lost_to_blocked(tmp_path, promote):
     assert "20-4-bmad-os-root-cause-analysis-is-doctor-wielded: done" in feed_path.read_text(encoding="utf-8")
 
 
-def test_main_repair_feed_restores_missing_key(tmp_path, promote, monkeypatch):
+def test_main_repair_feed_matches_bare_sync(tmp_path, promote, monkeypatch):
     slug = "pyforge-acme"
     feed = tmp_path / "feed.yaml"
     twin_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
@@ -224,9 +226,133 @@ def test_main_repair_feed_restores_missing_key(tmp_path, promote, monkeypatch):
     monkeypatch.setattr(promote, "REPO_ROOT", tmp_path, raising=False)
     monkeypatch.setattr(promote, "_load_generate", lambda: stub)
 
-    rc = promote.main(["--project", "acme", "--repair-feed"])
+    rc_bare = promote.main(["--project", "acme"])
+    feed_after_bare = feed.read_text(encoding="utf-8")
+    twin_after_bare = twin.read_text(encoding="utf-8")
+
+    _write_status_file(feed, {"1-1-demo": "backlog"})
+    _write_status_file(twin, {"1-1-demo": "backlog", "1-2-missing": "optional"})
+    rc_flag = promote.main(["--project", "acme", "--repair-feed"])
+
+    assert rc_bare == 0 and rc_flag == 0
+    assert feed.read_text(encoding="utf-8") == feed_after_bare
+    assert twin.read_text(encoding="utf-8") == twin_after_bare
+
+
+def _doctor_24_2_fixture() -> tuple[dict[str, str], dict[str, str]]:
+    """Twin holds 13 unrelated `done` rows; feed is behind on all of them plus one promotion."""
+    drift_keys = [f"24-{i}-story-{i}" for i in range(1, 14)]
+    twin = {k: "done" for k in drift_keys}
+    twin["54-1-promoted"] = "backlog"
+    feed = {k: "backlog" for k in drift_keys[:7]}
+    for k in drift_keys[7:]:
+        pass  # absent from feed
+    feed["54-1-promoted"] = "done"
+    return feed, twin
+
+
+def test_main_bare_sync_doctor_24_2_fixture(tmp_path, promote, monkeypatch, capsys):
+    slug = "pyforge-acme"
+    feed = tmp_path / "feed.yaml"
+    twin_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    twin_dir.mkdir(parents=True)
+    twin = twin_dir / "sprint-status-ledger.yaml"
+    feed_map, twin_map = _doctor_24_2_fixture()
+    _write_status_file(feed, feed_map)
+    _write_status_file(twin, twin_map)
+
+    stub = _make_generate_stub(feed.relative_to(tmp_path).as_posix(), slug)
+    monkeypatch.setattr(promote, "REPO_ROOT", tmp_path, raising=False)
+    monkeypatch.setattr(promote, "_load_generate", lambda: stub)
+
+    rc = promote.main(["--project", "acme"])
     assert rc == 0
-    assert "1-2-missing" in feed.read_text(encoding="utf-8")
+    twin_after = _parse_status_file(twin)
+    feed_after = _parse_status_file(feed)
+    assert twin_after["54-1-promoted"] == "done"
+    for k, v in twin_map.items():
+        if k == "54-1-promoted":
+            continue
+        assert feed_after[k] == v
+    out = capsys.readouterr().out
+    for k in twin_map:
+        if k == "54-1-promoted":
+            continue
+        assert k in out
+
+
+def test_repair_feed_preserves_trailing_metadata(tmp_path, promote):
+    feed_path = tmp_path / "feed.yaml"
+    tail = "generated: '2026-09-01'\nlast_updated: '2026-09-02'\nproject: pyforge-marshal\n"
+    feed_path.write_text(
+        "# header\ndevelopment_status:\n  1-1-a: backlog\n" + tail,
+        encoding="utf-8",
+    )
+    incoming = {"1-1-a": "backlog"}
+    twin_values = {"1-1-a": "done"}
+    promote.repair_feed(feed_path, incoming, twin_values)
+    assert feed_path.read_text(encoding="utf-8").endswith(tail)
+
+
+def test_main_allow_regression_writes_done_to_backlog(tmp_path, promote, monkeypatch, capsys):
+    slug = "pyforge-acme"
+    feed = tmp_path / "feed.yaml"
+    twin_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    twin_dir.mkdir(parents=True)
+    twin = twin_dir / "sprint-status-ledger.yaml"
+    _write_status_file(feed, {"1-1-demo": "backlog"})
+    _write_status_file(twin, {"1-1-demo": "done"})
+
+    stub = _make_generate_stub(feed.relative_to(tmp_path).as_posix(), slug)
+    monkeypatch.setattr(promote, "REPO_ROOT", tmp_path, raising=False)
+    monkeypatch.setattr(promote, "_load_generate", lambda: stub)
+
+    rc = promote.main(["--project", "acme", "--allow-regression"])
+    assert rc == 0
+    assert _parse_status_file(twin)["1-1-demo"] == "backlog"
+    out = capsys.readouterr().out
+    assert "WARNING" in out
+    assert "1-1-demo" in out
+
+
+def test_main_promotion_not_rewritten_by_repair(tmp_path, promote, monkeypatch):
+    slug = "pyforge-acme"
+    feed = tmp_path / "feed.yaml"
+    twin_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    twin_dir.mkdir(parents=True)
+    twin = twin_dir / "sprint-status-ledger.yaml"
+    _write_status_file(feed, {"54-1-x": "done", "24-1-other": "backlog"})
+    _write_status_file(twin, {"54-1-x": "backlog", "24-1-other": "done"})
+
+    stub = _make_generate_stub(feed.relative_to(tmp_path).as_posix(), slug)
+    monkeypatch.setattr(promote, "REPO_ROOT", tmp_path, raising=False)
+    monkeypatch.setattr(promote, "_load_generate", lambda: stub)
+
+    rc = promote.main(["--project", "acme"])
+    assert rc == 0
+    assert _parse_status_file(twin)["54-1-x"] == "done"
+    assert _parse_status_file(feed)["24-1-other"] == "done"
+
+
+def test_main_restores_twin_blocked_from_feed_backlog(tmp_path, promote, monkeypatch, capsys):
+    slug = "pyforge-acme"
+    feed = tmp_path / "feed.yaml"
+    twin_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
+    twin_dir.mkdir(parents=True)
+    twin = twin_dir / "sprint-status-ledger.yaml"
+    key = "44-3-open-the-foundry"
+    _write_status_file(feed, {key: "backlog"})
+    _write_status_file(twin, {key: "blocked"})
+
+    stub = _make_generate_stub(feed.relative_to(tmp_path).as_posix(), slug)
+    monkeypatch.setattr(promote, "REPO_ROOT", tmp_path, raising=False)
+    monkeypatch.setattr(promote, "_load_generate", lambda: stub)
+
+    rc = promote.main(["--project", "acme"])
+    assert rc == 0
+    assert _parse_status_file(feed)[key] == "blocked"
+    out = capsys.readouterr().out
+    assert f"{key}: feed backlog -> twin blocked" in out
 
 
 # --- doctor Story 25.3: --rekey (spec-one-chain-per-station CAP-3(g)) --------

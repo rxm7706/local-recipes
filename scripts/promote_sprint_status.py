@@ -28,18 +28,16 @@ overwrite the twin wholesale could — and did — destroy real completions: on 
 a stale marshal feed silently dropped six `done` keys and printed success. Measured the
 same day, `pyforge-atlas` was one command away from losing **35**.
 
-This script therefore refuses any write that moves a key backwards out of `done` or
-story `blocked`, or drops such a key entirely, naming every affected key and exiting
-non-zero. `done` is STRICTLY senior to `blocked` — a key moving `done` -> `blocked`
-is refused too, not treated as a lateral move between two protected states (found
-live 2026-09-10, DW-SYNC-2026-09-10-1: a genuinely `done` story's stale Tier-3
-`blocked` value silently overwrote the tracked twin's correct `done` because the
-original guard treated `done` and `blocked` as interchangeable). Twin-only keys
-absent from the feed are refused on the bare path too — not only under
-``--repair-feed``. Override with ``--allow-regression`` only when the twin is
-genuinely the wrong one. The pre-existing empty-feed guard below is the same idea
-at whole-file granularity; this is its per-key counterpart, which is where the real
-losses happen.
+When the feed is behind the tracked twin — it would move a key backwards out of
+`done` or story `blocked`, or drop such a key — a bare sync repairs the feed from
+the twin (one line per repaired key on stdout) and then promotes. ``--allow-regression``
+is the one way to move a key out of ``done`` instead: it skips repair and writes the
+feed's regression, naming every affected key. ``--repair-feed`` is accepted and means
+the same as a bare sync. `done` is STRICTLY senior to `blocked` — a key moving
+`done` -> `blocked` is repaired (or refused only under ``--allow-regression``), never
+treated as a lateral move between two protected states (found live 2026-09-10,
+DW-SYNC-2026-09-10-1). The pre-existing empty-feed guard below is the same idea at
+whole-file granularity; the per-key guard is where the real losses happen.
 """
 
 from __future__ import annotations
@@ -238,6 +236,45 @@ def apply_rekey(
     return translated, []
 
 
+def _split_development_status(text: str) -> tuple[str, str, str]:
+    """Split a sprint-status file into head, map body, and trailing tail.
+
+    Matches ``fleet_scan.parse_sprint_status`` boundaries: map entries are
+    indented; the first non-empty, non-comment line that is not indented ends
+    the map and begins ``tail`` (preserved byte-for-byte on rewrite).
+    """
+    head_lines: list[str] = []
+    map_lines: list[str] = []
+    tail_lines: list[str] = []
+    phase = "head"
+    for line in text.splitlines(keepends=True):
+        stripped = line.strip()
+        if phase == "head":
+            head_lines.append(line)
+            if stripped == "development_status:":
+                phase = "map"
+            continue
+        if phase == "map":
+            if line and not line[0].isspace() and not stripped.startswith("#"):
+                phase = "tail"
+                tail_lines.append(line)
+            else:
+                map_lines.append(line)
+            continue
+        tail_lines.append(line)
+    head = "".join(head_lines)
+    if phase == "head":
+        return text, "", ""
+    return head, "".join(map_lines), "".join(tail_lines)
+
+
+def _write_feed_development_status(feed_path: Path, merged: dict[str, str]) -> None:
+    text = feed_path.read_text(encoding="utf-8")
+    head, _old_map, tail = _split_development_status(text)
+    block = "".join(f"  {k}: {v}\n" for k, v in sorted(merged.items()))
+    feed_path.write_text(head + block + tail, encoding="utf-8")
+
+
 def repair_feed(
     feed_path: Path,
     incoming: dict[str, str],
@@ -279,10 +316,26 @@ def repair_feed(
         merged[k] = twin_values[k]
     for k, old, _new in lost:
         merged[k] = old
-    feed_body = "".join(f"  {k}: {v}\n" for k, v in sorted(merged.items()))
-    head = feed_path.read_text(encoding="utf-8").split("development_status:")[0]
-    feed_path.write_text(head + "development_status:\n" + feed_body, encoding="utf-8")
+    _write_feed_development_status(feed_path, merged)
     return merged, lost, missing
+
+
+def _print_repaired_keys(
+    lost: list[tuple[str, str, str]],
+    missing: list[str],
+    existing: dict[str, str],
+    incoming: dict[str, str],
+) -> None:
+    for key, twin_val, feed_val in sorted(
+        [(k, old, new) for k, old, new in lost]
+        + [(k, existing[k], "<absent>") for k in missing],
+        key=lambda row: row[0],
+    ):
+        if feed_val == "<absent>":
+            feed_display = "<absent>"
+        else:
+            feed_display = feed_val
+        print(f"  {key}: feed {feed_display} -> twin {twin_val}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -302,10 +355,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--repair-feed",
         action="store_true",
-        help="Reverse direction: where the tracked twin holds a `done` the Tier-3 feed "
-             "has lost, write it BACK into the feed. Closes the loop a one-way sync "
-             "leaves open — a truncated feed otherwise makes every later sync refuse "
-             "forever, with no sanctioned way to converge.",
+        help="Same as a bare sync (accepted for scripts that already pass it): when "
+             "the feed is behind the tracked twin, pull the twin's protected values "
+             "into the feed and name every repaired key before promoting.",
     )
     ap.add_argument(
         "--allow-regression",
@@ -403,26 +455,15 @@ def main(argv: list[str] | None = None) -> int:
             # carrying every `done` still silently dropped the twin's seven
             # `epic-N-retrospective: optional` rows — absence is loss whatever the state.
             missing = [k for k in existing if k not in statuses]
-            if (lost or missing) and args.repair_feed:
-                # The twin is the durable record; the feed is the lossy one. Push the
-                # twin's terminal states back into the feed so the two converge, then
-                # proceed with a now-clean promotion. `repair_feed` (extracted so
-                # `pyforge.marshal.cli.deploy::run_reconcile_completions` can reuse the
-                # SAME merge-then-write logic, scoped to just its own advanced keys)
-                # recomputes `lost`/`missing` from `(statuses, existing)` — identical
-                # to what was already computed above, so the counts below are unchanged.
+            if (lost or missing) and not args.allow_regression:
+                lost_report = list(lost)
+                missing_report = list(missing)
                 merged, lost, missing = repair_feed(src, statuses, existing)
-                # `repair_feed` only returns `None` when its OWN recomputed
-                # `lost`/`missing` both come up empty -- structurally
-                # impossible here since we just entered this branch on the
-                # identical `(lost or missing)` condition from the SAME
-                # `(statuses, existing)` inputs. Asserted, not silently
-                # trusted, now that the recomputation lives in a separate
-                # function a future edit could decouple from this check.
                 assert merged is not None
-                print(f"  REPAIRED  {key}: restored {len(lost)} regressed + "
-                      f"{len(missing)} missing key(s) into the Tier-3 feed from the "
+                print(f"  REPAIRED  {key}: restored {len(lost_report)} regressed + "
+                      f"{len(missing_report)} missing key(s) into the Tier-3 feed from the "
                       f"tracked twin")
+                _print_repaired_keys(lost_report, missing_report, existing, statuses)
                 statuses = merged
                 lost = []
                 missing = []
@@ -458,10 +499,10 @@ def main(argv: list[str] | None = None) -> int:
         for i in items:
             print(f"  {label:9} {i}")
     if refused:
-        print("\nREFUSED: the Tier-3 feed is BEHIND the tracked twin for the project(s)\n"
-              "above. The feed states intent; the twin is the record of fact — so this\n"
-              "is far more often a stale feed than a wrong twin. Reconcile the feed, or\n"
-              "pass --allow-regression if the twin really is the wrong one.")
+        print("\nREFUSED: the Tier-3 feed would move a protected twin key backwards.\n"
+              "A bare sync repairs feed-behind-twin drift automatically; this refusal\n"
+              "means the feed would un-finish the twin. Pass --allow-regression only\n"
+              "when the tracked twin is genuinely the wrong one.")
         return 1
     if not wrote and not unchanged:
         print("\nNOTHING promoted — every feed was missing or unparseable.")
