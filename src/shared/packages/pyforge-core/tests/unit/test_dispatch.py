@@ -45,6 +45,15 @@ MAP = {
     "marshal": "marshal",
 }
 
+# Guild env without atlas, mason, or warden (marshal Story 71.1).
+GUILD_FIVE = {
+    "doctor": "doctor",
+    "herald": "herald",
+    "marshal": "marshal",
+    "scribe": "scribe",
+    "steward": "steward",
+}
+
 
 def test_dispatch_argv_forwards_noun_and_verb():
     assert dispatch_argv(["pyforge", "steward", "keys", "list"], script_map=MAP) == ["steward", "keys", "list"]
@@ -143,3 +152,75 @@ def test_primary_console_script_skips_mcp_extra():
 
 def test_primary_console_script_prefers_dist_name_for_atlas():
     assert primary_console_script("pyforge-atlas", {"pyforge-atlas": "pyforge.atlas.__main__:main"}) == "pyforge-atlas"
+
+
+def test_roster_station_not_installed_names_environment():
+    with pytest.raises(DispatchError) as exc:
+        dispatch_argv(["pyforge", "warden", "--help"], script_map=GUILD_FIVE)
+    msg = str(exc.value)
+    assert "station 'warden' is not installed in this environment" in msg
+    assert "-e pyforge-warden" in msg
+    assert "pixi run -e pyforge-warden pyforge warden" in msg
+
+
+@pytest.mark.parametrize(
+    ("token", "env"),
+    [
+        ("atlas", "pyforge-atlas"),
+        ("mason", "pyforge-mason"),
+    ],
+)
+def test_roster_station_not_installed_atlas_and_mason(token: str, env: str):
+    with pytest.raises(DispatchError, match=f"-e {env}"):
+        dispatch_argv(["pyforge", token, "--help"], script_map=GUILD_FIVE)
+
+
+def test_off_roster_unknown_station_message_unchanged():
+    with pytest.raises(DispatchError) as exc:
+        dispatch_argv(["pyforge", "nosuch"], script_map=GUILD_FIVE)
+    assert str(exc.value) == (
+        "unknown station 'nosuch'; known: doctor, herald, marshal, scribe, steward"
+    )
+
+
+def test_context_alias_still_works_in_guild_five():
+    assert dispatch_argv(["pyforge", "context", "bootstrap"], script_map=GUILD_FIVE) == [
+        "marshal",
+        "context",
+        "bootstrap",
+    ]
+
+
+def test_installed_warden_still_dispatches():
+    assert dispatch_argv(["pyforge", "warden", "scan"], script_map=MAP) == ["warden", "scan"]
+
+
+def test_main_roster_not_installed_is_usage(capsys):
+    proc = _FakeProcess()
+    code = main(["pyforge", "warden", "--help"], process=proc, script_map=GUILD_FIVE)
+    assert code == EXIT_USAGE
+    assert proc.calls == []
+    err = capsys.readouterr().err
+    assert "unknown station" not in err
+    assert "-e pyforge-warden" in err
+
+
+def test_help_lists_installed_and_missing_roster_stations():
+    with pytest.raises(DispatchError) as exc:
+        dispatch_argv(["pyforge", "--help"], script_map=GUILD_FIVE)
+    msg = str(exc.value)
+    assert "stations: doctor, herald, marshal, scribe, steward" in msg
+    assert "not installed here:" in msg
+    assert "atlas (-e pyforge-atlas)" in msg
+    assert "mason (-e pyforge-mason)" in msg
+    assert "warden (-e pyforge-warden)" in msg
+
+
+def test_help_empty_map_lists_all_roster_environments():
+    with pytest.raises(DispatchError) as exc:
+        dispatch_argv(["pyforge", "--help"], script_map={})
+    msg = str(exc.value)
+    assert "stations: (none installed)" in msg
+    assert "not installed here:" in msg
+    for station in ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden"):
+        assert f"{station} (-e pyforge-{station})" in msg

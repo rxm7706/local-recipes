@@ -2,7 +2,8 @@
 title: '71.1: The front door names the environment a roster station runs in'
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'd058a3dcc63e92ef7da6205b2089c4c61551d8ab'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
