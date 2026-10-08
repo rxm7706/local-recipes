@@ -27,10 +27,9 @@ def test_default_repo_root_finds_the_real_git_root():
 
 def test_default_paths_shape():
     paths = fs._default_paths()
-    assert set(paths) == {"sprint_status_path", "epics_path", "specs_dir"}
+    assert set(paths) == {"sprint_status_path", "epics_path"}
     assert paths["sprint_status_path"].name == "sprint-status.yaml"
     assert paths["epics_path"].name == "epics.md"
-    assert paths["specs_dir"].name == "specs"
 
 
 def test_strict_safe_loader_rejects_aliases():
@@ -121,20 +120,6 @@ def test_read_epics_status_present(tmp_path: Path):
     assert fs.read_epics_status(str(path)) == "final"
 
 
-def test_read_spec_statuses_missing_dir_returns_empty():
-    assert fs.read_spec_statuses(None) == {}
-    assert fs.read_spec_statuses("/nope/specs") == {}
-
-
-def test_read_spec_statuses_mixed_frontmatter(tmp_path: Path):
-    specs = tmp_path / "specs"
-    specs.mkdir()
-    (specs / "alpha.md").write_text("---\nstatus: ready\n---\n# Alpha\n", encoding="utf-8")
-    (specs / "beta.md").write_text("---\nstatus: shipped\n---\n# Beta\n", encoding="utf-8")
-    (specs / "gamma.md").write_text("# no frontmatter\n", encoding="utf-8")
-    assert fs.read_spec_statuses(str(specs)) == {"alpha": "ready", "beta": "shipped"}
-
-
 def test_build_factory_status_frame_full(tmp_path: Path):
     sprint = tmp_path / "sprint-status.yaml"
     sprint.write_text(
@@ -143,15 +128,11 @@ def test_build_factory_status_frame_full(tmp_path: Path):
     )
     epics = tmp_path / "epics.md"
     epics.write_text("---\nstatus: final\n---\n# Epics\n", encoding="utf-8")
-    specs = tmp_path / "specs"
-    specs.mkdir()
-    (specs / "one.md").write_text("---\nstatus: ready\n---\n# One\n", encoding="utf-8")
 
     frame = fs.build_factory_status_frame(
         build_stamp=STAMP,
         sprint_status_path=sprint,
         epics_path=epics,
-        specs_dir=specs,
     )
     assert isinstance(frame, pd.DataFrame)
     assert list(frame.columns) == fs.FRAME_COLUMNS
@@ -168,8 +149,7 @@ def test_build_factory_status_frame_full(tmp_path: Path):
     }
     assert (frame["source"] == "epics.md").sum() == 1
     assert frame.loc[frame["source"] == "epics.md", "status"].iloc[0] == "final"
-    specs_rows = frame[frame["source"] == "docs/specs"]
-    assert dict(zip(specs_rows["artifact"], specs_rows["status"])) == {"one": "ready"}
+    assert (frame["source"] == "docs/specs").sum() == 0
 
 
 def test_build_factory_status_frame_degrades_on_missing_artifacts(tmp_path: Path):
@@ -177,7 +157,6 @@ def test_build_factory_status_frame_degrades_on_missing_artifacts(tmp_path: Path
         build_stamp=STAMP,
         sprint_status_path=tmp_path / "absent.yaml",
         epics_path=tmp_path / "absent.md",
-        specs_dir=tmp_path / "absent-dir",
     )
     assert list(frame["source"]) == ["build"]
     assert frame.iloc[0]["status"] == STAMP
@@ -185,13 +164,11 @@ def test_build_factory_status_frame_degrades_on_missing_artifacts(tmp_path: Path
 
 
 def test_build_factory_status_frame_uses_default_paths_when_none(monkeypatch, tmp_path: Path):
-    """`sprint_status_path`/`epics_path`/`specs_dir` default to `_default_paths()`
-    when not injected -- covers the "not provided" branch distinctly from the
-    fixture-injected path above."""
+    """`sprint_status_path`/`epics_path` default to `_default_paths()` when not injected --
+    covers the "not provided" branch distinctly from the fixture-injected path above."""
     fake_defaults = {
         "sprint_status_path": tmp_path / "sprint-status.yaml",
         "epics_path": tmp_path / "epics.md",
-        "specs_dir": tmp_path / "specs",
     }
     monkeypatch.setattr(fs, "_default_paths", lambda: fake_defaults)
     frame = fs.build_factory_status_frame(build_stamp=STAMP)

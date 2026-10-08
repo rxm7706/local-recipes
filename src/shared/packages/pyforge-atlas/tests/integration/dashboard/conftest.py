@@ -107,9 +107,4 @@ def bmad_fixture(tmp_path) -> dict:
     )
     epics = tmp_path / "epics.md"
     epics.write_text("---\nstatus: final\n---\n\n# Epics\n", encoding="utf-8")
-    specs = tmp_path / "specs"
-    specs.mkdir()
-    (specs / "one.md").write_text("---\nstatus: ready\n---\n# One\n", encoding="utf-8")
-    (specs / "two.md").write_text("---\nstatus: shipped\n---\n# Two\n", encoding="utf-8")
-    (specs / "no-fm.md").write_text("# No frontmatter here\n", encoding="utf-8")
-    return {"sprint": str(sprint), "epics": str(epics), "specs": str(specs)}
+    return {"sprint": str(sprint), "epics": str(epics)}
