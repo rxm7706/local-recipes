@@ -1,19 +1,20 @@
 name: Dashboard (GitHub Pages)
 
-# Publishes docs/dashboard/ to GitHub Pages. Steward 30.2 retired the
-# Guildhall generator; this tree's live content is atlas Kedro-Viz under
-# kedro-viz/. Lane 1 /console/ is the operator console.
+# Publishes one GitHub Pages artifact assembled at docs-site/build/site/
+# (Starlight docs shelf at /, herald dossier at /herald/, Kedro-Viz at
+# /dashboard/kedro-viz/). Steward 30.2 retired the Guildhall generator; atlas
+# Kedro-Viz is staged under docs/dashboard/kedro-viz/ by kedro-viz-publish.yml
+# and copied into the artifact by docsite/tools/assemble_pages.py. Lane 1
+# /console/ is the operator console.
+#
 # kedro-viz-publish.yml stages the export, then this workflow republishes
 # on push to main. No scheduled regen — there is no data.js to refresh.
 #
-# The PyForge dossier + infographic site is built here too, directly into
-# docs/dashboard/, so it IS the Pages landing page; Kedro-Viz stays at
-# kedro-viz/ and is linked from it. It deliberately does NOT deploy itself: a
-# repository has one Pages deployment, so a second workflow calling
+# This workflow is the only deploy-pages caller. A second workflow calling
 # deploy-pages would race this one and intermittently wipe the Kedro-Viz
 # export. Same reason kedro-viz-publish.yml stages rather than deploys.
-# build.py only ever deletes the outputs it owns (never a blanket rmtree of
-# docs/dashboard/), and nothing it builds is committed — see .gitignore.
+# docsite/build.py only ever deletes the outputs it owns; nothing under
+# docs-site/build/ is committed — see .gitignore.
 
 on:
   push:
@@ -30,38 +31,42 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.80.0
+          environments: site
+          locked: true
+          cache: true
+
+      - id: pages
+        uses: actions/configure-pages@v6
+
+      - name: Build and verify the unified Pages artifact
+        env:
+          SITE_URL: ${{ steps.pages.outputs.base_url }}
+        run: pixi run --frozen -e site pages-check
+
+      - name: Verify the dossier's numbers against the source tree
+        continue-on-error: true
+        run: pixi run --frozen -e site site-verify
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs-site/build/site
+
   deploy:
     runs-on: ubuntu-latest
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: prefix-dev/setup-pixi@v0.10.2
-        with:
-          pixi-version: v0.80.0
-          environments: pyforge-ci
-          locked: true
-          cache: true
-      - uses: actions/configure-pages@v6
-
-      # --- PyForge dossier + infographic site -> docs/dashboard/pyforge/ ---
-      # Its own python/deps rather than the pyforge-ci pixi env, which carries
-      # neither jinja2 nor pyyaml and has no reason to grow for a doc build.
-      - uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-      - name: Install site build dependencies
-        run: python -m pip install --disable-pip-version-check jinja2 pyyaml
-      - name: Build the PyForge site
-        run: python docsite/build.py --out docs/dashboard --check
-      - name: Verify the dossier's numbers against the source tree
-        # Advisory: a stale figure belongs in the log, never blocking a deploy.
-        continue-on-error: true
-        run: python docsite/tools/verify_claims.py --format github
-
-      - uses: actions/upload-pages-artifact@v5
-        with:
-          path: docs/dashboard
       - id: deployment
         uses: actions/deploy-pages@v5

@@ -35,9 +35,20 @@ pixi run site-verify   # check the dossier's numbers against the source tree
 pixi run site-serve    # build and serve at http://localhost:8000
 ```
 
-A PR touching `docsite/**`, `docs/dashboard/**`, `presentations/**` or `pixi.toml` also runs
-`docsite/build.py --check` + `site-check` in CI before merge (`.github/workflows/docsite-check.yml`);
-`pixi run -e pyforge-guild pr-preflight` predicts it locally.
+The GitHub Pages deploy assembles one artifact (Story 27.2):
+
+```bash
+pixi run -e site pages-build   # Starlight + mount under herald/ + dashboard/ + legacy redirects
+pixi run -e site pages-check   # pages-build + verify redirects and in-artifact links
+```
+
+Published layout: Starlight docs at `/`, the dossier site at `/herald/…`, Kedro-Viz at
+`/dashboard/kedro-viz/`, and HTML redirect stubs at the old dossier root paths (for example
+`/dossier/` → `/herald/dossier/`).
+
+A PR touching `docs/**`, `docs-site/**`, `docsite/**`, `docs/dashboard/**`, `presentations/**`
+or `pixi.toml` runs `pages-check` in CI (`.github/workflows/docsite-check.yml`);
+`pixi run -e pyforge-guild pr-preflight` still runs the local `dist/` `site-check` leg unchanged.
 
 Or without pixi:
 
