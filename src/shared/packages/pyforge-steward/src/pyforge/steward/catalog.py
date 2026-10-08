@@ -28,7 +28,12 @@ operator-confirm moments; ``steward catalog pointers`` prints the forms that
 work today (``--custom-source`` / ``extraKnownMarketplaces`` ``directory``)
 and names the ``github`` forms as waiting on ``edit_store.dedicated_repo``.
 
-Verbs: ``steward catalog check|list|render [--check]|pointers [--json]``.
+Verbs: ``steward catalog check|list|render [--check]|pointers|publish
+[--json]``. Story 60.2 adds ``publish``: append a module to
+``registry/estate.yaml`` only when a steward review record exists;
+``check`` reports ``listing-no-review`` for hand-edited rows. Wielded-suite
+modules are BMad Certified and never enter ``estate-listings``.
+
 ``CatalogDuty`` never calls ``sys.exit`` (AD-8) — it returns a
 ``DutyResult`` and ``cli.main`` projects it.
 """
@@ -56,15 +61,19 @@ CONFIG_FILENAME = "catalog.yaml"
 CLAUDE_MANIFEST_RELATIVE = Path(".claude-plugin/marketplace.json")
 CODEX_MANIFEST_RELATIVE = Path(".agents/plugins/marketplace.json")
 DEFAULT_ESTATE_REGISTRY = "registry/estate.yaml"
+DEFAULT_REVIEWS_DIR = "registry/reviews"
 
 STATES: tuple[str, ...] = ("on", "off", "available")
 STATE_ON, STATE_OFF, STATE_AVAILABLE = STATES
 TRUST_TIERS: tuple[str, ...] = ("unverified", "community-reviewed", "bmad-certified")
 TIER_UNVERIFIED, TIER_COMMUNITY_REVIEWED, TIER_BMAD_CERTIFIED = TRUST_TIERS
+PUBLISH_TRUST_TIERS: tuple[str, ...] = (TIER_UNVERIFIED, TIER_COMMUNITY_REVIEWED)
 KIND_MODULE = "module"
 KIND_FRAME = "frame"
 
-VERBS: tuple[str, ...] = ("check", "list", "render", "pointers")
+VERBS: tuple[str, ...] = ("check", "list", "render", "pointers", "publish")
+
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 UPSTREAM_REGISTRY_SCHEMA_URL = (
     "https://github.com/bmad-code-org/bmad-plugins-marketplace/blob/main/registry/registry-schema.yaml"
@@ -152,11 +161,49 @@ def _load_yaml_mapping(document_path: Path, *, what: str) -> dict[str, Any]:
     return document
 
 
+def _wielded_module_names() -> set[str]:
+    return {pkg.name for pkg in SUITE_PACKAGES if pkg.install_class == INSTALL_CLASS_MODULE}
+
+
 def _require_str(document_path: Path, mapping: dict[str, Any], key: str, where: str) -> str:
     value = mapping.get(key)
     if not isinstance(value, str) or not value.strip():
         raise CatalogConfigError(f"{document_path}: '{where}.{key}' is required and must be a non-empty string")
     return value.strip()
+
+
+def _load_review_record(review_path: Path) -> dict[str, str]:
+    """A steward review record for one estate module (Story 60.2)."""
+    document = _load_yaml_mapping(review_path, what="review record")
+    module = _require_str(review_path, document, "module", "review")
+    tier = document.get("trust_tier")
+    if tier is None:
+        tier = TIER_UNVERIFIED
+    if tier not in PUBLISH_TRUST_TIERS:
+        raise CatalogConfigError(
+            f"{review_path}: review.trust_tier = {tier!r} must be one of {PUBLISH_TRUST_TIERS!r} "
+            f"({TIER_BMAD_CERTIFIED!r} is only via wielded-suite)"
+        )
+    reviewed = _require_str(review_path, document, "reviewed", "review")
+    if not _ISO_DATE.match(reviewed):
+        raise CatalogConfigError(f"{review_path}: review.reviewed must be YYYY-MM-DD, got {reviewed!r}")
+    reviewer = _require_str(review_path, document, "reviewer", "review")
+    return {"module": module, "trust_tier": str(tier), "reviewed": reviewed, "reviewer": reviewer}
+
+
+def _load_listing_draft(listing_path: Path) -> dict[str, Any]:
+    """One upstream-format module row to publish (Builder / module-template / SKF output)."""
+    document = _load_yaml_mapping(listing_path, what="listing draft")
+    row = document["module"] if isinstance(document.get("module"), dict) else document
+    if not isinstance(row, dict):
+        raise CatalogConfigError(f"{listing_path}: listing draft must be a mapping (one module row)")
+    name = row.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise CatalogConfigError(f"{listing_path}: listing.name is required and must be a non-empty string")
+    repository = row.get("repository")
+    if not isinstance(repository, str) or not repository.strip():
+        raise CatalogConfigError(f"{listing_path}: listing.repository is required for a module publish")
+    return dict(row)
 
 
 def _normalize_state(document_path: Path, raw: object, where: str) -> str:
