@@ -1071,16 +1071,27 @@ def _run_deck_publish(args: argparse.Namespace) -> int:
             store = deck_store.open_deck_store()
         except deck_store.DeckStoreConfigurationError as exc:
             raise errors.DeckPublishError(str(exc)) from exc
+        from pyforge.core.flags import read_boolean
+
+        from pyforge.herald import twins as herald_twins
+        from pyforge.herald.twins import TwinOriginError
+
+        include_twins = read_boolean(herald_twins.DECK_VIEWER_FLAG, default=False)
         try:
             report = deck_publish.publish_deck(
                 args.slug,
                 repo_root=repo_root,
                 store=store,
                 dry_run=args.dry_run,
+                include_twins=include_twins,
             )
+        except TwinOriginError as exc:
+            raise errors.DeckPublishError(str(exc)) from exc
         except FileNotFoundError as exc:
             raise errors.DeckUsageError(str(exc)) from exc
         except OSError as exc:
+            raise errors.DeckPublishError(str(exc)) from exc
+        except RuntimeError as exc:
             raise errors.DeckPublishError(str(exc)) from exc
         verb = "would upload" if args.dry_run else "uploaded"
         manifest_note = (
