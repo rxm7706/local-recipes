@@ -33,6 +33,9 @@ DEFAULT_CACHE_READ_WEIGHT = 0.1
 LayersMode = Literal["off", "on"]
 
 #: Each context layer's savings field on ``LayerSavings`` (Story 28.4).
+#: ``recall`` (Story 47.3) meters injected prompt bytes through the
+#: session's normal adapter weighted-token accounting, not a savings counter
+#: here -- omit it until a dedicated ``LayerSavings`` field exists.
 _LAYER_SAVINGS_ATTR: dict[str, str] = {
     "wire": "wire_compression_saved",
     "output": "output_compression_saved",
@@ -159,6 +162,8 @@ def build_layer_comparison(off_leg: BenchmarkLegRecord, on_leg: BenchmarkLegReco
     """Per-layer before/after rows (off = before, on = after)."""
     rows: list[LayerComparisonRow] = []
     for layer in policy.CONTEXT_LAYER_NAMES:
+        if layer not in _LAYER_SAVINGS_ATTR:
+            continue
         before = _savings_value(off_leg.layer_savings, layer)
         after = _savings_value(on_leg.layer_savings, layer)
         row: LayerComparisonRow = {
