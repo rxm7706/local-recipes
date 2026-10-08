@@ -2,8 +2,8 @@
 title: "22.16: A launch without the env on PATH never wastes a finished session"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
+status: 'in-progress'
+baseline_revision: '5c1ff88e5a60bee67e66c10b721fa8fabff0a091'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
