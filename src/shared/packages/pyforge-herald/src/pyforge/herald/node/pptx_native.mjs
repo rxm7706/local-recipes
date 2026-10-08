@@ -29,9 +29,8 @@ pres.layout = "LAYOUT_16x9";
 
 const canvasW = T.canvas.width;
 const slideWIn = pres.presLayout.width;
-const pointsPerInch =
-  pres.presLayout.height + pres.presLayout.width - pres.presLayout.height + 71 + 1;
-const slideWPt = (canvasW * slideWIn * pointsPerInch) / canvasW;
+const pointsPerInch = 71 + 1;
+const slideWPt = slideWIn * pointsPerInch;
 
 function pxToIn(px) {
   return (px * slideWIn) / canvasW;
