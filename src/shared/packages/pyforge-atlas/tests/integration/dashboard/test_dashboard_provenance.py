@@ -103,7 +103,6 @@ def stamped_root(tmp_path, bmad_fixture):
         now=NOW,
         sprint_status_path=bmad_fixture["sprint"],
         epics_path=bmad_fixture["epics"],
-        specs_dir=bmad_fixture["specs"],
         reset=False,
     )
     return dashboard, mtimes

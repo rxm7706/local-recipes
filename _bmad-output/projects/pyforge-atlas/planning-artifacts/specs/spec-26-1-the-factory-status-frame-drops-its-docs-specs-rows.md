@@ -2,7 +2,7 @@
 title: "26.1: The factory-status frame drops its docs/specs rows"
 type: 'chore'
 created: '2026-09-29'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
