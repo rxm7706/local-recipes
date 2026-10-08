@@ -16,13 +16,8 @@ from pyforge.core.league_measure import (
 
 
 def _catalog_snippet(*rows: tuple[str, str]) -> str:
-    header = (
-        "| id | Dimension | Source (already counted) | State | Notes |\n"
-        "|---|---|---|---|---|\n"
-    )
-    body = "".join(
-        f"| `{mid}` | human | source | `{state}` | note |\n" for mid, state in rows
-    )
+    header = "| id | Dimension | Source (already counted) | State | Notes |\n|---|---|---|---|---|\n"
+    body = "".join(f"| `{mid}` | human | source | `{state}` | note |\n" for mid, state in rows)
     return header + body
 
 
@@ -43,9 +38,7 @@ def test_parse_measure_catalog_reads_state_column() -> None:
 
 def test_cite_on_allowed() -> None:
     verdict = validate_measure_cite("warden-verdict", repo_root=Path.cwd())
-    assert verdict == MeasureCiteVerdict(
-        allowed=True, measure_id="warden-verdict", state="on", reason=None
-    )
+    assert verdict == MeasureCiteVerdict(allowed=True, measure_id="warden-verdict", state="on", reason=None)
 
 
 def test_cite_off_refused(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:

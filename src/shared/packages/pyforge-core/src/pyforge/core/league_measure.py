@@ -15,8 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 MEASURE_CATALOG_RELATIVE = Path(
-    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/"
-    "spec-build-league-scorecard/measure-catalog.md"
+    "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-build-league-scorecard/measure-catalog.md"
 )
 
 _VALID_STATES = frozenset({"on", "off", "archived"})
@@ -49,8 +48,7 @@ def resolve_repo_root(start: Path | None = None) -> Path:
         if (candidate / MEASURE_CATALOG_RELATIVE).is_file():
             return candidate
     raise LeagueMeasureError(
-        f"measure catalog not found at {MEASURE_CATALOG_RELATIVE.as_posix()} "
-        f"walking up from {here}"
+        f"measure catalog not found at {MEASURE_CATALOG_RELATIVE.as_posix()} walking up from {here}"
     )
 
 
