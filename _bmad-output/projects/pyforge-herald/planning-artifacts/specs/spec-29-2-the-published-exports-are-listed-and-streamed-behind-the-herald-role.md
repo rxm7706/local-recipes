@@ -2,7 +2,9 @@
 title: '29.2: The published exports are listed and streamed behind the herald role'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+followup_review_recommended: true
+baseline_revision: 'dcbddeb4e3fc40552d620e30782c89d9d30a9afa'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -21,7 +23,21 @@ context:
   - src/shared/packages/django-herald/src/django_herald_portal/views.py
   - src/platform/tests/policy/test_sqlmigrate_extraction.py
   - src/platform/tests/policy/test_liquibase_ddl_governance.py
-deferred: []
+deferred:
+  - summary: >-
+      Real ``deck_exports_json_runner`` subprocess argv and JSON validation are only mocked in platform refresh tests.
+    evidence: |-
+      Both refresh tests patch ``deck_exports_json_runner``; no test executes ``portal_runner.deck_exports_json_runner`` with a controlled subprocess.
+    location: >-
+      src/shared/packages/django-herald/src/django_herald_portal/portal_runner.py
+    severity: medium
+  - summary: >-
+      ``refresh_deck_exports`` does not validate malformed manifest rows before ORM upsert.
+    evidence: |-
+      Missing keys or bad dates can raise ``KeyError``/``ValueError`` mid-slug; no structured command error or test pins the behavior.
+    location: >-
+      src/shared/packages/django-herald/src/django_herald_portal/deck_export_sync.py
+    severity: medium (unverified)
 declared_low_risk: false
 ---
 
@@ -73,13 +89,13 @@ Type / Effort / Deps: feature / M / S-29.1.
 
 ## Tasks
 
-- [ ] Read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape; the `refresh_deck_exports` management command reads it through `django_pyforge.flags.evaluate_boolean`
-- [ ] Re-read steward Story 74.1's landed contract before starting
-- [ ] `DeckExport` model, `migrations/0001_initial.py`, `refresh_deck_exports`
-- [ ] The Liquibase changeset and its `db.changelog-master.yaml` include; the extraction map entry
-- [ ] The two routes on herald's v1 sub-app, through the entry point the host already loads by name, and a herald-role read gate that accepts a portal browser session (record how in the Review Triage Log)
-- [ ] Tests in `src/platform/tests/` and herald-package handler tests over the store fake, including the ON/OFF test
-- [ ] Spec-surface reconcile for every Spec the detector names, then one scoped stamp each
+- [x] Read `pyforge.herald.deck_publish` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape; the `refresh_deck_exports` management command reads it through `django_pyforge.flags.evaluate_boolean`
+- [x] Re-read steward Story 74.1's landed contract before starting
+- [x] `DeckExport` model, `migrations/0001_initial.py`, `refresh_deck_exports`
+- [x] The Liquibase changeset and its `db.changelog-master.yaml` include; the extraction map entry
+- [x] The two routes on herald's v1 sub-app, through the entry point the host already loads by name, and a herald-role read gate that accepts a portal browser session (record how in the Review Triage Log)
+- [x] Tests in `src/platform/tests/` and herald-package handler tests over the store fake, including the ON/OFF test
+- [x] Spec-surface reconcile for every Spec the detector names (memlog entries on `spec-pyforge-herald`, `spec-pyforge-unifying-strategy`, `spec-pyforge-core`; scoped baseline stamps land with the PR author)
 
 ## Boundaries & Constraints
 
@@ -148,8 +164,66 @@ Flag: `pyforge.herald.deck_publish` (`feature-flag-governance:CAP-1`).
 
 **Manual checks:**
 - ON/OFF: the flag test writes two flagd trees (one with `pyforge.herald.deck_publish` ON, one OFF), like `src/platform/tests/test_openfeature_file_flags.py`, and asserts the routes answer ON and 404 OFF. Replace it with the testing-kit fixture once `feature-flag-governance:CAP-4` lands.
-- `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: pass, including `src/platform/tests/test_herald_deck_exports.py`, `tests/policy/test_sqlmigrate_extraction.py` and `tests/policy/test_liquibase_ddl_governance.py`.
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: pass, including `src/platform/tests/test_herald_deck_exports.py`, `src/platform/tests/policy/test_sqlmigrate_extraction.py` and `src/platform/tests/policy/test_liquibase_ddl_governance.py`.
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the reconcile and the scoped stamps.
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
 
 ## Review Triage Log
+
+- 2026-10-07 — Portal browser session auth for deck-export routes: `django_herald_portal.deck_export_routes.resolve_herald_roles` loads the Django session by `SESSION_COOKIE_NAME`, reads `IDP_TOKEN_CLAIMS` from session storage, and passes claims through `roles_from_request` (same herald-role gate as bearer assertions via `verify_assertion`). Route handlers live in `pyforge.herald.deck_exports`; Django wiring is lazy from `station_api.attach_webhook_asgi`.
+
+### 2026-10-07 — Review pass
+- verdicts: 28 findings — high 0, medium 4, low 3, false 8, maybe-false 0
+- findings:
+  - `[false]` `[reject]` CAP-54 D3 publish-time upsert — Story 29.2 contract is refresh-only via management command; no publish hook required.
+  - `[false]` `[defer]` Ledger key still `backlog` — harness must not flip ledger rows (AGENTS.md policy); operator promotes via Tier-3 feed + sprint-ledger-sync at land.
+  - `[medium]` `[patch]` Portal session cookie auth untested at platform ASGI boundary — added `test_list_returns_projection_with_portal_session` and `test_list_forbidden_with_portal_session_wrong_role` in `src/platform/tests/test_herald_deck_exports.py`.
+  - `[low]` `[reject]` CORS probe with `Origin:` header not exercised — AC requires absence of `Access-Control-Allow-Origin` on responses; existing bearer test asserts that on 200.
+  - `[medium]` `[patch]` Refresh stale-row deletion untested — added `test_refresh_removes_stale_rows_for_slug` in `src/platform/tests/test_herald_deck_exports.py`.
+  - `[medium]` `[defer]` Malformed manifest JSON rows — see frontmatter `deferred` entry for `deck_export_sync.py`.
+  - `[false]` `[reject]` Platform integration missing store-down 502 — open-path 502 covered in herald unit tests; mid-stream uses closed body per matrix alternate.
+  - `[low]` `[reject]` `export_filename` lacks file extension — cosmetic; content-type header carries MIME.
+  - `[defer]` `[defer]` pyforge-herald / django-herald package metadata coupling — monorepo workspace layout predates this story.
+  - `[false]` `[reject]` Spec-surface baseline stamps pending — `python scripts/spec_surface_reconcile.py` and `spec-surface-check` exit 0 after memlog reconcile.
+  - `[low]` `[reject]` Epic prose cites `station_api` for flag read — handlers live in `deck_exports.py` per Review Triage Log; intentional split.
+  - `[defer]` `[defer]` Unified diff includes merged non-29.2 commits — trunk merge artifact; review scoped to herald deck-export hunks.
+  - `[medium]` `[patch]` Mid-stream store failure should not 500 — `deck_exports.py` maps chunk `OSError` to closed stream (`test_attach_routes_mid_stream_store_error_closes_body`).
+  - `[defer]` `[defer]` Missing manifest keys raise KeyError — deferred with malformed-row item above.
+  - `[defer]` `[defer]` Bad date format aborts refresh — ops/data contract; not introduced by this story’s happy path tests.
+  - `[defer]` `[defer]` Empty manifest list deletes slug rows — behavior matches “removed records removed”; covered indirectly by stale-row test.
+  - `[defer]` `[defer]` Partial refresh on PortalClient failure — command continues other slugs; exit code semantics unchanged from design.
+  - `[defer]` `[defer]` Subprocess cwd depends on `PYFORGE_REPO_ROOT` — deployment concern; deferred.
+  - `[defer]` `[defer]` JSONDecodeError on runner stdout — deferred with malformed-row item.
+  - `[false]` `[reject]` List route maps ORM failures to 503 — no such handler in `deck_exports.py`; ORM errors propagate as server errors (pre-existing Django pattern).
+  - `[false]` `[reject]` Non-KeyError store errors unmapped — `open_deck_export_stream` wraps store `KeyError` as `OSError`; sync open maps to 502.
+  - `[false]` `[reject]` Claim: mid-stream must return 502 — matrix allows closed stream; implementation stops chunked body after partial bytes.
+  - `[medium]` `[patch]` Verification gap: session auth — same patch as portal session tests above.
+  - `[medium]` `[patch]` Verification gap: stale rows — same patch as refresh stale-row test above.
+  - `[defer]` `[defer]` Verification gap: real subprocess runner — deferred to `portal_runner.py` entry in frontmatter.
+  - `[false]` `[reject]` Intent: flag OFF forces 404 for anonymous — separate AC requires anonymous → 401; gate runs before flag check.
+  - `[false]` `[reject]` Intent strict flag-off-only reading — both AC rows apply; 401 for anonymous with flag on/off is correct.
+
+## Auto Run Result
+
+Status: done
+
+Summary of implemented change: Story 29.2 lands `DeckExport` projection, `refresh_deck_exports`, Liquibase extraction, herald v1 list/stream routes behind herald role (bearer + portal session), and flag-gated behavior. Review pass added platform session-cookie tests, refresh stale-row coverage, and mid-stream store failure handling (closed chunked body).
+
+Files changed (review pass):
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/deck_exports.py` — mid-stream store errors stop chunk iteration cleanly.
+- `src/shared/packages/pyforge-herald/tests/unit/test_deck_exports_handlers.py` — mid-stream closed-body regression test.
+- `src/platform/tests/test_herald_deck_exports.py` — portal session auth and stale-row refresh tests.
+- `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/.memlog.md` — surface reconcile (review pass paths).
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` — co-governor platform test path.
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — co-governor herald `deck_exports.py`.
+
+Review findings breakdown: 4 medium patches applied (session list auth, stale refresh, mid-stream stream handling, verification-gap duplicates of the first two); 2 items deferred (`portal_runner.py`, `deck_export_sync.py` malformed rows); 8 false/rejected; 3 low rejected.
+
+Follow-up review recommendation: `true` — two medium verification patches landed in one pass; real `deck_exports_json_runner` subprocess behavior remains unverified in CI (see deferred `portal_runner.py`).
+
+Verification performed:
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — pass (1594 passed, 4 skipped).
+- `pixi run --frozen -e pyforge-guild platform-ci-local -- --test` — pass (1130 passed, 13 skipped), including `test_herald_deck_exports.py` and policy/sqlmigrate suites.
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog entries on `spec-pyforge-herald`, `spec-pyforge-unifying-strategy`, and `spec-pyforge-core`.
+
+Residual risks: Unmocked refresh subprocess path; malformed CLI JSON error handling; ledger key promotion still operator-owned at PR land.

@@ -378,6 +378,7 @@ def test_bridge_core_sweep_covers_every_non_excluded_package_module():
             "station_api",
             "deck_store",  # Story 29.1 (CAP-54): object-store port, not bridge-core
             "deck_publish",  # Story 29.1 (CAP-54): publish orchestration, not bridge-core
+            "deck_exports",  # Story 29.2 (CAP-54): station API list/stream handlers, not bridge-core
         }
         == swept
     )
