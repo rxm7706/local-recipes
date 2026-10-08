@@ -839,6 +839,22 @@ def test_sync_all_auth_error_propagates_and_aborts_the_whole_run(tmp_path: Path)
         sync_all(UnauthorizedTransport(), slug=None, repo_root=tmp_path, **_seams())
 
 
+def test_sync_all_dry_run_auth_error_propagates(tmp_path: Path):
+    """``AuthError`` during dry-run preview must propagate, not become a
+    per-deck conflict (``AuthError`` is a ``TransportError`` subclass)."""
+
+    class UnauthorizedTransport(FakeSyncTransport):
+        def read_file(self, **kwargs):
+            self.read_file_calls.append(kwargs)
+            raise AuthError("/design-login required")
+
+    _make_deck_dir(tmp_path, "pyforge-warden")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+
+    with pytest.raises(AuthError):
+        sync_all(UnauthorizedTransport(), slug="pyforge-warden", repo_root=tmp_path, dry_run=True, **_seams())
+
+
 def test_sync_all_publish_failure_still_returns_every_decks_report(tmp_path: Path):
     """Review fix: a publish failure must not discard every already-
     gathered per-deck report."""
@@ -976,8 +992,8 @@ def test_sync_all_dry_run_still_reports_an_unseeded_deck_as_skipped(tmp_path: Pa
 
 
 def test_sync_all_second_run_reports_unchanged_with_zero_write_calls(tmp_path: Path):
-    """The core AC: once every tracked etag is already current, nothing new
-    to refresh/derive/push exists, a second run is a pure no-op report."""
+    """Steady-state run: every tracked etag already current → unchanged report
+    with no Design writes and no fleet publish."""
     _make_deck_dir(tmp_path, "pyforge-warden")
     _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
     transport = FakeSyncTransport(read_file_answers=_UNCHANGED_PROTOTYPE)
@@ -997,6 +1013,52 @@ def test_sync_all_second_run_reports_unchanged_with_zero_write_calls(tmp_path: P
     assert deck.labels() == ("unchanged",)
     assert transport.write_files_calls == []
     assert publisher.calls == []
+
+
+def test_sync_all_two_consecutive_runs_second_unchanged_after_mutating_first(
+    tmp_path: Path,
+):
+    """Two invocations: run 1 pulls a moved etag and updates bridge state;
+    run 2 over the same tree reports unchanged with zero new Design writes."""
+    deck_dir = _make_deck_dir(tmp_path, "pyforge-warden")
+    (deck_dir / "project").mkdir()
+    (deck_dir / "src" / "marp").mkdir(parents=True)
+    filename = "pyforge-warden-infographic-standalone-2026-09-18.html"
+    (deck_dir / "src" / "marp" / filename).write_text("<html>v1</html>", encoding="utf-8")
+    _seed_state(tmp_path, "pyforge-warden", etags={PROTOTYPE_ARTIFACT_KEY: "E1"})
+    refresher = FakeFactsRefresher(overrode=0)
+    deriver = FakeDeriver(changed=False)
+    publisher = FakeSitePublisher()
+
+    first = sync_all(
+        FakeSyncTransport(
+            read_file_answers=FileRead(
+                path="x", etag="E2", body="<html>new</html>", unchanged=False
+            ),
+            rendered_bytes={filename: b"<html>v1</html>"},
+        ),
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        **_seams(facts_refresher=refresher, deriver=deriver, site_publisher=publisher),
+    )
+    assert first.decks[0].pulled == (PROTOTYPE_ARTIFACT_KEY,)
+    assert publisher.calls == [tmp_path]
+
+    second_transport = FakeSyncTransport(
+        read_file_answers=FileRead(path="x", etag="E2", body=None, unchanged=True),
+        rendered_bytes={filename: b"<html>v1</html>"},
+    )
+    second = sync_all(
+        second_transport,
+        slug="pyforge-warden",
+        repo_root=tmp_path,
+        **_seams(facts_refresher=refresher, deriver=deriver, site_publisher=publisher),
+    )
+
+    assert second.decks[0].unchanged is True
+    assert second.decks[0].labels() == ("unchanged",)
+    assert second_transport.write_files_calls == []
+    assert publisher.calls == [tmp_path]
 
 
 # --- labels() vocabulary -------------------------------------------------------
