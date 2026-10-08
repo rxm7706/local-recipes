@@ -170,3 +170,31 @@ class CorridorLoad(models.Model):
 
     def __str__(self) -> str:
         return f"{self.direction}:{self.waybill} ({self.batch_sha[:8]})"
+
+
+class QuarantineShelfRow(models.Model):
+    """Story 61.5 (CAP-5): one inbound row waiting for a human to link nicknames.
+
+    ``title`` is stored for display only — never matched for linking (no
+    title-match endpoint). ``passport_id`` is set when the row arrived inside
+    the configured missing-passport window; after the window the row still
+    lands here with ``passport_id`` null until a human overrides.
+    """
+
+    row_id = models.CharField(max_length=64, primary_key=True)
+    vendor_id = models.CharField(max_length=64, db_index=True)
+    jira_key = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    github_item_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    title = models.CharField(max_length=512, blank=True, default="")
+    passport_id = models.CharField(max_length=64, blank=True, null=True, db_index=True)
+    arrived_at = models.DateTimeField(db_index=True)
+    linked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-arrived_at", "-row_id"]
+        verbose_name = "Quarantine shelf row"
+        verbose_name_plural = "Quarantine shelf rows"
+
+    def __str__(self) -> str:
+        pid = (self.passport_id or "no-passport")[:8]
+        return f"{self.vendor_id}:{self.row_id[:8]} ({pid})"

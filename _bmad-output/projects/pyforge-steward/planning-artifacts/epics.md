@@ -4151,7 +4151,7 @@ the existing Postgres app / a steward load duty.
 **When** this story lands
 **Then** first 14 days (config) mint into quarantine; after that, no mint
 **And** no title-match endpoint exists
-**Status:** backlog
+**Status:** done
 
 ## Epic 62: Published measure catalog (spec-build-league-scorecard CAP-1..145)
 
@@ -4190,7 +4190,7 @@ empty later slot — no story. Do not invent weights. Do not flip any Epic 44
 **When** this story lands
 **Then** citing `off`, `archived`, or an unknown id is a refuse
 **And** Hub Outcome Guards are not implemented here — they read later
-**Status:** backlog
+**Status:** done
 
 
 ## Epic 63: The Guild environment — `pyforge-guild` is the default for every agent (spec-pyforge-steward CAP-5)

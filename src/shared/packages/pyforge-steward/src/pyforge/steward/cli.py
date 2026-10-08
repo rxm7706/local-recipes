@@ -47,6 +47,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 #   Story 61.4 added the outbound default-deny slice+signer gate),
 # `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint),
 # `glass` (Epic 61, Story 61.3 — as-of glass over the inbound corridor, standup/shipped + flag-gated export),
+# `quarantine` (Epic 61, Story 61.5 — missing-passport mint-then-reject shelf),
 # `session` (Epic 63, Story 63.4 — one verdict for the session preconditions, run from every entry point).
 # `deck-drift` (Story 59.4 / spec-vocabulary-one-name-one-job CAP-5 — flags silent
 #   size/etag drift on a pulled Design deck artifact; Herald owns the pull itself).
@@ -75,6 +76,7 @@ DUTIES: tuple[str, ...] = (
     "load",
     "passport",
     "glass",
+    "quarantine",
     "session",
     "deck-drift",
 )
@@ -112,6 +114,10 @@ _HELP = {
     "passport": (
         "vendor work-passport identity -- mints a FRESH UUID per inbound key, "
         "never merges by Jira key or GitHub number (Story 61.2)"
+    ),
+    "quarantine": (
+        "quarantine shelf for inbound rows without a passport -- mint during the "
+        "configured window, then reject mint (Story 61.5)"
     ),
     "ledger-query": (
         "pluggable estate sprint ledger query & telemetry reporting "
@@ -246,6 +252,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_passport_subparsers(duty_parser)
         elif name == "glass":
             _add_glass_subparsers(duty_parser)
+        elif name == "quarantine":
+            _add_quarantine_subparsers(duty_parser)
         elif name == "session":
             _add_session_subparsers(duty_parser)
         elif name == "deck-drift":
@@ -725,6 +733,40 @@ def _add_passport_subparsers(passport_parser: argparse.ArgumentParser) -> None:
     mint.add_argument("--jira-key", default=None, metavar="KEY", help="Jira issue key nickname (optional)")
     mint.add_argument("--github-item-id", default=None, metavar="ID", help="GitHub item ID nickname (optional)")
     mint.add_argument("--title", default="", metavar="TEXT", help="a human-readable title (optional)")
+
+
+def _add_quarantine_subparsers(quarantine_parser: argparse.ArgumentParser) -> None:
+    """Story 61.5: bare (refuses) / ``admit`` / ``shelf``."""
+    quarantine_parser.add_argument(
+        "--json", action="store_true", default=False, help="emit JSON instead of human-readable text"
+    )
+    quarantine_parser.add_argument(
+        "--corridor",
+        default=None,
+        metavar="DIR",
+        help="corridor directory holding corridor.yaml (default: the tracked estate corridor)",
+    )
+    quarantine_subs = quarantine_parser.add_subparsers(dest="quarantine_verb", metavar="{admit,shelf}")
+    admit = quarantine_subs.add_parser(
+        "admit", help="admit an inbound row without a passport onto the quarantine shelf"
+    )
+    admit.add_argument("--vendor-id", required=True, metavar="NAME")
+    admit.add_argument("--jira-key", default=None, metavar="KEY")
+    admit.add_argument("--github-item-id", default=None, metavar="ID")
+    admit.add_argument("--title", default="", metavar="TEXT")
+    admit.add_argument(
+        "--arrived-at",
+        default=None,
+        metavar="ISO8601",
+        help="when the row arrived (default: now); used for the missing-passport window",
+    )
+    shelf = quarantine_subs.add_parser("shelf", help="list unlinked rows on the quarantine shelf")
+    shelf.add_argument(
+        "--include-linked",
+        action="store_true",
+        default=False,
+        help="include rows a human has already linked",
+    )
 
 
 def _add_glass_subparsers(glass_parser: argparse.ArgumentParser) -> None:
@@ -1532,6 +1574,10 @@ def resolve_duty(name: str) -> Duty:
         from .glass import GlassDuty
 
         return GlassDuty()
+    if name == "quarantine":
+        from .quarantine import QuarantineDuty
+
+        return QuarantineDuty()
     if name == "session":
         from .session import SessionDuty
 

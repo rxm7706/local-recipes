@@ -134,6 +134,7 @@ def test_load_config_happy_path_real_tracked_corridor_yaml():
     assert states == {"app-upload": "on", "shared-folder": "off", "email": "off"}
     assert config.transport("app-upload").state == "on"
     assert config.transport("does-not-exist") is None
+    assert config.quarantine.missing_passport_window_days == 14
 
 
 # -- compute_batch_sha --

@@ -6240,3 +6240,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-61-5: This PR touches only non-recipe paths and needs the `maintenance` label at PR open time.
+
+- source_spec: `planning-artifacts/specs/spec-61-5-quarantine-mint-then-reject.md`
+  summary: This PR touches only non-recipe paths and needs the `maintenance` label at PR open time.
+  evidence: Diff is under src/shared/packages/pyforge-steward and planning memlogs only. AGENTS.md requires `gh pr edit <n> --repo rxm7706/local-recipes --add-label maintenance`.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/quarantine.py
+  origin: spec-deferred 482df677d017 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
