@@ -3815,7 +3815,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_roster.py": "1b2280e6e7323e397d3e46a4a1a2593f8a516e08",
    "src/shared/packages/pyforge-core/tests/unit/test_station_port.py": "6fa706511e8f120dfefa81ee422a9ac28f28e8c1",
    "src/shared/packages/pyforge-core/tests/unit/test_verdict.py": "fe7f212927fc9a6f014d4255fa349c61fb2fa2d7",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "65e2835d6c74fdc9a90c498a4d2c0a711083a4d4",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "239366ae0864b74f6fbaa3ff46c843665d48d5a8",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "d45eb6925f8118e33d2a7cc72865d6ef77b468f1",
    "src/shared/packages/pyforge-marshal/.gitignore": "63c59419f6a5a17602e6cecfe6d44e3d491c3c63",
    "src/shared/packages/pyforge-marshal/README.md": "b81bf9fefb27c2edfe34d83e1bec222aacb8c822",
@@ -4257,7 +4257,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "a73e0d308f12268150115da79f7e490308913439"
+  "memlog": "22953798230c04b2e5a04af124746cf69441a9bb"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
