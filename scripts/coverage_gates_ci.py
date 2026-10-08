@@ -24,6 +24,7 @@ import re
 import subprocess
 import sys
 import tempfile
+from collections.abc import Sequence
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -173,7 +174,7 @@ def _run_pytest_cov(
         *[str(p) for p in test_paths],
         "-q",
         "-m",
-        "not slow",
+        GATE_MARKER_EXPR,
         f"--cov={cov_mod}",
         "--cov-branch",
         f"--cov-report=json:{report}",
@@ -267,6 +268,64 @@ def _evaluate(
     return 0 if ok else 1
 
 
+GATE_MARKER_EXPR = "not slow"
+
+
+def _resolve_changed_paths(base: str, head: str, paths_file: str | None) -> list[str]:
+    if paths_file:
+        return [
+            line.strip()
+            for line in Path(paths_file).read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+    normalized = _normalize_base(base)
+    paths = _git_diff_names(normalized, head)
+    return _drop_format_only(paths, normalized, head)
+
+
+def build_coverage_plan(
+    *,
+    base: str,
+    head: str,
+    paths_file: str | None,
+    suites: Sequence[str],
+    coverage_gates_stations: str | None = None,
+) -> dict[str, object]:
+    """JSON-serializable plan of pytest runs the driver would make (Story 71.4)."""
+    paths = _resolve_changed_paths(base, head, paths_file)
+    stations = sorted(touched_stations(paths))
+    allow_raw = (coverage_gates_stations or os.environ.get("COVERAGE_GATES_STATIONS", "")).strip()
+    allow = {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
+    runs: list[dict[str, object]] = []
+    for station in stations:
+        if station not in STATIONS:
+            continue
+        if allow is not None and station not in allow:
+            continue
+        root = package_root(REPO, station)
+        src = package_src(REPO, station)
+        if not src.is_dir():
+            continue
+        for suite in suites:
+            if suite not in ("unit", "integration"):
+                continue
+            test_paths = _suite_test_paths(root, suite)
+            if not test_paths:
+                continue
+            runs.append(
+                {
+                    "station": station,
+                    "suite": suite,
+                    "test_paths": [str(p.relative_to(REPO)) for p in test_paths],
+                    "marker_expr": GATE_MARKER_EXPR,
+                }
+            )
+    return {
+        "touched_stations": stations,
+        "runs": runs,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -292,20 +351,33 @@ def main(argv: list[str] | None = None) -> int:
         default="unit,integration",
         help="Comma-separated suites to gate (default: unit,integration)",
     )
+    parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="Print the stations and suites that would run as JSON; do not invoke pytest",
+    )
     args = parser.parse_args(argv)
 
-    if args.paths_file:
-        paths = [
-            line.strip()
-            for line in Path(args.paths_file).read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ]
-    else:
-        paths = _git_diff_names(_normalize_base(args.base), args.head)
-        paths = _drop_format_only(paths, _normalize_base(args.base), args.head)
-
+    paths = _resolve_changed_paths(args.base, args.head, args.paths_file)
     stations = sorted(touched_stations(paths))
     modules = sorted(touched_source_modules(paths))
+
+    suites = [s.strip() for s in args.suites.split(",") if s.strip()]
+    for suite in suites:
+        if suite not in ("unit", "integration"):
+            print(f"unknown suite {suite!r}; expected unit|integration", flush=True)
+            return 2
+
+    if args.plan:
+        plan = build_coverage_plan(
+            base=args.base,
+            head=args.head,
+            paths_file=args.paths_file,
+            suites=suites,
+        )
+        print(json.dumps(plan, sort_keys=True), flush=True)
+        return 0
+
     print(f"touched stations: {stations or '(none)'}", flush=True)
     print(f"touched source modules: {modules or '(none)'}", flush=True)
 
@@ -313,7 +385,6 @@ def main(argv: list[str] | None = None) -> int:
         print("coverage gates: no pyforge station packages touched; OK", flush=True)
         return 0
 
-    suites = [s.strip() for s in args.suites.split(",") if s.strip()]
     # Optional allow-list (CI home env often only installs one station).
     allow_raw = os.environ.get("COVERAGE_GATES_STATIONS", "").strip()
     allow = {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
