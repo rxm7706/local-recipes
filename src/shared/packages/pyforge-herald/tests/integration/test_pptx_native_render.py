@@ -267,7 +267,7 @@ def test_render_title_not_bold_when_heading_weight_below_600(tmp_path: Path, _no
     prs = Presentation(str(result.output_path))
     title_run = _first_run_with_text(prs.slides[0], "Light weight")
     assert title_run is not None
-    assert title_run.font.bold is False
+    assert not title_run.font.bold
 
 
 @pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")

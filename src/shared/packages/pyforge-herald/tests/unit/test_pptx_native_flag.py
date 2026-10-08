@@ -47,6 +47,7 @@ def test_pptx_native_flag_off_lists_disabled_and_exits_usage(tmp_path: Path, mon
 
 
 def test_pptx_native_writes_when_flag_on(tmp_path: Path, monkeypatch):
+    monkeypatch.setattr("pyforge.herald.stamps.write_stamp", lambda *_a, **_k: None)
     if shutil.which("node") is None:
         pytest.skip("node not on PATH")
     prefix = __import__("os").environ.get("CONDA_PREFIX", "")
