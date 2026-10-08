@@ -10,6 +10,7 @@ import re
 import shutil
 import subprocess
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -17,7 +18,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pages_second_host import (  # noqa: E402
     SITE_URL_MARKER,
-    is_navigation_link,
     resolve_from_process_environment,
     site_origin,
 )
@@ -27,20 +27,78 @@ DASHBOARD_PREFIX = "dashboard"
 ROOT_HERALD_INDEX = f"{HERALD_PREFIX}/index.html"
 KEDRO_VIZ_REDIRECT = "kedro-viz/index.html"
 
+# Vendored roots the cross-origin check does not judge (AD-21 rule 5, "re-vendor, never fork"):
+# a vendored upstream bundle stays byte-identical to its recorded build, so pages-check cannot
+# ask it to drop its own third-party references. Each root is named here with its reason --
+# never a blanket skip -- and `check` reports every root it exempted and what it found there.
+VENDORED_ROOTS: dict[str, str] = {
+    f"{DASHBOARD_PREFIX}/kedro-viz/": (
+        "Kedro-Viz static build, vendored from atlas viz-publish-stage "
+        "via docs/dashboard/kedro-viz/"
+    ),
+}
+
 _HREF_SRC = re.compile(
     r"""(?:href|src)\s*=\s*["']([^"']+)["']""",
     re.IGNORECASE,
 )
-_STYLE_URL = re.compile(
-    r"""url\(\s*["']?(https?://[^"')]+)["']?\s*\)""",
+
+# Cross-origin check (Story 31.1, AD-21 amended: no runtime cross-origin call). Only what the
+# browser fetches by itself when the page loads counts: stylesheets, scripts, images, media,
+# frames, fonts, CSS url()/@import, resource hints (preload, prefetch, preconnect), fetch( and
+# XHR. A navigation link (<a href>, <area href>) and a non-loading <link> rel (canonical,
+# alternate, author, ...) passes, unless it is an absolute internal link to the other host.
+_LOADING_LINK_RELS = frozenset(
+    {
+        "stylesheet",
+        "icon",
+        "apple-touch-icon",
+        "apple-touch-icon-precomposed",
+        "mask-icon",
+        "manifest",
+        "preload",
+        "prefetch",
+        "modulepreload",
+        "prerender",
+        "preconnect",
+        "dns-prefetch",
+    }
+)
+_LOADING_ATTRS: dict[str, tuple[tuple[str, str], ...]] = {
+    "script": (("src", "script"),),
+    "img": (("src", "image"), ("srcset", "image")),
+    "input": (("src", "image"),),
+    "source": (("src", "media"), ("srcset", "image")),
+    "video": (("src", "media"), ("poster", "image")),
+    "audio": (("src", "media"),),
+    "track": (("src", "media"),),
+    "iframe": (("src", "frame"),),
+    "frame": (("src", "frame"),),
+    "embed": (("src", "embed"),),
+    "object": (("data", "embed"),),
+    "image": (("href", "image"), ("xlink:href", "image")),  # SVG <image>
+    "use": (("href", "image"), ("xlink:href", "image")),  # SVG <use>
+}
+_FONT_SUFFIXES = (".woff", ".woff2", ".ttf", ".otf", ".eot")
+_CSS_REF = re.compile(
+    r"""@import\s+(?:url\(\s*)?["']?((?:https?:)?//[^"')\s;]+)"""
+    r"""|url\(\s*["']?((?:https?:)?//[^"')\s]+)""",
     re.IGNORECASE,
 )
 _FETCH_URL = re.compile(
-    r"""\bfetch\s*\(\s*["'](https?://[^"']+)["']""",
+    r"""\bfetch\s*\(\s*["'`]((?:https?:)?//[^"'`]+)["'`]""",
     re.IGNORECASE,
 )
 _XHR_OPEN = re.compile(
-    r"""\.open\s*\(\s*["'][A-Z]+["']\s*,\s*["'](https?://[^"']+)["']""",
+    r"""\.open\s*\(\s*["'][A-Z]+["']\s*,\s*["'`]((?:https?:)?//[^"'`]+)["'`]""",
+    re.IGNORECASE,
+)
+_JS_SRC_SET = re.compile(
+    r"""(?:\.src\s*=\s*|\bsetAttribute\(\s*["']src["']\s*,\s*)["'`]((?:https?:)?//[^"'`\s]+)""",
+    re.IGNORECASE,
+)
+_JS_TAG_FRAGMENT = re.compile(
+    r"""<(?:a|area|link|script|img|input|source|video|audio|track|iframe|frame|embed|object|image|use)\b[^<>]*>""",
     re.IGNORECASE,
 )
 
@@ -73,8 +131,6 @@ def redirect_html(target: str) -> str:
 
 def _relative_url(from_file: Path, to_file: Path) -> str:
     """Relative URL from ``from_file``'s directory to ``to_file`` (POSIX)."""
-    import os
-
     return os.path.relpath(to_file, start=from_file.parent).replace("\\", "/")
 
 
@@ -200,7 +256,7 @@ def _resolve_in_artifact(base: Path, raw: str, artifact_root: Path) -> Path | No
     if raw.startswith(("mailto:", "tel:", "javascript:", "data:")):
         return None
     parsed = urlparse(raw)
-    if parsed.scheme in ("http", "https"):
+    if parsed.scheme in ("http", "https") or parsed.netloc:  # off-site, incl. //host/...
         return None
     artifact_root = artifact_root.resolve()
     if raw.startswith("/"):
@@ -230,76 +286,199 @@ def _should_check_page_links(rel_posix: str) -> bool:
     return True
 
 
-def _report_cross_origin(rel_file: str, kind: str, url: str, origin: str) -> None:
-    print(
-        f"assemble_pages: cross-origin {kind}: {rel_file} -> {url!r} (expected origin {origin})",
-        file=sys.stderr,
-    )
-    raise SystemExit(1)
+def _absolute_url(raw: str) -> str | None:
+    """``raw`` as an absolute http(s) URL, or None when it is relative, ``data:`` and the like."""
+    url = raw.strip()
+    if url.startswith("//"):
+        return f"https:{url}"
+    if url.lower().startswith(("http://", "https://")):
+        return url
+    return None
 
 
-def _check_absolute_internal_href(
-    rel_file: str, href: str, configured_origin: str, public_origin: str
-) -> None:
-    if is_navigation_link(href):
-        return
-    parsed = urlparse(href)
-    if parsed.scheme not in ("http", "https"):
-        return
-    href_origin = site_origin(href)
-    if href_origin == configured_origin:
-        return
-    if href_origin == public_origin and configured_origin != public_origin:
-        print(
-            f"assemble_pages: absolute internal link to other host: {rel_file} -> {href!r}",
-            file=sys.stderr,
-        )
-        raise SystemExit(1)
+def _origin_of(url: str) -> str:
+    try:
+        return site_origin(url)
+    except ValueError:  # an unparseable port: never the configured origin
+        return url
 
 
-def _check_cross_origin_and_hosts(artifact_root: Path, site_url: str) -> None:
+def _srcset_urls(value: str) -> list[str]:
+    return [part.split()[0] for part in value.split(",") if part.strip()]
+
+
+def _link_kind(rels: set[str], attrs: dict[str, str]) -> str:
+    if "stylesheet" in rels:
+        return "stylesheet"
+    if rels & {"preconnect", "dns-prefetch"}:
+        return "preconnect"
+    if rels & {"preload", "prefetch", "modulepreload", "prerender"}:
+        return "font" if attrs.get("as", "").lower() == "font" else "preload"
+    if "manifest" in rels:
+        return "manifest"
+    return "icon"
+
+
+class _ResourceScanner(HTMLParser):
+    """Sort one HTML document's URLs into what the browser loads and what only links."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.loads: list[tuple[str, str]] = []  # (kind, url) the browser fetches on load
+        self.links: list[str] = []  # navigation and non-loading <link> hrefs
+        self.css: list[str] = []  # <style> bodies and style="" attributes
+        self.js: list[str] = []  # inline <script> bodies
+        self._body: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = {name: value for name, value in attrs if value is not None}
+        loading = _LOADING_ATTRS.get(tag, ())
+        if tag == "link":
+            href = values.get("href")
+            rels = set(values.get("rel", "").lower().split())
+            if href and rels & _LOADING_LINK_RELS:
+                self.loads.append((_link_kind(rels, values), href))
+            elif href:
+                self.links.append(href)
+        for attr, kind in loading:
+            value = values.get(attr)
+            if value:
+                urls = _srcset_urls(value) if attr == "srcset" else [value]
+                self.loads.extend((kind, url) for url in urls)
+        if tag != "link":
+            loading_names = {attr for attr, _ in loading}
+            for attr in ("href", "xlink:href"):
+                if values.get(attr) and attr not in loading_names:
+                    self.links.append(values[attr])
+        if values.get("style"):
+            self.css.append(values["style"])
+        if tag == "style":
+            self._body = "style"
+        elif tag == "script" and "src" not in values:
+            self._body = "script"
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("script", "style"):
+            self._body = None
+
+    def handle_data(self, data: str) -> None:
+        if self._body == "style":
+            self.css.append(data)
+        elif self._body == "script":
+            self.js.append(data)
+
+
+def _css_loads(text: str) -> list[tuple[str, str]]:
+    loads: list[tuple[str, str]] = []
+    for match in _CSS_REF.finditer(text):
+        imported, url = match.group(1), match.group(2)
+        if imported:
+            loads.append(("stylesheet", imported))
+        elif url:
+            path = urlparse(_absolute_url(url) or url).path.lower()
+            loads.append(("font" if path.endswith(_FONT_SUFFIXES) else "css url()", url))
+    return loads
+
+
+def _js_scan(text: str) -> tuple[list[tuple[str, str]], list[str]]:
+    text = text.replace('\\"', '"').replace("\\'", "'").replace("\\/", "/")
+    loads: list[tuple[str, str]] = []
+    links: list[str] = []
+    loads.extend(("fetch", m.group(1)) for m in _FETCH_URL.finditer(text))
+    loads.extend(("xhr", m.group(1)) for m in _XHR_OPEN.finditer(text))
+    loads.extend(("dynamic src", m.group(1)) for m in _JS_SRC_SET.finditer(text))
+    for match in _JS_TAG_FRAGMENT.finditer(text):  # HTML built in a JS string
+        fragment = _ResourceScanner()
+        fragment.feed(match.group(0))
+        fragment.close()
+        loads.extend(fragment.loads)
+        links.extend(fragment.links)
+    loads.extend(_css_loads(text))  # CSS-in-JS
+    return loads, links
+
+
+def _scan_file(path: Path) -> tuple[list[tuple[str, str]], list[str]]:
+    """``(loads, links)`` for one artifact file: loads are ``(kind, url)`` the browser fetches."""
+    text = path.read_text(encoding="utf-8", errors="replace")
+    suffix = path.suffix.lower()
+    if suffix == ".css":
+        return _css_loads(text), []
+    if suffix in (".js", ".mjs"):
+        return _js_scan(text)
+    scanner = _ResourceScanner()
+    scanner.feed(text)
+    scanner.close()
+    loads = list(scanner.loads)
+    links = list(scanner.links)
+    for css in scanner.css:
+        loads.extend(_css_loads(css))
+    for js in scanner.js:
+        js_loads, js_links = _js_scan(js)
+        loads.extend(js_loads)
+        links.extend(js_links)
+    return loads, links
+
+
+def _vendored_root(rel_file: str) -> str | None:
+    return next((root for root in VENDORED_ROOTS if rel_file.startswith(root)), None)
+
+
+def cross_origin_findings(
+    artifact_root: Path, site_url: str
+) -> tuple[list[str], dict[str, tuple[int, list[str]]]]:
+    """Every cross-origin finding outside the vendored roots, and what each vendored root held.
+
+    Returns ``(findings, exempt)``: ``findings`` are report lines; ``exempt`` maps each
+    :data:`VENDORED_ROOTS` entry to ``(files seen, cross-origin URLs found there)``.
+    """
     from pages_second_host import public_site_url
 
     configured_origin = site_origin(site_url)
     public_origin = site_origin(public_site_url())
+    findings: list[str] = []
+    exempt: dict[str, tuple[int, list[str]]] = {root: (0, []) for root in VENDORED_ROOTS}
 
     for path in _iter_checkable_files(artifact_root):
         rel_file = _artifact_path(path, artifact_root)
-        text = path.read_text(encoding="utf-8", errors="replace")
+        loads, links = _scan_file(path)
+        hits: list[tuple[str, str]] = []  # (url, report line)
+        for kind, raw in loads:
+            url = _absolute_url(raw)
+            if url is not None and _origin_of(url) != configured_origin:
+                where = f"{rel_file} -> {raw!r} (expected origin {configured_origin})"
+                hits.append((url, f"assemble_pages: cross-origin {kind}: {where}"))
+        if configured_origin != public_origin:
+            for raw in links:
+                url = _absolute_url(raw)
+                if url is not None and _origin_of(url) == public_origin:
+                    where = f"{rel_file} -> {raw!r}"
+                    hits.append(
+                        (url, f"assemble_pages: absolute internal link to other host: {where}")
+                    )
+        root = _vendored_root(rel_file)
+        if root is None:
+            findings.extend(line for _, line in hits)
+        else:  # reported as exempt, never judged (AD-21 rule 5)
+            files, urls = exempt[root]
+            exempt[root] = (files + 1, urls + [url for url, _ in hits])
+    return findings, exempt
 
-        for match in _HREF_SRC.finditer(text):
-            raw = match.group(1)
-            if not raw.startswith(("http://", "https://")):
-                continue
-            if is_navigation_link(raw):
-                continue
-            token = match.group(0).lower()
-            href_origin = site_origin(raw)
-            if href_origin == configured_origin:
-                continue
-            if "href" in token:
-                _check_absolute_internal_href(rel_file, raw, configured_origin, public_origin)
-            kind = "stylesheet" if path.suffix.lower() == ".css" else "script"
-            if "href" in token and path.suffix.lower() == ".html":
-                kind = "stylesheet"
-            elif "src" in token:
-                kind = "image" if path.suffix.lower() in {".html", ".js"} else "script"
-            _report_cross_origin(rel_file, kind, raw, configured_origin)
 
-        for match in _STYLE_URL.finditer(text):
-            url = match.group(1)
-            if site_origin(url) != configured_origin:
-                _report_cross_origin(rel_file, "font", url, configured_origin)
-
-        for match in _FETCH_URL.finditer(text):
-            url = match.group(1)
-            if site_origin(url) != configured_origin:
-                _report_cross_origin(rel_file, "fetch", url, configured_origin)
-
-        for match in _XHR_OPEN.finditer(text):
-            url = match.group(1)
-            if site_origin(url) != configured_origin:
-                _report_cross_origin(rel_file, "xhr", url, configured_origin)
+def _check_cross_origin_and_hosts(artifact_root: Path, site_url: str) -> None:
+    findings, exempt = cross_origin_findings(artifact_root, site_url)
+    for root, (files, urls) in exempt.items():
+        origins = sorted({_origin_of(url) for url in urls})
+        print(
+            f"assemble_pages: exempt vendored root {root} (AD-21 rule 5: {VENDORED_ROOTS[root]}): "
+            f"{files} file(s) not judged, {len(urls)} cross-origin reference(s)"
+            + (f" to {', '.join(origins)}" if origins else ""),
+            flush=True,  # ahead of the stderr findings in a combined log
+        )
+    for line in findings:
+        print(line, file=sys.stderr)
+    if findings:
+        print(f"assemble_pages: {len(findings)} cross-origin finding(s)", file=sys.stderr)
+        raise SystemExit(1)
 
 
 def _check_href_resolution(artifact_root: Path) -> None:

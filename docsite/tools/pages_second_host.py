@@ -99,8 +99,3 @@ def site_origin(site_url: str) -> str:
     parsed = urlparse(site_url.rstrip("/") + "/")
     port = f":{parsed.port}" if parsed.port else ""
     return f"{parsed.scheme}://{parsed.hostname}{port}".lower()
-
-
-def is_navigation_link(href: str) -> bool:
-    """Plain off-site navigation (allowed by CAP-56)."""
-    return href.startswith(("https://github.com/", "http://github.com/"))

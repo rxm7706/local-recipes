@@ -122,17 +122,38 @@ def _minimal_artifact(artifact: Path, site_url: str, *, herald_index_body: str) 
 
 
 @pytest.mark.parametrize(
-    ("snippet", "kind"),
+    ("snippet", "kind", "origin"),
     [
-        ('<script src="https://cdn.example/x.js"></script>', "script"),
-        ('<link rel="stylesheet" href="https://cdn.example/x.css">', "stylesheet"),
-        ("@font-face { src: url(https://fonts.gstatic.com/font.woff2); }", "font"),
-        ('<img src="https://cdn.example/x.png">', "image"),
-        ('fetch("https://platform.example/api")', "fetch"),
-        ('xhr.open("GET", "https://platform.example/api")', "xhr"),
+        ('<script src="https://cdn.example/x.js"></script>', "script", "https://cdn.example"),
+        ('<script src="//cdn.example/x.js"></script>', "script", "//cdn.example"),
+        ('<link rel="stylesheet" href="https://cdn.example/x.css">', "stylesheet", "https://cdn.example"),
+        (
+            "<style>@font-face { src: url(https://fonts.gstatic.com/font.woff2); }</style>",
+            "font",
+            "https://fonts.gstatic.com",
+        ),
+        (
+            "<style>@import url(https://fonts.googleapis.com/css2?family=Inter);</style>",
+            "stylesheet",
+            "https://fonts.googleapis.com",
+        ),
+        ('<link rel="preconnect" href="https://fonts.gstatic.com">', "preconnect", "https://fonts.gstatic.com"),
+        ('<link rel="preload" as="font" href="https://cdn.example/f.woff2">', "font", "https://cdn.example"),
+        ('<img src="https://cdn.example/x.png">', "image", "https://cdn.example"),
+        ('<img srcset="/a.png 1x, https://cdn.example/x.png 2x">', "image", "https://cdn.example"),
+        ('<iframe src="https://cdn.example/embed"></iframe>', "frame", "https://cdn.example"),
+        ('<script>fetch("https://platform.example/api")</script>', "fetch", "https://platform.example"),
+        ('<script>xhr.open("GET", "https://platform.example/api")</script>', "xhr", "https://platform.example"),
+        (
+            '<script>var s = document.createElement("script"); s.src = "https://cdn.example/t.js";</script>',
+            "dynamic src",
+            "https://cdn.example",
+        ),
     ],
 )
-def test_pages_check_cross_origin_kinds(tmp_path: Path, snippet: str, kind: str) -> None:
+def test_pages_check_cross_origin_kinds(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], snippet: str, kind: str, origin: str
+) -> None:
     assemble_pages = _assemble_pages()
     psh = _pages_second_host()
     artifact = tmp_path / "site"
@@ -144,17 +165,167 @@ def test_pages_check_cross_origin_kinds(tmp_path: Path, snippet: str, kind: str)
     with pytest.raises(SystemExit) as exc:
         assemble_pages.check(artifact, site_url=site_url)
     assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert f"cross-origin {kind}: herald/index.html -> '{origin}" in err
+    assert "1 cross-origin finding(s)" in err
 
 
-def test_pages_check_allows_github_navigation(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "snippet",
+    [
+        '<a href="https://docs.python.org/3/">Python docs</a>',
+        '<a href="https://github.com/rxm7706/local-recipes">repo</a>',
+        '<area href="https://docs.python.org/3/" alt="docs">',
+        '<link rel="canonical" href="https://docs.python.org/3/">',
+        '<link rel="alternate" type="application/rss+xml" href="https://docs.python.org/3/feed.xml">',
+        '<meta property="og:image" content="https://docs.python.org/3/og.png">',
+        "<pre><code>fetch(&quot;https://platform.example/api&quot;)</code></pre>",
+    ],
+)
+def test_pages_check_passes_navigation_and_non_loading_links(tmp_path: Path, snippet: str) -> None:
     assemble_pages = _assemble_pages()
     psh = _pages_second_host()
     artifact = tmp_path / "site"
     artifact.mkdir()
     site_url = psh.public_site_url()
-    body = '<html><a href="https://github.com/rxm7706/local-recipes">repo</a></html>'
-    _minimal_artifact(artifact, site_url, herald_index_body=body)
+    _minimal_artifact(artifact, site_url, herald_index_body=f"<html><body>{snippet}</body></html>")
     assemble_pages.check(artifact, site_url=site_url)
+
+
+def test_pages_check_judges_the_element_not_the_outside_host(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """One outside origin: the <a href> passes; the stylesheet, script and image it loads fail."""
+    assemble_pages = _assemble_pages()
+    psh = _pages_second_host()
+    site_url = psh.public_site_url()
+    link = '<a href="https://docs.python.org/3/">Python docs</a>'
+
+    passing = tmp_path / "passing"
+    passing.mkdir()
+    _minimal_artifact(passing, site_url, herald_index_body=f"<html><body>{link}</body></html>")
+    assemble_pages.check(passing, site_url=site_url)
+
+    failing = tmp_path / "failing"
+    failing.mkdir()
+    loads = (
+        '<link rel="stylesheet" href="https://docs.python.org/3/_static/pydoctheme.css">'
+        '<script src="https://docs.python.org/3/_static/doctools.js"></script>'
+        '<img src="https://docs.python.org/3/_static/py.svg">'
+    )
+    _minimal_artifact(failing, site_url, herald_index_body=f"<html><head>{loads}</head><body>{link}</body></html>")
+    capsys.readouterr()
+    with pytest.raises(SystemExit) as exc:
+        assemble_pages.check(failing, site_url=site_url)
+    assert exc.value.code == 1
+    err = capsys.readouterr().err
+    assert "cross-origin stylesheet: herald/index.html -> 'https://docs.python.org/3/_static/pydoctheme.css'" in err
+    assert "cross-origin script: herald/index.html -> 'https://docs.python.org/3/_static/doctools.js'" in err
+    assert "cross-origin image: herald/index.html -> 'https://docs.python.org/3/_static/py.svg'" in err
+    assert "'https://docs.python.org/3/'" not in err
+    assert "3 cross-origin finding(s)" in err
+
+
+@pytest.mark.parametrize(
+    ("rel_path", "content", "kind"),
+    [
+        ("herald/site.css", "@import url(https://fonts.googleapis.com/css2?family=Inter);", "stylesheet"),
+        ("herald/app.js", 'fetch("https://platform.example/api");', "fetch"),
+        ("herald/app.js", 'el.innerHTML = "<img src=\\"https://cdn.example/x.png\\">";', "image"),
+    ],
+)
+def test_pages_check_reads_css_and_js_files(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], rel_path: str, content: str, kind: str
+) -> None:
+    assemble_pages = _assemble_pages()
+    psh = _pages_second_host()
+    artifact = tmp_path / "site"
+    artifact.mkdir()
+    site_url = psh.public_site_url()
+    _minimal_artifact(artifact, site_url, herald_index_body="<html></html>")
+    (artifact / rel_path).write_text(content, encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        assemble_pages.check(artifact, site_url=site_url)
+    assert exc.value.code == 1
+    assert f"cross-origin {kind}: {rel_path} -> " in capsys.readouterr().err
+
+
+def test_pages_check_js_navigation_link_passes(tmp_path: Path) -> None:
+    """A map-attribution style <a href> built in a JS string is navigation, not a load."""
+    assemble_pages = _assemble_pages()
+    psh = _pages_second_host()
+    artifact = tmp_path / "site"
+    artifact.mkdir()
+    site_url = psh.public_site_url()
+    _minimal_artifact(artifact, site_url, herald_index_body="<html></html>")
+    (artifact / "herald" / "map.js").write_text(
+        'var a = \'© <a target="_blank" href="https://www.openstreetmap.org/copyright">OSM</a>\';',
+        encoding="utf-8",
+    )
+    assemble_pages.check(artifact, site_url=site_url)
+
+
+_VENDORED_KEDRO_VIZ = {
+    "index.html": (
+        '<html><head><link rel="preconnect" href="https://fonts.googleapis.com">'
+        '<link href="https://fonts.googleapis.com/css2?family=Inter" rel="stylesheet"></head></html>'
+    ),
+    "telemetry.html": (
+        '<script type="text/javascript">var r=document.createElement("script");'
+        'r.src="https://cdn.heapanalytics.com/js/heap-"+e+".js";</script>'
+    ),
+    "assets/index.js": 'Y.crossOrigin="Anonymous",Y.src="https://unpkg.com/maki@2.1.0/icons/"+n+".svg";',
+}
+
+
+def test_vendored_roots_are_a_named_allowlist() -> None:
+    assemble_pages = _assemble_pages()
+    assert list(assemble_pages.VENDORED_ROOTS) == ["dashboard/kedro-viz/"]
+    assert all(reason.strip() for reason in assemble_pages.VENDORED_ROOTS.values())
+
+
+def test_pages_check_exempts_vendored_kedro_viz_and_reports_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assemble_pages = _assemble_pages()
+    psh = _pages_second_host()
+    artifact = tmp_path / "site"
+    artifact.mkdir()
+    site_url = psh.public_site_url()
+    _minimal_artifact(artifact, site_url, herald_index_body="<html></html>")
+    root = artifact / "dashboard" / "kedro-viz"
+    for rel, content in _VENDORED_KEDRO_VIZ.items():
+        (root / rel).parent.mkdir(parents=True, exist_ok=True)
+        (root / rel).write_text(content, encoding="utf-8")
+
+    assemble_pages.check(artifact, site_url=site_url)
+    out = capsys.readouterr().out
+    assert "exempt vendored root dashboard/kedro-viz/ (AD-21 rule 5:" in out
+    assert "4 cross-origin reference(s) to" in out
+    for origin in ("https://cdn.heapanalytics.com", "https://fonts.googleapis.com", "https://unpkg.com"):
+        assert origin in out
+
+
+@pytest.mark.parametrize("rel_root", ["dashboard/other-board", "kedro-viz"])
+def test_pages_check_exemption_is_not_a_blanket_skip(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], rel_root: str
+) -> None:
+    """The same vendored bytes outside the named root fail, even beside it under dashboard/."""
+    assemble_pages = _assemble_pages()
+    psh = _pages_second_host()
+    artifact = tmp_path / "site"
+    artifact.mkdir()
+    site_url = psh.public_site_url()
+    _minimal_artifact(artifact, site_url, herald_index_body="<html></html>")
+    target = artifact / rel_root / "telemetry.html"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(_VENDORED_KEDRO_VIZ["telemetry.html"], encoding="utf-8")
+    with pytest.raises(SystemExit) as exc:
+        assemble_pages.check(artifact, site_url=site_url)
+    assert exc.value.code == 1
+    assert f"cross-origin dynamic src: {rel_root}/telemetry.html -> 'https://cdn.heapanalytics.com" in (
+        capsys.readouterr().err
+    )
 
 
 def test_pages_check_absolute_internal_other_host(tmp_path: Path) -> None:
