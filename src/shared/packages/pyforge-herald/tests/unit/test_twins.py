@@ -82,11 +82,7 @@ def test_twin_origin_error_message(tmp_path: Path):
 
 def test_scan_text_ignores_relative_and_duplicate_urls(tmp_path: Path):
     path = tmp_path / "page.html"
-    html = (
-        '<img src="/local.png">'
-        '<img src="https://cdn.example.com/a.png">'
-        '<img src="https://cdn.example.com/a.png">'
-    )
+    html = '<img src="/local.png"><img src="https://cdn.example.com/a.png"><img src="https://cdn.example.com/a.png">'
     findings = twins.scan_text(html, path)
     assert len(findings) == 1
     assert findings[0].origin == "cdn.example.com"
