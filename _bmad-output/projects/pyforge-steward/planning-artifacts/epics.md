@@ -4070,7 +4070,7 @@ registry YAML.
 **Then** a listing cannot appear without steward review, unless it is already
 in the wielded suite (Certified)
 **And** tiers are Unverified / Community Reviewed / BMad Certified
-**Status:** backlog
+**Status:** done
 
 ### Story 60.3: Ship backends — conda channel default
 
