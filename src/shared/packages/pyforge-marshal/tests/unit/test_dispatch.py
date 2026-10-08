@@ -578,7 +578,7 @@ def test_run_dispatch_journals_and_returns(tmp_path: Path, monkeypatch: pytest.M
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
     spec = specs / f"spec-{story}.md"
-    spec.write_text("---\ndifficulty: medium\n---\n# spec\n", encoding="utf-8")
+    spec.write_text(f"---\ndifficulty: medium\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     fs = FakeFs()
     vcs = FakeVcs(tmp_path)
@@ -622,7 +622,7 @@ def test_run_dispatch_surfaces_the_context_payload(
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
     spec = specs / f"spec-{story}.md"
-    spec.write_text("---\ndifficulty: medium\n---\n# spec\n", encoding="utf-8")
+    spec.write_text(f"---\ndifficulty: medium\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     effective, _ = policy.compose(project_slug=slug, project={}, flags={})
     monkeypatch.setattr(
@@ -728,7 +728,7 @@ def test_dispatch_hands_the_launch_seam_only_the_wire_layer(
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     _enable_wire_layer(monkeypatch, slug)
     harness = FakeBuildHarness()
@@ -766,7 +766,7 @@ def test_dispatch_journals_and_echoes_what_the_wire_layer_did(
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     store = str(tmp_path / "wt" / ".marshal" / "wire")
 
@@ -830,7 +830,7 @@ def test_dispatch_reports_a_degraded_wire_layer_as_a_warning(
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     reason = "wire-compression wrapper binary 'headroom' did not resolve"
 
@@ -879,7 +879,7 @@ def test_dispatch_with_no_wire_decision_reports_the_layer_as_off(
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     args = argparse.Namespace(slug=slug, story=story, format="json")
     monkeypatch.chdir(tmp_path)
@@ -920,7 +920,7 @@ def test_dispatch_wire_payload_has_exactly_the_single_spellings_fields(
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     fs = FakeFs()
     args = argparse.Namespace(slug=slug, story=story, format="json")
@@ -961,7 +961,7 @@ def test_dispatch_states_the_wire_disposition_even_when_the_launch_fails(
     story = "28-2-wire-compression-at-the-harness-seam"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     class FailingHarness(FakeBuildHarness):
         def dispatch(self, worktree: Path, **kwargs) -> DispatchLaunchResult:
@@ -998,7 +998,7 @@ def test_run_dispatch_carries_profile_and_reports_skips(
     story = "22-8-the-session-harness-is-profile-driven-across-agent-clis"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     import json
 
@@ -1053,7 +1053,7 @@ def test_run_dispatch_journals_the_harness_session_id_only_when_the_launch_carri
     story = "22-8-the-session-harness-is-profile-driven-across-agent-clis"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     class SessionHarness(FakeBuildHarness):
         def dispatch(self, worktree: Path, **kwargs) -> DispatchLaunchResult:
@@ -1106,7 +1106,7 @@ def test_run_dispatch_refusal_names_every_candidate_tried(
     story = "22-8-the-session-harness-is-profile-driven-across-agent-clis"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     import json
 
@@ -1143,10 +1143,7 @@ _SHARED_STORY = "20-1-a-story-key-two-stations-both-happen-to-use"
 _SHARED_FEED_KEY = "20.1"
 
 
-# Story 65.2: dispatch_once refuses specs with no ``## Verification``; empty Commands bind.
-_BINDING_VERIFICATION_TAIL = (
-    "\n## Verification\n\n**Commands:**\n\n**Manual checks:**\n- none\n"
-)
+from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL as _BINDING_VERIFICATION_TAIL
 
 
 def _seed_spec(repo_root: Path, slug: str, story: str) -> Path:
@@ -1818,8 +1815,11 @@ def test_dispatch_stories_refuses_an_unknown_key_before_any_worktree(
     assert build_harness.calls == []
 
 
-_DONE_SPEC = "---\nstatus: done\nfollowup_review_recommended: false\ndifficulty: medium\n---\n# spec\n"
-_READY_SPEC = "---\nstatus: ready-for-dev\ndifficulty: medium\n---\n# spec\n"
+_DONE_SPEC = (
+    "---\nstatus: done\nfollowup_review_recommended: false\ndifficulty: medium\n---\n# spec\n"
+    + _BINDING_VERIFICATION_TAIL
+)
+_READY_SPEC = "---\nstatus: ready-for-dev\ndifficulty: medium\n---\n# spec\n" + _BINDING_VERIFICATION_TAIL
 
 
 def _write_worktree_spec(repo: Path, slug: str, story: str, text: str) -> Path:
@@ -2352,7 +2352,10 @@ def test_followup_true_still_launches(tmp_path: Path, monkeypatch: pytest.Monkey
 
 _FOLLOWUP_SLUG = "pyforge-marshal"
 _FOLLOWUP_STORY = "51-2-the-landing-record"
-_FOLLOWUP_SPEC = "---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\n---\n# spec\n"
+_FOLLOWUP_SPEC = (
+    "---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\n---\n# spec\n"
+    + _BINDING_VERIFICATION_TAIL
+)
 _ORIGIN_TIP = "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334"
 _FOLLOWUP_LEDGER_REL = f"_bmad-output/projects/{_FOLLOWUP_SLUG}/planning-artifacts/deferred-work-ledger.md"
 
@@ -4243,7 +4246,9 @@ def _seed_flag_gate_repo(tmp_path: Path, *, with_gate: bool = True) -> tuple[str
     slug = "pyforge-marshal"
     _init_git_repo(tmp_path, scope_slug=slug)
     spec = _seed_spec(tmp_path, slug, _FLAG_STORY)
-    spec.write_text("---\ntype: feature\ndifficulty: medium\n---\n# spec\n", encoding="utf-8")
+    spec.write_text(
+        f"---\ntype: feature\ndifficulty: medium\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8"
+    )
     if with_gate:
         (tmp_path / "scripts").mkdir()
         (tmp_path / "scripts" / "flag_gate_check.py").write_text("# stand-in; the gate is faked\n", encoding="utf-8")

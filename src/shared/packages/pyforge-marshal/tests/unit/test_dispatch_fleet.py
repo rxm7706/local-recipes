@@ -954,8 +954,10 @@ def test_missing_spec_refuse_re_preflights_when_spec_lands(
     _run_drain(tmp_path, args, ledgers=ledgers)
     run_id = next(dispatch_fleet.fleet_runs_dir(tmp_path).iterdir()).name
 
+    from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
+
     (specs / "spec-22-7-fleet.md").write_text(
-        '---\ndifficulty: medium\nsurface: ["src/**"]\n---\n',
+        '---\ndifficulty: medium\nsurface: ["src/**"]\n---\n' + BINDING_VERIFICATION_TAIL,
         encoding="utf-8",
     )
     harness = FakeBuildHarness()
@@ -1027,7 +1029,12 @@ def test_flag_gate_refuse_re_preflights_when_the_spec_is_edited(
     (tmp_path / "scripts").mkdir()
     (tmp_path / "scripts" / "flag_gate_check.py").write_text("# stand-in; the gate is faked\n", encoding="utf-8")
     spec = specs / "spec-22-7-fleet.md"
-    spec.write_text('---\ntype: feature\ndifficulty: medium\nsurface: ["src/**"]\n---\n', encoding="utf-8")
+    from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
+
+    spec.write_text(
+        '---\ntype: feature\ndifficulty: medium\nsurface: ["src/**"]\n---\n' + BINDING_VERIFICATION_TAIL,
+        encoding="utf-8",
+    )
     monkeypatch.chdir(tmp_path)
     ledgers = {"pyforge-marshal": (("22-7-fleet", "backlog"),)}
 

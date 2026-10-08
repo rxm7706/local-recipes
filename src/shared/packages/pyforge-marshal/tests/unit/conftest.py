@@ -16,7 +16,6 @@ import pytest
 
 from pyforge.marshal.cli.init import ENV_LOOP_HOME_ROOT
 
-
 @pytest.fixture(autouse=True)
 def _pin_loop_home_root_under_tmp(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(ENV_LOOP_HOME_ROOT, str(tmp_path_factory.mktemp("loop-home-root")))
