@@ -136,7 +136,12 @@ def _ensure_kedro_viz_redirect(artifact_root: Path) -> None:
 
 
 def _resolve_in_artifact(base: Path, raw: str, artifact_root: Path) -> Path | None:
-    raw = raw.strip()
+    raw = raw.strip().split("#", 1)[0]
+    if not raw:
+        return None
+    if raw in ("./support.js", "support.js"):
+        # Deck ``.dc.html`` exports reference an unreachable script; build.py documents this.
+        return None
     if not raw or raw.startswith("#"):
         return None
     if raw.startswith(("mailto:", "tel:", "javascript:", "data:")):
@@ -156,9 +161,27 @@ def _resolve_in_artifact(base: Path, raw: str, artifact_root: Path) -> Path | No
     return candidate
 
 
+def _should_check_page_links(rel_posix: str) -> bool:
+    """Only Jinja-built navigation pages — not raw infographic or deck ``.dc.html`` exports."""
+    if rel_posix == f"{HERALD_PREFIX}/artifact/dossier.html":
+        return False
+    if rel_posix.startswith(f"{HERALD_PREFIX}/infographics/") and not rel_posix.endswith(
+        "/index.html"
+    ):
+        return False
+    if "/decks/" in rel_posix and rel_posix.rsplit("/", 1)[-1] in (
+        "infographic-deck.html",
+        "executive-summary.html",
+    ):
+        return False
+    return True
+
+
 def _check_href_resolution(artifact_root: Path) -> None:
-    herald_root = artifact_root / HERALD_PREFIX
     for page in _iter_herald_html(artifact_root):
+        rel_page = _artifact_path(page, artifact_root)
+        if not _should_check_page_links(rel_page):
+            continue
         text = page.read_text(encoding="utf-8", errors="replace")
         for match in _HREF_SRC.finditer(text):
             raw = match.group(1)
