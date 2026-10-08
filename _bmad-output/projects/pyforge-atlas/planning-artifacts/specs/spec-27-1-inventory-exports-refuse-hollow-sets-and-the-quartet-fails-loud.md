@@ -2,10 +2,10 @@
 title: "27.1: The inventory exports refuse a hollow verification set, and the quartet scripts fail loud"
 type: 'fix'
 created: '2026-10-03'
-status: 'done'
+status: 'in-review'
 baseline_revision: a7746bc0b6
-review_loop_iteration: 1
-followup_review_recommended: true
+review_loop_iteration: 0
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
