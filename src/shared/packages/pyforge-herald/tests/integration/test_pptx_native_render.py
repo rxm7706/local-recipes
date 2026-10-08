@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 from pptx import Presentation
+from pptx.enum.dml import MSO_FILL
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.util import Inches
 
 from pyforge.herald import pptx_native
+from pyforge.herald.tests.unit.test_pptx_native import _copy_modernist_tokens, _repo_root
 
 
 def _node_and_pptxgenjs_available() -> bool:
@@ -31,6 +35,43 @@ def _normalize_ws(text: str) -> str:
     return " ".join((text or "").split())
 
 
+def _rgb_hex(rgb) -> str:
+    if rgb is None:
+        return ""
+    return f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+
+
+def _slide_width_pt(prs: Presentation) -> float:
+    return float(prs.slide_width) / 12700
+
+
+def _expected_title_pt(tokens: pptx_native.ModernistDesignTokens, prs: Presentation) -> float:
+    return tokens.type_title_px * (_slide_width_pt(prs) / tokens.canvas_width_px)
+
+
+def _expected_pad_x_in(tokens: pptx_native.ModernistDesignTokens, prs: Presentation) -> float:
+    slide_w_in = float(prs.slide_width) / 914400
+    return tokens.pad_x_px * slide_w_in / tokens.canvas_width_px
+
+
+def _first_run_with_text(slide, needle: str):
+    for shape in slide.shapes:
+        if not shape.has_text_frame:
+            continue
+        for para in shape.text_frame.paragraphs:
+            for run in para.runs:
+                if needle in (run.text or ""):
+                    return run
+    return None
+
+
+def _title_shape(slide):
+    for shape in slide.shapes:
+        if shape.has_text_frame and (shape.text_frame.text or "").strip():
+            return shape
+    return None
+
+
 def _slide_text_surfaces_in_order(slide) -> str:
     parts: list[str] = []
     for shape in slide.shapes:
@@ -48,6 +89,7 @@ def _slide_text_surfaces_in_order(slide) -> str:
 
 @pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")
 def test_fixture_render_read_back_with_python_pptx(tmp_path: Path, monkeypatch, _no_stamp_git) -> None:
+    _copy_modernist_tokens(tmp_path)
     slug = "fixture-deck"
     marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
     marp_dir.mkdir(parents=True)

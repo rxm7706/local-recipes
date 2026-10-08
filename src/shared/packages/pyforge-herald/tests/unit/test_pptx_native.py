@@ -2,12 +2,98 @@
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
 
 from pyforge.herald import pptx_native
 from pyforge.herald.errors import HeraldError
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[6]
+
+
+def _copy_modernist_tokens(dest_root: Path, *, source_root: Path | None = None) -> Path:
+    src_root = source_root or _repo_root()
+    src = src_root / pptx_native.MODERNIST_DESIGN_SYSTEM_REL
+    dst = dest_root / pptx_native.MODERNIST_DESIGN_SYSTEM_REL
+    if dst.exists():
+        shutil.rmtree(dst)
+    shutil.copytree(src, dst)
+    return dst
+
+
+def test_load_modernist_design_tokens_live_modernist() -> None:
+    tokens = pptx_native.load_modernist_design_tokens(_repo_root())
+    assert tokens.heading_family == "Archivo"
+    assert tokens.body_family == "Archivo"
+    assert tokens.heading_bold is True
+    assert tokens.palette_bg == "#f3f2f2"
+    assert tokens.palette_surface == "#eae9e9"
+    assert tokens.palette_text == "#201e1d"
+    assert tokens.palette_accent == "#ec3013"
+    assert tokens.type_title_px == 64
+    assert tokens.type_subtitle_px == 40
+    assert tokens.type_body_px == 34
+    assert tokens.type_small_px == 28
+    assert tokens.pad_x_px == 120
+    assert tokens.pad_top_px == 96
+    assert tokens.pad_bottom_px == 120
+    assert tokens.baseline_px == 48
+
+
+def test_load_modernist_tokens_missing_theme_json(tmp_path: Path) -> None:
+    base = _copy_modernist_tokens(tmp_path)
+    (base / "theme.json").unlink()
+    with pytest.raises(HeraldError, match="theme.json"):
+        pptx_native.load_modernist_design_tokens(tmp_path, design_system_dir=base)
+
+
+def test_load_modernist_tokens_missing_type_title(tmp_path: Path) -> None:
+    base = _copy_modernist_tokens(tmp_path)
+    template = base / "templates" / "deck" / "index.html"
+    text = template.read_text(encoding="utf-8").replace("--type-title: 64px;", "")
+    template.write_text(text, encoding="utf-8")
+    with pytest.raises(HeraldError, match="type-title"):
+        pptx_native.load_modernist_design_tokens(tmp_path, design_system_dir=base)
+
+
+def test_load_modernist_tokens_malformed_theme_json(tmp_path: Path) -> None:
+    base = _copy_modernist_tokens(tmp_path)
+    theme = base / "theme.json"
+    theme.write_text("{not json", encoding="utf-8")
+    with pytest.raises(HeraldError, match="theme.json"):
+        pptx_native.load_modernist_design_tokens(tmp_path, design_system_dir=base)
+
+
+def test_load_modernist_tokens_malformed_pad_x(tmp_path: Path) -> None:
+    base = _copy_modernist_tokens(tmp_path)
+    template = base / "templates" / "deck" / "index.html"
+    text = template.read_text(encoding="utf-8").replace("--pad-x: 120px;", "--pad-x: wide;")
+    template.write_text(text, encoding="utf-8")
+    with pytest.raises(HeraldError, match="pad-x"):
+        pptx_native.load_modernist_design_tokens(tmp_path, design_system_dir=base)
+
+
+def test_heading_weight_below_600_not_bold(tmp_path: Path) -> None:
+    base = _copy_modernist_tokens(tmp_path)
+    styles = base / "styles.css"
+    styles.write_text(
+        styles.read_text(encoding="utf-8").replace("--font-heading-weight: 800;", "--font-heading-weight: 400;"),
+        encoding="utf-8",
+    )
+    tokens = pptx_native.load_modernist_design_tokens(tmp_path, design_system_dir=base)
+    assert tokens.heading_bold is False
+
+
+def test_slide_model_to_json_includes_tokens(tmp_path: Path) -> None:
+    tokens = pptx_native.load_modernist_design_tokens(_repo_root())
+    payload = pptx_native.slide_model_to_json((), tokens=tokens)
+    assert "tokens" in payload
+    assert payload["tokens"]["fonts"]["heading"] == "Archivo"
+    assert payload["tokens"]["type"]["title"] == 64
 
 
 def test_parse_marp_deck_title_bullets_table_and_notes(tmp_path: Path) -> None:
