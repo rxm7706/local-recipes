@@ -1001,7 +1001,7 @@ So that a dead link or a broken sidebar order cannot merge while every gate is g
 **When** the findings are fixed in their pages and the validators are wired as pixi tasks, a `docsite-check.yml` step and a `pr-preflight` leg
 **Then** `pixi run -e site docs-site-validate` exits 0 on the story's tree; a planted dead link in any quadrant page makes it exit 1 and name the page; two pages with the same `sidebar.order` in one directory make `docs-site-validate-sidebar` exit 1
 **And** `docsite-check.yml` runs the validators on a PR that touches `docs/**`; `pr-preflight` carries the leg; the vendored validators are byte-identical to the recorded upstream commit; `test_docs_site_validators.py` passes in `pyforge-herald-test`; the fixed pages keep `docs-currency-check` and `docs-map-hygiene-check` free of new findings
-**Status:** backlog
+**Status:** done
 
 ### Story 27.5: pr-preflight runs the Pages build check only when docsite-check.yml's paths change
 
