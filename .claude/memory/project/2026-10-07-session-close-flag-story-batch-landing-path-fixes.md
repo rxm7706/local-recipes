@@ -1,0 +1,8 @@
+---
+name: "2026-10-07-session-close-flag-story-batch-landing-path-fixes"
+description: "2026-10-07 session close (flag-story batch + landing-path fixes). LANDED: herald 28.1 (#1892), 28.2 (#1904), 29.1 (#190…"
+metadata:
+  type: project
+---
+
+2026-10-07 session close (flag-story batch + landing-path fixes). LANDED: herald 28.1 (#1892), 28.2 (#1904), 29.1 (#1901); warden 14.2 (#1897), 14.3 (#1903), 16.4 (#1914); steward 74.2 (#1894), 63.7 (#1910, platform-ci-local lock), 13.5 (#1916, workspace clean --delete); doctor 34.6 (#1902, shared flag key judged against latest story), 6.13 (#1907, chain-currency ignores landing bookkeeping); marshal 22.17 (#1899, land-only refusals name their gate), 22.18 (baseline conflict heal), 22.15 (#1913, epics flip on a done spec), 22.19 (#1917, flag-registry union heal). CHAINS merged: marshal 22.15-22.17 (#1895), 22.18-22.19 + 2026-10-07 retro (#1906); doctor 6.13/34.6 (#1898); steward 63.7/85.6/13.5 (#1908); warden 11.3 tea_advisory subprocess seam (#1918). HYGIENE: #1905/#1911 epics Status lines, #1915 herald boto3 package run-dep. IN FLIGHT at close: marshal 22.16, steward 85.6, warden 11.3, herald 29.2 follow-up review (#1912). OPEN NEXT: herald 30.1, 30.2, 32.1 (flag stories, deps met after 29.2), 31.1 (needs 27.2); herald fix chain for docs-site/src/lib/site-url.mjs ignored by .gitignore lib/ (docs site cannot build from a clean checkout; FR-8.1, AD-21); a marshal fix story: the pre-verify ruff --fix commit runs after the landing reconcile stamp, so verification refuses the branch's own formatting change (herald 29.2, f1b8184bd1); warden 16.2/16.3 wait on 16.1 (blocked, operator flip); mason 16 stories idle.
