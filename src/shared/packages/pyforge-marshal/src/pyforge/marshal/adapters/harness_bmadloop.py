@@ -204,6 +204,7 @@ import shutil
 import subprocess
 import time
 from collections.abc import Mapping, MutableMapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 

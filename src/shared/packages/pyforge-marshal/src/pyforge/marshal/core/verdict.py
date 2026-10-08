@@ -118,9 +118,11 @@ factory spin``/``attach``, FR-9/FR-17) adds six more codes.
 classifies ``Verdict.UNEVALUABLE``, the same tier as every sibling pre-I/O
 shape gate (``MRS-INIT-001``/``MRS-PREFLIGHT-010``/``MRS-TEARDOWN-001``):
 Marshal cannot determine what to launch. ``MRS-SPIN-002`` (the loop home is
-not provisioned), ``MRS-SPIN-003`` (NO harness process was started and none
-can have been -- shared by ``spin``'s detached launch, ``run_foreground``'s
-synchronous one and ``attach``'s exec failing to launch, AND by
+not provisioned), ``MRS-SPIN-003`` (nothing is running, so a retry is safe --
+no harness process was started, or (Story 82.7) one was started and exited
+before its starting line appeared -- shared by ``spin``'s detached launch,
+``run_foreground``'s synchronous one and ``attach``'s exec failing to
+launch, AND by
 ``run_spin``'s two pre-spawn filesystem setup failures, which abort before
 ``HarnessPort.spin`` is called; see ``core/findings.py`` for why one code
 serves them all), and ``MRS-SPIN-005`` (the story feed is missing or
@@ -212,7 +214,7 @@ F-17 unclosed-``intent`` precedent): named so it is never passed over
 silently, but never itself failing the whole run when other candidates
 promote cleanly. ``MRS-DEPLOY-003`` (``VcsPort.commit_subjects`` could not
 read local ``main``'s commit history, or the promotion write path --
-copying a spec's bytes or ``VcsPort.commit_paths``'s stage-and-commit --
+copying a spec's bytes or ``CommitPort.commit_paths``'s stage-and-commit --
 failed) classifies ``Verdict.UNEVALUABLE``: Marshal could not positively
 confirm this run's promotion, the same "could not determine" tier as
 ``MRS-GATE-002``/``003``/``005``/``009`` -- AD-31 forbids classifying the
@@ -387,6 +389,24 @@ freshness answer either way) and ``MRS-CTX-002`` at ``Verdict.WARN`` (an
 ENABLED ``derived-context`` layer degraded to today's compile-on-hunch
 behavior with a named reason -- the same graceful-degradation tier as
 ``MRS-DISP-033``/``MRS-PREFLIGHT-015``, never a blocked iteration).
+Story 46.1 (``spec-pyforge-marshal`` CAP-192) extends the area for
+``marshal context bootstrap`` / ``pack``: ``MRS-CTX-003`` (rebuilt locally),
+``-005`` (fetched pack refused) and ``-006`` (pack written with a gap) at
+``Verdict.WARN``; ``-004`` (member neither fetched nor rebuilt) and ``-007``
+(nothing packable) at ``Verdict.UNEVALUABLE``.
+Story 46.2 (``spec-pyforge-marshal`` CAP-192) adds ``MRS-CTX-008`` at
+``Verdict.WARN`` for ``marshal context bundle``: a second harness's
+``--expect-digest`` does not match the freshly assembled bundle's digest --
+the same never-blocking tier as ``-002``/``-003``/``-005``/``-006``, since a
+digest mismatch means the two harnesses disagree on what to open with, not
+that either one failed to run.
+Story 46.6 (``spec-pyforge-marshal`` CAP-193, fold-remint of ``spec-marshal-
+token-economy`` CAP-20) adds ``MRS-CTX-009`` at ``Verdict.WARN`` for
+``marshal context advisory``: a declared-active ``[context]`` layer's kit
+item (a kit-provisioned layer gone ``MISSING``/``STALE`` -- ``UNAVAILABLE``
+is deliberately excluded) or scribe binary no longer resolves -- the same
+never-blocking tier as the rest of this area, since the layer's savings
+silently stop but nothing about the session itself failed.
 
 Later stories populate the table further as they add real codes. The mechanism (a total, fail-loud
 lookup) is separately proven via ``monkeypatch``-injected synthetic entries
@@ -502,6 +522,12 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # so folding the genuinely-lost case back into 008 would rebuild the very
 # ambiguity that cost an operator an hour on 2026-08-09. WARN, not ERROR,
 # because AD-46 forbids durability becoming a new refusal gate.
+# Story 82.4 adds MRS-SUPV-011/012/013 and MRS-SPIN-018 to the same two
+# areas, all WARN (see their rows below).
+# Story 82.5's supervisor/__main__.py adds MRS-SUPV-014 (a per-story budget
+# ceiling was breached; the run continues) and MRS-SUPV-015 (neither idle
+# channel could be observed, so the ladder holds its rung), both WARN: each is
+# a reported condition the run survives, like this area's own 001-013.
 # Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008 at
 # SCOPE_VIOLATION (this table's first use of that rung) and MRS-GATE-009
 # at UNEVALUABLE, alongside MRS-GATE-002/003/005.
@@ -718,10 +744,13 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # the same tier as MRS-LAND-003/008: reported, never blocking -- the wave's
 # own landing already succeeded (or there was nothing new to land this run)
 # by the time this best-effort resync step runs.
+# Story 82.2: MRS-LAND-009 also reports a deliberate skip -- the home's run is
+# live or could not be proven finished, so no fetch or fast-forward was
+# attempted; same WARN tier, nothing failed.
 # Story 4.13 (the loop's deferred work reaches the tracked ledger, FR-175)
 # adds a TENTH MRS-LAND-* code, MRS-LAND-010 (`_promote_deferred_work`'s own
 # advisory-lock contention on the tracked deferred-work ledger, or a
-# `VcsPort.commit_paths` failure committing a promoted entry). Classifies
+# `CommitPort.commit_paths` failure committing a promoted entry). Classifies
 # WARN, the same tier as MRS-LAND-003/008/009: reported, never blocking --
 # a landing story's Tier-3 followup deferral simply stays unpromoted for
 # this run, re-attempted on the next.
@@ -730,6 +759,12 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # contention on the tracked sprint-status-ledger, a refused downgrade sync,
 # or a write/commit failure). Classifies WARN, the same tier as
 # MRS-LAND-010: reported, never blocking -- the wave already landed.
+# Story 68.1 (CAP-277): MRS-LAND-011 also names a second triggering shape, same
+# WARN tier (AD-31: same code, several triggering shapes) -- the dispatch
+# supervisor's blocked-spec-twin publish onto origin/main that could not land
+# (`_promote_blocked_twin`), journaled as a WARN observation. Story 83.21: a
+# third shape, same tier -- the sync's `apply_epic_rollups` could not be loaded,
+# so the promotion wrote no epic row it did not compute.
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to cli/status.py's own MRS-STATUS-* area, both WARN.
 # MRS-STATUS-010: a failed-story patch found via a bare Path.glob over
@@ -752,6 +787,11 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # Boundaries forbid this signal from changing marshal status's exit code.
 # Both mirror MRS-STATUS-009's identical "the read failed, degrade every
 # affected value to unknown, never a hard failure" reasoning.
+# Story 82.8 adds MRS-STATUS-014 (DW-FU-4-14-10), also WARN: main's history
+# (with origin/main) is non-empty but no subject in it conforms to a
+# merge-subject pattern (a shallow or grafted clone), so it cannot show what
+# landed; reported per home with the examined and matched counts, in place of
+# one MRS-STATUS-010 per patch. The same "degrade to unknown" reasoning.
 # Story 5.9 (a story finished by hand is not invisible to the ledger,
 # AD-5/AD-6/AD-29/AD-33) adds four more MRS-DEPLOY-* codes for `marshal
 # deploy reconcile-completions`. MRS-DEPLOY-024 (the tracked sprint-status-
@@ -779,6 +819,11 @@ _RELAY_PASSTHROUGH: frozenset[int] = frozenset({EXIT_OK, _EXIT_BY_VERDICT[Verdic
 # eligible key still advances. MRS-DEPLOY-027 (the post-commit Tier-3 feed
 # repair-write failed) classifies WARN: the ledger commit already landed
 # and stands regardless -- a best-effort closing step, not a precondition.
+#
+# Story 83.20 adds MRS-DEPLOY-028 (a merged story's Tier-3 spec candidate
+# is an orphan -- no ledger row for its full key, or a tracked spec carries
+# its title slug under another story key -- and was not promoted) at WARN,
+# the same "reported, never blocks" tier as MRS-DEPLOY-001/002.
 #
 # Story 3.12 (retry escalation, AD-26, the spec-adaptive-model-tiering
 # Spec's own CAP-2) adds a thirteenth MRS-SPIN-* code, MRS-SPIN-016 (the
@@ -852,6 +897,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SUPV-008": Verdict.WARN,
     "MRS-SUPV-009": Verdict.WARN,
     "MRS-SUPV-010": Verdict.WARN,
+    "MRS-SUPV-014": Verdict.WARN,
+    "MRS-SUPV-015": Verdict.WARN,
     "MRS-GATE-007": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-008": Verdict.SCOPE_VIOLATION,
     "MRS-GATE-009": Verdict.UNEVALUABLE,
@@ -933,6 +980,12 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-SMOKE-005": Verdict.UNEVALUABLE,
     "MRS-SMOKE-006": Verdict.ERROR,
     "MRS-SMOKE-007": Verdict.WARN,
+    # Story 84.1 (operator-run model-list refresh, CAP-285): MRS-MDL-001
+    # (declared model id absent from live list and not an alias) at WARN --
+    # advisory drift, never blocks the rendered-report exit code.
+    "MRS-MDL-001": Verdict.WARN,
+    "MRS-MDL-002": Verdict.WARN,
+    "MRS-MDL-003": Verdict.WARN,
     # Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37):
     # MRS-MATRIX-001 (a pre-existing adapter-probes.json/adapter-smoke.json
     # was malformed) at WARN, mirroring MRS-ADP-016/MRS-SMOKE-007's own
@@ -969,12 +1022,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-011": Verdict.WARN,
     "MRS-STATUS-010": Verdict.WARN,
     "MRS-STATUS-011": Verdict.WARN,
+    "MRS-STATUS-014": Verdict.WARN,
     "MRS-STATUS-012": Verdict.WARN,
     "MRS-STATUS-013": Verdict.WARN,
     "MRS-DEPLOY-024": Verdict.WARN,
     "MRS-DEPLOY-025": Verdict.ERROR,
     "MRS-DEPLOY-026": Verdict.WARN,
     "MRS-DEPLOY-027": Verdict.WARN,
+    "MRS-DEPLOY-028": Verdict.WARN,
     "MRS-SPIN-016": Verdict.WARN,
     # Story 15.1 (fleet homes refresh, FR-133..FR-135, AD-21):
     # MRS-REFRESH-001 (enumerate/fetch/repo-root) at ERROR -- the sweep
@@ -987,7 +1042,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-REFRESH-005": Verdict.WARN,
     "MRS-REFRESH-006": Verdict.WARN,
     "MRS-REFRESH-007": Verdict.WARN,
-    # Story 17.4 (chain regenerate, FR-148/149/151):
+    # Story 17.4 / 86.5 (planning chain-regenerate; retired ``marshal chain regenerate``):
     # 001 missing planning tree → UNEVALUABLE; 002 phase fail ERROR;
     # 003 done-key refuse ERROR; 004 orphan report WARN.
     "MRS-CHAIN-001": Verdict.UNEVALUABLE,
@@ -1086,6 +1141,13 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-DRAIN-016": Verdict.WARN,
     # Story 28.18 (CAP-1): unchanged refuse predicate -- rate-limited skip.
     "MRS-DRAIN-017": Verdict.WARN,
+    # Story 73.2 (CAP-281): follow-up review scheduling. Both report the queue's own
+    # state over a drain that is otherwise proceeding -- a stale row, an unreadable
+    # ledger or a station layer's ignored cap (018), the follow-ups waiting on the
+    # per-campaign cap (019, emitted at INFO severity; the lattice has no INFO rung,
+    # and exit 0 is the same one WARN projects to). Never a refusal.
+    "MRS-DRAIN-018": Verdict.WARN,
+    "MRS-DRAIN-019": Verdict.WARN,
     # Story 28.2 (wire compression at the harness seam,
     # SPEC-marshal-token-economy CAP-2): both codes report a token-economy
     # LAYER that did not engage over a launch that is otherwise entirely
@@ -1150,6 +1212,50 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # (both fire immediately before the merge and both stop the land
     # attempt cold).
     "MRS-DISP-048": Verdict.ERROR,
+    # Story 63.4 (spec-pyforge-steward CAP-5): a non-ok `steward session
+    # check` verdict (or the check itself failing to run) folded into a
+    # dispatch-launch finding. Deliberately WARN, never escalated -- the
+    # docstring on `_surface_session_precondition_findings` is explicit that
+    # a session-precondition gap is worth flagging before a dispatch
+    # launches, not worth refusing the launch over.
+    "MRS-DISP-049": Verdict.WARN,
+    # Story 68.1 (spec-pyforge-marshal CAP-277): the landed story's ledger key does
+    # not read `done` on `origin/main` after finalize's promotion step. ERROR, the
+    # tier of MRS-DISP-048 above: it stops a landing being reported clean while the
+    # bookkeeping never reached main (the 64.1 landing, 2026-09-28).
+    "MRS-DISP-051": Verdict.ERROR,
+    # Story 77.1 (spec-pyforge-marshal CAP-282): the `structure-graph` layer's
+    # dispatch half -- 053 built (or rebuilt) the worktree's index with `init`
+    # instead of syncing a copied base; 054 seeded no index at all. WARN, the
+    # tier of MRS-DISP-042/033: the session is otherwise entirely viable and
+    # a missing navigation aid must never refuse a launch.
+    "MRS-DISP-053": Verdict.WARN,
+    "MRS-DISP-054": Verdict.WARN,
+    # Story 74.2 (spec-feature-flag-governance CAP-3): the pre-session flag-gate
+    # consult. 052 refuses the dispatch (the gate reds the spec, or could not
+    # judge it -- unevaluable is failure, AD-8): ERROR, the tier of MRS-DISP-041
+    # above, which refuses a dispatch before it provisions anything. 055 is the
+    # proceeds-with-a-warning half (a pre-rule spec; the gate script absent):
+    # WARN, the tier of MRS-DISP-042/049/053. Two codes because this table
+    # classifies by code alone (AD-31) -- a WARN under the ERROR-tier 052 would
+    # red a dispatch that proceeds.
+    "MRS-DISP-052": Verdict.ERROR,
+    "MRS-DISP-055": Verdict.WARN,
+    # Story 80.1 (spec-pyforge-marshal CAP-284): the landing's check wait. 056 a
+    # run concluded red; 057 runs still pending at the timeout. Both ERROR, the
+    # tier of MRS-DISP-044/048 above: each fires immediately before
+    # `forge.merge_pr`, stops the land attempt cold and leaves the PR open for a
+    # re-run -- a pending or red signal is never passing (AD-8).
+    "MRS-DISP-056": Verdict.ERROR,
+    "MRS-DISP-057": Verdict.ERROR,
+    # Story 85.1 (CAP-286): verification fix turn — start failure, wall-clock
+    # budget exceeded, or re-verification still refused after one turn.
+    "MRS-DISP-058": Verdict.ERROR,
+    "MRS-DISP-059": Verdict.ERROR,
+    "MRS-DISP-060": Verdict.ERROR,
+    # Story 83.25: unreadable operator Cursor config at launch prep.
+    "MRS-DISP-061": Verdict.ERROR,
+    "MRS-DISP-062": Verdict.ERROR,
     "MRS-SPIN-017": Verdict.WARN,
     # Story 28.3 (Genesis seeds the token-economy kit,
     # SPEC-marshal-token-economy CAP-3/CAP-4): a kit item that preflight
@@ -1180,6 +1286,47 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # verify command ran and failed -- GATE_FAILED, same rung as MRS-GATE-001,
     # never WARN or downgraded to advisory.
     "MRS-GATE-015": Verdict.GATE_FAILED,
+    # Story 82.1 (DW-FU-2-1-7): the repository root could not be resolved
+    # (an installed package invoked outside any git checkout) -- UNEVALUABLE,
+    # the same tier as MRS-GATE-002/003/005/009: Marshal could not say WHICH
+    # tree to gate, so there is no gate answer to report either way, and it
+    # is never the bare-defaults MRS-GATE-004 warn (exit 0) false green.
+    "MRS-GATE-016": Verdict.UNEVALUABLE,
+    # Story 82.9 (FR-25, DW-FU-2-6-2): the redacted gate record could not be written. WARN,
+    # never UNEVALUABLE or an error: the record is evidence about a verdict the gate already
+    # reached, so a missing loop home or a failed write must not turn a green gate red -- and
+    # `evaluate_gate` appends the finding AFTER the verdict is computed, never recomputing it.
+    "MRS-GATE-017": Verdict.WARN,
+    # Story 83.2 (spec-83-2): pre-verification deferred-work intake refused or
+    # could not run -- GATE_FAILED, same rung as MRS-GATE-001.
+    "MRS-GATE-018": Verdict.GATE_FAILED,
+    # Story 83.17 (spec-83-17): a commit on the story branch carries an
+    # AI-attribution trailer the commit-msg hook refuses -- GATE_FAILED.
+    "MRS-GATE-019": Verdict.GATE_FAILED,
+    # Story 83.19 (spec-83-19): CFE surface commits outside retro(cfe): or Rule 2.
+    "MRS-GATE-020": Verdict.GATE_FAILED,
+    "MRS-GATE-021": Verdict.GATE_FAILED,
+    # Story 82.9 (found registering the touched-module coverage of `cli/checkpoint.py`):
+    # `marshal factory checkpoint`'s three precondition failures -- no dispatch worktree in
+    # the journal (001), not inside a git repository (002), no loop home (003). ERROR, the
+    # tier of MRS-SPIN-002/003 and MRS-DISP-001..008: the command was asked to commit a
+    # worktree that does not exist, which is neither a could-not-evaluate nor a warning.
+    "MRS-CHK-001": Verdict.ERROR,
+    "MRS-CHK-002": Verdict.ERROR,
+    "MRS-CHK-003": Verdict.ERROR,
+    # Story 82.4 (spec-pyforge-marshal CAP-2): 011 an attach whose ownership the
+    # journal could not prove (a quarantined line, no launch/resume entry), 012
+    # a tampered journal that made the supervisor stop the watched run, 013 the
+    # same tamper with no harness run id to stop against, and MRS-SPIN-018 a
+    # `supervisor-spawn` observation that could not be journaled. All WARN, the
+    # tier of MRS-SUPV-003/005 and MRS-SPIN-006/007: each names a degraded
+    # supervision condition over a run that is otherwise live -- a classification
+    # that exited non-zero over a launch that succeeded would invite the
+    # double-dispatch MRS-SPIN-006's own note warns about.
+    "MRS-SUPV-011": Verdict.WARN,
+    "MRS-SUPV-012": Verdict.WARN,
+    "MRS-SUPV-013": Verdict.WARN,
+    "MRS-SPIN-018": Verdict.WARN,
     # Story 28.8 (derived context recomputes only on source change,
     # SPEC-marshal-token-economy CAP-5). 001 is UNEVALUABLE for the same
     # reason MRS-POLICY-001 is: marshal could not determine WHAT the
@@ -1192,6 +1339,27 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # blocks a run".
     "MRS-CTX-001": Verdict.UNEVALUABLE,
     "MRS-CTX-002": Verdict.WARN,
+    # Story 46.1 (a bare clone bootstraps the substrate, spec-pyforge-marshal
+    # CAP-192). A rebuild (003), a refused pack (005) and a pack with a gap
+    # (006) are WARN: the substrate still arrives, loudly and attributably.
+    # A member neither fetched nor rebuilt (004) and a pack with nothing to
+    # pack (007) are UNEVALUABLE: there is no substrate to answer with.
+    "MRS-CTX-003": Verdict.WARN,
+    "MRS-CTX-004": Verdict.UNEVALUABLE,
+    "MRS-CTX-005": Verdict.WARN,
+    "MRS-CTX-006": Verdict.WARN,
+    "MRS-CTX-007": Verdict.UNEVALUABLE,
+    # Story 46.2 (the canonical context bundle is digest-pinned,
+    # spec-pyforge-marshal CAP-192). A digest mismatch (008) is WARN, the
+    # same never-blocking tier as the rest of this area: the two harnesses
+    # disagree on what to open with, but the bundle itself still assembled.
+    "MRS-CTX-008": Verdict.WARN,
+    # Story 46.6 (a persistence advisory for a lapsed [context] layer,
+    # spec-pyforge-marshal CAP-193, fold-remint of spec-marshal-token-economy
+    # CAP-20). WARN, the same never-blocking tier as the rest of this area:
+    # a declared-active layer's kit item or scribe binary no longer
+    # resolves, but the session/iteration itself is otherwise unaffected.
+    "MRS-CTX-009": Verdict.WARN,
     "MRS-PLAN-001": Verdict.WARN,
     # Story 28.7 (index freshness is an advisory finding,
     # SPEC-marshal-token-economy CAP-10): all four staleness codes are
@@ -1216,14 +1384,18 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-WATCH-002": Verdict.ERROR,
     "MRS-WATCH-003": Verdict.WARN,
     "MRS-WATCH-004": Verdict.WARN,
-    # Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1): a pre-launch
-    # `scribe recall` attempt that degraded (CLI unresolved/non-zero/
-    # timeout, or the artifact write failed). The SAME WARN tier and the
-    # SAME reason as MRS-DISP-033/MRS-SPIN-017/MRS-PREFLIGHT-015 above: a
-    # token-economy-adjacent layer that did not engage over a dispatch that
-    # is otherwise entirely viable -- the dev pass still launches with no
-    # auto-recalled feedback rather than being blocked.
-    "MRS-SPIN-018": Verdict.WARN,
+    # Story 65.1 (spec-pyforge-marshal CAP-274): `marshal factory drain
+    # --plan`. 001 is the one hard rung -- a station's next story would be
+    # refused (or is parked in prose, or already landed), so the plan exits
+    # like the refusal it foresees. 002-004 report what a drain would do
+    # anyway or what only reorders it: WARN, exit 0. 005 is UNEVALUABLE for
+    # the reason MRS-DRAIN-003's ledger read is not an ERROR: the station's
+    # plan could not be computed, which is never a clean plan.
+    "MRS-DRAINPLAN-001": Verdict.ERROR,
+    "MRS-DRAINPLAN-002": Verdict.WARN,
+    "MRS-DRAINPLAN-003": Verdict.WARN,
+    "MRS-DRAINPLAN-004": Verdict.WARN,
+    "MRS-DRAINPLAN-005": Verdict.UNEVALUABLE,
 }
 
 
