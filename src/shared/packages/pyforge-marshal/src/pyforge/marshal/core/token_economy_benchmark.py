@@ -208,9 +208,7 @@ def context_layers_only_layer(layer: str, *, aggressiveness: str = "medium") -> 
     """Resolved ``[context]`` block with exactly one layer enabled (Story 46.9)."""
     if layer not in policy.CONTEXT_LAYER_NAMES:
         raise ValueError(f"unknown context layer: {layer!r}")
-    return {
-        name: {"enabled": name == layer, "aggressiveness": aggressiveness} for name in policy.CONTEXT_LAYER_NAMES
-    }
+    return {name: {"enabled": name == layer, "aggressiveness": aggressiveness} for name in policy.CONTEXT_LAYER_NAMES}
 
 
 def build_per_layer_leg_row(

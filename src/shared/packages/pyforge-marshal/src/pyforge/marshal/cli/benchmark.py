@@ -229,7 +229,7 @@ def _prompt_cache_hit_rate_for_story(home: Path, run_id: str, story_key: str) ->
                 cache_read_tokens=int(tokens.get("cache_read_tokens") or tokens.get("cache_read") or 0),
                 cache_creation_tokens=int(tokens.get("cache_creation_tokens") or tokens.get("cache_write") or 0),
             )
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             return None
     return None
 
