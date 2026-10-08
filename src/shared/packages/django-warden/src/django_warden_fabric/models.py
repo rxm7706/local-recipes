@@ -133,3 +133,49 @@ class FleetRepoScan(models.Model):
 
     def __str__(self) -> str:
         return f"{self.fleet_repo.full_name} ({self.status})"
+
+
+class FixProposal(models.Model):
+    """One operator-gated fleet fix (Story 16.3)."""
+
+    class State(models.TextChoices):
+        QUEUED = "queued", "Queued"
+        APPROVED = "approved", "Approved"
+        OPENED = "opened", "Opened"
+        FAILED = "failed", "Failed"
+        DISMISSED = "dismissed", "Dismissed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    fleet_repo_scan = models.ForeignKey(
+        FleetRepoScan,
+        on_delete=models.CASCADE,
+        related_name="fix_proposals",
+    )
+    repo_full_name = models.CharField(max_length=512)
+    finding_id = models.CharField(max_length=512)
+    action = models.CharField(max_length=32)
+    target = models.CharField(max_length=512, blank=True, default="")
+    planned_paths_json = models.TextField(blank=True, default="[]")
+    state = models.CharField(
+        max_length=16,
+        choices=State.choices,
+        default=State.QUEUED,
+    )
+    pr_url = models.TextField(blank=True, default="")
+    error = models.TextField(blank=True, default="")
+    approved_by = models.CharField(max_length=255, blank=True, default="")
+    approved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("fleet_repo_scan", "finding_id"),
+                name="warden_fabric_fixproposal_scan_finding_uniq",
+            ),
+        ]
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.repo_full_name} {self.finding_id} ({self.state})"

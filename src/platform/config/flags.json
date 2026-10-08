@@ -225,6 +225,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.warden.fleet_fix_proposals": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "warden",
+        "story": "16-3-each-fleet-fix-waits-in-a-proposal-queue-for-operator-approval",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.warden.non_python_ecosystems": {
       "state": "ENABLED",
       "variants": {
