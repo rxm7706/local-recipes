@@ -39,7 +39,7 @@ def _git(repo: Path, *args: str) -> None:
 
 
 def _mini_pixi(*tasks: str) -> str:
-    body = '[feature.guild-tasks.tasks.pr-preflight-lanes]\ndepends-on = [\n'
+    body = "[feature.guild-tasks.tasks.pr-preflight-lanes]\ndepends-on = [\n"
     body += ",\n".join(f'  "{name}"' for name in tasks)
     body += "\n]\n\n"
     for name in tasks:

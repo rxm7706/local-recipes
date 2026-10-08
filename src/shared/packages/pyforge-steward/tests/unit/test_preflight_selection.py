@@ -48,6 +48,7 @@ def _run_journal_record(repo: Path) -> dict:
     records = [json.loads(line) for line in lines if line.strip()]
     return next(record for record in reversed(records) if "lanes" in record)
 
+
 STATIONS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
 LINT = {"ruff", "ruff-format", "mypy", "target-version-check", "precommit-config-check"}
 SPEC_ALWAYS_ON = {"detectors-ci", "pyforge-doctor-scripts-test", "docs-map-render-test", "docs-gen-test"}

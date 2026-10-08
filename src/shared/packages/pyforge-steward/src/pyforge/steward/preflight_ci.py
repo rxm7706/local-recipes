@@ -996,9 +996,7 @@ def static_service_mutex_keys(
         workflows = load_workflows(repo_root.resolve())
     except _SelectAll:
         return {(lane.task, lane.environment): None for lane in lanes}
-    return {
-        (lane.task, lane.environment): _static_service_mutex_key(lane, workflows, pixi_data) for lane in lanes
-    }
+    return {(lane.task, lane.environment): _static_service_mutex_key(lane, workflows, pixi_data) for lane in lanes}
 
 
 def service_mutex_keys(

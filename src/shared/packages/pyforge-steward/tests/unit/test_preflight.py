@@ -77,9 +77,7 @@ def test_real_pixi_lists_every_leaf_once() -> None:
 def test_missing_aggregate_exits_2(tmp_path: Path) -> None:
     pixi_path = tmp_path / "pixi.toml"
     pixi_path.write_text("[feature.guild-tasks.tasks.other]\ncmd = 'true'\n", encoding="utf-8")
-    assert (
-        preflight.run_preflight(tmp_path, pixi_path=pixi_path, **_SERIAL) == preflight.EXIT_CONFIG
-    )
+    assert preflight.run_preflight(tmp_path, pixi_path=pixi_path, **_SERIAL) == preflight.EXIT_CONFIG
 
 
 def test_unknown_task_exits_2(tmp_path: Path) -> None:
@@ -88,9 +86,7 @@ def test_unknown_task_exits_2(tmp_path: Path) -> None:
         '[feature.guild-tasks.tasks.pr-preflight-lanes]\ndepends-on = ["missing-task"]\n',
         encoding="utf-8",
     )
-    assert (
-        preflight.run_preflight(tmp_path, pixi_path=pixi_path, **_SERIAL) == preflight.EXIT_CONFIG
-    )
+    assert preflight.run_preflight(tmp_path, pixi_path=pixi_path, **_SERIAL) == preflight.EXIT_CONFIG
 
 
 def test_third_lane_red_stops_and_journals(tmp_path: Path) -> None:
