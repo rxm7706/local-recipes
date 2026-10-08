@@ -92,8 +92,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-08T14:37:46-05:00'
-      tree: 343bdf9a2e49a9650b0402f9a0de27209fd670b9-dirty
+      derived_at: '2026-10-08T15:38:46-05:00'
+      tree: e2eb8057a9755c3a5e072165920a4e1cadd36a9a
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
