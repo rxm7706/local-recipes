@@ -4,7 +4,9 @@ Task-oriented instructions for building and testing individual recipes locally.
 
 For first-time environment setup, see [Getting started](../tutorials/getting-started.md).
 
-> **Everyday rattler-build route:** prefer `pixi run -e local-recipes recipe-build recipes/<name>` (native, fast). The `build` env is for legacy `meta.yaml` only — rattler-build lives in `local-recipes`. See [Getting started](../tutorials/getting-started.md) for install steps.
+> **Install:** everyday PyForge work uses `pixi install -e pyforge-foundry-full` (laptop SBOM). Recipe builds need the factory env too: `pixi install -e local-recipes` (~10 GB). See [Getting started](../tutorials/getting-started.md).
+>
+> **Everyday rattler-build route:** prefer `pixi run -e local-recipes recipe-build recipes/<name>` (native, fast). The `build` env is for legacy `meta.yaml` only — rattler-build lives in `local-recipes`.
 
 > **Mason-backed route** (Story 16.2, `pyforge-mason` — CAP-2): same native rattler-build,
 > invoked through the `mason` CLI's `recipe build` verb instead of the bare `local-recipes`
@@ -144,7 +146,7 @@ pixi run -e build python test-recipes.py --filter "aws-*" --platform linux-64
 wsl bash -c "curl -fsSL https://pixi.sh/install.sh | bash"
 
 # Install the local-recipes environment in WSL (rattler-build lives here, not in `build`)
-wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi install -e local-recipes"
+wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi install -e pyforge-foundry-full && ~/.pixi/bin/pixi install -e local-recipes"
 
 # Verify rattler-build works
 wsl bash -c "cd /mnt/c/path/to/local-recipes && ~/.pixi/bin/pixi run -e local-recipes rattler-build --version"

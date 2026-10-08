@@ -64,7 +64,7 @@ def test_docsite_check_runs_pages_check_with_path_filters() -> None:
 def test_pr_preflight_site_check_leg_unchanged() -> None:
     root = _repo_root()
     pixi = tomllib.loads((root / "pixi.toml").read_text(encoding="utf-8"))
-    preflight = pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight"]
+    preflight = pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight-lanes"]
     legs = preflight["depends-on"]
     site_legs = [leg for leg in legs if isinstance(leg, dict) and leg.get("task") == "site-check"]
     assert site_legs == [{"task": "site-check", "environment": "site"}]
@@ -113,6 +113,7 @@ def test_assemble_refuses_mount_collision(tmp_path: Path) -> None:
             artifact,
             repo_root=repo,
             skip_herald_build=True,
+            skip_docs_site_build=True,
         )
     assert exc.value.code == 1
 

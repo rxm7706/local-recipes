@@ -22,7 +22,7 @@ Use the instruction-surface conventions in `AGENTS.md` to make any coding agent 
 - `pixi run -e pyforge-guild claude-instruction-mode-check` reports a finding.
 
 :::note[Prerequisites]
-A clone of the repo with the `pyforge-guild` pixi environment installed (`pixi install -e pyforge-guild`), and the coding agent itself installed and signed in. For Claude Code, version 2.1.277 or later adds the native `AGENTS.md` reader; older versions still work through the import described below.
+A clone of the repo with the laptop SBOM installed (`pixi install -e pyforge-foundry-full`; planning-chain tasks run with `-e pyforge-guild`, which that env includes), and the coding agent itself installed and signed in. For Claude Code, version 2.1.277 or later adds the native `AGENTS.md` reader; older versions still work through the import described below.
 :::
 
 ## Claude Code

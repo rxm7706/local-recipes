@@ -261,7 +261,7 @@ development_status:
   61-4-signed-outbound-slice: done
   61-5-quarantine-mint-then-reject: done
   62-1-the-catalog-names-eight-measures-and-their-states: done
-  62-2-add-switch-and-archive-without-a-rewrite: backlog
+  62-2-add-switch-and-archive-without-a-rewrite: done
   62-3-consumers-cite-on-rows-only: done
   63-1-the-pyforge-guild-feature-and-environment-exist-and-the-guild-tasks-live-in-it: done
   63-2-every-agent-surface-names-pyforge-guild-as-the-session-default: done
@@ -277,13 +277,13 @@ development_status:
   66-1-lint-and-types-gate-the-ten-packages-locally-and-on-the-runners-alike: done
   66-2-the-pre-commit-set-attribution-lines-and-un-preflighted-pushes-are-refused-by-hooks: done
   67-1-the-sbom-composes-the-laptop-bill-of-materials-on-three-platforms-with-postgresql-17-held: done
-  67-2-one-laptop-gate-proves-the-laptop-needs-nothing-beyond-the-sbom: backlog
-  67-3-every-gap-and-every-fat-only-pin-has-a-disposition-and-an-owner: backlog
+  67-2-one-laptop-gate-proves-the-laptop-needs-nothing-beyond-the-sbom: done
+  67-3-every-gap-and-every-fat-only-pin-has-a-disposition-and-an-owner: done
   67-4-upstream-tickets-for-the-gaps-that-need-one: blocked
-  67-5-the-estate-points-at-the-sbom: backlog
+  67-5-the-estate-points-at-the-sbom: done
   67-6-index-herald-s-dossier-states-the-cutover-s-control-plane-herald-26-1: done
   67-7-index-scribe-s-instruction-surface-names-the-estate-first-scribe-21-1: done
-  67-8-the-cutover-spine-drops-the-archive: backlog
+  67-8-the-cutover-spine-drops-the-archive: done
   68-1-a-workspace-archive-holds-the-work-not-the-environments-and-one-bad-record-never-stops-the-sweep: done
   68-2-the-pre-push-gate-skips-a-push-that-carries-nothing-new-and-its-journal-names-what-was-pushed: done
   69-1-workspace-clean-keeps-a-note-not-a-tarball-for-a-worktree-already-on-its-source: done
@@ -293,8 +293,8 @@ development_status:
   7-4-state-outlives-the-container: done
   7-5-the-image-proves-itself-at-build-time: done
   70-1-steward-reads-the-workspace-source-and-branch-and-origin-main-by-their-full-refs: done
-  71-1-every-preflight-run-journals-each-lane-s-wall-time-and-exit-code: backlog
-  71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files: backlog
+  71-1-every-preflight-run-journals-each-lane-s-wall-time-and-exit-code: done
+  71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files: done
   71-3-selected-lanes-run-concurrently-and-share-no-mutable-state: backlog
   71-4-a-station-s-coverage-gate-reuses-its-own-suite-s-run: backlog
   71-5-the-two-lanes-every-branch-runs-fit-the-budget: backlog
@@ -460,7 +460,7 @@ development_status:
   epic-60-retrospective: optional
   epic-61: done
   epic-61-retrospective: optional
-  epic-62: in-progress
+  epic-62: done
   epic-62-retrospective: optional
   epic-63: done
   epic-63-retrospective: optional
@@ -480,7 +480,7 @@ development_status:
   epic-7-retrospective: optional
   epic-70: done
   epic-70-retrospective: optional
-  epic-71: backlog
+  epic-71: in-progress
   epic-71-retrospective: optional
   epic-72: backlog
   epic-72-retrospective: optional

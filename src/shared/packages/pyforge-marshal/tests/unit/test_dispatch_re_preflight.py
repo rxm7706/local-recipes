@@ -123,3 +123,46 @@ def test_a_spec_change_still_only_rate_limits_a_verify_gate(tmp_path: Path) -> N
 @pytest.mark.parametrize("gate", ["MRS-DISP-041", "MRS-DISP-053", "MRS-DISP-055"])
 def test_the_other_dispatch_refusals_stay_out_of_the_re_preflight_set(gate: str) -> None:
     assert not re_preflight.is_re_preflightable_gate(gate)
+
+
+# --- Story 65.2 (CAP-274): MRS-DISP-050 -------------------------------------------------------------
+
+_SPEC_BINDING_GATE = "MRS-DISP-050"
+_SPEC_BINDING_DETAIL = f"{_SPEC_BINDING_GATE}: tracked spec cannot bind before launch -- MRS-GATE-010"
+
+
+def test_the_spec_binding_refusal_is_a_re_preflightable_gate() -> None:
+    assert re_preflight.parse_refuse_gate(_SPEC_BINDING_DETAIL) == _SPEC_BINDING_GATE
+    assert re_preflight.is_re_preflightable_gate(_SPEC_BINDING_GATE)
+    assert _SPEC_BINDING_GATE in re_preflight._RE_PREFLIGHTABLE_GATES
+
+
+def test_a_changed_spec_fingerprint_clears_the_spec_binding_block(tmp_path: Path) -> None:
+    _write_spec(tmp_path, "---\n---\n# no verification\n")
+    prior = _predicate(tmp_path, gate=_SPEC_BINDING_GATE)
+    _write_spec(
+        tmp_path,
+        "---\n---\n## Verification\n\n**Commands:**\n\n**Manual checks:**\n- none\n",
+    )
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=_SLUG,
+        blocked={_STORY: _SPEC_BINDING_DETAIL},
+        prior_predicates={_STORY: prior},
+    )
+    assert kept == {}
+    assert [r.decision for r in results] == [re_preflight.RePreflightDecision.CLEARED]
+
+
+def test_a_verify_config_change_clears_the_spec_binding_block(tmp_path: Path) -> None:
+    _write_spec(tmp_path, "---\n---\n# no verification\n")
+    prior = _predicate(tmp_path, gate=_SPEC_BINDING_GATE, verify=("pytest -q",))
+    kept, results = re_preflight.reconcile_station_re_preflight(
+        repo_root=tmp_path,
+        slug=_SLUG,
+        blocked={_STORY: _SPEC_BINDING_DETAIL},
+        verify_commands=("pytest -q", "ruff check"),
+        prior_predicates={_STORY: prior},
+    )
+    assert kept == {}
+    assert [r.decision for r in results] == [re_preflight.RePreflightDecision.CLEARED]

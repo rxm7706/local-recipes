@@ -27,6 +27,10 @@ spec_updated: 2026-07-24
 > (Story 23.3). Any agent/human can execute it. It has **no** conda-forge
 > surface, so CLAUDE.md Rules 1 & 2 (invoke `conda-forge-expert`, run a CFE
 > retro) do **not** apply.
+>
+> **Pixi:** install `pixi install -e pyforge-foundry-full` for everyday work; deck export
+> tasks (`deck-export`, `marp`, …) live in `local-recipes` — add `pixi install -e local-recipes`
+> when you run them.
 
 ---
 

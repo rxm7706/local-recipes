@@ -381,7 +381,9 @@ def test_run_dispatch_spawns_completion_supervisor_without_waiting(
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
     spec = specs / f"spec-{story}.md"
-    spec.write_text("---\ndifficulty: medium\n---\n# spec\n", encoding="utf-8")
+    from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
+
+    spec.write_text(f"---\ndifficulty: medium\n---\n# spec\n{BINDING_VERIFICATION_TAIL}", encoding="utf-8")
 
     fs = FakeFs()
     vcs = FakeVcs(tmp_path, head_sha="deadbeef0001")

@@ -53,11 +53,14 @@ class RePreflightResult:
 
 #: Story 74.2: the refusal a fingerprint change (a spec edit) clears.
 _FLAG_GATE_REFUSAL = "MRS-DISP-052"
+#: Story 65.2: pre-launch spec binding refusal; clears when the spec or verify config changes.
+_SPEC_BINDING_REFUSAL = "MRS-DISP-050"
 
 # Gates whose refuse reason can change without operator intervention.
 _RE_PREFLIGHTABLE_GATES: frozenset[str] = frozenset(
     {
         "MRS-DISP-005",  # missing/unreadable tracked spec
+        _SPEC_BINDING_REFUSAL,  # Story 65.2: spec cannot bind before launch
         _FLAG_GATE_REFUSAL,  # Story 74.2: the flag gate reds (or cannot judge) the spec; an edit re-preflights it
         "MRS-GATE-001",
         "MRS-GATE-002",
@@ -194,6 +197,22 @@ def reconcile_station_re_preflight(
             # Story 74.2: the spec was edited after the refusal -- the change a
             # cheap tick-local fingerprint can see. Clear, and the next tick's
             # dispatch_once consults the gate again (this module never asks it).
+            results.append(
+                RePreflightResult(
+                    story=story,
+                    gate=gate,
+                    decision=RePreflightDecision.CLEARED,
+                    prior_detail=detail,
+                    predicate=current,
+                )
+            )
+            continue
+        if gate == _SPEC_BINDING_REFUSAL and (
+            previous.spec_fingerprint != current.spec_fingerprint
+            or verify_rerun_needed(prior=previous, current=current)
+        ):
+            # Story 65.2: a spec edit or verify_commands change may fix binding;
+            # the next tick's dispatch_once re-runs the predicate (never here).
             results.append(
                 RePreflightResult(
                     story=story,

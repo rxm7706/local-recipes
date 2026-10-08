@@ -48,9 +48,14 @@ jobs:
       - id: pages
         uses: actions/configure-pages@v6
 
-      - name: Build and verify the unified Pages artifact
+      - name: Resolve Pages host env (flag + configure-pages)
+        run: |
+          pixi run --frozen -e pyforge-guild python docsite/tools/export_pages_host_env.py >> "$GITHUB_ENV"
         env:
-          SITE_URL: ${{ steps.pages.outputs.base_url }}
+          PAGES_HOST_BASE_URL: ${{ steps.pages.outputs.base_url }}
+          PAGES_HOST_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+
+      - name: Build and verify the unified Pages artifact
         run: pixi run --frozen -e site pages-check
 
       - name: Verify the dossier's numbers against the source tree

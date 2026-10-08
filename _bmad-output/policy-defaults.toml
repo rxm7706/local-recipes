@@ -53,8 +53,9 @@ max_followup_reviews = 2
 # default and loses to a project's marshal-policy.toml / --set flags.
 harness_preference = ["claude", "cursor", "copilot", "gemini", "devin"]
 
-# context (Story 46.4): repo-wide default for the 5-layer [context] block
-# (Story 28.1, CAP-1). The 4 harness-agnostic layers default ON everywhere;
+# context (Story 46.4): repo-wide default for the 6-layer [context] block
+# (Story 28.1, CAP-1; recall added Story 47.3, CAP-3). The harness-agnostic
+# layers default ON everywhere;
 # `wire` alone defaults to the tri-state "auto" -- resolved per-launch,
 # against the concrete harness profile, to on iff that profile declares a
 # [wrapper] (off for a profile like cursor's that declares none, per Story
@@ -73,6 +74,9 @@ enabled = true
 enabled = true
 
 [context."planning-graph"]
+enabled = true
+
+[context.recall]
 enabled = true
 
 [context.wire]

@@ -15,7 +15,7 @@ verified: 2026-09-20
 This tutorial guides Platform Builders and New Developers through standing up the `src/platform/` Django application locally. The PyForge platform is the central monolithic host for the enterprise API, Wagtail CMS, and local AI engines.
 
 ## Prerequisites
-- A working `pixi` installation.
+- A working `pixi` installation and the laptop SBOM (`pixi install -e pyforge-foundry-full`). Platform work adds `platform-dev` (or `pyforge-foundry-full-stack` on linux-64, which composes it) — not `-e local-recipes`.
 - Ensure you have read the [PyForge Ecosystem Architecture](../explanation/pyforge-ecosystem-architecture.md) to understand the relationship between the platform and the CLI stations.
 
 ## Step 1: Provision the Development Environment

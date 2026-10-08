@@ -14,6 +14,10 @@ The PyForge Estate supports multiple agentic engines integrated directly with th
 
 ## Spinning up the Local Environment
 
+Install the laptop SBOM first (`pixi install -e pyforge-foundry-full`). On linux-64,
+`pyforge-foundry-full-stack` composes `platform-dev` and is the one-shot platform laptop
+env; otherwise add `platform-dev` explicitly.
+
 To run the full stack locally without Docker (PostgreSQL + pgvector, Redis, and the Silo S3-compatible object store all ship as per-user server processes), use the `platform-dev` environment, which composes `python-agent-platform` with those local services.
 
 1. **Install the environment:**

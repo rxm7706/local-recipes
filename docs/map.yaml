@@ -40,6 +40,10 @@ pages:
     quadrant: how-to
     owner: fleet
     kind: authored
+  - path: how-to/deploy-the-docs-site-to-github-enterprise-pages.md
+    quadrant: how-to
+    owner: herald
+    kind: authored
   - path: how-to/driving-a-pyforge-station-backlog.md
     quadrant: how-to
     owner: fleet
@@ -88,8 +92,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-10-08T03:06:14-05:00'
-      tree: 1bf6c5a138cb55ad4da80598789eaf5ef917e056-dirty
+      derived_at: '2026-10-08T15:38:46-05:00'
+      tree: e2eb8057a9755c3a5e072165920a4e1cadd36a9a
   - path: how-to/presentation-deck.md
     quadrant: how-to
     owner: fleet
@@ -173,8 +177,8 @@ pages:
     sources:
       - pixi.toml
     stamp:
-      derived_at: '2026-09-26T15:26:04-05:00'
-      tree: 6022314f3c88eba21f866e6b64a0e4fac712e61a-dirty
+      derived_at: '2026-10-08T14:37:46-05:00'
+      tree: 343bdf9a2e49a9650b0402f9a0de27209fd670b9-dirty
   - path: reference/github-workflows.md
     quadrant: reference
     owner: fleet

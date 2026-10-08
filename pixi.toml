@@ -949,7 +949,7 @@ depends-on = ["docs-site-install", "docs-site-sidebar"]
 [feature.site.tasks.pages-build]
 description = "Build the unified GitHub Pages artifact (Starlight + herald + dashboard mounts and legacy redirects)."
 cmd = "python docsite/tools/assemble_pages.py"
-depends-on = ["docs-site-build"]
+depends-on = ["docs-site-install", "docs-site-sidebar"]
 
 [feature.site.tasks.pages-check]
 description = "Build and verify the unified GitHub Pages artifact (Story 27.2)."
@@ -1563,8 +1563,24 @@ depends-on = [
   { task = "pyforge-warden-coverage-gate", environment = "pyforge-warden" },
 ]
 
-[feature.guild-tasks.tasks.pr-preflight]
-description = """Run locally, before pushing, everything a PR to rxm7706/local-recipes actually gates on. One command, so a green local run means a green CI run.
+[feature.guild-tasks.tasks.sbom-laptop-gate]
+description = "Story 67.2 (fnd:CAP-13): prove the laptop needs nothing beyond pyforge-foundry-full — lint-types, every station suite, platform bring-up smoke (manifest policy subset + requirements retirement guard), then a pixi.lock channel audit and import probes. Never -e local-recipes. Exit 0 pass / 1 findings / 2 could-not-run (docs/reference/judgement-vocabulary.md)."
+cmd = "python scripts/sbom_laptop_gate.py"
+depends-on = [
+  "lint-types",
+  "pyforge-station-tests",
+  "platform-ci-test-requirements-check",
+  "platform-policy-suite-check",
+]
+
+[feature.guild-tasks.tasks.sbom-gaps-check]
+description = "Story 67.3 (fnd:CAP-13): read-only check that docs/foundry/sbom-gaps.md lists every feature outside pyforge-foundry-full and pyforge-foundry-full-stack and every fat-only local-recipes pin, each with promote / won't-do / upstream, a reason and an owner — derived from pixi.toml via scripts/sbom_gap_derive.py. Exit 0 pass / 1 findings (docs/reference/judgement-vocabulary.md)."
+cmd = "python scripts/sbom_gap_derive.py"
+
+[feature.guild-tasks.tasks.pr-preflight-lanes]
+description = """Serial reference for every lane a PR gates on — same graph ``pr-preflight`` runs, without journaling. Story 71.1 moved this aggregate here unchanged; ``pr-preflight`` is now ``python -m pyforge.steward.preflight``.
+
+Run locally, before pushing, everything a PR to rxm7706/local-recipes actually gates on. One command, so a green local run means a green CI run.
 
 Covers the four lanes that red a PR: `detectors-ci` (the CI detector subset), `test-ci` (the CFE regression suite — this is the lane that owns the spec-surface meta-test), `pyforge-station-tests` (pyforge-core + all 8 station suites, which ALL fire together on any shared-surface change), and `pyforge-station-coverage-gates` (the touched-module coverage floors).
 
@@ -1574,6 +1590,10 @@ NOT covered (needs Docker/podman or a live service): the container/guild-contain
 
 Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) mirrors the new `docsite-check.yml` `pull_request` lane -- until then no `pr-preflight` leg, and no PR-gating CI lane at all, ran `docsite/build.py`, so a broken family-page template could merge with every gate green. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, which `pyforge-doctor-scripts-test` already covers for the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, not a declared `pyforge-ci` dependency (each test file skips cleanly there via `pytest.importorskip` if that ever stops being transitively available), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here. Tenth leg added 2026-10-08 (herald Story 27.4, spec-pyforge-herald CAP-52): `docs-site-validate` (`-e site`) mirrors the link, sidebar-order and map checks `docsite-check.yml` runs on every PR touching `docs/**` or `docs-site/**`; without it a broken docs link or a sidebar out of `docs/map.yaml` order could pass every local gate. It needs only node (no npm install, no build), so it runs unconditionally until steward Story 71.2 selects legs by each lane's paths."""
 depends-on = ["lint-types", "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "site-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
+
+[feature.guild-tasks.tasks.pr-preflight]
+description = "Story 71.1 (spec-pyforge-steward CAP-159): run pr-preflight-lanes serially, journal each lane's wall time and exit code to .steward/preflight-runs.jsonl, stop on the first red leg — same lanes and verdict as pr-preflight-lanes. The pre-push hook still calls pixi run --frozen -e pyforge-guild pr-preflight."
+cmd = "python -m pyforge.steward.preflight"
 
 [feature.local-recipes.tasks.eval-quality-smoke]
 description = "Story 45.2: compiles the shipped bmad-eval-quality dev corpus's own worked example (satisfied-declarations.json) plus this repo's own pilot contract (evals/review-catches-planted-defect/contract.json) — a cheap sanity check that the installed eval-quality CLI and this pilot's contract still agree with the published EvalContract schema. Not a gate: never joins detectors/detectors-ci. See evals/review-catches-planted-defect/driver.py."

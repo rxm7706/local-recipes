@@ -543,7 +543,9 @@ def _dispatch_with_layer(
     story = "77-1-dispatch-seeds-the-worktree-index"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
+
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{BINDING_VERIFICATION_TAIL}", encoding="utf-8")
     if base:
         (tmp_path / ".codegraph").mkdir()
         (tmp_path / ".codegraph" / "codegraph.db").write_bytes(b"base-db-bytes")
@@ -654,7 +656,9 @@ def test_dispatch_states_the_structure_graph_disposition_even_when_the_launch_fa
     story = "77-1-dispatch-seeds-the-worktree-index"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
+
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{BINDING_VERIFICATION_TAIL}", encoding="utf-8")
     (tmp_path / ".codegraph").mkdir()
     (tmp_path / ".codegraph" / "codegraph.db").write_bytes(b"base")
     effective, _ = policy.compose(project_slug=slug, project={"context": {"structure-graph": _ON}}, flags={})
@@ -686,7 +690,9 @@ def test_a_refusal_after_the_policy_composes_still_states_the_disposition_as_off
     story = "77-1-dispatch-seeds-the-worktree-index"
     specs = dispatch_core.planning_specs_dir(tmp_path, slug)
     specs.mkdir(parents=True)
-    (specs / f"spec-{story}.md").write_text("---\n---\n# spec\n", encoding="utf-8")
+    from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
+
+    (specs / f"spec-{story}.md").write_text(f"---\n---\n# spec\n{BINDING_VERIFICATION_TAIL}", encoding="utf-8")
     (tmp_path / ".codegraph").mkdir()
     (tmp_path / ".codegraph" / "codegraph.db").write_bytes(b"base")
     effective, _ = policy.compose(project_slug=slug, project={"context": {"structure-graph": _ON}}, flags={})

@@ -3,7 +3,10 @@ title: '54.1: The hand ledger sync repairs unrelated feed drift instead of refus
 type: 'feature'
 created: '2026-09-24'
 updated: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '01de79a0b9b7fbcea7169d7aadbd6282c7433fec'
+followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -99,3 +102,30 @@ Policy: `marshal-policy.toml` `[epic_surfaces]` `"54"` admits `scripts/promote_s
 **Manual checks:**
 - `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` (or the scribe parity meta-test alone) — expected: pass after the AGENTS.md line changes.
 - `pixi run -e pyforge-guild governance-currency` — expected: exit 0.
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — self-review against diff and AC matrix)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Bare `sprint-ledger-sync` now runs the same feed repair as the former `--repair-feed` path (unless `--allow-regression`), names each repaired key on stdout, and `repair_feed` keeps trailing YAML metadata after the `development_status:` map.
+
+Files changed:
+- `scripts/promote_sprint_status.py` — default repair, metadata-preserving feed rewrite, reporting
+- `src/shared/packages/pyforge-marshal/tests/unit/test_promote_sprint_status_regressions.py` — AC and matrix coverage
+- `AGENTS.md`, `docs/how-to/one-chain-station-ops.md`, `docs/how-to/troubleshoot-bmad-agent-loops.md` — operator wording
+- Spec memlogs: `spec-pyforge-marshal`, `spec-quick-dev-reconciliation`, `spec-pyforge-scribe`
+
+Verification:
+- `pyforge-marshal-test -k promote_sprint_status`: 23 passed
+- `pyforge-deps-test`: 130 passed
+- `pyforge-scribe-test -k instruction_surface`: 32 passed
+- `governance-currency`: ok
+- `python scripts/spec_surface_reconcile.py`: ok
+
+Follow-up review recommendation: false

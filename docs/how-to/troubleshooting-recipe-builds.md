@@ -2,6 +2,10 @@
 
 Task-oriented fixes for common local build failures.
 
+> **Environments:** install `pixi install -e pyforge-foundry-full` for everyday PyForge
+> work; install `pixi install -e local-recipes` when you need rattler-build and the recipe
+> factory task surface (this page assumes the factory env is materialized).
+
 ## "rattler-build not found"
 
 ```bash
