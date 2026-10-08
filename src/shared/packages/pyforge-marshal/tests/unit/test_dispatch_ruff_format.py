@@ -238,10 +238,9 @@ def test_finalize_verification_order_is_ruff_then_verify_without_reconcile(
 
 def test_cap4_verification_order_is_ruff_then_verify(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Story 22.20: land-only CAP-4 verification still runs ruff, then verify — no reconcile."""
-    import test_dispatch as dispatch_test_helpers
-
     import importlib
 
+    import test_dispatch as dispatch_test_helpers
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.core.policy import compose
 
