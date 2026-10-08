@@ -2,9 +2,9 @@
 title: '67.5: The estate points at the SBOM'
 type: 'docs'
 created: '2026-09-25'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'ad5d6cdb1c6e196dea8441655f0e78bf26164ffb'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - docs/dreams/pyforge-unifying-strategy.md
@@ -69,3 +69,29 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 - `grep -rl 'pixi install -e local-recipes' README.md CLAUDE.md docs .claude/skills` — expected: no page teaches it as the laptop install.
 - `pixi run -e pyforge-guild detectors-ci` — expected: exit 0 (`governance-currency`).
 - `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — expected: pass (parity meta-test).
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (self-review of delta; estate doc surfaces were already on branch HEAD from prior landing work)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Closed the remaining 67.5 gap — CFE Rule-2 retro (v8.92.0) naming `pyforge-foundry-full` as the laptop install, generator intros for `docs/how-to/pixi-tasks.md` and `docs/reference/environments.md`, and spec-surface memlogs on cutover, steward, and mason Specs. Branch HEAD already carried the epic-listed doc/tutorial/how-to/steward-skill/`library-llms-full.md` prose from earlier work on this line.
+
+Files changed (this delta):
+- `.claude/skills/conda-forge-expert/*` — install policy + cheatsheet callout + semver bump
+- `scripts/docs_pixi_tasks.py`, `scripts/docs_environments.py` — laptop SBOM intro paragraphs
+- `docs/how-to/pixi-tasks.md`, `docs/reference/environments.md`, `docs/map.yaml` — regenerated stamps
+- Spec memlogs: `spec-python-foundry-cutover`, `spec-pyforge-steward`, `spec-pyforge-mason`
+
+Verification:
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+- `pixi run -e pyforge-guild llms-full-check` — clean
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — pass after sanctioned `retro:` commit (CFE guard)
+- Manual: `grep -rl 'pixi install -e local-recipes' …` hits only pages that pair it with `pyforge-foundry-full` as factory add-on, not as sole laptop install
+
+Follow-up review recommended: false

@@ -2,7 +2,9 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.91.9** (Oct 5, 2026, current) — **Retired-id guard scans marshal planning docs (PATCH; marshal Story 86.7).** `test_no_retired_bmad_skill_ids.py` adds `SCAN_GLOB_FLOORS` for `architecture-bmad-infra.md` and `development-guide.md` under pyforge-marshal planning artifacts; living-doc rows carry same-line retired/6.11 glosses so the guard passes on the widened scope.
+**v8.92.0** (Oct 8, 2026, current) — **Estate install docs name `pyforge-foundry-full` as laptop SBOM (MINOR; steward Story 67.5 / fnd:CAP-12).** Added Pixi environment policy to `SKILL.md`, install callout on `quickref/commands-cheatsheet.md`, and aligned onboarding prose with `AGENTS.md`: laptop `pixi install -e pyforge-foundry-full`, recipe factory `local-recipes` at scale only. Verified existing recipe-task guidance unchanged.
+
+**v8.91.9** (Oct 5, 2026) — **Retired-id guard scans marshal planning docs (PATCH; marshal Story 86.7).** `test_no_retired_bmad_skill_ids.py` adds `SCAN_GLOB_FLOORS` for `architecture-bmad-infra.md` and `development-guide.md` under pyforge-marshal planning artifacts; living-doc rows carry same-line retired/6.11 glosses so the guard passes on the widened scope.
 
 **v8.91.8** (Oct 4, 2026) — **G62 survivor gate uses anchored line matching (PATCH; mason Story 27.2 review).** `_cfe_push_strip.assert_no_cfe_metadata_surfaces` matches `cfe-`, `#### CFE`, and `# CFE metadata` / `# CFE comments` with a line-anchored regex instead of substring scans, so innocuous recipe text does not false-positive.
 

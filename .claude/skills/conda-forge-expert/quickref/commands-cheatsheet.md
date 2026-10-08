@@ -2,6 +2,11 @@
 
 Quick reference for common conda-forge packaging commands.
 
+> **Pixi installs:** `pixi install -e pyforge-foundry-full` is the laptop SBOM (Guild +
+> stations). Add `pixi install -e local-recipes` for the recipe factory (~10 GB). Commands
+> below that say `-e local-recipes` are factory-scoped; Guild/detector tasks use
+> `-e pyforge-guild` (see `AGENTS.md`).
+
 ## Package Managers
 
 ### pixi (Recommended)
