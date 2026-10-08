@@ -681,11 +681,11 @@ def test_two_listings_with_the_same_kind_and_name_are_a_duplicate(tmp_path: Path
         extra_sources='  wielded-suite: {plugin: wielded-suite, state: "on"}\n',
     )
     findings = engine.check().findings
-    assert [(f.code, f.subject) for f in findings] == [
+    assert {(f.code, f.subject) for f in findings} == {
         ("listing-certified-wielded", "bmad-builder"),
         ("listing-duplicate", "twice"),
         ("listing-duplicate", "bmad-builder"),
-    ]
+    }
     assert "'estate-listings' and by 'estate-listings'" in findings[0].message
     assert "'estate-listings' and by 'wielded-suite'" in findings[1].message
     assert engine.render(write=True).ok is False

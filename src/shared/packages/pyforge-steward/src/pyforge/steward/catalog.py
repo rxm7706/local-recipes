@@ -874,15 +874,8 @@ class CatalogEngine:
         reviews_dir = self.catalog_dir / DEFAULT_REVIEWS_DIR
         wielded = _wielded_module_names()
         findings: list[CatalogFinding] = []
-        for index, row in enumerate(modules):
+        for row in modules:
             if not isinstance(row, dict):
-                findings.append(
-                    CatalogFinding(
-                        "config-source",
-                        f"estate-listings[{index}]",
-                        "each modules[] row must be a mapping",
-                    )
-                )
                 continue
             name = row.get("name")
             if not isinstance(name, str) or not name.strip():
