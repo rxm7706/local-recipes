@@ -2,7 +2,7 @@
 title: 'Tier 1 catalog sources: SelfExplainML, Anaconda, Basilisk packages, AOSS (Story 21.4, Epic 21)'
 type: 'feature'
 created: '2026-08-30'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 baseline_revision: '7b87803db5180c591211e2f97d539bff77bc61f7'
 followup_review_recommended: false
@@ -632,6 +632,24 @@ here to research items instead of pins).
 
 ## Review Triage Log
 
+### 2026-10-08 — Follow-up review pass
+- verdicts: 24 findings — high 0, medium 2, low 4, false 12, maybe-false 0, reject 6 (scope/intent)
+- findings:
+  - `[medium]` `[patch]` Basilisk walk treated a zero-row page after the first as a complete catalog — mid-walk empty page now sets `partial_reason` when `collected < total`; test `test_packages_empty_followup_page_marks_partial_not_fresh` added.
+  - `[medium]` `[patch]` Story 21.4 Dagster ops had no test pinning their `NODE_TIMEOUTS` entries (fallback 600s would hide a regression on the 1200s Basilisk walk) — `test_node_timeouts_covers_the_story_21_4_nodes` added.
+  - `[low]` `[defer]` carried — offline `core` half of the multi-pipeline AC still bounded by unchanged `CondaChanneldataDataset` transport (frontmatter deferred item 1).
+  - `[low]` `[defer]` carried — `test_refresh_single_writer.py` still omits Tier-1 upstream stores (frontmatter deferred item 2).
+  - `[low]` `[defer]` carried — no attended Dagster fetcher wiring for the three new external-refresh datasets (residual risk / design).
+  - `[low]` `[defer]` carried — `NODE_TIMEOUTS` completeness test deferred (frontmatter deferred item 4).
+  - `[low]` `[reject]` catalog-sources.md companion not updated — documentation drift only; Tier-2 contract lives in catalog.yml + this spec.
+  - `[false]` SKF/pyforge-atlas SKILL not recompiled in diff — exports unchanged since landing; SKF cadence is separate.
+  - `[false]` No scale-floor tests for Anaconda Dist / AOSS premium counts — spec owns only three floors (AOSS free, Anaconda main fixture, Basilisk non-zero).
+  - `[false]` Edge-case: `_coerce_cadence` with zero ttl — parameters ship 604800; no zero keys in catalog.
+  - `[false]` Edge-case: wrong `<ul>` before Python heading — parser scopes to `#python` sibling list shape exercised in fixtures.
+  - `[false]` save() clearing `_partial_walk` before `super().save()` — `_do_refresh` repopulates during parent refresh inside `super().save()`.
+  - `[false]` Basilisk `total` undercount mid-walk — offset loop breaks when `offset >= total`; separate from server lying on `total`.
+  - `[false]` First page empty while total positive — already logs and returns empty frame; scrape failure path, not silent complete walk with rows.
+
 ### 2026-08-30 — Review pass
 - intent_gap: 0
 - bad_spec: 0
@@ -717,3 +735,20 @@ seed-path coverage.
 - No shipped run path injects a `fetcher` into the three new `ExternalRefreshDataset` subclasses (same attended / Dagster-resource pattern as `TrendingSnapshotDataset`, DW-B5-2 / DW-B8-1) — unattended runs mark the stores stale rather than populate them, by design.
 - A first-ever Basilisk walk against a flaky endpoint persists a small, visibly-stale partial that a later complete walk replaces; a later partial walk keeps (does not grow) it — the never-overwrite rule.
 - Anaconda main is sourced from the `conda.anaconda.org/anaconda` mirror (5,401) rather than `repo.anaconda.com/pkgs/main` (5,474); ~400 rows of headroom above the ≥5,000 floor.
+
+### 2026-10-08 — Follow-up review (bmad-build-auto, dispatch/pyforge-atlas/20.4)
+
+**Summary.** Independent follow-up review of the landed Tier-1 catalog diff (`7b87803d..ee4d43222f`); two medium patches applied (Basilisk mid-walk empty-page partial staleness; explicit `NODE_TIMEOUTS` pin test for Story 21.4 ops). `followup_review_recommended` cleared; `DW-FRR-20-4` closed.
+
+**Files changed (this pass):**
+- `src/shared/packages/pyforge-atlas/src/pyforge/atlas/datasets/basilisk.py` — empty follow-up page partial_reason.
+- `src/shared/packages/pyforge-atlas/tests/unit/datasets/test_basilisk.py` — regression test for empty page 2.
+- `src/shared/packages/pyforge-atlas/tests/unit/orchestration/test_definitions_dryrun.py` — Story 21.4 timeout pin test.
+- `_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md` — `DW-FRR-20-4` → closed.
+- This spec — follow-up Review Triage Log + Auto Run Result.
+
+**Review findings.** 2 patched (medium 2), 4 deferred (carried from frontmatter), 12 false, 6 rejected (out-of-scope / documentation / intentional Never). **Follow-up review recommendation: false** (no high patched on follow-up pass).
+
+**Verification performed:**
+- `pytest` targeted: `test_packages_empty_followup_page_marks_partial_not_fresh`, `test_node_timeouts_covers_the_story_21_4_nodes` — 2 passed.
+- `python scripts/spec_surface_reconcile.py` — exit 0 (memlog on `spec-pyforge-atlas` for the three atlas paths above).
