@@ -173,9 +173,7 @@ def _write_status_file(path: Path, statuses: dict[str, str]) -> None:
     path.write_text("development_status:\n" + body, encoding="utf-8")
 
 
-def test_main_repairs_missing_twin_key_on_bare_sync(
-    tmp_path, promote, monkeypatch, capsys
-):
+def test_main_repairs_missing_twin_key_on_bare_sync(tmp_path, promote, monkeypatch, capsys):
     slug = "pyforge-acme"
     feed = tmp_path / "feed.yaml"
     twin_dir = tmp_path / "_bmad-output" / "projects" / slug / "planning-artifacts"
@@ -285,11 +283,7 @@ def test_main_bare_sync_doctor_24_2_fixture(tmp_path, promote, monkeypatch, caps
 
 def test_repair_feed_preserves_trailing_metadata(tmp_path, promote):
     feed_path = tmp_path / "feed.yaml"
-    tail = (
-        "generated: '2026-09-01'\n"
-        "last_updated: '2026-09-02'\n"
-        "project: pyforge-marshal\n"
-    )
+    tail = "generated: '2026-09-01'\nlast_updated: '2026-09-02'\nproject: pyforge-marshal\n"
     feed_path.write_text(
         "# header\ndevelopment_status:\n  1-1-a: backlog\n" + tail,
         encoding="utf-8",
