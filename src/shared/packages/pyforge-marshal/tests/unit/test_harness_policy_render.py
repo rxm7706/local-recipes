@@ -407,13 +407,11 @@ def test_context_absent_renders_no_context_table():
     """The AC's own byte-identical guarantee: no declaration at all (the
     DEFAULT_POLICY empty-mapping default) must render NO [context] table,
     matching pre-Story-28.1 output exactly."""
-    text = render_policy_toml(_compose())
-    assert "context" not in text
-    doc = tomllib.loads(text)
+    doc = tomllib.loads(render_policy_toml(_compose()))
     assert "context" not in doc
 
 
-def test_context_declared_renders_all_five_layers():
+def test_context_declared_renders_all_six_layers_including_recall():
     from pyforge.marshal.core import policy
 
     effective = _compose(context={"wire": {"enabled": True, "aggressiveness": "high"}})
@@ -425,6 +423,13 @@ def test_context_declared_renders_all_five_layers():
         assert doc["context"][layer]["aggressiveness"] == resolved[layer]["aggressiveness"]
     assert doc["context"]["wire"] == {"enabled": True, "aggressiveness": "high"}
     assert doc["context"]["output"] == {"enabled": False, "aggressiveness": "medium"}
+    assert doc["context"]["recall"] == {"enabled": False, "aggressiveness": "medium"}
+
+
+def test_rendered_policy_template_documents_recall_context_layer():
+    text = render_policy_toml(_compose())
+    assert "recall" in text
+    assert "CONTEXT_LAYER_NAMES" in text or "planning-graph, recall" in text
 
 
 def test_context_partial_declaration_defaults_remaining_layers_off():

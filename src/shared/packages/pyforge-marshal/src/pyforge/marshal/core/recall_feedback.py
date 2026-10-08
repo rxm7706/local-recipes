@@ -20,18 +20,31 @@ writes an empty string instead when it does not.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from .derived_context import implementation_artifacts_relpath
 
 __all__ = (
     "RECALL_FEEDBACK_HEADER",
+    "RECALL_LAYER",
     "build_recall_query",
+    "layer_enabled",
     "recall_feedback_output_relpath",
     "render_recall_feedback_block",
 )
 
+#: The ``CONTEXT_LAYER_NAMES`` member (``core/policy.py``) Story 47.3 makes
+#: load-bearing for scoped scribe-feedback injection.
+RECALL_LAYER = "recall"
+
 #: The label distinguishing this block from the story's own spec/intent
 #: content (this story's own "clearly labeled" constraint).
 RECALL_FEEDBACK_HEADER = "# Scribe feedback (auto-recalled for this story dispatch — dev and review pass)"
+
+
+def layer_enabled(layer: Mapping[str, object] | None) -> bool:
+    """Whether the declared ``recall`` context layer is on."""
+    return bool((layer or {}).get("enabled", False))
 
 
 def build_recall_query(station_slug: str) -> str:
