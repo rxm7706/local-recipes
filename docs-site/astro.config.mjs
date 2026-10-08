@@ -17,6 +17,9 @@ export default defineConfig({
   site: `${urlParts.origin}${basePath}`,
   base: basePath,
   outDir: './build/site',
+  redirects: {
+    '/kedro-viz/': '/dashboard/kedro-viz/',
+  },
   integrations: [
     starlight({
       title: 'PyForge documentation',
