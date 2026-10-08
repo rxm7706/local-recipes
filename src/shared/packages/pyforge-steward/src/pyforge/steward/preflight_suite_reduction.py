@@ -113,7 +113,7 @@ def _scripts_top_level_modules(repo_root: Path) -> set[str]:
 def _imports_scripts_module(path: Path, script_modules: set[str]) -> str | None:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    except (OSError, SyntaxError):
+    except OSError, SyntaxError:
         return None
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -223,9 +223,7 @@ def _build_reduced_shell_cmd(parsed: _ParsedPytest, repo_root: Path, gate_run: d
         segments.append(shlex.join(other_argv))
     complement = _complement_marker(parsed.marker_expr, gate_marker)
     if complement:
-        rel_gate = [
-            str(p.relative_to(repo_root)) if p.is_relative_to(repo_root) else str(p) for p in gate_dirs
-        ]
+        rel_gate = [str(p.relative_to(repo_root)) if p.is_relative_to(repo_root) else str(p) for p in gate_dirs]
         gate_argv = [*parsed.prefix, "pytest", *rel_gate, *parsed.suffix, "-m", complement]
         segments.append(shlex.join(gate_argv))
     if not segments:
@@ -370,9 +368,7 @@ def build_suite_lane_overrides(
         if scripts_hit:
             overrides[task] = reduction_skip_journal(f"tests import scripts/ module ({scripts_hit})")
             continue
-        override = derive_suite_lane_override(
-            repo_root, station=station, pixi_data=pixi_data, gate_plan=gate_plan
-        )
+        override = derive_suite_lane_override(repo_root, station=station, pixi_data=pixi_data, gate_plan=gate_plan)
         if override is None:
             parsed = _parse_single_pytest(_task_cmd(pixi_data, task) or "")
             if parsed is None:

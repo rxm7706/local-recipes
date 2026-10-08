@@ -27,8 +27,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from pyforge.steward import preflight_ci
-from pyforge.steward import preflight_suite_reduction
+from pyforge.steward import preflight_ci, preflight_suite_reduction
 
 ROOT_AGGREGATE = "pr-preflight-lanes"
 DEFAULT_INVOKING_ENV = "pyforge-guild"

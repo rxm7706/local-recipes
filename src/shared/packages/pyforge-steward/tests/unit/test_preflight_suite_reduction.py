@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import textwrap
 from pathlib import Path
 
@@ -85,7 +84,7 @@ def test_two_pytest_task_is_not_reduced(tmp_path: Path) -> None:
             "pyforge-mason": {
                 "tasks": {
                     "pyforge-mason-test": {
-                        "cmd": 'pytest a/tests -q && pytest b/tests -q',
+                        "cmd": "pytest a/tests -q && pytest b/tests -q",
                     },
                     "pyforge-mason-coverage-gate": {
                         "cmd": "python scripts/coverage_gates_ci.py --base origin/main --head HEAD --suites unit",
