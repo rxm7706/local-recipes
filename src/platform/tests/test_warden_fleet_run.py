@@ -23,6 +23,8 @@ from django_warden_fabric.models import JobStatus
 from django_warden_fabric.tasks import run_fleet_run
 from django_warden_fabric.tasks import scan_fleet_repo
 
+_PLATFORM_DIR = Path(__file__).resolve().parents[1]
+_FLAGS_JSON = _PLATFORM_DIR / "config" / "flags.json"
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _FABRIC_ROOT = (
     _REPO_ROOT
@@ -47,22 +49,10 @@ _ORG = "fixture-org"
 
 
 def _flag_tree(*, on: bool) -> dict:
-    return {
-        "flags": {
-            FLEET_SCAN_FLAG: {
-                "state": "ENABLED",
-                "variants": {"on": True, "off": False},
-                "defaultVariant": "on" if on else "off",
-                "metadata": {
-                    "owner": "warden",
-                    "story": "16-2-a-fleet-run-scans-each-inventoried-repo-one-verdict-per-repo",
-                    "created": "2026-09-28",
-                    "on_everywhere": "",
-                    "cleanup_by": "",
-                },
-            },
-        },
-    }
+    tree = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
+    entry = tree["flags"][FLEET_SCAN_FLAG]
+    entry["defaultVariant"] = "on" if on else "off"
+    return tree
 
 
 def _init_bare_repo(tmp_path: Path, name: str) -> str:
