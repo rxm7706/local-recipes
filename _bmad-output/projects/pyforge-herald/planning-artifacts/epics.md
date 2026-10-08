@@ -1458,7 +1458,7 @@ So that I can change a deck without rebuilding it from images, and without Chrom
 **When** the plugin, the Node driver, the verb and the environment change land
 **Then** `pixi run -e pyforge-guild herald deck pptx-native <slug>` exits 0 on a fixture deck and writes `<slug>-deck-native-<date>.pptx`; python-pptx reads it back with one slide per Marp slide, titles and bullet text as text frames, tables as table graphic frames, speaker notes in each notes slide, and no picture shape standing in for a slide; a second run on a later date leaves one version of the kind; the Marp and pptx-fill exports are byte-unchanged
 **And** with the flag OFF the verb is listed as disabled and exits 2 with a "flag off" message; `environment.yaml` is regenerated in the same PR; `pyforge-station-tests` and `pyforge-herald-test` are green
-**Status:** backlog
+**Status:** done
 
 ## Epic 33: The genesis deck counts archived Dreams where they now live (spec-one-chain-per-station CAP-11)
 

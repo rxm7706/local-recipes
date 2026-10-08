@@ -72,6 +72,7 @@ from . import (
     deck_store,
     errors,
     notices,
+    pptx_native,
     pptx_pipeline,
     progress,
     scheduler,
@@ -460,6 +461,22 @@ def _build_parser() -> _HeraldArgumentParser:
         required=True,
         help="output .pptx path",
     )
+    _pptx_native_help = disabled_help(
+        "export the deck's current Marp source as a native editable .pptx (CAP-57)",
+        pptx_native.DECK_EXPORT_NATIVE_FLAG,
+    )
+    pptx_native_parser = deck_subparsers.add_parser(
+        "pptx-native",
+        help=_pptx_native_help,
+        description=_pptx_native_help,
+    )
+    pptx_native_parser.add_argument("slug", help="deck slug, e.g. pyforge-herald")
+    pptx_native_parser.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
 
     global_flags = _global_flags_parent()
 
@@ -812,6 +829,8 @@ def _route(args: argparse.Namespace) -> int:
         return _run_deck_pptx_spec(args)
     if args.command == "deck" and args.deck_command == "pptx-fill":
         return _run_deck_pptx_fill(args)
+    if args.command == "deck" and args.deck_command == "pptx-native":
+        return _run_deck_pptx_native(args)
     if args.command == "progress":
         return _run_progress(args)
     if args.command == "success":
@@ -1242,6 +1261,28 @@ def _run_deck_pptx_fill(args: argparse.Namespace) -> int:
     def operation() -> None:
         pptx_pipeline.run_fill(template_path, args.content_plan, args.out_path)
         print(f"wrote {args.out_path}")
+
+    return dispatch(operation)
+
+
+def _deck_pptx_native_flag_or_exit() -> int | None:
+    try:
+        require(pptx_native.DECK_EXPORT_NATIVE_FLAG)
+    except FlagOff as exc:
+        print(f"{TOOL_NAME}: {exc}", file=sys.stderr)
+        return 2
+    return None
+
+
+def _run_deck_pptx_native(args: argparse.Namespace) -> int:
+    blocked = _deck_pptx_native_flag_or_exit()
+    if blocked is not None:
+        return blocked
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        result = pptx_native.export_native_pptx(args.slug, repo_root)
+        print(f"wrote {result.output_path} ({result.slide_count} slide(s) from {result.marp_source.name})")
 
     return dispatch(operation)
 

@@ -25,7 +25,8 @@ DECK_EXPORT_HOOK_SPEC = HookSpec(name=DECK_EXPORT_HOOK_SPEC_NAME, owner=DECK_EXP
 FORMAT_MARP = "marp"
 FORMAT_PPTX = "pptx"
 FORMAT_DC_HTML = "dc.html"
-DEFAULT_EXPORT_FORMATS: tuple[str, ...] = (FORMAT_MARP, FORMAT_PPTX, FORMAT_DC_HTML)
+FORMAT_PPTXGENJS = "pptxgenjs"
+DEFAULT_EXPORT_FORMATS: tuple[str, ...] = (FORMAT_MARP, FORMAT_PPTX, FORMAT_DC_HTML, FORMAT_PPTXGENJS)
 
 
 def _format_matches(requested: object, format_id: str) -> bool:
@@ -88,8 +89,12 @@ class DcHtmlExportPlugin(_DeckExportPlugin):
     format_id = FORMAT_DC_HTML
 
 
-def default_export_plugins() -> tuple[MarpExportPlugin, PptxExportPlugin, DcHtmlExportPlugin]:
-    return (MarpExportPlugin(), PptxExportPlugin(), DcHtmlExportPlugin())
+class PptxgenjsExportPlugin(_DeckExportPlugin):
+    format_id = FORMAT_PPTXGENJS
+
+
+def default_export_plugins() -> tuple[MarpExportPlugin, PptxExportPlugin, DcHtmlExportPlugin, PptxgenjsExportPlugin]:
+    return (MarpExportPlugin(), PptxExportPlugin(), DcHtmlExportPlugin(), PptxgenjsExportPlugin())
 
 
 def register_default_export_plugins(registry: PluginRegistry) -> None:
