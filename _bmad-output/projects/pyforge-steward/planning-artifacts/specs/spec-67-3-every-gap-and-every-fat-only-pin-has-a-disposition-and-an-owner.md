@@ -2,7 +2,8 @@
 title: '67.3: Every gap and every fat-only pin has a disposition and an owner'
 type: 'feature'
 created: '2026-09-25'
-status: 'ready'
+status: 'done'
+baseline_revision: 2e52f1ad61c13d43fc2288e2580819b0c5206f30
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
