@@ -1151,6 +1151,25 @@ alive; a seam for estates this factory cannot see ([[enterprise-airgap]]).
   different values, or a change that is not a pure addition of entries, still escalates. The landing re-runs the flag
   gate and both flag test modules on the healed tree before it pushes. **Constraints:** a fix story on 22.18's heal
   path, no CAP, no flag. Owner `spec-pyforge-marshal`. → Story 22.19, specced 2026-10-07.
+- **2026-10-08 (verify and landing order)** — **Found: the supervisor formats a file after it has stamped it, and a
+  story that recommends a follow-up review cannot pass its own CI.** (1) After herald 29.2's fix turn, the supervisor
+  ran Story 85.5's reconcile first (`104929ec89`, `3b3d2a8fec`, `ef558bf954` named the turn's paths and stamped
+  `spec-pyforge-herald` and `spec-pyforge-core`), and only then the pre-verify ruff pass of Stories 83.9 and 83.15,
+  which committed a one-line format of herald's `tests/unit/test_station_api.py` (`f1b8184bd1`). Re-verification read
+  that file as drift its Spec's memlog did not name and refused at `MRS-GATE-001` on
+  `python scripts/spec_surface_reconcile.py` (run `pyforge-herald-20261007T183712284Z-b952633b`), and the story parked
+  with `MRS-DISP-060` until an operator named the path by hand (`428a12b699`). (2) Herald 29.2's review pass then set
+  its spec `done` with `followup_review_recommended: true`. Marshal's meta-test (Story 66.2) wants a `DW-FRR-<story>`
+  row for every such spec, but `dispatch_land_finalize` writes that row only after the merge. So the PR's
+  `marshal-test` was red, and the landing was refused with `MRS-DISP-056` (PR #1912, run
+  `pyforge-herald-20261008T043732276Z-071a3953`). Each re-dispatch launched another full session on the `done`, flagged
+  spec instead of landing, until an operator added the row on the branch by hand (`4d40fc9b4a`) and the next run landed
+  (`cb46142c8d`). **What it looks like when fixed:** a fix turn formats before it reconciles, so one reconcile names the
+  fix and the formatting together, and nothing writes a story file between that stamp and re-verification. A landing
+  whose story spec is `done` and flagged writes its own `DW-FRR-<story>` row on the branch before CI sees it, and
+  finalize's post-merge carry finds the row and adds nothing. **Constraints:** fix stories, no CAP, no flag; the
+  meta-test keeps no exemption; the relaunch rule for a `done`, flagged spec is not changed here. Owner
+  `spec-pyforge-marshal`. → Stories 22.20, 22.21, specced 2026-10-08.
 - **2026-10-03 (night, last)** — **Found: a send-back can land unreviewed, and a CFE edit cannot land at all.**
   Herald 35.1 was re-dispatched after a send-back and auto-landed before its review; drafting the PR to stop that turns
   the landing into a refusal and trips Story 83.4's hold. Doctor 41.1's CFE test edit went into `wip:` auto-checkpoint
