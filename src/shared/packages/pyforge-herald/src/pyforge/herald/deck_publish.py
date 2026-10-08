@@ -11,7 +11,8 @@ from pathlib import Path
 
 from . import deck_versions, twins
 from .deck_store import DeckStore
-from .twins import TwinOriginError
+
+TwinOriginError = twins.TwinOriginError
 
 DECK_PUBLISH_FLAG = "pyforge.herald.deck_publish"
 _MANIFEST_MEDIA = "application/json"

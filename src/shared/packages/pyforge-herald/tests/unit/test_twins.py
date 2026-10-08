@@ -53,6 +53,19 @@ def test_vendor_standalone_strips_twemoji_and_google(tmp_path: Path):
     assert "↔" in text
 
 
+def test_scan_tree_over_dist_bundle(tmp_path: Path):
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text(
+        '<html><head><link rel="stylesheet" href="./assets/app.css"></head><body></body></html>',
+        encoding="utf-8",
+    )
+    assets = dist / "assets"
+    assets.mkdir()
+    (assets / "app.css").write_text("body { font-family: sans-serif; }", encoding="utf-8")
+    assert twins.scan_tree(dist) == []
+
+
 def test_twin_origin_error_message(tmp_path: Path):
     finding = twins.OriginFinding(
         path=tmp_path / "bad.html",
