@@ -606,13 +606,13 @@ flowchart LR
 
 ### Design Paradigm
 
-**Regenerative strangler-fig cutover.** The Dream seeds foundry; each capability is realized there by rebuild or by move (fnd:AD-2, fnd:AD-18, fnd:AD-20); the archive is the oracle (fnd:AD-21). Three roles, three places:
+**Regenerative strangler-fig cutover.** The Dream seeds foundry; each capability is realized there by rebuild or by move (fnd:AD-2, fnd:AD-18, fnd:AD-20); **A (`local-recipes`) is the oracle at a pinned source SHA** (fnd:AD-21). Three roles, three places:
 
 | Role | Place | Owner |
 |---|---|---|
 | Lasting root (estate) | `python-foundry/` — `pixi.toml` name `pyforge`, `src/platform/`, `src/packages/`, `skills/`, `_bmad-output/`, `docs/` | steward |
 | Island (recipe plant) | `python-foundry/factory/` — own `pixi.toml` + `pixi.lock`, `recipes/` working set, recipes-only CI | mason |
-| Archive (copy source) | `rxm7706/local-recipes` — read-only at a pinned SHA after Phase 6 | steward |
+| Control plane & oracle (A) | `rxm7706/local-recipes` — root of record until the flip; stays a live git root afterward (`A-only` rows per the ledger); never read-only archived | steward |
 
 The **capability ledger** decides the mode of every capability and the **manifest** routes the files
 of the moved ones (fnd:AD-2), both regenerated or appended at will. The two-remote era is bounded by one
@@ -657,19 +657,19 @@ flowchart LR
     island["factory/ (own lock)"]
     manifest["move-list manifest (rows · owner · coupling · destination)"]
   end
-  archive["rxm7706/local-recipes (read-only archive)"]
+  oracle["rxm7706/local-recipes (oracle · pinned source_sha)"]
   host -->|"installs workspace members"| pkgs
   adapters -->|"relative symlink"| skills
   pkgs -->|"pixi run --manifest-path factory/pixi.toml"| island
-  manifest -->|"source_sha · epoch"| archive
+  manifest -->|"source_sha · epoch"| oracle
   island -.->|"never a path-dep"| pkgs
 ```
 
 #### fnd:AD-1 — Fresh root, pinned source `[ADOPTED]`
 
-- **Binds:** fnd:CAP-1, fnd:CAP-7; Stories 44.3, 44.10
+- **Binds:** fnd:CAP-1; Story 44.3
 - **Prevents:** two live histories; the purged-secret history and 268 worktrees riding into the lasting repo; ambiguity over which repo is truth
-- **Rule:** Foundry's first commit carries no `local-recipes` history (no `filter-repo`, no subtree import). Every manifest row carries the `source_sha` it was lifted at, and the manifest records the **foundry epoch SHA** (fnd:AD-16). After Phase 6, `local-recipes` is archived read-only at its final SHA, that SHA is pinned in the foundry manifest and the Dream's Realization log, and its README opens with the supersession banner.
+- **Rule:** Foundry's first commit carries no `local-recipes` history (no `filter-repo`, no subtree import). Every manifest row carries the `source_sha` it was lifted at, and the manifest records the **foundry epoch SHA** (fnd:AD-16). **A is never archived read-only** (operator 2026-09-25; `fnd:CAP-7` / Story 44.10 retired): after the flip both git roots stay live and what A hosts is decided per capability by the ledger's modes (`A-only` rows).
 
 #### fnd:AD-2 — Two layers: a capability ledger over the file manifest, both derived
 
@@ -686,7 +686,7 @@ flowchart LR
 #### fnd:AD-4 — Mason reaches the island by manifest path, never by import
 
 - **Binds:** fnd:CAP-3, fnd:CAP-4, fnd:CAP-6; Stories 44.6, 44.7, 44.9
-- **Prevents:** the estate environment regrowing the solver farm; a second copy of the CFE skill; `MASON_CFE_ROOT` pointing back at the archive; a marker constant that no longer matches after the move
+- **Prevents:** the estate environment regrowing the solver farm; a second copy of the CFE skill; `MASON_CFE_ROOT` pointing back at A after the cell moves; a marker constant that no longer matches after the move
 - **Rule:** `MASON_CFE_ROOT` stays a **repo root** (flag → env → cwd walk, `pyforge/mason/resolve.py`) whose marker `_CFE_MARKER` (today `.claude/scripts/conda-forge-expert`, `resolve.py:100`) moves with the cell to `skills/domain/conda-forge-expert/scripts`; the marker constant is a manifest consumer rewritten in 44.6. Recipe build, submit and update are subprocesses of `pixi run --manifest-path factory/pixi.toml <task>`; `pyforge-mason` imports nothing from the island.
 
 #### fnd:AD-5 — One skills tree; IDE directories are adapters
@@ -699,7 +699,7 @@ flowchart LR
 
 - **Binds:** fnd:CAP-2; Story 44.4; canopy:AD-4, fnd:AD-14, fnd:AD-17
 - **Prevents:** a half-moved tree with two package roots; a distribution or import rename smuggled in with the move; 59 files computing paths by fixed parent depth silently resolving a wrong root; a stale spec-surface baseline after every move
-- **Rule:** `src/shared/packages/<x>` → `src/packages/<x>`; distribution and import names unchanged. Every consumer is rewritten from manifest rows in the same story: `pixi.toml` path-dependencies (103 sites), the Containerfile `COPY` lines, `five_tier._packages_root`, `script_map_from_packages_root`, `marshal-policy.toml` globs, Spec `surface:` globs, CI `paths:`, and every `parent_depth` coupling row (`parents[N]` constants; no silent wrong-root fallback survives). `CLAUDE.md` / `AGENTS.md` are rewritten by re-running `skf-export` (canopy:AD-17). Every move story ends with a scoped `spec_surface_check.py --write-baseline --spec <affected>` re-stamp. After 44.4 no `src/shared/` exists and `rg src/shared/packages` returns only the manifest and the archive.
+- **Rule:** `src/shared/packages/<x>` → `src/packages/<x>`; distribution and import names unchanged. Every consumer is rewritten from manifest rows in the same story: `pixi.toml` path-dependencies (103 sites), the Containerfile `COPY` lines, `five_tier._packages_root`, `script_map_from_packages_root`, `marshal-policy.toml` globs, Spec `surface:` globs, CI `paths:`, and every `parent_depth` coupling row (`parents[N]` constants; no silent wrong-root fallback survives). `CLAUDE.md` / `AGENTS.md` are rewritten by re-running `skf-export` (canopy:AD-17). Every move story ends with a scoped `spec_surface_check.py --write-baseline --spec <affected>` re-stamp. After 44.4 no `src/shared/` exists and `rg src/shared/packages` returns only the manifest and historical A references.
 
 #### fnd:AD-7 — The host consumes packages, never copies source
 
@@ -709,15 +709,15 @@ flowchart LR
 
 #### fnd:AD-8 — Two CI estates, disjoint triggers, classified not counted
 
-- **Binds:** fnd:CAP-1, fnd:CAP-4, fnd:CAP-7; Stories 44.3, 44.7, 44.10; R-17a
+- **Binds:** fnd:CAP-1, fnd:CAP-4; Stories 44.3, 44.7; R-17a
 - **Prevents:** a recipe PR paying for platform CI and the reverse; the `maintenance`-label and hand-run `environment.yaml` rituals; an undercounted "dies" list
 - **Rule:** Estate workflows carry `paths-ignore: [factory/**]`; island workflows carry `paths: [factory/**]`. Every workflow and CI script is a manifest row; a row that references `staged-recipes` **dies**: the four linter workflows, `test-all.yml` and `test-{linux,macos,windows}.yml`, `scripts/linter.py` (where the `environment.yaml` sync check lives), `azure-pipelines.yml`, `.azure-pipelines/`, `.scripts/`. `environment.yaml` is produced by a workflow step or dropped; never a by-hand step. No foundry workflow references `staged-recipes`.
 
 #### fnd:AD-9 — Every Epic 44 story is a gate the operator flips
 
-- **Binds:** fnd:CAP-1, fnd:CAP-6, fnd:CAP-7; all of 44.1–44.10
+- **Binds:** fnd:CAP-1, fnd:CAP-6; 44.1–44.9 (Story 44.10 retired 2026-09-25)
 - **Prevents:** a drain creating a GitHub repository, opening conda-forge PRs, or disabling CI unattended; implementation starting before the solutioning review closes
-- **Rule:** All 44.x are ledger `blocked` while solutioning is under review; the flip to `backlog` is the operator's act per story. 44.3, 44.9 and 44.10 additionally require explicit operator confirmation at dispatch. Marshal never auto-flips a `blocked` key.
+- **Rule:** All 44.x are ledger `blocked` while solutioning is under review; the flip to `backlog` is the operator's act per story. 44.3 and 44.9 additionally require explicit operator confirmation at dispatch. Marshal never auto-flips a `blocked` key.
 
 #### fnd:AD-10 — Working set, not universe
 
@@ -733,7 +733,7 @@ flowchart LR
 
 #### fnd:AD-12 — The BMAD chain moves whole; one ledger of record
 
-- **Binds:** fnd:CAP-2; Stories 44.5–44.10
+- **Binds:** fnd:CAP-2; Stories 44.5–44.9
 - **Prevents:** a loop home or a `bmad-switch` marker still targeting `local-recipes`; two ledgers both accepting rows mid-epic
 - **Rule:** `_bmad/`, `_bmad-output/projects/` and `docs/dreams/` move in 44.5 as one unit. The marker and the two planning symlinks are per-working-tree state recreated by `bmad-switch` / `bmad-loop-worktree`, never copied. The ledger of record follows the flag (fnd:AD-17), not the story: before the flip it is `local-recipes`', after it foundry's, and `sprint-ledger-sync` runs in the primary root. The eight `~/.bmad-loops/*` homes are re-provisioned against the foundry remote by the same flip, in an attended session with no loop running.
 
@@ -751,8 +751,8 @@ flowchart LR
 
 #### fnd:AD-15 — Identity strings are manifest rows; environment ids are not renamed here
 
-- **Binds:** fnd:CAP-3, fnd:CAP-6, fnd:CAP-7; Stories 44.4–44.10
-- **Prevents:** 333 `rxm7706/local-recipes` occurrences in 148 files pointing at the archive; a silent rename of the `local-recipes` pixi env breaking 974 call sites and GATE-011-frozen `verify_commands`
+- **Binds:** fnd:CAP-3, fnd:CAP-6; Stories 44.4–44.9
+- **Prevents:** 333 `rxm7706/local-recipes` occurrences in 148 files pointing at stale A identity strings; a silent rename of the `local-recipes` pixi env breaking 974 call sites and GATE-011-frozen `verify_commands`
 - **Rule:** Repository identity strings (`rxm7706/local-recipes` URLs and slugs) are manifest rows of kind `identity`, rewritten by the story that moves the file. The pixi environment id `local-recipes` stays until a named rename story — the same rule the Dream applies to `[feature.python-agent-platform]`.
 
 #### fnd:AD-16 — Detector ranges on a fresh root
@@ -763,7 +763,7 @@ flowchart LR
 
 #### fnd:AD-17 — Cutover is a flag, not a date `[ADOPTED]`
 
-- **Binds:** fnd:CAP-8, fnd:CAP-6, fnd:CAP-7; every story from 44.4 on
+- **Binds:** fnd:CAP-8, fnd:CAP-6; every story from 44.4 on
 - **Prevents:** a dated phase boundary that freezes the evergreen repo; a cutover with no rollback; three consumers deciding the root of record differently
 - **Rule:** One flag, `pyforge.cutover_root` in {`local-recipes`, `foundry`}, lives in the canopy:CAP-13 flag tree (`src/platform/config/flags.json`, canopy:AD-11), read in-process by the host and by the CLIs through a `pyforge-core` reader (a 44.12 task; none exists today). It alone decides the ledger of record (fnd:AD-12), Mason's submit and update targets (fnd:AD-4), which remote the loop homes track, and which root the detectors treat as primary. The transition point is the flip, allowed once the capabilities it depends on are `verified-in-foundry` (fnd:AD-22); flipping back is the rollback. The flip is an operator act recorded in the Dream's Realization log.
 
@@ -771,7 +771,7 @@ flowchart LR
 
 - **Binds:** fnd:CAP-2..fnd:CAP-5, fnd:CAP-8, fnd:CAP-9; Stories 44.4–44.8, 44.14 and every capability row
 - **Prevents:** one-off hand moves that cannot be repeated after the plan changes; a foundry mirror that silently falls behind the evolving repo; a rebuild that is a rewrite by another name
-- **Rule:** A `move` capability is realized by a manifest-driven, idempotent apply step (`steward cutover apply --phase <n>`) that can be re-run into foundry after every `--regenerate` or `--append` until the flag flips; a hand move the apply step cannot reproduce is review-blocking, and the replay records the foundry commit on each row. A `rebuild` capability is realized as a regeneration drill in foundry: its Dream and moved memlog → `bmad-spec` re-derives the Spec → `bmad-architecture` inherits the parent invariants → epics and stories → `bmad-build` drained by Marshal under a `steward budget` ceiling, with the archived code visible only as reference. Either way the row reaches `verified-in-foundry` only through fnd:AD-21.
+- **Rule:** A `move` capability is realized by a manifest-driven, idempotent apply step (`steward cutover apply --phase <n>`) that can be re-run into foundry after every `--regenerate` or `--append` until the flag flips; a hand move the apply step cannot reproduce is review-blocking, and the replay records the foundry commit on each row. A `rebuild` capability is realized as a regeneration drill in foundry: its Dream and moved memlog → `bmad-spec` re-derives the Spec → `bmad-architecture` inherits the parent invariants → epics and stories → `bmad-build` drained by Marshal under a `steward budget` ceiling, with A-side code at the pinned `source_sha` visible only as reference. Either way the row reaches `verified-in-foundry` only through fnd:AD-21.
 
 #### fnd:AD-19 — Native estate on stock Windows; host and supervisor remote `[ADOPTED]`
 
@@ -785,11 +785,11 @@ flowchart LR
 - **Prevents:** carrying 69 MB of rendered planning narrative into a greenfield root; re-deriving a Spec and losing hand-edits its memlog never recorded
 - **Rule:** `docs/dreams/` and every Spec and spine `.memlog.md` move unconditionally; they are the decision record. `SPEC.md`, spines, epics and stories are re-rendered in foundry by `bmad-spec`, `bmad-architecture` and `bmad-create-epics-and-stories`. Every other planning document (research, reviews, proposals, readiness reports, retros, run records, per-story specs of shipped stories) is archived. Prerequisite, in `local-recipes` before Phase 0 (Story 44.13): every hand-edit in a rendered `SPEC.md` — the unifying strategy first — is folded back into memlog entries, and each Spec proves it re-renders without loss.
 
-#### fnd:AD-21 — The archive is the oracle
+#### fnd:AD-21 — The oracle is the archived suite at a pinned source SHA
 
 - **Binds:** fnd:CAP-9; every `rebuild` row
 - **Prevents:** regeneration drift dressed as a rebuild
-- **Rule:** A rebuilt capability reaches `verified-in-foundry` only when the archived test suite for that capability passes against the rebuilt code, or an equivalence check does, and the re-derived Spec's success criteria hold. A rebuild story without its oracle gate is review-blocking.
+- **Rule:** A rebuilt capability reaches `verified-in-foundry` only when **the test suite archived at A for that capability** (at the manifest's pinned `source_sha`) passes against the rebuilt code on B, or an equivalence check does, and the re-derived Spec's success criteria hold. **No repository is archived read-only** (`fnd:CAP-7` retired; operator 2026-09-25). A rebuild story without its oracle gate is review-blocking.
 
 #### fnd:AD-22 — Per-capability state and freeze under one global flag
 
@@ -862,8 +862,7 @@ flowchart LR
   P3 --> P4["Phase 4 · 44.8<br/>working set"]
   P2 --> P5["Phase 5 · 44.9<br/>Mason → conda-forge"]
   P4 --> P5
-  P5 --> P6["Phase 6 · 44.10<br/>archive local-recipes"]
-  D["44.2 document fixes"] -.-> P6
+  D["44.2 document fixes"] -.-> P5
 ```
 
 ### Capability → Architecture Map
@@ -876,7 +875,6 @@ flowchart LR
 | fnd:CAP-4 factory island | `factory/` | fnd:AD-3, fnd:AD-4, fnd:AD-8 |
 | fnd:CAP-5 working set | `factory/recipes/` + manifest | fnd:AD-2, fnd:AD-10 |
 | fnd:CAP-6 Mason → conda-forge | `pyforge-mason` submit/update paths | fnd:AD-4, fnd:AD-9, fnd:AD-11, fnd:AD-15 |
-| fnd:CAP-7 archive | `rxm7706/local-recipes` | fnd:AD-1, fnd:AD-8, fnd:AD-9, fnd:AD-11, fnd:AD-15 |
 | fnd:CAP-8 flag-gated, replayable cutover | `steward cutover plan/apply`, `flags.json`, `pyforge-core` flag reader | fnd:AD-2, fnd:AD-17, fnd:AD-18, fnd:AD-22 |
 | fnd:CAP-9 capability ledger + rebuild harness | `steward cutover plan` (ledger), foundry's own planning tree, Marshal drains | fnd:AD-2, fnd:AD-18, fnd:AD-20, fnd:AD-21, fnd:AD-22, fnd:AD-23 |
 | fnd:CAP-10 metered minutes budget | `steward budget` (metering source), `steward keys`, estate workflows' `runs-on` | fnd:AD-14, fnd:AD-19, fnd:AD-23 |
@@ -889,11 +887,11 @@ flowchart LR
 | `environment.yaml` keep-or-drop | fnd:AD-8 allows either; the sync check dies with `scripts/linter.py` | 44.3 writes the first estate workflow |
 | Runtime-state home (`.claude/data/` 11 GB, `.claude/worktrees/` 85 GB) | Gitignored today; no tracked path moves | Open question `runtime-state-home` |
 | Epic 45 candidates (R-18..R-22: sizing, NetworkPolicy, secrets, SLOs, `/ws/events/`) | Ops gaps in `src/platform/`, not layout; operator carried them | A consumer story appears |
-| Archive history rewrite (purged secret) | fnd:AD-1 leaves it behind by construction | Only if the archive must be published |
-| Worktree retirement mechanics (268 registered) | Local residue; nothing tracked | 44.10 |
+| A history rewrite (purged secret) | fnd:AD-1 leaves it behind by construction | Only if A's history must be published |
+| Worktree retirement mechanics (268 registered) | Local residue; nothing tracked | Ledger hygiene when operator flips |
 | Foundry package release cadence / channel | Unchanged by the move (`[ASSUMPTION]`) | First island publish after 44.7 |
 | Native Django host on win-64 | fnd:AD-19 keeps the host remote; Langflow and DB-GPT trees make it a probe | A solver-probe story after 44.11 |
-| Renaming the `local-recipes` pixi env | fnd:AD-15 holds it; 974 call sites + GATE-011 | A named rename story, after 44.10 |
+| Renaming the `local-recipes` pixi env | fnd:AD-15 holds it; 974 call sites + GATE-011 | A named rename story when operator dispatches it |
 | Which capabilities rebuild versus move | Operator-owned per row; first pass in `cutover.md` is `[ASSUMPTION]` | 44.1 renders the ledger with the four signals scored |
 
 ### Open Questions (iteration 4)
@@ -2131,13 +2129,13 @@ CLI-as-driving-adapter paradigm this spine already declares. **No AD added, chan
 
 `prd→arch` edge after the PRD re-stamp of 2026-09-25 (the 2026-09-25 consolidation (PRs #1563 / #1564 / #1576 + the BMAD-method whitepaper folded into docs/dreams/pyforge-unifying-strategy.md)).
 
-**One AD change is owed and is not made here.** The operator's no-archive ruling retires
-`fnd:CAP-7`; this spine still describes `local-recipes` as a read-only archive after Phase 6
-(fnd:AD-1, the three-roles table's Archive row, the Phase 6 diagram node, the `fnd:CAP-7` trace
-row, fnd:AD-21's wording of the oracle). That amendment runs through `bmad-architecture` from a
-memlog entry as steward **Story 67.8**, not as a hand edit in this reconcile. `fnd:CAP-12..15`
-need no new AD: they bind to existing decisions (the pixi workspace, the dossier surface,
-the instruction-surface parity contract). `updated:` bumped to record that the check ran.
+**No-archive amendment landed (Story 67.8).** The operator's 2026-09-25 ruling retires
+`fnd:CAP-7` / Story 44.10; the cutover satellite now matches — fnd:AD-1, the three-roles table,
+the manifest/oracle diagram, the phase diagram, the capability trace, and fnd:AD-21 no longer
+describe `local-recipes` as read-only archived. Distilled from the architecture memlog via
+`bmad-architecture`. `fnd:CAP-12..15` need no new AD: they bind to existing decisions (the pixi
+workspace, the dossier surface, the instruction-surface parity contract). `updated:` bumped to
+record that the check ran.
 
 ## Currency reconciliation — 2026-09-27
 
