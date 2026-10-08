@@ -92,3 +92,32 @@ Policy: `marshal-policy.toml` `[epic_surfaces]` `"71"` admits `pyforge-core`'s `
 **Manual checks:**
 - `pixi run --frozen -e pyforge-core pyforge-core-test` — expected: pass (the suite that covers `dispatch.py`, including `tests/meta/test_cli_parity_matrix.py` and the sole-ownership meta-tests).
 - `pixi run --frozen -e pyforge-guild pyforge warden --help` names `-e pyforge-warden` and exits 2; `pyforge nosuch` still reads "unknown station".
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — blind, edge-case, verification-gap, and intent-alignment layers reported no actionable gaps)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** After installed-map, distribution fallback, and noun-alias resolution, roster stations that are not installed raise a directed message naming `roster.long_form(station)` and a sample `pixi run -e pyforge-<station> pyforge <station> …` command; off-roster tokens keep the prior `unknown station` text. Top-level help lists installed stations plus a `not installed here:` line for missing roster members.
+
+**Files changed:**
+- `src/shared/packages/pyforge-core/src/pyforge/core/dispatch.py` — roster-aware not-installed errors and help suffix
+- `src/shared/packages/pyforge-core/tests/unit/test_dispatch.py` — Guild five-station and help coverage
+- `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-core/.memlog.md` — surface reconcile (owner)
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/.memlog.md` — surface reconcile (co-governor)
+
+**Review:** No patches; nothing deferred.
+
+**Verification:**
+- `pixi run --frozen -e pyforge-core pyforge-core-test` — 2318 passed
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11967 passed, 6 skipped
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped
+- `python scripts/spec_surface_reconcile.py` — OK
+- Manual: `pyforge warden --help` in `-e pyforge-guild` prints not-installed message, exit 2
+
+**Residual risk:** None identified; mutation AC is guarded by unit tests that fail if roster check is removed.
