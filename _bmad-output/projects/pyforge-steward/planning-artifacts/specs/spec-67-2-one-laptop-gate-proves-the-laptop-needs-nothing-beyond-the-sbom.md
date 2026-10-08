@@ -2,7 +2,8 @@
 title: '67.2: One laptop gate proves the laptop needs nothing beyond the SBOM'
 type: 'feature'
 created: '2026-09-25'
-status: 'ready'
+status: 'done'
+baseline_revision: e4667b08a9cfe6d3847edef9091019bb3931330f
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -67,3 +68,24 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Manual checks:**
 - `pixi run -e pyforge-foundry-full sbom-laptop-gate` — expected: exit 0 on `main`.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `sbom-laptop-gate` — pixi `depends-on` runs lint-types, pyforge-station-tests, platform-ci-test-requirements-check, and platform-policy-suite-check; `scripts/sbom_laptop_gate.py` finishes with pixi.lock channel audit and station import probes. Refuses `-e local-recipes`.
+
+Files changed:
+- `pixi.toml` — `[feature.guild-tasks.tasks.sbom-laptop-gate]`
+- `scripts/sbom_laptop_gate.py` — gate script (new)
+- `tests/scripts/test_sbom_laptop_gate.py` — unit tests including planted-gap fixture (new)
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md` — surface entries
+- memlog entries on `spec-pyforge-steward` and `spec-python-foundry-cutover`
+
+Verification:
+- `pixi run -e pyforge-ci python -m pytest tests/scripts/test_sbom_laptop_gate.py` — 6 passed, 1 skipped
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2111 passed
+- `PIXI_ENVIRONMENT_NAME=pyforge-foundry-full pixi run -e pyforge-foundry-full python scripts/sbom_laptop_gate.py` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog + surface reconcile
+
+followup_review_recommended: false
