@@ -715,9 +715,7 @@ def run_actuator(
             manifest_fix = plan
         forge_repo: str | None = getattr(client, "repo_slug", None)
         fleet_authorized = (
-            authorized_fleet_repo is not None
-            and forge_repo is not None
-            and forge_repo == authorized_fleet_repo
+            authorized_fleet_repo is not None and forge_repo is not None and forge_repo == authorized_fleet_repo
         )
         if (
             draft_estate_flag_on
@@ -756,8 +754,10 @@ def run_actuator(
             open_proposal = proposal
             open_manifest_fix: ManifestFixPlan | None = None
             open_draft = False
-            if draft_estate_flag_on and forge_repo is not None and (
-                forge_repo in allowed_estate_repos or fleet_authorized
+            if (
+                draft_estate_flag_on
+                and forge_repo is not None
+                and (forge_repo in allowed_estate_repos or fleet_authorized)
             ):
                 open_draft = True
                 open_manifest_fix = manifest_fix
