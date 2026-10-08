@@ -498,6 +498,15 @@ class VcsPort(Protocol):
         other git failures."""
         ...
 
+    def merge_file_diff3(self, repo_root: Path, base_text: str, main_text: str, branch_text: str) -> str:
+        """Story 22.19: git's own three-way merge of one file's three texts, as
+        ``git merge-file -p --diff3`` prints it -- the merged text, each conflicting hunk wrapped in
+        diff3 markers (``<<<<<<< main`` / ``||||||| base`` / ``=======`` / ``>>>>>>> branch``). A
+        conflict is a normal outcome, never an exception. Reads no ref and writes no repository
+        file (the three texts go through a scratch directory). Raises ``VcsCommandError`` only on a
+        genuine git failure."""
+        ...
+
     def merge_tree_write(self, repo_root: Path, base: str, branch: str) -> str | None:
         """Story 51.1: ``git merge-tree --write-tree base branch``'s
         ``--write-tree`` sibling of ``merge_tree_conflict_paths`` above --

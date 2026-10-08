@@ -2,8 +2,8 @@
 title: "22.19: A landing unions the flag registry when two flag stories land in turn"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: 'bb5cece4eb8eb500ef4a062e6e6676d8f6222e19'
+status: 'done'
+baseline_revision: '9c29bda7ec3d5c8a108a2f511aa1d29e4a090c37'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -204,3 +204,36 @@ landing that waits behind another also conflicts on the baseline, as warden 14.3
 - Mutation: remove the flag-registry paths from `is_mechanical_conflict_path` and re-run the station suite. The real-git landing test fails with `MRS-DISP-038`. Restore it.
 - On the next real landing of a flag story behind another, the heal's merge commit shows both keys in all four files, and `pixi run -e pyforge-guild flag-gate-check` is green on `main` after the merge.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Review Triage Log
+
+### 2026-10-07 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation reviewed against acceptance criteria and station suite green)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** CAP-4 dispatch land heal now treats the four flag-registry paths as mechanical, unions JSON registries with a parsed three-way key merge, resolves Python registries only on pure-addition diff3 hunks inside named dict literals, runs flag-gate-check plus both flag test modules on the merged worktree before push, and escalates with `MRS-DISP-038` when no healed-tree check is supplied or checks fail.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/dispatch_landing.py` — registry constants, JSON/Python union pure functions, mechanical classification
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land_heal.py` — wired resolution, healed-tree check ordering (after re-stamp, before push)
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_land.py` — builds and passes the three-command healed-tree check
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py` and `ports/vcs.py` — `merge_file_diff3`
+- `tests/unit/test_dispatch_land_heal.py`, `tests/unit/test_dispatch_landing.py`, `tests/meta/test_local_branch_refs_are_full_refnames.py` — AC coverage and meta pin
+
+**Review:** 0 patches; nothing deferred.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pyforge-marshal-test`: 11845 passed, 6 skipped
+- `pyforge-deps-test`: 130 passed, 3 skipped
+- `lint-types`: exit 0
+- `python scripts/spec_surface_reconcile.py`: exit 0 (after memlog surface entries on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`)
+
+**Spec-surface memlogs (2026-10-07):** every governed path named on owning/co-governor memlogs — see entries in `spec-pyforge-marshal/.memlog.md` and `spec-pyforge-core/.memlog.md` (Story 22.19 surface reconcile).
+
+**Residual risk:** The platform pytest leg of the healed-tree check depends on the `platform-ci-test` pixi env in the dispatch worktree; it is exercised via fakes in unit tests, not a full platform-ci run in this session.
