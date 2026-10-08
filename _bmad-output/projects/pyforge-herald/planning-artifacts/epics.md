@@ -1031,7 +1031,7 @@ So that `docs-site-build` works on any checkout and Stories 27.2–27.4 build on
 **When** the upstream helper is vendored and tracked behind a narrow `.gitignore` exception, and a meta test resolves every relative import in the tracked docs-site sources against `git ls-files`
 **Then** in a fresh `git clone` of the story's branch, with `SITE_URL` and `GITHUB_REPOSITORY` unset, `pixi run -e site docs-site-build` exits 0 and writes `docs-site/build/site/index.html` and `404.html` (64 HTML pages on 2026-10-08); `git check-ignore -q docs-site/src/lib/site-url.mjs` exits 1, and `git check-ignore --no-index -q` still exits 0 for `lib/probe.py` and `docs-site/lib/probe.mjs`
 **And** the meta test passes on the fixed tree, fails naming the path when the helper is untracked (`git rm --cached`, the mutation), and fails on a synthetic tree whose config imports an untracked or a missing file; `test_vendored_files_match_readme_sha256` checks the helper's sha256; `pixi run --frozen -e pyforge-herald pyforge-herald-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 28: Each deck keeps one current version of each export (spec-pyforge-herald CAP-53)
 
