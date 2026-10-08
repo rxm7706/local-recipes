@@ -4,9 +4,9 @@ epics_role: canonical
 # 1:1 to a sprint-status-ledger.yaml story key. Exactly one `canonical` per station (marshal:AD-72).
 project_name: pyforge-herald
 epicCount: 35  # 2026-10-07: re-measured, 35 epic keys in the ledger (fleet_scan.parse_sprint_status); Epics 33-35 had been minted 2026-09-29..10-03 without a bump. 2026-09-28 (night): Epics 29-32 appended (spec-pyforge-herald CAP-54..CAP-57); 32 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 28 before this mint). 2026-09-28: Epic 28 appended (spec-pyforge-herald CAP-53); 28 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 27 before this mint). 2026-09-27: Epic 27 appended (spec-pyforge-herald CAP-52); 27 epic keys in the ledger (measured with fleet_scan.parse_sprint_status; 26 before this mint). Prior 2026-09-13: Epic 22 added (spec-pyforge-pages) — the 22 had gone stale by four epics (23-26 never bumped it). Dated snapshot; the ledger enumerates.
-storyCount: 125  # 2026-10-08: +1 for Story 27.6 (fix, no CAP); 125 story keys in the ledger, 113 done (fleet_scan.parse_sprint_status). 2026-10-07: re-measured, 124 story keys in the ledger (fleet_scan.parse_sprint_status), 108 done; Stories 33.1, 34.1, 35.1 and 35.2 had been minted without a bump. 2026-09-28 (night): +7 for Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 (120 story keys in the ledger, measured; 113 before this mint; 29.1 and 29.2 are minted blocked on steward 74.1). 2026-09-28: +2 for Epic 28 / Stories 28.1-28.2 (113 story keys in the ledger, measured; 111 before this mint). 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
+storyCount: 125  # 2026-10-08: +1 for Story 27.6 (fix, no CAP); 125 story keys in the ledger, 114 done once Story 30.2 landed (fleet_scan.parse_sprint_status). 2026-10-07: re-measured, 124 story keys in the ledger (fleet_scan.parse_sprint_status), 108 done; Stories 33.1, 34.1, 35.1 and 35.2 had been minted without a bump. 2026-09-28 (night): +7 for Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 (120 story keys in the ledger, measured; 113 before this mint; 29.1 and 29.2 are minted blocked on steward 74.1). 2026-09-28: +2 for Epic 28 / Stories 28.1-28.2 (113 story keys in the ledger, measured; 111 before this mint). 2026-09-27 (later): +1 for Story 27.5 (operator ruling D8; its ledger key is minted blocked on steward 71.2), 111 story keys in the ledger, measured. 2026-09-27: +4 for Epic 27 / Stories 27.1-27.4 (110 story keys in the ledger, measured; 106 before this mint). Prior 2026-09-13: + Story 22.1 — the 55 had gone stale (Epics 13-26 never bumped it). Dated snapshot; the ledger enumerates.
 status: in-progress  # 2026-09-28 (night): Epics 29-32 (7 stories) backlog; 29.1 and 29.2 blocked on steward Story 74.1, the rest backlog behind station-local Deps. 2026-09-28: Epic 28 (2 stories, both backlog; 28.2 on S-28.1) backlog. 2026-09-27: Epic 27 (5 stories; 27.1-27.4 backlog, 27.5 blocked on steward 71.2) backlog; Epic 19 in-progress with 19.2 blocked on DW-13-6-1. Prior 2026-09-13: Epic 22 opens Story 22.1; Epics 19 and 21 still have unstarted work.
-updated: "2026-10-08"   # AMENDED 2026-10-08 (docs-site helper): Story 27.6 minted (fix, no CAP, no flag) in Epic 27: the docs site builds from a clean checkout. The Epic List table re-measured from the ledger (E27 6/1; E28 and E29 2/2 and E30 2/1 after their landings; 125 stories, 113 done). Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch -> epics) validated against the spine's § Currency reconciliation — 2026-10-07 (no AD amended); no epic or story added or changed; the Epic List table and epicCount/storyCount re-measured from the ledger (35 epics, 124 stories, 108 done). See § Currency reconciliation — 2026-10-07. Prior: RE-STAMPED 2026-10-03 (night): Story 35.2 added to Epic 35 (fix: Story 35.1's post-landing follow-ups). Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 35 / Story 35.1 minted (fix, no CAP): herald's 21 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29 (evening): Epic 34 / Story 34.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 33 / Story 33.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-10.1..FR-10.6 / CAP-54..CAP-57; Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 minted; amended the same night: every flagged story names its reader (pyforge.core.flags.read_boolean, steward 75.1's contract; django_pyforge.flags on portal paths). Prior 2026-09-28
+updated: "2026-10-08"   # AMENDED 2026-10-08 (docs-site helper): Story 27.6 minted (fix, no CAP, no flag) in Epic 27: the docs site builds from a clean checkout. The Epic List table re-measured from the ledger (E27 6/1; E28, E29 and E30 2/2 after their landings; 125 stories, 114 done). Prior: RE-STAMPED 2026-10-07: chain-currency cascade (arch -> epics) validated against the spine's § Currency reconciliation — 2026-10-07 (no AD amended); no epic or story added or changed; the Epic List table and epicCount/storyCount re-measured from the ledger (35 epics, 124 stories, 108 done). See § Currency reconciliation — 2026-10-07. Prior: RE-STAMPED 2026-10-03 (night): Story 35.2 added to Epic 35 (fix: Story 35.1's post-landing follow-ups). Prior: RE-STAMPED 2026-10-03 (Phase 4+5): Epic 35 / Story 35.1 minted (fix, no CAP): herald's 21 open medium and low deferrals, operator rulings of 2026-10-03. Prior: RE-STAMPED 2026-09-29 (evening): Epic 34 / Story 34.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 33 / Story 33.1 minted (spec-one-chain-per-station CAP-11 relay; no herald CAP or FR). Prior 2026-09-28 (night): chain-currency cascade (spec -> PRD -> arch -> epics) for FR-10.1..FR-10.6 / CAP-54..CAP-57; Epics 29-32 / Stories 29.1-29.2, 30.1-30.2, 31.1-31.2, 32.1 minted; amended the same night: every flagged story names its reader (pyforge.core.flags.read_boolean, steward 75.1's contract; django_pyforge.flags on portal paths). Prior 2026-09-28
 # 2026-09-28  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-9.1..FR-9.2 / CAP-53; Epic 28 / Stories 28.1-28.2 minted. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED: chain-currency cascade (spec -> PRD -> arch -> epics) for FR-8.1..FR-8.5 / CAP-52; Epic 27 / Stories 27.1-27.5 minted (27.5 and the 27.2 rewrite follow the operator rulings of 2026-09-27, D7/D8). Prior 2026-09-25
 # 2026-09-25  # RE-STAMPED 2026-09-25: chain-currency cascade (arch -> epics); Epic 26 minted (26.1, spec-python-foundry-cutover fnd:CAP-14). Prior 2026-09-20
@@ -60,13 +60,13 @@ The prior content is preserved at `epics-planning-scratch-2026-08-08.md`.
 | **E27** | The docs site matches BMAD-METHOD's pattern (spec-pyforge-herald CAP-52) | 6 | 1 |
 | **E28** | Each deck keeps one current version of each export (spec-pyforge-herald CAP-53) | 2 | 2 |
 | **E29** | Each current export is also kept in object storage (spec-pyforge-herald CAP-54) | 2 | 2 |
-| **E30** | A deck is readable in the browser from its HTML twin (spec-pyforge-herald CAP-55) | 2 | 1 |
+| **E30** | A deck is readable in the browser from its HTML twin (spec-pyforge-herald CAP-55) | 2 | 2 |
 | **E31** | The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56) | 2 | 0 |
 | **E32** | A deck exports as a native, editable .pptx through pptxgenjs-plus (spec-pyforge-herald CAP-57) | 1 | 0 |
 | **E33** | The genesis deck counts archived Dreams where they now live (spec-one-chain-per-station CAP-11) | 1 | 0 |
 | **E34** | Herald cites the deck how-to, not the retiring intake stub (spec-one-chain-per-station CAP-11) | 1 | 0 |
 | **E35** | Phase 4+5 of the deferral burn-down: herald's open medium and low deferrals | 2 | 2 |
-| **Total** | | **125** | **113** |
+| **Total** | | **125** | **114** |
 
 
 ---
@@ -1329,7 +1329,7 @@ So that I can see the current deck without a download or a desktop application.
 **When** the deck list, the twin route and the viewer land
 **Then** `/stations/herald/decks/` lists every published deck, and `/stations/herald/decks/<slug>/view/` renders its twin with every asset request answered by the portal's own origin, which the Playwright run proves by recording zero requests to another origin; a `.pptx` is offered only as a download
 **And** an anonymous call is refused and a caller without the herald role gets 403; with the flag OFF the list and viewer answer 404 and the home page is unchanged; `platform-ci-local -- --test` and `pyforge-herald-test` are green
-**Status:** backlog
+**Status:** done
 
 ## Epic 31: The docs site deploys to a second host from the same artifact (spec-pyforge-herald CAP-56)
 
@@ -1483,7 +1483,7 @@ So that moving archived Dreams to one archive home does not make the deck report
 **When** a fixture archived Dream moves to `archive/docs/dreams/`
 **Then** `dreams_total` and `dreams_archived` keep their values, and each fact's source names both globs
 **And** on today's tree every count derived from `docs/dreams/` is unchanged and the six Dreams already under `archive/docs/dreams/` (`deckcraft`, `design-code-bridge`, `herald-pitch-deck-family-expansion`, `modernist-identity`, `pyforge-genesis`, `video-scripts`) are added to `dreams_total` and `dreams_archived`, counted as archived whatever their frontmatter `status` *(amended 2026-09-30, operator ruling: location is the archive signal, CHAIN-STANDARD §11)*; the test covers a moved Dream and an archive with no status; `pixi run --frozen -e pyforge-herald pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done
 
 ## Epic 34: Herald cites the deck how-to, not the retiring intake stub (spec-one-chain-per-station CAP-11)
 
@@ -1524,7 +1524,7 @@ So that retiring `docs/specs/` leaves no Herald file pointing at an archived stu
 **And** `environment.yaml` regenerates unchanged; `spec-surface-check` exits 0 after a memlog entry and a scoped stamp for each
 Spec it names (`spec-pyforge-herald`, `spec-design-code-bridge`, `spec-modernist-identity`); `pixi run --frozen -e
 pyforge-herald pyforge-herald-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 35: Phase 4+5 of the deferral burn-down: herald's open medium and low deferrals
 

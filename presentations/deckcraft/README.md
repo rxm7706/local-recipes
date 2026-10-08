@@ -15,7 +15,7 @@ Skill, an MCP stdio server and a CLI. It is also the PyForge deck family's desig
 editable-PPTX engine (§ *Export decisions revisited*, 2026-07-23), so this deck's own
 PowerPoint exports are interim artifacts until deckcraft ships.
 
-Workflow: `docs/specs/presentation-deck.md` (prototype contract, § Standard export set,
+Workflow: `docs/how-to/presentation-deck.md` (prototype contract, § Standard export set,
 § The MCP bridge). `npm install && npm run extract && npm run dev`.
 Engine files stay byte-identical across every deck.
 
@@ -52,7 +52,7 @@ https://claude.ai/design/p/59c42e9c-7c90-431d-adae-b0021dd3f727?file=Deckcraft.d
 ### Provenance
 
 Bound to the **Modernist** design system (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`). Pull it with
-the MCP bridge ("pull deckcraft") — see `docs/specs/presentation-deck.md` § *The MCP bridge*.
+the MCP bridge ("pull deckcraft") — see `docs/how-to/presentation-deck.md` § *The MCP bridge*.
 
 Seeded 2026-07-25 (every upload byte-verified against the local file):
 

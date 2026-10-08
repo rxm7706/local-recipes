@@ -290,7 +290,8 @@ sibling ledgers and the detector both use.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  resolved: 2026-10-08 (dispatch-land finalize: Merge pyforge-scribe/5-2 into main)
+  status: closed
 
 ### DW-FRR-1-1: Follow-up review still recommended for story 1.1
 
@@ -361,3 +362,25 @@ sibling ledgers and the detector both use.
   promoted: 2026-10-03 — Story 66.2 backfill
   reason: bmad-loop wave landing — the loop's own follow-up budget governed the recommendation.
   status: closed
+
+### DW-scribe-5-2: MCP run_recall remains a stub; portal slice AC targets /stations/scribe/ POST only.
+
+- source_spec: `planning-artifacts/specs/spec-5-2-first-portal-slice-one-recall-query.md`
+  summary: MCP run_recall remains a stub; portal slice AC targets /stations/scribe/ POST only.
+  evidence: django_scribe_portal/mcp_asgi.run_recall returns synthetic completed payload without PortalClient recall job; out of Story 5.2 intent contract.
+  location: src/shared/packages/django-scribe/src/django_scribe_portal/mcp_asgi.py
+  origin: spec-deferred e7d4cd4629dc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-scribe-5-2-2: Real PortalClient.call through emit/verify/subprocess recall still lacks a golden-PEM integration test.
+
+- source_spec: `planning-artifacts/specs/spec-5-2-first-portal-slice-one-recall-query.md`
+  summary: Real PortalClient.call through emit/verify/subprocess recall still lacks a golden-PEM integration test.
+  evidence: Follow-up patched chrome_home POST with mocked submit_recall; subprocess argv wiring in django_pyforge.assertion.client._grammar_recall remains unexercised in tests (grep shows no scribe recall PortalClient.call test).
+  location: src/shared/packages/django-pyforge/src/django_pyforge/assertion/client.py
+  origin: spec-deferred 789037494e0a — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

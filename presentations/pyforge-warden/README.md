@@ -2,7 +2,7 @@
 
 A self-contained React + Vite slide deck for **PyForge-Warden** — the multi-axis
 Python dependency compliance gate. Built with the reusable **Design-to-Deck**
-workflow (`docs/specs/presentation-deck.md`); the deck **engine** (`src/deck/*`)
+workflow (`docs/how-to/presentation-deck.md`); the deck **engine** (`src/deck/*`)
 and glue are copied verbatim from `presentations/agentic-sdlc/`, so only the
 **prototype** and the **generated** `src/slides/fragments/` + `manifest.json`
 are PyForge-Warden-specific.
@@ -13,7 +13,7 @@ are PyForge-Warden-specific.
 ## Bringing in the Claude Design session work
 
 1. **Author the deck in Claude Design** at **1920×1080**, following the
-   *prototype contract* in `docs/specs/presentation-deck.md`
+   *prototype contract* in `docs/how-to/presentation-deck.md`
    ("The prototype contract"): each slide is one `<section>` carrying
    `data-label="…"`, `data-speaker-notes="…"`, and `style="background:#HEX; …"`
    (first `#hex` = slide background); inline styles; footers `PYFORGE-WARDEN · <TAG>`
@@ -232,7 +232,7 @@ session's own throwaway paging script, not a `read_file` defect** — re-verifie
 ("the body ends at a complete line"), not spliced into content. Rather than fix the paging
 script, used the documented `render_preview` → curl the `serve_url` → strip the
 `data-omelette-injected` `<style>`/`<script>` harness block after `<head>` procedure
-(`docs/specs/presentation-deck.md` § *The MCP bridge*, "Large-file uploads" / pull mechanics),
+(`docs/how-to/presentation-deck.md` § *The MCP bridge*, "Large-file uploads" / pull mechanics),
 which is exempt from the cap entirely: both files came back byte-identical to disk. Noted here
 so a future session paging `read_file` past the cap knows to recognize and strip that sentinel
 rather than treat it as content — or just use the curl-based route instead, as this session did.
