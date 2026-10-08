@@ -275,9 +275,7 @@ class TestRecallContextLayerGate:
         self, loop_home: Path, repo_root: Path
     ) -> None:
         fs = _FakeFs()
-        scribe = _FakeScribeCli(
-            ScribeRecallOutcome(ok=True, grounded=True, text="should not appear", citation=None)
-        )
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="should not appear", citation=None))
         layers = {
             recall_feedback_core.RECALL_LAYER: {"enabled": False, "aggressiveness": "medium"},
         }
@@ -300,9 +298,7 @@ class TestRecallContextLayerGate:
 
     def test_enabled_recall_layer_still_injects(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs()
-        scribe = _FakeScribeCli(
-            ScribeRecallOutcome(ok=True, grounded=True, text="correction text", citation=None)
-        )
+        scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=True, text="correction text", citation=None))
         layers = {
             recall_feedback_core.RECALL_LAYER: {"enabled": True, "aggressiveness": "medium"},
         }
