@@ -2,10 +2,10 @@
 title: 'Tier 1 catalog sources: SelfExplainML, Anaconda, Basilisk packages, AOSS (Story 21.4, Epic 21)'
 type: 'feature'
 created: '2026-08-30'
-status: 'done'
+status: 'in-review'
 review_loop_iteration: 0
 baseline_revision: '7b87803db5180c591211e2f97d539bff77bc61f7'
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/SPEC.md'
   - '{project-root}/_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-kedro-catalog-expansion/catalog-sources.md'
