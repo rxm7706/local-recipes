@@ -15,7 +15,6 @@ import argparse
 import builtins
 import errno
 import json
-import subprocess
 import sys
 import tomllib
 from pathlib import Path
@@ -25,14 +24,8 @@ import pytest
 from pyforge.core.process import ProcessError
 from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
-from pyforge.marshal.adapters import harness_bmadloop as harness_module
 from pyforge.marshal.adapters.fs_local import FsError
-from pyforge.marshal.adapters.harness_bmadloop import (
-    BmadLoopHarness,
-    HarnessError,
-    HarnessPolicyWriteError,
-    render_policy_toml,
-)
+from pyforge.marshal.adapters.harness_bmadloop import HarnessError, RecallInjectionResult, render_policy_toml
 from pyforge.marshal.cli import spin as spin_module
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.spin import _non_negative_int, run_attach, run_resume, run_spin
@@ -100,16 +93,6 @@ class FakeFs:
         # Story 3.7's own `run_resume` read seam -- see `read_text` below.
         self.read_text_contents: dict[Path, str] = {}
         self.fail_read_text: Exception | None = None
-        self.remove_empty_dir_calls: list[Path] = []
-
-    def remove_empty_dir(self, path: Path) -> bool:
-        self.calls.append("remove_empty_dir")
-        self.remove_empty_dir_calls.append(path)
-        if path in self.dirs:
-            self.dirs.discard(path)
-            self.created_dirs = [entry for entry in self.created_dirs if entry != path]
-            return True
-        return False
 
     def is_dir(self, path: Path) -> bool:
         self.calls.append("is_dir")
@@ -220,11 +203,6 @@ class FakeHarness:
         self.adapter_binary_result: str = "claude"
         self.fail_adapter_binary: Exception | None = None
         self.adapter_binary_calls: list[tuple[str, Path]] = []
-        self.harness_version_result: str | None = "0.11.0"
-
-    def harness_version(self) -> str | None:
-        self.calls.append("harness_version")
-        return self.harness_version_result
 
     def adapter_binary(self, adapter_name: str, project: Path) -> str:
         self.calls.append("adapter_binary")
@@ -330,9 +308,6 @@ class FakeProcess:
     def is_alive(self, pid: int) -> bool:
         return pid in self.alive_pids
 
-    def process_start_time(self, _pid: int) -> float | None:
-        return None
-
     def spawn_detached(self, argv: list[str], *, cwd: Path, log_path: Path) -> int:
         self.calls.append("spawn_detached")
         self._events.append("spawn_detached")
@@ -361,9 +336,6 @@ class _StubProcess:
     def is_alive(self, pid: int) -> bool:
         return False
 
-    def process_start_time(self, _pid: int) -> float | None:
-        return None
-
 
 @pytest.fixture(autouse=True)
 def _default_supervisor_spawn_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -374,6 +346,25 @@ def _default_supervisor_spawn_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
     ``run_spin`` only ever constructs ``PosixProcess()`` when ``process``
     is ``None``."""
     monkeypatch.setattr(spin_module, "PosixProcess", lambda: _StubProcess())
+
+
+@pytest.fixture(autouse=True)
+def _default_recall_injection_is_a_no_op(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pins ``run_spin``'s Story 47.1 pre-launch recall attempt
+    (``inject_recall_feedback``, called once the Tier-3 backlink check
+    succeeds -- the detached/spin path only; ``--foreground`` never reaches
+    it) to a no-op for every test in this file that does not itself exercise
+    recall behavior -- this dev environment resolves a REAL ``scribe`` binary
+    on ``PATH``, so leaving the real call live would shell out for real, once
+    per applicable test, across this file's entire pre-existing suite. Tests
+    that DO exercise recall override this with their own
+    ``monkeypatch.setattr(spin_module, "inject_recall_feedback", ...)``,
+    applied after this fixture runs, so the later patch wins."""
+    monkeypatch.setattr(
+        spin_module,
+        "inject_recall_feedback",
+        lambda **_kwargs: RecallInjectionResult(attempted=False),
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -441,18 +432,12 @@ def test_spin_happy_path_mints_run_id_journals_and_spawns(home, capsys):
     assert spin_call["story"] is None
     assert spin_call["max_count"] is None
 
-    # Exactly three journal appends: intent (fsync=True), outcome (fsync=False),
-    # then Story 82.4's `supervisor-spawn` observation (fsync=False).
-    assert len(fs.appended_lines) == 3
-    (
-        (intent_path, intent_line, intent_fsync),
-        (outcome_path, outcome_line, outcome_fsync),
-        (spawn_path, spawn_line, spawn_fsync),
-    ) = fs.appended_lines
-    assert intent_path == outcome_path == spawn_path
+    # Exactly two journal appends: intent (fsync=True) then outcome (fsync=False).
+    assert len(fs.appended_lines) == 2
+    (intent_path, intent_line, intent_fsync), (outcome_path, outcome_line, outcome_fsync) = fs.appended_lines
+    assert intent_path == outcome_path
     assert intent_fsync is True
     assert outcome_fsync is False
-    assert spawn_fsync is False
 
     intent = json.loads(intent_line)
     outcome = json.loads(outcome_line)
@@ -475,13 +460,6 @@ def test_spin_happy_path_mints_run_id_journals_and_spawns(home, capsys):
     }
     assert outcome["run_id"] == intent["run_id"]
     assert intent["run_id"].startswith("acme-")
-
-    spawn = json.loads(spawn_line)
-    assert spawn["kind"] == "supervisor-spawn"
-    assert spawn["phase"] == "observation"
-    assert spawn["run_id"] == intent["run_id"]
-    assert spawn["id"] == {"writer_id": intent["id"]["writer_id"], "counter": 2}
-    assert spawn["payload"] == {"supervisor_pid": 999999, "watched_pid": 4242, "launched_via": "bmad-loop run"}
 
 
 def test_spin_writes_the_run_directory_under_the_local_tier3_store(home):
@@ -641,63 +619,6 @@ def test_spin_detached_launch_failure_journals_a_failed_outcome(home, capsys):
     assert outcome["payload"]["harness_run_id"] is None
 
 
-def test_spin_a_child_that_exits_before_its_starting_line_is_a_failed_launch(home, capsys, monkeypatch):
-    """Story 82.7 / DW-FU-3-3-4, AC1 at the command surface: ``harness.spin``
-    delegates to the REAL ``BmadLoopHarness.spin`` against a real child that
-    prints an error and exits 1 before any starting line (``cmd_run``'s own
-    ``worktree_clean`` refusal is the usual cause). Only the argv of the
-    detached ``Popen`` is substituted; the redirected log, the detach flags
-    and the real ``_child_exited`` probe are the production ones."""
-    monkeypatch.setattr(harness_module, "_SPIN_LOG_POLL_TIMEOUT_S", 10.0)
-    monkeypatch.setattr(harness_module, "_SPIN_LOG_POLL_INTERVAL_S", 0.01)
-    home.mkdir(parents=True)
-    script = home / "fake_bmad_loop_run.py"
-    script.write_text(
-        "import sys\nprint('error: worktree is not clean', file=sys.stderr)\nsys.exit(1)\n",
-        encoding="utf-8",
-    )
-    real_popen = subprocess.Popen  # captured before patching
-
-    def _argv_only_popen(argv, **kwargs):
-        return real_popen(
-            [sys.executable, str(script)],
-            cwd=kwargs["cwd"],
-            stdout=kwargs["stdout"],
-            stderr=kwargs["stderr"],
-            stdin=kwargs["stdin"],
-            env=kwargs["env"],
-            start_new_session=True,
-        )
-
-    monkeypatch.setattr(subprocess, "Popen", _argv_only_popen)
-
-    class _RealSpinHarness(FakeHarness):
-        def spin(self, project, *, epic, story, max_count, log_path):
-            self.calls.append("spin")
-            log_path.parent.mkdir(parents=True, exist_ok=True)  # FakeFs creates no real run directory
-            return BmadLoopHarness().spin(project, epic=epic, story=story, max_count=max_count, log_path=log_path)
-
-    fs = FakeFs(dirs={home})
-    harness = _RealSpinHarness()
-    harness.feed_keys = ("1-1-a",)
-
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
-
-    assert exit_code != EXIT_OK
-    out = capsys.readouterr().out
-    assert "MRS-SPIN-003" in out
-    assert "exited before printing its starting line" in out
-    assert "error: worktree is not clean" in out
-    assert "MRS-SPIN-004" not in out
-    # journaled as a FAILED outcome that says the process exited, never as a launch.
-    assert len(fs.appended_lines) == 2
-    outcome = json.loads(fs.appended_lines[1][1])
-    assert outcome["phase"] == "outcome"
-    assert outcome["payload"]["pid"] is None
-    assert outcome["payload"]["harness_run_id"] is None
-    assert "exited" in outcome["payload"]["error"]
-
-
 def test_spin_uncaught_story_feed_keys_error_exits_cleanly_as_mrs_spin_005(home, capsys):
     """Review finding (Edge Case Hunter, verified live): ``story_feed_keys``
     documents it can still raise ``HarnessError`` despite the
@@ -751,9 +672,7 @@ def test_spin_outcome_journal_write_failure_after_successful_spawn_is_mrs_spin_0
     assert "warn" in out.lower()
     # The spawn itself really happened -- distinct from the launch-failure
     # test above, where appended_lines still records the (failed) outcome.
-    # only the intent actually landed -- plus Story 82.4's supervisor-spawn
-    # observation, which is a separate append and succeeds.
-    assert [json.loads(line)["kind"] for _, line, _ in fs.appended_lines] == ["run-launch", "supervisor-spawn"]
+    assert len(fs.appended_lines) == 1  # only the intent actually landed
     [spin_call] = harness.spin_calls
     assert spin_call["project"] == home
 
@@ -1544,11 +1463,6 @@ def test_spin_spawns_the_supervisor_with_the_expected_argv(home):
         "500000000",
         "1440",
         "2880",
-        # Story 82.5's 11th positional: the usage-staleness window,
-        # `max(idle_threshold_minutes, RENDERED_SESSION_TIMEOUT_MIN)` -- the
-        # rendered 180-minute session timeout, not the 25-minute idle
-        # threshold that used to double as the window.
-        "180",
     ]
     assert call["cwd"] == home
     assert call["log_path"].name == "supervisor.log"
@@ -1563,10 +1477,9 @@ def test_spin_introduces_no_new_argv_surface_for_durability(home):
     interval-watcher fallback) is wired entirely inside
     ``run_supervisor``'s own defaults (station branch derives from the
     already-passed ``slug`` positional; the interval cadence reuses the
-    already-passed ``idle_threshold_minutes`` positional) -- durability adds
-    NO positional. The argv this command spawns the supervisor with stays
-    EXACTLY 11 positionals, the shape Story 82.5 last grew it to (its optional
-    usage-staleness window)."""
+    already-passed ``idle_threshold_minutes`` positional) -- the argv this
+    command spawns the supervisor with stays EXACTLY 10 positionals, the
+    same shape Story 3.6 last grew it to."""
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     harness.feed_keys = ("1-1-first-story",)
@@ -1576,50 +1489,8 @@ def test_spin_introduces_no_new_argv_surface_for_durability(home):
 
     assert exit_code == EXIT_OK
     [call] = process.spawn_calls
-    # 3 fixed tokens (python, -m, module) + 11 positionals.
-    assert len(call["argv"]) == 14
-
-
-def test_spin_passes_the_idle_threshold_as_the_staleness_window_when_it_exceeds_the_session_timeout(
-    home, tmp_path, monkeypatch
-):
-    """Story 82.5 (DW-FU-3-6-6): the window is ``max(idle_threshold_minutes,
-    RENDERED_SESSION_TIMEOUT_MIN)`` -- an operator who tunes the idle ladder
-    PAST the session timeout does not get a shorter staleness window than the
-    ladder window."""
-    policy_path = tmp_path / "marshal-policy.toml"
-    policy_path.write_text("idle_threshold_minutes = 240\n", encoding="utf-8")
-    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
-    fs = FakeFs(dirs={home})
-    process = FakeProcess()
-
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=FakeHarness(), process=process)
-
-    assert exit_code == EXIT_OK
-    [call] = process.spawn_calls
-    assert call["argv"][8] == "240"  # the idle ladder's own window
-    assert call["argv"][13] == "240"  # the staleness window follows it
-
-
-def test_spin_floors_the_staleness_window_at_the_session_timeout_for_a_short_idle_threshold(
-    home, tmp_path, monkeypatch
-):
-    """The 25-minute default (and anything shorter) used to double as the
-    window, leaving both token ceilings dark from minute 25 of a session that
-    may run 180: the window the supervisor is spawned with is floored at the
-    rendered session timeout while the idle ladder keeps its own threshold."""
-    policy_path = tmp_path / "marshal-policy.toml"
-    policy_path.write_text("idle_threshold_minutes = 0.5\n", encoding="utf-8")
-    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
-    fs = FakeFs(dirs={home})
-    process = FakeProcess()
-
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=FakeHarness(), process=process)
-
-    assert exit_code == EXIT_OK
-    [call] = process.spawn_calls
-    assert call["argv"][8] == "0.5"
-    assert call["argv"][13] == str(spin_module.RENDERED_SESSION_TIMEOUT_MIN)
+    # 3 fixed tokens (python, -m, module) + 10 positionals.
+    assert len(call["argv"]) == 13
 
 
 def test_spin_surfaces_a_malformed_idle_threshold_minutes_project_policy_finding(home, tmp_path, monkeypatch, capsys):
@@ -1723,7 +1594,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     inert exit 0 rather than an error.
 
     This drives the argv ``run_spin`` genuinely produced through the
-    supervisor's OWN ``main()`` and asserts the eleven values it recovers
+    supervisor's OWN ``main()`` and asserts the ten values it recovers
     compose the SAME run directory ``run_spin`` wrote its journal into.
     ``run_supervisor`` is stubbed out, so this stays pure parsing --
     ``test_supervisor_run_path_agreement.py`` pins the path helpers
@@ -1747,7 +1618,7 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     # argv launches must find its own run-launch entry in.
     journal_path = fs.appended_lines[0][0]
 
-    recovered: list[tuple[Path, str, str, int, Path, float, float, float, float, float, float]] = []
+    recovered: list[tuple[Path, str, str, int, Path, float, float, float, float, float]] = []
 
     def _fake_run_supervisor(
         home,
@@ -1760,7 +1631,6 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
         max_tokens_per_run,
         max_wall_clock_minutes_per_story,
         max_wall_clock_minutes_per_run,
-        staleness_window_minutes,
     ):
         recovered.append(
             (
@@ -1774,7 +1644,6 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
                 max_tokens_per_run,
                 max_wall_clock_minutes_per_story,
                 max_wall_clock_minutes_per_run,
-                staleness_window_minutes,
             )
         )
         return 0
@@ -1798,7 +1667,6 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
             got_max_tokens_per_run,
             got_max_wall_clock_minutes_per_story,
             got_max_wall_clock_minutes_per_run,
-            got_staleness_window_minutes,
         )
     ] = recovered
     assert supervisor_main._run_dir(got_home, got_slug, got_run_id) / supervisor_main._JOURNAL_FILENAME == journal_path
@@ -1809,7 +1677,6 @@ def test_the_supervisor_accepts_the_argv_spin_actually_builds(home, monkeypatch,
     assert got_max_tokens_per_run == 500_000_000.0
     assert got_max_wall_clock_minutes_per_story == 1_440.0
     assert got_max_wall_clock_minutes_per_run == 2_880.0
-    assert got_staleness_window_minutes == 180.0
 
 
 def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spin(home):
@@ -1834,11 +1701,9 @@ def test_spin_spawns_the_supervisor_after_the_outcome_append_not_right_after_spi
     spin_index = events.index("spin")
     spawn_index = events.index("spawn_detached")
     append_indices = [i for i, event in enumerate(events) if event == "append_line"]
-    assert len(append_indices) == 3  # intent, outcome, then the supervisor-spawn observation
+    assert len(append_indices) == 2  # intent, then outcome
     outcome_append_index = append_indices[1]
     assert spin_index < outcome_append_index < spawn_index
-    # Story 82.4: the spawn observation records the attempt, so it follows it.
-    assert spawn_index < append_indices[2]
 
 
 def test_spin_reports_the_supervisor_pid_in_json_and_text(home, capsys):
@@ -1879,9 +1744,8 @@ def test_spin_supervisor_spawn_failure_registers_mrs_spin_007_but_still_exits_ok
     assert "MRS-SPIN-007" in out
     assert "warn" in out.lower()
     # The harness run itself is entirely unaffected: both journal entries
-    # landed (plus Story 82.4's supervisor-spawn observation recording the
-    # failed spawn), and the harness was launched exactly once.
-    assert len(fs.appended_lines) == 3
+    # landed, and the harness was launched exactly once.
+    assert len(fs.appended_lines) == 2
     assert len(harness.spin_calls) == 1
     assert "pid: 4242" in out
 
@@ -2280,9 +2144,8 @@ def test_spin_still_spawns_the_supervisor_when_the_outcome_append_fails(home, ca
     assert f"supervisor_pid: {process.spawn_result}" in out
     # Only the intent actually landed, so the ONLY journal proof of Marshal
     # ownership the sidecar will find is the intent entry -- the exact state
-    # the widened inert-check exists to handle. (Story 82.4's supervisor-spawn
-    # observation is a separate append and lands after it.)
-    assert [json.loads(line)["kind"] for _, line, _ in fs.appended_lines] == ["run-launch", "supervisor-spawn"]
+    # the widened inert-check exists to handle.
+    assert len(fs.appended_lines) == 1
 
 
 def test_spin_reports_both_mrs_spin_006_and_mrs_spin_007_together(home, capsys):
@@ -2533,6 +2396,123 @@ def test_spin_writes_compression_ladder_sidecar_when_wire_is_enabled(home, monke
     assert payload["wire"] == {"enabled": True, "aggressiveness": "low"}
 
 
+# --- recall: Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1) -------------------
+#
+# ``inject_recall_feedback`` itself is exercised against fake ``FsPort``/
+# ``ScribeCli`` doubles in ``test_harness_bmadloop_recall.py``; these tests
+# cover only ``run_spin``'s OWN wiring -- the exact arguments it hands the
+# call, that the call site sits AFTER the Tier-3 backlink check (mirroring
+# that check's own "the LAST precondition before the first write" framing),
+# that ``--foreground`` -- which returns before ever reaching that check,
+# since it is documented to perform no ``FsPort`` writes at all -- never
+# invokes it either, and that a degraded outcome becomes exactly one WARN
+# finding without blocking the dispatch -- via ``monkeypatch.setattr(
+# spin_module, "inject_recall_feedback", ...)``, overriding this file's own
+# autouse ``_default_recall_injection_is_a_no_op`` fixture (the later patch
+# wins).
+
+
+def test_spin_invokes_recall_injection_with_the_dispatch_s_own_paths(home, monkeypatch):
+    """``run_spin`` hands ``inject_recall_feedback`` THIS dispatch's own loop
+    home, the invoking process's real checkout (``Path.cwd()``, mirroring
+    ``attempt_spin_wire_layer``'s identical ``repo_root`` convention), and
+    the resolved station slug -- never a hardcoded or mismatched path."""
+    recorded: dict[str, object] = {}
+
+    def _fake_inject_recall_feedback(**kwargs: object) -> RecallInjectionResult:
+        recorded.update(kwargs)
+        return RecallInjectionResult(attempted=False)
+
+    monkeypatch.setattr(spin_module, "inject_recall_feedback", _fake_inject_recall_feedback)
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    run_spin(_spin_namespace("acme"), fs=fs, harness=harness)
+
+    assert recorded == {
+        "fs": fs,
+        "loop_home": home,
+        "repo_root": Path.cwd(),
+        "station_slug": "acme",
+        "scribe": None,
+    }
+
+
+def test_spin_foreground_never_invokes_recall_injection(home, monkeypatch):
+    """``--foreground`` returns from ``run_spin`` before ever reaching the
+    Tier-3 backlink check (see that check's own comment: "the LAST
+    precondition before the first write ... which is why --foreground, which
+    writes nothing, returns above without it") -- and this call site sits
+    AFTER that check, alongside the other writes it gates. So a
+    ``--foreground`` run gets no auto-recalled feedback, the same way it gets
+    no journal and no minted run id; a regression that moved the call earlier
+    (ahead of the backlink check, as an initial draft of this story did) would
+    make ``--foreground`` perform a write with no backlink verification at
+    all -- exactly the fabricated-local-directory defect (NFR-8) the backlink
+    check itself exists to prevent."""
+    calls: list[dict[str, object]] = []
+
+    def _fake_inject_recall_feedback(**kwargs: object) -> RecallInjectionResult:
+        calls.append(kwargs)
+        return RecallInjectionResult(attempted=False)
+
+    monkeypatch.setattr(spin_module, "inject_recall_feedback", _fake_inject_recall_feedback)
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+
+    run_spin(_spin_namespace("acme", foreground=True), fs=fs, harness=harness)
+
+    assert calls == []
+
+
+def test_spin_reports_a_degraded_recall_attempt_as_a_warn_finding_without_blocking(home, capsys, monkeypatch):
+    """The story's own "never treat a recall failure as dispatch-blocking":
+    a degraded ``inject_recall_feedback`` outcome (scribe CLI unavailable,
+    non-zero exit, timeout, or the artifact write itself failing) becomes
+    exactly one ``MRS-SPIN-018`` WARN finding, and the dispatch's exit code
+    and launch are otherwise unaffected."""
+    monkeypatch.setattr(
+        spin_module,
+        "inject_recall_feedback",
+        lambda **_kwargs: RecallInjectionResult(attempted=True, ok=False, reason="scribe binary not found on PATH"),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    [finding] = [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-018"]
+    assert finding["severity"] == "warn"
+    assert "acme" in finding["message"]
+    assert "scribe binary not found on PATH" in finding["message"]
+    assert len(harness.spin_calls) == 1
+
+
+def test_spin_emits_no_recall_finding_when_the_attempt_was_never_made_or_succeeded(home, capsys, monkeypatch):
+    """Both the "no resolvable station slug" row (``attempted=False``) and a
+    genuinely successful/no-op attempt (``attempted=True, ok=True``) are
+    silent -- ``MRS-SPIN-018`` exists solely to name a degradation, mirroring
+    ``MRS-SPIN-017``'s own "silent unless the layer degrades" convention."""
+    monkeypatch.setattr(
+        spin_module,
+        "inject_recall_feedback",
+        lambda **_kwargs: RecallInjectionResult(attempted=True, ok=True, injected=True),
+    )
+    fs = FakeFs(dirs={home})
+    harness = FakeHarness()
+    harness.feed_keys = ("1-1-first-story",)
+
+    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
+
+    assert exit_code == EXIT_OK
+    envelope = json.loads(capsys.readouterr().out)
+    assert [f for f in envelope["findings"] if f["code"] == "MRS-SPIN-018"] == []
+
+
 def test_resume_reports_the_wire_layer_too(home, capsys, monkeypatch, tmp_path):
     """``run_resume`` shares ``_spawn_supervisor_sidecar`` with ``run_spin``
     (Story 3.7's extraction), so a resumed run states the same disposition
@@ -2680,19 +2660,11 @@ def test_resume_happy_path_journals_ad45_fields_and_spawns(home):
 
     assert exit_code == EXIT_OK
     entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    assert [e["kind"] for e in entries] == ["run-resume", "run-resume", "supervisor-spawn"]
-    intent, outcome, spawn = entries
+    assert [e["kind"] for e in entries] == ["run-resume", "run-resume"]
+    intent, outcome = entries
     assert intent["phase"] == "intent"
     assert outcome["phase"] == "outcome"
     assert outcome["intent_id"] == intent["id"]
-    # Story 82.4: the resume journals the sidecar spawn too, naming the verb.
-    assert spawn["phase"] == "observation"
-    assert spawn["run_id"] == intent["run_id"]
-    assert spawn["payload"] == {
-        "supervisor_pid": process.spawn_result,
-        "watched_pid": harness.resume_result,
-        "launched_via": "bmad-loop resume",
-    }
     assert intent["payload"]["resumed_from_run"] == "acme-20260801T000000000Z-aaaa"
     assert intent["payload"]["harness_run_id"] == "acme-hh01"
     assert intent["payload"]["story_key"] == "3.7"
@@ -3136,42 +3108,6 @@ def test_resume_launch_failure_journals_a_failed_outcome(home, capsys):
     assert process.spawn_calls == []
 
 
-@pytest.mark.parametrize("write_succeeds", [True, False], ids=["write-took-effect", "write-failed"])
-def test_resume_launch_failure_outcome_carries_escalation_applied(home, monkeypatch, write_succeeds):
-    """Story 82.6: the FAILED launch outcome (``harness.resume`` raising)
-    reports, like the successful one, whether the planned floor-raise took
-    effect -- the intent named it, so the outcome must say what became of it."""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    harness.fail_resume = HarnessError("cannot launch: bmad-loop not found")
-    process = FakeProcess()
-    _seed_resume_over_launched_run(
-        home,
-        fs,
-        harness,
-        limits=_LAUNCH_LIMITS,
-        deferred=(_deferred_story("3.6", attempt=2),),
-        policy_toml=_BASELINE_POLICY_TOML,
-    )
-    if not write_succeeds:
-
-        def failing_write(document, loop_home):
-            raise HarnessPolicyWriteError("cannot write policy.toml: disk full")
-
-        monkeypatch.setattr(spin_module, "write_policy_document", failing_write)
-
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == exit_code_for(Verdict.ERROR)
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    assert [e["kind"] for e in entries] == ["run-resume", "run-resume"]
-    assert entries[0]["payload"]["escalated"] is True
-    assert entries[1]["phase"] == "outcome"
-    assert entries[1]["payload"]["pid"] is None
-    assert entries[1]["payload"]["escalation_applied"] is write_succeeds
-    assert process.spawn_calls == []
-
-
 def test_resume_outcome_write_failure_registers_a_warn_but_still_spawns(home, capsys):
     slug = "acme"
     fs = FakeFs(dirs={home})
@@ -3357,7 +3293,7 @@ def test_resume_escalates_on_a_review_cycle_ceiling_through_the_full_pipeline(ho
     the ``review_cycle >= max_review_cycles`` branch in isolation, but every
     ``run_resume``-level scenario until now triggered only via ``attempt``
     -- this exercises the review-cycle axis end to end through
-    ``_plan_retry_escalation``/``_write_retry_escalation``/the journal payload."""
+    ``_apply_retry_escalation``/the journal payload."""
     fs = FakeFs(dirs={home})
     harness = FakeHarness()
     process = FakeProcess()
@@ -3533,14 +3469,8 @@ def test_resume_policy_write_failure_registers_mrs_spin_016_and_proceeds(home, c
     assert exit_code == EXIT_OK
     out = capsys.readouterr().out
     assert "MRS-SPIN-016" in out
-    # Story 82.6: the intent is the write-ahead record -- it names the
-    # escalation that was ATTEMPTED; the outcome says it was not applied and
-    # the report says `escalated: False`.
     intent = json.loads(fs.appended_lines[0][1])
-    assert intent["payload"]["escalated"] is True
-    assert (intent["payload"]["from_model"], intent["payload"]["to_model"]) == ("sonnet", "opus")
-    assert _outcome_payload_of(fs)["escalation_applied"] is False
-    assert "escalated: False" in out
+    assert intent["payload"]["escalated"] is False
     assert harness.resume_calls, "the resume must still proceed"
     assert process.spawn_calls, "a supervisor must still be spawned"
 
@@ -3562,534 +3492,6 @@ def test_resume_missing_status_snapshot_skips_escalation(home, capsys):
     intent = json.loads(fs.appended_lines[0][1])
     assert intent["payload"]["escalated"] is False
     assert not (home / ".bmad-loop" / "policy.toml").exists()
-
-
-# --- Story 82.6: launch-time ceilings + journal-before-policy-write (DW-3-12-1, DW-3-12-3) ---
-
-
-_PRIOR_RUN_ID = "acme-20260801T000000000Z-aaaa"
-_RERENDERED_POLICY_TOML = _BASELINE_POLICY_TOML.replace("max_dev_attempts = 2", "max_dev_attempts = 4")
-_LAUNCH_LIMITS = {"max_dev_attempts": 2, "max_review_cycles": 3}
-
-
-def _launch_intent_line(run_id: str, *, limits: object | None, preview: list[str] | None = None) -> str:
-    """A ``run-launch`` INTENT journal line the way ``run_spin`` writes one,
-    carrying ``limits`` verbatim (``None`` omits the field -- a launch from
-    before Story 82.6). Its id is the ``spin-1``/0 pair ``_outcome_line``'s
-    outcome already names as its ``intent_id``."""
-    payload: dict[str, object] = {"epic": None, "story": None, "max_count": None, "preview": preview or ["3.6"]}
-    if limits is not None:
-        payload["limits"] = limits
-    entry = build_entry(
-        id=JournalEntryId("spin-1", 0),
-        ts="2026-08-01T00:00:00.000Z",
-        run_id=run_id,
-        kind="run-launch",
-        phase=Phase.INTENT,
-        payload=payload,
-    )
-    return prepare_for_write(entry).line
-
-
-def _seed_launched_run(
-    home: Path, fs: FakeFs, *, run_id: str = _PRIOR_RUN_ID, harness_run_id: str = "acme-hh01", limits: object | None
-) -> Path:
-    """A prior Marshal run whose journal holds a launch intent recording
-    ``limits`` and the launch outcome naming ``harness_run_id``."""
-    prior_dir = _seed_prior_run(home, "acme", run_id)
-    fs.read_text_contents[prior_dir / spin_module._JOURNAL_FILENAME] = (
-        _launch_intent_line(run_id, limits=limits) + "\n" + _outcome_line(run_id, harness_run_id=harness_run_id) + "\n"
-    )
-    return prior_dir
-
-
-def _seed_resume_over_launched_run(
-    home: Path,
-    fs: FakeFs,
-    harness: FakeHarness,
-    *,
-    limits: object | None,
-    deferred: tuple[DeferredStory, ...],
-    policy_toml: str,
-) -> None:
-    """``_seed_resume_with_deferred``'s sibling for a prior run that journaled
-    a launch intent: the on-disk ``policy.toml`` is both what ``run_resume``
-    reads (through ``fs``) and a real file for the write to land on."""
-    _seed_launched_run(home, fs, limits=limits)
-    harness.run_status_snapshot_result = RunStatusSnapshot(
-        paused_stage=None,
-        paused_story_key=None,
-        paused_reason=None,
-        escalated_spec_file=None,
-        escalated_task_phase=None,
-        deferred=deferred,
-    )
-    _seed_policy_file(home, fs, policy_toml)
-
-
-def _seed_policy_file(home: Path, fs: FakeFs, policy_toml: str) -> Path:
-    """Put ``policy_toml`` on disk at the loop home's ``policy.toml`` -- a real
-    file (what the writers replace) and the ``fs`` read the commands plan from."""
-    policy_path = home / ".bmad-loop" / "policy.toml"
-    policy_path.parent.mkdir(parents=True, exist_ok=True)
-    policy_path.write_text(policy_toml, encoding="utf-8")
-    fs.read_text_contents[policy_path] = policy_toml
-    return policy_path
-
-
-def _outcome_payload_of(fs: FakeFs) -> dict[str, object]:
-    return json.loads(fs.appended_lines[1][1])["payload"]
-
-
-def test_resume_escalates_against_the_ceilings_the_launch_recorded_not_the_rerendered_policy(home):
-    """Story 82.6, AC 1 (DW-3-12-1): a run launched under
-    ``max_dev_attempts = 2`` whose story deferred at attempt 2, with the loop
-    home's ``policy.toml`` re-rendered since to say 4 -- escalation still
-    fires, because the counters are judged against the ceilings the launch
-    journaled. (Reverted to the on-disk read, attempt 2 < 4 and nothing
-    escalates.)"""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    process = FakeProcess()
-    _seed_resume_over_launched_run(
-        home,
-        fs,
-        harness,
-        limits=_LAUNCH_LIMITS,
-        deferred=(_deferred_story("3.6", attempt=2),),
-        policy_toml=_RERENDERED_POLICY_TOML,
-    )
-
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    intent = json.loads(fs.appended_lines[0][1])["payload"]
-    assert intent["escalated"] is True
-    assert intent["escalated_stories"] == ["3.6"]
-    assert (intent["from_model"], intent["to_model"]) == ("sonnet", "opus")
-    assert _outcome_payload_of(fs)["escalation_applied"] is True
-    written = tomllib.loads((home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8"))
-    assert written["adapter"]["model"] == "opus"
-    # The re-rendered ceiling is untouched: only the model was floor-raised.
-    assert written["limits"]["max_dev_attempts"] == 4
-
-
-def test_resume_chained_off_a_resume_still_reads_the_launch_runs_ceilings(home):
-    """The run a resume chains off is usually itself a ``run-resume`` (the
-    newest run directory), whose journal records no launch -- the ceilings
-    come from the OLDER run whose ``run-launch`` outcome names the same
-    ``harness_run_id``."""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    process = FakeProcess()
-    _seed_resume_over_launched_run(
-        home,
-        fs,
-        harness,
-        limits=_LAUNCH_LIMITS,
-        deferred=(_deferred_story("3.6", attempt=2),),
-        policy_toml=_RERENDERED_POLICY_TOML,
-    )
-    chained_id = "acme-20260802T000000000Z-bbbb"
-    chained_dir = _seed_prior_run(home, "acme", chained_id)
-    fs.read_text_contents[chained_dir / spin_module._JOURNAL_FILENAME] = (
-        _outcome_line(chained_id, kind="run-resume", harness_run_id="acme-hh01") + "\n"
-    )
-
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    assert json.loads(fs.appended_lines[0][1])["payload"]["resumed_from_run"] == chained_id
-    assert json.loads(fs.appended_lines[0][1])["payload"]["escalated"] is True
-    assert _outcome_payload_of(fs)["escalation_applied"] is True
-
-
-def test_resume_reads_the_ceilings_from_a_launch_intent_offloaded_to_a_sidecar(home):
-    """An intent past AD-30's 4 KiB threshold journals only a ``sidecar_ref``
-    -- the recorded ceilings must still be recovered from the blob."""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    process = FakeProcess()
-    prior_dir = _seed_prior_run(home, "acme", _PRIOR_RUN_ID)
-    big_intent = build_entry(
-        id=JournalEntryId("spin-1", 0),
-        ts="2026-08-01T00:00:00.000Z",
-        run_id=_PRIOR_RUN_ID,
-        kind="run-launch",
-        phase=Phase.INTENT,
-        payload={
-            "epic": None,
-            "story": None,
-            "max_count": None,
-            "preview": [f"1.{n}" for n in range(1, 701)],
-            "limits": _LAUNCH_LIMITS,
-        },
-    )
-    prepared = prepare_for_write(big_intent)
-    assert prepared.sidecar_relative_path is not None, "the fixture must exceed the sidecar threshold"
-    fs.read_text_contents[prior_dir / prepared.sidecar_relative_path] = prepared.sidecar_content
-    fs.read_text_contents[prior_dir / spin_module._JOURNAL_FILENAME] = (
-        prepared.line + "\n" + _outcome_line(_PRIOR_RUN_ID, harness_run_id="acme-hh01") + "\n"
-    )
-    harness.run_status_snapshot_result = RunStatusSnapshot(
-        paused_stage=None,
-        paused_story_key=None,
-        paused_reason=None,
-        escalated_spec_file=None,
-        escalated_task_phase=None,
-        deferred=(_deferred_story("3.6", attempt=2),),
-    )
-    _seed_policy_file(home, fs, _RERENDERED_POLICY_TOML)
-
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    assert _outcome_payload_of(fs)["escalation_applied"] is True
-
-
-@pytest.mark.parametrize(
-    "recorded",
-    [
-        pytest.param(None, id="launch-recorded-nothing"),
-        pytest.param({"max_dev_attempts": 0, "max_review_cycles": 3}, id="non-positive"),
-        pytest.param({"max_dev_attempts": True, "max_review_cycles": 3}, id="boolean"),
-        pytest.param({"max_dev_attempts": 2}, id="missing-key"),
-        pytest.param("two-and-three", id="not-a-mapping"),
-    ],
-)
-@pytest.mark.parametrize(
-    ("on_disk_policy", "escalates"),
-    [
-        pytest.param(_BASELINE_POLICY_TOML, True, id="on-disk-ceiling-reached"),
-        pytest.param(_RERENDERED_POLICY_TOML, False, id="on-disk-ceiling-not-reached"),
-    ],
-)
-def test_resume_with_no_usable_recorded_ceilings_reads_the_on_disk_policy(home, recorded, on_disk_policy, escalates):
-    """Story 82.6, AC 2: a run whose launch entry records no (valid)
-    ceilings escalates against the on-disk ``policy.toml``, exactly as before
-    -- a malformed record counts as none."""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    process = FakeProcess()
-    _seed_resume_over_launched_run(
-        home,
-        fs,
-        harness,
-        limits=recorded,
-        deferred=(_deferred_story("3.6", attempt=2),),
-        policy_toml=on_disk_policy,
-    )
-
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    assert json.loads(fs.appended_lines[0][1])["payload"]["escalated"] is escalates
-    written = tomllib.loads((home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8"))
-    assert (written["adapter"]["model"] == "opus") is escalates
-
-
-@pytest.mark.parametrize(
-    ("failure", "message"),
-    [
-        pytest.param("fail_create_dir_exclusive", "cannot create run directory", id="run-directory-creation"),
-        pytest.param("fail_append_line", "cannot journal the resume intent", id="intent-append"),
-    ],
-)
-def test_resume_failing_before_its_intent_is_durable_leaves_policy_toml_unchanged(home, capsys, failure, message):
-    """Story 82.6, AC 4 (DW-3-12-3): with an escalation to apply, a failure
-    creating the run directory (or appending the intent) leaves
-    ``policy.toml`` byte-identical -- the floor-raise is written only after
-    its intent. (Reverted to the old ordering, the file already says opus.)"""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    process = FakeProcess()
-    _seed_resume_over_launched_run(
-        home,
-        fs,
-        harness,
-        limits=_LAUNCH_LIMITS,
-        deferred=(_deferred_story("3.6", attempt=2),),
-        policy_toml=_BASELINE_POLICY_TOML,
-    )
-    policy_path = home / ".bmad-loop" / "policy.toml"
-    before = policy_path.read_bytes()
-    setattr(fs, failure, FsError("disk full"))
-
-    exit_code = run_resume(_resume_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == exit_code_for(Verdict.ERROR)
-    envelope = json.loads(capsys.readouterr().out)
-    assert any(f["code"] == "MRS-SPIN-003" and message in f["message"] for f in envelope["findings"])
-    assert envelope["data"]["escalated"] is False
-    assert policy_path.read_bytes() == before
-    assert not harness.resume_calls
-
-
-def test_resume_journals_the_floor_raise_before_it_writes_policy_toml(home, monkeypatch):
-    """Story 82.6, AC 5 (resume half): at the moment ``policy.toml`` is
-    written, the durable (fsynced) intent already names the change -- from and
-    to model and the stories that triggered it."""
-    events: list[str] = []
-    fs = FakeFs(dirs={home}, events=events)
-    harness = FakeHarness(events=events)
-    process = FakeProcess()
-    _seed_resume_over_launched_run(
-        home,
-        fs,
-        harness,
-        limits=_LAUNCH_LIMITS,
-        deferred=(_deferred_story("3.6", attempt=2), _deferred_story("3.7", attempt=1)),
-        policy_toml=_BASELINE_POLICY_TOML,
-    )
-    seen: list[list[tuple[dict[str, object], bool]]] = []
-    real_write = spin_module.write_policy_document
-
-    def spy(document, loop_home):
-        events.append("write-policy")
-        seen.append([(json.loads(line), fsync) for _, line, fsync in fs.appended_lines])
-        return real_write(document, loop_home)
-
-    monkeypatch.setattr(spin_module, "write_policy_document", spy)
-
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    assert len(seen) == 1
-    ((intent, intent_fsync),) = seen[0]
-    assert intent["phase"] == "intent"
-    assert intent_fsync is True
-    assert intent["payload"]["escalated"] is True
-    assert intent["payload"]["escalated_stories"] == ["3.6"]
-    assert (intent["payload"]["from_model"], intent["payload"]["to_model"]) == ("sonnet", "opus")
-    assert harness.resume_calls, "the resume itself still ran after the write"
-    # The rewrite lands before the harness is told to resume -- `bmad-loop
-    # resume` reads policy.toml once, at start-up, so a later write is moot.
-    assert events.index("write-policy") < events.index("resume")
-    assert _outcome_payload_of(fs)["escalation_applied"] is True
-
-
-def _tier_policy_launch(
-    home,
-    tmp_path,
-    monkeypatch,
-    *,
-    on_disk: str | None = _BASELINE_POLICY_TOML,
-    events: list[str] | None = None,
-):
-    """A ``run_spin`` fixture whose tiering decision WOULD rewrite
-    ``policy.toml`` (one story declaring ``difficulty: heavy`` against a real
-    ``model_tier_map``), with ``on_disk`` already in place as the file it
-    would replace. ``events`` is the shared ordering log ``FakeFs`` and
-    ``FakeHarness`` append to. Returns ``(fs, harness, policy_path)``."""
-    _write_story_spec(home, "1-1", difficulty_frontmatter="difficulty: heavy\n")
-    monkeypatch.setattr(
-        spin_module,
-        "conventional_project_policy_path",
-        lambda slug: _model_tier_map_policy_path(tmp_path),
-    )
-    fs = FakeFs(dirs={home}, events=events)
-    harness = FakeHarness(events=events)
-    harness.feed_keys = ("1-1-first-story",)
-    policy_path = home / ".bmad-loop" / "policy.toml"
-    if on_disk is not None:
-        _seed_policy_file(home, fs, on_disk)
-    return fs, harness, policy_path
-
-
-def test_spin_failed_launch_intent_append_removes_the_run_directory(home, tmp_path, monkeypatch, capsys):
-    """Story 86.3 (DW-FU-3-3-11): a failed intent append best-effort removes
-    the run directory and still reports MRS-SPIN-003."""
-    fs, harness, _ = _tier_policy_launch(home, tmp_path, monkeypatch)
-    fs.fail_append_line = FsError("disk full")
-
-    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
-
-    assert exit_code == exit_code_for(Verdict.ERROR)
-    envelope = json.loads(capsys.readouterr().out)
-    assert any(f["code"] == "MRS-SPIN-003" and "launch intent" in f["message"] for f in envelope["findings"])
-    assert len(fs.remove_empty_dir_calls) == 1
-    assert fs.remove_empty_dir_calls[0].name.startswith("acme-")
-    assert not harness.spin_calls
-
-
-def test_spin_launch_intent_carries_marshal_and_harness_versions(home, tmp_path, monkeypatch, capsys):
-    """Story 86.3 (DW-FU-3-3-9): launch intent records marshal_version and harness_version."""
-    from pyforge.marshal.cli import main as marshal_main
-
-    fs, harness, _ = _tier_policy_launch(home, tmp_path, monkeypatch)
-    harness.harness_version_result = "0.12.1"
-
-    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
-
-    assert exit_code == EXIT_OK
-    intent_line = fs.appended_lines[0][1]
-    intent = json.loads(intent_line)
-    assert intent["payload"]["marshal_version"] == marshal_main.__version__
-    assert intent["payload"]["harness_version"] == "0.12.1"
-
-
-def test_spin_surfaces_unreadable_project_policy_under_mrs_spin_008(home, tmp_path, monkeypatch, capsys):
-    """Story 86.3 (DW-FU-3-5-2): a project-policy read failure is WARN-tier MRS-SPIN-008."""
-    from pyforge.marshal.cli.config import PolicyIOError
-
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    harness.feed_keys = ("1-1-first-story",)
-    policy_path = tmp_path / "marshal-policy.toml"
-    policy_path.write_text("idle_threshold_minutes = 30\n", encoding="utf-8")
-    monkeypatch.setattr(spin_module, "conventional_project_policy_path", lambda slug: policy_path)
-
-    def _fail_read(path):
-        raise PolicyIOError("permission denied reading project policy")
-
-    monkeypatch.setattr(spin_module, "_read_project_policy", _fail_read)
-
-    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
-
-    envelope = json.loads(capsys.readouterr().out)
-    findings_by_code = {finding["code"]: finding for finding in envelope["findings"]}
-    assert exit_code == EXIT_OK
-    assert "MRS-SPIN-008" in findings_by_code
-    assert "MRS-POLICY-004" in findings_by_code["MRS-SPIN-008"]["message"]
-
-
-@pytest.mark.parametrize(
-    ("failure", "message"),
-    [
-        pytest.param("fail_append_line", "cannot journal the launch intent", id="intent-append"),
-        pytest.param("fail_create_dir_exclusive", "cannot create run directory", id="run-directory-creation"),
-    ],
-)
-def test_spin_failing_before_its_intent_is_durable_leaves_policy_toml_byte_identical(
-    home, tmp_path, monkeypatch, capsys, failure, message
-):
-    """Story 82.6, AC 3 (DW-3-12-3): model tiering that WOULD change the
-    model, an intent append (or run-directory creation) that fails -- the
-    file is byte-identical to before and the failure is reported. (Reverted
-    to the old ordering, the tiered render has already replaced it.)"""
-    fs, harness, policy_path = _tier_policy_launch(home, tmp_path, monkeypatch)
-    before = policy_path.read_bytes()
-    setattr(fs, failure, FsError("disk full"))
-
-    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
-
-    assert exit_code == exit_code_for(Verdict.ERROR)
-    envelope = json.loads(capsys.readouterr().out)
-    assert any(f["code"] == "MRS-SPIN-003" and message in f["message"] for f in envelope["findings"])
-    assert policy_path.read_bytes() == before
-    assert not harness.spin_calls
-
-
-def test_spin_journals_the_policy_change_before_it_writes_policy_toml(home, tmp_path, monkeypatch):
-    """Story 82.6, AC 5 (spin half): when ``policy.toml`` is written, the
-    durable launch intent already carries ``policy_change`` -- the dev model
-    from and to, the governing difficulty and the selected stories."""
-    events: list[str] = []
-    fs, harness, policy_path = _tier_policy_launch(home, tmp_path, monkeypatch, events=events)
-    seen: list[list[tuple[dict[str, object], bool]]] = []
-    real_write = spin_module.write_policy_toml
-
-    def spy(*args, **kwargs):
-        events.append("write-policy")
-        seen.append([(json.loads(line), fsync) for _, line, fsync in fs.appended_lines])
-        return real_write(*args, **kwargs)
-
-    monkeypatch.setattr(spin_module, "write_policy_toml", spy)
-
-    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
-
-    assert exit_code == EXIT_OK
-    assert len(seen) == 1
-    ((intent, intent_fsync),) = seen[0]
-    assert intent["phase"] == "intent"
-    assert intent["kind"] == "run-launch"
-    assert intent_fsync is True
-    assert intent["payload"]["policy_change"] == {
-        "from_model": "sonnet",
-        "to_model": "opus",
-        "governing_difficulty": "heavy",
-        "stories": ["1.1"],
-    }
-    # ...and the write really happened, after it -- and before the harness
-    # process that reads the file is spawned.
-    assert tomllib.loads(policy_path.read_text(encoding="utf-8"))["adapter"]["dev"]["model"] == "opus"
-    assert events.index("write-policy") < events.index("spin")
-
-
-def test_spin_launch_intent_records_the_ceilings_the_run_starts_under(home, tmp_path, monkeypatch):
-    """Story 82.6: the launch intent's ``limits`` are the rendered
-    ``[limits]`` ceilings of the policy the harness will read."""
-    fs, harness, policy_path = _tier_policy_launch(home, tmp_path, monkeypatch, on_disk=_RERENDERED_POLICY_TOML)
-
-    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness)
-
-    assert exit_code == EXIT_OK
-    intent = json.loads(fs.appended_lines[0][1])["payload"]
-    written_limits = tomllib.loads(policy_path.read_text(encoding="utf-8"))["limits"]
-    assert intent["limits"] == {
-        "max_dev_attempts": written_limits["max_dev_attempts"],
-        "max_review_cycles": written_limits["max_review_cycles"],
-    }
-    # The rendered ceilings, not the stale 4 the file said before.
-    assert intent["limits"]["max_dev_attempts"] == 2
-
-
-def test_spin_without_a_tiering_write_records_the_on_disk_ceilings_and_no_policy_change(home):
-    """No story selected (so nothing to tier): the policy file is not
-    touched, the intent records the ceilings that file already carries and
-    names no ``policy_change``; with no file there is nothing to record."""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    harness.feed_keys = ("1-1-first-story",)
-    _seed_policy_file(home, fs, _RERENDERED_POLICY_TOML)
-
-    assert run_spin(_spin_namespace("acme", story="9.9", fmt="json"), fs=fs, harness=harness) == EXIT_OK
-
-    intent = json.loads(fs.appended_lines[0][1])["payload"]
-    assert intent["limits"] == {"max_dev_attempts": 4, "max_review_cycles": 3}
-    assert "policy_change" not in intent
-    assert (home / ".bmad-loop" / "policy.toml").read_text(encoding="utf-8") == _RERENDERED_POLICY_TOML
-
-    bare_fs = FakeFs(dirs={home})
-    (home / ".bmad-loop" / "policy.toml").unlink()
-    assert run_spin(_spin_namespace("acme", story="9.9", fmt="json"), fs=bare_fs, harness=harness) == EXIT_OK
-    bare_intent = json.loads(bare_fs.appended_lines[0][1])["payload"]
-    assert "limits" not in bare_intent
-    assert "policy_change" not in bare_intent
-
-
-def test_a_resume_reads_back_the_ceilings_a_spin_journaled(home, tmp_path, monkeypatch):
-    """Producer and consumer agree: the ``limits`` ``run_spin`` journals are
-    exactly what ``run_resume`` judges a deferred story against, after the
-    loop home's ``policy.toml`` is re-rendered with a higher ceiling."""
-    spin_fs, spin_harness, _policy_path = _tier_policy_launch(home, tmp_path, monkeypatch)
-    spin_harness.spin_result = SpinResult(pid=4242, harness_run_id="acme-hh01")
-    assert run_spin(_spin_namespace("acme", fmt="json"), fs=spin_fs, harness=spin_harness) == EXIT_OK
-    spin_entries = [json.loads(line) for _, line, _ in spin_fs.appended_lines]
-    run_id = spin_entries[0]["run_id"]
-
-    prior_dir = _seed_prior_run(home, "acme", run_id)
-    resume_fs = FakeFs(dirs={home})
-    resume_fs.read_text_contents[prior_dir / spin_module._JOURNAL_FILENAME] = "".join(
-        line + "\n" for _, line, _ in spin_fs.appended_lines[:2]
-    )
-    # The operator re-rendered the home's policy between deferral and resume.
-    resume_fs.read_text_contents[home / ".bmad-loop" / "policy.toml"] = _RERENDERED_POLICY_TOML
-    resume_harness = FakeHarness()
-    resume_harness.run_status_snapshot_result = RunStatusSnapshot(
-        paused_stage=None,
-        paused_story_key=None,
-        paused_reason=None,
-        escalated_spec_file=None,
-        escalated_task_phase=None,
-        deferred=(_deferred_story("1.1", attempt=2),),
-    )
-
-    exit_code = run_resume(_resume_namespace("acme"), fs=resume_fs, harness=resume_harness, process=FakeProcess())
-
-    assert exit_code == EXIT_OK
-    assert json.loads(resume_fs.appended_lines[0][1])["payload"]["escalated"] is True
-    assert _outcome_payload_of(resume_fs)["escalation_applied"] is True
 
 
 # --- Story 6.1: profile-driven adapter selection, project-scoped (FR-48/FR-51/AD-19) ---
@@ -4668,139 +4070,3 @@ def test_spin_rapid_second_call_refuses_like_the_2026_09_10_race(home, capsys):
     assert "MRS-DISP-021" in out
     assert run_id in out
     assert len(harness.spin_calls) == 0
-
-
-# =============================================================================
-# Story 82.4 (DW-FU-3-4-7): the supervisor spawn is journaled, launch and resume
-# =============================================================================
-
-
-def _spawn_entries(fs: FakeFs) -> list[dict]:
-    entries = [json.loads(line) for _, line, _ in fs.appended_lines]
-    return [entry for entry in entries if entry["kind"] == "supervisor-spawn"]
-
-
-def _resume_setup(home: Path) -> tuple[FakeFs, FakeHarness, FakeProcess]:
-    fs = FakeFs(dirs={home})
-    _seed_resolvable_prior_run(home, "acme", fs, run_id="acme-20260801T000000000Z-aaaa", harness_run_id="acme-hh01")
-    harness = FakeHarness()
-    harness.resolution_reference_result = None
-    return fs, harness, FakeProcess()
-
-
-def test_spin_journals_one_supervisor_spawn_observation_carrying_the_sidecar_pid(home):
-    """Given ``marshal factory spin`` When the sidecar spawn succeeds Then the
-    run journal holds exactly one entry recording the sidecar pid."""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    harness.feed_keys = ("1-1-first-story",)
-    process = FakeProcess()
-    process.spawn_result = 555555
-
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    [spawn] = _spawn_entries(fs)
-    assert spawn["phase"] == "observation"
-    assert spawn["payload"] == {"supervisor_pid": 555555, "watched_pid": 4242, "launched_via": "bmad-loop run"}
-    assert spawn["id"]["counter"] == 2
-
-
-def test_spin_journals_one_supervisor_spawn_observation_carrying_the_spawn_error(home):
-    """...and When the spawn raises, the one entry records the error instead
-    (``supervisor_pid: None``) -- the journal finally says "launched
-    unsupervised"."""
-    fs = FakeFs(dirs={home})
-    harness = FakeHarness()
-    harness.feed_keys = ("1-1-first-story",)
-    process = FakeProcess()
-    process.fail_spawn = ProcessError("cannot launch: python not found")
-
-    exit_code = run_spin(_spin_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    [spawn] = _spawn_entries(fs)
-    assert spawn["payload"]["supervisor_pid"] is None
-    assert "cannot launch: python not found" in spawn["payload"]["error"]
-    assert spawn["payload"]["watched_pid"] == 4242
-    assert spawn["payload"]["launched_via"] == "bmad-loop run"
-
-
-def test_resume_journals_one_supervisor_spawn_observation_carrying_the_sidecar_pid(home):
-    fs, harness, process = _resume_setup(home)
-    process.spawn_result = 565656
-
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    [spawn] = _spawn_entries(fs)
-    assert spawn["payload"] == {
-        "supervisor_pid": 565656,
-        "watched_pid": harness.resume_result,
-        "launched_via": "bmad-loop resume",
-    }
-
-
-def test_resume_journals_one_supervisor_spawn_observation_carrying_the_spawn_error(home):
-    fs, harness, process = _resume_setup(home)
-    process.fail_spawn = ProcessError("cannot launch: python not found")
-
-    exit_code = run_resume(_resume_namespace("acme"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    [spawn] = _spawn_entries(fs)
-    assert spawn["payload"]["supervisor_pid"] is None
-    assert "cannot launch: python not found" in spawn["payload"]["error"]
-    assert spawn["payload"]["launched_via"] == "bmad-loop resume"
-
-
-def test_spin_a_failing_spawn_observation_append_is_mrs_spin_018_and_never_changes_the_outcome(home, capsys):
-    """A failure to journal the observation is a WARN paper-trail gap over an
-    already-live, already-supervised run: the exit code, ``supervisor_pid`` and
-    every earlier entry are unchanged."""
-    fs = FakeFs(dirs={home})
-    fs.fail_append_line_on_call = 3  # intent (#1) and outcome (#2) land; the spawn observation (#3) fails
-    harness = FakeHarness()
-    harness.feed_keys = ("1-1-first-story",)
-    process = FakeProcess()
-
-    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    envelope = json.loads(capsys.readouterr().out)
-    codes = [finding["code"] for finding in envelope["findings"]]
-    assert "MRS-SPIN-018" in codes
-    assert "MRS-SPIN-006" not in codes  # the launch outcome itself journaled fine
-    assert envelope["data"]["supervisor_pid"] == process.spawn_result
-    assert [json.loads(line)["kind"] for _, line, _ in fs.appended_lines] == ["run-launch", "run-launch"]
-    finding = next(finding for finding in envelope["findings"] if finding["code"] == "MRS-SPIN-018")
-    assert finding["severity"] == "warn"
-
-
-def test_resume_a_failing_spawn_observation_append_is_mrs_spin_018_and_never_changes_the_outcome(home, capsys):
-    fs, harness, process = _resume_setup(home)
-    fs.fail_append_line_on_call = 3
-
-    exit_code = run_resume(_resume_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    envelope = json.loads(capsys.readouterr().out)
-    assert "MRS-SPIN-018" in [finding["code"] for finding in envelope["findings"]]
-    assert envelope["data"]["supervisor_pid"] == process.spawn_result
-
-
-def test_spin_the_spawn_error_and_its_unjournaled_observation_report_both_findings(home, capsys):
-    """MRS-SPIN-007 (the spawn failed) and MRS-SPIN-018 (and it could not be
-    journaled either) are two findings about one spawn, in that order."""
-    fs = FakeFs(dirs={home})
-    fs.fail_append_line_on_call = 3
-    harness = FakeHarness()
-    harness.feed_keys = ("1-1-first-story",)
-    process = FakeProcess()
-    process.fail_spawn = ProcessError("cannot launch: python not found")
-
-    exit_code = run_spin(_spin_namespace("acme", fmt="json"), fs=fs, harness=harness, process=process)
-
-    assert exit_code == EXIT_OK
-    codes = [finding["code"] for finding in json.loads(capsys.readouterr().out)["findings"]]
-    assert codes.index("MRS-SPIN-007") < codes.index("MRS-SPIN-018")

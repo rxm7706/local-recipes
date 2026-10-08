@@ -63,16 +63,6 @@ degrades to an unsupervised run ... never to a corrupted one").
 (the detached sidecar's only diagnostic channel, needed whether or not the
 spawn succeeded); ``data["supervisor_pid"]`` joins it on success.
 
-Story 82.4 (DW-FU-3-4-7) adds the one journal entry that records the spawn
-itself: ``_spawn_supervisor_sidecar`` -- for ``marshal factory spin`` and
-``marshal factory resume`` alike -- appends one ``observation`` of kind
-``"supervisor-spawn"`` (counter 2 under this invocation's own writer id,
-after the launch's intent 0 and outcome 1) carrying the sidecar's pid, or its
-spawn error. Until then "this run was launched unsupervised" survived only as
-the transient stdout of a fire-and-forget command. A failure to journal that
-entry registers ``MRS-SPIN-018`` (``Verdict.WARN``) and never changes the
-launch's own outcome or exit code.
-
 Story 3.5 (idle-strand detection, AD-9/AD-20, FR-12) grows the supervisor
 spawn's argv from 5 to 6 positionals: the effective ``idle_threshold_minutes``
 (``core.policy.EffectivePolicy.seed_view()``'s own 10th SEED key, resolved by
@@ -106,15 +96,6 @@ Both signals match by NORMALIZED story key / titled spec filename, never by
 a rendered string form (review finding -- matching on the rendered forms
 made both halves unreachable on real data; see ``_prior_attempt_keys`` and
 ``_large_spec_bytes``).
-
-Story 82.5 (DW-FU-3-6-6) grows the argv once more, 10 -> 11, with one OPTIONAL
-trailing value: the usage-staleness window in minutes, ``max(idle_threshold_
-minutes, RENDERED_SESSION_TIMEOUT_MIN)``. bmad-loop rewrites ``state.json``
-only at session boundaries and the rendered policy lets a session run
-``session_timeout_min`` (180) minutes, so reusing the 25-minute idle threshold
-as the window left both token ceilings dark from minute 25 of any session. The
-floor is derived from the rendered policy template itself, never a second
-literal.
 
 **``--foreground``.** Calls the synchronous, stdio-inheriting
 ``HarnessPort.run_foreground`` INSTEAD of the detached ``spin`` path and
@@ -237,25 +218,6 @@ all, so this reads straight off ``status_snapshot.deferred``, never
 mirroring ``MRS-SPIN-015``'s identical "an already-viable resume is never
 aborted over a best-effort policy write" precedent.
 
-Story 82.6 (DW-3-12-1, DW-3-12-3) tightens both ``policy.toml`` rewrites
-this module makes -- the model-tiering write of ``run_spin`` and the retry-
-escalation floor-raise of ``run_resume``. (1) The launch intent records the
-``[limits]`` ceilings the run starts under (``max_dev_attempts``,
-``max_review_cycles``), and ``_plan_retry_escalation`` judges a deferred
-story's accumulated counters against the ceilings the resumed run's OWN
-launch recorded (``_launch_limits_for_resume``) -- a ``policy.toml``
-re-rendered since cannot cancel an escalation the story earned; only a launch
-that recorded none falls back to the on-disk file, as before. (2) Both
-commands DECIDE the rewrite first (``_resolve_model_tiering`` returns a
-``_TierPolicyWrite`` plan, ``_plan_retry_escalation`` a
-``_RetryEscalationPlan``), name it in their intent entry (``policy_change``;
-the resume intent's ``escalated``/``from_model``/``to_model``), and write
-``policy.toml`` (``_write_tier_policy`` / ``_write_retry_escalation``) only
-after that intent is durable -- so a failed run-directory creation or intent
-append leaves the file untouched, and no model change exists without a record
-of it. The resume outcome's ``escalation_applied`` says whether the write then
-took effect.
-
 Registers ``MRS-SPIN-001`` through ``MRS-SPIN-012`` (``core/findings.py``/
 ``core/verdict.py``) -- see those modules' own docstrings for the full
 per-code rationale. ``MRS-SPIN-006`` joined the original five in review,
@@ -295,9 +257,7 @@ import secrets
 import sys
 import tomllib
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
 from datetime import datetime, timezone
-from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -307,15 +267,16 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
     ADAPTER_REVIEW_MODEL_STOCK_DEFAULT,
-    RENDERED_SESSION_TIMEOUT_MIN,
     HarnessError,
     HarnessPolicyWriteError,
     attempt_spin_wire_layer,
+    inject_recall_feedback,
     render_policy_toml,
     resolve_loop_runner,
     write_policy_document,
     write_policy_toml,
 )
+from ..adapters.scribe_cli import ScribeCli
 from ..adapters.vcs_git import GitVcs
 from ..core import harness_profile, policy
 from ..core.identity import (
@@ -333,12 +294,11 @@ from ..core.journal import (
     fold,
     mint_run_id,
     prepare_for_write,
-    sidecar_texts_for_lines,
 )
 from ..core.model import Finding, Severity, build_envelope
 from ..core.spec_difficulty import DifficultyParseError, parse_declared_difficulty
 from ..core.supervise import EscalationStatus, evaluate_escalation, evaluate_retry_escalation
-from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
+from ..core.tier_routing import resolve_tier_launch
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import DeferredStory, HarnessPort
@@ -384,13 +344,6 @@ _LAUNCH_KIND = "run-launch"
 # though both mint a fresh Marshal run id and spawn a supervisor sidecar the
 # same way).
 _RESUME_KIND = "run-resume"
-# Story 82.4 (DW-FU-3-4-7): the ONE observation both launch verbs journal about
-# the supervisor sidecar spawn -- its pid, or the error that stopped it. An
-# observation, not an intent/outcome pair: the spawn is a fire-and-forget side
-# effect whose only durable fact is "supervision was attempted, and how it went".
-_SPAWN_KIND = "supervisor-spawn"
-# Its counter under `_writer_id()`: after the launch intent (0) and outcome (1).
-_SPAWN_COUNTER = 2
 
 # Story 3.6's FR-14 preflight advisory (MRS-SPIN-009) -- a fixed "this spec
 # is large" threshold, calibrated against this repo's own existing story
@@ -643,136 +596,37 @@ def _resolve_governing_difficulty(
     return governing, batching_report
 
 
-def _launch_version_journal_fields(harness: HarnessPort) -> dict[str, object]:
-    """FR-57 / Story 86.3: marshal and bmad-loop versions on launch intents."""
-    from .main import __version__ as marshal_version
-
-    return {
-        "marshal_version": marshal_version,
-        "harness_version": harness.harness_version(),
-    }
-
-
-def _warn_spin_policy_compose_findings(findings: list[Finding], policy_findings: list[Finding]) -> None:
-    if not policy_findings:
-        return
-    findings.append(
-        Finding(
-            code="MRS-SPIN-008",
-            severity=Severity.WARN,
-            message=(
-                "the project policy layer produced "
-                f"{len(policy_findings)} finding(s) while composing the "
-                "supervisor's idle threshold (the launch itself is "
-                "unaffected; every key a finding below names kept its "
-                "composed default instead of the project's own value): "
-                + "; ".join(f"{finding.code}: {finding.message}" for finding in policy_findings)
-            ),
-        )
-    )
-
-
 def _compose_spin_policy(
     slug: str, *, flags: dict[str, object] | None = None
 ) -> tuple[policy.EffectivePolicy, list[Finding]]:
     """Story 22.8 / 33.3: fold repo defaults the same way dispatch does."""
     repo_defaults, _repo_finding = read_repo_policy_defaults()
     project_data: dict[str, object] = {}
-    read_findings: list[Finding] = []
     candidate = conventional_project_policy_path(slug)
     if candidate.is_file():
         try:
             project_data = dict(_read_project_policy(candidate))
-        except PolicyIOError as exc:
+        except PolicyIOError:
             project_data = {}
-            read_findings.append(exc.finding)
-        except Exception as exc:  # noqa: BLE001 -- supplementary policy read
+        except Exception:  # noqa: BLE001 -- mirrors _spawn_supervisor_sidecar
             project_data = {}
-            read_findings.append(
-                Finding(
-                    code="MRS-POLICY-004",
-                    severity=Severity.ERROR,
-                    message=str(exc),
-                )
-            )
     effective, findings = policy.compose(
         project_slug=slug,
         repo_defaults=repo_defaults,
         project=project_data,
         flags=dict(flags or {}),
     )
-    return effective, read_findings + list(findings)
-
-
-@dataclass(frozen=True)
-class _TierPolicyWrite:
-    """Story 82.6 (DW-3-12-3): the model-tiering ``policy.toml`` write
-    ``_resolve_model_tiering`` DECIDED but did not perform -- everything
-    ``_write_tier_policy`` needs to apply it later (``write_policy_toml``'s
-    own inputs: the effective policy, the governing difficulty, the adapter
-    name and the tier resolution), plus what ``run_spin``'s launch intent
-    records ahead of it: ``limits`` (the rendered ``[limits]`` ceilings, the
-    ones this launch will run under) and ``change`` (the ``policy_change``
-    record -- ``from_model``/``to_model`` are the DEV stage's effective model
-    before and after the render, ``governing_difficulty``, and the selected
-    ``stories`` the render was resolved for). Frozen: it is evidence of a
-    decision, never state to patch."""
-
-    effective_policy: policy.EffectivePolicy
-    difficulty: str | None
-    adapter: str | None
-    tier_resolution: TierLaunchResolution
-    limits: Mapping[str, int] | None
-    change: Mapping[str, object]
-
-
-def _write_tier_policy(plan: _TierPolicyWrite, home: Path, findings: list[Finding]) -> None:
-    """Apply ``plan`` to the loop home's own ``.bmad-loop/policy.toml`` via
-    ``write_policy_toml`` -- the file ``bmad-loop run`` (spawned by this
-    function's caller, right after this call returns) actually reads.
-    Without this write the resolution would be journaled/reported only,
-    never applied to the launched process. A write failure degrades the SAME
-    way every other non-critical I/O step in a launch does (MRS-SPIN-007's
-    supervisor-spawn precedent): the harness launch is already viable, so
-    losing the persisted tier override registers ``MRS-SPIN-015`` (WARN) and
-    the launch proceeds on whatever baseline policy is already on disk, never
-    aborts an otherwise-viable launch.
-
-    Called by ``run_spin`` only AFTER the launch intent -- which names this
-    very change (``policy_change``) -- is durable, never from
-    ``_resolve_model_tiering`` (Story 82.6)."""
-    try:
-        write_policy_toml(
-            plan.effective_policy,
-            home,
-            difficulty=plan.difficulty,
-            adapter=plan.adapter,
-            tier_resolution=plan.tier_resolution,
-        )
-    except HarnessPolicyWriteError as exc:
-        findings.append(
-            Finding(
-                code="MRS-SPIN-015",
-                severity=Severity.WARN,
-                message=(
-                    f"could not persist the resolved model-tier policy to "
-                    f"{home}: {exc} -- this run's model resolution is "
-                    "reported but was not applied; the harness will use "
-                    "whatever policy.toml was already on disk"
-                ),
-            )
-        )
+    return effective, list(findings)
 
 
 def _resolve_model_tiering(
-    fs: FsPort,
     harness: HarnessPort,
     home: Path,
     slug: str,
     preview: Sequence[StoryKey],
     findings: list[Finding],
     data: dict[str, object],
-) -> tuple[bool, _TierPolicyWrite | None]:
+) -> bool:
     """Story 6.1's own FR-48/FR-51/AD-19 model-tier resolution: the
     governing difficulty among ``preview``'s in-scope stories
     (``_resolve_governing_difficulty``), the resolved per-stage models for
@@ -785,18 +639,14 @@ def _resolve_model_tiering(
     resolution -- never a second mechanism). Echoes ``adapter_name``/
     ``resolved_models``/``model_tier_batching`` (when applicable) into
     ``data`` -- this function's caller copies the same fields into the
-    outcome journal entry. Once the adapter itself resolves, ALSO decides to
-    persist the same rendered, difficulty-tiered policy to the loop home's
-    own ``.bmad-loop/policy.toml`` -- but never writes it (Story 82.6,
-    DW-3-12-3): it returns the decision as a ``_TierPolicyWrite`` plan, which
-    ``run_spin`` journals in its launch intent and only THEN applies via
-    ``_write_tier_policy`` (a write failure degrades to ``MRS-SPIN-015``
-    (WARN) rather than aborting an already-viable launch). This function
-    reads the on-disk file (through ``fs``) only to name the model the
-    change starts from.
-
-    Returns ``(refuse, plan)``: ``refuse`` is the ``MRS-SPIN-014`` verdict
-    below; ``plan`` is ``None`` for every case that would not write.
+    outcome journal entry. Once the adapter itself resolves, ALSO persists
+    the same rendered, difficulty-tiered policy to the loop home's own
+    ``.bmad-loop/policy.toml`` via ``write_policy_toml`` -- the file
+    ``bmad-loop run`` (spawned by this function's caller, right after this
+    call returns) actually reads. Without this write the resolution would be
+    journaled/reported only, never applied to the launched process -- a
+    write failure degrades to ``MRS-SPIN-015`` (WARN) rather than aborting
+    an already-viable launch.
 
     An empty ``preview`` (nothing selected for this launch) is a no-op --
     there is nothing to resolve tiering for.
@@ -831,13 +681,12 @@ def _resolve_model_tiering(
     all) returns ``False`` -- resolution simply could not complete, and the
     launch proceeds without it."""
     if not preview:
-        return False, None
+        return False
     governing, batching_report = _resolve_governing_difficulty(preview, home, slug, findings)
     if batching_report is not None:
         data["model_tier_batching"] = batching_report
 
-    effective_policy, tier_policy_findings = _compose_spin_policy(slug)
-    _warn_spin_policy_compose_findings(findings, tier_policy_findings)
+    effective_policy, _policy_findings = _compose_spin_policy(slug)
     tier_resolution = resolve_tier_launch(effective_policy, governing)
     data["resolved_models"] = dict(tier_resolution.resolved_models)
     if tier_resolution.serving_pools:
@@ -858,13 +707,13 @@ def _resolve_model_tiering(
         # unrelated to difficulty/adapter resolution, already surfaced (or
         # about to be) elsewhere; this function simply cannot resolve the
         # configured adapter from a render that failed.
-        return False, None
+        return False
     parsed_policy = tomllib.loads(rendered)
     adapter_name = tier_resolution.adapter_name
     if not isinstance(adapter_name, str) or not adapter_name:
         adapter_name = parsed_policy.get("adapter", {}).get("name")
     if not isinstance(adapter_name, str) or not adapter_name:
-        return False, None
+        return False
     data["adapter_name"] = adapter_name
 
     try:
@@ -877,34 +726,43 @@ def _resolve_model_tiering(
                 message=f"cannot resolve configured adapter {adapter_name!r}: {exc}",
             )
         )
-        return True, None
+        return True
 
     # The resolved, difficulty-tiered policy must reach the loop home's own
     # `.bmad-loop/policy.toml` -- the ONE file `bmad-loop run` (spawned
     # below by `harness.spin`) actually reads. Everything above this point
     # only rendered the policy in-memory to recover `adapter_name`; without
-    # a write the outcome journal's own `resolved_models` field would
+    # this write, the outcome journal's own `resolved_models` field would
     # describe a tiering the launched process never applies (the harness
     # would keep reading whatever `difficulty=None` baseline `marshal config
     # --write-harness-policy` last persisted, silently diverging from what
-    # this run reports). The write itself is NOT made here (Story 82.6,
-    # DW-3-12-3): the plan below rides back to `run_spin`, whose launch
-    # intent names the change before `_write_tier_policy` applies it, so a
-    # failed run-directory creation or intent append leaves the file as it
-    # was.
-    plan = _TierPolicyWrite(
-        effective_policy=effective_policy,
-        difficulty=governing,
-        adapter=tier_resolution.adapter_name,
-        tier_resolution=tier_resolution,
-        limits=_ceilings_record(_ceilings_of(parsed_policy.get("limits"))),
-        change={
-            "from_model": _stage_model(_read_policy_document(fs, home), "dev"),
-            "to_model": _stage_model(parsed_policy, "dev"),
-            "governing_difficulty": governing,
-            "stories": [render_feed_key(key) for key in preview],
-        },
-    )
+    # this run reports). A write failure here degrades the SAME way every
+    # other non-critical I/O step in this launch already does (MRS-SPIN-007's
+    # supervisor-spawn precedent): the harness launch is already viable, so
+    # losing the persisted tier override registers MRS-SPIN-015 (WARN) and
+    # the launch proceeds on whatever baseline policy is already on disk,
+    # never aborts an otherwise-viable launch.
+    try:
+        write_policy_toml(
+            effective_policy,
+            home,
+            difficulty=governing,
+            adapter=tier_resolution.adapter_name,
+            tier_resolution=tier_resolution,
+        )
+    except HarnessPolicyWriteError as exc:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-015",
+                severity=Severity.WARN,
+                message=(
+                    f"could not persist the resolved model-tier policy to "
+                    f"{home}: {exc} -- this run's model resolution is "
+                    "reported but was not applied; the harness will use "
+                    "whatever policy.toml was already on disk"
+                ),
+            )
+        )
 
     adapter_for_wire = tier_resolution.adapter_name
     if not isinstance(adapter_for_wire, str) or not adapter_for_wire:
@@ -919,7 +777,7 @@ def _resolve_model_tiering(
         )
         data["wire"] = wire.journal_payload()
 
-    return False, plan
+    return False
 
 
 def _tiering_journal_fields(data: Mapping[str, object]) -> dict[str, object]:
@@ -1001,10 +859,9 @@ def _writer_id() -> str:
     Always bullet): ``f"spin-{os.getpid()}"`` -- always matches
     ``core.journal``'s ``_WRITER_ID_PATTERN`` (a pid is digits-only). One
     CLI invocation is a bounded, sequential, single-process writer, so its
-    own ``counter`` (0 for the intent, 1 for the outcome, and -- since Story
-    82.4 -- 2 for the one ``supervisor-spawn`` observation
-    ``_spawn_supervisor_sidecar`` appends; never a fourth) can never collide
-    with another writer's by construction, without any coordination."""
+    own ``counter`` (0 for the intent, 1 for the outcome -- this module
+    never appends a third entry) can never collide with another writer's by
+    construction, without any coordination."""
     return f"spin-{os.getpid()}"
 
 
@@ -1278,15 +1135,7 @@ def _spawn_supervisor_sidecar(
     report, and a supervisor that attached before the outcome landed would
     interleave its own observation entries with this module's own append,
     two writers racing one journal file with no ordering guarantee between
-    them.
-
-    Story 82.4 adds one entry AFTER the spawn itself -- the
-    ``supervisor-spawn`` observation (``_journal_supervisor_spawn``) -- so
-    from that point the sidecar may already be appending too. "Last" now
-    means last of THIS module's launch-pair entries: the two writers are
-    distinct writer ids, ``append_line`` is line-atomic, and AD-28 orders by
-    ``(ts, writer_id, counter)`` rather than file position, so the
-    interleaving costs the journal nothing it relied on."""
+    them."""
     supervisor_log = run_dir / _SUPERVISOR_LOG_FILENAME
     # Reported unconditionally, BEFORE the spawn attempt (review finding,
     # preserved from run_spin's own original tail): this file is the
@@ -1334,7 +1183,21 @@ def _spawn_supervisor_sidecar(
     # text asserted, on every such launch, that the idle threshold had fallen
     # back to its default when it had not. A diagnostic that names the wrong
     # key sends the operator hunting a defect that is not there.
-    _warn_spin_policy_compose_findings(findings, policy_findings)
+    if policy_findings:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-008",
+                severity=Severity.WARN,
+                message=(
+                    "the project policy layer produced "
+                    f"{len(policy_findings)} finding(s) while composing the "
+                    "supervisor's idle threshold (the launch itself is "
+                    "unaffected; every key a finding below names kept its "
+                    "composed default instead of the project's own value): "
+                    + "; ".join(f"{finding.code}: {finding.message}" for finding in policy_findings)
+                ),
+            )
+        )
     # Story 28.2 / 33.3: wire disposition is resolved before ``harness.spin``
     # (``_resolve_model_tiering`` writes the bmad-loop profile overlay when
     # the layer applies). Reuse that payload here when present; otherwise
@@ -1383,11 +1246,6 @@ def _spawn_supervisor_sidecar(
     max_tokens_per_run = effective_policy.seed_view()["max_tokens_per_run"].value
     max_wall_clock_minutes_per_story = effective_policy.seed_view()["max_wall_clock_minutes_per_story"].value
     max_wall_clock_minutes_per_run = effective_policy.seed_view()["max_wall_clock_minutes_per_run"].value
-    # Story 82.5 (DW-FU-3-6-6): the usage-staleness window is its OWN value --
-    # never shorter than the longest session the rendered policy allows, since
-    # bmad-loop writes `state.json` only at session boundaries. The 11th argv
-    # positional; the idle threshold stays the idle ladder's window alone.
-    usage_staleness_window_minutes = max(idle_threshold_minutes, RENDERED_SESSION_TIMEOUT_MIN)
 
     # Story 28.6 (CAP-8): sidecar the supervisor reads once at attach --
     # threshold + wire layer from the same composition site as dispatch.
@@ -1436,7 +1294,6 @@ def _spawn_supervisor_sidecar(
                 str(max_tokens_per_run),
                 str(max_wall_clock_minutes_per_story),
                 str(max_wall_clock_minutes_per_run),
-                str(usage_staleness_window_minutes),
             ],
             cwd=home,
             log_path=supervisor_log,
@@ -1473,93 +1330,8 @@ def _spawn_supervisor_sidecar(
                 ),
             )
         )
-        # Story 82.4: the failed spawn is recorded in the run journal too, not
-        # only on stdout (see `_journal_supervisor_spawn`) -- after the
-        # MRS-SPIN-007 finding, so a failure to journal it (MRS-SPIN-018)
-        # reads as the second finding about the same spawn.
-        _journal_supervisor_spawn(
-            fs,
-            findings,
-            run_dir=run_dir,
-            run_id=run_id,
-            watched_pid=watched_pid,
-            launched_via=launched_via,
-            supervisor_pid=None,
-            error=str(exc),
-        )
     else:
         data["supervisor_pid"] = supervisor_pid
-        _journal_supervisor_spawn(
-            fs,
-            findings,
-            run_dir=run_dir,
-            run_id=run_id,
-            watched_pid=watched_pid,
-            launched_via=launched_via,
-            supervisor_pid=supervisor_pid,
-            error=None,
-        )
-
-
-def _journal_supervisor_spawn(
-    fs: FsPort,
-    findings: list[Finding],
-    *,
-    run_dir: Path,
-    run_id: str,
-    watched_pid: int,
-    launched_via: str,
-    supervisor_pid: int | None,
-    error: str | None,
-) -> None:
-    """Story 82.4 (DW-FU-3-4-7): journal the supervisor spawn -- exactly one
-    ``supervisor-spawn`` observation per attempt, for launch and resume alike.
-    Before this, a spawn that succeeded reached only ``data["supervisor_pid"]``
-    on stdout and one that failed only ``MRS-SPIN-007`` there, so a later
-    reader of the run journal could not tell "supervision was never attempted"
-    from "it was attempted and went wrong" -- the very condition (a supervisor
-    that dies before its own first write) that makes a run unsupervised.
-
-    Payload: ``{supervisor_pid, watched_pid, launched_via}`` on success, the
-    same with ``supervisor_pid: None`` plus ``error`` when the spawn raised.
-    Written under ``JournalEntryId(_writer_id(), 2)``. The sidecar may already
-    be running and appending when this lands, so the order of the two writers'
-    entries is undefined; they are distinct writer ids and ``append_line`` is
-    line-atomic, which is the property the journal relies on (AD-28's order is
-    by ``(ts, writer_id, counter)``, never by file position).
-
-    A failure to journal it (``FsError``) registers ``MRS-SPIN-018`` (WARN)
-    and never changes the launch's outcome or exit code -- the harness process
-    is already live and the observation is only the paper trail."""
-    payload: dict[str, object] = {
-        "supervisor_pid": supervisor_pid,
-        "watched_pid": watched_pid,
-        "launched_via": launched_via,
-    }
-    if error is not None:
-        payload["error"] = error
-    try:
-        entry = build_entry(
-            id=JournalEntryId(_writer_id(), _SPAWN_COUNTER),
-            ts=_format_entry_ts(_now_utc()),
-            run_id=run_id,
-            kind=_SPAWN_KIND,
-            phase=Phase.OBSERVATION,
-            payload=payload,
-        )
-        _append_entry(fs, run_dir, entry, fsync=False)
-    except (FsError, ValueError) as exc:
-        findings.append(
-            Finding(
-                code="MRS-SPIN-018",
-                severity=Severity.WARN,
-                message=(
-                    f"the supervisor spawn ({launched_via}, watched pid {watched_pid}) could not be "
-                    f"journaled in {str(run_dir)!r}: {exc} -- the launch itself is unaffected, but "
-                    "this run's journal does not record that supervision was attempted"
-                ),
-            )
-        )
 
 
 def run_spin(
@@ -1569,6 +1341,7 @@ def run_spin(
     harness: HarnessPort | None = None,
     process: ProcessPort | None = None,
     context: MarshalContext | None = None,
+    scribe: ScribeCli | None = None,
 ) -> int:
     # Story 5.6 (FR-65/AD-50): `context`, if `cli/main.py`'s dispatch
     # resolved one, is accepted but deliberately UNUSED here -- proving the
@@ -1858,6 +1631,47 @@ def run_spin(
         )
         return _emit(args, data, findings)
 
+    # --- recall: fold relevant scribe feedback into the dev pass, --------------
+    # best-effort (Story 47.1, SPEC-marshal-recall-in-the-loop CAP-1). Placed
+    # AFTER the Tier-3 backlink check above, for the same reason that check is
+    # itself "the LAST precondition before the first write" (its own comment,
+    # above): this call's own write (`recall-feedback.md`, a sibling of
+    # `epic-<N>-context.md` inside the same backlinked `implementation-
+    # artifacts/` directory) is exactly the write the backlink check exists to
+    # gate. Running it any earlier would repeat, for this write, the same
+    # fabricated-local-directory defect (NFR-8) that check's own docstring
+    # already documents fixing once for the run-directory case.
+    #
+    # `--foreground` (above) returns before ever reaching the backlink check,
+    # because it is documented to perform NO `FsPort` writes at all -- an
+    # existing, separately-tested invariant (`test_spin_foreground_relays_
+    # the_exit_code_and_skips_the_journal`). This call site does not disturb
+    # that: `--foreground` launches with no auto-recalled feedback, the same
+    # way it launches with no journal and no minted run id.
+    #
+    # Never blocking (this story's own "never treat a recall failure as
+    # dispatch-blocking") -- a degraded attempt only ever adds a WARN finding;
+    # the loop-home write happens (or doesn't) either way.
+    recall_result = inject_recall_feedback(
+        fs=fs,
+        loop_home=home,
+        repo_root=Path.cwd(),
+        station_slug=slug,
+        scribe=scribe,
+    )
+    if recall_result.attempted and not recall_result.ok:
+        findings.append(
+            Finding(
+                code="MRS-SPIN-018",
+                severity=Severity.WARN,
+                message=(
+                    f"scribe recall for station {slug!r} did not run "
+                    f"({recall_result.reason}) -- this dev pass starts with "
+                    "no auto-recalled feedback"
+                ),
+            )
+        )
+
     # --- Story 6.1 FR-48/FR-51/AD-19: profile-driven model-tier resolution --
     # The governing difficulty among the SELECTED (`preview`, never the
     # whole unfiltered feed -- the same "advise/resolve only for what this
@@ -1870,18 +1684,12 @@ def run_spin(
     # an unresolvable configured adapter (MRS-SPIN-014) refuses the launch
     # here, with NO journal entries at all, the same precondition-gate
     # precedent every check above it already follows.
-    #
-    # Story 82.6 (DW-3-12-3): this call DECIDES the `policy.toml` write and
-    # returns it as `tier_plan`; it is applied below, after the launch intent
-    # -- which names the change -- is durable and before `harness.spin`.
-    refuse_launch, tier_plan = _resolve_model_tiering(fs, harness, home, slug, preview, findings, data)
-    if refuse_launch:
+    if _resolve_model_tiering(harness, home, slug, preview, findings, data):
         return _emit(args, data, findings)
 
     # --- Story 34.1: refuse a second spin against a live loop home ----------
     guard_story_key = render_feed_key(preview[0]) if preview else "34.1"
-    effective_policy, guard_policy_findings = _compose_spin_policy(slug)
-    _warn_spin_policy_compose_findings(findings, guard_policy_findings)
+    effective_policy, _guard_policy_findings = _compose_spin_policy(slug)
     spin_conflict = spin_loop_home_in_flight_conflict(
         fs=fs,
         vcs=GitVcs(),
@@ -1924,44 +1732,23 @@ def run_spin(
         return _emit(args, data, findings)
 
     # --- write-before-act: intent BEFORE the spawn (AD-6) --------------------
-    # Story 82.6: the intent also records the `[limits]` ceilings this run
-    # starts under (DW-3-12-1 -- `marshal factory resume` judges a deferred
-    # story's counters against THESE, not against a `policy.toml` re-rendered
-    # since) and, when the tiering decision above would rewrite `policy.toml`,
-    # that pending change (DW-3-12-3). The ceilings are the plan's rendered
-    # ones, else the file already on disk's, else absent.
-    launch_limits = tier_plan.limits if tier_plan is not None else None
-    if launch_limits is None:
-        on_disk_policy = _read_policy_document(fs, home)
-        if on_disk_policy is not None:
-            launch_limits = _ceilings_record(_ceilings_of(on_disk_policy.get("limits")))
     intent_id = JournalEntryId(writer_id, 0)
-    intent_payload: dict[str, object] = {
-        "epic": args.epic,
-        "story": args.story,
-        "max_count": args.max_count,
-        "preview": list(data["preview"]),
-        **_launch_version_journal_fields(harness),
-    }
-    if launch_limits is not None:
-        intent_payload["limits"] = dict(launch_limits)
-    if tier_plan is not None:
-        intent_payload["policy_change"] = dict(tier_plan.change)
     intent_entry = build_entry(
         id=intent_id,
         ts=_format_entry_ts(mint_moment),
         run_id=run_id,
         kind=_LAUNCH_KIND,
         phase=Phase.INTENT,
-        payload=intent_payload,
+        payload={
+            "epic": args.epic,
+            "story": args.story,
+            "max_count": args.max_count,
+            "preview": list(data["preview"]),
+        },
     )
     try:
         _append_entry(fs, run_dir, intent_entry, fsync=True)
     except FsError as exc:
-        try:
-            fs.remove_empty_dir(run_dir)
-        except FsError:
-            pass
         findings.append(
             Finding(
                 code="MRS-SPIN-003",
@@ -1970,14 +1757,6 @@ def run_spin(
             )
         )
         return _emit(args, data, findings)
-
-    # --- apply the tiering decision, now that its intent is durable ---------
-    # Story 82.6 (DW-3-12-3): the one `policy.toml` write of a launch lands
-    # only after the intent above -- naming it as `policy_change` -- reached
-    # disk, so no model change exists without a record of why. A failed
-    # write is MRS-SPIN-015 (WARN), never a refusal: the launch is viable.
-    if tier_plan is not None:
-        _write_tier_policy(tier_plan, home, findings)
 
     # --- the detached spawn itself --------------------------------------------
     # The log path is reported (review finding, Blind Hunter): it was
@@ -2092,10 +1871,7 @@ def run_spin(
     # cli/spin.py's own outcome append -- two writers appending to one
     # journal with no ordering guarantee between them. Keeping the spawn
     # last means the launch's own intent/outcome pair is closed before a
-    # second writer ever opens the file. (Story 82.4: the one entry written
-    # AFTER the spawn is the `supervisor-spawn` observation, journaled inside
-    # `_spawn_supervisor_sidecar` -- by then the sidecar may be appending too,
-    # which is fine: distinct writer ids, line-atomic appends.)
+    # second writer ever opens the file.
     _spawn_supervisor_sidecar(
         process,
         findings,
@@ -2173,148 +1949,6 @@ def _render_story_key_best_effort(raw: str | None) -> str | None:
 _POLICY_TOML_RELATIVE_PATH = Path(".bmad-loop") / "policy.toml"
 
 
-def _read_policy_document(fs: FsPort, home: Path) -> tomlkit.TOMLDocument | None:
-    """The loop home's ALREADY-ON-DISK ``.bmad-loop/policy.toml`` parsed with
-    ``tomlkit`` (comment-preserving, so a caller that patches one key can hand
-    the same document back to ``write_policy_document``), read through the
-    injected ``FsPort``. ``None`` -- never an exception -- for an unreadable,
-    absent or malformed file: every caller treats "no usable file" as "nothing
-    to compare against / nothing to patch"."""
-    try:
-        text = fs.read_text(home / _POLICY_TOML_RELATIVE_PATH)
-    except FsError:
-        return None
-    if text is None:
-        return None
-    try:
-        return tomlkit.parse(text)
-    except tomlkit.exceptions.ParseError:
-        return None
-
-
-def _valid_ceilings(max_dev_attempts: object, max_review_cycles: object) -> tuple[int, int] | None:
-    """``(max_dev_attempts, max_review_cycles)`` when BOTH are a plain ``int``
-    of at least ``1``, else ``None`` -- the one guard both ceiling sources
-    share (``_ceilings_of``: the on-disk ``[limits]`` table and the ceilings a
-    launch journaled).
-
-    ``bool`` is an ``int`` subclass in Python, and ``render_policy_toml``
-    itself refuses to render either key below 1 (its own load-time floor
-    mirrors bmad_loop's own loader) -- but that guard lives in the RENDER
-    path, never in a READ-BACK of an on-disk file that could have been
-    hand-edited since, nor of a journal line. Rejecting both a non-``int`` and
-    a non-positive value here is the same "a malformed source degrades to no
-    escalation, never a crash or a spurious fire" discipline Story 3.12's
-    review settled on (an unguarded ``max_dev_attempts = 0`` would make
-    ``story.attempt >= 0`` trivially true for every deferred story,
-    escalating on every resume regardless of real struggle; an unguarded
-    ``= true`` would silently become ceiling ``1``)."""
-    if (
-        not isinstance(max_dev_attempts, int)
-        or isinstance(max_dev_attempts, bool)
-        or max_dev_attempts < 1
-        or not isinstance(max_review_cycles, int)
-        or isinstance(max_review_cycles, bool)
-        or max_review_cycles < 1
-    ):
-        return None
-    return int(max_dev_attempts), int(max_review_cycles)
-
-
-def _ceilings_of(limits: object) -> tuple[int, int] | None:
-    """``_valid_ceilings`` over a ``[limits]``-shaped table -- a rendered or
-    on-disk policy's own, or the ``limits`` mapping a launch intent carries
-    (the same two key names). ``None`` for anything that is not a mapping."""
-    if not isinstance(limits, Mapping):
-        return None
-    return _valid_ceilings(limits.get("max_dev_attempts"), limits.get("max_review_cycles"))
-
-
-def _ceilings_record(ceilings: tuple[int, int] | None) -> dict[str, int] | None:
-    """The journal spelling of a ceiling pair -- the launch intent's
-    ``limits`` field (Story 82.6) -- or ``None`` when there is nothing to
-    record."""
-    if ceilings is None:
-        return None
-    return {"max_dev_attempts": ceilings[0], "max_review_cycles": ceilings[1]}
-
-
-def _stage_model(document: Mapping[str, object] | None, stage: str) -> str | None:
-    """The model ``stage`` runs under per a rendered or on-disk policy: its
-    own ``[adapter.<stage>].model`` override when set, else the
-    ``[adapter].model`` default every stage without one inherits. ``None``
-    for a missing document or a model that is not a non-empty string."""
-    if document is None:
-        return None
-    adapter_table = document.get("adapter")
-    if not isinstance(adapter_table, Mapping):
-        return None
-    stage_table = adapter_table.get(stage)
-    if isinstance(stage_table, Mapping):
-        override = stage_table.get("model")
-        if isinstance(override, str) and override:
-            return override
-    default = adapter_table.get("model")
-    return default if isinstance(default, str) and default else None
-
-
-def _read_text_or_none(fs: FsPort, run_dir: Path, relative: str) -> str | None:
-    """``run_dir / relative`` read through ``fs``, ``None`` for an absent or
-    unreadable file -- ``_launch_limits_for_resume``'s one read primitive, for
-    a run's journal and for the sidecar blobs it references."""
-    try:
-        return fs.read_text(run_dir / relative)
-    except FsError:
-        return None
-
-
-def _launch_limits_for_resume(fs: FsPort, home: Path, slug: str, harness_run_id: str) -> tuple[int, int] | None:
-    """The ``[limits]`` ceilings the run being resumed was LAUNCHED under
-    (Story 82.6, DW-3-12-1), as its own launch intent journaled them -- the
-    counters a deferred story accumulated (``DeferredStory.attempt``/
-    ``.review_cycle``) are judged against THESE, never against whatever
-    ``policy.toml`` says now (a later ``marshal config --write-harness-
-    policy`` or ``factory spin`` in the same home may have re-rendered it).
-
-    Scans every Marshal run directory for ``slug`` (newest first -- the run
-    this resume chains off may itself be a ``run-resume``, whose journal
-    records no launch) for the ``run-launch`` OUTCOME whose ``harness_run_id``
-    is ``harness_run_id``, and returns that run's launch-INTENT ``limits``.
-    ``None`` -- the caller then falls back to the on-disk file -- when no such
-    run is found, its journal cannot be read, or the launch recorded no valid
-    ceilings (a launch from before this story, or a malformed record).
-
-    A plain ``Path.glob`` for the run directories, journals read through
-    ``fs`` with sidecar blobs resolved (an intent past AD-30's 4 KiB
-    threshold carries only a ``sidecar_ref``): mirrors ``_latest_run_dir`` and
-    ``_resolve_harness_run_id_for_resume`` just above."""
-    runs_dir = _tier3_path(home, slug) / "runs"
-    try:
-        run_dirs = sorted((path for path in runs_dir.glob(f"{slug}-*") if path.is_dir()), reverse=True)
-    except OSError:
-        return None
-
-    for run_dir in run_dirs:
-        text = _read_text_or_none(fs, run_dir, _JOURNAL_FILENAME)
-        if text is None:
-            continue
-        lines = text.split("\n")
-        folded = fold(
-            lines,
-            sidecars=sidecar_texts_for_lines(lines, read_sidecar=partial(_read_text_or_none, fs, run_dir)),
-        )
-        launches = [entry for entry in folded.by_kind(_LAUNCH_KIND) if entry.run_id == run_dir.name]
-        if not any(
-            entry.phase is Phase.OUTCOME and entry.payload.get("harness_run_id") == harness_run_id for entry in launches
-        ):
-            continue
-        for entry in launches:
-            if entry.phase is Phase.INTENT:
-                return _ceilings_of(entry.payload.get("limits"))
-        return None
-    return None
-
-
 def _crossing_deferred_story_keys(
     deferred: Sequence[DeferredStory], max_dev_attempts: int, max_review_cycles: int
 ) -> list[str]:
@@ -2335,51 +1969,33 @@ def _crossing_deferred_story_keys(
     ]
 
 
-@dataclass(frozen=True)
-class _RetryEscalationPlan:
-    """Story 82.6 (DW-3-12-3): the retry-escalation floor-raise
-    ``_plan_retry_escalation`` DECIDED but did not write -- ``document`` is the
-    on-disk ``policy.toml`` already patched in memory (``[adapter].model``
-    set to ``to_model``), what ``_write_retry_escalation`` hands to
-    ``write_policy_document`` once ``run_resume``'s intent naming this very
-    change is durable. ``stories`` are the crossing deferred stories in
-    Marshal's dot form (the AC's own "naming the trigger")."""
-
-    document: tomlkit.TOMLDocument
-    policy_path: Path
-    from_model: str
-    to_model: str
-    stories: tuple[str, ...]
-
-
-def _plan_retry_escalation(
+def _apply_retry_escalation(
     fs: FsPort,
     home: Path,
-    slug: str,
-    harness_run_id: str,
     deferred: Sequence[DeferredStory],
-) -> _RetryEscalationPlan | None:
-    """Story 3.12's own CAP-2 mechanism (AD-26), DECISION half (Story 82.6
-    split the write off as ``_write_retry_escalation``): reads the loop
-    home's ALREADY-ON-DISK ``.bmad-loop/policy.toml`` (never a fresh
+    findings: list[Finding],
+) -> tuple[bool, list[str], str | None, str | None]:
+    """Story 3.12's own CAP-2 mechanism (AD-26): reads the loop home's
+    ALREADY-ON-DISK ``.bmad-loop/policy.toml`` (never a fresh
     ``policy.compose()`` -- see ``run_resume``'s own module-docstring
     paragraph for why reading is the faithful source here), and if any
     ``deferred`` story has reached its own run's configured ceiling
-    (``core.supervise.evaluate_retry_escalation``) AND the on-disk
-    ``[adapter].model`` does not already equal ``[adapter.review].model``,
-    returns the floor-raise as a plan -- ``[adapter].model`` set to the
-    latter in memory only. Nothing is written here.
+    (``core.supervise.evaluate_retry_escalation``, read off that SAME
+    on-disk file's ``[limits]`` table) AND the on-disk ``[adapter].model``
+    does not already equal ``[adapter.review].model``, floor-raises the
+    former to the latter and persists it via
+    ``adapters.harness_bmadloop.write_policy_document``.
 
-    The ceilings are the ones the resumed run was LAUNCHED under
-    (``_launch_limits_for_resume``, Story 82.6 / DW-3-12-1); only a run whose
-    launch recorded none falls back to the on-disk file's own ``[limits]``
-    table, as before.
-
-    Returns ``None`` -- never raises, never registers a finding -- for every
-    degrading case: an empty ``deferred`` (nothing to evaluate -- checked
-    first, before any I/O, mirroring ``_resolve_model_tiering``'s own "an
-    empty preview is a no-op" guard), an unreadable or malformed on-disk
-    ``policy.toml``, no valid ceilings from either source, no story actually
+    Returns ``(escalated, escalated_stories, from_model, to_model)`` --
+    ``escalated_stories``/``from_model``/``to_model`` are only ever non-empty/
+    non-``None`` when ``escalated`` is ``True``, mirroring the journal
+    payload's own "populate the detail fields only when true" shape.
+    ``escalated`` is ``False`` (never raises, never registers a finding) for
+    every degrading case that is NOT a write failure: an empty ``deferred``
+    (nothing to evaluate -- checked first, before any I/O, mirroring
+    ``_resolve_model_tiering``'s own "an empty preview is a no-op" guard),
+    an unreadable or malformed on-disk ``policy.toml``, a ``[limits]`` table
+    missing either ceiling key as a plain ``int``, no story actually
     crossing its ceiling, an ``[adapter].model`` that cannot be read as a
     non-empty string, or the floor-raise already being applied
     (``from_model == to_model`` -- the mechanism's own "bounded, never
@@ -2387,30 +2003,66 @@ def _plan_retry_escalation(
     falls back to ``ADAPTER_REVIEW_MODEL_STOCK_DEFAULT`` (``_POLICY_TEMPLATE``'s
     own baseline) -- never expected on a real rendered file (see that
     constant's own docstring), but this read-back must not crash on one that
-    somehow lacks it."""
+    somehow lacks it.
+
+    A genuine write failure (``HarnessPolicyWriteError``) is the ONE case
+    that registers a finding here -- ``MRS-SPIN-016`` (``WARN``), naming the
+    attempted ``from_model -> to_model`` transition, mirroring
+    ``MRS-SPIN-015``'s identical "an already-viable resume/launch is never
+    aborted over a best-effort policy write" precedent -- and still returns
+    ``escalated=False``: the write did not actually take effect, so the
+    resume proceeds on whatever model was already on disk, exactly as the
+    spec's own I/O matrix names."""
     if not deferred:
-        return None
+        return False, [], None, None
 
-    doc = _read_policy_document(fs, home)
-    if doc is None:
-        return None
+    policy_path = home / _POLICY_TOML_RELATIVE_PATH
+    try:
+        text = fs.read_text(policy_path)
+    except FsError:
+        return False, [], None, None
+    if text is None:
+        return False, [], None, None
+    try:
+        doc = tomlkit.parse(text)
+    except tomlkit.exceptions.ParseError:
+        return False, [], None, None
 
-    ceilings = _launch_limits_for_resume(fs, home, slug, harness_run_id)
-    if ceilings is None:
-        ceilings = _ceilings_of(doc.get("limits"))
-    if ceilings is None:
-        return None
-    max_dev_attempts, max_review_cycles = ceilings
+    limits = doc.get("limits")
+    if not isinstance(limits, Mapping):
+        return False, [], None, None
+    max_dev_attempts = limits.get("max_dev_attempts")
+    max_review_cycles = limits.get("max_review_cycles")
+    # `bool` is an `int` subclass in Python, and `render_policy_toml` itself
+    # refuses to render either key below 1 (its own load-time floor mirrors
+    # bmad_loop's own loader) -- but that guard lives in the RENDER path,
+    # never in this READ-BACK of an on-disk file that could have been
+    # hand-edited since. Reject both a non-`int` and a non-positive value
+    # here too, the same "a malformed file degrades to no escalation, never
+    # a crash or a spurious fire" discipline every other guard in this
+    # function already uses (review finding: an unguarded `max_dev_attempts
+    # = 0` would make `story.attempt >= 0` trivially true for every
+    # deferred story, escalating on every resume regardless of real
+    # struggle; an unguarded `= true` would silently become ceiling `1`).
+    if (
+        not isinstance(max_dev_attempts, int)
+        or isinstance(max_dev_attempts, bool)
+        or max_dev_attempts < 1
+        or not isinstance(max_review_cycles, int)
+        or isinstance(max_review_cycles, bool)
+        or max_review_cycles < 1
+    ):
+        return False, [], None, None
 
     if not evaluate_retry_escalation(deferred, max_dev_attempts, max_review_cycles):
-        return None
+        return False, [], None, None
 
     adapter_table = doc.get("adapter")
     if not isinstance(adapter_table, Mapping):
-        return None
+        return False, [], None, None
     from_model = adapter_table.get("model")
     if not isinstance(from_model, str) or not from_model:
-        return None
+        return False, [], None, None
     review_table = adapter_table.get("review")
     to_model = review_table.get("model") if isinstance(review_table, Mapping) else None
     if not isinstance(to_model, str) or not to_model:
@@ -2420,36 +2072,11 @@ def _plan_retry_escalation(
         # Already escalated (or the two coincidentally already agree) --
         # floor-raise-only, idempotent: no write, no re-fire (the spec's own
         # "bounded" AC).
-        return None
+        return False, [], None, None
 
     doc["adapter"]["model"] = to_model
-
-    crossing = _crossing_deferred_story_keys(deferred, max_dev_attempts, max_review_cycles)
-    return _RetryEscalationPlan(
-        document=doc,
-        policy_path=home / _POLICY_TOML_RELATIVE_PATH,
-        from_model=from_model,
-        to_model=to_model,
-        stories=tuple(_render_story_key_best_effort(key) or key for key in crossing),
-    )
-
-
-def _write_retry_escalation(plan: _RetryEscalationPlan, home: Path, findings: list[Finding]) -> bool:
-    """Story 3.12's own CAP-2 mechanism, WRITE half: persists ``plan``'s
-    patched document via ``adapters.harness_bmadloop.write_policy_document``
-    -- called by ``run_resume`` only AFTER its ``run-resume`` intent, which
-    names this very floor-raise, is durable (Story 82.6, DW-3-12-3).
-
-    ``True`` when the write took effect. A genuine write failure
-    (``HarnessPolicyWriteError``) is the ONE case that registers a finding
-    here -- ``MRS-SPIN-016`` (``WARN``), naming the attempted
-    ``from_model -> to_model`` transition, mirroring ``MRS-SPIN-015``'s
-    identical "an already-viable resume/launch is never aborted over a
-    best-effort policy write" precedent -- and returns ``False``: the write
-    did not actually take effect, so the resume proceeds on whatever model
-    was already on disk, exactly as the spec's own I/O matrix names."""
     try:
-        write_policy_document(plan.document, home)
+        write_policy_document(doc, home)
     except HarnessPolicyWriteError as exc:
         findings.append(
             Finding(
@@ -2457,13 +2084,16 @@ def _write_retry_escalation(plan: _RetryEscalationPlan, home: Path, findings: li
                 severity=Severity.WARN,
                 message=(
                     f"could not persist the retry-escalation floor-raise "
-                    f"({plan.from_model!r} -> {plan.to_model!r}) to {plan.policy_path}: "
+                    f"({from_model!r} -> {to_model!r}) to {policy_path}: "
                     f"{exc} -- resuming un-escalated"
                 ),
             )
         )
-        return False
-    return True
+        return False, [], None, None
+
+    crossing = _crossing_deferred_story_keys(deferred, max_dev_attempts, max_review_cycles)
+    escalated_stories = [_render_story_key_best_effort(key) or key for key in crossing]
+    return True, escalated_stories, from_model, to_model
 
 
 def run_resume(
@@ -2693,17 +2323,16 @@ def run_resume(
     # task_phase. status_snapshot is None exactly when MRS-SPIN-012 already
     # fired above -- escalation is skipped too, the same "proceed without
     # having confirmed anything" degrade that finding already describes.
-    #
-    # Story 82.6 (DW-3-12-1/3): this DECIDES the floor-raise against the
-    # ceilings the run was launched under and writes nothing; the write
-    # follows the resume intent below (which names it), and `escalated` in
-    # the report turns true only once that write took effect.
-    escalation_plan = (
-        _plan_retry_escalation(fs, home, slug, harness_run_id, status_snapshot.deferred)
+    escalated, escalated_stories, from_model, to_model = (
+        _apply_retry_escalation(fs, home, status_snapshot.deferred, findings)
         if status_snapshot is not None
-        else None
+        else (False, [], None, None)
     )
-    data["escalated"] = False
+    data["escalated"] = escalated
+    if escalated:
+        data["escalated_stories"] = escalated_stories
+        data["from_model"] = from_model
+        data["to_model"] = to_model
 
     # --- mint a NEW Marshal run id, journal "run-resume" intent (AD-25/AD-45) ---
     writer_id = _writer_id()
@@ -2740,13 +2369,10 @@ def run_resume(
             "spec_file": spec_file,
             "resolution_reference": resolution_reference,
             "resolver": resolver,
-            # The intent is the write-ahead record (AD-6): it names the
-            # floor-raise ABOUT to be written; the outcome's
-            # `escalation_applied` says whether the write took effect.
-            "escalated": escalation_plan is not None,
-            "escalated_stories": list(escalation_plan.stories) if escalation_plan is not None else None,
-            "from_model": escalation_plan.from_model if escalation_plan is not None else None,
-            "to_model": escalation_plan.to_model if escalation_plan is not None else None,
+            "escalated": escalated,
+            "escalated_stories": escalated_stories if escalated else None,
+            "from_model": from_model if escalated else None,
+            "to_model": to_model if escalated else None,
         },
     )
     try:
@@ -2760,21 +2386,6 @@ def run_resume(
             )
         )
         return _emit(args, data, findings)
-
-    # --- apply the floor-raise, now that its intent is durable --------------
-    # Story 82.6 (DW-3-12-3): the `policy.toml` rewrite lands only after the
-    # intent above named it. A failed write is MRS-SPIN-016 (WARN) and the
-    # resume proceeds un-escalated: `escalation_applied` is false in both
-    # outcome payloads and the report says `escalated: False`.
-    escalation_outcome: dict[str, object] = {}
-    if escalation_plan is not None:
-        escalation_applied = _write_retry_escalation(escalation_plan, home, findings)
-        escalation_outcome["escalation_applied"] = escalation_applied
-        if escalation_applied:
-            data["escalated"] = True
-            data["escalated_stories"] = list(escalation_plan.stories)
-            data["from_model"] = escalation_plan.from_model
-            data["to_model"] = escalation_plan.to_model
 
     # --- the detached resume itself -------------------------------------------
     log_path = run_dir / _LOG_FILENAME
@@ -2799,7 +2410,7 @@ def run_resume(
             kind=_RESUME_KIND,
             phase=Phase.OUTCOME,
             intent_id=intent_id,
-            payload={"pid": None, "harness_run_id": None, "error": str(exc), **escalation_outcome},
+            payload={"pid": None, "harness_run_id": None, "error": str(exc)},
         )
         try:
             _append_entry(fs, run_dir, outcome_entry, fsync=False)
@@ -2816,7 +2427,7 @@ def run_resume(
         kind=_RESUME_KIND,
         phase=Phase.OUTCOME,
         intent_id=intent_id,
-        payload={"pid": pid, "harness_run_id": harness_run_id, **escalation_outcome},
+        payload={"pid": pid, "harness_run_id": harness_run_id},
     )
     try:
         _append_entry(fs, run_dir, outcome_entry, fsync=False)

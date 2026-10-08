@@ -104,8 +104,7 @@ failed -- resolving the current working directory or the loop-home root,
 resolving worktree/branch state, or the removal itself -- or an on-disk
 state git can no longer account for: a deregistered home path that still
 exists and was never checked for uncommitted work), and
-``MRS-TEARDOWN-003`` (refused: the home -- or a worktree registered inside
-it, Story 82.8 -- has uncommitted changes, the
+``MRS-TEARDOWN-003`` (refused: the home has uncommitted changes, the
 branch's content is not yet safely captured on ``main``, or the AD-29
 promotion-reachability stub names something unreachable -- and ``--force``
 was not supplied; the one finding names every triggering condition).
@@ -166,9 +165,7 @@ any I/O -- the same pre-I/O shape gate every sibling command's own
 ``MRS-INIT-001``/``MRS-PREFLIGHT-010``/``MRS-TEARDOWN-001`` applies),
 ``MRS-SPIN-002`` (the loop home is not provisioned -- ``fs.is_dir(home)`` is
 ``False``, its Tier-3 backlink is absent, or that backlink dangles),
-``MRS-SPIN-003`` (nothing is running, so a retry is safe -- either NO harness
-process was started, or (Story 82.7) one was started and exited before its
-starting line appeared, the message quoting the tail of ``harness.log`` --
+``MRS-SPIN-003`` (NO harness process was started, and none can have been --
 covers ``spin``'s detached launch, ``run_foreground``'s synchronous one, and
 ``attach``'s exec failing to launch at all (a missing binary, a launch-time
 ``OSError``), AND ``run_spin``'s two pre-spawn filesystem setup failures,
@@ -314,18 +311,6 @@ network conditions, never a new refusal gate" -- a failed push never
 invalidates the run's own supervision, and the tick loop continues
 regardless.
 
-Story 82.5 (budget and idle signals, AD-8/AD-9/AD-32; DW-FU-3-6-8,
-DW-FU-3-5-6) adds two more codes to the same area, both ``Verdict.WARN``:
-``MRS-SUPV-014`` (a per-STORY budget ceiling -- tokens or wall-clock -- was
-breached: journaled once per (story, metric) with the story, the observed and
-the limit values, and the run CONTINUES; a per-story breach used to stop the
-whole run and abandon every remaining story of an overnight wave, and only a
-per-RUN ceiling still does) and ``MRS-SUPV-015`` (neither the session pane nor
-the harness log could be observed on a tick -- the observer is broken, not the
-session idle -- so the idle ladder holds its rung; journaled once per
-unobservable episode). WARN for the reason this area's own 001-010 are: each
-reports a condition the run survives, and neither invalidates supervision.
-
 Story 2.3 (frozen-surface scope check, narrowing only, AD-4/AD-26/AD-27)
 adds THREE more codes to ``cli/gate.py``/``core/gate.py``'s own area, the
 first real classifications into ``Verdict.SCOPE_VIOLATION`` (reserved
@@ -364,7 +349,7 @@ overwriting a good existing tracked copy, per AD-13), and
 ``main``'s own commit history at all -- the run cannot determine ANY
 story's durability, so nothing is promoted -- OR the promotion write path
 itself -- copying a spec's bytes into the tracked archive, or
-``CommitPort.commit_paths``'s stage-and-commit -- failed, leaving that run
+``VcsPort.commit_paths``'s stage-and-commit -- failed, leaving that run
 unable to positively confirm its own promotion completed). ``MRS-DEPLOY-001``/
 ``002`` classify ``Verdict.WARN``, the same tier as this codebase's every
 other "reported, never blocks progression" paper-trail-gap code
@@ -524,9 +509,7 @@ back to ``DEFAULT_POLICY``'s empty rule set) HARD REFUSES the entire
 forge is ever touched: proceeding on a malformed ``landing_rules`` layer
 would silently evaluate against ZERO rules instead of the project's declared
 ones, letting a config typo -- not a deliberate decision -- bypass the
-hygiene gate entirely. Story 61.1 (CAP-271) widens it to a malformed
-``landing_base_branch`` layer, whose fallback is ``main``: proceeding would
-open the PR against a base nobody declared. Classifies ``Verdict.ERROR``, the same tier as
+hygiene gate entirely. Classifies ``Verdict.ERROR``, the same tier as
 ``MRS-TEARDOWN-005``'s identical "this refusal must be at least as strict as
 a real violation, never a softer UNEVALUABLE" reasoning. ``MRS-DEPLOY-016``
 (P4: the head branch moved between the hygiene preflight's own read of its
@@ -597,8 +580,7 @@ Story 4.8's ``cli/land.py::run_land`` adds the twelfth real caller's own NEW
 area, ``MRS-LAND-*`` (FR-60/AD-40, "marshal land -- the last mile lands
 itself"): seven codes. ``MRS-LAND-001`` (the loop-home station branch
 ``loop/<slug>`` could not be resolved or does not exist -- refused before
-any forge call) and ``MRS-LAND-002`` (a malformed ``landing_rules`` or,
-since Story 61.1, ``landing_base_branch`` policy
+any forge call) and ``MRS-LAND-002`` (a malformed ``landing_rules`` policy
 layer -- the SAME hard-refuse-before-any-forge-call precondition
 ``MRS-DEPLOY-015`` already established for ``batch-pr``, copied verbatim
 for ``land``) both classify ``Verdict.ERROR`` -- a precondition failure,
@@ -813,7 +795,7 @@ current state) or only the ledger-advance half does (lock contention, a
 dirty worktree -- spec promotion for other keys still proceeds
 independently), but this is always a paper-trail gap, never a blocking
 error. ``MRS-DEPLOY-025`` (the ledger's own durable WRITE failed --
-``FsPort.write_text_atomic`` or ``CommitPort.commit_paths`` raised, AFTER
+``FsPort.write_text_atomic`` or ``VcsPort.commit_paths`` raised, AFTER
 this run already determined which keys to advance) classifies
 ``Verdict.ERROR``, the same tier as ``MRS-DEPLOY-008``/``011``: a real
 write was attempted against an already-computed decision and did not
@@ -847,15 +829,6 @@ commit already landed and stands regardless (this is a best-effort
 closing step, not a precondition of the write it follows), and the next
 ``sprint-ledger-sync --repair-feed`` run or ``dashboard-drift-check``'s
 own twin-ahead-of-feed detector still catches the gap.
-
-Story 83.20 (landing finalize never promotes a Tier-3 spec the ledger
-does not list) adds ``MRS-DEPLOY-028``: a Tier-3 spec candidate of a
-merged, not-yet-promoted story is an orphan -- its full key (the file name
-after ``spec-``) is no row of the station's tracked ledger, or a tracked
-spec already carries its title slug under another story key -- and was not
-promoted. It classifies ``Verdict.WARN``, the same "reported, never
-blocks" tier as ``MRS-DEPLOY-001``/``002``: the refusal itself is the
-safety, and the operator resolves the orphan by hand.
 
 Story 53.2 ("the landing reconciles from git facts and runs intake",
 spec-pyforge-marshal CAP-261b) adds two more codes to ``dispatch_land.py``'s
@@ -902,26 +875,17 @@ rather than absorbing it. Neither code changes what a self-reconciled
 session does: a branch whose own memlog already names every changed path
 produces no entry, no stamp, and neither finding.
 
-Story 80.1 ("a dispatch landing waits for its PR's checks", spec-pyforge-marshal
-CAP-284) adds two more codes to ``dispatch_land.py``'s ``MRS-DISP-*`` area, closing
-the gap the 2026-10-01 landings exposed (doctor 38.3 merged with
-``Detectors / scripts-suite`` already failing; steward 80.1 merged with Platform CI
-and Detectors still pending): ``main`` has no branch protection, and the landing
-never evaluated ``landing_rules`` at all, so nothing made a landing wait for CI.
-Immediately before ``forge.merge_pr`` (after the spec-surface reconcile has left the
-head sha final) the landing now polls the head's check runs under the
-``dispatch.landing_check_*`` policy bounds -- and, when a failed merge is healed by a
-union commit, polls the pushed union head the same way before the retried merge (a
-commit CI has not seen). ``MRS-DISP-056`` names each check run
-that concluded anything but ``success``/``skipped``/``neutral`` -- red beats pending,
-so one red run refuses at once without waiting for the rest. ``MRS-DISP-057`` names
-the runs still pending when ``dispatch.landing_check_timeout_minutes`` elapsed (or
-states that no run was ever reported, when the empty set outlasts the timeout without
-the grace having let it count as green). Both classify ``Verdict.ERROR``, the same
-tier as ``MRS-DISP-044``/``048``: they fire immediately before the merge, stop the
-land attempt cold, and leave the PR open so re-running the landing merges once CI is
-green. A forge read failure while polling reuses ``MRS-DISP-018`` (the landing's own
-forge-lookup refusal) -- no third code, and it refuses, never passes (AD-8).
+Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1) adds ``MRS-SPIN-018``:
+``cli/spin.py::run_spin`` shells ``scribe recall --scope <station-slug>``
+once per detached dispatch -- right after the Tier-3 backlink check
+succeeds, the same "last precondition before the first write" gate the
+run-directory writes below it share -- and folds a grounded hit into the
+loop home's ``implementation-artifacts/recall-feedback.md``. ``--foreground``
+returns before that check runs at all (it performs no ``FsPort`` writes),
+so it never attempts this and never emits this finding. WARN, fail-open --
+the scribe CLI did not resolve, exited non-zero, timed out, or the artifact
+write itself failed; the dev pass still launches with no auto-recalled
+feedback rather than being blocked.
 
 Later stories append further real codes here as they gain their own real
 callers. The registry MECHANISM (format check, then membership check) is
@@ -989,10 +953,6 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # boundary is acted on. Measured 2026-08-09: 6 of 22 pushes in one live run.
 # 009 is reserved for the genuinely alarming shape (branch gone, work not
 # landed), so that a durability finding means something again.
-# Story 82.4 adds MRS-SUPV-011/012/013 (an unproven-ownership attach; the
-# journal was tampered with and the run was stopped; the same tamper with no
-# harness run id to stop against) and MRS-SPIN-018 (the `supervisor-spawn`
-# observation could not be journaled) -- all WARN; see the tuple below.
 # Story 2.3's cli/gate.py/core/gate.py add MRS-GATE-007/008/009 -- the
 # table's first SCOPE_VIOLATION classifications (007/008) plus a new
 # UNEVALUABLE code for a --scope-check that could not be evaluated at all
@@ -1031,8 +991,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # `marshal deploy batch-pr`: MRS-DEPLOY-013 (an unsatisfied blocking
 # hygiene rule) and MRS-DEPLOY-014 (a ForgePort/gh command failure).
 # Code review (2026-08-06) adds four more MRS-DEPLOY-* codes for
-# `marshal deploy batch-pr`: MRS-DEPLOY-015 (P1: a malformed landing_rules --
-# or, since Story 61.1, landing_base_branch --
+# `marshal deploy batch-pr`: MRS-DEPLOY-015 (P1: a malformed landing_rules
 # policy layer hard-refuses the whole invocation), MRS-DEPLOY-016 (P4: the
 # head branch moved between hygiene evaluation and the PR write),
 # MRS-DEPLOY-017 (P5: the loop-home worktree's checkout does not match the
@@ -1054,8 +1013,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # silent empty FoldResult).
 # Story 4.8's cli/land.py adds the twelfth real caller's own NEW area,
 # MRS-LAND-* (seven codes): MRS-LAND-001 (the station branch could not be
-# resolved/does not exist), MRS-LAND-002 (a malformed landing_rules or, since
-# Story 61.1, landing_base_branch policy
+# resolved/does not exist), MRS-LAND-002 (a malformed landing_rules policy
 # layer), MRS-LAND-003 (an already-landed wave's own branch retirement
 # could not be confirmed), MRS-LAND-004 (a fired required_check resolved to
 # a real failure or could not be read), MRS-LAND-005 (a fired
@@ -1248,14 +1206,6 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # ownership between stations for a shared repo-level file is unsettled),
 # so no code here ever classifies ERROR/GATE_FAILED for a failed write --
 # there is no write to fail.
-# Story 84.1 (operator-run model-list refresh, CAP-285 / FR-232) adds
-# `cli/adapters.py`'s own `run_adapters_models` (`marshal adapters models`)
-# -- `MRS-MDL-001` (a declared model id is absent from its harness live
-# list and not declared as a profile alias) classifies WARN, never ERROR:
-# drift is advisory and must not change the rendered-report exit code.
-# `MRS-MDL-002` (one or more harness live lists unavailable) and
-# `MRS-MDL-003` (unchecked catalog providers) classify WARN for the same
-# rendered-report exit tier.
 # Story 6.6 (the conformance matrix, FR-45/SM-6/AD-31/AD-37) adds
 # `cli/adapters.py`'s own `run_adapters_matrix` (`marshal adapters matrix`)
 # -- a NEW area, `MRS-MATRIX-*`, reusing `MRS-ADP-001` verbatim for its one
@@ -1302,12 +1252,6 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # is `"squash"`/`"rebase"` (a fast-forward is impossible BY CONSTRUCTION
 # under either of those two strategies, every single landing, so the resync
 # step is skipped entirely rather than firing a WARN that can never clear).
-# Story 82.2 (DW-FU-4-12) adds one DELIBERATE-skip meaning to the same code:
-# while `core.status.is_run_live` says the home's run is live (an engine
-# alive behind a dead supervisor counts), or could not be proven finished
-# (an unreadable journal, a retired run), `_resync_home_branch` attempts no
-# fetch and no fast-forward and fires this WARN instead -- no attempt was
-# made, so nothing failed; the message says which.
 # Deliberately a NEW code, not a reuse of `MRS-LAND-008`: that code is
 # reserved by Story 4.11 (`is_run_live`/`--retire-live-branch`), a sibling
 # effort against the same `MRS-LAND-*` area.
@@ -1322,7 +1266,7 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # `planning-artifacts/deferred-work-ledger.md`, mirroring `cli/deploy.py`'s
 # own spec-promotion lock/write/commit shape (AD-42). `MRS-LAND-010` names
 # EITHER failure this best-effort step can have -- the ledger's own
-# advisory lock could not be acquired, or `CommitPort.commit_paths` raised
+# advisory lock could not be acquired, or `VcsPort.commit_paths` raised
 # after the ledger was rewritten locally -- never fired for the ordinary
 # "nothing to promote" case (silent, no finding, per the story's own Never
 # bullet). Classifies WARN, the same tier as `MRS-LAND-003`/`008`/`009`:
@@ -1335,14 +1279,6 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # advances the tracked `sprint-status-ledger.yaml` under the same AD-42
 # advisory lock. Names lock contention, refused feed downgrade, or
 # write/commit failure — WARN, never blocking (wave already landed).
-# Story 68.1 (CAP-277) gives the same code a second triggering shape, at the same
-# WARN tier (AD-31: same code, several triggering shapes): the dispatch
-# supervisor's `_promote_blocked_twin` publish of a blocked story-spec twin onto
-# `origin/main` that could not land, journaled as a `dispatch-blocked-twin-publish`
-# observation naming the story and the error.
-# Story 83.21 gives it a third, same WARN tier: the promotion could not load the
-# sync's own `apply_epic_rollups`, so it published no epic row it did not compute
-# (the twin keeps its own `epic-N` rows and the Tier-3 feed is not synced).
 #
 # Story 4.14 (the failed-story safety net is reported, FR-176) adds two more
 # codes to `cli/status.py`'s own `MRS-STATUS-*` area, both sourced from a
@@ -1385,24 +1321,12 @@ CODE_PATTERN = re.compile(r"MRS-[A-Z][A-Z0-9]*-[0-9]{3}")
 # degrade every affected value to unknown, never a hard failure"
 # reasoning.
 #
-# Story 82.8 adds `MRS-STATUS-014` beside them (DW-FU-4-14-10): the history
-# `main` (with `origin/main`) yielded is non-empty but NOT ONE subject
-# conforms to any merge-subject pattern `core.promotion.merged_story_keys`
-# reads -- a shallow `--depth` clone, a grafted or truncated history, or one
-# predating the merge-subject convention. It carries the examined and matched
-# counts `marshal deploy promote` reports as `subjects_examined` /
-# `subjects_matched`, and takes the place of one `MRS-STATUS-010` per patch:
-# the history cannot show what landed, so no patch is told "unlanded". PER
-# HOME like `MRS-STATUS-011`'s second cause (the count is per slug), and
-# `Verdict.WARN` for the same "degrade to unknown, never a hard failure"
-# reason.
-#
 # Story 5.9 (a story finished by hand is not invisible to the ledger,
 # AD-5/AD-6/AD-29/AD-33) adds four more MRS-DEPLOY-* codes for `marshal
 # deploy reconcile-completions`: MRS-DEPLOY-024 (the tracked ledger could
 # not be safely read/locked, at any of its read/lock sites) at WARN,
 # mirroring MRS-STATUS-005; MRS-DEPLOY-025 (the ledger's own durable
-# write -- FsPort.write_text_atomic or CommitPort.commit_paths -- failed
+# write -- FsPort.write_text_atomic or VcsPort.commit_paths -- failed
 # after this run already decided what to advance) at ERROR, mirroring
 # MRS-DEPLOY-008/011; MRS-DEPLOY-026 (a corroborated not-loop-native-
 # landed key has no row at all in the tracked ledger, or no matching
@@ -1527,8 +1451,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SUPV-008",
         "MRS-SUPV-009",
         "MRS-SUPV-010",
-        "MRS-SUPV-014",
-        "MRS-SUPV-015",
         "MRS-GATE-007",
         "MRS-GATE-008",
         "MRS-GATE-009",
@@ -1610,9 +1532,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-SMOKE-005",
         "MRS-SMOKE-006",
         "MRS-SMOKE-007",
-        "MRS-MDL-001",
-        "MRS-MDL-002",
-        "MRS-MDL-003",
         "MRS-MATRIX-001",
         "MRS-MATRIX-002",
         "MRS-ENTRY-001",
@@ -1626,10 +1545,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-011",
         "MRS-STATUS-010",
         "MRS-STATUS-011",
-        # Story 82.8 (DW-FU-4-14-10): a non-empty history in which nothing
-        # conforms to a merge-subject pattern -- WARN, replacing the
-        # per-patch MRS-STATUS-010s with one finding carrying the counts.
-        "MRS-STATUS-014",
         # A run whose journal read fine but whose harness snapshot is gone --
         # the retired/cleaned-run shape (DW-STATUS-2026-09-08-1). WARN: the home
         # is reported free rather than `unknown`, and the unresolvable run is
@@ -1642,9 +1557,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-DEPLOY-025",
         "MRS-DEPLOY-026",
         "MRS-DEPLOY-027",
-        # Story 83.20: an orphan Tier-3 spec (no ledger row for its full key,
-        # or a tracked twin under another key) is never promoted -- WARN.
-        "MRS-DEPLOY-028",
         "MRS-SPIN-016",
         # Story 15.1 (fleet homes refresh, FR-133..FR-135, AD-21):
         # MRS-REFRESH-001 enumerate/fetch/repo-root failure (ERROR);
@@ -1668,9 +1580,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # 002 phase failure (ERROR); 003 done-key regression refuse (ERROR);
         # 004 orphan candidate reported, not deleted (WARN).
         # Story 21.2: 005 skill blocked mid-chain (ERROR; planning verb halt).
-        # Story 86.5 retired `marshal chain regenerate`: `planning
-        # chain-regenerate` emits 001, 002 and 005; 003 and 004 are emitted by
-        # nothing now and stay registered (codes are never reused).
         "MRS-CHAIN-001",
         "MRS-CHAIN-002",
         "MRS-CHAIN-003",
@@ -1819,19 +1728,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # tick because its refuse predicate is unchanged -- rate-limited,
         # never silently looped.
         "MRS-DRAIN-017",
-        # Story 73.2 (spec-pyforge-marshal CAP-281): a drain schedules the
-        # follow-up review a landed story recommended. 018 WARN: a fact about
-        # the follow-up queue the operator should see -- an open `DW-FRR` row
-        # whose story spec no longer qualifies (named, never dispatched), a
-        # station's deferred-work ledger or `origin/main`'s history that could
-        # not be read (no follow-ups for it this cycle), or a station project
-        # layer that sets `dispatch.max_followup_reviews_per_campaign` (not
-        # applied: the cap bounds a campaign, not a station); 019 (emitted at
-        # INFO severity, classified WARN -- the lattice has no INFO rung): how
-        # many qualifying follow-up reviews wait for a later campaign because
-        # the per-campaign cap is spent.
-        "MRS-DRAIN-018",
-        "MRS-DRAIN-019",
         # Story 28.2 (wire compression at the harness seam,
         # SPEC-marshal-token-economy CAP-2): the declared `[context]`
         # `wire` layer was ENABLED but could not be applied to this launch
@@ -1862,10 +1758,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # land failed or is not yet eligible — park, never another session.
         "MRS-DISP-040",
         # Story 33.9 (spec-bmad-switch-scope-enforcement CAP-1 third call
-        # site), narrowed by Story 64.1 (CAP-273, FR-219): `verify_scope`
-        # against the dispatch WORKTREE's own triangle, or the parent
-        # BMAD_ACTIVE_PROJECT disagreeing with the dispatch slug — the
-        # primary checkout's marker/links are never read here.
+        # site): `verify_scope` at `factory dispatch` — marker/symlink
+        # triangle or parent BMAD_ACTIVE_PROJECT disagrees with dispatch slug.
         "MRS-DISP-041",
         # Story 28.30 (CAP-3, dispatch half of the `output` layer): the
         # caveman skill's instrument is unavailable, or deploying it into
@@ -1911,72 +1805,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # branch did not change -- foreign drift the landing refuses rather
         # than silently launder into a scoped stamp.
         "MRS-DISP-048",
-        # Story 63.4 (spec-pyforge-steward CAP-5): a pre-launch shell-out to
-        # `steward session check --json` reported a non-ok session-precondition
-        # verdict (pixi/pyforge-guild, bmad-method drift, the token-economy
-        # kit + codegraph index, gh auth/rate-limit, the Tier-3 sprint-status
-        # feed) -- WARN, non-blocking, mirroring MRS-DISP-036's worktree-WIP
-        # surfacing shape. Never escalated to ERROR: a session precondition
-        # gap is worth flagging before a dispatch launches, not worth
-        # refusing the launch over.
-        "MRS-DISP-049",
-        # Story 68.1 (spec-pyforge-marshal CAP-277): after its ledger promotion,
-        # `dispatch_land_finalize` read `origin/main`'s tracked
-        # `sprint-status-ledger.yaml` and the landed story's key does not read
-        # `done` there (absent, another status, or the ledger unreadable) --
-        # the promotion's publish failed, and the landing is not a clean one.
-        # ERROR: finalize exits 1, `dispatch land` refuses (MRS-DISP-020).
-        "MRS-DISP-051",
-        # Story 77.1 (spec-pyforge-marshal CAP-282): the dispatch half of the
-        # `structure-graph` layer gave a worktree its codegraph index the slow
-        # way -- 053: no base index on the primary checkout (or the copied one
-        # would not sync), so `codegraph init -y` built one in the worktree;
-        # the message names `marshal context bootstrap` (CAP-192) as the fix.
-        # 054: no index was seeded at all (`codegraph` not on PATH, the base
-        # could not be copied, a build failed or hit its ceiling) and the
-        # session runs without one. Both WARN, never blocking -- the SAME tier
-        # as MRS-DISP-042 / MRS-DISP-033: a layer disables itself with a named
-        # finding.
-        "MRS-DISP-053",
-        "MRS-DISP-054",
-        # Story 74.2 (spec-feature-flag-governance CAP-3): the pre-session
-        # consult of the Guild's flag gate (`scripts/flag_gate_check.py --spec`)
-        # in `dispatch_once`'s preflight. 052 ERROR: the gate reds the story's
-        # spec (a post-rule `type: feature` spec with neither a `flag:` block
-        # nor a `flag-exempt:` value), or the gate could not judge it (exit 2,
-        # a timeout, output that is not its JSON -- AD-8, unevaluable is
-        # failure); the dispatch is refused before any worktree or session.
-        # 055 WARN: the gate warned (a pre-rule spec, backlog warns until it
-        # is retrofitted) or the script is absent from this repository (one
-        # that has not adopted the rule); the dispatch proceeds. Its own code,
-        # not 052 -- the verdict is classified by code alone and AD-31 gives
-        # one code one rung. (053/054 are Story 77.1's, 050 Story 65.2's.)
-        "MRS-DISP-052",
-        "MRS-DISP-055",
-        # Story 80.1 (spec-pyforge-marshal CAP-284): a dispatch landing waits for
-        # its PR head's check runs before `forge.merge_pr`. 056: at least one run
-        # concluded anything but success/skipped/neutral (failure, cancelled,
-        # timed_out, action_required, ...) -- the message names each; the PR
-        # stays open. 057: runs were still pending when
-        # `dispatch.landing_check_timeout_minutes` elapsed (or none was ever
-        # reported and the grace outlasted the timeout) -- the message names
-        # them; the PR stays open. Both ERROR: they stop the land attempt cold
-        # immediately before the merge, the tier of MRS-DISP-044/048.
-        "MRS-DISP-056",
-        "MRS-DISP-057",
-        # Story 85.1 (CAP-286): verification fix turn could not start, exceeded
-        # its wall-clock budget, or re-verification still refused — ERROR, never
-        # a pass or a second turn.
-        "MRS-DISP-058",
-        "MRS-DISP-059",
-        "MRS-DISP-060",
-        # Story 83.25 (spec-83-25): the operator Cursor ``cli-config.json``
-        # could not be read when building a run-scoped attribution-off copy
-        # for a Cursor harness launch -- ERROR, the launch is refused.
-        "MRS-DISP-061",
-        # Story 22.17: harness-done land-only independent verify raised before
-        # gate findings were produced -- ERROR, same tier as a refused gate.
-        "MRS-DISP-062",
         # Story 28.2, the same layer on the OTHER engine: `marshal factory
         # spin` launches `bmad-loop run`, and bmad-loop -- not marshal --
         # launches the coding CLI, so marshal's harness-seam wrapper has no
@@ -2029,61 +1857,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 22.12 (shared-surface cross-suite gate, CAP-12):
         # MRS-GATE-015 -- cross-surface verify failed (platform-ci-local).
         "MRS-GATE-015",
-        # Story 82.1 (DW-FU-2-1-7): MRS-GATE-016 -- the repository root could
-        # not be resolved (an installed package invoked outside any git
-        # checkout), so no gate was evaluated; UNEVALUABLE, never the bare
-        # defaults + MRS-GATE-004 false green.
-        "MRS-GATE-016",
-        # Story 82.9 (FR-25, DW-FU-2-6-2): MRS-GATE-017 -- `marshal gate evaluate --story`
-        # could not write its redacted gate record (no loop home provisioned, an
-        # unreadable tree revision, a failed write); WARN, because the record is evidence
-        # about the verdict and never an input to it -- the verdict and exit code stand.
-        "MRS-GATE-017",
-        # Story 83.2 (spec-83-2): MRS-GATE-018 -- pre-verification
-        # ``deferred_work_intake.py --fix`` refused or could not run before
-        # the derived ``deferred-work-check``; GATE_FAILED, never WARN.
-        "MRS-GATE-018",
-        # Story 83.17 (spec-83-17): MRS-GATE-019 -- a commit on the story
-        # branch carries an AI-attribution trailer the commit-msg hook refuses.
-        "MRS-GATE-019",
-        # Story 83.19 (spec-83-19): MRS-GATE-020 -- the CFE surface moved outside
-        # a sanctioned retro commit or pending CFE edits lack a CHANGELOG change.
-        "MRS-GATE-020",
-        # Story 83.24 (spec-83-24): MRS-GATE-021 -- an unsanctioned CFE commit is
-        # already on the story branch (terminal; no fix turn).
-        "MRS-GATE-021",
-        # Story 34.2 shipped `marshal factory checkpoint` building these three findings
-        # without registering them, so every failure path of that command raised
-        # `UnregisteredFindingCodeError` out of `Finding(...)` instead of exiting non-zero
-        # (found by Story 82.9's touched-module coverage gate on `cli/checkpoint.py`).
-        # 001 -- the dispatch journal names no worktree or story to checkpoint; 002 -- the
-        # invocation directory is not inside a git repository; 003 -- the station's loop
-        # home does not exist, so no in-flight dispatch or spin worktree. All ERROR.
-        "MRS-CHK-001",
-        "MRS-CHK-002",
-        "MRS-CHK-003",
-        # Story 82.4 (spec-pyforge-marshal CAP-2, DW-FU-3-4-3/6/7/8): the
-        # supervisor stops being silenceable through its own journal, and the
-        # run journal finally records the supervisor spawn. MRS-SUPV-011 --
-        # the journal proves nothing about who owns the run (no run-launch or
-        # run-resume line for ANY run id, but at least one quarantined line),
-        # so the supervisor attaches anyway and says so on its
-        # `supervisor-attach`. MRS-SUPV-012 -- the journal was replaced,
-        # truncated, removed or made read-only (or an append to it failed), so
-        # the supervisor stopped the watched run through `HarnessPort.stop`
-        # rather than leave it alive and unwatched; carried on the final
-        # `supervisor-detach` when the held descriptor still takes it.
-        # MRS-SUPV-013 -- the same tamper with NO harness run id to stop
-        # against: the supervisor cannot act, reports it once and keeps
-        # watching (the MRS-SUPV-003/005 precedent). MRS-SPIN-018 -- the
-        # `supervisor-spawn` observation (`marshal factory spin`/`resume`)
-        # could not be journaled; the launch outcome is unchanged. All WARN:
-        # each reports a degraded supervision condition over a run that is
-        # otherwise live, never a refusal.
-        "MRS-SUPV-011",
-        "MRS-SUPV-012",
-        "MRS-SUPV-013",
-        "MRS-SPIN-018",
         # Story 28.8 (derived context recomputes only on source change,
         # SPEC-marshal-token-economy CAP-5): `marshal context refresh`'s
         # own two codes -- 001 UNEVALUABLE (the declaration itself could
@@ -2091,32 +1864,6 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # today's compile-on-hunch behavior with a named reason).
         "MRS-CTX-001",
         "MRS-CTX-002",
-        # Story 46.1 (a bare clone bootstraps the substrate, spec-pyforge-
-        # marshal CAP-192): `marshal context bootstrap` / `context pack`.
-        # 003 WARN (a member was rebuilt locally -- names the command run
-        # and why the fetch did not serve it); 004 UNEVALUABLE (a member
-        # was neither fetched nor rebuilt); 005 WARN (a fetched pack was
-        # refused -- digest mismatch, malformed manifest or unsafe entry --
-        # and installed nothing); 006 WARN (`context pack` wrote the pair
-        # without an absent member); 007 UNEVALUABLE (nothing packable).
-        "MRS-CTX-003",
-        "MRS-CTX-004",
-        "MRS-CTX-005",
-        "MRS-CTX-006",
-        "MRS-CTX-007",
-        # Story 46.2 (the canonical context bundle is digest-pinned,
-        # spec-pyforge-marshal CAP-192): `marshal context bundle`'s own
-        # code. 008 WARN -- a second harness's `--expect-digest` does not
-        # match the freshly assembled bundle's digest; never blocks.
-        "MRS-CTX-008",
-        # Story 46.6 (2026-09-25, spec-pyforge-marshal CAP-193, fold-remint
-        # of spec-marshal-token-economy CAP-20): `marshal context advisory`'s
-        # own code. 009 WARN -- a declared-active `[context]` layer's
-        # instrument/binary no longer resolves at session-close (a kit item
-        # gone MISSING/STALE -- UNAVAILABLE is deliberately excluded -- or
-        # an enabled derived-context/planning-graph layer whose `scribe`
-        # binary does not resolve on PATH); never blocks.
-        "MRS-CTX-009",
         # Story 28.9 (planning-graph retrieval, CAP-6/CAP-13):
         # `marshal context retrieve`'s degradation code -- WARN, never
         # blocking; falls back to Story 28.8's epic-context file.
@@ -2156,25 +1903,17 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-WATCH-002",
         "MRS-WATCH-003",
         "MRS-WATCH-004",
-        # Story 65.1 (spec-pyforge-marshal CAP-274): `marshal factory drain
-        # --plan`'s own area (`MRS-PLAN` is planning-graph retrieval's, and
-        # CODE_PATTERN admits one token). 001 ERROR: a story the cycle would
-        # hand to `dispatch_once` (the next story; every wave member in
-        # parallel mode) would not dispatch cleanly -- one finding per reason,
-        # naming the would-be code (MRS-DISP-041/005/045/030/036/039/019/003/
-        # 002, MRS-GATE-010/011/003), `already-landed` or `prose-park`; 002
-        # WARN: the same for a queued story beyond those, and every prose park
-        # in a backlog that no `skip_policies` entry mirrors; 003 WARN: an
-        # `order_overrides` list whose keys are all done or absent (it only
-        # switches the Deps sort off); 004 WARN: the next story's declared
-        # Deps are not all done (serial mode dispatches it anyway, parallel
-        # mode holds it); 005 UNEVALUABLE: the station's plan could not be
-        # computed.
-        "MRS-DRAINPLAN-001",
-        "MRS-DRAINPLAN-002",
-        "MRS-DRAINPLAN-003",
-        "MRS-DRAINPLAN-004",
-        "MRS-DRAINPLAN-005",
+        # Story 47.1 (SPEC-marshal-recall-in-the-loop CAP-1): `cli/spin.py`
+        # shells `scribe recall --scope <station-slug>` once per detached
+        # dispatch, right after the Tier-3 backlink check succeeds, and
+        # folds a grounded hit into the loop home's
+        # `implementation-artifacts/recall-feedback.md`. `--foreground`
+        # returns before that check runs (it writes nothing) and never
+        # emits this finding. `MRS-SPIN-018` is WARN, fail-open -- the
+        # scribe CLI did not resolve, exited non-zero, timed out, or the
+        # artifact write itself failed; the dev pass still launches with
+        # no auto-recalled feedback rather than being blocked.
+        "MRS-SPIN-018",
     }
 )
 
