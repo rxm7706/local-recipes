@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: cc90de9ca00f0211
-story_count: 125
-test_file_count: 70
+source_fingerprint: d5846e7c115e47aa
+story_count: 128
+test_file_count: 78
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 125
+- **Stories parsed:** 128
 - **Epics parsed:** 35
-- **Test files inventoried:** 70 under `src/shared/packages/pyforge-herald/tests/`
+- **Test files inventoried:** 78 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `cc90de9ca00f0211`
+- **Source fingerprint:** `d5846e7c115e47aa`
 
 ## Risk Assessment
 
@@ -76,12 +76,16 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 
 | Relative path | Level | Linked stories |
 |---------------|-------|----------------|
+| `src/shared/packages/pyforge-herald/tests/integration/test_pptx_native_render.py` | integration | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_deck_qa_pixi_task.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_deck_registry_sections.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_deck_store_import_boundary.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_deck_sync_all_pixi_task.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_deck_working_set.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_docs_site.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_validators.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_pages_artifact.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
@@ -113,9 +117,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_qa.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_status.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_store.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_twins_handlers.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_versions.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_viewer_publish_flag.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_docs_site_shelf_loader.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_docs_site_sidebar.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_dossier_structure.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_errors.py` | unit | none observed |
@@ -129,6 +135,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_mcp_transport.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_notices.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_performance_epic11.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_pptx_native_flag.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_pptx_pipeline.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_progress.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_registry.py` | unit | none observed |
@@ -271,7 +279,10 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 30.2 | The herald portal shows a deck in the browser from its HTML twin | none observed |
 | 31.1 | The Pages artifact builds for the host that deploys it | none observed |
 | 31.2 | How to deploy the docs site to GitHub Enterprise Pages | none observed |
+| 31.3 | The public Pages build loads no third-party resource from herald's own pages | none observed |
 | 32.1 | A deck exports as a native, editable pptx through pptxgenjs-plus | none observed |
+| 32.2 | The native pptx export carries every speaker note and every text block | none observed |
+| 32.3 | The native pptx export takes its fonts, colours and spacing from the design t... | none observed |
 | 33.1 | deck-facts counts Dreams under the archive too | none observed |
 | 34.1 | Herald cites the deck how-to, not the intake stub | none observed |
 | 35.1 | The deck transport, sync-all, deck tooling and docs site close their open def... | none observed |

@@ -116,6 +116,52 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-08 (native pptx tokens) — Found: the native `.pptx` export reads no design token.** The spine's AD-5 and
+  its PPTX Generation invariant say every PPTX takes its fonts, colours and spacing from the design tokens, never
+  hardcoded. Story 32.1's driver, `node/pptx_native.mjs`, sets `LAYOUT_16x9` (`:22`), hardcodes every offset and box,
+  and hardcodes its font sizes, 32 pt for the title (`:33`), 18 pt for bullets (`:40`) and 14 pt for tables (`:45`). It
+  names no face and no colour, so pptxgenjs-plus's defaults apply. `pptx_native.py` passes it no token. The spine's
+  § Currency reconciliation — 2026-10-08 recorded this gap and left it for a fix story. One more finding: the file the
+  spine names, `design-tokens.json`, does not exist, and no commit has ever held one (`git log --all` is empty). The
+  Modernist tokens herald binds every deck to (`MODERNIST_DESIGN_SYSTEM_ID`, `transport/base.py:113`,
+  `deck_pipeline.py:256`) are tracked under `presentations/_design-systems/modernist/`. `theme.json` holds the palette
+  and the font families. The deck template's custom properties (`templates/deck/index.html:16-26`) hold the type scale
+  and the slide padding, on a 1920×1080 canvas. **What it looks like when fixed:** the driver takes every font face,
+  font size, colour, offset and padding from those Modernist tokens, scaled to the slide. A changed token value
+  changes the export, and a missing token file stops the export with a named error. **Constraints:** a `fix`
+  story, no CAP, no flag. No second token file, the Marp and pptx-fill exports do not change, and no file under
+  `presentations/` changes. Owner `spec-pyforge-herald` (CAP-57, FR-10.6; AD-5; AD-3 as amended). → Epic 32 /
+  Story 32.3, specced 2026-10-08.
+- **2026-10-08 (native pptx notes) — Found: the native `.pptx` export drops multi-line speaker notes and most body
+  text.** In Story 32.1's parser (`pyforge.herald.pptx_native`), a comment is a note only when it opens and closes on
+  one line (`:101`). The lines of a `<!--` block fall to the body loop, which keeps images, the first heading, the last
+  table and `-`/`*` bullets (`:121-143`) and drops every other line. The slide model has no field for body text
+  (`:35-41`), and the driver draws only the title, bullets, a table, images and notes (`node/pptx_native.mjs:24-57`).
+  Measured on `8a2da2c010` with the parser itself over the 15 current Marp decks (263 slides): 101 note comments, 50 of
+  them multi-line, all 50 in `agentic-sdlc`, and none of those 50 reaches the export. 410 paragraph lines, 26
+  numbered-list lines, 109 headings after a slide's first, 12 fenced code blocks and 10 inline-HTML lines are dropped.
+  FR-10.6 says the export carries a deck's notes; the PRD's § Currency reconciliation — 2026-10-08 recorded the gap and
+  left it for a fix story. **What it looks like when fixed:** every note, single- or multi-line, lands in its slide's
+  notes, and every text block on a slide becomes text on the native slide, in source order. A fixture deck proves both
+  through python-pptx, and a measure over the 15 decks finds nothing dropped. **Constraints:** a `fix` story, no CAP,
+  no flag (the verb stays behind `pyforge.herald.deck_export_native`). The Marp and pptx-fill exports do not change.
+  Owner `spec-pyforge-herald` (CAP-57, FR-10.6; AD-3 as amended). → Epic 32 / Story 32.2, specced 2026-10-08.
+- **2026-10-08 (Pages fonts) — Found: every herald page on the public Pages site loads Google Fonts.** Story 31.1's
+  cross-origin check (on its dispatch branch, not on `main`) finds 135 references on the real artifact, all under
+  `/herald/`, in 45 pages. Each page has one stylesheet from `fonts.googleapis.com` and two `rel="preconnect"` hints, to
+  `fonts.googleapis.com` and `fonts.gstatic.com`. Herald's own scanner, `pyforge.herald.twins.scan_tree`, finds the same
+  135 in a `docsite/build.py` build of `8a2da2c010`. Two kinds of source emit them. The docsite shells
+  (`templates/shell_page.html.j2:13-15`, `templates/shell_artifact.html.j2:6-8`) load Big Shoulders Display, IBM Plex
+  Sans and IBM Plex Mono in 15 pages. The 30 Design-twin pages that `build.py` publishes as copies (the ten posters and
+  each deck's Infographic Deck and Executive Summary, from `presentations/<slug>/project/`) carry their own Archivo and
+  Archivo Expanded links. AD-21's 2026-09-28 amendment says no stylesheet or font in the artifact names another origin,
+  so FR-10.5 cannot hold on any host while these remain. **What it looks like when fixed:** the faces are self-hosted
+  under the docsite's assets, each recorded with its source, version, licence and sha256. The shells and the published
+  copies point at them, both preconnect hints are gone, and a check fails the build when a herald page names another
+  origin. **Constraints:** a `fix` story, no CAP, no flag. The Design twins under `presentations/` are not edited; only
+  their published copies are. The vendored Kedro-Viz bundle under `/dashboard/` is out of scope. Operator decision
+  2026-10-08: this lands before Story 31.1. Owner `spec-pyforge-herald` (CAP-56, FR-10.5; AD-21 as amended).
+  → Epic 31 / Story 31.3, specced 2026-10-08.
 - **2026-10-08 (docs-site helper) — Found: the docs site cannot build from a clean checkout, because its URL helper
   was never tracked.** `docs-site/astro.config.mjs:4` imports `./src/lib/site-url.mjs`, and `docs-site/README.md:26`
   lists that file as copied from upstream. The root `.gitignore` rule `lib/` (`:40`, a Python-packaging ignore) also
