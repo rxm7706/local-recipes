@@ -54,12 +54,15 @@ def test_docs_site_pixi_tasks() -> None:
     root = _repo_root()
     pixi = tomllib.loads((root / "pixi.toml").read_text(encoding="utf-8"))
     install = pixi["feature"]["site"]["tasks"]["docs-site-install"]
+    sidebar = pixi["feature"]["site"]["tasks"]["docs-site-sidebar"]
     build = pixi["feature"]["site"]["tasks"]["docs-site-build"]
     assert install["cmd"] == "npm ci"
     assert install["cwd"] == "docs-site"
+    assert sidebar["cmd"] == "python scripts/sidebar_from_map.py"
+    assert sidebar["cwd"] == "docs-site"
     assert build["cmd"] == "npm run build"
     assert build["cwd"] == "docs-site"
-    assert build["depends-on"] == ["docs-site-install"]
+    assert build["depends-on"] == ["docs-site-install", "docs-site-sidebar"]
 
 
 def test_nvmrc_major_within_nodejs_pin() -> None:
@@ -92,5 +95,10 @@ def test_vendored_files_match_readme_sha256() -> None:
 def test_gitignore_excludes_docs_site_artifacts() -> None:
     root = _repo_root()
     ignore = (root / ".gitignore").read_text(encoding="utf-8")
-    for line in ("docs-site/node_modules/", "docs-site/build/", "docs-site/.astro/"):
+    for line in (
+        "docs-site/node_modules/",
+        "docs-site/build/",
+        "docs-site/.astro/",
+        "docs-site/src/sidebar.generated.json",
+    ):
         assert line in ignore

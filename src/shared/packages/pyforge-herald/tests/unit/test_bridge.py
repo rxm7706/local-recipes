@@ -381,6 +381,8 @@ def test_bridge_core_sweep_covers_every_non_excluded_package_module():
             "deck_exports",  # Story 29.2 (CAP-54): station API list/stream handlers, not bridge-core
             "deck_twins",  # Story 30.2 (CAP-55): twin stream handlers, not bridge-core
             "twins",  # Story 30.1 (CAP-55): twin scan/build/publish, not bridge-core
+            "pptx_native",  # Story 32.1 (CAP-57): native pptx export, not bridge-core
+            "pages_host",  # Story 31.1 (CAP-56): Pages second-host flag read, not bridge-core
         }
         == swept
     )

@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from pyforge.steward.glass import GlassReading, compute_glass_reading
+from pyforge.steward.quarantine import list_quarantine_shelf
 from pyforge.steward.sprint_ledger_query import SprintLedgerQueryEngine
 
 _STATION_RE = re.compile(r"[A-Za-z0-9_-]+")
@@ -180,6 +181,54 @@ def standup_htmx_view(request: Any) -> Any:
 
     reading = compute_glass_reading(direction="inbound")
     fragment = _render_glass_fragment(reading, "Standup — any news from the vendor?", "glass-standup")
+    response = HttpResponse(fragment, content_type="text/html")
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+def quarantine_htmx_view(request: Any) -> Any:
+    """Render the quarantine shelf — inbound rows waiting for a human link.
+
+    There is no title-match query parameter: ``title`` is display-only on
+    each row (Story 61.5 / CAP-5).
+    """
+    from django.http import HttpResponse
+
+    outcome = list_quarantine_shelf(include_linked=False)
+    if outcome.get("status") != "ok":
+        esc = html.escape
+        msg = esc(outcome.get("message", "refused"))
+        fragment = f"""
+        <div id="quarantine-shelf" class="htmx-fade-in">
+          <strong>Quarantine shelf</strong>
+          <div style="color:#f85149">REFUSED — {msg}</div>
+        </div>
+        """
+    else:
+        esc = html.escape
+        rows_html = ""
+        for row in outcome.get("rows", []):
+            pid = row.get("passport_id") or "no passport"
+            rows_html += (
+                f"<tr><td>{esc(row.get('vendor_id') or '')}</td>"
+                f"<td><code>{esc(row.get('jira_key') or '-')}</code></td>"
+                f"<td><code>{esc(row.get('github_item_id') or '-')}</code></td>"
+                f"<td><code>{esc(pid)}</code></td>"
+                f"<td><code>{esc(row.get('arrived_at') or '')}</code></td></tr>"
+            )
+        if not rows_html:
+            rows_html = '<tr><td colspan="5" style="color:#8b949e">No unlinked rows</td></tr>'
+        fragment = f"""
+        <div id="quarantine-shelf" class="htmx-fade-in">
+          <strong>Quarantine shelf</strong>
+          <table style="width:100%;margin-top:0.5rem;font-size:13px">
+            <thead><tr>
+              <th>Vendor</th><th>Jira</th><th>GitHub</th><th>Passport</th><th>Arrived (UTC)</th>
+            </tr></thead>
+            <tbody>{rows_html}</tbody>
+          </table>
+        </div>
+        """
     response = HttpResponse(fragment, content_type="text/html")
     response["Cache-Control"] = "no-store"
     return response

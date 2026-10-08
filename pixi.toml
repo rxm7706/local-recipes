@@ -894,6 +894,7 @@ jsonschema = ">=4.26.0"
 # (no tomli: python 3.14's stdlib tomllib serves detectors.py / index_freshness_check.py; tomli is their <3.11 fallback only)
 pytest = ">=9.1.1"                # pyforge-station-coverage-gates' scripts/coverage_gates_ci.py
 pytest-cov = ">=7.1.0"
+pptxgenjs-plus = { version = "4.2.1.*", channel = "SelfExplainML" }  # Story 32.1 (CAP-57): SelfExplainML build (node 24); >=4.2.1 would pull 4.3.4/node 26 and break codegraph's node 24 pin. Channel-pinned, not channel-priority = "flexible": flexible re-solves every env that carries the feature
 
 [feature.pyforge-guild.pypi-dependencies]
 sqlite-vec = ">=0.1.9"            # headroom-ai's [proxy] extra; not on conda-forge
@@ -934,16 +935,21 @@ description = "Install docs-site npm dependencies (npm ci in docs-site/)."
 cmd = "npm ci"
 cwd = "docs-site"
 
+[feature.site.tasks.docs-site-sidebar]
+description = "Generate Starlight sidebar JSON from docs/map.yaml (Story 27.3)."
+cmd = "python scripts/sidebar_from_map.py"
+cwd = "docs-site"
+
 [feature.site.tasks.docs-site-build]
 description = "Build the Diátaxis shelf Starlight site to docs-site/build/site/."
 cmd = "npm run build"
 cwd = "docs-site"
-depends-on = ["docs-site-install"]
+depends-on = ["docs-site-install", "docs-site-sidebar"]
 
 [feature.site.tasks.pages-build]
 description = "Build the unified GitHub Pages artifact (Starlight + herald + dashboard mounts and legacy redirects)."
 cmd = "python docsite/tools/assemble_pages.py"
-depends-on = ["docs-site-install"]
+depends-on = ["docs-site-install", "docs-site-sidebar"]
 
 [feature.site.tasks.pages-check]
 description = "Build and verify the unified GitHub Pages artifact (Story 27.2)."
@@ -953,6 +959,23 @@ depends-on = ["pages-build"]
 [feature.site.tasks.site]
 description = "Build the PyForge dossier + infographic site into dist/."
 cmd = "python docsite/build.py --out dist"
+
+[feature.site.tasks.docs-site-validate-links]
+description = "Story 27.4 (spec-pyforge-herald CAP-52 D5): upstream validate-doc-links.js over docs/ — dead links exit 1."
+cmd = "node docs-site/scripts/validate-doc-links.js"
+
+[feature.site.tasks.docs-site-validate-sidebar-order]
+description = "Story 27.4: upstream validate-sidebar-order.js over docs/ frontmatter."
+cmd = "node docs-site/scripts/validate-sidebar-order.js"
+
+[feature.site.tasks.docs-site-validate-sidebar]
+description = "Story 27.4: sidebar-order validator then map.yaml sidebar drift check (27.3 generator, --check only)."
+cmd = "python docs-site/scripts/sidebar_from_map.py --check"
+depends-on = ["docs-site-validate-sidebar-order"]
+
+[feature.site.tasks.docs-site-validate]
+description = "Story 27.4: vendored BMAD doc link + sidebar validators (node-only; no npm install)."
+depends-on = ["docs-site-validate-links", "docs-site-validate-sidebar"]
 
 [feature.site.tasks.site-check]
 description = "Build the site and verify its output (required pages, no stray template syntax, every infographic published intact)."
@@ -1549,8 +1572,8 @@ Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivale
 
 NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error).
 
-Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) mirrors the new `docsite-check.yml` `pull_request` lane -- until then no `pr-preflight` leg, and no PR-gating CI lane at all, ran `docsite/build.py`, so a broken family-page template could merge with every gate green. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, which `pyforge-doctor-scripts-test` already covers for the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, not a declared `pyforge-ci` dependency (each test file skips cleanly there via `pytest.importorskip` if that ever stops being transitively available), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here."""
-depends-on = ["lint-types", "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "site-check", environment = "site" }]
+Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) mirrors the new `docsite-check.yml` `pull_request` lane -- until then no `pr-preflight` leg, and no PR-gating CI lane at all, ran `docsite/build.py`, so a broken family-page template could merge with every gate green. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, which `pyforge-doctor-scripts-test` already covers for the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, not a declared `pyforge-ci` dependency (each test file skips cleanly there via `pytest.importorskip` if that ever stops being transitively available), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here. Tenth leg added 2026-10-08 (herald Story 27.4, spec-pyforge-herald CAP-52): `docs-site-validate` (`-e site`) mirrors the link, sidebar-order and map checks `docsite-check.yml` runs on every PR touching `docs/**` or `docs-site/**`; without it a broken docs link or a sidebar out of `docs/map.yaml` order could pass every local gate. It needs only node (no npm install, no build), so it runs unconditionally until steward Story 71.2 selects legs by each lane's paths."""
+depends-on = ["lint-types", "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "site-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
 
 [feature.local-recipes.tasks.eval-quality-smoke]
 description = "Story 45.2: compiles the shipped bmad-eval-quality dev corpus's own worked example (satisfied-declarations.json) plus this repo's own pilot contract (evals/review-catches-planted-defect/contract.json) — a cheap sanity check that the installed eval-quality CLI and this pilot's contract still agree with the published EvalContract schema. Not a gate: never joins detectors/detectors-ci. See evals/review-catches-planted-defect/driver.py."
@@ -2940,6 +2963,8 @@ playwright = ">=1.63.0"           # CLI + browser driver
 playwright-python = ">=1.62.0"    # the `import playwright` bindings
 pillow = ">=12.3.0"               # Pillow -- render_gate's contact-sheet compositing
 python-pptx = ">=1.0.2"           # Story 15.1: pptx_pipeline.py's template-parse-then-fill CAP-1 (never hand-written OOXML)
+nodejs = ">=24.19.0,<27.0,!=25.*"  # Story 32.1 (CAP-57): pptx_native.mjs driver (same pin as [feature.python.dependencies])
+pptxgenjs-plus = { version = "4.2.1.*", channel = "SelfExplainML" }  # Story 32.1 (CAP-57): SelfExplainML build matched to pyforge-guild (node 24)
 boto3 = ">=1.43.75"               # Story 29.1 (CAP-54): deck_store's S3 adapter (env-only; same floor as platform object_storage)
 fastapi = ">=0.141.1"             # Story 29.2 (CAP-54): deck_exports route registration on herald v1 sub-app (package run-dep)
 # --- pyforge-core (Core): pixi build workspace member (pyforge-scribe mirror, Story 14.1) --

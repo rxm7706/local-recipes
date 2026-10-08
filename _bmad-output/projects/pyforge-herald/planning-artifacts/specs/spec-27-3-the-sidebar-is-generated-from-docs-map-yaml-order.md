@@ -2,7 +2,8 @@
 title: '27.3: The sidebar is generated from docs/map.yaml order'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'done'
+baseline_revision: '039577b6acf790ad6c81a2b125ba2da3b125101a'
 difficulty: 'easy'
 review_loop_iteration: 0
 followup_review_recommended: false

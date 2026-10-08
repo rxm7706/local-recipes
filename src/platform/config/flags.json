@@ -180,6 +180,21 @@
         "cleanup_by": ""
       }
     },
+    "pyforge.herald.deck_export_native": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "herald",
+        "story": "32-1-a-deck-exports-as-a-native-editable-pptx-through-pptxgenjs-plus",
+        "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
     "pyforge.warden.fix_draft_pr_estate": {
       "state": "ENABLED",
       "variants": {

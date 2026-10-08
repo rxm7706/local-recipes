@@ -9,3 +9,7 @@ transports:
     state: off
   email:
     state: off
+# Story 61.5 (CAP-5): inbound rows without a passport — mint during this
+# window, then quarantine without minting.
+quarantine:
+  missing_passport_window_days: 14

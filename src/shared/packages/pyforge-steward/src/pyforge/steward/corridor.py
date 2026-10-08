@@ -78,11 +78,22 @@ class TransportDecl:
     state: str
 
 
+DEFAULT_MISSING_PASSPORT_WINDOW_DAYS = 14
+
+
+@dataclass(frozen=True)
+class QuarantineDecl:
+    """Story 61.5: how long inbound rows without a passport may auto-mint."""
+
+    missing_passport_window_days: int
+
+
 @dataclass(frozen=True)
 class CorridorConfig:
     """The operator-declared corridor: which transports are active."""
 
     transports: tuple[TransportDecl, ...]
+    quarantine: QuarantineDecl
 
     def transport(self, name: str) -> TransportDecl | None:
         for decl in self.transports:
@@ -152,7 +163,23 @@ def load_config(config_path: str | Path) -> CorridorConfig:
             raise CorridorConfigError(f"{document_path}: '{where}' must be a mapping")
         state = _normalize_state(document_path, body.get("state"), where)
         decls.append(TransportDecl(name=name.strip(), state=state))
-    return CorridorConfig(transports=tuple(decls))
+
+    quarantine_raw = document.get("quarantine")
+    window_days = DEFAULT_MISSING_PASSPORT_WINDOW_DAYS
+    if quarantine_raw is not None:
+        if not isinstance(quarantine_raw, dict):
+            raise CorridorConfigError(f"{document_path}: 'quarantine' section must be a mapping")
+        raw_days = quarantine_raw.get("missing_passport_window_days", DEFAULT_MISSING_PASSPORT_WINDOW_DAYS)
+        if not isinstance(raw_days, int) or isinstance(raw_days, bool) or raw_days < 1:
+            raise CorridorConfigError(
+                f"{document_path}: 'quarantine.missing_passport_window_days' must be a positive int, got {raw_days!r}"
+            )
+        window_days = raw_days
+
+    return CorridorConfig(
+        transports=tuple(decls),
+        quarantine=QuarantineDecl(missing_passport_window_days=window_days),
+    )
 
 
 def compute_batch_sha(data: bytes) -> str:

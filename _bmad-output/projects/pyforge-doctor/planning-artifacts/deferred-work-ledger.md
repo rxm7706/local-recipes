@@ -2898,7 +2898,8 @@ not. Severity: low. Status: open. Relayed 2026-08-21.
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  resolved: 2026-10-08 (dispatch-land finalize: Merge pyforge-doctor/38-5 into main)
+  status: closed
 
 ### DW-FRR-8-1: Follow-up review still recommended for story 8.1
 

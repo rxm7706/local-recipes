@@ -77,7 +77,7 @@ from openlineage.client.transport import Transport
 from openlineage.client.uuid import generate_new_uuid
 from opentelemetry import trace as otel_trace
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.trace import Span, Status, StatusCode
+from opentelemetry.trace import Span, Status, StatusCode, Tracer
 
 # Producer URI stamped on every emitted OpenLineage facet/event (this project).
 PRODUCER = "https://github.com/rxm7706/local-recipes/tree/main/pyforge-atlas"
@@ -194,7 +194,7 @@ class AtlasObservabilityHooks:
         # never call otel_trace.set_tracer_provider, and the default provider has no
         # span processor, so spans are dropped (offline, no network).
         self._provider = tracer_provider
-        self._tracer_cache = None
+        self._tracer_cache: Tracer | None = None
         self._ol = openlineage_client
         self._namespace = namespace
         self._pipelines: list[_PipelineFrame] = []

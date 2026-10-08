@@ -9,7 +9,7 @@
 # its v1 default; `state` is one of `on | off | available` (quoted, because
 # bare `on`/`off` are YAML 1.1 booleans).
 #
-# Read by `steward catalog check|list|render|pointers`.
+# Read by `steward catalog check|list|render|pointers|ship`.
 catalog:
   name: pyforge-estate-catalog
   display_name: PyForge estate catalog

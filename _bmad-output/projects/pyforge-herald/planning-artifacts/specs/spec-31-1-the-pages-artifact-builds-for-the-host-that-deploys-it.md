@@ -7,7 +7,6 @@ followup_review_recommended: false
 baseline_revision: 'f1cc68bab7fef224a9d5a78994db73e6b7af0895'
 difficulty: 'easy'
 review_loop_iteration: 0
-followup_review_recommended: false
 flag:
   key: pyforge.herald.pages_second_host
   provider: openfeature-file                   # the one tree, src/platform/config/flags.json (canopy:AD-11)
@@ -133,7 +132,7 @@ Flag: `pyforge.herald.pages_second_host` (`feature-flag-governance:CAP-1`).
 ## Verification
 
 **Commands:**
-- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's `verify_commands`; `tests/meta/test_pages_second_host.py` and the ON/OFF test run inside it).
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's `verify_commands`; `src/shared/packages/pyforge-herald/tests/meta/test_pages_second_host.py` and the ON/OFF test `src/shared/packages/pyforge-herald/tests/unit/test_pages_host.py` run inside it).
 
 **Manual checks:**
 - ON/OFF: the flag test writes two flagd trees (one with `pyforge.herald.pages_second_host` ON, one OFF), like `src/platform/tests/test_openfeature_file_flags.py`, and asserts the enterprise inputs apply ON and are ignored OFF. Replace it with the testing-kit fixture once `feature-flag-governance:CAP-4` lands.

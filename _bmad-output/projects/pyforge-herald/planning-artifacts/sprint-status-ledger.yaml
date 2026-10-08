@@ -99,8 +99,8 @@ development_status:
   26-1-the-dossier-reads-the-a-b-cutover-as-control-plane-fact: done
   27-1-the-docs-shelf-builds-as-a-starlight-site-in-place: done
   27-2-one-pages-artifact-carries-the-docs-site-the-dossier-and-the-dashboard: done
-  27-3-the-sidebar-is-generated-from-docs-map-yaml-order: backlog
-  27-4-the-docs-validators-gate-every-pr: backlog
+  27-3-the-sidebar-is-generated-from-docs-map-yaml-order: done
+  27-4-the-docs-validators-gate-every-pr: done
   27-5-pr-preflight-runs-the-pages-build-check-only-when-docsite-check-yml-s-paths-change: blocked
   27-6-the-docs-site-builds-from-a-clean-checkout: done
   28-1-each-deck-keeps-one-current-version-of-each-export: done
@@ -113,7 +113,7 @@ development_status:
   30-2-the-herald-portal-shows-a-deck-in-the-browser-from-its-html-twin: done
   31-1-the-pages-artifact-builds-for-the-host-that-deploys-it: backlog
   31-2-how-to-deploy-the-docs-site-to-github-enterprise-pages: backlog
-  32-1-a-deck-exports-as-a-native-editable-pptx-through-pptxgenjs-plus: backlog
+  32-1-a-deck-exports-as-a-native-editable-pptx-through-pptxgenjs-plus: done
   33-1-deck-facts-counts-dreams-under-the-archive-too: done
   34-1-herald-cites-the-deck-how-to-not-the-intake-stub: done
   35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals: done
@@ -189,7 +189,7 @@ development_status:
   epic-30-retrospective: optional
   epic-31: backlog
   epic-31-retrospective: optional
-  epic-32: backlog
+  epic-32: done
   epic-32-retrospective: optional
   epic-33: done
   epic-33-retrospective: optional

@@ -13,7 +13,7 @@ import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
-from pyforge.marshal.core import policy, promotion
+from pyforge.marshal.core import deferred_work, policy, promotion
 from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.dispatch_landing import (
     DispatchLandingVerdict,
@@ -166,6 +166,9 @@ class FakeVcs:
         self.calls.append(("fetch", remote, ref))
         if self.fetch_fails:
             raise VcsCommandError("could not read from remote repository")
+
+    def commit_paths(self, worktree: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        return "fake-commit-sha"
 
     def changed_files(self, repo_root: Path, worktree: Path, *, base: str) -> tuple[str, ...]:
         return ()
@@ -2172,6 +2175,160 @@ def test_a_normal_landing_hands_finalize_the_same_argv_as_before(tmp_path: Path)
         str(tmp_path / "wt"),
     ]
     assert "followup_review" not in envelope.data
+
+
+# -- Story 22.21 (CAP-275): carry ``DW-FRR-<story>`` on the branch before push ------------------------
+
+
+_FRR_STORY_KEY = "51-2-the-landing-record"
+_FRR_LEDGER_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
+_FRR_SPEC_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-2-the-landing-record.md"
+_FRR_SPEC_TEXT = "---\nstatus: done\nfollowup_review_recommended: true\n---\n\nbody\n"
+_FRR_ROW_ID = "DW-FRR-51-2"
+
+
+class _FollowupCarryVcs(_OwnHeadVcs):
+    def __init__(self, *, own_head_on_origin_main: bool = False, **kwargs) -> None:
+        super().__init__(merged=False, own_head_on_origin_main=own_head_on_origin_main, **kwargs)
+        self.ledger_commits: list[tuple[Path, tuple[Path, ...], str]] = []
+        self.events: list[str] = []
+
+    def commit_paths(self, worktree: Path, paths: tuple[Path, ...], message: Redacted) -> str:
+        self.ledger_commits.append((worktree, paths, message.text))
+        self.events.append("commit")
+        return "frr-carry-sha"
+
+    def push(self, repo_root: Path, branch: str) -> None:
+        super().push(repo_root, branch)
+        self.events.append("push")
+
+
+def _write_frr_branch_fixture(worktree: Path, *, ledger_text: str) -> None:
+    spec_path = worktree / _FRR_SPEC_REL
+    spec_path.parent.mkdir(parents=True, exist_ok=True)
+    spec_path.write_text(_FRR_SPEC_TEXT, encoding="utf-8")
+    ledger_path = worktree / _FRR_LEDGER_REL
+    ledger_path.parent.mkdir(parents=True, exist_ok=True)
+    ledger_path.write_text(ledger_text, encoding="utf-8")
+
+
+def _land_frr_story(tmp_path: Path, vcs: FakeVcs, *, ledger_text: str = "# deferred\n"):
+    worktree = tmp_path / "wt"
+    worktree.mkdir(exist_ok=True)
+    _write_frr_branch_fixture(worktree, ledger_text=ledger_text)
+    return execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key=_FRR_STORY_KEY,
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+
+
+def test_a_done_flagged_landing_commits_one_followup_row_before_push(tmp_path: Path) -> None:
+    vcs = _FollowupCarryVcs()
+
+    result, _envelope = _land_frr_story(tmp_path, vcs)
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert len(vcs.ledger_commits) == 1
+    _worktree, paths, message = vcs.ledger_commits[0]
+    assert paths == (Path(_FRR_LEDGER_REL),)
+    assert _FRR_ROW_ID in message
+    assert vcs.events.index("commit") < vcs.events.index("push")
+    ledger_text = (tmp_path / "wt" / _FRR_LEDGER_REL).read_text(encoding="utf-8")
+    assert f"### {_FRR_ROW_ID}:" in ledger_text
+    assert "origin: dispatch-followup-review" in ledger_text
+    assert f"location: {_FRR_SPEC_REL}" in ledger_text
+    assert "promoted:" in ledger_text and "dispatch land" in ledger_text
+    spec_name = Path(_FRR_SPEC_REL).name
+    assert not deferred_work.followup_review_orphans(
+        spec_basename=spec_name,
+        spec_text=_FRR_SPEC_TEXT,
+        ledger_text=ledger_text,
+    )
+
+
+def test_a_done_flagged_re_landing_does_not_duplicate_the_row(tmp_path: Path) -> None:
+    vcs = _FollowupCarryVcs()
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    _write_frr_branch_fixture(worktree, ledger_text="# deferred\n")
+
+    result, _envelope = _land_frr_story(tmp_path, vcs)
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert len(vcs.ledger_commits) == 1
+    ledger_text = (worktree / _FRR_LEDGER_REL).read_text(encoding="utf-8")
+    assert ledger_text.count(f"### {_FRR_ROW_ID}:") == 1
+
+    result2, _envelope2 = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key=_FRR_STORY_KEY,
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+    assert result2.verdict == DispatchLandingVerdict.LANDED
+    assert len(vcs.ledger_commits) == 1
+    assert (worktree / _FRR_LEDGER_REL).read_text(encoding="utf-8").count(f"### {_FRR_ROW_ID}:") == 1
+
+
+def test_a_done_flagged_landing_with_no_ledger_warns_and_continues(tmp_path: Path) -> None:
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    spec_path = worktree / _FRR_SPEC_REL
+    spec_path.parent.mkdir(parents=True, exist_ok=True)
+    spec_path.write_text(_FRR_SPEC_TEXT, encoding="utf-8")
+    vcs = FakeVcs(merged=False)
+
+    result, envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key=_FRR_STORY_KEY,
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+    )
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    ledger_warns = [f for f in envelope.findings if f.code == "MRS-DISP-047" and f.path == _FRR_LEDGER_REL]
+    assert len(ledger_warns) == 1
+    assert _FRR_ROW_ID in ledger_warns[0].message
+    assert vcs.pushed == ["dispatch/pyforge-marshal/51.2"]
+
+
+def test_a_follow_up_review_landing_does_not_carry_again(tmp_path: Path) -> None:
+    open_row = deferred_work.render_followup_review_entry(
+        deferred_work.followup_review_candidate(_FRR_SPEC_TEXT, normalize("51.2"), _FRR_SPEC_REL),
+        promoted_date="2026-10-08",
+    )
+    vcs = _FollowupCarryVcs(merged_at=frozenset({ORIGIN_MAIN}), own_head_on_origin_main=False)
+    worktree = tmp_path / "wt"
+    worktree.mkdir()
+    _write_frr_branch_fixture(worktree, ledger_text=f"# ledger\n\n{open_row}")
+
+    result, _envelope = execute_dispatch_land(
+        project_slug="pyforge-marshal",
+        story_key=_FRR_STORY_KEY,
+        worktree=worktree,
+        repo_root=tmp_path,
+        verification_verdict=DispatchVerificationVerdict.VERIFIED,
+        vcs=vcs,
+        forge=FakeForge(),
+        process=FakeProcess(),
+        followup_review=FollowupReview(dw_id=_FRR_ROW_ID),
+    )
+
+    assert result.verdict == DispatchLandingVerdict.LANDED
+    assert vcs.ledger_commits == []
 
 
 def test_execute_dispatch_land_pushes_branch_when_verified(tmp_path: Path) -> None:

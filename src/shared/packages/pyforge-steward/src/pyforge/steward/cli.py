@@ -46,6 +46,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 #   Story 61.4 added the outbound default-deny slice+signer gate),
 # `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint),
 # `glass` (Epic 61, Story 61.3 — as-of glass over the inbound corridor, standup/shipped + flag-gated export),
+# `quarantine` (Epic 61, Story 61.5 — missing-passport mint-then-reject shelf),
 # `session` (Epic 63, Story 63.4 — one verdict for the session preconditions, run from every entry point).
 # `deck-drift` (Story 59.4 / spec-vocabulary-one-name-one-job CAP-5 — flags silent
 #   size/etag drift on a pulled Design deck artifact; Herald owns the pull itself).
@@ -73,6 +74,7 @@ DUTIES: tuple[str, ...] = (
     "load",
     "passport",
     "glass",
+    "quarantine",
     "session",
     "deck-drift",
 )
@@ -90,10 +92,11 @@ _HELP = {
         "(Story 61.3)"
     ),
     "catalog": (
-        "estate BMAD catalog — check/list/render/pointers/publish over catalog.yaml "
+        "estate BMAD catalog — check/list/render/pointers/ship/publish over catalog.yaml "
         "(backends + sources declared in config, git is the edit store; "
-        "generated Claude/Codex marketplace manifests; publish requires a review record; "
-        "Stories 60.1–60.2)"
+        "generated Claude/Codex marketplace manifests; ship vendors the snapshot through "
+        "the default conda backend; publish requires a review record; render also writes "
+        "the Frame index and browse list under docs/foundry/frames/; Stories 60.1–60.4)"
     ),
     "load": (
         "extract corridor -- idempotent inbound/outbound file loads keyed by "
@@ -104,6 +107,10 @@ _HELP = {
     "passport": (
         "vendor work-passport identity -- mints a FRESH UUID per inbound key, "
         "never merges by Jira key or GitHub number (Story 61.2)"
+    ),
+    "quarantine": (
+        "quarantine shelf for inbound rows without a passport -- mint during the "
+        "configured window, then reject mint (Story 61.5)"
     ),
     "ledger-query": (
         "pluggable estate sprint ledger query & telemetry reporting "
@@ -236,6 +243,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_passport_subparsers(duty_parser)
         elif name == "glass":
             _add_glass_subparsers(duty_parser)
+        elif name == "quarantine":
+            _add_quarantine_subparsers(duty_parser)
         elif name == "session":
             _add_session_subparsers(duty_parser)
         elif name == "deck-drift":
@@ -543,8 +552,10 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
 
 def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     """Story 60.1: ``check`` (default) / ``list`` / ``render [--check]`` /
-    ``pointers``, all ``--json``. ``--catalog DIR`` points at another catalog
-    dir (default: ``src/shared/packages/pyforge-steward/catalog``).
+    ``pointers``; Story 60.2: ``publish``; Story 60.3: ``ship``; all
+    ``--json``. Story 60.4 widens ``render`` (Frame index + browse list).
+    ``--catalog DIR`` points at another catalog dir (default:
+    ``src/shared/packages/pyforge-steward/catalog``).
 
     ``--catalog`` and ``--json`` are accepted both before and after the verb:
     the parent parser owns the defaults, and the verb subparsers redeclare
@@ -556,7 +567,10 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     json_help = "emit JSON instead of human-readable text"
     catalog_parser.add_argument("--catalog", default=None, metavar="DIR", help=catalog_help)
     catalog_parser.add_argument("--json", action="store_true", default=False, help=json_help)
-    catalog_subs = catalog_parser.add_subparsers(dest="catalog_verb", metavar="{check,list,render,pointers,publish}")
+    catalog_subs = catalog_parser.add_subparsers(
+        dest="catalog_verb",
+        metavar="{check,list,render,pointers,ship,publish}",
+    )
     check = catalog_subs.add_parser(
         "check",
         help="bind declared backends/sources to plugins, validate listings, detect manifest drift (default)",
@@ -564,7 +578,10 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     listing = catalog_subs.add_parser("list", help="every listing with its source and trust tier")
     render = catalog_subs.add_parser(
         "render",
-        help="regenerate .claude-plugin/marketplace.json + .agents/plugins/marketplace.json",
+        help=(
+            "regenerate .claude-plugin/marketplace.json + .agents/plugins/marketplace.json "
+            "(estate catalog: also docs/foundry/frames/frame-index.yaml + browse.yaml)"
+        ),
     )
     render.add_argument(
         "--check",
@@ -574,6 +591,22 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     pointers = catalog_subs.add_parser(
         "pointers",
         help="print how the installer, Claude and Codex point at this catalog (edits nothing)",
+    )
+    ship = catalog_subs.add_parser(
+        "ship",
+        help="materialize the vendored snapshot and run the default (conda) ship backend",
+    )
+    ship.add_argument(
+        "--backend",
+        default=None,
+        metavar="NAME",
+        help="ship backend row from catalog.yaml (default: the one backend with state on)",
+    )
+    ship.add_argument(
+        "--output",
+        default=None,
+        metavar="DIR",
+        help=f"snapshot output directory (default: catalog/{'snapshot'})",
     )
     publish = catalog_subs.add_parser(
         "publish",
@@ -596,7 +629,7 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
         action="store_true",
         help="validate listing + review without writing registry/estate.yaml",
     )
-    for sub in (check, listing, render, pointers, publish):
+    for sub in (check, listing, render, pointers, ship, publish):
         sub.add_argument("--catalog", default=argparse.SUPPRESS, metavar="DIR", help=catalog_help)
         sub.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=json_help)
 
@@ -671,6 +704,40 @@ def _add_passport_subparsers(passport_parser: argparse.ArgumentParser) -> None:
     mint.add_argument("--jira-key", default=None, metavar="KEY", help="Jira issue key nickname (optional)")
     mint.add_argument("--github-item-id", default=None, metavar="ID", help="GitHub item ID nickname (optional)")
     mint.add_argument("--title", default="", metavar="TEXT", help="a human-readable title (optional)")
+
+
+def _add_quarantine_subparsers(quarantine_parser: argparse.ArgumentParser) -> None:
+    """Story 61.5: bare (refuses) / ``admit`` / ``shelf``."""
+    quarantine_parser.add_argument(
+        "--json", action="store_true", default=False, help="emit JSON instead of human-readable text"
+    )
+    quarantine_parser.add_argument(
+        "--corridor",
+        default=None,
+        metavar="DIR",
+        help="corridor directory holding corridor.yaml (default: the tracked estate corridor)",
+    )
+    quarantine_subs = quarantine_parser.add_subparsers(dest="quarantine_verb", metavar="{admit,shelf}")
+    admit = quarantine_subs.add_parser(
+        "admit", help="admit an inbound row without a passport onto the quarantine shelf"
+    )
+    admit.add_argument("--vendor-id", required=True, metavar="NAME")
+    admit.add_argument("--jira-key", default=None, metavar="KEY")
+    admit.add_argument("--github-item-id", default=None, metavar="ID")
+    admit.add_argument("--title", default="", metavar="TEXT")
+    admit.add_argument(
+        "--arrived-at",
+        default=None,
+        metavar="ISO8601",
+        help="when the row arrived (default: now); used for the missing-passport window",
+    )
+    shelf = quarantine_subs.add_parser("shelf", help="list unlinked rows on the quarantine shelf")
+    shelf.add_argument(
+        "--include-linked",
+        action="store_true",
+        default=False,
+        help="include rows a human has already linked",
+    )
 
 
 def _add_glass_subparsers(glass_parser: argparse.ArgumentParser) -> None:
@@ -1474,6 +1541,10 @@ def resolve_duty(name: str) -> Duty:
         from .glass import GlassDuty
 
         return GlassDuty()
+    if name == "quarantine":
+        from .quarantine import QuarantineDuty
+
+        return QuarantineDuty()
     if name == "session":
         from .session import SessionDuty
 

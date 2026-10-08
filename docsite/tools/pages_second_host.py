@@ -1,16 +1,15 @@
 """Resolve GitHub Pages host inputs for Story 31.1 (CAP-56).
 
-The flag is read only through ``pyforge.core.flags.read_boolean`` (steward 75.1).
-Callers in the ``site`` pixi env invoke :func:`export_host_env_for_ci` from the
-Guild env; unit tests import this module from ``pyforge-herald`` tests directly.
+The flag is read only through ``pyforge.herald.pages_host`` (which calls
+``pyforge.core.flags.read_boolean``, steward 75.1). Callers in the ``site`` pixi env
+invoke :func:`export_host_env_for_ci` from the Guild env; unit tests import this
+module from ``pyforge-herald`` tests directly.
 """
 
 from __future__ import annotations
 
 import os
 from urllib.parse import urlparse
-
-PAGES_SECOND_HOST_FLAG = "pyforge.herald.pages_second_host"
 
 ENV_APPLY_HOST = "PYFORGE_PAGES_APPLY_HOST"
 ENV_CONFIGURED_BASE_URL = "PAGES_HOST_BASE_URL"
@@ -46,9 +45,9 @@ def combine_pages_host(base_url: str, base_path: str) -> str:
 
 
 def second_host_enabled() -> bool:
-    from pyforge.core.flags import read_boolean
+    from pyforge.herald.pages_host import pages_second_host_enabled
 
-    return read_boolean(PAGES_SECOND_HOST_FLAG, default=False)
+    return pages_second_host_enabled()
 
 
 def resolve_build_site_url(

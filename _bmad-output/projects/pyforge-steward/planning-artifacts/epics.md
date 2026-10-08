@@ -4081,7 +4081,7 @@ SelfExplainML / Artifactory channel path.
 **When** this story lands
 **Then** the default ship path is a pixi/conda index package on that channel
 **And** object storage and git bundle / tarball are switchable extras
-**Status:** backlog
+**Status:** done
 
 ### Story 60.4: Frame index and a thin browse list
 
@@ -4093,7 +4093,7 @@ SelfExplainML / Artifactory channel path.
 install hint)
 **And** a Frame listing is a reviewed git add; share uses CAP-3 backends
 **And** it is not an App Store, MyBMAD, Collab, or nebari-frames
-**Status:** backlog
+**Status:** done
 
 ## Epic 61: Work passports and dated extracts (spec-work-passports-dated-extracts CAP-1..145)
 
@@ -4151,7 +4151,7 @@ the existing Postgres app / a steward load duty.
 **When** this story lands
 **Then** first 14 days (config) mint into quarantine; after that, no mint
 **And** no title-match endpoint exists
-**Status:** backlog
+**Status:** done
 
 ## Epic 62: Published measure catalog (spec-build-league-scorecard CAP-1..145)
 
@@ -4190,7 +4190,7 @@ empty later slot — no story. Do not invent weights. Do not flip any Epic 44
 **When** this story lands
 **Then** citing `off`, `archived`, or an unknown id is a refuse
 **And** Hub Outcome Guards are not implemented here — they read later
-**Status:** backlog
+**Status:** done
 
 
 ## Epic 63: The Guild environment — `pyforge-guild` is the default for every agent (spec-pyforge-steward CAP-5)

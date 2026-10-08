@@ -1,7 +1,7 @@
 # Getting started
 
 Learning-oriented path to a working build environment for this repo. For
-task-oriented commands after setup, see [`docs/how-to/`](../how-to/).
+task-oriented commands after setup, see [`docs/how-to/`](../how-to/README.md).
 
 ## Requirements
 

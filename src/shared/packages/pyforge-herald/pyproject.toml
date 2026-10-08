@@ -76,9 +76,13 @@ herald = "pyforge.herald.cli:main"
 herald-deck-export-marp = "pyforge.herald.exporters:MarpExportPlugin"
 herald-deck-export-pptx = "pyforge.herald.exporters:PptxExportPlugin"
 herald-deck-export-dc-html = "pyforge.herald.exporters:DcHtmlExportPlugin"
+herald-deck-export-pptxgenjs = "pyforge.herald.exporters:PptxgenjsExportPlugin"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyforge"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/pyforge/herald/node/pptx_native.mjs" = "pyforge/herald/node/pptx_native.mjs"
 
 [tool.pytest.ini_options]
 # Story 1.2: the FR-21 transport spike (test_live_design_spike.py) is the
