@@ -53,7 +53,7 @@ Your primary project [`/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-rec
 - **Global Config Directory:** [`/home/rxm7706/.gemini/`](file:///home/rxm7706/.gemini/)
 - **Project Registration File:** [`/home/rxm7706/.gemini/projects.json`](file:///home/rxm7706/.gemini/projects.json)
 - **Trusted Workspaces File:** [`/home/rxm7706/.gemini/antigravity-cli/settings.json`](file:///home/rxm7706/.gemini/antigravity-cli/settings.json)
-- **Repo Agent Guidelines:** [`/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/AGENTS.md`](file:///home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/AGENTS.md)
+- **Repo Agent Guidelines:** [`AGENTS.md`](https://github.com/rxm7706/local-recipes/tree/main)
 
 ---
 

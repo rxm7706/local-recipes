@@ -1,5 +1,5 @@
-"""Stories 60.1–60.2 — estate BMAD catalog config and publish + review
-(spec-self-hosted-bmad-marketplace CAP-1..2 / spec-pyforge-steward CAP-117..118).
+"""Stories 60.1–60.3 — estate BMAD catalog config, publish + review and ship
+backends (spec-self-hosted-bmad-marketplace CAP-1..3 / spec-pyforge-steward CAP-117..118).
 
 Git is the edit store; backends and sources are declared in ``catalog.yaml``
 and bound to plugins; a new backend or source is a plugin, not a rewrite.
@@ -118,6 +118,11 @@ class _CustomBackend(ShipBackendPlugin):
 
     def snapshot_target(self, decl: BackendDecl) -> str:
         return f"custom://{decl.name}"
+
+    def ship(self, ctx, decl: BackendDecl):
+        from pyforge.steward.catalog import ShipBackendResult
+
+        return ShipBackendResult(target=f"custom://{decl.name}", artifacts=(str(ctx.snapshot_dir),))
 
 
 def _row(name: str, source: str, **overrides) -> Listing:
@@ -383,6 +388,10 @@ def test_a_backend_that_raises_never_aborts_check(tmp_path: Path) -> None:
 
         def snapshot_target(self, decl: BackendDecl) -> str:
             raise RuntimeError("boom")
+
+        def ship(self, ctx, decl: BackendDecl):
+
+            raise RuntimeError("boom-ship")
 
     engine = _engine(tmp_path, 'backends:\n  b: {plugin: broken, state: "on"}\n')
     engine.backends.register(Broken())
@@ -1027,7 +1036,7 @@ def test_pointers_name_every_consumer_form_and_edit_nothing(tmp_path: Path, caps
     assert "wait on edit_store.dedicated_repo" in out
     assert ".claude/settings.json is not edited" in out
     # verified live 2026-09-19: bmad-method 6.12.0 resolves the dir but "Found 0 modules"
-    assert "Found 0 modules" in out and "until 60.3" in out
+    assert "Found 0 modules" in out and "steward catalog ship" in out
     after = settings.read_bytes() if settings.is_file() else None
     assert before == after
 
@@ -1176,6 +1185,138 @@ def test_real_tree_estate_registry_is_empty_and_names_its_source() -> None:
 
     registry = yaml.safe_load((default_catalog_dir() / "registry" / "estate.yaml").read_text(encoding="utf-8"))
     assert registry == {"source": "estate-listings", "modules": []}
+
+
+def test_ship_refuses_when_manifest_drift(tmp_path: Path) -> None:
+    body = """
+backends:
+  conda-channel:
+    plugin: conda-channel
+    state: "on"
+sources:
+  estate-listings:
+    plugin: estate-listings
+    state: "on"
+"""
+    catalog_dir = _write_catalog(tmp_path, body)
+    (catalog_dir / "registry").mkdir(exist_ok=True)
+    (catalog_dir / "registry" / "estate.yaml").write_text("source: estate-listings\nmodules: []\n", encoding="utf-8")
+    engine = CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir)
+    result = engine.ship(snapshot_dir=tmp_path / "out")
+    assert not result.ok
+    assert any(f.code == "manifest-drift" for f in result.findings)
+
+
+def test_ship_vendors_installed_module_and_writes_local_manifest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    prefix = tmp_path / "env"
+    share = prefix / "share" / "probe-mod"
+    skills = share / "skills"
+    skills.mkdir(parents=True)
+    (skills / "module.yaml").write_text("name: probe-mod\n", encoding="utf-8")
+    (skills / "probe-skill").mkdir()
+    (skills / "probe-skill" / "SKILL.md").write_text("# probe\n", encoding="utf-8")
+    monkeypatch.setenv("CONDA_PREFIX", str(prefix))
+
+    catalog_dir = _write_catalog(
+        tmp_path,
+        """
+backends:
+  conda-channel:
+    plugin: conda-channel
+    state: "on"
+sources:
+  wielded-suite:
+    plugin: wielded-suite
+    state: "on"
+""",
+    )
+    (catalog_dir / "registry").mkdir(exist_ok=True)
+    (catalog_dir / "registry" / "estate.yaml").write_text("source: estate-listings\nmodules: []\n", encoding="utf-8")
+    (catalog_dir / CLAUDE_MANIFEST_RELATIVE.parent).mkdir(parents=True, exist_ok=True)
+    (catalog_dir / CLAUDE_MANIFEST_RELATIVE).write_text(
+        '{"name":"test-catalog","owner":{"name":"t"},"plugins":[]}\n', encoding="utf-8"
+    )
+    (catalog_dir / CODEX_MANIFEST_RELATIVE.parent).mkdir(parents=True, exist_ok=True)
+    (catalog_dir / CODEX_MANIFEST_RELATIVE).write_text(
+        '{"name":"test-catalog","interface":{"displayName":"T"},"plugins":[]}\n', encoding="utf-8"
+    )
+
+    probe = _row("probe-mod", "wielded-suite")
+    monkeypatch.setattr(
+        "pyforge.steward.catalog.WieldedSuiteSource.listings",
+        lambda self, ctx: [probe],
+    )
+    monkeypatch.setattr(
+        "pyforge.steward.catalog.EstateFramesSource.listings",
+        lambda self, ctx: [],
+    )
+    engine = CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir)
+    assert engine.render(write=True).ok
+
+    out = tmp_path / "snapshot"
+    result = engine.ship(snapshot_dir=out)
+    assert result.ok, result.findings
+    assert result.target == "conda://SelfExplainML/pyforge-estate-catalog"
+    manifest = json.loads((out / CLAUDE_MANIFEST_RELATIVE).read_text(encoding="utf-8"))
+    assert manifest["plugins"][0]["source"] == {"source": "local", "path": "plugins/probe-mod"}
+    assert (out / "plugins" / "probe-mod" / "skills" / "module.yaml").is_file()
+
+
+def test_air_gap_matrix_ship_without_github_urls(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """I/O matrix: air-gap install uses local plugin trees, not github.com."""
+    prefix = tmp_path / "env"
+    share = prefix / "share" / "probe-mod"
+    skills = share / "skills"
+    skills.mkdir(parents=True)
+    (skills / "module.yaml").write_text("name: probe-mod\n", encoding="utf-8")
+    monkeypatch.setenv("CONDA_PREFIX", str(prefix))
+
+    catalog_dir = _write_catalog(
+        tmp_path,
+        """
+backends:
+  conda-channel:
+    plugin: conda-channel
+    state: "on"
+sources:
+  estate-listings:
+    plugin: estate-listings
+    state: "on"
+  wielded-suite:
+    plugin: wielded-suite
+    state: "on"
+""",
+    )
+    (catalog_dir / "registry").mkdir(exist_ok=True)
+    (catalog_dir / "registry" / "estate.yaml").write_text("source: estate-listings\nmodules: []\n", encoding="utf-8")
+    (catalog_dir / CLAUDE_MANIFEST_RELATIVE.parent).mkdir(parents=True, exist_ok=True)
+    (catalog_dir / CLAUDE_MANIFEST_RELATIVE).write_text(
+        '{"name":"test-catalog","owner":{"name":"t"},"plugins":[]}\n', encoding="utf-8"
+    )
+    (catalog_dir / CODEX_MANIFEST_RELATIVE.parent).mkdir(parents=True, exist_ok=True)
+    (catalog_dir / CODEX_MANIFEST_RELATIVE).write_text(
+        '{"name":"test-catalog","interface":{"displayName":"T"},"plugins":[]}\n', encoding="utf-8"
+    )
+
+    probe = _row("probe-mod", "wielded-suite")
+    monkeypatch.setattr(
+        "pyforge.steward.catalog.WieldedSuiteSource.listings",
+        lambda self, ctx: [probe],
+    )
+    monkeypatch.setattr(
+        "pyforge.steward.catalog.EstateFramesSource.listings",
+        lambda self, ctx: [],
+    )
+    engine = CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir)
+    assert engine.render(write=True).ok
+    result = engine.ship(snapshot_dir=tmp_path / "snap")
+    assert result.ok, result.findings
+    manifest = json.loads((tmp_path / "snap" / CLAUDE_MANIFEST_RELATIVE).read_text(encoding="utf-8"))
+    for plugin in manifest["plugins"]:
+        assert plugin["source"]["source"] == "local"
+        assert "github.com" not in json.dumps(plugin["source"])
 
 
 # ---------------------------------------------------------------------------

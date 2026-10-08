@@ -55,3 +55,6 @@ jobs:
 
       - name: pixi run -e site pages-check
         run: pixi run --frozen -e site pages-check
+
+      - name: pixi run -e site docs-site-validate
+        run: pixi run --frozen -e site docs-site-validate

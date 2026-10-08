@@ -5,9 +5,9 @@
 A **Dream** is the raw, unconstrained human aspiration that seeds a deliverable —
 the BMAD mission itself: **B**uild **M**ore **A**rchitect **D**reams. It is
 **Tier 0** of the framework-neutral layout (see
-[`AGENTS.md` → the tiers](../../AGENTS.md)), upstream of the spec BMAD produces
+[`AGENTS.md` → the tiers](https://github.com/rxm7706/local-recipes/tree/main)), upstream of the spec BMAD produces
 in `_bmad-output/projects/<slug>/planning-artifacts/` (legacy hand-authored
-specs remain in [`docs/specs/`](../specs/)).
+specs remain in [`docs/specs/`](../specs/feedstock-refresh.md)).
 
 `docs/dreams/` is the home for the **starting point of each deliverable**. Going
 forward, a deliverable **begins as a Dream here** — a vision, unconstrained by

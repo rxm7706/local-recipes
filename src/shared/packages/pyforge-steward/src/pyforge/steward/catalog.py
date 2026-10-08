@@ -28,11 +28,12 @@ operator-confirm moments; ``steward catalog pointers`` prints the forms that
 work today (``--custom-source`` / ``extraKnownMarketplaces`` ``directory``)
 and names the ``github`` forms as waiting on ``edit_store.dedicated_repo``.
 
-Verbs: ``steward catalog check|list|render [--check]|pointers|publish
-[--json]``. Story 60.2 adds ``publish``: append a module to
+Verbs: ``steward catalog check|list|render [--check]|pointers|ship [--backend]
+[--output]|publish [--json]``. Story 60.2 adds ``publish``: append a module to
 ``registry/estate.yaml`` only when a steward review record exists;
 ``check`` reports ``listing-no-review`` for hand-edited rows. Wielded-suite
-modules are BMad Certified and never enter ``estate-listings``.
+modules are BMad Certified and never enter ``estate-listings``. Story 60.3
+adds ``ship``: materialize the vendored snapshot and run a ship backend.
 
 ``CatalogDuty`` never calls ``sys.exit`` (AD-8) — it returns a
 ``DutyResult`` and ``cli.main`` projects it.
@@ -42,8 +43,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shlex
+import shutil
+import tarfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -71,7 +75,9 @@ PUBLISH_TRUST_TIERS: tuple[str, ...] = (TIER_UNVERIFIED, TIER_COMMUNITY_REVIEWED
 KIND_MODULE = "module"
 KIND_FRAME = "frame"
 
-VERBS: tuple[str, ...] = ("check", "list", "render", "pointers", "publish")
+VERBS: tuple[str, ...] = ("check", "list", "render", "pointers", "ship", "publish")
+SNAPSHOT_RELATIVE = Path("snapshot")
+SNAPSHOT_PLUGINS_RELATIVE = Path("plugins")
 
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -384,9 +390,57 @@ class CatalogSourcePlugin(ABC):
         malformed source file; the engine reports it as a ``config-*`` finding."""
 
 
+@dataclass(frozen=True)
+class ShipContext:
+    """Inputs every ship backend receives after the snapshot tree is materialized."""
+
+    repo_root: Path
+    catalog_dir: Path
+    snapshot_dir: Path
+    listings: tuple[Listing, ...]
+    config: CatalogConfig
+
+
+@dataclass(frozen=True)
+class ShipBackendResult:
+    """What one backend's ``ship`` returns — frozen evidence."""
+
+    target: str
+    artifacts: tuple[str, ...]
+    findings: tuple[CatalogFinding, ...] = ()
+
+    @property
+    def ok(self) -> bool:
+        return not self.findings
+
+
+@dataclass(frozen=True)
+class ShipResult:
+    """What :meth:`CatalogEngine.ship` returns."""
+
+    backend: str
+    snapshot_dir: Path
+    target: str
+    artifacts: tuple[str, ...]
+    findings: tuple[CatalogFinding, ...] = ()
+
+    @property
+    def ok(self) -> bool:
+        return not self.findings
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "ok": self.ok,
+            "backend": self.backend,
+            "snapshot_dir": str(self.snapshot_dir),
+            "target": self.target,
+            "artifacts": list(self.artifacts),
+            "findings": [f.to_dict() for f in self.findings],
+        }
+
+
 class ShipBackendPlugin(ABC):
-    """Abstract interface for a ship backend — the shared snapshot interface.
-    Story 60.3 adds ``ship``; a backend here never claims to ship."""
+    """Abstract interface for a ship backend — the shared snapshot interface."""
 
     @property
     @abstractmethod
@@ -396,6 +450,10 @@ class ShipBackendPlugin(ABC):
     @abstractmethod
     def snapshot_target(self, decl: BackendDecl) -> str:
         """Where this backend would put the catalog snapshot, from the declaration."""
+
+    @abstractmethod
+    def ship(self, ctx: ShipContext, decl: BackendDecl) -> ShipBackendResult:
+        """Publish the materialized ``ctx.snapshot_dir`` through this backend."""
 
 
 class _Registry:
@@ -626,6 +684,10 @@ class CondaChannelBackend(ShipBackendPlugin):
         package = decl.options.get("package") or "pyforge-estate-catalog"
         return f"conda://{channel}/{package}"
 
+    def ship(self, ctx: ShipContext, decl: BackendDecl) -> ShipBackendResult:
+        target = self.snapshot_target(decl)
+        return ShipBackendResult(target=target, artifacts=(str(ctx.snapshot_dir),))
+
 
 class ObjectStorageBackend(ShipBackendPlugin):
     """The same snapshot as a blob on the consumed S3-style store (Epic 50)."""
@@ -639,6 +701,13 @@ class ObjectStorageBackend(ShipBackendPlugin):
         key = decl.options.get("key") or "catalog/snapshot.tar.gz"
         return f"s3://{bucket}/{key}"
 
+    def ship(self, ctx: ShipContext, decl: BackendDecl) -> ShipBackendResult:
+        archive = _write_snapshot_archive(ctx.snapshot_dir, ctx.snapshot_dir / "snapshot.tar.gz")
+        return ShipBackendResult(
+            target=self.snapshot_target(decl),
+            artifacts=(str(archive),),
+        )
+
 
 class GitBundleBackend(ShipBackendPlugin):
     """The same snapshot as a file (git bundle / tarball)."""
@@ -649,6 +718,34 @@ class GitBundleBackend(ShipBackendPlugin):
 
     def snapshot_target(self, decl: BackendDecl) -> str:
         return str(decl.options.get("file") or "catalog.bundle")
+
+    def ship(self, ctx: ShipContext, decl: BackendDecl) -> ShipBackendResult:
+        bundle_name = str(decl.options.get("file") or "catalog.bundle")
+        archive = _write_snapshot_archive(ctx.snapshot_dir, ctx.snapshot_dir / bundle_name)
+        return ShipBackendResult(
+            target=str(archive.name),
+            artifacts=(str(archive),),
+        )
+
+
+def _write_snapshot_archive(snapshot_dir: Path, dest: Path) -> Path:
+    """Tar every file under ``snapshot_dir`` except the archive itself."""
+    dest = dest.resolve()
+    with tarfile.open(dest, "w:gz") as tar:
+        for path in sorted(snapshot_dir.rglob("*")):
+            if not path.is_file() or path.resolve() == dest:
+                continue
+            tar.add(path, arcname=path.relative_to(snapshot_dir).as_posix())
+    return dest
+
+
+def _module_share_root(package: str) -> Path | None:
+    """Installed conda share tree for a wielded module package, when present."""
+    prefix = os.environ.get("CONDA_PREFIX")
+    if not prefix:
+        return None
+    candidate = Path(prefix) / "share" / package
+    return candidate if candidate.is_dir() else None
 
 
 def default_backends() -> list[ShipBackendPlugin]:
@@ -753,6 +850,24 @@ def _github_owner_repo(repository: str | None) -> str | None:
 
 def _json_text(payload: object) -> str:
     return json.dumps(payload, indent=2) + "\n"
+
+
+def _installer_note(catalog_dir: Path) -> str:
+    snapshot_manifest = catalog_dir / SNAPSHOT_RELATIVE / CLAUDE_MANIFEST_RELATIVE
+    if snapshot_manifest.is_file():
+        snap = (catalog_dir / SNAPSHOT_RELATIVE).resolve()
+        quoted = shlex.quote(str(snap))
+        return (
+            "a vendored snapshot is present — use "
+            f"`bmad-method install --custom-source {quoted}` for air-gapped discovery "
+            "(local plugin trees under snapshot/plugins/)"
+        )
+    return (
+        "the installer resolves this directory but installs only module trees "
+        "inside it (v1 rows are github pointers: 'Found 0 modules'); run "
+        "`steward catalog ship` after installing wielded modules, or install a "
+        "listed module from its own repository / install_hint"
+    )
 
 
 class CatalogEngine:
@@ -1099,6 +1214,189 @@ class CatalogEngine:
             CODEX_MANIFEST_RELATIVE.as_posix(): _json_text(codex),
         }
 
+    def snapshot_manifests(self, listings: list[Listing]) -> dict[str, str]:
+        """Manifests for the vendored ship tree — local plugin paths only."""
+        cfg = self.config
+        claude_plugins: list[dict[str, object]] = []
+        for row in listings:
+            if row.kind != KIND_MODULE:
+                continue
+            rel = (SNAPSHOT_PLUGINS_RELATIVE / row.name).as_posix()
+            entry: dict[str, object] = {
+                "name": row.name,
+                "description": row.description,
+                "source": {"source": "local", "path": rel},
+                "tags": [f"source:{row.source}", f"trust:{row.trust_tier}"],
+            }
+            if row.version:
+                entry["version"] = row.version
+            if row.link:
+                entry["homepage"] = row.link
+            claude_plugins.append(entry)
+        claude = {
+            "name": cfg.name,
+            "owner": {"name": cfg.owner},
+            "metadata": {"description": cfg.description},
+            "plugins": claude_plugins,
+        }
+        codex = {
+            "name": cfg.name,
+            "interface": {"displayName": cfg.display_name},
+            "plugins": [
+                {
+                    "name": row.name,
+                    "source": {"source": "local", "path": (SNAPSHOT_PLUGINS_RELATIVE / row.name).as_posix()},
+                    "policy": {"installation": "AVAILABLE"},
+                    "category": row.kind,
+                }
+                for row in listings
+                if row.kind == KIND_MODULE and row.codex_source
+            ],
+        }
+        return {
+            CLAUDE_MANIFEST_RELATIVE.as_posix(): _json_text(claude),
+            CODEX_MANIFEST_RELATIVE.as_posix(): _json_text(codex),
+        }
+
+    def _materialize_ship_snapshot(
+        self, snapshot_dir: Path, listings: list[Listing]
+    ) -> tuple[list[str], list[CatalogFinding]]:
+        """Vendor module trees and write ship manifests under ``snapshot_dir``."""
+        findings: list[CatalogFinding] = []
+        written: list[str] = []
+        if snapshot_dir.exists():
+            shutil.rmtree(snapshot_dir)
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
+        plugins_root = snapshot_dir / SNAPSHOT_PLUGINS_RELATIVE
+        module_rows = [row for row in listings if row.kind == KIND_MODULE]
+        for row in module_rows:
+            share = _module_share_root(row.name)
+            if share is None:
+                findings.append(
+                    CatalogFinding(
+                        "ship-missing-share",
+                        row.name,
+                        f"module {row.name!r} is not installed under "
+                        f"$CONDA_PREFIX/share/{row.name}; install the wielded package "
+                        "before shipping the conda snapshot",
+                    )
+                )
+                continue
+            dest = plugins_root / row.name
+            shutil.copytree(share, dest, dirs_exist_ok=True)
+            written.append(str(dest))
+            module_yaml = dest / "skills" / "module.yaml"
+            if not module_yaml.is_file():
+                findings.append(
+                    CatalogFinding(
+                        "ship-incomplete-vendor",
+                        row.name,
+                        f"vendored tree at {dest} has no skills/module.yaml — "
+                        "BMAD discovery mode will not install this module",
+                    )
+                )
+        if findings:
+            return written, findings
+        for rel, text in self.snapshot_manifests(listings).items():
+            target = snapshot_dir / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(text, encoding="utf-8")
+            written.append(str(target))
+        readme = snapshot_dir / "README.md"
+        readme.write_text(
+            "# PyForge estate catalog snapshot (generated)\n\n"
+            "Install with `bmad-method install --custom-source <this directory>` "
+            "or from the `pyforge-estate-catalog` conda package on the SelfExplainML channel.\n",
+            encoding="utf-8",
+        )
+        written.append(str(readme))
+        return written, findings
+
+    def ship(self, backend_name: str | None = None, *, snapshot_dir: Path | None = None) -> ShipResult:
+        """Materialize the vendored snapshot and run the chosen ship backend."""
+        check_report = self.check()
+        if not check_report.ok:
+            return ShipResult(
+                backend=backend_name or "",
+                snapshot_dir=snapshot_dir or (self.catalog_dir / SNAPSHOT_RELATIVE),
+                target="",
+                artifacts=(),
+                findings=check_report.findings,
+            )
+        drift = self.drift()
+        if drift:
+            return ShipResult(
+                backend=backend_name or "",
+                snapshot_dir=snapshot_dir or (self.catalog_dir / SNAPSHOT_RELATIVE),
+                target="",
+                artifacts=(),
+                findings=tuple(drift),
+            )
+        listings = self.listings()
+        out = Path(snapshot_dir) if snapshot_dir is not None else self.catalog_dir / SNAPSHOT_RELATIVE
+        _, findings = self._materialize_ship_snapshot(out, listings)
+        if findings:
+            return ShipResult(
+                backend=backend_name or "",
+                snapshot_dir=out,
+                target="",
+                artifacts=(),
+                findings=tuple(findings),
+            )
+        chosen: BackendDecl | None = None
+        for decl in self.config.backends:
+            if decl.state != STATE_ON:
+                continue
+            if backend_name is None or decl.name == backend_name:
+                chosen = decl
+                break
+        if chosen is None:
+            msg = f"no ship backend {backend_name!r}" if backend_name else "no backend with state 'on'"
+            return ShipResult(
+                backend=backend_name or "",
+                snapshot_dir=out,
+                target="",
+                artifacts=(),
+                findings=(CatalogFinding("ship-no-backend", "backends", msg),),
+            )
+        if not self._bound(chosen, self.backends):
+            return ShipResult(
+                backend=chosen.name,
+                snapshot_dir=out,
+                target="",
+                artifacts=(),
+                findings=(
+                    CatalogFinding(
+                        "slot-unbound",
+                        f"backends.{chosen.name}",
+                        f"state 'on' names plugin {chosen.plugin!r} which is not registered",
+                    ),
+                ),
+            )
+        plugin = self.backends.get(chosen.plugin)
+        ctx = ShipContext(
+            repo_root=self.repo_root,
+            catalog_dir=self.catalog_dir,
+            snapshot_dir=out,
+            listings=tuple(listings),
+            config=self.config,
+        )
+        backend_result = plugin.ship(ctx, chosen)
+        if not backend_result.ok:
+            return ShipResult(
+                backend=chosen.name,
+                snapshot_dir=out,
+                target=backend_result.target,
+                artifacts=backend_result.artifacts,
+                findings=backend_result.findings,
+            )
+        return ShipResult(
+            backend=chosen.name,
+            snapshot_dir=out,
+            target=backend_result.target,
+            artifacts=backend_result.artifacts,
+        )
+
     def render(self, *, write: bool = False) -> RenderResult:
         """Render both manifests; ``write=True`` puts them beside the config.
 
@@ -1282,12 +1580,7 @@ class CatalogEngine:
             # only module trees inside the source ("Found 0 modules" here) — it does
             # not follow a plugin's `github` source. Pointer rows install from their
             # own `repository` (`install_hint`); Story 60.3's snapshot vendors them.
-            "installer_note": (
-                "the installer resolves this directory but installs only module trees "
-                "inside it (v1 rows are github pointers: 'Found 0 modules'); install a "
-                "listed module from its own repository / install_hint until 60.3 ships "
-                "the vendored snapshot"
-            ),
+            "installer_note": _installer_note(self.catalog_dir),
             "settings_note": ".claude/settings.json is not edited by this duty; paste the block yourself",
         }
 
@@ -1344,8 +1637,21 @@ def format_pointers(pointers: dict[str, object]) -> str:
     )
 
 
+def format_ship(result: ShipResult) -> str:
+    if not result.ok:
+        lines = [f"catalog ship: {len(result.findings)} finding(s)"]
+        for finding in result.findings:
+            lines.append(f"  [{finding.code}] {finding.subject}: {finding.message}")
+        return "\n".join(lines)
+    artifacts = ", ".join(result.artifacts) or "(none)"
+    return (
+        f"catalog ship: ok — backend {result.backend!r}, target {result.target!r}, "
+        f"snapshot {result.snapshot_dir}, artifacts: {artifacts}"
+    )
+
+
 class CatalogDuty:
-    """``steward catalog check|list|render [--check]|pointers|publish [--json]`` — 60.1 + 60.2."""
+    """``steward catalog check|list|render [--check]|pointers|ship|publish [--json]`` — 60.1 + 60.2 + 60.3."""
 
     name = "catalog"
 
@@ -1422,6 +1728,17 @@ class CatalogDuty:
                     ok=True,
                     summary=_json_text(pointers).rstrip("\n") if as_json else format_pointers(pointers),
                     details=pointers,
+                )
+            if verb == "ship":
+                backend = getattr(ns, "backend", None)
+                output = getattr(ns, "output", None)
+                snapshot_dir = Path(output).resolve() if output else None
+                shipped = engine.ship(backend, snapshot_dir=snapshot_dir)
+                payload = shipped.to_dict()
+                return DutyResult(
+                    ok=shipped.ok,
+                    summary=_json_text(payload).rstrip("\n") if as_json else format_ship(shipped),
+                    details=payload,
                 )
             if verb == "publish":
                 listing_arg = getattr(ns, "listing", None)
