@@ -20,6 +20,7 @@ import shutil
 import sys
 import tempfile
 import time
+from datetime import date
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,6 +31,7 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 from .adapters.forge_gh import GhForge
 from .adapters.fs_local import LocalFs
 from .adapters.vcs_git import GitVcs, VcsCommandError
+from .core import deferred_work
 from .core import dispatch as dispatch_core
 from .core import identity, promotion
 from .core.commit_vcs import CommittingVcs
@@ -1148,6 +1150,109 @@ def _healed_tree_flag_registry_check(worktree: Path, process: ProcessPort) -> Ca
     return check
 
 
+def _deferred_work_ledger_rel(project_slug: str) -> str:
+    return f"_bmad-output/projects/{project_slug}/planning-artifacts/deferred-work-ledger.md"
+
+
+def _carry_followup_review_on_branch_before_push(
+    *,
+    followup_review: FollowupReview | None,
+    project_slug: str,
+    key: StoryKey,
+    feed_story: str,
+    worktree: Path,
+    story_spec_text: str,
+    vcs: CommittingVcs,
+    findings: list[Finding],
+) -> bool:
+    """Story 22.21 (CAP-275): publish ``DW-FRR-<story>`` on the branch before the landing push.
+
+    Returns ``True`` when an error finding was appended and the landing must refuse."""
+    if followup_review is not None:
+        return False
+    spec_rel = dispatch_core.story_spec_rel_path(worktree, project_slug, feed_story)
+    if spec_rel is None:
+        return False
+    candidate = deferred_work.followup_review_candidate(story_spec_text or None, key, spec_rel)
+    if candidate is None:
+        return False
+    ledger_rel = _deferred_work_ledger_rel(project_slug)
+    ledger_path = worktree / ledger_rel
+    if not ledger_path.is_file():
+        row_id = deferred_work.followup_review_id(key)
+        findings.append(
+            Finding(
+                code="MRS-DISP-047",
+                severity=Severity.WARN,
+                message=(
+                    f"story {key}'s recommended follow-up review row ({row_id}) was not carried: "
+                    f"the deferred-work ledger {ledger_rel!r} does not exist on the branch "
+                    "(one row never creates it)"
+                ),
+                path=ledger_rel,
+            )
+        )
+        return False
+    try:
+        ledger_text = ledger_path.read_text(encoding="utf-8")
+    except OSError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-017",
+                severity=Severity.ERROR,
+                message=f"cannot read the deferred-work ledger {ledger_rel!r} before landing: {exc}",
+                path=ledger_rel,
+            )
+        )
+        return True
+    row = deferred_work.followup_review_to_promote(candidate, ledger_text)
+    if row is None:
+        return False
+    row_id = deferred_work.followup_review_id(key)
+    entry = deferred_work.render_followup_review_entry(
+        row,
+        promoted_date=date.today().isoformat(),
+        landing_evidence=(
+            f"Story {key} reads `status: done` with `followup_review_recommended: true` on the dispatch "
+            "branch; dispatch land carried the recommendation before push."
+        ),
+        promoted_label="dispatch land",
+    )
+    new_text = deferred_work.append_ledger_entry(ledger_text, entry)
+    try:
+        ledger_path.write_text(new_text, encoding="utf-8")
+    except OSError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-017",
+                severity=Severity.ERROR,
+                message=f"cannot write the deferred-work ledger {ledger_rel!r} before landing: {exc}",
+                path=ledger_rel,
+            )
+        )
+        return True
+    try:
+        vcs.commit_paths(
+            worktree,
+            (Path(ledger_rel),),
+            to_redacted_text(f"marshal: carry {row_id} for follow-up review before landing"),
+        )
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code="MRS-DISP-017",
+                severity=Severity.ERROR,
+                message=(
+                    f"cannot commit the deferred-work ledger {ledger_rel!r} "
+                    f"with follow-up review row {row_id} before landing: {exc}"
+                ),
+                path=ledger_rel,
+            )
+        )
+        return True
+    return False
+
+
 def execute_dispatch_land(
     *,
     project_slug: str,
@@ -1390,6 +1495,24 @@ def execute_dispatch_land(
         return DispatchLandingResult(verdict=DispatchLandingVerdict.ALREADY_LANDED), envelope
 
     if not may_attempt_dispatch_landing(verification_verdict, story_merged_on_main=False):
+        envelope = build_envelope(
+            command="dispatch land",
+            verdict=compute_verdict(tuple(findings)),
+            data=data,
+            findings=tuple(findings),
+        )
+        return DispatchLandingResult(verdict=DispatchLandingVerdict.REFUSED), envelope
+
+    if _carry_followup_review_on_branch_before_push(
+        followup_review=followup_review,
+        project_slug=project_slug,
+        key=key,
+        feed_story=feed_story,
+        worktree=worktree,
+        story_spec_text=story_spec_text,
+        vcs=vcs,
+        findings=findings,
+    ):
         envelope = build_envelope(
             command="dispatch land",
             verdict=compute_verdict(tuple(findings)),
