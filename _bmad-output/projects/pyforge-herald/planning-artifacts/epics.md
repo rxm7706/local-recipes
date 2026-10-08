@@ -973,7 +973,7 @@ So that the docs, the dossier and Kedro-Viz share one site, no existing public U
 **When** `pixi run -e site pages-build` and then `pixi run -e site pages-check` run
 **Then** both exit 0, and the artifact holds `index.html` (Starlight), `herald/index.html`, `herald/dossier/index.html`, `dashboard/kedro-viz/index.html`, a `kedro-viz/` page that redirects to `/dashboard/kedro-viz/`, and a redirect page at each former root HTML path (`dossier/index.html` → `/herald/dossier/`, and so on for the infographics, deck family pages and `artifact/dossier.html`) except `/`. A planted collision (a Starlight page at a redirect path or a mount point) or a removed mount makes `pages-check` exit 1 and name the path
 **And** `dashboard.yml` is the only workflow using `actions/deploy-pages` and it uploads `docs-site/build/site`; `pr-preflight`'s `site-check` leg is unchanged; steward's `tests/meta/test_invariants.py` and `src/platform/tests/test_console_parity_homes.py` pass unedited; `pixi run -e pyforge-guild pixi-version-check` is green; `test_pages_artifact.py` passes in `pyforge-herald-test`
-**Status:** backlog
+**Status:** done
 
 ### Story 27.3: The sidebar is generated from docs/map.yaml order
 

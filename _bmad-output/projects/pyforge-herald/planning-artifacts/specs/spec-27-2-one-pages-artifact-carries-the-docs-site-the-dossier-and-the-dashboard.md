@@ -2,7 +2,9 @@
 title: '27.2: One Pages artifact carries the docs site, the dossier and the dashboard'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'done'
+baseline_revision: '3fe8584eac77aec67e1a8df4e64b243e99eb6891'
+followup_review_recommended: false
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -132,3 +134,39 @@ Minted 2026-09-27 from `epics.md`, and amended the same day for the operator's r
 - `pixi run -e pyforge-guild pixi-version-check` — expected: exit 0.
 - `pixi run -e pyforge-steward pyforge-steward-test` and `pixi run -e pyforge-guild platform-ci-local -- --test` — expected: the `dashboard.yml` readers stay green.
 - After merge: the first `dashboard.yml` run on `main` deploys. The Pages URL then serves the docs landing at `/`, the dossier at `/herald/dossier/` (with `/dossier/` redirecting there), and Kedro-Viz at `/dashboard/kedro-viz/` (with `/kedro-viz/` redirecting there).
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (review layers condensed; diff verified against spec intent-contract)
+
+## Auto Run Result
+
+Status: done
+
+Summary: One GitHub Pages artifact at `docs-site/build/site/`: Starlight at `/`, dossier under `/herald/` with derived legacy HTML redirects, Kedro-Viz under `/dashboard/kedro-viz/`, Astro `/kedro-viz/` redirect, reshaped `dashboard.yml` (build + deploy jobs) and `docsite-check.yml` on `pages-check`.
+
+Files changed:
+- `docsite/tools/assemble_pages.py` — assembler and `--check` verifier
+- `pixi.toml` — `pages-build` / `pages-check` tasks
+- `docs-site/astro.config.mjs` — kedro-viz redirect
+- `docsite/content/site.yml` — Kedro-Viz neighbour href for `/herald/` depth
+- `.github/workflows/dashboard.yml` / `docsite-check.yml` — unified artifact CI/deploy
+- `.gitignore` — drop generated dossier paths under `docs/dashboard/`
+- `docsite/README.md`, `docs/dashboard/README.md` — mount layout docs
+- `tests/meta/test_pages_artifact.py` — workflow and assembler meta tests
+- Co-governor memlogs: `spec-pyforge-herald/.memlog.md`, `spec-pyforge-marshal/.memlog.md`
+
+Review: no patch/defer items.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — pass
+- `pixi run --frozen -e site pages-check` — exit 0
+- `pixi run --frozen -e pyforge-guild pixi-version-check` — exit 0
+- `pytest …/test_invariants.py -k dashboard` — 8 passed
+- `python scripts/spec_surface_reconcile.py` — exit 0 (memlog paths named below)
+
+Residual risk: first production deploy on `main` should be watched; `site-verify` remains advisory in CI.

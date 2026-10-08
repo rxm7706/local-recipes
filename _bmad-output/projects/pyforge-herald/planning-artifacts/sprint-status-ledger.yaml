@@ -98,7 +98,7 @@ development_status:
   25-1-the-deck-pipeline-runs-from-the-guild-env: done
   26-1-the-dossier-reads-the-a-b-cutover-as-control-plane-fact: done
   27-1-the-docs-shelf-builds-as-a-starlight-site-in-place: done
-  27-2-one-pages-artifact-carries-the-docs-site-the-dossier-and-the-dashboard: backlog
+  27-2-one-pages-artifact-carries-the-docs-site-the-dossier-and-the-dashboard: done
   27-3-the-sidebar-is-generated-from-docs-map-yaml-order: backlog
   27-4-the-docs-validators-gate-every-pr: backlog
   27-5-pr-preflight-runs-the-pages-build-check-only-when-docsite-check-yml-s-paths-change: blocked

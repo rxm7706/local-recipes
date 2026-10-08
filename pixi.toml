@@ -945,6 +945,16 @@ cmd = "npm run build"
 cwd = "docs-site"
 depends-on = ["docs-site-install", "docs-site-sidebar"]
 
+[feature.site.tasks.pages-build]
+description = "Build the unified GitHub Pages artifact (Starlight + herald + dashboard mounts and legacy redirects)."
+cmd = "python docsite/tools/assemble_pages.py"
+depends-on = ["docs-site-build"]
+
+[feature.site.tasks.pages-check]
+description = "Build and verify the unified GitHub Pages artifact (Story 27.2)."
+cmd = "python docsite/tools/assemble_pages.py --check"
+depends-on = ["pages-build"]
+
 [feature.site.tasks.site]
 description = "Build the PyForge dossier + infographic site into dist/."
 cmd = "python docsite/build.py --out dist"
