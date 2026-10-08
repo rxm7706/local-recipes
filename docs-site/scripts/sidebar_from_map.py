@@ -71,7 +71,7 @@ def _validate_and_build(
 ) -> tuple[list[dict[str, Any]], list[str]]:
     """Return (sidebar groups, error messages)."""
     errors: list[str] = []
-    seen: dict[str, int] = {}
+    seen: set[str] = set()
     by_quadrant: dict[str, list[str]] = defaultdict(list)
     quadrant_order: list[str] = []
 
@@ -83,7 +83,8 @@ def _validate_and_build(
             continue
         if path in seen:
             errors.append(f"duplicate map entry: {path}")
-        seen[path] = seen.get(path, 0) + 1
+            continue
+        seen.add(path)
         if not isinstance(quadrant, str) or quadrant not in _QUADRANTS:
             errors.append(f"{path}: invalid quadrant")
             continue
@@ -91,11 +92,7 @@ def _validate_and_build(
             quadrant_order.append(quadrant)
         by_quadrant[quadrant].append(path)
 
-    for path, count in seen.items():
-        if count > 1:
-            errors.append(f"duplicate map entry: {path}")
-
-    mapped_paths = set(seen.keys())
+    mapped_paths = seen
     for path in sorted(mapped_paths):
         if not (docs_dir / path).is_file():
             errors.append(f"mapped page missing on disk: {path}")
