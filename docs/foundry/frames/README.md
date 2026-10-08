@@ -10,6 +10,14 @@ and must not appear here.
 |---|---|
 | `pyforge.frame.md` | Company Frame (`identifier: pyforge/company`) |
 | `stations/<station>.frame.md` | Station Frame (`identifier: pyforge/<station>`); `inherits: [pyforge/company]` |
+| `frame-index.yaml` | **Generated** Frame catalog (identifier, tier, link/install hint) — Story 60.4 |
+| `browse.yaml` | **Generated** thin browse list of estate modules and Frames — Story 60.4 |
+
+Regenerate both with `steward catalog render` (or `pixi run -e pyforge-steward pyforge steward catalog render` from repo root). Do not hand-edit them; a new Frame under this tree appears on the indexes after preflight passes and render runs.
+
+## Browse without opening YAML
+
+Story 60.4 (CAP-4 / CAP-7): read `browse.yaml` for every wielded module and estate Frame, or run `steward catalog list` for the same rows in the terminal. Each row carries `trust_tier` and either `link` or `install_hint`.
 
 Stations: herald, marshal, atlas, warden, mason, doctor, scribe, steward.
 

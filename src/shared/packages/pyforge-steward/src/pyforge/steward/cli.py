@@ -93,7 +93,8 @@ _HELP = {
         "estate BMAD catalog — check/list/render/pointers/ship/publish over catalog.yaml "
         "(backends + sources declared in config, git is the edit store; "
         "generated Claude/Codex marketplace manifests; ship vendors the snapshot through "
-        "the default conda backend; publish requires a review record; Stories 60.1–60.3)"
+        "the default conda backend; publish requires a review record; render also writes "
+        "the Frame index and browse list under docs/foundry/frames/; Stories 60.1–60.4)"
     ),
     "load": (
         "extract corridor -- idempotent inbound/outbound file loads keyed by "
@@ -543,8 +544,10 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
 
 def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     """Story 60.1: ``check`` (default) / ``list`` / ``render [--check]`` /
-    ``pointers``, all ``--json``. ``--catalog DIR`` points at another catalog
-    dir (default: ``src/shared/packages/pyforge-steward/catalog``).
+    ``pointers``; Story 60.2: ``publish``; Story 60.3: ``ship``; all
+    ``--json``. Story 60.4 widens ``render`` (Frame index + browse list).
+    ``--catalog DIR`` points at another catalog dir (default:
+    ``src/shared/packages/pyforge-steward/catalog``).
 
     ``--catalog`` and ``--json`` are accepted both before and after the verb:
     the parent parser owns the defaults, and the verb subparsers redeclare
@@ -567,7 +570,10 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     listing = catalog_subs.add_parser("list", help="every listing with its source and trust tier")
     render = catalog_subs.add_parser(
         "render",
-        help="regenerate .claude-plugin/marketplace.json + .agents/plugins/marketplace.json",
+        help=(
+            "regenerate .claude-plugin/marketplace.json + .agents/plugins/marketplace.json "
+            "(estate catalog: also docs/foundry/frames/frame-index.yaml + browse.yaml)"
+        ),
     )
     render.add_argument(
         "--check",
