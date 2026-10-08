@@ -2,8 +2,10 @@
 title: '69.1: The switch script runs where it is documented to run'
 type: 'fix'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '7b9b194f93a0cfb905998c960c57518cfc3b4e64'
+followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -95,3 +97,34 @@ Policy: `marshal-policy.toml` `[epic_surfaces]` `"69"` admits `scripts/bmad-swit
 **Manual checks:**
 - `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — expected: pass (`tests/scripts/test_bmad_switch_hard_fail.py` unchanged).
 - On the primary checkout (never a worktree), `/usr/bin/python3 scripts/bmad-switch --current` prints the active project and exits 0 through the re-execution; with `pixi` removed from `PATH` it exits 8 with the one-line message.
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[reject]` Unused test helpers and import in new test module — removed during review; not worth a separate patch cycle.
+  - `[false]` `[reject]` Re-exec does not inherit stdout/stderr from child — `subprocess.run` is called without capture_output, so streams pass through unchanged.
+
+## Auto Run Result
+
+Status: done
+
+Summary: `scripts/bmad-switch` now treats an unloadable `pyforge.marshal.scope` as a load failure (ImportError/SyntaxError), re-executes once under `pixi run --frozen -e pyforge-guild` for `--current` and `--list`, or exits 8 with a one-line guild command hint. Switch and clear are unchanged.
+
+Files changed:
+- `scripts/bmad-switch` — load gate, guild re-exec, exit 8 messaging, docstring
+- `tests/scripts/test_bmad_switch_reexec.py` — Story 69.1 acceptance tests including mutation guard
+- Co-governor `.memlog.md` entries on `spec-pyforge-marshal`, `spec-bmad-switch-scope-enforcement`, `spec-multi-loop-isolation`
+
+Review: 0 patches applied; 2 findings rejected (see triage log).
+
+Follow-up review recommended: false (0 patched high/medium).
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11967 passed, 6 skipped
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed, 3 skipped
+- `pixi run --frozen -e pyforge-ci pytest tests/scripts/test_bmad_switch_reexec.py tests/scripts/test_bmad_switch_hard_fail.py` — 10 passed
+- `python scripts/spec_surface_reconcile.py` — OK
+
+Residual risk: Manual primary-checkout check with system Python 3.12 not run from this worktree (policy: do not run `scripts/bmad-switch` from a worktree).

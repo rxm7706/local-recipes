@@ -79,7 +79,7 @@ def _load_verify_scope(root: Path):
             return None
 
 
-def _unloadable_stderr_line(root: Path, forwarded_argv: list[str]) -> str:
+def _unloadable_stderr_line(forwarded_argv: list[str]) -> str:
     verb = " ".join(forwarded_argv) if forwarded_argv else ""
     guild_cmd = f"pixi run -e pyforge-guild python scripts/bmad-switch {verb}".rstrip()
     py_ver = sys.version.split()[0]
@@ -116,10 +116,10 @@ def _ensure_scope_primitive_or_exit(root: Path, *, need_scope: bool) -> int | No
         return None
     forwarded = sys.argv[1:]
     if os.environ.get(_REEXEC_GUARD):
-        sys.stderr.write(_unloadable_stderr_line(root, forwarded))
+        sys.stderr.write(_unloadable_stderr_line(forwarded))
         return 8
     if shutil.which("pixi") is None:
-        sys.stderr.write(_unloadable_stderr_line(root, forwarded))
+        sys.stderr.write(_unloadable_stderr_line(forwarded))
         return 8
     script = Path(__file__).resolve()
     return _reexec_under_guild(root, script, forwarded)

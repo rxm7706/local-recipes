@@ -2,14 +2,12 @@
 from __future__ import annotations
 
 import importlib.util
-import json
 import os
 import stat
 import subprocess
 import sys
 from importlib.machinery import SourceFileLoader
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -43,11 +41,6 @@ raise SystemExit({exit_code})
     return script
 
 
-def _read_pixi_argv(record_parent: Path) -> list[str]:
-    record = record_parent / "pixi-record.jsonl"
-    return json.loads(record.read_text(encoding="utf-8"))
-
-
 def _minimal_switch_tree(root: Path, slug: str = "alpha") -> None:
     (root / "_bmad").mkdir(parents=True, exist_ok=True)
     out = root / "_bmad-output"
@@ -69,7 +62,7 @@ def test_current_reexec_calls_pixi_once_with_guard(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
     mod = _load()
-    fake = _fake_pixi(tmp_path, exit_code=0)
+    _fake_pixi(tmp_path, exit_code=0)
     monkeypatch.setattr(mod, "_load_verify_scope", lambda _root: None)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
 
