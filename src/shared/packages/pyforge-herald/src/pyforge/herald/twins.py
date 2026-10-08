@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse
 
+from pyforge.core.errors import PyforgeError
+
 from . import deck_versions
 
 DECK_VIEWER_FLAG = "pyforge.herald.deck_viewer"
@@ -49,7 +51,7 @@ class OriginFinding:
     reference: str
 
 
-class TwinOriginError(Exception):
+class TwinOriginError(PyforgeError, Exception):
     """Publish refused because a twin names another origin (D5)."""
 
     def __init__(self, finding: OriginFinding) -> None:
