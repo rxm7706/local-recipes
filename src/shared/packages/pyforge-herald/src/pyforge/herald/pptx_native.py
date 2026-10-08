@@ -264,7 +264,13 @@ def _partition_notes_and_body(lines: list[str]) -> tuple[str, list[str]]:
         else:
             body.append(line)
     notes = "\n\n".join(note_chunks).strip()
-    return notes, body
+    filtered_body: list[str] = []
+    for line in body:
+        stripped_only = line.strip()
+        if stripped_only in ("<!--", "-->"):
+            continue
+        filtered_body.append(line)
+    return notes, filtered_body
 
 
 def _strip_inline_html(line: str) -> str:
