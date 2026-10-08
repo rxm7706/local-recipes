@@ -13,8 +13,7 @@ import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 
 from pyforge.marshal.adapters.vcs_git import VcsCommandError
-from pyforge.marshal.core import policy, promotion
-from pyforge.marshal.core import deferred_work
+from pyforge.marshal.core import deferred_work, policy, promotion
 from pyforge.marshal.core.dispatch_harness_done import FollowupReview
 from pyforge.marshal.core.dispatch_landing import (
     DispatchLandingVerdict,
@@ -2183,9 +2182,7 @@ def test_a_normal_landing_hands_finalize_the_same_argv_as_before(tmp_path: Path)
 
 _FRR_STORY_KEY = "51-2-the-landing-record"
 _FRR_LEDGER_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md"
-_FRR_SPEC_REL = (
-    "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-2-the-landing-record.md"
-)
+_FRR_SPEC_REL = "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-51-2-the-landing-record.md"
 _FRR_SPEC_TEXT = "---\nstatus: done\nfollowup_review_recommended: true\n---\n\nbody\n"
 _FRR_ROW_ID = "DW-FRR-51-2"
 
@@ -2302,11 +2299,7 @@ def test_a_done_flagged_landing_with_no_ledger_warns_and_continues(tmp_path: Pat
     )
 
     assert result.verdict == DispatchLandingVerdict.LANDED
-    ledger_warns = [
-        f
-        for f in envelope.findings
-        if f.code == "MRS-DISP-047" and f.path == _FRR_LEDGER_REL
-    ]
+    ledger_warns = [f for f in envelope.findings if f.code == "MRS-DISP-047" and f.path == _FRR_LEDGER_REL]
     assert len(ledger_warns) == 1
     assert _FRR_ROW_ID in ledger_warns[0].message
     assert vcs.pushed == ["dispatch/pyforge-marshal/51.2"]

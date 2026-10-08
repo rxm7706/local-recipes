@@ -20,9 +20,9 @@ import shutil
 import sys
 import tempfile
 import time
-from datetime import date
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -31,9 +31,8 @@ from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 from .adapters.forge_gh import GhForge
 from .adapters.fs_local import LocalFs
 from .adapters.vcs_git import GitVcs, VcsCommandError
-from .core import deferred_work
+from .core import deferred_work, identity, promotion
 from .core import dispatch as dispatch_core
-from .core import identity, promotion
 from .core.commit_vcs import CommittingVcs
 from .core.dispatch_harness_done import FollowupReview, resolve_hold_dispatch_landing
 from .core.dispatch_landing import (
