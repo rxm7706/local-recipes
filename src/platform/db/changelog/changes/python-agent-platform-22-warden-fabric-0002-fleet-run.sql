@@ -30,3 +30,6 @@ ALTER TABLE "warden_fabric_fleetreposcan" ADD CONSTRAINT "warden_fabric_fleetr_f
 ALTER TABLE "warden_fabric_fleetreposcan" ADD CONSTRAINT "warden_fabric_fleetr_fleet_run_id_f4905ebd_fk_warden_fa" FOREIGN KEY ("fleet_run_id") REFERENCES "warden_fabric_fleetrun" ("id") DEFERRABLE INITIALLY DEFERRED;
 CREATE INDEX "warden_fabric_fleetreposcan_fleet_repo_id_5612ae6c" ON "warden_fabric_fleetreposcan" ("fleet_repo_id");
 CREATE INDEX "warden_fabric_fleetreposcan_fleet_run_id_f4905ebd" ON "warden_fabric_fleetreposcan" ("fleet_run_id");
+--rollback DROP TABLE IF EXISTS "warden_fabric_fleetreposcan";
+--rollback DROP TABLE IF EXISTS "warden_fabric_fleetrun";
+--rollback DROP TABLE IF EXISTS "warden_fabric_fleetrepo";

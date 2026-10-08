@@ -676,7 +676,9 @@ class BasiliskPackagesDataset(ExternalRefreshDataset):
             if frame.empty:
                 if pages == 1:
                     logger.warning("Basilisk /v1/packages first page parsed zero rows (layout break?)")
-                break  # complete: nothing more to read
+                elif total is not None and collected < total:
+                    partial_reason = f"empty page at offset={offset} with {collected}/{total} collected"
+                break  # complete: nothing more to read (or truncated mid-walk)
             frames.append(frame)
             collected += len(frame)
             offset += len(frame)  # advance by rows ACTUALLY served, not by page_size

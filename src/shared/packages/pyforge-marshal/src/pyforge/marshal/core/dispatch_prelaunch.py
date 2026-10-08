@@ -26,8 +26,12 @@ from dataclasses import dataclass
 from . import gate, spec_binding
 from .dispatch_fleet import DONE_STATUS, WaveBatch
 from .identity import MalformedStoryKeyError, StoryKey, normalize, render_feed_key
-from .model import Finding
+from .model import Finding, Severity
 from .spec_deps import STORY_HEADING_RE
+
+# Story 65.2: pre-launch refusal in ``dispatch_once`` (distinct from drain --plan's
+# raw ``MRS-GATE-010``/``011`` findings and from the post-session gate).
+SPEC_BINDING_REFUSAL_CODE = "MRS-DISP-050"
 
 # --- spec binding (shared with Story 65.2) -----------------------------------
 
@@ -49,6 +53,24 @@ def spec_binding_findings(
     not import (AD-4)."""
     declared = spec_binding.parse_success_signal(spec_text) if spec_text is not None else None
     return gate.check_spec_binding(declared, tuple(policy_commands))
+
+
+def spec_binding_refusal_finding(binding_findings: Iterable[Finding]) -> Finding | None:
+    """One ERROR ``MRS-DISP-050`` when ``spec_binding_findings`` reported ``010``/``011`` (Story 65.2).
+
+    The message names each gate code; for ``MRS-GATE-011`` it repeats that finding's
+    message so every missing command is visible. Pure."""
+    relevant = tuple(f for f in binding_findings if f.code in ("MRS-GATE-010", "MRS-GATE-011"))
+    if not relevant:
+        return None
+    parts: list[str] = []
+    for finding in relevant:
+        if finding.code == "MRS-GATE-011":
+            parts.append(f"{finding.code}: {finding.message}")
+        else:
+            parts.append(finding.code)
+    message = "tracked spec cannot bind before launch -- " + "; ".join(parts)
+    return Finding(code=SPEC_BINDING_REFUSAL_CODE, severity=Severity.ERROR, message=message)
 
 
 # --- prose park --------------------------------------------------------------

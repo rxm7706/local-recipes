@@ -31,8 +31,9 @@ core verbs `steward keys / deploy / provision / budget / sync / workspace`
 
 ## Quick Start
 
-Run from the repository root (never a hardcoded absolute path). Unified grammar
-is `pyforge steward …`; the console script is `steward`
+Run from the repository root (never a hardcoded absolute path). Install the laptop
+SBOM once: `pixi install -e pyforge-foundry-full` (includes `pyforge-steward`). Unified
+grammar is `pyforge steward …`; the console script is `steward`
 [SRC:pyproject.toml:L52-L53]:
 
 ```bash

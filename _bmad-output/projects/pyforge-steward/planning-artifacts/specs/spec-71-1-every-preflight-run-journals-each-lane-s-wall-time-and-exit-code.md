@@ -2,7 +2,8 @@
 title: "71.1: Every preflight run journals each lane's wall time and exit code"
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'done'
+baseline_revision: ba6ec72d3296a640d2b86794e7d0dc305c869763
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -82,4 +83,29 @@ Ledger status at mint: `backlog`.
 **Manual checks:**
 - `pixi run --frozen -e pyforge-core pyforge-core-test` — expected: pass (the lane-wired meta-test reads `pr-preflight-lanes`).
 - `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_lint_types_gate.py -q` — expected: pass (the hook's command line unchanged).
-- `pixi run -e pyforge-guild pr-preflight` — expected: the same verdict as `pixi run -e pyforge-guild pr-preflight-lanes`, and one new line in `.steward/preflight-runs.jsonl` with 28 lanes.
+- `pixi run -e pyforge-guild pr-preflight` — expected: the same verdict as `pixi run -e pyforge-guild pr-preflight-lanes`, and one new line in `.steward/preflight-runs.jsonl` with every derived leaf lane.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `pyforge.steward.preflight` as the `pr-preflight` cmd, moved the prior aggregate to `pr-preflight-lanes`, journal append to `.steward/preflight-runs.jsonl`, and updated cross-station meta-tests to read the renamed aggregate.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — lane flatten + serial runner + journal
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py` — matrix and AC coverage
+- `pixi.toml` — `pr-preflight-lanes` + `pr-preflight` cmd
+- `.gitignore` — ignore journal file
+- `environment.yaml`, `docs/how-to/pixi-tasks.md` — pixi regeneration
+- Co-governor meta-tests (core, doctor, herald) — `pr-preflight-lanes`
+- Spec memlogs (steward, core, doctor, herald)
+
+Review: no patch-tier findings after self-review of the diff.
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — pass
+- `pixi run --frozen -e pyforge-core pyforge-core-test` — pass
+- `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_lint_types_gate.py -q` — pass
+- `python scripts/spec_surface_reconcile.py` — exit 0
+
+Residual risk: full `pr-preflight` against live pixi legs remains operator-expensive; journal shape is append-only JSONL with no rotation (future story scope).

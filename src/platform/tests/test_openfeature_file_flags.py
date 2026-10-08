@@ -639,6 +639,11 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    "pyforge.herald.pages_second_host": {
+        "dev": True,
+        "staging": True,
+        "production": False,
+    },
     "pyforge.herald.deck_export_native": {
         "dev": True,
         "staging": True,

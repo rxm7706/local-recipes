@@ -204,6 +204,7 @@ import shutil
 import subprocess
 import time
 from collections.abc import Mapping, MutableMapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -213,7 +214,7 @@ from pyforge.core.errors import PyforgeError
 from pyforge.core.hooks import HookSpec, PluginRegistry
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
-from ..core import policy
+from ..core import policy, recall_feedback
 from ..core.egress import to_redacted
 from ..core.harness_profile import (
     PROFILE_BY_BMADLOOP_ADAPTER,
@@ -236,6 +237,7 @@ from ..core.model_cost import (
     weighted_total,
 )
 from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
+from ..ports.fs import FsPort
 from ..ports.harness import (
     AdapterProbe,
     DeferredStory,
@@ -249,6 +251,7 @@ from ..ports.harness import (
     TaskPhaseSnapshot,
     UsageSnapshot,
 )
+from .scribe_cli import ScribeCli
 
 LOOP_RUNNER_HOOK_SPEC = HookSpec(name="pyforge.marshal.loop_runner", owner="marshal")
 DEFAULT_LOOP_RUNNER_PLUGIN_ID = "bmad-loop"
@@ -277,6 +280,15 @@ _POLICY_TEMPLATE = """\
 # repo-wide default belongs in this template (adapters/harness_bmadloop.py's
 # _POLICY_TEMPLATE), never in this rendered file. All keys optional; the
 # harness applies its own stock default for anything absent.
+#
+# Token-economy [context] layers (Story 28.1; recall added Story 47.3):
+# When the composed marshal policy declares any [context] key, render_policy_toml
+# writes [context.<name>] for each name in core/policy.py CONTEXT_LAYER_NAMES:
+# wire, output, structure-graph, derived-context, planning-graph, recall.
+# Each sub-table carries enabled and aggressiveness (wire alone may use
+# enabled = "auto"). recall injects scoped scribe feedback before dev/review
+# passes when enabled (SPEC-marshal-recall-in-the-loop CAP-3); disabling it
+# skips the recall query with no effect on the other five layers.
 
 [gates]
 mode = "per-epic"            # none | per-epic | per-story-spec-approval -- overwritten per render from EffectivePolicy
@@ -1313,6 +1325,145 @@ def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> ProcessRe
         return PosixProcess().run(args, cwd=Path.cwd(), timeout_s=timeout_s)
     except ProcessError:
         return None
+
+
+@dataclass(frozen=True)
+class RecallInjectionResult:
+    """What one pre-launch ``inject_recall_feedback`` attempt did (Story
+    47.1, SPEC-marshal-recall-in-the-loop CAP-1).
+
+    ``attempted=False`` is the "no resolvable station slug" row of the
+    story's own I/O matrix -- the recall query was skipped entirely, no
+    subprocess call, target left untouched. Every other row always
+    attempts exactly one ``scribe recall`` call and always writes
+    ``target`` exactly once (the labeled block on a grounded hit, an empty
+    string otherwise) -- ``FsPort`` has no delete-a-file primitive, and
+    ``implementation-artifacts/`` is backlinked across a project's
+    worktrees, so a stale hit from a previous dispatch must never survive
+    unnoticed. ``ok=False`` is the "scribe CLI unavailable/non-zero/timeout"
+    row -- fail-open, never dispatch-blocking; callers report it as a WARN
+    finding and continue."""
+
+    attempted: bool
+    ok: bool = True
+    injected: bool = False
+    reason: str | None = None
+    target: Path | None = None
+
+
+def _recall_feedback_target(loop_home: Path, station_slug: str) -> Path:
+    return loop_home / recall_feedback.recall_feedback_output_relpath(station_slug)
+
+
+def _recall_query_marker_path(feedback_target: Path) -> Path:
+    """Sibling marker proving ``inject_recall_feedback`` already ran for this
+    dispatch (Story 47.2, CAP-2): the review pass reads the cached block
+    from ``feedback_target`` and must never shell ``scribe recall`` again."""
+    return feedback_target.with_name(f"{feedback_target.name}.query-ran")
+
+
+def inject_recall_feedback(
+    *,
+    fs: FsPort,
+    loop_home: Path,
+    repo_root: Path,
+    station_slug: str | None,
+    scribe: ScribeCli | None = None,
+) -> RecallInjectionResult:
+    """Before a ``bmad-loop`` dev pass launches: shell ``scribe recall
+    --scope <station_slug>`` (CLI subprocess, never ``import
+    pyforge.scribe``) and, on a grounded hit, write the clearly-labeled
+    block CAP-1 requires to ``{implementation_artifacts}/recall-feedback.md``.
+    Read-only against scribe's own capture store; never raises."""
+    if not station_slug:
+        return RecallInjectionResult(attempted=False)
+    target = _recall_feedback_target(loop_home, station_slug)
+    client = scribe if scribe is not None else ScribeCli()
+    outcome = client.recall(
+        repo_root=repo_root,
+        query=recall_feedback.build_recall_query(station_slug),
+        scope=station_slug,
+    )
+    content = recall_feedback.format_recall_feedback_for_injection(
+        ok=outcome.ok,
+        grounded=outcome.grounded,
+        text=outcome.text,
+        citation=outcome.citation,
+    )
+    injected = bool(content)
+    marker = _recall_query_marker_path(target)
+    try:
+        fs.ensure_dir(target.parent)
+        fs.write_text_atomic(target, content)
+        fs.write_text_atomic(marker, "")
+    except (OSError, PyforgeError) as exc:
+        return RecallInjectionResult(
+            attempted=True,
+            ok=False,
+            reason=f"could not write {target} ({exc})",
+            target=target,
+        )
+    if not outcome.ok:
+        return RecallInjectionResult(attempted=True, ok=False, reason=outcome.reason, target=target)
+    return RecallInjectionResult(attempted=True, ok=True, injected=injected, target=target)
+
+
+def read_cached_recall_feedback_block(*, fs: FsPort, loop_home: Path, station_slug: str) -> str | None:
+    """Load the formatted block Story 47.1 wrote for this dispatch, if any."""
+    target = _recall_feedback_target(loop_home, station_slug)
+    text = fs.read_text(target)
+    if text is None or not text.strip():
+        return None
+    return text
+
+
+def augment_bmad_loop_session_prompt_with_recall(
+    prompt: str,
+    *,
+    role: str,
+    fs: FsPort,
+    loop_home: Path,
+    repo_root: Path,
+    station_slug: str | None,
+    scribe: ScribeCli | None = None,
+    context_layers: Mapping[str, Mapping[str, object]] | None = None,
+) -> tuple[str, RecallInjectionResult | None]:
+    """Review-pass launch path (Story 47.2, CAP-2): fold the same scoped
+    feedback block the dev pass received into ``prompt``.
+
+    Story 47.3 (CAP-3): when ``context_layers`` is given, the ``recall``
+    layer's ``enabled`` gate must be true before any query or cache read;
+    when omitted, the layer is treated as enabled so direct unit tests and
+    pre-wiring callers keep today's behavior. Injected block bytes count
+    toward the session's normal adapter input-token accounting once folded
+    into ``prompt`` -- no separate uncounted budget.
+
+    Exactly one ``scribe recall`` subprocess runs per story dispatch: the
+    first ``dev`` session calls ``inject_recall_feedback`` when the query
+    marker is absent; every ``review`` session (and later ``dev`` retries
+    in the same dispatch) read the cached ``recall-feedback.md`` only."""
+    if not station_slug:
+        return prompt, None
+    if context_layers is not None:
+        recall_layer = context_layers.get(recall_feedback.RECALL_LAYER)
+        if not recall_feedback.layer_enabled(recall_layer):
+            return prompt, None
+    target = _recall_feedback_target(loop_home, station_slug)
+    marker = _recall_query_marker_path(target)
+    injection: RecallInjectionResult | None = None
+    if role == "dev" and fs.read_text(marker) is None:
+        injection = inject_recall_feedback(
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug=station_slug,
+            scribe=scribe,
+        )
+    block = read_cached_recall_feedback_block(fs=fs, loop_home=loop_home, station_slug=station_slug)
+    if block is None:
+        return prompt, injection
+    separator = "\n\n" if prompt and not prompt.endswith("\n\n") else ""
+    return f"{prompt}{separator}{block}", injection
 
 
 class BmadLoopHarness:

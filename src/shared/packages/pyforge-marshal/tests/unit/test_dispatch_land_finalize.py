@@ -1175,8 +1175,8 @@ def test_a_plain_sprint_ledger_sync_reports_unchanged_once_the_feed_row_is_promo
     tmp_path: Path, monkeypatch, capsys
 ) -> None:
     """AC 1, second clause, through the sync's own entry point (`scripts/promote_sprint_status.py`, the module
-    `marshal land` loads) over the tmp feed and the twin a landing leaves: the sync REFUSES before finalize
-    (the incident, "feed would un-finish") and reports `unchanged` after it."""
+    `marshal land` loads) over the tmp feed and the twin a landing leaves: after finalize promotes the feed row,
+    a plain sync reports `unchanged` (Story 54.1 repairs feed-behind-twin drift on a bare sync before that)."""
     from pyforge.marshal.cli.land import _load_promote_sprint_status_module
 
     sync = _load_promote_sprint_status_module()
@@ -1192,9 +1192,6 @@ def test_a_plain_sprint_ledger_sync_reports_unchanged_once_the_feed_row_is_promo
     twin = sync.ledger_path_for(_SLUG_79)
     twin.parent.mkdir(parents=True, exist_ok=True)
     twin.write_text(twin_text, encoding="utf-8")
-    assert sync.main(["--project", "marshal"]) == 1
-    before = capsys.readouterr().out
-    assert "refused 1" in before and f"{_FEED_KEY_79} (done -> backlog)" in before
 
     _stub_planned_finalize(monkeypatch, tmp_path, _PublishVcs(ledger_text=twin_text))
     assert finalize_dispatch_land(_SLUG_79, "79.1") == 0

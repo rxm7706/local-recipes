@@ -2961,6 +2961,7 @@ def test_verified_line_cites_accepts_a_path_line_or_a_command_with_its_exit_code
         "FIXED `cmd` returned 0",
         "FIXED `cmd` returns 0",
         "FIXED `pytest -q` was run; see `notes` for the outcome and a long gap before the final exit 0",
+        "FIXED `cmd` exited with 3 retries",
         # DW-doctor-38-1-2 stays NARROW: without an extension, a `/`, or
         # a name on the closed extensionless list, nothing distinguishes
         # a filename from an ordinary capitalised word.

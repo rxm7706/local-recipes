@@ -8983,3 +8983,25 @@ status: open
   severity: low
   promoted: 2026-10-04 — marshal's Epic 85 retrospective
   status: open
+
+### DW-marshal-47-2: augment_bmad_loop_session_prompt_with_recall is not yet invoked from an in-tree bmad-loop session launcher; end-to-end recall in live loops still needs a caller (same integration seam as Story 47.1).
+
+- source_spec: `planning-artifacts/specs/spec-47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw.md`
+  summary: augment_bmad_loop_session_prompt_with_recall is not yet invoked from an in-tree bmad-loop session launcher; end-to-end recall in live loops still needs a caller (same integration seam as Story 47.1).
+  evidence: Grep shows the helper is exercised only from tests/unit/test_harness_bmadloop_recall.py; bmad_loop site-packages has no recall hook. The story surface is the harness review-pass launch helper itself, which is implemented and unit-tested.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py:1409
+  origin: spec-deferred 5136dfccc6cc — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-47-3: Live bmad-loop launch paths do not yet pass resolve_context_layers into augment_bmad_loop_session_prompt_with_recall (pre-existing 47.1/47.2 seam).
+
+- source_spec: `planning-artifacts/specs/spec-47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline.md`
+  summary: Live bmad-loop launch paths do not yet pass resolve_context_layers into augment_bmad_loop_session_prompt_with_recall (pre-existing 47.1/47.2 seam).
+  evidence: Layer gate is implemented when context_layers is supplied; None keeps backward-compatible enabled behavior until spin/dispatch wires the payload.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py
+  origin: spec-deferred 4dfe6b79d429 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

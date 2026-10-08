@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.91.9
+version: 8.92.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -72,6 +72,14 @@ Conda-forge standards evolve rapidly. Before implementing a pattern:
 ## Critical Constraints
 
 These are non-negotiable rules that override all other guidance.
+
+### Pixi environments (laptop vs recipe factory)
+
+- **Laptop SBOM:** `pixi install -e pyforge-foundry-full` (fnd:CAP-12) — everyday PyForge /
+  Guild work; run planning-chain tasks with `-e pyforge-guild`.
+- **Recipe factory at scale:** `pixi install -e local-recipes` (~10 GB) — required before
+  any `pixi run -e local-recipes …` command in this skill. Do not teach
+  `pixi install -e local-recipes` as the only install on onboarding docs.
 
 ### Never Mix Formats in a Build Run
 `meta.yaml` and `recipe.yaml` **cannot coexist** in the same build run. The tooling will reject it. If both files exist (e.g., after `migrate_to_v1`), remove `meta.yaml` only after validating and successfully building the new `recipe.yaml`.

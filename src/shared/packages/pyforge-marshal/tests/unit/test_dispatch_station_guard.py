@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL as _BV
 from pyforge.core.process import ProcessResult
 from scope_triangle import point_scope_triangle
 
@@ -368,7 +369,7 @@ def test_surface_overlap_refuses_second_dispatch(tmp_path: Path) -> None:
     specs.mkdir(parents=True)
     live_spec = specs / "spec-22-1-live.md"
     live_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
     cand_spec = specs / "spec-22-5-candidate.md"
@@ -376,7 +377,7 @@ def test_surface_overlap_refuses_second_dispatch(tmp_path: Path) -> None:
     # candidate must declare a glob that survives intersection with the
     # auto-derived default so overlap is judged on effective surfaces.
     cand_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
     _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-live", story_key="22.1")
@@ -491,7 +492,7 @@ def test_cross_station_dispatch_allowed_when_other_station_busy(
         specs = dispatch_core.planning_specs_dir(tmp_path, slug)
         specs.mkdir(parents=True, exist_ok=True)
         (specs / f"spec-{story}.md").write_text(
-            '---\ndifficulty: medium\nsurface: ["src/free/**"]\n---\n',
+            '---\ndifficulty: medium\nsurface: ["src/free/**"]\n---\n' + _BV,
             encoding="utf-8",
         )
     (tmp_path / "_bmad-output" / "projects" / free_slug).mkdir(parents=True, exist_ok=True)
@@ -553,7 +554,7 @@ def test_overlap_advisory_is_warn_and_dispatch_proceeds(tmp_path: Path, monkeypa
         specs = dispatch_core.planning_specs_dir(tmp_path, slug)
         specs.mkdir(parents=True, exist_ok=True)
         (specs / f"spec-{story_name}.md").write_text(
-            f"---\ndifficulty: medium\n{shared_surface}\n---\n",
+            f"---\ndifficulty: medium\n{shared_surface}\n---\n{_BV}",
             encoding="utf-8",
         )
         (tmp_path / "_bmad-output" / "projects" / slug).mkdir(parents=True, exist_ok=True)
@@ -777,14 +778,14 @@ def test_refused_story_with_open_pr_blocks_overlapping_dispatch(tmp_path: Path) 
     # Create spec for refused story
     refused_spec = specs / "spec-82-4-refused.md"
     refused_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
 
     # Create spec for candidate story with overlapping surface
     cand_spec = specs / "spec-82-5-candidate.md"
     cand_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
 
@@ -835,12 +836,12 @@ def test_held_for_review_story_with_open_pr_does_not_block_overlapping_dispatch(
 
     held_spec = specs / "spec-83-18-held.md"
     held_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
     cand_spec = specs / "spec-83-19-candidate.md"
     cand_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
 
@@ -888,14 +889,14 @@ def test_refused_story_with_closed_pr_allows_overlapping_dispatch(tmp_path: Path
     # Create spec for refused story
     refused_spec = specs / "spec-82-4-refused.md"
     refused_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
 
     # Create spec for candidate story with overlapping surface
     cand_spec = specs / "spec-82-6-candidate.md"
     cand_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
 
@@ -953,14 +954,14 @@ def test_refused_story_with_disjoint_surfaces_allows_dispatch(tmp_path: Path) ->
     # Create spec for refused story
     refused_spec = specs / "spec-82-4-refused.md"
     refused_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
 
     # Create spec for candidate story with disjoint surface
     cand_spec = specs / "spec-82-7-candidate.md"
     cand_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-doctor/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-doctor/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
 
@@ -1010,7 +1011,7 @@ def test_verification_refused_without_landing_does_not_block_overlapping_dispatc
     specs.mkdir(parents=True)
     cand_spec = specs / "spec-82-8-candidate.md"
     cand_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
     run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-verif-only", story_key="82.4")
@@ -1074,12 +1075,12 @@ def test_serial_station_refused_landing_disjoint_does_not_mrs_disp_021(tmp_path:
     specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
     specs.mkdir(parents=True)
     (specs / "spec-82-4-refused.md").write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
     cand_spec = specs / "spec-82-9-candidate.md"
     cand_spec.write_text(
-        '---\nsurface: ["src/shared/packages/pyforge-doctor/**"]\n---\n',
+        '---\nsurface: ["src/shared/packages/pyforge-doctor/**"]\n---\n' + _BV,
         encoding="utf-8",
     )
     run_dir = _seed_live_dispatch_journal(tmp_path, fs, slug=slug, run_id="run-serial-disjoint", story_key="82.4")
@@ -1122,7 +1123,7 @@ def test_two_refused_landing_open_pr_stories_do_not_hold_each_other(tmp_path: Pa
     fs = FakeFs()
     specs = tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs"
     specs.mkdir(parents=True)
-    shared_surface = '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n'
+    shared_surface = '---\nsurface: ["src/shared/packages/pyforge-marshal/**"]\n---\n' + _BV + _BV
     (specs / "spec-82-4-refused.md").write_text(shared_surface, encoding="utf-8")
     (specs / "spec-82-5-refused.md").write_text(shared_surface, encoding="utf-8")
 

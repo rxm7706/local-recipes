@@ -367,6 +367,9 @@ def test_registered_codes_contains_the_real_codes():
             # key does not read `done` there (absent, another status, unreadable) --
             # ERROR: finalize exits 1 and `dispatch land` refuses (MRS-DISP-020).
             "MRS-DISP-051",
+            # Story 65.2 (spec-pyforge-marshal CAP-274): pre-launch spec binding
+            # refusal in `dispatch_once` before worktree or harness.
+            "MRS-DISP-050",
             # Story 77.1 (spec-pyforge-marshal CAP-282, dispatch half of the
             # `structure-graph` layer): 053 the worktree's codegraph index was
             # built with `init -y` (no base index, or the copied one would not
@@ -498,6 +501,7 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-BENCH-002",
             "MRS-BENCH-003",
             "MRS-BENCH-004",
+            "MRS-BENCH-005",
             # Story 44.1 (marshal watch).
             "MRS-WATCH-001",
             "MRS-WATCH-002",
@@ -591,6 +595,24 @@ def test_mrs_disp_051_is_registered_at_the_error_tier():
         )
         is verdict.Verdict.ERROR
     )
+
+
+def test_mrs_disp_050_is_registered_once_at_the_error_tier() -> None:
+    """Story 65.2 (CAP-274): pre-launch spec binding refusal is ERROR."""
+    import inspect
+    import re
+
+    from pyforge.marshal.core import verdict
+    from pyforge.marshal.core.model import Finding, Severity
+
+    assert "MRS-DISP-050" in findings.REGISTERED_CODES
+    assert verdict.classify("MRS-DISP-050") is verdict.Verdict.ERROR
+    registry_source = inspect.getsource(findings)
+    table_source = inspect.getsource(verdict)
+    assert len(re.findall(r'^\s+"MRS-DISP-050",\s*$', registry_source, re.MULTILINE)) == 1
+    assert len(re.findall(r'^\s+"MRS-DISP-050":', table_source, re.MULTILINE)) == 1
+    refused = Finding(code="MRS-DISP-050", severity=Severity.ERROR, message="cannot bind")
+    assert verdict.compute_verdict((refused,)) is verdict.Verdict.ERROR
 
 
 def test_mrs_disp_052_is_registered_once_at_the_error_tier_and_055_at_warn():

@@ -6271,7 +6271,7 @@ schema (cache-hit rate field).
 **When** the benchmark runs one leg per layer
 **Then** each artifact reports weighted tokens, dollars if the catalog is
 declared, and cache-hit rate, and a non-identical landing voids that leg only
-**Status:** backlog
+**Status:** done
 
 ### Story 46.10: The matrix tells the truth, copilot wrapper, gemini probe, per-currency cells
 

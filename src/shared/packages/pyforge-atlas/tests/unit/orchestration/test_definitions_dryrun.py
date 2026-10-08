@@ -731,6 +731,18 @@ def test_refresh_assets_job_lists_the_21_2_and_21_4_refresh_triggers(defs):
     assert "Story 21.5" in label
 
 
+def test_node_timeouts_covers_the_story_21_4_nodes():
+    """Story 21.4's four Tier-1 nodes each get an explicit NODE_TIMEOUTS entry."""
+    assert D.NODE_TIMEOUTS["refresh_basilisk_packages"] == 1200
+    for name in (
+        "enumerate_anaconda_main_packages",
+        "refresh_anaconda_dist_2026x",
+        "refresh_basilisk_packages",
+        "refresh_aoss_premium_python",
+    ):
+        assert name in D.NODE_TIMEOUTS, f"{name} missing from NODE_TIMEOUTS"
+
+
 def test_node_timeouts_covers_the_story_21_5_nodes():
     """Story 21.5's three new nodes each get an explicit NODE_TIMEOUTS entry —
     the dict's own stated invariant is that every migrated node appears here

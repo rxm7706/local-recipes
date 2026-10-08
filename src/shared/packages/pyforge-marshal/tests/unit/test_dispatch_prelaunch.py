@@ -51,6 +51,27 @@ def test_a_spec_whose_commands_all_bind_reports_nothing() -> None:
     assert prelaunch.spec_binding_findings(_SPEC_WITH_COMMANDS, policy) == ()
 
 
+def test_spec_binding_refusal_finding_is_disp_050_naming_gate_codes() -> None:
+    from pyforge.marshal.core.model import Severity
+
+    gate_010 = prelaunch.spec_binding_findings("---\n---\n", _POLICY)[0]
+    refusal = prelaunch.spec_binding_refusal_finding((gate_010,))
+    assert refusal is not None
+    assert (refusal.code, refusal.severity) == (prelaunch.SPEC_BINDING_REFUSAL_CODE, Severity.ERROR)
+    assert "MRS-GATE-010" in refusal.message
+
+    gate_011 = prelaunch.spec_binding_findings(_SPEC_WITH_COMMANDS, _POLICY)[0]
+    refusal = prelaunch.spec_binding_refusal_finding((gate_011,))
+    assert refusal is not None
+    assert "MRS-GATE-011" in refusal.message
+    assert "pyforge-deps-test" in refusal.message
+
+
+def test_spec_binding_refusal_finding_is_none_when_binding_is_clean() -> None:
+    policy = _POLICY + ("pixi run --frozen -e pyforge-ci pyforge-deps-test",)
+    assert prelaunch.spec_binding_refusal_finding(prelaunch.spec_binding_findings(_SPEC_WITH_COMMANDS, policy)) is None
+
+
 def test_binding_is_the_post_session_gates_own_verdict() -> None:
     """The predicate is `gate.check_spec_binding` over `parse_success_signal`, not a copy of it."""
     from pyforge.marshal.core import gate, spec_binding

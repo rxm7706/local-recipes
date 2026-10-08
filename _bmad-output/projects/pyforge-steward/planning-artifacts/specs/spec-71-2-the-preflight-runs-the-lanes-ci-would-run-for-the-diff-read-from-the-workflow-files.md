@@ -2,7 +2,10 @@
 title: '71.2: The preflight runs the lanes CI would run for the diff, read from the workflow files'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'done'
+baseline_revision: '55178370efd04ed67215393fb3ea4f27acf21ce0'
+followup_review_recommended: false
+review_loop_iteration: 0
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -83,3 +86,40 @@ Ledger status at mint: `backlog`.
 
 **Manual checks:**
 - On a marshal-only branch, `pixi run -e pyforge-guild pr-preflight` — expected: the journal line lists 12 selected lanes and names the rule that skipped each of the other 16.
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 13 findings — high 0, medium 0, low 1, false 8, defer 4
+- findings:
+  - `[false]` `[reject]` paths-ignore runs lanes — spec requires unevaluable path keys to run lanes; tested in `test_unrecognised_paths_ignore_*`.
+  - `[false]` `[reject]` compound job `if:` runs extra lanes — spec boundary: unrecognised `if:` runs the lane; conservative superset is intended.
+  - `[false]` `[reject]` matrix include/exclude refused — spec I/O matrix row for unexpandable matrix; runs gates with journaled rule.
+  - `[false]` `[reject]` broad `except Exception` selects all — matches spec fail-open when selection cannot complete.
+  - `[false]` `[reject]` no CI counterpart on push-only workflows — PR preflight models `pull_request` only per spec boundaries.
+  - `[false]` `[reject]` journal stores path counts not paths — selection block lists tasks and skip rules; path list not required by AC.
+  - `[false]` `[reject]` only `run:` steps bind lanes — matches spec approach (pixi task in step `run:` or depends-on closure).
+  - `[false]` `[reject]` firing[0].rule only on selected — selected lanes carry human reason string; skipped lanes carry workflow+rule.
+  - `[low]` `[patch]` `run_preflight` docstring still said “all lanes” — updated to “CI-selected lanes”.
+  - `[defer]` `[defer]` dirty snapshot `commit-tree` may leave unreachable objects — acceptable for throwaway evaluation; no user-visible leak; severity: low
+  - `[defer]` `[defer]` `--no-renames` on diff may diverge from GitHub on rename-only PRs — rare; would need rename-aware diff to settle; severity: medium (unverified)
+  - `[defer]` `[defer]` `uses:` composite steps not scanned for tasks — no PR workflow in this repo relies on it for gated pixi tasks; severity: low
+  - `[defer]` `[defer]` spec AC literal lane counts (12 marshal / 4 dream) stale vs live workflows — tests document live parity; spec text update deferred to planning pass; severity: medium
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Added `preflight_ci.py` to select `pr-preflight-lanes` leaf tasks from live `.github/workflows` (`pull_request` paths, job `if:`, executed `changes` jobs, matrix expansion) against `refs/remotes/origin/main...HEAD` plus dirty-tree paths; `run_preflight` runs the selected subset and journals `selection` with skip provenance.
+
+**Files changed:**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_ci.py` — workflow reader and lane selector
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — integrate selection and journal field
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` — fixture-git parity tests (63 cases)
+- `spec-pyforge-steward/.memlog.md` and `spec-pyforge-core/.memlog.md` — surface reconcile paths
+
+**Review:** 1 patch (docstring); 4 deferred; 8 rejected as spec-intended conservative behavior.
+
+**Verification:** `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2181 passed, 2 skipped, exit 0. `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile (paths named above; no `--write-baseline`).
+
+**Residual risks:** Rename-only diffs; spec AC lane enumerations lag live workflow/pixi graph (tests follow CI rules).

@@ -61,7 +61,7 @@ A common failure mode is an agent operating against a stale `sprint-status-ledge
    ```
    Then commit the twin and run `story-status-check` again.
    > [!WARNING]
-   > A plain sync refuses to move any key *out of* `done` or drop it (`--allow-regression` overrides, naming every affected key). `--repair-feed` runs the other direction — it writes `done` rows the tracked twin holds *back into* a truncated Tier-3 feed. Use it only when you are deliberately converging a stale feed toward the twin.
+   > A plain sync repairs feed-behind-twin drift (restores twin `done` / story `blocked` rows the feed lost, naming each key) and then promotes. `--allow-regression` is the one way to move a key *out of* `done` instead, naming every affected key. `--repair-feed` means the same as a bare sync.
 
 ## Step 5: Validate the "One Chain" Governance
 Check that the station still has one active Dream, one Spec, one PRD, one spine, and one epic chain. A second Dream file or Spec folder minted without a `fold-exemption:` is what `chain-sprawl-check` reports; agents do not refuse to run on it, so it surfaces as a detector finding, not a stall:

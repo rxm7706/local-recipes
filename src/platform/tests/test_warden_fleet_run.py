@@ -14,8 +14,8 @@ import pytest
 from django.core.management import call_command
 from django.test.utils import override_settings
 from django_pyforge.flags import evaluate_from_source
-
 from django_warden_fabric.fleet import FLEET_SCAN_FLAG
+from django_warden_fabric.fleet import mkdtemp_clone_dir
 from django_warden_fabric.models import FleetRepo
 from django_warden_fabric.models import FleetRepoScan
 from django_warden_fabric.models import FleetRun
@@ -46,6 +46,9 @@ _CLEAN_PROJECT = (
     / "clean"
 )
 _ORG = "fixture-org"
+_FIXTURE_REPO_COUNT = 3
+_EXIT_REFUSED = 2
+_SCAN_EXIT_ERROR = 2
 
 
 def _flag_tree(*, on: bool) -> dict:
@@ -69,7 +72,7 @@ def _init_bare_repo(tmp_path: Path, name: str) -> str:
     ):
         subprocess.run(cmd, cwd=work, check=True, capture_output=True)  # noqa: S603
     subprocess.run(  # noqa: S603
-        ["git", "clone", "--bare", str(work), str(bare)],
+        ["git", "clone", "--bare", str(work), str(bare)],  # noqa: S607 -- git from PATH, like the init loop above
         check=True,
         capture_output=True,
     )
@@ -78,7 +81,7 @@ def _init_bare_repo(tmp_path: Path, name: str) -> str:
 
 def _seed_inventory(tmp_path: Path, *, extra: dict | None = None) -> list[FleetRepo]:
     repos = []
-    for idx in range(3):
+    for idx in range(_FIXTURE_REPO_COUNT):
         url = _init_bare_repo(tmp_path, f"repo-{idx}")
         repos.append(
             FleetRepo.objects.create(
@@ -126,7 +129,7 @@ def test_fleet_run_three_repos(tmp_path: Path, fleet_flags_on: Path) -> None:
     run.refresh_from_db()
     assert run.status == JobStatus.SUCCEEDED
     scans = FleetRepoScan.objects.filter(fleet_run=run)
-    assert scans.count() == 3
+    assert scans.count() == _FIXTURE_REPO_COUNT
     for row in scans:
         assert row.status == JobStatus.SUCCEEDED
         assert row.scan_exit_code in (0, 1, 2)
@@ -139,7 +142,8 @@ def test_fleet_run_three_repos(tmp_path: Path, fleet_flags_on: Path) -> None:
 def test_job_status_vocabulary_only() -> None:
     allowed = {c.value for c in JobStatus}
     assert allowed == {"pending", "running", "succeeded", "failed"}
-    for field in (FleetRun._meta.get_field("status"), FleetRepoScan._meta.get_field("status")):
+    for model in (FleetRun, FleetRepoScan):
+        field = model._meta.get_field("status")  # noqa: SLF001
         assert {c for c, _ in field.choices} <= allowed
 
 
@@ -150,13 +154,14 @@ def test_clone_directory_removed(tmp_path: Path, fleet_flags_on: Path) -> None:
     seen: list[Path] = []
 
     def _track_mkdtemp(prefix: str = "warden-fleet-") -> Path:
-        from django_warden_fabric import fleet as fleet_mod
-
-        path = fleet_mod.mkdtemp_clone_dir(prefix=prefix)
+        path = mkdtemp_clone_dir(prefix=prefix)
         seen.append(path)
         return path
 
-    with patch("django_warden_fabric.tasks.mkdtemp_clone_dir", side_effect=_track_mkdtemp):
+    with patch(
+        "django_warden_fabric.tasks.mkdtemp_clone_dir",
+        side_effect=_track_mkdtemp,
+    ):
         run = FleetRun.objects.create(organisation=_ORG)
         run_fleet_run(str(run.pk))
     assert seen
@@ -168,7 +173,9 @@ def test_celery_tasks_are_keys_not_blobs() -> None:
     tree = ast.parse(_TASKS_PATH.read_text(encoding="utf-8"))
     for name in ("run_fleet_run", "scan_fleet_repo", "finalize_fleet_run"):
         fn = next(
-            node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == name
+            node
+            for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == name
         )
         arg_names = [a.arg for a in fn.args.args]
         assert "fleet_run_id" in arg_names or name == "finalize_fleet_run"
@@ -194,12 +201,15 @@ def test_flag_off_refuses_exit_2(fleet_flags_off: Path) -> None:
     stderr = StringIO()
     with pytest.raises(SystemExit) as exc:
         call_command("warden_fleet_run", _ORG, stderr=stderr)
-    assert exc.value.code == 2
+    assert exc.value.code == _EXIT_REFUSED
 
 
 @pytest.mark.django_db
 @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
-def test_clone_failure_repo_failed_run_succeeded(tmp_path: Path, fleet_flags_on: Path) -> None:
+def test_clone_failure_repo_failed_run_succeeded(
+    tmp_path: Path,
+    fleet_flags_on: Path,
+) -> None:
     FleetRepo.objects.create(
         organisation=_ORG,
         full_name=f"{_ORG}/bad",
@@ -236,7 +246,10 @@ def test_archived_repo_skipped(tmp_path: Path, fleet_flags_on: Path) -> None:
     )
     run = FleetRun.objects.create(organisation=_ORG)
     run_fleet_run(str(run.pk))
-    row = FleetRepoScan.objects.get(fleet_run=run, fleet_repo__full_name=f"{_ORG}/archived")
+    row = FleetRepoScan.objects.get(
+        fleet_run=run,
+        fleet_repo__full_name=f"{_ORG}/archived",
+    )
     assert row.error == "skipped: archived"
     assert row.status == JobStatus.SUCCEEDED
 
@@ -250,5 +263,5 @@ def test_scan_exit_code_two_persisted(tmp_path: Path, fleet_flags_on: Path) -> N
         mock_scan.return_value = ('{"status":"error"}', "{}", 2)
         scan_fleet_repo(str(run.pk), str(repos[0].pk))
     row = FleetRepoScan.objects.get(fleet_run=run, fleet_repo=repos[0])
-    assert row.scan_exit_code == 2
+    assert row.scan_exit_code == _SCAN_EXIT_ERROR
     assert row.status == JobStatus.SUCCEEDED
