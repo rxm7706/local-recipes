@@ -126,6 +126,22 @@ def test_non_estate_repo_is_skipped_when_draft_flag_on() -> None:
     assert forge.opens == []
 
 
+def test_authorized_fleet_repo_opens_draft_without_widening_allowlist() -> None:
+    forge = _NonEstateForge()
+    actuation = run_actuator(
+        [_vuln()],
+        dry_run=False,
+        fix_draft_pr_estate_enabled=True,
+        client=forge,
+        estate_repos=frozenset({"rxm7706/local-recipes"}),
+        authorized_fleet_repo="acme/app",
+    )
+    (outcome,) = actuation.outcomes
+    assert outcome.status == "opened"
+    assert len(forge.opens) == 1
+    assert forge.opens[0].draft is True
+
+
 def test_estate_flag_on_records_draft_open_with_manifest_fix(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     _write_pixi_repo(repo)
