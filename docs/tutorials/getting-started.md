@@ -125,3 +125,5 @@ and the maintenance/infrastructure task set.
 - [Developer guide (reference)](../reference/developer-guide.md) — configuration reference, recipe format examples
 
 See [`docs/MAP.md`](../MAP.md) for the full documentation map.
+
+- [plant](nope.md)

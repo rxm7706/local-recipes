@@ -224,6 +224,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`reference/agent-instruction-notes.md`](reference/agent-instruction-notes.md) | scribe | authored |
 | [`reference/agent-memory-lifecycle.md`](reference/agent-memory-lifecycle.md) | fleet | authored |
 | [`reference/antigravity-developer-startup.md`](reference/antigravity-developer-startup.md) | fleet | pointer |
+| [`reference/bmad-estate-llms-full.md`](reference/bmad-estate-llms-full.md) | scribe | authored |
 | [`reference/conda-forge-packaging-inventory-operations_prompt.md`](reference/conda-forge-packaging-inventory-operations_prompt.md) | fleet | authored |
 | [`reference/conda-forge-packaging-inventory-operations_replay.md`](reference/conda-forge-packaging-inventory-operations_replay.md) | fleet | authored |
 | [`reference/container-base-layer-convention.md`](reference/container-base-layer-convention.md) | fleet | authored |
@@ -232,7 +233,6 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`reference/environments.md`](reference/environments.md) | steward | generated |
 | [`reference/github-workflows.md`](reference/github-workflows.md) | fleet | authored |
 | [`reference/judgement-vocabulary.md`](reference/judgement-vocabulary.md) | doctor | authored |
-| [`reference/bmad-estate-llms-full.md`](reference/bmad-estate-llms-full.md) | scribe | generated |
 | [`reference/library-llms-full.md`](reference/library-llms-full.md) | fleet | authored |
 | [`reference/manticore-studio.md`](reference/manticore-studio.md) | fleet | pointer |
 | [`reference/mcp-server-architecture.md`](reference/mcp-server-architecture.md) | fleet | pointer |

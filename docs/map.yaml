@@ -190,12 +190,7 @@ pages:
   - path: reference/bmad-estate-llms-full.md
     quadrant: reference
     owner: scribe
-    kind: generated
-    generator: pixi run -e pyforge-guild scribe catalog bmad-estate --write
-    sources:
-      - .claude/skills
-      - _bmad
-      - pixi.toml
+    kind: authored
   - path: reference/manticore-studio.md
     quadrant: reference
     owner: fleet
