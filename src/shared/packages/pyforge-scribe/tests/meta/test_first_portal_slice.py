@@ -5,8 +5,11 @@ from __future__ import annotations
 import ast
 import importlib.util
 import shutil
+import sys
+from http import HTTPStatus
 from pathlib import Path
 
+import pytest
 from pyforge.testing_kit import changed_paths_since, diff_text_since
 
 STATION = "scribe"
@@ -24,6 +27,16 @@ def _repo_root() -> Path:
 
 def _portal_root(root: Path) -> Path:
     return root / "src" / "shared" / "packages" / f"django-{STATION}" / "src" / f"django_{STATION}_portal"
+
+
+def _ensure_portal_import_path(root: Path) -> None:
+    for rel in (
+        "src/shared/packages/django-pyforge/src",
+        f"src/shared/packages/django-{STATION}/src",
+    ):
+        path = str(root / rel)
+        if path not in sys.path:
+            sys.path.insert(0, path)
 
 
 def _iter_py(tree: Path) -> list[Path]:
@@ -189,6 +202,82 @@ def test_recall_cli_argv_mode_is_optional() -> None:
     assert "--kind" not in planned
     coded = recall_cli_argv("q", mode="code")
     assert coded[-2:] == ["--mode", "code"]
+
+
+def test_chrome_home_post_renders_cited_recall_results() -> None:
+    pytest.importorskip("django")
+    from django.conf import settings
+
+    if not settings.configured:
+        settings.configure(
+            SECRET_KEY="5-2-portal-slice",
+            USE_TZ=True,
+            STATIC_URL="/static/",
+            INSTALLED_APPS=["django.contrib.staticfiles"],
+        )
+    import django
+
+    django.setup()
+
+    root = _repo_root()
+    _ensure_portal_import_path(root)
+    from django.template import Context, Engine
+    from django.test import RequestFactory
+    from django_pyforge.roles import prefixed_station
+    from django_scribe_portal import views
+
+    engine = Engine(
+        dirs=[
+            str(_portal_root(root) / "templates"),
+            str(root / "src/shared/packages/django-pyforge/src/django_pyforge/templates"),
+        ],
+    )
+
+    def real_render(request, template, context=None, **_kwargs):
+        from django.http import HttpResponse
+
+        html = engine.get_template(template).render(Context(context or {}))
+        return HttpResponse(html)
+
+    cited = {
+        "grounded": True,
+        "text": "cited answer",
+        "citation": "memory.md:12",
+    }
+
+    def fake_submit(_client, query, *, sub, roles):
+        assert query == "what did we decide?"
+        assert sub
+        assert roles
+        return cited
+
+    import django_scribe_portal.views as views_module
+
+    original_render = views_module.render
+    original_submit = views_module.submit_recall
+    views_module.render = real_render
+    views_module.submit_recall = fake_submit
+    try:
+        forbidden = RequestFactory().post("/stations/scribe/", {"query": "x"})
+        forbidden.idp_roles = [prefixed_station("warden")]
+        assert views.chrome_home(forbidden).status_code == HTTPStatus.FORBIDDEN
+
+        request = RequestFactory().post(
+            "/stations/scribe/",
+            {"query": "what did we decide?"},
+            HTTP_HX_REQUEST="true",
+        )
+        request.idp_roles = [prefixed_station("scribe")]
+        response = views.chrome_home(request)
+        assert response.status_code == HTTPStatus.OK
+        body = response.content.decode()
+        assert "cited answer" in body
+        assert "memory.md:12" in body
+        assert 'id="scribe-recall-text"' in body
+        assert 'id="scribe-recall-citation"' in body
+    finally:
+        views_module.render = original_render
+        views_module.submit_recall = original_submit
 
 
 def test_portal_submits_recall_via_portal_client_only() -> None:
