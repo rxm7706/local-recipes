@@ -266,3 +266,58 @@ class TestReviewPassReusesCachedRecall:
         assert review_prompt == "Review."
         target = loop_home / recall_feedback_core.recall_feedback_output_relpath("pyforge-marshal")
         assert fs.writes[target] == ""
+
+
+class TestRecallContextLayerGate:
+    """Story 47.3 (CAP-3): ``[context.recall] enabled = false`` skips the query."""
+
+    def test_disabled_recall_layer_skips_scribe_and_leaves_prompt_unchanged(
+        self, loop_home: Path, repo_root: Path
+    ) -> None:
+        fs = _FakeFs()
+        scribe = _FakeScribeCli(
+            ScribeRecallOutcome(ok=True, grounded=True, text="should not appear", citation=None)
+        )
+        layers = {
+            recall_feedback_core.RECALL_LAYER: {"enabled": False, "aggressiveness": "medium"},
+        }
+
+        prompt, injection = augment_bmad_loop_session_prompt_with_recall(
+            "Dev prompt.",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            scribe=scribe,
+            context_layers=layers,
+        )
+
+        assert scribe.calls == []
+        assert injection is None
+        assert prompt == "Dev prompt."
+        assert fs.writes == {}
+
+    def test_enabled_recall_layer_still_injects(self, loop_home: Path, repo_root: Path) -> None:
+        fs = _FakeFs()
+        scribe = _FakeScribeCli(
+            ScribeRecallOutcome(ok=True, grounded=True, text="correction text", citation=None)
+        )
+        layers = {
+            recall_feedback_core.RECALL_LAYER: {"enabled": True, "aggressiveness": "medium"},
+        }
+
+        prompt, injection = augment_bmad_loop_session_prompt_with_recall(
+            "Dev.",
+            role="dev",
+            fs=fs,
+            loop_home=loop_home,
+            repo_root=repo_root,
+            station_slug="pyforge-marshal",
+            scribe=scribe,
+            context_layers=layers,
+        )
+
+        assert len(scribe.calls) == 1
+        assert injection is not None and injection.injected is True
+        assert "correction text" in prompt

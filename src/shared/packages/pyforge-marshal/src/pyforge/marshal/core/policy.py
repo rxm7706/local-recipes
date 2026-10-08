@@ -269,7 +269,7 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # Story 28.1's 14th STATIC key, the vocabulary's 30th
         # (SPEC-marshal-token-economy CAP-1): the declared context
         # pipeline -- Mapping[str, {enabled, aggressiveness?}] keyed by one
-        # of the companion's closed 5-layer matrix. STATIC for the
+        # of the companion's closed 6-layer matrix. STATIC for the
         # identical reason `epic_surfaces`/`mcp_servers` are: declared and
         # validated here, never narrowed at runtime by a journal entry. See
         # `_valid_context_block`/`resolve_context_layers` below.
@@ -648,7 +648,7 @@ DEFAULT_POLICY: Mapping[str, object] = {
     # carry for the identical STATIC/empty-mapping shape. An empty mapping
     # here is what makes "absent block = every layer off, rendered output
     # byte-identical to today" hold (`resolve_context_layers` expands it to
-    # all 5 layers at `enabled=False`).
+    # all 6 layers at `enabled=False`).
     "context": {},
     # Story 28.15's `scope_violation_mode` (SPEC-marshal-token-economy
     # CAP-17): "warn", NOT "hard" -- an explicit operator decision
@@ -1015,7 +1015,7 @@ def _valid_dispatch_block(value: object) -> dict[str, object] | None:
 def _valid_context_block(value: object) -> dict[str, object] | None:
     """``context`` (Story 28.1, SPEC-marshal-token-economy CAP-1):
     ``Mapping[str, {enabled: bool, aggressiveness?: str}]`` keyed by ONE of
-    ``CONTEXT_LAYER_NAMES``'s closed 5-layer vocabulary, PLUS Story 28.6's
+    ``CONTEXT_LAYER_NAMES``'s closed 6-layer vocabulary, PLUS Story 28.6's
     optional ``escalation_threshold`` scalar (CAP-8). Mirrors
     ``_valid_mcp_servers``'s/``_valid_epic_surfaces``'s shape-checking
     pattern exactly: reject a non-mapping, reject an unknown layer-name key

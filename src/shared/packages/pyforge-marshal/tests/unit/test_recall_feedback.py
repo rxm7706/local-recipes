@@ -95,3 +95,15 @@ class TestRenderRecallFeedbackBlock:
         body_source = "\n".join(ast.unparse(node) for node in body_without_docstring)
         assert "no grounded" not in body_source.lower()
         assert "no relevant" not in body_source.lower()
+
+
+class TestRecallLayerPolicyShape:
+    def test_recall_is_a_declared_context_layer(self) -> None:
+        from pyforge.marshal.core import policy
+
+        assert recall_feedback.RECALL_LAYER in policy.CONTEXT_LAYER_NAMES
+
+    def test_layer_enabled_reads_enabled_flag(self) -> None:
+        assert recall_feedback.layer_enabled({"enabled": True}) is True
+        assert recall_feedback.layer_enabled({"enabled": False}) is False
+        assert recall_feedback.layer_enabled(None) is False
