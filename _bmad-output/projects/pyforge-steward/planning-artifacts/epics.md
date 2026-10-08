@@ -4180,7 +4180,7 @@ empty later slot — no story. Do not invent weights. Do not flip any Epic 44
 **When** this story lands
 **Then** add is a new row starting `off`; archive keeps the id and forbids reuse
 **And** `on` / `off` / `archived` is a config flip
-**Status:** backlog
+**Status:** done
 
 ### Story 62.3: Consumers cite `on` rows only
 

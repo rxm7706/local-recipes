@@ -42,6 +42,7 @@ EXIT_BUDGET_NOT_CONFIGURED = 3
 # `init`/`shell-init`/`setup`/`initrepo`/`validate-fast` (Epic 17 — machine bootstrap),
 # `revoke` (Epic 42, Story 42.2 — stop one runaway subject),
 # `catalog` (Epic 60, Story 60.1 — the estate BMAD catalog config),
+# `measure` (Epic 62, Story 62.2 — Build League measure catalog config),
 # `load` (Epic 61, Story 61.1 — corridor transports, idempotent on batch sha + waybill;
 #   Story 61.4 added the outbound default-deny slice+signer gate),
 # `passport` (Epic 61, Story 61.2 — vendor work-passport identity, a fresh UUID per mint),
@@ -71,6 +72,7 @@ DUTIES: tuple[str, ...] = (
     "cutover",
     "ledger-query",
     "catalog",
+    "measure",
     "load",
     "passport",
     "glass",
@@ -97,6 +99,11 @@ _HELP = {
         "generated Claude/Codex marketplace manifests; ship vendors the snapshot through "
         "the default conda backend; publish requires a review record; render also writes "
         "the Frame index and browse list under docs/foundry/frames/; Stories 60.1–60.4)"
+    ),
+    "measure": (
+        "Build League measure catalog — check/list over measures.yaml "
+        "(on/off/archived config flip; new rows start off; archived ids cannot be reused; "
+        "Story 62.2)"
     ),
     "load": (
         "extract corridor -- idempotent inbound/outbound file loads keyed by "
@@ -237,6 +244,8 @@ def build_parser() -> argparse.ArgumentParser:
             _add_ledger_query_subparsers(duty_parser)
         elif name == "catalog":
             _add_catalog_subparsers(duty_parser)
+        elif name == "measure":
+            _add_measure_subparsers(duty_parser)
         elif name == "load":
             _add_load_subparsers(duty_parser)
         elif name == "passport":
@@ -548,6 +557,26 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
         metavar="NAME=VALUE",
         help="feature-flag override, repeatable (e.g. --flag enable_dossier_export=true); outranks FLAGS_<NAME> and flags.json",
     )
+
+
+def _add_measure_subparsers(measure_parser: argparse.ArgumentParser) -> None:
+    """Story 62.2: ``check`` (default) / ``list``; ``--measures-dir DIR`` overrides the tracked config."""
+    measures_help = "directory holding measures.yaml (default: the tracked Build League catalog)"
+    json_help = "emit JSON instead of human-readable text"
+    measure_parser.add_argument("--measures-dir", default=None, metavar="DIR", help=measures_help)
+    measure_parser.add_argument("--json", action="store_true", default=False, help=json_help)
+    measure_subs = measure_parser.add_subparsers(
+        dest="measure_verb",
+        metavar="{check,list}",
+    )
+    check = measure_subs.add_parser(
+        "check",
+        help="validate measure declarations (new rows off, no archived id reuse)",
+    )
+    listing = measure_subs.add_parser("list", help="every measure with dimension, source, and state")
+    for sub in (check, listing):
+        sub.add_argument("--measures-dir", default=argparse.SUPPRESS, metavar="DIR", help=measures_help)
+        sub.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help=json_help)
 
 
 def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
@@ -1529,6 +1558,10 @@ def resolve_duty(name: str) -> Duty:
         from .catalog import CatalogDuty
 
         return CatalogDuty()
+    if name == "measure":
+        from .measures import MeasureDuty
+
+        return MeasureDuty()
     if name == "load":
         from .corridor import LoadDuty
 
