@@ -2,7 +2,8 @@
 title: "33.1: deck-facts counts Dreams under the archive too"
 type: 'chore'
 created: '2026-09-29'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: '1bf6c5a138cb55ad4da80598789eaf5ef917e056'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -102,4 +103,27 @@ Flag: none. This is a `chore` (`spec-feature-flag-governance` Q1).
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-10-08 — Review pass
+- verdicts: 1 findings — high 0, medium 0, low 1, false 0, maybe-false 0
+- findings:
+  - `[low]` `[patch]` `dreams_total` method text did not mention archive-only slugs — updated method string in `scripts/deck_facts.py`.
+
+## Auto Run Result
+
+Status: done
+
+Summary: `pyforge-genesis` Dream fact derivation now reads `archive/docs/dreams/` alongside `docs/dreams/`, deduplicates by slug with live winning, counts archive-only files toward `dreams_archived` regardless of frontmatter status, and names both globs in every dreams_* fact source.
+
+Files changed:
+- `scripts/deck_facts.py` — `genesis_dream_status_counts`, `GENESIS_DREAMS_SOURCE`, genesis branch wiring
+- `tests/scripts/test_deck_facts.py` — acceptance tests and archive-read mutation guard
+- `spec-pyforge-herald/.memlog.md` and `spec-deck-family-currency/.memlog.md` — surface reconcile (no `--write-baseline`)
+
+Review: one low patch (method copy for `dreams_total`); no deferrals.
+
+Verification:
+- `pytest tests/scripts/test_deck_facts.py -q` — 70 passed
+- `pyforge-herald-test` — 1638 passed, 4 skipped
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+
+Residual risk: none identified; live-tree counts unchanged except adding the six archive-only Dreams already on disk.

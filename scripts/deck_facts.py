@@ -652,7 +652,8 @@ def derive(root: Path, slug: str, with_tests: bool = False) -> tuple[dict, list[
         facts.append(fact("guild_stations", str(len(guild)), rel(roster), "length of stations"))
         counts = genesis_dream_status_counts(root)
         facts.append(fact("dreams_total", str(sum(counts.values())), GENESIS_DREAMS_SOURCE,
-                          "count of files with a frontmatter status"))
+                          "count of Dreams with a frontmatter status (live by status; "
+                          "archive-only slugs toward archived)"))
         for st in sorted(counts):
             if st == "archived":
                 method = (
