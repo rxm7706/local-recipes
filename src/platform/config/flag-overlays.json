@@ -11,6 +11,7 @@
     "pyforge.warden.fix_manifest_edit": "on",
     "pyforge.herald.deck_viewer": "on",
     "pyforge.herald.deck_publish": "on",
+    "pyforge.herald.pages_second_host": "on",
     "pyforge.herald.deck_export_native": "on",
     "pyforge.warden.fix_draft_pr_estate": "on",
     "pyforge.warden.non_python_ecosystems": "on"
@@ -27,6 +28,7 @@
     "pyforge.warden.fix_manifest_edit": "on",
     "pyforge.herald.deck_viewer": "on",
     "pyforge.herald.deck_publish": "on",
+    "pyforge.herald.pages_second_host": "on",
     "pyforge.herald.deck_export_native": "on",
     "pyforge.warden.fix_draft_pr_estate": "on",
     "pyforge.warden.non_python_ecosystems": "on"
@@ -43,6 +45,7 @@
     "pyforge.warden.fix_manifest_edit": "off",
     "pyforge.herald.deck_viewer": "off",
     "pyforge.herald.deck_publish": "off",
+    "pyforge.herald.pages_second_host": "off",
     "pyforge.herald.deck_export_native": "off",
     "pyforge.warden.fix_draft_pr_estate": "off",
     "pyforge.warden.non_python_ecosystems": "off"

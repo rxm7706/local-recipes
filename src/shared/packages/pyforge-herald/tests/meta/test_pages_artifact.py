@@ -113,6 +113,7 @@ def test_assemble_refuses_mount_collision(tmp_path: Path) -> None:
             artifact,
             repo_root=repo,
             skip_herald_build=True,
+            skip_docs_site_build=True,
         )
     assert exc.value.code == 1
 

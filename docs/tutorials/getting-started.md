@@ -83,10 +83,16 @@ python build-locally.py --filter win*
 git clone https://github.com/rxm7706/local-recipes.git
 cd local-recipes
 
-# Install the build environment with Pixi
+# Laptop SBOM — Guild stations, detectors, and build/grayskull tooling (fnd:CAP-12)
+pixi install -e pyforge-foundry-full
+
+# Recipe factory at scale (~10 GB) — rattler-build tasks, atlas bootstrap, full task surface
+pixi install -e local-recipes
+
+# Legacy meta.yaml-only sweeps (minimal; prefer recipe-build in local-recipes for recipe.yaml)
 pixi install -e build
 
-# Verify tools are available
+# Verify legacy build env tools (optional)
 pixi run -e build python test-recipes.py --check
 ```
 
@@ -106,13 +112,15 @@ pixi run -e build python test-recipes.py --recipe <package-name> --all
 ## Guild station development (optional)
 
 Contributing to a PyForge Guild station (atlas, doctor, herald, marshal, mason, scribe, steward,
-warden) instead of authoring recipes? Run this first-time bootstrap sequence once:
+warden) instead of authoring recipes? After `pixi install -e pyforge-foundry-full`, run this
+bootstrap sequence once (atlas-heavy steps need the `local-recipes` env installed too):
 
 ```bash
-pixi run -e local-recipes health-check       # validates pixi envs, MCP server, atlas freshness
+pixi run -e pyforge-guild detectors-ci        # merge gate subset — proves the laptop SBOM
+pixi run -e local-recipes health-check        # validates pixi envs, MCP server, atlas freshness
 pixi run -e local-recipes bootstrap-data      # one-time atlas refresh; 30-45 min cold, 5-10 min warm
 pixi run -e local-recipes verify-env          # confirms default-env directive + pixi.toml integrity
-pixi run bmad-groundtruth                     # live factory facts as JSON (in the default pyforge-guild env)
+pixi run -e pyforge-guild bmad-groundtruth    # live factory facts as JSON
 ```
 
 See [Pixi tasks](../how-to/pixi-tasks.md) for the full task surface, including `bmad-drift-check`

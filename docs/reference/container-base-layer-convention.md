@@ -87,7 +87,7 @@ rather than one do-everything one:
 
 - **`scripts/pixi_version_registry.py`** — already keeps every
   Containerfile's `ghcr.io/prefix-dev/pixi:<version> AS builder` tag in
-  sync with `pixi.toml`'s `requires-pixi` floor (`pixi run -e local-recipes
+  sync with `pixi.toml`'s `requires-pixi` floor (`pixi run -e pyforge-guild
   pixi-version-check`). Narrow scope: the pixi builder-stage tag only.
 - **`tests/packaging/test_containerfile_base_layer_convention.py`** — the
   full sweep this doc otherwise couldn't prove on its own: every `FROM` in

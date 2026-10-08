@@ -111,8 +111,8 @@ development_status:
   3-2-stale-hand-mirror-detection: done
   30-1-a-deck-s-html-twins-are-self-contained-and-published: done
   30-2-the-herald-portal-shows-a-deck-in-the-browser-from-its-html-twin: done
-  31-1-the-pages-artifact-builds-for-the-host-that-deploys-it: backlog
-  31-2-how-to-deploy-the-docs-site-to-github-enterprise-pages: backlog
+  31-1-the-pages-artifact-builds-for-the-host-that-deploys-it: done
+  31-2-how-to-deploy-the-docs-site-to-github-enterprise-pages: done
   31-3-the-public-pages-build-loads-no-third-party-resource-from-herald-s-own-pages: done
   32-1-a-deck-exports-as-a-native-editable-pptx-through-pptxgenjs-plus: done
   32-2-the-native-pptx-export-carries-every-speaker-note-and-every-text-block: backlog
@@ -190,7 +190,7 @@ development_status:
   epic-3-retrospective: optional
   epic-30: done
   epic-30-retrospective: optional
-  epic-31: in-progress
+  epic-31: done
   epic-31-retrospective: optional
   epic-32: in-progress
   epic-32-retrospective: optional
