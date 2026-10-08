@@ -2,7 +2,7 @@
 title: '27.6: The docs site builds from a clean checkout'
 type: 'fix'
 created: '2026-10-08'
-status: 'in-progress'
+status: 'done'
 difficulty: 'easy'
 baseline_revision: 'd576ac1f1d46693db4d0e0e43fbc2ff845a68ef3'
 review_loop_iteration: 0
@@ -236,4 +236,31 @@ Type / Effort / Deps: fix / S / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (self-review against acceptance criteria; implementation subagent inlined)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Vendored upstream `site-url.mjs` into git, narrowed `.gitignore` exception, extended README sha256 table, added `test_docs_site_imports_tracked.py`, and wired `docs-site/**` into herald's `pyforge-station-tests` path filters.
+
+**Files changed:**
+- `docs-site/src/lib/site-url.mjs` — upstream helper, tracked (blob `7bc47ba8…`, sha256 `734c233b…`)
+- `docs-site/README.md` — vendored table row; removed helper from local-only list
+- `.gitignore` — `!docs-site/src/lib/` negation after Story 27.1 block
+- `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_imports_tracked.py` — relative-import tracking oracle
+- `.github/workflows/pyforge-station-tests.yml` — `docs-site/**` on both `paths:` lists; herald `job_paths` includes `docs-site`
+- `spec-pyforge-herald/.memlog.md` and `spec-pyforge-pages/.memlog.md` — surface reconcile entries
+
+**Review:** 0 patch / defer / intent_gap items.
+
+**followup_review_recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — 1641 passed, 4 skipped
+- `pixi run --frozen -e pyforge-steward pytest …/test_workflow_path_filters_match.py` — pass
+- `env -u SITE_URL -u GITHUB_REPOSITORY pixi run --frozen -e site docs-site-build` — exit 0, 64 HTML pages
+- `python scripts/spec_surface_reconcile.py` — OK (after memlog reconciles)
+- `git check-ignore -q docs-site/src/lib/site-url.mjs` — exit 1 (not ignored)
