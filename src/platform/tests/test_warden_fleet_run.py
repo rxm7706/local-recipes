@@ -117,7 +117,12 @@ def fleet_flags_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def test_fleet_run_three_repos(tmp_path: Path, fleet_flags_on: Path) -> None:
     _seed_inventory(tmp_path)
     run = FleetRun.objects.create(organisation=_ORG, status=JobStatus.PENDING)
-    run_fleet_run(str(run.pk))
+    report = json.dumps({"status": "clean", "schemaVersion": "1.1.0"})
+    with patch(
+        "django_warden_fabric.tasks._run_warden_engines",
+        return_value=(report, "{}", 0),
+    ):
+        run_fleet_run(str(run.pk))
     run.refresh_from_db()
     assert run.status == JobStatus.SUCCEEDED
     scans = FleetRepoScan.objects.filter(fleet_run=run)
