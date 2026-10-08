@@ -1506,7 +1506,7 @@ So that it matches the rest of the deck family and a token change reaches it wit
 **When** `pptx_native.py` reads those tokens and the driver takes every visual value from them
 **Then** a fixture deck read back with python-pptx shows Archivo (the heading and body families from `theme.json`), sizes of `--type-title`, `--type-body` and `--type-small` scaled to the slide, `palette.text` text on a `palette.bg` background, and a title offset of `--pad-x` scaled; a render with mutated tokens follows the mutation
 **And** a missing token file or key stops the export with a named error, exit 1, nothing written and nothing retired; the driver source holds no hex colour, `fontFace` literal or numeric size or offset literal; no file under `presentations/` changes; `pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done
 
 ## Epic 33: The genesis deck counts archived Dreams where they now live (spec-one-chain-per-station CAP-11)
 
