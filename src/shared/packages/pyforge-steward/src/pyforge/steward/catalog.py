@@ -1009,7 +1009,9 @@ class CatalogEngine:
             CODEX_MANIFEST_RELATIVE.as_posix(): _json_text(codex),
         }
 
-    def _materialize_ship_snapshot(self, snapshot_dir: Path, listings: list[Listing]) -> tuple[list[str], list[CatalogFinding]]:
+    def _materialize_ship_snapshot(
+        self, snapshot_dir: Path, listings: list[Listing]
+    ) -> tuple[list[str], list[CatalogFinding]]:
         """Vendor module trees and write ship manifests under ``snapshot_dir``."""
         findings: list[CatalogFinding] = []
         written: list[str] = []
@@ -1100,11 +1102,7 @@ class CatalogEngine:
                 chosen = decl
                 break
         if chosen is None:
-            msg = (
-                f"no ship backend {backend_name!r}"
-                if backend_name
-                else "no backend with state 'on'"
-            )
+            msg = f"no ship backend {backend_name!r}" if backend_name else "no backend with state 'on'"
             return ShipResult(
                 backend=backend_name or "",
                 snapshot_dir=out,

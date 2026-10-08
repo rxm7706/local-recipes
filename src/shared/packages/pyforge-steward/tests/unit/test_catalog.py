@@ -389,7 +389,6 @@ def test_a_backend_that_raises_never_aborts_check(tmp_path: Path) -> None:
             raise RuntimeError("boom")
 
         def ship(self, ctx, decl: BackendDecl):
-            from pyforge.steward.catalog import ShipBackendResult
 
             raise RuntimeError("boom-ship")
 
@@ -1195,9 +1194,13 @@ sources:
     (catalog_dir / "registry").mkdir(exist_ok=True)
     (catalog_dir / "registry" / "estate.yaml").write_text("source: estate-listings\nmodules: []\n", encoding="utf-8")
     (catalog_dir / CLAUDE_MANIFEST_RELATIVE.parent).mkdir(parents=True, exist_ok=True)
-    (catalog_dir / CLAUDE_MANIFEST_RELATIVE).write_text('{"name":"test-catalog","owner":{"name":"t"},"plugins":[]}\n', encoding="utf-8")
+    (catalog_dir / CLAUDE_MANIFEST_RELATIVE).write_text(
+        '{"name":"test-catalog","owner":{"name":"t"},"plugins":[]}\n', encoding="utf-8"
+    )
     (catalog_dir / CODEX_MANIFEST_RELATIVE.parent).mkdir(parents=True, exist_ok=True)
-    (catalog_dir / CODEX_MANIFEST_RELATIVE).write_text('{"name":"test-catalog","interface":{"displayName":"T"},"plugins":[]}\n', encoding="utf-8")
+    (catalog_dir / CODEX_MANIFEST_RELATIVE).write_text(
+        '{"name":"test-catalog","interface":{"displayName":"T"},"plugins":[]}\n', encoding="utf-8"
+    )
 
     probe = _row("probe-mod", "wielded-suite")
     monkeypatch.setattr(
@@ -1248,9 +1251,13 @@ sources:
     (catalog_dir / "registry").mkdir(exist_ok=True)
     (catalog_dir / "registry" / "estate.yaml").write_text("source: estate-listings\nmodules: []\n", encoding="utf-8")
     (catalog_dir / CLAUDE_MANIFEST_RELATIVE.parent).mkdir(parents=True, exist_ok=True)
-    (catalog_dir / CLAUDE_MANIFEST_RELATIVE).write_text('{"name":"test-catalog","owner":{"name":"t"},"plugins":[]}\n', encoding="utf-8")
+    (catalog_dir / CLAUDE_MANIFEST_RELATIVE).write_text(
+        '{"name":"test-catalog","owner":{"name":"t"},"plugins":[]}\n', encoding="utf-8"
+    )
     (catalog_dir / CODEX_MANIFEST_RELATIVE.parent).mkdir(parents=True, exist_ok=True)
-    (catalog_dir / CODEX_MANIFEST_RELATIVE).write_text('{"name":"test-catalog","interface":{"displayName":"T"},"plugins":[]}\n', encoding="utf-8")
+    (catalog_dir / CODEX_MANIFEST_RELATIVE).write_text(
+        '{"name":"test-catalog","interface":{"displayName":"T"},"plugins":[]}\n', encoding="utf-8"
+    )
 
     probe = _row("probe-mod", "wielded-suite")
     monkeypatch.setattr(
