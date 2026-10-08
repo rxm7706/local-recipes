@@ -30,9 +30,10 @@ _SRC_HREF = re.compile(
     re.I,
 )
 _TWEMOJI_IMG = re.compile(
-    r'<img\b[^>]*\bclass="emoji"[^>]*\bsrc="https?://[^"]+"[^>]*\balt="([^"]*)"[^>]*/?>',
+    r'<img\b[^>]*\bclass="emoji"[^>]*/?>',
     re.I,
 )
+_TWEMOJI_ALT = re.compile(r'\balt="([^"]*)"', re.I)
 _GOOGLE_FONTS_IMPORT = re.compile(
     r"@import\s+url\(['\"]https://fonts\.googleapis\.com/[^'\"]+['\"]\)\s*;?",
     re.I,
@@ -116,10 +117,16 @@ def scan_tree(root: Path) -> list[OriginFinding]:
     return out
 
 
+def _twemoji_to_alt(match: re.Match[str]) -> str:
+    tag = match.group(0)
+    alt = _TWEMOJI_ALT.search(tag)
+    return alt.group(1) if alt else ""
+
+
 def vendor_standalone_html(path: Path) -> None:
     """Post-process a Marp standalone export: drop CDN twemoji and Google Fonts imports."""
     text = path.read_text(encoding="utf-8", errors="replace")
-    text = _TWEMOJI_IMG.sub(r"\1", text)
+    text = _TWEMOJI_IMG.sub(_twemoji_to_alt, text)
     text = _GOOGLE_FONTS_IMPORT.sub("", text)
     text = re.sub(
         r'<link[^>]+href="https://fonts\.googleapis\.com/[^"]+"[^>]*/?>',

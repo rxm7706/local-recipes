@@ -11,7 +11,6 @@ from pyforge.herald import twins
 REPO_ROOT = Path(__file__).resolve().parents[6]
 
 
-@pytest.mark.meta
 def test_standalone_twins_have_zero_external_origins():
     findings: list[twins.OriginFinding] = []
     for path in twins.iter_standalone_twin_files(REPO_ROOT):
@@ -19,7 +18,6 @@ def test_standalone_twins_have_zero_external_origins():
     assert not findings, _format_findings(findings)
 
 
-@pytest.mark.meta
 def test_react_deck_index_html_has_zero_external_origins():
     findings: list[twins.OriginFinding] = []
     for path in twins.iter_react_deck_index_files(REPO_ROOT):
