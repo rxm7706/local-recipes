@@ -955,7 +955,6 @@ class CatalogEngine:
 
     def publish(self, listing_path: Path, review_path: Path, *, dry_run: bool = False) -> PublishResult:
         """Append or update one reviewed module row in ``registry/estate.yaml``."""
-        findings: list[CatalogFinding] = []
         registry_path = self._estate_registry_path()
         if registry_path is None:
             return PublishResult(
