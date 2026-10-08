@@ -2,7 +2,8 @@
 title: '31.1: The Pages artifact builds for the host that deploys it'
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'f1cc68bab7fef224a9d5a78994db73e6b7af0895'
 difficulty: 'easy'
 review_loop_iteration: 0
 followup_review_recommended: false
