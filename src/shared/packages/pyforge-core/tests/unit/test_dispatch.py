@@ -178,9 +178,7 @@ def test_roster_station_not_installed_atlas_and_mason(token: str, env: str):
 def test_off_roster_unknown_station_message_unchanged():
     with pytest.raises(DispatchError) as exc:
         dispatch_argv(["pyforge", "nosuch"], script_map=GUILD_FIVE)
-    assert str(exc.value) == (
-        "unknown station 'nosuch'; known: doctor, herald, marshal, scribe, steward"
-    )
+    assert str(exc.value) == ("unknown station 'nosuch'; known: doctor, herald, marshal, scribe, steward")
 
 
 def test_context_alias_still_works_in_guild_five():
