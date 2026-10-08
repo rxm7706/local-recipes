@@ -1029,6 +1029,11 @@ def _add_workspace_subparsers(workspace_parser: argparse.ArgumentParser) -> None
         action="store_true",
         help="only archive worktrees whose branch is already merged into its source",
     )
+    clean.add_argument(
+        "--delete",
+        action="store_true",
+        help="drop gone or proven-landed workspaces without prompting or writing an archive",
+    )
     clean.add_argument("--json", action="store_true", help="emit JSON instead of text")
 
 

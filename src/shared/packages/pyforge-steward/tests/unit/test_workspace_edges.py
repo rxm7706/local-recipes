@@ -92,12 +92,15 @@ def test_format_repo_set_start_lists_the_workspace_file_then_each_member():
 
 
 def test_format_clean_renders_nothing_archived_and_skipped_rows_with_members():
-    assert format_clean({"archived": [], "skipped": []}, as_json=False) == "workspace clean: nothing to do"
+    assert (
+        format_clean({"archived": [], "deleted": [], "skipped": []}, as_json=False) == "workspace clean: nothing to do"
+    )
     result = {
         "archived": [
             {"slug": "a", "archive": "/arch/a.tar.gz"},
             {"slug": "b", "archive": "/arch/b.tar.gz", "member": "api"},
         ],
+        "deleted": [],
         "skipped": [{"slug": "c", "reason": "not-merged"}, {"slug": "d", "member": "web"}],
     }
     assert format_clean(result, as_json=False).splitlines() == [

@@ -1075,7 +1075,7 @@ So that the bookkeeping lists only open workspaces and no agent hand-edits it.
 **When** `steward workspace clean --delete` runs over the fleet, or `steward workspace clean <slug> --delete` for one record
 **Then** (a) loses its record; (b) loses its worktree, its local branch and its record; neither leaves a tarball, a `.landed.txt` note, a `.missing.txt` marker or a tag; (c), (d) and (e) keep their worktree, branch and record and are reported with the reason (`not-merged`, `dirty`, `branch <b> not on <source>`); the proof for (b) is CAP-157's, with the source and branch read by full ref (CAP-158); a gone worktree whose branch is on its source loses the branch and the record
 **And** no prompt is asked; a slug-targeted `--delete` that refuses exits 1 naming why, and a fleet run exits 0 unless a row errored (CAP-155); `--json` carries a `deleted` list beside `archived` and `skipped`; `--delete` with `--merged-only`, or with a repo-set feature, is a usage error; the default `clean`, `--merged-only`, `ls` and `status` are unchanged; dropping the refusal of an unmerged or dirty workspace fails a new test (mutation)
-**Status:** backlog
+**Status:** done
 
 ## Epic 14: The BMAD core upgrades repeatably
 
