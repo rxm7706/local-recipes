@@ -2,7 +2,7 @@
 title: '65.2: A story whose spec cannot bind is refused before a session is spent'
 type: 'fix'
 created: '2026-09-27'
-status: 'backlog'
+status: 'ready-for-dev'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
