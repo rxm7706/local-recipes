@@ -2,10 +2,10 @@
 title: '32.3: The native pptx export takes its fonts, colours and spacing from the design tokens'
 type: 'fix'
 created: '2026-10-08'
-status: 'in-progress'
+status: 'done'
 difficulty: 'medium'
 baseline_revision: 'da076933eb0480b13b02181f1d0964f729dae726'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
@@ -218,4 +218,43 @@ Type / Effort / Deps: fix / M / S-32.2.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-08 — Review pass
+- verdicts: 22 findings — high 0, medium 6, low 8, false 2, maybe-false 0
+- findings:
+  - `[medium]` `[patch]` CLI flag-on test skipped on missing Modernist tree — seeded tokens and narrowed skip to node/pptxgenjs absence.
+  - `[medium]` `[patch]` Missing export failure integration — added unit test for missing theme with stub native file preserved.
+  - `[medium]` `[patch]` Heading weight below 600 not end-to-end tested — added integration read-back asserting title not bold.
+  - `[medium]` `[patch]` Code block typography untested — added code fence and font face/size assertions in token read-back test.
+  - `[medium]` `[patch]` Flag-on CLI stamp failure in tmp trees — mocked write_stamp in flag test.
+  - `[medium]` `[patch]` Live reader omitted type-kicker px — asserted kicker 24 in unit test.
+  - `[low]` `[reject]` Table header-only surface fill — whole-table fill matches practical pptxgenjs table API; header-only deferred.
+  - `[low]` `[reject]` padBottom unused in driver — bottom margin not yet mapped to slide geometry; follow-up if overflow appears.
+  - `[low]` `[reject]` palette.accent unused — accent not in PPTX mapping table for text elements; loaded for JSON completeness only.
+  - `[low]` `[reject]` Table border pt always 1 — acceptable 1pt rule using token ratio placeholder.
+  - `[low]` `[reject]` Baseline vs block height overlap risk — integration fixtures pass; tune if real decks overlap.
+  - `[low]` `[reject]` Duplicate test helpers — small duplication acceptable between unit/integration modules.
+  - `[low]` `[reject]` Meta test import cleanup — removed unused pytest import.
+  - `[low]` `[defer]` Expanded meta literal scan — spec meta test scope is explicit; location: src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_driver_has_no_literals.py
+  - `[false]` `[reject]` Memlog missing in diff — appended spec-pyforge-herald memlog entries during finalize (not in original diff hunk).
+  - `[false]` `[reject]` design-tokens.json divergence memlog missing — recorded on spec-pyforge-herald memlog in same session.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Native PPTX export loads Modernist tokens from theme.json, styles.css, and deck index.html, embeds them in slide-model JSON, and the Node driver scales px tokens to slide inches/points for colours, fonts, padding, and typography.
+
+Files changed:
+- src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_native.py — token reader, model JSON tokens block, export wiring
+- src/shared/packages/pyforge-herald/src/pyforge/herald/node/pptx_native.mjs — token-driven layout and theme
+- src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py — reader and export failure tests
+- src/shared/packages/pyforge-herald/tests/integration/test_pptx_native_render.py — read-back, mutation, bold, code tests
+- src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_driver_has_no_literals.py — driver literal guard
+- src/shared/packages/pyforge-herald/tests/unit/test_pptx_native_flag.py — Modernist seed for flag-on CLI test
+- _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/.memlog.md — surface reconcile entries
+
+Review: 6 medium patches applied; low/false items rejected or deferred as noted.
+
+Verification: `pixi run --frozen -e pyforge-herald pyforge-herald-test` passed (1739 passed, 4 skipped); `python scripts/spec_surface_reconcile.py` OK.
+
+Residual risks: pad-bottom and accent tokens are loaded but not applied in layout; table surface fill applies to entire table.
