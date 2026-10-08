@@ -4444,7 +4444,7 @@ So that "the SBOM is complete" is a verdict, and a missing dependency is a named
 **When** this story lands
 **Then** `pixi run -e pyforge-foundry-full sbom-laptop-gate` runs `lint-types`, every station suite, the platform bring-up smoke from the layer environment, and a channel audit (every locked package comes from the declared channels; no PyPI-only entry) and exits 0 on `main`; exit codes follow `docs/reference/judgement-vocabulary.md`
 **And** a fixture that removes one dependency a station imports makes the gate exit non-zero and name that dependency as a gap; the gate never falls back to `-e local-recipes`
-**Status:** backlog
+**Status:** done
 
 ### Story 67.3: Every gap and every fat-only pin has a disposition and an owner
 

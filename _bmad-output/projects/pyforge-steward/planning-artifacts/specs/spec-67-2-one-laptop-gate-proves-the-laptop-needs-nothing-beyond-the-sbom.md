@@ -2,7 +2,8 @@
 title: '67.2: One laptop gate proves the laptop needs nothing beyond the SBOM'
 type: 'feature'
 created: '2026-09-25'
-status: 'ready'
+status: 'done'
+baseline_revision: e4667b08a9cfe6d3847edef9091019bb3931330f
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
