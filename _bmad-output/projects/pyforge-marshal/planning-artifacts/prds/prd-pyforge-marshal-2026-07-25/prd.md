@@ -2,7 +2,7 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: "2026-10-07"   # RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 34 entries since section 37 (fix stories 83.22, 83.23, 85.5, 70.2, 22.13-22.17, 53.4 and 85.6, their landings and surface reconciles); no FR registered. See section 38. Earlier 2026-10-04: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-287 (Epic 87); FR-234 registered; FR-59, FR-62 and FR-63 gain dated consequences. See section 37. Earlier 2026-10-03: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for CAP-286 (Epic 85); FR-233 registered. See section 36. Earlier 2026-10-02: RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for CAP-285 (Epic 84); FR-232 registered. See section 35. Earlier 2026-10-01: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for CAP-284 (Epic 80); FR-231 registered. See section 34. Earlier 2026-09-30: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD) for CAP-283 (Epic 78); FR-230 registered. See section 33. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
+updated: "2026-10-08"   # RE-STAMPED 2026-10-08: chain-currency behind-code (code -> PRD) truth-up for Story 46.9 as built (CAP-196, per-layer benchmark legs with cache-hit rates) and the cli.benchmark refusal fix that let its attr-defined mypy override go (MRS-BENCH-001..005); the spec memlog's entries since section 38 folded (Stories 22.18-22.21); no FR registered; two divergences and one FR-tag defect recorded. See section 39. Earlier 2026-10-07: RE-STAMPED 2026-10-07: chain-currency cascade (spec -> PRD) for the spec memlog's 34 entries since section 37 (fix stories 83.22, 83.23, 85.5, 70.2, 22.13-22.17, 53.4 and 85.6, their landings and surface reconciles); no FR registered. See section 38. Earlier 2026-10-04: RE-STAMPED 2026-10-04: chain-currency cascade (spec -> PRD) for CAP-287 (Epic 87); FR-234 registered; FR-59, FR-62 and FR-63 gain dated consequences. See section 37. Earlier 2026-10-03: RE-STAMPED 2026-10-03: chain-currency cascade (spec -> PRD) for CAP-286 (Epic 85); FR-233 registered. See section 36. Earlier 2026-10-02: RE-STAMPED 2026-10-02: chain-currency cascade (spec -> PRD) for CAP-285 (Epic 84); FR-232 registered. See section 35. Earlier 2026-10-01: RE-STAMPED 2026-10-01: chain-currency cascade (spec -> PRD) for CAP-284 (Epic 80); FR-231 registered. See section 34. Earlier 2026-09-30: RE-STAMPED 2026-09-30: chain-currency cascade (spec -> PRD) for CAP-283 (Epic 78); FR-230 registered. See section 33. Earlier 2026-09-29: RE-STAMPED 2026-09-29: chain-currency cascade (spec -> PRD) for CAP-282 (Epic 77); FR-229 registered. See section 32. Earlier 2026-09-28: RE-STAMPED (night): Epic 74 recorded for spec-feature-flag-governance CAP-3, CAP-4 and CAP-6 (the Guild's CAPs; no FR registered, the doctor Epic 24/25/32 relay). No AD amended. See section 31.11. Earlier: AMENDED (evening, cont. 6): operator rulings -- FR-225 (CAP-279, the loop-home scope for .bmad-loop/policy.toml), FR-227 (CAP-280 widened to dispatch land's ALREADY_LANDED read) and FR-228 (CAP-281, the per-campaign follow-up cap) amended in place; AD-55 amended in place on the spine. See § 31.10. Earlier: RE-STAMPED (evening, cont. 5): chain-currency cascade (spec -> PRD) for FR-228 / CAP-281 (Epic 73). No AD amended. See § 31.9. Earlier: RE-STAMPED (evening, cont. 4): chain-currency cascade (spec -> PRD) for FR-227 / CAP-280 (Epic 72). No AD amended. See § 31.8. Earlier: AMENDED (evening, cont. 3): FR-211 re-scoped with CAP-265 (operator ruling; Story 54.1, key kept). No AD amended. See § 22 and § 31.7. Earlier: RE-STAMPED (evening, cont. 2): chain-currency cascade (spec -> PRD) for FR-226 / spec-pyforge-core CAP-11 (Epic 71). No AD amended. See § 31.6. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-225 / CAP-279 (Epic 70). No AD amended. See § 31.5. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-224 / CAP-278 (Epic 69). No AD amended. See § 31.4. Earlier: RE-STAMPED (later): chain-currency cascade (spec -> PRD) for FR-223 / CAP-277 (Epic 68). No AD amended. See § 31.3. Earlier: RE-STAMPED: chain-currency cascade (spec -> PRD) for FR-221 / CAP-275 (Epic 66) and FR-222 / CAP-276 (Epic 67). No AD amended. See § 31. Prior 2026-09-27
 # 2026-09-27  # RE-STAMPED (late night, cont.): chain-currency cascade (spec -> PRD) for FR-220 / CAP-274 (Epic 65). No AD amended. See § 30.2. Earlier: RE-STAMPED (late night): chain-currency cascade (spec -> PRD) for FR-219 / CAP-273 (Epic 64). No AD amended. See § 30. Earlier: RE-STAMPED (late, cont.): chain-currency cascade (spec -> PRD) for FR-218 / CAP-272 (Epic 62). No AD amended. See § 29. Earlier: RE-STAMPED (late): chain-currency cascade (spec -> PRD) for FR-217 / CAP-271 (Epic 61). No AD amended. See § 28. Earlier: RE-STAMPED (night): chain-currency cascade (spec -> PRD) for FR-216 / CAP-270 (Epic 60). No AD amended. See § 27. Earlier: RE-STAMPED (evening, cont.): chain-currency cascade (spec -> PRD) for FR-215 / CAP-269 (Epic 59). No AD amended. See § 26. Earlier: RE-STAMPED (evening): chain-currency cascade (spec -> PRD) for FR-214 / CAP-268 (Epic 58). No AD amended. See § 25. Earlier 2026-09-27: FR-213 / CAP-267 (Epic 57), § 24; FR-212 / CAP-266 (Epic 56), § 23. Prior 2026-09-26
 # 2026-09-26  # RE-STAMPED 2026-09-26: chain-currency (spec->prd, behind-code) — bmad-loop cap widened to <0.13 (spec-pyforge-marshal memlog 2026-09-26); Stack literal corrected in place; no FR change. Prior 2026-09-24
 # 2026-09-19  # currency reconciliation (§ 21): FR-201..FR-210 registered from spec-pyforge-marshal CAP-249..256 (Epic 51, the landing self-drives — second round) and spec-pyforge-core CAP-8..9 (Epic 52, the shared floor is a PR gate).
@@ -3236,3 +3236,97 @@ the supervisor's verification already does; the verdict mapping (AD-8) is unchan
 
 **Content changed:** § 38 added. No FR added, renumbered or removed. The spine's § Currency reconciliation —
 2026-10-07 checks 22.15, 22.16 and 22.17 against its ADs; none is added or amended. `updated:` bumped.
+
+## 39. Currency reconciliation — 2026-10-08
+
+*Trigger: the chain-currency `behind-code` finding on this PRD and the spine (both 2026-10-07) against the code stage
+(2026-10-08). The code stage is the package `pyproject.toml`, dated by its last commit: on `dispatch/pyforge-marshal/46.9`,
+`c111fb3799` removed the `[[tool.mypy.overrides]]` entry that disabled `attr-defined` for `pyforge.marshal.cli.benchmark`.
+This is a truth-up against the as-built code, not a re-stamp: § 39.1 checks Story 46.9 and the fix that let the override
+go, and § 39.3 folds the spec memlog's entries since § 38. No CAP is added.*
+
+### 39.1 Story 46.9 as built: one benchmark leg per layer, with cache-hit rates
+
+Story 46.9 realizes `spec-pyforge-marshal` CAP-196, the fold remint of `spec-marshal-token-economy` CAP-23. Like the rest
+of CAP-192..CAP-197 it is decomposed straight into Epic 46 with no FR in this PRD; `epics.md` cites
+`spec-marshal-token-economy CAP-23` as the story's FR/AD.
+
+- `marshal benchmark compare --per-layer --layer-legs PATH` compares one isolated leg per context layer against a shared
+  all-off baseline (`--off`). The layers are policy's `CONTEXT_LAYER_NAMES` (`wire`, `output`, `structure-graph`,
+  `derived-context`, `planning-graph`); `--layer-legs` is a JSON object naming, for every layer, a recorded leg file or a
+  bmad-loop run id. Without `--per-layer` the verb is Story 28.5's off/on comparison, unchanged.
+- Each layer row reports the story's weighted tokens for the baseline and the isolated leg and their delta; the USD
+  estimate from Story 28.10's catalog when one is declared (absent otherwise, never fabricated); and each side's
+  prompt-cache hit rate: cache reads over input plus cache reads plus cache writes, 0 to 1, or null when unknown. The
+  artifact (schema `marshal-token-economy-benchmark-per-layer/v1`) is written to the project's Tier-3
+  `implementation-artifacts/`.
+- Story 28.5's equivalence gate runs per leg: the same story, both legs `done`, the same gate fingerprint, and an
+  independent review on both. A leg that fails it is marked `void` and its delta is withheld; the other legs stand. A
+  void leg is the WARN `MRS-BENCH-004`, and the artifact is still written.
+
+**The refusal paths, as built.** `MRS-BENCH-001` (an invalid project slug), `MRS-BENCH-002` (a leg or the `--layer-legs`
+map cannot be loaded: unreadable or malformed JSON, not an object, a missing or mistyped field, the wrong `layers_mode`,
+a layer missing from the map, or a run whose usage or status snapshot cannot be read), `MRS-BENCH-003` (the artifact
+cannot be written) and the new `MRS-BENCH-005` (`--per-layer` without `--layer-legs`, or the reverse) are ERROR and exit
+4; `MRS-BENCH-004` is WARN and exits 0. Before the fix none of the ERROR paths worked. Each built its finding with
+`Severity.HARD`, a member of the seed installer's HARD/DRIFT/INFO ladder (`seed/detect/findings.py`), not of
+`core.model.Severity` (ERROR/WARN/INFO), so each raised `AttributeError`: a traceback with no envelope and no code,
+against NFR-12. The module's `attr-defined` override, from the 2026-09-20 mypy baseline, hid it from the type checker;
+Story 46.9's coverage gate (the module at 78%) surfaced it. The fix (`42752a2e2b`) uses `Severity.ERROR`, reports a leg
+file that is not an object or lacks a field as `MRS-BENCH-002` (it was an uncaught exception), and adds 32 tests that
+assert exit 4 and the exact code (the module at 100%). `c111fb3799` then removed the override; `mypy -p pyforge.marshal`
+is clean without it (191 source files, re-run for this reconciliation). The retrospective
+(`retros/retro-pyforge-marshal-2026-10-08.md`) carries the lesson as a candidate fix story: refuse a
+`disable_error_code` override on a module a story touches unless it is still needed.
+
+**Contract against code, recorded and not repaired** (each is a code change for a fix story):
+
+- CAP-196 and the story say a named story *runs* one leg per layer. Marshal does not launch the legs: the operator runs
+  each one and records it, and `compare --per-layer` reads the records. That is the boundary Story 28.5 drew for its
+  off/on pair (the module's docstring puts live orchestration out of scope). No per-layer artifact has been recorded
+  yet, so the Claude wire savings are not yet verified, and Epic 46's realized-guard (a measured benchmark artifact) is
+  still unmet.
+- The artifact does not show that a leg ran with only its layer. A run-id leg is labelled with its layer's single-on
+  `[context]` block instead of being read from the run's materialized policy, and the artifact's `policy_digest` is the
+  project's currently resolved block, not any leg's. The spine's § Currency reconciliation — 2026-10-08 records this
+  against AD-35, with an AD-3 and an AD-4 divergence in the same code.
+
+### 39.2 The FR space: no FR registered
+
+Story 46.9 adds no requirement here: CAP-196 stays epic-decomposed, and the refusal fix restores the envelope NFR-12
+requires on paths that were crashing. The memlog's new stories are fixes under FRs that already hold them: 22.18 and 22.19 under
+FR-193 (Epic 22, the dispatch landing), on CAP-137's mechanical land-conflict union; 22.20 under FR-233 (the fix turn);
+22.21 under FR-221 (the follow-up review carry) and FR-193.
+
+One defect found, not repaired: the `← CAP-n` tags on the FR-170..FR-195 headings run CAP-128..CAP-153 in step with the
+FR number and do not name the Spec's current CAPs for the same capabilities. FR-193 (single-story dispatch) is tagged
+CAP-151, a parallel-dispatch fan-out CAP, while the Spec's single-story-dispatch CAPs are CAP-159..CAP-169; FR-179 is
+tagged CAP-137, which is the mechanical land-conflict union. Re-tagging those 26 headings is a citation pass for its own
+story.
+
+**ONE FR space still FR-1..FR-234** (FR-235 = next free id).
+
+### 39.3 What the Spec's memlog carries since § 38
+
+- **2026-10-07, the rest of the landing-gaps batch landed:** 22.15, 22.16 and 22.17 with their surface reconciles. 22.16
+  took approach B: the guard runs under `sys.executable`, and the journaled command stays
+  `python scripts/spec_surface_reconcile.py`. Doctor Story 6.13 edited the co-governed `scripts/fleet_scan.py`: the
+  `spec→prd` edge reads the memlog's contract date and ignores trailing bookkeeping lines.
+- **2026-10-07, Stories 22.18 and 22.19 minted** (fixes, no CAP, no flag; Epic 22) and both landed. A landing that
+  conflicts on `scripts/.spec-surface-baseline.json` takes main's baseline and re-runs its own scoped reconcile on the
+  merged tree; a refusing stamp is `MRS-DISP-048`, and any other unknown path is still `MRS-DISP-038` (22.18). A landing
+  unions the four flag-registry files when two flag stories land in turn: the JSON key by key, main's keys first; the
+  Python registries only when every hunk is a pure addition; then the flag gate and both flag test modules run before
+  the single push (22.19).
+- **2026-10-08, Stories 22.20 and 22.21 minted** (fixes, no CAP, no flag; Epic 22) and both landed. In a fix turn the
+  ruff pass runs after the WIP commit and before the spec-surface reconcile, so one reconcile names the fix and its
+  formatting (22.20). A landing writes the follow-up review's `DW-FRR-<story>` row on the branch and commits it before
+  its push, so the PR's marshal-test no longer reds on a done-and-flagged spec; finalize's carry stays as the backstop
+  (22.21).
+- **2026-10-08, other landings:** herald 27.2, 30.2, 32.1 and 34.1, steward 62.3 and 67.2, and doctor 38.1 touched
+  paths this Spec co-governs; Story 46.9 recorded its own surface reconcile.
+
+**Content changed:** § 39 added. No FR added, renumbered or removed. No earlier line of this PRD described
+`marshal benchmark` (§ 30.1's mention of a refused 46.9 dispatch is accurate history), so none is corrected. The spine's
+§ Currency reconciliation — 2026-10-08 checks 46.9 and 22.18..22.21 against its ADs, records three divergences and
+corrects AD-4's enforcement sentence. `updated:` bumped.

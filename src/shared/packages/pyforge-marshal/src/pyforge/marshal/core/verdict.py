@@ -1378,6 +1378,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-BENCH-002": Verdict.ERROR,
     "MRS-BENCH-003": Verdict.ERROR,
     "MRS-BENCH-004": Verdict.WARN,
+    "MRS-BENCH-005": Verdict.ERROR,
     # Story 44.1: marshal watch. Loop-CLI / no-run are hard; git/gh probes
     # are advisory (finding, not a crash).
     "MRS-WATCH-001": Verdict.ERROR,
