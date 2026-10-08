@@ -1381,7 +1381,7 @@ So that the same artifact works on github.io and on the enterprise host, with no
 **When** the build takes the host's site URL and base path
 **Then** `pixi run -e site pages-build` with a fixture enterprise URL and base path produces an artifact whose internal links and assets resolve under that base, and with the public values produces today's artifact; with the flag OFF the host inputs are ignored and the public build results
 **And** `pages-check` exits 0 on both builds and exits 1 on each planted cross-origin kind and on an absolute link to the other host; exactly one workflow uses `actions/deploy-pages`; `pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 31.2: How to deploy the docs site to GitHub Enterprise Pages
 
@@ -1404,7 +1404,7 @@ So that the enterprise deploy is repeatable and does not live in one person's he
 **When** the how-to lands
 **Then** it names each enterprise-side step with its command or setting, links the air-gapped mirror how-to instead of restating it, and ends with the check that the deployed site makes no request to another origin
 **And** `docs-map-hygiene-check` and `docs-currency-check` exit 0, and `pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 31.3: The public Pages build loads no third-party resource from herald's own pages
 

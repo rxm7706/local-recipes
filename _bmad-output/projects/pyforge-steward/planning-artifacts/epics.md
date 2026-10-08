@@ -4485,7 +4485,7 @@ So that I never learn to install the 10 GB `local-recipes` environment for work 
 **Given** the laptop gate is green on `main`
 **When** this story lands
 **Then** each surface names `pyforge-foundry-full` as the laptop install and `local-recipes` only for recipe-factory work at scale; `governance-currency` and scribe's parity meta-test stay green
-**Status:** backlog
+**Status:** done
 
 ### Story 67.6: Index — herald's dossier states the cutover's control plane (herald 26.1)
 

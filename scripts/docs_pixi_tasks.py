@@ -65,6 +65,11 @@ pixi run -e <env> <task> -- [args]
 `docs/reference/environments.md` is the environments-first view of the same
 `[environments]` table (composed features per environment); this page is
 the tasks-first view (environments per feature).
+
+**Laptop install:** `pixi install -e pyforge-foundry-full` (fnd:CAP-12 SBOM — every
+Guild station plus `build`/`grayskull`). Run planning-chain and detector tasks with
+`-e pyforge-guild` (included in that SBOM). Install `pixi install -e local-recipes`
+only for recipe-factory work at scale (~10 GB factory task surface).
 """
 
 

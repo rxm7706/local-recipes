@@ -48,13 +48,19 @@ prompt above reconciles.
 
 Everything runs through pixi environments. Nothing here is installed globally.
 
-    pixi shell -e local-recipes                 # enter the main environment
-    pixi run -e local-recipes python script.py  # one-shot: run python with all libs below
-    pixi run -e local-recipes <task> -- <args>  # run one of the ~80 predefined tasks
+    pixi install -e pyforge-foundry-full        # laptop SBOM (fnd:CAP-12) — everyday PyForge work
+    pixi install -e local-recipes               # recipe factory at scale (~10 GB) — optional add-on
+
+    pixi shell -e pyforge-guild                 # enter the Guild session env (inside the SBOM)
+    pixi run -e pyforge-guild <task> -- <args>  # detectors, ledger sync, fleet-picture, …
+    pixi shell -e local-recipes                 # enter the full factory env when installed
+    pixi run -e local-recipes python script.py  # one-shot with the widest library closure
+    pixi run -e local-recipes <task> -- <args>  # recipe-build, atlas bootstrap, ~325 tasks
     pixi run -e vuln-db vdb-refresh             # tasks scoped to other envs
 
-- **Default / kitchen-sink environment: `local-recipes`.** Unless an entry says
-  otherwise, every library in this catalog is importable there.
+- **Laptop install: `pyforge-foundry-full`.** Unless an entry names another env,
+  libraries marked for Guild/station work resolve there; the catalog's widest
+  closure remains **`local-recipes`** when that env is installed.
 - **Python is 3.14.x in every environment except one.** If a library you want to
   add doesn't support 3.14, it won't resolve here. The sole exception is
   `python-agent-platform` (CAP-5, Story 10.2), env-scoped to `python = "3.12.*"`
