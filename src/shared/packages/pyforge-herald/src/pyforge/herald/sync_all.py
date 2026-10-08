@@ -50,10 +50,11 @@ dry-run mode of its own to delegate to, and teaching each one a new flag
 is outside this story's surface (``herald/cli.py``, ``pixi.toml``, the run
 report, the runbook -- never ``scripts/deck_facts.py`` et al). So
 ``--dry-run`` never calls any of them: it previews only the pull step, via
-``deck_pipeline.status`` (already 100% read-only), and reports whether a
-live run would find that deck ``unchanged`` or would have something to
-pull -- a deliberately narrower preview than a live run's full report, not
-a simulation of every step.
+``_dry_run_preview`` (a read-only etag loop over pull-tracked keys only --
+not ``deck_pipeline.status``, which walks ``export:*`` keys too), and
+reports whether a live run would find that deck ``unchanged`` or would have
+something to pull -- a deliberately narrower preview than a live run's full
+report, not a simulation of every step.
 
 **``proof_dir`` (Story 24.3, ``spec-pyforge-herald`` CAP-50).** An opt-in
 seam: when given, every deck's ``DeckSyncReport`` from this run is also
@@ -530,6 +531,8 @@ def _dry_run_preview(transport: DesignTransport, *, slug: str, existing: state.D
         remote_path = _remote_path_for_artifact(slug, artifact_key)
         try:
             file_read = transport.read_file(project_id=existing.project_id, path=remote_path, if_none_match=etag)
+        except errors.AuthError:
+            raise
         except errors.TransportError:
             saw_conflict = True
             continue
@@ -594,26 +597,36 @@ def _sync_one_deck(
 
     pulled: list[str] = []
     overwrote_local: list[str] = []
-    for artifact_key in sorted(existing.etags):
-        if artifact_key.startswith(_EXPORT_ARTIFACT_PREFIX):
-            continue  # push-tracked, not pull-tracked
-        changed, overwrote = _pull_one(
-            transport,
+    try:
+        for artifact_key in sorted(existing.etags):
+            if artifact_key.startswith(_EXPORT_ARTIFACT_PREFIX):
+                continue  # push-tracked, not pull-tracked
+            changed, overwrote = _pull_one(
+                transport,
+                slug=slug,
+                repo_root=repo_root,
+                state_path=state_path,
+                artifact_key=artifact_key,
+                deck_dir=deck_dir,
+                persona=persona,
+                date_str=date_str,
+                edit_detector=edit_detector,
+                prover=prover,
+                now=_frozen_now,
+            )
+            if changed:
+                pulled.append(artifact_key)
+            if overwrote:
+                overwrote_local.append(artifact_key)
+    except errors.AuthError:
+        raise
+    except errors.HeraldError as exc:
+        return DeckSyncReport(
             slug=slug,
-            repo_root=repo_root,
-            state_path=state_path,
-            artifact_key=artifact_key,
-            deck_dir=deck_dir,
-            persona=persona,
-            date_str=date_str,
-            edit_detector=edit_detector,
-            prover=prover,
-            now=_frozen_now,
+            pulled=tuple(pulled),
+            overwrote_local=tuple(overwrote_local),
+            error=str(exc),
         )
-        if changed:
-            pulled.append(artifact_key)
-        if overwrote:
-            overwrote_local.append(artifact_key)
 
     # A refresh/derive/push failure here must not discard the pull facts
     # already gathered above (including a real `overwrote-local` warning)
