@@ -388,7 +388,7 @@ def test_seed_refuses_a_malformed_registry_section_rather_than_treating_it_as_un
         "(`existing-project-id`):\n"
         "https://claude.ai/design/p/existing-project-id\n"
         'Pull it into this deck with the MCP bridge ("pull warden") -- see\n'
-        "`docs/specs/presentation-deck.md` § *The MCP bridge*.\n",
+        "`docs/how-to/presentation-deck.md` § *The MCP bridge*.\n",
         encoding="utf-8",
     )
     transport = FakeTransport()

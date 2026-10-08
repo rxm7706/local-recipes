@@ -26,12 +26,12 @@ nav:
     href: decks/index.html
 
 # Things that live in the same publish root but are produced by something else.
-# This site is built into docs/dashboard/, which also carries the Kedro-Viz
-# export staged by kedro-viz-publish.yml. Listing them keeps them reachable
-# from the landing page now that it is the Pages root.
+# The unified Pages artifact mounts this site under /herald/ and Kedro-Viz under
+# /dashboard/kedro-viz/. The href is rel-prefixed in templates so it resolves at
+# every depth under /herald/.
 neighbours:
   - label: Kedro-Viz
-    href: kedro-viz/
+    href: ../dashboard/kedro-viz/
     eyebrow: Atlas DAG
     blurb: >-
       The real pyforge-atlas Kedro pipeline graph, exported straight from the

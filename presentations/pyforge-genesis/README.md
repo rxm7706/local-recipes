@@ -11,7 +11,7 @@ brownfield repo (this repo was the first brownfield adoption).
 
 Engine + glue copied **verbatim** from `presentations/pyforge-atlas/` (Archivo /
 Modernist system). Built with the Design-to-Deck workflow
-(`docs/specs/presentation-deck.md` — prototype contract, pipeline, § Standard
+(`docs/how-to/presentation-deck.md` — prototype contract, pipeline, § Standard
 export set).
 
 ## Quick start
