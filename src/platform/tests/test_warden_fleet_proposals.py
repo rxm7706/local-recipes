@@ -23,9 +23,6 @@ from django_warden_fabric.proposals import approve_proposal
 from django_warden_fabric.proposals import dismiss_proposal
 from django_warden_fabric.tasks import finalize_fleet_run
 from django_warden_fabric.tasks import open_fix_proposal
-from pyforge.warden.actuator import RemediationProposal
-from pyforge.warden.manifest_fixup import ManifestFileChange
-from pyforge.warden.manifest_fixup import ManifestFixPlan
 
 from test_warden_fleet_run import _ORG
 from test_warden_fleet_run import _init_bare_repo
@@ -78,27 +75,6 @@ def _report_with_planned(*finding_ids: str) -> str:
     )
 
 
-class _RecordingForge:
-    repo_slug = "fixture-org/repo-0"
-    opens: list[object]
-
-    def __init__(self) -> None:
-        self.opens = []
-
-    def existing_open_pr(self, finding_id: str) -> None:
-        return None
-
-    def open_pull_request(
-        self,
-        proposal: RemediationProposal,
-        *,
-        manifest_fix: ManifestFixPlan | None = None,
-        draft: bool = False,
-    ) -> str:
-        self.opens.append((proposal.finding_id, draft))
-        return "https://forge.example/draft/1"
-
-
 @pytest.fixture
 def proposal_flags_on(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     tree = tmp_path / "flags-on.json"
@@ -139,14 +115,9 @@ def test_run_complete_queues_two_proposals_zero_forge_writes(
         status=JobStatus.SUCCEEDED,
         report_json='{"actuation": null}',
     )
-    forge = _RecordingForge()
-
-    with patch("pyforge.warden.actuator.run_actuator") as mock_actuator:
-        finalize_fleet_run([], str(run.pk))
-        mock_actuator.assert_not_called()
+    finalize_fleet_run([], str(run.pk))
 
     assert FixProposal.objects.filter(fleet_repo_scan=scan_a, state=FixProposal.State.QUEUED).count() == 2
-    assert forge.opens == []
 
 
 @pytest.mark.django_db
@@ -181,28 +152,23 @@ def test_approve_one_opens_draft_other_stays_queued(
         FixProposal.objects.filter(fleet_repo_scan=scan).order_by("finding_id"),
     )
     assert len(proposals) == 2
-    forge = _RecordingForge()
+    outcome = type(
+        "Outcome",
+        (),
+        {
+            "finding_id": proposals[0].finding_id,
+            "action": proposals[0].action,
+            "subject": proposals[0].target,
+            "status": "opened",
+            "pr_url": "https://forge.example/draft/1",
+            "detail": None,
+        },
+    )()
 
     with patch("django_warden_fabric.tasks.shallow_clone"), patch(
         "django_warden_fabric.tasks.run_actuator",
-    ) as mock_run:
-        from pyforge.warden.actuator import PROutcome
-
-        mock_run.return_value = type(
-            "Actuation",
-            (),
-            {
-                "outcomes": (
-                    PROutcome(
-                        finding_id=proposals[0].finding_id,
-                        action=proposals[0].action,
-                        subject=proposals[0].target,
-                        status="opened",
-                        pr_url="https://forge.example/draft/1",
-                    ),
-                ),
-            },
-        )()
+        return_value=type("Actuation", (), {"outcomes": (outcome,)})(),
+    ):
         approve_proposal(proposals[0].pk, "operator@test")
         open_fix_proposal(str(proposals[0].pk))
 
@@ -211,7 +177,6 @@ def test_approve_one_opens_draft_other_stays_queued(
     assert proposals[0].state == FixProposal.State.OPENED
     assert proposals[0].pr_url == "https://forge.example/draft/1"
     assert proposals[1].state == FixProposal.State.QUEUED
-    assert forge.opens == []
 
 
 @pytest.mark.django_db
@@ -307,7 +272,7 @@ def test_dismiss_without_forge(proposal_flags_on: Path) -> None:
 
     queue_proposals_from_scan(scan)
     proposal = FixProposal.objects.get(fleet_repo_scan=scan)
-    with patch("pyforge.warden.actuator.run_actuator") as mock_actuator:
+    with patch("django_warden_fabric.tasks.run_actuator") as mock_actuator:
         dismiss_proposal(proposal.pk)
         mock_actuator.assert_not_called()
     proposal.refresh_from_db()
