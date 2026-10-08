@@ -1,5 +1,5 @@
-"""Story 60.1 — the catalog config names backends and sources
-(spec-self-hosted-bmad-marketplace CAP-1 / spec-pyforge-steward CAP-117).
+"""Stories 60.1–60.2 — estate BMAD catalog config and publish + review
+(spec-self-hosted-bmad-marketplace CAP-1..2 / spec-pyforge-steward CAP-117..118).
 
 Git is the edit store; backends and sources are declared in ``catalog.yaml``
 and bound to plugins; a new backend or source is a plugin, not a rewrite.
@@ -21,6 +21,7 @@ from pyforge.steward.catalog import (
     CODEX_MANIFEST_RELATIVE,
     KIND_FRAME,
     KIND_MODULE,
+    PUBLISH_TRUST_TIERS,
     STATES,
     TIER_BMAD_CERTIFIED,
     TIER_UNVERIFIED,
@@ -438,6 +439,44 @@ def test_a_raising_source_refuses_render_and_render_check(tmp_path: Path) -> Non
 # ---------------------------------------------------------------------------
 
 
+def _write_review(reviews_dir: Path, name: str, *, tier: str = "community-reviewed") -> Path:
+    reviews_dir.mkdir(parents=True, exist_ok=True)
+    path = reviews_dir / f"{name}.yaml"
+    path.write_text(
+        f'module: {name}\ntrust_tier: {tier}\nreviewed: "2026-10-08"\nreviewer: steward-test\n',
+        encoding="utf-8",
+    )
+    return path
+
+
+def _seed_estate_reviews(registry: Path, estate_yaml: str) -> None:
+    import yaml
+
+    doc = yaml.safe_load(textwrap.dedent(estate_yaml))
+    modules = doc.get("modules") if isinstance(doc, dict) else None
+    if not isinstance(modules, list):
+        return
+    wielded = {p.name for p in SUITE_PACKAGES if p.install_class == INSTALL_CLASS_MODULE}
+    reviews = registry / "reviews"
+    seen: set[str] = set()
+    for row in modules:
+        if not isinstance(row, dict):
+            continue
+        if row.get("source", "estate-listings") != "estate-listings":
+            continue
+        name = row.get("name")
+        if not isinstance(name, str) or not name.strip():
+            continue
+        name = name.strip()
+        if name in wielded or name in seen:
+            continue
+        tier = row.get("trust_tier", TIER_UNVERIFIED)
+        if tier not in TRUST_TIERS or tier not in PUBLISH_TRUST_TIERS:
+            continue
+        _write_review(reviews, name, tier=str(tier))
+        seen.add(name)
+
+
 def _estate_engine(tmp_path: Path, estate_yaml: str, extra_sources: str = "") -> CatalogEngine:
     engine = _engine(
         tmp_path,
@@ -450,6 +489,7 @@ def _estate_engine(tmp_path: Path, estate_yaml: str, extra_sources: str = "") ->
     registry = engine.catalog_dir / "registry"
     registry.mkdir()
     (registry / "estate.yaml").write_text(textwrap.dedent(estate_yaml), encoding="utf-8")
+    _seed_estate_reviews(registry, estate_yaml)
     return engine
 
 
@@ -641,10 +681,11 @@ def test_two_listings_with_the_same_kind_and_name_are_a_duplicate(tmp_path: Path
         extra_sources='  wielded-suite: {plugin: wielded-suite, state: "on"}\n',
     )
     findings = engine.check().findings
-    assert [(f.code, f.subject) for f in findings] == [
+    assert {(f.code, f.subject) for f in findings} == {
+        ("listing-certified-wielded", "bmad-builder"),
         ("listing-duplicate", "twice"),
         ("listing-duplicate", "bmad-builder"),
-    ]
+    }
     assert "'estate-listings' and by 'estate-listings'" in findings[0].message
     assert "'estate-listings' and by 'wielded-suite'" in findings[1].message
     assert engine.render(write=True).ok is False
@@ -1135,3 +1176,133 @@ def test_real_tree_estate_registry_is_empty_and_names_its_source() -> None:
 
     registry = yaml.safe_load((default_catalog_dir() / "registry" / "estate.yaml").read_text(encoding="utf-8"))
     assert registry == {"source": "estate-listings", "modules": []}
+
+
+# ---------------------------------------------------------------------------
+# Story 60.2 — publish uses tools we wield; steward records the review
+# ---------------------------------------------------------------------------
+
+
+def _write_listing_draft(tmp_path: Path, name: str) -> Path:
+    path = tmp_path / f"{name}-listing.yaml"
+    path.write_text(
+        textwrap.dedent(
+            f"""\
+            name: {name}
+            description: a test module
+            repository: https://github.com/acme/{name}
+            """
+        ),
+        encoding="utf-8",
+    )
+    return path
+
+
+def test_io_matrix_publish_without_steward_review_refuses(tmp_path: Path) -> None:
+    engine = _estate_engine(tmp_path, "modules: []\n")
+    listing = _write_listing_draft(tmp_path, "probe-mod")
+    missing_review = tmp_path / "catalog" / "registry" / "reviews" / "probe-mod.yaml"
+    result = engine.publish(listing, missing_review)
+    assert not result.ok
+    assert result.findings[0].code == "publish-refused"
+    assert "not found" in result.findings[0].message
+
+
+def test_publish_with_review_appends_estate_row(tmp_path: Path) -> None:
+    engine = _estate_engine(tmp_path, "modules: []\n")
+    catalog_dir = tmp_path / "catalog"
+    review = _write_review(catalog_dir / "registry" / "reviews", "probe-mod")
+    listing = _write_listing_draft(tmp_path, "probe-mod")
+    result = engine.publish(listing, review)
+    assert result.ok and result.wrote_estate
+    import yaml
+
+    registry = yaml.safe_load((catalog_dir / "registry" / "estate.yaml").read_text(encoding="utf-8"))
+    assert len(registry["modules"]) == 1
+    row = registry["modules"][0]
+    assert row["name"] == "probe-mod"
+    assert row["trust_tier"] == "community-reviewed"
+    assert row["source"] == "estate-listings"
+    assert engine.render(write=True).ok
+    assert engine.check().ok
+
+
+def test_check_lists_hand_edited_module_without_review(tmp_path: Path) -> None:
+    engine = _engine(
+        tmp_path,
+        """
+        sources:
+          estate-listings: {plugin: estate-listings, state: "on", path: registry/estate.yaml}
+        """,
+    )
+    registry = engine.catalog_dir / "registry"
+    registry.mkdir(parents=True)
+    (registry / "estate.yaml").write_text(
+        textwrap.dedent(
+            """\
+            modules:
+              - name: sneaky-mod
+                repository: https://github.com/acme/sneaky-mod
+                trust_tier: unverified
+            """
+        ),
+        encoding="utf-8",
+    )
+    report = engine.check()
+    assert not report.ok
+    codes = {f.code for f in report.findings}
+    assert "listing-no-review" in codes
+
+
+def test_publish_refuses_wielded_suite_module(tmp_path: Path) -> None:
+    wielded_name = next(p.name for p in SUITE_PACKAGES if p.install_class == INSTALL_CLASS_MODULE)
+    engine = _estate_engine(tmp_path, "modules: []\n")
+    catalog_dir = tmp_path / "catalog"
+    review = _write_review(catalog_dir / "registry" / "reviews", wielded_name)
+    listing = _write_listing_draft(tmp_path, wielded_name)
+    result = engine.publish(listing, review)
+    assert not result.ok
+    assert result.findings[0].code == "publish-certified-wielded"
+
+
+def test_publish_installs_review_record_when_path_is_not_canonical(tmp_path: Path) -> None:
+    engine = _estate_engine(tmp_path, "modules: []\n")
+    catalog_dir = tmp_path / "catalog"
+    review = _write_review(tmp_path / "elsewhere" / "reviews", "off-path-mod")
+    listing = _write_listing_draft(tmp_path, "off-path-mod")
+    assert engine.publish(listing, review).ok
+    canonical = catalog_dir / "registry" / "reviews" / "off-path-mod.yaml"
+    assert canonical.is_file()
+    assert engine.render(write=True).ok
+    assert engine.check().ok
+
+
+def test_cli_catalog_publish_dry_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    catalog_dir = _write_catalog(
+        tmp_path,
+        textwrap.dedent(
+            """\
+            sources:
+              estate-listings: {plugin: estate-listings, state: "on", path: registry/estate.yaml}
+            """
+        ),
+    )
+    (catalog_dir / "registry").mkdir(parents=True, exist_ok=True)
+    (catalog_dir / "registry" / "estate.yaml").write_text("source: estate-listings\nmodules: []\n", encoding="utf-8")
+    review = _write_review(catalog_dir / "registry" / "reviews", "cli-mod")
+    listing = _write_listing_draft(tmp_path, "cli-mod")
+    monkeypatch.chdir(tmp_path)
+    code = main(
+        [
+            "catalog",
+            "publish",
+            "--catalog",
+            str(catalog_dir),
+            "--listing",
+            str(listing),
+            "--review",
+            str(review),
+            "--dry-run",
+        ]
+    )
+    assert code == EXIT_OK

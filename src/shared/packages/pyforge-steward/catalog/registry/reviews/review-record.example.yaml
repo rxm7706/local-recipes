@@ -1,0 +1,6 @@
+# Copy to <module-name>.yaml after steward review (Story 60.2).
+# trust_tier: unverified | community-reviewed (bmad-certified is wielded-suite only)
+module: my-module
+trust_tier: community-reviewed
+reviewed: "2026-10-08"
+reviewer: steward
