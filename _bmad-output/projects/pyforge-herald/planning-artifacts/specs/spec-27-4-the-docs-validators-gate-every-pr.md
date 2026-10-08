@@ -2,7 +2,8 @@
 title: '27.4: The docs validators gate every PR'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'f1cc68bab7fef224a9d5a78994db73e6b7af0895'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
