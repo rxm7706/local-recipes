@@ -4093,7 +4093,7 @@ SelfExplainML / Artifactory channel path.
 install hint)
 **And** a Frame listing is a reviewed git add; share uses CAP-3 backends
 **And** it is not an App Store, MyBMAD, Collab, or nebari-frames
-**Status:** backlog
+**Status:** done
 
 ## Epic 61: Work passports and dated extracts (spec-work-passports-dated-extracts CAP-1..145)
 
