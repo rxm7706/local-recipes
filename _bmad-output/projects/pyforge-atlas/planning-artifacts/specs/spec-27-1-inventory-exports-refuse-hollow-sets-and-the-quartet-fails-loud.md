@@ -5,7 +5,7 @@ created: '2026-10-03'
 status: 'done'
 baseline_revision: a7746bc0b6
 review_loop_iteration: 1
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/SPEC.md
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md
@@ -111,6 +111,29 @@ Minted 2026-10-03 from the operator's Phase 4+5 ruling (open medium and low defe
 
 ## Review Triage Log
 
+### 2026-10-08 — Review pass (follow-up, bmad-build-auto)
+- verdicts: 20 findings — high 0, medium 1, low 3, false 12, maybe-false 0, reject 4
+- findings:
+  - `[false]` `[reject]` CI workflow omits quartet path filters — `.github/workflows/pyforge-station-tests.yml` already lists `scripts/conda-forge-packaging-inventory-operations_*.py`, handoffs, and `scripts/tests/`.
+  - `[false]` `[reject]` Scoped diff lacks atlas e2e/unit tests — `test_derived_artifacts_e2e.py` and `test_inventory_verification.py` exist on branch; follow-up diff was story-scoped, not branch-complete.
+  - `[low]` `[defer]` `pixi.toml` bundles non–27.1 tasks — pre-existing branch composition; not introduced by this follow-up pass.
+  - `[false]` `[reject]` Unknown `verification_sets` keys are an undeclared breaking change — intentional refusal per AC and `inventory_verification.py` docstring.
+  - `[low]` `[defer]` Ledger row text still names `cf_or_pm` floor — AC1 and code floor `core_packages_enumerated`; operator triage already accepted D1.
+  - `[low]` `[defer]` Node vs reader warning column naming split — operational doc gap only; behavior matches intent.
+  - `[medium]` `[patch]` Empty verified export must omit timestamp line — added `test_empty_verified_export_omits_timestamp_from_summary` in `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py`.
+  - `[false]` `[reject]` `test_default_run_leaves_the_tracked_prompt_doc_unchanged` is unsafe — restores bytes in `finally`; parametrized doc-sync tests use `tmp_path` chdir.
+  - `[low]` `[defer]` Daemon Parquet reader may leave stuck thread after deadline — documented trade-off for process exit; NFR-1 offline tests use fast reads.
+  - `[false]` `[reject]` Replay doc lacks migration note for revised-prompt default — help text and prompt section 7 state opt-in path.
+  - `[false]` `[reject]` Handoff gist tests unpaired with `identity_gist.py` in scoped diff — module on branch; tests import live gist code.
+  - `[false]` `[reject]` Floor zero allows hollow sets — `floor: 0` is test-harness isolation only; production defaults remain 30_000 / 1.
+  - `[false]` `[reject]` Bool floor via `int(True)` — requires YAML bool in params; `_floor` rejects non-integer types except int coercion path is explicit.
+  - `[false]` `[reject]` Parquet worker may finish without `outcome` key — `_work` always sets `value` or `error` before join returns.
+  - `[low]` `[defer]` `stringify_export_cell` lacks dict/set branch — no export schema emits dict/set cells today.
+  - `[false]` `[reject]` From-scratch fixture skips Kedro nodes — `test_inventory_nodes_then_metrics_actuator_matches_snapshot` calls both inventory nodes before metrics.
+  - `[medium]` `[patch]` (carried verification-gap) Same empty-export timestamp regression — same patch as row above.
+  - `[medium]` `[defer]` `pyforge-deps-test` not on `pr-preflight` — carried from 2026-10-04 post-landing note; atlas CI now runs handoffs + `scripts/tests` via `pyforge-atlas-test`.
+  - `[low]` `[defer]` Gist publish still uses raw `check_output` — issue-creation path is paced; gist paths mocked in handoffs suite.
+  - `[false]` `[reject]` Intent-alignment scoped-diff vs full story — follow-up pass reviewed story-scoped delta; branch already carries e2e, ledger closure, and gist fixes per prior triage.
 
 ### 2026-10-04 — Post-landing follow-up (operator)
 `identity_export_contract.py` imported numpy, which pyforge-atlas does not declare, so `pyforge-deps-test` (`tests/packaging/test_dependency_completeness.py`) went red on main after this story landed; no CI lane runs that test, so it surfaced only in marshal's dispatch verification. `stringify_export_cell` now matches an array by shape (`tolist` plus `ndim >= 1`) with no numpy import; the existing `np.array` case in `test_identity_complete_export.py` still passes.
@@ -204,12 +227,14 @@ Keep: the floor refusal (removing it fails four tests), the corrupt-Parquet catc
 
 Status: done
 
-Summary: Third send-back TEST SAFETY and snapshot bar — Kedro session e2e runs in an isolated project copy with stub credentials (no writes to member `data/`), gh handoff tests mock `subprocess.run` with an autouse guard, from-scratch fixture compares CSV and Markdown sha256 snapshots, metrics help/epilog documents `core_packages_enumerated` floor and restores the revised-prompt stdout line.
+Summary: Operator-requested single allowed follow-up review (`followup_review_recommended` consumed). Four review layers ran against the story-scoped diff since `baseline_revision` a7746bc0b6; one verification-gap patch pins the metrics actuator’s conditional `Verification timestamp (UTC)` line when the verified export has zero rows.
 
-Files: `test_derived_artifacts_e2e.py`; `test_openteams_handoffs.py`; `test_inventory_from_scratch_fixture.py`; `expected_report.csv.sha256`; `conda-forge-packaging-inventory-operations_metrics.py`; `conda-forge-packaging-inventory-operations_replay.md`; spec surface memlogs and `spec-pyforge-atlas/SPEC.md`.
+Files: `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` (new test); `_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md` (surface reconcile); this story spec (triage + metadata).
 
-Review: HIGH send-back items addressed; medium mutant-coverage and prompt.md exact-shape sync deferred (see triage log above).
+Review: 1 medium patch applied; 12 false/reject; 7 defer (including carried `pyforge-deps-test` CI gap and NFR-3 skip-and-mark-stale). No high findings. Prior third-review mutant-killing coverage treated as carried closed on branch.
 
-Follow-up review recommended: true — mutant-killing tests for canvas/timestamp/warning paths and prompt.md sync remain unverified at AC 7.
+Follow-up review recommended: false — follow-up pass consumed; no high patches; single medium patch only.
 
-Verification: `kedro-test` 1879 passed; `kedro-catalog-check` 68 passed; `lint-types` 0; `spec_surface_reconcile.py` 0; `tests/packaging/test_openteams_handoffs.py` 53 passed; `scripts/tests/test_inventory_from_scratch_fixture.py` passed.
+Verification: `kedro-test` 2143 passed (+102 handoffs/scripts leg); `kedro-catalog-check` 69 passed; `lint-types` 0; `spec_surface_reconcile.py` 0 after memlog; new test `test_empty_verified_export_omits_timestamp_from_summary` passed.
+
+Spec surface reconcile (governed paths named on co-governor memlog): `scripts/tests/test_conda_forge_packaging_inventory_operations_metrics.py` → `spec-pyforge-atlas/.memlog.md` (2026-10-08 event). No `--write-baseline` stamp.
