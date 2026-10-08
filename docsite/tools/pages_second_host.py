@@ -8,7 +8,7 @@ Guild env; unit tests import this module from ``pyforge-herald`` tests directly.
 from __future__ import annotations
 
 import os
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 PAGES_SECOND_HOST_FLAG = "pyforge.herald.pages_second_host"
 
