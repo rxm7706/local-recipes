@@ -28,6 +28,9 @@ spec_updated: 2026-06-20
 >
 > **Timeless workflow lives in
 > [`.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md`](https://github.com/rxm7706/local-recipes/tree/main/.claude/skills/conda-forge-expert/guides).**
+>
+> **Install:** `pixi install -e pyforge-foundry-full` for the laptop SBOM; add
+> `pixi install -e local-recipes` for the recipe-build / validate tasks this workflow runs.
 > This spec parameterizes the workflow for a specific feedstock and
 > records the per-case empirical state, open questions, and
 > ruled-out alternatives. New cases append to "Worked Examples" — they

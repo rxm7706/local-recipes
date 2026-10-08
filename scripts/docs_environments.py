@@ -40,6 +40,10 @@ runs under every environment whose feature list includes `<name>` --
 "no-default-feature" means the environment excludes the fat default
 `[dependencies]` table (python 3.14 + pixi + conda + pip + uv) -- a lean,
 purpose-built environment carrying only its own declared features.
+
+**Laptop install:** `pixi install -e pyforge-foundry-full` — the locked SBOM for
+everyday PyForge work. Use `local-recipes` only when you need the full recipe
+factory (~10 GB); see `AGENTS.md` and `docs/tutorials/getting-started.md`.
 """
 
 

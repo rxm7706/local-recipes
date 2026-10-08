@@ -2,7 +2,8 @@
 title: '67.5: The estate points at the SBOM'
 type: 'docs'
 created: '2026-09-25'
-status: 'ready'
+status: 'in-progress'
+baseline_revision: 'ad5d6cdb1c6e196dea8441655f0e78bf26164ffb'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

@@ -17,7 +17,7 @@ Use `headroom` and `caveman` to cut token cost in your own interactive Claude Co
 - You want to confirm which compression layers are actually active in a running session.
 
 :::note[Prerequisites]
-The `pyforge-guild` pixi environment installed (`pixi install -e pyforge-guild`) and Claude Code itself installed and signed in.
+The laptop SBOM installed (`pixi install -e pyforge-foundry-full`; headroom/caveman and Guild tasks use `-e pyforge-guild`) and Claude Code itself installed and signed in.
 :::
 
 ## Understand the two layers
