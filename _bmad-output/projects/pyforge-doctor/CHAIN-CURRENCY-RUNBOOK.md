@@ -251,3 +251,14 @@ Regenerating a board view is optional confirmation, not the measure.
   plugins); a decision entry on the Spec memlog for CAP-57's stale `>=4.2.1`. Deviation: the truth-up found two gaps the
   finding did not name (multi-line speaker notes and paragraph text are not carried; the native driver is not
   token-driven), recorded for a fix story, not repaired. Epics already sat at 2026-10-08, so `arch→epics` did not fire.
+
+- **Run 2026-10-08 (marshal) — 1 finding cleared, single station.** Entry: pyforge-marshal `staleness`, `behind-code` on
+  the PRD and the spine (dated 2026-10-07; on `dispatch/pyforge-marshal/46.9`, `c111fb3799` removed the package
+  `pyproject.toml`'s `attr-defined` mypy override for `cli.benchmark`, moving the code stage to 2026-10-08). Exit:
+  `chain_currency_sweep_check.py --project pyforge-marshal` exit 0. Remedy: PRD § 39 and the spine's `## Currency
+  reconciliation — 2026-10-08` fold Story 46.9 as built (CAP-196's per-layer legs and cache-hit rates, no FR), the
+  refusal-path fix (`Severity.HARD` had made every `MRS-BENCH` ERROR path an `AttributeError`) and the spec memlog since
+  the 2026-10-07 stamp (Stories 22.18–22.21); AD-4's enforcement sentence corrected in place. Deviation: the truth-up
+  found what the finding did not name — three divergences in the benchmark code (a harness `state.json` read outside the
+  AD-3 seam, clock reads in `core/`, an artifact that cannot show a leg's isolation) and a PRD defect (the FR-170..FR-195
+  `← CAP-n` tags do not match the Spec's CAPs), recorded for fix stories, not repaired. Epics already sat at 2026-10-08.

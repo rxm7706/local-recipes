@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from pyforge.marshal.core import policy
@@ -160,3 +162,45 @@ def test_leg_from_mapping_rejects_invalid_layers_mode():
                 "run_weighted_tokens": 0,
             }
         )
+
+
+def test_prompt_cache_hit_rate_computes_fraction():
+    assert bench.prompt_cache_hit_rate(input_tokens=900, cache_read_tokens=100) == pytest.approx(0.1)
+    assert bench.prompt_cache_hit_rate(input_tokens=0, cache_read_tokens=0) is None
+
+
+def test_build_per_layer_artifact_voids_one_leg_only():
+    baseline = replace(
+        _leg(layers_mode="off", story_weighted_tokens=5000, task_phase="done"),
+        prompt_cache_hit_rate=0.25,
+        story_cost_estimate_usd=1.0,
+    )
+    isolated_ok = replace(
+        _leg(layers_mode="on", story_weighted_tokens=4200, task_phase="done"),
+        prompt_cache_hit_rate=0.5,
+        story_cost_estimate_usd=0.8,
+        context_layers=bench.context_layers_only_layer("wire"),
+    )
+    isolated_bad = replace(
+        _leg(layers_mode="on", story_weighted_tokens=4100, task_phase="deferred"),
+        prompt_cache_hit_rate=0.1,
+        context_layers=bench.context_layers_only_layer("output"),
+    )
+    isolated = {name: isolated_ok for name in policy.CONTEXT_LAYER_NAMES}
+    isolated["output"] = isolated_bad
+    artifact = bench.build_per_layer_artifact(
+        baseline_leg=baseline,
+        isolated_legs=isolated,
+        environment={"repo_root": "/tmp"},
+        generated_at=__import__("datetime").datetime(2026, 10, 8, 12, 0, 0, tzinfo=__import__("datetime").UTC),
+    )
+    assert artifact.schema == bench.PER_LAYER_ARTIFACT_SCHEMA
+    assert len(artifact.layer_legs) == len(policy.CONTEXT_LAYER_NAMES)
+    wire_row = next(r for r in artifact.layer_legs if r["layer"] == "wire")
+    output_row = next(r for r in artifact.layer_legs if r["layer"] == "output")
+    assert wire_row["void"] is False
+    assert wire_row["weighted_tokens_delta"] == -800
+    assert wire_row["prompt_cache_hit_rate_baseline"] == 0.25
+    assert wire_row["prompt_cache_hit_rate_isolated"] == 0.5
+    assert output_row["void"] is True
+    assert output_row["weighted_tokens_delta"] is None
