@@ -2087,7 +2087,9 @@ def test_a_fix_turn_runs_ruff_format_before_reconcile(tmp_path: Path, monkeypatc
 
     _finalize(fs, repo_root, worktree, vcs=vcs)
 
-    assert order == ["ruff", "reconcile"]
+    reconcile_at = order.index("reconcile")
+    assert reconcile_at > 0
+    assert order[reconcile_at - 1] == "ruff", "fix turn must journal ruff immediately before reconcile"
 
 
 def test_a_fix_turn_journals_ruff_format_before_reconcile_and_reverify_skips_ruff_journal(

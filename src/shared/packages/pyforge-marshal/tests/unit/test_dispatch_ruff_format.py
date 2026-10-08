@@ -240,10 +240,12 @@ def test_cap4_verification_order_is_ruff_then_verify(tmp_path: Path, monkeypatch
     """Story 22.20: land-only CAP-4 verification still runs ruff, then verify — no reconcile."""
     import test_dispatch as dispatch_test_helpers
 
+    import importlib
+
     from pyforge.marshal.cli import dispatch as dispatch_module
-    from pyforge.marshal.core.model import build_envelope
     from pyforge.marshal.core.policy import compose
 
+    loop_tests = importlib.import_module("test_dispatch_supervisor_main_loop")
     order: list[str] = []
     repo_root = tmp_path / "repo"
     worktree = tmp_path / "wt"
@@ -256,10 +258,14 @@ def test_cap4_verification_order_is_ruff_then_verify(tmp_path: Path, monkeypatch
 
     def _evaluate(**_kwargs: object):
         order.append("verify")
-        return build_envelope(command="dispatch verify", verdict="ok", data={}, findings=())
+        return loop_tests._clean_envelope()
 
     monkeypatch.setattr(dispatch_module, "run_dispatch_ruff_format_before_verify", _ruff)
     monkeypatch.setattr(dispatch_module, "evaluate_dispatch_verification", _evaluate)
+
+    class _CommittingVcs(dispatch_test_helpers.FakeVcs):
+        def commit_paths(self, *_a: object, **_k: object) -> str:
+            return "sha"
 
     dispatch_module._verification_verdict_for_cap4(
         slug="pyforge-marshal",
@@ -269,7 +275,7 @@ def test_cap4_verification_order_is_ruff_then_verify(tmp_path: Path, monkeypatch
         effective_policy=effective_policy,
         spec_text="---\nstatus: done\n---\n",
         process=dispatch_test_helpers.FakeProcess(),
-        vcs=dispatch_test_helpers.FakeVcs(repo_root),
+        vcs=_CommittingVcs(repo_root),
     )
 
     assert order == ["ruff", "verify"]
