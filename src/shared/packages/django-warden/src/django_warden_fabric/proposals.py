@@ -87,7 +87,11 @@ def approve_proposal(proposal_id: UUID | str, operator: str) -> FixProposal:
     if not read_boolean(FLEET_FIX_PROPOSALS_FLAG, default=False):
         msg = "fleet fix proposals flag is off"
         raise ProposalRefusedError(msg)
-    proposal = FixProposal.objects.select_for_update().get(pk=proposal_id)
+    try:
+        proposal = FixProposal.objects.select_for_update().get(pk=proposal_id)
+    except FixProposal.DoesNotExist as exc:
+        msg = "proposal not found"
+        raise ProposalRefusedError(msg) from exc
     if proposal.state == FixProposal.State.OPENED:
         msg = "proposal already opened"
         raise ProposalRefusedError(msg)
@@ -102,16 +106,21 @@ def approve_proposal(proposal_id: UUID | str, operator: str) -> FixProposal:
     proposal.approved_by = operator
     proposal.approved_at = timezone.now()
     proposal.save(update_fields=["state", "approved_by", "approved_at", "updated_at"])
+    proposal_pk = str(proposal.pk)
     from .tasks import open_fix_proposal  # noqa: PLC0415 — keys-not-blobs enqueue
 
-    open_fix_proposal.delay(str(proposal.pk))
+    transaction.on_commit(lambda: open_fix_proposal.delay(proposal_pk))
     return proposal
 
 
 @transaction.atomic
 def dismiss_proposal(proposal_id: UUID | str) -> FixProposal:
     """Close a queued proposal without a forge call."""
-    proposal = FixProposal.objects.select_for_update().get(pk=proposal_id)
+    try:
+        proposal = FixProposal.objects.select_for_update().get(pk=proposal_id)
+    except FixProposal.DoesNotExist as exc:
+        msg = "proposal not found"
+        raise ProposalRefusedError(msg) from exc
     if proposal.state != FixProposal.State.QUEUED:
         msg = f"cannot dismiss proposal in state {proposal.state}"
         raise ProposalRefusedError(msg)

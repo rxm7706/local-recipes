@@ -186,7 +186,6 @@ def job_status(request: HttpRequest, job_id: str) -> HttpResponse:
     )
 
 
-@require_GET
 def _fleet_fix_proposals_enabled() -> bool:
     return evaluate_from_source(key=FLEET_FIX_PROPOSALS_FLAG)
 
