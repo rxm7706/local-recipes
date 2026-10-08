@@ -643,6 +643,59 @@ def test_run_preflight_with_no_base_ref_runs_every_lane(tmp_path: Path) -> None:
     assert "refs/remotes/origin/main" in record["selection"]["all_reason"]
 
 
+def test_static_service_mutex_keys_reads_workflow_services(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(
+        repo,
+        ".github/workflows/w.yml",
+        "on:\n  pull_request:\n    paths: ['**']\n"
+        "jobs:\n  j:\n    services:\n      postgres:\n        image: pgvector/pgvector:pg17\n"
+        "    steps:\n      - run: pixi run --frozen -e pyforge-guild lane-a\n",
+    )
+    _write(
+        repo,
+        "pixi.toml",
+        '[feature.guild-tasks.tasks.lane-a]\ncmd = "true"\n',
+    )
+    lane = preflight.Lane(task="lane-a", environment="pyforge-guild")
+    pixi = tomllib.loads((repo / "pixi.toml").read_text(encoding="utf-8"))
+    keys = preflight_ci.static_service_mutex_keys(repo, [lane], pixi)
+    assert keys[("lane-a", "pyforge-guild")] == "services:postgres"
+
+
+def test_service_mutex_keys_follows_ci_firing_site(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _write(
+        repo,
+        ".github/workflows/w.yml",
+        "on:\n  pull_request:\n    paths: ['**']\n"
+        "jobs:\n  j:\n    services:\n      redis:\n        image: redis:7\n"
+        "    steps:\n      - run: pixi run --frozen -e pyforge-guild lane-b\n",
+    )
+    _write(
+        repo,
+        "pixi.toml",
+        '[feature.guild-tasks.tasks.lane-b]\ncmd = "true"\n',
+    )
+    _write(repo, "touch.txt", "x\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "base")
+    _git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+    _git(repo, "checkout", "-q", "-b", "feature")
+    _write(repo, "touch.txt", "y\n")
+    _git(repo, "add", "touch.txt")
+    _git(repo, "commit", "-q", "-m", "branch")
+
+    lane = preflight.Lane(task="lane-b", environment="pyforge-guild")
+    pixi = tomllib.loads((repo / "pixi.toml").read_text(encoding="utf-8"))
+    assert preflight_ci.lane_service_mutex_key(repo, lane, pixi) == "services:redis"
+    keys = preflight_ci.service_mutex_keys(repo, [lane], pixi)
+    assert keys[("lane-b", "pyforge-guild")] == "services:redis"
+
+
 def test_a_repository_without_workflows_still_selects_every_lane(tmp_path: Path) -> None:
     """Not a git repository at all: nothing can be read, so nothing is skipped."""
     pixi_path = tmp_path / "pixi.toml"

@@ -260,3 +260,33 @@ def test_service_lanes_never_overlap(tmp_path: Path) -> None:
     assert len(intervals) == 2
     (_, a0, a1), (_, b0, b1) = sorted(intervals, key=lambda row: row[0])
     assert a1 <= b0 or b1 <= a0
+
+
+def test_install_failure_short_circuits_before_lanes(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(repo / "pixi.toml", _mini_pixi("a"))
+
+    def install(_env: str) -> int:
+        return 42
+
+    code = preflight.run_preflight(repo, install_environment=install)
+    assert code == preflight.EXIT_LANE_RED
+    install_record = next(r for r in _run_records(repo) if r.get("phase") == "install")
+    assert install_record["verdict"] == "red"
+    assert install_record["exit_code"] == 42
+    assert not (repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").count('"lanes"')
+
+
+def test_lane_runner_exception_counts_as_red(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(repo / "pixi.toml", _mini_pixi("a"))
+
+    def run_ctx(_ctx: preflight.LaneRunContext) -> int:
+        raise RuntimeError("boom")
+
+    code = preflight.run_preflight(repo, jobs=1, install_environment=_NOOP_INSTALL, run_lane_ctx=run_ctx)
+    assert code == preflight.EXIT_LANE_RED
+    record = _run_record(repo)
+    assert record["lanes"][0]["status"] == "red"

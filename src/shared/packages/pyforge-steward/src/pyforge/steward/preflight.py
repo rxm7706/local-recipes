@@ -364,7 +364,11 @@ def run_preflight(
     if run_lane_ctx is not None:
         injected_runner = run_lane_ctx
     elif run_lane is not None:
-        injected_runner = lambda ctx: run_lane(ctx.lane)
+        legacy_run_lane = run_lane
+
+        def injected_runner(ctx: LaneRunContext) -> int:
+            return legacy_run_lane(ctx.lane)
+
     else:
         injected_runner = None
 
@@ -418,11 +422,12 @@ def run_preflight(
         jobs=worker_count,
         keep_going=keep_going,
     )
-    runner: Callable[[LaneRunContext], int]
     if injected_runner is not None:
         runner = injected_runner
     else:
-        runner = lambda ctx: _default_run_lane_ctx(coord, ctx)
+
+        def runner(ctx: LaneRunContext) -> int:
+            return _default_run_lane_ctx(coord, ctx)
 
     prior_sigint = signal.getsignal(signal.SIGINT)
 
@@ -437,7 +442,6 @@ def run_preflight(
         with ThreadPoolExecutor(max_workers=worker_count) as pool:
             futures: dict[Future[LaneResult], Lane] = {}
             lane_iter = iter(lanes)
-            pending = set(futures.keys())
 
             while True:
                 if coord.cancel.is_set():
