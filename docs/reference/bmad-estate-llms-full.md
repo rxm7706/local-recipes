@@ -10,12 +10,12 @@
 > from steward's adoption register (AD-2), and a version the sources disagree on is shown
 > as a disagreement, never resolved here.
 >
-> Generated: 2026-10-05. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
+> Generated: 2026-10-08. Regenerate: `pixi run -e pyforge-guild scribe catalog bmad-estate --write`.
 > Drift detector: `pixi run -e pyforge-guild bmad-estate-check` (structured: a section reds when
 > its derived facts move, prose is exempt).
 
 <!-- bmad-estate-digest: installed=58220a6d9490 -->
-<!-- bmad-estate-digest: skills=2b9a771be7d3 -->
+<!-- bmad-estate-digest: skills=1ecff8116b3f -->
 <!-- bmad-estate-digest: phases=b74a30513e46 -->
 <!-- bmad-estate-digest: suite=99320657c0ef -->
 <!-- bmad-estate-digest: pins=4c42a2caf3a4 -->
@@ -39,7 +39,7 @@ Source: `_bmad/_config/manifest.yaml`, `_bmad/_config/skf-manifest.yaml`.
 ## 2. Skills by family
 
 Source: `.claude/skills/*/SKILL.md` frontmatter (`name`, `description`); the
-core/bmm split comes from `_bmad/_config/bmad-help.csv`. 129 skills.
+core/bmm split comes from `_bmad/_config/bmad-help.csv`. 130 skills.
 
 ### BMAD core (8)
 
@@ -206,7 +206,7 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 129 skills.
 | `bmad-build-auto` | One iteration of an unattended development loop. Use when invoked by name |
 | `bmad-sprint-ledger-query` | Pluggable, extensible, hookable, feature-flagged Sprint Ledger Query & Telemetry Reporting engine across all eight PyForge stations. |
 
-### Other repo skills (24)
+### Other repo skills (25)
 
 | Skill | Description |
 |---|---|
@@ -226,6 +226,7 @@ core/bmm split comes from `_bmad/_config/bmad-help.csv`. 129 skills.
 | `idea-refine` | Transform raw concepts into actionable plans via three phases: divergent thinking, convergence, and sharpening. |
 | `incremental-implementation` | Build in thin vertical slices. One piece at a time, test it, verify it, then expand. Each increment leaves the system working. |
 | `marshal-run-watch` | Reusable ops-manager status check for marshal-supervised BMAD work — one pinned run, a whole station (project), or the entire fleet (all projects). Covers both the multi-story bmad-loop orchestrator pattern and the one-s |
+| `mason-package` | Hand-authored operating procedure for Mason's native package craft: build wheel, sdist, and conda artifacts from one manifest, then ship to PyPI, TestPyPI, a conda channel, or conda-forge. Use when driving pyforge mason |
 | `performance-optimization` | Measure before optimizing. Five-step workflow: Measure → Identify → Fix → Verify → Guard. No guessing. |
 | `planning-and-task-breakdown` | Decompose work into manageable, verifiable tasks. Read-only mode first. Vertical slicing, not horizontal. Checkpoints every 2–3 tasks. |
 | `security-and-hardening` | Security-first development. Three-tier boundary system: Always Do / Ask First / Never Do. Prevents OWASP Top 10 vulnerabilities. |
