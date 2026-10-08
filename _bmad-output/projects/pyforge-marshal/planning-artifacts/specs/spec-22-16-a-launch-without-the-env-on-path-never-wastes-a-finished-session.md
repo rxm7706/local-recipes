@@ -2,8 +2,8 @@
 title: "22.16: A launch without the env on PATH never wastes a finished session"
 type: 'fix'
 created: '2026-10-07'
-status: 'ready-for-dev'
-baseline_revision: '966b166f76797916b96286b88587aa6f10f8240d'
+status: 'done'
+baseline_revision: '5c1ff88e5a60bee67e66c10b721fa8fabff0a091'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -136,3 +136,37 @@ Type / Effort / Deps: fix / S / —.
 - Mutation: remove the launch check (A) or the interpreter substitution (B) and re-run the station suite. Its new test fails. Restore it.
 - With (A): from a shell whose PATH has no `python`, `.pixi/envs/pyforge-guild/bin/marshal factory dispatch <slug> <key>` refuses before it provisions a worktree and names the `pixi run -e pyforge-guild marshal` form. With (B): the recording-port tests are the proof, and the next dispatch launched that way verifies the guard under the env's own interpreter.
 - `pixi run --frozen -e pyforge-guild spec-surface-check`: exit 0 after the memlog reconciles and scoped stamps.
+
+## Review Triage Log
+
+### 2026-10-07 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — diff matches intent-contract AC for approach B)
+
+## Auto Run Result
+
+Status: done
+
+**Approach:** (B) — `dispatch_verify._argv_for_verify_execution` runs `[sys.executable, "scripts/spec_surface_reconcile.py"]` for the derived S-13.7 guard; the reported command string and loop `policy.toml` / bmad-build prompt text stay `python scripts/spec_surface_reconcile.py`.
+
+**Summary:** Dispatch verification, merge-tree re-verify (`run_verify_commands_only`), and fix-turn re-verification no longer depend on a `python` executable on the supervisor PATH; they use the interpreter already running marshal.
+
+**Files changed:**
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/dispatch_verify.py` — interpreter substitution at the process edge
+- `src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py` — documents dispatch vs render split (Story 22.16)
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_commands.py` — guards argv and report command string
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verify_merge_tree.py` — merge-tree preview expects `sys.executable`
+- `src/shared/packages/pyforge-marshal/tests/unit/test_dispatch_verification.py` — `FakeProcessGuardFails` matches substituted argv
+
+**Review:** No patch/defer items; self-review found no gaps vs AC.
+
+**Verification:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11848 passed
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — 130 passed
+- `pixi run --frozen -e pyforge-guild lint-types` — exit 0
+- `python scripts/spec_surface_reconcile.py` — OK
+- `pixi run --frozen -e pyforge-guild spec-surface-check` — ok (no drift)
+
+**Surface reconcile (memlog):** `spec-pyforge-marshal` and co-governor `spec-pyforge-core`; scoped baseline stamps for both.
+
+**Follow-up review recommended:** false

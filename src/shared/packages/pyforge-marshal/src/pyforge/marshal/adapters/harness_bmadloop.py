@@ -438,6 +438,12 @@ _ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
 #: needs no environment, and it still avoids the deep-worktree pixi path-length
 #: panic that breaks other gates inside bmad-loop run worktrees.
 #:
+#: Story 22.16: loop homes and bmad-build prompts keep this plain `python …`
+#: string (AD-12/AD-35). Dispatch-side verification executes the same guard with
+#: ``sys.executable`` via ``dispatch_verify._argv_for_verify_execution`` so a
+#: supervisor launched without `python` on PATH (e.g. `.pixi/envs/.../bin/marshal`)
+#: still runs S-13.7 after the session finishes.
+#:
 #: NEVER `--write-baseline`. A producer that can stamp its own baseline is exactly
 #: the laundering S-13.2 exists to end: the loop must RECONCILE by naming the paths
 #: it changed, never accept its own drift as correct -- `spec_surface_reconcile.py`

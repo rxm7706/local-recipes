@@ -2,7 +2,8 @@
 title: "30.1: A deck's HTML twins are self-contained and published"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '5b5951211ecf10c1b01c5fd49f0ebf51e85c82fd'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -73,14 +74,14 @@ Type / Effort / Deps: feature / M / S-28.2, S-29.1.
 
 ## Tasks
 
-- [ ] Read `pyforge.herald.deck_viewer` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape
-- [ ] Vendor fonts in the 14 React decks (`index.html`, `package.json`, `vite.config.js`); set `base: './'`
-- [ ] Re-export the agentic-sdlc and pyforge-warden standalones with the reference vendored (extend `scripts/deck_export.py` only if needed)
-- [ ] `twins.py`: the scan, the React build, the bundle manifest
-- [ ] `deck_publish.py`: twin publishing behind the flag, and the refusal
-- [ ] `src/platform/config/flags.json`: `pyforge.herald.deck_viewer`, `defaultVariant` off
-- [ ] Tests, including the live-tree meta-test and the ON/OFF test
-- [ ] Spec-surface reconcile for every Spec the detector names, then one scoped stamp each
+- [x] Read `pyforge.herald.deck_viewer` through `pyforge.core.flags.read_boolean` (steward Story 75.1); if 75.1 is unlanded, add it to `pyforge.core` in exactly 75.1's shape
+- [x] Vendor fonts in the 14 React decks (`index.html`, `package.json`, `vite.config.js`); set `base: './'`
+- [x] Re-export the agentic-sdlc and pyforge-warden standalones with the reference vendored (extend `scripts/deck_export.py` only if needed)
+- [x] `twins.py`: the scan, the React build, the bundle manifest
+- [x] `deck_publish.py`: twin publishing behind the flag, and the refusal
+- [x] `src/platform/config/flags.json`: `pyforge.herald.deck_viewer`, `defaultVariant` off
+- [x] Tests, including the live-tree meta-test and the ON/OFF test
+- [x] Spec-surface reconcile for every Spec the detector names, then one scoped stamp each
 
 ## Boundaries & Constraints
 
@@ -148,3 +149,19 @@ Flag: `pyforge.herald.deck_viewer` (`feature-flag-governance:CAP-1`).
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
 
 ## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches CAP-55 D5 acceptance criteria; pyforge-herald-test green)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Landed `pyforge.herald.twins` (zero-origin scan, standalone vendor hook, React `npm ci` + `vite build`, bundle path-to-sha256 manifest), extended `deck_publish.publish_deck(..., include_twins=)` behind `pyforge.herald.deck_viewer`, vendored fonts in 14 React decks via `@fontsource/*`, post-processed Marp standalones (Google Fonts + twemoji CDN), and added `pyforge.herald.deck_viewer` to `src/platform/config/flags.json`.
+
+Verification: `pixi run --frozen -e pyforge-herald pyforge-herald-test` — 1609 passed; `python scripts/spec_surface_reconcile.py` — OK.
+
+Memlog reconcile: `spec-pyforge-herald/.memlog.md` and `docs/governance/spec-feature-flag-governance/.memlog.md` name all 54 governed paths touched since baseline `5b5951211e`.
+
+followup_review_recommended: false

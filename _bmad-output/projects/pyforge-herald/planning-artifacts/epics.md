@@ -1283,7 +1283,7 @@ So that the portal can show a deck where fonts.googleapis.com and jsDelivr are u
 **When** the fonts and images are vendored and the twin publisher lands
 **Then** the zero-origin scan passes on every current standalone, every deck's source `index.html` and a built bundle; publish refuses a planted twin that names another origin, naming the file and the origin, and exits non-zero
 **And** with the flag ON, `herald deck publish <slug>` puts the twins in the store and records them in the manifest; with it OFF, publish behaves exactly as Story 29.1 left it; `pyforge-herald-test` is green
-**Status:** backlog
+**Status:** done
 
 ### Story 30.2: The herald portal shows a deck in the browser from its HTML twin
 

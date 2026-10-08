@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -385,7 +386,7 @@ class FakeProcessGuardFails:
         git_log = _fake_git_log_empty(list(tokens))
         if git_log is not None:
             return git_log
-        if tokens and tokens[0] == "python":
+        if len(tokens) >= 2 and tokens[0] == sys.executable and tokens[1] == "scripts/spec_surface_reconcile.py":
             return ProcessResult(returncode=1, stdout="", stderr="found drift")
         return ProcessResult(returncode=0, stdout="ok", stderr="")
 
