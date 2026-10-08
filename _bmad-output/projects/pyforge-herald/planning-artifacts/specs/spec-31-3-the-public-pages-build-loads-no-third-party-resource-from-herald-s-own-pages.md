@@ -208,9 +208,9 @@ Type / Effort / Deps: fix / M / —.
 
 **Commands:**
 - `pixi run --frozen -e pyforge-herald pyforge-herald-test` — expected: pass (the station's `verify_commands`).
-- `pixi run --frozen -e site site-check` — expected: exit 0, with the two new problems wired into `check()`.
 
 **Manual checks (not a dispatch gate):**
+- `pixi run --frozen -e site site-check` — expected: exit 0, with the two new problems wired into `check()`. (Not a dispatch gate: herald's `verify_commands` is `pyforge-herald-test` only, so naming it under Commands makes MRS-GATE-011 refuse the landing.)
 - Build into scratch with `pixi run --frozen -e site python docsite/build.py --out <scratch>`, then run `pixi run
   --frozen -e pyforge-herald python -c "from pathlib import Path; from pyforge.herald import twins; print(len(twins.scan_tree(Path('<scratch>'))))"`
   — expected: `0` (it is `135` on `8a2da2c010`).
