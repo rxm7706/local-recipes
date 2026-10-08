@@ -67,8 +67,7 @@ def _validate_skill_file(skill_md: Path, spec: dict[str, object]) -> None:
     expected_name = str(spec["expected_name"])
     if frontmatter.get("name") != expected_name:
         raise MasonSkillContractError(
-            f"{skill_md}: frontmatter name: expected {expected_name!r}, "
-            f"got {frontmatter.get('name')!r}"
+            f"{skill_md}: frontmatter name: expected {expected_name!r}, got {frontmatter.get('name')!r}"
         )
     if not frontmatter.get("description", "").strip():
         raise MasonSkillContractError(f"{skill_md}: description: frontmatter must be non-empty")
@@ -80,14 +79,10 @@ def _validate_skill_file(skill_md: Path, spec: dict[str, object]) -> None:
 
     for phrase in spec.get("gate_phrases", ()):
         if phrase not in body:
-            raise MasonSkillContractError(
-                f"{skill_md}: body must document pypi-test gate (missing {phrase!r})"
-            )
+            raise MasonSkillContractError(f"{skill_md}: body must document pypi-test gate (missing {phrase!r})")
 
     if CFE_LINK_FRAGMENT not in text:
-        raise MasonSkillContractError(
-            f"{skill_md}: must link {CFE_LINK_FRAGMENT} (conda-forge target defers to CFE)"
-        )
+        raise MasonSkillContractError(f"{skill_md}: must link {CFE_LINK_FRAGMENT} (conda-forge target defers to CFE)")
 
     gotcha = GOTCHA_HEADING_RE.search(text)
     if gotcha:
