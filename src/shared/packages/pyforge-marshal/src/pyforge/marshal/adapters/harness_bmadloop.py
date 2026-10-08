@@ -204,7 +204,6 @@ import shutil
 import subprocess
 import time
 from collections.abc import Mapping, MutableMapping
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -214,7 +213,7 @@ from pyforge.core.errors import PyforgeError
 from pyforge.core.hooks import HookSpec, PluginRegistry
 from pyforge.core.process import PosixProcess, ProcessError, ProcessResult
 
-from ..core import policy, recall_feedback
+from ..core import policy
 from ..core.egress import to_redacted
 from ..core.harness_profile import (
     PROFILE_BY_BMADLOOP_ADAPTER,
@@ -237,7 +236,6 @@ from ..core.model_cost import (
     weighted_total,
 )
 from ..core.tier_routing import TierLaunchResolution, resolve_tier_launch
-from ..ports.fs import FsPort
 from ..ports.harness import (
     AdapterProbe,
     DeferredStory,
@@ -251,7 +249,6 @@ from ..ports.harness import (
     TaskPhaseSnapshot,
     UsageSnapshot,
 )
-from .scribe_cli import ScribeCli
 
 LOOP_RUNNER_HOOK_SPEC = HookSpec(name="pyforge.marshal.loop_runner", owner="marshal")
 DEFAULT_LOOP_RUNNER_PLUGIN_ID = "bmad-loop"
@@ -440,6 +437,12 @@ _ADAPTER_STAGES: tuple[str, ...] = ("dev", "review", "triage")
 #: stdlib once that's done (git + hashlib, via the Doctor package), so it still
 #: needs no environment, and it still avoids the deep-worktree pixi path-length
 #: panic that breaks other gates inside bmad-loop run worktrees.
+#:
+#: Story 22.16: loop homes and bmad-build prompts keep this plain `python …`
+#: string (AD-12/AD-35). Dispatch-side verification executes the same guard with
+#: ``sys.executable`` via ``dispatch_verify._argv_for_verify_execution`` so a
+#: supervisor launched without `python` on PATH (e.g. `.pixi/envs/.../bin/marshal`)
+#: still runs S-13.7 after the session finishes.
 #:
 #: NEVER `--write-baseline`. A producer that can stamp its own baseline is exactly
 #: the laundering S-13.2 exists to end: the loop must RECONCILE by naming the paths
@@ -1035,6 +1038,18 @@ def attempt_spin_wire_layer(
 # never user input).
 ADAPTER_REVIEW_MODEL_STOCK_DEFAULT: str = tomlkit.parse(_POLICY_TEMPLATE)["adapter"]["review"]["model"]
 
+# Story 82.5 (DW-FU-3-6-6) -- the longest a single bmad-loop session may run,
+# in minutes: the rendered policy's ``[limits].session_timeout_min``. bmad-loop
+# rewrites ``state.json`` only at session boundaries, so the supervisor's
+# usage-staleness window (``supervisor/__main__.py``, ``cli/spin.py``) may not
+# be shorter than this or both token ceilings go dark partway through a
+# perfectly healthy session. ``_POLICY_TEMPLATE`` is the ONE source: the key is
+# a hardcoded repo-wide override that ``render_policy_toml`` never overwrites
+# from ``EffectivePolicy`` (see that function's own docstring), so deriving it
+# here, exactly as ``ADAPTER_REVIEW_MODEL_STOCK_DEFAULT`` above is derived,
+# cannot desync from the file the harness actually reads.
+RENDERED_SESSION_TIMEOUT_MIN: int = int(tomlkit.parse(_POLICY_TEMPLATE)["limits"]["session_timeout_min"])
+
 
 def write_policy_document(doc: tomlkit.TOMLDocument, loop_home: Path) -> Path:
     """Story 3.12's own narrow sibling to ``write_policy_toml`` (retry
@@ -1090,8 +1105,8 @@ def write_policy_document(doc: tomlkit.TOMLDocument, loop_home: Path) -> Path:
 # library -- this package has no dependency on it and the range is a
 # fixed, simple two-point interval.
 _HARNESS_MIN_VERSION: tuple[int, ...] = (0, 11, 0)
-_HARNESS_MAX_MINOR_EXCLUSIVE: tuple[int, ...] = (0, 12)
-HARNESS_VERSION_RANGE_TEXT = ">=0.11.0,<0.12"
+_HARNESS_MAX_MINOR_EXCLUSIVE: tuple[int, ...] = (0, 13)
+HARNESS_VERSION_RANGE_TEXT = ">=0.11.0,<0.13"
 
 
 def harness_version_tuple(text: str) -> tuple[int, ...] | None:
@@ -1183,6 +1198,45 @@ _SPIN_LOG_POLL_TIMEOUT_S = 5.0
 # (anchors at line start) against each line of `spin`'s own redirected log.
 _RUN_STARTING_RE = re.compile(r"^run (\S+) starting\b")
 
+# Story 82.7 (DW-FU-3-3-4): how much of ``harness.log`` an early-exit launch
+# error quotes -- the last few non-blank lines, joined onto ONE line (the
+# message is interpolated verbatim into a finding and a journal ``error``
+# field, so an embedded newline or an ANSI escape would forge extra report
+# lines or drive the operator's terminal), then cut to the trailing
+# characters. The caller redacts the WHOLE log text first, so a token the cut
+# would split is never left half-matched.
+_SPIN_LOG_TAIL_LINES = 5
+_SPIN_LOG_TAIL_CHARS = 500
+_SPIN_LOG_WITHHELD = "(withheld: redaction failed)"
+_CONTROL_RUN_RE = re.compile(r"[\x00-\x1f\x7f]+")
+
+
+def _child_exited(pid: int) -> bool:
+    """Whether the child ``spin`` spawned has exited (Story 82.7). ``spawn_detached``
+    drops its ``Popen``, so an exited child stays an unreaped zombie and
+    ``PosixProcess.is_alive`` (``os.kill(pid, 0)``) reports it ALIVE; this
+    process is the parent, so ``waitpid(WNOHANG)`` is the one party that can
+    tell -- and reaps it, so a zombie counts as exited. ``ChildProcessError``
+    (the pid is not our child, or was already reaped) falls back to
+    ``PosixProcess.is_alive`` -- the one liveness model this package has."""
+    try:
+        reaped, _status = os.waitpid(pid, os.WNOHANG)
+    except ChildProcessError:
+        return not PosixProcess().is_alive(pid)
+    return reaped == pid
+
+
+def _log_tail(text: str) -> str:
+    """The bounded, single-line tail of ``text`` for an early-exit launch error
+    (empty log -> a stated absence, never an empty quote). Each run of control
+    characters (ANSI escapes, NUL, DEL, ...) collapses to one space."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    tail = _CONTROL_RUN_RE.sub(" ", " | ".join(lines[-_SPIN_LOG_TAIL_LINES:])).strip()
+    if len(tail) > _SPIN_LOG_TAIL_CHARS:
+        tail = "..." + tail[-_SPIN_LOG_TAIL_CHARS:]
+    return tail or "(empty)"
+
+
 # Story 3.5's `stop` -- a synchronous SIGTERM-then-force-kill against a
 # possibly-wedged engine plus its tmux session teardown, confirmed live
 # against the installed 0.9.0 `cmd_stop`/`runs.stop_run`. Bounded rather than
@@ -1259,152 +1313,6 @@ def _run(args: list[str], *, timeout_s: float = _VERSION_TIMEOUT_S) -> ProcessRe
         return PosixProcess().run(args, cwd=Path.cwd(), timeout_s=timeout_s)
     except ProcessError:
         return None
-
-
-@dataclass(frozen=True)
-class RecallInjectionResult:
-    """What one pre-launch ``inject_recall_feedback`` attempt did (Story
-    47.1, SPEC-marshal-recall-in-the-loop CAP-1).
-
-    ``attempted=False`` is the "no resolvable station slug" row of the
-    story's own I/O matrix -- the recall query was skipped entirely, no
-    subprocess call, target left untouched. Every other row always
-    attempts exactly one ``scribe recall`` call and always writes
-    ``target`` exactly once (the labeled block on a grounded hit, an empty
-    string otherwise) -- ``FsPort`` has no delete-a-file primitive, and
-    ``implementation-artifacts/`` is backlinked across a project's
-    worktrees, so a stale hit from a previous dispatch must never survive
-    unnoticed. ``ok=False`` is the "scribe CLI unavailable/non-zero/timeout"
-    row -- fail-open, never dispatch-blocking; callers report it as a WARN
-    finding and continue."""
-
-    attempted: bool
-    ok: bool = True
-    injected: bool = False
-    reason: str | None = None
-    target: Path | None = None
-
-
-def inject_recall_feedback(
-    *,
-    fs: FsPort,
-    loop_home: Path,
-    repo_root: Path,
-    station_slug: str | None,
-    scribe: ScribeCli | None = None,
-) -> RecallInjectionResult:
-    """Before a ``bmad-loop`` dev pass launches: shell ``scribe recall
-    --scope <station_slug>`` (CLI subprocess, never ``import
-    pyforge.scribe``) and, on a grounded hit, write the clearly-labeled
-    block CAP-1 requires to ``{implementation_artifacts}/recall-feedback.md``
-    so the shared ``bmad-build-auto`` skill's context load can fold it in.
-    Read-only against scribe's own capture store; never raises.
-
-    ``loop_home``/``repo_root`` mirror ``attempt_spin_wire_layer``'s own
-    split (the SAME two paths ``cli/spin.py`` already resolves for that
-    layer): the artifact is written into ``loop_home``'s backlinked
-    ``implementation-artifacts/`` -- the tree the dev-pass session
-    launching FROM ``loop_home`` actually reads -- while the ``scribe``
-    subprocess itself runs against ``repo_root`` (the invoking process's
-    own checkout), since a loop-home worktree does not carry its own pixi
-    envs for ``ScribeCli.resolve_binary`` to find the binary in.
-
-    ``station_slug`` is the dispatch's own resolved slug (``args.slug`` in
-    ``cli/spin.py``) -- the same ``--scope`` mechanism
-    ``scribe-marshal-fact-visibility`` CAP-1 already proves, never a
-    per-file-glob scope. ``None`` means the dispatch has no resolvable
-    station scope -- the query is skipped entirely (the matrix's fourth
-    row), not just degraded.
-
-    On every other row the target is always (re)written exactly once, with
-    real content on a grounded hit or an empty string otherwise -- never
-    left holding a previous dispatch's stale hit."""
-    if not station_slug:
-        return RecallInjectionResult(attempted=False)
-    target = loop_home / recall_feedback.recall_feedback_output_relpath(station_slug)
-    client = scribe if scribe is not None else ScribeCli()
-    outcome = client.recall(
-        repo_root=repo_root,
-        query=recall_feedback.build_recall_query(station_slug),
-        scope=station_slug,
-    )
-    content = ""
-    injected = False
-    if outcome.ok and outcome.grounded:
-        content = recall_feedback.render_recall_feedback_block(text=outcome.text, citation=outcome.citation)
-        injected = True
-    marker = _recall_query_marker_path(target)
-    try:
-        fs.ensure_dir(target.parent)
-        fs.write_text_atomic(target, content)
-        fs.write_text_atomic(marker, "")
-    except (OSError, PyforgeError) as exc:
-        return RecallInjectionResult(
-            attempted=True,
-            ok=False,
-            reason=f"could not write {target} ({exc})",
-            target=target,
-        )
-    if not outcome.ok:
-        return RecallInjectionResult(attempted=True, ok=False, reason=outcome.reason, target=target)
-    return RecallInjectionResult(attempted=True, ok=True, injected=injected, target=target)
-
-
-def _recall_feedback_target(loop_home: Path, station_slug: str) -> Path:
-    return loop_home / recall_feedback.recall_feedback_output_relpath(station_slug)
-
-
-def _recall_query_marker_path(feedback_target: Path) -> Path:
-    """Sibling marker proving ``inject_recall_feedback`` already ran for this
-    dispatch (Story 47.2, CAP-2): the review pass reads the cached block
-    from ``feedback_target`` and must never shell ``scribe recall`` again."""
-    return feedback_target.with_name(f"{feedback_target.name}.query-ran")
-
-
-def read_cached_recall_feedback_block(*, fs: FsPort, loop_home: Path, station_slug: str) -> str | None:
-    """Load the formatted block Story 47.1 wrote for this dispatch, if any."""
-    target = _recall_feedback_target(loop_home, station_slug)
-    text = fs.read_text(target)
-    if text is None or not text.strip():
-        return None
-    return text
-
-
-def augment_bmad_loop_session_prompt_with_recall(
-    prompt: str,
-    *,
-    role: str,
-    fs: FsPort,
-    loop_home: Path,
-    repo_root: Path,
-    station_slug: str | None,
-    scribe: ScribeCli | None = None,
-) -> tuple[str, RecallInjectionResult | None]:
-    """Review-pass launch path (Story 47.2, CAP-2): fold the same scoped
-    feedback block the dev pass received into ``prompt``.
-
-    Exactly one ``scribe recall`` subprocess runs per story dispatch: the
-    first ``dev`` session calls ``inject_recall_feedback`` when the query
-    marker is absent; every ``review`` session (and later ``dev`` retries
-    in the same dispatch) read the cached ``recall-feedback.md`` only."""
-    if not station_slug:
-        return prompt, None
-    target = _recall_feedback_target(loop_home, station_slug)
-    marker = _recall_query_marker_path(target)
-    injection: RecallInjectionResult | None = None
-    if role == "dev" and fs.read_text(marker) is None:
-        injection = inject_recall_feedback(
-            fs=fs,
-            loop_home=loop_home,
-            repo_root=repo_root,
-            station_slug=station_slug,
-            scribe=scribe,
-        )
-    block = read_cached_recall_feedback_block(fs=fs, loop_home=loop_home, station_slug=station_slug)
-    if block is None:
-        return prompt, injection
-    separator = "\n\n" if prompt and not prompt.endswith("\n\n") else ""
-    return f"{prompt}{separator}{block}", injection
 
 
 class BmadLoopHarness:
@@ -1660,7 +1568,7 @@ class BmadLoopHarness:
             argv += ["--max-stories", str(max_count)]
         return argv
 
-    def _poll_for_harness_run_id(self, log_path: Path) -> str | None:
+    def _poll_for_harness_run_id(self, log_path: Path, pid: int) -> str | None:
         """A bounded poll (``_SPIN_LOG_POLL_INTERVAL_S`` steps, never past
         ``_SPIN_LOG_POLL_TIMEOUT_S``) of ``log_path`` for ``_RUN_STARTING_RE``
         -- never indefinite (the spec's own Never clause). Re-reads the whole
@@ -1668,9 +1576,18 @@ class BmadLoopHarness:
         line appears -- `bmad-loop run` prints it before any per-story
         adapter output); a missing/unreadable file at any step is treated
         the same as "not there yet", not a fatal error -- the file may not
-        exist for the first instant after ``Popen`` returns."""
+        exist for the first instant after ``Popen`` returns.
+
+        Story 82.7 (DW-FU-3-3-4): each step asks whether the spawned child
+        ``pid`` has exited BEFORE it reads the log, so output the child wrote
+        before exiting is always seen -- a match returns the run id; an exit
+        with no match raises ``HarnessError`` (the child is gone and can never
+        print the line; `cmd_run`'s own ``worktree_clean`` refusal is the usual
+        cause) quoting the log's tail. A child still alive at the deadline
+        keeps the old degrade: ``None``."""
         deadline = time.monotonic() + _SPIN_LOG_POLL_TIMEOUT_S
         while True:
+            exited = _child_exited(pid)
             try:
                 text = log_path.read_text(encoding="utf-8", errors="replace")
             except OSError:
@@ -1679,6 +1596,16 @@ class BmadLoopHarness:
                 match = _RUN_STARTING_RE.match(line)
                 if match:
                     return match.group(1)
+            if exited:
+                # The tail lands in a finding, stdout and the durable journal:
+                # redact the WHOLE text first (AD-34's redaction-at-capture),
+                # so a token cut by the tail's truncation cannot slip the
+                # regex; a failed redaction quotes nothing.
+                redacted = self._redact_text(text)
+                tail = _SPIN_LOG_WITHHELD if redacted is None else _log_tail(redacted)
+                raise HarnessError(
+                    f"the process (pid {pid}) exited before printing its starting line; {log_path} tail: {tail}"
+                )
             if time.monotonic() >= deadline:
                 return None
             time.sleep(_SPIN_LOG_POLL_INTERVAL_S)
@@ -1722,7 +1649,7 @@ class BmadLoopHarness:
                 raise HarnessError(f"cannot open spin log {log_path}: {cause or exc}") from (cause or exc)
             raise HarnessError(f"cannot launch bmad-loop run: {cause or exc}") from (cause or exc)
 
-        harness_run_id = self._poll_for_harness_run_id(log_path)
+        harness_run_id = self._poll_for_harness_run_id(log_path, pid)
         return SpinResult(pid=pid, harness_run_id=harness_run_id)
 
     @staticmethod
