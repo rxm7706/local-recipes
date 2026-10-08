@@ -1059,7 +1059,8 @@ def test_flag_gate_refuse_re_preflights_when_the_spec_is_edited(
     assert "MRS-DRAIN-017" in out  # the unchanged predicate is rate-limited, not re-dispatched
 
     spec.write_text(
-        '---\ntype: feature\nflag-exempt: detector-or-gate\ndifficulty: medium\nsurface: ["src/**"]\n---\n',
+        '---\ntype: feature\nflag-exempt: detector-or-gate\ndifficulty: medium\nsurface: ["src/**"]\n---\n'
+        + BINDING_VERIFICATION_TAIL,
         encoding="utf-8",
     )
     edited = FakeBuildHarness()
@@ -1678,8 +1679,11 @@ def test_overlapping_declared_surfaces_advise_loudly_but_never_block(
         (tmp_path / "_bmad-output" / "projects" / slug).mkdir(parents=True, exist_ok=True)
         specs = dispatch_core.planning_specs_dir(tmp_path, slug)
         specs.mkdir(parents=True, exist_ok=True)
+        from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
+
         (specs / f"spec-{key}.md").write_text(
-            '---\ndifficulty: medium\nsurface: ["src/shared/**"]\n---\n', encoding="utf-8"
+            '---\ndifficulty: medium\nsurface: ["src/shared/**"]\n---\n' + BINDING_VERIFICATION_TAIL,
+            encoding="utf-8",
         )
     _seed_live_dispatch_journal(tmp_path, slug="pyforge-doctor", run_id="run-live", story_key="14.1")
     monkeypatch.chdir(tmp_path)
@@ -3308,12 +3312,14 @@ def test_dependency_ordering_never_crashes_on_small_backlogs(
 
 
 def _seed_done_worktree_spec(repo: Path, slug: str, story: str) -> Path:
+    from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
     from pyforge.marshal.core.identity import normalize, render_feed_key
 
     specs = dispatch_core.planning_specs_dir(repo, slug)
     spec = specs / f"spec-{story}.md"
     spec.write_text(
-        f'---\nstatus: ready-for-dev\ndifficulty: medium\nsurface: ["src/{slug}/**"]\n---\n',
+        f'---\nstatus: ready-for-dev\ndifficulty: medium\nsurface: ["src/{slug}/**"]\n---\n'
+        + BINDING_VERIFICATION_TAIL,
         encoding="utf-8",
     )
     feed = render_feed_key(normalize(story))
@@ -3321,7 +3327,8 @@ def _seed_done_worktree_spec(repo: Path, slug: str, story: str) -> Path:
     dest = worktree / spec.relative_to(repo)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(
-        f'---\nstatus: done\nfollowup_review_recommended: false\ndifficulty: medium\nsurface: ["src/{slug}/**"]\n---\n',
+        f'---\nstatus: done\nfollowup_review_recommended: false\ndifficulty: medium\nsurface: ["src/{slug}/**"]\n---\n'
+        + BINDING_VERIFICATION_TAIL,
         encoding="utf-8",
     )
     return worktree
@@ -5825,8 +5832,11 @@ _FU_MARSHAL_TREE = "src/shared/packages/pyforge-marshal/**"
 
 def _fu_write_surface(tmp_path: Path, story: str, surface: str) -> None:
     """The primary checkout's tracked spec for ``story``: still a qualifying follow-up, declaring ``surface``."""
+    from dispatch_spec_fixtures import BINDING_VERIFICATION_TAIL
+
     (dispatch_core.planning_specs_dir(tmp_path, _FU_SLUG) / f"spec-{story}.md").write_text(
-        f'---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\nsurface: ["{surface}"]\n---\n',
+        f'---\nstatus: done\nfollowup_review_recommended: true\ndifficulty: medium\nsurface: ["{surface}"]\n---\n'
+        + BINDING_VERIFICATION_TAIL,
         encoding="utf-8",
     )
 

@@ -367,6 +367,9 @@ def test_registered_codes_contains_the_real_codes():
             # key does not read `done` there (absent, another status, unreadable) --
             # ERROR: finalize exits 1 and `dispatch land` refuses (MRS-DISP-020).
             "MRS-DISP-051",
+            # Story 65.2 (spec-pyforge-marshal CAP-274): pre-launch spec binding
+            # refusal in `dispatch_once` before worktree or harness.
+            "MRS-DISP-050",
             # Story 77.1 (spec-pyforge-marshal CAP-282, dispatch half of the
             # `structure-graph` layer): 053 the worktree's codegraph index was
             # built with `init -y` (no base index, or the copied one would not
