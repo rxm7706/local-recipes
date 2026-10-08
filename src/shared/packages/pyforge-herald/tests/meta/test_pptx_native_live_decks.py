@@ -121,7 +121,5 @@ def test_live_decks_zero_lost_notes_and_body_lines() -> None:
                     if len(lost_line_samples) < 5:
                         lost_line_samples.append(f"{path.name}: {frag!r}")
     assert lost_notes == 0, f"lost {lost_notes} note fragments across live decks"
-    assert lost_lines == 0, (
-        f"lost {lost_lines} body text fragments across live decks: {lost_line_samples}"
-    )
+    assert lost_lines == 0, f"lost {lost_lines} body text fragments across live decks: {lost_line_samples}"
     assert slide_total >= 200

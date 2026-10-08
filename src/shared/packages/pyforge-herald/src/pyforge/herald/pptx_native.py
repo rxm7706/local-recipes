@@ -115,15 +115,7 @@ class QuoteBlock:
     text: str
 
 
-BodyBlock = (
-    HeadingBlock
-    | ParagraphBlock
-    | BulletListBlock
-    | NumberedListBlock
-    | TableBlock
-    | CodeBlock
-    | QuoteBlock
-)
+BodyBlock = HeadingBlock | ParagraphBlock | BulletListBlock | NumberedListBlock | TableBlock | CodeBlock | QuoteBlock
 
 
 @dataclass(frozen=True, slots=True)
