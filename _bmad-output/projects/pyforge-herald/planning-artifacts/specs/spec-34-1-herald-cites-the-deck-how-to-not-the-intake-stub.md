@@ -2,7 +2,7 @@
 title: "34.1: Herald cites the deck how-to, not the intake stub"
 type: 'chore'
 created: '2026-09-29'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

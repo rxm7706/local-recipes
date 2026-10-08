@@ -5,7 +5,7 @@ from `presentations/pyforge-atlas/` (Archivo / Modernist system). A chapter deck
 of the founding Dream (`docs/dreams/pyforge-charter.md`); persona Dream:
 `docs/dreams/pyforge-steward.md`. Motto: *"Provision the line. Hold the keys. Keep the lights on."*
 
-Workflow: `docs/specs/presentation-deck.md` (prototype contract, § Standard
+Workflow: `docs/how-to/presentation-deck.md` (prototype contract, § Standard
 export set, § The MCP bridge). `npm install && npm run extract && npm run dev`.
 Engine files stay byte-identical across every deck.
 

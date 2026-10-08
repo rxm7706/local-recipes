@@ -3,7 +3,7 @@
 
 A hand-edit that reintroduces a multi-line body under the ``## Design
 project (the bridge's far end)`` heading breaks the fresh-clone bootstrap
-recipe in ``docs/specs/presentation-deck.md`` silently -- this has already
+recipe in ``docs/how-to/presentation-deck.md`` silently -- this has already
 happened once live (``unity-data-stack``'s own ``### Provenance`` note).
 ``test_registry.py`` only exercises synthetic ``tmp_path`` fixtures per its
 own docstring, so nothing previously covered the real ``presentations/``

@@ -22,7 +22,7 @@ not guarantee multi-platform lockfiles, and the EU CRA's vulnerability-reporting
 > 23 ADs. There are **no epics and no stories**; they decompose fresh when the Dream is scheduled.
 > The deck says so on its closing slide — don't imply stories exist.
 
-Workflow: `docs/specs/presentation-deck.md` (prototype contract, § Standard export set,
+Workflow: `docs/how-to/presentation-deck.md` (prototype contract, § Standard export set,
 § The MCP bridge). `npm install && npm run extract && npm run dev`.
 Engine files stay byte-identical across every deck.
 
@@ -51,7 +51,7 @@ https://claude.ai/design/p/0494e2b0-7132-43b7-8ff2-4b4b42fa8384?file=Unity+Data+
 ### Provenance
 
 Bound to **Modernist** (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`). Pull it with the MCP bridge
-("pull unity-data-stack") — see `docs/specs/presentation-deck.md` § *The MCP bridge*. (This
+("pull unity-data-stack") — see `docs/how-to/presentation-deck.md` § *The MCP bridge*. (This
 `### Provenance` sub-heading was added 2026-09-17 to bring the section above into
 `pyforge.herald.registry.read()`'s canonical two-body-line shape — the prose that used to sit
 directly under the heading broke `registry.read()` with "expected exactly two body lines, found
