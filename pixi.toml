@@ -954,6 +954,23 @@ depends-on = ["pages-build"]
 description = "Build the PyForge dossier + infographic site into dist/."
 cmd = "python docsite/build.py --out dist"
 
+[feature.site.tasks.docs-site-validate-links]
+description = "Story 27.4 (spec-pyforge-herald CAP-52 D5): upstream validate-doc-links.js over docs/ — dead links exit 1."
+cmd = "node docs-site/scripts/validate-doc-links.js"
+
+[feature.site.tasks.docs-site-validate-sidebar-order]
+description = "Story 27.4: upstream validate-sidebar-order.js over docs/ frontmatter."
+cmd = "node docs-site/scripts/validate-sidebar-order.js"
+
+[feature.site.tasks.docs-site-validate-sidebar]
+description = "Story 27.4: sidebar-order validator then map.yaml sidebar drift check (27.3 generator, --check only)."
+cmd = "python docs-site/scripts/sidebar_from_map.py --check"
+depends-on = ["docs-site-validate-sidebar-order"]
+
+[feature.site.tasks.docs-site-validate]
+description = "Story 27.4: vendored BMAD doc link + sidebar validators (node-only; no npm install)."
+depends-on = ["docs-site-validate-links", "docs-site-validate-sidebar"]
+
 [feature.site.tasks.site-check]
 description = "Build the site and verify its output (required pages, no stray template syntax, every infographic published intact)."
 cmd = "python docsite/build.py --out dist --check"
@@ -1550,7 +1567,7 @@ Added 2026-09-14 after PR #1355 went red on two lanes that had NO local equivale
 NOT covered (needs Docker/podman or a live service): the container/guild-container jobs, atlas's Chromium/DuckDB/WASM setup, herald's browser check, and scribe's Postgres+pgvector service (`scribe-pg-up` first, or scribe's durable GraphStore tests error).
 
 Runs from `-e pyforge-guild` (the session default) as well as `-e local-recipes`: the `test-ci` leg is pinned to `local-recipes` because the CFE regression suite is a factory task that lives only there (found 2026-09-16, steward Story 63.1 -- the first `pr-preflight` from the Guild env failed with "could not find the task 'test-ci'"), the same per-leg pinning the two station aggregates already use. Fifth leg added the same day: `scripts-suite` (`tests/scripts`, the detectors.yml job `pyforge-doctor-scripts-test` in `-e pyforge-ci`) redded PR #1388 on a test that pinned a task to `feature.local-recipes` -- a CI lane this aggregate did not cover, the very gap it exists to close. Sixth leg added 2026-09-18 (herald Story 24.2, spec-pyforge-herald CAP-49, closes DW-FU-23-5): `site-check` (`-e site`) mirrors the new `docsite-check.yml` `pull_request` lane -- until then no `pr-preflight` leg, and no PR-gating CI lane at all, ran `docsite/build.py`, so a broken family-page template could merge with every gate green. Seventh leg added 2026-09-20 (doctor Story 30.2 review pass): `docs-map-render-test` -- a `tests/scripts/` file needing jsonschema (unavailable in `pyforge-ci`, which `pyforge-doctor-scripts-test` already covers for the stdlib-only subset) needs its OWN leg here rather than silently only ever skipping. Eighth leg added 2026-09-24 (doctor Story 30.3, spec-pyforge-doctor CAP-84): `docs-gen-test` -- the five reference-page generators import PyYAML via `_docs_gen_common.py`, not a declared `pyforge-ci` dependency (each test file skips cleanly there via `pytest.importorskip` if that ever stops being transitively available), so this gets its own leg rather than relying on `pyforge-doctor-scripts-test`. Ninth leg added 2026-10-01 (doctor Story 39.1): `pyforge-doctor-aggregate-scripts-test` (`-e pyforge-doctor`) -- doctor Story 38.5 added a second Detectors `scripts-suite` step that runs `tests/scripts/test_detectors_doctor_sources.py` under `pyforge-doctor`, because its aggregate tests skip in `pyforge-ci`, and no leg here ran it, so those tests only ever skipped locally. A doctor meta-test (`tests/meta/test_preflight_mirrors_scripts_suite.py`) now reds any `scripts-suite` step that is not a leg here."""
-depends-on = ["lint-types", "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "site-check", environment = "site" }]
+depends-on = ["lint-types", "detectors-ci", { task = "test-ci", environment = "local-recipes" }, { task = "pyforge-doctor-scripts-test", environment = "pyforge-ci" }, { task = "pyforge-doctor-aggregate-scripts-test", environment = "pyforge-doctor" }, "docs-map-render-test", "docs-gen-test", "pyforge-station-tests", "pyforge-station-coverage-gates", { task = "site-check", environment = "site" }, { task = "docs-site-validate", environment = "site" }]
 
 [feature.local-recipes.tasks.eval-quality-smoke]
 description = "Story 45.2: compiles the shipped bmad-eval-quality dev corpus's own worked example (satisfied-declarations.json) plus this repo's own pilot contract (evals/review-catches-planted-defect/contract.json) — a cheap sanity check that the installed eval-quality CLI and this pilot's contract still agree with the published EvalContract schema. Not a gate: never joins detectors/detectors-ci. See evals/review-catches-planted-defect/driver.py."
