@@ -8,7 +8,11 @@ import pytest
 
 from pyforge.steward.measures import (
     FIRST_CUT_IDS,
+    MeasureConfig,
     MeasureConfigError,
+    MeasureDecl,
+    MeasureDuty,
+    format_list,
     load_config,
     refuse_reuse,
     validate_add_rules,
@@ -128,3 +132,174 @@ def test_cli_measure_list_json(capsys) -> None:
     out = capsys.readouterr().out
     assert "warden-verdict" in out
     assert "build-league-measures" in out
+
+
+def test_load_config_missing_file(tmp_path: Path) -> None:
+    with pytest.raises(MeasureConfigError, match="not found"):
+        load_config(tmp_path / "missing.yaml")
+
+
+def test_load_config_malformed_yaml(tmp_path: Path) -> None:
+    path = tmp_path / "measures.yaml"
+    path.write_text("catalog: [\n", encoding="utf-8")
+    with pytest.raises(MeasureConfigError, match="malformed YAML"):
+        load_config(path)
+
+
+def test_load_config_unreadable(tmp_path: Path) -> None:
+    path = tmp_path / "measures.yaml"
+    path.write_text("catalog: {}\n", encoding="utf-8")
+    path.chmod(0o000)
+    try:
+        with pytest.raises(MeasureConfigError, match="unreadable"):
+            load_config(path)
+    finally:
+        path.chmod(0o644)
+
+
+def test_load_config_top_level_not_mapping(tmp_path: Path) -> None:
+    path = tmp_path / "measures.yaml"
+    path.write_text("- not-a-mapping\n", encoding="utf-8")
+    with pytest.raises(MeasureConfigError, match="must be a mapping"):
+        load_config(path)
+
+
+def test_load_config_unknown_top_level_key(tmp_path: Path) -> None:
+    body = """\
+extra: true
+measures:
+  warden-verdict:
+    dimension: human
+    source: x
+    state: on
+"""
+    with pytest.raises(MeasureConfigError, match="unknown top-level"):
+        load_config(_write_measures(tmp_path, body))
+
+
+def test_load_config_catalog_missing(tmp_path: Path) -> None:
+    path = tmp_path / "measures.yaml"
+    path.write_text("measures: {}\n", encoding="utf-8")
+    with pytest.raises(MeasureConfigError, match="'catalog'"):
+        load_config(path)
+
+
+def test_load_config_catalog_name_required(tmp_path: Path) -> None:
+    path = tmp_path / "measures.yaml"
+    path.write_text("catalog: {}\nmeasures: {}\n", encoding="utf-8")
+    with pytest.raises(MeasureConfigError, match="catalog.name"):
+        load_config(path)
+
+
+def test_load_config_archived_ids_not_list(tmp_path: Path) -> None:
+    header = """\
+catalog:
+  name: test-measures
+archived_ids: retired-one
+measures: {}
+"""
+    path = tmp_path / "measures.yaml"
+    path.write_text(header, encoding="utf-8")
+    with pytest.raises(MeasureConfigError, match="archived_ids"):
+        load_config(path)
+
+
+def test_load_config_archived_ids_entry_invalid(tmp_path: Path) -> None:
+    header = """\
+catalog:
+  name: test-measures
+archived_ids:
+  - ""
+measures: {}
+"""
+    path = tmp_path / "measures.yaml"
+    path.write_text(header, encoding="utf-8")
+    with pytest.raises(MeasureConfigError, match="archived_ids\\[0\\]"):
+        load_config(path)
+
+
+def test_load_config_measures_defaults_when_absent(tmp_path: Path) -> None:
+    header = """\
+catalog:
+  name: test-measures
+"""
+    path = tmp_path / "measures.yaml"
+    path.write_text(header, encoding="utf-8")
+    config = load_config(path)
+    assert config.measures == ()
+
+
+def test_load_config_measures_not_mapping(tmp_path: Path) -> None:
+    header = """\
+catalog:
+  name: test-measures
+measures: []
+"""
+    path = tmp_path / "measures.yaml"
+    path.write_text(header, encoding="utf-8")
+    with pytest.raises(MeasureConfigError, match="'measures' section"):
+        load_config(path)
+
+
+def test_load_config_measure_body_not_mapping(tmp_path: Path) -> None:
+    body = """\
+measures:
+  warden-verdict: not-a-mapping
+"""
+    with pytest.raises(MeasureConfigError, match="must be a mapping"):
+        load_config(_write_measures(tmp_path, body))
+
+
+def test_load_config_bad_dimension(tmp_path: Path) -> None:
+    body = """\
+measures:
+  warden-verdict:
+    dimension: machine
+    source: x
+    state: on
+"""
+    with pytest.raises(MeasureConfigError, match="dimension"):
+        load_config(_write_measures(tmp_path, body))
+
+
+def test_load_config_missing_source(tmp_path: Path) -> None:
+    body = """\
+measures:
+  warden-verdict:
+    dimension: human
+    state: on
+"""
+    with pytest.raises(MeasureConfigError, match="source"):
+        load_config(_write_measures(tmp_path, body))
+
+
+def test_validate_add_rules_archived_id_also_in_measures() -> None:
+    decl = MeasureDecl("warden-verdict", "human", "x", "on")
+    config = MeasureConfig("n", "", ("warden-verdict",), (decl,))
+    findings = validate_add_rules(config)
+    assert any("archived_ids and measures" in f for f in findings)
+
+
+def test_refuse_reuse_existing_and_allowed() -> None:
+    decl = MeasureDecl("warden-verdict", "human", "x", "on")
+    config = MeasureConfig("n", "", (), (decl,))
+    assert refuse_reuse("warden-verdict", config) is not None
+    assert refuse_reuse("fresh-id", config) is None
+
+
+def test_format_list_includes_notes_and_archived_ids() -> None:
+    decl = MeasureDecl("z-last", "team", "src", "off", notes="note text")
+    config = MeasureConfig("demo", "comp.md", ("gone",), (decl,))
+    text = format_list(config)
+    assert "note text" in text
+    assert "archived_ids (reserved): gone" in text
+
+
+def test_measure_duty_config_load_error(tmp_path: Path) -> None:
+    measures_dir = tmp_path / "measures"
+    measures_dir.mkdir()
+    duty = MeasureDuty()
+    ns = type("NS", (), {"measure_verb": "check", "json": False, "measures_dir": str(measures_dir)})()
+    result = duty.run(ns)
+    assert not result.ok
+    assert "config-load" in str(result.details)
