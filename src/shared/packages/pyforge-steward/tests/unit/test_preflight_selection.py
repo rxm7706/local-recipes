@@ -39,6 +39,16 @@ from pyforge.steward import preflight, preflight_ci
 REPO_ROOT = Path(__file__).resolve().parents[6]
 INVOKING_ENV = "pyforge-guild"
 
+_NOOP_INSTALL = lambda _env: 0  # noqa: E731
+_SERIAL = {"jobs": 1, "install_environment": _NOOP_INSTALL}
+
+
+def _run_journal_record(repo: Path) -> dict:
+    lines = (repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").strip().splitlines()
+    records = [json.loads(line) for line in lines if line.strip()]
+    return next(record for record in reversed(records) if "lanes" in record)
+
+
 STATIONS = ("atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden")
 LINT = {"ruff", "ruff-format", "mypy", "target-version-check", "precommit-config-check"}
 SPEC_ALWAYS_ON = {"detectors-ci", "pyforge-doctor-scripts-test", "docs-map-render-test", "docs-gen-test"}
@@ -604,13 +614,13 @@ def test_run_preflight_runs_selected_lanes_in_order_and_journals_the_selection(t
         ran.append(lane.task)
         return 0
 
-    code = preflight.run_preflight(repo, invoking_env=INVOKING_ENV, run_lane=fake_run)
+    code = preflight.run_preflight(repo, invoking_env=INVOKING_ENV, run_lane=fake_run, **_SERIAL)
     assert code == preflight.EXIT_OK
     expected = LINT | SPEC_ALWAYS_ON | ALWAYS_ON_SINCE_SPEC | {"pyforge-core-test", suite("marshal"), gate("marshal")}
     assert set(ran) == expected
     assert ran == [lane.task for lane in lanes if lane.task in expected]  # declaration order kept
 
-    record = json.loads((repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").strip())
+    record = _run_journal_record(repo)
     assert [entry["task"] for entry in record["lanes"]] == ran
     selection = record["selection"]
     assert selection["mode"] == "diff"
@@ -623,12 +633,67 @@ def test_run_preflight_with_no_base_ref_runs_every_lane(tmp_path: Path) -> None:
     repo = make_repo(tmp_path, MARSHAL_ONLY, with_base=False)
     lanes, _ = lanes_and_pixi(repo)
     ran: list[str] = []
-    code = preflight.run_preflight(repo, invoking_env=INVOKING_ENV, run_lane=lambda lane: ran.append(lane.task) or 0)
+    code = preflight.run_preflight(
+        repo, invoking_env=INVOKING_ENV, run_lane=lambda lane: ran.append(lane.task) or 0, **_SERIAL
+    )
     assert code == preflight.EXIT_OK
     assert ran == [lane.task for lane in lanes]
-    record = json.loads((repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").strip())
+    record = _run_journal_record(repo)
     assert record["selection"]["mode"] == "all"
     assert "refs/remotes/origin/main" in record["selection"]["all_reason"]
+
+
+def test_static_service_mutex_keys_reads_workflow_services(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(
+        repo,
+        ".github/workflows/w.yml",
+        "on:\n  pull_request:\n    paths: ['**']\n"
+        "jobs:\n  j:\n    services:\n      postgres:\n        image: pgvector/pgvector:pg17\n"
+        "    steps:\n      - run: pixi run --frozen -e pyforge-guild lane-a\n",
+    )
+    _write(
+        repo,
+        "pixi.toml",
+        '[feature.guild-tasks.tasks.lane-a]\ncmd = "true"\n',
+    )
+    lane = preflight.Lane(task="lane-a", environment="pyforge-guild")
+    pixi = tomllib.loads((repo / "pixi.toml").read_text(encoding="utf-8"))
+    keys = preflight_ci.static_service_mutex_keys(repo, [lane], pixi)
+    assert keys[("lane-a", "pyforge-guild")] == "services:postgres"
+
+
+def test_service_mutex_keys_follows_ci_firing_site(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _write(
+        repo,
+        ".github/workflows/w.yml",
+        "on:\n  pull_request:\n    paths: ['**']\n"
+        "jobs:\n  j:\n    services:\n      redis:\n        image: redis:7\n"
+        "    steps:\n      - run: pixi run --frozen -e pyforge-guild lane-b\n",
+    )
+    _write(
+        repo,
+        "pixi.toml",
+        '[feature.guild-tasks.tasks.lane-b]\ncmd = "true"\n',
+    )
+    _write(repo, "touch.txt", "x\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "base")
+    _git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+    _git(repo, "checkout", "-q", "-b", "feature")
+    _write(repo, "touch.txt", "y\n")
+    _git(repo, "add", "touch.txt")
+    _git(repo, "commit", "-q", "-m", "branch")
+
+    lane = preflight.Lane(task="lane-b", environment="pyforge-guild")
+    pixi = tomllib.loads((repo / "pixi.toml").read_text(encoding="utf-8"))
+    assert preflight_ci.lane_service_mutex_key(repo, lane, pixi) == "services:redis"
+    keys = preflight_ci.service_mutex_keys(repo, [lane], pixi)
+    assert keys[("lane-b", "pyforge-guild")] == "services:redis"
 
 
 def test_a_repository_without_workflows_still_selects_every_lane(tmp_path: Path) -> None:
@@ -640,5 +705,10 @@ def test_a_repository_without_workflows_still_selects_every_lane(tmp_path: Path)
         encoding="utf-8",
     )
     ran: list[str] = []
-    assert preflight.run_preflight(tmp_path, pixi_path=pixi_path, run_lane=lambda lane: ran.append(lane.task) or 0) == 0
+    assert (
+        preflight.run_preflight(
+            tmp_path, pixi_path=pixi_path, run_lane=lambda lane: ran.append(lane.task) or 0, **_SERIAL
+        )
+        == 0
+    )
     assert ran == ["a", "b"]

@@ -12,6 +12,15 @@ from pyforge.steward import preflight
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 
+_NOOP_INSTALL = lambda _env: 0  # noqa: E731
+_SERIAL = {"jobs": 1, "install_environment": _NOOP_INSTALL}
+
+
+def _run_journal_record(repo: Path) -> dict:
+    lines = (repo / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").strip().splitlines()
+    records = [json.loads(line) for line in lines if line.strip()]
+    return next(record for record in reversed(records) if "lanes" in record)
+
 
 FIXTURE_TOML = """
 [feature.guild-tasks.tasks.pr-preflight-lanes]
@@ -68,7 +77,7 @@ def test_real_pixi_lists_every_leaf_once() -> None:
 def test_missing_aggregate_exits_2(tmp_path: Path) -> None:
     pixi_path = tmp_path / "pixi.toml"
     pixi_path.write_text("[feature.guild-tasks.tasks.other]\ncmd = 'true'\n", encoding="utf-8")
-    assert preflight.run_preflight(tmp_path, pixi_path=pixi_path) == preflight.EXIT_CONFIG
+    assert preflight.run_preflight(tmp_path, pixi_path=pixi_path, **_SERIAL) == preflight.EXIT_CONFIG
 
 
 def test_unknown_task_exits_2(tmp_path: Path) -> None:
@@ -77,7 +86,7 @@ def test_unknown_task_exits_2(tmp_path: Path) -> None:
         '[feature.guild-tasks.tasks.pr-preflight-lanes]\ndepends-on = ["missing-task"]\n',
         encoding="utf-8",
     )
-    assert preflight.run_preflight(tmp_path, pixi_path=pixi_path) == preflight.EXIT_CONFIG
+    assert preflight.run_preflight(tmp_path, pixi_path=pixi_path, **_SERIAL) == preflight.EXIT_CONFIG
 
 
 def test_third_lane_red_stops_and_journals(tmp_path: Path) -> None:
@@ -97,16 +106,13 @@ def test_third_lane_red_stops_and_journals(tmp_path: Path) -> None:
         calls.append(lane.task)
         return 1 if lane.task == "c" else 0
 
-    code = preflight.run_preflight(tmp_path, pixi_path=pixi_path, run_lane=fake_run)
+    code = preflight.run_preflight(tmp_path, pixi_path=pixi_path, run_lane=fake_run, **_SERIAL)
     assert code == preflight.EXIT_LANE_RED
     assert calls == ["a", "b", "c"]
-    journal = tmp_path / preflight.JOURNAL_RELATIVE
-    lines = journal.read_text(encoding="utf-8").strip().splitlines()
-    assert len(lines) == 1
-    record = json.loads(lines[0])
+    record = _run_journal_record(tmp_path)
     assert record["verdict"] == "red"
     statuses = [entry["status"] for entry in record["lanes"]]
-    assert statuses == ["ok", "ok", "red", "not-run"]
+    assert statuses == ["ok", "ok", "red", "cancelled"]
 
 
 def test_all_green_journals_ok(tmp_path: Path) -> None:
@@ -122,9 +128,10 @@ def test_all_green_journals_ok(tmp_path: Path) -> None:
         tmp_path,
         pixi_path=pixi_path,
         run_lane=lambda _lane: 0,
+        **_SERIAL,
     )
     assert code == preflight.EXIT_OK
-    record = json.loads((tmp_path / preflight.JOURNAL_RELATIVE).read_text(encoding="utf-8").strip())
+    record = _run_journal_record(tmp_path)
     assert record["verdict"] == "ok"
     assert record["logical_cores"] >= 1
     assert record["total_seconds"] >= 0

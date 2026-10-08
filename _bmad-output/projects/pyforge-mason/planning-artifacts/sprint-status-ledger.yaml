@@ -49,7 +49,7 @@ development_status:
   17-3-the-recurring-campaigns-have-a-home-and-a-record: done
   18-1-the-recipe-ci-picks-changed-recipes-from-the-remote-tracking-ref: done
   19-1-mason-s-station-skill-is-skf-compiled-exported-and-consulted-by-the-persona: done
-  19-2-the-package-craft-skill-teaches-mason-package-build-and-ship: backlog
+  19-2-the-package-craft-skill-teaches-mason-package-build-and-ship: done
   19-3-the-environment-craft-skill-teaches-mason-environment-lock-and-check: backlog
   19-4-the-two-feedstock-campaigns-become-mason-skills: backlog
   19-5-the-closing-rule-2-retro-teaches-conda-forge-expert-it-is-one-of-mason-s-skills: backlog

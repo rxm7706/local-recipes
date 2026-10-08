@@ -65,6 +65,7 @@ def test_current_reexec_calls_pixi_once_with_guard(
     _fake_pixi(tmp_path, exit_code=0)
     monkeypatch.setattr(mod, "_load_verify_scope", lambda _root: None)
     monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
+    monkeypatch.delenv(mod._REEXEC_GUARD, raising=False)
 
     calls: list[tuple[list[str], dict]] = []
 
@@ -97,6 +98,9 @@ def test_list_reexec_returns_child_code_without_parent_table(
     mod = _load()
     _fake_pixi(tmp_path)
     monkeypatch.setattr(mod, "_load_verify_scope", lambda _root: None)
+    # The fake is the only pixi the gate may find: never the host's.
+    monkeypatch.setenv("PATH", f"{tmp_path}{os.pathsep}{os.environ.get('PATH', '')}")
+    monkeypatch.delenv(mod._REEXEC_GUARD, raising=False)
     monkeypatch.setattr(
         mod.subprocess,
         "run",
@@ -168,13 +172,24 @@ def test_mutation_without_main_gate_raises_on_current(
 ) -> None:
     mod = _load()
     _minimal_switch_tree(tmp_path, "alpha")
+    # Drive main() against the fixture tree, never the checkout the script sits
+    # in: its marker is gitignored, so a fresh CI clone has none and cmd_current
+    # would return 1 ("no active project") before reaching the guarded load.
+    monkeypatch.setattr(mod, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(mod, "_load_verify_scope", lambda _root: None)
     monkeypatch.setattr(
         mod,
         "_ensure_scope_primitive_or_exit",
         lambda _root, need_scope: None,
     )
+
+    def no_reexec(*_a, **_k):
+        raise RuntimeError("the mutated main() must not re-execute")
+
+    monkeypatch.setattr(mod.subprocess, "run", no_reexec)
     monkeypatch.setattr(sys, "argv", ["bmad-switch", "--current"])
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(AssertionError) as excinfo:
         mod.main()
+    # The raise is cmd_current's guarded load, reached past the fixture marker.
+    assert excinfo.traceback[-1].name == "cmd_current"
