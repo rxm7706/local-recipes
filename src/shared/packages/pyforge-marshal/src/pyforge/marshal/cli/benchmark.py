@@ -318,7 +318,15 @@ def _load_leg(
     path = Path(spec)
     if path.is_file():
         payload = json.loads(path.read_text(encoding="utf-8"))
-        leg = bench.leg_from_mapping(payload)
+        if not isinstance(payload, Mapping):
+            raise ValueError(f"{path}: a benchmark leg must be a JSON object")
+        try:
+            leg = bench.leg_from_mapping(payload)
+        except (KeyError, TypeError) as exc:
+            # A recorded leg missing a required field (or carrying a wrong
+            # type) is the same operator-input failure as malformed JSON:
+            # MRS-BENCH-002, never an uncaught traceback.
+            raise ValueError(f"{path}: malformed benchmark leg: {exc!r}") from exc
         if leg.layers_mode != layers_mode:
             raise ValueError(f"{path}: layers_mode={leg.layers_mode!r} expected {layers_mode!r}")
         return leg
@@ -343,7 +351,7 @@ def run_structure_graph_dispatch_measure(args: argparse.Namespace) -> int:
         findings.append(
             Finding(
                 code="MRS-BENCH-001",
-                severity=Severity.HARD,
+                severity=Severity.ERROR,
                 message=f"invalid project slug: {slug!r}",
             )
         )
@@ -393,7 +401,7 @@ def run_structure_graph_dispatch_measure(args: argparse.Namespace) -> int:
         findings.append(
             Finding(
                 code="MRS-BENCH-003",
-                severity=Severity.HARD,
+                severity=Severity.ERROR,
                 message=f"could not write benchmark artifact to {output}: {exc}",
             )
         )
@@ -451,7 +459,7 @@ def run_benchmark_compare(
         findings.append(
             Finding(
                 code="MRS-BENCH-001",
-                severity=Severity.HARD,
+                severity=Severity.ERROR,
                 message=f"invalid project slug: {slug!r}",
             )
         )
@@ -463,7 +471,7 @@ def run_benchmark_compare(
         findings.append(
             Finding(
                 code="MRS-BENCH-005",
-                severity=Severity.HARD,
+                severity=Severity.ERROR,
                 message="--per-layer requires --layer-legs PATH (JSON map of layer -> leg)",
             )
         )
@@ -472,7 +480,7 @@ def run_benchmark_compare(
         findings.append(
             Finding(
                 code="MRS-BENCH-005",
-                severity=Severity.HARD,
+                severity=Severity.ERROR,
                 message="--layer-legs requires --per-layer",
             )
         )
@@ -526,7 +534,7 @@ def run_benchmark_compare(
         findings.append(
             Finding(
                 code="MRS-BENCH-002",
-                severity=Severity.HARD,
+                severity=Severity.ERROR,
                 message=f"could not load benchmark leg: {exc}",
             )
         )
@@ -546,7 +554,7 @@ def run_benchmark_compare(
         findings.append(
             Finding(
                 code="MRS-BENCH-003",
-                severity=Severity.HARD,
+                severity=Severity.ERROR,
                 message=f"could not write benchmark artifact to {output}: {exc}",
             )
         )
@@ -636,7 +644,7 @@ def _run_benchmark_compare_per_layer(
         findings.append(
             Finding(
                 code="MRS-BENCH-002",
-                severity=Severity.HARD,
+                severity=Severity.ERROR,
                 message=f"could not load per-layer benchmark legs: {exc}",
             )
         )
@@ -650,7 +658,7 @@ def _run_benchmark_compare_per_layer(
         findings.append(
             Finding(
                 code="MRS-BENCH-003",
-                severity=Severity.HARD,
+                severity=Severity.ERROR,
                 message=f"could not write benchmark artifact to {output}: {exc}",
             )
         )
