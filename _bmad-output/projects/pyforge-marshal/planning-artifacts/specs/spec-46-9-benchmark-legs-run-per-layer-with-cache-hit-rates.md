@@ -2,7 +2,7 @@
 title: '46.9: Benchmark legs run per layer with cache-hit rates'
 type: 'feature'
 created: '2026-09-18'
-status: 'backlog'
+status: 'ready-for-dev'
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
