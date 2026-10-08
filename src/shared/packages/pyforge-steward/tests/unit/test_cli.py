@@ -37,7 +37,7 @@ def test_help_lists_all_duties(capsys):
         assert duty in out
 
 
-def test_there_are_exactly_twenty_five_duties():
+def test_there_are_exactly_twenty_six_duties():
     assert DUTIES == (
         "keys",
         "deploy",
@@ -62,6 +62,7 @@ def test_there_are_exactly_twenty_five_duties():
         "load",
         "passport",
         "glass",
+        "quarantine",
         "session",
         "deck-drift",
     )
@@ -127,6 +128,7 @@ def test_setup_initrepo_validate_fast_are_wired_into_help():
             "cutover",
             "passport",
             "glass",
+            "quarantine",
             "session",
             "deck-drift",
         )
