@@ -907,6 +907,7 @@ _SHIPPED_CLOCKS = {
     ),
     "pyforge.atlas.dependency_history_sensor": ("atlas", "25-2-", "2026-09-28", "", ""),
     "pyforge.herald.deck_publish": ("herald", "29-1-", "2026-09-28", "", ""),
+    # CAP-55 deck_viewer: Story 30.1 publish/twins; Story 30.2 portal + deck-twins API routes.
     "pyforge.herald.deck_viewer": ("herald", "30-1-", "2026-09-28", "", ""),
 }
 

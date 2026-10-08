@@ -25,7 +25,7 @@ under Restricted SCC.
 > 10 ADs. There are **no epics and no stories**; they decompose fresh when the Dream is scheduled.
 > The deck says so on its closing slide — don't imply stories exist.
 
-Workflow: `docs/specs/presentation-deck.md` (prototype contract, § Standard export set,
+Workflow: `docs/how-to/presentation-deck.md` (prototype contract, § Standard export set,
 § The MCP bridge). `npm install && npm run extract && npm run dev`.
 Engine files stay byte-identical across every deck.
 
@@ -55,7 +55,7 @@ https://claude.ai/design/p/45c841c6-e807-4fee-a92a-f8e89cb890b4?file=Wasm+Analyt
 ### Provenance
 
 Bound to **Modernist** (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`). Pull it with the MCP bridge
-("pull wasm-analytics-stack") — see `docs/specs/presentation-deck.md` § *The MCP bridge*.
+("pull wasm-analytics-stack") — see `docs/how-to/presentation-deck.md` § *The MCP bridge*.
 
 Seeded 2026-07-25 (byte-exact, verified against disk via `list_files`):
 

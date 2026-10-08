@@ -1,0 +1,25 @@
+{% extends "django_pyforge/base.html" %}
+{% block title %}
+  {{ deck.topic }} — herald deck viewer
+{% endblock title %}
+{% block content %}
+  <h1 id="herald-deck-viewer">{{ deck.topic }}</h1>
+  <p class="herald-deck-slug">{{ deck.slug }}</p>
+  {% if deck.pptx_stream_path %}
+    <p>
+      <a id="herald-deck-pptx-download" href="{{ deck.pptx_stream_path }}" download>Download current .pptx</a>
+    </p>
+  {% endif %}
+  {% if deck.twin_iframe_path %}
+    <iframe
+      id="herald-deck-twin-frame"
+      title="{{ deck.topic }} HTML twin"
+      src="{{ deck.twin_iframe_path }}"
+      sandbox="allow-scripts allow-same-origin"
+      style="width: 100%; min-height: 70vh; border: 1px solid #ccc;"
+    ></iframe>
+  {% else %}
+    <p id="herald-deck-no-twin">No HTML twin is published for this deck yet.</p>
+  {% endif %}
+  <p><a href="{% url 'herald-deck-list' %}">Back to deck list</a></p>
+{% endblock content %}

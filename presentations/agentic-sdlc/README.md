@@ -52,7 +52,7 @@ Five new slides landed this pass, plus a reconciliation. Design project:
 
 **Reconciled, not new:** *The Lexicon* and *Lexicon to PyForge* existed in Design
 since 2026-07-25 but were never pulled to the repo (a real desync — recovered here
-per the byte-exact-pull discipline in `docs/specs/presentation-deck.md`). Both, plus
+per the byte-exact-pull discipline in `docs/how-to/presentation-deck.md`). Both, plus
 their two standalone poster artifacts (also pulled to the repo for the first time —
 see `project/Lexicon Poster.dc.html` / `project/Lexicon to PyForge.dc.html`), were
 corrected to match the Charter's own Lexicon, which moved from six nouns to seven

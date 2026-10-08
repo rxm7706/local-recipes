@@ -31,6 +31,7 @@ on:
       - 'src/shared/packages/pyforge-doctor/**'
       - 'src/shared/packages/pyforge-herald/**'
       - 'presentations/**'
+      - 'docs-site/**'
       - 'src/shared/packages/pyforge-marshal/**'
       - 'src/shared/packages/pyforge-mason/**'
       - 'src/shared/packages/pyforge-scribe/**'
@@ -58,6 +59,7 @@ on:
       - 'src/shared/packages/pyforge-doctor/**'
       - 'src/shared/packages/pyforge-herald/**'
       - 'presentations/**'
+      - 'docs-site/**'
       - 'src/shared/packages/pyforge-marshal/**'
       - 'src/shared/packages/pyforge-mason/**'
       - 'src/shared/packages/pyforge-scribe/**'
@@ -147,7 +149,7 @@ jobs:
             if [ "$s" = "atlas" ]; then extra=("${ATLAS_EXTRA[@]}"); fi
             station_path="src/shared/packages/pyforge-$s"
             job_paths=("$station_path")
-            if [ "$s" = "herald" ]; then job_paths=("$station_path" presentations); fi
+            if [ "$s" = "herald" ]; then job_paths=("$station_path" presentations docs-site); fi
             if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "${job_paths[@]}" "${extra[@]}" 2>/dev/null; then
               echo "$s=true" >> "$GITHUB_OUTPUT"
               if [ "$SHARED_CHANGED" = "true" ] || ! git diff --quiet "$BASE"...HEAD -- "$station_path" "${extra[@]}" 2>/dev/null; then

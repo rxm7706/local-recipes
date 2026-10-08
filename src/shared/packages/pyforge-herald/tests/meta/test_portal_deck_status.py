@@ -74,6 +74,8 @@ _PORTAL_PYFORGE_IMPORT_ALLOWED = frozenset(
     {
         "deck_export_routes.py",
         "deck_export_sync.py",
+        "deck_twin_routes.py",
+        "deck_viewer.py",
     }
 )
 

@@ -116,6 +116,26 @@ re-scoped infrastructure and the fleet-chain regeneration machinery) ·
 
 ## Realization log
 
+- **2026-10-08 (docs-site helper) — Found: the docs site cannot build from a clean checkout, because its URL helper
+  was never tracked.** `docs-site/astro.config.mjs:4` imports `./src/lib/site-url.mjs`, and `docs-site/README.md:26`
+  lists that file as copied from upstream. The root `.gitignore` rule `lib/` (`:40`, a Python-packaging ignore) also
+  matches `docs-site/src/lib/`: `git check-ignore -v` prints `.gitignore:40:lib/`, and `git log --all` finds no commit
+  that ever held the file. Story 27.1's dispatch built green because the file sat untracked in its worktree; its
+  auto-checkpoint (`773f656f03`) and its landing (`c47bbb99e4`, 2026-10-05) left it behind, and no worktree of this
+  repository holds it now. Measured on `054bb4e795`: in a fresh clone, `pixi run -e site docs-site-build` exits 1 at `[astro] Unable to
+  load your Astro config` ("Failed to load url ./src/lib/site-url.mjs"). With upstream's `docs-site/src/lib/site-url.mjs`
+  in place (`bmad-code-org/BMAD-METHOD` at the recorded commit `561eeedf38`, 1032 bytes), the same build exits 0 and
+  writes 64 pages. So FR-8.1 and AD-21 hold on no checkout, and Stories 27.2–27.4 build on a site that does not build.
+  Nothing catches it: `tests/meta/test_docs_site.py` checks the symlink, the Node pin and the vendored hashes, never
+  whether the config's imports are tracked; herald's CI job does not run on `docs-site/**`; and no lane builds the
+  site yet. The 2026-10-07 retro, PRD and spine recorded the gap and left it for a fix story. **What it looks like when
+  fixed:** the helper is tracked, byte-identical to upstream, with its sha256 in `docs-site/README.md`'s vendored
+  table; a narrow `.gitignore` exception admits `docs-site/src/lib/` and the general `lib/` rule stays; a herald meta
+  test fails when any relative import in the docs-site sources resolves to a path git does not track; herald's CI job
+  runs on `docs-site/**`; and a fresh clone builds. **Constraints:** a `fix` story, no CAP, no flag. Re-vendor, never
+  fork (AD-21 rule 5, D6). No page under `docs/` changes, and the only workflow edit is herald's trigger. Owner
+  `spec-pyforge-herald` (CAP-52, FR-8.1, AD-21; Story 27.1 shipped the site). → Epic 27 / Story 27.6, specced
+  2026-10-08.
 - **2026-10-03 (night) — Found: Story 35.1 landed with two rows closed on thin evidence.** It auto-landed after
   its send-back pass, before a landing review. The docs-site check has tests for 4 of its 15 problems, the sync-proof
   row closed on a speculative normaliser and a tautological hash branch, and the act vocabulary, a README sentence and

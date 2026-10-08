@@ -53,3 +53,8 @@ python-pptx = ">=1.0.2"
 # Story 29.1 (CAP-54): deck_store's S3 adapter imports boto3. Floor matches
 # pyproject.toml and root pixi.toml's [feature.pyforge-herald.dependencies].
 boto3 = ">=1.43.75"
+# Story 29.2 (CAP-54): deck_export_routes registers FastAPI handlers on herald's v1
+# sub-app and opens the store from async handlers with asgiref's sync_to_async.
+# Floors match pyproject.toml's [project.dependencies].
+fastapi = ">=0.141.1"
+asgiref = ">=3.8.0"

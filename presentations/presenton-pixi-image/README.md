@@ -14,7 +14,7 @@ Steward deploys and operates the OpenShift service.
 Display title is **"Presenton, Conda-Native"**; file/dir names drop the comma
 (`Presenton Conda-Native.dc.html`) and the repo slug is `presenton-pixi-image`.
 
-Workflow: `docs/specs/presentation-deck.md` (prototype contract, § Standard export set,
+Workflow: `docs/how-to/presentation-deck.md` (prototype contract, § Standard export set,
 § The MCP bridge). `npm install && npm run extract && npm run dev`.
 Engine files stay byte-identical across every deck.
 
@@ -53,7 +53,7 @@ https://claude.ai/design/p/c824a332-8e43-4b17-bf84-f38307085289?file=Presenton+C
 ### Provenance
 
 Bound to the **Modernist** design system (`fbc1d6c8-b35f-4df6-9044-a64d2675427b`). Pull it with
-the MCP bridge ("pull presenton") — see `docs/specs/presentation-deck.md` § *The MCP bridge*.
+the MCP bridge ("pull presenton") — see `docs/how-to/presentation-deck.md` § *The MCP bridge*.
 
 Seeded 2026-07-25 (every upload byte-verified against the local file):
 

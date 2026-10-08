@@ -4,8 +4,8 @@ Exact CLI/config/schema surfaces, inventories, and policy charters. Part of the
 Diátaxis-adapted general docs layer — see [`docs/MAP.md`](../MAP.md) for the full
 four-quadrant map and per-file classification.
 
-Architecture-rationale ("why") content lives in [`docs/explanation/`](../explanation/).
-Tutorials live at [`docs/tutorials/`](../tutorials/); how-to guides at [`docs/how-to/`](../how-to/).
+Architecture-rationale ("why") content lives in [`docs/explanation/`](../explanation/README.md).
+Tutorials live at [`docs/tutorials/`](../tutorials/README.md); how-to guides at [`docs/how-to/`](../how-to/README.md).
 
 Descriptions of what exists — never aspirations (`docs/dreams/`) and never BMAD
 contracts (`_bmad-output/*/planning-artifacts/`; legacy: `docs/specs/`).

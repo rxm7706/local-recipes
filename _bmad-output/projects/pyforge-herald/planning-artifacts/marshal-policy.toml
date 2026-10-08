@@ -291,6 +291,9 @@ verify_commands = [
   ".github/workflows/docsite-check.yml",
   "scripts/pixi_version_registry.py",
   "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+  # Story 27.6 (2026-10-08, fix): herald's station-tests job also runs on docs-site/**, so the new
+  # tracked-imports meta test fires on the diffs that could break it (Story 28.1 did the same for presentations/**)
+  ".github/workflows/pyforge-station-tests.yml",
 ]
 "28" = [  # each deck keeps one current version of each export (spec-pyforge-herald CAP-53), added 2026-09-28; no .steward/ path: deck-integrity-baseline.json is gitignored and never re-stamped by this epic
   "src/shared/packages/pyforge-herald/**",
