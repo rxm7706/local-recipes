@@ -3782,7 +3782,7 @@
    "docs/dreams/bmad-loop-liveness-footgun.md": "279259e2cd1f374fb438591ed834fc527f6b0a4f",
    "docs/reference/library-llms-full.md": "88206a00cf32457daf2639e0a138730613e2b574",
    "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
-   "pixi.toml": "36ac29a51ef634e0b606082e8b59c21fb224292d",
+   "pixi.toml": "9cd6cb200ca18cb2acc1da9d81739d8a007dd67d",
    "scripts/.ad-citation-baseline.json": "685db30063a76e6a36e8ed25a938bd92c3dfa4cf",
    "scripts/ad_citation_check.py": "d3f93464f906a391aea7e9d89d060e858c9b2890",
    "scripts/bmad-loop-worktree": "8e9c02c8a311f36b0f4b8a628cb64ef5e28050cb",
@@ -3834,7 +3834,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_cutover_root.py": "101475d65160b49c9ef311d035b38af01e85b6b1",
    "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py": "fe3f4b9797c6bcc59a3058ac7f3574988e268376",
    "src/shared/packages/pyforge-core/tests/unit/test_errors.py": "cb0d234990797d401f15f4b59a247a96537648a9",
-   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "75f99efccbb5310b8e5e648aab994a85c0a080e9",
+   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "6e83153a9ccfcd750559f9e30f7ae065b3c59991",
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
    "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "115c10aa12674d205a1d76dc560c0fde5996d098",
    "src/shared/packages/pyforge-core/tests/unit/test_league_measure.py": "9bd6766e602674c54cb06dd67647707f0c442fdd",
@@ -4285,7 +4285,7 @@
    "tests/scripts/test_bmad_cursor_mdc_check.py": "72ab0c82752f3bd02ecc2c7f804518a218486b6e",
    "tests/scripts/test_tea_playwright_check.py": "be266df25acac99bc9a8a317e4e3f4f68374844b"
   },
-  "memlog": "a73e0d308f12268150115da79f7e490308913439"
+  "memlog": "fb4f45c799ec8b824d6c385f3ebf95f5cfe5f214"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
