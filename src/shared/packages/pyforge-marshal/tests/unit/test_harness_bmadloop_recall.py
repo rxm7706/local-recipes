@@ -24,8 +24,8 @@ from pyforge.marshal.adapters.harness_bmadloop import (
     augment_bmad_loop_session_prompt_with_recall,
     inject_recall_feedback,
 )
-from pyforge.marshal.core import recall_feedback as recall_feedback_core
 from pyforge.marshal.adapters.scribe_cli import ScribeRecallOutcome
+from pyforge.marshal.core import recall_feedback as recall_feedback_core
 from pyforge.marshal.core.recall_feedback import RECALL_FEEDBACK_HEADER
 
 
@@ -187,9 +187,7 @@ class TestNoResolvableStationSlug:
 class TestReviewPassReusesCachedRecall:
     """Story 47.2 (CAP-2): one ``scribe recall`` per story dispatch; review reads cache."""
 
-    def test_dev_then_review_shares_one_scribe_call_and_identical_block(
-        self, loop_home: Path, repo_root: Path
-    ) -> None:
+    def test_dev_then_review_shares_one_scribe_call_and_identical_block(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs()
         scribe = _FakeScribeCli(
             ScribeRecallOutcome(ok=True, grounded=True, text="never skip memlog reconcile", citation="memlog/x.md")
@@ -240,9 +238,7 @@ class TestReviewPassReusesCachedRecall:
         assert injection is None
         assert prompt == "Review the diff."
 
-    def test_dev_pass_received_no_block_review_also_gets_no_block(
-        self, loop_home: Path, repo_root: Path
-    ) -> None:
+    def test_dev_pass_received_no_block_review_also_gets_no_block(self, loop_home: Path, repo_root: Path) -> None:
         fs = _FakeFs()
         scribe = _FakeScribeCli(ScribeRecallOutcome(ok=True, grounded=False))
 

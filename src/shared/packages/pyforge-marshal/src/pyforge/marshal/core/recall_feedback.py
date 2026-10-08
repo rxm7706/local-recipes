@@ -31,9 +31,7 @@ __all__ = (
 
 #: The label distinguishing this block from the story's own spec/intent
 #: content (this story's own "clearly labeled" constraint).
-RECALL_FEEDBACK_HEADER = (
-    "# Scribe feedback (auto-recalled for this story dispatch — dev and review pass)"
-)
+RECALL_FEEDBACK_HEADER = "# Scribe feedback (auto-recalled for this story dispatch — dev and review pass)"
 
 
 def build_recall_query(station_slug: str) -> str:

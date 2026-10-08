@@ -28,9 +28,7 @@ class TestBuildRecallQuery:
 class TestRecallFeedbackOutputRelpath:
     def test_is_a_sibling_of_epic_context_under_implementation_artifacts(self) -> None:
         relpath = recall_feedback.recall_feedback_output_relpath("pyforge-doctor")
-        assert relpath == (
-            "_bmad-output/projects/pyforge-doctor/implementation-artifacts/recall-feedback.md"
-        )
+        assert relpath == ("_bmad-output/projects/pyforge-doctor/implementation-artifacts/recall-feedback.md")
 
     def test_scopes_by_project_slug(self) -> None:
         acme = recall_feedback.recall_feedback_output_relpath("acme")
