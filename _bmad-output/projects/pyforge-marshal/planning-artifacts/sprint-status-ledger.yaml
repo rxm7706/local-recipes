@@ -345,7 +345,7 @@ development_status:
   66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test: done
   67-1-a-landed-dispatch-reads-completed-when-the-primary-checkout-cannot-be-fast-forwarded: done
   68-1-a-landing-s-ledger-promotion-reaches-origin-main-and-a-failed-one-is-never-silent: done
-  69-1-the-switch-script-runs-where-it-is-documented-to-run: backlog
+  69-1-the-switch-script-runs-where-it-is-documented-to-run: done
   7-1-the-seed-module-tree-inside-pyforge-marshal: done
   7-2-error-taxonomy-and-exit-codes: done
   7-3-the-fs-write-primitive-and-the-never-write-guard: done
@@ -578,7 +578,7 @@ development_status:
   epic-67-retrospective: optional
   epic-68: done
   epic-68-retrospective: optional
-  epic-69: backlog
+  epic-69: done
   epic-69-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
