@@ -32,7 +32,7 @@ _PREFLIGHT_ENV = "pyforge-guild"
 def _preflight_legs(pixi: dict[str, Any]) -> set[tuple[str, str]]:
     """``pr-preflight``'s legs as ``(task, environment)``; a bare string leg runs in ``_PREFLIGHT_ENV``."""
     legs: set[tuple[str, str]] = set()
-    for dep in pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight"]["depends-on"]:
+    for dep in pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight-lanes"]["depends-on"]:
         if isinstance(dep, str):
             legs.add((dep, _PREFLIGHT_ENV))
         else:
@@ -85,8 +85,8 @@ def test_the_doctor_env_step_is_the_leg_story_39_1_added() -> None:
 def test_a_step_with_no_leg_is_named() -> None:
     """Mutation: drop the leg and the step is reported, by task and environment."""
     workflow, pixi = _live()
-    deps = pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight"]["depends-on"]
-    pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight"]["depends-on"] = [
+    deps = pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight-lanes"]["depends-on"]
+    pixi["feature"]["guild-tasks"]["tasks"]["pr-preflight-lanes"]["depends-on"] = [
         dep for dep in deps if not (isinstance(dep, dict) and dep["task"] == "pyforge-doctor-aggregate-scripts-test")
     ]
     problems = unmirrored_steps(workflow, pixi)
