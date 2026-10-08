@@ -2,7 +2,7 @@
 title: "22.19: A landing unions the flag registry when two flag stories land in turn"
 type: 'fix'
 created: '2026-10-07'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '9c29bda7ec3d5c8a108a2f511aa1d29e4a090c37'
 review_loop_iteration: 0
 followup_review_recommended: false
