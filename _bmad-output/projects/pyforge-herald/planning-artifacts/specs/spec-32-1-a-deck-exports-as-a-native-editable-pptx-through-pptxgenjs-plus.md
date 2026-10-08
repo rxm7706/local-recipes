@@ -2,7 +2,7 @@
 title: '32.1: A deck exports as a native, editable pptx through pptxgenjs-plus'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
