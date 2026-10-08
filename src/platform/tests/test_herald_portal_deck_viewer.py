@@ -3,17 +3,22 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import importlib
 import json
-from datetime import UTC, datetime
+from datetime import UTC
+from datetime import datetime
 from http import HTTPStatus
-from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 import pytest
 from django.conf import settings
 from django.contrib.sessions.backends.db import SessionStore
+from django.db import connections
 from django.http import Http404
-from django.test import RequestFactory, override_settings
+from django.test import RequestFactory
+from django.test import override_settings
 from django_herald_portal import views as herald_views
 from django_herald_portal.models import DeckExport
 from django_pyforge.assertion.client import PortalClient
@@ -21,13 +26,24 @@ from django_pyforge.assertion.golden import GOLDEN_PRIVATE_PEM
 from django_pyforge.assertion.golden import GOLDEN_PUBLIC_PEM
 from django_pyforge.roles import IDP_TOKEN_CLAIMS_SESSION_KEY
 from django_pyforge.roles import prefixed_station
-from httpx import ASGITransport, AsyncClient
+from httpx import ASGITransport
+from httpx import AsyncClient
 
 from config.station_api import station_application
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 DECK_VIEWER_FLAG = "pyforge.herald.deck_viewer"
 
 pytestmark = pytest.mark.django_db(transaction=True)
+
+
+@pytest.fixture(autouse=True)
+def _herald_repo_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # The herald station API builds its webhook host on first request.
+    monkeypatch.setenv("HERALD_REPO_ROOT", str(tmp_path))
+    monkeypatch.setenv("HERALD_WEBHOOK_SECRET", "test-secret")
 
 
 def _viewer_flag_tree(tmp_path: Path, *, enabled: bool) -> Path:
@@ -48,11 +64,11 @@ def _viewer_flag_tree(tmp_path: Path, *, enabled: bool) -> Path:
 
 def _herald_request(path: str = "/stations/herald/decks/") -> object:
     request = RequestFactory().get(path)
-    request.idp_token_claims = {
+    request.idp_token_claims = {  # type: ignore[attr-defined]
         "sub": "herald-operator",
         "groups": [prefixed_station("herald")],
     }
-    request.idp_roles = [prefixed_station("herald")]
+    request.idp_roles = [prefixed_station("herald")]  # type: ignore[attr-defined]
     return request
 
 
@@ -83,8 +99,6 @@ def _herald_get(
     try:
         return asyncio.run(_call())
     finally:
-        from django.db import connections
-
         connections.close_all()
 
 
@@ -95,8 +109,6 @@ def _seed_store(
     standalone: bytes | None = None,
     bundle: dict[str, bytes] | None = None,
 ) -> None:
-    import importlib
-
     deck_store = importlib.import_module("pyforge.herald.deck_store")
     mem = deck_store.MemoryDeckStore()
     twins: dict[str, object] = {}
@@ -112,17 +124,14 @@ def _seed_store(
     if bundle is not None:
         files: dict[str, str] = {}
         for rel, body in bundle.items():
-            digest = f"{rel}-hash".ljust(64, "0")[:64]
-            if len(digest) != 64:
-                digest = ("0" * (64 - len(digest))) + digest
             # stable 64-hex per rel for tests
-            import hashlib
-
             digest = hashlib.sha256(body).hexdigest()
             mem.put_bytes(
                 f"sha256/{digest}",
                 body,
-                content_type="application/javascript" if rel.endswith(".js") else "text/html",
+                content_type="application/javascript"
+                if rel.endswith(".js")
+                else "text/html",
             )
             files[rel] = digest
         twins["bundle"] = {"files": files}
@@ -170,7 +179,9 @@ def test_deck_list_shows_published_slugs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True))
+    )
     monkeypatch.setattr(
         "django_herald_portal.views.evaluate_boolean",
         lambda _key, default=False: True,
@@ -185,7 +196,9 @@ def test_deck_list_shows_published_slugs(
 def test_deck_list_404_when_flag_off(
     deck_rows, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=False)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=False))
+    )
     monkeypatch.setattr(
         "django_herald_portal.views.evaluate_boolean",
         lambda _key, default=False: False,
@@ -200,7 +213,7 @@ def test_deck_list_forbidden_without_role(monkeypatch: pytest.MonkeyPatch) -> No
         lambda _key, default=False: True,
     )
     denied = RequestFactory().get("/stations/herald/decks/")
-    denied.idp_roles = [prefixed_station("steward")]
+    denied.idp_roles = [prefixed_station("steward")]  # type: ignore[attr-defined]
     response = herald_views.deck_list(denied)
     assert response.status_code == HTTPStatus.FORBIDDEN
 
@@ -215,7 +228,9 @@ def test_viewer_renders_iframe_and_pptx_link(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     slug = "demo-standalone"
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True))
+    )
     monkeypatch.setattr(
         "django_herald_portal.views.evaluate_boolean",
         lambda _key, default=False: True,
@@ -242,14 +257,21 @@ def test_viewer_renders_iframe_and_pptx_link(
 def test_home_unchanged_when_flag_off(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=False)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=False))
+    )
     monkeypatch.setattr(
         "django_herald_portal.views.evaluate_boolean",
         lambda _key, default=False: False,
     )
     monkeypatch.setattr(
         "django_herald_portal.views.PortalClient.invoke",
-        lambda self, **kwargs: {"slug": "pyforge-herald", "linked": True, "sync": "ok", "stale_mirror": False},
+        lambda self, **kwargs: {
+            "slug": "pyforge-herald",
+            "linked": True,
+            "sync": "ok",
+            "stale_mirror": False,
+        },
     )
     response = herald_views.chrome_home(_herald_request("/stations/herald/"))
     body = response.content.decode()
@@ -264,7 +286,9 @@ def test_home_unchanged_when_flag_off(
 def test_twin_routes_require_herald_role(
     deck_rows, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True))
+    )
     _seed_store(monkeypatch, "demo-standalone", standalone=b"<html></html>")
     assert (
         _herald_get("/stations/herald/api/v1/deck-twins/demo-standalone").status_code
@@ -279,7 +303,9 @@ def test_twin_routes_require_herald_role(
 def test_twin_stream_sets_csp_and_no_cors(
     deck_rows, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True))
+    )
     _seed_store(monkeypatch, "demo-standalone", standalone=b"<html></html>")
     token = PortalClient().emit(
         "herald-operator",
@@ -304,7 +330,9 @@ def test_twin_stream_sets_csp_and_no_cors(
 def test_twin_routes_404_when_flag_off(
     deck_rows, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=False)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=False))
+    )
     _seed_store(monkeypatch, "demo-standalone", standalone=b"<html></html>")
     token = PortalClient().emit(
         "herald-operator",
@@ -314,7 +342,9 @@ def test_twin_routes_404_when_flag_off(
     )
     headers = {"Authorization": f"Bearer {token}"}
     assert (
-        _herald_get("/stations/herald/api/v1/deck-twins/demo-standalone", headers=headers).status_code
+        _herald_get(
+            "/stations/herald/api/v1/deck-twins/demo-standalone", headers=headers
+        ).status_code
         == HTTPStatus.NOT_FOUND
     )
 
@@ -326,7 +356,9 @@ def test_twin_routes_404_when_flag_off(
 def test_portal_routes_404_when_flag_off(
     deck_rows, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=False)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=False))
+    )
     monkeypatch.setattr(
         "django_herald_portal.views.evaluate_boolean",
         lambda _key, default=False: False,
@@ -344,7 +376,9 @@ def test_portal_routes_404_when_flag_off(
 def test_unknown_twin_path_is_not_found(
     deck_rows, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True))
+    )
     _seed_store(
         monkeypatch,
         "demo-bundle",
@@ -394,7 +428,9 @@ def test_playwright_records_zero_foreign_origin_requests(
 
     slug_standalone = "demo-standalone"
     slug_bundle = "demo-bundle"
-    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True)))
+    monkeypatch.setenv(
+        "PYFORGE_FLAGS_PATH", str(_viewer_flag_tree(tmp_path, enabled=True))
+    )
     _seed_store(
         monkeypatch,
         slug_standalone,
