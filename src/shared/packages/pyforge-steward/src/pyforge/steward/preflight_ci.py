@@ -63,8 +63,11 @@ _OUTPUT_HEREDOC = re.compile(r"([^=<\s]+)<<(\S+)")
 
 
 class LaneLike(Protocol):
-    task: str
-    environment: str
+    @property
+    def task(self) -> str: ...
+
+    @property
+    def environment(self) -> str: ...
 
 
 class _Unevaluable(Exception):
@@ -168,7 +171,7 @@ def filter_matches(patterns: Sequence[str], path: str) -> bool:
 @dataclass(frozen=True)
 class Workflow:
     file: str
-    data: dict[str, Any]
+    data: dict[Any, Any]
 
     @property
     def jobs(self) -> dict[str, Any]:
