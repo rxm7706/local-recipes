@@ -1008,3 +1008,5 @@ docs/dashboard/artifact/
 docs-site/node_modules/
 docs-site/build/
 docs-site/.astro/
+# Override repo-root `lib/` (Python packaging) so vendored upstream helper is tracked.
+!docs-site/src/lib/
