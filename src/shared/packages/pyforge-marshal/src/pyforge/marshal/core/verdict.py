@@ -1224,6 +1224,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # tier of MRS-DISP-048 above: it stops a landing being reported clean while the
     # bookkeeping never reached main (the 64.1 landing, 2026-09-28).
     "MRS-DISP-051": Verdict.ERROR,
+    # Story 65.2 (spec-pyforge-marshal CAP-274): pre-launch spec binding refusal.
+    "MRS-DISP-050": Verdict.ERROR,
     # Story 77.1 (spec-pyforge-marshal CAP-282): the `structure-graph` layer's
     # dispatch half -- 053 built (or rebuilt) the worktree's index with `init`
     # instead of syncing a copied base; 054 seeded no index at all. WARN, the

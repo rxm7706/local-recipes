@@ -582,7 +582,9 @@ def _seed_fleet(tmp_path: Path, *, stories: dict[str, list[str]]) -> None:
         specs.mkdir(parents=True, exist_ok=True)
         for key in keys:
             (specs / f"spec-{key}.md").write_text(
-                '---\ndifficulty: medium\nsurface: ["src/%s/**"]\n---\n' % slug,
+                '---\ndifficulty: medium\nsurface: ["src/%s/**"]\n---\n'
+                % slug
+                + "\n## Verification\n\n**Commands:**\n\n**Manual checks:**\n- none\n",
                 encoding="utf-8",
             )
 
@@ -1064,6 +1066,53 @@ def test_flag_gate_refuse_re_preflights_when_the_spec_is_edited(
     out = capsys.readouterr().out
     assert edited.dispatched == [("pyforge-marshal", "22.7")]
     assert "MRS-DISP-052" not in out
+
+
+def test_unbound_spec_refuse_re_preflights_when_the_spec_gains_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Story 65.2 (CAP-274): a drain cycle that met ``MRS-DISP-050`` leaves a campaign block; an unchanged spec stays
+    rate-limited, and once the spec binds the next cycle clears the block and dispatches."""
+    _init_git_repo(tmp_path)
+    (tmp_path / "_bmad-output" / "projects" / "pyforge-marshal").mkdir(parents=True)
+    specs = dispatch_core.planning_specs_dir(tmp_path, "pyforge-marshal")
+    specs.mkdir(parents=True)
+    spec = specs / "spec-22-7-fleet.md"
+    spec.write_text('---\ndifficulty: medium\n---\n# no verification\n', encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    ledgers = {"pyforge-marshal": (("22-7-fleet", "backlog"),)}
+
+    refused = FakeBuildHarness()
+    _run_drain(tmp_path, _drain_args(once=True), ledgers=ledgers, build_harness=refused)
+    run_id = next(dispatch_fleet.fleet_runs_dir(tmp_path).iterdir()).name
+    assert refused.dispatched == []
+    assert "MRS-DISP-050" in capsys.readouterr().out
+
+    unchanged = FakeBuildHarness()
+    _run_drain(
+        tmp_path,
+        _drain_args(once=True, campaign=run_id),
+        ledgers=ledgers,
+        build_harness=unchanged,
+    )
+    out = capsys.readouterr().out
+    assert unchanged.dispatched == []
+    assert "MRS-DRAIN-017" in out
+
+    spec.write_text(
+        '---\ndifficulty: medium\n---\n# spec\n\n## Verification\n\n**Commands:**\n\n**Manual checks:**\n- none\n',
+        encoding="utf-8",
+    )
+    edited = FakeBuildHarness()
+    _run_drain(
+        tmp_path,
+        _drain_args(once=True, campaign=run_id),
+        ledgers=ledgers,
+        build_harness=edited,
+    )
+    out = capsys.readouterr().out
+    assert edited.dispatched == [("pyforge-marshal", "22.7")]
+    assert "MRS-DISP-050" not in out
 
 
 def test_skip_on_blocked_moves_to_the_next_story_and_reports_the_skip(
@@ -4549,7 +4598,10 @@ _FU_TIP = "0f1e2d3c4b5a69788796a5b4c3d2e1f001122334"
 
 
 def _fu_spec(status: str = "done", flag: bool = True) -> str:
-    return f"---\nstatus: {status}\nfollowup_review_recommended: {str(flag).lower()}\ndifficulty: medium\n---\n# spec\n"
+    return (
+        f"---\nstatus: {status}\nfollowup_review_recommended: {str(flag).lower()}\ndifficulty: medium\n---\n# spec\n"
+        "\n## Verification\n\n**Commands:**\n\n**Manual checks:**\n- none\n"
+    )
 
 
 def _fu_ledger_rel(slug: str) -> str:

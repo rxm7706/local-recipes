@@ -594,6 +594,24 @@ def test_mrs_disp_051_is_registered_at_the_error_tier():
     )
 
 
+def test_mrs_disp_050_is_registered_once_at_the_error_tier() -> None:
+    """Story 65.2 (CAP-274): pre-launch spec binding refusal is ERROR."""
+    import inspect
+    import re
+
+    from pyforge.marshal.core import verdict
+    from pyforge.marshal.core.model import Finding, Severity
+
+    assert "MRS-DISP-050" in findings.REGISTERED_CODES
+    assert verdict.classify("MRS-DISP-050") is verdict.Verdict.ERROR
+    registry_source = inspect.getsource(findings)
+    table_source = inspect.getsource(verdict)
+    assert len(re.findall(r'^\s+"MRS-DISP-050",\s*$', registry_source, re.MULTILINE)) == 1
+    assert len(re.findall(r'^\s+"MRS-DISP-050":', table_source, re.MULTILINE)) == 1
+    refused = Finding(code="MRS-DISP-050", severity=Severity.ERROR, message="cannot bind")
+    assert verdict.compute_verdict((refused,)) is verdict.Verdict.ERROR
+
+
 def test_mrs_disp_052_is_registered_once_at_the_error_tier_and_055_at_warn():
     """Story 74.2 (spec-feature-flag-governance CAP-3): the flag-gate refusal is ERROR; the
     proceeds-with-a-warning half takes its own code because ``compute_verdict`` classifies by

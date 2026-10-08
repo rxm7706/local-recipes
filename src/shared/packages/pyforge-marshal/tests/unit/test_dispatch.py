@@ -1143,11 +1143,17 @@ _SHARED_STORY = "20-1-a-story-key-two-stations-both-happen-to-use"
 _SHARED_FEED_KEY = "20.1"
 
 
+# Story 65.2: dispatch_once refuses specs with no ``## Verification``; empty Commands bind.
+_BINDING_VERIFICATION_TAIL = (
+    "\n## Verification\n\n**Commands:**\n\n**Manual checks:**\n- none\n"
+)
+
+
 def _seed_spec(repo_root: Path, slug: str, story: str) -> Path:
     specs = dispatch_core.planning_specs_dir(repo_root, slug)
     specs.mkdir(parents=True, exist_ok=True)
     spec = specs / f"spec-{story}.md"
-    spec.write_text("---\ndifficulty: medium\n---\n# spec\n", encoding="utf-8")
+    spec.write_text(f"---\ndifficulty: medium\n---\n# spec\n{_BINDING_VERIFICATION_TAIL}", encoding="utf-8")
     return spec
 
 
@@ -4444,3 +4450,91 @@ def test_removing_the_flag_gate_consult_lets_the_red_fixture_dispatch(
     assert attempt.launched
     assert harness.calls and vcs.added
     assert process.gate_calls == []
+
+
+# --- Story 65.2 (CAP-274): pre-launch spec binding refusal -----------------------------------------
+
+_UNBOUND_SPEC_BODY = "\n## Intent\n\nNo verification section at all.\n"
+_OUT_OF_POLICY_SPEC = f"""\
+---
+difficulty: medium
+---
+
+## Verification
+
+**Commands:**
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` -- expected: pass
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` -- expected: pass
+"""
+
+
+def _seed_binding_dispatch_repo(
+    tmp_path: Path, *, body: str, slug: str = "pyforge-marshal", story: str = "65-2-binding"
+) -> None:
+    _init_git_repo(tmp_path, scope_slug=slug)
+    specs = dispatch_core.planning_specs_dir(tmp_path, slug)
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / f"spec-{story}.md").write_text(f"---\ndifficulty: medium\n---\n{body}", encoding="utf-8")
+
+
+def test_dispatch_once_refuses_an_unbound_spec_before_harness_or_worktree(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _seed_binding_dispatch_repo(tmp_path, body=_UNBOUND_SPEC_BODY)
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug="pyforge-marshal",
+        story="65-2-binding",
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    [refusal] = [f for f in attempt.errors if f.code == "MRS-DISP-050"]
+    assert "MRS-GATE-010" in refusal.message
+    assert not attempt.launched
+    assert harness.calls == []
+
+
+def test_dispatch_once_refuses_a_command_outside_policy_before_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    body = _OUT_OF_POLICY_SPEC.replace("pyforge-deps-test", "pyforge-atlas-test")
+    _seed_binding_dispatch_repo(tmp_path, body=body)
+    monkeypatch.chdir(tmp_path)
+    harness = FakeBuildHarness()
+    attempt = dispatch_once(
+        slug="pyforge-marshal",
+        story="65-2-binding",
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=harness,
+        process=FakeProcess(),
+    )
+    [refusal] = [f for f in attempt.errors if f.code == "MRS-DISP-050"]
+    assert "MRS-GATE-011" in refusal.message
+    assert "pyforge-atlas-test" in refusal.message
+    assert not attempt.launched
+    assert harness.calls == []
+
+
+def test_the_spec_binding_refusal_is_re_preflightable_through_classify_attempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pyforge.marshal.core import dispatch_re_preflight
+
+    _seed_binding_dispatch_repo(tmp_path, body=_UNBOUND_SPEC_BODY)
+    monkeypatch.chdir(tmp_path)
+    attempt = dispatch_once(
+        slug="pyforge-marshal",
+        story="65-2-binding",
+        fs=FakeFs(),
+        vcs=FakeVcs(tmp_path),
+        build_harness=FakeBuildHarness(),
+        process=FakeProcess(),
+    )
+    _status, detail, _findings = dispatch_module._classify_attempt("pyforge-marshal", "65-2-binding", attempt)
+    assert detail is not None and detail.startswith("MRS-DISP-050:")
+    assert dispatch_re_preflight.parse_refuse_gate(detail) == "MRS-DISP-050"
+    assert dispatch_re_preflight.is_re_preflightable_gate("MRS-DISP-050")
