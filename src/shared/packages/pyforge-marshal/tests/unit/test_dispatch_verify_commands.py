@@ -8,12 +8,18 @@ the guard honours -- had no test of their own.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
 from pyforge.core.process import ProcessError, ProcessResult
 
-from pyforge.marshal.dispatch_verify import _bare_shell_metacharacters, _run_verify_command
+from pyforge.marshal.adapters.harness_bmadloop import _SURFACE_RECONCILE_COMMAND
+from pyforge.marshal.dispatch_verify import (
+    _argv_for_verify_execution,
+    _bare_shell_metacharacters,
+    _run_verify_command,
+)
 
 
 class _Process:
@@ -83,3 +89,25 @@ def test_a_failing_command_is_reported_with_its_exit(tmp_path: Path) -> None:
     process = _Process(ProcessResult(returncode=1, stdout="", stderr="1 failed"))
     _report, finding = _run_verify_command("pytest -q", process=process, worktree=tmp_path)
     assert finding is not None and finding.code == "MRS-GATE-001"
+
+
+def test_surface_guard_runs_with_supervisor_interpreter_not_bare_python(tmp_path: Path) -> None:
+    """Story 22.16 (B): argv uses ``sys.executable``; report command string unchanged."""
+    process = _Process(ProcessResult(returncode=0, stdout="", stderr=""))
+    report, finding = _run_verify_command(_SURFACE_RECONCILE_COMMAND, process=process, worktree=tmp_path)
+    assert finding is None
+    assert report["command"] == _SURFACE_RECONCILE_COMMAND
+    assert process.calls == [[sys.executable, "scripts/spec_surface_reconcile.py"]]
+
+
+def test_argv_for_verify_execution_leaves_non_guard_commands_untouched() -> None:
+    tokens = ["python", "-m", "pytest"]
+    assert _argv_for_verify_execution("python -m pytest", tokens) == tokens
+
+
+def test_surface_guard_whitespace_normalized_before_interpreter_substitution() -> None:
+    spaced = _SURFACE_RECONCILE_COMMAND.replace(" ", "  ", 1)
+    assert _argv_for_verify_execution(spaced, spaced.split()) == [
+        sys.executable,
+        "scripts/spec_surface_reconcile.py",
+    ]

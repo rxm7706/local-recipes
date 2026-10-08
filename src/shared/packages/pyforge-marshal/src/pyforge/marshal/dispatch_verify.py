@@ -264,6 +264,23 @@ def check_unsanctioned_cfe_commits(
     )
 
 
+def _normalize_verify_command(command: str) -> str:
+    return " ".join(command.split())
+
+
+def _argv_for_verify_execution(command: str, tokens: list[str]) -> list[str]:
+    """Story 22.16 (spec-22-16): execute the S-13.7 guard with ``sys.executable``.
+
+    The journaled / spec-binding command string stays plain
+    ``python scripts/spec_surface_reconcile.py`` (``_SURFACE_RECONCILE_COMMAND``);
+    only the argv passed to ``ProcessPort.run`` uses the supervisor's own
+    interpreter so a PATH without a ``python`` shim cannot refuse a finished
+    session at verification."""
+    if _normalize_verify_command(command) == _normalize_verify_command(_SURFACE_RECONCILE_COMMAND):
+        return [sys.executable, "scripts/spec_surface_reconcile.py"]
+    return tokens
+
+
 def _run_verify_command(
     command: str,
     *,
@@ -293,8 +310,9 @@ def _run_verify_command(
                 "but verify commands are never run through a shell"
             ),
         )
+    argv = _argv_for_verify_execution(command, tokens)
     try:
-        result = process.run(tokens, cwd=worktree)
+        result = process.run(argv, cwd=worktree)
     except ProcessError as exc:
         return gate.classify_outcome(
             command,
