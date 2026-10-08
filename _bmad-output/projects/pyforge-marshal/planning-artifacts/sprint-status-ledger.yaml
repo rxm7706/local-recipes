@@ -340,7 +340,7 @@ development_status:
   63-1-the-station-tests-lane-picks-suites-from-the-remote-tracking-ref: done
   64-1-the-dispatch-worktree-carries-its-own-scope-never-the-shared-marker: done
   65-1-a-drain-plan-reports-every-refusal-it-can-decide-before-launch: done
-  65-2-a-story-whose-spec-cannot-bind-is-refused-before-a-session-is-spent: backlog
+  65-2-a-story-whose-spec-cannot-bind-is-refused-before-a-session-is-spent: done
   66-1-finalize-carries-a-recommended-follow-up-review-into-the-deferred-work-ledger: done
   66-2-every-landed-follow-up-recommendation-is-backfilled-and-held-by-a-meta-test: done
   67-1-a-landed-dispatch-reads-completed-when-the-primary-checkout-cannot-be-fast-forwarded: done
@@ -570,7 +570,7 @@ development_status:
   epic-63-retrospective: optional
   epic-64: done
   epic-64-retrospective: optional
-  epic-65: in-progress
+  epic-65: done
   epic-65-retrospective: optional
   epic-66: done
   epic-66-retrospective: optional
