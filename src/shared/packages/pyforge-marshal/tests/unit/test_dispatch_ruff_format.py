@@ -240,10 +240,10 @@ def test_cap4_verification_order_is_ruff_then_verify(tmp_path: Path, monkeypatch
     """Story 22.20: land-only CAP-4 verification still runs ruff, then verify — no reconcile."""
     import importlib
 
+    import test_dispatch as dispatch_test_helpers
+
     from pyforge.marshal.cli import dispatch as dispatch_module
     from pyforge.marshal.core.policy import compose
-
-    import test_dispatch as dispatch_test_helpers
 
     loop_tests = importlib.import_module("test_dispatch_supervisor_main_loop")
     order: list[str] = []

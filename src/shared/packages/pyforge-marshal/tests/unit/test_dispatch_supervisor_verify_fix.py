@@ -2134,7 +2134,9 @@ def test_a_fix_turn_journals_ruff_format_before_reconcile_and_reverify_skips_ruf
         if entry.get("kind") == dispatch_core.KIND_DISPATCH_VERIFY_FIX
         and entry.get("payload", {}).get("step") == "reconcile"
     )
-    ruff_idx = next(i for i, entry in enumerate(entries) if entry.get("kind") == dispatch_core.KIND_DISPATCH_RUFF_FORMAT)
+    ruff_idx = next(
+        i for i, entry in enumerate(entries) if entry.get("kind") == dispatch_core.KIND_DISPATCH_RUFF_FORMAT
+    )
     assert ruff_idx < reconcile_idx
     reconcile_paths = [
         entry["payload"]["paths"]
