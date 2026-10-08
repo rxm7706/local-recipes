@@ -388,6 +388,11 @@ def test_a_backend_that_raises_never_aborts_check(tmp_path: Path) -> None:
         def snapshot_target(self, decl: BackendDecl) -> str:
             raise RuntimeError("boom")
 
+        def ship(self, ctx, decl: BackendDecl):
+            from pyforge.steward.catalog import ShipBackendResult
+
+            raise RuntimeError("boom-ship")
+
     engine = _engine(tmp_path, 'backends:\n  b: {plugin: broken, state: "on"}\n')
     engine.backends.register(Broken())
     assert engine.render(write=True).ok
@@ -1194,7 +1199,7 @@ sources:
     (catalog_dir / CODEX_MANIFEST_RELATIVE.parent).mkdir(parents=True, exist_ok=True)
     (catalog_dir / CODEX_MANIFEST_RELATIVE).write_text('{"name":"test-catalog","interface":{"displayName":"T"},"plugins":[]}\n', encoding="utf-8")
 
-    probe = _row("probe-mod", "wielded-suite", name="probe-mod")
+    probe = _row("probe-mod", "wielded-suite")
     monkeypatch.setattr(
         "pyforge.steward.catalog.WieldedSuiteSource.listings",
         lambda self, ctx: [probe],
@@ -1204,6 +1209,7 @@ sources:
         lambda self, ctx: [],
     )
     engine = CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir)
+    assert engine.render(write=True).ok
 
     out = tmp_path / "snapshot"
     result = engine.ship(snapshot_dir=out)
@@ -1256,8 +1262,9 @@ sources:
         lambda self, ctx: [],
     )
     engine = CatalogEngine(tmp_path, load_config(catalog_dir / "catalog.yaml"), catalog_dir=catalog_dir)
+    assert engine.render(write=True).ok
     result = engine.ship(snapshot_dir=tmp_path / "snap")
-    assert result.ok
+    assert result.ok, result.findings
     manifest = json.loads((tmp_path / "snap" / CLAUDE_MANIFEST_RELATIVE).read_text(encoding="utf-8"))
     for plugin in manifest["plugins"]:
         assert plugin["source"]["source"] == "local"
