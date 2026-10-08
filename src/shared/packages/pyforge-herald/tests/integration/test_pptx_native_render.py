@@ -27,6 +27,25 @@ def _no_stamp_git(monkeypatch):
     monkeypatch.setattr("pyforge.herald.stamps.write_stamp", lambda *_a, **_k: None)
 
 
+def _normalize_ws(text: str) -> str:
+    return " ".join((text or "").split())
+
+
+def _slide_text_surfaces_in_order(slide) -> str:
+    parts: list[str] = []
+    for shape in slide.shapes:
+        if shape.has_text_frame:
+            chunk = shape.text_frame.text or ""
+            if chunk.strip():
+                parts.append(chunk)
+        if shape.has_table:
+            for row in shape.table.rows:
+                for cell in row.cells:
+                    if cell.text and cell.text.strip():
+                        parts.append(cell.text)
+    return "\n".join(parts)
+
+
 @pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")
 def test_fixture_render_read_back_with_python_pptx(tmp_path: Path, monkeypatch, _no_stamp_git) -> None:
     slug = "fixture-deck"
@@ -43,20 +62,38 @@ marp: true
 - alpha
 - beta
 
-<!-- notes for slide one -->
+Intro paragraph for slide one.
+
+<!--
+Multi-line
+speaker note.
+-->
 
 ---
 
+###### Kicker
+
 ## Metrics
+
+1. first metric
+2. second metric
 
 | K | V |
 |---|---|
 | a | 1 |
 
-<!-- notes for table slide -->
+```
+print("code")
+```
+
+> A quoted line
+
+<!-- metrics notes -->
 """,
         encoding="utf-8",
     )
+    marp_text = marp_path.read_text(encoding="utf-8")
+    expected_slides = pptx_native.parse_marp_deck(marp_text, marp_dir=marp_dir)
     fixed = datetime(2026, 9, 20, tzinfo=timezone.utc)
     result = pptx_native.export_native_pptx(
         slug,
@@ -66,12 +103,34 @@ marp: true
     )
     assert result.output_path.name == f"{slug}-deck-native-2026-09-20.pptx"
     prs = Presentation(str(result.output_path))
-    assert len(prs.slides) == 2
-    for slide in prs.slides:
+    assert len(prs.slides) == len(expected_slides)
+    for slide, model in zip(prs.slides, expected_slides, strict=True):
         for shape in slide.shapes:
             assert shape.shape_type != MSO_SHAPE_TYPE.PICTURE
-    notes = [slide.notes_slide.notes_text_frame.text for slide in prs.slides if slide.has_notes_slide]
-    assert any("notes for slide one" in (text or "") for text in notes)
+        if model.notes:
+            notes_text = slide.notes_slide.notes_text_frame.text if slide.has_notes_slide else ""
+            assert _normalize_ws(model.notes) in _normalize_ws(notes_text)
+        joined_frames = _slide_text_surfaces_in_order(slide)
+        for block in model.blocks:
+            if isinstance(block, pptx_native.ParagraphBlock):
+                assert block.text in joined_frames
+            elif isinstance(block, pptx_native.HeadingBlock):
+                assert block.text in joined_frames
+            elif isinstance(block, pptx_native.BulletListBlock):
+                for item in block.items:
+                    assert item.text in joined_frames
+            elif isinstance(block, pptx_native.NumberedListBlock):
+                for item in block.items:
+                    assert item.text in joined_frames
+            elif isinstance(block, pptx_native.TableBlock):
+                for row in block.rows:
+                    for cell in row:
+                        assert cell in joined_frames
+            elif isinstance(block, pptx_native.CodeBlock):
+                assert block.text.splitlines()[0] in joined_frames
+            elif isinstance(block, pptx_native.QuoteBlock):
+                assert block.text in joined_frames
+        assert model.title in joined_frames
 
 
 @pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")
