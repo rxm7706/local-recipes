@@ -1,7 +1,7 @@
 # PostgreSQL restore runbook (Story 41.1)
 
 Operator steps for restoring the platform PostgreSQL database from chart
-backups. Pair with [DR.md](DR.md) for RPO/RTO and reconciliation order.
+backups. Pair with [disaster-recovery.md](disaster-recovery.md) for RPO/RTO and reconciliation order.
 
 ## Prerequisites
 
@@ -56,7 +56,7 @@ first.
 5. Replay WAL to the desired recovery target if PITR is needed (`recovery.signal`
    + `restore_command` — consult PostgreSQL 17 docs for your layout).
 6. Start postgres; confirm `pg_isready`.
-7. Run the BS-8 reconciliation order in [DR.md](DR.md) from step 2 onward.
+7. Run the BS-8 reconciliation order in [disaster-recovery.md](disaster-recovery.md) from step 2 onward.
 8. Scale web/worker back up; run `pyforge steward validate-fast`.
 
 For scratch-namespace validation before touching production, install a second

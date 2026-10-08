@@ -4,7 +4,7 @@ A self-contained React + Vite slide deck for **PyForge-Atlas** — the conda-for
 intelligence layer being migrated from a hand-rolled ~10,000-LOC orchestrator to
 declarative **Kedro + Dagster + DuckDB** dataflow, with a Boring Semantic Layer,
 a Vizro / Vizro-AI read surface, and MCP / A2A agent interfaces. Built with the
-reusable **Design-to-Deck** workflow (`docs/specs/presentation-deck.md`); the
+reusable **Design-to-Deck** workflow (`docs/how-to/presentation-deck.md`); the
 deck **engine** (`src/deck/*`) and glue are copied verbatim from
 `presentations/pyforge-warden/`, so only the **prototype** and the **generated**
 `src/slides/fragments/` + `manifest.json` are PyForge-Atlas-specific.
@@ -29,7 +29,7 @@ npm run build      # static, offline-safe dist/
 ## Bringing in / updating the deck
 
 1. **Author the deck in Claude Design** at **1920×1080**, following the
-   *prototype contract* in `docs/specs/presentation-deck.md`: each slide is one
+   *prototype contract* in `docs/how-to/presentation-deck.md`: each slide is one
    `<section>` carrying `data-label="…"`, `data-speaker-notes="…"`, and
    `style="background:#HEX; …"` (first `#hex` = slide background); inline styles;
    footers `PYFORGE-ATLAS · <TAG>` left, `NN / TT` right. Each slide's inner is a

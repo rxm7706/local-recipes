@@ -121,7 +121,12 @@ _STATION_PYFORGE_ALLOWED: dict[str, tuple[str, ...]] = {
     # comment); the boundary exception is the same shape as atlas's own.
     "mason": ("pyforge.mason.boot",),
     # Story 29.2 (CAP-54 D3): deck-export projection + route wiring in the portal app.
-    "herald": ("pyforge.herald.deck_exports", "pyforge.herald.deck_store"),
+    # Story 30.2 (CAP-55): the twin is served through the station package (AD-22).
+    "herald": (
+        "pyforge.herald.deck_exports",
+        "pyforge.herald.deck_store",
+        "pyforge.herald.deck_twins",
+    ),
 }
 
 

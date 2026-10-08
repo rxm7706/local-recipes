@@ -6229,3 +6229,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium (unverified)
   promoted: 2026-10-04 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-60-2: Builder / module-template / SKF publish paths do not yet invoke `steward catalog publish`; operators can still hand-edit estate.yaml until upstream wiring lands.
+
+- source_spec: `planning-artifacts/specs/spec-60-2-publish-uses-tools-we-wield-steward-records-the-review.md`
+  summary: Builder / module-template / SKF publish paths do not yet invoke `steward catalog publish`; operators can still hand-edit estate.yaml until upstream wiring lands.
+  evidence: CAP-118 names Builder/module-template/SKF as the publish path; this story ships the steward gate (`catalog publish`, review records, check/render enforcement) only.
+  location: src/shared/packages/pyforge-steward/src/pyforge/steward/catalog.py
+  origin: spec-deferred 99f787a1d137 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

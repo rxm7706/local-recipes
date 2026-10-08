@@ -2,7 +2,9 @@
 title: '30.2: The herald portal shows a deck in the browser from its HTML twin'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '7b8d08144bd5fa5edff952a6f5382ffdbd490970'
+followup_review_recommended: false
 difficulty: 'medium'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -139,3 +141,34 @@ Flag: `pyforge.herald.deck_viewer` (`feature-flag-governance:CAP-1`).
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0, read from the exit code.
 
 ## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 0, false 1, maybe-false 1
+- findings:
+  - `[false]` `[reject]` Twin route uses bearer/session gate identical to deck-exports — same 401/403 behavior the spec already accepts for anonymous/wrong-role callers.
+  - `[maybe-false]` `[defer]` Platform pytest suite for this story needs PostgreSQL from platform-dev when run outside platform-ci-local — evidence: local `platform-ci-test` pytest errored on DB connect; CI runs the full platform-ci test job with services.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Herald CAP-55 Story 30.2 — deck list and sandboxed viewer on django-herald, twin streaming on the v1 API with CSP and herald-role gate, all behind `pyforge.herald.deck_viewer` (`read_boolean` on the API path, `evaluate_boolean` on portal views).
+
+Files changed:
+- `pyforge/herald/deck_twins.py` — twin path resolution, flag gate, FastAPI routes with CSP
+- `django_herald_portal/deck_twin_routes.py`, `deck_viewer.py` — store-backed twin open + portal helpers
+- `django_herald_portal/views.py`, `urls.py`, templates — list, viewer, Pitch tab link when flag ON
+- `station_api.py` — wire twin routes beside deck exports
+- Unit/platform tests and meta-test allowlists for Story 30.2 scope
+
+Review: 0 patches; 1 defer (platform DB provisioning for local pytest); 1 rejected false positive.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — 1627 passed, 4 skipped
+- `python scripts/spec_surface_reconcile.py` — OK
+- `pixi run --frozen -e pyforge-guild spec-surface-check` — ok (drift-presumed warnings cleared via memlog)
+- Platform `tests/test_herald_portal_deck_viewer.py` — requires platform-ci-local `--test` (PostgreSQL); not run to completion in this session due to missing local PG
+
+Residual risk: Playwright zero-foreign-origin test depends on Chromium and live_server; validated in platform CI, not re-run locally here.

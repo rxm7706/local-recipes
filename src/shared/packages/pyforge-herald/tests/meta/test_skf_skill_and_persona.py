@@ -362,11 +362,18 @@ _DJANGO_HERALD_PREFIX = "src/shared/packages/django-herald/"
 # Story 29.2 (CAP-54 FR-10.2): portal projection + refresh — not Wave B / Lane 1 CMS.
 _DJANGO_HERALD_DECK_EXPORT_MARKERS = (
     "deck_export",
+    "deck_twin",
+    "deck_viewer",
     "refresh_deck_exports",
     "portal_runner",
     "django_herald_portal/models.py",
     "django_herald_portal/migrations/",
     "django_herald_portal/management/",
+    "herald_portal/deck_list.html",
+    "herald_portal/deck_view.html",
+    "herald_portal/home.html",
+    "django_herald_portal/views.py",
+    "django_herald_portal/urls.py",
 )
 
 

@@ -1,7 +1,20 @@
 // @ts-check
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import { getSiteUrl } from './src/lib/site-url.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const sidebarGenerated = path.join(__dirname, 'src', 'sidebar.generated.json');
+if (!fs.existsSync(sidebarGenerated)) {
+  throw new Error(
+    `Missing ${sidebarGenerated}. Run pixi run -e site docs-site-sidebar before building.`,
+  );
+}
+const sidebar = JSON.parse(fs.readFileSync(sidebarGenerated, 'utf8'));
 
 const siteUrl = getSiteUrl();
 const urlParts = new URL(siteUrl);
@@ -17,6 +30,9 @@ export default defineConfig({
   site: `${urlParts.origin}${basePath}`,
   base: basePath,
   outDir: './build/site',
+  redirects: {
+    '/kedro-viz/': '/dashboard/kedro-viz/',
+  },
   integrations: [
     starlight({
       title: 'PyForge documentation',
@@ -27,24 +43,7 @@ export default defineConfig({
           lang: 'en',
         },
       },
-      sidebar: [
-        {
-          label: 'Tutorials',
-          items: [{ autogenerate: { directory: 'tutorials' } }],
-        },
-        {
-          label: 'How-to',
-          items: [{ autogenerate: { directory: 'how-to' } }],
-        },
-        {
-          label: 'Reference',
-          items: [{ autogenerate: { directory: 'reference' } }],
-        },
-        {
-          label: 'Explanation',
-          items: [{ autogenerate: { directory: 'explanation' } }],
-        },
-      ],
+      sidebar,
     }),
   ],
 });

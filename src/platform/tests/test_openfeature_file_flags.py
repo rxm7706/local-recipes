@@ -628,6 +628,7 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    # Story 30.2 deck-twins HTTP routes gate on the same key (CAP-55 FR-10.4).
     "pyforge.herald.deck_viewer": {
         "dev": True,
         "staging": True,

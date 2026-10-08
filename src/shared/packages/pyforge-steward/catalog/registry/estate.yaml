@@ -35,5 +35,7 @@
 # never this file.
 #
 # v1 ships with no community modules (operator ruling 4).
+# Steward review records live under registry/reviews/<name>.yaml; only
+# `steward catalog publish --listing … --review …` (Story 60.2) appends here.
 source: estate-listings
 modules: []

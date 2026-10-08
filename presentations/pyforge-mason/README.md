@@ -10,7 +10,7 @@ A self-contained React + Vite slide deck for **PyForge-Mason** — the Artisan B
 `docs/dreams/pyforge-charter.md`). Motto: *"We forge the blocks. We bind the environment. We ship the structure."*
 
 Built with the reusable **Design-to-Deck** workflow
-(`docs/specs/presentation-deck.md` — read it first; it defines the prototype
+(`docs/how-to/presentation-deck.md` — read it first; it defines the prototype
 contract, the pipeline, and the § Standard export set this deck must ship).
 
 ## Wiring the deck (when the prototype lands)

@@ -2,10 +2,11 @@
 title: '27.4: The docs validators gate every PR'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'done'
+baseline_revision: 'f1cc68bab7fef224a9d5a78994db73e6b7af0895'
+followup_review_recommended: false
 difficulty: 'medium'
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/SPEC.md
   - _bmad-output/projects/pyforge-herald/planning-artifacts/research/docs-site-bmad-method-pattern-2026-09-20.md
@@ -109,3 +110,21 @@ Minted 2026-09-27 from `epics.md` so `marshal factory dispatch` can resolve this
 - Plant `[x](nope.md)` in one quadrant page and re-run `pixi run -e site docs-site-validate-links` — expected: exit 1 naming that page; then revert the plant.
 - `pixi run -e pyforge-guild docs-currency-check` and `pixi run -e pyforge-guild docs-map-hygiene-check` — expected: no new finding.
 - `pixi run -e pyforge-guild pr-preflight` — expected: exit 0 (read the exit code, never through a pipe).
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 1, false 1, maybe-false 0
+- findings:
+  - `[low]` `[defer]` `sidebar_from_map.py` ships as part of 27.4 but full 27.3 astro integration is still backlog — `--check` mode only until 27.3 lands.
+  - `[false]` `[reject]` Vendored validators cannot run under `docs-site` `"type":"module"` without `docs-site/scripts/package.json` `"type":"commonjs"` — nested package scope is intentional, not a validator edit.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Wired BMAD `validate-doc-links.js` and `validate-sidebar-order.js` as `pixi` tasks (`docs-site-validate*`), added `docsite-check.yml` and `pr-preflight` legs, fixed doc link findings, added `test_docs_site_validators.py`, and introduced `sidebar_from_map.py --check` (27.3 dependency) plus `docs-site/scripts/package.json` so CommonJS validators run under the ESM package.
+
+Verification: `pixi run -e site docs-site-validate` exit 0; `pyforge-herald-test` 1653 passed; planted dead link exit 1 naming `tutorials/getting-started.md`; `python scripts/spec_surface_reconcile.py` exit 0; `docs-map-hygiene-check` ok.
+
+Memlog reconcile (Story 27.4): **spec-pyforge-herald** — `.github/workflows/docsite-check.yml`, `docs-site/scripts/package.json`, `docs-site/scripts/sidebar_from_map.py`, `pixi.toml`, `src/shared/packages/pyforge-herald/tests/meta/test_docs_site_validators.py`, `docs/dreams/README.md`, `docs/dreams/archive/pyforge-unifying-strategy-2026-08-23-topology.md`, `docs/how-to/disaster-recovery.md`, `docs/how-to/ocp-cluster-bringup.md`, `docs/how-to/restore-operations.md`, `docs/index.md`, `docs/reference/README.md`, `docs/reference/conda-forge-packaging-inventory-operations_replay.md`. **spec-pyforge-doctor** — `docs/how-to/antigravity-developer-startup.md`, `docs/how-to/feedstock-platform-expansion.md`, `docs/tutorials/getting-started.md`, `docs/map.yaml`, `docs/MAP.md`.
