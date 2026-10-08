@@ -86,11 +86,18 @@ _DEFAULT_BASE_REF = "refs/remotes/origin/main"
 _DEFAULT_AGENT = "claude"
 _DEFAULT_TIMEOUT_SECONDS = 1800  # mirrors the CLI's own --timeout-ms default
 
-# The low-level runner seam: (target, json_path) -> a CompletedProcess (or
-# None -- the return value itself is never consulted, only whatever the
-# runner left at json_path). A fake test runner writes its canned JSON
-# verdict to json_path as its only required side effect.
-TeaRunner = Callable[[Path, Path], "subprocess.CompletedProcess[str] | None"]
+class TeaRunOutcome(Protocol):
+    """Structural return type for the default runner seam — only ``returncode``
+    is read; ``subprocess.CompletedProcess`` satisfies this in tests."""
+
+    returncode: int
+
+
+# The low-level runner seam: (target, json_path) -> an outcome with
+# ``returncode`` (or None — only whatever the runner left at ``json_path``
+# is consulted when ``returncode`` is absent). A fake test runner writes its
+# canned JSON verdict to ``json_path`` as its only required side effect.
+TeaRunner = Callable[[Path, Path], TeaRunOutcome | None]
 
 
 class TeaRosterMissingError(PyforgeError, RuntimeError):
@@ -147,34 +154,21 @@ class TeaAdvisoryResult:
     skipped_reason: str | None
 
 
-def _default_runner(binary: str, target: Path, json_path: Path) -> subprocess.CompletedProcess[str]:
-    """Shell out to the real ``tea-test-review`` binary. Both the markdown
-    report and the JSON verdict are written into ``json_path``'s own
-    scratch directory -- never into ``target`` -- an advisory scanner must
-    not litter the scanned tree with a stray ``test-review.md``. The real
-    binary is NEVER run inside this repo's own test suite: the "TEA absent"
-    test relies on the real absent binary, the "low score"/"runner errors"
-    tests inject their own ``runner``, and the one test that calls this
-    function (Story 13.1: the argv's ``--base``) replaces ``subprocess.run``."""
-    report_path = json_path.with_name("test-review.md")
-    return subprocess.run(
-        [
-            binary,
-            "--base",
-            _DEFAULT_BASE_REF,
-            "--output",
-            str(report_path),
-            "--json",
-            str(json_path),
-            "--agent",
-            _DEFAULT_AGENT,
-        ],
-        cwd=target,
-        capture_output=True,
-        text=True,
-        timeout=_DEFAULT_TIMEOUT_SECONDS,
-        check=False,
-    )
+def _default_runner(binary: str, target: Path, json_path: Path) -> TeaRunOutcome:
+    """Invoke the real ``tea-test-review`` binary via ``engines.run_tea_test_
+    review_engine`` (Story 11.3 — the package's sole subprocess seam).
+    Markdown and JSON outputs stay out of ``target``; the engines entry
+    point owns the report scratch file. The real binary is NEVER run inside
+    this repo's own test suite: the "TEA absent" test relies on the real
+    absent binary, the "low score"/"runner errors" tests inject their own
+    ``runner``, and Story 13.1's argv test replaces ``_engine_env``."""
+    text, error, exit_code = run_tea_test_review_engine(binary=binary, cwd=target)
+    if error is not None:
+        raise RuntimeError(error.message)
+    if exit_code is None:
+        raise RuntimeError("tea-test-review did not complete")
+    json_path.write_text(text or "", encoding="utf-8")
+    return types.SimpleNamespace(returncode=exit_code)
 
 
 def run_tea_test_review(
