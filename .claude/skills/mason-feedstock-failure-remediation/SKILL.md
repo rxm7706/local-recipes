@@ -35,9 +35,10 @@ Per CLAUDE.md Rule 1, invoke [conda-forge-expert](../conda-forge-expert/SKILL.md
    override per case).
 3. **Execute the Waves** — Wave A (triage) always runs first; B/C/D run per the
    classification of each PR; E always closes the effort.
-4. **Append a new "Worked Example"** recording the PR set, each PR's
-   classification + outcome, and any novel finding (which then feeds the
-   Wave E skill retro).
+4. **Append a new "Worked Example"** in
+   [references/worked-examples.md](references/worked-examples.md) recording the
+   PR set, each PR's classification + outcome, and any novel finding (which
+   then feeds the Wave E skill retro).
 
 ---
 

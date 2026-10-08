@@ -49,7 +49,8 @@ Per CLAUDE.md Rule 1, invoke [conda-forge-expert](../conda-forge-expert/SKILL.md
 2. **Run BMAD quick-dev**; it follows the Stories section verbatim,
    referencing the guide for procedural detail.
 3. **Resolve the Open Questions** before opening any PR.
-4. **Append a new "Worked Example"** section at the bottom recording
+4. **Append a new "Worked Example"** in
+   [references/worked-examples.md](references/worked-examples.md) recording
    per-case empirical state, Q&A resolutions, and the final PR URL.
    This becomes a permanent record once the case ships.
 
