@@ -907,8 +907,7 @@ class CatalogEngine:
                     CatalogFinding(
                         "listing-certified-wielded",
                         name,
-                        "wielded-suite modules are BMad Certified and must not appear in "
-                        "registry/estate.yaml",
+                        "wielded-suite modules are BMad Certified and must not appear in registry/estate.yaml",
                     )
                 )
                 continue
@@ -1018,9 +1017,7 @@ class CatalogEngine:
             modules = []
         if not isinstance(modules, list):
             return PublishResult(
-                findings=(
-                    CatalogFinding("publish-refused", name, f"{registry_path}: 'modules' must be a list"),
-                )
+                findings=(CatalogFinding("publish-refused", name, f"{registry_path}: 'modules' must be a list"),)
             )
         updated = False
         new_modules: list[Any] = []

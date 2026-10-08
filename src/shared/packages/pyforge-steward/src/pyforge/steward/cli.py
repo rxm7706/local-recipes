@@ -556,9 +556,7 @@ def _add_catalog_subparsers(catalog_parser: argparse.ArgumentParser) -> None:
     json_help = "emit JSON instead of human-readable text"
     catalog_parser.add_argument("--catalog", default=None, metavar="DIR", help=catalog_help)
     catalog_parser.add_argument("--json", action="store_true", default=False, help=json_help)
-    catalog_subs = catalog_parser.add_subparsers(
-        dest="catalog_verb", metavar="{check,list,render,pointers,publish}"
-    )
+    catalog_subs = catalog_parser.add_subparsers(dest="catalog_verb", metavar="{check,list,render,pointers,publish}")
     check = catalog_subs.add_parser(
         "check",
         help="bind declared backends/sources to plugins, validate listings, detect manifest drift (default)",
