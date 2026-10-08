@@ -4081,7 +4081,7 @@ SelfExplainML / Artifactory channel path.
 **When** this story lands
 **Then** the default ship path is a pixi/conda index package on that channel
 **And** object storage and git bundle / tarball are switchable extras
-**Status:** backlog
+**Status:** done
 
 ### Story 60.4: Frame index and a thin browse list
 

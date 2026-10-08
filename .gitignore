@@ -989,6 +989,9 @@ manticore/engines/bin/
 # skf-audit-skill / skf-campaign compilation workspace (ccc-bridge.md calls it
 # exactly that -- a scratch workspace excluded from context collection, same
 # class as `_skf-learn` and the skills output folder). Timestamped audit
+# Story 60.3: generated vendored tree from `steward catalog ship` (recipe build copies it).
+src/shared/packages/pyforge-steward/catalog/snapshot/
+
 # results, drift reports, and snapshots are regenerated per run, never
 # governed by a spec surface -- never git-tracked.
 forge-data/
