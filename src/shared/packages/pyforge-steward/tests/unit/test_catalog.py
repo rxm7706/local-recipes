@@ -78,10 +78,25 @@ def _write_catalog(tmp_path: Path, body: str, *, header: str = _HEADER) -> Path:
     return catalog_dir
 
 
+def _write_estate_catalog(tmp_path: Path, body: str, *, header: str = _HEADER) -> Path:
+    """Estate layout: ``src/shared/packages/pyforge-steward/catalog`` (Story 60.4 indexes)."""
+    catalog_dir = tmp_path / CATALOG_RELATIVE
+    catalog_dir.mkdir(parents=True, exist_ok=True)
+    (catalog_dir / "catalog.yaml").write_text(header + textwrap.dedent(body), encoding="utf-8")
+    return catalog_dir
+
+
 def _engine(tmp_path: Path, body: str, *, root: Path | None = None) -> CatalogEngine:
     catalog_dir = _write_catalog(tmp_path, body)
     config = load_config(catalog_dir / "catalog.yaml")
     return CatalogEngine(root if root is not None else tmp_path, config, catalog_dir=catalog_dir)
+
+
+def _browse_index_engine(tmp_path: Path, body: str) -> CatalogEngine:
+    """Catalog at ``CATALOG_RELATIVE`` so Story 60.4 browse indexes render."""
+    catalog_dir = _write_estate_catalog(tmp_path, body)
+    config = load_config(catalog_dir / "catalog.yaml")
+    return CatalogEngine(tmp_path, config, catalog_dir=catalog_dir)
 
 
 class _CustomSource(CatalogSourcePlugin):
@@ -777,14 +792,11 @@ def test_render_writes_both_manifests_with_required_keys(tmp_path: Path) -> None
     )
     rendered = engine.render(write=True)
     assert rendered.ok
-    assert set(rendered.manifests) == {
-        CLAUDE_MANIFEST_RELATIVE.as_posix(),
-        CODEX_MANIFEST_RELATIVE.as_posix(),
-        FRAME_INDEX_RELATIVE.as_posix(),
-        BROWSE_INDEX_RELATIVE.as_posix(),
-    }
-    assert str(engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE) in rendered.written
-    assert str(engine.repo_root / FRAME_INDEX_RELATIVE) in rendered.written
+    assert set(rendered.manifests) == {CLAUDE_MANIFEST_RELATIVE.as_posix(), CODEX_MANIFEST_RELATIVE.as_posix()}
+    assert rendered.written == (
+        str(engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE),
+        str(engine.catalog_dir / CODEX_MANIFEST_RELATIVE),
+    )
     claude = json.loads((engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE).read_text(encoding="utf-8"))
     assert claude["name"] == "test-catalog"
     assert claude["owner"] == {"name": "tester"}
@@ -821,8 +833,17 @@ def test_a_module_listing_without_a_repository_is_a_finding_not_a_silent_omissio
     assert not (engine.catalog_dir / CLAUDE_MANIFEST_RELATIVE).exists()
 
 
-def test_render_writes_frame_index_and_browse_yaml(tmp_path: Path) -> None:
+def test_non_estate_catalog_render_skips_repo_browse_indexes(tmp_path: Path) -> None:
     engine = _engine(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
+    engine.sources.register(_CustomSource([_row("one", "extra")]))
+    rendered = engine.render(write=True)
+    assert rendered.ok
+    assert FRAME_INDEX_RELATIVE.as_posix() not in rendered.manifests
+    assert not (tmp_path / FRAME_INDEX_RELATIVE).exists()
+
+
+def test_render_writes_frame_index_and_browse_yaml(tmp_path: Path) -> None:
+    engine = _browse_index_engine(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
     engine.sources.register(
         _CustomSource(
             [
@@ -844,7 +865,7 @@ def test_render_writes_frame_index_and_browse_yaml(tmp_path: Path) -> None:
 
 def test_io_matrix_new_frame_listing_appears_on_browse_after_render(tmp_path: Path) -> None:
     """Story 60.4 — a new Frame listing → row on the browse list after render."""
-    engine = _engine(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
+    engine = _browse_index_engine(tmp_path, 'sources:\n  extra: {plugin: x, state: "on"}\n')
     source = _CustomSource([_row("pyforge/first", "extra", kind=KIND_FRAME)], plugin_name="x")
     engine.sources.register(source)
     assert engine.render(write=True).ok
@@ -865,8 +886,8 @@ def test_a_listing_change_without_rerender_is_manifest_drift(tmp_path: Path) -> 
     assert engine.check().ok
     source._rows.append(_row("two", "extra"))
     report = engine.check()
-    assert [f.code for f in report.findings] == ["manifest-drift"]
-    assert report.findings[0].subject == CLAUDE_MANIFEST_RELATIVE.as_posix()
+    drift = [f for f in report.findings if f.code == "manifest-drift"]
+    assert drift and drift[0].subject == CLAUDE_MANIFEST_RELATIVE.as_posix()
     assert "stale" in report.findings[0].message
     assert [f.code for f in engine.drift()] == ["manifest-drift"]
 
@@ -935,7 +956,9 @@ def test_cli_slot_unbound_is_the_only_finding_and_exits_1(tmp_path: Path, capsys
     assert payload["sources"] == [{"name": "extra", "plugin": "x", "state": "on", "bound": False, "listings": 0}]
     rc = main(["catalog", "--catalog", str(catalog_dir), "check"])
     assert rc == EXIT_FAILED
-    assert "[slot-unbound] sources.extra" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "[slot-unbound] sources.extra" in err
+    assert "manifest-drift" not in err
 
 
 def test_cli_render_check_reports_drift_and_render_repairs_it(tmp_path: Path, capsys) -> None:

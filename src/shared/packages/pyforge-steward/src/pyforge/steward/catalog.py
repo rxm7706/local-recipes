@@ -893,13 +893,24 @@ class CatalogEngine:
             BROWSE_INDEX_RELATIVE.as_posix(): _yaml_document_text(browse_doc),
         }
 
+    def _writes_estate_browse_indexes(self) -> bool:
+        """Story 60.4 indexes live under ``docs/foundry/frames/`` for the
+        committed estate catalog only — not when ``--catalog`` points elsewhere."""
+        try:
+            return self.catalog_dir.resolve() == default_catalog_dir(self.repo_root).resolve()
+        except OSError:
+            return False
+
     def _artifact_target(self, rel: str) -> Path:
         if rel.startswith("docs/"):
             return self.repo_root / rel
         return self.catalog_dir / rel
 
     def _all_artifacts(self, rows: list[Listing]) -> dict[str, str]:
-        return {**self.manifests(rows), **self.index_artifacts(rows)}
+        artifacts = self.manifests(rows)
+        if self._writes_estate_browse_indexes():
+            artifacts = {**artifacts, **self.index_artifacts(rows)}
+        return artifacts
 
     def render(self, *, write: bool = False) -> RenderResult:
         """Render manifests and browse indexes; ``write=True`` writes them.
