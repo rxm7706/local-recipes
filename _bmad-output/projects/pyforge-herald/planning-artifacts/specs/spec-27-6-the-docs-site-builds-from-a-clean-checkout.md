@@ -2,9 +2,9 @@
 title: '27.6: The docs site builds from a clean checkout'
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
+status: 'in-progress'
 difficulty: 'easy'
-baseline_revision: '054bb4e795e96594e1ab48c35e14b578ca4d925c'
+baseline_revision: 'd576ac1f1d46693db4d0e0e43fbc2ff845a68ef3'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
