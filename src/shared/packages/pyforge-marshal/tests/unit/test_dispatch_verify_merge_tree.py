@@ -18,6 +18,7 @@ same way `evaluate_dispatch_verification` does, via
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from pyforge.core.process import ProcessResult
@@ -118,7 +119,7 @@ def test_run_verify_commands_only_empty_commands_still_runs_the_derived_commands
     assert findings == ()
     assert preview_findings == ()
     assert process.calls == [
-        (_SURFACE_RECONCILE_COMMAND.split(), worktree),
+        ([sys.executable, "scripts/spec_surface_reconcile.py"], worktree),
         (LINT_TYPES.split(), worktree),
         (PYFORGE_CORE_TEST.split(), worktree),
         (DEFERRED_WORK_CHECK.split(), worktree),
