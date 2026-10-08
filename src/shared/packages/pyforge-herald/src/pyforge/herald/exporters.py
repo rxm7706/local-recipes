@@ -93,9 +93,7 @@ class PptxgenjsExportPlugin(_DeckExportPlugin):
     format_id = FORMAT_PPTXGENJS
 
 
-def default_export_plugins() -> tuple[
-    MarpExportPlugin, PptxExportPlugin, DcHtmlExportPlugin, PptxgenjsExportPlugin
-]:
+def default_export_plugins() -> tuple[MarpExportPlugin, PptxExportPlugin, DcHtmlExportPlugin, PptxgenjsExportPlugin]:
     return (MarpExportPlugin(), PptxExportPlugin(), DcHtmlExportPlugin(), PptxgenjsExportPlugin())
 
 

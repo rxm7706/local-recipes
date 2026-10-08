@@ -58,8 +58,7 @@ def find_current_deck_marp(slug: str, repo_root: Path) -> Path:
     path = _newest_dated_match(marp_dir, f"{slug}-deck-", ".md")
     if path is None:
         raise HeraldError(
-            f"pptx-native: no Marp deck source for {slug!r} under {marp_dir} "
-            f"(expected {slug}-deck-<YYYY-MM-DD>.md)"
+            f"pptx-native: no Marp deck source for {slug!r} under {marp_dir} (expected {slug}-deck-<YYYY-MM-DD>.md)"
         )
     return path
 

@@ -69,7 +69,7 @@ def test_parse_marp_image_path_resolves_relative_to_marp_dir(tmp_path: Path) -> 
     marp_dir.mkdir()
     img = marp_dir / "pic.png"
     img.write_bytes(b"png")
-    text = f"""# Image slide
+    text = """# Image slide
 
 ![diagram](pic.png)
 """
