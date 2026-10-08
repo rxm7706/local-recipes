@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "PyForge-Marshal (pyforge.marshal) — a field-guide deck for the PyForge Guild's Commander: the BMAD-method orchestrator that enforces the spec, guards the boundaries, and runs the line.",
+  "description": "PyForge-Marshal (pyforge.marshal) \u2014 a field-guide deck for the PyForge Guild's Commander: the BMAD-method orchestrator that enforces the spec, guards the boundaries, and runs the line.",
   "scripts": {
     "extract": "node scripts/extract-slides.mjs",
     "dev": "vite",
@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "@fontsource/archivo": "^5.2.5",
+    "@fontsource/archivo-expanded": "^5.2.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",

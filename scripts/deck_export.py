@@ -37,7 +37,7 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from pyforge.herald import deck_versions, stamps
+from pyforge.herald import deck_versions, stamps, twins
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VALID_TARGETS = {"html", "deck-pptx", "infographic-pptx"}
@@ -288,6 +288,7 @@ def main() -> None:
         run_marp([info_md, "-o", out])
         produced.append(out)
         out_path = Path(out)
+        twins.vendor_standalone_html(out_path)
         stamps.write_stamp(out_path, repo_root=Path(ROOT), slug=args.slug)
         deck_versions.retire_superseded(out_path)
     if "infographic-pptx" in targets:

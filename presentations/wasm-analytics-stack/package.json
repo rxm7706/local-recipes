@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "@fontsource/archivo": "^5.2.5",
+    "@fontsource/archivo-expanded": "^5.2.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
