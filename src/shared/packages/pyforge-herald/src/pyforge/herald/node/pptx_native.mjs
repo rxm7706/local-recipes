@@ -28,7 +28,8 @@ const pres = new PptxGenJS();
 pres.layout = "LAYOUT_16x9";
 
 const canvasW = T.canvas.width;
-const slideWIn = pres.presLayout.width;
+// presLayout width/height are EMU; positions use inches, font sizes use points (pptxgenjs-plus).
+const slideWIn = pres.presLayout.width / (pres.presLayout.width / 10);
 const pointsPerInch = 71 + 1;
 const slideWPt = slideWIn * pointsPerInch;
 
