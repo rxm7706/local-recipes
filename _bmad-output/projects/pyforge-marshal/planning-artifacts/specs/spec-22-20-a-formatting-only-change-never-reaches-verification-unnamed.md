@@ -2,8 +2,8 @@
 title: "22.20: A formatting-only change never reaches verification unnamed"
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
-baseline_revision: '5b5951211ecf10c1b01c5fd49f0ebf51e85c82fd'
+status: 'in-progress'
+baseline_revision: 'ce29e073d3375a852b194f034613d4f249a67d10'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
