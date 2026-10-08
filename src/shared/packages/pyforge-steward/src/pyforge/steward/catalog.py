@@ -1,6 +1,6 @@
 """Steward's ``catalog`` duty — the estate BMAD catalog: config names backends
-and sources (Story 60.1, spec-self-hosted-bmad-marketplace CAP-1 /
-spec-pyforge-steward CAP-117).
+and sources (Story 60.1, CAP-117) and publish + steward review records
+(Story 60.2, spec-self-hosted-bmad-marketplace CAP-2 / CAP-118).
 
 Git is the edit store: ``src/shared/packages/pyforge-steward/catalog/`` is
 tracked in this repo and is where listings are edited. ``catalog.yaml`` there
@@ -28,7 +28,13 @@ operator-confirm moments; ``steward catalog pointers`` prints the forms that
 work today (``--custom-source`` / ``extraKnownMarketplaces`` ``directory``)
 and names the ``github`` forms as waiting on ``edit_store.dedicated_repo``.
 
-Verbs: ``steward catalog check|list|render [--check]|pointers|ship [--backend] [--output] [--json]``.
+Verbs: ``steward catalog check|list|render [--check]|pointers|ship [--backend]
+[--output]|publish [--json]``. Story 60.2 adds ``publish``: append a module to
+``registry/estate.yaml`` only when a steward review record exists;
+``check`` reports ``listing-no-review`` for hand-edited rows. Wielded-suite
+modules are BMad Certified and never enter ``estate-listings``. Story 60.3
+adds ``ship``: materialize the vendored snapshot and run a ship backend.
+
 ``CatalogDuty`` never calls ``sys.exit`` (AD-8) — it returns a
 ``DutyResult`` and ``cli.main`` projects it.
 """
@@ -59,17 +65,21 @@ CONFIG_FILENAME = "catalog.yaml"
 CLAUDE_MANIFEST_RELATIVE = Path(".claude-plugin/marketplace.json")
 CODEX_MANIFEST_RELATIVE = Path(".agents/plugins/marketplace.json")
 DEFAULT_ESTATE_REGISTRY = "registry/estate.yaml"
+DEFAULT_REVIEWS_DIR = "registry/reviews"
 
 STATES: tuple[str, ...] = ("on", "off", "available")
 STATE_ON, STATE_OFF, STATE_AVAILABLE = STATES
 TRUST_TIERS: tuple[str, ...] = ("unverified", "community-reviewed", "bmad-certified")
 TIER_UNVERIFIED, TIER_COMMUNITY_REVIEWED, TIER_BMAD_CERTIFIED = TRUST_TIERS
+PUBLISH_TRUST_TIERS: tuple[str, ...] = (TIER_UNVERIFIED, TIER_COMMUNITY_REVIEWED)
 KIND_MODULE = "module"
 KIND_FRAME = "frame"
 
-VERBS: tuple[str, ...] = ("check", "list", "render", "pointers", "ship")
+VERBS: tuple[str, ...] = ("check", "list", "render", "pointers", "ship", "publish")
 SNAPSHOT_RELATIVE = Path("snapshot")
 SNAPSHOT_PLUGINS_RELATIVE = Path("plugins")
+
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 UPSTREAM_REGISTRY_SCHEMA_URL = (
     "https://github.com/bmad-code-org/bmad-plugins-marketplace/blob/main/registry/registry-schema.yaml"
@@ -157,11 +167,64 @@ def _load_yaml_mapping(document_path: Path, *, what: str) -> dict[str, Any]:
     return document
 
 
+def _wielded_module_names() -> set[str]:
+    return {pkg.name for pkg in SUITE_PACKAGES if pkg.install_class == INSTALL_CLASS_MODULE}
+
+
 def _require_str(document_path: Path, mapping: dict[str, Any], key: str, where: str) -> str:
     value = mapping.get(key)
     if not isinstance(value, str) or not value.strip():
         raise CatalogConfigError(f"{document_path}: '{where}.{key}' is required and must be a non-empty string")
     return value.strip()
+
+
+def _load_review_record(review_path: Path) -> dict[str, str]:
+    """A steward review record for one estate module (Story 60.2)."""
+    document = _load_yaml_mapping(review_path, what="review record")
+    module = _require_str(review_path, document, "module", "review")
+    tier = document.get("trust_tier")
+    if tier is None:
+        tier = TIER_UNVERIFIED
+    if tier not in PUBLISH_TRUST_TIERS:
+        raise CatalogConfigError(
+            f"{review_path}: review.trust_tier = {tier!r} must be one of {PUBLISH_TRUST_TIERS!r} "
+            f"({TIER_BMAD_CERTIFIED!r} is only via wielded-suite)"
+        )
+    reviewed = _require_str(review_path, document, "reviewed", "review")
+    if not _ISO_DATE.match(reviewed):
+        raise CatalogConfigError(f"{review_path}: review.reviewed must be YYYY-MM-DD, got {reviewed!r}")
+    reviewer = _require_str(review_path, document, "reviewer", "review")
+    return {"module": module, "trust_tier": str(tier), "reviewed": reviewed, "reviewer": reviewer}
+
+
+def _load_listing_draft(listing_path: Path) -> dict[str, Any]:
+    """One upstream-format module row to publish (Builder / module-template / SKF output)."""
+    document = _load_yaml_mapping(listing_path, what="listing draft")
+    row = document["module"] if isinstance(document.get("module"), dict) else document
+    if not isinstance(row, dict):
+        raise CatalogConfigError(f"{listing_path}: listing draft must be a mapping (one module row)")
+    name = row.get("name")
+    if not isinstance(name, str) or not name.strip():
+        raise CatalogConfigError(f"{listing_path}: listing.name is required and must be a non-empty string")
+    repository = row.get("repository")
+    if not isinstance(repository, str) or not repository.strip():
+        raise CatalogConfigError(f"{listing_path}: listing.repository is required for a module publish")
+    return dict(row)
+
+
+def _estate_registry_header(registry_path: Path) -> str:
+    """Leading comment/blank lines in ``registry/estate.yaml`` preserved on publish."""
+    if not registry_path.is_file():
+        return ""
+    header: list[str] = []
+    for line in registry_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("#") or not line.strip():
+            header.append(line)
+        else:
+            break
+    if not header:
+        return ""
+    return "\n".join(header) + "\n"
 
 
 def _normalize_state(document_path: Path, raw: object, where: str) -> str:
@@ -743,6 +806,19 @@ class RenderResult:
         return not self.findings
 
 
+@dataclass(frozen=True)
+class PublishResult:
+    """What ``publish`` returns — refused or wrote ``registry/estate.yaml``."""
+
+    findings: tuple[CatalogFinding, ...]
+    module_name: str | None = None
+    wrote_estate: bool = False
+
+    @property
+    def ok(self) -> bool:
+        return not self.findings
+
+
 _REPO_SEGMENT = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
@@ -903,6 +979,179 @@ class CatalogEngine:
 
     def listings(self) -> list[Listing]:
         return self._collect()[0]
+
+    def _estate_registry_path(self) -> Path | None:
+        for decl in self.config.sources:
+            if decl.name == "estate-listings" and decl.state == STATE_ON:
+                rel = decl.options.get("path") or DEFAULT_ESTATE_REGISTRY
+                return self.catalog_dir / str(rel)
+        return None
+
+    def _review_findings(self) -> list[CatalogFinding]:
+        """Every ``estate-listings`` row must have a steward review record (60.2)."""
+        registry_path = self._estate_registry_path()
+        if registry_path is None:
+            return []
+        try:
+            document = _load_yaml_mapping(registry_path, what="estate listings")
+        except CatalogConfigError:
+            return []
+        modules = document.get("modules")
+        if modules is None:
+            modules = []
+        if not isinstance(modules, list):
+            return []
+        reviews_dir = self.catalog_dir / DEFAULT_REVIEWS_DIR
+        wielded = _wielded_module_names()
+        findings: list[CatalogFinding] = []
+        for row in modules:
+            if not isinstance(row, dict):
+                continue
+            name = row.get("name")
+            if not isinstance(name, str) or not name.strip():
+                continue
+            name = name.strip()
+            row_source = row.get("source", "estate-listings")
+            if row_source != "estate-listings":
+                continue
+            tier_raw = row.get("trust_tier", TIER_UNVERIFIED)
+            if tier_raw not in TRUST_TIERS:
+                continue
+            if name in wielded:
+                findings.append(
+                    CatalogFinding(
+                        "listing-certified-wielded",
+                        name,
+                        "wielded-suite modules are BMad Certified and must not appear in registry/estate.yaml",
+                    )
+                )
+                continue
+            row_tier = tier_raw
+            if row_tier == TIER_BMAD_CERTIFIED:
+                findings.append(
+                    CatalogFinding(
+                        "listing-certified-estate",
+                        name,
+                        f"trust_tier {TIER_BMAD_CERTIFIED!r} is only via wielded-suite, not estate-listings",
+                    )
+                )
+            review_path = reviews_dir / f"{name}.yaml"
+            if not review_path.is_file():
+                findings.append(
+                    CatalogFinding(
+                        "listing-no-review",
+                        name,
+                        f"no steward review record at {DEFAULT_REVIEWS_DIR}/{name}.yaml",
+                    )
+                )
+                continue
+            try:
+                review = _load_review_record(review_path)
+            except CatalogConfigError as exc:
+                findings.append(CatalogFinding("review-invalid", name, str(exc)))
+                continue
+            if review["module"] != name:
+                findings.append(
+                    CatalogFinding(
+                        "review-module-mismatch",
+                        name,
+                        f"review record names module {review['module']!r}",
+                    )
+                )
+            if review["trust_tier"] != row_tier:
+                findings.append(
+                    CatalogFinding(
+                        "review-tier-mismatch",
+                        name,
+                        f"estate trust_tier {row_tier!r} != review trust_tier {review['trust_tier']!r}",
+                    )
+                )
+        return findings
+
+    def publish(self, listing_path: Path, review_path: Path, *, dry_run: bool = False) -> PublishResult:
+        """Append or update one reviewed module row in ``registry/estate.yaml``."""
+        registry_path = self._estate_registry_path()
+        if registry_path is None:
+            return PublishResult(
+                findings=(
+                    CatalogFinding(
+                        "publish-unavailable",
+                        "estate-listings",
+                        "estate-listings source is not on; cannot publish",
+                    ),
+                )
+            )
+        try:
+            listing_row = _load_listing_draft(listing_path)
+            review = _load_review_record(review_path)
+        except CatalogConfigError as exc:
+            return PublishResult(findings=(CatalogFinding("publish-refused", listing_path.name, str(exc)),))
+
+        name = str(listing_row["name"]).strip()
+        if review["module"] != name:
+            return PublishResult(
+                findings=(
+                    CatalogFinding(
+                        "publish-refused",
+                        name,
+                        f"review record is for {review['module']!r}, listing names {name!r}",
+                    ),
+                )
+            )
+        if name in _wielded_module_names():
+            return PublishResult(
+                findings=(
+                    CatalogFinding(
+                        "publish-certified-wielded",
+                        name,
+                        "module is already BMad Certified via wielded-suite; do not publish to estate-listings",
+                    ),
+                )
+            )
+        tier = review["trust_tier"]
+        listing_row = dict(listing_row)
+        listing_row["name"] = name
+        listing_row["trust_tier"] = tier
+        listing_row["source"] = "estate-listings"
+
+        if dry_run:
+            return PublishResult(findings=(), module_name=name, wrote_estate=False)
+
+        canonical_review = self.catalog_dir / DEFAULT_REVIEWS_DIR / f"{name}.yaml"
+        canonical_review.parent.mkdir(parents=True, exist_ok=True)
+        if review_path.resolve() != canonical_review.resolve():
+            canonical_review.write_text(review_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+        try:
+            document = _load_yaml_mapping(registry_path, what="estate listings")
+        except CatalogConfigError as exc:
+            return PublishResult(findings=(CatalogFinding("publish-refused", name, str(exc)),))
+        modules = document.get("modules")
+        if modules is None:
+            modules = []
+        if not isinstance(modules, list):
+            return PublishResult(
+                findings=(CatalogFinding("publish-refused", name, f"{registry_path}: 'modules' must be a list"),)
+            )
+        updated = False
+        new_modules: list[Any] = []
+        for row in modules:
+            if isinstance(row, dict) and str(row.get("name", "")).strip() == name:
+                new_modules.append(listing_row)
+                updated = True
+            else:
+                new_modules.append(row)
+        if not updated:
+            new_modules.append(listing_row)
+        document["source"] = "estate-listings"
+        document["modules"] = new_modules
+        registry_path.parent.mkdir(parents=True, exist_ok=True)
+        header = _estate_registry_header(registry_path)
+        registry_path.write_text(
+            header + yaml.safe_dump(document, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
+        )
+        return PublishResult(findings=(), module_name=name, wrote_estate=True)
 
     # -- manifests --
 
@@ -1157,8 +1406,13 @@ class CatalogEngine:
         silently lack the rows a broken source would have produced.
         """
         rows, findings = self._collect()
-        if findings:
-            return RenderResult(findings=tuple(findings), manifests={}, written=())
+        review_findings = self._review_findings()
+        if findings or review_findings:
+            return RenderResult(
+                findings=tuple([*findings, *review_findings]),
+                manifests={},
+                written=(),
+            )
         manifests = self.manifests(rows)
         written: list[str] = []
         if write:
@@ -1192,8 +1446,9 @@ class CatalogEngine:
         any (a fresh render would refuse, so "in sync" would be a false green),
         else ``manifest-drift`` per missing/stale manifest."""
         rows, findings = self._collect()
-        if findings:
-            return findings
+        review_findings = self._review_findings()
+        if findings or review_findings:
+            return [*findings, *review_findings]
         return self._drift_of(rows)
 
     # -- check --
@@ -1232,6 +1487,7 @@ class CatalogEngine:
 
         listings, listing_findings = self._collect()
         findings.extend(listing_findings)
+        findings.extend(self._review_findings())
         per_source: dict[str, int] = {}
         for row in listings:
             per_source[row.source] = per_source.get(row.source, 0) + 1
@@ -1395,7 +1651,7 @@ def format_ship(result: ShipResult) -> str:
 
 
 class CatalogDuty:
-    """``steward catalog check|list|render|pointers|ship [--json]`` — Stories 60.1 / 60.3."""
+    """``steward catalog check|list|render [--check]|pointers|ship|publish [--json]`` — 60.1 + 60.2 + 60.3."""
 
     name = "catalog"
 
@@ -1482,6 +1738,53 @@ class CatalogDuty:
                 return DutyResult(
                     ok=shipped.ok,
                     summary=_json_text(payload).rstrip("\n") if as_json else format_ship(shipped),
+                    details=payload,
+                )
+            if verb == "publish":
+                listing_arg = getattr(ns, "listing", None)
+                review_arg = getattr(ns, "review", None)
+                if not listing_arg or not review_arg:
+                    return DutyResult(
+                        ok=False,
+                        summary=(
+                            "catalog publish: --listing PATH and --review PATH are required"
+                            if not as_json
+                            else _json_text(
+                                {
+                                    "ok": False,
+                                    "findings": [
+                                        CatalogFinding(
+                                            "usage",
+                                            "publish",
+                                            "--listing and --review are required",
+                                        ).to_dict()
+                                    ],
+                                }
+                            ).rstrip("\n")
+                        ),
+                    )
+                dry_run = bool(getattr(ns, "dry_run", False))
+                result = engine.publish(Path(listing_arg), Path(review_arg), dry_run=dry_run)
+                payload = {
+                    "ok": result.ok,
+                    "module": result.module_name,
+                    "wrote_estate": result.wrote_estate,
+                    "dry_run": dry_run,
+                    "findings": [f.to_dict() for f in result.findings],
+                }
+                if result.ok:
+                    text = (
+                        f"catalog publish: dry-run ok for {result.module_name!r}"
+                        if dry_run
+                        else f"catalog publish: wrote {result.module_name!r} to registry/estate.yaml"
+                    )
+                else:
+                    text = "catalog publish: refused — " + "; ".join(
+                        f"[{f.code}] {f.subject}: {f.message}" for f in result.findings
+                    )
+                return DutyResult(
+                    ok=result.ok,
+                    summary=_json_text(payload).rstrip("\n") if as_json else text,
                     details=payload,
                 )
             return DutyResult(

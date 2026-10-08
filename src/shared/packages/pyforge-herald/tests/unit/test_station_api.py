@@ -30,9 +30,19 @@ def test_attach_webhook_asgi_wires_deck_exports_and_mounts_webhook(monkeypatch: 
     deck_routes.wire_deck_export_routes = wire_deck_export_routes  # type: ignore[attr-defined]
     monkeypatch.setitem(sys.modules, "django_herald_portal.deck_export_routes", deck_routes)
 
+    twin_wired: list[Any] = []
+    twin_routes = ModuleType("django_herald_portal.deck_twin_routes")
+
+    def wire_deck_twin_routes(app: Any) -> None:
+        twin_wired.append(app)
+
+    twin_routes.wire_deck_twin_routes = wire_deck_twin_routes  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "django_herald_portal.deck_twin_routes", twin_routes)
+
     app = _RecordingApp()
     station_api.attach_webhook_asgi(app)
     assert wired == [app]
+    assert twin_wired == [app]
     assert len(app.mounted) == 1
     assert app.mounted[0][0] == "/"
     assert isinstance(app.mounted[0][1], station_api._LazyWebhookASGI)

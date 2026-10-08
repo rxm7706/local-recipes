@@ -17,5 +17,9 @@
       <dd id="herald-stale-mirror">{{ deck_status.stale_mirror }}</dd>
     </dl>
   </section>
-  <section data-console-home="pitch"></section>
+  <section data-console-home="pitch">
+    {% if deck_viewer_enabled %}
+      <p><a id="herald-pitch-deck-list" href="{% url 'herald-deck-list' %}">Published decks</a></p>
+    {% endif %}
+  </section>
 {% endblock content %}

@@ -1662,7 +1662,7 @@ def account_status(transport: DesignTransport, *, repo_root: Path) -> list[Accou
 # `DesignTransport.write_files`'s `data` field is documented as inline
 # *text* content ("Write inline file contents") -- exactly the shape
 # `seed`/`pull_prototype` already exercise for the `.dc.html` prototype. Of
-# the three derived exports `docs/specs/presentation-deck.md` § *Standard
+# the three derived exports `docs/how-to/presentation-deck.md` § *Standard
 # export set* names (the standalone HTML poster, and two PPTX files), only
 # the HTML is text -- the PPTX pair is binary. Story 5.1 deferred pushing
 # them until a binary `write_files` wire shape was proven live (the same
@@ -1675,7 +1675,7 @@ def account_status(transport: DesignTransport, *, repo_root: Path) -> list[Accou
 #
 # **`--prove` (Story 23.4, CAP-6).** `push_exports`'s optional `prove=True`
 # mechanizes the manual "curl the serve URL, strip the injected harness,
-# diff the bytes" recipe (`docs/specs/presentation-deck.md` § *Large-file
+# diff the bytes" recipe (`docs/how-to/presentation-deck.md` § *Large-file
 # uploads*) into a read-back assertion run right after a successful push:
 # `transport.fetch_rendered_bytes` fetches each just-pushed file's
 # currently-rendered bytes, `_strip_serve_harness` removes the
@@ -1844,7 +1844,7 @@ _OMELETTE_TAG_RE = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 """One ``<style>``/``<script>`` tag carrying ``data-omelette-injected``
-anywhere in its opening tag (``docs/specs/presentation-deck.md`` § *Large-file
+anywhere in its opening tag (``docs/how-to/presentation-deck.md`` § *Large-file
 uploads*: the host editor injects these into a served HTML document and
 marks them so they are "never written back as authored source"). The
 non-greedy ``.*?`` body plus a backreferenced closing tag keeps a run of
@@ -1887,7 +1887,7 @@ def _strip_serve_harness(content: bytes, *, path: str) -> bytes:
     be compared byte-for-byte against what was actually pushed.
 
     Only an ``.html`` path can carry the harness described in
-    ``docs/specs/presentation-deck.md``: a contiguous run of
+    ``docs/how-to/presentation-deck.md``: a contiguous run of
     ``data-omelette-injected`` ``<style>``/``<script>`` tags spliced in
     immediately after the document's ``<head ...>`` opening tag (whitespace
     between tags is tolerated). Every other extension -- including both

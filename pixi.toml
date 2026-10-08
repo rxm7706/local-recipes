@@ -934,11 +934,26 @@ description = "Install docs-site npm dependencies (npm ci in docs-site/)."
 cmd = "npm ci"
 cwd = "docs-site"
 
+[feature.site.tasks.docs-site-sidebar]
+description = "Generate Starlight sidebar JSON from docs/map.yaml (Story 27.3)."
+cmd = "python scripts/sidebar_from_map.py"
+cwd = "docs-site"
+
 [feature.site.tasks.docs-site-build]
 description = "Build the Diátaxis shelf Starlight site to docs-site/build/site/."
 cmd = "npm run build"
 cwd = "docs-site"
-depends-on = ["docs-site-install"]
+depends-on = ["docs-site-install", "docs-site-sidebar"]
+
+[feature.site.tasks.pages-build]
+description = "Build the unified GitHub Pages artifact (Starlight + herald + dashboard mounts and legacy redirects)."
+cmd = "python docsite/tools/assemble_pages.py"
+depends-on = ["docs-site-build"]
+
+[feature.site.tasks.pages-check]
+description = "Build and verify the unified GitHub Pages artifact (Story 27.2)."
+cmd = "python docsite/tools/assemble_pages.py --check"
+depends-on = ["pages-build"]
 
 [feature.site.tasks.site]
 description = "Build the PyForge dossier + infographic site into dist/."
@@ -1278,7 +1293,7 @@ cmd = "python -m pyforge.doctor.sources pixi-currency-ledger"
 # deck-export / deck-facts / deck-trio need pyforge-herald (pinned below in the Guild feature);
 # platform-ci-local is a bash wrapper that provisions and uses the platform envs' own bins.
 [feature.guild-tasks.tasks.deck-export]
-description = "Regenerate a presentation deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp .md sources via marp — keeps the § Standard export set reproducible. Usage: pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...] (default: all). PPTX needs Chrome (skipped, not crashed, when unavailable — Story 23.3). Every produced artifact gets a <artifact>.stamp.json provenance sidecar (Story 23.3, pyforge.herald.stamps). See docs/specs/presentation-deck.md."
+description = "Regenerate a presentation deck's derived export artifacts (standalone infographic HTML + PPTX) from its Marp .md sources via marp — keeps the § Standard export set reproducible. Usage: pixi run -e local-recipes deck-export <slug> [html|deck-pptx|infographic-pptx ...] (default: all). PPTX needs Chrome (skipped, not crashed, when unavailable — Story 23.3). Every produced artifact gets a <artifact>.stamp.json provenance sidecar (Story 23.3, pyforge.herald.stamps). See docs/how-to/presentation-deck.md."
 cmd = "python scripts/deck_export.py"
 env = { PYTHONPATH = "src/shared/packages/pyforge-herald/src:src/shared/packages/pyforge-core/src" }  # Story 23.3: imports pyforge.herald.stamps, which imports pyforge.core.atomic_write -- both paths listed explicitly (mirrors this file's other PYTHONPATH entries) rather than relying on pyforge-core arriving as pyforge-doctor's transitive run-dep
 
@@ -1287,7 +1302,7 @@ description = "Derive a presentation deck's fact ledger presentations/<slug>/fac
 cmd = "python scripts/deck_facts.py"
 
 [feature.guild-tasks.tasks.deck-trio]
-description = "Derive a deck's Infographic HEAD and/or Infographic Deck from its standalone poster — two independently combinable modes, both pure functions of the standalone's bytes. --head: project/<Persona> - Infographic.dc.html via three mechanical transforms — wrap the body in <x-dc><helmet>, move the standalone's <head><style> block + font/stylesheet <link> tags into <helmet> verbatim, and add the support.js script tag + a data-dc-script/$preview block whose height is an actual headless-Chromium measurement of the standalone (never a guess, never a render of the head). --deck: project/<Persona> - Infographic Deck.dc.html — parses the standalone's masthead (content before the first act/section, when present), act bands (<div class=\"act\">, never split) and numbered sections (<section class=\"sec\">, split only when a section's own rendered content overflows a slide's content budget, packed at its own direct-child boundaries), and closing band (content after the last act/section, when present, never split) in document order, same skeleton convention as the family's other decks; a non-numbered banner between act/section elements produces no slide. Both refuse (exit 2) rather than guess on a missing/ambiguous poster, an unlocatable <style> block, or (--deck) zero act bands/numbered sections, an empty act/section label, a section with zero direct children, or a measured-vs-parsed section-count mismatch; both skip the write when the derived bytes already match what's on disk; neither ever touches the standalone; combined, both modes are validated before either is written. Every derived write also gets a <artifact>.stamp.json provenance sidecar (Story 23.3, pyforge.herald.stamps). Usage: pixi run -e local-recipes deck-trio <slug> --head [--deck] (at least one required). See docs/specs/presentation-deck.md § Artifact dependency tree."
+description = "Derive a deck's Infographic HEAD and/or Infographic Deck from its standalone poster — two independently combinable modes, both pure functions of the standalone's bytes. --head: project/<Persona> - Infographic.dc.html via three mechanical transforms — wrap the body in <x-dc><helmet>, move the standalone's <head><style> block + font/stylesheet <link> tags into <helmet> verbatim, and add the support.js script tag + a data-dc-script/$preview block whose height is an actual headless-Chromium measurement of the standalone (never a guess, never a render of the head). --deck: project/<Persona> - Infographic Deck.dc.html — parses the standalone's masthead (content before the first act/section, when present), act bands (<div class=\"act\">, never split) and numbered sections (<section class=\"sec\">, split only when a section's own rendered content overflows a slide's content budget, packed at its own direct-child boundaries), and closing band (content after the last act/section, when present, never split) in document order, same skeleton convention as the family's other decks; a non-numbered banner between act/section elements produces no slide. Both refuse (exit 2) rather than guess on a missing/ambiguous poster, an unlocatable <style> block, or (--deck) zero act bands/numbered sections, an empty act/section label, a section with zero direct children, or a measured-vs-parsed section-count mismatch; both skip the write when the derived bytes already match what's on disk; neither ever touches the standalone; combined, both modes are validated before either is written. Every derived write also gets a <artifact>.stamp.json provenance sidecar (Story 23.3, pyforge.herald.stamps). Usage: pixi run -e local-recipes deck-trio <slug> --head [--deck] (at least one required). See docs/how-to/presentation-deck.md § Artifact dependency tree."
 cmd = "python scripts/deck_trio.py"
 env = { PYTHONPATH = "src/shared/packages/pyforge-herald/src:src/shared/packages/pyforge-core/src" }  # Story 23.3: imports pyforge.herald.stamps, which imports pyforge.core.atomic_write -- both paths listed explicitly (mirrors this file's other PYTHONPATH entries) rather than relying on pyforge-core arriving as pyforge-doctor's transitive run-dep
 
@@ -3050,7 +3065,7 @@ cmd = "python scripts/export_web_snapshot.py"
 cwd = "src/shared/packages/pyforge-herald"
 
 [feature.pyforge-herald.tasks.deck-qa]
-description = "Story 19.3: run Herald's deck visual-QA gates against a built deck — JSON report plus render artifacts under .herald/deck-qa/<slug>/. Advisory only (never a PR gate). Run from repo root: pixi run -e pyforge-herald deck-qa <slug>. See docs/specs/presentation-deck.md."
+description = "Story 19.3: run Herald's deck visual-QA gates against a built deck — JSON report plus render artifacts under .herald/deck-qa/<slug>/. Advisory only (never a PR gate). Run from repo root: pixi run -e pyforge-herald deck-qa <slug>. See docs/how-to/presentation-deck.md."
 cmd = "herald deck qa"
 
 [feature.pyforge-herald.tasks.deck-sync-all]

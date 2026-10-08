@@ -1543,6 +1543,19 @@ def _maybe_run_verify_fix_turn(
             failed_message=commit_refusal,
         )
 
+    counter = _run_and_journal_ruff_format(
+        fs=fs,
+        vcs=vcs,
+        process=process,
+        run_dir=run_dir,
+        run_id=run_id,
+        writer_id=writer_id,
+        counter=counter,
+        repo_root=repo_root,
+        story_key=story_key,
+        worktree=worktree,
+    )
+
     if head_before_turn is not None:
         reconcile_ok, reconcile_refusal = _reconcile_fix_turn_spec_surface(
             vcs=vcs,

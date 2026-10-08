@@ -2,7 +2,7 @@
 """Regenerate a presentation deck's derived export artifacts from its Marp sources.
 
 The Marp ``.md`` files under ``presentations/<slug>/src/marp/`` are the source of
-truth for the non-React exports (see ``docs/specs/presentation-deck.md`` §
+truth for the non-React exports (see ``docs/how-to/presentation-deck.md`` §
 *Standard export set*). This tool re-derives the companions with ``marp`` so they
 never drift from their source and stay reproducible:
 
