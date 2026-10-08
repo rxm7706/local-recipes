@@ -282,7 +282,7 @@ development_status:
   46-9-benchmark-legs-run-per-layer-with-cache-hit-rates: backlog
   47-1-a-bmad-loop-dev-pass-automatically-receives-relevant-scribe-feedback-before-it-starts: blocked
   47-2-a-bmad-loop-review-pass-sees-the-same-scoped-feedback-the-dev-pass-saw: done
-  47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: backlog
+  47-3-the-recall-injection-layer-composes-with-the-existing-context-pipeline: done
   47-4-a-genuine-recall-miss-injects-nothing-never-a-fabricated-confidence-claim: backlog
   5-1-fleet-view: done
   5-10-marshal-land-renders-a-detectable-merge-subject: done

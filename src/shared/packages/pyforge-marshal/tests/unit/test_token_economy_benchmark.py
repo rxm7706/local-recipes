@@ -42,7 +42,7 @@ def _leg(
     )
 
 
-def test_build_layer_comparison_emits_all_five_layers():
+def test_build_layer_comparison_emits_all_metered_savings_layers():
     off = _leg(
         layers_mode="off",
         story_weighted_tokens=5000,
@@ -58,7 +58,7 @@ def test_build_layer_comparison_emits_all_five_layers():
         ),
     )
     rows = bench.build_layer_comparison(off, on)
-    assert len(rows) == len(policy.CONTEXT_LAYER_NAMES)
+    assert len(rows) == len(bench._LAYER_SAVINGS_ATTR)
     wire = next(r for r in rows if r["layer"] == "wire")
     assert wire["savings_before"] is None
     assert wire["savings_after"] == 2048

@@ -2,7 +2,7 @@
 title: '32.2: The native pptx export carries every speaker note and every text block'
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
+status: 'done'
 difficulty: 'medium'
 baseline_revision: '063fecf553893b0b6d63524558b74ba65674bb54'
 review_loop_iteration: 0
@@ -223,4 +223,30 @@ Type / Effort / Deps: fix / M / —.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches intent-contract; live-deck measure 0 lost notes / 0 lost body fragments across 15 decks and 263 slides)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Extended `pptx_native` parsing and the Node driver so multi-line Marp speaker notes, directive comments, and every body block kind (headings after the title, paragraphs, bullet and numbered lists, all tables, fenced code, blockquotes) serialize in source order and render as native PPTX text. Added a live-deck meta measure that reports zero note or body loss across all 15 current Marp decks (263 slides).
+
+Files changed:
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/pptx_native.py` — note/body parser and block model JSON
+- `src/shared/packages/pyforge-herald/src/pyforge/herald/node/pptx_native.mjs` — ordered block rendering
+- `src/shared/packages/pyforge-herald/tests/unit/test_pptx_native.py` — fixtures per block kind and note edge cases
+- `src/shared/packages/pyforge-herald/tests/integration/test_pptx_native_render.py` — python-pptx read-back for every block kind
+- `src/shared/packages/pyforge-herald/tests/meta/test_pptx_native_live_decks.py` — parse-only zero-loss gate on live decks
+- `_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-pyforge-herald/.memlog.md` — surface reconcile entry (Story 32.2)
+
+Review: no patch/defer/intent_gap items.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-herald pyforge-herald-test` — 1726 passed, 5 skipped (pptx render tests ran, not skipped)
+- `python scripts/spec_surface_reconcile.py` — OK (no drift after memlog reconcile; no `--write-baseline`)
+
+Residual risk: overflow layout relies on pptxgenjs shrink/overflow; no pixel-perfect ordering guarantee under extreme slide density (accepted per intent-contract).

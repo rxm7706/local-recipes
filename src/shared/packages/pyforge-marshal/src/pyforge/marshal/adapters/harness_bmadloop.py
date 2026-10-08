@@ -280,6 +280,15 @@ _POLICY_TEMPLATE = """\
 # repo-wide default belongs in this template (adapters/harness_bmadloop.py's
 # _POLICY_TEMPLATE), never in this rendered file. All keys optional; the
 # harness applies its own stock default for anything absent.
+#
+# Token-economy [context] layers (Story 28.1; recall added Story 47.3):
+# When the composed marshal policy declares any [context] key, render_policy_toml
+# writes [context.<name>] for each name in core/policy.py CONTEXT_LAYER_NAMES:
+# wire, output, structure-graph, derived-context, planning-graph, recall.
+# Each sub-table carries enabled and aggressiveness (wire alone may use
+# enabled = "auto"). recall injects scoped scribe feedback before dev/review
+# passes when enabled (SPEC-marshal-recall-in-the-loop CAP-3); disabling it
+# skips the recall query with no effect on the other five layers.
 
 [gates]
 mode = "per-epic"            # none | per-epic | per-story-spec-approval -- overwritten per render from EffectivePolicy
@@ -1415,9 +1424,17 @@ def augment_bmad_loop_session_prompt_with_recall(
     repo_root: Path,
     station_slug: str | None,
     scribe: ScribeCli | None = None,
+    context_layers: Mapping[str, Mapping[str, object]] | None = None,
 ) -> tuple[str, RecallInjectionResult | None]:
     """Review-pass launch path (Story 47.2, CAP-2): fold the same scoped
     feedback block the dev pass received into ``prompt``.
+
+    Story 47.3 (CAP-3): when ``context_layers`` is given, the ``recall``
+    layer's ``enabled`` gate must be true before any query or cache read;
+    when omitted, the layer is treated as enabled so direct unit tests and
+    pre-wiring callers keep today's behavior. Injected block bytes count
+    toward the session's normal adapter input-token accounting once folded
+    into ``prompt`` -- no separate uncounted budget.
 
     Exactly one ``scribe recall`` subprocess runs per story dispatch: the
     first ``dev`` session calls ``inject_recall_feedback`` when the query
@@ -1425,6 +1442,10 @@ def augment_bmad_loop_session_prompt_with_recall(
     in the same dispatch) read the cached ``recall-feedback.md`` only."""
     if not station_slug:
         return prompt, None
+    if context_layers is not None:
+        recall_layer = context_layers.get(recall_feedback.RECALL_LAYER)
+        if not recall_feedback.layer_enabled(recall_layer):
+            return prompt, None
     target = _recall_feedback_target(loop_home, station_slug)
     marker = _recall_query_marker_path(target)
     injection: RecallInjectionResult | None = None

@@ -8,7 +8,7 @@ import re
 import shutil
 import subprocess
 import tempfile
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -23,7 +23,42 @@ DECK_EXPORT_NATIVE_FLAG = "pyforge.herald.deck_export_native"
 
 _IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.+)$")
-_MARP_DIRECTIVE_COMMENT = re.compile(r"^\s*<!--\s*_[^>]*-->\s*$")
+_NUMBERED_RE = re.compile(r"^(\d+)\.\s+(.*)$")
+_BULLET_RE = re.compile(r"^(\s*)([-*+])\s+(.*)$")
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+_FENCE_RE = re.compile(r"^```")
+
+_MARP_GLOBAL_DIRECTIVES = frozenset(
+    {
+        "theme",
+        "style",
+        "headingDivider",
+        "size",
+        "math",
+        "title",
+        "description",
+        "author",
+        "image",
+        "keywords",
+        "url",
+        "marp",
+        "lang",
+    }
+)
+_MARP_LOCAL_DIRECTIVES = frozenset(
+    {
+        "paginate",
+        "header",
+        "footer",
+        "class",
+        "backgroundColor",
+        "backgroundImage",
+        "backgroundPosition",
+        "backgroundRepeat",
+        "backgroundSize",
+        "color",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,12 +68,64 @@ class SlideImage:
 
 
 @dataclass(frozen=True, slots=True)
+class HeadingBlock:
+    level: int
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class ParagraphBlock:
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class BulletItem:
+    text: str
+    depth: int
+
+
+@dataclass(frozen=True, slots=True)
+class BulletListBlock:
+    items: tuple[BulletItem, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class NumberedItem:
+    number: str
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class NumberedListBlock:
+    items: tuple[NumberedItem, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class TableBlock:
+    rows: tuple[tuple[str, ...], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class CodeBlock:
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class QuoteBlock:
+    text: str
+
+
+BodyBlock = HeadingBlock | ParagraphBlock | BulletListBlock | NumberedListBlock | TableBlock | CodeBlock | QuoteBlock
+
+
+@dataclass(frozen=True, slots=True)
 class SlideModel:
     title: str = ""
     bullets: tuple[str, ...] = ()
     table: tuple[tuple[str, ...], ...] | None = None
     notes: str = ""
     images: tuple[SlideImage, ...] = ()
+    blocks: tuple[BodyBlock, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,61 +180,238 @@ def _parse_table_rows(lines: list[str], start: int) -> tuple[tuple[tuple[str, ..
     return tuple(rows), idx
 
 
-def _extract_notes_and_body(lines: list[str]) -> tuple[str, list[str]]:
-    notes: list[str] = []
+def _directive_key_name(raw_key: str) -> str:
+    key = raw_key.strip()
+    if key.startswith("_"):
+        key = key[1:]
+    return key
+
+
+def _is_marp_directive_comment(inner: str) -> bool:
+    lines = [ln.strip() for ln in inner.splitlines() if ln.strip()]
+    if not lines:
+        return True
+    for ln in lines:
+        if ":" not in ln:
+            return False
+        key_part, _, _value_part = ln.partition(":")
+        name = _directive_key_name(key_part)
+        if name not in _MARP_GLOBAL_DIRECTIVES and name not in _MARP_LOCAL_DIRECTIVES:
+            return False
+    return True
+
+
+def _extract_comment_inner(first_line: str, rest_lines: list[str], closing_line: str) -> str:
+    open_idx = first_line.find("<!--")
+    close_on_first = "-->" in first_line[open_idx:]
+    if close_on_first:
+        close_idx = first_line.index("-->", open_idx)
+        inner = first_line[open_idx + 4 : close_idx]
+        return inner.strip()
+    inner_parts: list[str] = []
+    after_open = first_line[open_idx + 4 :].strip()
+    if after_open:
+        inner_parts.append(after_open)
+    inner_parts.extend(rest_lines)
+    close_idx = closing_line.rfind("-->")
+    last_text = closing_line[:close_idx].strip() if close_idx >= 0 else closing_line.strip()
+    if last_text:
+        inner_parts.append(last_text)
+    return "\n".join(inner_parts).strip()
+
+
+def _partition_notes_and_body(lines: list[str]) -> tuple[str, list[str]]:
+    note_chunks: list[str] = []
     body: list[str] = []
-    for line in lines:
+    idx = 0
+    while idx < len(lines):
+        line = lines[idx]
         stripped = line.strip()
-        if stripped.startswith("<!--") and stripped.endswith("-->"):
-            if _MARP_DIRECTIVE_COMMENT.match(stripped):
-                continue
-            inner = stripped[4:-3].strip()
-            if inner:
-                notes.append(inner)
+        if "<!--" not in stripped:
+            body.append(line)
+            idx += 1
             continue
-        body.append(line)
-    return "\n".join(notes).strip(), body
+        open_pos = stripped.find("<!--")
+        before = stripped[:open_pos]
+        if before:
+            body.append(before)
+        comment_start = stripped[open_pos:]
+        if "-->" in comment_start[4:]:
+            inner = _extract_comment_inner(comment_start, [], comment_start)
+            if inner and not _is_marp_directive_comment(inner):
+                note_chunks.append(inner)
+            idx += 1
+            continue
+        rest: list[str] = []
+        idx += 1
+        while idx < len(lines):
+            if "-->" in lines[idx]:
+                inner = _extract_comment_inner(comment_start, rest, lines[idx])
+                if inner and not _is_marp_directive_comment(inner):
+                    note_chunks.append(inner)
+                idx += 1
+                break
+            rest.append(lines[idx])
+            idx += 1
+        else:
+            body.append(line)
+    notes = "\n\n".join(note_chunks).strip()
+    filtered_body: list[str] = []
+    for line in body:
+        stripped_only = line.strip()
+        if stripped_only in ("<!--", "-->"):
+            continue
+        filtered_body.append(line)
+    return notes, filtered_body
 
 
-def parse_slide_chunk(chunk: str, *, marp_dir: Path) -> SlideModel:
-    lines = chunk.splitlines()
-    notes, body_lines = _extract_notes_and_body(lines)
+def _strip_inline_html(line: str) -> str:
+    if not _HTML_TAG_RE.search(line):
+        return line.strip()
+    text = _HTML_TAG_RE.sub("", line).strip()
+    return text
+
+
+def _bullet_depth(indent: str) -> int:
+    spaces = len(indent.replace("\t", "    "))
+    return spaces // 2
+
+
+def _blocks_from_body(
+    body_lines: list[str], *, marp_dir: Path
+) -> tuple[str, list[str], list[SlideImage], list[BodyBlock], tuple[tuple[str, ...], ...] | None]:
     title = ""
-    bullets: list[str] = []
+    legacy_bullets: list[str] = []
     images: list[SlideImage] = []
-    table: tuple[tuple[str, ...], ...] | None = None
-
+    blocks: list[BodyBlock] = []
     idx = 0
     while idx < len(body_lines):
         line = body_lines[idx]
+        stripped = line.strip()
+        if not stripped:
+            idx += 1
+            continue
+
         img = _IMAGE_RE.search(line)
-        if img:
+        if img and stripped == img.group(0).strip():
             alt, rel = img.group(1), img.group(2)
             resolved = (marp_dir / rel).resolve() if not rel.startswith(("http://", "https://")) else Path(rel)
             images.append(SlideImage(alt=alt, path=str(resolved)))
             idx += 1
             continue
+
         heading = _HEADING_RE.match(line)
-        if heading and not title:
-            title = heading.group(2).strip()
+        if heading:
+            level = len(heading.group(1))
+            text = heading.group(2).strip()
+            if not title:
+                title = text
+            else:
+                blocks.append(HeadingBlock(level=level, text=text))
             idx += 1
             continue
+
+        if _FENCE_RE.match(stripped):
+            code_lines: list[str] = []
+            idx += 1
+            while idx < len(body_lines) and not _FENCE_RE.match(body_lines[idx].strip()):
+                code_lines.append(body_lines[idx])
+                idx += 1
+            if idx < len(body_lines):
+                idx += 1
+            blocks.append(CodeBlock(text="\n".join(code_lines)))
+            continue
+
+        if stripped.startswith(">"):
+            quote_lines: list[str] = []
+            while idx < len(body_lines):
+                qline = body_lines[idx].strip()
+                if not qline.startswith(">"):
+                    break
+                quote_lines.append(qline.lstrip(">").strip())
+                idx += 1
+            blocks.append(QuoteBlock(text="\n".join(quote_lines).strip()))
+            continue
+
         if _is_table_row(line):
             parsed, idx = _parse_table_rows(body_lines, idx)
             if parsed:
-                table = parsed
+                blocks.append(TableBlock(rows=parsed))
             continue
-        bullet = line.strip()
-        if bullet.startswith(("- ", "* ")):
-            bullets.append(bullet[2:].strip())
-        idx += 1
+
+        bullet_match = _BULLET_RE.match(line)
+        if bullet_match:
+            items: list[BulletItem] = []
+            while idx < len(body_lines):
+                bm = _BULLET_RE.match(body_lines[idx])
+                if not bm:
+                    break
+                depth = _bullet_depth(bm.group(1))
+                text = bm.group(3).strip()
+                items.append(BulletItem(text=text, depth=depth))
+                if depth == 0:
+                    legacy_bullets.append(text)
+                idx += 1
+            blocks.append(BulletListBlock(items=tuple(items)))
+            continue
+
+        numbered_match = _NUMBERED_RE.match(stripped)
+        if numbered_match:
+            items_num: list[NumberedItem] = []
+            while idx < len(body_lines):
+                nm = _NUMBERED_RE.match(body_lines[idx].strip())
+                if not nm:
+                    break
+                items_num.append(NumberedItem(number=nm.group(1), text=nm.group(2).strip()))
+                idx += 1
+            blocks.append(NumberedListBlock(items=tuple(items_num)))
+            continue
+
+        para_lines: list[str] = []
+        while idx < len(body_lines):
+            pline = body_lines[idx]
+            ps = pline.strip()
+            if not ps:
+                break
+            img_break = _IMAGE_RE.search(pline)
+            if (
+                _HEADING_RE.match(pline)
+                or (img_break is not None and ps == img_break.group(0).strip())
+                or _FENCE_RE.match(ps)
+                or ps.startswith(">")
+                or _is_table_row(pline)
+                or _BULLET_RE.match(pline)
+                or _NUMBERED_RE.match(ps)
+            ):
+                break
+            cleaned = _strip_inline_html(pline)
+            if cleaned:
+                para_lines.append(cleaned)
+            idx += 1
+        if para_lines:
+            blocks.append(ParagraphBlock(text="\n".join(para_lines)))
+
+    legacy_table: tuple[tuple[str, ...], ...] | None = None
+    for block in reversed(blocks):
+        if isinstance(block, TableBlock):
+            legacy_table = block.rows
+            break
+
+    return title, legacy_bullets, images, blocks, legacy_table
+
+
+def parse_slide_chunk(chunk: str, *, marp_dir: Path) -> SlideModel:
+    lines = chunk.splitlines()
+    notes, body_lines = _partition_notes_and_body(lines)
+    title, legacy_bullets, images, blocks, legacy_table = _blocks_from_body(body_lines, marp_dir=marp_dir)
 
     return SlideModel(
         title=title,
-        bullets=tuple(bullets),
-        table=table,
+        bullets=tuple(legacy_bullets),
+        table=legacy_table,
         notes=notes,
         images=tuple(images),
+        blocks=tuple(blocks),
     )
 
 
@@ -157,12 +421,40 @@ def parse_marp_deck(text: str, *, marp_dir: Path) -> tuple[SlideModel, ...]:
     return tuple(parse_slide_chunk(chunk, marp_dir=marp_dir) for chunk in chunks)
 
 
+def _body_block_to_json(block: BodyBlock) -> dict[str, Any]:
+    if isinstance(block, HeadingBlock):
+        return {"kind": "heading", "level": block.level, "text": block.text}
+    if isinstance(block, ParagraphBlock):
+        return {"kind": "paragraph", "text": block.text}
+    if isinstance(block, BulletListBlock):
+        return {
+            "kind": "bullets",
+            "items": [{"text": item.text, "depth": item.depth} for item in block.items],
+        }
+    if isinstance(block, NumberedListBlock):
+        return {
+            "kind": "numbered",
+            "items": [{"number": item.number, "text": item.text} for item in block.items],
+        }
+    if isinstance(block, TableBlock):
+        return {"kind": "table", "rows": [list(row) for row in block.rows]}
+    if isinstance(block, CodeBlock):
+        return {"kind": "code", "text": block.text}
+    if isinstance(block, QuoteBlock):
+        return {"kind": "quote", "text": block.text}
+    raise TypeError(f"unknown body block: {type(block)!r}")
+
+
 def slide_model_to_json(slides: tuple[SlideModel, ...]) -> dict[str, Any]:
     return {
         "slides": [
             {
-                **{k: v for k, v in asdict(slide).items() if k != "images"},
+                "title": slide.title,
+                "bullets": list(slide.bullets),
+                "table": [list(row) for row in slide.table] if slide.table else None,
+                "notes": slide.notes,
                 "images": [{"alt": img.alt, "path": img.path} for img in slide.images],
+                "blocks": [_body_block_to_json(block) for block in slide.blocks],
             }
             for slide in slides
         ]

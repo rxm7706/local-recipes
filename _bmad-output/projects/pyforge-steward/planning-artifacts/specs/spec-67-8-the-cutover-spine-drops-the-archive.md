@@ -2,7 +2,8 @@
 title: '67.8: The cutover spine drops the archive'
 type: 'docs'
 created: '2026-09-25'
-status: 'ready'
+status: 'done'
+baseline_revision: b564463700d509bd0189b23ed5d80172551338b4
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -67,3 +68,13 @@ Minted 2026-09-25 from `epics.md` so `marshal factory dispatch` can resolve `spe
 
 **Manual checks:**
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the scoped stamp.
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pyforge-steward-test` exit 0; `python scripts/spec_surface_reconcile.py` exit 0 (memlog reconcile on architecture memlog plus co-governors `spec-python-foundry-cutover`, `spec-pyforge-unifying-strategy`, `spec-pyforge-steward` — no `--write-baseline`).
+
+Governed paths touched:
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md`
+- `_bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/.memlog.md`

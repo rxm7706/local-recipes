@@ -4517,7 +4517,7 @@ So that no later story implements a Phase 6 the operator retired.
 **When** `bmad-architecture` re-renders the cutover section from a memlog entry naming the ruling
 **Then** no AD describes `local-recipes` as archived or read-only; fnd:AD-21's oracle is "the archived suite at a pinned source SHA", with no repository archive implied; the trace table maps no story to `fnd:CAP-7`
 **And** the spine re-stamp is scoped (`--spec` for each Spec the detector names)
-**Status:** backlog
+**Status:** done
 
 ## Epic 68: Housekeeping that does not leak, and a gate journal that names what was pushed (spec-pyforge-steward CAP-155..156)
 
