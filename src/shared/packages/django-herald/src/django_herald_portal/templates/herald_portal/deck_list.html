@@ -1,0 +1,18 @@
+{% extends "django_pyforge/base.html" %}
+{% block title %}
+  herald decks
+{% endblock title %}
+{% block content %}
+  <h1 id="herald-deck-list">Published decks</h1>
+  <ul id="herald-deck-rows">
+    {% for deck in decks %}
+      <li>
+        <a href="{% url 'herald-deck-view' deck.slug %}">{{ deck.topic }}</a>
+        <span class="herald-deck-slug">({{ deck.slug }})</span>
+      </li>
+    {% empty %}
+      <li>No published decks in the projection.</li>
+    {% endfor %}
+  </ul>
+  <p><a href="{% url 'herald-home' %}">Back to herald home</a></p>
+{% endblock content %}

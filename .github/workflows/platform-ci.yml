@@ -225,6 +225,12 @@ jobs:
       - name: Install test dependencies
         uses: ./.github/actions/platform-test-setup
 
+      # Herald Story 30.2: the deck viewer's zero-foreign-origin check drives a
+      # real browser. The runner has no Playwright-managed Chromium, so install
+      # it the way pyforge-station-tests' atlas and herald jobs do.
+      - name: Install Chromium for the herald deck viewer browser check
+        run: python -m playwright install --with-deps chromium
+
       - name: Django system checks (PostgreSQL + Redis, no other backing service)
         run: python manage.py check
 

@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: herald
-source_fingerprint: 5816ab007c1e4f7d
-story_count: 124
-test_file_count: 56
+source_fingerprint: cc90de9ca00f0211
+story_count: 125
+test_file_count: 70
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-herald`
-- **Stories parsed:** 124
+- **Stories parsed:** 125
 - **Epics parsed:** 35
-- **Test files inventoried:** 56 under `src/shared/packages/pyforge-herald/tests/`
+- **Test files inventoried:** 70 under `src/shared/packages/pyforge-herald/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `5816ab007c1e4f7d`
+- **Source fingerprint:** `cc90de9ca00f0211`
 
 ## Risk Assessment
 
@@ -78,11 +78,15 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 |---------------|-------|----------------|
 | `src/shared/packages/pyforge-herald/tests/meta/test_deck_qa_pixi_task.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_deck_registry_sections.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_deck_store_import_boundary.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_deck_sync_all_pixi_task.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_deck_working_set.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_docs_site.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_portal_deck_status.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_release_comms_routing.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_skf_skill_and_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/meta/test_slides_generator_routing.py` | meta | none observed |
+| `src/shared/packages/pyforge-herald/tests/meta/test_twins_zero_origin.py` | meta | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_agent_sdk_transport.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_auth.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_bridge.py` | unit | none observed |
@@ -101,9 +105,17 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_cli_sync_all.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_cli_watch.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_db.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_exports_handlers.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_pipeline.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_publish.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_publish_flag.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_publish_twins.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_qa.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_deck_status.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_store.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_versions.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_deck_viewer_publish_flag.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_docs_site_shelf_loader.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_docsite_build.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_dossier_structure.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_errors.py` | unit | none observed |
@@ -125,9 +137,11 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-herald/tests/unit/test_smoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_stamps.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_state.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_station_api.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_story_19_4_warden_deck.py` | unit | 19.4 |
 | `src/shared/packages/pyforge-herald/tests/unit/test_sync_all.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_transport_base.py` | unit | none observed |
+| `src/shared/packages/pyforge-herald/tests/unit/test_twins.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_watch.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_webhook.py` | unit | none observed |
 | `src/shared/packages/pyforge-herald/tests/unit/test_webhook_host.py` | unit | none observed |
@@ -248,6 +262,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 27.3 | The sidebar is generated from docs/map.yaml order | none observed |
 | 27.4 | The docs validators gate every PR | none observed |
 | 27.5 | pr-preflight runs the Pages build check only when docsite-check.yml's paths c... | none observed |
+| 27.6 | The docs site builds from a clean checkout | none observed |
 | 28.1 | Each deck keeps one current version of each export | none observed |
 | 28.2 | A new export replaces the version it supersedes | none observed |
 | 29.1 | herald deck publish puts each current export in the object store | none observed |

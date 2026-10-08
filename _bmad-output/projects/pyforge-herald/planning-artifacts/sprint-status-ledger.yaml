@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: herald
-# stories: 194
+# stories: 195
 development_status:
   1-1-package-scaffold-for-pyforge-herald: done
   1-2-transport-port-primary-mcp-client-adapter-the-transport-spike: done
@@ -102,6 +102,7 @@ development_status:
   27-3-the-sidebar-is-generated-from-docs-map-yaml-order: backlog
   27-4-the-docs-validators-gate-every-pr: backlog
   27-5-pr-preflight-runs-the-pages-build-check-only-when-docsite-check-yml-s-paths-change: blocked
+  27-6-the-docs-site-builds-from-a-clean-checkout: backlog
   28-1-each-deck-keeps-one-current-version-of-each-export: done
   28-2-a-new-export-replaces-the-version-it-supersedes: done
   29-1-herald-deck-publish-puts-each-current-export-in-the-object-store: done
@@ -109,12 +110,12 @@ development_status:
   3-1-herald-deck-status-slug: done
   3-2-stale-hand-mirror-detection: done
   30-1-a-deck-s-html-twins-are-self-contained-and-published: done
-  30-2-the-herald-portal-shows-a-deck-in-the-browser-from-its-html-twin: backlog
+  30-2-the-herald-portal-shows-a-deck-in-the-browser-from-its-html-twin: done
   31-1-the-pages-artifact-builds-for-the-host-that-deploys-it: backlog
   31-2-how-to-deploy-the-docs-site-to-github-enterprise-pages: backlog
   32-1-a-deck-exports-as-a-native-editable-pptx-through-pptxgenjs-plus: backlog
-  33-1-deck-facts-counts-dreams-under-the-archive-too: backlog
-  34-1-herald-cites-the-deck-how-to-not-the-intake-stub: backlog
+  33-1-deck-facts-counts-dreams-under-the-archive-too: done
+  34-1-herald-cites-the-deck-how-to-not-the-intake-stub: done
   35-1-the-deck-transport-sync-all-deck-tooling-and-docs-site-close-their-open-deferrals: done
   35-2-the-docs-site-checks-and-the-sync-proof-row-close-on-real-evidence: done
   4-1-poll-loop-with-quiescence-debounce: done
@@ -184,15 +185,15 @@ development_status:
   epic-29-retrospective: optional
   epic-3: done
   epic-3-retrospective: optional
-  epic-30: in-progress
+  epic-30: done
   epic-30-retrospective: optional
   epic-31: backlog
   epic-31-retrospective: optional
   epic-32: backlog
   epic-32-retrospective: optional
-  epic-33: backlog
+  epic-33: done
   epic-33-retrospective: optional
-  epic-34: backlog
+  epic-34: done
   epic-34-retrospective: optional
   epic-35: done
   epic-35-retrospective: optional

@@ -3,7 +3,7 @@
 standalone poster.
 
 Every PyForge deck's Infographic head (``project/<Persona> - Infographic.dc.html``)
-is, per ``docs/specs/presentation-deck.md`` § *Artifact dependency tree*, the
+is, per ``docs/how-to/presentation-deck.md`` § *Artifact dependency tree*, the
 standalone poster's body with exactly three mechanical differences:
 
 1. the body content is wrapped in ``<x-dc>...</x-dc>``, with a ``<helmet>`` as
