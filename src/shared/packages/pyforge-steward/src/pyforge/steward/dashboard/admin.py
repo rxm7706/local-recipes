@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from django.contrib import admin
 
-from pyforge.steward.dashboard.models import AuditEntry, CorridorLoad, WorkPassport
+from pyforge.steward.dashboard.models import AuditEntry, CorridorLoad, QuarantineShelfRow, WorkPassport
 
 
 @admin.register(AuditEntry)
@@ -51,6 +51,40 @@ class WorkPassportAdmin(admin.ModelAdmin):
         "title",
     )
     ordering = ("station", "story_id")
+
+
+@admin.register(QuarantineShelfRow)
+class QuarantineShelfRowAdmin(admin.ModelAdmin):
+    """Read-only shelf: rows are admitted by ``quarantine_admit`` and linked by
+    a human in admin — never auto-linked by title."""
+
+    list_display = (
+        "row_id",
+        "vendor_id",
+        "jira_key",
+        "github_item_id",
+        "passport_id",
+        "arrived_at",
+        "linked_at",
+    )
+    list_filter = ("vendor_id",)
+    search_fields = ("row_id", "vendor_id", "jira_key", "github_item_id", "passport_id")
+    ordering = ("-arrived_at",)
+    readonly_fields = (
+        "row_id",
+        "vendor_id",
+        "jira_key",
+        "github_item_id",
+        "title",
+        "passport_id",
+        "arrived_at",
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(CorridorLoad)

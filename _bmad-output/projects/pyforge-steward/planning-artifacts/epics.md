@@ -4151,7 +4151,7 @@ the existing Postgres app / a steward load duty.
 **When** this story lands
 **Then** first 14 days (config) mint into quarantine; after that, no mint
 **And** no title-match endpoint exists
-**Status:** backlog
+**Status:** done
 
 ## Epic 62: Published measure catalog (spec-build-league-scorecard CAP-1..145)
 
