@@ -28,7 +28,7 @@ import re
 import shutil
 import subprocess
 import tomllib
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 
 import pytest
@@ -82,12 +82,29 @@ def _write(repo: Path, relative: str, text: str = "x\n") -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def make_repo(tmp_path: Path, branch_files: Mapping[str, str], *, with_base: bool = True) -> Path:
-    """Real workflows + pixi.toml, a base commit (``refs/remotes/origin/main``), a branch commit."""
+WorkflowEdit = tuple[str, str, str]  # (workflow file, old text, new text)
+
+
+def make_repo(
+    tmp_path: Path,
+    branch_files: Mapping[str, str],
+    *,
+    with_base: bool = True,
+    edits: Sequence[WorkflowEdit] = (),
+) -> Path:
+    """Real workflows + pixi.toml, a base commit (``refs/remotes/origin/main``), a branch commit.
+
+    ``edits`` rewrite the FIXTURE's copy of a workflow (never the real file) before the base
+    commit, so the diff under test stays the branch's own."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q", "-b", "main")
     shutil.copytree(REPO_ROOT / ".github" / "workflows", repo / ".github" / "workflows")
+    for name, old, new in edits:
+        path = repo / ".github" / "workflows" / name
+        text = path.read_text(encoding="utf-8")
+        assert old in text, f"{old!r} not in {name}"
+        path.write_text(text.replace(old, new, 1), encoding="utf-8")
     shutil.copy(REPO_ROOT / "pixi.toml", repo / "pixi.toml")
     _write(repo, STEWARD_PLACEHOLDER)
     _git(repo, "add", "-A")
@@ -100,21 +117,6 @@ def make_repo(tmp_path: Path, branch_files: Mapping[str, str], *, with_base: boo
     _git(repo, "add", "-A")
     _git(repo, "commit", "-q", "-m", "branch", "--allow-empty")
     return repo
-
-
-def edit_workflow(repo: Path, name: str, old: str, new: str) -> None:
-    """Rewrite one fixture workflow (the fixture's copy -- never the real file) and commit it
-    on the base so the diff under test stays the branch's own."""
-    path = repo / ".github" / "workflows" / name
-    text = path.read_text(encoding="utf-8")
-    assert old in text, f"{old!r} not in {name}"
-    path.write_text(text.replace(old, new, 1), encoding="utf-8")
-    _git(repo, "add", "-A")
-    _git(repo, "commit", "-q", "-m", f"edit {name}")
-    # Move the base ref up to this commit and replay the branch's own commit on it.
-    branch_tip = _git(repo, "rev-parse", "HEAD~1").strip()
-    _git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
-    _ = branch_tip
 
 
 def lanes_and_pixi(repo: Path) -> tuple[list[preflight.Lane], dict]:
@@ -210,25 +212,23 @@ cmd = "pytest a/tests -q && pytest b/tests -q"
 
 
 @pytest.mark.parametrize(
-    ("task", "text", "expected"),
+    ("task", "lane_env", "text", "expected"),
     [
-        ("child", "pixi run --frozen -e pyforge-guild parent", True),  # depends-on closure
-        ("child", "pixi run --frozen -e pyforge-guild child", True),  # its own task
-        ("parent", "pixi run --frozen -e pyforge-guild child", False),  # the other direction
-        ("child", "# pixi run parent\necho hi", False),  # a comment is not a step
-        ("child", '${{ steps.py.outputs.cmd }} scripts/tool.py --scope repo 2>&1 | tee out', True),  # own command line
-        ("child", "python scripts/tool.py --list", False),  # same script, other flags
-        ("child", "python scripts/tool.py --scope other", False),  # same flag, other value
-        ("gate", 'pixi run -e s python scripts/gate.py \\\n --base "$BASE" --suites unit', True),  # dynamic value
-        ("gate", "pixi run -e other-env python scripts/gate.py --base x --suites unit", False),  # env must equal the lane's
-        ("two-step", "pytest a/tests -q", False),  # every `&&` segment must be there
-        ("two-step", "pytest a/tests -q\npytest b/tests -q", True),
+        ("child", INVOKING_ENV, "pixi run --frozen -e pyforge-guild parent", True),  # depends-on closure
+        ("child", INVOKING_ENV, "pixi run --frozen -e pyforge-guild child", True),  # its own task
+        ("parent", INVOKING_ENV, "pixi run --frozen -e pyforge-guild child", False),  # not the other direction
+        ("child", INVOKING_ENV, "# pixi run parent\necho hi", False),  # a comment is not a step
+        ("child", INVOKING_ENV, "${{ steps.py.outputs.cmd }} scripts/tool.py --scope repo 2>&1 | tee out", True),
+        ("child", INVOKING_ENV, "python scripts/tool.py --list", False),  # same script, other flags
+        ("child", INVOKING_ENV, "python scripts/tool.py --scope other", False),  # same flag, other value
+        ("gate", "s", 'pixi run -e s python scripts/gate.py \\\n --base "$BASE" --suites unit', True),  # dynamic value
+        ("gate", "s", "pixi run -e other python scripts/gate.py --base x --suites unit", False),  # env must equal the lane's
+        ("two-step", INVOKING_ENV, "pytest a/tests -q", False),  # every `&&` segment must be there
+        ("two-step", INVOKING_ENV, "pytest a/tests -q\npytest b/tests -q", True),
     ],
 )
-def test_step_matches_task_closure_or_own_command_line(task: str, text: str, expected: bool) -> None:
-    environment = "other-env-lane" if task == "gate" and "other-env" in text else INVOKING_ENV
-    lane = _L(task, "s" if task == "gate" and "-e s " in text else environment)
-    assert preflight_ci._step_matches(lane, text, PIXI_FIXTURE) is expected
+def test_step_matches_task_closure_or_own_command_line(task: str, lane_env: str, text: str, expected: bool) -> None:
+    assert preflight_ci._step_matches(_L(task, lane_env), text, PIXI_FIXTURE) is expected
 
 
 # ---------------------------------------------------------------------------
@@ -415,8 +415,11 @@ def test_a_short_origin_main_is_not_the_base(tmp_path: Path, all_tasks: set[str]
 
 
 def test_unrecognised_paths_ignore_runs_that_workflows_lane_and_names_the_rule(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path, {"docs/dreams/a-dream.md": "# dream\n"})
-    edit_workflow(repo, "cfe-regression-net.yml", "  pull_request:\n    paths:\n", "  pull_request:\n    paths-ignore:\n")
+    repo = make_repo(
+        tmp_path,
+        {"docs/dreams/a-dream.md": "# dream\n"},
+        edits=[("cfe-regression-net.yml", "  pull_request:\n    paths:\n", "  pull_request:\n    paths-ignore:\n")],
+    )
     selection = select(repo)
     assert "test-ci" in selected_tasks(selection)
     assert "paths-ignore" in verdict(selection, "test-ci").reason
@@ -424,12 +427,16 @@ def test_unrecognised_paths_ignore_runs_that_workflows_lane_and_names_the_rule(t
 
 
 def test_unrecognised_job_if_runs_that_job_s_lane_and_names_the_rule(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path, {"src/shared/packages/pyforge-warden/src/x.py": "x\n"})
-    edit_workflow(
-        repo,
-        "pyforge-station-tests.yml",
-        "if: needs.changes.outputs.marshal == 'true'",
-        "if: needs.changes.outputs.marshal == 'true' && github.actor != 'nobody'",
+    repo = make_repo(
+        tmp_path,
+        {"src/shared/packages/pyforge-warden/src/x.py": "x\n"},
+        edits=[
+            (
+                "pyforge-station-tests.yml",
+                "if: needs.changes.outputs.marshal == 'true'",
+                "if: needs.changes.outputs.marshal == 'true' && github.actor != 'nobody'",
+            )
+        ],
     )
     selection = select(repo)
     chosen = selected_tasks(selection)
@@ -439,12 +446,16 @@ def test_unrecognised_job_if_runs_that_job_s_lane_and_names_the_rule(tmp_path: P
 
 
 def test_unexpandable_matrix_selects_every_gate_and_names_the_rule(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path, {"src/shared/packages/pyforge-warden/src/x.py": "x\n"})
-    edit_workflow(
-        repo,
-        "coverage-gates.yml",
-        "${{ fromJSON(needs.changes.outputs.stations) }}",
-        "${{ fromJSON(github.event.inputs.stations) }}",
+    repo = make_repo(
+        tmp_path,
+        {"src/shared/packages/pyforge-warden/src/x.py": "x\n"},
+        edits=[
+            (
+                "coverage-gates.yml",
+                "${{ fromJSON(needs.changes.outputs.stations) }}",
+                "${{ fromJSON(github.event.inputs.stations) }}",
+            )
+        ],
     )
     selection = select(repo)
     assert GATES <= selected_tasks(selection)
@@ -452,8 +463,11 @@ def test_unexpandable_matrix_selects_every_gate_and_names_the_rule(tmp_path: Pat
 
 
 def test_a_failing_changes_step_runs_its_workflow_s_lanes(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path, {"src/shared/packages/pyforge-warden/src/x.py": "x\n"})
-    edit_workflow(repo, "pyforge-station-tests.yml", "set -euo pipefail", "exit 3")
+    repo = make_repo(
+        tmp_path,
+        {"src/shared/packages/pyforge-warden/src/x.py": "x\n"},
+        edits=[("pyforge-station-tests.yml", "set -euo pipefail", "exit 3")],
+    )
     selection = select(repo)
     station_lanes = {"pyforge-core-test", "pyforge-testing-kit-test"} | {suite(s) for s in STATIONS}
     assert station_lanes <= selected_tasks(selection)
@@ -464,12 +478,16 @@ def test_a_failing_changes_step_runs_its_workflow_s_lanes(tmp_path: Path) -> Non
 
 
 def test_unreadable_changes_output_runs_its_workflow_s_lanes(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path, {"src/shared/packages/pyforge-warden/src/x.py": "x\n"})
-    edit_workflow(
-        repo,
-        "pyforge-station-tests.yml",
-        'echo "core=$CORE_CHANGED" >> "$GITHUB_OUTPUT"',
-        'echo "not an output line" >> "$GITHUB_OUTPUT"',
+    repo = make_repo(
+        tmp_path,
+        {"src/shared/packages/pyforge-warden/src/x.py": "x\n"},
+        edits=[
+            (
+                "pyforge-station-tests.yml",
+                'echo "core=$CORE_CHANGED" >> "$GITHUB_OUTPUT"',
+                'echo "not an output line" >> "$GITHUB_OUTPUT"',
+            )
+        ],
     )
     selection = select(repo)
     assert suite("atlas") in selected_tasks(selection)
@@ -477,8 +495,11 @@ def test_unreadable_changes_output_runs_its_workflow_s_lanes(tmp_path: Path) -> 
 
 
 def test_a_job_output_that_is_not_a_run_step_output_is_unevaluable(tmp_path: Path) -> None:
-    repo = make_repo(tmp_path, {"src/shared/packages/pyforge-warden/src/x.py": "x\n"})
-    edit_workflow(repo, "coverage-gates.yml", "stations: ${{ steps.filter.outputs.stations }}", "stations: ${{ steps.nope.outputs.stations }}")
+    repo = make_repo(
+        tmp_path,
+        {"src/shared/packages/pyforge-warden/src/x.py": "x\n"},
+        edits=[("coverage-gates.yml", "stations: ${{ steps.filter.outputs.stations }}", "stations: ${{ steps.nope.outputs.stations }}")],
+    )
     selection = select(repo)
     assert GATES <= selected_tasks(selection)
     assert "not a run step's output" in verdict(selection, gate("atlas")).reason
@@ -506,7 +527,7 @@ def _dirty_unstaged(repo: Path) -> None:
 
 
 @pytest.mark.parametrize("dirty", [_dirty_untracked, _dirty_staged, _dirty_unstaged], ids=["untracked", "staged", "unstaged"])
-def test_dirty_steward_file_adds_the_steward_lanes(tmp_path: Path, dirty) -> None:  # type: ignore[no-untyped-def]
+def test_dirty_steward_file_adds_the_steward_lanes(tmp_path: Path, dirty: Callable[[Path], None]) -> None:
     repo = make_repo(tmp_path, MARSHAL_ONLY)
     clean = selected_tasks(select(repo))
     assert not clean & STEWARD_LANES
