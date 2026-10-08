@@ -40,6 +40,10 @@ pages:
     quadrant: how-to
     owner: fleet
     kind: authored
+  - path: how-to/deploy-the-docs-site-to-github-enterprise-pages.md
+    quadrant: how-to
+    owner: herald
+    kind: authored
   - path: how-to/driving-a-pyforge-station-backlog.md
     quadrant: how-to
     owner: fleet
