@@ -294,13 +294,16 @@ def test_check_flags_each_problem_predicate(build_mod, tmp_path: Path, capsys, m
             "external origin 'fonts.gstatic.com'",
         ),
         (
-            lambda od: (od / "assets/planted.css").write_text(
-                "@import url('https://fonts.googleapis.com/css2?family=Archivo');",
-                encoding="utf-8",
-            )
-            or (od / "index.html").write_text(
-                (od / "index.html").read_text(encoding="utf-8") + '<link rel="stylesheet" href="assets/planted.css">',
-                encoding="utf-8",
+            lambda od: (
+                (od / "assets/planted.css").write_text(
+                    "@import url('https://fonts.googleapis.com/css2?family=Archivo');",
+                    encoding="utf-8",
+                )
+                or (od / "index.html").write_text(
+                    (od / "index.html").read_text(encoding="utf-8")
+                    + '<link rel="stylesheet" href="assets/planted.css">',
+                    encoding="utf-8",
+                )
             ),
             "external origin 'fonts.googleapis.com'",
         ),
@@ -345,7 +348,7 @@ def test_rewrite_google_font_links_inserts_vendored_stylesheet(build_mod):
     )
     out = build_mod.rewrite_google_font_links(raw, "../assets/fonts/fonts.css")
     assert "fonts.googleapis.com" not in out
-    assert '../assets/fonts/fonts.css' in out
+    assert "../assets/fonts/fonts.css" in out
 
 
 def test_check_skips_family_views_when_executive_summary_is_none(build_mod, tmp_path: Path, capsys):

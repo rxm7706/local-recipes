@@ -45,9 +45,7 @@ def test_docsite_build_has_zero_external_origins(tmp_path: Path) -> None:
     assert len(html_pages) >= 45, f"expected at least 45 HTML pages, got {len(html_pages)}"
 
     findings = twins.scan_tree(out)
-    assert not findings, "\n".join(
-        f"{f.path.relative_to(out)}: {f.origin}" for f in findings[:20]
-    )
+    assert not findings, "\n".join(f"{f.path.relative_to(out)}: {f.origin}" for f in findings[:20])
 
 
 def test_vendored_font_files_match_readme_sha256() -> None:
