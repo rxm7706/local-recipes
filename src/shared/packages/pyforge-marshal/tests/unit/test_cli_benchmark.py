@@ -160,3 +160,44 @@ def test_collect_leg_from_harness_reads_review_cycle(tmp_path):
     assert leg.story_weighted_tokens == 150
     assert leg.layer_savings is not None
     assert leg.layer_savings.wire_compression_saved == 50
+
+
+def test_compare_per_layer_from_json_files(tmp_path, monkeypatch):
+    baseline_path = tmp_path / "baseline.json"
+    layer_map_path = tmp_path / "layers.json"
+    baseline_path.write_text(
+        json.dumps(_leg_dict(layers_mode="off", tokens=5000) | {"prompt_cache_hit_rate": 0.2}),
+        encoding="utf-8",
+    )
+    layer_specs = {}
+    for layer in ("wire", "output", "structure-graph", "derived-context", "planning-graph"):
+        leg_path = tmp_path / f"{layer}.json"
+        leg_path.write_text(
+            json.dumps(
+                _leg_dict(layers_mode="on", tokens=4000, savings={"wire_compression_saved": 100})
+                | {"prompt_cache_hit_rate": 0.4}
+            ),
+            encoding="utf-8",
+        )
+        layer_specs[layer] = str(leg_path)
+    layer_map_path.write_text(json.dumps(layer_specs), encoding="utf-8")
+    out_path = tmp_path / "per-layer.json"
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "_bmad-output/projects/pyforge-marshal/planning-artifacts").mkdir(parents=True)
+
+    args = argparse.Namespace(
+        project="pyforge-marshal",
+        off=str(baseline_path),
+        on="unused-on.json",
+        home=None,
+        story=bench.PINNED_BENCHMARK_STORY_KEY,
+        output=str(out_path),
+        format="json",
+        per_layer=True,
+        layer_legs=str(layer_map_path),
+    )
+    assert benchmark_cli.run_benchmark_compare(args) == EXIT_OK
+    artifact = json.loads(out_path.read_text(encoding="utf-8"))
+    assert artifact["schema"] == bench.PER_LAYER_ARTIFACT_SCHEMA
+    assert len(artifact["layer_legs"]) == 5
+    assert all("prompt_cache_hit_rate_isolated" in row for row in artifact["layer_legs"])

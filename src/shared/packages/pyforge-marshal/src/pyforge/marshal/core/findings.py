@@ -2148,6 +2148,9 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-BENCH-002",
         "MRS-BENCH-003",
         "MRS-BENCH-004",
+        # Story 46.9 (per-layer benchmark legs, CAP-196): 005 ERROR invalid
+        # --per-layer / --layer-legs pairing.
+        "MRS-BENCH-005",
         # Story 44.1 (marshal watch ports the operator ritual): 001 ERROR
         # (bmad-loop status/list failed -- no delta fabricated); 002 ERROR
         # (no active run / invalid scope); 003 WARN (git probe failed);

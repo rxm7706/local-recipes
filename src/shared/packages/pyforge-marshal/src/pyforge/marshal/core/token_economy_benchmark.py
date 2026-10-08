@@ -24,6 +24,8 @@ from ..ports.harness import LayerSavings
 from . import policy
 
 LEDGER_KEY = "28-5-the-pinned-wrapped-vs-unwrapped-benchmark"
+LEDGER_KEY_PER_LAYER = "46-9-benchmark-legs-run-per-layer-with-cache-hit-rates"
+PER_LAYER_ARTIFACT_SCHEMA = "marshal-token-economy-benchmark-per-layer/v1"
 # Reuses the adapter conformance smoke story — a minimal, station-owned pin
 # that already exists in every loop home's harness profile registry.
 PINNED_BENCHMARK_STORY_KEY = "1-1-marshal-conformance-smoke"
@@ -51,6 +53,22 @@ class LayerComparisonRow(TypedDict, total=False):
     savings_after: object
 
 
+class PerLayerLegRow(TypedDict, total=False):
+    """One isolated-layer leg vs the shared baseline (Story 46.9, CAP-196)."""
+
+    layer: str
+    void: bool
+    equivalence_passed: bool
+    equivalence_reasons: list[str]
+    weighted_tokens_baseline: int | None
+    weighted_tokens_isolated: int | None
+    weighted_tokens_delta: int | None
+    prompt_cache_hit_rate_baseline: float | None
+    prompt_cache_hit_rate_isolated: float | None
+    story_cost_estimate_usd_baseline: float | None
+    story_cost_estimate_usd_isolated: float | None
+
+
 @dataclass(frozen=True)
 class BenchmarkLegRecord:
     """One benchmark leg's recorded facts — off or on."""
@@ -70,12 +88,40 @@ class BenchmarkLegRecord:
     # Story 28.10 (CAP-11): advisory dollar estimates when catalog declared
     story_cost_estimate_usd: float | None = None
     layer_savings_usd: Mapping[str, float] | None = None
+    # Story 46.9 (CAP-196): prompt-cache hit rate for this leg's story tokens
+    prompt_cache_hit_rate: float | None = None
 
 
 @dataclass(frozen=True)
 class EquivalenceResult:
     passed: bool
     reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PerLayerBenchmarkArtifact:
+    """Per-layer leg comparison artifact (Story 46.9, CAP-196)."""
+
+    schema: str
+    ledger_key: str
+    pinned_story_key: str
+    generated_at: str
+    policy_digest: str | None
+    environment: Mapping[str, object]
+    baseline_leg: BenchmarkLegRecord
+    layer_legs: tuple[PerLayerLegRow, ...]
+
+    def to_json_dict(self) -> dict[str, object]:
+        return {
+            "schema": self.schema,
+            "ledger_key": self.ledger_key,
+            "pinned_story_key": self.pinned_story_key,
+            "generated_at": self.generated_at,
+            "policy_digest": self.policy_digest,
+            "environment": dict(self.environment),
+            "baseline_leg": _leg_to_dict(self.baseline_leg),
+            "layer_legs": list(self.layer_legs),
+        }
 
 
 @dataclass(frozen=True)
@@ -135,7 +181,98 @@ def _leg_to_dict(leg: BenchmarkLegRecord) -> dict[str, object]:
         payload["story_cost_estimate_usd"] = leg.story_cost_estimate_usd
     if leg.layer_savings_usd is not None:
         payload["layer_savings_usd"] = dict(leg.layer_savings_usd)
+    if leg.prompt_cache_hit_rate is not None:
+        payload["prompt_cache_hit_rate"] = leg.prompt_cache_hit_rate
     return payload
+
+
+def prompt_cache_hit_rate(
+    *,
+    input_tokens: int,
+    cache_read_tokens: int,
+    cache_creation_tokens: int = 0,
+) -> float | None:
+    """Fraction of billed prompt tokens served from cache (0..1), or None when unknown."""
+    if input_tokens < 0 or cache_read_tokens < 0 or cache_creation_tokens < 0:
+        return None
+    denominator = input_tokens + cache_read_tokens + cache_creation_tokens
+    if denominator <= 0:
+        return None
+    rate = cache_read_tokens / denominator
+    if rate < 0 or rate > 1:
+        return None
+    return round(rate, 6)
+
+
+def context_layers_only_layer(layer: str, *, aggressiveness: str = "medium") -> dict[str, dict[str, object]]:
+    """Resolved ``[context]`` block with exactly one layer enabled (Story 46.9)."""
+    if layer not in policy.CONTEXT_LAYER_NAMES:
+        raise ValueError(f"unknown context layer: {layer!r}")
+    return {
+        name: {"enabled": name == layer, "aggressiveness": aggressiveness} for name in policy.CONTEXT_LAYER_NAMES
+    }
+
+
+def build_per_layer_leg_row(
+    *,
+    layer: str,
+    baseline: BenchmarkLegRecord,
+    isolated: BenchmarkLegRecord,
+) -> PerLayerLegRow:
+    """Compare one isolated-layer leg to the shared baseline; void only this leg on mismatch."""
+    equivalence = check_equivalence(baseline, isolated)
+    delta: int | None = None
+    if baseline.story_weighted_tokens is not None and isolated.story_weighted_tokens is not None:
+        delta = isolated.story_weighted_tokens - baseline.story_weighted_tokens
+    row: PerLayerLegRow = {
+        "layer": layer,
+        "void": not equivalence.passed,
+        "equivalence_passed": equivalence.passed,
+        "equivalence_reasons": list(equivalence.reasons),
+        "weighted_tokens_baseline": baseline.story_weighted_tokens,
+        "weighted_tokens_isolated": isolated.story_weighted_tokens,
+        "weighted_tokens_delta": delta if equivalence.passed else None,
+        "prompt_cache_hit_rate_baseline": baseline.prompt_cache_hit_rate,
+        "prompt_cache_hit_rate_isolated": isolated.prompt_cache_hit_rate,
+        "story_cost_estimate_usd_baseline": baseline.story_cost_estimate_usd,
+        "story_cost_estimate_usd_isolated": isolated.story_cost_estimate_usd,
+    }
+    return row
+
+
+def build_per_layer_artifact(
+    *,
+    baseline_leg: BenchmarkLegRecord,
+    isolated_legs: Mapping[str, BenchmarkLegRecord],
+    environment: Mapping[str, object],
+    generated_at: datetime | None = None,
+    policy_digest: str | None = None,
+) -> PerLayerBenchmarkArtifact:
+    """Assemble the per-layer leg artifact — one row per context layer (Story 46.9)."""
+    missing = [name for name in policy.CONTEXT_LAYER_NAMES if name not in isolated_legs]
+    if missing:
+        raise ValueError(f"missing isolated leg for layer(s): {', '.join(missing)}")
+    extra = [name for name in isolated_legs if name not in policy.CONTEXT_LAYER_NAMES]
+    if extra:
+        raise ValueError(f"unexpected layer key(s): {', '.join(extra)}")
+    rows = tuple(
+        build_per_layer_leg_row(layer=layer, baseline=baseline_leg, isolated=isolated_legs[layer])
+        for layer in policy.CONTEXT_LAYER_NAMES
+    )
+    instant = generated_at or datetime.now(tz=UTC)
+    digest = policy_digest or baseline_leg.policy_digest
+    for leg in isolated_legs.values():
+        digest = digest or leg.policy_digest
+    return PerLayerBenchmarkArtifact(
+        schema=PER_LAYER_ARTIFACT_SCHEMA,
+        ledger_key=LEDGER_KEY_PER_LAYER,
+        pinned_story_key=baseline_leg.story_key,
+        generated_at=instant.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        policy_digest=digest,
+        environment=environment,
+        baseline_leg=baseline_leg,
+        layer_legs=rows,
+    )
 
 
 def digest_context_layers(context_layers: Mapping[str, Mapping[str, object]]) -> str:
@@ -283,6 +420,7 @@ def leg_from_mapping(payload: Mapping[str, object]) -> BenchmarkLegRecord:
         policy_digest=_optional_str(payload.get("policy_digest")),
         story_cost_estimate_usd=_optional_float(payload.get("story_cost_estimate_usd")),
         layer_savings_usd=_optional_float_mapping(payload.get("layer_savings_usd")),
+        prompt_cache_hit_rate=_optional_float(payload.get("prompt_cache_hit_rate")),
     )
 
 
