@@ -2,9 +2,9 @@
 title: 'Register GraphStore as CAP-18 plugins (Story 4.1)'
 type: 'feature'
 created: '2026-08-24'
-status: 'done'
+status: 'in-review'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - src/shared/packages/pyforge-core/src/pyforge/core/hooks.py
   - src/shared/packages/pyforge-core/README.md
