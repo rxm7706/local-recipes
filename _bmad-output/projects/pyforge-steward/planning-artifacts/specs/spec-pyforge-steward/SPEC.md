@@ -100,6 +100,8 @@ surface:
   - scripts/platform-golden-path-promotion.sh
   - scripts/platform-deploy-verify-promotion.py
   - scripts/platform-ci-local.sh
+  - scripts/sbom_laptop_gate.py
+  - tests/scripts/test_sbom_laptop_gate.py
   - scripts/pixi_env_matrix.py
   - src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-bmad-suite-lifecycle/adoption-register.md

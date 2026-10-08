@@ -1563,6 +1563,16 @@ depends-on = [
   { task = "pyforge-warden-coverage-gate", environment = "pyforge-warden" },
 ]
 
+[feature.guild-tasks.tasks.sbom-laptop-gate]
+description = "Story 67.2 (fnd:CAP-13): prove the laptop needs nothing beyond pyforge-foundry-full — lint-types, every station suite, platform bring-up smoke (manifest policy subset + requirements retirement guard), then a pixi.lock channel audit and import probes. Never -e local-recipes. Exit 0 pass / 1 findings / 2 could-not-run (docs/reference/judgement-vocabulary.md)."
+cmd = "python scripts/sbom_laptop_gate.py"
+depends-on = [
+  "lint-types",
+  "pyforge-station-tests",
+  "platform-ci-test-requirements-check",
+  "platform-policy-suite-check",
+]
+
 [feature.guild-tasks.tasks.pr-preflight]
 description = """Run locally, before pushing, everything a PR to rxm7706/local-recipes actually gates on. One command, so a green local run means a green CI run.
 

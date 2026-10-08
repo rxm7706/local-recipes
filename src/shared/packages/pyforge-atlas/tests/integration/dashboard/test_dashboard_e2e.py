@@ -44,9 +44,7 @@ def wait_for_server(port: int, proc: multiprocessing.Process, timeout: float = 6
     raise RuntimeError(f"dashboard server did not bind port {port} within {timeout:.0f}s")
 
 
-def run_vizro_server(
-    port: int, data_root: str, stamp: str, now: int, sprint_path: str, epics_path: str, specs_dir: str
-) -> None:
+def run_vizro_server(port: int, data_root: str, stamp: str, now: int, sprint_path: str, epics_path: str) -> None:
     """Target function for background server process."""
     from vizro import Vizro
 
@@ -59,7 +57,6 @@ def run_vizro_server(
         now=now,
         sprint_status_path=sprint_path,
         epics_path=epics_path,
-        specs_dir=specs_dir,
         reset=True,
     )
     Vizro().build(dashboard).run(port=port, debug=False, use_reloader=False)
@@ -87,7 +84,6 @@ def dashboard_server(bmad_fixture, tmp_path_factory):
     # 2. Extract paths from the BMAD fixture
     sprint_path = bmad_fixture["sprint"]
     epics_path = bmad_fixture["epics"]
-    specs_dir = bmad_fixture["specs"]
 
     # 3. Find a free port
     port = get_free_port()
@@ -101,7 +97,7 @@ def dashboard_server(bmad_fixture, tmp_path_factory):
     # hidden even after Story 27.5 pinned static page data (DW-atlas-27-3-1).
     proc = multiprocessing.get_context("spawn").Process(
         target=run_vizro_server,
-        args=(port, str(data_root), stamp, now, sprint_path, epics_path, specs_dir),
+        args=(port, str(data_root), stamp, now, sprint_path, epics_path),
     )
     proc.start()
 

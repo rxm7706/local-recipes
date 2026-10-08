@@ -692,7 +692,6 @@ def _factory_page(
     build_stamp: str,
     sprint_status_path: str | Path | None,
     epics_path: str | Path | None,
-    specs_dir: str | Path | None,
 ) -> vm.Page:
     """factory-status — AD-17 build stamp (in a Card AND row 0 of the table) + the BMAD
     artifact-state table."""
@@ -703,7 +702,6 @@ def _factory_page(
             build_stamp=build_stamp,
             sprint_status_path=sprint_status_path,
             epics_path=epics_path,
-            specs_dir=specs_dir,
         )
 
     data_manager[key] = _loader
@@ -712,8 +710,8 @@ def _factory_page(
         text=(
             f"### Factory Status\n\n"
             f"**Build timestamp (AD-17):** `{build_stamp}`\n\n"
-            "Live BMAD artifact state — sprint-status.yaml `development_status`, "
-            "epics.md frontmatter, and each `docs/specs/*.md` status."
+            "Live BMAD artifact state — sprint-status.yaml `development_status` and "
+            "epics.md frontmatter status."
         ),
     )
     # AG Grid infers each column's cellDataType from row 0 alone — and row 0's "status" is
@@ -773,7 +771,6 @@ def build_dashboard(
     now: int | None = None,
     sprint_status_path: str | Path | None = None,
     epics_path: str | Path | None = None,
-    specs_dir: str | Path | None = None,
     reset: bool = True,
 ) -> vm.Dashboard:
     """Assemble the BSL-driven Vizro Dashboard object (OFFLINE — no server, no live data).
@@ -1039,7 +1036,6 @@ def build_dashboard(
             build_stamp=build_stamp,
             sprint_status_path=sprint_status_path,
             epics_path=epics_path,
-            specs_dir=specs_dir,
         ),
     ]
     return LandmarkDashboard(id=DASHBOARD_ID, title=DASHBOARD_TITLE, pages=pages)

@@ -261,7 +261,7 @@ development_status:
   61-4-signed-outbound-slice: done
   61-5-quarantine-mint-then-reject: done
   62-1-the-catalog-names-eight-measures-and-their-states: done
-  62-2-add-switch-and-archive-without-a-rewrite: backlog
+  62-2-add-switch-and-archive-without-a-rewrite: done
   62-3-consumers-cite-on-rows-only: done
   63-1-the-pyforge-guild-feature-and-environment-exist-and-the-guild-tasks-live-in-it: done
   63-2-every-agent-surface-names-pyforge-guild-as-the-session-default: done
@@ -277,7 +277,7 @@ development_status:
   66-1-lint-and-types-gate-the-ten-packages-locally-and-on-the-runners-alike: done
   66-2-the-pre-commit-set-attribution-lines-and-un-preflighted-pushes-are-refused-by-hooks: done
   67-1-the-sbom-composes-the-laptop-bill-of-materials-on-three-platforms-with-postgresql-17-held: done
-  67-2-one-laptop-gate-proves-the-laptop-needs-nothing-beyond-the-sbom: backlog
+  67-2-one-laptop-gate-proves-the-laptop-needs-nothing-beyond-the-sbom: done
   67-3-every-gap-and-every-fat-only-pin-has-a-disposition-and-an-owner: backlog
   67-4-upstream-tickets-for-the-gaps-that-need-one: blocked
   67-5-the-estate-points-at-the-sbom: backlog
@@ -460,7 +460,7 @@ development_status:
   epic-60-retrospective: optional
   epic-61: done
   epic-61-retrospective: optional
-  epic-62: in-progress
+  epic-62: done
   epic-62-retrospective: optional
   epic-63: done
   epic-63-retrospective: optional
