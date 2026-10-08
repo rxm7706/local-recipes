@@ -95,6 +95,107 @@ def test_find_current_deck_marp_missing_raises() -> None:
         pptx_native.find_current_deck_marp("missing", Path("/nonexistent/root"))
 
 
+def test_multiline_note_and_two_notes_joined(tmp_path: Path) -> None:
+    marp_dir = tmp_path / "marp"
+    marp_dir.mkdir()
+    text = """# Slide
+
+<!--
+Line one.
+Line two.
+-->
+
+<!-- second note -->
+
+"""
+    slides = pptx_native.parse_marp_deck(text, marp_dir=marp_dir)
+    assert len(slides) == 1
+    assert "Line one.\nLine two." in slides[0].notes
+    assert "second note" in slides[0].notes
+    assert "\n\n" in slides[0].notes
+
+
+def test_directive_comments_are_not_notes(tmp_path: Path) -> None:
+    marp_dir = tmp_path / "marp"
+    marp_dir.mkdir()
+    text = """<!-- _class: lead -->
+
+# Title
+
+<!-- paginate: false -->
+"""
+    slides = pptx_native.parse_marp_deck(text, marp_dir=marp_dir)
+    assert slides[0].notes == ""
+
+
+def test_todo_comment_is_a_note(tmp_path: Path) -> None:
+    marp_dir = tmp_path / "marp"
+    marp_dir.mkdir()
+    text = """# T
+
+<!-- todo: fix the chart -->
+"""
+    slides = pptx_native.parse_marp_deck(text, marp_dir=marp_dir)
+    assert slides[0].notes == "todo: fix the chart"
+
+
+def test_note_with_pipe_and_dash_stays_in_notes(tmp_path: Path) -> None:
+    marp_dir = tmp_path / "marp"
+    marp_dir.mkdir()
+    text = """# T
+
+<!-- a | b
+- not a bullet -->
+"""
+    slides = pptx_native.parse_marp_deck(text, marp_dir=marp_dir)
+    assert "|" in slides[0].notes
+    assert slides[0].bullets == ()
+    assert not any(isinstance(b, pptx_native.TableBlock) for b in slides[0].blocks)
+
+
+def test_body_blocks_all_kinds_in_order(tmp_path: Path) -> None:
+    marp_dir = tmp_path / "marp"
+    marp_dir.mkdir()
+    text = """###### KICKER
+
+## Real title
+
+Intro paragraph line.
+
+1. first
+2. second
+
+| A | B |
+|---|---|
+| 1 | 2 |
+
+| C | D |
+|---|---|
+| 3 | 4 |
+
+```
+code line
+```
+
+> quoted text
+
+<div>Inline HTML</div>
+"""
+    slides = pptx_native.parse_marp_deck(text, marp_dir=marp_dir)
+    slide = slides[0]
+    assert slide.title == "KICKER"
+    kinds = [type(b).__name__ for b in slide.blocks]
+    assert kinds[0] == "HeadingBlock"
+    assert kinds[1] == "ParagraphBlock"
+    assert kinds[2] == "NumberedListBlock"
+    assert kinds[3] == "TableBlock"
+    assert kinds[4] == "TableBlock"
+    assert kinds[5] == "CodeBlock"
+    assert kinds[6] == "QuoteBlock"
+    assert kinds[7] == "ParagraphBlock"
+    assert slide.blocks[7].text == "Inline HTML"
+
+
 def test_run_node_driver_refuses_missing_node(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setattr(pptx_native.shutil, "which", lambda _name: None)
     model = tmp_path / "model.json"

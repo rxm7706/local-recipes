@@ -2,7 +2,7 @@
 title: '32.2: The native pptx export carries every speaker note and every text block'
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
+status: 'in-progress'
 difficulty: 'medium'
 baseline_revision: '063fecf553893b0b6d63524558b74ba65674bb54'
 review_loop_iteration: 0
