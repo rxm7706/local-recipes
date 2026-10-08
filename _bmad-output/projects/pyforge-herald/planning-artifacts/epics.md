@@ -987,7 +987,7 @@ So that the shelf keeps one registry, doctor's map, and reordering a page takes 
 **When** `pixi run -e site docs-site-build` runs (it regenerates the sidebar first)
 **Then** the built sidebar lists every `map.yaml` page exactly once, grouped by quadrant, in `map.yaml` order; swapping two entries in `map.yaml` alone swaps them in the built sidebar; no page under `docs/` gains a `sidebar:` key
 **And** `docs-currency-check` and `docs-map-hygiene-check` report no new finding; `test_docs_site_sidebar.py` passes in `pyforge-herald-test`
-**Status:** backlog
+**Status:** done
 
 ### Story 27.4: The docs validators gate every PR
 
