@@ -2,7 +2,7 @@
 title: "71.4: A station's coverage gate reuses its own suite's run"
 type: 'feature'
 created: '2026-09-27'
-status: 'in-review'
+status: 'done'
 baseline_revision: '2d4fb7a1aa80c20ace4231f5a98a62bc15e337de'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -83,3 +83,41 @@ Ledger status at mint: `backlog`.
 **Manual checks:**
 - `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_coverage_gates_ci_driver.py -q` — expected: pass (`--plan`).
 - On a marshal-only branch, `pixi run -e pyforge-guild pr-preflight` — expected: the journal shows no second pass over marshal's unit suite.
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 7 findings — high 1, medium 0, low 0, false 0, maybe-false 6
+- findings:
+  - `[high]` `[patch]` `--plan` stdout polluted by format-only diagnostic line, breaking JSON parse in preflight — suppressed format-only logging on the plan path (`quiet_format_only`); test added in `tests/scripts/test_coverage_gates_ci_driver.py`.
+  - `[maybe-false]` `[defer]` `touched_stations` in plan JSON can list stations with no run under `COVERAGE_GATES_STATIONS` — misleading but unused by reduction; defer unless operators read plan directly.
+  - `[maybe-false]` `[defer]` scripts import scan only top-level `scripts/*.py` stems — extend in a follow-up if a station test imports nested script modules without reduction block.
+  - `[maybe-false]` `[defer]` relative imports in unit/meta block reduction conservatively — safe whole-run fallback; revisit if false positives appear.
+  - `[maybe-false]` `[reject]` JSON parse fragility beyond format-only line — addressed by primary fix; no second parser needed now.
+  - `[maybe-false]` `[defer]` reduction subtracts only `unit` plan entry — current pixi gate tasks pass `--suites unit` only; guard if integration gating is added to preflight.
+  - `[maybe-false]` `[defer]` matrix rows (shared-surface-only, plan failure, alternate markers, marshal journal e2e) not all automated — partition AC covered on fixtures; manual preflight journal check remains in Verification.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Coverage driver `--plan` emits JSON for gate runs; preflight shrinks `pyforge-<s>-test` when `pyforge-<s>-coverage-gate` is also selected and the plan includes that station's unit suite, with whole-run fallbacks for mason's two-pytest task, scripts imports in unit/meta, and unparseable plans.
+
+**Files changed:**
+- `scripts/coverage_gates_ci.py` — `build_coverage_plan`, `--plan`, quiet format-only on plan path
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py` — derive complement pytest command and gate plan reader
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — apply suite overrides and journal fields
+- `tests/scripts/test_coverage_gates_ci_driver.py` — `--plan` contracts
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` — collect-only partition and skip paths
+- Governance memlogs on `spec-pyforge-steward` and `spec-coverage-gate-independence`
+
+**Review:** 1 high patch applied (plan stdout JSON purity); 5 items deferred as maybe-false/low-risk gaps; 1 rejected as redundant after patch.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2195 passed, 5 skipped
+- `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_coverage_gates_ci_driver.py -q` — 14 passed
+- `python scripts/spec_surface_reconcile.py` — OK
+
+**Residual risks:** Manual marshal-only `pr-preflight` journal check not run this session; scripts import scan is top-level-module only.

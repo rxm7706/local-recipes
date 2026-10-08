@@ -107,7 +107,7 @@ def _git_show(rev: str, path: str) -> str | None:
     return proc.stdout if proc.returncode == 0 else None
 
 
-def _drop_format_only(paths: list[str], base: str, head: str) -> list[str]:
+def _drop_format_only(paths: list[str], base: str, head: str, *, quiet: bool = False) -> list[str]:
     """Remove station source files whose AST did not change between ``base``
     and ``head`` (steward Story 66.1, 2026-09-20): a formatting-only edit is
     not a touched module, so the floor measures code changes, not the
@@ -119,7 +119,7 @@ def _drop_format_only(paths: list[str], base: str, head: str) -> list[str]:
     candidates = [p for p in paths if p.endswith(".py") and "/src/shared/packages/" in f"/{p}"]
     pairs = {p: (_git_show(merge_base, p), _git_show(head, p)) for p in candidates}
     skipped = format_only_paths(pairs)
-    if skipped:
+    if skipped and not quiet:
         print(f"format-only (AST unchanged), not counted as touched: {len(skipped)} file(s)", flush=True)
     return [p for p in paths if p not in skipped]
 
@@ -271,7 +271,9 @@ def _evaluate(
 GATE_MARKER_EXPR = "not slow"
 
 
-def _resolve_changed_paths(base: str, head: str, paths_file: str | None) -> list[str]:
+def _resolve_changed_paths(
+    base: str, head: str, paths_file: str | None, *, quiet_format_only: bool = False
+) -> list[str]:
     if paths_file:
         return [
             line.strip()
@@ -280,7 +282,7 @@ def _resolve_changed_paths(base: str, head: str, paths_file: str | None) -> list
         ]
     normalized = _normalize_base(base)
     paths = _git_diff_names(normalized, head)
-    return _drop_format_only(paths, normalized, head)
+    return _drop_format_only(paths, normalized, head, quiet=quiet_format_only)
 
 
 def build_coverage_plan(
@@ -292,7 +294,7 @@ def build_coverage_plan(
     coverage_gates_stations: str | None = None,
 ) -> dict[str, object]:
     """JSON-serializable plan of pytest runs the driver would make (Story 71.4)."""
-    paths = _resolve_changed_paths(base, head, paths_file)
+    paths = _resolve_changed_paths(base, head, paths_file, quiet_format_only=True)
     stations = sorted(touched_stations(paths))
     allow_raw = (coverage_gates_stations or os.environ.get("COVERAGE_GATES_STATIONS", "")).strip()
     allow = {s.strip() for s in allow_raw.split(",") if s.strip()} if allow_raw else None
