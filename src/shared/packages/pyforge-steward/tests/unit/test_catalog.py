@@ -1265,6 +1265,18 @@ def test_publish_refuses_wielded_suite_module(tmp_path: Path) -> None:
     assert result.findings[0].code == "publish-certified-wielded"
 
 
+def test_publish_installs_review_record_when_path_is_not_canonical(tmp_path: Path) -> None:
+    engine = _estate_engine(tmp_path, "modules: []\n")
+    catalog_dir = tmp_path / "catalog"
+    review = _write_review(tmp_path / "elsewhere" / "reviews", "off-path-mod")
+    listing = _write_listing_draft(tmp_path, "off-path-mod")
+    assert engine.publish(listing, review).ok
+    canonical = catalog_dir / "registry" / "reviews" / "off-path-mod.yaml"
+    assert canonical.is_file()
+    assert engine.render(write=True).ok
+    assert engine.check().ok
+
+
 def test_cli_catalog_publish_dry_run(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     catalog_dir = _write_catalog(
         tmp_path,

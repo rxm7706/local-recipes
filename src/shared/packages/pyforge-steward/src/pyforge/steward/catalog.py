@@ -1,6 +1,6 @@
 """Steward's ``catalog`` duty — the estate BMAD catalog: config names backends
-and sources (Story 60.1, spec-self-hosted-bmad-marketplace CAP-1 /
-spec-pyforge-steward CAP-117).
+and sources (Story 60.1, CAP-117) and publish + steward review records
+(Story 60.2, spec-self-hosted-bmad-marketplace CAP-2 / CAP-118).
 
 Git is the edit store: ``src/shared/packages/pyforge-steward/catalog/`` is
 tracked in this repo and is where listings are edited. ``catalog.yaml`` there
@@ -204,6 +204,21 @@ def _load_listing_draft(listing_path: Path) -> dict[str, Any]:
     if not isinstance(repository, str) or not repository.strip():
         raise CatalogConfigError(f"{listing_path}: listing.repository is required for a module publish")
     return dict(row)
+
+
+def _estate_registry_header(registry_path: Path) -> str:
+    """Leading comment/blank lines in ``registry/estate.yaml`` preserved on publish."""
+    if not registry_path.is_file():
+        return ""
+    header: list[str] = []
+    for line in registry_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("#") or not line.strip():
+            header.append(line)
+        else:
+            break
+    if not header:
+        return ""
+    return "\n".join(header) + "\n"
 
 
 def _normalize_state(document_path: Path, raw: object, where: str) -> str:
@@ -989,6 +1004,11 @@ class CatalogEngine:
         if dry_run:
             return PublishResult(findings=(), module_name=name, wrote_estate=False)
 
+        canonical_review = self.catalog_dir / DEFAULT_REVIEWS_DIR / f"{name}.yaml"
+        canonical_review.parent.mkdir(parents=True, exist_ok=True)
+        if review_path.resolve() != canonical_review.resolve():
+            canonical_review.write_text(review_path.read_text(encoding="utf-8"), encoding="utf-8")
+
         try:
             document = _load_yaml_mapping(registry_path, what="estate listings")
         except CatalogConfigError as exc:
@@ -1015,8 +1035,9 @@ class CatalogEngine:
         document["source"] = "estate-listings"
         document["modules"] = new_modules
         registry_path.parent.mkdir(parents=True, exist_ok=True)
+        header = _estate_registry_header(registry_path)
         registry_path.write_text(
-            yaml.safe_dump(document, sort_keys=False, allow_unicode=True),
+            header + yaml.safe_dump(document, sort_keys=False, allow_unicode=True),
             encoding="utf-8",
         )
         return PublishResult(findings=(), module_name=name, wrote_estate=True)
@@ -1091,8 +1112,13 @@ class CatalogEngine:
         silently lack the rows a broken source would have produced.
         """
         rows, findings = self._collect()
-        if findings:
-            return RenderResult(findings=tuple(findings), manifests={}, written=())
+        review_findings = self._review_findings()
+        if findings or review_findings:
+            return RenderResult(
+                findings=tuple([*findings, *review_findings]),
+                manifests={},
+                written=(),
+            )
         manifests = self.manifests(rows)
         written: list[str] = []
         if write:
@@ -1126,8 +1152,9 @@ class CatalogEngine:
         any (a fresh render would refuse, so "in sync" would be a false green),
         else ``manifest-drift`` per missing/stale manifest."""
         rows, findings = self._collect()
-        if findings:
-            return findings
+        review_findings = self._review_findings()
+        if findings or review_findings:
+            return [*findings, *review_findings]
         return self._drift_of(rows)
 
     # -- check --
