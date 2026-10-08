@@ -605,7 +605,7 @@ def test_protected_ref_deletion_denied(fake_repo: Path, command: str) -> None:
     result = _run(_claude_bash(command, fake_repo), fake_repo)
     reason = _claude_deny_reason(result)
     assert reason is not None
-    assert "worktree_sweep.py --retire" in reason
+    assert "operator" in reason.lower()
 
 
 def test_protected_ref_deletion_allows_recover_and_unprotected_branches(fake_repo: Path) -> None:
@@ -706,7 +706,7 @@ def test_protected_ref_deletion_widened_forms(fake_repo: Path, command: str) -> 
     result = _run(_claude_bash(command, fake_repo), fake_repo)
     reason = _claude_deny_reason(result)
     assert reason is not None
-    assert "worktree_sweep.py --retire" in reason or "operator" in reason.lower()
+    assert "operator" in reason.lower()
 
 
 def test_rm_rf_loop_home_denied(fake_repo: Path, tmp_path: Path) -> None:
@@ -751,7 +751,7 @@ def test_unreachable_ref_deletion_denies_orphan_branch(fake_repo: Path) -> None:
         result = _run(_claude_bash(command, fake_repo), fake_repo)
         reason = _claude_deny_reason(result)
         assert reason is not None
-        assert "preserve tag" in reason or "worktree_sweep.py --retire" in reason
+        assert "operator" in reason.lower()
 
 
 def test_unreachable_ref_deletion_allows_after_preserve_tag(fake_repo: Path) -> None:

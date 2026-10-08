@@ -1223,7 +1223,7 @@ So that a deck can be downloaded from the platform with no CORS hole and no byte
 **When** the projection, its changeset and the two routes land
 **Then** `refresh_deck_exports` fills `DeckExport` from the manifest and the model has no binary field; the list route returns the records; the stream route streams the bytes in bounded chunks with the record's content type; an anonymous call gets 401, a caller without the herald role 403, and an unknown sha256 404; no response carries `Access-Control-Allow-Origin`
 **And** `test_sqlmigrate_extraction.py` and `test_liquibase_ddl_governance.py` stay green; no `pyforge.*` import appears under `src/platform/`; with the flag OFF both routes answer 404; `platform-ci-local -- --test` and `pyforge-herald-test` are green
-**Status:** blocked
+**Status:** done
 
 ## Epic 30: A deck is readable in the browser from its HTML twin (spec-pyforge-herald CAP-55)
 

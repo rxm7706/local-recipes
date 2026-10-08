@@ -128,6 +128,7 @@ def test_ping_websocket_still_returns_pong():
     )
 
 
+@pytest.mark.django_db
 def test_events_websocket_rejects_invalid_token():
     recorder = asyncio.run(
         _drive_websocket(
@@ -141,6 +142,7 @@ def test_events_websocket_rejects_invalid_token():
     )
 
 
+@pytest.mark.django_db
 def test_events_websocket_accepts_with_valid_token():
     token = _events_token()
     scope_path = "/ws/events/"

@@ -5518,7 +5518,7 @@ So that following the hook's own advice never fails.
 **When** the new test reads every `session_denials` reason, every string of a reason object included
 **Then** every repo-owned command a reason names in backticks resolves: a `python scripts/<x>.py` or `uv run _bmad/scripts/<x>.py` path exists and its parser accepts every flag the reason names; a `pixi run -e <env> <task>` names an environment and a task `pixi.toml` declares; a `pyforge <station> …` form names a verb path that station's parser accepts; a placeholder (`<branch>`, `{task}`) stands for an argument; a command the test cannot classify fails it, so a new reason cannot slip past; and the two reasons name what exists today (until marshal 87.1 and 87.3 ship their forms, the operator act: hand the operator the command)
 **And** only reason text changes: the ids, triggers, `applies_to`, the hook's `MATCHERS` and their parity check are untouched, so no denial is added or removed; third-party commands (`git`, `gh`, `pixi lock`, `npx skills add`) are outside the test; no reason prints a tag-minting remedy (marshal Story 87.2's rule); the hook tests that pinned `--retire` assert the new text; marshal 87.1 and 87.3 may name their forms again once they resolve, and the same test then admits them; putting `--retire` back into a reason fails the new test (mutation)
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
