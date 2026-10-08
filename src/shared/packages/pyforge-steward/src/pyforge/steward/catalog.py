@@ -28,7 +28,7 @@ operator-confirm moments; ``steward catalog pointers`` prints the forms that
 work today (``--custom-source`` / ``extraKnownMarketplaces`` ``directory``)
 and names the ``github`` forms as waiting on ``edit_store.dedicated_repo``.
 
-Verbs: ``steward catalog check|list|render [--check]|pointers [--json]``.
+Verbs: ``steward catalog check|list|render [--check]|pointers|ship [--backend] [--output] [--json]``.
 ``CatalogDuty`` never calls ``sys.exit`` (AD-8) — it returns a
 ``DutyResult`` and ``cli.main`` projects it.
 """
@@ -37,8 +37,11 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shlex
+import shutil
+import tarfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -64,7 +67,9 @@ TIER_UNVERIFIED, TIER_COMMUNITY_REVIEWED, TIER_BMAD_CERTIFIED = TRUST_TIERS
 KIND_MODULE = "module"
 KIND_FRAME = "frame"
 
-VERBS: tuple[str, ...] = ("check", "list", "render", "pointers")
+VERBS: tuple[str, ...] = ("check", "list", "render", "pointers", "ship")
+SNAPSHOT_RELATIVE = Path("snapshot")
+SNAPSHOT_PLUGINS_RELATIVE = Path("plugins")
 
 UPSTREAM_REGISTRY_SCHEMA_URL = (
     "https://github.com/bmad-code-org/bmad-plugins-marketplace/blob/main/registry/registry-schema.yaml"
@@ -322,9 +327,57 @@ class CatalogSourcePlugin(ABC):
         malformed source file; the engine reports it as a ``config-*`` finding."""
 
 
+@dataclass(frozen=True)
+class ShipContext:
+    """Inputs every ship backend receives after the snapshot tree is materialized."""
+
+    repo_root: Path
+    catalog_dir: Path
+    snapshot_dir: Path
+    listings: tuple[Listing, ...]
+    config: CatalogConfig
+
+
+@dataclass(frozen=True)
+class ShipBackendResult:
+    """What one backend's ``ship`` returns — frozen evidence."""
+
+    target: str
+    artifacts: tuple[str, ...]
+    findings: tuple[CatalogFinding, ...] = ()
+
+    @property
+    def ok(self) -> bool:
+        return not self.findings
+
+
+@dataclass(frozen=True)
+class ShipResult:
+    """What :meth:`CatalogEngine.ship` returns."""
+
+    backend: str
+    snapshot_dir: Path
+    target: str
+    artifacts: tuple[str, ...]
+    findings: tuple[CatalogFinding, ...] = ()
+
+    @property
+    def ok(self) -> bool:
+        return not self.findings
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "ok": self.ok,
+            "backend": self.backend,
+            "snapshot_dir": str(self.snapshot_dir),
+            "target": self.target,
+            "artifacts": list(self.artifacts),
+            "findings": [f.to_dict() for f in self.findings],
+        }
+
+
 class ShipBackendPlugin(ABC):
-    """Abstract interface for a ship backend — the shared snapshot interface.
-    Story 60.3 adds ``ship``; a backend here never claims to ship."""
+    """Abstract interface for a ship backend — the shared snapshot interface."""
 
     @property
     @abstractmethod
@@ -334,6 +387,10 @@ class ShipBackendPlugin(ABC):
     @abstractmethod
     def snapshot_target(self, decl: BackendDecl) -> str:
         """Where this backend would put the catalog snapshot, from the declaration."""
+
+    @abstractmethod
+    def ship(self, ctx: ShipContext, decl: BackendDecl) -> ShipBackendResult:
+        """Publish the materialized ``ctx.snapshot_dir`` through this backend."""
 
 
 class _Registry:
@@ -564,6 +621,10 @@ class CondaChannelBackend(ShipBackendPlugin):
         package = decl.options.get("package") or "pyforge-estate-catalog"
         return f"conda://{channel}/{package}"
 
+    def ship(self, ctx: ShipContext, decl: BackendDecl) -> ShipBackendResult:
+        target = self.snapshot_target(decl)
+        return ShipBackendResult(target=target, artifacts=(str(ctx.snapshot_dir),))
+
 
 class ObjectStorageBackend(ShipBackendPlugin):
     """The same snapshot as a blob on the consumed S3-style store (Epic 50)."""
@@ -577,6 +638,13 @@ class ObjectStorageBackend(ShipBackendPlugin):
         key = decl.options.get("key") or "catalog/snapshot.tar.gz"
         return f"s3://{bucket}/{key}"
 
+    def ship(self, ctx: ShipContext, decl: BackendDecl) -> ShipBackendResult:
+        archive = _write_snapshot_archive(ctx.snapshot_dir, ctx.snapshot_dir / "snapshot.tar.gz")
+        return ShipBackendResult(
+            target=self.snapshot_target(decl),
+            artifacts=(str(archive),),
+        )
+
 
 class GitBundleBackend(ShipBackendPlugin):
     """The same snapshot as a file (git bundle / tarball)."""
@@ -587,6 +655,34 @@ class GitBundleBackend(ShipBackendPlugin):
 
     def snapshot_target(self, decl: BackendDecl) -> str:
         return str(decl.options.get("file") or "catalog.bundle")
+
+    def ship(self, ctx: ShipContext, decl: BackendDecl) -> ShipBackendResult:
+        bundle_name = str(decl.options.get("file") or "catalog.bundle")
+        archive = _write_snapshot_archive(ctx.snapshot_dir, ctx.snapshot_dir / bundle_name)
+        return ShipBackendResult(
+            target=str(archive.name),
+            artifacts=(str(archive),),
+        )
+
+
+def _write_snapshot_archive(snapshot_dir: Path, dest: Path) -> Path:
+    """Tar every file under ``snapshot_dir`` except the archive itself."""
+    dest = dest.resolve()
+    with tarfile.open(dest, "w:gz") as tar:
+        for path in sorted(snapshot_dir.rglob("*")):
+            if not path.is_file() or path.resolve() == dest:
+                continue
+            tar.add(path, arcname=path.relative_to(snapshot_dir).as_posix())
+    return dest
+
+
+def _module_share_root(package: str) -> Path | None:
+    """Installed conda share tree for a wielded module package, when present."""
+    prefix = os.environ.get("CONDA_PREFIX")
+    if not prefix:
+        return None
+    candidate = Path(prefix) / "share" / package
+    return candidate if candidate.is_dir() else None
 
 
 def default_backends() -> list[ShipBackendPlugin]:
