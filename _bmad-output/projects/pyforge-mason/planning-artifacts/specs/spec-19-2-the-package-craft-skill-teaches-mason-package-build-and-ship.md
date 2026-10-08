@@ -2,7 +2,7 @@
 title: "19.2: The package craft skill teaches mason package build and ship"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
