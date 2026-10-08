@@ -2,7 +2,10 @@
 title: '65.2: A story whose spec cannot bind is refused before a session is spent'
 type: 'fix'
 created: '2026-09-27'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '9ccc9f738c06408bf4c138802a9ebc929f04afe4'
+followup_review_recommended: false
+review_loop_iteration: 0
 context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-marshal/SPEC.md
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md
@@ -76,3 +79,19 @@ Ledger status at mint: `backlog`.
 **Commands:**
 - `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
 - `pixi run --frozen -e pyforge-ci pyforge-deps-test` — expected: pass (the station's `verify_commands`; MRS-GATE-010 binding).
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matches intent-contract acceptance criteria)
+
+## Auto Run Result
+
+Status: done
+
+Summary: `dispatch_once` evaluates Story 65.1's binding predicate after policy compose (guard-appended verify commands) and returns ERROR `MRS-DISP-050` before harness or worktree when the tracked spec cannot bind. Re-preflight clears on spec or verify-config fingerprint change; unchanged predicate rate-limits via `MRS-DRAIN-017`.
+
+Verification: `pyforge-marshal-test` and `pyforge-deps-test` green; `python scripts/spec_surface_reconcile.py` OK after memlog reconcile on `spec-pyforge-marshal` and co-governor `spec-pyforge-core`.
+
+Follow-up review recommendation: false
