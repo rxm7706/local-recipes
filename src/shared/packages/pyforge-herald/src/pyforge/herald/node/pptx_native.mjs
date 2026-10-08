@@ -176,7 +176,7 @@ function addBlock(s, block, yRef) {
       fontFace: bodyFace,
       color,
       fill: { color: T.palette.surface.replace(/^#/, "") },
-      border: { pt: pxToPt(T.type.kicker) / pxToPt(T.type.title), color },
+      border: { pt: pxToPt(T.type.kicker) / pxToPt(T.type.kicker), color },
     });
     yRef.value = tableY + lineStep * block.rows.length;
   }

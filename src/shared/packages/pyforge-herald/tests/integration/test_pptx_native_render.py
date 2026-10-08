@@ -14,7 +14,19 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.util import Inches
 
 from pyforge.herald import pptx_native
-from pyforge.herald.tests.unit.test_pptx_native import _copy_modernist_tokens, _repo_root
+
+
+def _repo_root() -> Path:
+    return Path(__file__).resolve().parents[6]
+
+
+def _copy_modernist_tokens(dest_root: Path) -> Path:
+    src = _repo_root() / pptx_native.MODERNIST_DESIGN_SYSTEM_REL
+    dst = dest_root / pptx_native.MODERNIST_DESIGN_SYSTEM_REL
+    if dst.exists():
+        shutil.rmtree(dst)
+    shutil.copytree(src, dst)
+    return dst
 
 
 def _node_and_pptxgenjs_available() -> bool:
@@ -176,7 +188,100 @@ print("code")
 
 
 @pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")
+def test_render_applies_modernist_tokens_read_back(tmp_path: Path, _no_stamp_git) -> None:
+    _copy_modernist_tokens(tmp_path)
+    tokens = pptx_native.load_modernist_design_tokens(tmp_path)
+    slug = "token-deck"
+    marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
+    marp_dir.mkdir(parents=True)
+    (marp_dir / f"{slug}-deck-2026-09-01.md").write_text(
+        """# Title slide
+
+Body line one.
+
+| K | V |
+|---|---|
+| a | 1 |
+""",
+        encoding="utf-8",
+    )
+    result = pptx_native.export_native_pptx(slug, tmp_path, export_date="2026-09-20")
+    prs = Presentation(str(result.output_path))
+    slide = prs.slides[0]
+    fill = slide.background.fill
+    assert fill.type == MSO_FILL.SOLID
+    assert _rgb_hex(fill.fore_color.rgb).lower() == tokens.palette_bg.lower()
+
+    title_shape = _title_shape(slide)
+    assert title_shape is not None
+    expected_left = Inches(_expected_pad_x_in(tokens, prs)).emu
+    assert abs(title_shape.left - expected_left) <= 1
+
+    title_run = _first_run_with_text(slide, "Title slide")
+    assert title_run is not None
+    assert title_run.font.name == tokens.heading_family
+    assert title_run.font.size.pt == pytest.approx(_expected_title_pt(tokens, prs), rel=0.02)
+    assert _rgb_hex(title_run.font.color.rgb).lower() == tokens.palette_text.lower()
+
+    body_run = _first_run_with_text(slide, "Body line")
+    assert body_run is not None
+    assert body_run.font.name == tokens.body_family
+    body_pt = tokens.type_body_px * (_slide_width_pt(prs) / tokens.canvas_width_px)
+    assert body_run.font.size.pt == pytest.approx(body_pt, rel=0.02)
+
+    table_font_pt = None
+    for shape in slide.shapes:
+        if shape.has_table:
+            cell = shape.table.cell(0, 0)
+            if cell.text_frame.paragraphs[0].runs:
+                table_font_pt = cell.text_frame.paragraphs[0].runs[0].font.size.pt
+                break
+    small_pt = tokens.type_small_px * (_slide_width_pt(prs) / tokens.canvas_width_px)
+    assert table_font_pt == pytest.approx(small_pt, rel=0.02)
+
+
+@pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")
+def test_render_follows_mutated_token_directory(tmp_path: Path, _no_stamp_git) -> None:
+    base = _copy_modernist_tokens(tmp_path)
+    theme_path = base / "theme.json"
+    theme = json.loads(theme_path.read_text(encoding="utf-8"))
+    theme["palette"]["text"] = "#010203"
+    theme["palette"]["accent"] = "#0a0b0c"
+    theme["fonts"]["body"]["family"] = "Courier New"
+    theme_path.write_text(json.dumps(theme), encoding="utf-8")
+    template = base / "templates" / "deck" / "index.html"
+    template.write_text(
+        template.read_text(encoding="utf-8")
+        .replace("--type-title: 64px;", "--type-title: 128px;")
+        .replace("--pad-x: 120px;", "--pad-x: 240px;"),
+        encoding="utf-8",
+    )
+    tokens = pptx_native.load_modernist_design_tokens(tmp_path)
+    slug = "mut-deck"
+    marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
+    marp_dir.mkdir(parents=True)
+    (marp_dir / f"{slug}-deck-2026-09-01.md").write_text("# Mutated\n\nParagraph.\n", encoding="utf-8")
+    result = pptx_native.export_native_pptx(slug, tmp_path, export_date="2026-09-21")
+    prs = Presentation(str(result.output_path))
+    slide = prs.slides[0]
+    title_run = _first_run_with_text(slide, "Mutated")
+    assert title_run is not None
+    assert _rgb_hex(title_run.font.color.rgb).lower() == "#010203"
+    assert title_run.font.size.pt == pytest.approx(
+        tokens.type_title_px * (_slide_width_pt(prs) / tokens.canvas_width_px),
+        rel=0.02,
+    )
+    body_run = _first_run_with_text(slide, "Paragraph")
+    assert body_run is not None
+    assert body_run.font.name == "Courier New"
+    title_shape = _title_shape(slide)
+    assert title_shape is not None
+    assert title_shape.left == pytest.approx(Inches(_expected_pad_x_in(tokens, prs)).emu, abs=1)
+
+
+@pytest.mark.skipif(not _node_and_pptxgenjs_available(), reason="node or pptxgenjs-plus not installed")
 def test_second_run_retires_older_native_kind(tmp_path: Path, _no_stamp_git) -> None:
+    _copy_modernist_tokens(tmp_path)
     slug = "retire-deck"
     marp_dir = tmp_path / "presentations" / slug / "src" / "marp"
     marp_dir.mkdir(parents=True)
