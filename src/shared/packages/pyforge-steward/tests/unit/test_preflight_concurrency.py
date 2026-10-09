@@ -853,7 +853,7 @@ def test_late_lane_killed_at_registration_after_sigint(
         _assert_group_gone(_scratch_root(tmp_path), "late")
 
 
-def _two_segment_reduced_plan(*, second_body: str = "pass") -> dict[str, psr.SuiteLaneOverride]:
+def _two_segment_reduced_plan(*, second_body: str = "print('seg-two')") -> dict[str, psr.SuiteLaneOverride]:
     segments = (
         psr.ReducedSuiteSegment("seg-one", [sys.executable, "-c", "pass"]),
         psr.ReducedSuiteSegment("seg-two", [sys.executable, "-c", second_body]),
