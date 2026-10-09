@@ -186,4 +186,5 @@ def test_unpushed_work_check_still_reports_unpushed_work_beside_a_same_named_tag
     findings = _unpushed(repo)["findings"]
     assert [f.get("ref") for f in findings if f.get("kind") == "unpushed-branch"] == ["work"]
     assert findings[0]["files"] == 1  # the bare name diffed the tag (the base): empty, so never reported
-    assert findings[0]["remedy"] == "git push origin refs/heads/work:refs/heads/work"  # review 2: runnable beside the tag
+    assert "report; do not tag" in findings[0]["remedy"]
+    assert "git push" not in findings[0]["remedy"]
