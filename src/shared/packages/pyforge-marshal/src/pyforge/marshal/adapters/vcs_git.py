@@ -161,9 +161,7 @@ def _ephemeral_git_object_env_for(repo_root: Path) -> tuple[Mapping[str, str], P
     objects_path = _run(["git", "-C", str(repo_root), "rev-parse", "--git-path", "objects"])
     if objects_path.returncode != 0:
         shutil.rmtree(tmp, ignore_errors=True)
-        raise VcsCommandError(
-            f"cannot resolve git objects path for {repo_root}: {objects_path.stderr.strip()}"
-        )
+        raise VcsCommandError(f"cannot resolve git objects path for {repo_root}: {objects_path.stderr.strip()}")
     real_objects = (repo_root / objects_path.stdout.strip()).resolve()
     child_env = os.environ.copy()
     child_env["GIT_OBJECT_DIRECTORY"] = str(ephem_objects)
@@ -184,9 +182,7 @@ def _ephemeral_git_object_env(repo_root: Path) -> Iterator[Mapping[str, str]]:
 def _repo_objects_info_dir(repo_root: Path) -> Path:
     info_path = _run(["git", "-C", str(repo_root), "rev-parse", "--git-path", "objects/info"])
     if info_path.returncode != 0:
-        raise VcsCommandError(
-            f"cannot resolve git objects/info path for {repo_root}: {info_path.stderr.strip()}"
-        )
+        raise VcsCommandError(f"cannot resolve git objects/info path for {repo_root}: {info_path.stderr.strip()}")
     return (repo_root / info_path.stdout.strip()).resolve()
 
 
