@@ -11,6 +11,7 @@ from pyforge.testing_kit.cli_runner import invoke_cli
 from pyforge.testing_kit.flags import assert_flag_off_verb, flag_states, flagd_tree
 
 from pyforge.marshal.cli.main import main
+
 _FLAG = "pyforge.marshal.preserve_refs"
 
 
