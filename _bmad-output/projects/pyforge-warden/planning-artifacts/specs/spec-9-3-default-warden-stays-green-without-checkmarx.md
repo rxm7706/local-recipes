@@ -2,10 +2,10 @@
 title: 'Story 9.3: Default Warden stays green without Checkmarx'
 type: 'chore'
 created: '2026-08-24'
-status: 'done'
+status: 'in-review'
 baseline_revision: 'bf025506f4c325be68b602f69d79ca9f34b63008'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - '{project-root}/src/shared/packages/pyforge-warden/src/pyforge/warden/scanner_plugins.py'
   - '{project-root}/src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py'
