@@ -1347,7 +1347,7 @@ def main(argv: list[str] | None = None) -> int:
                             results["preserve_debt"].append(  # type: ignore[union-attr]
                                 {"ref": outcome.refname, "reason": outcome.debt}
                             )
-                    except preserve_refs.PreserveRefError, preserve_refs.PreserveGitError as exc:
+                    except (preserve_refs.PreserveRefError, preserve_refs.PreserveGitError) as exc:
                         results["failed"].append(wt.path)  # type: ignore[union-attr]
                         results["preserve_debt"].append({"ref": wt.branch, "reason": str(exc)})  # type: ignore[union-attr]
                         continue

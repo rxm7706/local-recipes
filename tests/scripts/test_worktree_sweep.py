@@ -540,3 +540,162 @@ def test_mutation_protected_floor():
     roster_empty = {"protected_refs": []}
     assert ws.is_protected_branch_name("loop/x", protected_prefixes=ws.effective_protected_prefixes(roster_empty))
     assert not ws.is_protected_branch_name("random/feature", protected_prefixes=frozenset())
+
+
+# --- Story 87.8: preserve tags + engine scratch (flag on/off) -----------------
+
+_PRESERVE_FLAG = "pyforge.marshal.preserve_refs"
+
+
+def _add_worktree(repo: Path, branch: str, base: str = "main") -> Path:
+    wt = repo.parent / f"wt-{branch.replace('/', '-')}"
+    _git(repo, "worktree", "add", "-q", "-b", branch, str(wt), base)
+    return wt
+
+
+@flag_states(_PRESERVE_FLAG)
+def test_preserve_then_delete_flag_states(
+    clone: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    flag_provider: dict[str, bool],
+):
+    flag_on = flag_provider[_PRESERVE_FLAG]
+    preserve_dir = tmp_path / "legacy-preserve"
+    monkeypatch.setattr(ws, "DEFAULT_PRESERVE_DIR", preserve_dir)
+    branch = "dispatch/pyforge-marshal/87-8-wt"
+    wt_path = _add_worktree(clone, branch)
+    (wt_path / "tracked.txt").write_text("commit me\n", encoding="utf-8")
+    _git(wt_path, "add", "tracked.txt")
+    _git(wt_path, "commit", "-qm", "unmerged done story work")
+    (wt_path / "orphan-only.txt").write_text("keep me\n", encoding="utf-8")
+    wt = ws.Worktree(
+        path=str(wt_path),
+        branch=branch,
+        category="dispatch",
+        exists=True,
+        merged=False,
+        unmerged_commits=1,
+        ledger_status="done",
+        branch_on_origin=False,
+        station="marshal",
+        story_key="87-8",
+        reason="test preserve",
+    )
+    if flag_on:
+        outcome = ws.preserve_worktree_as_tag(wt)
+        assert outcome.refname.startswith("refs/tags/preserve/")
+        assert _git(clone, "cat-file", "-e", f"{outcome.refname}^{{tree}}") == ""
+        assert not list(preserve_dir.glob("*"))
+        tree = _git(clone, "rev-parse", f"{outcome.refname}^{{tree}}")
+        names = _git(clone, "ls-tree", "-r", "--name-only", tree)
+        assert "orphan-only.txt" in names.splitlines()
+    else:
+        dest = ws.preserve(wt, preserve_dir)
+        assert dest.is_dir()
+        assert list(dest.glob("*.patch")) or (dest / "uncommitted.diff").exists()
+
+
+def test_engine_scratch_unpromoted_then_promoted(clone: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(ws, "preserve_refs_flag_on", lambda: True)
+    dirty = "refs/attempt-preserve-dirty/run1-deadbeef"
+    _git(clone, "update-ref", dirty, _git(clone, "rev-parse", "main"))
+    rows = ws.classify_engine_scratch_refs()
+    by_ref = {r.refname: r for r in rows}
+    assert by_ref[dirty].verdict == "KEEP"
+    assert "unpromoted" in by_ref[dirty].reason
+    commit = _git(clone, "rev-parse", dirty)
+    refname = render_preserve_ref(commit_sha=commit, producer="bmad-loop")
+    trailers = PreserveTrailers(
+        producer="bmad-loop",
+        provenance="machine",
+        reason="test",
+        source=dirty,
+        run="run1",
+        journal="",
+        commit=commit,
+    )
+    tag_preserve(clone, refname=refname, commit=commit, trailers=trailers)
+    assert ws.verdict_for_engine_scratch(dirty, commit)[0] == "DELETE"
+    _, retired = ws.retire_promoted_engine_scratch(apply=True)
+    assert dirty in retired
+    proc = subprocess.run(
+        ["git", "-C", str(clone), "show-ref", "--verify", dirty],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode != 0
+
+
+@flag_states(_PRESERVE_FLAG)
+def test_mutation_preserve_refs_flag_switches_preserve_path(
+    clone: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    flag_provider: dict[str, bool],
+):
+    flag_on = flag_provider[_PRESERVE_FLAG]
+    wt = ws.Worktree(
+        path=str(clone),
+        branch="feat/x",
+        category="dispatch",
+        exists=True,
+        merged=False,
+        unmerged_commits=1,
+        ledger_status="done",
+        station="marshal",
+        story_key="1-1",
+    )
+    preserve_dir = tmp_path / "p"
+    if flag_on:
+        tag = ws.preserve_worktree_as_tag(wt)
+        assert tag.refname
+        assert not preserve_dir.exists()
+    else:
+        ws.preserve(wt, preserve_dir)
+        assert preserve_dir.is_dir()
+
+
+def test_mutation_engine_scratch_promotion_rule(clone: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(ws, "preserve_refs_flag_on", lambda: True)
+    dirty = "refs/attempt-preserve-dirty/x"
+    _git(clone, "update-ref", dirty, _git(clone, "rev-parse", "main"))
+    commit = _git(clone, "rev-parse", dirty)
+    assert ws.verdict_for_engine_scratch(dirty, commit)[0] == "KEEP"
+    refname = render_preserve_ref(commit_sha=commit, producer="bmad-loop")
+    trailers = PreserveTrailers(
+        producer="bmad-loop",
+        provenance="machine",
+        reason="test",
+        source="refs/heads/wrong-source",
+        run="",
+        journal="",
+        commit=commit,
+    )
+    tag_preserve(clone, refname=refname, commit=commit, trailers=trailers)
+    assert ws.verdict_for_engine_scratch(dirty, commit)[0] == "KEEP"
+
+
+def test_local_branch_delete_skips_tag_names(clone: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(ws, "preserve_refs_flag_on", lambda: True)
+    _git(clone, "tag", "-a", "not-a-branch", "-m", "t", "main")
+    calls: list[tuple[str, ...]] = []
+
+    def fake_git(*args, cwd=None):
+        calls.append(tuple(args))
+        if args[:2] == ("branch", "--merged"):
+            return "not-a-branch \nmain \n", 0
+        if args[:2] == ("merge-base", "--is-ancestor"):
+            return "", 0
+        if args[0] == "rev-parse" and "--verify" in args:
+            ref = args[-1]
+            if ref.startswith("refs/tags/not-a-branch"):
+                return "", 0
+            return "", 1
+        if args[:2] == ("branch", "-D"):
+            raise AssertionError("must not delete tag-shaped names")
+        return "", 0
+
+    monkeypatch.setattr(ws, "_git", fake_git)
+    deleted, _, _ = ws.delete_merged_local_branches(apply=True)
+    assert deleted == 0
