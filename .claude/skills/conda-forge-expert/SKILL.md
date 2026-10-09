@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.97.1
+version: 8.98.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -728,7 +728,7 @@ The pattern is not optional — reviewers will request these five elements:
 1. **`cargo auditable install`** (not plain `cargo install`) — embeds dependency SBOM into the binary.
 2. **`--locked --no-track --bins`** flags — reproducible, no `.crates.toml` in prefix, binary-only install.
 3. **Unix/Win install root split** — `--root ${{ PREFIX }}` on unix, `--root %LIBRARY_PREFIX%` on win.
-4. **`script.env` + `script.content` shape** — set `CARGO_PROFILE_RELEASE_STRIP: symbols` and `CARGO_PROFILE_RELEASE_LTO: fat` via the env map, then list commands under `content:`. Avoids the [G1 "exports don't carry across script entries"](#g1-script-list-entries-run-in-separate-shells--env-vars-do-not-carry-across-entries) trap.
+4. **`script.env` + `script.content` shape** — set `CARGO_PROFILE_RELEASE_STRIP: symbols` and `CARGO_PROFILE_RELEASE_LTO: fat` via the env map, then list commands under `content:`. Avoids the [G1 "exports may not carry across script entries"](#g1-dont-rely-on-env-vars-carrying-across-script-list-entries--older-rattler-build-ran-each-entry-in-its-own-shell) trap.
 5. **Both `cargo-bundle-licenses` and `cargo-auditable` in build deps** — both packages are required, not interchangeable.
 
 Canonical CLI skeleton (see [`templates/rust/cli-recipe.yaml`](templates/rust/cli-recipe.yaml) for the full template):
@@ -1519,13 +1519,15 @@ Recent conda-forge changes that affect recipe authoring. Cite the relevant entry
 
 Patterns that look right but fail silently or produce broken recipes. Each entry includes the symptom, why it happens, and the correct form. Case studies cited where relevant.
 
-### G1. `script:` list entries run in separate shells — env vars do NOT carry across entries
+### G1. Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell
 
-**Symptom**: an `export FOO=bar` in one script entry has no effect in the next entry. `pip install` later in the script doesn't see `CFLAGS` you set earlier.
+**Symptom**: on rattler-build releases that run each entry in its own shell, an `export FOO=bar` in one script entry has no effect in the next entry. `pip install` later in the script doesn't see `CFLAGS` you set earlier.
 
-**Why**: rattler-build evaluates each top-level item under `build.script:` (when given as a YAML list) as an independent shell invocation. Shell state — env vars and function definitions — does not survive between entries.
+**Why**: rattler-build releases this gotcha was written against (May 2026) evaluated each top-level item under `build.script:` (when given as a YAML list) as an independent shell invocation, so shell state (env vars and function definitions) did not survive between entries. 0.76.1 joins the entries into one script instead (see the re-verification note below), so whether an `export` carries depends on the rattler-build version. The patterns below work either way.
 
 **Caveat — CWD specifically *does* persist across entries.** Env vars and shell functions don't carry, but the current working directory does. If entry 1 ends with CWD inside a subdirectory, entry 2 starts there too. See **G13** for the cross-platform CWD-isolation pattern (pushd/popd) and the Windows cmd.exe `(...)` -is-not-a-subshell trap that makes naive bash subshell patterns fail on Windows.
+
+**Re-verified 2026-10-09 on rattler-build 0.76.1 (linux-64; mason Story 22.1 review): env vars DO carry.** 0.76.1 joins the list entries into one `conda_build.sh`, so `- export FOO=bar` followed by `- echo "FOO=[${FOO}]"` prints `FOO=[bar]`. Keep the single-entry patterns below anyway: they do not depend on how a given rattler-build version joins entries, and the Windows `.bat` path was not re-tested.
 
 **Fix**: choose one of three patterns:
 
@@ -1892,7 +1894,7 @@ The minimum for the gate flip is 2 platforms. List only what you've verified —
 
 **Why** (two interlocking facts the skill didn't previously capture):
 
-1. **rattler-build's script-list entries share CWD across entries.** G1 documents that environment variables don't carry across entries — but CWD specifically *does* carry. If entry 1 ends with CWD inside a subdirectory, entry 2 starts there. (Verified empirically on solvor PR #33647 buildId 1534140 Windows leg; also reproduced on local Linux builds.)
+1. **rattler-build's script-list entries share CWD across entries.** G1 documents that environment variables may not carry across entries — but CWD specifically *does* carry. If entry 1 ends with CWD inside a subdirectory, entry 2 starts there. (Verified empirically on solvor PR #33647 buildId 1534140 Windows leg; also reproduced on local Linux builds.)
 
 2. **On Windows cmd.exe, `(cmd1 && cmd2)` is command grouping, not a subshell.** On bash, `(cd dir && do_thing)` runs the entire group in a child process — the `cd` only affects that child, so when control returns to the parent shell, CWD is unchanged. On cmd.exe, `(...)` is purely syntactic grouping (parentheses associate the AND chain) — there is no child process, so the `cd` permanently changes the parent shell's CWD. The same recipe that "works" on Linux is broken on Windows.
 
@@ -4364,6 +4366,41 @@ The result matched upstream's 55 shaded classes. The only remaining differences 
 - **Windows:** a `build.bat` too, because staged-recipes builds noarch on Windows ([G102](#g102)).
 - **Install and test:** install the jar where its consumer auto-loads it, and test through that consumer (`liquibase --version` lists `postgresql.jar`).
 
+### G121. conda-recipe-manager's v0→v1 conversion can leak a `SentinelType` repr as a YAML mapping key — and exits 100, not an error
+
+**Symptom**: a converted `recipe.yaml` carries a key that is literally `<conda_recipe_manager.types.SentinelType object at 0x…>`. rattler-build refuses the file at parse time. PyYAML reads the key as a plain string, so a parse-only gate passes it. Before Story 22.2, CFE's recipe validation passed six of the twelve such files in `recipes/`. conda-smithy flagged only a top-level key and crashed on multi-output recipes.
+
+**Why**: crm writes its sentinel wherever a `meta.yaml` construct has no v1 translation. The 2026-08-16 bulk conversion (`20b2f459fa`) hit five shapes:
+- a commented-out key (`#patches:`, `#host:`);
+- a test left with only `requires:` once its commands were commented out;
+- an `imports:` list split from its key by comments;
+- `test.requires` orphaned at the top level;
+- jinja `{% for %}` / `{% if %}` blocks inside test commands.
+
+crm 0.10.6 still writes the sentinel and exits **100** ("warnings"), so re-running the conversion repairs nothing.
+
+**Fix**: repair by hand against the sibling `meta.yaml`, one construct at a time.
+- Drop a commented-out key and keep its comment lines indented in place.
+- Remove a test element that has nothing left to run.
+- Rejoin a split `imports:` list.
+- Fold an orphaned requirement into the surviving script test.
+- Keep `meta.yaml`'s comments where they map, indented to the block they annotate: G93 forbids only column 0. Inside a loop that replaced a jinja loop, a comment from the loop body becomes a shell comment on the matching line. A commented-out line whose construct no longer exists (a `pytest` call for a suite the recipe never runs) goes to the bottom `# CFE comments` block.
+- Turn a flattened jinja loop into one shell loop per platform in the element's own `script:` (G1): a `for` loop under `if: unix`, a `for %%X in (…) do (…)` block under `if: win`. Build the lists from `context` with jinja, e.g. `${{ (libs + ([] if ppc64le else long_double_libs)) | join(" ") }}`.
+
+Then render the file on a platform it builds (`rattler-build build --render-only`), and run `validate_recipe` and the CI-parity lint. Keep `meta.yaml` while the feedstock is v0. `tests/meta/test_recipe_yaml_parse_audit.py::test_no_crm_sentinel_keys_in_recipe_yaml` reds any `recipe.yaml` under `recipes/` with a non-string key, or a key or whole scalar that is an object repr. The scan is recursive, so grouped recipes (`recipes/pixi/*`, `recipes/teradata/*`) count. Each allowlist entry is a file and the parsed-tree location of its leak, naming the story that removes it, and admits exactly one object-repr key there, so a second leak in an allowlisted file still reds, even in the same mapping: mason Story 22.3 owns `ctng-compilers` (`outputs[6].tests[0]`), and Story 22.4 owns `vc` (`outputs[5].tests[0]`).
+
+**Traps the twelve-recipe repair hit** (mason Story 22.1, rattler-build 0.76.1):
+- **render-only does not evaluate test scripts.** An undefined variable in a test (`${{ each_lib }}`, `${{ dllname }}`) renders green and fails only when the test runs. Check a test-script expression by putting it in a field the render evaluates (e.g. an output's `about.description` in a scratch copy).
+- **A multi-output v1 recipe has no top-level `requirements`** (`unknown field 'requirements'`). conda-build's top-level build (its `build.sh` and requirements) becomes a `staging` output. Outputs inherit it with `inherit: {from: <name>, run_exports: false}`; without `run_exports: false`, the staging host's run_exports (`python_abi`, `numpy`, …) leak into every output. A top-level `build.script` is merged into every output that defines none, metapackages included. **An inheriting output does not get the staging output's build environment:** its own `build.script` sees only the tools its own `requirements` declare, so a `python` the staging build used is `command not found` there (status 127). Declare each output's build requirements, e.g. `python`, on the output itself. It does take the staging output's variant keys, so its build string changes: boost's `libboost-headers` renders as `np2he8b8257_0` where the v0 feedstock publishes `ha770c72_N`. `inherit:` accepts only `from` and `run_exports`, so no inherit form drops them.
+- **Other v1 differences:** minijinja has no `str.startswith`; use `x is startingwith("win")`. `script_interpreter` is not a v1 field; call the script with its arguments in `build.script`. v0 `py` (the python nodot) is `${{ python | version_to_buildstring }}`. conda-build renders an output that does not vary by python with the first `python` variant of the matrix; that is `python_min` only while `python_min` equals the lowest python in the matrix (conda-forge's default floor). A recipe that raises `python_min` breaks the equality, so check before substituting.
+- **`build.track_features` is rejected, and 0.76.1 has no v1 equivalent.** `build.variant.down_prioritize_variant` is not one: it writes `track_features: <package-name>-p-<n>` (`st-out-p-0` for a test output), a feature unique to that package. A recipe whose packages must share one named feature, as vc's outputs share `vc14`, cannot be ported faithfully on 0.76.1 (a v1-migration gap; mason Story 22.4).
+- **minijinja compares a string with an integer without converting.** A context or variant value is a string (`vsver: "9"`), and `vsver >= 17` is true for `"9"` and for `"18"` alike. Convert first: `vsver | int >= 17`.
+- **v1 lint R-013** requires a top-level `about.license_file`, which v0 did not. Outputs inherit it, so set `license_file: []` on an output whose `meta.yaml` ships no licence file.
+- **The CI-parity lint stops at "both `meta.yaml` and `recipe.yaml`"** on a v0-mirror directory. Lint a copy without `meta.yaml` to see the v1 lints.
+- **Jinja block syntax in a `# CFE comments` line crashes conda-smithy's v1 lint.** It renders the round-tripped YAML, comments included, through jinja2, so a note quoting meta.yaml's `{% for … %}` or `{% if … %}` raises `TemplateSyntaxError`. Describe the construct in words in the comment.
+- **The bulk conversion dropped fixes its own CFE comments record.** `psycopg2-yugabytedb`'s CFE block still described `setuptools` in host (G55) and a `>=3.13` skip (G50) that the regenerated body had lost. After any regeneration, re-read the CFE comments against the body.
+- **Mirror directories can lack the feedstock's build scripts and CI files.** `lerc` had no `build.sh`, so a local build packages nothing; `pyautogui` had no `yum_requirements.txt`, which puts `xvfb-run` on the feedstock's CI image for its linux build script. Fetch the feedstock's `recipe/` files before building (G94). Where a host lacks such a tool and the step does not need it (pyautogui's `setup.py` never imports the package), a pass-through shim on `PATH` in a scratch build proves the recipe; record the shim in the CFE block.
+
 ---
 
 ## Skill Automation
@@ -4402,6 +4439,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.98.0** (Oct 9, 2026) — **mason Story 22.1 Rule-2 retro: G121, conda-recipe-manager's leaked `SentinelType` key, and the corpus check that refuses the next one (MINOR).** Revised the same day after the independent review (still unreleased): the corpus scan is recursive with a per-location allowlist that admits one leak per entry (Stories 22.3 and 22.4), and G121 corrects the `track_features` claim and adds the staging build-env, staging build-string and minijinja string-vs-int traps; G1 is retitled for its 0.76.1 re-verification. See `CHANGELOG.md`.
 - **v8.93.0** (Oct 8, 2026) — **pyforge-mason Epic 19 closing Rule-2 retro: CFE names Mason's skill cell (MINOR; Story 19.5).** See `CHANGELOG.md`.
 - **v8.91.9** (Oct 5, 2026) — **Retired-id guard scans marshal planning docs (PATCH; marshal Story 86.7).** See `CHANGELOG.md`.
 - **v8.91.8** (Oct 4, 2026) — **G62 survivor gate uses anchored line matching (PATCH; mason Story 27.2 review).** See `CHANGELOG.md`.

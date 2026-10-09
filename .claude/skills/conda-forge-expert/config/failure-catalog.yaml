@@ -4,10 +4,10 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "643c7efb322b1c7b18dacba991ac240c529ca12c31ab3974dba25782380e45f1"
+source_sha256: "366626449ed258b941287ff8e43f3cdd59af4e539dcd99b864f8aa7a46dac30d"
 rows:
   - id: G1
-    title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
+    title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"
     symptom_signature:
       - "export FOO=bar"
       - "pip install"
@@ -978,4 +978,11 @@ rows:
       - "org/postgresql/shaded/com/ongres/…"
       - "lib/"
       - "java -jar … --version"
+    enforced_by: null
+  - id: G121
+    title: "conda-recipe-manager's v0→v1 conversion can leak a `SentinelType` repr as a YAML mapping key — and exits 100, not an error"
+    symptom_signature:
+      - "recipe.yaml"
+      - "<conda_recipe_manager.types.SentinelType object at 0x…>"
+      - "recipes/"
     enforced_by: null
