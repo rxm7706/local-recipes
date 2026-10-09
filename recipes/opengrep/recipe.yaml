@@ -127,7 +127,8 @@ about:
     Upstream publishes self-contained, single-file executables per platform
     (embedded Python CLI). A conda-forge source build is not feasible today
     (OCaml/dune/opam/submodule gaps documented in the CFE block), so this
-    recipe repackages the signed GitHub release binaries for local use only.
+    recipe repackages the GitHub release binaries for local use only (release
+    assets ship cosign `.sig`/`.cert` sidecars; cosign was not run on this host).
 
 extra:
   recipe-maintainers:
