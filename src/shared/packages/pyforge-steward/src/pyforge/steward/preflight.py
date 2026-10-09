@@ -27,7 +27,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from pyforge.steward import preflight_ci
+from pyforge.steward import preflight_ci, preflight_suite_reduction
 
 ROOT_AGGREGATE = "pr-preflight-lanes"
 DEFAULT_INVOKING_ENV = "pyforge-guild"
@@ -62,6 +62,7 @@ class LaneResult:
     exit_code: int
     status: str  # ok | red | cancelled | not-run
     start_offset: float = 0.0
+    journal_extra: dict[str, Any] | None = None
 
 
 class PreflightConfigError(Exception):
@@ -196,6 +197,9 @@ class _RunCoordinator:
     active_procs: list[tuple[subprocess.Popen[Any], int]] = field(default_factory=list)
     proc_lock: threading.Lock = field(default_factory=threading.Lock)
     red_lanes: list[str] = field(default_factory=list)
+    suite_lane_plan: dict[str, preflight_suite_reduction.SuiteLaneOverride | dict[str, Any]] = field(
+        default_factory=dict
+    )
 
     def service_lock(self, key: str | None) -> threading.Lock | None:
         if key is None:
@@ -233,9 +237,14 @@ class _RunCoordinator:
 
 def _subprocess_lane(coord: _RunCoordinator, ctx: LaneRunContext) -> int:
     ctx.log_path.parent.mkdir(parents=True, exist_ok=True)
+    plan_entry = coord.suite_lane_plan.get(ctx.lane.task)
+    if isinstance(plan_entry, preflight_suite_reduction.SuiteLaneOverride):
+        argv = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, *plan_entry.argv]
+    else:
+        argv = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task]
     with ctx.log_path.open("wb") as log_handle:
         proc = subprocess.Popen(
-            ["pixi", "run", "--frozen", "-e", ctx.lane.environment, ctx.lane.task],
+            argv,
             cwd=coord.repo_root,
             env=ctx.env,
             stdout=log_handle,
@@ -269,6 +278,23 @@ def _print_lane_log(log_path: Path) -> None:
         if not text.endswith("\n"):
             sys.stdout.write("\n")
         sys.stdout.flush()
+
+
+def _lane_journal_extra(coord: _RunCoordinator, task: str) -> dict[str, Any] | None:
+    entry = coord.suite_lane_plan.get(task)
+    if isinstance(entry, preflight_suite_reduction.SuiteLaneOverride):
+        return dict(entry.journal)
+    if isinstance(entry, dict):
+        return dict(entry)
+    return None
+
+
+def _lane_result_dict(result: LaneResult) -> dict[str, Any]:
+    payload = asdict(result)
+    extra = payload.pop("journal_extra", None)
+    if extra:
+        payload.update(extra)
+    return payload
 
 
 def _run_lane_in_pool(
@@ -306,13 +332,14 @@ def _run_lane_in_pool(
         elapsed = time.monotonic() - lane_start
         _print_lane_log(log_path)
 
+        journal_extra = _lane_journal_extra(coord, lane.task)
         if code == 0:
-            return LaneResult(lane.task, lane.environment, elapsed, 0, "ok", start_offset)
+            return LaneResult(lane.task, lane.environment, elapsed, 0, "ok", start_offset, journal_extra)
         coord.red_lanes.append(lane.task)
         if not coord.keep_going:
             coord.stop_on_red.set()
             coord.terminate_children()
-        return LaneResult(lane.task, lane.environment, elapsed, code, "red", start_offset)
+        return LaneResult(lane.task, lane.environment, elapsed, code, "red", start_offset, journal_extra)
     finally:
         if service_lock is not None:
             service_lock.release()
@@ -358,6 +385,11 @@ def run_preflight(
         worker_count = 1
 
     mutex_keys = preflight_ci.static_service_mutex_keys(repo_root, lanes, pixi_data)
+    suite_lane_plan = preflight_suite_reduction.build_suite_lane_overrides(
+        repo_root,
+        selected_task_names={lane.task for lane in lanes},
+        pixi_data=pixi_data,
+    )
 
     use_subprocess = run_lane_ctx is None and run_lane is None
     injected_runner: Callable[[LaneRunContext], int] | None
@@ -421,6 +453,7 @@ def run_preflight(
         run_start=run_start,
         jobs=worker_count,
         keep_going=keep_going,
+        suite_lane_plan=suite_lane_plan,
     )
     if injected_runner is not None:
         runner = injected_runner
@@ -502,7 +535,7 @@ def run_preflight(
                 "verdict": "interrupted",
                 "invoking_environment": env,
                 "selection": selection.to_journal(),
-                "lanes": [asdict(r) for r in ordered],
+                "lanes": [_lane_result_dict(r) for r in ordered],
             },
         )
         return EXIT_INTERRUPT
@@ -545,7 +578,7 @@ def run_preflight(
             "verdict": verdict,
             "invoking_environment": env,
             "selection": selection.to_journal(),
-            "lanes": [asdict(r) for r in ordered_results],
+            "lanes": [_lane_result_dict(r) for r in ordered_results],
         },
     )
     return exit_code

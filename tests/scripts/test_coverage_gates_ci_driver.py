@@ -160,3 +160,55 @@ def test_allow_list_skips_foreign_station(driver, tmp_path: Path, monkeypatch, c
     assert rc == 0
     assert called == []
     assert "skipping pyforge-doctor" in capsys.readouterr().out
+
+
+def test_plan_prints_json_without_pytest(driver, tmp_path: Path, monkeypatch, capsys):
+    paths_file = tmp_path / "paths.txt"
+    paths_file.write_text(
+        "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/main.py\n",
+        encoding="utf-8",
+    )
+    ran = []
+
+    def fake_run(*, station, suite, report):
+        ran.append((station, suite))
+        return "ran", 0
+
+    monkeypatch.setattr(driver, "_run_pytest_cov", fake_run)
+    monkeypatch.setenv("COVERAGE_GATES_STATIONS", "marshal")
+
+    rc = driver.main(["--plan", "--paths-file", str(paths_file), "--suites", "unit"])
+    assert rc == 0
+    assert ran == []
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["touched_stations"] == ["marshal"]
+    assert len(payload["runs"]) == 1
+    run = payload["runs"][0]
+    assert run["station"] == "marshal"
+    assert run["suite"] == "unit"
+    assert run["marker_expr"] == "not slow"
+    assert any("tests/unit" in p for p in run["test_paths"])
+    assert any("tests/meta" in p for p in run["test_paths"])
+
+
+def test_plan_stdout_stays_json_when_format_only_paths_skipped(driver, monkeypatch, capsys):
+    """format-only diagnostics must not precede JSON (Story 71.4 preflight parses stdout)."""
+
+    def fake_drop(paths, base, head, *, quiet=False):
+        assert quiet is True
+        return paths
+
+    monkeypatch.setattr(driver, "_drop_format_only", fake_drop)
+    rc = driver.main(["--plan", "--paths-file", "/dev/null", "--suites", "unit"])
+    assert rc == 0
+    out = capsys.readouterr().out.strip()
+    json.loads(out)
+
+
+def test_plan_empty_when_no_station_touched(driver, tmp_path: Path, capsys):
+    paths_file = tmp_path / "paths.txt"
+    paths_file.write_text("pixi.toml\n", encoding="utf-8")
+    rc = driver.main(["--plan", "--paths-file", str(paths_file), "--suites", "unit"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out.strip())
+    assert payload["runs"] == []
