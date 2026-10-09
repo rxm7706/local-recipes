@@ -269,6 +269,12 @@ Flag: `flag-exempt: recipe-build` (recipe repairs ship no runtime capability beh
   commit (G94); boost's CFE comments record its staging-inherited build strings; three more upstream comments are back
   in the body (shodan, pyautogui, lerc); pyobjc's CFE metadata is refreshed; psycopg2-yugabytedb's and semgrep's CFE
   blocks follow the convention. The CFE retro stays `8.98.0` and lands a third `retro(cfe):` commit.
+- 2026-10-09: **Merged origin/main after mason Story 25.1 landed** (CFE 8.97.1, Wave H). 22.1's retro stays `8.98.0`,
+  above 8.97.1; main has no G121, so no gotcha moves. `pyobjc-framework-systemconfiguration` was touched by both: the
+  merged recipe takes 25.1's 12.2.2 bump (version, sha256) and keeps 22.1's sentinel removal, review fixes and
+  `pypi.org/packages` source URL. 25.1 had renamed its `meta.yaml` to `.meta.yaml.wave_h_hold`; the feedstock is still
+  v0, so `meta.yaml` is back as the feedstock's 12.2.2 copy and the hold file is gone (this story's AC 6, and 25.1's
+  own C1 rule). No other 22.1 recipe changed on main.
 
 ## Run results
 
@@ -288,7 +294,7 @@ through render, validate and the CI-parity lint (comment, metadata and recipe-di
 | psycopg2-yugabytedb | clean | linux-64: 2 (+2 skipped, >=3.13) | pass | in fine form | success (py3.11, py3.12) |
 | pyautogui | clean | linux-64: 4 | pass | in fine form | success (py3.11-3.14) on a scratch copy with a pass-through `xvfb-run` shim on PATH: the host has no Xvfb, and `setup.py` never imports pyautogui (the feedstock gets xvfb-run from yum_requirements.txt, now copied here). The first run, without the shim, failed with `xvfb-run: command not found` |
 | shodan | clean | linux-64: 1 | pass | in fine form | success (imports and pip check on `python_min` and the newest python, then `shodan --help`) |
-| pyobjc-framework-systemconfiguration | clean | osx-64: 4 (render reads the feedstock's `conda_build_config.yaml`) | pass | in fine form | not built (osx-only) |
+| pyobjc-framework-systemconfiguration | clean | osx-64: 4 at 12.2.2 after the merge with Story 25.1 (render reads the feedstock's `conda_build_config.yaml`) | pass | in fine form | not built (osx-only) |
 | boost | clean | linux-64: 11 (render reads the feedstock's `conda_build_config.yaml`) | pass (G29 "no tests" warning) | one suggestion: rename `bld.bat` to `build.bat` (the staging output names `bld.bat`, the feedstock's file) | not built (heavyweight) |
 | vc | sentinel (main's copy) | — | — | — | Story 22.4 |
 | ctng-compilers | sentinel (main's copy) | — | — | — | Story 22.3 |

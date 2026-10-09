@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 5.1.1
+  version: 5.1.3
 
 package:
   name: django-cms
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/django-cms/django_cms-${{ version }}.tar.gz
-  sha256: 9b25f17d591e1f8beae8b2d47ce54e9b16f5af2d2a933b00d4ee62cdc9b2a55e
+  sha256: 80c50fc44cffa2cae28f4b8d841b7f48bd5ded9c88e493096b6e2235ba94d3ca
 
 build:
   number: 0
@@ -19,25 +19,25 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - django >=5.2
-    - django-classy-tags >=0.7.2
-    - django-formtools >=2.1
-    - django-treebeard >=4.3,<6
-    - django-sekizai >=0.7
-    - packaging
+  - python >=${{ python_min }}
+  - django >=5.2
+  - django-classy-tags >=0.7.2
+  - django-formtools >=2.1
+  - django-treebeard >=4.3,<6
+  - django-sekizai >=0.7
+  - packaging
 tests:
-  - python:
-      imports:
-        - cms
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - '*'
+- python:
+    imports:
+    - cms
+    pip_check: true
+    python_version:
+    - ${{ python_min }}.*
+    - '*'
 
 about:
   homepage: https://www.django-cms.org/
@@ -51,7 +51,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -59,8 +59,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-cms
   cfe-purls:
-    - pkg:conda/django-cms@${{ version }}?channel=conda-forge
-    - pkg:pypi/django-cms@${{ version }}
+  - pkg:conda/django-cms@${{ version }}?channel=conda-forge
+  - pkg:pypi/django-cms@${{ version }}
   cfe-upstream-repo: https://github.com/django-cms/django-cms
   cfe-upstream-homepage: https://github.com/django-cms/django-cms
   cfe-import-names: [cms]
@@ -75,7 +75,7 @@ extra:
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-datetime: 2026-10-09T09:15:34Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

@@ -77,7 +77,7 @@ development_status:
   23-2-cfe-s-recipe-generator-asks-instead-of-guessing: done
   23-3-a-negative-corpus-proves-each-cfe-check-keeps-rejecting-its-defect: done
   24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell: done
-  25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed: backlog
+  25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed: done
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: backlog
   26-1-cfe-s-tests-never-ask-github-whether-a-recipe-maintainer-exists: done
   27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals: done
@@ -143,7 +143,7 @@ development_status:
   epic-23-retrospective: optional
   epic-24: done
   epic-24-retrospective: optional
-  epic-25: backlog
+  epic-25: in-progress
   epic-25-retrospective: optional
   epic-26: done
   epic-26-retrospective: optional

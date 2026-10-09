@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: wasmtime
-  version: "47.0.1"
+  version: "49.0.0"
 
 package:
   name: ${{ name }}-py
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: fab6ee0e87354f14ef228fa71b40841dd3c2c713f6efce636af234b4e3e6edcc
+  url: https://files.pythonhosted.org/packages/48/7e/eb4b868529a2ae444cd24ea3c2cf1dd6dd2ce8d67ed4fb27b4e84529a1bf/wasmtime-49.0.0.tar.gz
+  sha256: fe0bf510ebdaf9432b756e320d2da2347f159e241f468c961b95164ab06cfdc1
 
 build:
   number: 0
@@ -19,28 +19,28 @@ build:
 
 requirements:
   build:
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
-    - ${{ compiler('rust') }}
-    - cargo-bundle-licenses
-    - if: build_platform != target_platform
-      then: python
-    - if: build_platform != target_platform
-      then: cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ stdlib('c') }}
+  - ${{ compiler('rust') }}
+  - cargo-bundle-licenses
+  - if: build_platform != target_platform
+    then: python
+  - if: build_platform != target_platform
+    then: cross-python_${{ target_platform }}
   host:
-    - python
-    - pip
-    - setuptools
-    - setuptools-git-versioning >=2.0,<3
-    - wheel
+  - python
+  - pip
+  - setuptools
+  - setuptools-git-versioning >=2.0,<3
+  - wheel
   run:
-    - python
+  - python
 
 tests:
-  - python:
-      imports:
-        - wasmtime
-      pip_check: true
+- python:
+    imports:
+    - wasmtime
+    pip_check: true
 
 about:
   summary: A WebAssembly runtime powered by Wasmtime
@@ -57,7 +57,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -65,8 +65,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wasmtime
   cfe-purls:
-    - pkg:conda/wasmtime-py@${{ version }}?channel=conda-forge
-    - pkg:pypi/wasmtime@${{ version }}
+  - pkg:conda/wasmtime-py@${{ version }}?channel=conda-forge
+  - pkg:pypi/wasmtime@${{ version }}
   cfe-upstream-repo: https://github.com/bytecodealliance/wasmtime-py
   cfe-upstream-homepage: https://github.com/bytecodealliance/wasmtime-py
   cfe-import-names: [wasmtime]
@@ -80,8 +80,8 @@ extra:
   cfe-last-checked: 2026-06-21T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T09:14:37Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: '2026-10-09T11:31:54Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

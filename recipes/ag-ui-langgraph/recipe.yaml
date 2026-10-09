@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.0.43"
+  version: "0.0.47"
 
 package:
   name: ag-ui-langgraph
@@ -10,44 +10,48 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/ag-ui-langgraph/ag_ui_langgraph-${{ version }}.tar.gz
-  sha256: 6df1577c039c91d9dbd3b0f279bf4b545837ce7f65299e8c7947299c2d467d9c
+  sha256: e19c1b13c909d1fbbf46968c65cb3ab6c681d97a0f6f2b980bb94ee000ca8079
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - dev = ag_ui_langgraph.dojo:main
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pip
     - hatchling
+    - pip
   run:
-    - python >=${{ python_min }}
-    - fastapi
+    - python >=${{ python_min }},<3.15
+    - ag-ui-protocol >=0.1.22
     - ag-ui-a2ui-toolkit >=0.0.4
-    - ag-ui-protocol >=0.1.15
-    - langchain-core >=0.3.0
     - langchain >=1.2.0
-    - langgraph <2,>=0.6.0
+    - langchain-core >=0.3.0
+    - langgraph >=0.6.0,<2
     - pydantic >=2.0.0
+  run_constraints:
+    - fastapi >=0.115.12
 
 tests:
-  - python:
-      imports:
-        - ag_ui_langgraph
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+  - script:
+      - python -c "import ag_ui_langgraph"
+      - pip check
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+        - fastapi >=0.115.12
 
 about:
-  homepage: https://pypi.org/project/ag-ui-langgraph/
+  summary: Implementation of the AG-UI protocol for LangGraph.
   license: MIT
   license_file: LICENSE
-  summary: Implementation of the AG-UI protocol for LangGraph.
-  description: |
-    Implementation of the AG-UI protocol for LangGraph.
+  homepage: https://pypi.org/project/ag-ui-langgraph/
+  repository: https://github.com/ag-ui-protocol/ag-ui/tree/main/integrations/langgraph/python
 
 extra:
   recipe-maintainers:
@@ -74,12 +78,12 @@ extra:
   cfe-last-checked: 2026-08-18T07:45:24Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T07:45:24Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-08-18T07:45:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T08:45:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
 # Header:
-#    # added run deps from import test: ['fastapi']
+#    # Synced to feedstock v0.0.47: fastapi moved to run_constraints + test run deps.
 ####

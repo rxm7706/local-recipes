@@ -2604,7 +2604,7 @@ with diff-apply, folding in platform expansion where the recipe is compiled
 **And** the live count and the per-bucket results are recorded in the story spec; commits go per bucket through the
 story's PR; the `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason
 pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 25.2: Track B refreshes the co-maintained recipes and keeps every other maintainer's work
 

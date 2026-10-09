@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-csvimport
-  version: "3.2"
+  version: "3.3"
 
 package:
   name: ${{ name|lower }}
@@ -11,30 +11,30 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-csvimport-${{ version }}.tar.gz
-  sha256: 21a6144dc22e819dc78f60ffd08be1991071240bf75276160e68aa9804b67c9d
+  sha256: ad7cad94ce287360cc09dcf2c5c7910dc568ccbaef0ca828f0b8343b912a74bf
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - django >=2.2.5
-    - chardet
-    - dateparser
+  - python >=${{ python_min }},<4.0
+  - django >=2.2.5
+  - chardet
+  - dateparser
 
 tests:
-  - python:
-      imports:
-        - csvimport
-      python_version: ${{ python_min }}.*
-      pip_check: true
+- python:
+    imports:
+    - csvimport
+    python_version: ${{ python_min }}.*
+    pip_check: true
 
 about:
   summary: Import CSV files to django models
@@ -44,4 +44,9 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
+
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-10-09T09:18:42Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build

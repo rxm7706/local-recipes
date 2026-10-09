@@ -2,17 +2,15 @@
 schema_version: 1
 
 context:
-  version: "5.2.1"
+  version: "5.5.0"
 
 package:
   name: confluence-markdown-exporter
   version: ${{ version }}
 
 source:
-  url: 
-    https://pypi.org/packages/source/c/confluence-markdown-exporter/confluence_markdown_exporter-${{
-    version }}.tar.gz
-  sha256: ee270e5554dee01e466dd6c6d917a8f883a365aed1492af139efb3469267cb9a
+  url: https://pypi.org/packages/source/c/confluence-markdown-exporter/confluence_markdown_exporter-${{ version }}.tar.gz
+  sha256: c94c7026b0886c652dd294a16cb8d7535f2a7896b4f7d7c3841ff558568156db
 
 build:
   number: 0
@@ -26,7 +24,7 @@ requirements:
     - hatchling
   run:
     - python >=${{ python_min }}
-    - atlassian-python-api
+    - atlassian-python-api >=4,<5
     - jmespath
     - lxml >=6.0.2
     - markdownify
@@ -51,10 +49,7 @@ about:
   license: MIT
   license_file: LICENSE
   summary: A tool to export Confluence pages to Markdown
-  description: "The confluence-markdown-exporter exports Confluence pages in Markdown
-    format. \nThis exporter helps in migrating content from Confluence to platforms
-    that support Markdown. \ne.g. Obsidian, Gollum, Azure DevOps (ADO), Foam, Dendron
-    and more.\n"
+  description: "The confluence-markdown-exporter exports Confluence pages in Markdown format. \nThis exporter helps in migrating content from Confluence to platforms that support Markdown. \ne.g. Obsidian, Gollum, Azure DevOps (ADO), Foam, Dendron and more.\n"
   repository: https://github.com/Spenhouet/confluence-markdown-exporter
   documentation: https://spenhouet.github.io/confluence-markdown-exporter/
 extra:
@@ -82,8 +77,8 @@ extra:
   cfe-last-checked: 2026-07-03T04:00:00Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T09:20:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.30.7"
+  version: "1.31.4"
 
 package:
   name: mailpit
@@ -10,27 +10,27 @@ package:
 
 source:
   url: https://github.com/axllent/mailpit/archive/v${{ version }}.tar.gz
-  sha256: 19366f9b6fb3c8dd8f9c97b2e894133c6fbac2c2fee9657975874a0deab71777
+  sha256: cd4d0d40044dde07df8ff5c168f6d95356770dca45627a9f9910ba66e70d7832
 
 build:
   number: 0
   script:
-    - if: unix
-      then: build.sh
-    - if: win
-      then: build.bat
+  - if: unix
+    then: build.sh
+  - if: win
+    then: build.bat
 
 requirements:
   build:
-    - ${{ compiler('go-cgo') }}
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
-    - go-licenses
-    - nodejs >=18
+  - ${{ compiler('go-cgo') }}
+  - ${{ compiler('c') }}
+  - ${{ stdlib('c') }}
+  - go-licenses
+  - nodejs >=18
 
 tests:
-  - script:
-      - mailpit --help
+- script:
+  - mailpit --help
 
 about:
   summary: A small, fast, low memory, zero-dependency, multi-platform email testing tool & API for developers
@@ -49,15 +49,15 @@ about:
     - Real-time web UI updates
   license: MIT
   license_file:
-    - LICENSE
-    - library_licenses/
+  - LICENSE
+  - library_licenses/
   homepage: https://github.com/axllent/mailpit
   repository: https://github.com/axllent/mailpit
   documentation: https://mailpit.axllent.org/docs/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -65,8 +65,8 @@ extra:
   cfe-upstream-registry: golang
   cfe-upstream-name: github.com/axllent/mailpit
   cfe-purls:
-    - pkg:conda/mailpit@${{ version }}?channel=conda-forge
-    - pkg:golang/github.com/axllent/mailpit@${{ version }}
+  - pkg:conda/mailpit@${{ version }}?channel=conda-forge
+  - pkg:golang/github.com/axllent/mailpit@${{ version }}
   cfe-upstream-repo: https://github.com/axllent/mailpit
   cfe-upstream-homepage: https://github.com/axllent/mailpit
   cfe-import-names: []
@@ -81,7 +81,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-28T15:19:00Z
+  cfe-local-build-datetime: '2026-10-09T11:04:55Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

@@ -3,42 +3,42 @@ schema_version: 1
 
 context:
   name: robocorp-log
-  version: "3.1.2"
+  version: "3.1.5"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp_log-${{ version }}.tar.gz
-  sha256: 57df58ab49c51dbdcfa1291f46bb2d02bfd4b9a5f5c8149eac4eca2ff4a845b7
+  url: https://files.pythonhosted.org/packages/4f/8a/dbac2aacddc31c3d6cbffae757b7a189dfeb91eab6a17fe92eb240d71e17/robocorp_log-3.1.5.tar.gz
+  sha256: 8e74972c60920ca2cf84f61d43895a2a5622e31efa368ca3cd555da09e533377
 
 build:
   number: 0
   noarch: python
   script:
-    - if: win
-      then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
-    - if: unix
-      then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
-    - ${{ PYTHON }} -m pip install . -vv
+  - if: win
+    then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
+  - if: unix
+    then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
+  - ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - poetry-core
-    - pip
+  - python ${{ python_min }}.*
+  - poetry-core
+  - pip
   run:
-    - python >=${{ python_min }},<4.0.0
-    - tomli <3.0.0,>=2.0.1
-    - psutil <8.0,>=5.0
+  - python >=${{ python_min }},<4.0.0
+  - tomli <3.0.0,>=2.0.1
+  - psutil <8.0,>=5.0
 
 tests:
-  - python:
-      imports:
-        - robocorp.log
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - robocorp.log
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Automatic trace logging for Python
@@ -48,7 +48,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -56,8 +56,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: robocorp-log
   cfe-purls:
-    - pkg:conda/robocorp-log@${{ version }}?channel=conda-forge
-    - pkg:pypi/robocorp-log@${{ version }}
+  - pkg:conda/robocorp-log@${{ version }}?channel=conda-forge
+  - pkg:pypi/robocorp-log@${{ version }}
   cfe-upstream-repo: https://github.com/robocorp/robocorp/
   cfe-upstream-homepage: https://github.com/robocorp/robocorp/
   cfe-import-names: [robocorp.log]
@@ -67,13 +67,13 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/robocorp-log-feedstock
   cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: '2026-10-09T11:17:03Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

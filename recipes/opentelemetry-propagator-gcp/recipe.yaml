@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: opentelemetry-propagator-gcp
-  version: "1.14.0"
+  version: "1.15.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 2d677ec5f0be296a25822a2011b1a5f74ba95c9635b7162f36bd376423b5a943
+  url: https://files.pythonhosted.org/packages/24/42/56047a7254dce3c689fd2514736370d360071614fd40d0c9af3538013dce/opentelemetry_propagator_gcp-1.15.0.tar.gz
+  sha256: b5066851d55be13344985c895ea5f07809226c21de821d864e7ce60602487663
 
 build:
   number: 0
@@ -20,19 +20,19 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - opentelemetry-api >=1.0,<2.dev0
+  - python >=${{ python_min }}
+  - opentelemetry-api >=1.0,<2.dev0
 
 tests:
-  - python:
-      imports:
-        - opentelemetry
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - opentelemetry
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Google Cloud propagator for OpenTelemetry
@@ -42,7 +42,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -50,8 +50,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: opentelemetry-propagator-gcp
   cfe-purls:
-    - pkg:conda/opentelemetry-propagator-gcp@${{ version }}?channel=conda-forge
-    - pkg:pypi/opentelemetry-propagator-gcp@${{ version }}
+  - pkg:conda/opentelemetry-propagator-gcp@${{ version }}?channel=conda-forge
+  - pkg:pypi/opentelemetry-propagator-gcp@${{ version }}
   cfe-upstream-repo: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
   cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-propagator-gcp
   cfe-import-names: [opentelemetry.propagators.cloud_trace_propagator]
@@ -61,13 +61,13 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/opentelemetry-propagator-gcp-feedstock
   cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: '2026-10-09T11:11:11Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

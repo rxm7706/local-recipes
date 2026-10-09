@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-mongodb-backend
-  version: "6.0.4"
+  version: "6.1.0"
   python_min: "3.12"
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_mongodb_backend-${{ version }}.tar.gz
-  sha256: 5733952f6dc14bc0d2162ab37c524405d2e4253eaaeaa67b0cd43932c34bc68e
+  sha256: 95d834c3b758f5e47bd568cabb0b9181d97ca1a6dcbc14dcbfdcac35682aad76
 
 build:
   number: 0
@@ -21,14 +21,14 @@ build:
 
 requirements:
   host:
-    - python 3.12.*
-    - hatchling
-    - hatch-requirements-txt >=0.4.1
-    - pip
+  - python 3.12.*
+  - hatchling
+  - hatch-requirements-txt >=0.4.1
+  - pip
   run:
-    - python >=${{ python_min }}
-    - django <6.1,>=6.0
-    - pymongo
+  - python >=${{ python_min }}
+  - django <6.1,>=6.0
+  - pymongo
     # - sphinx-copybutton
     # - sphinx >=7
     # - furo >=2025.7.19
@@ -46,11 +46,11 @@ requirements:
     # - furo >=2025.7.19
 
 tests:
-  - python:
-      imports:
-        - django_mongodb_backend
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - django_mongodb_backend
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Django MongoDB Backend
@@ -61,7 +61,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -69,8 +69,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-mongodb-backend
   cfe-purls:
-    - pkg:conda/django-mongodb-backend@${{ version }}?channel=conda-forge
-    - pkg:pypi/django-mongodb-backend@${{ version }}
+  - pkg:conda/django-mongodb-backend@${{ version }}?channel=conda-forge
+  - pkg:pypi/django-mongodb-backend@${{ version }}
   cfe-upstream-repo: https://github.com/mongodb/django-mongodb-backend
   cfe-upstream-homepage: https://www.mongodb.com/docs/languages/python/django-mongodb/current/
   cfe-import-names: [django_mongodb_backend]
@@ -84,8 +84,8 @@ extra:
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-10-09T09:23:01Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

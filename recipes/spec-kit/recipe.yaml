@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: spec-kit
-  version: "0.16.4"
+  version: "1.1.2"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/github/spec-kit/archive/v${{ version }}.tar.gz
-  sha256: 0012e4c1b956284b4284cae9b98ee984f7a71bcf61d2d0aff179824eb22ff387
+  sha256: ec29b9c598fef84331bbd2d68eefc2bbc66a198eee4ff2e8c7339ba6282a0ef9
 
 build:
   number: 0
@@ -23,41 +23,41 @@ build:
     content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - specify = specify_cli:main
+    - specify = specify_cli:main
 
 requirements:
   host:
-    - python 3.11.*
-    - hatchling
-    - pip
+  - python 3.11.*
+  - hatchling
+  - pip
   run:
-    - json5 >=0.13.0
-    - pathspec >=0.12.0
-    - click >=8.2.1
-    - python >=${{ python_min }},<4.0
-    - typer >=0.24.0
-    - rich
-    - httpx
+  - json5 >=0.13.0
+  - pathspec >=0.12.0
+  - click >=8.2.1
+  - python >=${{ python_min }},<4.0
+  - typer >=0.24.0
+  - rich
+  - httpx
     # https://github.com/encode/httpx/blob/master/pyproject.toml#L51
-    - socksio ==1
-    - platformdirs
-    - readchar
-    - truststore >=0.10.4
-    - pyyaml >=6.0
-    - packaging >=23.0
+  - socksio ==1
+  - platformdirs
+  - readchar
+  - truststore >=0.10.4
+  - pyyaml >=6.0
+  - packaging >=23.0
 
 tests:
-  - python:
-      imports:
-        - specify_cli
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}
-    script:
-      - specify --help
+- python:
+    imports:
+    - specify_cli
+    pip_check: false
+    python_version: ${{ python_min }}
+- requirements:
+    run:
+    - pip
+    - python ${{ python_min }}.*
+  script:
+  - specify --help
 
 about:
   summary: Specify CLI, part of GitHub Spec Kit. A tool to bootstrap your projects for Spec-Driven Development (SDD).
@@ -67,7 +67,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -75,9 +75,9 @@ extra:
   cfe-upstream-registry: github
   cfe-upstream-name: github/spec-kit
   cfe-purls:
-    - pkg:conda/spec-kit@${{ version }}?channel=conda-forge
-    - pkg:pypi/specify-cli@${{ version }}
-    - pkg:github/github/spec-kit@v${{ version }}
+  - pkg:conda/spec-kit@${{ version }}?channel=conda-forge
+  - pkg:pypi/specify-cli@${{ version }}
+  - pkg:github/github/spec-kit@v${{ version }}
   cfe-upstream-repo: https://github.com/github/spec-kit
   cfe-upstream-homepage: https://github.com/github/spec-kit
   cfe-import-names: [specify_cli]
@@ -87,13 +87,13 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/spec-kit-feedstock
   cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-21T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: '2026-10-09T11:22:06Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

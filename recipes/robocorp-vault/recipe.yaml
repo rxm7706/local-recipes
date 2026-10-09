@@ -3,44 +3,44 @@ schema_version: 1
 
 context:
   name: robocorp-vault
-  version: "1.4.0"
+  version: "1.4.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp_vault-${{ version }}.tar.gz
-  sha256: f65082ab31485f921db000657dc526dfd32a1597c707d0ab120df980e646ea2f
+  url: https://files.pythonhosted.org/packages/33/b2/1ff7aad1a631e27ae1ac10281dce30dbc4e51bd1d02218c0a6c2183d399a/robocorp_vault-1.4.1.tar.gz
+  sha256: ab4b41dae5b2a305ef6b4ab70b5049c463190445680494003351fdfcabd96159
 
 build:
   number: 0
   noarch: python
   script:
-    - if: win
-      then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
-    - if: unix
-      then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
-    - ${{ PYTHON }} -m pip install . -vv
+  - if: win
+    then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
+  - if: unix
+    then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
+  - ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - poetry-core
-    - pip
+  - python ${{ python_min }}.*
+  - poetry-core
+  - pip
   run:
-    - python >=${{ python_min }},<4.0.0
-    - cryptography >=46.0.5
-    - requests >=2.28.2
-    - pyyaml >=6.0.0,<7.0.0
-    - tenacity >=8.0.1
+  - python >=${{ python_min }},<4.0.0
+  - cryptography >=46.0.5
+  - requests >=2.28.2
+  - pyyaml >=6.0.0,<7.0.0
+  - tenacity >=8.0.1
 
 tests:
-  - python:
-      imports:
-        - robocorp.vault
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - robocorp.vault
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Robocorp Control Room Vault API integration library
@@ -50,4 +50,8 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
+  cfe-local-build-status: success
+  cfe-local-build-datetime: '2026-10-09T11:18:25Z'
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build

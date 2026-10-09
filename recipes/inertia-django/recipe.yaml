@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: inertia-django
-  version: "1.2.0"
+  version: "2.0.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/inertia_django-${{ version }}.tar.gz
-  sha256: 36511038caf2cbb6f54a08f17dc18fe1dd1b30c712a616672704e395b984f250
+  url: https://files.pythonhosted.org/packages/51/ae/abfa389f0944526a813e9c3ab644de091b22c7cf8b5284f4381e066509db/inertia_django-2.0.0.tar.gz
+  sha256: 89ab1ea1a1f45c3441010ecb3d0bca0b0256404d1b1f84e1f1abd734e21006f5
 
 build:
   number: 0
@@ -20,20 +20,20 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - poetry-core >=1.0.0
-    - pip
+  - python ${{ python_min }}.*
+  - poetry-core >=1.0.0
+  - pip
   run:
-    - python >=${{ python_min }},<4.0.0
-    - django >=4
-    - requests >=2.0.0,<3.0.0
+  - python >=${{ python_min }},<4.0.0
+  - django >=4
+  - requests >=2.0.0,<3.0.0
 
 tests:
-  - python:
-      imports:
-        - inertia
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - inertia
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Django adapter for the InertiaJS framework
@@ -43,7 +43,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -51,8 +51,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: inertia-django
   cfe-purls:
-    - pkg:conda/inertia-django@${{ version }}?channel=conda-forge
-    - pkg:pypi/inertia-django@${{ version }}
+  - pkg:conda/inertia-django@${{ version }}?channel=conda-forge
+  - pkg:pypi/inertia-django@${{ version }}
   cfe-upstream-repo: https://github.com/inertiajs/inertia-django
   cfe-upstream-homepage: https://github.com/inertiajs/inertia-django
   cfe-import-names: [inertia]
@@ -62,13 +62,13 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/inertia-django-feedstock
   cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: '2026-10-09T11:00:27Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

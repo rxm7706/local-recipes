@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.10.12"
+  version: "2.10.13"
 
 package:
   name: django-comments-xtd
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/django-comments-xtd/django_comments_xtd-${{ version }}.tar.gz
-  sha256: 56f736a291e76a13c935202d1d6ea8ad9bf530707075ed128888d47499565a77
+  sha256: a6a971971a581e65eaa3a770ac6e08af4ee80ae6c5c00b7b60560583eb38540e
 
 build:
   number: 0
@@ -19,26 +19,26 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - setuptools
-    - pip
+  - python ${{ python_min }}.*
+  - setuptools
+  - pip
   run:
-    - python >=${{ python_min }}
-    - django >=4.0,<7
-    - django-contrib-comments >=2.2,<2.3
-    - djangorestframework >=3.12,<3.18
-    - docutils
-    - pytz
-    - six
+  - python >=${{ python_min }}
+  - django >=4.0,<7
+  - django-contrib-comments >=2.2,<2.3
+  - djangorestframework >=3.12,<3.18
+  - docutils
+  - pytz
+  - six
 
 tests:
-  - python:
-      imports:
-        - django_comments_xtd
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+- python:
+    imports:
+    - django_comments_xtd
+    pip_check: true
+    python_version:
+    - ${{ python_min }}.*
+    - "*"
 
 about:
   summary: Django Comments Framework extension app with thread support, follow up notifications and email confirmations.
@@ -54,7 +54,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -62,8 +62,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-comments-xtd
   cfe-purls:
-    - pkg:conda/django-comments-xtd@${{ version }}?channel=conda-forge
-    - pkg:pypi/django-comments-xtd@${{ version }}
+  - pkg:conda/django-comments-xtd@${{ version }}?channel=conda-forge
+  - pkg:pypi/django-comments-xtd@${{ version }}
   cfe-upstream-repo: https://github.com/danirus/django-comments-xtd
   cfe-upstream-homepage: https://github.com/danirus/django-comments-xtd
   cfe-import-names: [django_comments_xtd]
@@ -78,7 +78,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-10-09T09:16:17Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
