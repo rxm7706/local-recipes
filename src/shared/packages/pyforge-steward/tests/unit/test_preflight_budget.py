@@ -43,7 +43,7 @@ def _run_record(
 
 
 def test_single_station_under_budget_exits_0(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("PIXI_PROJECT_ROOT", str(tmp_path))
     journal = tmp_path / preflight.JOURNAL_RELATIVE
     _write_journal(
         journal,
@@ -145,7 +145,7 @@ def test_unknown_run_id_exits_2(tmp_path: Path) -> None:
 
 
 def test_preflight_main_budget_mode(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("PIXI_PROJECT_ROOT", str(tmp_path))
     journal = tmp_path / preflight.JOURNAL_RELATIVE
     _write_journal(
         journal,
