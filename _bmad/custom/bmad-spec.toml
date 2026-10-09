@@ -1,0 +1,11 @@
+# Team override for bmad-spec — local-recipes / PyForge estate.
+# Personal overrides go in bmad-spec.user.toml (gitignored).
+#
+# Marshal Story 74.3 (spec-feature-flag-governance CAP-6): the Architect mandate
+# travels here as a persistent fact, never through an installer-owned SKILL.md.
+
+[workflow]
+
+persistent_facts = [
+  "Feature-flag governance (Architect): every story spec of `type: feature` minted on or after 2026-09-28 must declare exactly one of a `flag:` block or a `flag-exempt:` value from the closed list in `docs/governance/guild-roster.json` — see `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-1 and the block shape in `docs/reference/story-spec-flag-block.md`. `fix`, `chore` and `docs` stories need neither. Carrying both, or neither, is a defect.",
+]
