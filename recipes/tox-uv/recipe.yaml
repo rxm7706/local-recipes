@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.36.0"
+  version: "1.36.1"
 
 package:
   name: tox-uv
@@ -10,34 +10,34 @@ package:
 
 source:
   # tox-uv-bare provides the actual package code
-  url: https://files.pythonhosted.org/packages/source/t/tox-uv-bare/tox_uv_bare-${{ version }}.tar.gz
-  sha256: d9b0a2fd0f74fa65d9597108f8a0ef7abb08651c9196a998a6073b781b45cfd0
+  url: https://files.pythonhosted.org/packages/42/c1/1f5b4ff553013dfd418485cb9359cf305e7f47b946e02a36f4a4c279ac21/tox_uv_bare-1.36.1.tar.gz
+  sha256: 33a08e4205c63811dd76590590718539fe87dcadda5882f164f747bd5db31a2c
 
 build:
   number: 0
   noarch: python
   script:
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - hatch-vcs >=0.5
-    - hatchling >=1.28
-    - pip
+  - python ${{ python_min }}.*
+  - hatch-vcs >=0.5
+  - hatchling >=1.28
+  - pip
   run:
-    - python >=${{ python_min }}
-    - packaging >=26
-    - tox <5,>=4.52.1
-    - typing_extensions >=4.15
-    - uv
+  - python >=${{ python_min }}
+  - packaging >=26
+  - tox <5,>=4.52.1
+  - typing_extensions >=4.15
+  - uv
 
 tests:
-  - python:
-      imports:
-        - tox_uv
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - tox_uv
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Integration of uv with tox.
@@ -48,7 +48,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -56,8 +56,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: tox-uv-bare
   cfe-purls:
-    - pkg:conda/tox-uv@${{ version }}?channel=conda-forge
-    - pkg:pypi/tox-uv-bare@${{ version }}
+  - pkg:conda/tox-uv@${{ version }}?channel=conda-forge
+  - pkg:pypi/tox-uv-bare@${{ version }}
   cfe-upstream-repo: https://github.com/tox-dev/tox-uv
   cfe-upstream-homepage: https://github.com/tox-dev/tox-uv
   cfe-import-names: [tox_uv]
@@ -72,7 +72,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: '2026-10-09T11:24:37Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
