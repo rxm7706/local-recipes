@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: openmetadata-managed-apis
-  version: "1.13.3.2"
+  version: "2.0.5.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/openmetadata_managed_apis-${{ version }}.tar.gz
-  sha256: 3f030d52085ceb162e5081aafcd6b2a5fd23994efff762c5bcdf94209d705002
+  url: https://files.pythonhosted.org/packages/6e/41/85a60200608bd94d77d352e34d15263a0efc77934d944dfad48d7948c9b6/openmetadata_managed_apis-2.0.5.0.tar.gz
+  sha256: 39a769f0b53bd75b9957ce1af97b2b598c5eb091bc759f3c9f8f780485bba832
 
 build:
   number: 0
@@ -20,26 +20,26 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=70.3.0,<70.4.dev0
-    - pip
+  - python ${{ python_min }}.*
+  - setuptools >=70.3.0,<70.4.dev0
+  - pip
   run:
-    - apache-airflow-providers-fab >=1.0.0
-    - packaging >=20.0
-    - python >=${{ python_min }}
-    - pendulum >=3.0,<4.dev0
-    - apache-airflow >=2.2.2
-    - flask ==3.1.3
-    - flask-admin ==1.6.0
-    - apache-airflow-core >=3.0.2,<3.1.0
+  - apache-airflow-providers-fab >=1.0.0
+  - packaging >=20.0
+  - python >=${{ python_min }}
+  - pendulum >=3.0,<4.dev0
+  - apache-airflow >=2.2.2
+  - flask ==3.1.3
+  - flask-admin ==1.6.0
+  - apache-airflow-core >=3.0.2,<3.1.0
     # Pip Check Error cryptography 46.0.1 has requirement cffi>=2.0.0; python_full_version >= "3.9" and platform_python_implementation != "PyPy", but you have cffi 1.17.1.
 
 tests:
-  - python:
-      imports:
-        - openmetadata_managed_apis
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - openmetadata_managed_apis
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Airflow REST APIs to create and manage DAGS
@@ -50,7 +50,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -58,8 +58,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openmetadata-managed-apis
   cfe-purls:
-    - pkg:conda/openmetadata-managed-apis@${{ version }}?channel=conda-forge
-    - pkg:pypi/openmetadata-managed-apis@${{ version }}
+  - pkg:conda/openmetadata-managed-apis@${{ version }}?channel=conda-forge
+  - pkg:pypi/openmetadata-managed-apis@${{ version }}
   cfe-upstream-repo: https://github.com/open-metadata/OpenMetadata
   cfe-upstream-homepage: https://open-metadata.org/
   cfe-import-names: [openmetadata_managed_apis]
@@ -69,8 +69,8 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/openmetadata-managed-apis-feedstock
   cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
-    - recipe-regenerate
+  - meta-yaml-to-recipe-yaml
+  - recipe-regenerate
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0

@@ -9,8 +9,8 @@ package:
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/m/microsoft-agents-m365copilot/microsoft_agents_m365copilot-${{ version }}.tar.gz
-    sha256: a3a3b73bbd85fb95e565d9b17670e9f8698742e6b1c510137d966fd267d50aa0
+- url: https://pypi.org/packages/source/m/microsoft-agents-m365copilot/microsoft_agents_m365copilot-${{ version }}.tar.gz
+  sha256: a3a3b73bbd85fb95e565d9b17670e9f8698742e6b1c510137d966fd267d50aa0
 
 build:
   number: 0
@@ -19,24 +19,24 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - poetry-core
-    - pip
+  - python ${{ python_min }}.*
+  - poetry-core
+  - pip
   run:
-    - python >=${{ python_min }}
-    - microsoft-agents-m365copilot-core >=1.0.0
-    - microsoft-kiota-authentication-azure >=1.8.0,<2.0.0
-    - microsoft-kiota-bundle >=1.8.0,<2.0.0
-    - httpx >=0.23.0
+  - python >=${{ python_min }}
+  - microsoft-agents-m365copilot-core >=1.0.0
+  - microsoft-kiota-authentication-azure >=1.8.0,<2.0.0
+  - microsoft-kiota-bundle >=1.8.0,<2.0.0
+  - httpx >=0.23.0
 
 tests:
-  - python:
-      imports:
-        - microsoft_agents_m365copilot
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+- python:
+    imports:
+    - microsoft_agents_m365copilot
+    pip_check: true
+    python_version:
+    - ${{ python_min }}.*
+    - "*"
 
 about:
   summary: Microsoft Agents M365 Copilot Python SDK
@@ -48,4 +48,8 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
+  cfe-local-build-status: blocked
+  cfe-local-build-datetime: '2026-10-09T11:06:27Z'
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
