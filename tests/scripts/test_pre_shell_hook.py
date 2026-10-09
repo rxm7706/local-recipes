@@ -879,9 +879,9 @@ def test_outward_git_push_allowed_local_path(push_fixture: Path) -> None:
     assert result.stdout.strip() == ""
 
 
-def test_outward_git_push_denied_set_url_foreign_origin(push_fixture: Path) -> None:
+def test_outward_git_push_denied_set_url_foreign_origin() -> None:
     cmd = "git remote set-url --push origin https://github.com/someone/local-recipes.git"
-    result = _run(_claude_bash(cmd, push_fixture), push_fixture)
+    result = _run(_claude_bash(cmd, REPO_ROOT), REPO_ROOT)
     assert _claude_deny_reason(result) is not None
 
 
