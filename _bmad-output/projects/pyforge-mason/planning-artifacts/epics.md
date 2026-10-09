@@ -2100,7 +2100,7 @@ operating-procedure skill, hand-authored)
 discovery, `--platform` repeatable, the engine's name and version in the output) and `pyforge mason environment check`
 (non-zero on a stale lockfile, machine-readable for CI), with the solve left entirely to the engine
 **And** `test_mason_skills.py` covers the skill the way it covers `mason-package`; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 19.4: The two feedstock campaigns become Mason skills
 

@@ -12,7 +12,7 @@ import yaml
 CFE_LINK_FRAGMENT = ".claude/skills/conda-forge-expert/"
 GOTCHA_HEADING_RE = re.compile(r"^### G\d+\.", re.MULTILINE)
 
-# Extend in Stories 19.3 (mason-environment) and 19.4 (feedstock campaigns).
+# Extend in Story 19.4 (feedstock campaigns).
 MASON_HAND_AUTHORED_SKILLS: tuple[dict[str, object], ...] = (
     {
         "skill_dir": "mason-package",
@@ -30,6 +30,20 @@ MASON_HAND_AUTHORED_SKILLS: tuple[dict[str, object], ...] = (
             "pypi-test",
             "pypi",
             "gate",
+        ),
+    },
+    {
+        "skill_dir": "mason-environment",
+        "expected_name": "mason-environment",
+        "required_phrases": (
+            "pyforge mason environment lock",
+            "pyforge mason environment check",
+            "discover",
+            "explicit",
+            "--platform",
+            "engine_name",
+            "engine_version",
+            "conda-lock",
         ),
     },
 )
