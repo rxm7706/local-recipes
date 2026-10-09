@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/d2/54/7525db2491a1bdfbaf869a713d1492572161b24a145d3c8dec9688635ec3/tika_client-1.0.0.tar.gz
+  url: https://pypi.org/packages/source/t/tika-client/tika_client-${{ version }}.tar.gz
   sha256: 899c2fd08c717d8d590d46d76942103ef972fc37d43eadbfd6772a9961351ced
 
 build:
@@ -20,19 +20,19 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - hatchling
-  - pip
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
   run:
-  - python >=${{ python_min }},<4
-  - anyio >=4.8
-  - httpx >=0.27
-  - typing_extensions
+    - python >=${{ python_min }},<4
+    - anyio >=4.8
+    - httpx >=0.27
+    - typing_extensions
 
 tests:
 - python:
     imports:
-    - tika_client
+      - tika_client
     pip_check: true
     python_version: ${{ python_min }}.*
 
@@ -44,7 +44,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -52,8 +52,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: tika-client
   cfe-purls:
-  - pkg:conda/tika-client@${{ version }}?channel=conda-forge
-  - pkg:pypi/tika-client@${{ version }}
+    - pkg:conda/tika-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/tika-client@${{ version }}
   cfe-upstream-repo: https://github.com/stumpylog/tika-client
   cfe-upstream-homepage: https://github.com/stumpylog/tika-client
   cfe-import-names: [tika_client]
