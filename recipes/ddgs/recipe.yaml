@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "9.14.4"
+  version: "9.16.0"
 
 package:
   name: ddgs
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/ddgs/ddgs-${{ version }}.tar.gz
-  sha256: f7b118a2b709a9e9c04a1dca6e96b98c25d4dfaca1a4b0a244d74454fcca48ef
+  sha256: 161ca8e78ea08d40cd3f83fb12279b49322ffb342d981368bfa39bed9847d874
 
 build:
   number: 0
