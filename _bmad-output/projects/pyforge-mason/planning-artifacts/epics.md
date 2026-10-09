@@ -2420,7 +2420,7 @@ directory (today it prints `[ERROR]` and exits 0)
 **And** the function carries a provenance line naming `auto-recipe@8b53eda` `verify/checks.py`; removing the comparison
 makes the mismatch fixture's test fail; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 23.2: CFE's recipe generator asks instead of guessing
 
