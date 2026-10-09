@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: d7b9d05ef0763e0a
-story_count: 93
-test_file_count: 41
+source_fingerprint: 64eaf672649647d1
+story_count: 94
+test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 93
+- **Stories parsed:** 94
 - **Epics parsed:** 27
-- **Test files inventoried:** 41 under `src/shared/packages/pyforge-mason/tests/`
+- **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d7b9d05ef0763e0a`
+- **Source fingerprint:** `64eaf672649647d1`
 
 ## Risk Assessment
 
@@ -80,12 +80,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-mason/tests/meta/test_dependency_direction.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_exit_code_ownership.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_namespace_is_implicit.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_no_config_file.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_no_recipe_knowledge.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_render_ownership.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_airgap_contract.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_boot_reconcile.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_build_hooks.py` | unit | none observed |
@@ -205,6 +207,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 24.1 | CFE's host-gate tests pass in any developer shell | none observed |
 | 25.1 | Track A's Wave H refreshes the sole-maintainer recipes the first waves missed | none observed |
 | 25.2 | Track B refreshes the co-maintained recipes and keeps every other maintainer'... | none observed |
+| 25.3 | CFE gains a tracked bulk recipe-refresh driver that the refresh waves run thr... | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |
 | 27.2 | CFE, its failure catalog and the closed rebuild campaign's records close thei... | none observed |

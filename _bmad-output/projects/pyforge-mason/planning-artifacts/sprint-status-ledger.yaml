@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 147
+# stories: 148
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -77,6 +77,7 @@ development_status:
   24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell: done
   25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed: done
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: backlog
+  25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: backlog
   26-1-cfe-s-tests-never-ask-github-whether-a-recipe-maintainer-exists: done
   27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals: done
   27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals: done

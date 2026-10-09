@@ -441,6 +441,36 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   surface (`mason-cfe-surface-check`). DW-PRESENTON-PHASE0-1 stays open: its exits wait on decisions and access outside
   this repo. The 71 open rows that carry no severity, and the one open high row, are outside these two phases. Owner:
   mason (`spec-pyforge-mason`, no new CAP). → Epic 27 / Stories 27.1–27.2, specced 2026-10-03.
+- **2026-10-09 — Ruled: CFE gains a tracked bulk refresh driver, so Track B can continue.** Operator ruling, 2026-10-09:
+  mint a driver story so Story 25.2 can continue. Story 25.1 refreshed 92 sole-maintainer recipes with scripts it never
+  committed (`.cursor/wave_h_*` in its dispatch worktree). Story 25.2 stopped `blocked` after Wave A, with 96
+  co-maintained recipes queued and no batch driver in the repo. Its pilot through CFE's autotick failed on a recipe with
+  no `context.name`. Those uncommitted scripts also left four defects in 25.1's landing:
+  - `recipes/wasmtime-py/meta.yaml` was renamed to `.meta.yaml.wave_h_hold`, although that feedstock is still v0. An
+    early exit skipped the restore.
+  - 56 recipes lost their templated `pypi.org/packages/source` URL to a hashed `files.pythonhosted.org` one.
+  - 78 of the 92 recipe diffs re-indent lists.
+  - The CFE version carriers broke lockstep at 8.97.1. Story 22.1's landing restores it at 8.98.0.
+
+  **What it looks like when real:** one tracked CFE script, `refresh-wave`, takes a wave manifest. It refreshes each
+  recipe to its feedstock's published version through CFE's own edit path, and keeps a v0 feedstock's `meta.yaml` in
+  place. It re-merges every co-maintainer, reports a dependency or pin difference instead of applying it, and records
+  each outcome in the recipe's CFE comments and in a wave report. It is dry-run by default, resumable, and idempotent.
+  Stories 25.1 and 25.2's waves run through it, not through a session's scratch scripts.
+  **Constraints:**
+  - Everything the driver does with these recipes stays local. It never runs `git push`, `gh pr create`,
+    `gh repo fork`, a `gh api` write, `mason recipe submit` or `mason package ship`, or CFE's `submit_pr` or
+    `prepare_submission_branch`.
+  - It only reads feedstocks (raw files, or `gh api` GETs), and writes only under `recipes/` and its own report path.
+    No PR, issue or comment reaches conda-forge, a feedstock, staged-recipes, or any repository other than
+    `rxm7706/local-recipes`.
+  - The work goes through `conda-forge-expert` (Rule 1), and its CFE edits land in one `retro(cfe):` commit with a
+    CHANGELOG semver entry (AD-15).
+  - The story repairs none of the four landing defects in `recipes/`: they are context, and the driver stops them
+    recurring.
+
+  Owner: mason (`spec-pyforge-mason`, no new CAP: CAP-35 is the campaign, CAP-20 the parameterized wave, CAP-23 the CFE
+  machinery). → Epic 25 / Story 25.3 (FR-57), specced 2026-10-09; Story 25.2 now depends on it.
 
 ## One-chain fold — 2026-09-17
 

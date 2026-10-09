@@ -214,6 +214,28 @@ verify_commands = [
   "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
 ]
 
+"25" = [  # The feedstock refresh campaign is Mason's (spec-pyforge-mason CAP-35), added 2026-10-09 with Story 25.3.
+  # The station default, restated because a declared entry replaces it outright, plus what Epic 25's stories touch:
+  # - 25.1 and 25.2: recipes/** and their retro(cfe) commits.
+  # - 25.3: the CFE surface (the refresh_wave script, its wrapper and tests, recipe_updater, the version carriers) in
+  #   one retro(cfe) commit, and one pixi.toml task table.
+  # - Every story: the station ledger and every Spec memlog a surface reconcile names (spec-fleet-stewardship governs
+  #   recipes/**; spec-packaging-factory and spec-conda-forge-expert-rebuild govern the CFE surface).
+  "src/shared/packages/pyforge-mason/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/**",
+  "_bmad-output/projects/pyforge-mason/implementation-artifacts/**",
+  ".gitignore",
+  "pixi.toml",
+  "pixi.lock",
+  "environment.yaml",
+  "scripts/.spec-surface-baseline.json",
+  "recipes/**",
+  ".claude/skills/conda-forge-expert/**",
+  ".claude/scripts/conda-forge-expert/**",
+  "_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml",
+  "_bmad-output/projects/*/planning-artifacts/specs/spec-*/.memlog.md",
+]
+
 "26" = [  # CFE's tests never ask GitHub whether a recipe maintainer exists (fix under spec-pyforge-mason CAP-34), added 2026-10-02
   # Station default, plus the CFE surface Story 26.1's one retro(cfe) commit writes (tests/conftest.py, a new
   # regression test, CHANGELOG.md and the version carriers), every Spec memlog (spec-packaging-factory governs the
