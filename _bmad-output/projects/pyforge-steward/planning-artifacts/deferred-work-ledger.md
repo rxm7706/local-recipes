@@ -6251,3 +6251,14 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: low
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-71-7: Operator manual CAP-159 proof on the 16-core reference laptop (pr-preflight then preflight-budget under 60s on a marshal-only branch) was not run in this harness session.
+
+- source_spec: `planning-artifacts/specs/spec-71-7-the-one-minute-budget-is-a-check-that-reads-the-journal.md`
+  summary: Operator manual CAP-159 proof on the 16-core reference laptop (pr-preflight then preflight-budget under 60s on a marshal-only branch) was not run in this harness session.
+  evidence: Story AC requires measured wall time on reference hardware; this auto run verified journal semantics via unit tests and `python scripts/spec_surface_reconcile.py` only.
+  location: _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-71-7-the-one-minute-budget-is-a-check-that-reads-the-journal.md
+  origin: spec-deferred 3f54dc65d469 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

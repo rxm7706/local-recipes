@@ -596,6 +596,11 @@ def run_preflight(
 
 
 def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
+    if argv and ("--budget" in argv or argv[0] == "--budget"):
+        from pyforge.steward import preflight_budget
+
+        return preflight_budget._parse_args(argv)  # noqa: SLF001 — shared CLI surface
+
     parser = argparse.ArgumentParser(prog="pyforge.steward.preflight")
     parser.add_argument(
         "--jobs",
@@ -612,7 +617,12 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = _parse_args(argv or [])
+    argv_list = list(argv or [])
+    if argv_list and ("--budget" in argv_list or argv_list[0] == "--budget"):
+        from pyforge.steward import preflight_budget
+
+        return preflight_budget.main(argv_list)
+    args = _parse_args(argv_list)
     repo_root = Path(os.environ.get("PIXI_PROJECT_ROOT", ".")).resolve()
     return run_preflight(
         repo_root,
