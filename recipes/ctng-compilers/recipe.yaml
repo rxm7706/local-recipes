@@ -10,6 +10,15 @@ context:
   build_num: 1
   gcc_maj_ver: 15
   cross_target_platform: linux-64
+  cross_target_stdlib: sysroot
+  cross_target_stdlib_version: "2.17"
+  cross_target_cxx_stdlib: libstdcxx
+  TARGET: x86_64-conda-linux-gnu
+  binutils_version: "2.46.1"
+  with_conda_specs: true
+  openmp_ver: "4.5"
+  libgomp_ver: "1.0.0"
+  libgfortran_soname: 5
   libgcc_devel_build_num: ${{ build_num + 100 if target_platform == cross_target_platform else build_num }}
 
 recipe:
