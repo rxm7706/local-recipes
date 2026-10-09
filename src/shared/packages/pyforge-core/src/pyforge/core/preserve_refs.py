@@ -13,11 +13,11 @@ from __future__ import annotations
 import os
 import re
 import tempfile
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
-from collections.abc import Iterator
-from contextlib import contextmanager
 from typing import Literal
 
 from pyforge.core.process import PosixProcess, ProcessError
@@ -445,7 +445,6 @@ def list_preserves(
             continue
         if producer is not None and parsed.producer != producer:
             continue
-        short = refname.removeprefix("refs/tags/")
         object_sha = _full_sha(repo, refname)
         msg = _git_out(repo, "cat-file", "-p", object_sha)
         # Annotated tag object: skip header lines to message body
