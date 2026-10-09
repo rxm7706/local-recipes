@@ -2,7 +2,7 @@
 title: "87.11: The build skills and recovery recipes preserve before they revert or rebuild"
 type: 'feature'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'db08e46a974ea2d59c84005242bfc7a545b69ba9'
 review_loop_iteration: 0
 followup_review_recommended: false
