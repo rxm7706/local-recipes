@@ -2,7 +2,7 @@
 title: "87.6: Land, retire and the station branch never fight the protected list"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '48988a4d84a5a2be6e5e17162849a112c8cc315a'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -15,7 +15,28 @@ context:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/retire.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py
-deferred: []
+deferred:
+  - summary: >-
+      Policy protected additions do not print with provenance (AD-10 / AD-16 / AD-27) on land or retire output.
+    evidence: |-
+      Story approach names provenance printing; implementation unions floor, roster, and project additions silently.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py
+    severity: medium
+  - summary: >-
+      Real-git unit tests for new GitVcs ls-remote, merge-base, and for-each-ref helpers are not added.
+    evidence: |-
+      Consumers land.py and retire.py depend on remote_branch_exists, is_commit_ancestor, and commit_contained_in_tag_prefixes; test_vcs_git.py has no cases.
+    location: >-
+      src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py
+    severity: medium
+  - summary: >-
+      Mutation-style AC (each rule removal must fail a test) is not enforced by dedicated tests.
+    evidence: |-
+      Behavioral tests updated but no tests fail when protected_refs or downgrade helpers are removed.
+    location: >-
+      src/shared/packages/pyforge-marshal/tests/unit/test_protected_refs.py
+    severity: low
 declared_low_risk: false
 ---
 
@@ -79,8 +100,31 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Auto run landed Story 87.6 implementation; review deferred provenance printing and expanded VCS test coverage.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 18 findings — high 0, medium 4, low 3, false 3, maybe-false 0 (remaining routed patch/defer/reject)
+- findings:
+  - `[false]` `[reject]` MRS-LAND-013 unreachable on current land entry (head always loop/{slug}) — land.py fixes head to loop/{slug} before merge; finding path is reserved for future non-loop heads.
+  - `[false]` `[reject]` loop happy-path branch_retired should always false while branch on origin — fake defaults remote absent; tests model post-delete remote; loop path never requests delete.
+  - `[false]` `[reject]` retire module docstring stale — docstring drift only; behavior matches 87.6 via protected_refs.
+  - `[medium]` `[patch]` Invalid protected_ref_prefixes silently dropped — retire now emits MRS-POLICY-004 and skips slug when key present and validation fails.
+  - `[medium]` `[defer]` Provenance printing for policy additions not implemented — recorded in frontmatter deferred.
+  - `[medium]` `[defer]` No real-git tests for new VcsPort methods — deferred.
+  - `[medium]` `[defer]` Roster read failure returns empty set without finding — pre-existing pattern; floor still applies.
+  - `[low]` `[defer]` Mutation AC not explicit in tests — deferred.
+  - `[low]` `[reject]` archive/rescue branch names missing in test_protected_refs — covered by _STRUCTURAL_BRANCH_PREFIXES in protected_refs.py same as preserve/.
+  - `[low]` `[reject]` MRS-LAND-013 no unit test — dead path on current land CLI; MRS-LAND-012 covered.
+  - `[medium]` `[defer]` forge_gh merge success when gh pr view fails after delete refusal — edge case; MERGED view path covered by test_merge_pr_delete_failure_after_merged_does_not_raise.
+  - Additional blind-hunter / edge-case items grouped into defer/reject above (docstring, test gaps, roster WARN).
+
+## Auto Run Result
+
+- **Summary:** Land never passes `--delete-branch` for `loop/*` (MRS-LAND-012, AD-47); `branch_retired` comes from post-merge `remote_branch_exists`; forge treats merged+delete-failure as success; retire structural exclusions use code floor ∪ roster ∪ validated policy additions; would-orphan refuse on execute (MRS-RETIRE-004).
+- **Files changed:** `core/protected_refs.py` (new floor/roster/policy matching); `cli/land.py`, `adapters/forge_gh.py`, `ports/vcs.py`, `adapters/vcs_git.py`; `core/retire.py`, `cli/retire.py`; findings/verdict; unit/meta tests; story spec metadata.
+- **Review:** One patch (invalid `protected_ref_prefixes` → MRS-POLICY-004); provenance printing and VCS real-git tests deferred; several findings rejected as false or low-value.
+- **Follow-up review recommended:** false (one medium patch only).
+- **Verification:** `pyforge-marshal-test` pass; `pyforge-ci pyforge-deps-test` 130 passed; `pyforge-guild lint-types` exit 0 after ruff-format-fix; `python scripts/spec_surface_reconcile.py` OK.
+- **Residual risks:** Provenance not printed; orphan “held elsewhere” narrowed to main + preserve/archive tags per M5; roster I/O errors still silent beyond code floor.
