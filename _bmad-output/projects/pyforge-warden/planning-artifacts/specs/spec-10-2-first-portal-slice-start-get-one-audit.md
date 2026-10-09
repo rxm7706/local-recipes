@@ -2,7 +2,7 @@
 title: First portal slice — start/get one audit
 type: feature
 created: '2026-08-25'
-status: in-review
+status: done
 updated: '2026-10-08'
 baseline_revision: c3f75232a15bb3c28730c546e8f955cda59054df
 review_loop_iteration: 0
