@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-dbbackup
-  version: 5.3.0
+  version: 5.3.1
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 2c880dba7650539e8a724174fedb5213062c4fcda3aa09e1c5f3f573192106cb
+  sha256: 029573a760ddd288eae26504dcf3d9013282a4d2fed7d723d113a9c5fefa8aaf
 
 build:
   number: 0
@@ -20,19 +20,19 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools
-    - hatchling
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
+  - hatchling
   run:
-    - python >=${{ python_min }},<4.0
-    - django >=5.0
+  - python >=${{ python_min }},<4.0
+  - django >=5.0
 tests:
-  - python:
-      imports:
-        - dbbackup
-      python_version: ${{ python_min }}.*
-      pip_check: true
+- python:
+    imports:
+    - dbbackup
+    python_version: ${{ python_min }}.*
+    pip_check: true
 
 about:
   summary: Management commands to help backup and restore a project database and media.
@@ -42,7 +42,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -50,8 +50,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-dbbackup
   cfe-purls:
-    - pkg:conda/django-dbbackup@${{ version }}?channel=conda-forge
-    - pkg:pypi/django-dbbackup@${{ version }}
+  - pkg:conda/django-dbbackup@${{ version }}?channel=conda-forge
+  - pkg:pypi/django-dbbackup@${{ version }}
   cfe-upstream-repo: https://github.com/Archmonger/django-dbbackup
   cfe-upstream-homepage: https://github.com/Archmonger/django-dbbackup
   cfe-import-names: [dbbackup]
@@ -66,7 +66,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-10-09T09:19:22Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
