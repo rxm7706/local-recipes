@@ -3,36 +3,36 @@ schema_version: 1
 
 context:
   name: wagtailtables
-  version: "0.2.2"
+  version: "0.3.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtailtables-${{ version }}.tar.gz
-  sha256: 45bfcfda12e56e479fae05e0438efb5026928793d588c9d08101d5af27021544
+  url: https://files.pythonhosted.org/packages/ce/8a/4245e13b1b94d13f3c7ebe3b3028dc2142679cbead8a11650bc36e970c14/wagtailtables-0.3.0.tar.gz
+  sha256: fc05a63a659597706cfd4eb82c9a18fa6678addb50c500ab28ea3534f19d4c43
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - wagtail >=3.0
+  - python >=${{ python_min }}
+  - wagtail >=3.0
 
 tests:
-  - python:
-      imports:
-        - wagtailtables
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - wagtailtables
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: jSpreadsheet table blocks for Wagtail
@@ -42,4 +42,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
