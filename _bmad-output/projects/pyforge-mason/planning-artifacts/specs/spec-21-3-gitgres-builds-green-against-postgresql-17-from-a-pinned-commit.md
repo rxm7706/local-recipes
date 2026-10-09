@@ -2,7 +2,7 @@
 title: "21.3: gitgres builds green against PostgreSQL 17 from a pinned commit"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '1560c1fbcf187bcf729be8aff1705b0ffb3687e6'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -167,5 +167,38 @@ Flag: `flag-exempt: recipe-build`.
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate); the operator reviews the branch before
-  landing it as `Merge pyforge-mason/21-3-gitgres-builds-green-against-postgresql-17-from-a-pinned-commit into main`.
+### 2026-10-09 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 0, false 3, reject 1
+- findings:
+  - `[false]` `[reject]` Missing `build.bat` for Windows — recipe declares `build.skip: win`; no Windows artifact is built or tested.
+  - `[false]` `[reject]` Backend Makefile ignores `PG_CONFIG` on the command line — `PG_CONFIG` is unused in backend rules; only `CC` override was required for conda compilers (verified green build).
+  - `[false]` `[reject]` Extension test does not assert PostgreSQL 17 vs 18 at render time — host/test resolve logs show `postgresql 17.11` / `libpq 17.11` during `recipe-build`.
+  - `[false]` `[reject]` `gitgres-backend` usage grep may fail if upstream changes stderr — matched live binary output in rattler test phase.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `recipes/gitgres` (v1 recipe + `build.sh`) packaging upstream commit `eaf8743f` against PostgreSQL 17.11: PGXS extension, backend binaries, socket-only integration test, and CFE metadata. Rule-2 retro bumped conda-forge-expert to v8.93.3.
+
+Files changed:
+- `recipes/gitgres/recipe.yaml` — recipe, tests, CFE block with local build stamp
+- `recipes/gitgres/build.sh` — PGXS build/install and backend binary install
+- `.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,MANIFEST.yaml,config/skill-config.yaml}` — retro v8.93.3
+- Spec memlogs on `spec-pyforge-mason`, `spec-packaging-factory`, `spec-conda-forge-expert-rebuild`
+
+Review: 0 patches applied; 4 findings rejected as false on verification.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run -e local-recipes validate recipes/gitgres` — exit 0
+- `pixi run -e local-recipes lint-optimize recipes/gitgres` — exit 0
+- `pixi run -e local-recipes check-deps recipes/gitgres` — exit 0
+- `pixi run -e local-recipes scan-vulnerabilities recipes/gitgres` — exit 0
+- `pixi run -e local-recipes recipe-build recipes/gitgres` — exit 0; tests passed (CREATE EXTENSION, repositories query, backend usage)
+- `pixi exec … conda-smithy recipe-lint --conda-forge recipes/gitgres` — exit 0
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile
+
+Residual risks: GitHub commit archive sha256 may drift (G61); upstream tagging would require G109 source/version flip; global PG 18 pin may require recipe-local CBC on other platforms if render ever leaks 18.

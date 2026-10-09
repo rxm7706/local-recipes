@@ -106,7 +106,7 @@ extra:
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-last-checked: "2026-10-09T00:00:00Z"
-  cfe-generated-by-version: 8.93.2
+  cfe-generated-by-version: 8.93.3
   cfe-generated-at-datetime: "2026-10-09T00:00:00Z"
   cfe-local-build-status: success
   cfe-local-build-datetime: "2026-10-09T03:01:00Z"
