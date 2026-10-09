@@ -104,9 +104,7 @@ _SHIPPED_CONFIG = Path(__file__).resolve().parents[6] / "src" / "platform" / "co
 _DATED_KILL_FIXTURE = "pyforge.test.dated_kill_fixture"
 
 
-def test_killing_a_dated_on_everywhere_flag_on_a_shipped_copy_leaves_the_tree_composable(
-    tmp_path: Path, monkeypatch
-):
+def test_killing_a_dated_on_everywhere_flag_on_a_shipped_copy_leaves_the_tree_composable(tmp_path: Path, monkeypatch):
     """Story 76.2: ``disable_flag`` sets only ``state``. A flag with ``on_everywhere`` set
     must still compose after kill (Story 76.4 removed ``pyforge.three_surfaces`` from the
     shipped tree, so this copies the live tree and adds a dated fixture key)."""
