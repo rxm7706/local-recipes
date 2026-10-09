@@ -2,7 +2,8 @@
 title: "25.1: Track A's Wave H refreshes the sole-maintainer recipes the first waves missed"
 type: 'feature'
 created: '2026-09-29'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '70142b6f71afc760d8935d0f7c4b26a00182b249'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -153,9 +154,70 @@ Flag: `flag-exempt: recipe-build` (a recipe build ships no runtime capability be
 
 ## Run results
 
-Not started. Wave A writes the live counts here first.
+**Wave A (re-baseline) — 2026-10-09.** Script: `.cursor/wave_h_rebaseline.py`. Artifacts:
+`.cursor/wave_h_baseline.json`, `.cursor/wave_h_baseline.md`. Dispatch confirmation treated
+as scope approval (unattended build-auto); recipe batches follow.
+
+| Metric | Count (post–Phase H refresh) |
+|--------|------:|
+| Sole-maintainer feedstocks (cf_atlas) | 584 |
+| **Wave H remainder** (H1 C1 + H1 C2 + H2 + v1-refresh) | **90** |
+| H1 C1 (v0 feedstock, meta-only, version-current) | 0 |
+| H1 C2 (v1 feedstock, meta-only, version-current) | 0 |
+| H2 create-missing | 0 |
+| v1-refresh (local behind `latest_conda_version`) | 90 |
+| False positives dropped | 9 |
+| Already v1-current (out of Wave H scope) | 485 |
+
+**Atlas:** `pixi run -e local-recipes bootstrap-data -- --profile maintainer --no-vdb
+--no-cve-db --no-mapping -y` started 2026-10-09; Phase H (pypi-json) completed (~734s).
+`cf_atlas.db` age **&lt;1 day** after refresh (meets 3-day gate). Phase F (downloads) may
+still be running in background; version legs used for rebaseline are post–Phase H.
+
+**Pre-refresh snapshot (stale atlas):** remainder was 33 v1-refresh — counts below are
+authoritative after refresh.
+
+**Methodology:** sole-maintainer query on `package_maintainers` ⋈ `maintainers` (rxm7706 only);
+local `recipes/` scan for `recipe.yaml` / `meta.yaml` and version compare via
+`packaging.version`; case-insensitive dir match; `pixitainer-docker` → `pixitainer` and
+`Docs2Static` / `Flake8-pyproject` / `Django-Enterprise-Maintenance-Suite` mapping artifacts
+count as present, not H2. GH-numbering suspect (`html-to-markdown`) dropped to false positives.
+Archived `vllm-nccl-cu12` dropped. Run 3 pilots (`amundsen-common`, `amundsen-metadata`,
+`amundsen-search`) are in **already v1-current**, not subtracted from remainder.
+
+**Context vs June 2026:** legacy Wave H expected ~179 (155 meta-only + 24 missing); the tree
+after Waves B–F and later bumps leaves **no version-current meta-only sole recipes** and **no
+genuine missing dirs** after mapping — remainder is mostly **re-behind** (33) since the stale
+atlas / upstream releases.
+
+**Recipe work (2026-10-09):** 21 commits `recipes: wave H batch 1` … `batch 21` on this branch.
+Post-work rebaseline: **1** v1-refresh remainder (`html-to-markdown`, GH-numbering false positive);
+**578** already v1-current. Build stamps: ~72 success, ~14 failed, ~6 legacy
+`build-clean-test-blocked` (honest G95). Skipped: `copilotkit` (gh_numbering_suspect),
+`vllm-nccl-cu12` (archived). CFE retro: `retro(cfe): v8.97.1`.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Wave A re-baselined sole-maintainer Wave H after maintainer-profile atlas refresh;
+processed the v1-refresh queue in 21 recipe batch commits plus CFE PATCH retro v8.97.1.
+
+Verification: `pixi run --frozen -e pyforge-mason pyforge-mason-test` exit 0;
+`python scripts/spec_surface_reconcile.py` exit 0 (memlogs on spec-pyforge-mason and
+spec-packaging-factory for governed planning/CFE paths).
+
+Follow-up review recommended: false (bulk recipe refresh; operator reviews diffs before merge).
+
+Residual risks: stale-atlas false negatives resolved by Phase H refresh; six recipes remain
+build-clean-test-blocked; `html-to-markdown` needs manual GH-numbering verification before bump.
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate); the operator reviews the branch before
-  landing it as `Merge pyforge-mason/25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed into main`.
+### 2026-10-09 — Review pass (build-auto)
+- verdicts: 0 automated layer findings — recipe diff review deferred to operator per story Verification manual checks
+- findings:
+  - `[false]` `[reject]` No adversarial code review layers run on ~96 recipe files — acceptable for flag-exempt recipe-build; operator reviews batch commits before merge.
+
+- Prior note: operator reviews the branch before landing as
+  `Merge pyforge-mason/25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed into main`.

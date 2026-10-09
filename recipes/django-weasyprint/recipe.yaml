@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-weasyprint
-  version: "2.5.0"
+  version: "2.6.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 362956b650d2a053967471c0ce15857f08e30253a3eeb746aef7c459d3ee9cf9
+  url: https://files.pythonhosted.org/packages/ae/a1/1d002b74459ad85645d2ef162fd6f8894f4b155e53689234c39f62f9b17b/django_weasyprint-2.6.0.tar.gz
+  sha256: ec69834de0c1b416bdc9a9a6aaf72070d7a0072ce38df9cc9296d123ffcf5e28
 
 build:
   number: 0
@@ -20,21 +20,21 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - wheel
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - wheel
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - django >=3.2
-    - weasyprint >=68
+  - python >=${{ python_min }}
+  - django >=3.2
+  - weasyprint >=68
 
 tests:
-  - python:
-      imports:
-        - django_weasyprint
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - django_weasyprint
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Django WeasyPrint CBV
@@ -44,4 +44,8 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
+  cfe-local-build-status: success
+  cfe-local-build-datetime: '2026-10-09T10:50:57Z'
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build

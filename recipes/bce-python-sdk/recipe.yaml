@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.9.76"
+  version: "0.9.79"
 
 package:
   name: bce-python-sdk
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/b/bce-python-sdk/bce_python_sdk-${{ version }}.tar.gz
-  sha256: 01c630ce8dcbf8be0563d65f18b5201eaac6bd954b3dc776040aec268f81b6ff
+  sha256: cd77476b43347ed28d0211d5ad557e524e1ec648bd093d57c6a6d3de075a7508
 
 build:
   number: 0
@@ -78,7 +78,7 @@ extra:
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-19T16:53:58Z
+  cfe-local-build-datetime: 2026-10-09T09:20:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

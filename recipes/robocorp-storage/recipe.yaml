@@ -3,43 +3,43 @@ schema_version: 1
 
 context:
   name: robocorp-storage
-  version: "1.1.0"
+  version: "1.1.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp_storage-${{ version }}.tar.gz
-  sha256: ae9d0f654e88047ea8efcce9d7cbb1017a52993da57b83c38d243395c3198d96
+  url: https://files.pythonhosted.org/packages/39/97/407e7d06a14d65b20f0055b0a518ae1d775172f06eb02153946228b57593/robocorp_storage-1.1.1.tar.gz
+  sha256: 0f86824a65308e7ec56df76326913d15d62bbce0f27dccb22074f97e653f1aaa
 
 build:
   number: 0
   noarch: python
   script:
-    - if: win
-      then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
-    - if: unix
-      then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
-    - ${{ PYTHON }} -m pip install . -vv
+  - if: win
+    then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
+  - if: unix
+    then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
+  - ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - poetry-core
-    - pip
+  - python ${{ python_min }}.*
+  - poetry-core
+  - pip
   run:
-    - python >=${{ python_min }},<4.0.0
-    - requests >=2.28.2
-    - tenacity >=8.0.1
-    - typing-extensions >=4.5.0,<5.0.0
+  - python >=${{ python_min }},<4.0.0
+  - requests >=2.28.2
+  - tenacity >=8.0.1
+  - typing-extensions >=4.5.0,<5.0.0
 
 tests:
-  - python:
-      imports:
-        - robocorp.storage
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - robocorp.storage
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Robocorp Asset Storage library
@@ -49,4 +49,8 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
+  cfe-local-build-status: success
+  cfe-local-build-datetime: '2026-10-09T11:17:43Z'
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build

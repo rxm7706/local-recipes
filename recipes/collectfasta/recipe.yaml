@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: collectfasta
-  version: "3.3.3"
+  version: "3.3.5"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/jasongi/collectfasta/archive/${{ version }}.tar.gz
-  sha256: 7e5a5e76a274c19f7d5e118726dc5e251b7da57ab3e0a64e32f8e229efa6199c
+  sha256: 2462fa6330b6b2513159adbc2574e8694f692e57d77c4c0c492a252d3c72b225
 
 build:
   number: 0
@@ -24,8 +24,8 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - django >=4.2,<5.1
+    - python >=${{ python_min }}
+    - django >=5.2
     - django-storages >=1.6
     - typing-extensions
 
@@ -33,7 +33,9 @@ tests:
   - python:
       imports:
         - collectfasta
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
       pip_check: true
 
 about:
@@ -68,7 +70,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: 2026-10-09T09:20:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

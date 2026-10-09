@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: vizro
-  version: "0.1.60"
+  version: "0.1.62"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/vizro-${{ version }}.tar.gz
-  sha256: dcd62dae4f330f75a9e8ba0d846246fee556350918e322810a0f7047c937b60c
+  url: https://files.pythonhosted.org/packages/d3/a7/0f7f5a50c9f42044177e4664a61389ec9f811adcf12419f5e7ab535a7133/vizro-0.1.62.tar.gz
+  sha256: f6911bac5b55a2116bf0b966ae007416c247274036b6c6eeca0a9f116fc0b859
 
 build:
   number: 0
@@ -20,46 +20,46 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - hatchling
-    - pip
+  - python ${{ python_min }}.*
+  - hatchling
+  - pip
   run:
-    - vizro-dash-components >=0.3.0
-    - python >=${{ python_min }}
-    - dash >=4,<5
-    - dash-bootstrap-components >=2
-    - dash-ag-grid >=34.3.0,!=35.2.0
-    - dash-mantine-components >=2.0.0
-    - pandas >=2
-    - plotly >=5.24.0
-    - pydantic >=2.7.0
-    - flask-caching >=2
-    - wrapt >=1
-    - black
-    - autoflake
-    - packaging
-    - python-box
+  - vizro-dash-components >=0.3.0
+  - python >=${{ python_min }}
+  - dash >=4,<5
+  - dash-bootstrap-components >=2
+  - dash-ag-grid >=34.3.0,!=35.2.0
+  - dash-mantine-components >=2.0.0
+  - pandas >=2
+  - plotly >=5.24.0
+  - pydantic >=2.7.0
+  - flask-caching >=2
+  - wrapt >=1
+  - black
+  - autoflake
+  - packaging
+  - python-box
 
 tests:
-  - python:
-      imports:
-        - vizro
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - vizro
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Vizro is a low-code framework for building high-quality data visualization apps.
   license: MIT AND Apache-2.0
   license_file:
-    - LICENSE.txt
-    - examples/visual-vocabulary/LICENSE.txt
+  - LICENSE.txt
+  - examples/visual-vocabulary/LICENSE.txt
   homepage: https://vizro.mckinsey.com/
   repository: https://github.com/mckinsey/vizro
   documentation: https://vizro.readthedocs.io/en/stable/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -67,8 +67,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: vizro
   cfe-purls:
-    - pkg:conda/vizro@${{ version }}?channel=conda-forge
-    - pkg:pypi/vizro@${{ version }}
+  - pkg:conda/vizro@${{ version }}?channel=conda-forge
+  - pkg:pypi/vizro@${{ version }}
   cfe-upstream-repo: https://github.com/mckinsey/vizro
   cfe-upstream-homepage: https://vizro.mckinsey.com/
   cfe-import-names: [vizro]
@@ -78,13 +78,13 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/vizro-feedstock
   cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: '2026-10-09T11:25:25Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

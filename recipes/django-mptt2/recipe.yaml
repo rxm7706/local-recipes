@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-mptt2
-  version: "0.2.1"
+  version: "0.3.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,28 +11,28 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 54c3d829ec961d4c40bf2d2094225ac49cd22d1b1e52a28ada1492015b05b47b
+  sha256: 8ffb27bf0d10298d519cc3d0672a47f3a7ccebdd663ced41b098ba4348905d05
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - django
-    - python >=${{ python_min }},<4.0
+  - django
+  - python >=${{ python_min }},<4.0
 
 tests:
-  - python:
-      imports:
-        - mptt2
-      python_version: ${{ python_min }}.*
-      pip_check: true
+- python:
+    imports:
+    - mptt2
+    python_version: ${{ python_min }}.*
+    pip_check: true
 
 about:
   summary: Utilities for implementing Modified Preorder Tree Traversal with your Django Models and working with trees of Model instances.
@@ -42,7 +42,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -50,8 +50,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-mptt2
   cfe-purls:
-    - pkg:conda/django-mptt2@${{ version }}?channel=conda-forge
-    - pkg:pypi/django-mptt2@${{ version }}
+  - pkg:conda/django-mptt2@${{ version }}?channel=conda-forge
+  - pkg:pypi/django-mptt2@${{ version }}
   cfe-upstream-repo: https://github.com/jokiefer/django-mptt2
   cfe-upstream-homepage: https://github.com/jokiefer/django-mptt2
   cfe-import-names: [mptt2]
@@ -66,7 +66,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-10-09T09:24:20Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

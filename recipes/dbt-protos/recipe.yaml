@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.565"
+  version: "1.0.594"
 
 package:
   name: dbt-protos
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/d/dbt-protos/dbt_protos-${{ version }}.tar.gz
-  sha256: fabee73a6f98a7eb7e52ab34571ef24d82cce760829e268c7263a5805f3937cf
+  sha256: 23140898ff8bcbb9291f087c9f344c0a4a4279e31639916196ff98fb2e41967d
 
 build:
   number: 0
@@ -19,21 +19,21 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - protobuf >=3.17.1
+  - python >=${{ python_min }}
+  - protobuf >=3.17.1
 
 tests:
-  - python:
-      imports:
-        - dbtlabs
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+- python:
+    imports:
+    - dbtlabs
+    pip_check: true
+    python_version:
+    - ${{ python_min }}.*
+    - "*"
 
 about:
   homepage: https://github.com/dbt-labs/proto-python-public
@@ -47,7 +47,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -55,8 +55,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: dbt-protos
   cfe-purls:
-    - pkg:conda/dbt-protos@${{ version }}?channel=conda-forge
-    - pkg:pypi/dbt-protos@${{ version }}
+  - pkg:conda/dbt-protos@${{ version }}?channel=conda-forge
+  - pkg:pypi/dbt-protos@${{ version }}
   cfe-upstream-repo: https://github.com/dbt-labs/proto-python-public
   cfe-upstream-homepage: https://github.com/dbt-labs/proto-python-public
   cfe-import-names: [dbtlabs]
@@ -70,7 +70,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T10:33:34Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-03T22:07:06Z
+  cfe-local-build-datetime: 2026-10-09T09:14:28Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

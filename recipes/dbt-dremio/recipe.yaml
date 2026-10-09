@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: dbt-dremio
-  version: "1.10.1"
+  version: "1.11.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 6b0bc19dffe45984bee95217078579936f276630e3892c8816bba3efcbb0f22f
+  sha256: a5c8caab8503b742439893cfda6c67647dcd166932cb7625c827e41e4bf9552b
 
 build:
   number: 0
@@ -20,21 +20,21 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pip
-    - setuptools
+  - python ${{ python_min }}
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - dbt-adapters >=1.0.0,<2.0.0
-    - requests >=2.31.0
-    - dbt-core >=1.8
+  - python >=${{ python_min }}
+  - dbt-adapters >=1.0.0,<2.0.0
+  - requests >=2.31.0
+  - dbt-core >=1.8
 
 tests:
-  - python:
-      imports:
-        - dbt
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - dbt
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: The Dremio adapter plugin for dbt
@@ -44,7 +44,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -52,8 +52,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: dbt-dremio
   cfe-purls:
-    - pkg:conda/dbt-dremio@${{ version }}?channel=conda-forge
-    - pkg:pypi/dbt-dremio@${{ version }}
+  - pkg:conda/dbt-dremio@${{ version }}?channel=conda-forge
+  - pkg:pypi/dbt-dremio@${{ version }}
   cfe-upstream-repo: https://github.com/dremio/dbt-dremio
   cfe-upstream-homepage: https://github.com/dremio/dbt-dremio
   cfe-import-names: [dbt.adapters.dremio]
@@ -68,7 +68,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-10-09T09:18:05Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

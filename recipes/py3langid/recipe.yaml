@@ -2,15 +2,15 @@
 schema_version: 1
 
 context:
-  version: "0.3.0"
+  version: "0.4.0"
 
 package:
   name: py3langid
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/py3langid/py3langid-${{ version }}.tar.gz
-  sha256: 0a875a031a58aaf9dbda7bb8285fd75e801a7bd276216ffabe037901d4b449ec
+  url: https://files.pythonhosted.org/packages/16/fc/51c88e5ef8346878ae6c09e1f7c86c6e6308c57794723bf423a72ddba4dd/py3langid-0.4.0.tar.gz
+  sha256: 5924159039b5cc282c2edc10a7ea9363b2099834a0e99ed8d5bea3cc435d7871
 
 build:
   number: 0
@@ -19,21 +19,21 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - numpy >=2.0.0
+  - python >=${{ python_min }}
+  - numpy >=2.0.0
 
 tests:
-  - python:
-      imports:
-        - py3langid
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+- python:
+    imports:
+    - py3langid
+    pip_check: true
+    python_version:
+    - ${{ python_min }}.*
+    - "*"
 
 about:
   homepage: https://github.com/adbar/py3langid
@@ -45,4 +45,8 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
+  cfe-local-build-status: success
+  cfe-local-build-datetime: '2026-10-09T11:15:22Z'
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build

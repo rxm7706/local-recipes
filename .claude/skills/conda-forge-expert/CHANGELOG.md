@@ -2,7 +2,9 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.97.0** (Oct 9, 2026, current) — **Story 23.3: offline negative corpus pins each CFE check to its defect (MINOR).** Ports auto-recipe@8b53eda grayskull negatives into `tests/fixtures/negative/`, adds `tests/unit/test_negative_corpus.py`, native `SEL-005` for `build.skip` on `noarch: python`, and references Story 22.2's sentinel-key fixture by path.
+**v8.97.1** (Oct 9, 2026, current) — **Mason story 25.1 Wave H sole-maintainer v1-refresh retro (PATCH).** From ~90 post-rebaseline behind recipes (21 batch commits; 72 green / 14 failed / 6 legacy-block stamps). **Reinforcement:** host and script-test pins must use `python ${{ python_min }}.*`, not bare `${{ python_min }}`, or rattler-build fails Jinja render (dbt-dremio, django-grpc, django-sesame, django-survey-and-report class). **`autotick`** targets `recipes/<dir>/recipe.yaml` and needs resolvable `context.name` — recipes with only `context.version` need feedstock/manual bump. **C1:** when both `meta.yaml` and `recipe.yaml` exist, lint/build target `recipe.yaml` explicitly; STD-002 on dual files is expected. No new gotcha id — documents existing CFEP-25 / line-877 discipline from bulk refresh.
+
+**v8.97.0** (Oct 9, 2026) — **Story 23.3: offline negative corpus pins each CFE check to its defect (MINOR).** Ports auto-recipe@8b53eda grayskull negatives into `tests/fixtures/negative/`, adds `tests/unit/test_negative_corpus.py`, native `SEL-005` for `build.skip` on `noarch: python`, and references Story 22.2's sentinel-key fixture by path.
 
 **v8.96.0** (Oct 9, 2026) — **Story 23.2: `recipe-generator.py` reports ambiguous PyPI choices instead of silent guesses (MINOR).** Decided/Ambiguous decision type (auto-recipe@8b53eda); six decision points (build backend, import name, noarch without sdist, licence + Story 23.1 semantics, licence file, Python floor); stdout + CFE `# Header:` questions; `pypi --strict` refuses writes. Cross-ref G7, G55, G90.
 

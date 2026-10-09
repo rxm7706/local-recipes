@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.11.15"
+  version: "0.11.18"
 
 package:
   name: collate-data-diff
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/collate-data-diff/collate_data_diff-${{ version }}.tar.gz
-  sha256: db924ecc1b44423bbd142e874334bcc57e0e6fd5fc5d56a53284cdec1131fc05
+  sha256: 183a51ef5245043b68012494b50162778b155a696ac1ee5efe248118014759bb
 
 build:
   number: 0
@@ -111,7 +111,7 @@ extra:
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-datetime: 2026-10-09T09:20:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

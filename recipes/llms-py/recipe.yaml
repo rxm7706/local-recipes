@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: llms-py
-  version: "4.0.10"
+  version: "4.0.23"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llms_py-${{ version }}.tar.gz
-  sha256: 38d045ba997ef2c4361e798016a1dafd6b0203d8e41839ab3242f0d45a0fd624
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: e087a11269fe733bc178617c931e4bbb0f216324d0750476d226a08bc5c41d30
 
 build:
   number: 0
@@ -72,13 +72,13 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llms-py-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-3.0.49]
+  cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-07-03T04:00:00Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T08:45:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

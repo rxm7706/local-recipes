@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-grpc
-  version: "1.0.21"
+  version: "1.2.15"
 
 package:
   name: ${{ name|lower }}
@@ -11,33 +11,33 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-grpc-${{ version }}.tar.gz
-  sha256: 87adcfb7a20e56a5d04f9c50b820ac95e2815fb31370aa7fa5f2385a61899613
+  sha256: eb80b1e5dcf855f421ffd363571cecd592ea298a5dbbc8b6b7306288cac81d3e
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pip
-    - setuptools
+  - python ${{ python_min }}
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - setuptools
-    - django >=4.2
-    - protobuf >=4.21.4
-    - grpcio >=1.47.0,<2.0.0
-    - grpcio-tools >=1.47.0,<2.0.0
+  - python >=${{ python_min }}
+  - setuptools
+  - django >=4.2
+  - protobuf >=4.21.4
+  - grpcio >=1.47.0,<2.0.0
+  - grpcio-tools >=1.47.0,<2.0.0
 
 tests:
-  - python:
-      imports:
-        - django_grpc
-        - django_grpc_testtools
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - django_grpc
+    - django_grpc_testtools
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Easy Django based gRPC service
@@ -47,4 +47,9 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
+
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-10-09T09:20:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build

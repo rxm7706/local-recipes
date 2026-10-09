@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  version: "1.34.0"
+  version: "1.35.1"
 
 package:
   name: azure-ai-ml
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/a/azure-ai-ml/azure_ai_ml-${{ version 
-    }}.tar.gz
-  sha256: 7b11e66a494d328022847e9b9367db34a744ffba23a2198c7b587028b296572c
+  url: https://pypi.org/packages/source/a/azure-ai-ml/azure_ai_ml-${{ version }}.tar.gz
+  sha256: 4ac8f77fb56e0793d012ae3f9a38550883b07175bdae4742554cc3c3a17f0231
 
 build:
   number: 0
@@ -60,8 +59,7 @@ about:
   summary: Microsoft Azure Machine Learning Client Library for Python
   description: "Microsoft Azure Azure Core OpenTelemetry plugin Library for Python.\n"
   repository: https://github.com/Azure/azure-sdk-for-python
-  documentation: 
-    https://github.com/Azure/azure-sdk-for-python/blob/main/README.md
+  documentation: https://github.com/Azure/azure-sdk-for-python/blob/main/README.md
 extra:
   recipe-maintainers:
     - rxm7706
@@ -87,8 +85,8 @@ extra:
   cfe-last-checked: 2026-07-03T04:00:00Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T09:20:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

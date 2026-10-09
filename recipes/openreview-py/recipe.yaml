@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.3.1"
+  version: "2.8.0"
 
 package:
   name: openreview-py
@@ -13,7 +13,7 @@ source:
   # only (no sdist), and conda-forge prefers building from source. The v2.3.1
   # tag carries the full source tree incl. LICENSE (SKILL.md G54 step 2).
   url: https://github.com/openreview/openreview-py/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 7ff67817ea92b79791a314d99568f04a964eeb2c054b0e41cc43825772f1c746
+  sha256: dae4a84739bc1f87c41415112a3625dcae28617382a321568e0a318dd5a51c5c
 
 build:
   number: 0
@@ -22,31 +22,31 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - setuptools >=65.5.1,<81
-    - wheel >=0.40,<1
-    - pip
+  - python ${{ python_min }}.*
+  - setuptools >=65.5.1,<81
+  - wheel >=0.40,<1
+  - pip
   run:
-    - python >=${{ python_min }}
-    - pycryptodome >=3.20,<4
-    - requests >=2.32,<3
-    - urllib3 >=2,<3
-    - future >=1.0.0,<2
-    - tqdm >=4.60,<5
-    - deprecated >=1.2.0,<2
-    - pylatexenc >=2.10,<3
-    - tld >=0.12,<1
-    - pyjwt >=2.0,<3
-    - editdistance >=0.8.1,<1
+  - python >=${{ python_min }}
+  - pycryptodome >=3.20,<4
+  - requests >=2.32,<3
+  - urllib3 >=2,<3
+  - future >=1.0.0,<2
+  - tqdm >=4.60,<5
+  - deprecated >=1.2.0,<2
+  - pylatexenc >=2.10,<3
+  - tld >=0.12,<1
+  - pyjwt >=2.0,<3
+  - editdistance >=0.8.1,<1
 
 tests:
-  - python:
-      imports:
-        - openreview
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+- python:
+    imports:
+    - openreview
+    pip_check: true
+    python_version:
+    - ${{ python_min }}.*
+    - "*"
 
 about:
   homepage: https://github.com/openreview/openreview-py
@@ -62,7 +62,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -70,8 +70,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: openreview-py
   cfe-purls:
-    - pkg:conda/openreview-py@${{ version }}?channel=conda-forge
-    - pkg:pypi/openreview-py@${{ version }}
+  - pkg:conda/openreview-py@${{ version }}?channel=conda-forge
+  - pkg:pypi/openreview-py@${{ version }}
   cfe-upstream-repo: https://github.com/openreview/openreview-py
   cfe-upstream-homepage: https://github.com/openreview/openreview-py
   cfe-import-names: [openreview]
@@ -86,7 +86,7 @@ extra:
   cfe-generated-by-version: 8.79.1
   cfe-generated-at-datetime: "2026-07-26T00:00:00Z"
   cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-07-26T16:27:29Z"
+  cfe-local-build-datetime: "2026-10-09T11:08:23Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
