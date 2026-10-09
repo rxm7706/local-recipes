@@ -60,8 +60,11 @@ def test_registered_codes_contains_the_real_codes():
     adds MRS-POLICY-008 (no harness_preference entry has a bmad-loop
     counterpart -- the rendered [adapter].name keeps the template default)
     and MRS-DISP-027/028/029 (a skipped preference candidate; an ignored
-    overlay profile file; an omitted model tier). This asserts the
-    registry's exact real contents."""
+    overlay profile file; an omitted model tier). Story 87.6's
+    core/policy.py::compose adds MRS-POLICY-009 (a malformed
+    protected_ref_prefixes layer) and MRS-POLICY-010 (a layer that tries to
+    remove a protected-floor entry). This asserts the registry's exact real
+    contents."""
     assert findings.REGISTERED_CODES == frozenset(
         {
             "MRS-IDENT-001",
@@ -74,6 +77,8 @@ def test_registered_codes_contains_the_real_codes():
             "MRS-POLICY-006",
             "MRS-POLICY-007",
             "MRS-POLICY-008",
+            "MRS-POLICY-009",
+            "MRS-POLICY-010",
             "MRS-INIT-001",
             "MRS-INIT-002",
             "MRS-INIT-003",

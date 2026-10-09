@@ -1475,6 +1475,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # composition stands, the operator is told their preference did not
         # reach the bmad-loop engine).
         "MRS-POLICY-008",
+        # Story 87.6 (CAP-287, AD-47): a layer's `protected_ref_prefixes` is
+        # refused at policy load -- MRS-POLICY-009 malformed, MRS-POLICY-010
+        # it tries to remove a code-floor entry (named). Either makes
+        # `marshal retire` refuse the project (UNEVALUABLE, MRS-POLICY-002's
+        # tier).
+        "MRS-POLICY-009",
+        "MRS-POLICY-010",
         "MRS-INIT-001",
         "MRS-INIT-002",
         "MRS-INIT-003",

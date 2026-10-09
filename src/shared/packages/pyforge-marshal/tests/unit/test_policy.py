@@ -2215,6 +2215,7 @@ def test_effective_policy_rejects_non_policy_field_static_attribute():
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
             dispatch=PolicyField(value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}),
+            protected_ref_prefixes=PolicyField(value=(), layer="default", raw_source=()),
             _seed=seed,
         )
 
@@ -2239,6 +2240,7 @@ def test_effective_policy_rejects_incomplete_seed_mapping():
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
             dispatch=PolicyField(value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}),
+            protected_ref_prefixes=PolicyField(value=(), layer="default", raw_source=()),
             _seed={"gate_mode": PolicyField(value="none", layer="default", raw_source="none")},
         )
 
@@ -2263,6 +2265,7 @@ def test_effective_policy_rejects_non_policy_field_seed_value():
             scope_violation_mode=PolicyField(value="warn", layer="default", raw_source="warn"),
             model_cost_catalog=PolicyField(value={}, layer="default", raw_source={}),
             dispatch=PolicyField(value={"max_parallel": 1}, layer="default", raw_source={"max_parallel": 1}),
+            protected_ref_prefixes=PolicyField(value=(), layer="default", raw_source=()),
             _seed={
                 # All 16 seed keys present (an INCOMPLETE mapping would
                 # raise for that reason instead, never reaching the
@@ -2300,7 +2303,7 @@ def test_effective_policy_seed_is_a_read_only_mapping_proxy():
 # --- schema hygiene -----------------------------------------------------------
 
 
-def test_schema_file_declares_the_thirty_three_keys():
+def test_schema_file_declares_every_policy_key():
     package_dir = Path(pyforge.marshal.__file__).resolve().parent
     schema = json.loads((package_dir / "schemas" / "policy.json").read_text(encoding="utf-8"))
     assert schema["additionalProperties"] is False
@@ -2339,8 +2342,11 @@ def test_schema_file_declares_the_thirty_three_keys():
         "review_min_score",
         "model_cost_catalog",
         "dispatch",
+        "protected_ref_prefixes",
     }
     assert set(schema["properties"].keys()) == set(schema["required"])
+    # Self-correcting: the schema tracks the live vocabulary, whatever its size.
+    assert set(schema["required"]) == set(policy._ALL_KEYS)
 
 
 # --- review-pass regressions (2026-07-30) ------------------------------------
@@ -2873,3 +2879,116 @@ def test_the_template_placeholder_literals_match_identity_and_every_accepted_tem
     for param in _BAD_MERGE_SUBJECT_TEMPLATES:
         template = param.values[0]
         assert policy._valid_merge_subject_template(template) is None
+
+
+# --- Story 87.6 (CAP-287, AD-47): protected_ref_prefixes ----------------------
+
+
+def test_protected_ref_prefixes_defaults_to_no_additions():
+    effective, findings = compose(project_slug="acme", project={}, flags={})
+    assert findings == ()
+    assert effective.protected_ref_prefixes.value == ()
+    assert effective.protected_ref_prefixes.layer is PolicyLayer.DEFAULT
+
+
+def test_a_project_layer_declaring_protected_ref_prefixes_composes_with_no_finding():
+    """The key is part of the closed vocabulary: no MRS-POLICY-001, and the
+    additions carry their provenance (AD-16)."""
+    effective, findings = compose(
+        project_slug="acme",
+        project={"protected_ref_prefixes": ["refs/heads/release/", "refs/heads/hotfix"]},
+        flags={},
+    )
+    assert findings == ()
+    assert effective.protected_ref_prefixes.value == ("refs/heads/release/", "refs/heads/hotfix")
+    assert effective.protected_ref_prefixes.layer is PolicyLayer.PROJECT
+    assert tuple(effective.protected_ref_prefixes.raw_source) == ("refs/heads/release/", "refs/heads/hotfix")
+
+
+def test_a_re_declared_floor_entry_is_a_no_op_not_a_finding():
+    effective, findings = compose(
+        project_slug="acme",
+        project={
+            "protected_ref_prefixes": ["refs/heads/main", "refs/heads/loop/", "refs/tags/", "refs/heads/release/"]
+        },
+        flags={},
+    )
+    assert findings == ()
+    assert effective.protected_ref_prefixes.value == ("refs/heads/release/",)
+
+
+@pytest.mark.parametrize(
+    ("entry", "floor_entries"),
+    [
+        ("!refs/heads/loop/", ("refs/heads/loop/",)),
+        ("^refs/heads/main", ("refs/heads/main",)),
+        ("!refs/heads/", ("refs/heads/loop/", "refs/heads/main")),
+        ("!refs/heads/loop/acme", ("refs/heads/loop/",)),
+        ("^refs/tags/preserve/", ("refs/tags/",)),
+    ],
+)
+def test_a_layer_removing_a_floor_entry_is_refused_at_policy_load_naming_it(entry, floor_entries):
+    effective, findings = compose(
+        project_slug="acme",
+        project={"protected_ref_prefixes": ["refs/heads/release/", entry]},
+        flags={},
+    )
+    assert [finding.code for finding in findings] == ["MRS-POLICY-010"]
+    assert findings[0].path == "project"
+    for floor_entry in floor_entries:
+        assert repr(floor_entry) in findings[0].message
+    # The refused layer contributes nothing, not even its valid addition.
+    assert effective.protected_ref_prefixes.value == ()
+    assert effective.protected_ref_prefixes.layer is PolicyLayer.DEFAULT
+    assert verdict.compute_verdict(findings) == Verdict.UNEVALUABLE
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "refs/heads/release/",
+        ["release/"],
+        [""],
+        ["refs/heads/x", 3],
+        {"refs/heads/x": True},
+        ["!refs/heads/feature/"],
+        None,
+    ],
+)
+def test_a_malformed_protected_ref_prefixes_is_refused_with_its_own_code(value):
+    """MRS-POLICY-009, never the generic MRS-POLICY-002 -- and a removal that
+    names no floor entry is malformed, not a floor removal."""
+    effective, findings = compose(project_slug="acme", project={"protected_ref_prefixes": value}, flags={})
+    assert [finding.code for finding in findings] == ["MRS-POLICY-009"]
+    assert findings[0].path == "project"
+    assert effective.protected_ref_prefixes.value == ()
+
+
+def test_protected_ref_prefixes_layers_union_so_a_later_layer_cannot_drop_an_addition():
+    effective, findings = compose(
+        project_slug="acme",
+        repo_defaults={"protected_ref_prefixes": ["refs/heads/release/"]},
+        project={"protected_ref_prefixes": ["refs/heads/hotfix/", "refs/heads/release/"]},
+        flags={},
+    )
+    assert findings == ()
+    assert effective.protected_ref_prefixes.value == ("refs/heads/release/", "refs/heads/hotfix/")
+    assert effective.protected_ref_prefixes.layer is PolicyLayer.PROJECT
+
+
+def test_a_refused_project_layer_keeps_the_repo_layer_additions():
+    effective, findings = compose(
+        project_slug="acme",
+        repo_defaults={"protected_ref_prefixes": ["refs/heads/release/"]},
+        project={"protected_ref_prefixes": ["!refs/heads/loop/"]},
+        flags={},
+    )
+    assert [(finding.code, finding.path) for finding in findings] == [("MRS-POLICY-010", "project")]
+    assert effective.protected_ref_prefixes.value == ("refs/heads/release/",)
+    assert effective.protected_ref_prefixes.layer is PolicyLayer.REPO_DEFAULTS
+
+
+@pytest.mark.parametrize("code", ["MRS-POLICY-009", "MRS-POLICY-010"])
+def test_protected_ref_refusal_codes_classify_unevaluable(code):
+    assert code in policy.PROTECTED_REFS_REFUSAL_CODES
+    assert verdict.classify(code) == Verdict.UNEVALUABLE

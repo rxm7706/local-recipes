@@ -168,13 +168,6 @@ def _roster_protected_prefixes(root: Path) -> frozenset[str]:
     return protected_refs.parse_roster_protected_prefixes(payload.get("protected_refs"))
 
 
-def _policy_protected_additions(project_data: Mapping[str, object]) -> tuple[str, ...] | None:
-    if "protected_ref_prefixes" not in project_data:
-        return ()
-    validated = protected_refs.validate_policy_protected_additions(project_data.get("protected_ref_prefixes"))
-    return validated
-
-
 def _branch_deletion_would_orphan(vcs: VcsPort, git_repo_root: Path, branch: str) -> bool:
     tip = vcs.resolve_ref(git_repo_root, branch)
     if vcs.is_commit_ancestor(git_repo_root, tip, _ORIGIN_MAIN_REF):
@@ -336,19 +329,18 @@ def run_retire(
                     findings.append(exc.finding)
         effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
         findings.extend(policy_findings)
-        policy_additions = _policy_protected_additions(project_data)
-        if policy_additions is None:
-            findings.append(
-                Finding(
-                    code="MRS-POLICY-004",
-                    severity=Severity.ERROR,
-                    message=(
-                        f"project policy for {slug!r} has invalid protected_ref_prefixes -- "
-                        "entries must be non-empty refs/ prefixes that extend the protected floor"
-                    ),
-                )
-            )
+        # Story 87.6: a refused protected list (MRS-POLICY-009 malformed,
+        # MRS-POLICY-010 removes a floor entry) refuses the whole project --
+        # retiring against a list the operator meant to be wider fails open.
+        # compose() already reported why; nothing is gathered for this slug.
+        if any(f.code in policy.PROTECTED_REFS_REFUSAL_CODES for f in policy_findings):
             continue
+        composed_additions = effective.protected_ref_prefixes.value
+        policy_additions = (
+            tuple(prefix for prefix in composed_additions if isinstance(prefix, str))
+            if isinstance(composed_additions, tuple)
+            else ()
+        )
         base = effective.landing_base_branch.value
         template = effective.merge_subject_template.value
         main_subjects = _subjects_for_base(base)

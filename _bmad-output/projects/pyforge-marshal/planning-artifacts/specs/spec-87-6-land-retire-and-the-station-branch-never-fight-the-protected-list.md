@@ -101,6 +101,7 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 ## Spec Change Log
 
 - 2026-10-09: Auto run landed Story 87.6 implementation; review deferred provenance printing and expanded VCS test coverage.
+- 2026-10-09 (landing repair, after the refused finalize stamp): `protected_ref_prefixes` joins the closed policy vocabulary as a STATIC key (`core/policy.py`, `schemas/policy.json`, `cli/config.py`; default `()`), so a layer declaring it composes with no MRS-POLICY-001 and `marshal config` prints it with its layer. Its layers union rather than last-wins, so no layer drops another's addition. A layer that tries to remove a floor entry (a leading `!` or `^`) is refused at policy load as MRS-POLICY-010, naming the floor entry; a re-declared floor entry is a no-op. A malformed list is MRS-POLICY-009, replacing the reused MRS-POLICY-004 in `cli/retire.py`. `marshal retire` reads the composed additions and refuses the whole project on either code. Closes the AC3 gap ("refused at policy load"). Count-named tests renamed (closes DW-3-13-1).
 
 ## Review Triage Log
 
@@ -119,6 +120,13 @@ Minted 2026-10-04 under the operator's ruling of the same day.
   - `[low]` `[reject]` MRS-LAND-013 no unit test — dead path on current land CLI; MRS-LAND-012 covered.
   - `[medium]` `[defer]` forge_gh merge success when gh pr view fails after delete refusal — edge case; MERGED view path covered by test_merge_pr_delete_failure_after_merged_does_not_raise.
   - Additional blind-hunter / edge-case items grouped into defer/reject above (docstring, test gaps, roster WARN).
+
+### 2026-10-09 — Landing-repair review notes
+- verdicts: 3 findings — medium 3; all patched
+- findings:
+  - `[medium]` `[patch]` `protected_ref_prefixes` was not a `core/policy.py` key, so a project layer declaring it tripped MRS-POLICY-001 — added to the closed vocabulary with type tuple-of-refs/-prefixes and default `()`; `tests/unit/test_policy.py::test_a_project_layer_declaring_protected_ref_prefixes_composes_with_no_finding`.
+  - `[medium]` `[patch]` AC3 "a project layer that tries to remove a floor entry is refused at policy load" was not met (a re-declared floor entry was skipped, removal was not expressible, refusal ran at retire time) — `compose()` now refuses a removal entry that overlaps the floor as MRS-POLICY-010 naming the entry; `test_a_layer_removing_a_floor_entry_is_refused_at_policy_load_naming_it`, `test_a_refused_protected_list_refuses_the_project_before_any_evidence`.
+  - `[medium]` `[patch]` the invalid-list refusal reused MRS-POLICY-004 (registered for an unreadable project layer) — now its own registered code MRS-POLICY-009 (`core/findings.py`, `core/verdict.py` UNEVALUABLE); `test_a_malformed_protected_ref_prefixes_is_refused_with_its_own_code`, `test_protected_ref_refusal_codes_classify_unevaluable`.
 
 ## Auto Run Result
 

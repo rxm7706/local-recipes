@@ -3,7 +3,7 @@
 
 (steward Story 63.3, spec-pyforge-steward CAP-5)
 
-WHAT THIS IS. A repo-level `PreToolUse` guard for the twelve AGENTS.md/CLAUDE.md
+WHAT THIS IS. A repo-level `PreToolUse` guard for the sixteen AGENTS.md/CLAUDE.md
 session rules that were previously prose only. Registered on `Bash` and on
 `Edit`/`Write`/`NotebookEdit` in `.claude/settings.json` (Claude Code) and on
 `beforeShellExecution` / `afterFileEdit` in `.cursor/hooks.json` (Cursor) --
@@ -12,9 +12,10 @@ harness's event(s) at this one script, and this script tells the two apart by
 the shape of the JSON on stdin (see `detect()`).
 
 Gemini CLI, GitHub Copilot CLI and Devin have no verified deny surface for
-this hook -- for them the twelve rules stay instruction-only, as written in
+this hook -- for them the sixteen rules stay instruction-only, as written in
 AGENTS.md (see AGENTS.md's own "Session guardrails" section; do not assume
-this script runs there).
+this script runs there). Cursor has no before-MCP deny; MCP submission there
+stays instruction-only (Story 85.8).
 
 THE CLOSED LIST. `docs/governance/guild-roster.json`'s `session_denials`
 array is the ONE declared source of what this hook denies and the one-line
@@ -69,12 +70,14 @@ from typing import Any, Callable, Optional
 @dataclass
 class Context:
     harness: str  # "claude" | "cursor"
-    kind: str  # "bash" | "edit_write"
+    kind: str  # "bash" | "edit_write" | "mcp"
     command: Optional[str]
     subcommands: list[list[str]] = field(default_factory=list)
     file_path: Optional[str] = None
     cwd: str = "."
     repo_root: Path = field(default_factory=Path)
+    mcp_tool_name: Optional[str] = None
+    mcp_tool_input: dict[str, Any] = field(default_factory=dict)
 
 
 def detect(payload: dict[str, Any]) -> tuple[str, str]:
@@ -93,6 +96,8 @@ def detect(payload: dict[str, Any]) -> tuple[str, str]:
             return "claude", "bash"
         if tool_name in ("Edit", "Write", "NotebookEdit"):
             return "claude", "edit_write"
+        if isinstance(tool_name, str) and tool_name.startswith("mcp__"):
+            return "claude", "mcp"
         return "claude", "other"
     if event == "beforeShellExecution":
         return "cursor", "bash"
@@ -123,6 +128,13 @@ def build_context(harness: str, kind: str, payload: dict[str, Any]) -> Context:
 
     subcommands = split_subcommands(command) if command else []
     repo_root = find_repo_root(cwd)
+    mcp_tool_name: Optional[str] = None
+    mcp_tool_input: dict[str, Any] = {}
+    if harness == "claude" and kind == "mcp":
+        mcp_tool_name = payload.get("tool_name")
+        raw_input = payload.get("tool_input")
+        if isinstance(raw_input, dict):
+            mcp_tool_input = raw_input
     return Context(
         harness=harness,
         kind=kind,
@@ -131,12 +143,14 @@ def build_context(harness: str, kind: str, payload: dict[str, Any]) -> Context:
         file_path=file_path,
         cwd=cwd,
         repo_root=repo_root,
+        mcp_tool_name=mcp_tool_name,
+        mcp_tool_input=mcp_tool_input,
     )
 
 
 # --------------------------------------------------------------------------
 # Command tokenization -- heuristic, not a shell. Good enough to recognize
-# the twelve named forms; not a sandbox and not trying to be one.
+# the closed session-denial forms; not a sandbox and not trying to be one.
 # --------------------------------------------------------------------------
 
 
@@ -1005,6 +1019,521 @@ def match_unreachable_ref_deletion(ctx: Context, rule: dict[str, Any]) -> Option
     return None
 
 
+_LOCAL_RECIPES_SLUG = "rxm7706/local-recipes"
+_GITHUB_SLUG_RE = re.compile(
+    r"^(?:https?://(?:[^/@]+@)?github\.com/|git@github\.com:|ssh://(?:[^/@]+@)?github\.com/)([^/]+)/([^/]+?)(?:\.git)?(?:/.*)?$",
+    re.IGNORECASE,
+)
+_GH_PR_URL_RE = re.compile(
+    r"^https?://github\.com/([^/]+)/([^/]+)/pull/\d+",
+    re.IGNORECASE,
+)
+_GH_ISSUE_URL_RE = re.compile(
+    r"^https?://github\.com/([^/]+)/([^/]+)/issues/\d+",
+    re.IGNORECASE,
+)
+_CONDA_SMITHY_OUTWARD = frozenset(
+    {
+        "register-github",
+        "register-ci",
+        "register-feedstock-token",
+        "update-anaconda-token",
+        "rotate-anaconda-token",
+        "update-binstar-token",
+        "rotate-binstar-token",
+    }
+)
+_MCP_OUTWARD_TOOLS = frozenset(
+    {
+        "mcp__conda_forge_server__submit_pr",
+        "mcp__conda_forge_server__prepare_submission_branch",
+        "mcp__conda_forge_server__migrate_to_v1",
+    }
+)
+
+
+def _normalize_repo_slug(text: str) -> Optional[str]:
+    raw = text.strip().strip('"').strip("'")
+    if not raw:
+        return None
+    if raw.lower() == _LOCAL_RECIPES_SLUG:
+        return _LOCAL_RECIPES_SLUG
+    if "/" in raw and "://" not in raw and not raw.startswith("git@"):
+        owner, repo = raw.split("/", 1)
+        repo = repo.removesuffix(".git")
+        if owner and repo:
+            return f"{owner.lower()}/{repo.lower()}"
+    m = _GITHUB_SLUG_RE.match(raw)
+    if m:
+        return f"{m.group(1).lower()}/{m.group(2).lower()}"
+    return None
+
+
+def _is_local_recipes_slug(slug: Optional[str]) -> bool:
+    return slug is not None and slug.lower() == _LOCAL_RECIPES_SLUG
+
+
+def _is_local_filesystem_destination(dest: str) -> bool:
+    d = dest.strip()
+    if not d:
+        return False
+    if d.startswith("file://"):
+        return True
+    if d.startswith("./") or d.startswith("../"):
+        return True
+    if d.startswith("/") and "github.com" not in d.lower():
+        return True
+    if d.startswith("~"):
+        return True
+    if "://" not in d and "@" not in d and "/" in d and "github.com" not in d.lower():
+        return True
+    return False
+
+
+def _git_effective_cwd(tokens: list[str], default_cwd: str) -> str:
+    i = 0
+    while i < len(tokens):
+        if tokens[i] != "git":
+            i += 1
+            continue
+        j = i + 1
+        while j < len(tokens):
+            if tokens[j] in ("-C", "--git-dir", "--work-tree") and j + 1 < len(tokens):
+                if tokens[j] == "-C":
+                    return str(Path(default_cwd) / tokens[j + 1])
+                j += 2
+                continue
+            if tokens[j].startswith("-C") and len(tokens[j]) > 2:
+                return str(Path(default_cwd) / tokens[j][2:])
+            if tokens[j].startswith("--git-dir=") or tokens[j].startswith("--work-tree="):
+                j += 1
+                continue
+            break
+        break
+    return default_cwd
+
+
+def _shares_git_common_dir(cwd: str, repo_root: Path) -> bool:
+    common_cwd = _git(["rev-parse", "--git-common-dir"], cwd)
+    common_root = _git(["rev-parse", "--git-common-dir"], str(repo_root))
+    if common_cwd is None or common_root is None:
+        return False
+    abs_cwd = os.path.realpath(os.path.join(cwd, common_cwd))
+    abs_root = os.path.realpath(os.path.join(str(repo_root), common_root))
+    return abs_cwd == abs_root
+
+
+def _hook_install_repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
+def _is_local_recipes_checkout(cwd: str) -> bool:
+    """True when cwd is the PyForge checkout or one of its worktrees (shared config)."""
+    return _shares_git_common_dir(cwd, _hook_install_repo_root())
+
+
+def _git_remote_url(name: str, cwd: str, *, push: bool = False) -> Optional[str]:
+    args = ["remote", "get-url", name]
+    if push:
+        args.append("--push")
+    return _git(args, cwd)
+
+
+def _resolve_push_destination(repository: Optional[str], cwd: str) -> tuple[Optional[str], bool]:
+    """Return (github_slug_or_none, is_local_path). unresolved remote -> (None, False)."""
+    if repository is None:
+        branch = get_branch(cwd)
+        if branch is None:
+            return None, False
+        for key in (
+            f"branch.{branch}.pushRemote",
+            "remote.pushDefault",
+            f"branch.{branch}.remote",
+        ):
+            val = _git(["config", "--get", key], cwd)
+            if val:
+                repository = val
+                break
+        if repository is None:
+            repository = "origin"
+    assert repository is not None
+    if _is_local_filesystem_destination(repository):
+        return None, True
+    slug = _normalize_repo_slug(repository)
+    if slug:
+        return slug, False
+    url = _git_remote_url(repository, cwd, push=True) or _git_remote_url(
+        repository, cwd, push=False
+    )
+    if url is None:
+        return None, False
+    if _is_local_filesystem_destination(url):
+        return None, True
+    return _normalize_repo_slug(url), False
+
+
+def _strip_env_prefix(tokens: list[str]) -> tuple[dict[str, str], list[str]]:
+    env: dict[str, str] = {}
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if "=" in tok and not tok.startswith("-") and not tok.startswith("git"):
+            key, _, val = tok.partition("=")
+            if key.isidentifier() or key.replace("_", "").isalnum():
+                env[key] = val
+                i += 1
+                continue
+        break
+    return env, tokens[i:]
+
+
+def _gh_repo_from_tokens(tokens: list[str], cwd: str) -> Optional[str]:
+    env, body = _strip_env_prefix(tokens)
+    if "GH_REPO" in env:
+        return _normalize_repo_slug(env["GH_REPO"])
+    for i, tok in enumerate(body):
+        if tok in ("-R", "--repo") and i + 1 < len(body):
+            return _normalize_repo_slug(body[i + 1])
+        if tok.startswith("--repo="):
+            return _normalize_repo_slug(tok.split("=", 1)[1])
+    for tok in body:
+        if tok.startswith("http://") or tok.startswith("https://"):
+            m = _GH_PR_URL_RE.match(tok) or _GH_ISSUE_URL_RE.match(tok)
+            if m:
+                return f"{m.group(1).lower()}/{m.group(2).lower()}"
+    for remote in ("gh-resolved", "upstream", "github", "origin"):
+        url = _git_remote_url(remote, cwd, push=False)
+        if url:
+            slug = _normalize_repo_slug(url)
+            if slug:
+                return slug
+    return None
+
+
+def _gh_api_endpoint_slug(tokens: list[str]) -> Optional[str]:
+    env, body = _strip_env_prefix(tokens)
+    i = 0
+    endpoint = ""
+    while i < len(body):
+        tok = body[i]
+        if tok in ("-X", "--method") and i + 1 < len(body):
+            i += 2
+            continue
+        if tok.startswith("--method="):
+            i += 1
+            continue
+        if tok.startswith("-"):
+            i += 1
+            continue
+        endpoint = tok
+        break
+    endpoint = endpoint.strip("/")
+    parts = endpoint.split("/")
+    if len(parts) >= 2 and parts[0] == "repos":
+        if parts[1] in ("{owner}", "OWNER") or parts[2] in ("{repo}", "REPO"):
+            return None
+        if len(parts) >= 3:
+            return f"{parts[1].lower()}/{parts[2].lower()}"
+    return None
+
+
+def _gh_api_http_method(body: list[str]) -> str:
+    method = "GET"
+    i = 2
+    while i < len(body):
+        tok = body[i]
+        if tok in ("-X", "--method") and i + 1 < len(body):
+            method = body[i + 1].upper()
+            i += 2
+            continue
+        if tok.startswith("--method="):
+            method = tok.split("=", 1)[1].upper()
+            i += 1
+            continue
+        if tok.startswith("-"):
+            i += 1
+            continue
+        break
+    if method == "GET":
+        return "GET"
+    return method
+
+
+def _gh_api_endpoint_parts(body: list[str]) -> list[str]:
+    i = 2
+    while i < len(body):
+        tok = body[i]
+        if tok in ("-X", "--method") and i + 1 < len(body):
+            i += 2
+            continue
+        if tok.startswith("--method="):
+            i += 1
+            continue
+        if tok.startswith("-"):
+            i += 1
+            continue
+        return body[i].strip("/").split("/")
+    return []
+
+
+def _gh_api_has_explicit_get(body: list[str]) -> bool:
+    i = 2
+    while i < len(body):
+        tok = body[i]
+        if tok in ("-X", "--method") and i + 1 < len(body):
+            if body[i + 1].upper() == "GET":
+                return True
+            i += 2
+            continue
+        if tok.startswith("--method=") and tok.split("=", 1)[1].upper() == "GET":
+            return True
+        i += 1
+    return False
+
+
+def _gh_api_is_write(tokens: list[str]) -> bool:
+    _, body = _strip_env_prefix(tokens)
+    if _gh_api_has_explicit_get(body):
+        return False
+    method = _gh_api_http_method(body)
+    if method != "GET":
+        return method in ("POST", "PUT", "PATCH", "DELETE")
+    for tok in body[2:]:
+        if tok in ("-f", "-F", "--field", "--raw-field", "--input"):
+            return True
+        if tok.startswith(("-f", "-F")) and len(tok) > 2:
+            return True
+    return False
+
+
+def _parse_git_remote_mutation(args: list[str]) -> Optional[str]:
+    if not args or args[0] != "remote":
+        return None
+    if len(args) < 2:
+        return None
+    sub = args[1]
+    if sub == "add" and len(args) >= 4:
+        return args[3]
+    if sub == "set-url":
+        url_idx = 3
+        if len(args) >= 4 and args[2] in ("--push", "--add"):
+            url_idx = 4
+        if len(args) > url_idx:
+            return args[url_idx]
+    return None
+
+
+def _parse_git_push_repository(args: list[str]) -> Optional[str]:
+    if not args or args[0] != "push":
+        return None
+    i = 1
+    repository: Optional[str] = None
+    while i < len(args):
+        tok = args[i]
+        if tok.startswith("--repo="):
+            repository = tok.split("=", 1)[1]
+            i += 1
+            continue
+        if tok in ("--repo",):
+            if i + 1 < len(args):
+                repository = args[i + 1]
+            i += 2
+            continue
+        if tok.startswith("-"):
+            i += 1
+            continue
+        repository = tok
+        break
+    return repository
+
+
+def match_outward_git_push(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    reason = str(rule["reason"])
+    for tokens in ctx.subcommands:
+        git_cwd = _git_effective_cwd(tokens, ctx.cwd)
+        sub = _git_subcommand_tokens(tokens)
+        if sub is None:
+            continue
+        remote_url = _parse_git_remote_mutation(sub)
+        if remote_url is not None and _is_local_recipes_checkout(git_cwd):
+            if _is_local_filesystem_destination(remote_url):
+                continue
+            slug = _normalize_repo_slug(remote_url)
+            if slug and not _is_local_recipes_slug(slug):
+                return reason
+            if slug is None and not _is_local_filesystem_destination(remote_url):
+                return reason
+        push_repo = _parse_git_push_repository(sub)
+        if push_repo is not None or (sub and sub[0] == "push"):
+            slug, is_local = _resolve_push_destination(push_repo, git_cwd)
+            if is_local:
+                continue
+            if slug is None:
+                return reason
+            if not _is_local_recipes_slug(slug):
+                return reason
+    return None
+
+
+_GH_WRITE_PR = frozenset(
+    {"create", "comment", "review", "edit", "merge", "close", "reopen", "ready"}
+)
+_GH_WRITE_ISSUE = frozenset(
+    {
+        "create",
+        "comment",
+        "edit",
+        "close",
+        "reopen",
+        "delete",
+        "transfer",
+        "lock",
+        "unlock",
+        "pin",
+        "unpin",
+    }
+)
+_GH_WRITE_RELEASE = frozenset({"create", "upload", "edit", "delete", "delete-asset"})
+
+
+def match_outward_github_write(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    reason = str(rule["reason"])
+    for tokens in ctx.subcommands:
+        env, body = _strip_env_prefix(tokens)
+        if not body:
+            continue
+        if body[0] != "gh":
+            continue
+        if len(body) >= 2 and body[1] == "repo":
+            if len(body) >= 3 and body[2] in ("fork", "create"):
+                return reason
+        if len(body) >= 2 and body[1] == "gist":
+            if len(body) >= 3 and body[2] in ("create", "edit", "delete"):
+                return reason
+        if len(body) >= 3 and body[1] == "api":
+            if body[2] == "graphql":
+                continue
+            if not _gh_api_is_write(body):
+                continue
+            parts = _gh_api_endpoint_parts(body)
+            if parts[:2] == ["user", "repos"]:
+                return reason
+            if len(parts) >= 3 and parts[0] == "orgs" and parts[2] == "repos":
+                return reason
+            if parts[:1] == ["gists"]:
+                return reason
+            if len(parts) >= 4 and parts[0] == "repos" and parts[3] == "forks":
+                return reason
+            if len(parts) >= 3 and parts[0] == "repos":
+                slug = f"{parts[1].lower()}/{parts[2].lower()}"
+                if _is_local_recipes_slug(slug):
+                    continue
+            return reason
+        if len(body) >= 3 and body[1] in ("pr", "issue", "release"):
+            family = body[1]
+            verb = body[2]
+            write_set = (
+                _GH_WRITE_PR
+                if family == "pr"
+                else _GH_WRITE_ISSUE
+                if family == "issue"
+                else _GH_WRITE_RELEASE
+            )
+            if verb not in write_set:
+                continue
+            slug = _gh_repo_from_tokens(tokens, ctx.cwd)
+            if slug is None:
+                if _is_local_recipes_checkout(ctx.cwd):
+                    return reason
+                continue
+            if not _is_local_recipes_slug(slug):
+                return reason
+    return None
+
+
+def _tokens_have_yes(tokens: list[str]) -> bool:
+    return any(t == "--yes" or t == "-y" for t in tokens)
+
+
+def _is_mason_invocation(tokens: list[str]) -> bool:
+    low = [Path(t).name for t in tokens]
+    if low[:2] == ["pyforge", "mason"]:
+        return True
+    if low[0] == "mason":
+        return True
+    if _PY_INTERPRETER_RE.fullmatch(low[0]) and len(low) >= 3 and low[1] == "-m":
+        mod = low[2]
+        return mod in ("pyforge.mason", "pyforge.mason.cli")
+    return False
+
+
+def _mason_submit_denied(tokens: list[str]) -> bool:
+    if not _is_mason_invocation(tokens):
+        return False
+    low = [Path(t).name for t in tokens]
+    if "recipe" in low:
+        idx = low.index("recipe")
+        if idx + 1 < len(low) and low[idx + 1] == "submit" and _tokens_have_yes(tokens):
+            return True
+    if "package" in low:
+        idx = low.index("package")
+        rest = low[idx + 1 :]
+        has_ship = any(
+            tok == "ship" or tok == "--ship" or tok.startswith("--ship") for tok in rest
+        )
+        if has_ship and _tokens_have_yes(tokens):
+            return True
+    return False
+
+
+def _cfe_submit_denied(tokens: list[str]) -> bool:
+    if len(tokens) >= 2 and tokens[0] == "pixi" and tokens[1] == "run":
+        env, rest = _pixi_run_env(tokens)
+        if env != "local-recipes":
+            return False
+        task = next((tok for tok in rest if not tok.startswith("-")), None)
+        if task in ("submit-pr", "prepare-pr") and "--dry-run" not in tokens:
+            return True
+    for tok in tokens:
+        if tok.endswith("submit_pr.sh"):
+            return True
+        if tok.endswith("submit_pr.py") or tok.endswith("prepare_pr.py"):
+            if "--dry-run" not in tokens:
+                return True
+    return False
+
+
+def match_outward_package_submission(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    reason = str(rule["reason"])
+    for tokens in ctx.subcommands:
+        low = [Path(t).name.lower() for t in tokens]
+        if low and low[0] == "feedrattler":
+            if len(low) >= 2 and low[1] in ("--help", "--version", "-h"):
+                continue
+            return reason
+        if low and low[0] == "conda-smithy" and len(low) >= 2:
+            if low[1] in _CONDA_SMITHY_OUTWARD:
+                return reason
+        if _mason_submit_denied(tokens):
+            return reason
+        if _cfe_submit_denied(tokens):
+            return reason
+    return None
+
+
+def match_outward_mcp_submission(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
+    reason = str(rule["reason"])
+    name = ctx.mcp_tool_name
+    if not name or name not in _MCP_OUTWARD_TOOLS:
+        return None
+    if name == "mcp__conda_forge_server__migrate_to_v1":
+        return reason
+    dry = ctx.mcp_tool_input.get("dry_run")
+    if dry is True:
+        return None
+    return reason
+
+
 MATCHERS: dict[str, Callable[[Context, dict[str, Any]], Optional[str]]] = {
     "guild-task-via-local-recipes": match_guild_task_via_local_recipes,
     "adhoc-package-install": match_adhoc_package_install,
@@ -1018,6 +1547,10 @@ MATCHERS: dict[str, Callable[[Context, dict[str, Any]], Optional[str]]] = {
     "direct-write-governed-path": match_direct_write_governed_path,
     "protected-ref-deletion": match_protected_ref_deletion,
     "unreachable-ref-deletion": match_unreachable_ref_deletion,
+    "outward-git-push": match_outward_git_push,
+    "outward-github-write": match_outward_github_write,
+    "outward-package-submission": match_outward_package_submission,
+    "outward-mcp-submission": match_outward_mcp_submission,
 }
 
 
@@ -1112,7 +1645,7 @@ def main() -> int:
         return 0
 
     harness, kind = detect(payload)
-    if kind not in ("bash", "edit_write"):
+    if kind not in ("bash", "edit_write", "mcp"):
         return 0
 
     ctx = build_context(harness, kind, payload)

@@ -13,6 +13,9 @@ _BRANCH_NAME_FLOOR: frozenset[str] = frozenset({"main", "loop/"})
 _STRUCTURAL_BRANCH_PREFIXES: frozenset[str] = frozenset(
     {"preserve/", "archive/", "rescue/"},
 )
+# A policy entry that starts with one of these asks to REMOVE a ref from the
+# protected list -- refused, since a policy layer may only add (AD-47, AD-27).
+_REMOVAL_MARKERS: tuple[str, ...] = ("!", "^")
 
 
 def protected_branch_floor() -> frozenset[str]:
@@ -89,6 +92,41 @@ def parse_roster_protected_prefixes(entries: object) -> frozenset[str]:
             continue
         out.add(refname)
     return frozenset(out)
+
+
+def protected_floor() -> frozenset[str]:
+    """The code floor every protected list starts from: the branch floor plus
+    all of ``refs/tags/``. No policy layer can remove an entry from it."""
+    return _PROTECTED_BRANCH_FLOOR | _PROTECTED_TAG_FLOOR
+
+
+def floor_entries_weakened_by(value: object) -> tuple[str, ...]:
+    """The floor entries a policy value tries to remove, sorted; ``()`` when it
+    tries none.
+
+    A policy layer may only add prefixes. An entry spelled as a removal -- a
+    leading ``!`` or ``^`` (git's own negative-refspec marker) -- weakens the
+    floor when the ref it names overlaps a floor entry: it covers the entry
+    (``!refs/heads/`` drops ``refs/heads/main`` and ``refs/heads/loop/``) or
+    carves a hole in it (``!refs/heads/loop/acme``). A removal that overlaps no
+    floor entry is malformed rather than weakening, and is left to
+    ``validate_policy_protected_additions``."""
+    if not isinstance(value, (list, tuple)):
+        return ()
+    weakened: set[str] = set()
+    for item in value:
+        if not isinstance(item, str):
+            continue
+        entry = item.strip()
+        if not entry or entry[0] not in _REMOVAL_MARKERS:
+            continue
+        target = entry[1:].strip()
+        if not target:
+            continue
+        for floor_entry in protected_floor():
+            if ref_matches_prefix(floor_entry, target) or ref_matches_prefix(target, floor_entry):
+                weakened.add(floor_entry)
+    return tuple(sorted(weakened))
 
 
 def validate_policy_protected_additions(value: object) -> tuple[str, ...] | None:

@@ -84,3 +84,26 @@ def test_roster_prefixes_union_with_floor():
     roster = frozenset({"refs/heads/attempt-preserve/"})
     prefixes = protected_refs.effective_protected_prefixes(roster_prefixes=roster)
     assert protected_refs.is_branch_name_structurally_excluded("attempt-preserve/foo", protected_prefixes=prefixes)
+
+
+def test_protected_floor_is_the_branch_floor_plus_every_tag():
+    assert protected_refs.protected_floor() == frozenset({"refs/heads/main", "refs/heads/loop/", "refs/tags/"})
+
+
+def test_floor_entries_weakened_by_names_each_floor_entry_a_removal_overlaps():
+    weakened = protected_refs.floor_entries_weakened_by
+    assert weakened(["!refs/heads/loop/"]) == ("refs/heads/loop/",)
+    assert weakened(["^refs/heads/main"]) == ("refs/heads/main",)
+    # A removal that covers the floor entry, or carves a hole in it.
+    assert weakened(["!refs/heads/"]) == ("refs/heads/loop/", "refs/heads/main")
+    assert weakened(["!refs/heads/loop/acme"]) == ("refs/heads/loop/",)
+    assert weakened(["  ! refs/tags/preserve/ "]) == ("refs/tags/",)
+
+
+def test_floor_entries_weakened_by_ignores_additions_and_off_floor_removals():
+    weakened = protected_refs.floor_entries_weakened_by
+    assert weakened(["refs/heads/main", "refs/heads/release/"]) == ()
+    assert weakened(["!refs/heads/feature/", "!refs/heads/mainline"]) == ()
+    assert weakened(["!", "", 3]) == ()
+    assert weakened("!refs/heads/loop/") == ()
+    assert weakened(None) == ()

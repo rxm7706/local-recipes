@@ -5669,7 +5669,7 @@ naming what stays open and that outward work is the operator's, after explicit c
 stay allowed (graphql named instruction-only); `MATCHERS` equals the sixteen declared ids; every backticked span in the new reasons passes Story 85.6's
 check; AGENTS.md, the roster comment and the hook docstring say sixteen; the skill text that instructs outward steps is mason's follow-up, not this story's;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
