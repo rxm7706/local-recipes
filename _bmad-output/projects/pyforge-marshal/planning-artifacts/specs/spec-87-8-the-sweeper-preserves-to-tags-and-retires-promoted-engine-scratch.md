@@ -2,7 +2,8 @@
 title: "87.8: The sweeper preserves to tags and retires promoted engine scratch"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '02167e79f48afd9fb8cacd8ce3369c435302f1ab'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:

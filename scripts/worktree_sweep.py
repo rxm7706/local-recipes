@@ -88,6 +88,9 @@ if str(REPO_ROOT / "scripts") not in sys.path:
 
 import _protected_refs_ruleset_lib as pr_rules
 from pyforge.core import preserve_refs
+from pyforge.core.flags import read_boolean
+
+PRESERVE_REFS_FLAG = "pyforge.marshal.preserve_refs"
 # Marshal Story 61.1 (review 3): `main` by its full refname -- a stray tag `main` on a feature
 # commit made that feature read as merged, its worktree swept and its branch deleted.
 MAIN_REF = "refs/heads/main"
@@ -161,6 +164,43 @@ class OrphanDir:
     empty: bool
     verdict: str = ""
     reason: str = ""
+
+
+@dataclass
+class EngineScratchRow:
+    refname: str
+    commit: str
+    verdict: str
+    reason: str = ""
+
+
+@dataclass
+class PreserveToTagOutcome:
+    refname: str
+    pushed: bool
+    debt: str = ""
+
+
+def _flags_path() -> Path:
+    return REPO_ROOT / "src/platform/config/flags.json"
+
+
+def preserve_refs_flag_on() -> bool:
+    return read_boolean(PRESERVE_REFS_FLAG, default=False, flags_path=_flags_path())
+
+
+def _feed_story_key(story_key: str | None) -> str | None:
+    if not story_key:
+        return None
+    m = re.match(r"^(\d+)-(\d+)([a-z])?$", story_key)
+    if m:
+        suffix = m.group(3) or ""
+        return f"{m.group(1)}.{m.group(2)}{suffix}"
+    return story_key
+
+
+def _project_slug(station: str | None) -> str | None:
+    return f"pyforge-{station}" if station else None
 
 
 # ---------------------------------------------------------------- discovery
@@ -483,6 +523,125 @@ def preserve(wt: Worktree, preserve_dir: Path) -> Path:
     return dest
 
 
+def preserve_worktree_as_tag(wt: Worktree) -> PreserveToTagOutcome:
+    """Write a local ``sweep`` preserve tag (and try push) before worktree removal."""
+    p = Path(wt.path)
+    commit: str | None = None
+    try:
+        commit = preserve_refs.snapshot_worktree_commit(p)
+    except preserve_refs.PreserveGitError:
+        commit = None
+    if commit is None:
+        head, rc = _git("rev-parse", "HEAD", cwd=p)
+        if rc != 0:
+            raise preserve_refs.PreserveGitError(f"cannot read HEAD in {wt.path}")
+        commit = head
+    project = _project_slug(wt.station)
+    story = _feed_story_key(wt.story_key)
+    refname = preserve_refs.render_preserve_ref(
+        commit_sha=commit,
+        producer="sweep",
+        project_slug=project,
+        story_key=story,
+    )
+    source = preserve_refs.normalize_ref(wt.branch)
+    trailers = preserve_refs.PreserveTrailers(
+        producer="sweep",
+        provenance="machine",
+        reason=wt.reason or "worktree-sweep PRESERVE-THEN-DELETE",
+        source=source,
+        run="",
+        journal="",
+        commit=commit,
+    )
+    tagged = preserve_refs.tag_preserve(REPO_ROOT, refname=refname, commit=commit, trailers=trailers)
+    pushed = False
+    debt = ""
+    purge_path = preserve_refs.default_purge_list_path(REPO_ROOT)
+    try:
+        push_result = preserve_refs.push_preserve_ref(REPO_ROOT, tagged.refname, purge_list_path=purge_path)
+        pushed = push_result.pushed
+        if not pushed:
+            debt = "; ".join(f.message for f in push_result.findings) or "content gate refused push"
+    except preserve_refs.PreserveGitError as exc:
+        debt = str(exc)
+    return PreserveToTagOutcome(refname=tagged.refname, pushed=pushed, debt=debt)
+
+
+def _iter_engine_scratch_refs() -> list[tuple[str, str]]:
+    fmt = "%(refname)\x1f%(objectname)"
+    out, rc = _git(
+        "for-each-ref",
+        f"--format={fmt}",
+        f"refs/heads/{preserve_refs.ATTEMPT_PRESERVE_BRANCH_PREFIX}",
+        preserve_refs.ATTEMPT_PRESERVE_DIRTY_PREFIX,
+    )
+    if rc != 0:
+        return []
+    refs: list[tuple[str, str]] = []
+    for line in out.splitlines():
+        if "\x1f" not in line:
+            continue
+        refname, commit = line.split("\x1f", 1)
+        refname, commit = refname.strip(), commit.strip()
+        if refname and commit:
+            refs.append((refname, commit))
+    return sorted(refs)
+
+
+def _engine_scratch_promoted(refname: str, commit: str) -> bool:
+    want = preserve_refs.normalize_ref(refname)
+    short = preserve_refs.short_ref_name(want)
+    for rec in preserve_refs.list_preserves(REPO_ROOT):
+        src = rec.trailers.source
+        if src not in (want, short, refname, preserve_refs.short_ref_name(refname)):
+            continue
+        _, rc = _git("merge-base", "--is-ancestor", commit, rec.object_sha)
+        if rc == 0:
+            return True
+    return False
+
+
+def verdict_for_engine_scratch(refname: str, commit: str) -> tuple[str, str]:
+    if not preserve_refs_flag_on():
+        return "KEEP", "engine scratch (flag off)"
+    if _engine_scratch_promoted(refname, commit):
+        return "DELETE", "promoted engine scratch"
+    return "KEEP", "unpromoted scratch"
+
+
+def classify_engine_scratch_refs() -> list[EngineScratchRow]:
+    rows: list[EngineScratchRow] = []
+    for refname, commit in _iter_engine_scratch_refs():
+        verdict, reason = verdict_for_engine_scratch(refname, commit)
+        rows.append(EngineScratchRow(refname=refname, commit=commit, verdict=verdict, reason=reason))
+    return rows
+
+
+def _delete_local_ref(refname: str) -> bool:
+    if refname.startswith("refs/heads/"):
+        _, rc = _git("branch", "-D", refname.removeprefix("refs/heads/"))
+        return rc == 0
+    _, rc = _git("update-ref", "-d", refname)
+    return rc == 0
+
+
+def retire_promoted_engine_scratch(*, apply: bool) -> tuple[list[EngineScratchRow], list[str]]:
+    rows = classify_engine_scratch_refs()
+    retired: list[str] = []
+    for row in rows:
+        if row.verdict != "DELETE" or not apply:
+            continue
+        if _delete_local_ref(row.refname):
+            retired.append(row.refname)
+    return rows, retired
+
+
+def _local_ref_is_tag(name: str) -> bool:
+    _, rc = _git("rev-parse", "--verify", "--quiet", f"refs/tags/{name}^{{}}")
+    return rc == 0
+
+
 def remove_worktree(wt: Worktree, *, unlock_first: bool = False) -> bool:
     """Re-check the verdict-relevant facts immediately before removal."""
     p = Path(wt.path)
@@ -520,9 +679,12 @@ def remove_orphan_dir(od: OrphanDir) -> bool:
 def delete_merged_local_branches(*, apply: bool = True) -> tuple[int, list[str], list[str]]:
     out, _ = _git("branch", "--merged", MAIN_REF, "--format=%(refname:lstrip=2) %(worktreepath)")
     deleted, kept, patch_equivalent = 0, [], []
+    flag_on = preserve_refs_flag_on()
     for line in out.splitlines():
         name, _, wtpath = line.partition(" ")
         if name == "main" or wtpath.strip() or name.startswith(PROTECTED_BRANCH_PREFIXES):
+            continue
+        if _local_ref_is_tag(name):
             continue
         _, rc = _git("merge-base", "--is-ancestor", f"refs/heads/{name}", MAIN_REF)
         if rc != 0:
@@ -532,6 +694,13 @@ def delete_merged_local_branches(*, apply: bool = True) -> tuple[int, list[str],
                 kept.append(name)
             continue
         if apply:
+            if flag_on:
+                tip, tip_rc = _git("rev-parse", f"refs/heads/{name}")
+                if tip_rc == 0 and deletion_would_orphan_commits(tip):
+                    archive_ref, err = ensure_local_archive_twin(name, tip)
+                    if not archive_ref and err:
+                        kept.append(name)
+                        continue
             _, rc = _git("branch", "-D", name)
             deleted += 1 if rc == 0 else 0
     return deleted, kept, patch_equivalent
@@ -903,8 +1072,8 @@ def _archive_tag_message(branch: str, commit: str) -> str:
     return trailers.format_message()
 
 
-def write_and_push_archive_twin(branch: str, tip_sha: str) -> tuple[str | None, str]:
-    """Create and push archive/heads twin; return (refname, error_reason)."""
+def ensure_local_archive_twin(branch: str, tip_sha: str) -> tuple[str | None, str]:
+    """Create a local ``archive/heads`` twin when deletion would orphan commits."""
     if not deletion_would_orphan_commits(tip_sha):
         return "", ""
     refname = preserve_refs.render_archive_heads_ref(branch)
@@ -924,6 +1093,16 @@ def write_and_push_archive_twin(branch: str, tip_sha: str) -> tuple[str | None, 
                 pass
         if tag_rc != 0:
             return None, "failed to create local archive tag"
+    return refname, ""
+
+
+def write_and_push_archive_twin(branch: str, tip_sha: str) -> tuple[str | None, str]:
+    """Create and push archive/heads twin; return (refname, error_reason)."""
+    refname, err = ensure_local_archive_twin(branch, tip_sha)
+    if err or not refname:
+        return refname, err
+    if refname == "":
+        return "", ""
     purge_path = preserve_refs.default_purge_list_path(REPO_ROOT)
     try:
         push_result = preserve_refs.push_preserve_ref(REPO_ROOT, refname, purge_list_path=purge_path)
@@ -1138,15 +1317,20 @@ def main(argv: list[str] | None = None) -> int:
     ]
     orphan_actionable = [od for od in orphans if od.verdict == "ORPHAN-DIR"]
 
+    scratch_rows = classify_engine_scratch_refs() if preserve_refs_flag_on() else []
     results: dict[str, object] = {
         "executed": args.execute,
         "removed": [],
         "preserved": [],
+        "preserve_tags": [],
+        "preserve_debt": [],
         "failed": [],
         "orphans_removed": [],
         "orphans_failed": [],
         "branches_deleted": 0,
         "patch_equivalent_branches": [],
+        "engine_scratch": [asdict(r) for r in scratch_rows],
+        "engine_scratch_retired": [],
     }
     if args.execute:
         for wt in actionable:
@@ -1155,9 +1339,25 @@ def main(argv: list[str] | None = None) -> int:
             exec_v = effective_execute_verdict(wt)
             unlock = wt.verdict == "STALE-LOCK" and wt.merged
             if exec_v == "PRESERVE-THEN-DELETE":
-                results["preserved"].append(str(preserve(wt, args.preserve_dir)))  # type: ignore[union-attr]
+                if preserve_refs_flag_on():
+                    try:
+                        outcome = preserve_worktree_as_tag(wt)
+                        results["preserve_tags"].append(outcome.refname)  # type: ignore[union-attr]
+                        if outcome.debt:
+                            results["preserve_debt"].append(  # type: ignore[union-attr]
+                                {"ref": outcome.refname, "reason": outcome.debt}
+                            )
+                    except preserve_refs.PreserveRefError, preserve_refs.PreserveGitError as exc:
+                        results["failed"].append(wt.path)  # type: ignore[union-attr]
+                        results["preserve_debt"].append({"ref": wt.branch, "reason": str(exc)})  # type: ignore[union-attr]
+                        continue
+                else:
+                    results["preserved"].append(str(preserve(wt, args.preserve_dir)))  # type: ignore[union-attr]
             removed = remove_worktree(wt, unlock_first=unlock)
             (results["removed"] if removed else results["failed"]).append(wt.path)  # type: ignore[union-attr]
+        if preserve_refs_flag_on():
+            _, retired = retire_promoted_engine_scratch(apply=True)
+            results["engine_scratch_retired"] = retired  # type: ignore[assignment]
         for od in orphan_actionable:
             (results["orphans_removed"] if remove_orphan_dir(od) else results["orphans_failed"]).append(od.path)  # type: ignore[union-attr]
         _git("worktree", "prune")
@@ -1210,12 +1410,23 @@ def main(argv: list[str] | None = None) -> int:
         patch_eq = results.get("patch_equivalent_branches") or []
         if patch_eq:
             print(f"patch-equivalent (reported, not deleted): {', '.join(patch_eq)}")
+        if scratch_rows:
+            for row in scratch_rows:
+                print(
+                    f"  scratch {row.verdict:8s} {row.refname} "
+                    f"{row.commit[:8]}  {row.reason}"
+                )
         if args.execute:
+            tag_n = len(results.get("preserve_tags") or [])
+            patch_n = len(results.get("preserved") or [])
+            debt_n = len(results.get("preserve_debt") or [])
             print(
-                f"executed: removed {len(results['removed'])}, preserved {len(results['preserved'])} "
-                f"(under {args.preserve_dir}), failed {len(results['failed'])}, "
+                f"executed: removed {len(results['removed'])}, "
+                f"preserve tags {tag_n}, format-patch dirs {patch_n}, preserve debt {debt_n}, "
+                f"failed {len(results['failed'])}, "
                 f"orphans removed {len(results['orphans_removed'])}, "
-                f"local branches deleted {results['branches_deleted']}"
+                f"local branches deleted {results['branches_deleted']}, "
+                f"engine scratch retired {len(results.get('engine_scratch_retired') or [])}"
             )
             for f in results["failed"]:  # type: ignore[union-attr]
                 print(f"  FAILED: {f}")
