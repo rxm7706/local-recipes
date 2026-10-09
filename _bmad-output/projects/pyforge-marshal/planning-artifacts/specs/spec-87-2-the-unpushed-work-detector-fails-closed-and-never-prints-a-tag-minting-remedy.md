@@ -2,7 +2,8 @@
 title: "87.2: The unpushed-work detector fails closed and never prints a tag-minting remedy"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'fe98582a06cfb1e3b69edde46eaab05efe292c79'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
