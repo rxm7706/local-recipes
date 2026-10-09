@@ -389,7 +389,7 @@ def test_remote_execute_writes_archive_twin_before_orphan_delete(clone: Path, tm
     ws.execute_remote_deletes(rows, apply=True, preserve_dir=preserve)
     assert "refs/heads/orphan-delete-me" not in _git(clone, "ls-remote", "--heads", "origin")
     tags = _git(clone, "ls-remote", "--tags", "origin")
-    assert f"refs/tags/archive/heads/orphan-delete-me" in tags
+    assert "refs/tags/archive/heads/orphan-delete-me" in tags
     assert sha[:8] in tags
 
 

@@ -74,9 +74,10 @@ import subprocess
 import sys
 import tempfile
 from dataclasses import asdict, dataclass, field
+from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Protocol
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 _CORE_SRC = REPO_ROOT / "src" / "shared" / "packages" / "pyforge-core" / "src"
@@ -85,9 +86,8 @@ if str(_CORE_SRC) not in sys.path:
 if str(REPO_ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-from pyforge.core import preserve_refs  # noqa: E402
-
-import _protected_refs_ruleset_lib as pr_rules  # noqa: E402
+import _protected_refs_ruleset_lib as pr_rules
+from pyforge.core import preserve_refs
 # Marshal Story 61.1 (review 3): `main` by its full refname -- a stray tag `main` on a feature
 # commit made that feature read as merged, its worktree swept and its branch deleted.
 MAIN_REF = "refs/heads/main"
@@ -680,7 +680,6 @@ def live_dispatch_branches() -> set[str]:
                 continue
             kind = entry.get("kind", "")
             if kind in terminal:
-                phase = entry.get("phase", "")
                 payload = entry.get("payload") or {}
                 if kind == "dispatch-finalize" and payload.get("ok") is True:
                     run_live = False
@@ -698,7 +697,7 @@ def live_dispatch_branches() -> set[str]:
 
 def flat_ledger() -> dict[str, str]:
     merged: dict[str, str] = {}
-    for station, keys in load_ledgers().items():
+    for keys in load_ledgers().values():
         merged.update(keys)
     return merged
 
