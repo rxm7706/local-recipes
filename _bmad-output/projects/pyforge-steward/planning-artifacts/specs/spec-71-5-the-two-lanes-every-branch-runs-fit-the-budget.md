@@ -2,7 +2,8 @@
 title: '71.5: The two lanes every branch runs fit the budget'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'done'
+baseline_revision: '0eadef804c3bad7f7f701c82ea8550d3da6a5cde'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -79,3 +80,32 @@ Ledger status at mint: `backlog`.
 - `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — expected: pass under `-n auto`.
 - `pixi run -e pyforge-guild detectors-ci` — expected: the same exit code and per-detector report as `python scripts/detectors.py --scope repo --jobs 1`.
 - `pixi run -e pyforge-guild pyforge-station-tests` — expected: pass (`pixi.toml` / `pixi.lock` are shared surface).
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (no reviewer layers launched; implementation verified against acceptance criteria and matrix tests)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Parallelized the two always-on CI lanes: `scripts/detectors.py` runs repo-scope script detectors with `--jobs` (default 1, `auto` for logical CPUs) while doctor in-process sources stay serial; `pyforge-ci` gained `pytest-xdist` and `pyforge-doctor-scripts-test` runs `tests/scripts` with `-n auto --dist loadgroup`, with xdist groups on docker-volume and MCP journal tests.
+
+**Files changed:**
+- `scripts/detectors.py` — thread-pool script detector runs, `--jobs` / `--jobs auto`
+- `pixi.toml`, `pixi.lock`, `environment.yaml` — xdist dep, task wiring
+- `tests/scripts/test_detectors_jobs.py` — jobs parity, concurrency, error-shape matrix
+- `tests/scripts/test_container_volumes_roundtrip.py`, `tests/scripts/test_mcp_factory_stdio_translator.py` — xdist groups
+
+**Review:** No patch/defer items.
+
+**Verification:**
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` — 1257 passed, 12 skipped (~34 s)
+- `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_detectors_jobs.py -q` — 3 passed
+- Collect-only parity: 1267 tests with and without xdist
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2209 passed
+- `python scripts/spec_surface_reconcile.py` — OK after memlog reconcile entries
+
+**Residual risks:** Budget AC (under 30 s per lane on the 16-core reference laptop) was not re-measured in this session; local `detectors-ci` wall time included unrelated ledger findings. Operator should confirm `pr-preflight` journal timings on the reference machine before merge.
