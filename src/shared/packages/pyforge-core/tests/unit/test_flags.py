@@ -925,6 +925,42 @@ _SHIPPED_CLOCKS = {
     "pyforge.herald.deck_viewer": ("herald", "30-1-", "2026-09-28", "", ""),
     "pyforge.herald.pages_second_host": ("herald", "31-1-", "2026-09-28", "", ""),
     "pyforge.herald.deck_export_native": ("herald", "32-1-", "2026-09-28", "", ""),
+    "pyforge.steward.ledger_query_postgres_sync": (
+        "steward",
+        "65-1-",
+        "2026-09-19",
+        "",
+        "",
+    ),
+    "pyforge.steward.ledger_query_dossier_export": (
+        "steward",
+        "65-1-",
+        "2026-09-19",
+        "",
+        "",
+    ),
+    "pyforge.steward.ledger_query_vizro_dataset": (
+        "steward",
+        "65-1-",
+        "2026-09-19",
+        "",
+        "",
+    ),
+    "pyforge.steward.ledger_query_herald_facts": (
+        "steward",
+        "65-1-",
+        "2026-09-19",
+        "",
+        "",
+    ),
+    "pyforge.steward.ledger_query_jira_github_matrix": (
+        "steward",
+        "65-1-",
+        "2026-09-19",
+        "",
+        "",
+    ),
+    "pyforge.steward.glass_export": ("steward", "61-3-", "2026-09-17", "", ""),
 }
 
 
@@ -972,6 +1008,12 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
     expected = {
         "pyforge.three_surfaces": True,
         "pyforge.steward.ghe_fleet_credentials": False,
+        "pyforge.steward.ledger_query_postgres_sync": False,
+        "pyforge.steward.ledger_query_dossier_export": False,
+        "pyforge.steward.ledger_query_vizro_dataset": False,
+        "pyforge.steward.ledger_query_herald_facts": False,
+        "pyforge.steward.ledger_query_jira_github_matrix": False,
+        "pyforge.steward.glass_export": False,
     }
     # Story 84.4 / 85.3 / 74.2: per-environment booleans (object_store_consumer, sync_github_only_marker and
     # verify_fix_loop on in dev/staging, off in production).
@@ -1006,3 +1048,20 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
         assert {k: e["defaultVariant"] for k, e in rendered["flags"].items()} == {
             k: e["defaultVariant"] for k, e in payload["flags"].items()
         } | {k: ("on" if by_environment[environment] else "off") for k, by_environment in per_environment.items()}
+
+
+def test_read_boolean_configures_the_flagd_file_provider(tmp_path, monkeypatch):
+    flagd = pytest.importorskip("openfeature.contrib.provider.flagd")
+    tree = _tree(tmp_path, _bool_entry("on"))
+    configured_sources: list[str] = []
+    real_provider = flagd.FlagdProvider
+
+    class _SpyProvider(real_provider):
+        def __init__(self, **kwargs: object) -> None:
+            configured_sources.append(str(kwargs.get("offline_flag_source_path")))
+            super().__init__(**kwargs)
+
+    monkeypatch.setattr(flagd, "FlagdProvider", _SpyProvider)
+    flags._PROVIDER_SOURCE = None  # noqa: SLF001 -- reset process-local provider pin for this test
+    assert read_boolean(KEY, flags_path=tree) is True
+    assert configured_sources and Path(configured_sources[0]).is_file()

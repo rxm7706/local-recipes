@@ -49,17 +49,17 @@ No formatter writes into another station's tree (`presentations/`, `_bmad-output
 
 ## Feature flags
 
-Every optional integration sits behind a flag (default OFF); asking for a gated formatter or action with its flag off exits 1 with `flag <name> is off (set FLAGS_<NAME>=true, flags.json, or --flag <name>=true)` and writes nothing.
+Every optional integration sits behind a key on the one flagd tree (`src/platform/config/flags.json`, default OFF in every environment); asking for a gated formatter or action with its flag off exits 1 naming the tree key and writes nothing.
 
-| Flag | Gates |
-|---|---|
-| `enable_jira_github_matrix` | `--format sync-matrix`, `jira-csv`, `github-json` |
-| `enable_herald_facts` | `--format herald-facts` |
-| `enable_vizro_dataset` | `--format atlas-dataset` |
-| `enable_dossier_export` | `--format static-dossier` |
-| `enable_postgres_sync` | `--sync-postgres` |
+| Tree key | Legacy `--flag` short name | Gates |
+|---|---|---|
+| `pyforge.steward.ledger_query_jira_github_matrix` | `enable_jira_github_matrix` | `--format sync-matrix`, `jira-csv`, `github-json` |
+| `pyforge.steward.ledger_query_herald_facts` | `enable_herald_facts` | `--format herald-facts` |
+| `pyforge.steward.ledger_query_vizro_dataset` | `enable_vizro_dataset` | `--format atlas-dataset` |
+| `pyforge.steward.ledger_query_dossier_export` | `enable_dossier_export` | `--format static-dossier` |
+| `pyforge.steward.ledger_query_postgres_sync` | `enable_postgres_sync` | `--sync-postgres` |
 
-Resolution order (`eval_flag()`; no OpenFeature SDK -- file / env / CLI only): (1) `--flag name=value` (repeatable; `true/1/yes/on` and `false/0/no/off` are coerced), (2) `FLAGS_<NAME>` in the environment (an empty value counts as unset), (3) `<repo-root>/.steward/flags.json` -- entries are bare values or `{"state": "ENABLED"|"DISABLED", "value": ...}`, `DISABLED` is false regardless of `value`, (4) the default. `markdown`, `summary`, `json` and `table` are never gated.
+Resolution (`eval_flag()` → `pyforge.core.flags.read_boolean`, OpenFeature FILE provider when installed): (1) `--flag name=value` (repeatable; short names map to tree keys; `true/1/yes/on` and `false/0/no/off` are coerced), (2) the rendered tree for `PYFORGE_ENVIRONMENT`, (3) the default. Turn a flag on in a checkout with `flag-overlays.json` or pass `--flag <short-or-tree-key>=true`. `markdown`, `summary`, `json` and `table` are never gated.
 
 ## `--sync-postgres`
 
