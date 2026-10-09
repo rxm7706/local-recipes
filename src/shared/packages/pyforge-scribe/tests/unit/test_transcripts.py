@@ -10,6 +10,7 @@ spec-3-1-the-scanner-surfaces-what-sessions-said-but-memory-missed.md.
 
 from __future__ import annotations
 
+import difflib
 import json
 import os
 import re
@@ -157,6 +158,60 @@ def test_curated_dedup_does_not_suppress_unrelated_content(transcript_root: Path
 
     assert len(proposal.candidates) == 1
     assert "webhook retry queue" in proposal.candidates[0].text
+
+
+def test_curated_overlap_at_dedup_ratio_threshold_suppresses_candidate(
+    transcript_root: Path, memory_root: Path
+) -> None:
+    curated = (
+        "The team decided to migrate the ingestion pipeline from REST polling "
+        "to an event-driven Kafka architecture after load testing."
+    )
+    transcript_sentence = (
+        "We decided to migrate the ingestion pipeline from REST polling "
+        "to an event-driven Kafka architecture after benchmarking."
+    )
+    ratio = difflib.SequenceMatcher(
+        None,
+        " ".join(curated.lower().split()),
+        " ".join(transcript_sentence.lower().split()),
+    ).ratio()
+    assert ratio >= 0.6
+
+    _write_curated(memory_root, "project", "kafka-migration", curated)
+    _write_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_line(text_blocks=[transcript_sentence])],
+    )
+
+    proposal = scan_transcripts(transcript_root, memory_root)
+
+    assert proposal.candidates == ()
+
+
+def test_curated_overlap_below_dedup_ratio_threshold_surfaces_candidate(
+    transcript_root: Path, memory_root: Path
+) -> None:
+    curated = "We decided to use SQLite for the local cache."
+    transcript_sentence = "We chose to deprecate the legacy webhook retry queue entirely."
+    ratio = difflib.SequenceMatcher(
+        None,
+        " ".join(curated.lower().split()),
+        " ".join(transcript_sentence.lower().split()),
+    ).ratio()
+    assert ratio < 0.6
+
+    _write_curated(memory_root, "project", "sqlite-cache", curated)
+    _write_jsonl(
+        transcript_root,
+        "session-a.jsonl",
+        [_assistant_line(text_blocks=[transcript_sentence])],
+    )
+
+    proposal = scan_transcripts(transcript_root, memory_root)
+
+    assert len(proposal.candidates) == 1
 
 
 # --- I/O Matrix row 3: non-text blocks are never mined ----------------------
