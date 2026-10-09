@@ -2,7 +2,7 @@
 title: "25.1: Track A's Wave H refreshes the sole-maintainer recipes the first waves missed"
 type: 'feature'
 created: '2026-09-29'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '70142b6f71afc760d8935d0f7c4b26a00182b249'
 flag-exempt: recipe-build
 review_loop_iteration: 0
