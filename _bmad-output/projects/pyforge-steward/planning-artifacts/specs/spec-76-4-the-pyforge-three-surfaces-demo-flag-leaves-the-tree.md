@@ -2,7 +2,7 @@
 title: "76.4: The pyforge.three_surfaces demo flag leaves the tree"
 type: 'chore'
 created: '2026-09-28'
-status: 'backlog'
+status: 'ready-for-dev'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: flag-infrastructure
