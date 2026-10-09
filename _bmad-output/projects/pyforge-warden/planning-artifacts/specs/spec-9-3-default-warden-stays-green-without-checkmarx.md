@@ -2,7 +2,7 @@
 title: 'Story 9.3: Default Warden stays green without Checkmarx'
 type: 'chore'
 created: '2026-08-24'
-status: 'in-review'
+status: 'done'
 baseline_revision: 'bf025506f4c325be68b602f69d79ca9f34b63008'
 review_loop_iteration: 0
 followup_review_recommended: false
