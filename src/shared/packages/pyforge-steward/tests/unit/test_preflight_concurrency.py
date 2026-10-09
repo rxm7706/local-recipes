@@ -9,7 +9,9 @@ import subprocess
 import sys
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -173,12 +175,15 @@ def test_red_lane_cancels_others(tmp_path: Path) -> None:
             return 1
         if ctx.lane.task == "b":
             started.set()
-        release.wait(timeout=5)
+            release.wait(timeout=5)
+        time.sleep(0.2)
         return 0
 
+    # Two workers, so `c` is still queued when `a` stops the run (Story 71.10 journals every lane
+    # that started from its own result; with three workers `c` could start and finish `ok`).
     code = preflight.run_preflight(
         repo,
-        jobs=3,
+        jobs=2,
         install_environment=_NOOP_INSTALL,
         run_lane_ctx=run_ctx,
         scratch_parent=tmp_path / "scratch",
@@ -187,7 +192,6 @@ def test_red_lane_cancels_others(tmp_path: Path) -> None:
     record = _run_record(repo)
     statuses = {entry["task"]: entry["status"] for entry in record["lanes"]}
     assert statuses["a"] == "red"
-    assert statuses["b"] in {"cancelled", "not-run"}
     assert statuses["c"] in {"cancelled", "not-run"}
 
 
@@ -314,117 +318,325 @@ def test_lane_runner_exception_counts_as_red(tmp_path: Path) -> None:
     assert record["lanes"][0]["status"] == "red"
 
 
-_FAIL_SCRIPT = "import time; time.sleep(0.5); raise SystemExit(1)"
-_SLEEP_SCRIPT = (
-    "import os, time; open(os.path.join(os.environ['TMPDIR'], 'pgid'), 'w').write(str(os.getpgrp())); time.sleep(30)"
-)
+def _capture_coordinators(monkeypatch: pytest.MonkeyPatch) -> list[preflight._RunCoordinator]:
+    """Record each run's coordinator, so a test can read `red_lanes` and the terminated marks."""
+    created: list[preflight._RunCoordinator] = []
+    real = preflight._RunCoordinator  # noqa: SLF001
+
+    def make(*args: Any, **kwargs: Any) -> preflight._RunCoordinator:
+        coord = real(*args, **kwargs)
+        created.append(coord)
+        return coord
+
+    monkeypatch.setattr(preflight, "_RunCoordinator", make)
+    return created
 
 
-def _subprocess_lane_scripts(lane: preflight.Lane) -> list[str]:
-    scripts = {"fail": _FAIL_SCRIPT, "sleep": _SLEEP_SCRIPT}
-    return [sys.executable, "-c", scripts[lane.task]]
+def _started_then(then: str, *, setup: str = "") -> str:
+    """A lane script: run `setup`, write its process group id and a `started` marker in its
+    scratch dir (TMPDIR), then run `then`."""
+    return (
+        "import os, signal, sys, time\n"
+        f"{setup}\n"
+        "tmp = os.environ['TMPDIR']\n"
+        "with open(os.path.join(tmp, 'pgid'), 'w') as handle:\n"
+        "    handle.write(str(os.getpgrp()))\n"
+        "with open(os.path.join(tmp, 'started'), 'w') as handle:\n"
+        "    handle.write('1')\n"
+        f"{then}\n"
+    )
 
 
-def test_real_subprocess_red_lane_cancels_running_peer(tmp_path: Path, capsys) -> None:
+def _after_peer_started(peer: str, then: str) -> str:
+    """A lane script: wait (10 s at most) for lane `peer`'s `started` marker, then run `then`."""
+    return (
+        "import os, sys, time\n"
+        f"marker = os.path.join(os.path.dirname(os.environ['TMPDIR']), {peer!r}, 'started')\n"
+        "deadline = time.monotonic() + 10\n"
+        "while not os.path.exists(marker) and time.monotonic() < deadline:\n"
+        "    time.sleep(0.02)\n"
+        f"{then}\n"
+    )
+
+
+_SLEEP_30 = _started_then("time.sleep(30)")
+_FAIL_HALF_SECOND_LATER = "time.sleep(0.5)\nsys.exit(1)"
+
+
+def _argv_from(scripts: dict[str, str]) -> Callable[[preflight.Lane], list[str]]:
+    return lambda lane: [sys.executable, "-c", scripts[lane.task]]
+
+
+def _scratch_root(tmp_path: Path) -> Path:
+    roots = list((tmp_path / "scratch").glob("pyforge-preflight-*"))
+    assert len(roots) == 1
+    return roots[0]
+
+
+def _assert_group_gone(scratch_root: Path, task: str) -> None:
+    pgid = int((scratch_root / task / "pgid").read_text(encoding="utf-8"))
+    with pytest.raises(ProcessLookupError):
+        os.killpg(pgid, 0)
+
+
+def _send_sigint_once_started(scratch_parent: Path, tasks: tuple[str, ...]) -> threading.Thread:
+    def interrupt() -> None:
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            roots = list(scratch_parent.glob("pyforge-preflight-*"))
+            if roots and all((roots[0] / task / "started").is_file() for task in tasks):
+                os.kill(os.getpid(), signal.SIGINT)
+                return
+            time.sleep(0.05)
+
+    thread = threading.Thread(target=interrupt, daemon=True)
+    thread.start()
+    return thread
+
+
+def test_real_subprocess_red_lane_cancels_running_peer(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC (1): the lane that failed is red; the lane its stop terminated is cancelled."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("fail", "sleep"))
+    coords = _capture_coordinators(monkeypatch)
+    scripts = {"fail": _after_peer_started("sleep", _FAIL_HALF_SECOND_LATER), "sleep": _SLEEP_30}
     t0 = time.monotonic()
     code = preflight.run_preflight(
         repo,
         jobs=2,
         install_environment=_NOOP_INSTALL,
         scratch_parent=tmp_path / "scratch",
-        subprocess_argv_for_lane=_subprocess_lane_scripts,
+        subprocess_argv_for_lane=_argv_from(scripts),
     )
     elapsed = time.monotonic() - t0
     assert code == preflight.EXIT_LANE_RED
     assert elapsed < 10.0
     record = _run_record(repo)
+    assert record["verdict"] == "red"
     by_task = {entry["task"]: entry for entry in record["lanes"]}
     assert by_task["fail"]["status"] == "red"
     assert by_task["fail"]["exit_code"] == 1
     assert by_task["fail"]["seconds"] > 0
+    assert "cancelled_by" not in by_task["fail"]
     assert by_task["sleep"]["status"] == "cancelled"
-    assert by_task["sleep"]["exit_code"] != 0
+    assert by_task["sleep"]["exit_code"] < 0
     assert by_task["sleep"]["seconds"] > 0
     assert by_task["sleep"]["cancelled_by"] == "fail"
+    (coord,) = coords
+    assert coord.red_lanes == ["fail"]
+    assert coord.terminated_lane_tasks == {"sleep"}
+    assert coord.stop_trigger == "fail"
     err = capsys.readouterr().err
-    assert "lane 'fail'" in err
-    assert "red lane 'sleep'" not in err
-    scratch_roots = list((tmp_path / "scratch").glob("pyforge-preflight-*"))
-    assert len(scratch_roots) == 1
-    pgid_file = scratch_roots[0] / "sleep" / "pgid"
-    assert pgid_file.is_file()
-    pgid = int(pgid_file.read_text(encoding="utf-8"))
-    with pytest.raises(ProcessLookupError):
-        os.killpg(pgid, 0)
+    assert "lane 'fail' in environment" in err
+    assert "lane 'sleep'" not in err
+    _assert_group_gone(_scratch_root(tmp_path), "sleep")
+
+
+def test_terminated_lane_that_exits_zero_is_cancelled_not_ok(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A lane the stop signalled is `cancelled` whatever it exits with -- here 0 from its own SIGTERM handler."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(repo / "pixi.toml", _mini_pixi("fail", "graceful"))
+    coords = _capture_coordinators(monkeypatch)
+    scripts = {
+        "fail": _after_peer_started("graceful", _FAIL_HALF_SECOND_LATER),
+        "graceful": _started_then(
+            "time.sleep(30)",
+            setup="signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))",
+        ),
+    }
+    code = preflight.run_preflight(
+        repo,
+        jobs=2,
+        install_environment=_NOOP_INSTALL,
+        scratch_parent=tmp_path / "scratch",
+        subprocess_argv_for_lane=_argv_from(scripts),
+    )
+    assert code == preflight.EXIT_LANE_RED
+    by_task = {entry["task"]: entry for entry in _run_record(repo)["lanes"]}
+    assert by_task["fail"]["status"] == "red"
+    assert by_task["graceful"]["status"] == "cancelled"
+    assert by_task["graceful"]["exit_code"] == 0
+    assert by_task["graceful"]["seconds"] > 0
+    assert by_task["graceful"]["cancelled_by"] == "fail"
+    (coord,) = coords
+    assert coord.red_lanes == ["fail"]
+
+
+def test_lane_that_exits_on_its_own_during_a_stop_stays_red(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """AC (3): a lane process already exited 2 when the stop polls it is not marked, and stays red."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(repo / "pixi.toml", _mini_pixi("fail", "own"))
+    coords = _capture_coordinators(monkeypatch)
+    real_run = preflight._run_pixi_argv  # noqa: SLF001
+    own_exited = threading.Event()
+
+    def run_argv(coord: Any, ctx: preflight.LaneRunContext, argv: list[str], log_handle: Any) -> int:
+        if ctx.lane.task == "fail":
+            assert own_exited.wait(timeout=10)
+            return real_run(coord, ctx, argv, log_handle)
+        proc = subprocess.Popen(
+            argv,
+            cwd=coord.repo_root,
+            env=ctx.env,
+            stdout=log_handle,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        coord.register_proc(proc, ctx.lane.task)
+        try:
+            code = proc.wait()
+            own_exited.set()
+            # Hand the exit back only once the culprit has stopped the run, so its
+            # terminate_children() finds this process registered and already exited.
+            assert coord.stop_on_red.wait(timeout=10)
+            return code
+        finally:
+            coord.unregister_proc(proc)
+
+    monkeypatch.setattr(preflight, "_run_pixi_argv", run_argv)
+    code = preflight.run_preflight(
+        repo,
+        jobs=2,
+        install_environment=_NOOP_INSTALL,
+        scratch_parent=tmp_path / "scratch",
+        subprocess_argv_for_lane=_argv_from({"fail": "raise SystemExit(1)", "own": "raise SystemExit(2)"}),
+    )
+    assert code == preflight.EXIT_LANE_RED
+    by_task = {entry["task"]: entry for entry in _run_record(repo)["lanes"]}
+    assert by_task["fail"]["status"] == "red"
+    assert by_task["fail"]["exit_code"] == 1
+    assert by_task["own"]["status"] == "red"
+    assert by_task["own"]["exit_code"] == 2
+    assert "cancelled_by" not in by_task["fail"]
+    assert "cancelled_by" not in by_task["own"]
+    (coord,) = coords
+    assert coord.red_lanes == ["fail", "own"]
+    assert coord.terminated_lane_tasks == set()
+    assert coord.stop_trigger == "fail"
+    err = capsys.readouterr().err
+    assert "lane 'fail' in environment" in err
+    assert "lane 'own' in environment" in err
+
+
+def test_lanes_running_at_a_stop_are_journaled_from_their_own_results(tmp_path: Path) -> None:
+    """With no process to terminate, a lane that was running when the run stopped keeps its own outcome."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _write(repo / "pixi.toml", _mini_pixi("a", "b", "c"))
+    started = {"b": threading.Event(), "c": threading.Event()}
+
+    def run_ctx(ctx: preflight.LaneRunContext) -> int:
+        if ctx.lane.task == "a":
+            assert started["b"].wait(timeout=5)
+            assert started["c"].wait(timeout=5)
+            return 1
+        started[ctx.lane.task].set()
+        time.sleep(0.3)
+        if ctx.lane.task == "c":
+            raise RuntimeError("c failed on its own")
+        return 0
+
+    code = preflight.run_preflight(
+        repo,
+        jobs=3,
+        install_environment=_NOOP_INSTALL,
+        run_lane_ctx=run_ctx,
+        scratch_parent=tmp_path / "scratch",
+    )
+    assert code == preflight.EXIT_LANE_RED
+    by_task = {entry["task"]: entry for entry in _run_record(repo)["lanes"]}
+    assert by_task["a"]["status"] == "red"
+    assert by_task["b"]["status"] == "ok"
+    assert by_task["b"]["seconds"] >= 0.3
+    assert by_task["c"]["status"] == "red"
+    assert by_task["c"]["exit_code"] == 1
+    assert all("cancelled_by" not in entry for entry in by_task.values())
 
 
 @pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
-def test_sigint_cancels_real_subprocess_lanes(tmp_path: Path) -> None:
+def test_sigint_cancels_real_subprocess_lanes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """AC (2): an interrupt cancels every running lane, `cancelled_by: interrupt`, and exits 130."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("sleep-a", "sleep-b"))
-    started = threading.Event()
-
-    def scripts(lane: preflight.Lane) -> list[str]:
-        return [
-            sys.executable,
-            "-c",
-            "import threading, time; "
-            "started = __import__('threading').Event(); "
-            "import os; "
-            f"open(os.path.join(os.environ['TMPDIR'], 'started-{lane.task}'), 'w').write('1'); "
-            "time.sleep(30)",
-        ]
-
-    def poll_started() -> None:
-        scratch_roots = list((tmp_path / "scratch").glob("pyforge-preflight-*"))
-        if not scratch_roots:
-            return
-        root = scratch_roots[0]
-        if (root / "sleep-a" / "started-sleep-a").is_file() and (root / "sleep-b" / "started-sleep-b").is_file():
-            started.set()
-
-    def interrupt() -> None:
-        for _ in range(50):
-            poll_started()
-            if started.is_set():
-                os.kill(os.getpid(), signal.SIGINT)
-                return
-            time.sleep(0.05)
-
-    timer = threading.Timer(0.1, interrupt)
-    timer.start()
-    try:
-        code = preflight.run_preflight(
-            repo,
-            jobs=2,
-            install_environment=_NOOP_INSTALL,
-            scratch_parent=tmp_path / "scratch",
-            subprocess_argv_for_lane=scripts,
-        )
-    finally:
-        timer.cancel()
+    coords = _capture_coordinators(monkeypatch)
+    sender = _send_sigint_once_started(tmp_path / "scratch", ("sleep-a", "sleep-b"))
+    code = preflight.run_preflight(
+        repo,
+        jobs=2,
+        install_environment=_NOOP_INSTALL,
+        scratch_parent=tmp_path / "scratch",
+        subprocess_argv_for_lane=_argv_from({"sleep-a": _SLEEP_30, "sleep-b": _SLEEP_30}),
+    )
+    sender.join(timeout=5)
     assert code == preflight.EXIT_INTERRUPT
     record = _run_record(repo)
     assert record["verdict"] == "interrupted"
+    assert {entry["task"] for entry in record["lanes"]} == {"sleep-a", "sleep-b"}
     for entry in record["lanes"]:
         assert entry["status"] == "cancelled"
+        assert entry["exit_code"] < 0
         assert entry["seconds"] > 0
         assert entry["cancelled_by"] == "interrupt"
+    (coord,) = coords
+    assert coord.red_lanes == []
+    assert coord.stop_trigger == "interrupt"
+    scratch_root = _scratch_root(tmp_path)
+    _assert_group_gone(scratch_root, "sleep-a")
+    _assert_group_gone(scratch_root, "sleep-b")
 
 
-def test_terminate_children_skips_already_exited_process(tmp_path: Path) -> None:
+@pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
+def test_sigint_leaves_a_never_started_lane_cancelled_without_cancelled_by(tmp_path: Path) -> None:
+    """An interrupted run journals the lane it terminated `cancelled_by: interrupt`, and a lane that
+    never started `cancelled`, exit 0, 0 s and no `cancelled_by`."""
     repo = tmp_path / "repo"
     repo.mkdir()
-    proc = subprocess.Popen(
+    _write(repo / "pixi.toml", _mini_pixi("first", "second"))
+    sender = _send_sigint_once_started(tmp_path / "scratch", ("first",))
+    code = preflight.run_preflight(
+        repo,
+        jobs=1,
+        install_environment=_NOOP_INSTALL,
+        scratch_parent=tmp_path / "scratch",
+        subprocess_argv_for_lane=_argv_from({"first": _SLEEP_30, "second": _SLEEP_30}),
+    )
+    sender.join(timeout=5)
+    assert code == preflight.EXIT_INTERRUPT
+    record = _run_record(repo)
+    assert record["verdict"] == "interrupted"
+    by_task = {entry["task"]: entry for entry in record["lanes"]}
+    assert by_task["first"]["status"] == "cancelled"
+    assert by_task["first"]["exit_code"] < 0
+    assert by_task["first"]["cancelled_by"] == "interrupt"
+    assert by_task["second"]["status"] == "cancelled"
+    assert by_task["second"]["exit_code"] == 0
+    assert by_task["second"]["seconds"] == 0.0
+    assert "cancelled_by" not in by_task["second"]
+    _assert_group_gone(_scratch_root(tmp_path), "first")
+
+
+def test_terminate_children_marks_only_a_process_it_signals(tmp_path: Path) -> None:
+    """AC (3) at the coordinator: an already-exited process is skipped; a live one is marked and killed."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    exited = subprocess.Popen(
         [sys.executable, "-c", "raise SystemExit(2)"],
         start_new_session=True,
     )
-    proc.wait(timeout=5)
-    assert proc.returncode == 2
+    exited.wait(timeout=5)
+    assert exited.returncode == 2
+    running = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)"],
+        start_new_session=True,
+    )
     coord = preflight._RunCoordinator(  # noqa: SLF001
         repo_root=repo,
         run_id="t",
@@ -432,27 +644,31 @@ def test_terminate_children_skips_already_exited_process(tmp_path: Path) -> None
         jobs=1,
         keep_going=False,
     )
-    coord.register_proc(proc, "culprit")
-    coord.terminate_children()
-    assert "culprit" not in coord.terminated_lane_tasks
+    coord.register_proc(exited, "culprit")
+    coord.register_proc(running, "running")
+    try:
+        coord.terminate_children()
+        assert running.wait(timeout=5) < 0
+    finally:
+        if running.poll() is None:
+            running.kill()
+            running.wait(timeout=5)
+    assert coord.terminated_lane_tasks == {"running"}
+    assert exited.returncode == 2
 
 
 def test_jobs_one_never_started_lanes_have_no_cancelled_by(tmp_path: Path) -> None:
+    """AC (4): with one worker, the lanes the stop kept from starting stay `cancelled`, exit 0, 0 s."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("fail", "b", "c"))
-
-    def scripts(lane: preflight.Lane) -> list[str]:
-        if lane.task == "fail":
-            return [sys.executable, "-c", "raise SystemExit(1)"]
-        return [sys.executable, "-c", "import time; time.sleep(30)"]
-
+    scripts = {"fail": "raise SystemExit(1)", "b": "import time; time.sleep(30)", "c": "import time; time.sleep(30)"}
     code = preflight.run_preflight(
         repo,
         jobs=1,
         install_environment=_NOOP_INSTALL,
         scratch_parent=tmp_path / "scratch",
-        subprocess_argv_for_lane=scripts,
+        subprocess_argv_for_lane=_argv_from(scripts),
     )
     assert code == preflight.EXIT_LANE_RED
     record = _run_record(repo)
@@ -466,17 +682,18 @@ def test_jobs_one_never_started_lanes_have_no_cancelled_by(tmp_path: Path) -> No
 
 
 def test_reduced_lane_cancelled_mid_segment(tmp_path: Path) -> None:
+    """AC (5): the running segment of a reduced lane is `cancelled`, the later ones `not-run`."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("fail", "slow"))
     segments = (
-        psr.ReducedSuiteSegment("rest-of-task", [sys.executable, "-c", "import time; time.sleep(30)"]),
+        psr.ReducedSuiteSegment("rest-of-task", [sys.executable, "-c", _SLEEP_30]),
         psr.ReducedSuiteSegment("gate-dirs-complement", [sys.executable, "-c", "pass"]),
     )
     override = psr.SuiteLaneOverride(segments=segments, journal={"suite_reduction": True})
     plan = {"slow": override}
 
-    def run_seg(coord, ctx, argv, log_handle):
+    def run_seg(coord: Any, ctx: preflight.LaneRunContext, argv: list[str], log_handle: Any) -> int:
         seg = argv[argv.index("--") + 1 :] if "--" in argv else argv
         proc = subprocess.Popen(
             seg,
@@ -499,12 +716,20 @@ def test_reduced_lane_cancelled_mid_segment(tmp_path: Path) -> None:
                 jobs=2,
                 install_environment=_NOOP_INSTALL,
                 scratch_parent=tmp_path / "scratch",
-                subprocess_argv_for_lane=lambda lane: [sys.executable, "-c", _FAIL_SCRIPT],
+                subprocess_argv_for_lane=lambda lane: [
+                    sys.executable,
+                    "-c",
+                    _after_peer_started("slow", _FAIL_HALF_SECOND_LATER),
+                ],
             )
     assert code == preflight.EXIT_LANE_RED
     record = _run_record(repo)
     slow = next(entry for entry in record["lanes"] if entry["task"] == "slow")
     assert slow["status"] == "cancelled"
+    assert slow["cancelled_by"] == "fail"
     rows = {row["label"]: row for row in slow["suite_reduction_segments"]}
     assert rows["rest-of-task"]["outcome"] == "cancelled"
+    assert rows["rest-of-task"]["exit_code"] < 0
     assert rows["gate-dirs-complement"]["outcome"] == "not-run"
+    assert rows["gate-dirs-complement"]["exit_code"] is None
+    _assert_group_gone(_scratch_root(tmp_path), "slow")

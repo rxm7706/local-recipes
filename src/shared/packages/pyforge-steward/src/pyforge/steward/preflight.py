@@ -493,8 +493,6 @@ def _run_lane_in_pool(
         _print_lane_log(log_path)
 
         journal_extra = _lane_journal_extra(coord, lane.task)
-        if code == 0:
-            return LaneResult(lane.task, lane.environment, elapsed, 0, "ok", start_offset, journal_extra)
         if lane.task in coord.terminated_lane_tasks:
             trigger = coord.stop_trigger or "interrupt"
             return LaneResult(
@@ -507,6 +505,8 @@ def _run_lane_in_pool(
                 journal_extra,
                 cancelled_by=trigger,
             )
+        if code == 0:
+            return LaneResult(lane.task, lane.environment, elapsed, 0, "ok", start_offset, journal_extra)
         coord.red_lanes.append(lane.task)
         if not coord.keep_going:
             if coord.stop_trigger is None:

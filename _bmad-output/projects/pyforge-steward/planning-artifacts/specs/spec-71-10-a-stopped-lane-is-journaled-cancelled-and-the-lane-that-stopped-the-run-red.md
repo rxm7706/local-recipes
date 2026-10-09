@@ -189,7 +189,18 @@ Type / Effort / Deps: fix / S / S-71.9.
 
 ## Spec Change Log
 
-- No change yet.
+- **2026-10-09 (landing repair).** AC (6) amended for `test_red_lane_cancels_others`: it now runs `jobs=2`
+  instead of `jobs=3`; its body and assertions are otherwise the 71.3 text. Under this story's drain, a lane the
+  injected runner had already started is journaled from its own result, so with three workers `c` could start
+  before `a` stopped the run and finish `ok` (measured 2 failures in 40 runs). With two workers `c` is still
+  queued at the stop and is `cancelled`. The fix turn's edit of that test (an added assertion on `b`, which
+  always finishes `ok`) failed the coverage-gate run and is reverted.
+- **2026-10-09 (landing repair).** `_run_lane_in_pool` checks the terminated mark before `code == 0`, so a lane the
+  coordinator signalled is `cancelled` even when it exits 0 (the Approach and the I/O matrix row "running when
+  the run stopped"); it was journaled `ok`.
+- **2026-10-09 (landing repair).** AC (7) verified by mutation against a scratch copy of `preflight.py`: dropping the
+  terminated mark fails `test_real_subprocess_red_lane_cancels_running_peer` (`sleep` journaled `red`), and
+  dropping running futures' results fails it too (`fail` journaled `cancelled`, run exits 0).
 
 ## Review Triage Log
 

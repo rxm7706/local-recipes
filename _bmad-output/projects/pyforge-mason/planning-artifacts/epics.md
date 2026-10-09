@@ -2471,7 +2471,7 @@ runs offline
 **And** the README says the fixtures must never be "fixed" and names `auto-recipe@8b53eda` `tests/negative` as the source
 of the ported two; removing any one check makes its fixture's test fail; the story's `retro(cfe):` commit lands a CFE
 `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 24: The CFE host-gate tests give the same verdict in any developer shell (spec-pyforge-mason CAP-34)
 
