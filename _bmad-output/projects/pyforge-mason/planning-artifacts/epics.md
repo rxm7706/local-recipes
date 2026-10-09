@@ -2723,7 +2723,7 @@ defects:
 - The `retro(cfe):` commit lands a CFE `CHANGELOG.md` MINOR entry, with all four version carriers in lockstep.
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` is green.
 
-**Status:** backlog
+**Status:** done
 
 ## Epic 26: CFE's tests never ask GitHub whether a recipe maintainer exists (spec-pyforge-mason CAP-34)
 
