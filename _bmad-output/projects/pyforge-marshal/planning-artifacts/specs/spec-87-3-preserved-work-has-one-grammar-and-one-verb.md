@@ -2,7 +2,7 @@
 title: "87.3: Preserved work has one grammar and one verb"
 type: 'feature'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '09fc2a68ece8e0a4d6b96d361622204b82c2c313'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -98,6 +98,24 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 - No change yet.
 
+## Auto Run Result
+
+Status: done
+
+**Summary:** Shipped `pyforge.core.preserve_refs` (stdlib + `PosixProcess` git) and `marshal preserve tag|list` behind `pyforge.marshal.preserve_refs`. Local annotated tags only; push/content gate deferred to Story 87.15.
+
+**Files changed:** `preserve_refs.py` (grammar, snapshot, tag, list); `marshal/cli/preserve.py`, `main.py`, `mcp/tools.py`, `retire.py` (prefix constants); `flags.json`; unit/meta tests; story spec frontmatter.
+
+**Review:** One defer — AD-6 journal-before-success is not wired on `preserve tag` yet (no journal path in this story’s AC); producer stories can attach it. No patches applied.
+
+**Verification:** `pyforge-core-test` 2353 passed; `pyforge-marshal-test` 12052 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `python scripts/spec_surface_reconcile.py` exit 0.
+
+**Follow-up review recommended:** false
+
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 0, false 0, maybe-false 0, defer 1, reject 1
+- findings:
+  - `[defer]` `[defer]` AD-6 journal-before-success not implemented on `marshal preserve tag` — verb writes tag without a marshal journal entry; acceptable for 87.3 scope (local tag only); wire when producers journal in later CAP-287 stories — location: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/preserve.py`
+  - `[reject]` `[reject]` Intent alignment: draft research mentioned push to bare origin — rejected; story intent-contract explicitly limits this story to local tags only — diff matches intent-contract
