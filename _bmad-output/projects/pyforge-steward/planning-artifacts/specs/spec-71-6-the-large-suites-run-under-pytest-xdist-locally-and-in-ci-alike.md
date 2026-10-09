@@ -2,7 +2,8 @@
 title: '71.6: The large suites run under pytest-xdist, locally and in CI alike'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'done'
+baseline_revision: 'b570bb995bb0622c23a63e12d2033886680ba27b'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -81,3 +82,22 @@ Ledger status at mint: `backlog`.
 - `pixi run -e pyforge-guild pyforge-station-tests` — expected: pass (`pixi.toml` / `pixi.lock` are shared surface).
 - `pixi run --frozen -e pyforge-<s> pyforge-<s>-coverage-gate` for atlas, doctor, warden and marshal — expected: pass, the same floors as before.
 - `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_coverage_gates_ci_driver.py -q` — expected: pass.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Atlas, doctor, marshal, and warden station suites run under `pytest-xdist` (`-n auto --dist loadgroup`) via their `pyforge-<s>-test` pixi tasks; the coverage driver and preflight inherit the same flags (driver reads `pixi.toml`; preflight sets per-lane `PYTEST_XDIST_AUTO_NUM_WORKERS` so concurrent xdist lanes do not oversubscribe cores). Doctor caps auto workers at 4 in the task cmd so the NFR-4 speed-budget test stays stable under parallel load.
+
+**Files changed:** `pixi.toml`, `pixi.lock`, `environment.yaml`, `scripts/coverage_gates_ci.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_xdist.py`, `src/shared/packages/pyforge-steward/tests/unit/test_preflight_workers.py`, `tests/scripts/test_coverage_gates_ci_driver.py`; memlogs on `spec-pyforge-steward`, `spec-pyforge-core`, co-governor station specs, and `docs/governance/spec-coverage-gate-independence/.memlog.md`.
+
+**Verification:**
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2209 passed, 5 skipped
+- `pixi run --frozen -e pyforge-ci python -m pytest tests/scripts/test_coverage_gates_ci_driver.py -q` — 15 passed
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — 11969 passed, 6 skipped
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 3495 passed, 1 skipped
+- `pixi run --frozen -e pyforge-warden pyforge-warden-test` — 2266 passed
+- `pixi run --frozen -e pyforge-atlas pyforge-atlas-test` — 103 passed
+- `python scripts/spec_surface_reconcile.py` — OK
+
+**Follow-up review recommended:** false
