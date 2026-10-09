@@ -64,7 +64,7 @@ def test_read_new_journal_objects_missing_and_malformed(tmp_path: Path):
     assert missing == ()
     assert off == 0
     journal = tmp_path / "j.jsonl"
-    journal.write_text("\nnot-json\n{\"kind\": \"ok\"}\n", encoding="utf-8")
+    journal.write_text('\nnot-json\n{"kind": "ok"}\n', encoding="utf-8")
     events, new_off = read_new_journal_objects(journal, byte_offset=0)
     assert len(events) == 1
     assert events[0]["kind"] == "ok"
