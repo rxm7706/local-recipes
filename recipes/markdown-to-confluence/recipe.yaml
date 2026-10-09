@@ -9,7 +9,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/29/d0/600ea40f916ea9b5749c377abefd8ffa7499085f7749299179cd85e05d04/markdown_to_confluence-0.6.4.tar.gz
+  url: https://pypi.org/packages/source/m/markdown-to-confluence/markdown_to_confluence-${{ version }}.tar.gz
   sha256: b9bc29ee05db72caa026d1430190af575afcbcd7c3cf9acd1cae804dac1dd29d
 
 build:
@@ -18,41 +18,41 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-    - md2conf = md2conf.__main__:main
+      - md2conf = md2conf.__main__:main
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - setuptools >=80.0
-  - pip
+    - python ${{ python_min }}.*
+    - setuptools >=80.0
+    - pip
   run:
-  - python >=${{ python_min }},<4
-  - cattrs >=26.1
-  - lxml >=6.1
-  - markdown >=3.10
-  - orjson >=3.11
-  - pymdown-extensions >=11.0
-  - pyyaml >=6.0
-  - requests >=2.34
-  - truststore >=0.10
-  - typing_extensions >=4.16
-  - pathspec >=1.1
+    - python >=${{ python_min }},<4
+    - cattrs >=26.1
+    - lxml >=6.1
+    - markdown >=3.10
+    - orjson >=3.11
+    - pymdown-extensions >=11.0
+    - pyyaml >=6.0
+    - requests >=2.34
+    - truststore >=0.10
+    - typing_extensions >=4.16
+    - pathspec >=1.1
   run_constraints:
-  - matplotlib >=3.10
+    - matplotlib >=3.10
 
 tests:
 - python:
     imports:
-    - md2conf
+      - md2conf
     pip_check: true
     python_version:
-    - ${{ python_min }}.*
-    - '*'
+      - ${{ python_min }}.*
+      - '*'
 - requirements:
     run:
-    - python ${{ python_min }}.*
+      - python ${{ python_min }}.*
   script:
-  - md2conf --help
+    - md2conf --help
 
 about:
   summary: Publish Markdown files to Confluence wiki
@@ -63,7 +63,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -71,8 +71,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: markdown-to-confluence
   cfe-purls:
-  - pkg:conda/markdown-to-confluence@${{ version }}?channel=conda-forge
-  - pkg:pypi/markdown-to-confluence@${{ version }}
+    - pkg:conda/markdown-to-confluence@${{ version }}?channel=conda-forge
+    - pkg:pypi/markdown-to-confluence@${{ version }}
   cfe-upstream-repo: https://github.com/hunyadi/md2conf
   cfe-upstream-homepage: https://github.com/hunyadi/md2conf
   cfe-import-names: [md2conf]
