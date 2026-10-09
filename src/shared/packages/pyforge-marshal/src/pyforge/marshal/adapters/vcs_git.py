@@ -708,15 +708,11 @@ class GitVcs:
         ref = f"refs/heads/{branch}"
         result = _run(["git", "-C", str(repo_root), "ls-remote", "--heads", remote, ref])
         if result.returncode != 0:
-            raise VcsCommandError(
-                f"git ls-remote --heads {remote} {ref} failed: {result.stderr.strip()}"
-            )
+            raise VcsCommandError(f"git ls-remote --heads {remote} {ref} failed: {result.stderr.strip()}")
         return bool(result.stdout.strip())
 
     def is_commit_ancestor(self, repo_root: Path, ancestor: str, descendant: str) -> bool:
-        result = _run(
-            ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", ancestor, descendant]
-        )
+        result = _run(["git", "-C", str(repo_root), "merge-base", "--is-ancestor", ancestor, descendant])
         if result.returncode == 0:
             return True
         if result.returncode == 1:
@@ -726,9 +722,7 @@ class GitVcs:
             f"(exit {result.returncode}): {result.stderr.strip()}"
         )
 
-    def commit_contained_in_tag_prefixes(
-        self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]
-    ) -> bool:
+    def commit_contained_in_tag_prefixes(self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]) -> bool:
         for prefix in tag_prefixes:
             result = _run(
                 [
@@ -744,8 +738,7 @@ class GitVcs:
             )
             if result.returncode != 0:
                 raise VcsCommandError(
-                    f"git for-each-ref --contains failed for {commit} under {prefix!r}: "
-                    f"{result.stderr.strip()}"
+                    f"git for-each-ref --contains failed for {commit} under {prefix!r}: {result.stderr.strip()}"
                 )
             if result.stdout.strip():
                 return True

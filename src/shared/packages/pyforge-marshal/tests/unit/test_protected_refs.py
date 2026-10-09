@@ -17,6 +17,4 @@ def test_loop_main_and_tag_refs_are_structurally_excluded():
 def test_roster_prefixes_union_with_floor():
     roster = frozenset({"refs/heads/attempt-preserve/"})
     prefixes = protected_refs.effective_protected_prefixes(roster_prefixes=roster)
-    assert protected_refs.is_branch_name_structurally_excluded(
-        "attempt-preserve/foo", protected_prefixes=prefixes
-    )
+    assert protected_refs.is_branch_name_structurally_excluded("attempt-preserve/foo", protected_prefixes=prefixes)

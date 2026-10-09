@@ -369,9 +369,7 @@ def _evaluate_required_checks(
     return report, error_findings, warn_findings, tuple(fired_labels)
 
 
-def _downgrade_loop_head_branch_delete(
-    head_branch: str, delete_branch: bool, findings: list[Finding]
-) -> bool:
+def _downgrade_loop_head_branch_delete(head_branch: str, delete_branch: bool, findings: list[Finding]) -> bool:
     if delete_branch and head_branch.startswith("loop/"):
         findings.append(
             Finding(
@@ -407,8 +405,7 @@ def _branch_retired_from_remote(
                 code=_MRS_LAND_003,
                 severity=Severity.WARN,
                 message=(
-                    f"branch retirement for {head_branch!r} could not be "
-                    f"confirmed from origin (git ls-remote): {exc}"
+                    f"branch retirement for {head_branch!r} could not be confirmed from origin (git ls-remote): {exc}"
                 ),
             )
         )

@@ -163,7 +163,7 @@ def _roster_protected_prefixes(root: Path) -> frozenset[str]:
     roster_path = root / "docs" / "governance" / "guild-roster.json"
     try:
         payload = json.loads(roster_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except OSError, json.JSONDecodeError:
         return frozenset()
     return protected_refs.parse_roster_protected_prefixes(payload.get("protected_refs"))
 
@@ -473,10 +473,7 @@ def run_retire(
                         Finding(
                             code=_MRS_RETIRE_002,
                             severity=Severity.WARN,
-                            message=(
-                                f"cannot assess orphan risk for {branch!r} "
-                                f"({slug!r}): {exc}"
-                            ),
+                            message=(f"cannot assess orphan risk for {branch!r} ({slug!r}): {exc}"),
                             path=branch,
                         )
                     )

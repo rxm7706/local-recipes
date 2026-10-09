@@ -551,8 +551,6 @@ class VcsPort(Protocol):
         """Story 87.6: ``git merge-base --is-ancestor`` (exit 0/1 only)."""
         ...
 
-    def commit_contained_in_tag_prefixes(
-        self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]
-    ) -> bool:
+    def commit_contained_in_tag_prefixes(self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]) -> bool:
         """Story 87.6: ``git for-each-ref --contains <commit>`` under tag prefixes."""
         ...
