@@ -15,6 +15,7 @@
     "pyforge.herald.deck_export_native": "on",
     "pyforge.warden.fix_draft_pr_estate": "on",
     "pyforge.warden.fleet_scan": "on",
+    "pyforge.warden.fleet_fix_proposals": "on",
     "pyforge.warden.non_python_ecosystems": "on"
   },
   "staging": {
@@ -33,6 +34,7 @@
     "pyforge.herald.deck_export_native": "on",
     "pyforge.warden.fix_draft_pr_estate": "on",
     "pyforge.warden.fleet_scan": "on",
+    "pyforge.warden.fleet_fix_proposals": "on",
     "pyforge.warden.non_python_ecosystems": "on"
   },
   "production": {
@@ -51,6 +53,7 @@
     "pyforge.herald.deck_export_native": "off",
     "pyforge.warden.fix_draft_pr_estate": "off",
     "pyforge.warden.fleet_scan": "off",
+    "pyforge.warden.fleet_fix_proposals": "off",
     "pyforge.warden.non_python_ecosystems": "off"
   }
 }

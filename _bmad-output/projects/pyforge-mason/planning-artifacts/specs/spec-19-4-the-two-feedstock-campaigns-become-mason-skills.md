@@ -2,8 +2,9 @@
 title: "19.4: The two feedstock campaigns become Mason skills"
 type: 'docs'
 created: '2026-09-28'
-status: 'backlog'
-review_loop_iteration: 0
+status: 'done'
+baseline_revision: '915e6292e3c103c2b22a73266eb52a4b92e9e600'
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
@@ -105,3 +106,30 @@ Deps: S-19.3.
 - `pixi run -e pyforge-guild governance-currency` and `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0.
 
 ## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 3 findings — high 0, medium 2, low 0, false 0, maybe-false 1
+- findings:
+  - `[medium]` `[patch]` Platform skill step 4 still said append at bottom of SKILL.md — updated to name references/worked-examples.md.
+  - `[medium]` `[patch]` Failure-remediation skill step 4 omitted references path — updated for parity.
+  - `[maybe-false]` `[defer]` Scoped spec-surface baseline stamp vs 915e629 — reconcile guard and spec-surface-check green via memlog entries; operator stamps baseline at PR time per AGENTS checklist, not in this auto run.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Moved feedstock platform-expansion and failure-remediation campaign bodies from long `docs/how-to/` pages into Mason skills (`mason-feedstock-platform-expansion`, `mason-feedstock-failure-remediation`) with worked examples in each skill's `references/worked-examples.md`. How-to and legacy `docs/specs/` stubs now point at the skills; `CLAUDE.md` index updated; `test_mason_skills.py` covers all four hand-authored Mason skills; skills catalog and agent-instruction-notes refreshed.
+
+Files changed:
+- `.claude/skills/mason-feedstock-*` — campaign SKILL.md + worked-examples (verbatim move, link/run-line updates only)
+- `docs/how-to/feedstock-*.md`, `docs/specs/feedstock-*.md`, `docs/how-to/README.md` — short pointers
+- `CLAUDE.md` — legacy stub index descriptions
+- `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` — two campaign skill rows
+- `docs/reference/skills-catalog.md`, `docs/reference/agent-instruction-notes.md`
+- Co-governor memlogs on spec-pyforge-mason, spec-pyforge-doctor, spec-pyforge-scribe
+
+Review: 2 medium patches applied (worked-example append targets); 1 defer (baseline stamp left to PR author).
+
+Verification: `pyforge-mason-test` pass; `docs-skills-catalog --check` pass; `bmad-drift-check` pass (no spec-unindexed); `governance-currency` pass; `python scripts/spec_surface_reconcile.py` pass after memlog reconcile.
+
+Follow-up review recommended: false

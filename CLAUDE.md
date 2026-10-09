@@ -36,8 +36,8 @@ the shipped rows: `docs/reference/agent-instruction-notes.md` § *Intake specs*.
 |---|---|
 | `docs/specs/flyte-conda-forge.md` | in-progress |
 | `docs/specs/feedstock-refresh.md` | in-progress |
-| `docs/specs/feedstock-platform-expansion.md` | workflow stub; body in `docs/how-to/feedstock-platform-expansion.md` |
-| `docs/specs/feedstock-failure-remediation.md` | workflow stub; body in `docs/how-to/feedstock-failure-remediation.md` |
+| `docs/specs/feedstock-platform-expansion.md` | workflow stub; body in `.claude/skills/mason-feedstock-platform-expansion/` |
+| `docs/specs/feedstock-failure-remediation.md` | workflow stub; body in `.claude/skills/mason-feedstock-failure-remediation/` |
 | `docs/specs/presentation-deck.md` | workflow stub; body in `docs/how-to/presentation-deck.md` |
 
 ## Where moved sections went

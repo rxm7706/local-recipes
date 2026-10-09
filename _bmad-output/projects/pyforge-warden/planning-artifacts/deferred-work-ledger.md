@@ -855,3 +855,14 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   severity: low
   promoted: 2026-10-07 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-warden-16-3: Add portal HTTP tests for fleet proposal queue approve/dismiss and flag-off disabled UI.
+
+- source_spec: `planning-artifacts/specs/spec-16-3-each-fleet-fix-waits-in-a-proposal-queue-for-operator-approval.md`
+  summary: Add portal HTTP tests for fleet proposal queue approve/dismiss and flag-off disabled UI.
+  evidence: Service-layer tests cover approve_proposal; no Client tests hit /stations/warden/fleet/proposals/ views.
+  location: src/platform/tests/test_warden_fleet_proposals.py
+  origin: spec-deferred 9217b8094f0d — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

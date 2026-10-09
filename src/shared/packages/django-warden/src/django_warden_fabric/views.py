@@ -27,8 +27,14 @@ from django_pyforge.supervisor import HandleNotFoundError
 from django_pyforge.supervisor import HandleRefusedError
 from django_pyforge.supervisor import RunBoundExceeded
 from django_pyforge.supervisor import bound_refusal_payload
+from django_pyforge.flags import evaluate_from_source
 
+from .fleet import FLEET_FIX_PROPOSALS_FLAG
 from .mcp_asgi import RUN_AUDIT_TOOL
+from .models import FixProposal
+from .proposals import ProposalRefusedError
+from .proposals import approve_proposal
+from .proposals import dismiss_proposal
 from .mcp_asgi import WARDEN_STATION
 from .models import ComplianceJob
 from .phases import current_progress
@@ -176,6 +182,76 @@ def job_status(request: HttpRequest, job_id: str) -> HttpResponse:
             "phase_total": progress.total,
             "progress": progress.ratio,
             "error": job.error or None,
+        },
+    )
+
+
+def _fleet_fix_proposals_enabled() -> bool:
+    return evaluate_from_source(key=FLEET_FIX_PROPOSALS_FLAG)
+
+
+@require_GET
+@require_station_role("warden")
+def fleet_proposal_queue(request: HttpRequest) -> HttpResponse:
+    """List queued fleet fix proposals (HTMX shell)."""
+    proposals = FixProposal.objects.filter(state=FixProposal.State.QUEUED).order_by(
+        "created_at",
+    )
+    return render(
+        request,
+        "warden_fabric/fleet_proposals.html",
+        {
+            "proposals": proposals,
+            "approve_enabled": _fleet_fix_proposals_enabled(),
+        },
+    )
+
+
+@require_POST
+@require_station_role("warden")
+def fleet_proposal_approve(request: HttpRequest, proposal_id: str) -> HttpResponse:
+    identity = _portal_identity(request)
+    if identity is None:
+        return HttpResponseForbidden()
+    if not _fleet_fix_proposals_enabled():
+        return HttpResponse(status=403)
+    sub, _roles = identity
+    try:
+        approve_proposal(proposal_id, sub)
+    except ProposalRefusedError as exc:
+        return HttpResponse(str(exc), status=409)
+    proposals = FixProposal.objects.filter(state=FixProposal.State.QUEUED).order_by(
+        "created_at",
+    )
+    return render(
+        request,
+        "warden_fabric/fleet_proposals.html",
+        {
+            "proposals": proposals,
+            "approve_enabled": _fleet_fix_proposals_enabled(),
+        },
+    )
+
+
+@require_POST
+@require_station_role("warden")
+def fleet_proposal_dismiss(request: HttpRequest, proposal_id: str) -> HttpResponse:
+    identity = _portal_identity(request)
+    if identity is None:
+        return HttpResponseForbidden()
+    try:
+        dismiss_proposal(proposal_id)
+    except ProposalRefusedError as exc:
+        return HttpResponse(str(exc), status=409)
+    proposals = FixProposal.objects.filter(state=FixProposal.State.QUEUED).order_by(
+        "created_at",
+    )
+    return render(
+        request,
+        "warden_fabric/fleet_proposals.html",
+        {
+            "proposals": proposals,
+            "approve_enabled": _fleet_fix_proposals_enabled(),
         },
     )
 

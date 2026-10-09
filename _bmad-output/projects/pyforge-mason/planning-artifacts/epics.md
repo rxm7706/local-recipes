@@ -2126,7 +2126,7 @@ cases append to — moved verbatim, not rewritten; the timeless workflow stays i
 **And** the how-to and the `docs/specs/` stub each resolve to the skill; `CLAUDE.md`'s legacy index still names both stub
 filenames (`bmad-drift-check`); `test_mason_skills.py` covers both skills; `docs/specs/feedstock-refresh.md` does not
 move; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 19.5: The closing Rule-2 retro teaches conda-forge-expert it is one of Mason's skills
 

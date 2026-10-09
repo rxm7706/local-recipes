@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: 2fb3b3fd77499af0
-story_count: 330
-test_file_count: 96
+source_fingerprint: 5619399f667131e9
+story_count: 331
+test_file_count: 103
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 330
+- **Stories parsed:** 331
 - **Epics parsed:** 85
-- **Test files inventoried:** 96 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 103 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `2fb3b3fd77499af0`
+- **Source fingerprint:** `5619399f667131e9`
 
 ## Risk Assessment
 
@@ -185,7 +185,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_plaintext_secret_scan.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_revoke.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_keys_rotate.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_measures.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_env.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_install_class_playbook.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_list.py` | unit | none observed |
@@ -195,6 +200,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_plugin.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_runner.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_verify.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_quarantine.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_restore_duty.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_revoke_duty.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_session.py` | unit | none observed |
@@ -218,6 +224,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_prove_landed.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_upgrade_reconcile.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_workspace_clean_delete.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_edges.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_full_refs.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_workspace_repo_set.py` | unit | none observed |
@@ -557,6 +564,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 85.4 | The hook denies every protected-ref deletion and any deletion that orphans co... | none observed |
 | 85.5 | Workspace clean parks unlanded commits as a preserve tag before removing the ... | none observed |
 | 85.6 | Every command a session denial names as the sanctioned form exists | none observed |
+| 85.7 | The session-denial form check never stamps the real spec-surface baseline | none observed |
 
 ## Quality Gates
 
