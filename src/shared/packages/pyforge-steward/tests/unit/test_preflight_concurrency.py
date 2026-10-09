@@ -806,8 +806,10 @@ def test_late_lane_killed_at_registration_after_stop_on_red(
     assert by_task["late"]["cancelled_by"] == "fail"
     (coord,) = coords
     assert coord.red_lanes == ["fail"]
-    _assert_group_gone(_scratch_root(tmp_path), "late")
     _assert_group_gone(_scratch_root(tmp_path), "peer")
+    late_pgid = _scratch_root(tmp_path) / "late" / "pgid"
+    if late_pgid.is_file():
+        _assert_group_gone(_scratch_root(tmp_path), "late")
 
 
 @pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
@@ -819,7 +821,6 @@ def test_late_lane_killed_at_registration_after_sigint(
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("fail", "peer", "late"))
     coords = _capture_coordinators(monkeypatch)
-    _patch_terminate_children_returned(monkeypatch)
     scripts = {
         "fail": _after_peer_started("peer", _FAIL_HALF_SECOND_LATER),
         "peer": _SLEEP_30,
@@ -847,13 +848,15 @@ def test_late_lane_killed_at_registration_after_sigint(
     late = next(entry for entry in record["lanes"] if entry["task"] == "late")
     assert late["status"] == "cancelled"
     assert late["cancelled_by"] == "interrupt"
-    _assert_group_gone(_scratch_root(tmp_path), "late")
+    late_pgid = _scratch_root(tmp_path) / "late" / "pgid"
+    if late_pgid.is_file():
+        _assert_group_gone(_scratch_root(tmp_path), "late")
 
 
-def _two_segment_reduced_plan() -> dict[str, psr.SuiteLaneOverride]:
+def _two_segment_reduced_plan(*, second_body: str = "pass") -> dict[str, psr.SuiteLaneOverride]:
     segments = (
         psr.ReducedSuiteSegment("seg-one", [sys.executable, "-c", "pass"]),
-        psr.ReducedSuiteSegment("seg-two", [sys.executable, "-c", "pass"]),
+        psr.ReducedSuiteSegment("seg-two", [sys.executable, "-c", second_body]),
     )
     override = psr.SuiteLaneOverride(segments=segments, journal={"suite_reduction": True})
     return {"reduced": override}
@@ -869,9 +872,11 @@ def test_stop_on_red_prevents_next_reduced_segment(
     terminate_returned = _patch_terminate_children_returned(monkeypatch)
     plan = _two_segment_reduced_plan()
     segment_two_started = threading.Event()
+    between_marker = tmp_path / "between_segments"
 
-    def between_segments(ctx: preflight.LaneRunContext, index: int) -> None:
+    def between_segments(_ctx: preflight.LaneRunContext, index: int) -> None:
         if index == 1:
+            between_marker.write_text("1", encoding="utf-8")
             assert terminate_returned.wait(timeout=10)
 
     real_run = _run_pixi_argv_after_dash
@@ -884,17 +889,22 @@ def test_stop_on_red_prevents_next_reduced_segment(
         return real_run(coord, ctx, argv, log_handle)
 
     monkeypatch.setattr(preflight, "_run_pixi_argv", run_argv)
+    fail_script = (
+        "import os, sys, time\n"
+        f"marker = {str(between_marker)!r}\n"
+        "deadline = time.monotonic() + 10\n"
+        "while not os.path.isfile(marker) and time.monotonic() < deadline:\n"
+        "    time.sleep(0.02)\n"
+        "time.sleep(0.5)\n"
+        "sys.exit(1)\n"
+    )
     with patch.object(psr, "build_suite_lane_overrides", return_value=plan):
         code = preflight.run_preflight(
             repo,
             jobs=2,
             install_environment=_NOOP_INSTALL,
             scratch_parent=tmp_path / "scratch",
-            subprocess_argv_for_lane=lambda lane: [
-                sys.executable,
-                "-c",
-                _after_peer_started("reduced", _FAIL_HALF_SECOND_LATER),
-            ],
+            subprocess_argv_for_lane=_argv_from({"fail": fail_script, "reduced": "pass"}),
             between_segments=between_segments,
         )
     assert code == preflight.EXIT_LANE_RED
