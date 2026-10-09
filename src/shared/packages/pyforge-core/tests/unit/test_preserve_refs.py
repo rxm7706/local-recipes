@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -16,10 +17,18 @@ from pyforge.core.preserve_refs import (
     PreserveState,
     PreserveTrailers,
     PurgeList,
+    is_preserve_tag_ref,
+    list_local_preserve_tags,
     list_preserves,
+    normalize_ref,
+    observe_preserve_debt,
     parse_archive_ref,
     parse_preserve_ref,
+    preserve_artifact_reachable,
     push_preserve_ref,
+    recovery_refs_for_run,
+    ref_exists_local,
+    ref_on_origin,
     render_archive_heads_ref,
     render_archive_tags_ref,
     render_preserve_ref,
@@ -270,3 +279,146 @@ def test_content_gate_mutation_secret_rule_required(git_pair: tuple[Path, Path])
         mod._SECRET_PATTERNS = original
     findings = run_content_gate(repo, commit=commit, purge_list=PurgeList(frozenset(), frozenset()))
     assert any(f.reason is ContentGateReason.SECRET for f in findings)
+
+
+# ---------------------------------------------------------------------------
+# Story 87.9 -- the reader side. Real git, a real bare remote, no network.
+# ---------------------------------------------------------------------------
+
+
+def _head(repo: Path) -> str:
+    return _run(repo, "rev-parse", "HEAD").stdout.strip()
+
+
+def _tagged(repo: Path, *, story: str = "87.9", run: str = "run-1") -> str:
+    """A local-only annotated preserve tag on HEAD, ``Preserve-Run`` = ``run``; returns its full refname."""
+    commit = _head(repo)
+    ref = render_preserve_ref(commit_sha=commit, producer="hand", project_slug="pyforge-marshal", story_key=story)
+    tag_preserve(repo, refname=ref, commit=commit, trailers=replace(_trailers(commit), run=run))
+    return ref
+
+
+def test_normalize_ref_spells_each_shape_one_way():
+    assert normalize_ref("preserve/pyforge-marshal/87.9/hand-abcd1234") == (
+        "refs/tags/preserve/pyforge-marshal/87.9/hand-abcd1234"
+    )
+    assert normalize_ref("attempt-preserve/run-1-abcd1234") == "refs/heads/attempt-preserve/run-1-abcd1234"
+    assert normalize_ref("refs/tags/preserve/x") == "refs/tags/preserve/x"
+    assert is_preserve_tag_ref("preserve/x") and not is_preserve_tag_ref("attempt-preserve/x")
+
+
+def test_ref_on_origin_is_read_from_the_remote_not_from_a_local_tag(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    ref = _tagged(repo)
+
+    assert ref_exists_local(repo, ref)
+    assert ref_on_origin(repo, ref) is False  # a local tag is not proof of origin
+
+    _run(repo, "push", "origin", f"{ref}:{ref}")
+    assert ref_on_origin(repo, ref) is True
+    assert ref_on_origin(repo, ref.removeprefix("refs/tags/")) is True  # short spelling, same answer
+
+
+def test_ref_on_origin_without_a_readable_remote_is_false_not_present(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    ref = _tagged(repo)
+    _run(repo, "push", "origin", f"{ref}:{ref}")
+    _run(repo, "remote", "set-url", "origin", str(repo / "no-such-remote.git"))
+    assert ref_on_origin(repo, ref) is False
+
+
+def test_preserve_artifact_reachable_local_tag_origin_only_branch_and_nowhere(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    ref = _tagged(repo)
+    assert preserve_artifact_reachable(repo, ref)  # local tag, never pushed
+
+    _run(repo, "branch", "attempt-preserve/run-1-abcd1234")
+    _run(repo, "push", "origin", "attempt-preserve/run-1-abcd1234")
+    _run(repo, "branch", "-D", "attempt-preserve/run-1-abcd1234")
+    assert ref_exists_local(repo, "attempt-preserve/run-1-abcd1234") is False
+    assert preserve_artifact_reachable(repo, "attempt-preserve/run-1-abcd1234")  # origin-only branch
+
+    assert preserve_artifact_reachable(repo, "attempt-preserve/run-9-ffffffff") is False
+    assert preserve_artifact_reachable(repo, "") is False
+
+
+def test_list_local_preserve_tags_reads_the_run_trailer_and_survives_a_malformed_tag(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    ref = _tagged(repo, run="run-7")
+    _run(repo, "tag", "preserve/not-a-shape")  # lightweight, unparseable name
+
+    by_name = {t.refname: t for t in list_local_preserve_tags(repo)}
+
+    assert by_name[ref].run == "run-7"
+    assert by_name[ref].project_slug == "pyforge-marshal" and by_name[ref].story_key == "87.9"
+    assert by_name["refs/tags/preserve/not-a-shape"].run is None
+
+
+def test_recovery_refs_for_run_lists_the_tag_first_then_origin_only_branches(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    ref = _tagged(repo, run="run-3")
+    _run(repo, "branch", "attempt-preserve/run-3-abcd1234")
+    _run(repo, "push", "origin", "attempt-preserve/run-3-abcd1234")
+    _run(repo, "branch", "-D", "attempt-preserve/run-3-abcd1234")
+
+    refs = recovery_refs_for_run(repo, "run-3")
+
+    assert refs == [ref.removeprefix("refs/tags/"), "attempt-preserve/run-3-abcd1234"]
+    assert recovery_refs_for_run(repo, "run-4") == []
+    assert recovery_refs_for_run(repo, "") == []
+
+
+def test_recovery_refs_for_run_pairs_a_bmad_loop_tag_with_the_branch_head(git_pair: tuple[Path, Path]):
+    """The engine's own tag has no ``Preserve-Run`` trailer: the branch head8 is the join."""
+    repo, _ = git_pair
+    head8 = _head(repo)[:8]
+    _run(repo, "branch", f"attempt-preserve/run-5-{head8}")
+    _run(repo, "tag", f"preserve/pyforge-marshal/87.9/bmad-loop-{head8}")
+
+    refs = recovery_refs_for_run(repo, "run-5")
+
+    assert refs == [f"preserve/pyforge-marshal/87.9/bmad-loop-{head8}", f"attempt-preserve/run-5-{head8}"]
+
+
+def test_observe_preserve_debt_names_local_only_tags_and_unpromoted_scratch(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    pushed = _tagged(repo, story="87.1")
+    _run(repo, "push", "origin", f"{pushed}:{pushed}")
+    (repo / "tracked.txt").write_text("v2\n", encoding="utf-8")
+    _run(repo, "commit", "-am", "second")
+    local_only = _tagged(repo, story="87.2")
+    (repo / "tracked.txt").write_text("v3\n", encoding="utf-8")
+    _run(repo, "commit", "-am", "scratch work")
+    _run(repo, "branch", "attempt-preserve/run-8-deadbeef")
+
+    observation = observe_preserve_debt(repo)
+
+    assert observation is not None
+    assert [t.refname for t in observation.local_only_tags] == [local_only]
+    assert len(observation.tags) == 2
+    assert observation.unpromoted_scratch == ("refs/heads/attempt-preserve/run-8-deadbeef",)
+
+
+def test_observe_preserve_debt_a_scratch_ref_a_tag_holds_or_main_holds_is_not_debt(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    _run(repo, "branch", "attempt-preserve/run-1-aaaaaaaa")  # on origin/main already: landed
+    _run(repo, "fetch", "origin")
+    (repo / "tracked.txt").write_text("v2\n", encoding="utf-8")
+    _run(repo, "commit", "-am", "work")
+    _run(repo, "branch", "attempt-preserve/run-2-bbbbbbbb")
+    ref = _tagged(repo)  # the tag holds that commit
+    _run(repo, "push", "origin", f"{ref}:{ref}")
+
+    observation = observe_preserve_debt(repo)
+
+    assert observation is not None
+    assert observation.unpromoted_scratch == ()
+    assert observation.local_only_tags == ()
+
+
+def test_observe_preserve_debt_is_none_not_empty_when_origin_cannot_be_read(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    _tagged(repo)
+    _run(repo, "remote", "set-url", "origin", str(repo / "no-such-remote.git"))
+    assert observe_preserve_debt(repo) is None
+
