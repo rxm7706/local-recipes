@@ -38,9 +38,8 @@ requirements:
 tests:
   - python:
       imports:
+        - psycopg2
       pip_check: true
-  - <conda_recipe_manager.types.SentinelType object at 0x7c4a922fdbe0>:
-      - psycopg2
 
 about:
   summary: Yugabyte Psycopg2 driver is a distributed python driver for YugabyteDB built on the PostgreSQL psycopg2 driver.

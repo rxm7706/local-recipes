@@ -24,7 +24,7 @@ build:
 requirements:
   host:
     - pip
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - setuptools
   run:
     - certifi
@@ -44,6 +44,10 @@ tests:
   - files:
       source:
         - tests
+    requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
     script:
       - shodan --help
 
@@ -58,8 +62,9 @@ extra:
   recipe-maintainers:
     - thewchan
 
-<conda_recipe_manager.types.SentinelType object at 0x70b19d84dbe0>:  #     - pytest -vvv --capture=tee-sys tests
-  requires:
-    - pip
-    - pytest
-    - python ${{ python_min }}
+#### CFE metadata AND comments
+# CFE comments
+# tests:
+#    # Skip test suite becuase it requires Shodan API key
+#     - pytest -vvv --capture=tee-sys tests
+####

@@ -27,10 +27,10 @@ requirements:
       then: make
     - if: win
       then: ninja
-  <conda_recipe_manager.types.SentinelType object at 0x73bd0662dbe0>:  #host:
-    # TODO: add support for
-    # gdal
-    # geotiff
+  #host:
+  # TODO: add support for
+  # gdal
+  # geotiff
   run_exports:
     - ${{ pin_subpackage('lerc', upper_bound='x') }}
 

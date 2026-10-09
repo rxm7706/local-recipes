@@ -12,8 +12,8 @@ package:
 source:
   url: https://github.com/ashvardanian/StringZilla/archive/v${{ version }}.tar.gz
   sha256: 5470ed92c91032ac11b8b95c2a0967822b81ad72e68a9db0653c2c8d4316e7e6
-  <conda_recipe_manager.types.SentinelType object at 0x72101874dbe0>:  #patches:
-    #- patches/0001-fix-build-option.patch
+  #patches:
+  #- patches/0001-fix-build-option.patch
 
 build:
   number: 0

@@ -224,22 +224,22 @@ outputs:
             - if: (vsver >=17 or (vsver == 16 and update_version >= 10)) and (cross_target_platform == "win-64" or cross_target_platform == "win-32")
               then: ucrt >=10.0.20348.0
     tests:
-      - <conda_recipe_manager.types.SentinelType object at 0x73973f055be0>:
-          - if: win
-            then: for /f "tokens=3" %%i in ('clang --version^| findstr /R "[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*"') do set "FOUND_CLANG_VERSION=%%i"
-          - if: win
-            then: echo found clang %FOUND_CLANG_VERSION%
-          - if: win
-            then: if not "%FOUND_CLANG_VERSION%"=="${{ clang_test_version }}" exit /b 1
-        requirements:
+      - requirements:
           run:
-            - clang ${{ clang_test_version }}.*
+            - if: win and vsyear | int >= 2022
+              then: clang ${{ clang_test_version }}.*
         script:
           - echo "%CMAKE_GENERATOR%"
           - echo "%CMAKE_GENERATOR_PLATFORM%"
           - echo "%CMAKE_GENERATOR_TOOLSET%"
           - echo "CC=%CC%"
           - echo "CC_FOR_BUILD=%CC_FOR_BUILD%"
+          - if: win and vsyear | int >= 2022
+            then: for /f "tokens=3" %%i in ('clang --version^| findstr /R "[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*"') do set "FOUND_CLANG_VERSION=%%i"
+          - if: win and vsyear | int >= 2022
+            then: echo found clang %FOUND_CLANG_VERSION%
+          - if: win and vsyear | int >= 2022
+            then: if not "%FOUND_CLANG_VERSION%"=="${{ clang_test_version }}" exit /b 1
     about:
       summary: Activation and version verification of MSVC ${{ vcver }} (VS ${{ vsyear }} compiler, update ${{ update_version }})
       license: BSD-3-Clause

@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -59,10 +59,6 @@ tests:
         - example
       pip_check: false
       python_version: ${{ python_min }}
-  - <conda_recipe_manager.types.SentinelType object at 0x707a26e51be0>:
-      requirements:
-        run:
-          - python ${{ python_min }}
 
 about:
   summary: Amundsen Data builder

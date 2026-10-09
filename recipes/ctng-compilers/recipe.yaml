@@ -406,17 +406,14 @@ outputs:
       ignore_run_exports:
         from_package:
           - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+      run_exports:
+        strong:
+          - if: cross_target_cxx_stdlib == "libstdcxx"
+            then: libstdcxx >=${{ gcc_version }}
+          - if: cross_target_cxx_stdlib == "libcxx"
+            then: libcxx
     tests:
-      - <conda_recipe_manager.types.SentinelType object at 0x7a7153e51be0>:
-          - ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb-override.cpp -c -o tzdb-override.o -v
-          - ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb.cpp -c -o tzdb.o -v
-          - ${CXX} tzdb-override.o -o tzdb-override -v && ./tzdb-override
-          - ${CXX} tzdb.o -o tzdb -v && ./tzdb
-          - strace ./tzdb 2>&1 | grep ${CONDA_PREFIX}/lib/../share/zoneinfo/tzdata.zi
-          - unset PREFIX
-          - unset CONDA_PREFIX
-          - ./tzdb
-        files:
+      - files:
           recipe:
             - tests
         requirements:
@@ -432,17 +429,26 @@ outputs:
             then: ${CXX} -Wall cpp_aligned.o -o cpp_aligned --std=c++17 && ./cpp_aligned
           - ${CXX} -Wall tests/hello_world.cpp -c -o hello_world.o --std=c++17 -v
           - ${CXX} -Wall hello_world.o -o hello_world --std=c++17 -v
+          - if: cross_target_cxx_stdlib == "libstdcxx"
+            then: ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb-override.cpp -c -o tzdb-override.o -v
+          - if: cross_target_cxx_stdlib == "libstdcxx"
+            then: ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb.cpp -c -o tzdb.o -v
+          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
+            then: ${CXX} tzdb-override.o -o tzdb-override -v && ./tzdb-override
+          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
+            then: ${CXX} tzdb.o -o tzdb -v && ./tzdb
+          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
+            then: strace ./tzdb 2>&1 | grep ${CONDA_PREFIX}/lib/../share/zoneinfo/tzdata.zi
+          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
+            then: unset PREFIX
+          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
+            then: unset CONDA_PREFIX
+          - if: cross_target_cxx_stdlib == "libstdcxx" and target_platform == cross_target_platform
+            then: ./tzdb
     about:
       summary: GNU C++ Compiler
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
-    run_exports:
-      # impose this requirement across the build/host boundary
-      strong:
-        - if: cross_target_cxx_stdlib == "libstdcxx"
-          then: libstdcxx >=${{ gcc_version }}
-        - if: cross_target_cxx_stdlib == "libcxx"
-          then: libcxx
   - package:
       name: gxx
     build:

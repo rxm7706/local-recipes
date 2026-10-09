@@ -80,6 +80,8 @@ extra:
     - thewchan
     - jschueller
 
-<conda_recipe_manager.types.SentinelType object at 0x7be944a29be0>:  #     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not test_pause" tests  # [osx]
-  requires:
-    - pip
+#### CFE metadata AND comments
+# CFE comments
+# tests:
+#     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not test_pause" tests  # [osx]
+####

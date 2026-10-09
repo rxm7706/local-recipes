@@ -50,10 +50,6 @@ tests:
         - semdep
         - semgrep
       pip_check: false
-  - <conda_recipe_manager.types.SentinelType object at 0x6ffcf4afdbe0>:
-      requirements:
-        run:
-          - pip
 
 about:
   summary: Lightweight static analysis for many languages. Find bug variants with patterns that look like source code.

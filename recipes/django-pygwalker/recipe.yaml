@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - python-build
     - setuptools >=67.7.2
     - setuptools-scm >=7.1
@@ -39,11 +39,6 @@ tests:
         - djangoaddicts.pygwalker
       pip_check: false
       python_version: ${{ python_min }}
-  - <conda_recipe_manager.types.SentinelType object at 0x7cc30604dbe0>: {}
-    requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
 
 about:
   summary: PyGWalker views for Django projects
