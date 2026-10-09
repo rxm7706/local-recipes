@@ -2,7 +2,8 @@
 title: "87.6: Land, retire and the station branch never fight the protected list"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '48988a4d84a5a2be6e5e17162849a112c8cc315a'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
