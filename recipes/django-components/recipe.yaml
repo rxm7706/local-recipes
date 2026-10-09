@@ -19,23 +19,23 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - django >=5.2
-  - djc-core >=1.3.1
-  - typing_extensions >=4.12.2
+    - python >=${{ python_min }}
+    - django >=5.2
+    - djc-core >=1.3.1
+    - typing_extensions >=4.12.2
 
 tests:
 - python:
     imports:
-    - django_components
+      - django_components
     pip_check: true
     python_version:
-    - ${{ python_min }}.*
-    - "*"
+      - ${{ python_min }}.*
+      - "*"
 
 about:
   homepage: https://github.com/django-components/django-components/
@@ -48,7 +48,7 @@ about:
   repository: https://github.com/django-components/django-components
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -56,8 +56,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-components
   cfe-purls:
-  - pkg:conda/django-components@${{ version }}?channel=conda-forge
-  - pkg:pypi/django-components@${{ version }}
+    - pkg:conda/django-components@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-components@${{ version }}
   cfe-upstream-repo: https://github.com/django-components/django-components
   cfe-upstream-homepage: https://github.com/django-components/django-components
   cfe-import-names: [src.django_components]
