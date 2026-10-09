@@ -133,6 +133,7 @@ class _FakeVcs:
         worktree_path_raises_for: frozenset[str] = frozenset(),
         delete_raises_for: frozenset[str] = frozenset(),
         subjects_raise: bool = False,
+        would_orphan: bool = False,
     ) -> None:
         self.subjects_raise = subjects_raise
         self.subject_refs: list[str] = []
@@ -144,6 +145,7 @@ class _FakeVcs:
         self.worktree_path_map = worktree_path_map or {}
         self.worktree_path_raises_for = worktree_path_raises_for
         self.delete_raises_for = delete_raises_for
+        self.would_orphan = would_orphan
         self.delete_calls: list[tuple[str, bool]] = []
         self.merged_calls: list[str] = []
 
@@ -181,7 +183,7 @@ class _FakeVcs:
         return f"tip-{branch}"
 
     def is_commit_ancestor(self, repo_root, ancestor, descendant):
-        return True
+        return not self.would_orphan
 
     def commit_contained_in_tag_prefixes(self, repo_root, commit, tag_prefixes):
         return False
@@ -813,6 +815,21 @@ def test_a_journal_that_cannot_be_written_is_reported_after_the_deletes(tmp_path
     assert vcs.delete_calls == [("acme-4-10", True)]
     assert [f["code"] for f in payload["findings"]] == ["MRS-RETIRE-003"]
     assert "could not be journaled" in payload["findings"][0]["message"]
+
+
+def test_would_orphan_refuses_execute_and_names_archive_twin_route(tmp_path, capsys, monkeypatch):
+    _patch_repo(monkeypatch, tmp_path)
+    home, harness = _one_task_setup(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        merged_map={"acme-4-10": True},
+        would_orphan=True,
+    )
+    retire_module.run_retire(_args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness)
+    payload = _payload(capsys)
+    assert vcs.delete_calls == []
+    assert "MRS-RETIRE-004" in [f["code"] for f in payload["findings"]]
+    assert payload["data"]["insufficient_evidence"][0]["missing"] == ["would_orphan"]
 
 
 # --- main.py wiring smoke test -------------------------------------------

@@ -1267,6 +1267,7 @@ def test_live_run_refuses_branch_retirement_but_merge_still_proceeds(tmp_path, c
         existing_branches=frozenset({"loop/acme"}),
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         changed_paths=("docs/notes.md",),
+        remote_branch_on_origin=True,
     )
     forge = _FakeForge(existing=None)
     harness = _FakeHarness(
@@ -1368,6 +1369,7 @@ def test_journal_unreadable_is_conservatively_treated_as_live(tmp_path, capsys, 
         existing_branches=frozenset({"loop/acme"}),
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         changed_paths=("docs/notes.md",),
+        remote_branch_on_origin=True,
     )
     forge = _FakeForge(existing=None)
     harness = _FakeHarness()
@@ -1413,6 +1415,7 @@ def test_no_live_run_retires_normally_no_finding(tmp_path, capsys, monkeypatch, 
         existing_branches=frozenset({"loop/acme"}),
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         changed_paths=("docs/notes.md",),
+        remote_branch_on_origin=False,
     )
     forge = _FakeForge(existing=None)
     harness = _FakeHarness(snapshots={(str(home), "hrid-1"): _live_snapshot(**snapshot_kwargs)})
@@ -1426,6 +1429,7 @@ def test_no_live_run_retires_normally_no_finding(tmp_path, capsys, monkeypatch, 
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-008" not in codes
+    assert "MRS-LAND-012" in codes
     assert payload["data"]["merged"] is True
     assert payload["data"]["branch_retired"] is True
     assert exit_code == 0
@@ -1459,6 +1463,7 @@ def test_never_run_home_retires_normally_no_finding(tmp_path, capsys, monkeypatc
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-008" not in codes
+    assert "MRS-LAND-012" in codes
     assert payload["data"]["merged"] is True
     assert payload["data"]["branch_retired"] is True
     assert exit_code == 0
@@ -1507,11 +1512,12 @@ def test_override_flag_short_circuits_the_liveness_gather_even_when_not_live(tmp
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-008" not in codes
+    assert "MRS-LAND-012" in codes
     assert payload["data"]["merged"] is True
     assert payload["data"]["branch_retired"] is True
     assert exit_code == 0
     repo, number, strategy, expected_head_sha, delete_branch, subject = forge.merge_calls[0]
-    assert delete_branch is True
+    assert delete_branch is False
 
 
 def test_policy_already_off_skips_liveness_gather_entirely(tmp_path, capsys, monkeypatch):
@@ -1626,6 +1632,7 @@ def test_dead_supervisor_with_live_engine_refuses_branch_retirement(tmp_path, ca
         existing_branches=frozenset({"loop/acme"}),
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         changed_paths=("docs/notes.md",),
+        remote_branch_on_origin=True,
     )
     forge = _FakeForge(existing=None)
 
