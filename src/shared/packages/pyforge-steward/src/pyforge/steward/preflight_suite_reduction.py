@@ -22,11 +22,22 @@ _STATION_TEST_RE = re.compile(r"^pyforge-([a-z]+)-test$")
 _STATION_GATE_RE = re.compile(r"^pyforge-([a-z]+)-coverage-gate$")
 
 
+PYTEST_EXIT_NO_TESTS_COLLECTED = 5
+
+
+@dataclass(frozen=True)
+class ReducedSuiteSegment:
+    """One pytest invocation in a reduced suite lane (Story 71.9)."""
+
+    label: str  # ``rest-of-task`` | ``gate-dirs-complement``
+    argv: list[str]  # argv after ``pixi run --frozen -e <env> --``
+
+
 @dataclass(frozen=True)
 class SuiteLaneOverride:
     """How to run a suite lane instead of its pixi task verbatim."""
 
-    argv: list[str]  # argv after ``pixi run --frozen -e <env> --``
+    segments: tuple[ReducedSuiteSegment, ...]
     journal: dict[str, Any]
 
 
@@ -192,15 +203,31 @@ def _gate_paths_resolved(repo_root: Path, gate_run: dict[str, Any]) -> list[Path
     return out
 
 
-def _complement_marker(task_marker: str | None, gate_marker: str) -> str:
+def _complement_marker(task_marker: str | None, gate_marker: str) -> str | None:
     if task_marker == gate_marker:
-        return "slow"
+        return None
     if task_marker:
         return f"({task_marker}) and not ({gate_marker})"
     return "slow"
 
 
-def _build_reduced_shell_cmd(parsed: _ParsedPytest, repo_root: Path, gate_run: dict[str, Any]) -> str | None:
+def _pytest_argv_from_parsed(
+    parsed: _ParsedPytest,
+    repo_root: Path,
+    *,
+    test_dirs: list[Path],
+    marker_expr: str | None,
+) -> list[str]:
+    rel = [str(p.relative_to(repo_root)) if p.is_relative_to(repo_root) else str(p) for p in test_dirs]
+    argv = [*parsed.prefix, "pytest", *rel, *parsed.suffix]
+    if marker_expr:
+        argv.extend(["-m", marker_expr])
+    return argv
+
+
+def _build_reduced_segments(
+    parsed: _ParsedPytest, repo_root: Path, gate_run: dict[str, Any]
+) -> list[ReducedSuiteSegment] | None:
     gate_dirs = _gate_paths_resolved(repo_root, gate_run)
     if not gate_dirs:
         return None
@@ -210,25 +237,25 @@ def _build_reduced_shell_cmd(parsed: _ParsedPytest, repo_root: Path, gate_run: d
         all_dirs = [_normalize_path_str(repo_root, p) for p in parsed.test_paths]
     gate_set = {p.resolve() for p in gate_dirs}
     other_dirs = [d for d in all_dirs if d.resolve() not in gate_set]
-    segments: list[str] = []
+    segments: list[ReducedSuiteSegment] = []
     if other_dirs:
-        other_argv = [
-            *parsed.prefix,
-            "pytest",
-            *[str(p.relative_to(repo_root)) if p.is_relative_to(repo_root) else str(p) for p in other_dirs],
-            *parsed.suffix,
-        ]
-        if parsed.marker_expr:
-            other_argv.extend(["-m", parsed.marker_expr])
-        segments.append(shlex.join(other_argv))
+        other_argv = _pytest_argv_from_parsed(parsed, repo_root, test_dirs=other_dirs, marker_expr=parsed.marker_expr)
+        segments.append(ReducedSuiteSegment("rest-of-task", other_argv))
     complement = _complement_marker(parsed.marker_expr, gate_marker)
-    if complement:
-        rel_gate = [str(p.relative_to(repo_root)) if p.is_relative_to(repo_root) else str(p) for p in gate_dirs]
-        gate_argv = [*parsed.prefix, "pytest", *rel_gate, *parsed.suffix, "-m", complement]
-        segments.append(shlex.join(gate_argv))
+    if complement is not None:
+        gate_argv = _pytest_argv_from_parsed(parsed, repo_root, test_dirs=gate_dirs, marker_expr=complement)
+        segments.append(ReducedSuiteSegment("gate-dirs-complement", gate_argv))
     if not segments:
         return None
-    return " && ".join(segments)
+    return segments
+
+
+def _build_reduced_shell_cmd(parsed: _ParsedPytest, repo_root: Path, gate_run: dict[str, Any]) -> str | None:
+    """Join reduced segments for collect-only helpers (tests and partition checks)."""
+    built = _build_reduced_segments(parsed, repo_root, gate_run)
+    if not built:
+        return None
+    return " && ".join(shlex.join(seg.argv) for seg in built)
 
 
 def _gate_driver_argv(gate_cmd: str) -> list[str] | None:
@@ -309,11 +336,11 @@ def derive_suite_lane_override(
     parsed = _parse_single_pytest(cmd)
     if parsed is None:
         return None
-    reduced = _build_reduced_shell_cmd(parsed, repo_root, gate_run)
+    reduced = _build_reduced_segments(parsed, repo_root, gate_run)
     if not reduced:
         return None
     return SuiteLaneOverride(
-        argv=["bash", "-lc", reduced],
+        segments=tuple(reduced),
         journal={
             "suite_reduction": True,
             "suite_reduction_reason": "coverage gate unit run overlaps station suite",
@@ -380,6 +407,12 @@ def build_suite_lane_overrides(
     return overrides
 
 
+def _segment_without_quiet_flags(segment: str) -> str:
+    parts = shlex.split(segment)
+    filtered = [p for p in parts if p not in ("-q", "-qq")]
+    return shlex.join(filtered)
+
+
 def collect_pytest_node_ids(repo_root: Path, shell_cmd: str, *, env: dict[str, str] | None = None) -> set[str]:
     """``pytest --collect-only -q`` node ids for a shell pytest command."""
     ids: set[str] = set()
@@ -388,7 +421,8 @@ def collect_pytest_node_ids(repo_root: Path, shell_cmd: str, *, env: dict[str, s
     for segment in segments:
         if not segment:
             continue
-        collect_cmd = re.sub(r"\bpytest\b", "pytest --collect-only -q", segment, count=1)
+        stripped = _segment_without_quiet_flags(segment)
+        collect_cmd = re.sub(r"\bpytest\b", "pytest --collect-only -q", stripped, count=1)
         proc = subprocess.run(
             ["bash", "-lc", collect_cmd],
             cwd=repo_root,
@@ -396,6 +430,8 @@ def collect_pytest_node_ids(repo_root: Path, shell_cmd: str, *, env: dict[str, s
             capture_output=True,
             text=True,
         )
+        if proc.returncode == PYTEST_EXIT_NO_TESTS_COLLECTED:
+            continue
         if proc.returncode != 0:
             raise RuntimeError(proc.stdout + proc.stderr)
         for line in proc.stdout.splitlines():
