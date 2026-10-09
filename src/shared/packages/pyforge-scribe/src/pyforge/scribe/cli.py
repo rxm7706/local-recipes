@@ -264,7 +264,7 @@ def _run_transcripts(source: Path | None) -> None:
     for candidate in proposal.candidates:
         try:
             result = capture_write(_MEMORY_ROOT, candidate.capture_type, candidate.text)
-        except (ValueError, TimeoutError) as exc:
+        except (ValueError, TimeoutError, OSError) as exc:
             typer.echo(str(exc), err=True)
             raise typer.Exit(code=2) from exc
         typer.echo(f"captured: {result.path}")

@@ -524,6 +524,63 @@ def test_capture_transcripts_confirm_yes_writes_full_sentence_at_truncation_boun
     assert long_sentence not in _combined_output(result)
 
 
+def test_capture_transcripts_forwards_cap_warnings_to_stderr(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    for name, sentence in (
+        ("aaa-old.jsonl", "We decided to archive the oldest ingestion job."),
+        ("bbb-mid.jsonl", "We chose to deprecate the legacy webhook retry queue entirely."),
+        ("ccc-new.jsonl", "Settled on keeping the build script single-threaded for now."),
+    ):
+        _scaffold_transcript_entry(transcript_root, name, [_assistant_transcript_line(sentence)])
+
+    real_scan = cli_module.scan_transcripts
+
+    def _scan_with_file_cap(transcript_root_arg, **kwargs):
+        return real_scan(transcript_root_arg, max_files=2, memory_root=kwargs["memory_root"])
+
+    monkeypatch.setattr(cli_module, "scan_transcripts", _scan_with_file_cap)
+
+    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(transcript_root)], input="n\n")
+
+    assert result.exit_code == 0
+    output = _combined_output(result)
+    assert "warning:" in output
+    assert "capped" in output
+    assert "max_files=2" in output
+
+
+def test_capture_transcripts_confirm_yes_writes_every_candidate_in_batch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _scaffold_memory_root(tmp_path)
+    transcript_root = tmp_path / "transcripts"
+    transcript_root.mkdir()
+    _scaffold_transcript_entry(
+        transcript_root,
+        "session-a.jsonl",
+        [
+            _assistant_transcript_line("We decided to use SQLite for the local cache."),
+            _assistant_transcript_line("We chose to deprecate the legacy webhook retry queue entirely."),
+        ],
+    )
+
+    result = runner.invoke(app, ["capture", "--transcripts", "--source", str(transcript_root)], input="y\n")
+
+    assert result.exit_code == 0
+    written = list((tmp_path / ".claude" / "memory" / "project").glob("*.md"))
+    assert len(written) == 2
+    bodies = {path.read_text(encoding="utf-8") for path in written}
+    assert any("SQLite" in body for body in bodies)
+    assert any("webhook retry queue" in body for body in bodies)
+    assert _combined_output(result).count("captured:") == 2
+
+
 def test_capture_transcripts_confirm_yes_capture_failure_exits_2_cleanly(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
