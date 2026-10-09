@@ -2,7 +2,9 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.93.2** (Oct 8, 2026, current) — **Story 21.2 forge local recipe retro (PATCH).** Packaged `git-pkgs/forge` v0.10.0 (G109: v0.10.1 upstream; AC pinned 0.10.0): pure Go via `go-nocgo`, `GOTOOLCHAIN=local`, `./cmd/forge` with `-X …/internal/cli.Version`, `go-licenses save ./cmd/forge` (no G79 ignores needed on linux-64). G58/G118 channel absence recorded in CFE comments. Existing git-pkgs/wuphf Go patterns held; no failure-catalog change.
+**v8.93.3** (Oct 9, 2026, current) — **Story 21.3 gitgres local recipe retro (PATCH).** Packaged `gitgres` 0.1.0.dev0 from commit `eaf8743f` (G109: no upstream tags): PGXS `ext/` via host `pg_config`, backend binaries copied manually with `CC="${CC}"` (upstream hard-codes `cc`), explicit PostgreSQL 17.11 host/run pins (fnd:CAP-12; global conda-forge 18 pin did not leak on linux-64). Test: throwaway initdb cluster on a Unix socket, `CREATE EXTENSION gitgres CASCADE`, query `repositories`. Design reference only — not wired into platform or pixi.
+
+**v8.93.2** (Oct 8, 2026) — **Story 21.2 forge local recipe retro (PATCH).** Packaged `git-pkgs/forge` v0.10.0 (G109: v0.10.1 upstream; AC pinned 0.10.0): pure Go via `go-nocgo`, `GOTOOLCHAIN=local`, `./cmd/forge` with `-X …/internal/cli.Version`, `go-licenses save ./cmd/forge` (no G79 ignores needed on linux-64). G58/G118 channel absence recorded in CFE comments. Existing git-pkgs/wuphf Go patterns held; no failure-catalog change.
 
 **v8.93.1** (Oct 8, 2026) — **Story 21.1 git-pkgs local recipe retro (PATCH).** Packaged `git-pkgs/git-pkgs` v0.21.0 (G109 over mint v0.20.0): pure Go via `go-nocgo`, `GOTOOLCHAIN=local`, upstream goreleaser pre-hooks (`generate-man`, `generate-docs`), `go-licenses save` with `--force` and linux `--ignore=github.com/oapi-codegen/nullable` (G79). Existing Go template + wuphf/skillsctl patterns held; no failure-catalog change.
 
