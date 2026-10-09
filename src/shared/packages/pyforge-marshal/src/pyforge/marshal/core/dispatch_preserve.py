@@ -24,7 +24,7 @@ from pyforge.core.preserve_refs import (
     tag_preserve,
 )
 
-from ..ports.vcs import VcsCommandError, VcsPort
+from ..ports.vcs import VcsPort
 from .dispatch_completion import DispatchSessionVerdict
 from .identity import MalformedStoryKeyError, normalize, render_feed_key
 
@@ -119,7 +119,7 @@ def tag_dispatch_worktree_preserve(
     if commit is None:
         try:
             commit = vcs.worktree_head_sha(worktree)
-        except VcsCommandError:
+        except Exception:
             return None
     feed_story = _preserve_story_key_for_tag(story_key)
     refname = render_preserve_ref(

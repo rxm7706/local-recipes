@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 import subprocess
-from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -22,7 +20,7 @@ from pyforge.marshal.core.dispatch_preserve import (
     tag_dispatch_worktree_preserve,
 )
 from pyforge.marshal.core.journal import Phase, build_entry, prepare_for_write
-from pyforge.marshal.core.status import FleetHomeFacts, patch_dispatch_row
+from pyforge.marshal.core.status import FleetHomeFacts, _merge_dispatch_row_fields
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
 _FLAG = PRESERVE_REFS_FLAG_KEY
@@ -43,8 +41,14 @@ def git_pair(tmp_path: Path) -> tuple[Path, Path]:
     subprocess.run(["git", "init", str(repo)], cwd=tmp_path, check=True)
     _git(repo, "config", "user.email", "t@example.com")
     _git(repo, "config", "user.name", "t")
+    purge_dir = repo / "docs" / "governance"
+    purge_dir.mkdir(parents=True, exist_ok=True)
+    (purge_dir / "preserve-purge-list.json").write_text(
+        '{"schema_version": 1, "commit_shas": [], "paths": []}\n',
+        encoding="utf-8",
+    )
     (repo / "tracked.txt").write_text("v1\n", encoding="utf-8")
-    _git(repo, "add", "tracked.txt")
+    _git(repo, "add", "tracked.txt", "docs/governance/preserve-purge-list.json")
     _git(repo, "commit", "-m", "init")
     _git(repo, "branch", "-M", "main")
     _git(repo, "remote", "add", "origin", str(bare))
@@ -54,29 +58,15 @@ def git_pair(tmp_path: Path) -> tuple[Path, Path]:
 
 
 def _run_dir(repo_root: Path) -> Path:
-    path = (
-        repo_root
-        / ".steward"
-        / "dispatch-runs"
-        / _SLUG
-        / f"{_SLUG}-{_RUN_ID}"
-    )
+    path = dispatch_core.dispatch_run_dir(repo_root, _SLUG, _RUN_ID)
     path.mkdir(parents=True, exist_ok=True)
     return path
 
 
 def _journal_preserve_outcome(run_dir: Path, *, preserve_tag: str | None = None) -> None:
-    writer = "test-writer"
-    intent = build_entry(
-        id=supervisor_main.JournalEntryId(writer, 0) if hasattr(supervisor_main, "JournalEntryId") else None,
-        ts="2026-10-09T12:00:00.000Z",
-        run_id=_RUN_ID,
-        kind=dispatch_core.KIND_DISPATCH_PRESERVE,
-        phase=Phase.INTENT,
-        payload={"preserve_ref": "failed/87.5/changes.patch", "story_key": _STORY},
-    )
     from pyforge.marshal.core.journal import JournalEntryId
 
+    writer = "test-writer"
     intent = build_entry(
         id=JournalEntryId(writer, 0),
         ts="2026-10-09T12:00:00.000Z",
@@ -102,7 +92,7 @@ def _journal_preserve_outcome(run_dir: Path, *, preserve_tag: str | None = None)
     )
     journal = run_dir / "journal.jsonl"
     journal.write_text(
-        prepare_for_write(intent) + "\n" + prepare_for_write(outcome) + "\n",
+        prepare_for_write(intent).line + "\n" + prepare_for_write(outcome).line + "\n",
         encoding="utf-8",
     )
 
@@ -155,6 +145,7 @@ def test_supervisor_preserve_journals_tag_when_flag_on(
     repo, _bare = git_pair
     flags_path = flagd_tree(repo, {_FLAG: "on" if flag_provider[_FLAG] else "off"})
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flags_path))
+    (repo / "tracked.txt").write_text("v2\n", encoding="utf-8")
     (repo / "u.txt").write_text("untracked\n", encoding="utf-8")
     run_dir = _run_dir(repo)
     fs = LocalFs()
@@ -264,7 +255,7 @@ def test_status_row_shows_dispatch_preserve_tag():
         dispatch_story=_STORY,
         dispatch_preserve_tag="preserve/pyforge-marshal/87.5/dispatch-deadbeef",
     )
-    row = patch_dispatch_row({}, facts)
+    row = _merge_dispatch_row_fields({}, facts)
     assert row["dispatch_preserve_tag"] == "preserve/pyforge-marshal/87.5/dispatch-deadbeef"
 
 
@@ -274,7 +265,7 @@ def test_gather_journal_reads_preserve_tag(git_pair: tuple[Path, Path]):
     tag = "preserve/pyforge-marshal/87.5/dispatch-01234567"
     _journal_preserve_outcome(run_dir, preserve_tag=tag)
     fs = LocalFs()
-    facts = gather_dispatch_journal_facts(fs, run_dir, _RUN_ID, story_key=_STORY)
+    facts = gather_dispatch_journal_facts(fs, run_dir, _RUN_ID)
     assert facts.preserve_tag == tag
 
 
