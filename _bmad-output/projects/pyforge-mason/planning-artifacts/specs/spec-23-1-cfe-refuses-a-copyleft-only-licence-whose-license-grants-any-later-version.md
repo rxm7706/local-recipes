@@ -2,7 +2,8 @@
 title: "23.1: CFE refuses a copyleft -only licence whose LICENSE grants any later version"
 type: 'feature'
 created: '2026-09-29'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: f7e9368e70338cca4dbfbfd2adc5d57270948aac
 flag-exempt: detector-or-gate
 review_loop_iteration: 0
 followup_review_recommended: false
