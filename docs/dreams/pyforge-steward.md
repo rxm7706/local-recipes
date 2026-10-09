@@ -1125,6 +1125,32 @@ Drift — orphaned between stations.
 
   Owner `spec-pyforge-steward` CAP-5 (Story 63.3's closed list; Story 85.1 added an entry under it by ruling). → Epic
   85 / Story 85.8, specced 2026-10-09.
+- **2026-10-09 (hook roster) — Found: the session hook judges with its own matchers but the cwd's roster, so a stale
+  worktree blocks every tool call.** Seen on 2026-10-09 in `.worktrees/dispatch-pyforge-mason-25.2`, 153 commits
+  behind `main` with the roster from before Story 85.8, and reproduced on `20b7e853c3`. Claude Code runs
+  `.claude/hooks/pre-shell.py` from `$CLAUDE_PROJECT_DIR` (`.claude/settings.json:51`), the primary checkout on `main`.
+  `main()` loads the roster with `load_denial_rules(ctx.repo_root)` (`:1652`), and `ctx.repo_root` is
+  `find_repo_root(cwd)` (`:130`, `:271`): the top of whatever git repository the tool call's cwd is in. So the matchers
+  come from the script's revision and `docs/governance/guild-roster.json` from the cwd's. In that worktree every Bash,
+  Edit and Write call exited 2 (`:1669`-`:1677`) with "session_denials in guild-roster.json and pre-shell.py's MATCHERS
+  have drifted: declared-but-unimplemented=[] implemented-but-undeclared=['outward-git-push', 'outward-github-write',
+  'outward-mcp-submission', 'outward-package-submission']". The session could leave the directory only through harness
+  tools. The same fault has two more shapes:
+  - a worktree whose roster is newer than the hook script fails the same way, from the other side;
+  - a cwd inside any other git repository (a feedstock clone under `/tmp`) has no roster at all, so the read raises
+    `FileNotFoundError` and every tool call is blocked (reproduced on `20b7e853c3`).
+
+  `load_protected_deletion_prefixes` (`:642`) reads the roster's `protected_refs` through the same cwd root and falls
+  back to the code floor instead of raising. Today the drift crash comes first. If the denial read alone moved, a
+  worktree older than Story 85.1 would pass the parity check and then protect only `main` and `loop/` from deletion,
+  although every worktree shares the same refs. **What it looks like when fixed:** the hook reads the
+  roster from the tree it lives in (`Path(__file__).resolve().parents[2]`, the root `_hook_install_repo_root()` at
+  `:1126` already names), so its matchers and its roster always come from one revision. A drift between the script and
+  its own roster still fails loud, as Story 63.3 requires. Everything that judges the command's own checkout keeps the
+  cwd's root: branch and worktree state, primary-checkout detection, path checks, the `pixi.toml` guild tasks and
+  `scripts/commit_msg_hook.py`. **Constraints:** a fix story, no CAP, no flag; only the hook and its tests change; no
+  roster entry, reason or matcher moves; AGENTS.md gains no rule. Owner `spec-pyforge-steward` CAP-5 (Story 63.3's
+  closed list and its fail-loud parity check). → Epic 85 / Story 85.9, specced 2026-10-09.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

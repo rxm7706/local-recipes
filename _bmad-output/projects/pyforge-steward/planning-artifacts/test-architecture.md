@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: f7390f64ed444a85
-story_count: 336
+source_fingerprint: 48db5748aceaef35
+story_count: 337
 test_file_count: 109
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 336
+- **Stories parsed:** 337
 - **Epics parsed:** 85
 - **Test files inventoried:** 109 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `f7390f64ed444a85`
+- **Source fingerprint:** `48db5748aceaef35`
 
 ## Risk Assessment
 
@@ -576,6 +576,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 85.6 | Every command a session denial names as the sanctioned form exists | none observed |
 | 85.7 | The session-denial form check never stamps the real spec-surface baseline | none observed |
 | 85.8 | An agent session never writes outside this repository | none observed |
+| 85.9 | The session hook reads its denial roster from its own tree | none observed |
 
 ## Quality Gates
 
