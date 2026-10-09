@@ -658,10 +658,10 @@ def test_is_branch_merged_raises_on_empty_cherry_output(vcs, repo, monkeypatch):
 
     real_run = vcs_git_module._run
 
-    def _fake_run(args, *, timeout_s=vcs_git_module._GIT_TIMEOUT_S):
+    def _fake_run(args, *, timeout_s=vcs_git_module._GIT_TIMEOUT_S, env=None):
         if "cherry" in args:
             return _subprocess.CompletedProcess(args, returncode=0, stdout="", stderr="")
-        return real_run(args, timeout_s=timeout_s)
+        return real_run(args, timeout_s=timeout_s, env=env)
 
     monkeypatch.setattr(vcs_git_module, "_run", _fake_run)
     with pytest.raises(VcsCommandError, match="no output"):
@@ -2781,10 +2781,23 @@ def test_add_worktree_for_tree_checks_out_the_merged_content(vcs, repo, tmp_path
     assert (home / "main-only.txt").read_text(encoding="utf-8") == "main content\n"
     assert any("merge-tree-preview-home" in path for path in _worktree_paths(repo))
 
-    # the synthetic wrapper commit is never referenced by any branch or tag.
+    # the synthetic wrapper commit is never referenced by any branch or tag, and
+    # Story 87.10 keeps it out of the repository's own object store (only the
+    # preview worktree's HEAD names it, via the side object directory).
     synthetic_sha = _git(home, "rev-parse", "HEAD").stdout.strip()
     assert synthetic_sha != feature_sha
-    contains = _git(repo, "for-each-ref", "--contains", synthetic_sha)
+    missing_in_repo = subprocess.run(
+        ["git", "-C", str(repo), "cat-file", "-e", synthetic_sha],
+        capture_output=True,
+        text=True,
+    )
+    assert missing_in_repo.returncode != 0
+    contains = subprocess.run(
+        ["git", "-C", str(home), "for-each-ref", "--contains", synthetic_sha],
+        capture_output=True,
+        text=True,
+    )
+    assert contains.returncode == 0
     assert contains.stdout.strip() == ""
 
     vcs.remove_worktree(repo, home, force=True)

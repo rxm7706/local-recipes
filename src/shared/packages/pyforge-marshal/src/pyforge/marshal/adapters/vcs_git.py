@@ -143,32 +143,47 @@ _TREE_OID = re.compile(r"[0-9a-f]{40}|[0-9a-f]{64}")
 # `git fetch` is likewise a network round-trip, not a local query -- mirrors
 # `_GIT_PUSH_TIMEOUT_S`'s own reasoning exactly (Story 4.12, FR-173).
 _GIT_FETCH_TIMEOUT_S = 120.0
+# Story 87.10: merge-tree preview worktrees check out a synthetic commit that
+# lives only in an ephemeral object directory. The directory outlives
+# ``add_worktree_for_tree`` until ``remove_worktree`` drops the home (the
+# worktree's HEAD must keep resolving). ``is_branch_merged`` uses a scoped
+# context manager instead and deletes its store before returning.
+_PREVIEW_EPHEMERAL_OBJECT_DIRS: dict[Path, Path] = {}
 
 
-@contextmanager
-def _ephemeral_git_object_env(repo_root: Path) -> Iterator[Mapping[str, str]]:
-    """Story 87.10: write throwaway ``commit-tree`` objects outside the repo store.
-
-    ``GIT_OBJECT_DIRECTORY`` receives new objects; ``GIT_ALTERNATE_OBJECT_DIRECTORIES``
-    points at the repository's real ``objects/`` so reads still resolve. The temp
-    directory is removed when the context exits (success or failure)."""
+def _ephemeral_git_object_env_for(repo_root: Path) -> tuple[Mapping[str, str], Path]:
+    """Build ``GIT_OBJECT_DIRECTORY`` + alternates env; caller owns ``tmp`` cleanup."""
     tmp = Path(tempfile.mkdtemp(prefix="marshal-ephemeral-git-objects-"))
     ephem_objects = tmp / "objects"
     ephem_objects.mkdir()
     (ephem_objects / "info").mkdir()
     (ephem_objects / "pack").mkdir()
+    objects_path = _run(["git", "-C", str(repo_root), "rev-parse", "--git-path", "objects"])
+    if objects_path.returncode != 0:
+        shutil.rmtree(tmp, ignore_errors=True)
+        raise VcsCommandError(
+            f"cannot resolve git objects path for {repo_root}: {objects_path.stderr.strip()}"
+        )
+    real_objects = (repo_root / objects_path.stdout.strip()).resolve()
+    child_env = os.environ.copy()
+    child_env["GIT_OBJECT_DIRECTORY"] = str(ephem_objects)
+    child_env["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = str(real_objects)
+    return child_env, tmp
+
+
+@contextmanager
+def _ephemeral_git_object_env(repo_root: Path) -> Iterator[Mapping[str, str]]:
+    """Story 87.10: throwaway ``commit-tree`` objects outside the repo store (deleted on exit)."""
+    git_env, tmp = _ephemeral_git_object_env_for(repo_root)
     try:
-        objects_path = _run(["git", "-C", str(repo_root), "rev-parse", "--git-path", "objects"])
-        if objects_path.returncode != 0:
-            raise VcsCommandError(
-                f"cannot resolve git objects path for {repo_root}: {objects_path.stderr.strip()}"
-            )
-        real_objects = (repo_root / objects_path.stdout.strip()).resolve()
-        child_env = os.environ.copy()
-        child_env["GIT_OBJECT_DIRECTORY"] = str(ephem_objects)
-        child_env["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = str(real_objects)
-        yield child_env
+        yield git_env
     finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def _discard_preview_ephemeral_object_dir(home: Path) -> None:
+    tmp = _PREVIEW_EPHEMERAL_OBJECT_DIRS.pop(home.resolve(), None)
+    if tmp is not None:
         shutil.rmtree(tmp, ignore_errors=True)
 
 
@@ -725,6 +740,7 @@ class GitVcs:
         result = _run(args, timeout_s=_GIT_CHECKOUT_TIMEOUT_S)
         if result.returncode != 0:
             raise VcsCommandError(f"git worktree remove failed for {home}: {result.stderr.strip()}")
+        _discard_preview_ephemeral_object_dir(home)
 
     def prune_worktrees(self, repo_root: Path) -> None:
         """``git worktree prune`` -- clears stale worktree registrations
@@ -1642,7 +1658,8 @@ class GitVcs:
         if second_parent is not None:
             commit_args.extend(["-p", second_parent])
         commit_args.extend(["-m", "marshal merge-tree preview (not a real commit)"])
-        with _ephemeral_git_object_env(repo_root) as git_env:
+        git_env, ephem_tmp = _ephemeral_git_object_env_for(repo_root)
+        try:
             commit_result = _run(commit_args, env=git_env)
             if commit_result.returncode != 0:
                 raise VcsCommandError(
@@ -1660,6 +1677,11 @@ class GitVcs:
                 raise VcsCommandError(
                     f"git worktree add --detach {home} {synthetic_sha} failed: {add_result.stderr.strip()}"
                 )
+        except BaseException:
+            shutil.rmtree(ephem_tmp, ignore_errors=True)
+            raise
+        _discard_preview_ephemeral_object_dir(home)
+        _PREVIEW_EPHEMERAL_OBJECT_DIRS[home.resolve()] = ephem_tmp
 
     def _paths_changed_between(self, repo_root: Path, old_sha: str, new_sha: str) -> frozenset[str]:
         """Every path ``git diff`` names between two commits (Story 68.1). ``--no-renames`` so a
