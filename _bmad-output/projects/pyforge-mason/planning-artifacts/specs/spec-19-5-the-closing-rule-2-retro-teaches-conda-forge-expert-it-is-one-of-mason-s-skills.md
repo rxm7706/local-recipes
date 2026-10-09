@@ -110,7 +110,7 @@ Verification:
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1622 + 12 passed
 - `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py` — 6 passed
 - `python scripts/spec_surface_reconcile.py` — OK
-- `pixi run -e local-recipes test-ci` — dispatched (long-running full suite; not awaited to completion in this run)
+- `pixi run -e local-recipes test-ci` — 9256 passed, 30 skipped, 1 xpassed (exit 0)
 
 ## Review Triage Log
 
