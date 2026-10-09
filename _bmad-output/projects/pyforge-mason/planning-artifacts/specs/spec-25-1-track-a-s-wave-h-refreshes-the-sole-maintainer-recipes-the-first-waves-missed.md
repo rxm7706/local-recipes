@@ -2,7 +2,8 @@
 title: "25.1: Track A's Wave H refreshes the sole-maintainer recipes the first waves missed"
 type: 'feature'
 created: '2026-09-29'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '70142b6f71afc760d8935d0f7c4b26a00182b249'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -153,7 +154,41 @@ Flag: `flag-exempt: recipe-build` (a recipe build ships no runtime capability be
 
 ## Run results
 
-Not started. Wave A writes the live counts here first.
+**Wave A (re-baseline) — 2026-10-09.** Script: `.cursor/wave_h_rebaseline.py`. Artifacts:
+`.cursor/wave_h_baseline.json`, `.cursor/wave_h_baseline.md`. **Stop here for operator
+scope confirmation** before any recipe edits (Task 2 gate).
+
+| Metric | Count |
+|--------|------:|
+| Sole-maintainer feedstocks (cf_atlas) | 584 |
+| **Wave H remainder** (H1 C1 + H1 C2 + H2 + v1-refresh) | **33** |
+| H1 C1 (v0 feedstock, meta-only, version-current) | 0 |
+| H1 C2 (v1 feedstock, meta-only, version-current) | 0 |
+| H2 create-missing | 0 |
+| v1-refresh (local behind `latest_conda_version`) | 33 |
+| False positives dropped | 2 |
+| Already v1-current (out of Wave H scope) | 549 |
+
+**Atlas:** shared `cf_atlas.db` at primary checkout, built **2026-09-18** (~20.5 days old;
+story gate is 3 days). Full `bootstrap-data` / `build-cf-atlas` (~30–45 min) was **not** run
+this session; published versions may lag live conda-forge. Refresh atlas (or `atlas-phase`
+B/H/K) before recipe work.
+
+**Methodology:** sole-maintainer query on `package_maintainers` ⋈ `maintainers` (rxm7706 only);
+local `recipes/` scan for `recipe.yaml` / `meta.yaml` and version compare via
+`packaging.version`; case-insensitive dir match; `pixitainer-docker` → `pixitainer` and
+`Docs2Static` / `Flake8-pyproject` / `Django-Enterprise-Maintenance-Suite` mapping artifacts
+count as present, not H2. GH-numbering suspect (`html-to-markdown`) dropped to false positives.
+Archived `vllm-nccl-cu12` dropped. Run 3 pilots (`amundsen-common`, `amundsen-metadata`,
+`amundsen-search`) are in **already v1-current**, not subtracted from remainder.
+
+**Context vs June 2026:** legacy Wave H expected ~179 (155 meta-only + 24 missing); the tree
+after Waves B–F and later bumps leaves **no version-current meta-only sole recipes** and **no
+genuine missing dirs** after mapping — remainder is mostly **re-behind** (33) since the stale
+atlas / upstream releases.
+
+**v1-refresh sample (first 10 by conda_name):** ag-ui-langgraph, ag-ui-protocol, copilotkit,
+customersatisfactionmetrics, ddgs, … (full list in JSON).
 
 ## Review Triage Log
 
