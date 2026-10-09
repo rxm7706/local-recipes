@@ -94,7 +94,12 @@ def test_preserve_refuses_when_flag_off(
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flags_path))
     assert_flag_off_verb(main, "preserve", usage_code=2, args=["tag"])
     assert_flag_off_verb(main, "preserve", usage_code=2, args=["push"])
-    assert_flag_off_verb(main, "preserve", usage_code=2, args=["retire", "refs/tags/preserve/x", "--evidence", "story s 1.1 done deadbeef"])
+    assert_flag_off_verb(
+        main,
+        "preserve",
+        usage_code=2,
+        args=["retire", "refs/tags/preserve/x", "--evidence", "story s 1.1 done deadbeef"],
+    )
 
 
 def test_preserve_tag_dedup_mutation(git_repo: Path, monkeypatch: pytest.MonkeyPatch):

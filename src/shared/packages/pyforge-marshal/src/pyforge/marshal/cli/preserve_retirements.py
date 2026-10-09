@@ -50,10 +50,7 @@ def append_retirement(path: Path, *, tag: str, evidence: str) -> RetirementRow:
     )
     payload = {
         "schema_version": 1,
-        "retirements": [
-            {"tag": r.tag, "evidence": r.evidence, "retired_at": r.retired_at}
-            for r in (*existing, row)
-        ],
+        "retirements": [{"tag": r.tag, "evidence": r.evidence, "retired_at": r.retired_at} for r in (*existing, row)],
     }
     path.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
     return row
