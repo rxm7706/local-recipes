@@ -333,18 +333,67 @@ def test_remote_verdict_closed_pr_done_deletes(clone: Path):
             return {"state": "closed", "head": branch}
         return None
 
-    monkeypatch_ledger = {"13-1": "done"}
-
-    def fake_flat():
-        return monkeypatch_ledger
-
-    orig = ws.flat_ledger
-    ws.flat_ledger = fake_flat  # type: ignore[method-assign]
+    orig = ws.load_ledgers
+    ws.load_ledgers = lambda: {"marshal": {"13-1": "done"}}  # type: ignore[method-assign, assignment]
     try:
         rows = ws.classify_remote_branches(pr_reader=pr_reader)
     finally:
-        ws.flat_ledger = orig  # type: ignore[method-assign]
+        ws.load_ledgers = orig  # type: ignore[method-assign]
     assert {r.branch: r.verdict for r in rows}["dispatch/pyforge-marshal/13-1-done"] == "DELETE"
+
+
+def test_remote_verdict_closed_pr_not_done_inspect(clone: Path):
+    _push_branch(clone, "dispatch/pyforge-marshal/13-1-open")
+
+    def pr_reader(branch: str):
+        if branch == "dispatch/pyforge-marshal/13-1-open":
+            return {"state": "closed", "head": branch}
+        return None
+
+    orig = ws.load_ledgers
+    ws.load_ledgers = lambda: {"marshal": {"13-1": "backlog"}}  # type: ignore[method-assign, assignment]
+    try:
+        rows = ws.classify_remote_branches(pr_reader=pr_reader)
+    finally:
+        ws.load_ledgers = orig  # type: ignore[method-assign]
+    row = {r.branch: r for r in rows}["dispatch/pyforge-marshal/13-1-open"]
+    assert row.verdict == "INSPECT"
+    assert "backlog" in row.reason
+
+
+def test_remote_legacy_recover_prefix_keep_even_when_merged(clone: Path):
+    _push_branch(clone, "recover/merged-branch", merged=True)
+    rows = ws.classify_remote_branches(pr_reader=lambda _b: None)
+    assert {r.branch: r.verdict for r in rows}["recover/merged-branch"] == "KEEP"
+
+
+def test_github_pr_reader_uses_preloaded_states():
+    reader = ws.github_pr_reader({"feature-x": {"state": "open", "head": "feature-x"}})
+    assert reader("feature-x") == {"state": "open", "head": "feature-x"}
+    assert reader("other") is None
+
+
+def test_remote_execute_archive_twin_refusal_keeps_branch(clone: Path, tmp_path: Path, monkeypatch):
+    _push_branch(clone, "orphan-delete-me", merged=False)
+
+    def pr_reader(branch: str):
+        if branch == "orphan-delete-me":
+            return {"state": "merged", "head": branch}
+        return None
+
+    rows = ws.classify_remote_branches(pr_reader=pr_reader)
+
+    def refuse_push(*_a, **_k):
+        return ws.preserve_refs.PushPreserveResult(
+            "refs/tags/archive/heads/orphan-delete-me",
+            False,
+            (ws.preserve_refs.ContentGateFinding(ws.preserve_refs.ContentGateReason.SIZE_CAP, "too big"),),
+        )
+
+    monkeypatch.setattr(ws.preserve_refs, "push_preserve_ref", refuse_push)
+    findings, _ = ws.execute_remote_deletes(rows, apply=True, preserve_dir=tmp_path / "m")
+    assert "refs/heads/orphan-delete-me" in _git(clone, "ls-remote", "--heads", "origin")
+    assert any(f.code == "archive-twin-refused" for f in findings)
 
 
 def test_remote_dry_run_does_not_delete(clone: Path):
@@ -404,7 +453,7 @@ def test_retire_ruleset_protected_refused(clone: Path, tmp_path: Path):
     codes = {f.code for f in findings}
     assert "protected-refs-loop-branches" in codes
     assert "protected-refs-attempt-preserve-branches" in codes
-    assert all(r.verdict in ("REFUSE", "RETIRE") for r in rows)
+    assert all(r.verdict == "REFUSE" for r in rows)
 
 
 def test_retire_recovers_branch_with_archive_twin(clone: Path, tmp_path: Path):
@@ -437,7 +486,7 @@ def test_mutation_remote_ancestor_rule():
         pr_reader=lambda _b: None,
         checked_out=set(),
         dispatch_live=set(),
-        ledger={},
+        ledgers={},
         protected_prefixes=ws.effective_protected_prefixes(),
     )
 
@@ -469,7 +518,7 @@ def test_mutation_remote_open_pr_rule():
         pr_reader=pr_open,
         checked_out=set(),
         dispatch_live=set(),
-        ledger={},
+        ledgers={},
         protected_prefixes=ws.effective_protected_prefixes(),
     )
     assert v == "KEEP"
@@ -479,7 +528,7 @@ def test_mutation_remote_open_pr_rule():
         pr_reader=lambda _b: None,
         checked_out=set(),
         dispatch_live=set(),
-        ledger={},
+        ledgers={},
         protected_prefixes=ws.effective_protected_prefixes(),
     )
     assert v2 == "INSPECT"

@@ -616,6 +616,8 @@ def is_protected_branch_name(branch: str, *, protected_prefixes: frozenset[str] 
         return True
     if branch == "main" or branch.startswith("loop/"):
         return True
+    if branch.startswith(PROTECTED_BRANCH_PREFIXES):
+        return True
     return False
 
 
@@ -702,9 +704,77 @@ def flat_ledger() -> dict[str, str]:
     return merged
 
 
+def ledger_status_for_branch(branch: str, ledgers: dict[str, dict[str, str]]) -> str:
+    story = story_key_of(branch)
+    if not story:
+        return "not-in-ledger"
+    station = station_of("", branch)
+    if station:
+        return ledgers.get(station, {}).get(story, "not-in-ledger")
+    for keys in ledgers.values():
+        if story in keys:
+            return keys[story]
+    return "not-in-ledger"
+
+
+GITHUB_REPO = "rxm7706/local-recipes"
+
+
+def load_pr_states_from_github(*, timeout: int = 120) -> dict[str, dict[str, str]]:
+    """Head branch name -> ``{state, head}`` for open/merged/closed PRs (operator tool; tests inject instead)."""
+    try:
+        result = subprocess.run(
+            [
+                "gh",
+                "pr",
+                "list",
+                "--repo",
+                GITHUB_REPO,
+                "--state",
+                "all",
+                "--limit",
+                "500",
+                "--json",
+                "headRefName,state",
+            ],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=True,
+        )
+        payload = json.loads(result.stdout or "[]")
+    except (subprocess.SubprocessError, json.JSONDecodeError, OSError):
+        return {}
+    if not isinstance(payload, list):
+        return {}
+    by_head: dict[str, dict[str, str]] = {}
+    for entry in payload:
+        if not isinstance(entry, dict):
+            continue
+        head = entry.get("headRefName")
+        state_raw = entry.get("state")
+        if not isinstance(head, str) or not head or not isinstance(state_raw, str):
+            continue
+        normalized = state_raw.lower()
+        if normalized not in ("open", "merged", "closed"):
+            normalized = "closed"
+        by_head[head] = {"state": normalized, "head": head}
+    return by_head
+
+
 def default_pr_reader() -> PrStateReader:
     def _read(branch: str) -> dict[str, str] | None:
         return None
+
+    return _read
+
+
+def github_pr_reader(states: dict[str, dict[str, str]] | None = None) -> PrStateReader:
+    cached = states if states is not None else load_pr_states_from_github()
+
+    def _read(branch: str) -> dict[str, str] | None:
+        return cached.get(branch)
 
     return _read
 
@@ -742,7 +812,10 @@ def remote_branch_map() -> dict[str, str]:
     for line in out.splitlines():
         if not line.strip():
             continue
-        sha, ref = line.split(maxsplit=1)
+        try:
+            sha, ref = line.split(maxsplit=1)
+        except ValueError:
+            continue
         mapping[ref.removeprefix("refs/heads/")] = sha
     return mapping
 
@@ -754,7 +827,7 @@ def verdict_for_remote_branch(
     pr_reader: PrStateReader,
     checked_out: set[str],
     dispatch_live: set[str],
-    ledger: dict[str, str],
+    ledgers: dict[str, dict[str, str]],
     protected_prefixes: frozenset[str],
 ) -> tuple[str, str]:
     if branch == "main":
@@ -773,8 +846,7 @@ def verdict_for_remote_branch(
     if pr and pr.get("state") == "merged":
         return "DELETE", "pull request merged"
     if pr and pr.get("state") == "closed":
-        story = story_key_of(branch)
-        status = ledger.get(story, "not-in-ledger") if story else "not-in-ledger"
+        status = ledger_status_for_branch(branch, ledgers)
         if status == "done":
             return "DELETE", "pull request closed and ledger story is done"
         return "INSPECT", f"pull request closed but story is {status}"
@@ -786,11 +858,11 @@ def classify_remote_branches(
     pr_reader: PrStateReader | None = None,
     roster: dict | None = None,
 ) -> list[RemoteBranchRow]:
-    reader = pr_reader if pr_reader is not None else default_pr_reader()
+    reader = pr_reader if pr_reader is not None else github_pr_reader()
     protected = effective_protected_prefixes(roster)
     checked_out = branches_in_worktrees()
     dispatch_live = live_dispatch_branches()
-    ledger = flat_ledger()
+    ledgers = load_ledgers()
     rows: list[RemoteBranchRow] = []
     for branch, sha in sorted(remote_branch_map().items()):
         verdict, reason = verdict_for_remote_branch(
@@ -799,7 +871,7 @@ def classify_remote_branches(
             pr_reader=reader,
             checked_out=checked_out,
             dispatch_live=dispatch_live,
-            ledger=ledger,
+            ledgers=ledgers,
             protected_prefixes=protected,
         )
         rows.append(RemoteBranchRow(branch=branch, sha=sha, verdict=verdict, reason=reason))
@@ -923,7 +995,11 @@ def run_retire_branches(
     findings: list[SweepFinding] = []
     for raw in names:
         branch = raw.strip()
-        if not branch or branch != raw.strip() or "*" in branch or "?" in branch:
+        if (
+            not branch
+            or branch != raw
+            or any(c in branch for c in "*?[]\\")
+        ):
             findings.append(SweepFinding(branch or raw, "invalid-name", "retire requires an explicit branch name, never a pattern"))
             continue
         if branch not in remote:
@@ -1040,6 +1116,10 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"  FINDING {f['code']}: {f['branch']} — {f['message']}")
             if not args.execute:
                 print("dry run: re-run with --execute to apply remote deletes / retirements")
+        remote_findings = (remote_results or {}).get("findings") or []  # type: ignore[union-attr]
+        retire_findings = (retire_results or {}).get("findings") or []  # type: ignore[union-attr]
+        if args.execute and (remote_findings or retire_findings):
+            return 1
         return 0
 
     cwds, ledgers, heads = live_cwds(), load_ledgers(), origin_heads()
