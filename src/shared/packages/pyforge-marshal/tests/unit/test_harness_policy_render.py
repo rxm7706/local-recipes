@@ -979,3 +979,65 @@ def test_rendered_session_timeout_constant_is_the_value_the_rendered_policy_carr
     assert RENDERED_SESSION_TIMEOUT_MIN == doc["limits"]["session_timeout_min"]
     assert isinstance(RENDERED_SESSION_TIMEOUT_MIN, int)
     assert not isinstance(RENDERED_SESSION_TIMEOUT_MIN, bool)
+
+
+# --- Story 87.13: preserve_keep = 0 (AD-78 pin) -------------------------------
+
+
+def test_rendered_preserve_keep_is_zero_and_passes_installed_bmad_loop_load():
+    """Story 87.13 / AD-78: marshal renders ``preserve_keep = 0`` unflagged;
+    the installed harness loader must accept it with zero warnings."""
+    bmad_loop_policy = pytest.importorskip("bmad_loop.policy")
+
+    rendered = render_policy_toml(_compose())
+    doc = tomllib.loads(rendered)
+    assert doc["scm"]["preserve_keep"] == 0
+    assert not isinstance(doc["scm"]["preserve_keep"], bool)
+
+    loaded = bmad_loop_policy.loads(rendered)
+    assert loaded.scm.preserve_keep == 0
+
+
+def test_preserve_keep_zero_means_never_prune_in_installed_bmad_loop(tmp_path):
+    """AD-78 drift guard: ``keep <= 0`` must keep meaning never prune in the
+    installed ``bmad_loop`` package -- not only in marshal's render."""
+    verify = pytest.importorskip("bmad_loop.verify")
+    import subprocess
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    env = {"GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+    subprocess.run(["git", "init", "-q", "-b", "main", str(repo)], check=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "config", "user.email", "t@example.com"], check=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "config", "user.name", "T"], check=True, env=env)
+    (repo / "README.md").write_text("base\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repo), "add", "README.md"], check=True, env=env)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", "init"], check=True, env=env)
+
+    for idx in range(3):
+        subprocess.run(
+            ["git", "-C", str(repo), "branch", f"attempt-preserve/run-{idx}"],
+            check=True,
+            env=env,
+        )
+
+    assert verify.prune_preserve_refs(repo, 0) == []
+    listed = subprocess.run(
+        ["git", "-C", str(repo), "branch", "--list", "attempt-preserve/*"],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=True,
+    ).stdout.strip()
+    assert len([line for line in listed.splitlines() if line.strip()]) == 3
+
+    pruned = verify.prune_preserve_refs(repo, 1)
+    assert len(pruned) == 2
+
+
+def test_preserve_keep_zero_in_template_not_twenty():
+    """Mutation guard: the harness template must not regress to ``20``."""
+    from pyforge.marshal.adapters import harness_bmadloop as hb
+
+    assert "preserve_keep = 0" in hb._POLICY_TEMPLATE
+    assert "preserve_keep = 20" not in hb._POLICY_TEMPLATE
