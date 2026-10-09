@@ -1790,7 +1790,8 @@ status: open
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  resolved: 2026-10-09 (dispatch-land finalize: Merge pyforge-mason/24-1 into main)
+  status: closed
 
 ### DW-FRR-5-5: Follow-up review still recommended for story 5.5
 
