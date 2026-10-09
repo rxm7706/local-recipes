@@ -441,20 +441,6 @@ def _read_boolean_openfeature(key: str, default: bool, evaluation_path: Path) ->
     return bool(details.value)
 
 
-def _composed_flags(resolved: Path, environment: str) -> dict[str, Any] | None:
-    try:
-        payload = json.loads(resolved.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    flags = payload.get("flags") if isinstance(payload, dict) else None
-    if not isinstance(flags, dict):
-        return None
-    overlays = overlays_path_for(resolved)
-    if overlays is not None:
-        return compose(payload, load_overlays(overlays), environment)["flags"]
-    return flags
-
-
 def _read_boolean_from_tree_json(
     key: str,
     default: bool,

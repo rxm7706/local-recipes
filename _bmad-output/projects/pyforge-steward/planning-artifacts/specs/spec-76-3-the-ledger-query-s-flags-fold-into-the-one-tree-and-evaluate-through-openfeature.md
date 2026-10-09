@@ -2,7 +2,7 @@
 title: "76.3: The ledger query's flags fold into the one tree and evaluate through OpenFeature"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '628f5e4ede4c7868204306bed6aafc72c561b52f'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -150,3 +150,35 @@ reader, precedes 76.1.
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings.
 
 ## Review Triage Log
+
+### 2026-10-09 — Review pass
+- verdicts: 3 findings — high 0, medium 0, low 1, false 2, maybe-false 0
+- findings:
+  - `[low]` `[reject]` OpenFeature deps live in a shared `openfeature-file-eval` pixi feature rather than duplicated inside `[feature.pyforge-steward.dependencies]` — protobuf 7 vs dagster would break `pyforge-container`; `-e pyforge-steward` and `-e pyforge-guild` both compose the feature and satisfy CAP-5 import proof.
+  - `[false]` `[reject]` Legacy `--flag` short names would not open formatters — verified `eval_flag` resolves `_TREE_TO_LEGACY` for duty gate checks.
+  - `[false]` `[reject]` OpenFeature would bypass WARN semantics on missing keys — verified structural pre-check runs before FILE evaluation.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Six steward ledger-query flags and `pyforge.steward.glass_export` joined `src/platform/config/flags.json` (off everywhere). `eval_flag` and `read_boolean` read the one tree; CLI `--flag` short names still work. OpenFeature FILE provider evaluates after structural validation.
+
+Files changed:
+- `src/platform/config/flags.json`, `flag-overlays.json` — six new keys, overlays off in dev/staging/production
+- `pyforge/core/flags.py`, `tests/unit/test_flags.py` — OpenFeature FILE evaluation + shipped-tree clocks
+- `pyforge/steward/sprint_ledger_query.py`, `glass.py`, `cli.py` — tree keys, legacy alias table, removed second tree
+- `tests/unit/test_sprint_ledger_query.py`, `tests/meta/test_steward_single_flag_tree.py` — matrix coverage
+- `.claude/skills/bmad-sprint-ledger-query/SKILL.md`, `docs/how-to/pixi-tasks.md` — operator docs
+- `pixi.toml`, `pixi.lock` — `openfeature-file-eval` feature on guild + steward envs
+
+Review: 0 patches applied; 1 low rejected (container solve constraint documented above).
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — pass (2239 tests)
+- `pixi run --frozen -e pyforge-guild pytest src/shared/packages/pyforge-core/tests/unit/test_flags.py -q` — pass (162)
+- `pixi run -e pyforge-guild python -c "import openfeature"` — exit 0
+- Guild env size `du -sm .pixi/envs/pyforge-guild` — 1874 MB (under CAP-5 2 GB)
+- `python scripts/spec_surface_reconcile.py` — OK after memlog reconciles
+
+Residual risk: `pyforge-container` env omits `openfeature-file-eval`; container image builds that need FILE evaluation must use guild/steward envs or add a non-atlas slice.
