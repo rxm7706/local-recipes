@@ -123,6 +123,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from pyforge.core import preserve_refs as core_preserve_refs
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.clock_system import SystemClock
@@ -429,6 +430,20 @@ _MRS_STATUS_011 = "MRS-STATUS-011"
 # An EMPTY history is not this case (nothing was examined) and keeps the
 # `done: false` reading.
 _MRS_STATUS_014 = "MRS-STATUS-014"
+
+# Story 87.9 (FR-62/AD-48 as amended 2026-10-04, spec-pyforge-marshal CAP-287): an unpushed
+# ref no row accounts for is reported fleet-wide, never dropped (`_MRS_STATUS_015`); and each
+# row carries its preserve debt under a registered code -- local-only `preserve/` tags
+# (`_MRS_STATUS_016`), engine scratch refs no preserve tag holds (`_MRS_STATUS_017`) and
+# failed-story patches with no tag (`_MRS_STATUS_018`). All WARN, the tier of `_MRS_STATUS_008`:
+# a home with debt is never reported clean. A read that cannot be made reuses `_MRS_STATUS_009`.
+_MRS_STATUS_015 = status_core.UNMATCHED_UNPUSHED_REF_CODE
+_MRS_STATUS_016 = status_core.LOCAL_ONLY_PRESERVE_TAG_CODE
+_MRS_STATUS_017 = status_core.UNPROMOTED_SCRATCH_REF_CODE
+_MRS_STATUS_018 = status_core.PATCH_WITHOUT_TAG_CODE
+
+# How many names a debt finding spells out before it counts the rest.
+_DEBT_NAMES_SHOWN = 5
 
 # The tracked ledger's own conventional, fixed path (Story 5.4) -- NEVER
 # the gitignored Tier-3 feed AD-5 forbids this command's other views from
@@ -2587,6 +2602,17 @@ def _render_text_status(data: Mapping[str, object], findings: tuple[Finding, ...
             # text-format consumer of this output relies on.
             stat_text = str(unpushed.get("stat")).replace("\n", " ").strip()
             line += f" UNPUSHED files={unpushed.get('files')} ({stat_text})"
+        # Story 87.9: the SAME `preserve_debt` dict the JSON payload carries.
+        debt = home.get("preserve_debt")
+        if isinstance(debt, Mapping):
+            if debt.get("could_not_observe"):
+                line += " PRESERVE_DEBT could-not-observe"
+            else:
+                line += (
+                    f" PRESERVE_DEBT tags={len(debt.get('local_only_tags') or ())}"
+                    f" scratch={len(debt.get('unpromoted_scratch_refs') or ())}"
+                    f" patches={len(debt.get('patches_without_tag') or ())}"
+                )
         # Story 4.14 (FR-176): the SAME `failed_patches` list the
         # `--format json` payload carries -- a pure projection (NFR-12).
         # Only a COUNT here, mirroring `unpushed`'s own single-line
