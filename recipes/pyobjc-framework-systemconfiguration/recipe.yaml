@@ -10,46 +10,46 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/50/14/4d4a417e7594a0ef919b804449cb3bb4b53194a5e940fd9e4fed304db51f/pyobjc_framework_systemconfiguration-12.2.2.tar.gz
+  url: https://pypi.org/packages/source/p/pyobjc_framework_systemconfiguration/pyobjc_framework_systemconfiguration-${{ version }}.tar.gz
   sha256: 9a82d5a1214e49697843f39e72718a5d606378999e94b5b4591bd429bb8e6ada
-  <conda_recipe_manager.types.SentinelType object at 0x752103951be0>:  #patches:
-    #- patches/0001-Remove-werror-from-compile-flags.patch
+  #patches:
+  #- patches/0001-Remove-werror-from-compile-flags.patch
 
 build:
   number: 0
   skip: (not osx) or match(python, ">=2,<3") or python_impl == 'pypy' or (arm64 and match(python, "<3.9"))
   script:
     # force pyobjc to use conda-forge's chosen SDK
-  - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
+    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
     # force ignoring invalid compiler flag (-Wl,-export-dynamic)
-  - if: match(python, "==3.7") or match(python, "==3.8")
-    then: export CFLAGS="${CFLAGS} -Wno-unused-command-line-argument"
-  - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - if: match(python, "==3.7") or match(python, "==3.8")
+      then: export CFLAGS="${CFLAGS} -Wno-unused-command-line-argument"
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
-  - if: build_platform != target_platform
-    then: python
-  - if: build_platform != target_platform
-    then: cross-python_${{ target_platform }}
-  - ${{ compiler('c') }}
-  - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
   host:
-  - python
-  - setuptools
-  - wheel
-  - pip
+    - python
+    - setuptools
+    - wheel
+    - pip
   run:
-  - python
-  - pyobjc-core >=${{ version }}
-  - pyobjc-framework-cocoa >=${{ version }}
+    - python
+    - pyobjc-core >=${{ version }}
+    - pyobjc-framework-cocoa >=${{ version }}
 
 tests:
-- python:
-    imports:
-    - PyObjCTools
-    - SystemConfiguration
-    pip_check: true
+  - python:
+      imports:
+        - PyObjCTools
+        - SystemConfiguration
+      pip_check: true
 
 about:
   summary: Wrappers for the framework SystemConfiguration on macOS
@@ -60,7 +60,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -68,8 +68,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: pyobjc-framework-systemconfiguration
   cfe-purls:
-  - pkg:conda/pyobjc-framework-systemconfiguration@${{ version }}?channel=conda-forge
-  - pkg:pypi/pyobjc-framework-systemconfiguration@${{ version }}
+    - pkg:conda/pyobjc-framework-systemconfiguration@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyobjc-framework-systemconfiguration@${{ version }}
   cfe-upstream-repo: https://github.com/ronaldoussoren/pyobjc
   cfe-upstream-homepage: https://github.com/ronaldoussoren/pyobjc
   cfe-import-names: [PyObjCTools]
@@ -78,17 +78,32 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyobjc-framework-systemconfiguration-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-12.2.1, meta-yaml-to-recipe-yaml]
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-03T04:00:00Z
+  cfe-last-checked: 2026-10-09T12:30:00Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: '2026-10-09T11:16:20Z'
-  cfe-local-build-platform: linux-64
-  cfe-local-build-tool: rattler-build
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
 ####
 # CFE comments
 # Header:
 #    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 conversion turned the commented-out `#patches:` into
+#    # a SentinelType key (G121); the comments stay indented under source. source.url's
+#    # `name.replace(...)` (minijinja has no str.replace method) is now the literal URL meta.yaml renders;
+#    # sha256 re-verified. Rendered on osx-64 only (osx-only).
+#    # Merged with mason Story 25.1 (Wave H), which bumped the recipe to 12.2.2: version 12.2.2 and its sha256
+#    # (re-verified against the pypi.org/packages URL) are kept; 25.1's files.pythonhosted.org hash URL is not
+#    # (PyPI source.url rule), nor is its re-indent of every list to the parent key's depth. 25.1 also renamed
+#    # meta.yaml to .meta.yaml.wave_h_hold; the feedstock is still v0, so meta.yaml is back (C1, the
+#    # local-mirror rule) as the feedstock's own 12.2.2 meta.yaml, copied verbatim at 0619c5d9385a.
+#    # 25.1's linux-64 build attempt (2026-10-09T11:16:20Z) failed on the SentinelType key this file no longer
+#    # carries; the recipe skips every non-osx variant, so no local build has run since.
+#    # conda_build_config.yaml is the feedstock's, unchanged from 12.2.1 to 12.2.2 (blob 2e951d4e):
+#    # c_stdlib_version 11.3 on osx-arm64 (G94).
+#    # The local 0001-Remove-werror-from-compile-flags.patch.txt has no feedstock counterpart; meta.yaml
+#    # keeps its patch line commented out.
 ####

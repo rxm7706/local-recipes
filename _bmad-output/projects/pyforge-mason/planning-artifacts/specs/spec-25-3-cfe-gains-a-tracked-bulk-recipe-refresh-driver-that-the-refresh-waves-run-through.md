@@ -46,30 +46,36 @@ The untracked scripts also caused four defects in 25.1's landing (`f1402da5d4`):
   `.meta.yaml.wave_h_hold` (`:33-37`), restored it only after the build (`:55-57`), and exited on a failed validate
   or check-deps before the restore (`:24-30`). `recipes/wasmtime-py/meta.yaml` is now `.meta.yaml.wave_h_hold`
   (rename `R100` in `8b27631ec5`). Its feedstock is still v0: `recipe/` holds only `meta.yaml` (`gh api` GET,
-  2026-10-09), and `recipes/wasmtime-py/recipe.yaml:76-78` records that. This breaks 25.1's own C1 rule.
-- **56 `recipe.yaml` files got hashed PyPI URLs.** Their `${{ version }}`-templated
-  `https://pypi.org/packages/source/…` URL became a hashed `https://files.pythonhosted.org/packages/<hash>/…` URL,
-  for example `recipes/django-todo/recipe.yaml:13`. `wave_h_bump.py:44-47` writes PyPI JSON's `url` field. This
-  breaks CFE's critical constraint at `SKILL.md:150`.
-- **78 of the 92 `recipe.yaml` diffs re-indent lists.** List items moved to their parent key's depth (FMT-001).
-  The scripts dumped with ruamel's default indent. `recipe_editor.py:93-101` already sets the canonical indent and
-  width.
+  2026-10-09), and `recipes/wasmtime-py/recipe.yaml:76-78` records that. This breaks 25.1's own C1 rule. 25.1 hid
+  a second one the same way, `recipes/pyobjc-framework-systemconfiguration/meta.yaml`. Story 22.1's landing renamed it
+  back, so `wasmtime-py`'s is the one left (`git ls-files 'recipes/*/.meta.yaml*'`).
+- **56 of its `recipe.yaml` files carry hashed PyPI URLs.** 25.1 introduced 52 of them; 4 (`ag-ui-protocol`,
+  `openmetadata-managed-apis`, `tox-uv`, `wagtailmedia`) were already hashed before it. A `${{ version }}`-templated
+  `https://pypi.org/packages/source/…` URL became a hashed `https://files.pythonhosted.org/packages/<hash>/…` URL, for
+  example `recipes/django-todo/recipe.yaml:13`. `wave_h_bump.py:44-47` writes PyPI JSON's `url` field. All 56 are
+  sdists (`.tar.gz`). This breaks CFE's critical constraint at `SKILL.md:150`.
+- **78 of the 92 `recipe.yaml` diffs re-indent list items** (lines whose text is unchanged but whose indentation
+  moved). In 76 of them, FMT-001 now fires where it did not before: list items sit at their parent key's depth. The
+  scripts dumped with ruamel's default indent. `recipe_editor.py:93-101` already sets the canonical indent and width.
 - **The CFE version carriers broke lockstep.** CFE `SKILL.md:10` and `CHANGELOG.md:5` moved to 8.97.1, while
-  `MANIFEST.yaml:15` and `config/skill-config.yaml:6` stayed at 8.97.0. Story 22.1's branch
-  (`dispatch/pyforge-mason/22.1` at `192e6843a4`) carries all four at 8.98.0 and restores lockstep when it lands.
+  `MANIFEST.yaml:15` and `config/skill-config.yaml:6` stayed at 8.97.0. Story 22.1's landing (PR #2017) restored
+  lockstep: all four now read 8.98.0.
 
-These are recorded as context. This story fixes none of them in `recipes/`: the driver only stops them recurring.
+This story edits no file in `recipes/`. The driver stops these defects recurring. Its repair mode (§ *Repair mode*)
+can also undo the three recipe defects. A second operator ruling, the same day, has Story 25.2's Wave 0 run that
+repair over the damaged recipes.
 
 **Approach:** add one tracked CFE script, `refresh_wave.py`, under the three-place rule. It reads a wave manifest and
 refreshes each recipe to its feedstock's published version through CFE's existing edit path (`recipe_editor`). It
 reads feedstocks through `feedstock_lookup` (`gh api` GET only) and merges maintainers through
 `feedstock_enrich._merge_maintainers` (G53). It writes a wave report. It is dry-run by default, resumable, and
-idempotent. The same commit fixes `recipe_updater.get_current_recipe_info` so the autotick path can read a recipe that
-has no `context.name`.
+idempotent. A separate `--repair` mode undoes the three recipe defects above and changes nothing else. The default
+refresh path never rewrites a URL. The same commit fixes `recipe_updater.get_current_recipe_info` so the autotick path
+can read a recipe that has no `context.name`.
 
 Ledger key: `25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through`.
 Ledger status at mint: `backlog`.
-Type / Effort / Deps: feature / M / —.
+Type / Effort / Deps: feature / L / —.
 
 ### Living CAP citations
 
@@ -112,7 +118,9 @@ recipes:
 
 An unknown key, a bad `track`, or a name `_path_guard` refuses is a manifest error: exit 2, nothing written.
 
-**CLI:** `refresh-wave MANIFEST [--apply] [--gates] [--build] [--report-dir DIR] [--force] [--json]`.
+**CLI:** `refresh-wave MANIFEST [--repair] [--apply] [--gates] [--build] [--report-dir DIR] [--force] [--json]`.
+Without `--repair`, the run is a refresh (the per-recipe steps below). With it, the run is a repair (§ *Repair mode*);
+`--build` is refused with `--repair`.
 
 - Without `--apply`, the run is a dry-run. It reads, plans and writes only the report. Gates and builds run only with
   `--apply`.
@@ -141,7 +149,7 @@ An unknown key, a bad `track`, or a name `_path_guard` refuses is a manifest err
    - `sha256` is recomputed with `calculate_hash` against the recipe's own rendered `source.url`. When it differs from
      the feedstock's sha256 for the same version, the outcome is `needs-review` and the original bytes are restored.
    - `source.url` is never rewritten. A templated `pypi.org/packages/source/…${{ version }}` URL stays templated. A
-     literal, version-baked URL is `needs-review` (`SKILL.md:150`).
+     literal, version-baked URL is `needs-review` (`SKILL.md:150`), and the report names `--repair` as its remedy.
 5. **Maintainers.** `extra.recipe-maintainers` becomes the union of the local list and the deployed list, local order
    first. No handle is ever dropped (G53).
 6. **Dependencies.** The feedstock is the dependency authority (G96). When the local `host` or `run` names differ from
@@ -182,6 +190,44 @@ A rerun skips any recipe whose outcome is terminal and whose file hash is unchan
 | 0 | The run completed. `needs-review` and `blocked` are data, not failures. |
 | 1 | At least one recipe ended `failed`. |
 | 2 | The manifest or the environment made the run impossible. |
+
+**Repair mode** (`--repair`). It reads the same manifest, and dry-run is still the default. It changes only the three
+defects below. It never changes `context.version`, `build.number`, `requirements`, tests, `about`, or
+`recipe-maintainers`. The built artifact does not change: the source bytes are the same, and so is the parsed recipe.
+So no build number moves, and G113 does not apply. Each recipe gets the repairs its files call for, in this order:
+
+1. **Hashed URL.** A `source.url` matching `https://files.pythonhosted.org/packages/<xx>/<xx>/<hash>/<file>` is
+   rewritten to the canonical form at `SKILL.md:150`:
+   `https://pypi.org/packages/source/<first letter>/<dist>/<stem>-${{ version }}.<ext>`.
+   - **`<dist>`** is the PyPI project name: `extra.cfe-upstream-name`, else the path segment of the feedstock's own
+     `pypi.org/packages/source` URL. It is never `package.name`; `wasmtime-py`'s project is `wasmtime` (G10). With
+     neither source, the outcome is `needs-review`.
+   - **`<stem>` and `<ext>`** come from `<file>`, which must end in `-<context.version>.<ext>`. A wheel, or any other
+     shape, is `needs-review`.
+   - **The sha256 line is unchanged and verified.** The new URL, rendered at the recipe's version, must hash to the
+     recipe's existing `sha256`. On a mismatch, or a failed fetch, the file is left byte-identical and the outcome is
+     `needs-review`.
+2. **List indentation.** List items at their parent key's depth (FMT-001) move to `recipe_editor`'s canonical style
+   (`recipe_editor.py:93-101`: mapping 2, sequence 4, offset 2). The change must be whitespace-only:
+   - `yaml.safe_load` gives the same value before and after;
+   - every line keeps its non-whitespace text, in the same order;
+   - every comment line is kept, including both `# CFE …` blocks (G92).
+   Any other difference restores the original bytes, and the outcome is `needs-review`. A line-level re-indent meets
+   this. A whole-file parse-and-dump is allowed only if it passes the same checks.
+3. **Hidden `meta.yaml`.** The defect is a hold file such as `.meta.yaml.wave_h_hold`, with no `meta.yaml` beside it.
+   - **Feedstock v0 (C1):** `meta.yaml` is written from the feedstock's raw `recipe/meta.yaml` (the mirror rule,
+     `SKILL.md:1157`), and the report records whether that text equals the hold file.
+   - **Feedstock v1 (C2):** no `meta.yaml` is restored.
+   - **Feedstock unreadable:** the hold file is renamed back to `meta.yaml` byte-for-byte, and the outcome is
+     `needs-review` (`feedstock-unread`).
+
+   In all three cases the hold file is removed. A hold file beside an existing `meta.yaml` is `needs-review`, and
+   neither file is touched.
+
+Repair outcomes are `repaired` (naming each repair applied), `already-clean`, `needs-review` and `failed`, or
+`would-repair` in a dry-run. The write check (step 8 above) runs after every repair write, and `--gates` runs the same
+gates as a refresh. Like the refresh path, the repair path reads feedstocks only through `feedstock_lookup` and runs no
+`git` command.
 
 **Also in scope:** `recipe_updater.get_current_recipe_info` falls back from `context.name` to
 `extra.cfe-upstream-name`, then to a literal `package.name` that contains no `${{`. A recipe with none of those still
@@ -226,6 +272,40 @@ fetch and the hash calculation are mocked, so no test touches the network.
 - Given a fixture recipe with a literal `package.name` and no `context.name` (the billiard shape), When
   `recipe_updater.get_current_recipe_info` reads it, Then it returns that name and version. A recipe with no name
   source still raises the same `ValueError`.
+- **Repair: hashed URL.** Given a fixture whose `source.url` is a hashed `files.pythonhosted.org` sdist URL, with
+  `extra.cfe-upstream-name` set, and the mocked hash of the canonical URL equal to the recipe's `sha256`, When
+  `--repair --apply` runs, Then:
+  - `source.url` reads `https://pypi.org/packages/source/<l>/<dist>/<stem>-${{ version }}.tar.gz`;
+  - the `sha256` line and every other line are byte-identical;
+  - the report records `repaired: url`.
+
+  With the mocked hash different, or the fetch failing, the file is byte-identical and the outcome is `needs-review`.
+  A wheel URL, a file name not ending in `-<version>.<ext>`, or a recipe with no `<dist>` source is `needs-review`,
+  with no write. A fixture whose package name differs from its PyPI name (the `wasmtime-py` shape) gets the PyPI name
+  in the path.
+- **Repair: indentation.** Given a fixture with list items at their parent key's depth (FMT-001), When
+  `--repair --apply` runs, Then:
+  - the optimizer's FMT-001 check no longer fires;
+  - `yaml.safe_load` is equal before and after;
+  - every line's non-whitespace text is unchanged, in order;
+  - the `#### CFE metadata` and `# CFE comments` lines are all present, with `cfe-conda-name` exactly once.
+
+  A planted change that would also alter content is restored and reported `needs-review`.
+- **Repair: hidden `meta.yaml`.** Given `.meta.yaml.wave_h_hold` and no `meta.yaml`, When `--repair --apply` runs,
+  Then no hold file remains, and:
+  - with a v0 feedstock, `meta.yaml` equals the feedstock's raw text, and the report says whether that equals the hold
+    file;
+  - with a v1 feedstock, no `meta.yaml` exists;
+  - with the feedstock unreadable, `meta.yaml` equals the old hold file byte-for-byte, and the outcome is
+    `needs-review`.
+
+  Given both a hold file and `meta.yaml`, both files are byte-identical afterwards and the outcome is `needs-review`.
+- **Repair touches nothing else.** Over a fixture with all three defects, the parsed `context`, `build`,
+  `requirements`, `tests`, `about` and `extra.recipe-maintainers` are equal before and after. A rerun reports
+  `already-clean` and writes nothing. A `--repair` dry-run leaves `recipes/` byte-identical and writes a report.
+  `--repair --build` exits 2.
+- **The refresh path still never rewrites a URL.** Given the hashed-URL fixture, When a refresh (no `--repair`)
+  applies, Then the file is byte-identical, and the outcome is `needs-review`, with a reason that names `--repair`.
 - **Wiring.** A meta-test asserts:
   - the CLI wrapper exists and delegates to the skill script;
   - `pixi.toml` declares `[feature.local-recipes.tasks.refresh-wave]` naming the wrapper;
@@ -256,8 +336,8 @@ fetch and the hash calculation are mocked, so no test touches the network.
    - `.worktrees/dispatch-pyforge-mason-25.1/.cursor/wave_h_*.py` and `.sh`;
    - `.worktrees/dispatch-pyforge-mason-25.2/.cursor/track_b_wave_a.py`.
 3. Write the tests first, from the Acceptance Criteria, and see each fail.
-4. Implement `refresh_wave.py`, reusing `_path_guard`, `_paths`, `feedstock_lookup`, `feedstock_enrich` and
-   `recipe_editor`. Keep one subprocess seam for gates and builds. Then add the wrapper, the pixi task, the `SCRIPTS`
+4. Implement `refresh_wave.py` with both its refresh path and its `--repair` mode, reusing `_path_guard`, `_paths`,
+   `feedstock_lookup`, `feedstock_enrich` and `recipe_editor`. Keep one subprocess seam for gates and builds. Then add the wrapper, the pixi task, the `SCRIPTS`
    entry and the `CLI_ONLY_VERBS` entry, and fix `recipe_updater.get_current_recipe_info`.
 5. Document the driver in SKILL.md. Add a gotcha if the work finds a new failure class, for example the
    `meta.yaml` hold an early exit never restores. Regenerate `config/failure-catalog.yaml` if a gotcha is added.
@@ -289,8 +369,10 @@ fetch and the hash calculation are mocked, so no test touches the network.
   It opens no PR, issue or comment on conda-forge, a feedstock, staged-recipes, or any repository other than
   `rxm7706/local-recipes`. It only reads feedstocks (raw files, or `gh api` GETs through `feedstock_lookup`), and
   writes only under `recipes/` and its own report directory.
-- Never rename, move or delete a `meta.yaml` whose feedstock is still v0, and never create a `.meta.yaml*` file.
-- Never rewrite a `source.url`, and never drop a maintainer handle.
+- Never rename, move or delete a `meta.yaml` whose feedstock is still v0, and never create a `.meta.yaml*` file. The
+  one exception is `--repair`: it removes a hold file after restoring `meta.yaml`.
+- Never drop a maintainer handle. The refresh path never rewrites a `source.url`. Only `--repair` rewrites one, and
+  only from a hashed `files.pythonhosted.org` URL to the canonical form, with the sha256 unchanged and verified.
 - Never apply a dependency or pin change, or override a deliberate maintainer choice: report it.
 - Do not touch `src/shared/packages/pyforge-mason/`, `pixi.lock`, `recipes/**`, any `SPEC.md`, or
   `sprint-status-ledger.yaml`. The driver runs only on fixture trees here, and refreshing real recipes is Stories
@@ -317,6 +399,11 @@ fetch and the hash calculation are mocked, so no test touches the network.
 | resume | rerun over a recorded wave | terminal, unchanged recipes skipped | `--force` reprocesses |
 | dry-run | no `--apply` | report only; `recipes/` byte-identical | — |
 | bad manifest | unknown key, bad track, `../x` | exit 2, nothing written | `_path_guard` |
+| repair: hashed URL | sdist URL under `files.pythonhosted.org/packages/<hash>/` | canonical `pypi.org/packages/source` URL; sha256 unchanged; `repaired: url` | hash mismatch, failed fetch, wheel or no `<dist>`: `needs-review`, no write |
+| repair: indentation | FMT-001 list items | canonical indent; whitespace-only change | any non-whitespace change restored: `needs-review` |
+| repair: hidden meta.yaml, v0 | hold file, no `meta.yaml`, feedstock v0 | `meta.yaml` from the feedstock; hold file removed | feedstock unreadable: hold renamed back; `needs-review` |
+| repair: hidden meta.yaml, v1 | hold file, feedstock v1 | hold file removed, no `meta.yaml` | — |
+| repair: both files present | hold file and `meta.yaml` | nothing touched; `needs-review` | — |
 
 </intent-contract>
 
@@ -327,7 +414,8 @@ Dream: `docs/dreams/pyforge-mason.md` § Realization log → *2026-10-09 — Rul
 driver, so Track B can continue*.
 Ledger key: `25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through`.
 Ledger status at mint: `backlog`.
-Deps: —. Story 25.2 now depends on this story (`epics.md` § Story 25.2, **Deps:** S-25.3).
+Deps: —. Story 25.2 now depends on this story (`epics.md` § Story 25.2, **Deps:** S-25.3). Its Wave 0 runs this
+story's `--repair` mode over the recipes 25.1's landing damaged (operator ruling, 2026-10-09).
 Flag: `flag-exempt: recipe-build` (recipe-factory tooling, not a runtime capability).
 Minted 2026-10-09 from the operator's ruling of the same day: mint a driver story so Story 25.2 can continue.
 
@@ -344,10 +432,29 @@ Minted 2026-10-09 from the operator's ruling of the same day: mint a driver stor
   `test_cli_tool_parity.py`.
 - `pixi run -e local-recipes refresh-wave <manifest>`, as a dry-run over a three-recipe manifest taken from 25.2's
   Wave A list. It prints a report, and `git status --porcelain recipes/` is empty afterwards.
+- `pixi run -e local-recipes refresh-wave <manifest> --repair`, as a dry-run over `wasmtime-py`, `django-todo` and
+  `tox-uv`. The report plans the URL, indentation and `meta.yaml` repairs, and `git status --porcelain recipes/` is
+  empty afterwards.
 - `git log origin/main..HEAD --format=%s -- .claude/skills/conda-forge-expert .claude/scripts/conda-forge-expert`
   shows exactly one `retro(cfe):` subject, and that commit carries `CHANGELOG.md`. The four version carriers agree.
 - `pixi project export conda-environment -e build` leaves `environment.yaml` byte-identical.
 - `pixi run -e pyforge-guild spec-surface-check` exits 0 after the scoped stamps.
+
+## Spec Change Log
+
+- **2026-10-09 (later), operator ruling:** Story 25.2's first wave runs the new driver over the recipes Story 25.1's
+  landing damaged, to repair them. This spec gains `--repair`. It rewrites a hashed `files.pythonhosted.org` sdist URL
+  to the canonical `pypi.org/packages/source` form, with the sha256 unchanged and verified. It re-indents FMT-001 list
+  items to `recipe_editor`'s canonical style, whitespace-only. It restores a v0 feedstock's `meta.yaml` from the
+  feedstock, or else from the `.meta.yaml.wave_h_hold` file, and removes the hold file. ACs on fixtures cover each
+  repair, and the refresh path keeps never rewriting a URL.
+  - The CLI, the per-recipe outcomes, the I/O matrix, the Boundaries and the manual checks follow.
+  - Effort moves from M to L.
+  - The context counts are made exact: of the 56 hashed URLs, 25.1 introduced 52. Of the 78 re-indented recipes, 76
+    now fire FMT-001. 25.1 hid two `meta.yaml` files, and 22.1's landing restored one of them. Story 22.1's landing
+    (PR #2017) also restored the CFE version lockstep at 8.98.0.
+  - Every local-only line is unchanged.
+  Recorded on `spec-pyforge-mason`'s memlog.
 
 ## Review Triage Log
 

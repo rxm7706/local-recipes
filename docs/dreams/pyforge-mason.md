@@ -441,6 +441,32 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   surface (`mason-cfe-surface-check`). DW-PRESENTON-PHASE0-1 stays open: its exits wait on decisions and access outside
   this repo. The 71 open rows that carry no severity, and the one open high row, are outside these two phases. Owner:
   mason (`spec-pyforge-mason`, no new CAP). → Epic 27 / Stories 27.1–27.2, specced 2026-10-03.
+- **2026-10-09 — Ruled: Story 22.1 lands for eleven recipes, and ctng-compilers waits for rattler-build.** Operator
+  ruling, 2026-10-09. The 22.1 dispatch repaired all twelve sentinel keys. Eleven of the twelve then render, validate and
+  lint clean on a platform each builds. `ctng-compilers` does not: once its sentinel and its output-level `run_exports`
+  are repaired, `rattler-build build --render-only` 0.76.1 (`.ci_support/linux64.yaml` plus the local pinning) still
+  exits 1 with `Cycle detected in recipe outputs` across the gcc stack. rattler-build #2531 (a false cycle from
+  `pin_subpackage` in `run_constraints`) closed on 2026-07-03 and 0.76.1 carries its fix, so this is a case that fix did
+  not cover. **What it looks like when real:** 22.1 lands its eleven (ten after the second ruling below).
+  `ctng-compilers/recipe.yaml` stays as `main` has it, sentinel included, and 22.1's corpus check allowlists that one
+  leak by file and location. A new story repairs it once a rattler-build release, or a feedstock-faithful variant set,
+  renders the gcc output graph, and it removes the allowlist entry. **Constraints:** a `fix` story under CAP-32, no new CAP, no flag (`flag-exempt: recipe-build`). It stays
+  `blocked` until the operator flips it. Reporting the cycle upstream is outward work and waits for the operator.
+  Owner: mason. → `spec-pyforge-mason` CAP-32 / Epic 22 / Story 22.3 (FR-54), specced 2026-10-09.
+- **2026-10-09 (later) — Ruled: Story 22.1 lands for ten recipes, and vc waits for a named track feature.** Second
+  operator ruling, 2026-10-09, after the independent review of the 22.1 landing failed it. The run's v1 port of
+  `recipes/vc/recipe.yaml` renders, but it does not say what `meta.yaml` says. `meta.yaml` gives the `vc`,
+  `vs<year>_<platform>` and `vs_<platform>` packages `track_features: [vc14]`, a feature they share. rattler-build 0.76.1 rejects
+  `build.track_features`, and its `variant.down_prioritize_variant` writes a per-package `<name>-p-0` instead. The port
+  also hardcoded the VS 2026 win-64 values in `context` in place of the feedstock's five-entry variant matrix. It left
+  out `vc_repack.py`, `activate.bat`, `LICENSE.TXT` and `conda_build_config.yaml`. Its inheriting outputs called
+  `python` with no `python` build requirement. And it compared the string `vsver` with an integer; minijinja answers
+  `true` for `"9" >= 17` as well as for `"18" >= 17`. **What it looks like when real:** 22.1 lands its ten. `vc/recipe.yaml` stays as `main`
+  has it, sentinel included, and 22.1's corpus check allowlists that one leak by file and location. A new story ports vc
+  once a rattler-build release can emit a named track feature, and it removes the allowlist entry. **Constraints:** a
+  `fix` story under CAP-32, no new CAP, no flag (`flag-exempt: recipe-build`). It stays `blocked` until the operator
+  flips it. Asking rattler-build for the feature is outward work and waits for the operator. Owner: mason.
+  → `spec-pyforge-mason` CAP-32 / Epic 22 / Story 22.4 (FR-54), specced 2026-10-09.
 - **2026-10-09 — Ruled: CFE gains a tracked bulk refresh driver, so Track B can continue.** Operator ruling, 2026-10-09:
   mint a driver story so Story 25.2 can continue. Story 25.1 refreshed 92 sole-maintainer recipes with scripts it never
   committed (`.cursor/wave_h_*` in its dispatch worktree). Story 25.2 stopped `blocked` after Wave A, with 96
@@ -471,6 +497,24 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
 
   Owner: mason (`spec-pyforge-mason`, no new CAP: CAP-35 is the campaign, CAP-20 the parameterized wave, CAP-23 the CFE
   machinery). → Epic 25 / Story 25.3 (FR-57), specced 2026-10-09; Story 25.2 now depends on it.
+- **2026-10-09 (later) — Ruled: Story 25.2's first wave repairs what Story 25.1's landing damaged.** Second operator
+  ruling, 2026-10-09: 25.2's first wave runs the new driver over the recipes 25.1's landing damaged, to repair them.
+  **What it looks like when real:** the driver gains a `--repair` mode, separate from its refresh path, which still never
+  rewrites a URL. Repair does three things and nothing else:
+  - it puts a hashed `files.pythonhosted.org` sdist URL back in the canonical `pypi.org/packages/source` form, with the
+    sha256 unchanged and verified;
+  - it re-indents list items to CFE's canonical style, whitespace-only;
+  - it restores a v0 feedstock's `meta.yaml`, from the feedstock or else from the hold file, and removes the hold file.
+
+  It moves no version, build number, dependency or maintainer. Story 25.2's Wave 0 runs it, before any Track B wave,
+  over 79 recipes:
+  - the 56 in 25.1's landing with a hashed URL;
+  - the 78 whose lists it re-indented;
+  - `recipes/wasmtime-py`.
+
+  **Constraints:** local only, like every wave: no push, PR, fork, issue or comment outside `rxm7706/local-recipes`.
+  Wave 0 is the one place Story 25.2 touches Track A's recipes. Owner: mason (no new CAP). → Story 25.3's repair mode
+  and Story 25.2's Wave 0, specced 2026-10-09.
 
 ## One-chain fold — 2026-09-17
 

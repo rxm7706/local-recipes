@@ -24,7 +24,7 @@ build:
 requirements:
   host:
     - pip
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - setuptools
   run:
     - certifi
@@ -35,17 +35,26 @@ requirements:
     - requests >=2.2.1
     - colorama
     - tldextract
+    - setuptools <81
 
 tests:
   - python:
       imports:
         - shodan
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - files:
       source:
         - tests
+    requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
     script:
       - shodan --help
+      # Skip test suite becuase it requires Shodan API key
 
 about:
   summary: Python library and command-line utility for Shodan, a search engine for Internet-connected devices.
@@ -58,8 +67,50 @@ extra:
   recipe-maintainers:
     - thewchan
 
-<conda_recipe_manager.types.SentinelType object at 0x70b19d84dbe0>:  #     - pytest -vvv --capture=tee-sys tests
-  requires:
-    - pip
-    - pytest
-    - python ${{ python_min }}
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: shodan
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: shodan
+  cfe-purls:
+    - pkg:conda/shodan@${{ version }}?channel=conda-forge
+    - pkg:pypi/shodan@${{ version }}
+  cfe-upstream-repo: https://github.com/achillean/shodan-python
+  cfe-upstream-homepage: https://github.com/achillean/shodan-python
+  cfe-import-names: [shodan]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/shodan-feedstock
+  cfe-forge-recipe-updates-needed:
+    - meta-yaml-to-recipe-yaml
+    - "run-setuptools-lt-81: shodan/__main__.py imports pkg_resources (G34)"
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-09T10:08:00Z
+  cfe-generated-by-version: 8.98.0
+  cfe-generated-at-datetime: 2026-10-09T10:08:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T10:07:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion left a SentinelType key at the
+#    # top level, holding the orphaned `test.requires: [pip, pytest, python {{ python_min }}]` (G121). pip and
+#    # `python ${{ python_min }}.*` moved to the script test's requirements.run; pytest served only the
+#    # commented-out suite below and is dropped. The feedstock is still v0; meta.yaml stays beside this file.
+# requirements:
+#  host:
+#    # `python ${{ python_min }}` -> `python ${{ python_min }}.*` (the conversion dropped the `.*`).
+#  run:
+#    # setuptools <81 (G34): shodan/__main__.py imports pkg_resources, which setuptools 82+ no longer ships,
+#    # so `shodan --help` failed on a fresh solve (setuptools 84). Drop the cap once shodan stops importing
+#    # pkg_resources. The feedstock has the same defect.
+# tests:
+#    # Upstream's meta.yaml carries this commented-out line after its "Skip test suite" comment (which is back
+#    # in the body); a column-0 comment mid-document crashes conda-recipe-manager (G93), so it is parked here:
+#    #     - pytest -vvv --capture=tee-sys tests
+#    # LOCAL BUILD 2026-10-09 (linux-64): imports, pip check and `shodan --help` passed.
+####

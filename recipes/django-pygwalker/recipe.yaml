@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - python-build
     - setuptools >=67.7.2
     - setuptools-scm >=7.1
@@ -37,13 +37,17 @@ tests:
   - python:
       imports:
         - djangoaddicts.pygwalker
+      #commands:
+        #- pip check
+      # + pip check Errors to be resolved upstream
+      # https://github.com/conda-forge/pygwalker-feedstock/blob/main/recipe/meta.yaml
+      # Requires wasmtime (python-wasmtime) for gw-dsl-parser, segment-analytics-python ==2.2.3 is called analytics-python,  quickjs is called python-quickjs 1.19.4
+      # pygwalker 0.4.9.15 requires anywidget, which is not installed.
+      # pygwalker 0.4.9.15 requires gw-dsl-parser, which is not installed.
+      # pygwalker 0.4.9.15 requires quickjs, which is not installed.
+      # pygwalker 0.4.9.15 has requirement segment-analytics-python==2.2.3, but you have segment-analytics-python 2.2.2.
       pip_check: false
       python_version: ${{ python_min }}
-  - <conda_recipe_manager.types.SentinelType object at 0x7cc30604dbe0>: {}
-    requirements:
-      run:
-        - python ${{ python_min }}
-        - pip
 
 about:
   summary: PyGWalker views for Django projects
@@ -54,3 +58,42 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-pygwalker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-pygwalker
+  cfe-purls:
+    - pkg:conda/django-pygwalker@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-pygwalker@${{ version }}
+  cfe-upstream-repo: https://github.com/djangoaddicts/django-pygwalker
+  cfe-upstream-homepage: https://github.com/djangoaddicts/django-pygwalker
+  cfe-import-names: [djangoaddicts.pygwalker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: false:feedstock-mirror-pip-check-commented-out
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-pygwalker-feedstock
+  cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-09T09:52:00Z
+  cfe-generated-by-version: 8.98.0
+  cfe-generated-at-datetime: 2026-10-09T09:52:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T09:36:52Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion left a SentinelType key on a
+#    # second test element that held only `requires: [python {{ python_min }}, pip]` once its pip-check
+#    # command was commented out (G121). Removed: the python test's `python_version` covers the floor.
+#    # The feedstock is still v0; meta.yaml stays beside this file.
+# requirements:
+#  host:
+#    # `python ${{ python_min }}` -> `python ${{ python_min }}.*` (the conversion dropped the `.*`).
+# tests:
+#    # LOCAL BUILD 2026-10-09 (linux-64): import test passed; pip_check off as in the feedstock.
+####
