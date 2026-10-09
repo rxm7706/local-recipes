@@ -2,7 +2,8 @@
 title: '74.3: bmad-spec, bmad-build and bmad-tea carry the flag mandate in their overrides'
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '488837c504cb46ebf973c50e337af5623fafac13'
 flag-exempt: flag-infrastructure   # the rule's own harness wiring (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
 followup_review_recommended: false

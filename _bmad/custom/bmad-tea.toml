@@ -1,0 +1,11 @@
+# Team override for bmad-tea — local-recipes / PyForge estate.
+# Personal overrides go in bmad-tea.user.toml (gitignored).
+#
+# Marshal Story 74.3 (spec-feature-flag-governance CAP-6): the TEA mandate
+# lives under [agent] persistent_facts, never in installer-owned SKILL.md.
+
+[agent]
+
+persistent_facts = [
+  "Feature-flag governance (TEA): a flagged story's Verification must exercise both flag states through `pyforge.testing_kit.flags` — `flag_states`, `flagd_tree`, and `assert_flag_off_verb` for CLI verbs (marshal Story 74.1; `docs/governance/spec-feature-flag-governance/SPEC.md` CAP-4 and CAP-6). Never mock `waffle`, never drive flags through an environment variable, and never skip the OFF case. The Architect block shape is `docs/reference/story-spec-flag-block.md`.",
+]

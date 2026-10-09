@@ -1,0 +1,27 @@
+# Team override for bmad-build — local-recipes / PyForge estate.
+# Personal overrides go in bmad-build.user.toml (gitignored).
+#
+# Marshal Story 74.3 (spec-feature-flag-governance CAP-6): the Builder mandate
+# and a flagged-story review layer live here, never in installer-owned SKILL.md.
+
+[workflow]
+
+persistent_facts = [
+  "Feature-flag governance (Builder): on a flagged story read the declared flag key only through `pyforge.core` or `django_pyforge.flags` — never Waffle, an environment variable, or a second tree (`docs/governance/spec-feature-flag-governance/SPEC.md` CAP-6; canopy:AD-11). With the flag OFF the legacy behaviour in the story spec's `flag.fallback` must hold. A CLI verb whose flag is OFF stays listed in `--help`, marked disabled, and refuses with its station's usage exit code and a flag-off message (Q3 in the Guild Spec). The block shape lives in `docs/reference/story-spec-flag-block.md`.",
+]
+
+[[workflow.review_layers]]
+id = "flag-mandate"
+name = "Feature Flag Mandate"
+when = "The active story spec is `type: feature` and carries a `flag:` block (not `flag-exempt:`)."
+instruction = """
+On a flagged story, read the story spec's `flag.key` and the unified diff at `{diff_file}`.
+
+Answer only from those sources:
+1. Does the diff read the declared flag key only through sanctioned surfaces (`pyforge.core`, `django_pyforge.flags`, or tests that use `pyforge.testing_kit.flags`) — not a mock of Waffle or an environment variable?
+2. Does the story spec's `## Verification` section name a two-state test (flag ON and OFF) for that key?
+
+Output a short Markdown list: one bullet per question with yes/no and one line of evidence each. If either answer is no, say what is missing. If the story is not flagged, report zero findings and stop.
+
+Do not invoke any skill, and do not spawn subagents — you are the reviewer. Return findings as text in your final message only.
+"""
