@@ -171,9 +171,11 @@ def test_no_unquoted_hash_in_cfe_list_items() -> None:
 _OBJECT_REPR_RE = re.compile(r"^<[A-Za-z_][\w.]* object at 0x[0-9a-fA-F]+>$")
 
 # One entry per known leak: (file, the parsed-tree location of the offending
-# key), each naming the story that removes it. Keying on the location, not the
-# file, means a second leak in an allowlisted file still reds. An entry whose leak
-# is gone fails the test, so the allowlist cannot outlive its reason.
+# key), each naming the story that removes it. An entry admits exactly ONE
+# object-repr key at its location, so a second leak in an allowlisted file
+# still reds, whether it sits in another element or in the same mapping as the
+# allowlisted key. An entry whose leak is gone fails the test, so the allowlist
+# cannot outlive its reason.
 SENTINEL_ALLOWLIST: dict[tuple[str, str], str] = {
     ("recipes/ctng-compilers/recipe.yaml", "outputs[6].tests[0]"): (
         "mason Story 22.3: the repaired file hits rattler-build 0.76.1's "
@@ -224,15 +226,22 @@ def _triage(
     hits: dict[str, list[tuple[str, str]]],
     allowlist: dict[tuple[str, str], str],
 ) -> tuple[list[str], list[str]]:
-    """(unexpected findings, stale allowlist entries)."""
-    unexpected = [
-        f"{f}: {where}: {detail}"
-        for f, found in sorted(hits.items())
-        for where, detail in found
-        if (f, where) not in allowlist or not detail.startswith("object-repr key")
-    ]
-    seen = {(f, where) for f, found in hits.items() for where, detail in found}
-    stale = [f"{f} @ {where}" for f, where in sorted(set(allowlist) - seen)]
+    """(unexpected findings, stale allowlist entries).
+
+    Each allowlist entry is consumed by the first object-repr key found at its
+    (file, location); every other finding, including a second object-repr key
+    at the same location, is unexpected.
+    """
+    unexpected: list[str] = []
+    consumed: set[tuple[str, str]] = set()
+    for f, found in sorted(hits.items()):
+        for where, detail in found:
+            entry = (f, where)
+            if entry in allowlist and entry not in consumed and detail.startswith("object-repr key"):
+                consumed.add(entry)
+                continue
+            unexpected.append(f"{f}: {where}: {detail}")
+    stale = [f"{f} @ {where}" for f, where in sorted(set(allowlist) - consumed)]
     return unexpected, stale
 
 
@@ -284,6 +293,26 @@ def test_sentinel_scan_reds_a_planted_key(tmp_path: Path) -> None:
     assert len(unexpected) == 3 and not stale
 
 
+def test_second_sentinel_key_in_an_allowlisted_mapping_reds(tmp_path: Path) -> None:
+    """Parsed from YAML, not hand-built: two sentinel keys in one test element
+    land at the same location, and the allowlist entry covers only one."""
+    double = _CLEAN + _LEAK + "    <conda_recipe_manager.types.SentinelType object at 0x7f00feedface>:\n      - echo planted\n"
+    single = _CLEAN + _LEAK
+    recipes = tmp_path / "recipes"
+    for name, text in {"double": double, "single": single}.items():
+        (recipes / name).mkdir(parents=True)
+        (recipes / name / "recipe.yaml").write_text(text)
+    hits = _scan_for_sentinels(_recipe_files(recipes), tmp_path)
+    assert [where for where, _ in hits["recipes/double/recipe.yaml"]] == ["tests[0]", "tests[0]"]
+    allow = {
+        ("recipes/double/recipe.yaml", "tests[0]"): "story",
+        ("recipes/single/recipe.yaml", "tests[0]"): "story",
+    }
+    unexpected, stale = _triage(hits, allow)
+    assert len(unexpected) == 1 and unexpected[0].startswith("recipes/double/recipe.yaml: tests[0]: object-repr key")
+    assert not stale
+
+
 def test_sentinel_allowlist_is_per_location() -> None:
     allow = {("recipes/x/recipe.yaml", "outputs[6].tests[0]"): "story"}
     key = "object-repr key '<conda_recipe_manager.types.SentinelType object at 0x1>'"
@@ -294,6 +323,12 @@ def test_sentinel_allowlist_is_per_location() -> None:
         {"recipes/x/recipe.yaml": [("outputs[6].tests[0]", key), ("outputs[2].tests[0]", key)]}, allow
     )
     assert unexpected == [f"recipes/x/recipe.yaml: outputs[2].tests[0]: {key}"]
+    # a second object-repr key in the SAME mapping as the allowlisted one reds
+    key2 = "object-repr key '<conda_recipe_manager.types.SentinelType object at 0x2>'"
+    unexpected, stale = _triage(
+        {"recipes/x/recipe.yaml": [("outputs[6].tests[0]", key), ("outputs[6].tests[0]", key2)]}, allow
+    )
+    assert unexpected == [f"recipes/x/recipe.yaml: outputs[6].tests[0]: {key2}"] and not stale
     # a non-string key at the allowlisted location is not covered by the entry
     unexpected, _ = _triage(
         {"recipes/x/recipe.yaml": [("outputs[6].tests[0]", "non-string key 1 (int)")]}, allow

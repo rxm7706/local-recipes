@@ -4,10 +4,10 @@
 # "Recipe Authoring Gotchas" section. Hand edits are detectably wrong —
 # regenerating overwrites them; see tests/meta/test_failure_catalog_freshness.py.
 schema_version: 1
-source_sha256: "d747f607711f1c7b582d3bb0cf62004fa4302abfe17341863fa5b862017c6d4a"
+source_sha256: "366626449ed258b941287ff8e43f3cdd59af4e539dcd99b864f8aa7a46dac30d"
 rows:
   - id: G1
-    title: "`script:` list entries run in separate shells — env vars do NOT carry across entries"
+    title: "Don't rely on env vars carrying across `script:` list entries — older rattler-build ran each entry in its own shell"
     symptom_signature:
       - "export FOO=bar"
       - "pip install"
