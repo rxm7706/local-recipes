@@ -4836,6 +4836,33 @@ changed and the partition test asserting non-empty sets; a lane run whole keeps 
 not change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 
+### Story 71.10: A stopped lane is journaled cancelled, and the lane that stopped the run red
+
+As the operator reading why a push was refused,
+I want the preflight journal and its stderr to name the lane that failed, and to mark the lanes it stopped as cancelled,
+So that a red run points at its cause, as Story 71.3 promised, instead of at a lane the preflight killed.
+
+**Type:** fix • **Effort:** S • **Deps:** S-71.9 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32; Story 71.3's run-and-cancel contract) • Dream 2026-10-08 (cancelled lane)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (`_RunCoordinator.terminate_children` `:219`,
+`_run_lane_in_pool` `:300`, the pool loop `:474`-`:514`, the result assembly `:516`-`:563`), its unit tests under
+`src/shared/packages/pyforge-steward/tests/unit/`
+**Spec:** `planning-artifacts/specs/spec-71-10-a-stopped-lane-is-journaled-cancelled-and-the-lane-that-stopped-the-run-red.md`
+**Given** `ad6f0428ff`, where `_run_lane_in_pool` journals every non-zero exit `red` (`:336`-`:342`), so a lane `terminate_children()` killed
+reads `red` with exit -15 and joins `red_lanes`, and the pool loop drops every future it has not collected when the run stops (`:507`-`:511`),
+so the lane that failed reads `cancelled`, exit 0, 0 s (measured on a herald branch twice: the gate `red -15`, the failing herald suite
+`cancelled`)
+**When** a lane fails without `--keep-going`, or SIGINT arrives
+**Then** a lane whose process the coordinator terminated is journaled `cancelled` with its observed exit code and seconds and `cancelled_by`
+(the lane that stopped the run, or `interrupt`), and is never red nor in `red_lanes`; every started lane's result is collected after the stop,
+so the lane that failed on its own is `red` with its own exit code and seconds; a lane that never started is `cancelled`, exit 0, as today;
+the verdict and the stderr red-lane lines name only lanes that failed on their own
+**And** a test with two real lane processes (one exits 1, one sleeps) journals the sleeper `cancelled` with `cancelled_by` naming the failing
+lane and `red_lanes == [failing lane]`; a SIGINT test journals both running lanes `cancelled` (`interrupt`) and exits 130 with no process left;
+a lane that exits non-zero on its own before the stop's signal stays `red`; a Story 71.9 reduced lane stopped mid-segment is `cancelled`
+with that segment `cancelled`; the 71.1-71.9 preflight tests pass unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 
 Minted 2026-09-28 from the station Dream's entry of the same name — steward's two pieces of the operator's 2026-09-28

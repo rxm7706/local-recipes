@@ -1036,6 +1036,30 @@ Drift — orphaned between stations.
   lanes run, and every task command stay unchanged. Also found, not taken here: a lane the coordinator terminates is
   journaled `red` with its signal exit (`preflight.py:336`-`:342`), where Story 71.3's AC says `cancelled`. Owner
   `spec-pyforge-steward` CAP-159 (FR-32; Story 71.4's reduction). → Epic 71 / Story 71.9, specced 2026-10-08.
+- **2026-10-08 (cancelled lane) — Found: when one lane stops the preflight, the journal blames the lane it stopped.**
+  Story 71.3's AC reads: "Given one fake lane that exits 1 while two others still run When the preflight runs Then it
+  exits 1, the other two are terminated and journaled `cancelled`, and no child process is left running". On
+  `ad6f0428ff`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` does not do that.
+  `_run_lane_in_pool` (`:300`) treats every non-zero exit as red (`:336`-`:342`). A lane whose process
+  `terminate_children()` (`:219`) sent SIGTERM is therefore journaled `red` with exit -15 and added to `red_lanes`.
+  The lane that went red calls `terminate_children()` itself (`:341`), and that waits for each process it kills, so
+  the killed lane's future finishes first. The pool loop takes the first finished future, sees the stop, cancels and
+  drops every other future (`:499`-`:511`). Every lane whose result it did not collect is then journaled `cancelled`
+  with exit 0 and 0 s (`:549`), including the lane that actually failed. The journal of a one-file herald branch
+  (`hygiene-herald-shelf-two-headings`, two runs at `4bf5b746f8`) shows exactly this: `pyforge-herald-coverage-gate`
+  `red`, exit -15, after 14.0 s and 13.1 s; `pyforge-herald-test`, whose pytest exited 5, `cancelled`, exit 0, 0.0 s;
+  and four more lanes that were running, `cancelled`, 0.0 s. The run's stderr names the gate as the red lane, not the
+  herald suite. The SIGINT path (`_on_sigint`, `:467`) has the same red branch. No test reaches any of this:
+  `test_red_lane_cancels_others` (`tests/unit/test_preflight_concurrency.py:156`) uses an injected runner with no
+  process to terminate and asserts nothing about the lane that was running, and no test sends SIGINT. **What it looks
+  like when fixed:** a lane whose process ends because the preflight terminated it (a stop on red, or SIGINT) is
+  journaled `cancelled`, with the exit code and seconds observed and the lane that triggered the stop, or
+  `interrupt`. It is never `red` and never in `red_lanes`. A lane that fails on its own is journaled `red` with its
+  own exit code and seconds, even when its result arrives after the stop. The verdict and the printed red-lane
+  summary name only lanes that failed on their own. **Constraints:** a fix story, no CAP, no flag. Which lanes run,
+  each lane's exit code as the verdict, and stop-on-red unless `--keep-going` do not change. Owner
+  `spec-pyforge-steward` CAP-159 (FR-32; Story 71.3's run-and-cancel contract). → Epic 71 / Story 71.10, specced
+  2026-10-08.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
