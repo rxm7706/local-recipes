@@ -18,7 +18,7 @@ if errorlevel 1 exit /b 1
 if exist "%SRC_DIR%\library_licenses" rmdir /s /q "%SRC_DIR%\library_licenses"
 mkdir "%SRC_DIR%\library_licenses"
 
-call go-licenses save . --save_path "%SRC_DIR%\library_licenses"
+call go-licenses save . --save_path "%SRC_DIR%\library_licenses" --force
 if errorlevel 1 exit /b 1
 
 if not exist "%LIBRARY_BIN%" mkdir "%LIBRARY_BIN%"
