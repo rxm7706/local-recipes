@@ -4861,7 +4861,7 @@ the verdict and the stderr red-lane lines name only lanes that failed on their o
 lane and `red_lanes == [failing lane]`; a SIGINT test journals both running lanes `cancelled` (`interrupt`) and exits 130 with no process left;
 a lane that exits non-zero on its own before the stop's signal stays `red`; a Story 71.9 reduced lane stopped mid-segment is `cancelled`
 with that segment `cancelled`; the 71.1-71.9 preflight tests pass unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 
