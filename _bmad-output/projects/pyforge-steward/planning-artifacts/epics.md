@@ -5692,7 +5692,7 @@ roster with no crash, and a drift between the script and its own roster still ex
 resolves; the fail-loud tests and the protected-refs floor test run a copy of the hook inside the fixture repository, so the fixture is its own tree; no roster entry,
 reason, matcher, hook registration or AGENTS.md rule changes; putting `ctx.repo_root` back into either read fails the new tests (mutation);
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
