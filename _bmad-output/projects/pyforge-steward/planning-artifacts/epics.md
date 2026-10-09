@@ -5520,6 +5520,22 @@ So that following the hook's own advice never fails.
 **And** only reason text changes: the ids, triggers, `applies_to`, the hook's `MATCHERS` and their parity check are untouched, so no denial is added or removed; third-party commands (`git`, `gh`, `pixi lock`, `npx skills add`) are outside the test; no reason prints a tag-minting remedy (marshal Story 87.2's rule); the hook tests that pinned `--retire` assert the new text; marshal 87.1 and 87.3 may name their forms again once they resolve, and the same test then admits them; putting `--retire` back into a reason fails the new test (mutation)
 **Status:** done
 
+### Story 85.7: The session-denial form check never stamps the real spec-surface baseline
+
+As the operator whose local scripts-suite runs rewrite steward's section of `scripts/.spec-surface-baseline.json` because Story 85.6's check runs every script it probes,
+I want the check to decide whether a script's parser accepts the argv without running the script's body,
+So that running the tests, `pr-preflight` or a push never stamps a baseline that no one reconciled.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-165 (FR-38) and CAP-5 (Story 85.6's check of "a one-line reason naming the sanctioned form") • Dream 2026-10-08 (denial probe)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `tests/scripts/test_session_denial_forms.py` (`_script_accepts_argv`, about :109, and new tests beside it)
+**Spec:** `planning-artifacts/specs/spec-85-7-the-session-denial-form-check-never-stamps-the-real-spec-surface-baseline.md`
+**Given** the roster on `488837c504`, whose `spec-surface-bare-write-baseline` reason names `python scripts/spec_surface_check.py --write-baseline --spec <project>/<spec>`, filled in as `pyforge-steward/spec-pyforge-steward`; `_script_accepts_argv` runs `[sys.executable, script, *argv]` with `cwd=REPO_ROOT`, so three tests over the live roster each run a real scoped stamp (measured: one run rewrote the baseline from 1,073,738 to 1,075,879 bytes, steward's entry only)
+**When** the check probes a script's argv
+**Then** it runs a `sys.executable -c` bootstrap that wraps argparse's parse entry points with a depth counter, runs the script with `runpy.run_path(script, run_name="__main__")`, `sys.argv = [script, *argv]` and the script's directory on `sys.path`, and ends the process with exit 0 when the outermost parse succeeds, before any of the script's body runs; a rejection still prints `unrecognized arguments` or `invalid choice:` and fails naming the flag; a script with no argparse import is reported unprobeable and never run, and one that exits before it parses is unprobeable, never accepted
+**And** probing `spec_surface_check.py --write-baseline --spec pyforge-steward/spec-pyforge-steward` leaves the baseline's bytes and mtime unchanged, and `pyforge-doctor-scripts-test` leaves the file byte-identical; a `tmp_path` fixture that writes a marker after `parse_args()` is accepted with the marker absent and rejected for an unknown flag; a subparser fixture is accepted for `sub --known` and rejected for `sub --known --bogus`; every existing test in the file still passes; the roster, the hook and the probed scripts do not change; putting the direct run back fails the new tests (mutation)
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
