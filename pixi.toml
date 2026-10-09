@@ -689,6 +689,7 @@ hatchling = ">=1.32.4"            # Python build backend (drives both conda + wh
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 19.3 / FR-131: coverage JSON for named-module gates
+pytest-xdist = ">=3.8.0"          # Story 71.6 (CAP-159): parallel station suite in pyforge-marshal-test
 import-linter = ">=2.15"          # enforces the AD-3 seam + AD-4 purity contracts (pyproject.toml's [tool.importlinter])
 # spec-library-catalog-manifest-sync CAP-1: mirror this station's own pixi.toml
 # [package.run-dependencies] pins, undocumented in root pixi.toml until 2026-09-12.
@@ -733,7 +734,7 @@ depends-on = ["pyforge-marshal-build-conda", "pyforge-marshal-build-dist"]
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test]
 description = "Run the pyforge-marshal test suite (unit + meta, fast default loop -- excludes @pytest.mark.slow)."
-cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\""
+cmd = "pytest src/shared/packages/pyforge-marshal/tests -q -m \"not slow\" -n auto --dist loadgroup"
 
 [feature.pyforge-marshal.tasks.pyforge-marshal-test-slow]
 description = "Run the slow, real-git end-to-end integration tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-warden-test-corpus-oracle's split)."
@@ -2615,6 +2616,7 @@ hatchling = ">=1.32.4"            # Python build backend (drives both conda + wh
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
+pytest-xdist = ">=3.8.0"          # Story 71.6 (CAP-159): parallel station suite in pyforge-warden-test
 py-rattler = ">=0.26.0"           # test-only oracle for extract/lockfiles.py (Story 2.6); NEVER a pyforge-warden runtime dep. 2026-09-20 (steward Story 63.5): floor back to 0.25.0 -- the 0.26.0 bump was a catalog sync (8beb582d30), not an API need (LockFile.from_path / CondaLockedPackage / PypiLockedPackage exist in 0.25), and conda's rattler-solver variant (the only conda that tolerates ruamel.yaml 0.19, which mason's deps need) caps py-rattler <0.26 -- the pyforge-foundry-full union solve surfaced it
 py-rattler-build = ">=0.73.0"     # test-only differential-oracle for extract/recipe_v1.py (Story 2.2, v1 recipe.yaml render); NEVER a pyforge-warden runtime dep
 conda-build = ">=25.3.1"          # test-only differential-oracle for extract/meta_v0.py (Story 2.2, v0 meta.yaml render); NEVER a pyforge-warden runtime dep
@@ -2631,7 +2633,7 @@ cmd = "warden"
 
 [feature.pyforge-warden.tasks.pyforge-warden-test]
 description = "Run the pyforge.warden test suite (fast default loop -- excludes @pytest.mark.slow)"
-cmd = "pytest src/shared/packages/pyforge-warden/tests -q -m \"not slow\""
+cmd = "pytest src/shared/packages/pyforge-warden/tests -q -m \"not slow\" -n auto --dist loadgroup"
 
 [feature.pyforge-warden.tasks.pyforge-warden-coverage-gate]
 description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (warden)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in warden's own env, against the 80% unit floor. Distinct from pyforge-warden-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
@@ -2684,6 +2686,7 @@ hatchling = ">=1.32.4"            # Python build backend (drives both conda + wh
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner (kedro-test)
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
+pytest-xdist = ">=3.8.0"          # Story 71.6 (CAP-159): parallel station suite in pyforge-atlas-test
 attrs = ">=26.1.0"                # spec-library-catalog-manifest-sync CAP-1: mirrors this station's own pixi.toml [package.run-dependencies] pin; observability.py's own run-dep, undocumented in root pixi.toml until 2026-09-12
 filelock = ">=3.32.6"             # spec-library-catalog-manifest-sync CAP-1 (scoping correction): duckdb_writer.py + admission.py's own run-dep, undocumented in root pixi.toml until 2026-09-12 -- distinct from the separate marshal/scribe filelock *adoption* question tracked in pyforge-unifying-strategy's Estate leverage table
 kedro-viz = ">=12.4.0"            # C2 `viz` task + test_viz_loadable smoke — NOT a pyforge-atlas run-dep so not pulled transitively; the lean no-default-feature env needs it explicitly (Gemini #85)
@@ -2737,7 +2740,7 @@ duckdb-server = ">=0.31.0"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-test]
 description = "Run the pyforge-atlas test suite. Story 32.2 (spec-fleet-consistency-standard CAP-5): the canonical fleet grammar is `pixi run -e pyforge-<station> pyforge-<station>-test`, documented in CLAUDE.md, and atlas was the one station where that command did not exist -- its suite only answered to `kedro-test`, so anyone following the documented contract got 'task not found'. Story 27.1: a second pytest run gates the inventory quartet's tests (tests/packaging/test_openteams_handoffs.py and scripts/tests/) -- they hold the kill tests for the quartet scripts and no other lane ran them. A separate run keeps the station suite's own rootdir."
-cmd = "pytest src/shared/packages/pyforge-atlas/tests -q && pytest tests/packaging/test_openteams_handoffs.py scripts/tests -q"
+cmd = "pytest src/shared/packages/pyforge-atlas/tests -q -n auto --dist loadgroup && pytest tests/packaging/test_openteams_handoffs.py scripts/tests -q -n auto --dist loadgroup"
 
 [feature.pyforge-atlas.tasks.pyforge-atlas-coverage-gate]
 description = "Mirror of .github/workflows/coverage-gates.yml's `named-module-gates (atlas)` job: run scripts/coverage_gates_ci.py over the modules THIS branch touches, in atlas's own env, against the 80% unit floor. Distinct from pyforge-atlas-test-coverage, which measures named modules against seeded ratchet floors -- this one measures only touched modules and is the gate that actually reds a PR. Added 2026-09-14 after PR #1355: board.py had sat at 70.1% since the Guildhall console was retired, and because the gate only measures TOUCHED modules it stayed invisible until an unrelated edit to that file surfaced it in CI with no local equivalent to catch it first."
@@ -2855,6 +2858,7 @@ hatchling = ">=1.32.4"            # Python build backend (drives both conda + wh
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                # test runner
 pytest-cov = ">=7.1.0"            # Story 32.7 (spec-pyforge-testing-charter CAP-4, amended by spec-fleet-consistency-standard): coverage JSON for the named-module gate. Declared in only pyforge-marshal and local-recipes until 2026-09-07, so seven station envs could not run a coverage gate at all -- verified live against scribe, which exited 1 with "unrecognized arguments: --cov".
+pytest-xdist = ">=3.8.0"          # Story 71.6 (CAP-159): parallel station suite in pyforge-doctor-test
 # --- pyforge-scribe (Scribe): pixi build workspace member (warden mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-scribe (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as
@@ -3009,8 +3013,8 @@ python-build = ">=1.6.1"          # PyPA `python -m build` frontend (wheel + sdi
 pytest = ">=9.1.1"                # test runner
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-test]
-description = "Run the pyforge.doctor test suite"
-cmd = "pytest src/shared/packages/pyforge-doctor/tests -q"
+description = "Run the pyforge.doctor test suite (pytest-xdist, 4 workers; the 5 s speed-budget test runs alone afterwards so worker contention cannot time it)"
+cmd = "env PYTEST_XDIST_AUTO_NUM_WORKERS=4 pytest src/shared/packages/pyforge-doctor/tests -q -n auto --dist loadgroup --ignore=src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py && pytest src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py -q"
 
 [feature.pyforge-doctor.tasks.pyforge-doctor-aggregate-scripts-test]
 description = "Story 39.1 (spec-pyforge-doctor; follows Story 38.5; Story 41.1 added the second file): tests/scripts/test_detectors_doctor_sources.py and tests/scripts/test_apply_verification_verdicts.py where Doctor's run-deps (jsonschema, pyyaml, pyforge-core) are installed. The aggregate tests load Doctor's dispatch table and the verdict-writer tests import its citation predicate, so both skip under pyforge-doctor-scripts-test (pyforge-ci, stdlib-only by design) and this is where they run. The Detectors scripts-suite job and pr-preflight call this task verbatim."

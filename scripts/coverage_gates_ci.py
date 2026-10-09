@@ -21,9 +21,11 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
+import tomllib
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -179,6 +181,7 @@ def _run_pytest_cov(
         "--cov-branch",
         f"--cov-report=json:{report}",
         "--cov-report=term-missing:skip-covered",
+        *_station_test_task_xdist_argv(station),
     ]
     print("+", " ".join(cmd), flush=True)
     env = os.environ.copy()
@@ -269,6 +272,57 @@ def _evaluate(
 
 
 GATE_MARKER_EXPR = "not slow"
+
+
+def _pixi_task_cmd(task_name: str) -> str | None:
+    pixi_path = REPO / "pixi.toml"
+    if not pixi_path.is_file():
+        return None
+    data = tomllib.loads(pixi_path.read_text(encoding="utf-8"))
+    for feature in data.get("feature", {}).values():
+        if not isinstance(feature, dict):
+            continue
+        tasks = feature.get("tasks")
+        if not isinstance(tasks, dict):
+            continue
+        task = tasks.get(task_name)
+        if isinstance(task, dict):
+            cmd = task.get("cmd")
+            if isinstance(cmd, str):
+                return cmd
+    return None
+
+
+def _pytest_xdist_argv_from_task_cmd(cmd: str) -> list[str]:
+    """Mirror Story 71.6: read ``-n`` / ``--dist`` from the station test task cmd."""
+    for segment in cmd.split("&&"):
+        segment = segment.strip()
+        if not segment:
+            continue
+        parts = shlex.split(segment)
+        try:
+            idx = parts.index("pytest")
+        except ValueError:
+            continue
+        rest = parts[idx + 1 :]
+        out: list[str] = []
+        i = 0
+        while i < len(rest):
+            tok = rest[i]
+            if tok in ("-n", "--dist") and i + 1 < len(rest):
+                out.extend([tok, rest[i + 1]])
+                i += 2
+                continue
+            i += 1
+        return out
+    return []
+
+
+def _station_test_task_xdist_argv(station: str) -> list[str]:
+    cmd = _pixi_task_cmd(f"pyforge-{station}-test")
+    if not cmd:
+        return []
+    return _pytest_xdist_argv_from_task_cmd(cmd)
 
 
 def _resolve_changed_paths(
