@@ -179,7 +179,9 @@ def test_supervisor_preserve_journals_tag_when_flag_on(
         assert facts.preserve_tag is not None
         assert facts.preserve_tag.startswith("preserve/")
         tags = list_local_preserve_tags(repo)
-        assert any(t.refname.endswith(facts.preserve_tag.split("/", 1)[-1]) or facts.preserve_tag in t.refname for t in tags)
+        assert any(
+            t.refname.endswith(facts.preserve_tag.split("/", 1)[-1]) or facts.preserve_tag in t.refname for t in tags
+        )
     else:
         assert facts.preserve_tag is None
 
@@ -215,7 +217,9 @@ def test_tag_dedup_writes_one_local_tag(
     assert len(list_local_preserve_tags(repo)) == 1
 
 
-def test_mutation_dedup_second_tag_would_fail_without_noop(git_pair: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch):
+def test_mutation_dedup_second_tag_would_fail_without_noop(
+    git_pair: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+):
     repo, _bare = git_pair
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flagd_tree(repo, {_FLAG: "on"})))
     (repo / "w.txt").write_text("work\n", encoding="utf-8")

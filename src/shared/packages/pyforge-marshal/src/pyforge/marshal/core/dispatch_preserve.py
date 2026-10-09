@@ -139,7 +139,7 @@ def tag_dispatch_worktree_preserve(
     )
     try:
         tagged = tag_preserve(worktree, refname=refname, commit=commit, trailers=trailers)
-    except (PreserveRefError, PreserveGitError):
+    except PreserveRefError, PreserveGitError:
         return None
     preserve_tag = short_ref_name(tagged.refname)
     pushed = False

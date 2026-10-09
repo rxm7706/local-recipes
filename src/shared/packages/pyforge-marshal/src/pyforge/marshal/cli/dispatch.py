@@ -1260,10 +1260,7 @@ def _fleet_cycle_preserve_tag_for_story(
             Finding(
                 code="MRS-DRAIN-020",
                 severity=Severity.WARN,
-                message=(
-                    f"station {slug!r}: story {story!r} has no dispatch preserve tag "
-                    "in its latest run journal"
-                ),
+                message=(f"station {slug!r}: story {story!r} has no dispatch preserve tag in its latest run journal"),
             )
         )
     return tag
