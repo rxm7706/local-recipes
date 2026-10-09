@@ -26,7 +26,8 @@ story's worktree. Hit five times in one session on 2026-08-14 (marshal
 8.1-9.5, 9.6; mason 3.6-3.9) before this containment existed; three more
 same-day (atlas 14-2, herald 14-2/14-3) confirmed the recurrence was not a
 one-off. Every occurrence's real, reviewed commits survive as an
-`attempt-preserve/<run>-<hash>` branch (or its `preserve/…/bmad-loop-…` tag twin) -- recoverable by hand (create
+`attempt-preserve/<run>-<hash>` branch (or its `preserve/…/bmad-loop-…` tag twin) -- recoverable by hand (preserve
+the source with `marshal preserve tag --producer hand --from .` before cutting
 `land/<slug>-<story>` off `origin/loop/<slug>`, merge the preserve branch's
 commits in, land as a normal PR), but invisible until an operator notices,
 which is exactly what this containment (CAP-1/CAP-2) ends.
@@ -312,9 +313,11 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print(f"      no preserve tag or attempt-preserve/{f['run']}-* branch found -- "
                       f"check failed/{f['story']}/changes.patch in the run dir")
-        print(f"\n{len(findings)} finding(s). Recover: create land/<slug>-<story> off "
-              f"origin/loop/<slug>, merge the preserve branch's real commits in, land "
-              f"as a normal PR (same shape as PRs #482-484, #510).")
+        print(f"\n{len(findings)} finding(s). Recover: preserve the source "
+              f"(marshal preserve tag --producer hand --from .) before cutting "
+              f"land/<slug>-<story> off origin/loop/<slug>, merge the preserve "
+              f"branch's real commits in, land as a normal PR (same shape as PRs "
+              f"#482-484, #510).")
         return 1
 
     print("OK: no unrecovered baseline-drift defer on either observation plane.")

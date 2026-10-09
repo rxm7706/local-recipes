@@ -172,11 +172,13 @@ _RECOVERY_ALLOWLIST_KEYS: dict[str, StoryKeyRef] = {
 RECOVERY_LANDING_CONVENTION = """\
 Recovery landing convention (forward-compatible, FR-191 CAP-1):
 
-1. Branch: ``land/<station>-<epic>-<seq>[-<description>]`` off the loop home
+1. Preserve the source (``marshal preserve tag --producer hand --from .`` in the
+   loop home or recovery worktree) before cutting ``land/<station>-<epic>-<seq>…``.
+2. Branch: ``land/<station>-<epic>-<seq>[-<description>]`` off the loop home
    (same shape as PRs #482-#488).
-2. Merge commit subject: ``recover <station> <epic>-<seq> (<short title>)``
+3. Merge commit subject: ``recover <station> <epic>-<seq> (<short title>)``
    when landing by hand without ``marshal land``'s templated subject.
-3. Prefer ``marshal land`` / ``deploy land-story`` (FR-187 templated subject)
+4. Prefer ``marshal land`` / ``deploy land-story`` (FR-187 templated subject)
    for all new landings -- recovery shapes above exist so manual recoveries
    are born recognizable.
 
