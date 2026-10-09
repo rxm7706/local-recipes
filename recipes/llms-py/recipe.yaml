@@ -72,13 +72,13 @@ extra:
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llms-py-feedstock
-  cfe-forge-recipe-updates-needed: [version-bump-to-3.0.49]
+  cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-07-03T04:00:00Z
   cfe-generated-by-version: 8.65.0
   cfe-generated-at-datetime: 2026-07-03T04:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-07-03T04:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T08:45:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

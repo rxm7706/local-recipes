@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - uv-build >=0.8.0,<0.9
     - pip
   run:
@@ -32,7 +32,9 @@ tests:
       imports:
         - ag_ui.core
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: "AG-UI: the Agent-User Interaction Protocol. Bring Agents into Frontend Applications."
@@ -66,7 +68,7 @@ extra:
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: 2026-10-09T08:45:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
