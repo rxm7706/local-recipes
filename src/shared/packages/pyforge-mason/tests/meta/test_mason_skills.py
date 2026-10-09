@@ -1,4 +1,4 @@
-"""Story 19.2+ — hand-authored Mason craft skills (mason-package, …)."""
+"""Story 19.2+ — hand-authored Mason craft and campaign skills."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ import yaml
 CFE_LINK_FRAGMENT = ".claude/skills/conda-forge-expert/"
 GOTCHA_HEADING_RE = re.compile(r"^### G\d+\.", re.MULTILINE)
 
-# Extend in Story 19.4 (feedstock campaigns).
 MASON_HAND_AUTHORED_SKILLS: tuple[dict[str, object], ...] = (
     {
         "skill_dir": "mason-package",
@@ -44,6 +43,28 @@ MASON_HAND_AUTHORED_SKILLS: tuple[dict[str, object], ...] = (
             "engine_name",
             "engine_version",
             "conda-lock",
+        ),
+    },
+    {
+        "skill_dir": "mason-feedstock-platform-expansion",
+        "expected_name": "mason-feedstock-platform-expansion",
+        "required_phrases": (
+            "target_platforms",
+            "conda-forge-expert/guides/feedstock-platform-expansion.md",
+            "Worked Examples",
+            "references/worked-examples.md",
+        ),
+    },
+    {
+        "skill_dir": "mason-feedstock-failure-remediation",
+        "expected_name": "mason-feedstock-failure-remediation",
+        "required_phrases": (
+            "FLAKE",
+            "REAL_FIX",
+            "BLOCKED",
+            "Wave A",
+            "Wave E",
+            "references/worked-examples.md",
         ),
     },
 )
