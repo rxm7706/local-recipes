@@ -45,7 +45,6 @@ import csv
 import html
 import io
 import json
-import os
 import re
 import sys
 import uuid
@@ -129,8 +128,7 @@ def resolve_flag_key(flag_name: str) -> str:
 def flag_off_message(flag_key: str) -> str:
     short = _TREE_TO_LEGACY.get(flag_key, flag_key)
     return (
-        f"flag {flag_key} is off (set flag-overlays.json variant on, or "
-        f"--flag {short}=true or --flag {flag_key}=true)"
+        f"flag {flag_key} is off (set flag-overlays.json variant on, or --flag {short}=true or --flag {flag_key}=true)"
     )
 
 

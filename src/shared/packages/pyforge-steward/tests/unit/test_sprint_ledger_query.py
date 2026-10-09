@@ -396,7 +396,9 @@ def test_eval_flag_cli_override_outranks_the_tree(tmp_path: Path) -> None:
         eval_flag(FLAG_DOSSIER_EXPORT, False, flag_overrides={"enable_dossier_export": True}, flags_path=missing)
         is True
     )
-    assert eval_flag(FLAG_DOSSIER_EXPORT, False, flag_overrides={FLAG_DOSSIER_EXPORT: "yes"}, flags_path=missing) is True
+    assert (
+        eval_flag(FLAG_DOSSIER_EXPORT, False, flag_overrides={FLAG_DOSSIER_EXPORT: "yes"}, flags_path=missing) is True
+    )
 
 
 def test_eval_flag_reads_the_one_tree(tmp_path: Path) -> None:
@@ -411,9 +413,7 @@ def test_eval_flag_maps_legacy_short_names(tmp_path: Path) -> None:
     assert eval_flag("enable_postgres_sync", False, flags_path=tree) is True
 
 
-def test_eval_flag_env_var_is_not_a_provider(
-    duty_engine: Path, monkeypatch: pytest.MonkeyPatch, capsys
-) -> None:
+def test_eval_flag_env_var_is_not_a_provider(duty_engine: Path, monkeypatch: pytest.MonkeyPatch, capsys) -> None:
     monkeypatch.setenv("FLAGS_ENABLE_DOSSIER_EXPORT", "true")
     result = LedgerQueryDuty().run(_ns(format="static-dossier"))
     assert result.ok is False
@@ -475,9 +475,7 @@ def test_flag_override_via_cli_flag_opens_a_gated_formatter(duty_engine: Path, m
     result = LedgerQueryDuty().run(_ns(format="static-dossier", flag=["enable_dossier_export=true"]))
     assert result.ok is True
     assert result.summary.startswith("<!DOCTYPE html>")
-    result = LedgerQueryDuty().run(
-        _ns(format="static-dossier", flag=[f"{FLAG_DOSSIER_EXPORT}=true"])
-    )
+    result = LedgerQueryDuty().run(_ns(format="static-dossier", flag=[f"{FLAG_DOSSIER_EXPORT}=true"]))
     assert result.ok is True
     result = LedgerQueryDuty().run(_ns(format="static-dossier", flag=["enable_dossier_export=false"]))
     assert result.ok is False
