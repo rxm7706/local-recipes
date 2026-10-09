@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/d5/db/df6cfb7a64357825a09aa52e00d0e3718a22c4c820c3eb08d3a5eebfc9ca/google_cloud_scheduler-2.21.0.tar.gz
+  url: https://pypi.org/packages/source/g/google-cloud-scheduler/google_cloud_scheduler-${{ version }}.tar.gz
   sha256: 0c5f0d98b0aeede68072fc49c58b491db05ead8d498e53dcdd33eb8185c1979f
 
 build:
@@ -20,24 +20,24 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
-  - wheel
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
   run:
-  - python >=${{ python_min }},<4.0
-  - google-api-core >=1.34.1,<3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,!=2.8.*,!=2.9.*,!=2.10.*
-  - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
-  - grpcio >=1.33.2,<2.0.0
-    #- grpcio >=1.75.1,<2.0.0  # [py>=314]
-  - proto-plus >=1.22.3,<2.0.0
-    #- proto-plus >=1.25.0,<2.0.0  # [py>=313]
-  - protobuf >=3.20.2,<7.0.0,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5
+    - python >=${{ python_min }},<4.0
+    - google-api-core >=1.34.1,<3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,!=2.8.*,!=2.9.*,!=2.10.*
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    - grpcio >=1.33.2,<2.0.0
+      #- grpcio >=1.75.1,<2.0.0  # [py>=314]
+    - proto-plus >=1.22.3,<2.0.0
+      #- proto-plus >=1.25.0,<2.0.0  # [py>=313]
+    - protobuf >=3.20.2,<7.0.0,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5
 
 tests:
 - python:
     imports:
-    - google
+      - google
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -49,7 +49,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -57,8 +57,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: google-cloud-scheduler
   cfe-purls:
-  - pkg:conda/google-cloud-scheduler@${{ version }}?channel=conda-forge
-  - pkg:pypi/google-cloud-scheduler@${{ version }}
+    - pkg:conda/google-cloud-scheduler@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-scheduler@${{ version }}
   cfe-upstream-repo: https://github.com/googleapis/google-cloud-python
   cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-scheduler
   cfe-import-names: [google.cloud.scheduler]
@@ -68,7 +68,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/google-cloud-scheduler-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
+    - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
