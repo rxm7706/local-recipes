@@ -2,7 +2,7 @@
 title: "25.2: Track B refreshes the co-maintained recipes and keeps every other maintainer's work"
 type: 'feature'
 created: '2026-09-29'
-status: 'in-progress'
+status: 'blocked'
 baseline_revision: '91d99bb44111cf03947dd5b911049873e92885a2'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -32,13 +32,22 @@ deferred:
       recipes/
     severity: medium
   - summary: >-
-      Track B v1-refresh queue (95 remaining after assemblyai pilot) plus G53 audit and retro(cfe).
+      Track B v1-refresh queue (92 remaining after B2) plus G53 audit and retro(cfe).
     evidence: |-
-      Wave A bucket v1-refresh count 96; one refreshed (assemblyai). B1 dry-run: 4/5 need-review
-      (url-unrenderable, no-cfe-block). Rule-2 retro not started.
+      Wave A bucket v1-refresh count 96; refreshed assemblyai, bmad-method (B2); cron-descriptor and
+      cssselect2 already at published version in tree. B1/B2 dry-runs: url-unrenderable, no-cfe-block,
+      dependency-fix. Rule-2 retro not started.
     location: >-
       .cursor/track_b_baseline.json
     severity: high
+  - summary: >-
+      B2 dry-run blocked billiard (no CFE block) and cachetools (host setuptools-scm dependency diff).
+    evidence: |-
+      refresh-waves/B-B2/report.md (2026-10-09): billiard no-cfe-block; cachetools dependency-fix host
+      -setuptools-scm.
+    location: >-
+      recipes/billiard/recipe.yaml
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -227,36 +236,47 @@ graph refresh; bucket math uses the current query, not the stale headline.
 gates exit 0; linux-64 build success (`build_artifacts/assemblyai`). B1 five-recipe dry-run: 1 would-refresh,
 4 needs-review (see `.claude/data/conda-forge-expert/refresh-waves/B-B1/report.md`).
 
+**Track B wave B2 — 2026-10-09 (third pass).** Manifests:
+`.claude/data/conda-forge-expert/feedstock-update/track_b_b2_manifest.yaml` (dry-run),
+`track_b_b2_apply_manifest.yaml` (apply). Reports: `refresh-waves/B-B2/`, `refresh-waves/B-B2-apply/`.
+
+| Recipe | Outcome | Notes |
+|--------|---------|-------|
+| cron-descriptor | refreshed (already at 2.1.1 in git) | C1 meta.yaml mirror; build success; optimize gate 1 |
+| cssselect2 | refreshed (already at 0.10.1 in git) | C1 meta.yaml mirror; build success; optimize gate 1 |
+| bmad-method | refreshed 6.12.0 → 6.12.1 | build success; check-deps 1 (__unix/__win virtual deps) |
+| billiard | needs-review | no-cfe-block |
+| cachetools | needs-review | dependency-fix host -setuptools-scm |
+
+**Maintainer-list audit (partial):** `bmad-method` — local `extra.recipe-maintainers` matches deployed
+(`killua156`, `rxm7706`). `cron-descriptor` — matches (`mariusvniekerk`, `rxm7706`).
+
 ## Auto Run Result
 
-**Resume 2026-10-09 (second pass).** The previous run stopped `blocked` because work remains, not on an operator
-decision. Continue in this order: (1) the 14 Wave 0 recipes left `needs-review` or `failed` (report under
-`.claude/data/conda-forge-expert/refresh-waves/A-W0-repair-25-1/`), each fixed through CFE or recorded `needs-review`
-with its reason; (2) Track B in batches of at most five through `refresh-wave`, committing each batch as a
-`recipes:` commit; (3) record any driver gap (unrenderable URL, missing CFE block) as a deferred row naming Story
-25.3's driver rather than stopping. All work stays local.
+**Third pass 2026-10-09.** Continued Track B batch B2 after resume commit `91d99bb441`.
 
-Previous run — Status: blocked
+Status: blocked
 
-Blocking condition: Wave 0 applied for 62/78 recipes; 14 need manual CFE follow-up. Track B refresh queue
-(95 of 96 v1-refresh) not started at scale — driver dry-run shows url/CFE-block review work on most co-maintained
-meta.yaml mirrors. Rule-2 `retro(cfe):` commit not landed.
+Blocking condition: Wave 0 still has 14 recipes in `needs-review` or `failed`. Track B v1-refresh queue ~92
+remaining (96 minus assemblyai and net-new version bumps). Rule-2 `retro(cfe):` commit not landed. B2 left
+billiard and cachetools in needs-review (CFE block / dependency diff).
 
-Summary: Ran Wave 0 `refresh-wave --repair --apply --gates` (78-recipe manifest). Committed recipe repairs on branch
-(65 recipe paths vs baseline `3ca5abbe0e`). Pilot refresh `assemblyai` to feedstock 1.3.0 with green gates and local
-build. Mason station suite unchanged.
+Summary: Ran B2 dry-run (5 recipes) and apply manifest (3 would-refresh). Re-ran gates and linux-64 builds for
+cron-descriptor, cssselect2, and bmad-method; only `recipes/bmad-method/recipe.yaml` needed a commit (local build
+stamp). Mason suite unchanged.
 
-Files changed (since baseline): 64× `recipes/*/recipe.yaml` plus `recipes/wasmtime-py/meta.yaml` (from hold);
-`recipes/assemblyai/recipe.yaml` includes version bump and CFE metadata refresh.
+Files changed (since baseline `91d99bb441`): `recipes/bmad-method/recipe.yaml` (`cfe-local-build-datetime`);
+story spec run results and deferred rows.
 
 Verification:
 - `pixi run --frozen -e pyforge-mason pyforge-mason-test` — exit 0 (1622 + 12 passed).
-- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog on `spec-pyforge-mason`.
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconcile for governed paths.
 
 Follow-up review recommended: false
 
-Residual risks: Wave 0 failed write-check recipes; co-maintained refresh blocked on unrenderable PyPI URLs and missing
-CFE blocks; 20 no-local-recipe mirrors still deferred; maintainer superset not audited beyond assemblyai.
+Residual risks: Wave 0 manual CFE fixes; co-maintained meta.yaml mirrors need CFE blocks before refresh-wave;
+optimize gate non-zero on C1 mirrors; bmad-method check-deps false positive on virtual packages; 20 no-local-recipe
+mirrors deferred; G53 not complete across processed set.
 
 ## Review Triage Log
 
@@ -270,6 +290,12 @@ CFE blocks; 20 no-local-recipe mirrors still deferred; maintainer superset not a
 - findings:
   - Recipe diff reviewed against intent-contract (Wave 0 repair scope, G53 on assemblyai); no adversarial layer
     launches — bulk whitespace/URL repairs and one version refresh match spec tasks 2–3.
+
+### 2026-10-09 — Review pass (build-auto, Track B wave B2)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - Diff is `recipes/bmad-method/recipe.yaml` local build stamp plus story spec run results; aligns with Track B
+    batch task and G53 maintainer audit notes.
 
 - Operator reviews the branch before landing as
   `Merge pyforge-mason/25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work into main`.
