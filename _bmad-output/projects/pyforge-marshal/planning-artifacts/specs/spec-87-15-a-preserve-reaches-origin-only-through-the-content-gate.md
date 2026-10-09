@@ -2,7 +2,8 @@
 title: "87.15: A preserve reaches origin only through the content gate"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '1ea679cd82a2aa474fa5e2c6e6a25997a570c19b'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
