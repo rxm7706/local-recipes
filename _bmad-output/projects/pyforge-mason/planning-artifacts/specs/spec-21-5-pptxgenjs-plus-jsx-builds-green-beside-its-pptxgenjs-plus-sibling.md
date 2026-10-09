@@ -2,7 +2,8 @@
 title: "21.5: pptxgenjs-plus-jsx builds green beside its pptxgenjs-plus sibling"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '8ff4ac37a763fa821fcd0a1e4fd1e14d8fee10fc'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false

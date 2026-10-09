@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "4.2.1"
+  version: "4.3.4"
 
 package:
   name: pptxgenjs-plus
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://registry.npmjs.org/pptxgenjs-plus/-/pptxgenjs-plus-${{ version }}.tgz
-  sha256: 15c9abf31bb2fa07f96d206f6d608fb1dc527b543a27006209773a038a39bcdc
+  sha256: 91dad0729f2fb3f9e4df490fe02ce2bc23cd3e3554e5f04cfbcbca317be30144
 
 build:
   number: 0
@@ -92,11 +92,11 @@ extra:
   cfe-on-conda-forge-feedstock: none
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-08-25T23:15:00Z"
+  cfe-last-checked: "2026-10-09T04:00:00Z"
   cfe-generated-by-version: 8.84.0
   cfe-generated-at-datetime: "2026-08-25T23:15:00Z"
-  cfe-local-build-status: success
-  cfe-local-build-datetime: "2026-08-25T23:20:00Z"
+  cfe-local-build-status: pending
+  cfe-local-build-datetime: ""
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
