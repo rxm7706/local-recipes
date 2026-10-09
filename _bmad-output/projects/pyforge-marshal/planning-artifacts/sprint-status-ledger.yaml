@@ -360,7 +360,7 @@ development_status:
   73-2-a-drain-schedules-the-follow-up-review-a-landed-story-recommended: done
   74-1-the-testing-kit-runs-a-story-in-both-flag-states-through-one-fixture: done
   74-2-dispatch-refuses-a-story-the-flag-gate-would-red-before-any-session-starts: done
-  74-3-bmad-spec-bmad-build-and-bmad-tea-carry-the-flag-mandate-in-their-overrides: backlog
+  74-3-bmad-spec-bmad-build-and-bmad-tea-carry-the-flag-mandate-in-their-overrides: done
   75-1-fleet-scan-reads-archived-dreams-from-the-archive: done
   76-1-bmad-drift-check-py-s-specs-mode-retires: done
   77-1-dispatch-seeds-each-worktree-s-codegraph-index-from-the-shared-base-and-syncs-it: done
@@ -590,7 +590,7 @@ development_status:
   epic-72-retrospective: optional
   epic-73: done
   epic-73-retrospective: optional
-  epic-74: in-progress
+  epic-74: done
   epic-74-retrospective: optional
   epic-75: done
   epic-75-retrospective: optional
