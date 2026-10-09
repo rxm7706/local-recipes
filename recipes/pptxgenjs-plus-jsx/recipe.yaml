@@ -23,6 +23,7 @@ build:
         - npm pack --ignore-scripts
         - npm install --global ./pptxgenjs-plus-jsx-${{ version }}.tgz
         - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - install -D third-party-licenses.txt "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/third-party-licenses.txt"
         - rm -rf "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/node_modules/.bin"
       else:
         - call pnpm install --ignore-scripts
@@ -33,6 +34,7 @@ build:
         - if %ERRORLEVEL% neq 0 exit 1
         - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
         - if %ERRORLEVEL% neq 0 exit 1
+        - copy /Y third-party-licenses.txt "%PREFIX%\lib\node_modules\pptxgenjs-plus-jsx\third-party-licenses.txt"
         - if exist "%PREFIX%\lib\node_modules\pptxgenjs-plus-jsx\node_modules\.bin" rmdir /s /q "%PREFIX%\lib\node_modules\pptxgenjs-plus-jsx\node_modules\.bin"
         - if exist "%PREFIX%\node_modules\pptxgenjs-plus-jsx\node_modules\.bin" rmdir /s /q "%PREFIX%\node_modules\pptxgenjs-plus-jsx\node_modules\.bin"
 
@@ -52,7 +54,7 @@ tests:
       - if: not win
         then:
           - test -f "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/package.json"
-          - test -f "${PREFIX}/share/licenses/pptxgenjs-plus-jsx/third-party-licenses.txt"
+          - test -f "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/third-party-licenses.txt"
           - test ! -d "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/node_modules/.bin"
           - |
             node <<'EOF'
@@ -114,8 +116,8 @@ extra:
   cfe-last-checked: "2026-10-09T04:00:00Z"
   cfe-generated-by-version: 8.84.0
   cfe-generated-at-datetime: "2026-10-09T04:00:00Z"
-  cfe-local-build-status: pending
-  cfe-local-build-datetime: ""
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-10-09T03:48:00Z"
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
