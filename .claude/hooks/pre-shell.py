@@ -1237,10 +1237,9 @@ def _gh_api_endpoint_slug(tokens: list[str]) -> Optional[str]:
     return None
 
 
-def _gh_api_is_write(tokens: list[str]) -> bool:
-    env, body = _strip_env_prefix(tokens)
+def _gh_api_http_method(body: list[str]) -> str:
     method = "GET"
-    i = 0
+    i = 2
     while i < len(body):
         tok = body[i]
         if tok in ("-X", "--method") and i + 1 < len(body):
@@ -1255,9 +1254,34 @@ def _gh_api_is_write(tokens: list[str]) -> bool:
             i += 1
             continue
         break
+    if method == "GET":
+        return "GET"
+    return method
+
+
+def _gh_api_endpoint_parts(body: list[str]) -> list[str]:
+    i = 2
+    while i < len(body):
+        tok = body[i]
+        if tok in ("-X", "--method") and i + 1 < len(body):
+            i += 2
+            continue
+        if tok.startswith("--method="):
+            i += 1
+            continue
+        if tok.startswith("-"):
+            i += 1
+            continue
+        return body[i].strip("/").split("/")
+    return []
+
+
+def _gh_api_is_write(tokens: list[str]) -> bool:
+    _, body = _strip_env_prefix(tokens)
+    method = _gh_api_http_method(body)
     if method != "GET":
         return method in ("POST", "PUT", "PATCH", "DELETE")
-    for tok in body:
+    for tok in body[2:]:
         if tok in ("-f", "-F", "--field", "--raw-field", "--input"):
             return True
         if tok.startswith(("-f", "-F")) and len(tok) > 2:
@@ -1374,25 +1398,20 @@ def match_outward_github_write(ctx: Context, rule: dict[str, Any]) -> Optional[s
                 continue
             if not _gh_api_is_write(body):
                 continue
-            endpoint = ""
-            for tok in body[2:]:
-                if not tok.startswith("-"):
-                    endpoint = tok
-                    break
-            ep = endpoint.strip("/")
-            parts = ep.split("/") if ep else []
-            if parts[:1] == ["user"] and len(parts) >= 2 and parts[1] == "repos":
+            parts = _gh_api_endpoint_parts(body)
+            if parts[:2] == ["user", "repos"]:
                 return reason
-            if parts[:1] == ["orgs"] and len(parts) >= 3 and parts[2] == "repos":
+            if len(parts) >= 3 and parts[0] == "orgs" and parts[2] == "repos":
                 return reason
-            if parts[:1] == ["gists"] or (len(parts) >= 2 and parts[0] == "gists"):
+            if parts[:1] == ["gists"]:
                 return reason
             if len(parts) >= 4 and parts[0] == "repos" and parts[3] == "forks":
                 return reason
-            slug = _gh_api_endpoint_slug(body)
-            if slug is None or not _is_local_recipes_slug(slug):
-                return reason
-            continue
+            if len(parts) >= 3 and parts[0] == "repos":
+                slug = f"{parts[1].lower()}/{parts[2].lower()}"
+                if _is_local_recipes_slug(slug):
+                    continue
+            return reason
         if len(body) >= 3 and body[1] in ("pr", "issue", "release"):
             family = body[1]
             verb = body[2]
@@ -1442,9 +1461,10 @@ def _mason_submit_denied(tokens: list[str]) -> bool:
     if "package" in low:
         idx = low.index("package")
         rest = low[idx + 1 :]
-        if "ship" in rest and _tokens_have_yes(tokens):
-            return True
-        if _tokens_have_yes(tokens) and "ship" in rest:
+        has_ship = any(
+            tok == "ship" or tok == "--ship" or tok.startswith("--ship") for tok in rest
+        )
+        if has_ship and _tokens_have_yes(tokens):
             return True
     return False
 
