@@ -69,7 +69,7 @@ development_status:
   21-3-gitgres-builds-green-against-postgresql-17-from-a-pinned-commit: done
   21-4-opengrep-is-repackaged-from-its-release-binaries-as-a-local-only-recipe: done
   21-5-pptxgenjs-plus-jsx-builds-green-beside-its-pptxgenjs-plus-sibling: done
-  22-1-the-twelve-recipes-carrying-conda-recipe-manager-s-sentinel-key-are-repaired: backlog
+  22-1-the-twelve-recipes-carrying-conda-recipe-manager-s-sentinel-key-are-repaired: done
   22-2-cfe-s-validation-reds-a-recipe-with-a-non-string-key-or-a-python-object-repr: done
   22-3-ctng-compilers-loses-its-sentinel-key-once-rattler-build-renders-its-output-graph: blocked
   22-4-vc-loses-its-sentinel-key-once-rattler-build-can-emit-its-vc14-track-feature: blocked
