@@ -2,7 +2,8 @@
 title: "87.2: The unpushed-work detector fails closed and never prints a tag-minting remedy"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'done'
+followup_review_recommended: false
 baseline_revision: 'fe98582a06cfb1e3b69edde46eaab05efe292c79'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -13,6 +14,7 @@ context:
   - _bmad-output/projects/pyforge-marshal/planning-artifacts/research/preserved-work-refs-2026-10-04-review.md
   - scripts/unpushed_work_check.py
   - tests/scripts/test_unpushed_work_check_full_ref.py
+  - tests/scripts/test_unpushed_work_check.py
 deferred: []
 declared_low_risk: false
 ---
@@ -79,8 +81,34 @@ Minted 2026-10-04 under the operator's ruling of the same day (the review's reco
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Shipped fail-closed observation, unpushed-ref findings, report-only remedies, and Story 87.2 test suite (bmad-build-auto).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 0, false 2, maybe-false 0
+- findings:
+  - `[false]` `[reject]` Annotated tags on origin via ls-remote may not peel to commits without a local object — remote lightweight tags and branch tips cover the common case; full peel is Story 87.9 scope.
+  - `[false]` `[reject]` Scanning all non-head refs may include rare git internal refs — none observed in tests; acceptable report-only noise.
+
+## Auto Run Result
+
+Status: done
+
+Summary: `scripts/unpushed_work_check.py` now fails closed when git cannot be observed (exit 2, command named), parses fsck stdout even when fsck exits non-zero, skips synthetic merged-check subjects, reports local-only tags and custom refs as `unpushed-ref`, treats preserve/archive/rescue tags as rescued, and prints report-only remedies with no `git tag` or `git push`.
+
+Files changed:
+- `scripts/unpushed_work_check.py` — detector behavior per CAP-287 / Story 87.2 ACs
+- `tests/scripts/test_unpushed_work_check.py` — new integration tests (real git, mutation checks)
+- `tests/scripts/test_local_branch_full_ref_scripts.py` — remedy contract update
+
+Review: no patches applied; two edge-case notes rejected as out of scope or already acceptable.
+
+Follow-up review recommended: false
+
+Verification:
+- `pytest tests/scripts/test_unpushed_work_check*.py tests/scripts/test_local_branch_full_ref_scripts.py` — pass
+- `pixi run -e pyforge-marshal pyforge-marshal-test` — pass
+- `pixi run -e pyforge-ci pyforge-deps-test` — pass
+- `pixi run -e pyforge-guild lint-types` — pass
+- `python scripts/spec_surface_reconcile.py` — pass (memlog names governed paths on spec-pyforge-marshal)
