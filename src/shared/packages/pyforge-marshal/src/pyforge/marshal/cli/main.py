@@ -113,6 +113,8 @@ import argparse
 import inspect
 import sys
 
+from pyforge.core.flags import FlagOff
+
 from ..adapters.harness_bmadloop import (
     HARNESS_VERSION_RANGE_TEXT,
     BmadLoopHarness,
@@ -122,8 +124,6 @@ from ..adapters.harness_bmadloop import (
 from ..core import policy as policy_core
 from ..core.context import MarshalContext
 from ..core.model import Verdict
-from pyforge.core.flags import FlagOff
-
 from ..core.verdict import EXIT_OK, EXIT_SIGINT, EXIT_USAGE, GUARDED_EXIT_CODES, exit_code_for
 from . import adapters as adapters_cli
 from . import check as check_cli

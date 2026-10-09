@@ -7,11 +7,11 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit.cli_runner import invoke_cli
+from pyforge.testing_kit.flags import assert_flag_off_verb, flag_states, flagd_tree
 
 from pyforge.marshal.cli.main import main
 from pyforge.marshal.cli.preserve import PRESERVE_FLAG_KEY
-from pyforge.testing_kit.flags import assert_flag_off_verb, flag_states, flagd_tree
-from pyforge.testing_kit.cli_runner import invoke_cli
 
 _FLAG = PRESERVE_FLAG_KEY
 

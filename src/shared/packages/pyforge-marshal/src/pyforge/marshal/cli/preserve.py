@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from pyforge.core.flags import FlagOff, disabled_help, require
+from pyforge.core.flags import disabled_help, require
 from pyforge.core.preserve_refs import (
     PRESERVE_PRODUCERS,
     PreserveGitError,
@@ -20,7 +20,6 @@ from pyforge.core.preserve_refs import (
     snapshot_worktree_commit,
     tag_preserve,
 )
-
 from pyforge.core.process import PosixProcess
 
 from ..core.model import Finding, Severity, Verdict, build_envelope
