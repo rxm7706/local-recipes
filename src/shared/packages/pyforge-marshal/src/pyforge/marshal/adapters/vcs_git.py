@@ -28,9 +28,11 @@ reproducing this repo's own squash-merge convention), and the two writes
 ``remove_worktree``/``delete_branch``. ``is_branch_merged``'s internal
 ``commit-tree`` call pins its own ``user.name``/``user.email`` and disables
 ``commit.gpgsign`` via ``-c`` flags (never the operator's global git
-config) -- the resulting object is never referenced by any ref and is
-eligible for garbage collection the moment this process exits; its identity
-has no lasting effect beyond this one comparison.
+config). Story 87.10 routes that object through a temporary
+``GIT_OBJECT_DIRECTORY`` (alternates to the repo store) so ``git
+count-objects`` on the repository itself is unchanged; the object is never
+referenced by any ref and is removed with the temp directory when the call
+returns.
 
 Story 4.1 (story-spec promotion, AD-13/AD-24/AD-29/AD-33) adds
 ``commit_subjects`` (``git log <ref> --format=%s``, read-only) and
