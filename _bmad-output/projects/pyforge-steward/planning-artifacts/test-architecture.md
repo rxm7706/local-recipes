@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: b1f2249b64bf25ba
-story_count: 332
+source_fingerprint: dda202dd9b89c096
+story_count: 334
 test_file_count: 104
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 332
+- **Stories parsed:** 334
 - **Epics parsed:** 85
 - **Test files inventoried:** 104 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `b1f2249b64bf25ba`
+- **Source fingerprint:** `dda202dd9b89c096`
 
 ## Risk Assessment
 
@@ -536,6 +536,8 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 71.6 | The large suites run under pytest-xdist, locally and in CI alike | none observed |
 | 71.7 | The one-minute budget is a check that reads the journal | none observed |
 | 71.8 | A preflight lane's scratch lives outside the checkout | none observed |
+| 71.9 | A reduced suite lane never fails on a segment that selects no tests | none observed |
+| 71.10 | A stopped lane is journaled cancelled, and the lane that stopped the run red | none observed |
 | 72.1 | The Guild environment answers pyforge mason | none observed |
 | 72.2 | Mason's five-tier skill cell requires its station skill and conda-forge-expert | none observed |
 | 73.1 | `steward session check` reads `marshal seed check`'s envelope, whatever its e... | none observed |

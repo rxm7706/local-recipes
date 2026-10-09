@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.21.0"
+
+package:
+  name: git-pkgs
+  version: ${{ version }}
+
+source:
+  url: https://github.com/git-pkgs/git-pkgs/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: d48505757969fb808e21de80f3dc8d8247e3cfd3f8f89c30bf43fe7a91d5f598
+
+build:
+  number: 0
+  script:
+    - if: win
+      then: call "%RECIPE_DIR%/build.bat"
+      else: bash "${RECIPE_DIR}/build.sh"
+
+requirements:
+  build:
+    - ${{ compiler("go-nocgo") }}
+    - go-licenses
+
+tests:
+  - script:
+      - git-pkgs --version | grep -F "${{ version }}"
+      - git-pkgs --help
+  - package_contents:
+      bin:
+        - if: unix
+          then: git-pkgs
+        - if: win
+          then: git-pkgs.exe
+
+about:
+  homepage: https://github.com/git-pkgs/git-pkgs
+  repository: https://github.com/git-pkgs/git-pkgs
+  documentation: https://github.com/git-pkgs/git-pkgs
+  summary: Git subcommand that analyses package and dependency use across repository history
+  description: |
+    git-pkgs is a Go CLI distributed as a git subcommand. It scans a
+    repository's git history to surface how packages and dependencies were used
+    over time, backed by pure-Go SQLite (modernc.org/sqlite) and go-git — no
+    CGO. Packaged here for local PyForge consumption (Atlas/Warden intake
+    tooling); not yet on conda-forge.
+  license: MIT
+  license_file:
+    - LICENSE
+    - library_licenses/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: git-pkgs
+  cfe-upstream-registry: golang
+  cfe-upstream-name: github.com/git-pkgs/git-pkgs
+  cfe-purls:
+    - pkg:conda/git-pkgs@${{ version }}?channel=conda-forge
+    - pkg:golang/github.com/git-pkgs/git-pkgs@${{ version }}
+  cfe-upstream-repo: https://github.com/git-pkgs/git-pkgs
+  cfe-upstream-homepage: https://github.com/git-pkgs/git-pkgs
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-09T02:00:00Z
+  cfe-generated-by-version: 8.93.1
+  cfe-generated-at-datetime: 2026-10-09T02:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T03:04:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Story 21.1 — local recipe for git-pkgs/git-pkgs. G109: v0.21.0 was
+#    # latest non-prerelease tag at build time (spec mint cited v0.20.0).
+# build:
+#    # Pure Go (CGO_ENABLED=0, GOTOOLCHAIN=local). Builds main package `.` per
+#    # .goreleaser.yaml. Runs upstream generate-man/docs hooks before compile.
+#    # Version via -X github.com/git-pkgs/git-pkgs/cmd.version (commit/date
+#    # ldflags omitted — tag tarball has no .git).
+#    # Cross-platform: unix -> build.sh; win -> build.bat with call on go shims.
+#    # go-licenses save bundles dependency licenses into library_licenses/;
+#    # linux-64 needs --ignore=github.com/oapi-codegen/nullable (unknown license).
+####

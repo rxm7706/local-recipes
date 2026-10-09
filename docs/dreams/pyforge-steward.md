@@ -1007,6 +1007,59 @@ Drift — orphaned between stations.
   tests are right and do not change. It lands after Stories 71.5-71.7, which edit the same runner and move no
   scratch. Owner `spec-pyforge-steward` CAP-159 (FR-32; Story 71.3's per-lane scratch). → Epic 71 / Story 71.8,
   specced 2026-10-08.
+- **2026-10-08 (suite reduction) — Found: a reduced suite lane fails on a segment that selects no tests.** Story 71.4
+  splits a station's suite lane into segments when its coverage gate is also selected:
+  `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py` `_build_reduced_shell_cmd`
+  (`:203`) runs the task's other test directories under its own marker, then the gate's directories under
+  `_complement_marker` (`:195`), joined with ` && ` (`:231`) and run as one `bash -lc` (`:316`). With no task marker
+  the complement is `slow` (`:200`), and the gate runs `unit` and `meta` under `not slow`
+  (`scripts/coverage_gates_ci.py:140`, `:271`). Where those directories hold no `slow` test, that segment collects
+  every test, deselects them all, and pytest exits 5, which reds the lane. Measured 2026-10-08 on a one-file herald
+  branch: `pr-preflight -- --keep-going` journaled `pyforge-herald-test` exit 5 after 12.4 s (the lane log ends `5
+  passed`, then `1738 deselected`), while `pyforge-herald-test` run directly passes 1739; without `--keep-going` the
+  red stopped the run and `pyforge-herald-coverage-gate`, terminated, was journaled `-15 red`. Every station 71.4
+  reduces is affected (measured on `875f418334`, each station's reduced lane derived with a gate plan for its
+  `unit` suite). Doctor's and scribe's reduced lanes are that one segment alone (exit 5: 3494 and 440 deselected).
+  Herald and warden run their `integration` tests first, then the empty segment (exit 5: 1738 and 2001 deselected).
+  Marshal's task already passes `-m "not slow"`, the gate's own marker, and for an equal marker the complement is
+  still `slow` (`:196`-`:197`), so its reduced lane runs a test `pyforge-marshal-test` excludes:
+  `tests/unit/test_harness_bmadloop_spin.py::test_spin_recovers_the_run_id_from_a_real_unbuffered_subprocess`
+  (`:251`-`:252`). Steward, atlas and mason are not reduced (a `scripts/` import, or a two-command task), and core
+  has no gate. 71.4's partition test (`test_preflight_suite_reduction.py:66`) could not catch either:
+  `collect_pytest_node_ids` (`:383`) adds `--collect-only -q` to a command that already passes `-q`, so pytest
+  prints per-file counts, no line carries `::`, and every set it compares is empty. **What it looks like when
+  fixed:** a segment the reduction added that selects no tests counts as passed, and a segment that runs a failing
+  test still reds the lane. A lane whose every segment selected nothing passes only if the station's own task
+  collects something, and a lane run whole keeps pytest's exit 5. For an equal marker the reduction adds no
+  gate-directory segment. The journal names each segment and how it ended. The partition test compares real,
+  non-empty node-id sets. **Constraints:** a fix story, no CAP, no flag. The gate driver and its verdict, which
+  lanes run, and every task command stay unchanged. Also found, not taken here: a lane the coordinator terminates is
+  journaled `red` with its signal exit (`preflight.py:336`-`:342`), where Story 71.3's AC says `cancelled`. Owner
+  `spec-pyforge-steward` CAP-159 (FR-32; Story 71.4's reduction). → Epic 71 / Story 71.9, specced 2026-10-08.
+- **2026-10-08 (cancelled lane) — Found: when one lane stops the preflight, the journal blames the lane it stopped.**
+  Story 71.3's AC reads: "Given one fake lane that exits 1 while two others still run When the preflight runs Then it
+  exits 1, the other two are terminated and journaled `cancelled`, and no child process is left running". On
+  `ad6f0428ff`, `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` does not do that.
+  `_run_lane_in_pool` (`:300`) treats every non-zero exit as red (`:336`-`:342`). A lane whose process
+  `terminate_children()` (`:219`) sent SIGTERM is therefore journaled `red` with exit -15 and added to `red_lanes`.
+  The lane that went red calls `terminate_children()` itself (`:341`), and that waits for each process it kills, so
+  the killed lane's future finishes first. The pool loop takes the first finished future, sees the stop, cancels and
+  drops every other future (`:499`-`:511`). Every lane whose result it did not collect is then journaled `cancelled`
+  with exit 0 and 0 s (`:549`), including the lane that actually failed. The journal of a one-file herald branch
+  (`hygiene-herald-shelf-two-headings`, two runs at `4bf5b746f8`) shows exactly this: `pyforge-herald-coverage-gate`
+  `red`, exit -15, after 14.0 s and 13.1 s; `pyforge-herald-test`, whose pytest exited 5, `cancelled`, exit 0, 0.0 s;
+  and four more lanes that were running, `cancelled`, 0.0 s. The run's stderr names the gate as the red lane, not the
+  herald suite. The SIGINT path (`_on_sigint`, `:467`) has the same red branch. No test reaches any of this:
+  `test_red_lane_cancels_others` (`tests/unit/test_preflight_concurrency.py:156`) uses an injected runner with no
+  process to terminate and asserts nothing about the lane that was running, and no test sends SIGINT. **What it looks
+  like when fixed:** a lane whose process ends because the preflight terminated it (a stop on red, or SIGINT) is
+  journaled `cancelled`, with the exit code and seconds observed and the lane that triggered the stop, or
+  `interrupt`. It is never `red` and never in `red_lanes`. A lane that fails on its own is journaled `red` with its
+  own exit code and seconds, even when its result arrives after the stop. The verdict and the printed red-lane
+  summary name only lanes that failed on their own. **Constraints:** a fix story, no CAP, no flag. Which lanes run,
+  each lane's exit code as the verdict, and stop-on-red unless `--keep-going` do not change. Owner
+  `spec-pyforge-steward` CAP-159 (FR-32; Story 71.3's run-and-cancel contract). → Epic 71 / Story 71.10, specced
+  2026-10-08.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

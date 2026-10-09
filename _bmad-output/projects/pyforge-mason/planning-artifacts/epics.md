@@ -2215,7 +2215,7 @@ So that adopting it is a channel install, not a download.
 **And** the recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; its CFE block records the real
 build; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 21.2: forge builds green from source as a local recipe
 
@@ -2235,7 +2235,7 @@ print `forge 0.10.0`, not `forge dev`
 **And** the name `forge` is re-checked against live conda-forge `channeldata.json` before the build (CFE G74, G118); the
 recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's `retro(cfe):` commit lands a CFE
 `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 21.3: gitgres builds green against PostgreSQL 17 from a pinned commit
 
@@ -2260,7 +2260,7 @@ sees `gitgres-backend` print its usage
 **And** the rendered build and test environments resolve PostgreSQL 17, never 18; Windows is skipped
 (`build.skip: win`, CFE G102); the recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's
 `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 21.4: opengrep is repackaged from its release binaries as a local-only recipe
 
@@ -2286,7 +2286,7 @@ binary is byte-identical to the release asset
 `cfe-on-conda-forge-status: blocked-pending-prerequisites`, and the source-build blockers in `cfe-forge-blocker-list`, so
 the recipe stays local; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 21.5: pptxgenjs-plus-jsx builds green beside its pptxgenjs-plus sibling
 

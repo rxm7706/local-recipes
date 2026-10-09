@@ -1,0 +1,125 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# gitgres — git object storage in PostgreSQL (design reference; not wired into PyForge).
+schema_version: 1
+
+context:
+  version: "0.1.0.dev0"
+  commit: eaf8743f2c137d61a75432e44e13467cad7eceaa
+
+package:
+  name: gitgres
+  version: ${{ version }}
+
+source:
+  url: https://github.com/andrew/gitgres/archive/${{ commit }}.tar.gz
+  sha256: 82ad23f53602d57ba86e920c36cbae412f502adc56bf09a7d7671eb37cd0df8e
+
+build:
+  number: 0
+  skip:
+    - win
+  script: bash ${{ RECIPE_DIR }}/build.sh
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - make
+    - pkg-config
+  host:
+    - postgresql >=17.11,<18
+    - libpq >=17.11,<18
+    - libgit2
+    - openssl
+  run:
+    - postgresql >=17.11,<18
+
+tests:
+  - script:
+      - if: win
+        then: echo "skipped on win"
+      - if: not win
+        then:
+          - 'gitgres-backend 2>&1 | grep -F "Usage: gitgres-backend <command> [args]"'
+          - export TEST_DIR="$(mktemp -d)"
+          - export PGDATA="${TEST_DIR}/data"
+          - export PGSOCK="${TEST_DIR}/sock"
+          - mkdir -p "${PGSOCK}"
+          - initdb -D "${PGDATA}" -U postgres --auth=trust --encoding=UTF8
+          - pg_ctl -D "${PGDATA}" -l "${TEST_DIR}/log" -w -o "-c listen_addresses='' -k ${PGSOCK}" start
+          - psql -h "${PGSOCK}" -U postgres -d postgres -v ON_ERROR_STOP=1 -c "CREATE EXTENSION gitgres CASCADE;"
+          - psql -h "${PGSOCK}" -U postgres -d postgres -v ON_ERROR_STOP=1 -c "SELECT COUNT(*) FROM repositories;"
+          - pg_ctl -D "${PGDATA}" -m fast -w stop
+          - rm -rf "${TEST_DIR}"
+  - package_contents:
+      lib:
+        - if: unix
+          then:
+            - gitgres
+      files:
+        - share/extension/gitgres.control
+        - share/extension/gitgres--0.1.sql
+      bin:
+        - gitgres-backend
+        - git-remote-gitgres
+
+about:
+  homepage: https://github.com/andrew/gitgres
+  repository: https://github.com/andrew/gitgres
+  license: MIT
+  license_file: LICENSE
+  summary: Store git objects and refs in PostgreSQL tables (PGXS extension plus backend tools)
+  description: |
+    gitgres is a reference implementation that maps git repositories into PostgreSQL.
+    This conda package builds the PGXS extension (requires PostgreSQL 17) and ships
+    the ``gitgres-backend`` and ``git-remote-gitgres`` helper binaries. Nothing in
+    the PyForge platform loads or depends on this package; it exists as a packaging
+    design reference for Mason.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+  upstream:
+    type: snapshot
+    commit: eaf8743f2c137d61a75432e44e13467cad7eceaa
+    date: 2026-03-08
+    note: |
+      Upstream has no git tags or releases. When upstream tags, flip the source URL
+      to the tag archive and drop the .dev0 suffix (G109).
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gitgres
+  cfe-upstream-registry: github
+  cfe-upstream-name: andrew/gitgres
+  cfe-purls:
+    - pkg:conda/gitgres@${{ version }}?channel=conda-forge
+    - "pkg:github/andrew/gitgres@eaf8743f2c137d61a75432e44e13467cad7eceaa"
+  cfe-upstream-repo: https://github.com/andrew/gitgres
+  cfe-upstream-homepage: https://github.com/andrew/gitgres
+  cfe-import-names: []
+  cfe-source-kind: github-commit
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: not-on-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-10-09T00:00:00Z"
+  cfe-generated-by-version: 8.93.3
+  cfe-generated-at-datetime: "2026-10-09T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-10-09T03:01:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Design-reference mirror only — not submitted to conda-forge and not wired
+#    # into pixi.toml or any station. PostgreSQL 17 host/run pins hold fnd:CAP-12.
+# build:
+#    # PGXS extension (ext/) plus libgit2/libpq backend binaries copied manually
+#    # because upstream backend/Makefile has no install target.
+# tests:
+#    # Throwaway initdb cluster on a Unix socket; no TCP. CREATE EXTENSION …
+#    # CASCADE pulls pgcrypto from the conda postgresql contrib bundle.
