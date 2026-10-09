@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: example-repr-in-prose
+  version: "1.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://example.com/example-repr-in-prose-${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  script: echo ok
+
+requirements:
+  build: []
+
+tests:
+  - script:
+      - echo ok
+
+about:
+  homepage: https://example.com
+  license: MIT
+  summary: Normal summary line.
+  description: repr() prints <foo.Bar object at 0x7f00> for this type
+
+extra:
+  recipe-maintainers:
+    - rxm7706

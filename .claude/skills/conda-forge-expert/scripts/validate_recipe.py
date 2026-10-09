@@ -105,6 +105,43 @@ def run_external_lint(recipe_path: Path) -> tuple[list[str], list[str], bool]:
     return errors, warnings, True
 
 
+_OBJECT_REPR_RE = re.compile(
+    r"^<[A-Za-z_][\w.]* object at 0x[0-9a-fA-F]+>$"
+)
+
+
+def _child_path(parent: str, segment: str) -> str:
+    if not parent:
+        return segment
+    if segment.startswith("["):
+        return f"{parent}{segment}"
+    return f"{parent}.{segment}"
+
+
+def _find_bad_keys(tree: object, path: str = "") -> list[str]:
+    """Find non-string mapping keys and Python object repr leaks in a parsed YAML tree."""
+    errors: list[str] = []
+    loc = path or "root"
+
+    if isinstance(tree, dict):
+        for key, value in tree.items():
+            if not isinstance(key, str):
+                errors.append(f"Non-string mapping key {key!r} at {loc}")
+            elif _OBJECT_REPR_RE.match(key):
+                errors.append(
+                    f"Python object repr as a mapping key at {loc}: {key} "
+                    "(a converter leak, e.g. conda-recipe-manager's SentinelType)"
+                )
+            errors.extend(_find_bad_keys(value, _child_path(path, str(key))))
+    elif isinstance(tree, list):
+        for i, item in enumerate(tree):
+            errors.extend(_find_bad_keys(item, _child_path(path, f"[{i}]")))
+    elif isinstance(tree, str) and path and _OBJECT_REPR_RE.match(tree):
+        errors.append(f"Python object repr as a value at {path}")
+
+    return errors
+
+
 def validate_recipe_yaml(path: Path) -> ValidationResult:
     """Validate recipe.yaml against v1 format rules and best practices."""
     errors: list[str] = []
@@ -124,6 +161,8 @@ def validate_recipe_yaml(path: Path) -> ValidationResult:
 
     if content is None:
         return ValidationResult(False, ["Empty recipe file"], [], [])
+
+    errors.extend(_find_bad_keys(content))
 
     # Check schema_version
     schema_version = content.get("schema_version")

@@ -1,0 +1,37 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: example-sentinel-key
+  version: "1.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://example.com/example-sentinel-key-${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  script: echo ok
+
+requirements:
+  build: []
+
+tests:
+  - script:
+      - echo ok
+  - script:
+      - echo nested
+    "<conda_recipe_manager.types.SentinelType object at 0xdeadbeef>": leaked
+
+about:
+  homepage: https://example.com
+  license: MIT
+  summary: Fixture for converter sentinel repr as a nested mapping key.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
