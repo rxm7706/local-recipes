@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: wagtail-autocomplete
-  version: "0.12.0"
+  version: "0.12.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_autocomplete-${{ version }}.tar.gz
-  sha256: d1cd315475e8c776c85a75ba5eb76ceb2eb680c18334e7e9424040d7faa9b538
+  url: https://files.pythonhosted.org/packages/43/86/013e4adfb5503d8fb5374ac4a030a149cd28f774364e321941ee0b9987bd/wagtail_autocomplete-0.12.1.tar.gz
+  sha256: 87ae8b42bc67016417e6c108befef84a451bdfe0eb8e9b5e86a9bbdb420bb55d
 
 build:
   number: 0
@@ -20,19 +20,19 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - wagtail >=4.1
+  - python >=${{ python_min }}
+  - wagtail >=4.1
 
 tests:
-  - python:
-      imports:
-        - wagtailautocomplete
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - wagtailautocomplete
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: An Autocomplete edit handler for Pages, Snippets, and more.
@@ -42,4 +42,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
