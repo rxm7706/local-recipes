@@ -45,12 +45,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-# The loop-home station-branch prefix every bmad-loop-provisioned home's own
-# branch carries (``f"loop/{slug}"``, ``cli/init.py``'s ``add_worktree``
-# convention) -- excluded structurally, unconditionally, before any
-# evidence-gathering runs against it (this story's own Never bullet: no
-# policy key governs this exclusion).
-_STATION_BRANCH_PREFIX = "loop/"
+from . import protected_refs
 
 
 @dataclass(frozen=True)
@@ -94,15 +89,21 @@ class InsufficientEvidence:
     missing: tuple[str, ...]
 
 
-def is_structurally_excluded(branch: str) -> bool:
-    """``True`` if ``branch`` carries the station-branch prefix
-    (``"loop/<slug>"``) -- excluded before evidence-gathering ever runs
-    against it, unconditionally, for every project, every run (this story's
-    own Never bullet: no policy key governs this). Also the defense-in-depth
-    guard against a malformed harness snapshot that names a station branch
-    as a task's own ``branch`` field (should never happen -- see the I/O
-    matrix)."""
-    return branch.startswith(_STATION_BRANCH_PREFIX)
+def is_structurally_excluded(
+    branch: str,
+    *,
+    roster_prefixes: frozenset[str] | None = None,
+    policy_additions: tuple[str, ...] = (),
+) -> bool:
+    """``True`` when ``branch`` is protected structurally (Story 87.6):
+    station branches, tags, preserve/archive/rescue names, ``main``, and
+    every code-floor/roster/policy prefix -- before evidence-gathering."""
+    roster = roster_prefixes if roster_prefixes is not None else frozenset()
+    prefixes = protected_refs.effective_protected_prefixes(
+        roster_prefixes=roster,
+        policy_additions=policy_additions,
+    )
+    return protected_refs.is_branch_name_structurally_excluded(branch, protected_prefixes=prefixes)
 
 
 def classify_retirement(

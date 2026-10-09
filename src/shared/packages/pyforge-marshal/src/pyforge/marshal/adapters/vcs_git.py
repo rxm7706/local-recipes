@@ -704,6 +704,53 @@ class GitVcs:
         if result.returncode != 0:
             raise VcsCommandError(f"git branch {flag} failed for {branch}: {result.stderr.strip()}")
 
+    def remote_branch_exists(self, repo_root: Path, branch: str, *, remote: str = "origin") -> bool:
+        ref = f"refs/heads/{branch}"
+        result = _run(["git", "-C", str(repo_root), "ls-remote", "--heads", remote, ref])
+        if result.returncode != 0:
+            raise VcsCommandError(
+                f"git ls-remote --heads {remote} {ref} failed: {result.stderr.strip()}"
+            )
+        return bool(result.stdout.strip())
+
+    def is_commit_ancestor(self, repo_root: Path, ancestor: str, descendant: str) -> bool:
+        result = _run(
+            ["git", "-C", str(repo_root), "merge-base", "--is-ancestor", ancestor, descendant]
+        )
+        if result.returncode == 0:
+            return True
+        if result.returncode == 1:
+            return False
+        raise VcsCommandError(
+            f"git merge-base --is-ancestor failed for {ancestor}..{descendant} "
+            f"(exit {result.returncode}): {result.stderr.strip()}"
+        )
+
+    def commit_contained_in_tag_prefixes(
+        self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]
+    ) -> bool:
+        for prefix in tag_prefixes:
+            result = _run(
+                [
+                    "git",
+                    "-C",
+                    str(repo_root),
+                    "for-each-ref",
+                    "--contains",
+                    commit,
+                    "--format=%(refname)",
+                    prefix,
+                ]
+            )
+            if result.returncode != 0:
+                raise VcsCommandError(
+                    f"git for-each-ref --contains failed for {commit} under {prefix!r}: "
+                    f"{result.stderr.strip()}"
+                )
+            if result.stdout.strip():
+                return True
+        return False
+
     def tracked_paths_matching(self, repo_root: Path, pathspec: str) -> tuple[str, ...]:
         """Story 1.11 (FR-178): ``git ls-files -- <pathspec>``, read-only.
 
