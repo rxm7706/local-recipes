@@ -47,8 +47,12 @@ from ..core.dispatch_harness_done import (
 )
 from ..core.dispatch_landing import DispatchLandingVerdict, blocked_twin_promotion_text
 from ..core.dispatch_preserve import (
+    dispatch_preserve_outcome_payload,
     failed_patch_path,
+    preserve_refs_flag_on,
     relative_preserve_ref,
+    should_journal_dispatch_preserve,
+    tag_dispatch_worktree_preserve,
 )
 from ..core.dispatch_push import may_push_dispatch_branch_before_verify
 from ..core.dispatch_supervisor_finalize import (
@@ -320,6 +324,9 @@ def _journal_dispatch_preserve(
     story_key: str,
     worktree: Path,
     baseline_head_sha: str,
+    repo_root: Path,
+    project_slug: str,
+    completion_verdict: str,
 ) -> int:
     try:
         patch_body = vcs.worktree_unified_patch(worktree, baseline_sha=baseline_head_sha)
@@ -342,13 +349,32 @@ def _journal_dispatch_preserve(
         )
         return counter
     preserve_ref = relative_preserve_ref(run_dir, patch_path)
+    preserve_tag: str | None = None
+    preserve_pushed: bool | None = None
+    if preserve_refs_flag_on():
+        tag_outcome = tag_dispatch_worktree_preserve(
+            vcs=vcs,
+            repo_root=repo_root,
+            worktree=worktree,
+            project_slug=project_slug,
+            story_key=story_key,
+            run_id=run_id,
+            journal_path=str(run_dir / _JOURNAL_FILENAME),
+            reason=f"dispatch {completion_verdict}",
+        )
+        if tag_outcome is not None:
+            preserve_tag = tag_outcome.preserve_tag
+            preserve_pushed = tag_outcome.pushed
+    intent_payload: dict[str, object] = {"preserve_ref": preserve_ref, "story_key": story_key}
+    if preserve_tag is not None:
+        intent_payload["preserve_tag"] = preserve_tag
     intent_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
         ts=_format_entry_ts(_now_utc()),
         run_id=run_id,
         kind=dispatch_core.KIND_DISPATCH_PRESERVE,
         phase=Phase.INTENT,
-        payload={"preserve_ref": preserve_ref, "story_key": story_key},
+        payload=intent_payload,
     )
     counter += 1
     outcome_entry = build_entry(
@@ -358,7 +384,11 @@ def _journal_dispatch_preserve(
         kind=dispatch_core.KIND_DISPATCH_PRESERVE,
         phase=Phase.OUTCOME,
         intent_id=intent_entry.id,
-        payload={"preserve_ref": preserve_ref, "ok": True},
+        payload=dispatch_preserve_outcome_payload(
+            preserve_ref=preserve_ref,
+            preserve_tag=preserve_tag,
+            preserve_pushed=preserve_pushed,
+        ),
     )
     counter += 1
     try:
@@ -2986,7 +3016,11 @@ def run_dispatch_supervisor(
             baseline_revision=git_facts.baseline_head_sha,
             final_revision=git_facts.current_head_sha,
         )
-        if verdict == DispatchSessionVerdict.FAILED and has_git_progress(git_facts, spec_relative_path=narration_path):
+        if should_journal_dispatch_preserve(
+            flag_on=preserve_refs_flag_on(),
+            verdict=verdict,
+            has_progress=has_git_progress(git_facts, spec_relative_path=narration_path),
+        ):
             counter = _journal_dispatch_preserve(
                 fs=fs,
                 vcs=vcs,
@@ -2997,6 +3031,9 @@ def run_dispatch_supervisor(
                 story_key=story_key,
                 worktree=worktree,
                 baseline_head_sha=baseline_head_sha,
+                repo_root=repo_root,
+                project_slug=slug,
+                completion_verdict=verdict.value,
             )
         if supervisor_should_exit(
             completion_verdict=verdict.value,

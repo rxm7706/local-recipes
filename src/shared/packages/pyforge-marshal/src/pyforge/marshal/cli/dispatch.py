@@ -1545,6 +1545,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
     baseline_revision: str | None = None
     final_revision: str | None = None
     preserve_ref: str | None = None
+    preserve_tag: str | None = None
     for entry in folded.by_kind(dispatch_core.KIND_DISPATCH_TIMING):
         if entry.phase == Phase.OUTCOME:
             raw_started = entry.payload.get("story_started_at")
@@ -1564,6 +1565,9 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
             raw_ref = entry.payload.get("preserve_ref")
             if isinstance(raw_ref, str):
                 preserve_ref = raw_ref
+            raw_tag = entry.payload.get("preserve_tag")
+            if isinstance(raw_tag, str):
+                preserve_tag = raw_tag
     if baseline_revision is None and baseline_head_sha is not None:
         baseline_revision = baseline_head_sha
     if story_started_at is None and launched_at is not None:
@@ -1593,6 +1597,7 @@ def gather_dispatch_journal_facts(fs: FsPort, run_dir: Path, run_id: str) -> dis
         baseline_revision=baseline_revision,
         final_revision=final_revision,
         preserve_ref=preserve_ref,
+        preserve_tag=preserve_tag,
         verify_fix_session_pid=in_flight_fix.session_pid if in_flight_fix is not None else None,
         verify_fix_started_at=in_flight_fix.started_at if in_flight_fix is not None else None,
     )
