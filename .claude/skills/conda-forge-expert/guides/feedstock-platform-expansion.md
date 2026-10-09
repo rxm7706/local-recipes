@@ -1,5 +1,7 @@
 # Feedstock Platform Expansion Guide
 
+**Parameterized runner:** invoke `.claude/skills/mason-feedstock-platform-expansion/SKILL.md` when Mason drives this campaign; this guide remains the timeless workflow CFE and that skill both reference.
+
 Workflow for **two intertwined goals on the same effort**:
 
 1. **Refresh** the local `recipes/<feedstock>/` mirror and (when

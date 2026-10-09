@@ -52,7 +52,7 @@ development_status:
   19-2-the-package-craft-skill-teaches-mason-package-build-and-ship: done
   19-3-the-environment-craft-skill-teaches-mason-environment-lock-and-check: done
   19-4-the-two-feedstock-campaigns-become-mason-skills: done
-  19-5-the-closing-rule-2-retro-teaches-conda-forge-expert-it-is-one-of-mason-s-skills: backlog
+  19-5-the-closing-rule-2-retro-teaches-conda-forge-expert-it-is-one-of-mason-s-skills: done
   2-1-the-cfe-port: done
   2-10-mason-recipe-update: done
   2-2-the-seam-guard: done
@@ -127,7 +127,7 @@ development_status:
   epic-17-retrospective: optional
   epic-18: done
   epic-18-retrospective: optional
-  epic-19: in-progress
+  epic-19: done
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
