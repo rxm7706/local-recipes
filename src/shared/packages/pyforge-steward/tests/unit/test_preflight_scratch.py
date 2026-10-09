@@ -94,13 +94,13 @@ def test_pytest_sees_no_git_work_tree_outside_checkout(tmp_path: Path) -> None:
     _write(
         test_file,
         textwrap.dedent(
-            f"""
+            """
             import subprocess
-            from pathlib import Path
 
-            def test_git_not_inside_work_tree():
+            def test_git_not_inside_work_tree(tmp_path):
                 r = subprocess.run(
-                    ["git", "-C", {str(tmp_path)!r}, "rev-parse", "--is-inside-work-tree"],
+                    ["git", "rev-parse", "--is-inside-work-tree"],
+                    cwd=tmp_path,
                     capture_output=True,
                     text=True,
                 )
@@ -137,12 +137,13 @@ def test_pytest_fails_when_scratch_lives_inside_checkout_mutation(tmp_path: Path
     _write(
         test_file,
         textwrap.dedent(
-            f"""
+            """
             import subprocess
 
-            def test_git_not_inside_work_tree():
+            def test_git_not_inside_work_tree(tmp_path):
                 r = subprocess.run(
-                    ["git", "-C", {str(tmp_path)!r}, "rev-parse", "--is-inside-work-tree"],
+                    ["git", "rev-parse", "--is-inside-work-tree"],
+                    cwd=tmp_path,
                     capture_output=True,
                     text=True,
                 )
