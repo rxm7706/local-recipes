@@ -332,7 +332,13 @@ jobs:
   # wiring -- see spec-10-3-one-image-both-engines.md's Design Notes for
   # the full investigation and evidence. Both steps are expected green.
   container:
-    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
+    # Paused on pull_request/push while repo variable PAUSE_PLATFORM_CONTAINER_BUILDS is 'true'
+    # (operator 2026-10-09, separate from guild-container's PAUSE_CONTAINER_BUILDS); a
+    # workflow_dispatch with jobs=all still builds. golden-path-promotion needs this job and
+    # skips with it. Resume: `gh variable set PAUSE_PLATFORM_CONTAINER_BUILDS --body false`.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') ||
+      (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true')
     strategy:
       fail-fast: false
       matrix:
@@ -610,6 +616,25 @@ jobs:
             exit 1
           fi
 
+      # Story 78.1 follow-up: the 403 smoke alone cannot prove password login still
+      # works after AUTO_LOGIN is forced off (test_langflow_mount.py needs langflow in
+      # the pytest env, which platform-ci-test does not carry).
+      - name: Smoke-test Langflow credentialed superuser login (/langflow/api/v1/login)
+        run: |
+          code="$(curl -s -o /tmp/langflow-login.json -w '%{http_code}' -X POST http://localhost:8000/langflow/api/v1/login \
+            -d 'username=langflow&password=ci-placeholder-not-a-real-secret' || true)"
+          if [ "$code" != "200" ]; then
+            echo "::error::POST /langflow/api/v1/login returned $code, expected 200 (${{ matrix.engine }})"
+            cat /tmp/langflow-login.json 2>/dev/null || true
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          fi
+          if ! grep -q '"access_token"' /tmp/langflow-login.json; then
+            echo "::error::POST /langflow/api/v1/login response missing access_token (${{ matrix.engine }})"
+            cat /tmp/langflow-login.json
+            exit 1
+          fi
+
       - name: manage.py check inside the running container
         run: ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py check
 
@@ -820,7 +845,10 @@ jobs:
   # own top-of-file comment for why this image is built from a separate,
   # isolated `dbgpt-sidecar` pixi env in the first place.
   container-dbgpt:
-    if: github.event_name != 'workflow_dispatch' || inputs.jobs == 'all'
+    # Paused with `container` above while PAUSE_PLATFORM_CONTAINER_BUILDS is 'true'.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.jobs == 'all') ||
+      (github.event_name != 'workflow_dispatch' && vars.PAUSE_PLATFORM_CONTAINER_BUILDS != 'true')
     strategy:
       fail-fast: false
       matrix:

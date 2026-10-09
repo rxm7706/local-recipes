@@ -204,6 +204,15 @@ non_root() {
   local uid gid; uid="$("$ENGINE" run --rm --entrypoint id "platform:$TAG" -u)"; gid="$("$ENGINE" run --rm --entrypoint id "platform:$TAG" -g)"
   echo "uid=$uid gid=$gid"; [ "$uid" != "0" ] && [ "$gid" = "0" ]
 }
+langflow_superuser_login() {
+  local code body
+  code="$(curl -s -o "$WORK/langflow-login.json" -w '%{http_code}' -X POST "http://localhost:$APP_PORT/langflow/api/v1/login" \
+    -d 'username=langflow&password=ci-placeholder-not-a-real-secret' || true)"
+  echo "POST /langflow/api/v1/login -> $code"
+  [ "$code" = "200" ] || { cat "$WORK/langflow-login.json" 2>/dev/null; return 1; }
+  body="$(cat "$WORK/langflow-login.json")"
+  case "$body" in *'"access_token"'*) return 0 ;; *) echo "missing access_token: $body"; return 1 ;; esac
+}
 
 stage_container() {
   # The workflow's `container` job against the local services (host networking
@@ -225,6 +234,7 @@ stage_container() {
   step container "Smoke-test the FastAPI seam (/api/, the other half of the ASGI dispatcher)" expect_code /api/health 200 &&
   step container "Smoke-test the Langflow mount (bare /health, unchanged forward per AD-4)" expect_code /health 200 &&
   step container "Smoke-test Langflow auto-login is refused (/langflow/api/v1/auto_login)" expect_code /langflow/api/v1/auto_login 403 &&
+  step container "Smoke-test Langflow credentialed superuser login (/langflow/api/v1/login)" langflow_superuser_login &&
   step container "manage.py check inside the running container" "$ENGINE" exec "$APP" /app/entrypoint.sh python manage.py check &&
   step container "Confirm non-root UID (arbitrary uid honored)" non_root
   local rc=$?
