@@ -1,0 +1,30 @@
+schema_version: 1
+context:
+  version: "1.0.0"
+package:
+  name: example-compiler-no-stdlib
+  version: ${{ version }}
+source:
+  url: https://example.com/example-compiler-no-stdlib-${{ version }}.tar.gz
+  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+build:
+  number: 0
+  script: make install
+requirements:
+  build:
+    - ${{ compiler('c') }}
+  host:
+    - zlib
+  run:
+    - zlib
+tests:
+  - script:
+      - test -f "${PREFIX}/lib/libexample${SHLIB_EXT}"
+about:
+  summary: Negative corpus fixture — compiler without stdlib (STD-001).
+  license: MIT
+  license_file: LICENSE
+  homepage: https://example.com/
+extra:
+  recipe-maintainers:
+    - rxm7706

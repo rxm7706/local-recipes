@@ -24,6 +24,7 @@ Check codes (17 total):
   SEL-001  Redundant platform skip conditions
   SEL-002  Incomplete CFEP-25 python_min triad for noarch:python
   SEL-003  Bare `py < N` selector in v1 recipe.yaml build.skip (use match(python, ...))
+  SEL-005  build.skip on noarch:python (build-time selectors break the single noarch artifact)
   STD-001  compiler() used without stdlib() — CRITICAL, causes CI rejection
   STD-002  Both meta.yaml and recipe.yaml present — format mixing is rejected
   SEC-001  Source URL without sha256 checksum
@@ -400,7 +401,7 @@ _TEST_003_JUSTIFICATION_PREFIX = "# CFEP-25-justified:"
 
 def analyze_selectors(data: Dict, recipe_path: Path | None = None) -> List[OptimizationSuggestion]:
     """Analyzes platform selectors (SEL-001), CFEP-25 python_min compliance (SEL-002),
-    and v0-style `py < N` selectors in v1 recipes (SEL-003).
+    v0-style `py < N` selectors in v1 recipes (SEL-003), and skip on noarch:python (SEL-005).
     """
     suggestions = []
     # If recipe carries a CFEP-25-justified comment, the recipe is intentionally
@@ -458,6 +459,23 @@ def analyze_selectors(data: Dict, recipe_path: Path | None = None) -> List[Optim
                     ),
                     confidence=1.0,
                 ))
+
+    # --- SEL-005: skip selectors on noarch:python (v8.97.0, Story 23.3) ---
+    # conda-smithy's lint_noarch_selectors rejects build-time selectors on noarch
+    # recipes; CFE keeps an offline twin so the negative corpus does not need smithy.
+    if build_section.get("noarch") == "python" and skip_value is not None:
+        suggestions.append(OptimizationSuggestion(
+            code="SEL-005",
+            message=(
+                "noarch: python recipe declares build.skip — platform/Python selectors "
+                "in build fields produce a single artifact that cannot honor them."
+            ),
+            suggestion=(
+                "Remove build.skip and use run-time constraints, per-platform outputs, "
+                "or drop noarch: python if the package truly needs platform-specific builds."
+            ),
+            confidence=1.0,
+        ))
 
     # --- SEL-002: CFEP-25 python_min for noarch:python ---
     # Checks all three required locations: context, host, run, and tests python block.
