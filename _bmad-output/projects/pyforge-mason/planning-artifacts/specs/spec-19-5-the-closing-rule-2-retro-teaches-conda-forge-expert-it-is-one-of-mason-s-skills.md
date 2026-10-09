@@ -2,7 +2,8 @@
 title: "19.5: The closing Rule-2 retro teaches conda-forge-expert it is one of Mason's skills"
 type: 'retro'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: '21141248ca34e25bfa366ffd403644639831a108'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
