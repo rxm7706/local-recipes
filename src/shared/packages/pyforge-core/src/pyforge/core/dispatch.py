@@ -14,6 +14,7 @@ from collections.abc import Mapping, Sequence
 from importlib.metadata import PackageNotFoundError, distribution, distributions
 from pathlib import Path
 
+from pyforge.core import roster
 from pyforge.core.errors import PyforgeError
 from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
@@ -105,6 +106,26 @@ def script_map_from_installed() -> dict[str, str]:
     return mapping
 
 
+def _missing_roster_stations(mapping: Mapping[str, str]) -> list[str]:
+    return [name for name in roster.STATIONS if name not in mapping]
+
+
+def _not_installed_message(station: str) -> str:
+    env = roster.long_form(station)
+    return (
+        f"station {station!r} is not installed in this environment; "
+        f"it runs in -e {env}: pixi run -e {env} pyforge {station} <noun> <verb>"
+    )
+
+
+def _not_installed_help_suffix(mapping: Mapping[str, str]) -> str:
+    missing = _missing_roster_stations(mapping)
+    if not missing:
+        return ""
+    parts = [f"{name} (-e {roster.long_form(name)})" for name in sorted(missing)]
+    return f"\nnot installed here: {', '.join(parts)}"
+
+
 def resolve_script_map(
     script_map: Mapping[str, str] | None = None,
     *,
@@ -135,7 +156,8 @@ def dispatch_argv(
     mapping = resolve_script_map(script_map, packages_root=packages_root)
     if len(argv) < 2 or argv[1] in {"-h", "--help"}:
         known = ", ".join(sorted(mapping)) or "(none installed)"
-        raise DispatchError(f"usage: pyforge <station> <noun> <verb> [args...]\nstations: {known}")
+        suffix = _not_installed_help_suffix(mapping)
+        raise DispatchError(f"usage: pyforge <station> <noun> <verb> [args...]\nstations: {known}{suffix}")
     station = argv[1]
     if station.startswith("-"):
         raise DispatchError(f"unknown option {station!r}; usage: pyforge <station> <noun> <verb>")
@@ -147,6 +169,8 @@ def dispatch_argv(
         aliased = _resolve_primary(owner, mapping)
         if aliased is not None:
             return [aliased, *list(argv[1:])]
+    if station in roster.STATIONS:
+        raise DispatchError(_not_installed_message(station))
     known = ", ".join(sorted(mapping)) or "(none installed)"
     raise DispatchError(f"unknown station {station!r}; known: {known}")
 
