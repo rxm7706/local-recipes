@@ -52,12 +52,16 @@ def _facts_contain(table: dict[str, Any], snippet: str) -> bool:
     return any(isinstance(entry, str) and snippet in entry for entry in facts)
 
 
-def _validate_mandate_tables(spec: dict[str, Any], build: dict[str, Any], auto: dict[str, Any], tea: dict[str, Any]) -> None:
+def _validate_mandate_tables(
+    spec: dict[str, Any], build: dict[str, Any], auto: dict[str, Any], tea: dict[str, Any]
+) -> None:
     assert "workflow" in spec and _facts_contain(spec["workflow"], _ARCHITECT_SNIPPET)
     assert "workflow" in build and _facts_contain(build["workflow"], _BUILDER_SNIPPET)
     layers = build.get("workflow", {}).get("review_layers")
     assert isinstance(layers, list) and layers, "bmad-build.toml must carry a review layer"
-    flag_layer = next((layer for layer in layers if isinstance(layer, dict) and layer.get("id") == "flag-mandate"), None)
+    flag_layer = next(
+        (layer for layer in layers if isinstance(layer, dict) and layer.get("id") == "flag-mandate"), None
+    )
     assert flag_layer is not None, "bmad-build.toml must include [[workflow.review_layers]] id=flag-mandate"
     assert "workflow" in auto and _facts_contain(auto["workflow"], _BUILDER_SNIPPET)
     assert "agent" in tea and _facts_contain(tea["agent"], _TEA_SNIPPET)
