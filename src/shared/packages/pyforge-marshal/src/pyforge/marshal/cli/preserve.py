@@ -312,10 +312,10 @@ def run_preserve_retire(args: argparse.Namespace) -> int:
 
 def _run_preserve_list_retired(args: argparse.Namespace, root: Path) -> int:
     rows_out: list[dict[str, object]] = []
-    for row in load_retirements(retirements_path(root)):
+    for retirement in load_retirements(retirements_path(root)):
         station = story = producer = None
         try:
-            parsed = parse_preserve_ref(row.tag)
+            parsed = parse_preserve_ref(retirement.tag)
             station = parsed.project_slug
             story = parsed.story_key
             producer = parsed.producer
@@ -329,14 +329,14 @@ def _run_preserve_list_retired(args: argparse.Namespace, root: Path) -> int:
             continue
         rows_out.append(
             {
-                "refname": row.tag,
+                "refname": retirement.tag,
                 "commit": None,
                 "station": station,
                 "story": story,
                 "producer": producer,
                 "state": PreserveState.RETIRED.value,
-                "evidence": row.evidence,
-                "retired_at": row.retired_at,
+                "evidence": retirement.evidence,
+                "retired_at": retirement.retired_at,
             }
         )
     if args.format == "json":
@@ -349,6 +349,6 @@ def _run_preserve_list_retired(args: argparse.Namespace, root: Path) -> int:
         )
         print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True))
         return 0
-    for row in rows_out:
-        print(f"{row['refname']}\tretired\t{row.get('evidence', '')}")
+    for listed in rows_out:
+        print(f"{listed['refname']}\tretired\t{listed.get('evidence', '')}")
     return 0

@@ -310,6 +310,41 @@ def test_preserve_retire_and_list_retired(git_repo: Path, monkeypatch: pytest.Mo
     assert rows[0]["state"] == "retired"
 
 
+def test_preserve_list_retired_text_and_filters(git_repo: Path, monkeypatch: pytest.MonkeyPatch, capsys):
+    _flag_on(monkeypatch, git_repo)
+    monkeypatch.setattr(preserve_module, "repo_root", lambda: git_repo)
+    ledger = git_repo / "preserve-retirements.yaml"
+    monkeypatch.setattr(preserve_module, "retirements_path", lambda _root: ledger)
+    ref = "refs/tags/preserve/pyforge-marshal/87.15/hand-deadbeef"
+    evidence = "story pyforge-marshal 87.15 done deadbeef"
+    assert main(["preserve", "retire", ref, "--evidence", evidence]) == 0
+    code = preserve_module.run_preserve_list(
+        argparse.Namespace(
+            format="text",
+            station="pyforge-marshal",
+            story="87.15",
+            producer="hand",
+            state="retired",
+        )
+    )
+    assert code == 0
+    out = capsys.readouterr().out
+    assert ref in out
+    assert "retired" in out
+    assert evidence in out
+    filtered_out = preserve_module.run_preserve_list(
+        argparse.Namespace(
+            format="text",
+            station="pyforge-mason",
+            story=None,
+            producer=None,
+            state="retired",
+        )
+    )
+    assert filtered_out == 0
+    assert capsys.readouterr().out.strip() == ""
+
+
 def test_preserve_push_refuses_secret(git_repo: Path, monkeypatch: pytest.MonkeyPatch, capsys):
     _flag_on(monkeypatch, git_repo)
     monkeypatch.setattr(preserve_module, "repo_root", lambda: git_repo)
