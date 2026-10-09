@@ -359,14 +359,16 @@ def test_live_roster_session_denial_forms_resolve() -> None:
     assert errors == []
 
 
-def test_broken_retire_form_in_reason_fails() -> None:
+def test_broken_sweeper_form_in_reason_fails() -> None:
+    # `--retire` became a real worktree_sweep.py flag in marshal Story 87.1, so the
+    # broken form here is a flag the sweeper still does not accept.
     roster = json.loads(ROSTER.read_text(encoding="utf-8"))
     for rule in roster["session_denials"]:
         if rule["id"] == "protected-ref-deletion":
             rule = dict(rule)
             rule["reason"] = (
                 rule["reason"]
-                + " Retry with `python scripts/worktree_sweep.py --retire <branch>`."
+                + " Retry with `python scripts/worktree_sweep.py --retire-all <branch>`."
             )
             roster = dict(roster)
             roster["session_denials"] = [
@@ -375,7 +377,7 @@ def test_broken_retire_form_in_reason_fails() -> None:
             ]
             break
     errors = verify_session_denials(roster)
-    assert any("worktree_sweep.py" in e and "--retire" in e for e in errors)
+    assert any("worktree_sweep.py" in e and "--retire-all" in e for e in errors)
 
 
 @pytest.fixture
@@ -439,8 +441,8 @@ def test_fixture_unclassified_span(roster_template: dict[str, Any]) -> None:
     assert "unclassified" in errors[0]
 
 
-def test_historical_roster_with_retire_and_marshal_preserve_fails() -> None:
-    """AC: on b364823896 roster text the guard names the broken spans."""
+def _historical_roster_errors() -> list[str]:
+    """Verify the b364823896 roster text, whose two remedies were broken when 85.7 shipped."""
     roster = json.loads(ROSTER.read_text(encoding="utf-8"))
     denials: list[dict[str, Any]] = []
     for rule in roster["session_denials"]:
@@ -470,9 +472,18 @@ def test_historical_roster_with_retire_and_marshal_preserve_fails() -> None:
             denials.append(rule)
     roster = dict(roster)
     roster["session_denials"] = denials
-    errors = verify_session_denials(roster)
-    joined = "\n".join(errors)
-    assert "worktree_sweep.py" in joined and "--retire" in joined
+    return verify_session_denials(roster)
+
+
+def test_historical_roster_names_only_the_still_broken_span() -> None:
+    """AC: on b364823896 roster text the guard names the broken spans.
+
+    Marshal Story 87.1 shipped `worktree_sweep.py --retire`, so that remedy now resolves;
+    the bare `pyforge marshal preserve tag` (no ref) is still named, whether the marshal
+    parser rejects it or cannot be built in this environment.
+    """
+    joined = "\n".join(_historical_roster_errors())
+    assert "--retire" not in joined
     assert "preserve tag" in joined or "marshal preserve" in joined
 
 

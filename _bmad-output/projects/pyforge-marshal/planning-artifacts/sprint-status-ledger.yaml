@@ -430,7 +430,7 @@ development_status:
   86-6-the-test-coverage-matrices-are-regenerated-and-their-check-blocks-drift: done
   86-7-the-session-close-docs-name-the-context-advisory-and-the-retired-id-guard-scans-the-planning-docs: done
   86-8-path-form-spec-cites-count-as-missing-and-the-retired-chain-verb-leaves-no-trace: done
-  87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: backlog
+  87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: done
   87-10-merged-check-objects-never-enter-the-object-store: done
   87-11-the-build-skills-and-recovery-recipes-preserve-before-they-revert-or-rebuild: done
   87-12-legacy-refs-are-promoted-and-attempt-preserve-leaves-the-protected-list: backlog
