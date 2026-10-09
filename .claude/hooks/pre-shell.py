@@ -1276,8 +1276,25 @@ def _gh_api_endpoint_parts(body: list[str]) -> list[str]:
     return []
 
 
+def _gh_api_has_explicit_get(body: list[str]) -> bool:
+    i = 2
+    while i < len(body):
+        tok = body[i]
+        if tok in ("-X", "--method") and i + 1 < len(body):
+            if body[i + 1].upper() == "GET":
+                return True
+            i += 2
+            continue
+        if tok.startswith("--method=") and tok.split("=", 1)[1].upper() == "GET":
+            return True
+        i += 1
+    return False
+
+
 def _gh_api_is_write(tokens: list[str]) -> bool:
     _, body = _strip_env_prefix(tokens)
+    if _gh_api_has_explicit_get(body):
+        return False
     method = _gh_api_http_method(body)
     if method != "GET":
         return method in ("POST", "PUT", "PATCH", "DELETE")
