@@ -831,7 +831,7 @@ cmd = "python -m pytest tests/scripts -q -n auto --dist loadgroup"
 # --- pyforge-guild: the Guild's session environment (steward Story 63.1, spec-pyforge-steward CAP-5) ---
 # The DEFAULT environment for every agent and harness doing planning-chain work -- Claude,
 # Cursor (IDE + Cloud Agents), Copilot, Gemini, Marshal dispatch/spin. Carries the current
-# state of PyForge (core, doctor, marshal, steward, testing-kit) and NOTHING
+# state of PyForge (core, doctor, marshal, steward, herald, scribe, mason, testing-kit) and NOTHING
 # of the recipe factory: local-recipes (222 deps, 171 tasks, 10 GB) is Mason's environment and
 # includes feature.guild-tasks (the moved tasks, no deps) so every `pixi run -e local-recipes
 # <guild task>` keeps working. Tasks MOVE, never duplicate (Spec Constraint CAP-5): a task name
@@ -851,11 +851,16 @@ pyforge-doctor = { path = "src/shared/packages/pyforge-doctor" }      # run-deps
 # cannot be included by local-recipes. Doctor does not require warden at runtime (its run-deps are
 # jsonschema, pyyaml, mcp, pyforge-core) and degrades that seam to cannot-evaluate -- exactly how
 # detectors-ci has always run in local-recipes. The warden seam stays `-e pyforge-doctor` / `-e pyforge-warden`.
+# pyforge-atlas is deliberately NOT here (operator decision 2026-09-28, spec-pyforge-steward/.memlog.md): it solves in
+# pyforge-foundry-full but its closure (kedro, dagster, duckdb, pandas, pyarrow, ibis, vizro, bokeh, …) adds ~257
+# packages / ~841 MB on linux-64 and moves the Guild's pins (libabseil, nodejs, protobuf, filelock via ibis); the atlas
+# seam stays `-e pyforge-atlas`.
 pyforge-marshal = { path = "src/shared/packages/pyforge-marshal" }    # dispatch / spin / seed check; run-dep bmad-loop
 bmad-loop = ">=0.12.0"  # the harness every loop home runs from this env; floor follows the published build (conda-forge, __unix + __win variants since 0.12.0 build 1). Keep in step with the pyforge-marshal + local-recipes sites.
 pyforge-steward = { path = "src/shared/packages/pyforge-steward" }    # workspace start/clean, frame-preflight; run-dep age
 pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # Story 63.6 (spec-pyforge-steward CAP-152): deck-export / deck-trio import pyforge.herald.stamps; herald's deck pipeline shells those tasks under -e pyforge-guild (herald 25.1)
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }      # scribe capture / recall from the session default (scribe Story 19.2, spec-pyforge-scribe CAP-28, 2026-09-19): the CORE package only (run-deps typer + pydantic + pyforge-core); the heavy compile extras (graphifyy, cocoindex, psycopg) stay in -e pyforge-scribe, so `scribe graph compile` with an extra still runs there
+pyforge-mason = { path = "src/shared/packages/pyforge-mason" }        # Story 72.1 (spec-pyforge-steward CAP-161): bmad-agent-mason's only grammar is `pyforge mason …`; the front door routes installed pyforge-* distributions
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }
 headroom-ai = ">=0.37.0"          # wire-compression layer (marshal-token-economy); absent -> silent MRS-DISP-033, so it is on the floor
 # headroom-ai's `[proxy]` extra (needed for `headroom wrap claude`'s actual wire-compression
