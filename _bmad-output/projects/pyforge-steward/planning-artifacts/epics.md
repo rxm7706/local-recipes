@@ -5534,7 +5534,7 @@ So that running the tests, `pr-preflight` or a push never stamps a baseline that
 **When** the check probes a script's argv
 **Then** it runs a `sys.executable -c` bootstrap that wraps argparse's parse entry points with a depth counter, runs the script with `runpy.run_path(script, run_name="__main__")`, `sys.argv = [script, *argv]` and the script's directory on `sys.path`, and ends the process with exit 0 when the outermost parse succeeds, before any of the script's body runs; a rejection still prints `unrecognized arguments` or `invalid choice:` and fails naming the flag; a script with no argparse import is reported unprobeable and never run, and one that exits before it parses is unprobeable, never accepted
 **And** probing `spec_surface_check.py --write-baseline --spec pyforge-steward/spec-pyforge-steward` leaves the baseline's bytes and mtime unchanged, and `pyforge-doctor-scripts-test` leaves the file byte-identical; a `tmp_path` fixture that writes a marker after `parse_args()` is accepted with the marker absent and rejected for an unknown flag; a subparser fixture is accepted for `sub --known` and rejected for `sub --known --bogus`; every existing test in the file still passes; the roster, the hook and the probed scripts do not change; putting the direct run back fails the new tests (mutation)
-**Status:** backlog
+**Status:** done
 
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
