@@ -2,9 +2,9 @@
 title: 'Package scaffold + direct capture into team memory (Story 1.1)'
 type: 'feature'
 created: '2026-07-25'
-status: 'done'
+status: 'in-review'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context: []
 warnings: ['oversized']
 baseline_revision: 'bbe44fa5af21f205640eb6001909c5729a6cb7a8'
