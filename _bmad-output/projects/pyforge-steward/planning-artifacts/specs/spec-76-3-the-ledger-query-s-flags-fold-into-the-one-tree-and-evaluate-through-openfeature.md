@@ -2,7 +2,8 @@
 title: "76.3: The ledger query's flags fold into the one tree and evaluate through OpenFeature"
 type: 'feature'
 created: '2026-09-28'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: '628f5e4ede4c7868204306bed6aafc72c561b52f'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag-exempt: flag-infrastructure
