@@ -19,21 +19,21 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - python >=${{ python_min }}
-  - protobuf >=3.17.1
+    - python >=${{ python_min }}
+    - protobuf >=3.17.1
 
 tests:
 - python:
     imports:
-    - dbtlabs
+      - dbtlabs
     pip_check: true
     python_version:
-    - ${{ python_min }}.*
-    - "*"
+      - ${{ python_min }}.*
+      - "*"
 
 about:
   homepage: https://github.com/dbt-labs/proto-python-public
@@ -47,7 +47,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -55,8 +55,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: dbt-protos
   cfe-purls:
-  - pkg:conda/dbt-protos@${{ version }}?channel=conda-forge
-  - pkg:pypi/dbt-protos@${{ version }}
+    - pkg:conda/dbt-protos@${{ version }}?channel=conda-forge
+    - pkg:pypi/dbt-protos@${{ version }}
   cfe-upstream-repo: https://github.com/dbt-labs/proto-python-public
   cfe-upstream-homepage: https://github.com/dbt-labs/proto-python-public
   cfe-import-names: [dbtlabs]
