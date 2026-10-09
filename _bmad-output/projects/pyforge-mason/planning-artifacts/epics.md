@@ -2310,7 +2310,7 @@ only (G103)
 `.`, `./render` and `./jsx-runtime` exports under Node 24
 **And** both recipes pass `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's `retro(cfe):` commit
 lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 
 ## Epic 22: Twelve recipes lose conda-recipe-manager's leaked sentinel key, and CFE's validation refuses the next one (spec-pyforge-mason CAP-32)
