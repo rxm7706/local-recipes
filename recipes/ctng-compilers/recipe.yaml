@@ -9,6 +9,7 @@ context:
   build_num: 1
   gcc_maj_ver: 15
   cross_target_platform: linux-64
+  libgcc_devel_build_num: ${{ build_num + 100 if target_platform == cross_target_platform else build_num }}
 
 recipe:
   name: gcc_compilers
@@ -64,17 +65,6 @@ build:
   skip: (win and cross_target_platform != "win-64") or ((cross_target_platform in ("osx-64", "osx-arm64") or osx) and gcc_maj_ver < 15) or ((cross_target_platform == "linux-riscv64" or riscv64) and gcc_maj_ver < 15) or (riscv64 and cross_target_platform in ("osx-64", "osx-arm64"))
   prefix_detection:
     ignore_binary_files: true
-
-requirements:
-  build:
-    # Build dependencies are installed in setup_compilers.sh due to
-    # conda-build bugs
-  host:
-    - if: cross_target_stdlib != "None"
-      then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
-  ignore_run_exports:
-    from_package:
-      - ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
 
 outputs:
   - package:

@@ -41,16 +41,6 @@ build:
   script: |
     python ${{ RECIPE_DIR }}/vc_repack.py --extract --runtime-version ${{ runtime_version }} --target-platform ${{ cross_target_platform }}
 
-requirements:
-  build:
-    - if: build_platform.startswith("win")
-      then: m2-p7zip <10
-    - if: not build_platform.startswith("win")
-      then: p7zip
-    - python *
-  host:
-  run:
-
 outputs:
   - package:
       name: vcomp${{ vc_major }}
@@ -202,7 +192,6 @@ outputs:
   - package:
       name: vs_${{ cross_target_platform }}
       version: ${{ vsyear }}.${{ update_version }}
-    build:
     requirements:
       run:
         - vs${{ vsyear }}_${{ cross_target_platform }} ${{ cl_version }}.*
