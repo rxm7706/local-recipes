@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.6.2"
+  version: "0.6.3"
   python_min: "3.12"
 
 package:
@@ -10,45 +10,45 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/s/solvor/solvor-${{ version }}.tar.gz
-  sha256: fe9cea887b0d2abf107d332082b97b061289292bc8b1f8f7d7c086dac3a9a7ae
+  url: https://files.pythonhosted.org/packages/f8/ed/6058d0820fa33860af78a29cb46420eebc8eae5ce2e44cbab4be0dc7db06/solvor-0.6.3.tar.gz
+  sha256: 8a573e48c7c599e8937bc3fec41a36348dc75e02134b308a7795072ca29e706f
 
 build:
-  number: 2
+  number: 0
   script:
-    - pushd rust && cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml && popd
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  - pushd rust && cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml && popd
+  - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
-    - if: build_platform != target_platform
-      then:
-        - python
-        - cross-python_${{ target_platform }}
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
-    - ${{ compiler('rust') }}
-    - cargo-bundle-licenses
-  host:
-    - python ${{ python_min }}.*
-    - pip
-    - maturin >=1.7,<2.0
-  run:
+  - if: build_platform != target_platform
+    then:
     - python
+    - cross-python_${{ target_platform }}
+  - ${{ compiler('c') }}
+  - ${{ stdlib('c') }}
+  - ${{ compiler('rust') }}
+  - cargo-bundle-licenses
+  host:
+  - python ${{ python_min }}.*
+  - pip
+  - maturin >=1.7,<2.0
+  run:
+  - python
 
 tests:
-  - python:
-      imports:
-        - solvor
-      pip_check: true
+- python:
+    imports:
+    - solvor
+    pip_check: true
 
 about:
   homepage: https://solvOR.ai
   repository: https://github.com/StevenBtw/solvOR
   license: Apache-2.0
   license_file:
-    - LICENSE
-    - THIRDPARTY.yml
+  - LICENSE
+  - THIRDPARTY.yml
   summary: Solvor all your optimization needs
   description: |
     solvor is a Rust-implemented optimization toolkit with Python
@@ -58,4 +58,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
