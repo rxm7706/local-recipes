@@ -22,7 +22,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 # Sibling helper — universal conda-forge.yml pre-seed (shared with submit_pr.py).
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -78,6 +78,52 @@ def _pypi_to_conda_name(pypi_name: str) -> str:
     return pypi_name
 
 
+# Provenance: Decided/Ambiguous contract ported from OpenTeams-WFT-CDO/auto-recipe@8b53eda
+# src/auto_recipe/decisions/base.py (operator-owned org). Stdlib only.
+@dataclass(frozen=True)
+class Decided:
+    value: str
+    source: str
+
+
+@dataclass(frozen=True)
+class Ambiguous:
+    question: str
+    options: tuple[str, ...]
+    default: str
+
+
+Decision = Union[Decided, Ambiguous]
+
+
+@dataclass
+class GeneratorQuestion:
+    """One unresolved choice surfaced to the operator (default run keeps default)."""
+
+    key: str
+    question: str
+    options: list[str]
+    default: str
+
+
+def _value_from_decision(
+    decision: Decision,
+    questions: list[GeneratorQuestion],
+    key: str,
+) -> str:
+    if isinstance(decision, Decided):
+        return decision.value
+    questions.append(
+        GeneratorQuestion(
+            key=key,
+            question=decision.question,
+            options=list(decision.options),
+            default=decision.default,
+        )
+    )
+    return decision.default
+
+
 @dataclass
 class PackageInfo:
     """Package metadata."""
@@ -106,6 +152,9 @@ class PackageInfo:
     build_system_requires: list[str] = field(default_factory=list)
     # ^ conda-mapped [build-system].requires from the sdist (G91): the backend
     #   PLUS its plugins (hatch-requirements-txt, hatch-vcs, uv-build, …).
+    python_min: str = ""
+    cfe_noarch: str = "python"
+    questions: list[GeneratorQuestion] = field(default_factory=list)
 
 
 _PEP508_NAME_SPEC_RE = re.compile(
@@ -211,6 +260,34 @@ def determine_build_backend(requires_dist: list[str]) -> str:
     return "setuptools"
 
 
+_BUILD_BACKEND_OPTIONS = (
+    "setuptools",
+    "hatchling",
+    "flit-core",
+    "poetry-core",
+    "pdm-backend",
+    "scikit-build-core",
+    "maturin",
+)
+
+
+def _decide_build_backend(
+    build_system_requires: list[str],
+    requires_dist: list[str],
+) -> Decision:
+    if build_system_requires:
+        return Decided(
+            determine_build_backend(build_system_requires),
+            "sdist [build-system].requires",
+        )
+    default = determine_build_backend(requires_dist)
+    return Ambiguous(
+        "Which PEP 517 build backend should the recipe list in host requirements?",
+        _BUILD_BACKEND_OPTIONS,
+        default,
+    )
+
+
 # conda-forge global Python floor (CFEP-25). Never emit a recipe with python_min
 # below this value, even when the upstream package declares a lower floor in its
 # python_requires.
@@ -264,6 +341,19 @@ def _resolve_python_min(python_requires: str) -> str:
     detected = (int(match.group(1)), int(match.group(2)))
     floor = tuple(int(p) for p in _CONDA_FORGE_PYTHON_FLOOR.split("."))
     return ".".join(str(p) for p in max(detected, floor))
+
+
+def _decide_python_min(python_requires: str) -> Decision:
+    pr = (python_requires or "").strip()
+    if not pr:
+        return Decided(_CONDA_FORGE_PYTHON_FLOOR, "empty python_requires → conda-forge floor")
+    if not re.fullmatch(r">=\s*(\d+)\.(\d+)(?:\.\d+)*\s*", pr):
+        return Ambiguous(
+            f"Could not parse python_requires {python_requires!r}; use conda-forge floor or declare a floor?",
+            (_CONDA_FORGE_PYTHON_FLOOR,),
+            _CONDA_FORGE_PYTHON_FLOOR,
+        )
+    return Decided(_resolve_python_min(python_requires), "parsed python_requires")
 
 
 # --- v8.9.0 sdist cache + extraction helpers ----------------------------
@@ -428,6 +518,61 @@ def _extract_import_name_from_sdist(sdist_path: Path, distribution_name: str) ->
     return ""
 
 
+def _top_level_import_candidates(sdist_path: Path) -> list[str]:
+    """Top-level package directory names under the sdist root (no nested modules)."""
+    init_files = _read_sdist_files(sdist_path, ("__init__.py",))
+    tops: set[str] = set()
+    for path in init_files:
+        parts = path.split("/")
+        if len(parts) < 3:
+            continue
+        module_parts = parts[1:-1]
+        if module_parts and module_parts[0] == "src":
+            module_parts = module_parts[1:]
+        if not module_parts or module_parts[0].lower() in _NON_PACKAGE_DIRS:
+            continue
+        if not module_parts[0].isidentifier():
+            continue
+        if len(module_parts) == 1:
+            tops.add(module_parts[0])
+    return sorted(tops)
+
+
+def _decide_import_name(
+    sdist_path: Path | None,
+    distribution_name: str,
+    build_backend: str,
+) -> Decision:
+    default = distribution_name.replace("-", "_").lower()
+    if sdist_path is None:
+        return Ambiguous(
+            "Which top-level Python import name should pip check import?",
+            (default,),
+            default,
+        )
+    if build_backend == "maturin":
+        extracted = _extract_import_name_from_sdist(sdist_path, distribution_name)
+        if extracted:
+            return Decided(extracted, "sdist Cargo.toml [lib] or pymodule")
+    tops = _top_level_import_candidates(sdist_path)
+    if len(tops) == 1:
+        return Decided(tops[0], "single top-level package in sdist")
+    if len(tops) > 1:
+        return Ambiguous(
+            "Which top-level Python import name matches the shipped package layout?",
+            tuple(tops),
+            tops[0],
+        )
+    extracted = _extract_import_name_from_sdist(sdist_path, distribution_name)
+    if extracted:
+        return Decided(extracted, "sdist layout")
+    return Ambiguous(
+        "Which top-level Python import name should pip check import?",
+        (default,),
+        default,
+    )
+
+
 def _extract_abi3_from_sdist(sdist_path: Path) -> bool:
     """Return True when Cargo.toml declares the pyo3 abi3 feature.
 
@@ -563,6 +708,210 @@ def _can_noarch_python(info: dict, build_backend: str, sdist_path: Path | None) 
     if has_platform_markers:
         reasons.append("requires_dist has sys_platform markers (use __win/__unix selectors)")
     return (not reasons, reasons)
+
+
+def _decide_noarch(
+    info: dict,
+    build_backend: str,
+    sdist_path: Path | None,
+) -> Decision:
+    if sdist_path is None:
+        return Ambiguous(
+            "Should this recipe be noarch: python without an sdist to inspect?",
+            ("python", "compiled"),
+            "python",
+        )
+    ok, _reasons = _can_noarch_python(info, build_backend, sdist_path)
+    return Decided("python" if ok else "compiled", "sdist and classifier inspection")
+
+
+def _list_sdist_license_basenames(sdist_path: Path) -> list[str]:
+    """Top-level licence file basenames present in an sdist tarball."""
+    try:
+        with _tarfile.open(sdist_path, "r:*") as tf:
+            seen: dict[str, str] = {}
+            for member in tf.getmembers():
+                if not member.isfile():
+                    continue
+                parts = member.name.split("/")
+                if len(parts) != 2:
+                    continue
+                basename = parts[1]
+                seen.setdefault(basename.upper(), basename)
+    except (_tarfile.TarError, OSError):
+        return []
+    found: list[str] = []
+    for candidate in _LICENSE_FILE_PRIORITY:
+        if candidate.upper() in seen:
+            found.append(seen[candidate.upper()])
+    for upper, actual in seen.items():
+        if upper.startswith(("LICENSE", "LICENCE", "COPYING")) and actual not in found:
+            found.append(actual)
+    return found
+
+
+def _load_check_license_semantics():
+    import importlib.util
+
+    path = Path(__file__).resolve().parent / "license-checker.py"
+    spec = importlib.util.spec_from_file_location("cfe_license_checker_dyn", path)
+    if spec is None or spec.loader is None:
+        raise ImportError("license-checker.py spec failed")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.check_license_semantics
+
+
+def _sdist_extract_root(sdist_path: Path) -> Path | None:
+    """Extract sdist to a temp dir; return the root path (best-effort)."""
+    try:
+        dest = Path(_tempfile.mkdtemp(prefix="cfe-sdist-"))
+        with _tarfile.open(sdist_path, "r:*") as tf:
+            tf.extractall(dest, filter="data")
+        children = [p for p in dest.iterdir() if p.is_dir()]
+        if len(children) == 1:
+            return children[0]
+        return dest
+    except Exception:
+        return None
+
+
+def _decide_license(
+    info: dict,
+    repository: str,
+    sdist_path: Path | None,
+) -> Decision:
+    expr = (info.get("license_expression") or "").strip()
+    if expr:
+        return Decided(expr, "PEP 639 license_expression")
+
+    classifier_hits: list[str] = []
+    for c in info.get("classifiers") or []:
+        if c in _CLASSIFIER_SPDX:
+            classifier_hits.append(_CLASSIFIER_SPDX[c])
+    unique_hits = list(dict.fromkeys(classifier_hits))
+    if len(unique_hits) > 1:
+        return Ambiguous(
+            "Which OSI licence classifier matches the upstream intent?",
+            tuple(unique_hits),
+            unique_hits[0],
+        )
+    if len(unique_hits) == 1:
+        chosen = unique_hits[0]
+    else:
+        raw = (info.get("license") or "").strip()
+        if raw and "\n" not in raw and len(raw) <= 80:
+            key = raw.lower().rstrip(".")
+            if key in _SPDX_NORMALIZE:
+                chosen = _SPDX_NORMALIZE[key]
+            elif " " not in raw and key not in {"bsd", "gpl", "lgpl", "agpl"}:
+                chosen = raw
+            else:
+                chosen = ""
+        else:
+            chosen = ""
+        if not chosen:
+            m = re.match(r"https?://github\.com/([^/]+)/([^/]+)", repository or "")
+            if m and REQUESTS_AVAILABLE and requests is not None:
+                try:
+                    r = requests.get(
+                        f"https://api.github.com/repos/{m.group(1)}/"
+                        f"{m.group(2).removesuffix('.git')}/license",
+                        timeout=10,
+                    )
+                    if r.ok:
+                        spdx = (r.json().get("license") or {}).get("spdx_id") or ""
+                        if spdx and spdx != "NOASSERTION":
+                            chosen = spdx
+                except Exception:
+                    pass
+        if not chosen:
+            return Ambiguous(
+                "Which SPDX licence identifier should about.license use?",
+                ("REPLACE_LICENSE",),
+                "REPLACE_LICENSE",
+            )
+
+    if sdist_path is not None:
+        root = _sdist_extract_root(sdist_path)
+        if root is not None:
+            try:
+                check = _load_check_license_semantics()
+                status, _msg = check(chosen, root)
+            except Exception:
+                status = "skip"
+            if status == "fail" and chosen.lower().endswith("-only"):
+                or_later = re.sub(
+                    r"-only$", "-or-later", chosen, count=1, flags=re.IGNORECASE
+                )
+                return Ambiguous(
+                    "Declared -only licence disagrees with LICENSE grant text; which identifier?",
+                    (chosen, or_later),
+                    chosen,
+                )
+    return Decided(chosen, "PyPI metadata")
+
+
+def _decide_license_file(sdist_path: Path | None) -> Decision:
+    if sdist_path is None:
+        return Decided("LICENSE", "default when sdist unavailable")
+    names = _list_sdist_license_basenames(sdist_path)
+    if len(names) > 1:
+        return Ambiguous(
+            "Which upstream licence file should recipe about.license_file reference?",
+            tuple(names),
+            names[0],
+        )
+    if len(names) == 1:
+        return Decided(names[0], "sdist licence file list")
+    return Ambiguous(
+        "No licence file detected in sdist; keep default LICENSE?",
+        ("LICENSE",),
+        "LICENSE",
+    )
+
+
+def apply_pypi_generator_decisions(
+    info: PackageInfo,
+    raw_info: dict,
+    sdist_path: Path | None,
+    build_system_requires: list[str],
+) -> None:
+    """Resolve the six generator decision points; append questions on PackageInfo."""
+    questions: list[GeneratorQuestion] = []
+    requires_dist = raw_info.get("requires_dist") or []
+
+    info.build_backend = _value_from_decision(
+        _decide_build_backend(build_system_requires, requires_dist),
+        questions,
+        "build-backend",
+    )
+    info.import_name = _value_from_decision(
+        _decide_import_name(sdist_path, info.name, info.build_backend),
+        questions,
+        "import-name",
+    )
+    info.license = _value_from_decision(
+        _decide_license(raw_info, info.repository, sdist_path),
+        questions,
+        "license",
+    )
+    info.license_file = _value_from_decision(
+        _decide_license_file(sdist_path),
+        questions,
+        "license-file",
+    )
+    info.python_min = _value_from_decision(
+        _decide_python_min(info.python_requires),
+        questions,
+        "python-min",
+    )
+    info.cfe_noarch = _value_from_decision(
+        _decide_noarch(raw_info, info.build_backend, sdist_path),
+        questions,
+        "noarch",
+    )
+    info.questions = questions
 
 
 def _classify_sys_platform_deps(requires_dist: list[str]) -> dict[str, list[str]]:
@@ -928,18 +1277,13 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
     # Entry points from sdist's [project.scripts] (G4 / Wave D S18).
     entry_points = _extract_entry_points_from_sdist(sdist_path) if sdist_path else []
 
-    # Import name from sdist (G4 / SKILL.md G7 canonical fix).
-    import_name = ""
-    if sdist_path is not None:
-        import_name = _extract_import_name_from_sdist(sdist_path, info["name"])
-
     # abi3 detection for PyO3 packages (Wave B / G3.c gated emission).
     has_abi3 = bool(sdist_path and _extract_abi3_from_sdist(sdist_path))
 
     # OS-conditional run deps from sys_platform markers (Wave D / S16).
     sys_platform_deps = _classify_sys_platform_deps(requires_dist)
 
-    return PackageInfo(
+    pkg = PackageInfo(
         name=info["name"],
         version=version,
         summary=info.get("summary", ""),
@@ -947,7 +1291,7 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         homepage=homepage,
         repository=repository,
         documentation=documentation,
-        license=_resolve_license(info, repository),
+        license="",
         source_url=source_url,
         sha256=sha256,
         dependencies=dependencies,
@@ -955,11 +1299,13 @@ def fetch_pypi_info(package_name: str, version: Optional[str] = None) -> Package
         python_requires=python_requires,
         author=info.get("author", ""),
         build_backend=build_backend,
-        import_name=import_name,
+        import_name="",
         has_abi3=has_abi3,
         sys_platform_deps=sys_platform_deps,
         build_system_requires=_parse_requires_dist_specs(build_system_requires),
     )
+    apply_pypi_generator_decisions(pkg, info, sdist_path, build_system_requires)
+    return pkg
 
 
 
@@ -971,6 +1317,36 @@ def _skill_version() -> str:
         return m.group(1) if m else "unknown"
     except Exception:
         return "unknown"
+
+
+def _format_questions_block(questions: list[GeneratorQuestion]) -> str:
+    if not questions:
+        return ""
+    lines = [f"Questions ({len(questions)}):"]
+    for q in questions:
+        opts = ", ".join(q.options)
+        lines.append(f"  {q.question}")
+        lines.append(f"    options: {opts}")
+        lines.append(f"    default: {q.default}")
+    return "\n".join(lines) + "\n"
+
+
+def _cfe_header_questions_lines(questions: list[GeneratorQuestion]) -> str:
+    if not questions:
+        return ""
+    out = ""
+    for q in questions:
+        opts = ", ".join(q.options)
+        out += f"# Q ({q.key}): {q.question}\n"
+        out += f"#   options: {opts}\n"
+        out += f"#   default taken: {q.default}\n"
+    return out
+
+
+def _print_questions(questions: list[GeneratorQuestion]) -> None:
+    block = _format_questions_block(questions)
+    if block:
+        print(block, end="")
 
 
 def _render_cfe_block(info: "PackageInfo", conda_name: str, noarch_kind: str) -> str:
@@ -1007,7 +1383,7 @@ def _render_cfe_block(info: "PackageInfo", conda_name: str, noarch_kind: str) ->
   cfe-upstream-homepage: {info.homepage or "none"}
   cfe-import-names: {import_names}
   cfe-source-kind: {source_kind}
-  cfe-noarch: {noarch_kind}
+  cfe-noarch: {noarch_kind or info.cfe_noarch}
   cfe-pip-check: "true"
   cfe-on-conda-forge-status: pending-submission-to-conda-forge
   cfe-on-conda-forge-feedstock: none
@@ -1023,7 +1399,7 @@ def _render_cfe_block(info: "PackageInfo", conda_name: str, noarch_kind: str) ->
 ####
 # CFE comments
 # Header:
-####
+{_cfe_header_questions_lines(info.questions)}####
 """
 
 
@@ -1053,7 +1429,7 @@ def generate_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
     # Parse python_min from python_requires, then clamp to the conda-forge
     # floor (3.10) — Python 3.9 was dropped from the build matrix in Aug 2025
     # so any upstream-declared floor below 3.10 is moot for conda-forge.
-    python_min = _resolve_python_min(info.python_requires)
+    python_min = info.python_min or _resolve_python_min(info.python_requires)
     # CFEP-25 floor: only declare in context when overriding the default 3.10.
     context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != _CONDA_FORGE_PYTHON_FLOOR else ""
 
@@ -1178,7 +1554,7 @@ def _generate_maturin_recipe_yaml(info: PackageInfo, output_dir: Path) -> Path:
     - No CFEP-25 dual-version test matrix (1/27 PyO3 adoption; the build
       matrix already exercises each Python version).
     """
-    python_min = _resolve_python_min(info.python_requires)
+    python_min = info.python_min or _resolve_python_min(info.python_requires)
     context_python_min_line = f'  python_min: "{python_min}"\n' if python_min != _CONDA_FORGE_PYTHON_FLOOR else ""
 
     # Source URL: sdist filename may use underscore-form even when PyPI name uses hyphens.
@@ -1320,7 +1696,7 @@ def generate_meta_yaml(info: PackageInfo, output_dir: Path) -> Path:
     uses the CFEP-25 dual-version test stanza via the conda-build ``test.requires``
     machinery (``python ={python_min}`` for the floor build).
     """
-    python_min = _resolve_python_min(info.python_requires)
+    python_min = info.python_min or _resolve_python_min(info.python_requires)
     # Only declare ``python_min`` jinja var when overriding the 3.10 default.
     set_python_min_line = (
         f'{{% set python_min = "{python_min}" %}}\n' if python_min != _CONDA_FORGE_PYTHON_FLOOR else ""
@@ -2388,6 +2764,11 @@ Examples:
     pypi_parser.add_argument("package", help="Package name (optionally with version: pkg==1.0)")
     pypi_parser.add_argument("--output", "-o", type=Path, default=None,
                              help="Output directory")
+    pypi_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Refuse to write recipe files when any generator question exists.",
+    )
     pypi_parser.add_argument("--format", choices=["v1", "legacy"], default="v1",
                              help="Recipe format")
 
@@ -2521,6 +2902,11 @@ Examples:
 
             print(f"Fetching info for {name}...")
             info = fetch_pypi_info(name, version)
+
+            _print_questions(info.questions)
+            if info.questions and args.strict:
+                print("Strict mode: recipe not written (unresolved questions).")
+                sys.exit(1)
 
             output_dir = args.output or Path(f"recipes/{info.name.lower()}")  # G94c: lowercase feedstock-style dir
 

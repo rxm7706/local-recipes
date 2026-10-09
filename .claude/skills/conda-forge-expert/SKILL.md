@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.95.0
+version: 8.96.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -540,6 +540,8 @@ extra:
 **`cfe-upstream-registry` must name the registry the package actually publishes to** — it is not decoration: `bmad_suite_metapackage.py` resolves suite pins through it (`[npm+floor]` vs `[github+floor]`), `github_updater.py` / the MCP `update_recipe*` tools route through it, and a wrong value fails *silently as "upstream unknown"*. Live case: `recipes/bmad-method` carried `cfe-upstream-registry: pypi` (+ a `pkg:pypi/bmad-method` purl) for a package that only exists on npm; the generator's `generate failed rc=1` note sat in the recipe's CFE comments for weeks because the PyPI lookup 404'd. Check the purl and the registry agree with `source.url` before stamping the block (corrected to `npm` 2026-09-05).
 
 The `# CFE comments` block mirrors the recipe's structure (location keys `build` / `context` / `host` / `run` / `requirements` / `about` / `tests`) so each parked note shows where it would belong if promoted. Both the `# CFE metadata` and `# CFE comments` sections are CFE-local-only and are **stripped before any push** (along with `extra.cfe-*` keys). `recipe-generator.py` must emit new rationale into this block, never inline.
+
+**PyPI generator questions (v8.96.0, Story 23.2 — Operating Principle 1).** On the `pypi` subcommand, when metadata or the sdist cannot settle build backend, import name, licence, licence file, Python floor, or noarch (no sdist), `recipe-generator.py` still writes the recipe using each field's **existing default**, prints a `Questions (N):` block to stdout, and mirrors the same list under `# CFE comments` → `# Header:`. Do not silently pick among plausible values — the defaults are the same heuristics as before (see **G7** import-name divergence, **G55** backend-from-source vs wheel, **G90** licence/classifier gaps). Use `recipe-generator.py pypi … --strict` to refuse file output when any question exists (exit non-zero). The v0 `legacy` path prints questions but writes no CFE block.
 
 **The 4 identity/decision fields are the cached "hard-won" answers** (added v8.37.0; from the 4-analyst deep-analysis synthesis, 2026-06-19). They sit at the end of the identity/upstream block (after `cfe-upstream-homepage`, before `cfe-on-conda-forge-status`). Each caches a value that authoring would otherwise have to recompute — and that a **regen** (`grayskull` / `recipe-generator.py` re-running over a version bump) would re-guess, possibly *wrong*. Value semantics:
 

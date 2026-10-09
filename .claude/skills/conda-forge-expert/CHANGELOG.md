@@ -2,7 +2,9 @@
 
 ## TL;DR — what's new in the latest release
 
-**v8.95.0** (Oct 9, 2026, current) — **Story 23.1: `license-checker --check-source` refuses GPL-family `-only` when LICENSE grants any later version (MINOR).** Ports `check_license_semantics` from auto-recipe@8b53eda into `license-checker.py`; missing `license_file` in source now counts toward a non-zero exit. Fixtures under `tests/fixtures/license-semantics/` and unit tests in `tests/unit/test_license_semantics.py`.
+**v8.96.0** (Oct 9, 2026, current) — **Story 23.2: `recipe-generator.py` reports ambiguous PyPI choices instead of silent guesses (MINOR).** Decided/Ambiguous decision type (auto-recipe@8b53eda); six decision points (build backend, import name, noarch without sdist, licence + Story 23.1 semantics, licence file, Python floor); stdout + CFE `# Header:` questions; `pypi --strict` refuses writes. Cross-ref G7, G55, G90.
+
+**v8.95.0** (Oct 9, 2026) — **Story 23.1: `license-checker --check-source` refuses GPL-family `-only` when LICENSE grants any later version (MINOR).** Ports `check_license_semantics` from auto-recipe@8b53eda into `license-checker.py`; missing `license_file` in source now counts toward a non-zero exit. Fixtures under `tests/fixtures/license-semantics/` and unit tests in `tests/unit/test_license_semantics.py`.
 
 **v8.94.0** (Oct 9, 2026) — **Story 22.2: `validate_recipe_yaml` reds non-string keys and object repr leaks (MINOR).** After parse, a recursive walk reports non-string mapping keys and whole-key/whole-value Python object repr strings (conda-recipe-manager `SentinelType` converter leaks). v0 `meta.yaml` unchanged. Fixtures and unit tests under `tests/fixtures/recipes/v1-*` and `tests/unit/test_validate_recipe.py`.
 
