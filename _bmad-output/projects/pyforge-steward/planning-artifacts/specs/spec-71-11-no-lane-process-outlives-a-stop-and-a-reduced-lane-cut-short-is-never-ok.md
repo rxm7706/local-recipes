@@ -2,7 +2,7 @@
 title: "71.11: No lane process outlives a stop, and a reduced lane cut short is never ok"
 type: 'fix'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: 'd377581be4c3e4633743c39a8c84fc32ab90e33d'
 review_loop_iteration: 0
 followup_review_recommended: false
