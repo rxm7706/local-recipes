@@ -438,7 +438,7 @@ development_status:
   87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories: backlog
   87-15-a-preserve-reaches-origin-only-through-the-content-gate: backlog
   87-16-the-orphaned-tips-are-re-preserved-as-local-archive-tags: backlog
-  87-2-the-unpushed-work-detector-fails-closed-and-never-prints-a-tag-minting-remedy: backlog
+  87-2-the-unpushed-work-detector-fails-closed-and-never-prints-a-tag-minting-remedy: done
   87-3-preserved-work-has-one-grammar-and-one-verb: backlog
   87-4-spin-parks-every-attempt-as-a-preserve-tag-before-bmad-loop-can-prune-it: backlog
   87-5-dispatch-and-drain-preserve-a-stopped-storys-work-as-a-tag-on-origin: backlog
@@ -618,7 +618,7 @@ development_status:
   epic-85-retrospective: done
   epic-86: in-progress
   epic-86-retrospective: optional
-  epic-87: backlog
+  epic-87: in-progress
   epic-87-retrospective: optional
   epic-9: done
   epic-9-retrospective: optional
