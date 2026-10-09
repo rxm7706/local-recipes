@@ -1775,6 +1775,10 @@ cmd = "python .claude/scripts/conda-forge-expert/recipe_optimizer.py"
 description = "Check for new upstream versions of a package and update the recipe"
 cmd = "python .claude/scripts/conda-forge-expert/recipe_updater.py"
 
+[feature.local-recipes.tasks.refresh-wave]
+description = "Bulk recipe-refresh driver for the refresh waves: reads a wave manifest and refreshes each recipes/<name>/ to its feedstock's published version through recipe_editor (dry-run by default; --apply writes, --gates/--build run the CFE gates and an isolated rattler-build), or undoes the Wave H damage with --repair (hashed PyPI URLs, FMT-001 list indent, hidden meta.yaml). Local only: never pushes, forks or opens a PR. Usage: pixi run -e local-recipes refresh-wave <manifest.yaml> [--repair] [--apply] [--gates] [--build] [--report-dir DIR] [--force] [--json]"
+cmd = "python .claude/scripts/conda-forge-expert/refresh_wave.py"
+
 [feature.local-recipes.tasks.test]
 description = "Run the conda-forge-expert test suite (offline, fast subset)"
 cmd = "pytest .claude/skills/conda-forge-expert/tests -m 'not network and not slow'"
