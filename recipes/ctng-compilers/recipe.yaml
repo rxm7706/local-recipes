@@ -5,7 +5,8 @@
 schema_version: 1
 
 context:
-  version: gcc_version
+  gcc_version: "15.3.0"
+  version: "15.3.0"
   build_num: 1
   gcc_maj_ver: 15
   cross_target_platform: linux-64
@@ -83,7 +84,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run:
         - if: unix
           then: __unix
@@ -91,7 +92,7 @@ outputs:
           then: m2-conda-epoch
       ignore_run_exports:
         from_package:
-          - ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+          - ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
     tests:
       - script:
           - echo ${{ cross_target_stdlib_version }}
@@ -129,7 +130,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run:
         - if: unix
           then: __unix
@@ -165,7 +166,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
         - if: target_platform == cross_target_platform and cross_target_platform not in ("osx-64", "osx-arm64")
           then: ${{ pin_subpackage("libgomp", exact=True) }}
         - if: target_platform == cross_target_platform and cross_target_platform not in ("osx-64", "osx-arm64")
@@ -210,7 +211,7 @@ outputs:
         requirements:
           run:
             - if: cross_target_stdlib != "None"
-              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
         script:
           - echo ${{ c_stdlib }}
           - echo ${{ c_stdlib_version }}
@@ -368,7 +369,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
         # For cpp and crt{i,n}.o
         - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, exact=True) }}
         - if: cross_target_platform not in ("osx-arm64", "osx-64")
@@ -405,7 +406,7 @@ outputs:
         requirements:
           run:
             - if: cross_target_stdlib != "None"
-              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
         script:
           - test -f ${PREFIX}/bin/${{ TARGET }}-g++
           - CXX=$(${PREFIX}/bin/*-gcc -dumpmachine)-g++
@@ -479,7 +480,7 @@ outputs:
           then: binutils_impl_${{ cross_target_platform }} ${{ binutils_version }}.* bootstrap_*
         # not needed due to pinning above but marks this build as using the new sysroots
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run:
         # For cpp and crt{i,n}.o
         - gcc_impl_${{ cross_target_platform }} >=${{ gcc_version }}
@@ -507,7 +508,7 @@ outputs:
             - if: x86_64 or aarch64 or ppc64le
               then: cmake >=3.11,<4
             - if: cross_target_stdlib != "None"
-              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
         script:
           - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgfortran.so
           - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgfortran.dylib
@@ -567,7 +568,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
         - ${{ pin_subpackage("libgcc", exact=True) }}
       run:
         - ${{ pin_subpackage("libgcc", exact=True) }}
@@ -759,7 +760,7 @@ outputs:
       build:
       host:
         - if: cross_target_stdlib != "None"
-          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}.*
       run:
         - libgcc >=${{ gcc_version }}
       run_constraints:

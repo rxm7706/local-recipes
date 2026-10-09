@@ -9,31 +9,39 @@ schema_version: 1
 
 context:
   runtime_year: 2015
-  vsyear:
-  runtime_version: "14.40.33810"
-  cl_version: "19.40"
-  vcver:
-  vc_major: ${{ vcver.split(".")[0] }}
-  vcvars_ver_maj: ${{ cl_version.split(".")[0]|int - 5 }}
-  vcvars_ver_min: ${{ cl_version.split(".")[1]|int }}
-  vcvars_ver: vcvars_ver_maj ~ "." ~ vcvars_ver_min
+  vsyear: "2026"
+  vsver: "18"
+  vcver: "14.5"
+  runtime_version: "14.51.36247"
+  update_version: "1"
+  cl_version: "19.51.36247"
+  uuid: ebdab8e5-1d7b-4d9f-a11b-cbb1720c3b12
+  sha256: 843068991DAAA1F73AD9F6239BCE4D0F6A07A51F18C37EA2A867E9BECA71295C
+  vc_major: "14"
+  vcvars_ver_maj: 14
+  vcvars_ver_min: 51
+  vcvars_ver: "14.51"
   clang_test_version: "21.1.8"
   build_num: 41
+  cross_target_platform: win-64
 
 recipe:
   name: vs${{ vsyear }}
   version: ${{ runtime_version }}
 
 source:
-  # Latest version redirect: https://aka.ms/vs/16/release/vc_redist.x64.exe
-  - url: ${{ 'https://download.visualstudio.microsoft.com/download/pr/${{ uuid }}/${{ sha256 }}/vc_redist.x64.exe' if cross_target_platform == "win-64" else '' }}
-    sha256: ${{ sha256 | lower if cross_target_platform == "win-64" else '' }}
-  # Latest version redirect: https://aka.ms/vs/16/release/vc_redist.arm64.exe
-  - url: ${{ 'https://download.visualstudio.microsoft.com/download/pr/${{ uuid }}/${{ sha256 }}/vc_redist.arm64.exe' if cross_target_platform == "win-arm64" else '' }}
-    sha256: ${{ sha256 | lower if cross_target_platform == "win-arm64" else '' }}
-  # Latest version redirect: https://aka.ms/vs/16/release/vc_redist.x86.exe
-  - url: ${{ 'https://download.visualstudio.microsoft.com/download/pr/${{ uuid }}/${{ sha256 }}/vc_redist.x86.exe' if cross_target_platform == "win-32" else '' }}
-    sha256: ${{ sha256 | lower if cross_target_platform == "win-32" else '' }}
+  - if: cross_target_platform == "win-64"
+    then:
+      url: https://download.visualstudio.microsoft.com/download/pr/${{ uuid }}/${{ sha256 }}/vc_redist.x64.exe
+      sha256: ${{ sha256 | lower }}
+  - if: cross_target_platform == "win-arm64"
+    then:
+      url: https://download.visualstudio.microsoft.com/download/pr/${{ uuid }}/${{ sha256 }}/vc_redist.arm64.exe
+      sha256: ${{ sha256 | lower }}
+  - if: cross_target_platform == "win-32"
+    then:
+      url: https://download.visualstudio.microsoft.com/download/pr/${{ uuid }}/${{ sha256 }}/vc_redist.x86.exe
+      sha256: ${{ sha256 | lower }}
 
 build:
   number: ${{ build_num }}
