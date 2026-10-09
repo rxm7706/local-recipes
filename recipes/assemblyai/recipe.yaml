@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: 1.0.0
+  version: 1.3.0
 
 package:
   name: assemblyai
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/assemblyai/assemblyai-${{ version }}.tar.gz
-  sha256: da3715e5805594e75927333330127c6c23ad87d17878d69b76f2404658f7dbac
+  sha256: e404c2f695c8f32aa09c8a9f3ac425f81dfd72583b5ca3620b75a50fefa8b064
 
 build:
   noarch: python
@@ -74,7 +74,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/assemblyai-feedstock
   cfe-forge-recipe-updates-needed: [version-bump-to-0.64.25]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-07-04T21:04:05Z
+  cfe-last-checked: 2026-10-09T22:40:33Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
   cfe-local-build-status: success
@@ -88,4 +88,8 @@ extra:
 #    # noarch single-build must satisfy the union of upstream's python-gated
 #    # pins: pydantic>=1.10.17 (<3.14) and pydantic>=2.0 + pydantic-settings>=2.0
 #    # (>=3.14). pydantic>=2.0 covers both; pydantic-settings is harmless on 3.10-3.13.
+####
+# CFE comments
+# Header:
+#    # 2026-10-09 refresh_wave B-B1-assemblyai: refreshed 1.0.0 -> 1.3.0
 ####
