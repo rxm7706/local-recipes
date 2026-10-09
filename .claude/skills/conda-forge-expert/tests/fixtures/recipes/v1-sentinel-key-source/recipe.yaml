@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: example-sentinel-source
+  version: "1.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  "<conda_recipe_manager.types.SentinelType object at 0xcafebabe>":
+    url: https://example.com/leak.tar.gz
+    sha256: 0000000000000000000000000000000000000000000000000000000000000000
+
+build:
+  number: 0
+  script: echo ok
+
+requirements:
+  build: []
+
+tests:
+  - script:
+      - echo ok
+
+about:
+  homepage: https://example.com
+  license: MIT
+  summary: Fixture for sentinel repr under source.
+
+extra:
+  recipe-maintainers:
+    - rxm7706

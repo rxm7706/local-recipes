@@ -2,10 +2,11 @@
 title: "22.2: CFE's validation reds a recipe with a non-string key or a Python object repr"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '400a0d0f77d58d0c115fdd959796a1653162e13a'
+followup_review_recommended: false
 flag-exempt: detector-or-gate
 review_loop_iteration: 0
-followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-pyforge-mason/SPEC.md
   - docs/dreams/pyforge-mason.md
@@ -159,3 +160,30 @@ Flag: `flag-exempt: detector-or-gate` (a validation gate; flagging it OFF would 
 ## Review Triage Log
 
 - No independent review has run yet (implementation and review stay separate).
+
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — implementation matched intent-contract ACs; verification green)
+
+## Auto Run Result
+
+Status: done
+
+Summary: CFE `validate_recipe_yaml` now walks parsed v1 trees for non-string mapping keys and whole-key/whole-value Python object repr strings; fixtures and unit tests cover Story 22.2 ACs and matrix rows.
+
+Files changed:
+- `.claude/skills/conda-forge-expert/scripts/validate_recipe.py` — `_find_bad_keys` helper wired after parse
+- `.claude/skills/conda-forge-expert/tests/unit/test_validate_recipe.py` — new `TestValidateRecipeBadKeys`
+- `.claude/skills/conda-forge-expert/tests/fixtures/recipes/v1-{sentinel-key,sentinel-key-source,nonstring-key,repr-value,repr-in-prose}/recipe.yaml`
+- CFE version carriers v8.94.0 (`SKILL.md`, `MANIFEST.yaml`, `config/skill-config.yaml`, `CHANGELOG.md`)
+
+Review: 0 patch/defer/intent_gap findings.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/unit/test_validate_recipe.py -q` — 18 passed
+- `pixi run -e local-recipes test` — 9276 passed (1 pre-existing unrelated failure cleared by commit tracking fixtures)
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — pass after `retro(cfe):` commit
+- `python scripts/spec_surface_reconcile.py` — OK
+- Commit `43c8d99415` — `retro(cfe): v8.94.0 — validate_recipe reds non-string keys and object reprs`

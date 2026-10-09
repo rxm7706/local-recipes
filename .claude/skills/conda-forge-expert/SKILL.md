@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.93.5
+version: 8.94.0
 allowed-tools: [conda_forge_server]
 ---
 
@@ -1324,7 +1324,7 @@ extra:
 ### Validation & Quality
 | Tool | Description | Example |
 |---|---|---|
-| `validate_recipe` | Schema, license, checksums + `rattler-build lint` pass | `validate_recipe(recipe_path="recipes/numpy")` |
+| `validate_recipe` | Schema, license, checksums, conda-smithy lint, and (v1 `recipe.yaml` only) a tree walk that reds non-string mapping keys and whole-key/whole-value Python object reprs (e.g. conda-recipe-manager `SentinelType` leaks — see Story 22.1 corpus repair) | `validate_recipe(recipe_path="recipes/numpy")` |
 | `check_dependencies` | Verifies all deps exist on conda-forge. Batch repodata.json — fast, air-gapped-friendly, JFrog Artifactory-compatible | `check_dependencies(recipe_path="recipes/numpy")` |
 | `optimize_recipe` | 18 check codes — **critical** (STD-001: compiler without stdlib; STD-002: format mixing; SCHEMA-001: missing v1 schema header), **security** (SEC-001: no sha256), **completeness** (MAINT-001: no maintainers; TEST-001: no tests; TEST-002: noarch:python tests pinned to a single Python version instead of `[python_min, "*"]` ([staged-recipes#32857 r3039190932](https://github.com/conda-forge/staged-recipes/pull/32857#discussion_r3039190932)); TEST-003: package_contents substituted for python.imports without justification; ABT-001: no license_file; ABT-002: v0 about-fields in v1 recipe; **LIC-001: secondary-source LICENSE pattern (3) detected, convert to in-recipe pattern (2)** [v8.12.0]), **formatting** (**FMT-001: list items indented at parent-key depth instead of 2 spaces deeper** [v8.12.0]), **quality** (DEP-001/002, PIN-001, SCRIPT-001/002, SEL-001/002/003) | `optimize_recipe(recipe_path="recipes/numpy")` |
 
