@@ -2,7 +2,9 @@
 title: "25.3: CFE gains a tracked bulk recipe-refresh driver that the refresh waves run through"
 type: 'feature'
 created: '2026-10-09'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '222530149e164d7d7929c175b8418d82afedc5bc'
+followup_review_recommended: false
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -458,4 +460,34 @@ Minted 2026-10-09 from the operator's ruling of the same day: mint a driver stor
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - Implementation reviewed against acceptance criteria and the I/O matrix via unit/meta tests (95 passed); no adversarial layer findings recorded on this pass.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added tracked CFE `refresh_wave.py` with refresh and `--repair` modes, three-place wiring (wrapper, pixi `refresh-wave` task, SCRIPTS + CLI_ONLY_VERBS), and `recipe_updater.get_current_recipe_info` name fallback. CFE version carriers moved to 8.99.0 in lockstep.
+
+Files changed:
+- `.claude/skills/conda-forge-expert/scripts/refresh_wave.py` — bulk refresh/repair driver
+- `.claude/scripts/conda-forge-expert/refresh_wave.py` — CLI wrapper
+- `.claude/skills/conda-forge-expert/scripts/recipe_updater.py` — billiard-shape name resolution
+- `.claude/skills/conda-forge-expert/scripts/mcp_parity.py` — refresh-wave CLI-only verb
+- `.claude/skills/conda-forge-expert/tests/unit/test_refresh_wave.py` — AC/matrix coverage
+- `.claude/skills/conda-forge-expert/tests/meta/test_refresh_wave_wiring.py` — wiring + local-only ast guard
+- `.claude/skills/conda-forge-expert/tests/meta/test_all_scripts_runnable.py` — SCRIPTS entry
+- `.claude/skills/conda-forge-expert/SKILL.md`, `CHANGELOG.md`, `MANIFEST.yaml`, `config/skill-config.yaml` — v8.99.0 docs
+- `pixi.toml` — `[feature.local-recipes.tasks.refresh-wave]` (prior checkpoint commit)
+- Spec memlogs on `spec-conda-forge-expert-rebuild`, `spec-packaging-factory`, `spec-pyforge-mason`
+
+Review: no patch/defer entries; AC verified by pytest.
+
+Verification:
+- `pytest` refresh_wave unit + wiring tests: 95 passed
+- `python scripts/spec_surface_reconcile.py`: OK
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test`: pass after `retro(cfe):` commit (CFE meta tests require sanctioned commit)
+
+Residual: operator dry-runs over live Wave A / repair manifests not executed in this run; `--build` exercised via mocks only.
