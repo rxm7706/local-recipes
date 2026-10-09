@@ -154,7 +154,6 @@ derivation and this file diverge.
 | `pin:pyright` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:pytesseract` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:pytest-mock` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
-| `pin:pytest-xdist` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:python-docx` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:python-graphviz` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
 | `pin:qpdf` | pin | won't-do | Declared only in [feature.local-recipes.dependencies]; not in any SBOM feature | steward |
