@@ -1,7 +1,8 @@
 {
- "recorded": "2026-10-04",
+ "recorded": "2026-10-08",
  "known": [
   "pyforge-atlas: _bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-pyforge-atlas/.memlog.md cites bare CAP-152, which this project does not define -- qualify it (`<spine>:CAP-152`) or fix the id",
+  "pyforge-doctor: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md cites bare CAP-159, which this project does not define -- qualify it (`<spine>:CAP-159`) or fix the id",
   "pyforge-doctor: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor/.memlog.md cites bare CAP-265, which this project does not define -- qualify it (`<spine>:CAP-265`) or fix the id",
   "pyforge-mason: _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md cites bare CAP-13, which this project does not define -- qualify it (`<spine>:CAP-13`) or fix the id",
   "pyforge-mason: _bmad-output/projects/pyforge-mason/planning-artifacts/epics.md cites bare CAP-9, which this project does not define -- qualify it (`<spine>:CAP-9`) or fix the id",
