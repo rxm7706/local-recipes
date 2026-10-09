@@ -4807,6 +4807,35 @@ tests pass, with only `test_each_lane_gets_isolated_scratch_env`'s location asse
 four tests do not change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** backlog
 
+### Story 71.9: A reduced suite lane never fails on a segment that selects no tests
+
+As the operator whose push selects a station's suite lane and its coverage gate,
+I want a reduced suite lane to pass when a segment the reduction added selects no tests, and to run only what its task leaves to it,
+So that the lane's verdict is the station task's own, minus the tests the gate already ran.
+
+**Type:** fix • **Effort:** M • **Deps:** S-71.8 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32; Story 71.4's suite reduction) • Dream 2026-10-08 (suite reduction)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py` (`_complement_marker` `:195`,
+`_build_reduced_shell_cmd` `:203`, `derive_suite_lane_override` `:289`, `collect_pytest_node_ids` `:383`),
+`src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (`_subprocess_lane` `:238`, the lane's journal entry), their unit
+tests under `src/shared/packages/pyforge-steward/tests/unit/`
+**Spec:** `planning-artifacts/specs/spec-71-9-a-reduced-suite-lane-never-fails-on-a-segment-that-selects-no-tests.md`
+**Given** `875f418334`, where the reduced lane is one `bash -lc` of segments joined by ` && `, the gate-directory segment runs `-m slow` with
+no task marker and also when the task's marker equals the gate's `not slow`, and `collect_pytest_node_ids` returns empty sets (its doubled `-q`);
+measured: doctor's and scribe's reduced lanes are that one segment (exit 5), herald and warden reach it after `integration` (exit 5), and
+marshal's runs `test_spin_recovers_the_run_id_from_a_real_unbuffered_subprocess`, which `pyforge-marshal-test` excludes
+**When** a reduced suite lane runs
+**Then** its segments run as separate processes in order; a segment's pytest exit 5 is `no-tests-selected` and passes, any other non-zero
+exit ends the lane with that code and later segments are `not-run`; when every segment selected nothing the station task's own
+`--collect-only` decides (0 passes, 5 reds); an equal marker adds no gate-directory segment; the journal lists each segment's label,
+command, exit code and outcome
+**And** unit tests cover an empty gate-directory segment (exit 0), a failing test in either segment (non-zero), the herald and doctor shapes
+end to end through `build_suite_lane_overrides` and `run_preflight`, a task whose own selection is empty (still red), and the equal-marker
+partition by real, non-empty node ids; the 71.1-71.4 preflight tests pass with only `test_complement_marker_variants`'s equal-marker assertion
+changed and the partition test asserting non-empty sets; a lane run whole keeps exit 5 red; the gate driver, `pixi.toml` and lane selection do
+not change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 
 Minted 2026-09-28 from the station Dream's entry of the same name — steward's two pieces of the operator's 2026-09-28

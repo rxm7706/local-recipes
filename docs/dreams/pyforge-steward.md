@@ -1007,6 +1007,35 @@ Drift — orphaned between stations.
   tests are right and do not change. It lands after Stories 71.5-71.7, which edit the same runner and move no
   scratch. Owner `spec-pyforge-steward` CAP-159 (FR-32; Story 71.3's per-lane scratch). → Epic 71 / Story 71.8,
   specced 2026-10-08.
+- **2026-10-08 (suite reduction) — Found: a reduced suite lane fails on a segment that selects no tests.** Story 71.4
+  splits a station's suite lane into segments when its coverage gate is also selected:
+  `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py` `_build_reduced_shell_cmd`
+  (`:203`) runs the task's other test directories under its own marker, then the gate's directories under
+  `_complement_marker` (`:195`), joined with ` && ` (`:231`) and run as one `bash -lc` (`:316`). With no task marker
+  the complement is `slow` (`:200`), and the gate runs `unit` and `meta` under `not slow`
+  (`scripts/coverage_gates_ci.py:140`, `:271`). Where those directories hold no `slow` test, that segment collects
+  every test, deselects them all, and pytest exits 5, which reds the lane. Measured 2026-10-08 on a one-file herald
+  branch: `pr-preflight -- --keep-going` journaled `pyforge-herald-test` exit 5 after 12.4 s (the lane log ends `5
+  passed`, then `1738 deselected`), while `pyforge-herald-test` run directly passes 1739; without `--keep-going` the
+  red stopped the run and `pyforge-herald-coverage-gate`, terminated, was journaled `-15 red`. Every station 71.4
+  reduces is affected (measured on `875f418334`, each station's reduced lane derived with a gate plan for its
+  `unit` suite). Doctor's and scribe's reduced lanes are that one segment alone (exit 5: 3494 and 440 deselected).
+  Herald and warden run their `integration` tests first, then the empty segment (exit 5: 1738 and 2001 deselected).
+  Marshal's task already passes `-m "not slow"`, the gate's own marker, and for an equal marker the complement is
+  still `slow` (`:196`-`:197`), so its reduced lane runs a test `pyforge-marshal-test` excludes:
+  `tests/unit/test_harness_bmadloop_spin.py::test_spin_recovers_the_run_id_from_a_real_unbuffered_subprocess`
+  (`:251`-`:252`). Steward, atlas and mason are not reduced (a `scripts/` import, or a two-command task), and core
+  has no gate. 71.4's partition test (`test_preflight_suite_reduction.py:66`) could not catch either:
+  `collect_pytest_node_ids` (`:383`) adds `--collect-only -q` to a command that already passes `-q`, so pytest
+  prints per-file counts, no line carries `::`, and every set it compares is empty. **What it looks like when
+  fixed:** a segment the reduction added that selects no tests counts as passed, and a segment that runs a failing
+  test still reds the lane. A lane whose every segment selected nothing passes only if the station's own task
+  collects something, and a lane run whole keeps pytest's exit 5. For an equal marker the reduction adds no
+  gate-directory segment. The journal names each segment and how it ended. The partition test compares real,
+  non-empty node-id sets. **Constraints:** a fix story, no CAP, no flag. The gate driver and its verdict, which
+  lanes run, and every task command stay unchanged. Also found, not taken here: a lane the coordinator terminates is
+  journaled `red` with its signal exit (`preflight.py:336`-`:342`), where Story 71.3's AC says `cancelled`. Owner
+  `spec-pyforge-steward` CAP-159 (FR-32; Story 71.4's reduction). → Epic 71 / Story 71.9, specced 2026-10-08.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
