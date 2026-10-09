@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-method
-  version: "6.12.0"
+  version: "6.12.1"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/BMAD-METHOD/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: d605368a901345e1cee9106fed688c1891f61680efc7112e281452062b055e98
+  sha256: 36f8baceecf32624aff9e6fb98bacf2d91cd178492455ed0e772fdca94fd2902
 
 build:
   number: 0
@@ -75,7 +75,7 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/bmad-method-feedstock
   cfe-forge-recipe-updates-needed: none
   cfe-forge-blocker-list: []
-  cfe-last-checked: "2026-09-05T13:30:10Z"
+  cfe-last-checked: 2026-10-09T23:37:28Z
   cfe-generated-by-version: 8.81.0
   cfe-generated-at-datetime: 2026-08-18T08:22:37Z
   cfe-local-build-status: success
@@ -91,5 +91,6 @@ extra:
 #    # pypi lookup below always 404'd, which is why the generator failed.
 #    # generate failed rc=1: Fetching info for bmad-method...
 #    # Error: Failed to fetch PyPI metadata for 'bmad-method' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/bmad-method/json
+#    # 2026-10-09 refresh_wave B-B2-apply: refreshed 6.12.0 -> 6.12.1
 
 ####
