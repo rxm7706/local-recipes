@@ -2,7 +2,7 @@
 title: "85.9: The session hook reads its denial roster from its own tree"
 type: 'fix'
 created: '2026-10-09'
-status: 'in-progress'
+status: 'done'
 baseline_revision: 'f7ce163b6991281695ea93a121b5c96fad299cf9'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -234,4 +234,26 @@ reconcile to it and stamp it scoped (AGENTS.md § Pre-PR item 5); otherwise no s
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — diff matches intent-contract AC 1–9; hook and script tests green)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** `load_denial_rules` and both `load_protected_deletion_prefixes` call sites in `.claude/hooks/pre-shell.py` now pass `_hook_install_repo_root()` instead of `ctx.repo_root`, so session denials and protected-ref prefixes always match the hook script’s revision. Cwd-relative judgments are unchanged.
+
+**Files changed:**
+- `.claude/hooks/pre-shell.py` — three call-site fixes plus module docstring sentence (Story 85.9).
+- `tests/scripts/test_pre_shell_hook.py` — fixture cwd roster trimmed for AC (1); new AC (2)–(4) tests; copied-hook drift tests (5); floor test uses hook copy (6); unrelated-clone workaround removed (3).
+
+**Review:** No patch/defer/intent_gap items.
+
+**Verification:**
+- `pytest tests/scripts/test_pre_shell_hook.py tests/scripts/test_session_denial_forms.py` — 173 passed.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2256 passed, 5 skipped.
+- `python scripts/spec_surface_reconcile.py` — exit 0 (paths allowlisted; no memlog stamp required).
+- Manual: `git init` scratch cwd with no roster, hook from this tree — exit 0 on `ls`.
+
+**Residual risks:** None identified; parity check still exits 2 when the hook’s own tree roster drifts from `MATCHERS`.
