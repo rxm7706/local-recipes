@@ -313,7 +313,7 @@ development_status:
   76-1-the-one-flag-tree-carries-per-environment-values-so-off-in-production-is-a-value: done
   76-2-every-flag-in-the-tree-carries-its-owner-story-and-cleanup-clock-in-flagd-metadata: done
   76-3-the-ledger-query-s-flags-fold-into-the-one-tree-and-evaluate-through-openfeature: done
-  76-4-the-pyforge-three-surfaces-demo-flag-leaves-the-tree: backlog
+  76-4-the-pyforge-three-surfaces-demo-flag-leaves-the-tree: done
   77-1-the-console-lists-tier-2-specs-and-the-archived-dreams: done
   78-1-the-platform-refuses-langflow-auto-login-and-honours-an-idp-revocation-on-the-next-request: done
   79-1-the-session-check-and-the-dispatch-preamble-read-each-others-real-output: done
@@ -495,7 +495,7 @@ development_status:
   epic-74-retrospective: optional
   epic-75: done
   epic-75-retrospective: optional
-  epic-76: in-progress
+  epic-76: done
   epic-76-retrospective: optional
   epic-77: done
   epic-77-retrospective: optional
