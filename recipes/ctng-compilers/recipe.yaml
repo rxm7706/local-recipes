@@ -207,6 +207,9 @@ outputs:
           then: ${{ pin_subpackage("libsanitizer", exact=True) }}
         - if: target_platform == cross_target_platform
           then: ${{ pin_subpackage("libgcc", upper_bound=None) }}
+      run_exports:
+        strong:
+          - libgcc >=${{ gcc_version }}
       ignore_run_exports:
         from_package:
           - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
@@ -262,17 +265,10 @@ outputs:
       summary: GNU C Compiler
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
-    run_exports:
-      # impose this requirement across the build/host boundary
-      strong:
-        - libgcc >=${{ gcc_version }}
   - package:
       name: gcc
     build:
       skip: target_platform != cross_target_platform
-      track_features:  # [not with_conda_specs]
-        - if: not with_conda_specs
-          then: gcc_no_conda_specs
       script:
         file: install-symlinks.sh
     requirements:
@@ -505,6 +501,10 @@ outputs:
           then: ${{ pin_subpackage("libstdcxx", upper_bound=None) }}
         - if: cross_target_stdlib != "None"
           then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+      run_exports:
+        strong:
+          - libgfortran${{ libgfortran_soname }} ${{ gcc_version }}.*
+          - libgcc >=${{ gcc_version }}
       ignore_run_exports:
         from_package:
           - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
@@ -535,11 +535,6 @@ outputs:
       summary: GNU Fortran Compiler
       license: GPL-3.0-only WITH GCC-exception-3.1
       homepage: https://gcc.gnu.org/
-    run_exports:
-      # impose this requirement across the build/host boundary
-      strong:
-        - libgfortran${{ libgfortran_soname }} ${{ gcc_version }}.*
-        - libgcc >=${{ gcc_version }}
   - package:
       name: gfortran
     build:

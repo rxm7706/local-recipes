@@ -68,6 +68,8 @@ outputs:
           - "*.DLL"
       script:
         file: vc_repack.py
+      script_interpreter: >-
+        python -m vc_repack --install-vcomp
     requirements:
       build:
       host:
@@ -76,8 +78,8 @@ outputs:
         - if: (vsver >=17 or (vsver == 16 and update_version >= 10)) and (cross_target_platform == "win-64" or cross_target_platform == "win-32")
           then: ucrt >=10.0.20348.0
       run_exports:
-        - strong:
-            - ${{ pin_subpackage("vcomp" ~ vc_major, upper_bound=None) }}
+        strong:
+          - ${{ pin_subpackage("vcomp" ~ vc_major, upper_bound=None) }}
       run_constraints:
         - if: cross_target_platform == "win-64" or cross_target_platform == "win-32"
           then: vs${{ runtime_year }}_runtime ${{ runtime_version }}.* *_${{ build_num }}
@@ -93,8 +95,6 @@ outputs:
         - LICENSE.RTF
         - LICENSE.DOCX
       homepage: https://visualstudio.microsoft.com/downloads/
-    script_interpreter: >-
-      python -m vc_repack --install-vcomp
   - package:
       name: vc${{ vc_major }}_runtime
       version: ${{ runtime_version }}
@@ -111,6 +111,8 @@ outputs:
           - "*.DLL"
       script:
         file: vc_repack.py
+      script_interpreter: >-
+        python -m vc_repack --install-runtime
     requirements:
       build:
       host:
@@ -136,8 +138,6 @@ outputs:
         - LICENSE.RTF
         - LICENSE.DOCX
       homepage: https://visualstudio.microsoft.com/downloads/
-    script_interpreter: >-
-      python -m vc_repack --install-runtime
   - package:
       name: vs${{ runtime_year }}_runtime
       version: ${{ runtime_version }}
@@ -187,16 +187,17 @@ outputs:
         - vc${{ vc_major }}
       script:
         file: vc_repack.py
+      script_interpreter: python -m vc_repack --activate --host-platform ${{ target_platform }} --target-platform ${{ cross_target_platform }} --runtime-version ${{ runtime_version }} --vsyear ${{ vsyear }} --vsver ${{ vsver }} --vcver ${{ vcver }} --vcvars-ver ${{ vcvars_ver }} --update-version ${{ update_version }}
     requirements:
       run:
         # Used to set up the path in the activate script
         - vswhere
       run_exports:
-        - strong:
-            - vc >=${{ vcver }},<${{ vc_major | int + 1 }}
-            - vc${{ vc_major }}_runtime >=${{ runtime_version }}
-            - if: (vsver >=17 or (vsver == 16 and update_version >= 10)) and (cross_target_platform == "win-64" or cross_target_platform == "win-32")
-              then: ucrt >=10.0.20348.0
+        strong:
+          - vc >=${{ vcver }},<${{ vc_major | int + 1 }}
+          - vc${{ vc_major }}_runtime >=${{ runtime_version }}
+          - if: (vsver >=17 or (vsver == 16 and update_version >= 10)) and (cross_target_platform == "win-64" or cross_target_platform == "win-32")
+            then: ucrt >=10.0.20348.0
       run_constraints:
         - vs_${{ cross_target_platform }} ${{ vsyear }}.${{ update_version }}
     tests:
@@ -207,7 +208,6 @@ outputs:
     about:
       summary: Activation and version verification of MSVC ${{ vcver }} (VS ${{ vsyear }} compiler, update ${{ update_version }})
       license: BSD-3-Clause
-    script_interpreter: python -m vc_repack --activate --host-platform ${{ target_platform }} --target-platform ${{ cross_target_platform }} --runtime-version ${{ runtime_version }} --vsyear ${{ vsyear }} --vsver ${{ vsver }} --vcver ${{ vcver }} --vcvars-ver ${{ vcvars_ver }} --update-version ${{ update_version }}
   - package:
       name: vs_${{ cross_target_platform }}
       version: ${{ vsyear }}.${{ update_version }}
@@ -218,11 +218,11 @@ outputs:
       run:
         - vs${{ vsyear }}_${{ cross_target_platform }} ${{ cl_version }}.*
       run_exports:
-        - strong:
-            - vc >=${{ vcver }},<${{ vc_major | int + 1 }}
-            - vc${{ vc_major }}_runtime >=${{ runtime_version }}
-            - if: (vsver >=17 or (vsver == 16 and update_version >= 10)) and (cross_target_platform == "win-64" or cross_target_platform == "win-32")
-              then: ucrt >=10.0.20348.0
+        strong:
+          - vc >=${{ vcver }},<${{ vc_major | int + 1 }}
+          - vc${{ vc_major }}_runtime >=${{ runtime_version }}
+          - if: (vsver >=17 or (vsver == 16 and update_version >= 10)) and (cross_target_platform == "win-64" or cross_target_platform == "win-32")
+            then: ucrt >=10.0.20348.0
     tests:
       - requirements:
           run:
