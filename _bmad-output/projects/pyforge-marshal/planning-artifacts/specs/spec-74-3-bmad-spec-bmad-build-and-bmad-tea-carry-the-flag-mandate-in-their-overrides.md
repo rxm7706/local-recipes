@@ -2,7 +2,7 @@
 title: '74.3: bmad-spec, bmad-build and bmad-tea carry the flag mandate in their overrides'
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '488837c504cb46ebf973c50e337af5623fafac13'
 flag-exempt: flag-infrastructure   # the rule's own harness wiring (spec-feature-flag-governance Q2)
 review_loop_iteration: 0
@@ -130,4 +130,33 @@ Policy: `marshal-policy.toml` `[epic_surfaces]` `"74"`.
 - `uv run _bmad/scripts/resolve_customization.py --skill .claude/skills/bmad-spec --project-root "$PWD" --key workflow` and `--skill .claude/skills/bmad-tea … --key agent` — expected: the mandate in each.
 - In a scratch copy only: `bmad-method install --action update -y --directory <scratch> --modules core,bmm,skf`, then `cmp` each of the four override files against the tree — expected: identical.
 
+## Auto Run Result
+
+Summary: Added BMAD team overrides for bmad-spec, bmad-build, bmad-build-auto, and bmad-tea carrying CAP-6 Architect/Builder/TEA mandates; appended the Builder fact to the two existing bmad-build-auto facts verbatim; added `tests/meta/test_flag_mandate_overrides.py` for table placement and config collision guards.
+
+Files changed:
+- `_bmad/custom/bmad-spec.toml` — Architect persistent fact
+- `_bmad/custom/bmad-build.toml` — Builder persistent fact and `flag-mandate` review layer
+- `_bmad/custom/bmad-build-auto.toml` — third persistent fact (Builder mandate)
+- `_bmad/custom/bmad-tea.toml` — TEA persistent fact under `[agent]`
+- `src/shared/packages/pyforge-marshal/tests/meta/test_flag_mandate_overrides.py` — meta-test
+
+Review: 0 findings from self-review against acceptance criteria; no patches, no deferrals.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-marshal pyforge-marshal-test` — pass
+- `pixi run --frozen -e pyforge-ci pyforge-deps-test` — pass (130 passed, 3 skipped)
+- `render_skill.py` for bmad-build and bmad-build-auto — exit 0; Builder mandate in rendered workflow persistent facts
+- `resolve_customization.py` for bmad-spec (`workflow`) and bmad-tea (`agent`) — mandates present
+- `git diff --stat -- .claude/skills` — empty
+- `python scripts/spec_surface_reconcile.py` — OK after memlog on spec-pyforge-marshal
+
+Residual risks: preservation against `bmad-method update` not run in scratch copy (manual check in spec Verification deferred to operator).
+
 ## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
