@@ -65,13 +65,27 @@ def test_page_without_frontmatter_uses_first_heading() -> None:
     assert not rest.lstrip().startswith("# Pixi tasks")
 
 
+# No live page carries two H1s since mason Story 19.4 moved the feedstock how-to bodies
+# into skills, so the row uses the shape that page had.
+_TWO_HEADINGS = """\
+---
+status: workflow
+---
+
+# Tech Spec: Feedstock Failure Remediation (parameterized)
+
+## How to use this spec
+
+# Appendix
+"""
+
+
 def test_two_headings_use_first_only() -> None:
-    root = _repo_root()
-    raw = (root / "docs/how-to/feedstock-failure-remediation.md").read_text(encoding="utf-8")
-    body = _body_after_frontmatter(raw)
+    body = _body_after_frontmatter(_TWO_HEADINGS)
     title, rest = _extract_first_h1(body)
     assert title == "Tech Spec: Feedstock Failure Remediation (parameterized)"
     assert "## How to use this spec" in rest
+    assert "# Appendix" in rest
     assert not rest.lstrip().startswith(f"# {title}")
 
 
