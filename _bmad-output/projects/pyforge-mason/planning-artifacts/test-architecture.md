@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 32712524f80ddb8c
-story_count: 95
+source_fingerprint: 957a7a00abd371f5
+story_count: 96
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 95
+- **Stories parsed:** 96
 - **Epics parsed:** 27
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `32712524f80ddb8c`
+- **Source fingerprint:** `957a7a00abd371f5`
 
 ## Risk Assessment
 
@@ -209,6 +209,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 24.1 | CFE's host-gate tests pass in any developer shell | none observed |
 | 25.1 | Track A's Wave H refreshes the sole-maintainer recipes the first waves missed | none observed |
 | 25.2 | Track B refreshes the co-maintained recipes and keeps every other maintainer'... | none observed |
+| 25.3 | CFE gains a tracked bulk recipe-refresh driver that the refresh waves run thr... | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |
 | 27.2 | CFE, its failure catalog and the closed rebuild campaign's records close thei... | none observed |
