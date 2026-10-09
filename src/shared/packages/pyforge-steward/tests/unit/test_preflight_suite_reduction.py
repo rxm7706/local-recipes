@@ -14,7 +14,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pyforge.steward import preflight, preflight_suite_reduction as psr
+from pyforge.steward import preflight
+from pyforge.steward import preflight_suite_reduction as psr
 
 REPO_ROOT = Path(__file__).resolve().parents[6]
 
@@ -143,7 +144,10 @@ def _run_reduced_lane_via_preflight(
             assert resolved_task_cmd
             parsed = psr._parse_single_pytest(resolved_task_cmd)
             assert parsed
-            rel = [str(Path(p).resolve().relative_to(repo)) if not Path(p).is_absolute() else str(p) for p in parsed.test_paths]
+            rel = [
+                str(Path(p).resolve().relative_to(repo)) if not Path(p).is_absolute() else str(p)
+                for p in parsed.test_paths
+            ]
             seg = [sys.executable, "-m", "pytest", "--collect-only", "-q", *rel, *parsed.suffix]
             if parsed.marker_expr:
                 seg.extend(["-m", parsed.marker_expr])

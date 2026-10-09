@@ -239,15 +239,11 @@ def _build_reduced_segments(
     other_dirs = [d for d in all_dirs if d.resolve() not in gate_set]
     segments: list[ReducedSuiteSegment] = []
     if other_dirs:
-        other_argv = _pytest_argv_from_parsed(
-            parsed, repo_root, test_dirs=other_dirs, marker_expr=parsed.marker_expr
-        )
+        other_argv = _pytest_argv_from_parsed(parsed, repo_root, test_dirs=other_dirs, marker_expr=parsed.marker_expr)
         segments.append(ReducedSuiteSegment("rest-of-task", other_argv))
     complement = _complement_marker(parsed.marker_expr, gate_marker)
     if complement is not None:
-        gate_argv = _pytest_argv_from_parsed(
-            parsed, repo_root, test_dirs=gate_dirs, marker_expr=complement
-        )
+        gate_argv = _pytest_argv_from_parsed(parsed, repo_root, test_dirs=gate_dirs, marker_expr=complement)
         segments.append(ReducedSuiteSegment("gate-dirs-complement", gate_argv))
     if not segments:
         return None
