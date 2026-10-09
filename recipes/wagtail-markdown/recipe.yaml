@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/7e/2a/cb5233b65ca355d39f16c58c110f1ad4b04a378843d39a8a85d2cb087b7a/wagtail_markdown-0.15.0.tar.gz
+  url: https://pypi.org/packages/source/w/wagtail-markdown/wagtail_markdown-${{ version }}.tar.gz
   sha256: 08d58177a6f015c99d2597f681d6f8c276df5d7f74721ab24996d4582a2426da
 
 build:
@@ -20,20 +20,20 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - flit-core >=3.2,<4
-  - pip
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
   run:
-  - nh3 >=0.3.4
-  - python >=${{ python_min }}
-  - wagtail >=7.0
-  - markdown >=3.3,<4
-  - bleach >=3.3,<5
+    - nh3 >=0.3.4
+    - python >=${{ python_min }}
+    - wagtail >=7.0
+    - markdown >=3.3,<4
+    - bleach >=3.3,<5
 
 tests:
 - python:
     imports:
-    - wagtailmarkdown
+      - wagtailmarkdown
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -45,7 +45,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -53,8 +53,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtail-markdown
   cfe-purls:
-  - pkg:conda/wagtail-markdown@${{ version }}?channel=conda-forge
-  - pkg:pypi/wagtail-markdown@${{ version }}
+    - pkg:conda/wagtail-markdown@${{ version }}?channel=conda-forge
+    - pkg:pypi/wagtail-markdown@${{ version }}
   cfe-upstream-repo: https://github.com/torchbox/wagtail-markdown
   cfe-upstream-homepage: https://github.com/torchbox/wagtail-markdown
   cfe-import-names: [wagtailmarkdown]
@@ -64,7 +64,7 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wagtail-markdown-feedstock
   cfe-forge-recipe-updates-needed:
-  - meta-yaml-to-recipe-yaml
+    - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
