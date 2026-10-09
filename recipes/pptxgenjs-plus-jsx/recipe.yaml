@@ -1,0 +1,129 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.3.4"
+
+package:
+  name: pptxgenjs-plus-jsx
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/pptxgenjs-plus-jsx/-/pptxgenjs-plus-jsx-${{ version }}.tgz
+  sha256: 0343dc0629186c7109033190b8cbb867a32085a9ed76ce565cb79a3dd5b7f231
+
+build:
+  number: 0
+  noarch: generic
+  script:
+    - if: unix
+      then:
+        - set -ex
+        - pnpm install --ignore-scripts
+        - npm pack --ignore-scripts
+        - npm install --global ./pptxgenjs-plus-jsx-${{ version }}.tgz
+        - pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - install -D third-party-licenses.txt "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/third-party-licenses.txt"
+        - rm -rf "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/node_modules/.bin"
+      else:
+        - call pnpm install --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm pack --ignore-scripts
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call npm install --global "%SRC_DIR%\pptxgenjs-plus-jsx-${{ version }}.tgz"
+        - if %ERRORLEVEL% neq 0 exit 1
+        - call pnpm-licenses generate-disclaimer --prod --output-file=third-party-licenses.txt
+        - if %ERRORLEVEL% neq 0 exit 1
+        - copy /Y third-party-licenses.txt "%PREFIX%\lib\node_modules\pptxgenjs-plus-jsx\third-party-licenses.txt"
+        - if exist "%PREFIX%\lib\node_modules\pptxgenjs-plus-jsx\node_modules\.bin" rmdir /s /q "%PREFIX%\lib\node_modules\pptxgenjs-plus-jsx\node_modules\.bin"
+        - if exist "%PREFIX%\node_modules\pptxgenjs-plus-jsx\node_modules\.bin" rmdir /s /q "%PREFIX%\node_modules\pptxgenjs-plus-jsx\node_modules\.bin"
+
+requirements:
+  build:
+    - nodejs >=24
+    - pnpm
+    - pnpm-licenses
+  host:
+    - nodejs >=24
+  run:
+    - nodejs >=24
+    - pptxgenjs-plus ==4.3.4
+
+tests:
+  - script:
+      - if: not win
+        then:
+          - test -f "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/package.json"
+          - test -f "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/third-party-licenses.txt"
+          - test ! -d "${PREFIX}/lib/node_modules/pptxgenjs-plus-jsx/node_modules/.bin"
+          - |
+            node <<'EOF'
+            const path = require('node:path');
+            const { pathToFileURL } = require('node:url');
+            const pkgRoot = path.join(process.env.PREFIX, 'lib/node_modules/pptxgenjs-plus-jsx');
+            const dist = path.join(pkgRoot, 'dist');
+            const subpaths = ['index.js', 'render.js', 'jsx-runtime.js'];
+            (async () => {
+              for (const file of subpaths) {
+                await import(pathToFileURL(path.join(dist, file)).href);
+              }
+              console.log('pptxgenjs-plus-jsx exports OK');
+            })().catch((err) => {
+              console.error(err);
+              process.exit(1);
+            });
+            EOF
+
+about:
+  summary: JSX authoring layer for pptxgenjs-plus deck generation
+  description: |
+    pptxgenjs-plus-jsx is the ESM JSX companion to pptxgenjs-plus. It ships
+    prebuilt ``dist/`` entry points for the main module, ``render``, and the
+    JSX runtimes. Install ``pptxgenjs-plus`` at the same version (exact pin).
+    Upstream ``engines.node`` is ``>=24``; resolve subpath exports via
+    absolute file URLs or ``require()`` on Node 24 — bare ESM ``import`` ignores
+    ``NODE_PATH``.
+  homepage: https://github.com/lofcz/pptxgenjs-plus
+  repository: https://github.com/lofcz/pptxgenjs-plus
+  documentation: https://lofcz.github.io/pptxgenjs-plus/
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pptxgenjs-plus-jsx
+  cfe-upstream-registry: npm
+  cfe-upstream-name: pptxgenjs-plus-jsx
+  cfe-purls:
+    - pkg:conda/pptxgenjs-plus-jsx@${{ version }}?channel=conda-forge
+    - pkg:npm/pptxgenjs-plus-jsx@${{ version }}
+  cfe-upstream-repo: https://github.com/lofcz/pptxgenjs-plus
+  cfe-upstream-homepage: https://github.com/lofcz/pptxgenjs-plus
+  cfe-import-names: []
+  cfe-source-kind: npm-registry-tarball
+  cfe-noarch: generic
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-10-09T04:00:00Z"
+  cfe-generated-by-version: 8.84.0
+  cfe-generated-at-datetime: "2026-10-09T04:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-10-09T03:48:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Local recipe for pptxgenjs-plus-jsx (npm 4.3.4), sibling to
+#    # recipes/pptxgenjs-plus. Bin-less ESM library (G100 N/A); exact pin on
+#    # pptxgenjs-plus at run time (G69). Test loads dist/ via file URLs (ESM
+#    # ignores NODE_PATH).

@@ -2,7 +2,9 @@
 title: "21.5: pptxgenjs-plus-jsx builds green beside its pptxgenjs-plus sibling"
 type: 'feature'
 created: '2026-09-28'
-status: 'backlog'
+status: 'done'
+baseline_revision: '8ff4ac37a763fa821fcd0a1e4fd1e14d8fee10fc'
+followup_review_recommended: false
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -161,3 +163,27 @@ Flag: `flag-exempt: recipe-build`.
 
 - No independent review has run yet (implementation and review stay separate); the operator reviews the branch before
   landing it as `Merge pyforge-mason/21-5-pptxgenjs-plus-jsx-builds-green-beside-its-pptxgenjs-plus-sibling into main`.
+
+### 2026-10-09 — Review pass
+- verdicts: 2 findings — high 0, medium 0, low 0, false 2, maybe-false 0
+- findings:
+  - `[false]` `[reject]` PIN-001 lint suggests relaxing `pptxgenjs-plus ==4.3.4` run pin — npm JSX package pins the engine exactly (G69); story and CAP-31 require the sibling bump together.
+  - `[false]` `[reject]` `pptxgenjs-plus` about text still says JSX is not included — accurate for the engine-only package; JSX is the separate recipe.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Bumped `recipes/pptxgenjs-plus` to npm 4.3.4 and added `recipes/pptxgenjs-plus-jsx` 4.3.4 with ESM dist file-URL tests, license copy, and CFE local-build stamps. Rule-2 retro at conda-forge-expert v8.93.5.
+
+Files changed:
+- `recipes/pptxgenjs-plus/recipe.yaml` — version/sha256/CFE rebuild metadata
+- `recipes/pptxgenjs-plus-jsx/recipe.yaml` — new npm noarch recipe
+- `.claude/skills/conda-forge-expert/CHANGELOG.md` (+ SKILL/MANIFEST/config) — retro v8.93.5
+- `spec-pyforge-mason/.memlog.md`, `spec-packaging-factory/.memlog.md` — surface reconcile
+
+Review: 0 patches; 2 rejected (false).
+
+Verification: `recipe-build` green both recipes; validate/lint-optimize clean; conda-smithy lint clean; `pyforge-mason-test` pass; `spec_surface_reconcile.py` OK.
+
+Follow-up review recommended: false
