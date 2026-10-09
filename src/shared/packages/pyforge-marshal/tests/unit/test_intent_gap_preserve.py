@@ -11,6 +11,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from pyforge.testing_kit.flags import flag_states
 
 from pyforge.marshal.ports.harness import TaskPhaseSnapshot
 from pyforge.marshal.supervisor.intent_gap_preserve import (
@@ -337,6 +338,8 @@ def test_safe_segment_sanitizes_illegal_chars():
 
 # --- Story 87.4: preserve tag vs attempt-preserve branch (flag) -----------------
 
+_PRESERVE_REFS_FLAG = "pyforge.marshal.preserve_refs"
+
 
 def _origin_repo(tmp_path: Path) -> Path:
     bare = tmp_path / "origin.git"
@@ -361,10 +364,12 @@ def _origin_repo(tmp_path: Path) -> Path:
     return repo
 
 
-@pytest.mark.parametrize("flag_on", [False, True])
-def test_park_commits_respects_preserve_refs_flag(tmp_path, monkeypatch, flag_on: bool):
+@flag_states(_PRESERVE_REFS_FLAG)
+def test_park_commits_respects_preserve_refs_flag(tmp_path, monkeypatch, flag_provider):
     from pyforge.marshal.core.dispatch_preserve import PRESERVE_REFS_FLAG_KEY
 
+    assert PRESERVE_REFS_FLAG_KEY == _PRESERVE_REFS_FLAG
+    flag_on = flag_provider[_PRESERVE_REFS_FLAG]
     monkeypatch.setattr(
         "pyforge.marshal.supervisor.intent_gap_preserve.preserve_refs_flag_on",
         lambda **k: flag_on,
