@@ -4599,7 +4599,9 @@ class TestUnpushedWork:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_finding_ref_matching_no_known_home_is_ignored(self, tmp_path, capsys, monkeypatch):
+    def test_finding_ref_matching_no_known_home_is_reported_fleet_wide(self, tmp_path, capsys, monkeypatch):
+        """Story 87.9 (was ``..._is_ignored``): an unpushed ref no row accounts for is a fleet-wide
+        finding with its own registered code and an additive ``data`` list -- never dropped."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
@@ -4619,8 +4621,10 @@ class TestUnpushedWork:
         payload = _payload(capsys)
         row = payload["data"]["homes"][0]
         assert row["unpushed_work"] is None
-        assert [f["code"] for f in payload["findings"]] == []
-        assert payload["verdict"] == "clean"
+        assert [f["code"] for f in payload["findings"]] == ["MRS-STATUS-015"]
+        assert "recover/some-other-branch" in payload["findings"][0]["message"]
+        assert [entry["ref"] for entry in payload["data"]["unmatched_unpushed_refs"]] == ["recover/some-other-branch"]
+        assert payload["verdict"] == "warn"
         assert exit_code == 0
 
     def test_detector_script_launch_failure_reports_null_and_warns(self, tmp_path, capsys, monkeypatch):
@@ -6674,6 +6678,12 @@ class TestStatusReadsLandingsTheWayDeployDoes:
         assert exit_code == 0
 
 
+def _codes_without_preserve_debt(payload: dict) -> list[str]:
+    """Finding codes minus Story 87.9's preserve-debt ones: a patch with no tag is debt (``MRS-STATUS-018``)
+    in every fixture below, which is orthogonal to the landed-history classification they pin."""
+    return [f["code"] for f in payload["findings"] if f["code"] not in {"MRS-STATUS-016", "MRS-STATUS-017", "MRS-STATUS-018"}]
+
+
 class TestAHistoryThatShowsNothingIsSaidSo:
     """DW-FU-4-14-10: ``MRS-STATUS-014`` in place of one ``MRS-STATUS-010``
     per patch when a non-empty history has no conforming merge subject."""
@@ -6688,7 +6698,7 @@ class TestAHistoryThatShowsNothingIsSaidSo:
 
         exit_code, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
 
-        codes = [f["code"] for f in payload["findings"]]
+        codes = _codes_without_preserve_debt(payload)
         assert codes == ["MRS-STATUS-014"]
         assert "MRS-STATUS-010" not in codes
         message = payload["findings"][0]["message"]
@@ -6738,7 +6748,7 @@ class TestAHistoryThatShowsNothingIsSaidSo:
 
         _exit, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
 
-        codes = [f["code"] for f in payload["findings"]]
+        codes = _codes_without_preserve_debt(payload)
         assert codes == ["MRS-STATUS-010"]
         assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is False
 
@@ -6748,7 +6758,7 @@ class TestAHistoryThatShowsNothingIsSaidSo:
 
         _exit, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
 
-        codes = [f["code"] for f in payload["findings"]]
+        codes = _codes_without_preserve_debt(payload)
         assert codes == ["MRS-STATUS-010"]
         assert "MRS-STATUS-014" not in codes
         assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is False
@@ -6767,7 +6777,7 @@ class TestAHistoryThatShowsNothingIsSaidSo:
 
         exit_code, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
 
-        assert [f["code"] for f in payload["findings"]] == ["MRS-STATUS-011"]
+        assert _codes_without_preserve_debt(payload) == ["MRS-STATUS-011"]
         assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is None
         assert exit_code == 0
 
