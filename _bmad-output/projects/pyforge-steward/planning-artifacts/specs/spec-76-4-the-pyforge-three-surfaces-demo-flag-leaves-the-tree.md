@@ -2,7 +2,7 @@
 title: "76.4: The pyforge.three_surfaces demo flag leaves the tree"
 type: 'chore'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '7473db02d2a35eae082c40ba7ce031f887d2b756'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -157,3 +157,39 @@ new ships behind a flag).
 - `pixi run -e pyforge-guild detectors-ci` — expected: no new findings.
 
 ## Review Triage Log
+
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
+
+## Auto Run Result
+
+**Summary:** Removed the demo flag `pyforge.three_surfaces` from the platform tree and overlays; dropped module-level `FLAG_KEY`; required explicit flag keys on evaluate/MCP/CLI paths; `wait_until_ready` polls `api.get_client().get_provider_status()` until `ProviderStatus.READY` (openfeature-sdk 0.10.0 pin — no tree key embedded in the module).
+
+**Files changed:**
+- `src/platform/config/flags.json` — removed demo boolean; `pyforge.cutover_root` unchanged.
+- `src/platform/config/flag-overlays.json` — removed overlay entries for the demo flag.
+- `src/shared/packages/django-pyforge/src/django_pyforge/flags.py` — readiness via provider status; required `key` on public evaluators and CLI.
+- `src/platform/tests/test_openfeature_file_flags.py` — fixture key `pyforge.test.fixture`; real-tree configure test; refusal and malformed-tree tests.
+- `src/platform/tests/test_object_store_seam.py` — temp flag trees no longer carry the removed demo key.
+- `src/shared/packages/pyforge-core/tests/unit/test_flags.py` — shipped-tree metadata expectations after removal.
+- `src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py` — neutral `--flag` help example.
+- `src/shared/packages/pyforge-doctor/tests/unit/test_flag_kill_switch.py` — dated-clock composability test uses a fixture key on a shipped-tree copy.
+
+**Review:** No patch/defer/intent_gap items.
+
+**Follow-up review recommended:** false
+
+**Verification:**
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconciles.
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2245 passed.
+- `pixi run --frozen -e pyforge-doctor pyforge-doctor-test` — 3496 passed.
+- `pixi run -e pyforge-guild platform-ci-local -- --test` — PASS (1160 tests; one earlier redis flake cleared on retry).
+- `rg` acceptance scope — no `pyforge.three_surfaces` in governed src paths.
+
+**Spec-surface memlog reconciles (Story 76.4):**
+- `spec-pyforge-unifying-strategy`: `src/platform/config/flags.json`, `src/platform/config/flag-overlays.json`, `src/shared/packages/django-pyforge/src/django_pyforge/flags.py`, `src/platform/tests/test_openfeature_file_flags.py`, `src/platform/tests/test_object_store_seam.py`
+- `spec-pyforge-doctor`: `src/shared/packages/pyforge-doctor/src/pyforge/doctor/__main__.py`, `src/shared/packages/pyforge-doctor/tests/unit/test_flag_kill_switch.py`
+- `spec-pyforge-core`: `src/shared/packages/pyforge-core/tests/unit/test_flags.py`
+
+**Residual:** Scoped `--write-baseline --spec …` stamps for co-governors remain for the human PR author (reconcile guard passed; baselines not stamped in this run per S-13.7).
