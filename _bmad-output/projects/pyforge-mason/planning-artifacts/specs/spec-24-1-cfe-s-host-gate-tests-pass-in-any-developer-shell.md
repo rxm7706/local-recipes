@@ -2,7 +2,7 @@
 title: "24.1: CFE's host-gate tests pass in any developer shell"
 type: 'fix'
 created: '2026-09-29'
-status: 'in-review'
+status: 'done'
 baseline_revision: '3e047430cf'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -126,7 +126,43 @@ Flag: none (a fix; `spec-feature-flag-governance` CAP-1, Q1).
   that this already-implemented fix take the chain before merging, and the diff was verified by the checks below, not
   by a second reviewer. `followup_review_recommended: true` records that gap.
 
+### 2026-10-09 — Review pass (build-auto follow-up on `bcdda68b02`)
+- verdicts: 19 findings — high 0, medium 0, low 2, false 11, maybe-false 0, reject 6
+- findings:
+  - `[false]` `[reject]` No CI test encodes fixture-disabled mutation — CHANGELOG documents manual A/B; AC allowed operator verification, not automated negative control.
+  - `[false]` `[defer]` No meta-test enforcing `clean_mirror_env` on every exact-set allowlist file — real follow-on; story scoped opt-in + `test_clean_mirror_env.py`; cite `.claude/skills/conda-forge-expert/tests/unit/test_clean_mirror_env.py`.
+  - `[low]` `[reject]` Regression file does not assert `_http._configured_enterprise_hosts()` — fallback path was the CI-green/agent-red failure; jfrog module stubs pixi separately.
+  - `[false]` `[reject]` Partial class opt-in in `test_http_resolvers.py` / `test_s3_resolver.py` — matches intent Reading B (gate classes only).
+  - `[low]` `[reject]` SKILL.md could distinguish pixi vs env-only allowlist paths — doc clarity only; jfrog autouse documents stub requirement.
+  - `[false]` `[reject]` conftest module docstring omits `clean_mirror_env` — discoverability via fixture docstring and SKILL.md.
+  - `[defer]` `[defer]` `_clean_env()` still duplicates npm var names — pre-existing; out of 24.1 scope; `.claude/skills/conda-forge-expert/tests/unit/test_http_resolvers.py`.
+  - `[false]` `[reject]` CHANGELOG Files list omits memlog/baseline — same retro commit includes memlog and baseline updates in diff.
+  - `[false]` `[reject]` Diff lacks Mason planning artifacts — story chain lives outside the `retro(cfe):` commit body.
+  - `[false]` `[reject]` `delenv` raising mismatch for `*_BASE_URL` — keys come from `list(os.environ)` so keys exist at delete time.
+  - `[false]` `[reject]` `@functools.cache` on `_extra_mirror_env_vars` untested — reads static tuple from `_http`; no demonstrated import-order failure.
+  - `[false]` `[reject]` Edge: unstubs `read_pixi_config` on resolver gate class — `test_http_jfrog_host_gate.py` autouse stubs pixi for exact-set tests; class opt-in is gate-only.
+  - `[false]` `[reject]` Edge: S3 resolver pixi hosts without stub — `TestJFrogHeaderInjection` uses `clean_mirror_env`; test asserts unconfigured host behavior.
+  - `[false]` `[reject]` Edge: KeyError on `delenv` for missing `*_BASE_URL` — iteration is over present environ keys only.
+  - `[false]` `[reject]` Edge: wrong fixture ordering in `test_clean_mirror_env.py` — pytest runs `_ambient_mirror_vars` before `clean_mirror_env` (sets then clears).
+  - `[false]` `[defer]` Verification gap: meta-test for opt-in wiring — disposition filed as patch by layer; triage defer (enhancement); SKILL.md rule added; `.claude/skills/conda-forge-expert/tests/meta/` has no host-gate lint today.
+  - `[false]` `[reject]` Intent: no `ANTHROPIC_BASE_URL` in regression test — stand-in `*_BASE_URL` exercises same scan rule as documented incident.
+  - `[false]` `[reject]` Intent: no automated fixture-disabled failure in CI — accepted Reading D; positive regression in CI.
+  - `[false]` `[reject]` Intent: network tests not proven fixture-free — non-autouse design; no network test edits required by AC.
+
 ## Auto Run Result
+
+Status: done (build-auto follow-up review, 2026-10-09)
+
+**Follow-up review:** Four blind layers on `git diff bcdda68b02^..bcdda68b02`. Patches applied: 0 (medium defer: optional meta-test for host-gate opt-in wiring). Rejected/low: doc and CI-mutation nits. `followup_review_recommended: false` (forced after allowed follow-up).
+
+**Verification this run:**
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — exit 0 (1622 + 12 passed).
+- Host-gate subset with `ANTHROPIC_BASE_URL=https://api.anthropic.com` — 77 passed.
+- `python scripts/spec_surface_reconcile.py` — exit 0 (no drift; no governed paths changed this run, so no memlog reconcile required).
+
+**Residual risk (deferred):** Dropping module-level `pytestmark` on a host-gate file could reintroduce agent-shell-only failures while `test_clean_mirror_env.py` stays green in CI; a future meta-test under `.claude/skills/conda-forge-expert/tests/meta/` would pin wiring.
+
+---
 
 Status: done (hand-landed; no harness run)
 
