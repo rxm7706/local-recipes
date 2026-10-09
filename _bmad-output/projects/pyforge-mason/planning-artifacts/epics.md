@@ -2235,7 +2235,7 @@ print `forge 0.10.0`, not `forge dev`
 **And** the name `forge` is re-checked against live conda-forge `channeldata.json` before the build (CFE G74, G118); the
 recipe passes `validate_recipe`, `optimize_recipe` and the CI-parity lint; the story's `retro(cfe):` commit lands a CFE
 `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 21.3: gitgres builds green against PostgreSQL 17 from a pinned commit
 
