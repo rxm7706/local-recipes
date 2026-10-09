@@ -15,6 +15,7 @@ from django.test.utils import override_settings
 from django_pyforge.flags import evaluate_from_source
 from django_warden_fabric.fleet import FLEET_FIX_PROPOSALS_FLAG
 from django_warden_fabric.fleet import FLEET_SCAN_FLAG
+from django_warden_fabric.fleet import mkdtemp_clone_dir
 from django_warden_fabric.models import FixProposal
 from django_warden_fabric.models import FleetRepo
 from django_warden_fabric.models import FleetRepoScan
@@ -23,6 +24,7 @@ from django_warden_fabric.models import JobStatus
 from django_warden_fabric.proposals import ProposalRefusedError
 from django_warden_fabric.proposals import approve_proposal
 from django_warden_fabric.proposals import dismiss_proposal
+from django_warden_fabric.proposals import queue_proposals_from_scan
 from django_warden_fabric.tasks import finalize_fleet_run
 from django_warden_fabric.tasks import open_fix_proposal
 
@@ -44,6 +46,7 @@ _FIXTURE_REPO_COUNT = 3
 _EXIT_REFUSED = 2
 _FINDING_A = "vuln:PDOS-FIXTURE-0001:pkg-a@1.0.0"
 _FINDING_B = "hygiene:DEP002:pkg-b"
+_TWO_PROPOSALS = 2
 
 
 def _init_bare_repo(tmp_path: Path, name: str) -> str:
@@ -88,7 +91,9 @@ def _seed_inventory(tmp_path: Path, *, extra: dict | None = None) -> list[FleetR
 def _flag_tree(*, fleet_on: bool, proposals_on: bool) -> dict:
     tree = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
     tree["flags"][FLEET_SCAN_FLAG]["defaultVariant"] = "on" if fleet_on else "off"
-    tree["flags"][FLEET_FIX_PROPOSALS_FLAG]["defaultVariant"] = "on" if proposals_on else "off"
+    tree["flags"][FLEET_FIX_PROPOSALS_FLAG]["defaultVariant"] = (
+        "on" if proposals_on else "off"
+    )
     return tree
 
 
@@ -117,7 +122,10 @@ def _report_with_planned(*finding_ids: str) -> str:
     return json.dumps(
         {
             "schema_version": "1.1.0",
-            "status": {"value": "warnings", "driver": {"axis": "vulnerability", "finding_id": finding_ids[0]}},
+            "status": {
+                "value": "warnings",
+                "driver": {"axis": "vulnerability", "finding_id": finding_ids[0]},
+            },
             "exit_code": 1,
             "findings": findings,
             "actuation": {"dry_run": True, "outcomes": outcomes},
@@ -128,7 +136,10 @@ def _report_with_planned(*finding_ids: str) -> str:
 @pytest.fixture
 def proposal_flags_on(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     tree = tmp_path / "flags-on.json"
-    tree.write_text(json.dumps(_flag_tree(fleet_on=True, proposals_on=True)), encoding="utf-8")
+    tree.write_text(
+        json.dumps(_flag_tree(fleet_on=True, proposals_on=True)),
+        encoding="utf-8",
+    )
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "dev")
     assert evaluate_from_source(key=FLEET_FIX_PROPOSALS_FLAG, source=tree) is True
@@ -138,7 +149,10 @@ def proposal_flags_on(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 @pytest.fixture
 def proposal_flags_off(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     tree = tmp_path / "flags-off.json"
-    tree.write_text(json.dumps(_flag_tree(fleet_on=True, proposals_on=False)), encoding="utf-8")
+    tree.write_text(
+        json.dumps(_flag_tree(fleet_on=True, proposals_on=False)),
+        encoding="utf-8",
+    )
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
     monkeypatch.setenv("PYFORGE_ENVIRONMENT", "production")
     assert evaluate_from_source(key=FLEET_FIX_PROPOSALS_FLAG, source=tree) is False
@@ -167,7 +181,11 @@ def test_run_complete_queues_two_proposals_zero_forge_writes(
     )
     finalize_fleet_run([], str(run.pk))
 
-    assert FixProposal.objects.filter(fleet_repo_scan=scan_a, state=FixProposal.State.QUEUED).count() == 2
+    queued = FixProposal.objects.filter(
+        fleet_repo_scan=scan_a,
+        state=FixProposal.State.QUEUED,
+    )
+    assert queued.count() == _TWO_PROPOSALS
 
 
 @pytest.mark.django_db
@@ -195,13 +213,11 @@ def test_approve_one_opens_draft_other_stays_queued(
         FixProposal.objects.filter(fleet_repo_scan=scan).order_by("finding_id"),
     )
     assert len(proposals) == 0
-    from django_warden_fabric.proposals import queue_proposals_from_scan
-
     queue_proposals_from_scan(scan)
     proposals = list(
         FixProposal.objects.filter(fleet_repo_scan=scan).order_by("finding_id"),
     )
-    assert len(proposals) == 2
+    assert len(proposals) == _TWO_PROPOSALS
     outcome = type(
         "Outcome",
         (),
@@ -215,13 +231,19 @@ def test_approve_one_opens_draft_other_stays_queued(
         },
     )()
 
-    with patch("django_warden_fabric.tasks.shallow_clone"), patch(
-        "pyforge.warden.actuator.run_actuator",
-        return_value=type("Actuation", (), {"outcomes": (outcome,)})(),
-    ), patch("django_warden_fabric.tasks.open_fix_proposal.delay"):
+    with (
+        patch("django_warden_fabric.tasks.shallow_clone"),
+        patch(
+            "django_warden_fabric.tasks._run_fix_actuator",
+            return_value=type("Actuation", (), {"outcomes": (outcome,)})(),
+        ) as actuate,
+        patch("django_warden_fabric.tasks.open_fix_proposal.delay"),
+    ):
         approve_proposal(proposals[0].pk, "operator@test")
         open_fix_proposal(str(proposals[0].pk))
 
+    actuate.assert_called_once()
+    assert actuate.call_args.args[1] == proposals[0].finding_id
     proposals[0].refresh_from_db()
     proposals[1].refresh_from_db()
     assert proposals[0].state == FixProposal.State.OPENED
@@ -250,8 +272,6 @@ def test_open_failure_records_failed_and_removes_clone(
         status=JobStatus.SUCCEEDED,
         report_json=_report_with_planned(_FINDING_A),
     )
-    from django_warden_fabric.proposals import queue_proposals_from_scan
-
     queue_proposals_from_scan(scan)
     proposal = FixProposal.objects.get(fleet_repo_scan=scan)
     proposal.state = FixProposal.State.APPROVED
@@ -259,22 +279,26 @@ def test_open_failure_records_failed_and_removes_clone(
     seen: list[Path] = []
 
     def _track_mkdtemp(prefix: str = "warden-fleet-open-") -> Path:
-        from django_warden_fabric.fleet import mkdtemp_clone_dir
-
         path = mkdtemp_clone_dir(prefix=prefix)
         seen.append(path)
         return path
 
-    with patch("django_warden_fabric.tasks.mkdtemp_clone_dir", side_effect=_track_mkdtemp), patch(
-        "django_warden_fabric.tasks.shallow_clone",
-        side_effect=RuntimeError("forge 5xx"),
+    with (
+        patch(
+            "django_warden_fabric.tasks.mkdtemp_clone_dir", side_effect=_track_mkdtemp
+        ),
+        patch(
+            "django_warden_fabric.tasks.shallow_clone",
+            side_effect=RuntimeError("forge 5xx"),
+        ),
     ):
         open_fix_proposal(str(proposal.pk))
 
     proposal.refresh_from_db()
     assert proposal.state == FixProposal.State.FAILED
     assert "forge 5xx" in proposal.error
-    assert seen and not seen[0].exists()
+    assert seen
+    assert not seen[0].exists()
 
 
 @pytest.mark.django_db
@@ -293,8 +317,6 @@ def test_double_approve_refused(proposal_flags_on: Path) -> None:
         status=JobStatus.SUCCEEDED,
         report_json=_report_with_planned(_FINDING_A),
     )
-    from django_warden_fabric.proposals import queue_proposals_from_scan
-
     queue_proposals_from_scan(scan)
     proposal = FixProposal.objects.get(fleet_repo_scan=scan)
     with patch("django_warden_fabric.tasks.open_fix_proposal.delay"):
@@ -319,8 +341,6 @@ def test_dismiss_without_forge(proposal_flags_on: Path) -> None:
         status=JobStatus.SUCCEEDED,
         report_json=_report_with_planned(_FINDING_B),
     )
-    from django_warden_fabric.proposals import queue_proposals_from_scan
-
     queue_proposals_from_scan(scan)
     proposal = FixProposal.objects.get(fleet_repo_scan=scan)
     dismiss_proposal(proposal.pk)

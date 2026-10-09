@@ -6,6 +6,7 @@ import contextlib
 import io
 import json
 import logging
+import os
 import tempfile
 from pathlib import Path
 
@@ -265,13 +266,28 @@ def _findings_for_proposal(scan: FleetRepoScan, finding_id: str):
     raise ValueError(msg)
 
 
+def _run_fix_actuator(scan: FleetRepoScan, finding_id: str, *, clone_dir: Path):
+    """Call EXISTING warden actuator for one stored finding -- never reimplement it."""
+    # Lazy: platform host must import without pyforge installed (Story 10.1
+    # boundary), the same seam as _run_warden_engines.
+    from pyforge.warden.actuator import run_actuator  # noqa: PLC0415
+
+    repo_full_name = scan.fleet_repo.full_name
+    env = os.environ.copy()
+    env["GITHUB_REPOSITORY"] = repo_full_name
+    return run_actuator(
+        _findings_for_proposal(scan, finding_id),
+        dry_run=False,
+        env=env,
+        scan_target=clone_dir,
+        fix_draft_pr_estate_enabled=True,
+        authorized_fleet_repo=repo_full_name,
+    )
+
+
 @shared_task(bind=True, name="warden_fabric.open_fix_proposal")
 def open_fix_proposal(self, proposal_id: str) -> str:
     """Clone, act on exactly one approved finding, record opened or failed."""
-    import os
-
-    from pyforge.warden.actuator import run_actuator  # noqa: PLC0415
-
     proposal = FixProposal.objects.select_related(
         "fleet_repo_scan__fleet_repo",
     ).get(pk=proposal_id)
@@ -286,17 +302,7 @@ def open_fix_proposal(self, proposal_id: str) -> str:
             branch=repo.default_branch,
             dest=clone_dir,
         )
-        findings = _findings_for_proposal(scan, proposal.finding_id)
-        env = os.environ.copy()
-        env["GITHUB_REPOSITORY"] = repo.full_name
-        actuation = run_actuator(
-            findings,
-            dry_run=False,
-            env=env,
-            scan_target=clone_dir,
-            fix_draft_pr_estate_enabled=True,
-            authorized_fleet_repo=repo.full_name,
-        )
+        actuation = _run_fix_actuator(scan, proposal.finding_id, clone_dir=clone_dir)
         matching = [
             outcome
             for outcome in actuation.outcomes

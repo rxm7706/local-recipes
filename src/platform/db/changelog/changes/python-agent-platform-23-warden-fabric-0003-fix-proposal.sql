@@ -10,6 +10,6 @@ CREATE TABLE "warden_fabric_fixproposal" ("id" uuid NOT NULL PRIMARY KEY, "repo_
 -- Create constraint warden_fabric_fixproposal_scan_finding_uniq on model fixproposal
 --
 ALTER TABLE "warden_fabric_fixproposal" ADD CONSTRAINT "warden_fabric_fixproposal_scan_finding_uniq" UNIQUE ("fleet_repo_scan_id", "finding_id");
-ALTER TABLE "warden_fabric_fixproposal" ADD CONSTRAINT "warden_fabric_fixpro_fleet_repo_scan_id_8c0d0a0f_fk_warden_fa" FOREIGN KEY ("fleet_repo_scan_id") REFERENCES "warden_fabric_fleetreposcan" ("id") DEFERRABLE INITIALLY DEFERRED;
-CREATE INDEX "warden_fabric_fixproposal_fleet_repo_scan_id_8c0d0a0f" ON "warden_fabric_fixproposal" ("fleet_repo_scan_id");
+ALTER TABLE "warden_fabric_fixproposal" ADD CONSTRAINT "warden_fabric_fixpro_fleet_repo_scan_id_c0fb26a7_fk_warden_fa" FOREIGN KEY ("fleet_repo_scan_id") REFERENCES "warden_fabric_fleetreposcan" ("id") DEFERRABLE INITIALLY DEFERRED;
+CREATE INDEX "warden_fabric_fixproposal_fleet_repo_scan_id_c0fb26a7" ON "warden_fabric_fixproposal" ("fleet_repo_scan_id");
 --rollback DROP TABLE IF EXISTS "warden_fabric_fixproposal";
