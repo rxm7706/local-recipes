@@ -20,21 +20,21 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - pip
-  - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
-  - requests
-  - django
-  - django-modelcluster
-  - python >=${{ python_min }}
-  - wagtail >=6.3
-  - django-cogwheels ==0.3
+    - requests
+    - django
+    - django-modelcluster
+    - python >=${{ python_min }}
+    - wagtail >=6.3
+    - django-cogwheels ==0.3
 
 tests:
 - python:
     imports:
-    - wagtailmenus
+      - wagtailmenus
     pip_check: true
     python_version: ${{ python_min }}
 
@@ -46,7 +46,7 @@ about:
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -54,8 +54,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: wagtailmenus
   cfe-purls:
-  - pkg:conda/wagtailmenus@${{ version }}?channel=conda-forge
-  - pkg:pypi/wagtailmenus@${{ version }}
+    - pkg:conda/wagtailmenus@${{ version }}?channel=conda-forge
+    - pkg:pypi/wagtailmenus@${{ version }}
   cfe-upstream-repo: https://github.com/jazzband/wagtailmenus
   cfe-upstream-homepage: https://github.com/jazzband/wagtailmenus
   cfe-import-names: [wagtailmenus]
