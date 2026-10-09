@@ -1406,7 +1406,11 @@ def match_outward_github_write(ctx: Context, rule: dict[str, Any]) -> Optional[s
             if verb not in write_set:
                 continue
             slug = _gh_repo_from_tokens(tokens, ctx.cwd)
-            if slug is None or not _is_local_recipes_slug(slug):
+            if slug is None:
+                if _is_local_recipes_checkout(ctx.cwd):
+                    return reason
+                continue
+            if not _is_local_recipes_slug(slug):
                 return reason
     return None
 

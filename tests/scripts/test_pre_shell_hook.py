@@ -127,6 +127,7 @@ def fake_repo(tmp_path: Path) -> Path:
     (repo / "src").mkdir()
     (repo / "src" / "foo.py").write_text("print('hi')\n", encoding="utf-8")
     (repo / "subdir").mkdir()
+    _git(["remote", "add", "origin", "https://github.com/rxm7706/local-recipes.git"], repo)
     _git(["add", "-A"], repo)
     _git(["commit", "-q", "-m", "init"], repo)
     return repo
@@ -805,6 +806,242 @@ def test_benign_commands_never_denied(fake_repo: Path, command: str) -> None:
     result = _run(_claude_bash(command, fake_repo), fake_repo)
     assert result.returncode == 0
     assert result.stdout.strip() == ""
+
+
+# --------------------------------------------------------------------------
+# Story 85.8: outward session denials
+# --------------------------------------------------------------------------
+
+
+def _claude_mcp(tool_name: str, tool_input: dict[str, Any], cwd: Path) -> dict[str, Any]:
+    return {
+        "hook_event_name": "PreToolUse",
+        "tool_name": tool_name,
+        "tool_input": tool_input,
+        "cwd": str(cwd),
+    }
+
+
+@pytest.fixture()
+def push_fixture(fake_repo: Path) -> Path:
+    _git(
+        ["remote", "add", "fork", "https://github.com/someone/staged-recipes.git"],
+        fake_repo,
+    )
+    _git(["remote", "add", "home", str(fake_repo.parent / "loop-home")], fake_repo)
+    (fake_repo.parent / "loop-home").mkdir(exist_ok=True)
+    return fake_repo
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git push fork add-recipe",
+        "git push https://github.com/regro-cf-autotick-bot/x-feedstock.git HEAD:b",
+        "git push git@github.com:conda-forge/x-feedstock.git b",
+    ],
+)
+def test_outward_git_push_denied(push_fixture: Path, command: str) -> None:
+    result = _run(_claude_bash(command, push_fixture), push_fixture)
+    reason = _claude_deny_reason(result)
+    assert reason is not None
+    assert "git push" in reason or "operator" in reason.lower()
+
+
+def test_outward_git_push_denied_git_c(push_fixture: Path) -> None:
+    cmd = f"git -C {push_fixture} push fork b"
+    result = _run(_claude_bash(cmd, push_fixture), push_fixture)
+    assert _claude_deny_reason(result) is not None
+
+
+def test_outward_git_push_denied_push_remote_fork(push_fixture: Path) -> None:
+    _git(["config", "branch.main.pushRemote", "fork"], push_fixture)
+    result = _run(_claude_bash("git push", push_fixture), push_fixture)
+    assert _claude_deny_reason(result) is not None
+
+
+def test_outward_git_push_allowed_origin_and_home(push_fixture: Path) -> None:
+    for command in (
+        "git push origin b",
+        "git push -u origin b",
+        "git push home b",
+        "git push https://github.com/RXM7706/local-recipes b",
+    ):
+        result = _run(_claude_bash(command, push_fixture), push_fixture)
+        assert result.stdout.strip() == ""
+
+
+def test_outward_git_push_allowed_local_path(push_fixture: Path) -> None:
+    result = _run(
+        _claude_bash(f"git push ../other-clone b", push_fixture),
+        push_fixture,
+    )
+    assert result.stdout.strip() == ""
+
+
+def test_outward_git_remote_add_foreign_denied_in_local_recipes_checkout() -> None:
+    result = _run(
+        _claude_bash(
+            "git remote add up https://github.com/conda-forge/staged-recipes.git",
+            REPO_ROOT,
+        ),
+        REPO_ROOT,
+    )
+    assert _claude_deny_reason(result) is not None
+
+
+def test_outward_git_remote_add_allowed_in_unrelated_clone(tmp_path: Path) -> None:
+    other = tmp_path / "other"
+    other.mkdir()
+    _git(["init", "-q"], other)
+    _git(["symbolic-ref", "HEAD", "refs/heads/main"], other)
+    _git(["config", "user.email", "t@example.com"], other)
+    _git(["config", "user.name", "T"], other)
+    (other / "f").write_text("x\n", encoding="utf-8")
+    _git(["add", "f"], other)
+    _git(["commit", "-q", "-m", "i"], other)
+    _write_fixture_roster(other / "docs" / "governance" / "guild-roster.json")
+    (other / "pixi.toml").write_text(_PIXI_TOML, encoding="utf-8")
+    result = _run(
+        _claude_bash(
+            "git remote add up https://github.com/conda-forge/staged-recipes.git",
+            other,
+        ),
+        other,
+    )
+    assert result.stdout.strip() == ""
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh repo fork conda-forge/staged-recipes",
+        "gh repo create x",
+        "gh gist create f",
+        "gh pr comment 1 --repo conda-forge/x-feedstock --body y",
+        "gh pr edit 1 -R conda-forge/staged-recipes",
+        "gh pr review https://github.com/conda-forge/x/pull/1 --approve",
+        "GH_REPO=conda-forge/x gh issue comment 1 -b y",
+        "gh release create v1 --repo someone/x",
+        "gh api -X POST repos/conda-forge/x/issues/1/comments -f body=y",
+        "gh api repos/conda-forge/x/pulls -f title=t",
+        "gh api -X POST repos/rxm7706/local-recipes/forks",
+        "gh api -X POST user/repos -f name=x",
+    ],
+)
+def test_outward_github_write_denied(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert _claude_deny_reason(result) is not None
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh pr create --repo rxm7706/local-recipes --title x --body y",
+        "gh pr view 1 --repo conda-forge/x",
+        "gh api repos/conda-forge/x/pulls",
+        "gh api -X GET search/issues -f q=x",
+        "gh api graphql -f query='mutation { x }'",
+        "gh issue list --repo conda-forge/x",
+    ],
+)
+def test_outward_github_write_allowed(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.stdout.strip() == ""
+
+
+def test_outward_github_write_allows_pr_comment_in_checkout(fake_repo: Path) -> None:
+    result = _run(_claude_bash("gh pr comment 1 --body y", fake_repo), fake_repo)
+    assert result.stdout.strip() == ""
+
+
+def test_outward_github_write_allows_patch_local_recipes(fake_repo: Path) -> None:
+    result = _run(
+        _claude_bash(
+            "gh api -X PATCH repos/rxm7706/local-recipes/pulls/1 -f title=t",
+            fake_repo,
+        ),
+        fake_repo,
+    )
+    assert result.stdout.strip() == ""
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "pyforge mason recipe submit recipes/x --yes",
+        "mason recipe submit recipes/x --prepare-only --yes",
+        "pyforge mason package --yes ship --to pypi",
+        "python -m pyforge.mason package --ship pypi-test --yes",
+        "pixi run -e local-recipes submit-pr x",
+        "pixi run -e local-recipes prepare-pr x",
+        "python .claude/scripts/conda-forge-expert/submit_pr.py x",
+        "bash scripts/submit_pr.sh x",
+        "feedrattler x-feedstock someone",
+        "conda-smithy register-github .",
+        "conda-smithy rotate-anaconda-token",
+    ],
+)
+def test_outward_package_submission_denied(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert _claude_deny_reason(result) is not None
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "pyforge mason recipe submit recipes/x",
+        "mason package ship --to pypi",
+        "pixi run -e local-recipes submit-pr x --dry-run",
+        "feedrattler --help",
+        "conda-smithy rerender",
+        "conda-smithy recipe-lint .",
+    ],
+)
+def test_outward_package_submission_allowed(fake_repo: Path, command: str) -> None:
+    result = _run(_claude_bash(command, fake_repo), fake_repo)
+    assert result.stdout.strip() == ""
+
+
+@pytest.mark.parametrize(
+    "tool_name,tool_input",
+    [
+        ("mcp__conda_forge_server__submit_pr", {"recipe_name": "x"}),
+        ("mcp__conda_forge_server__submit_pr", {"recipe_name": "x", "dry_run": False}),
+        (
+            "mcp__conda_forge_server__prepare_submission_branch",
+            {"recipe_name": "x"},
+        ),
+        ("mcp__conda_forge_server__migrate_to_v1", {"recipe_name": "x"}),
+    ],
+)
+def test_outward_mcp_submission_denied(
+    fake_repo: Path, tool_name: str, tool_input: dict[str, Any]
+) -> None:
+    result = _run(_claude_mcp(tool_name, tool_input, fake_repo), fake_repo)
+    assert _claude_deny_reason(result) is not None
+
+
+def test_outward_mcp_submission_allowed_dry_run(fake_repo: Path) -> None:
+    result = _run(
+        _claude_mcp(
+            "mcp__conda_forge_server__submit_pr",
+            {"recipe_name": "x", "dry_run": True},
+            fake_repo,
+        ),
+        fake_repo,
+    )
+    assert result.stdout.strip() == ""
+
+
+def test_outward_mcp_mutation_missing_matcher_fails_parity(hook_module) -> None:
+    for rid in (
+        "outward-git-push",
+        "outward-github-write",
+        "outward-package-submission",
+        "outward-mcp-submission",
+    ):
+        assert rid in hook_module.MATCHERS
 
 
 def test_unrelated_claude_tool_is_a_no_op(fake_repo: Path) -> None:

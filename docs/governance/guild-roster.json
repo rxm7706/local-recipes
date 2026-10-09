@@ -414,7 +414,7 @@
       "id": "outward-package-submission",
       "applies_to": "bash",
       "trigger": "mason recipe submit or package ship with --yes; CFE submit-pr/prepare-pr without --dry-run; feedrattler; conda-smithy register-github/register-ci/register-feedstock-token/update-anaconda-token and aliases",
-      "reason": "Package and feedstock submission is outward work -- hand the operator `pyforge mason recipe submit <recipe_dir> --yes`, `pyforge mason package ship --to <targets>`, or `pixi run -e local-recipes submit-pr <name> --dry-run` (dry run only) and wait for explicit confirmation before any real submit."
+      "reason": "Package and feedstock submission is outward work -- hand the operator `pyforge mason recipe submit <recipe_dir> --yes` or `pyforge mason package ship --to <targets>` and wait for explicit confirmation; dry-run submit/prepare only until they approve a real run."
     },
     {
       "id": "outward-mcp-submission",
