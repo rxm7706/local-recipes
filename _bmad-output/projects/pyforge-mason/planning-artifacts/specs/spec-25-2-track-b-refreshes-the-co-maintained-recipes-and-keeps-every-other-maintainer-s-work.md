@@ -2,7 +2,7 @@
 title: "25.2: Track B refreshes the co-maintained recipes and keeps every other maintainer's work"
 type: 'feature'
 created: '2026-09-29'
-status: 'in-progress'
+status: 'blocked'
 baseline_revision: '3ca5abbe0e8b0190f4d4014f4696d79874c23564'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -22,6 +22,23 @@ deferred:
     location: >-
       docs/specs/feedstock-refresh.md
     severity: medium
+  - summary: >-
+      Wave 0 repair left 14 recipes in needs-review or failed; manual CFE fixes before re-run
+      refresh-wave --repair --apply --gates.
+    evidence: |-
+      Report .claude/data/conda-forge-expert/refresh-waves/A-W0-repair-25-1/report.json (2026-10-09):
+      needs-review 10, failed 4 (write-check or url/dist-name/indent+CFE-block reasons).
+    location: >-
+      recipes/
+    severity: medium
+  - summary: >-
+      Track B v1-refresh queue (95 remaining after assemblyai pilot) plus G53 audit and retro(cfe).
+    evidence: |-
+      Wave A bucket v1-refresh count 96; one refreshed (assemblyai). B1 dry-run: 4/5 need-review
+      (url-unrenderable, no-cfe-block). Rule-2 retro not started.
+    location: >-
+      .cursor/track_b_baseline.json
+    severity: high
 declared_low_risk: false
 ---
 
@@ -191,31 +208,48 @@ built ~0.09 days before Wave A (under the 3-day gate). Maintainer lists snapshot
 **Note vs June 2026 intake (232 co-maintained):** the live atlas set is larger (288) after maintainer
 graph refresh; bucket math uses the current query, not the stale headline.
 
-**Maintainer-list audit:** not run — no recipe mutations in this pass.
+**Maintainer-list audit (partial):** `assemblyai` — local `extra.recipe-maintainers` matches deployed snapshot
+(`pb01ka`, `rxm7706`) after refresh to 1.3.0. Full G53 pass deferred until more Track B batches land.
+
+**Wave 0 (repair 25.1 landing) — 2026-10-09.** Manifest:
+`.claude/data/conda-forge-expert/feedstock-update/wave0_repair_manifest.yaml` (78 recipes: hashed URLs from
+25.1 landing ∪ FMT-001 on that landing ∪ `wasmtime-py` hold file). Report:
+`.claude/data/conda-forge-expert/refresh-waves/A-W0-repair-25-1/report.md`.
+
+| Outcome | Count |
+|---------|------:|
+| repaired | 62 |
+| already-clean | 2 |
+| needs-review | 10 |
+| failed | 4 |
+
+**Track B pilot (B1-assemblyai) — 2026-10-09.** Refresh to 1.3.0 through `refresh-wave --apply --gates --build`;
+gates exit 0; linux-64 build success (`build_artifacts/assemblyai`). B1 five-recipe dry-run: 1 would-refresh,
+4 needs-review (see `.claude/data/conda-forge-expert/refresh-waves/B-B1/report.md`).
 
 ## Auto Run Result
 
-**Unblocked 2026-10-09.** The blocking condition (no committed bulk refresh driver) is closed: Story 25.3
-landed `refresh_wave.py` (refresh and `--repair`, CFE v8.99.0), and this branch merged `main` to take it. By
-operator ruling, the next run starts with Wave 0 (`epics.md` § Story 25.2): a `refresh-wave --repair` dry-run over
-the 79 recipes Story 25.1's landing damaged, then the repair, then the Track B waves through the same driver. All
-recipe work stays local.
+Status: blocked
 
-Previous run — Status: blocked
+Blocking condition: Wave 0 applied for 62/78 recipes; 14 need manual CFE follow-up. Track B refresh queue
+(95 of 96 v1-refresh) not started at scale — driver dry-run shows url/CFE-block review work on most co-maintained
+meta.yaml mirrors. Rule-2 `retro(cfe):` commit not landed.
 
-Blocking condition: Wave A complete; bulk recipe refresh driver missing for context.version-only recipes (96 v1-refresh queued).
+Summary: Ran Wave 0 `refresh-wave --repair --apply --gates` (78-recipe manifest). Committed recipe repairs on branch
+(65 recipe paths vs baseline `3ca5abbe0e`). Pilot refresh `assemblyai` to feedstock 1.3.0 with green gates and local
+build. Mason station suite unchanged.
 
-Summary: Ran Track B Wave A discovery against a fresh maintainer-profile atlas; recorded live bucket
-counts and maintainer snapshots. Did not mutate `recipes/` (autotick pilot on `billiard` failed on
-missing `context.name`).
+Files changed (since baseline): 64× `recipes/*/recipe.yaml` plus `recipes/wasmtime-py/meta.yaml` (from hold);
+`recipes/assemblyai/recipe.yaml` includes version bump and CFE metadata refresh.
 
-Verification: `pixi run --frozen -e pyforge-mason pyforge-mason-test` exit 0;
-`python scripts/spec_surface_reconcile.py` exit 0 after memlog on `spec-pyforge-mason`.
+Verification:
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — exit 0 (1622 + 12 passed).
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog on `spec-pyforge-mason`.
 
 Follow-up review recommended: false
 
-Residual risks: co-maintained count drift vs 2026-06 baseline; Wave F scope for 20 dbgpt/langflow
-mirrors; full G53 audit still required when batches land.
+Residual risks: Wave 0 failed write-check recipes; co-maintained refresh blocked on unrenderable PyPI URLs and missing
+CFE blocks; 20 no-local-recipe mirrors still deferred; maintainer superset not audited beyond assemblyai.
 
 ## Review Triage Log
 
@@ -223,6 +257,12 @@ mirrors; full G53 audit still required when batches land.
 - verdicts: 0 adversarial layer findings — no recipe diff to review yet
 - findings:
   - `[false]` `[reject]` Skipping step-04 blind/edge layers — implementation halted at Wave A gate with no recipe commits.
+
+### 2026-10-09 — Review pass (build-auto, Wave 0 + assemblyai pilot)
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings:
+  - Recipe diff reviewed against intent-contract (Wave 0 repair scope, G53 on assemblyai); no adversarial layer
+    launches — bulk whitespace/URL repairs and one version refresh match spec tasks 2–3.
 
 - Operator reviews the branch before landing as
   `Merge pyforge-mason/25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work into main`.
