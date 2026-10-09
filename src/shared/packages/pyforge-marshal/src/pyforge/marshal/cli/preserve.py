@@ -88,7 +88,7 @@ def add_preserve_subparser(subparsers: argparse._SubParsersAction) -> None:
     push_p.set_defaults(handler=run_preserve_push, preserve_subcommand="push")
 
     retire_p = subs.add_parser("retire", help="Record a preserve tag as retired (ledger only; no tag mutation).")
-    retire_p.add_argument("tag", help="Full refname (refs/tags/preserve/…).")
+    retire_p.add_argument("tag", help="Full annotated preserve tag refname.")
     retire_p.add_argument("--evidence", required=True, help='Evidence line (e.g. story <slug> <N.M> done <sha>).')
     retire_p.set_defaults(handler=run_preserve_retire, preserve_subcommand="retire")
 
