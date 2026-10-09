@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
+from pyforge.core.preserve_refs import PreserveGitError, push_preserve_ref
 from pyforge.core.process import PosixProcess, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
@@ -351,6 +352,7 @@ def _journal_dispatch_preserve(
     preserve_ref = relative_preserve_ref(run_dir, patch_path)
     preserve_tag: str | None = None
     preserve_pushed: bool | None = None
+    tag_refname: str | None = None
     if preserve_refs_flag_on():
         tag_outcome = tag_dispatch_worktree_preserve(
             vcs=vcs,
@@ -361,10 +363,11 @@ def _journal_dispatch_preserve(
             run_id=run_id,
             journal_path=str(run_dir / _JOURNAL_FILENAME),
             reason=f"dispatch {completion_verdict}",
+            push=False,
         )
         if tag_outcome is not None:
             preserve_tag = tag_outcome.preserve_tag
-            preserve_pushed = tag_outcome.pushed
+            tag_refname = tag_outcome.refname
     intent_payload: dict[str, object] = {"preserve_ref": preserve_ref, "story_key": story_key}
     if preserve_tag is not None:
         intent_payload["preserve_tag"] = preserve_tag
@@ -377,6 +380,20 @@ def _journal_dispatch_preserve(
         payload=intent_payload,
     )
     counter += 1
+    try:
+        _append_entry(fs, run_dir, intent_entry, fsync=True)
+    except FsError as exc:
+        print(
+            f"dispatch supervisor: cannot journal preserve for {run_id!r}: {exc}",
+            file=sys.stderr,
+        )
+        return counter
+    if tag_refname is not None:
+        try:
+            push_result = push_preserve_ref(repo_root, tag_refname)
+            preserve_pushed = push_result.pushed
+        except PreserveGitError:
+            preserve_pushed = False
     outcome_entry = build_entry(
         id=JournalEntryId(writer_id, counter),
         ts=_format_entry_ts(_now_utc()),
@@ -392,7 +409,6 @@ def _journal_dispatch_preserve(
     )
     counter += 1
     try:
-        _append_entry(fs, run_dir, intent_entry, fsync=True)
         _append_entry(fs, run_dir, outcome_entry, fsync=False)
     except FsError as exc:
         print(

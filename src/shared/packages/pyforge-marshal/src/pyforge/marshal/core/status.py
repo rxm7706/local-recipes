@@ -1023,6 +1023,7 @@ class FleetHomeFacts:
     dispatch_baseline_revision: str | None = None
     dispatch_final_revision: str | None = None
     dispatch_preserve_ref: str | None = None
+    dispatch_preserve_tag: str | None = None
     dispatch_landing_verdict: str | None = None
     # Story 28.16 (CAP-3): parallel wave membership visible in fleet status.
     dispatch_wave_id: str | None = None
@@ -1365,6 +1366,8 @@ def _merge_dispatch_row_fields(row: dict[str, object], facts: FleetHomeFacts) ->
         patched["dispatch_final_revision"] = facts.dispatch_final_revision
     if facts.dispatch_preserve_ref is not None:
         patched["dispatch_preserve_ref"] = facts.dispatch_preserve_ref
+    if facts.dispatch_preserve_tag is not None:
+        patched["dispatch_preserve_tag"] = facts.dispatch_preserve_tag
     if facts.dispatch_wave_id is not None:
         patched["dispatch_wave_id"] = facts.dispatch_wave_id
     if facts.dispatch_in_flight_stories:

@@ -109,6 +109,7 @@ def tag_dispatch_worktree_preserve(
     run_id: str,
     journal_path: str,
     reason: str,
+    push: bool = True,
 ) -> DispatchPreserveTagOutcome | None:
     """Snapshot, tag locally, push one refspec through the content gate."""
     try:
@@ -142,11 +143,12 @@ def tag_dispatch_worktree_preserve(
         return None
     preserve_tag = short_ref_name(tagged.refname)
     pushed = False
-    try:
-        push_result = push_preserve_ref(repo_root, tagged.refname)
-        pushed = push_result.pushed
-    except PreserveGitError:
-        pushed = False
+    if push:
+        try:
+            push_result = push_preserve_ref(repo_root, tagged.refname)
+            pushed = push_result.pushed
+        except PreserveGitError:
+            pushed = False
     return DispatchPreserveTagOutcome(
         refname=tagged.refname,
         preserve_tag=preserve_tag,
