@@ -316,8 +316,7 @@ def test_lane_runner_exception_counts_as_red(tmp_path: Path) -> None:
 
 _FAIL_SCRIPT = "import time; time.sleep(0.5); raise SystemExit(1)"
 _SLEEP_SCRIPT = (
-    "import os, time; open(os.path.join(os.environ['TMPDIR'], 'pgid'), 'w').write(str(os.getpgrp())); "
-    "time.sleep(30)"
+    "import os, time; open(os.path.join(os.environ['TMPDIR'], 'pgid'), 'w').write(str(os.getpgrp())); time.sleep(30)"
 )
 
 
