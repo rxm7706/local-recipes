@@ -150,7 +150,7 @@ def build_context(harness: str, kind: str, payload: dict[str, Any]) -> Context:
 
 # --------------------------------------------------------------------------
 # Command tokenization -- heuristic, not a shell. Good enough to recognize
-# the twelve named forms; not a sandbox and not trying to be one.
+# the closed session-denial forms; not a sandbox and not trying to be one.
 # --------------------------------------------------------------------------
 
 

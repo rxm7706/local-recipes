@@ -166,10 +166,10 @@ install, a live `pixi add`/`pixi update`, `scripts/bmad-switch` from a worktree 
 rxm7706/local-recipes`, `uv run` off the repo root, a bare `spec_surface_check.py
 --write-baseline`, a direct write to `SPEC.md` / `sprint-status-ledger.yaml` / a tracked
 `implementation-artifacts/` path, deleting every protected ref form and any `~/.bmad-loops/` loop home, deleting a branch or tag whose tip would orphan commits, outward `git push` / foreign `git remote` in this checkout, outward `gh` writes on other repositories, outward package and feedstock submission (including mason `--yes`, CFE submit without `--dry-run`, feedrattler, conda-smithy register/token subcommands), and the conda_forge_server MCP submission tools when `dry_run` is not true — are additionally enforced by a repo-level `PreToolUse` hook,
-`.claude/hooks/pre-shell.py`. It is registered on `Bash` and on `Edit`/`Write` in
-`.claude/settings.json` (Claude Code) and on `beforeShellExecution` (deny) / `afterFileEdit`
-(warn — Cursor has no before-edit deny) in `.cursor/hooks.json` (Cursor). **One script serves both
-harnesses.**
+`.claude/hooks/pre-shell.py`. It is registered on `Bash`, on `Edit`/`Write`, and on the three
+conda_forge_server MCP submission tools in `.claude/settings.json` (Claude Code) and on
+`beforeShellExecution` (deny) / `afterFileEdit` (warn — Cursor has no before-edit deny) in
+`.cursor/hooks.json` (Cursor). **One script serves both harnesses.**
 
 The closed list of what it denies, and the one-line reason it gives for each — naming the
 sanctioned form — lives in `docs/governance/guild-roster.json`'s `session_denials` array, the ONE

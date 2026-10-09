@@ -879,6 +879,24 @@ def test_outward_git_push_allowed_local_path(push_fixture: Path) -> None:
     assert result.stdout.strip() == ""
 
 
+def test_outward_git_push_denied_set_url_foreign_origin(push_fixture: Path) -> None:
+    cmd = "git remote set-url --push origin https://github.com/someone/local-recipes.git"
+    result = _run(_claude_bash(cmd, push_fixture), push_fixture)
+    assert _claude_deny_reason(result) is not None
+
+
+def test_outward_git_remote_add_local_path_allowed(push_fixture: Path) -> None:
+    result = _run(_claude_bash("git remote add home2 /tmp/x", push_fixture), push_fixture)
+    assert result.stdout.strip() == ""
+
+
+def test_outward_git_push_denied_unresolvable_remote(push_fixture: Path) -> None:
+    result = _run(_claude_bash("git push nosuchremote b", push_fixture), push_fixture)
+    reason = _claude_deny_reason(result)
+    assert reason is not None
+    assert "git remote -v" in reason
+
+
 def test_outward_git_remote_add_foreign_denied_in_local_recipes_checkout() -> None:
     result = _run(
         _claude_bash(
@@ -934,10 +952,22 @@ def test_outward_github_write_denied(fake_repo: Path, command: str) -> None:
     assert _claude_deny_reason(result) is not None
 
 
+def test_outward_github_write_denied_foreign_pr_create(fake_repo: Path) -> None:
+    result = _run(
+        _claude_bash(
+            "gh pr create --repo conda-forge/staged-recipes --title x --body y",
+            fake_repo,
+        ),
+        fake_repo,
+    )
+    assert _claude_deny_reason(result) is not None
+
+
 @pytest.mark.parametrize(
     "command",
     [
         "gh pr create --repo rxm7706/local-recipes --title x --body y",
+        "gh pr checks 1 --repo conda-forge/staged-recipes",
         "gh pr view 1 --repo conda-forge/x",
         "gh api repos/conda-forge/x/pulls",
         "gh api -X GET search/issues -f q=x",
@@ -976,6 +1006,7 @@ def test_outward_github_write_allows_patch_local_recipes(fake_repo: Path) -> Non
         "pixi run -e local-recipes submit-pr x",
         "pixi run -e local-recipes prepare-pr x",
         "python .claude/scripts/conda-forge-expert/submit_pr.py x",
+        "python .claude/scripts/conda-forge-expert/prepare_pr.py x",
         "bash scripts/submit_pr.sh x",
         "feedrattler x-feedstock someone",
         "conda-smithy register-github .",
@@ -1027,6 +1058,30 @@ def test_outward_mcp_submission_allowed_dry_run(fake_repo: Path) -> None:
         _claude_mcp(
             "mcp__conda_forge_server__submit_pr",
             {"recipe_name": "x", "dry_run": True},
+            fake_repo,
+        ),
+        fake_repo,
+    )
+    assert result.stdout.strip() == ""
+
+
+def test_outward_mcp_prepare_submission_branch_allowed_dry_run(fake_repo: Path) -> None:
+    result = _run(
+        _claude_mcp(
+            "mcp__conda_forge_server__prepare_submission_branch",
+            {"recipe_name": "x", "dry_run": True},
+            fake_repo,
+        ),
+        fake_repo,
+    )
+    assert result.stdout.strip() == ""
+
+
+def test_outward_mcp_validate_recipe_allowed(fake_repo: Path) -> None:
+    result = _run(
+        _claude_mcp(
+            "mcp__conda_forge_server__validate_recipe",
+            {"recipe_name": "x"},
             fake_repo,
         ),
         fake_repo,
