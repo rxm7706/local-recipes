@@ -611,7 +611,8 @@ outputs:
         - libgcc >=${{ gcc_version }}
         - libstdcxx >=${{ gcc_version }}
       run_exports:
-        - libsanitizer >=${{ gcc_version }}
+        strong:
+          - libsanitizer >=${{ gcc_version }}
     tests:
       - requirements:
           run:
