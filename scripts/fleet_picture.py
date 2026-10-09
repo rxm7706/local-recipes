@@ -45,6 +45,15 @@ import subprocess
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
+
+# Story 87.9: recovery refs are named by the one preserve grammar (pyforge-core, stdlib-only),
+# imported by path like scripts/deferred_work_intake.py does.
+_CORE_SRC = REPO / "src" / "shared" / "packages" / "pyforge-core" / "src"
+if str(_CORE_SRC) not in sys.path:
+    sys.path.insert(0, str(_CORE_SRC))
+
+from pyforge.core import preserve_refs as _preserve_refs  # noqa: E402
+
 LOOP_ROOT = pathlib.Path.home() / ".bmad-loops"
 # 20 is not derived from the 2026-08-15 incident's 55-60 (the magnitude at
 # which it was noticed by accident, not a chosen threshold) -- it's picked to
@@ -798,10 +807,15 @@ def _baseline_drift_needs_lines(findings: list[dict]) -> list[str]:
     if not isinstance(refs, list):
         refs = [refs] if refs else []
     if refs:
-        recover = f"recover from: {_sanitize(', '.join(str(r) for r in refs), 120)}"
+        # A preserve tag is the durable twin of the engine's scratch branch: name it first.
+        ordered = sorted(
+            (str(r) for r in refs),
+            key=lambda r: not _preserve_refs.is_preserve_tag_ref(r),
+        )
+        recover = f"recover from: {_sanitize(', '.join(ordered), 120)}"
     else:
         recover = (
-            f"no attempt-preserve/{run}-* branch -- "
+            f"no preserve tag or attempt-preserve/{run}-* branch -- "
             f"check failed/{story}/changes.patch in the run dir"
         )
     return [

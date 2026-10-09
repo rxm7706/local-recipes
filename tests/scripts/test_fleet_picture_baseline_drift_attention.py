@@ -132,6 +132,14 @@ def test_needs_lines_name_story_run_baselines_and_preserve_ref():
     assert "docs/dreams/bmad-loop-baseline-drift.md" in line
 
 
+def test_needs_lines_name_the_preserve_tag_before_the_scratch_branch():
+    """Story 87.9: the durable ``preserve/`` tag leads the recovery line, however the finding ordered it."""
+    mod = _load_fleet()
+    tag = "preserve/pyforge-marshal/9.6/bmad-loop-523e938c"
+    line = mod._baseline_drift_needs_lines([_unrecovered_finding(refs=[PRESERVE_REF, tag])])[0]
+    assert line.index(tag) < line.index(PRESERVE_REF)
+
+
 def test_needs_lines_patch_hint_when_no_preserve_ref():
     mod = _load_fleet()
     lines = mod._baseline_drift_needs_lines(

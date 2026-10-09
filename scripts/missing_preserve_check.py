@@ -30,12 +30,15 @@ For every marshal journal under every ``~/.bmad-loops`` loop home
 * ``kind == "intent-gap-preserve-failed"`` → finding (park attempted, failed).
 * ``kind == "escalation-detected"`` whose ``reason`` matches the Story 20.4
   intent-gap markers → finding unless a preserve artifact is present:
-  - ``payload.preserve_ref`` naming an existing ``attempt-preserve/*`` branch
-    or an existing ``changes.patch`` file, or
+  - ``payload.preserve_ref`` naming a ``preserve/`` tag, an ``attempt-preserve/*``
+    branch (local, or present only on ``origin`` -- Story 87.9, read with
+    ``git ls-remote`` by ``pyforge.core.preserve_refs``) or an existing
+    ``changes.patch`` file, or
   - a ``failed/<story>/changes.patch`` under that home's
     ``.bmad-loop/runs/*/`` tree.
 
-Never imports ``bmad_loop``. ``LOOP_ROOT`` and ``REPO`` are module-level so
+Never imports ``bmad_loop``; preserve names and the "is it on origin" answer come from
+``pyforge.core.preserve_refs`` (stdlib-only, imported by path). ``LOOP_ROOT`` and ``REPO`` are module-level so
 tests can monkeypatch them (loop-stall / baseline-drift precedent).
 
 EXIT
@@ -56,12 +59,18 @@ DETECTOR = {"scope": "runtime"}
 import argparse
 import json
 import re
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+
+_CORE_SRC = REPO / "src" / "shared" / "packages" / "pyforge-core" / "src"
+if str(_CORE_SRC) not in sys.path:
+    sys.path.insert(0, str(_CORE_SRC))
+
+from pyforge.core import preserve_refs  # noqa: E402
+
 LOOP_ROOT = Path.home() / ".bmad-loops"
 
 # Closed vocabulary — byte-identical to supervisor/intent_gap_preserve.py
@@ -75,7 +84,6 @@ _INTENT_GAP_MARKERS = (
 
 _ESCALATION_KIND = "escalation-detected"
 _PRESERVE_FAILED_KIND = "intent-gap-preserve-failed"
-_ATTEMPT_PRESERVE_PREFIX = "attempt-preserve/"
 _DISPATCH_RUNS_DIRNAME = "dispatch-runs"
 _COULD_NOT_OBSERVE = "could-not-observe"
 
@@ -143,24 +151,6 @@ def _parse_journal(path: Path) -> list[dict]:
     return out
 
 
-def _branch_exists(repo: Path, ref: str) -> bool:
-    if not ref or not repo.is_dir():
-        return False
-    candidates = [ref]
-    if not ref.startswith("refs/"):
-        candidates.append("refs/heads/" + ref)
-    for cand in candidates:
-        r = subprocess.run(
-            ["git", "show-ref", "--verify", "--quiet", cand],
-            cwd=repo,
-            capture_output=True,
-            timeout=30,
-        )
-        if r.returncode == 0:
-            return True
-    return False
-
-
 def _patch_exists(
     ref: str,
     home: Path,
@@ -207,15 +197,11 @@ def artifact_present(
     """Whether a Story 20.4 preserve artifact exists for this halt."""
     ref = (preserve_ref or "").strip()
     if ref:
-        if ref.startswith(_ATTEMPT_PRESERVE_PREFIX) or ref.startswith(
-            "refs/heads/" + _ATTEMPT_PRESERVE_PREFIX
-        ):
-            if _branch_exists(repo, ref):
-                return True
         if ref.endswith("changes.patch") or "/failed/" in ref:
             if _patch_exists(ref, home, story_key, run_dir=run_dir):
                 return True
-        if _branch_exists(repo, ref) or _patch_exists(
+        # A preserve/ tag, or a ref present locally or only on origin (Story 87.9).
+        if preserve_refs.preserve_artifact_reachable(repo, ref) or _patch_exists(
             ref, home, story_key, run_dir=run_dir
         ):
             return True

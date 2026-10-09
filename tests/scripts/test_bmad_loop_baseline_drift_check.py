@@ -373,3 +373,61 @@ def test_json_flag_empty_array_on_clean(tmp_path, monkeypatch, capsys):
 
     assert rc == 0
     assert json.loads(out) == []
+
+
+# --- Story 87.9: a preserve tag is a recovery source -------------------------------------------
+
+PRESERVE_TAG = "preserve/pyforge-marshal/9.6/bmad-loop-523e938c"
+
+
+def _drift_findings(tmp_path, monkeypatch, *, seed):
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    seed(repo)
+    _seed_loop_home(loop_root, journal_fixture="journal_9_6_drift.jsonl")
+    _seed_repo_ledger(repo, ledger_fixture=None)
+    mod = _load_detector()
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+    findings, _obs = mod.collect_findings()
+    return findings
+
+
+def test_preserve_tag_alone_is_a_recovery_source(tmp_path, monkeypatch):
+    """The engine's scratch branch is gone; only its durable ``preserve/`` twin remains, tied to the
+    run by its ``Preserve-Run`` trailer."""
+    findings = _drift_findings(
+        tmp_path,
+        monkeypatch,
+        seed=lambda repo: _git(repo, "tag", "-a", PRESERVE_TAG, "-m", f"preserve\n\nPreserve-Run: {RUN_ID}"),
+    )
+    assert [f["refs"] for f in findings] == [[PRESERVE_TAG]]
+
+
+def test_preserve_tag_precedes_the_branch_in_recovery_refs(tmp_path, monkeypatch, capsys):
+    def seed(repo: Path) -> None:
+        _seed_preserve_branch(repo)
+        _git(repo, "tag", PRESERVE_TAG)
+
+    findings = _drift_findings(tmp_path, monkeypatch, seed=seed)
+    assert findings[0]["refs"] == [PRESERVE_TAG, PRESERVE_REF]
+
+
+def test_origin_only_attempt_preserve_branch_is_a_recovery_source(tmp_path, monkeypatch):
+    bare = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "--bare", str(bare)], check=True, capture_output=True, text=True)
+
+    def seed(repo: Path) -> None:
+        _git(repo, "remote", "add", "origin", str(bare))
+        _seed_preserve_branch(repo)
+        _git(repo, "push", "origin", PRESERVE_REF)
+        _git(repo, "branch", "-D", PRESERVE_REF)
+
+    findings = _drift_findings(tmp_path, monkeypatch, seed=seed)
+    assert findings[0]["refs"] == [PRESERVE_REF]
+
+
+def test_no_recovery_ref_anywhere_is_still_named_unrecovered(tmp_path, monkeypatch):
+    findings = _drift_findings(tmp_path, monkeypatch, seed=lambda repo: None)
+    assert len(findings) == 1 and findings[0]["refs"] == []

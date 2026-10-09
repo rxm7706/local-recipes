@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -2010,12 +2011,22 @@ class _FakeProcess:
         *,
         run_result: ProcessResult | None = None,
         run_raises: bool = False,
+        git_handler: Callable[[tuple[str, ...]], ProcessResult] | None = None,
     ) -> None:
         self.alive_pids = alive_pids
         self.calls: list[int] = []
         self.run_calls: list[tuple[tuple[str, ...], Path]] = []
         self.run_result = run_result
         self.run_raises = run_raises
+        # Story 87.9: the preserve-debt read shells to ``git`` through this same port. A bare fake
+        # answers every git call with an empty, successful read (no tags, no scratch refs); a test
+        # that wants debt passes ``git_handler`` and answers by argv.
+        self.git_handler = git_handler
+
+    @property
+    def detector_calls(self) -> list[tuple[tuple[str, ...], Path]]:
+        """``run_calls`` minus the ``git`` reads -- the unpushed-work detector invocations."""
+        return [call for call in self.run_calls if call[0][0] != "git"]
 
     def is_alive(self, pid: int) -> bool:
         self.calls.append(pid)
@@ -2025,6 +2036,10 @@ class _FakeProcess:
         self.run_calls.append((tuple(argv), cwd))
         if self.run_raises:
             raise ProcessError("cannot launch the unpushed-work detector")
+        if argv[0] == "git":
+            if self.git_handler is not None:
+                return self.git_handler(tuple(argv))
+            return ProcessResult(returncode=0, stdout="", stderr="")
         if self.run_result is not None:
             return self.run_result
         return ProcessResult(
@@ -4534,8 +4549,8 @@ class TestUnpushedWork:
         assert payload["verdict"] == "clean"
         assert exit_code == 0
         # The detector ran exactly once for the whole sweep.
-        assert len(process.run_calls) == 1
-        argv, cwd = process.run_calls[0]
+        assert len(process.detector_calls) == 1
+        argv, cwd = process.detector_calls[0]
         # Code review (2026-08-07, Edge Case Hunter): `sys.executable`,
         # never a bare `"python3"` off PATH.
         assert argv[0] == sys.executable
@@ -4584,7 +4599,9 @@ class TestUnpushedWork:
         assert payload["verdict"] == "warn"
         assert exit_code == 0
 
-    def test_finding_ref_matching_no_known_home_is_ignored(self, tmp_path, capsys, monkeypatch):
+    def test_finding_ref_matching_no_known_home_is_reported_fleet_wide(self, tmp_path, capsys, monkeypatch):
+        """Story 87.9 (was ``..._is_ignored``): an unpushed ref no row accounts for is a fleet-wide
+        finding with its own registered code and an additive ``data`` list -- never dropped."""
         _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": None})
         home = tmp_path / "loop-homes" / "acme"
         vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
@@ -4604,8 +4621,10 @@ class TestUnpushedWork:
         payload = _payload(capsys)
         row = payload["data"]["homes"][0]
         assert row["unpushed_work"] is None
-        assert [f["code"] for f in payload["findings"]] == []
-        assert payload["verdict"] == "clean"
+        assert [f["code"] for f in payload["findings"]] == ["MRS-STATUS-015"]
+        assert "recover/some-other-branch" in payload["findings"][0]["message"]
+        assert [entry["ref"] for entry in payload["data"]["unmatched_unpushed_refs"]] == ["recover/some-other-branch"]
+        assert payload["verdict"] == "warn"
         assert exit_code == 0
 
     def test_detector_script_launch_failure_reports_null_and_warns(self, tmp_path, capsys, monkeypatch):
@@ -6659,6 +6678,16 @@ class TestStatusReadsLandingsTheWayDeployDoes:
         assert exit_code == 0
 
 
+def _codes_without_preserve_debt(payload: dict) -> list[str]:
+    """Finding codes minus Story 87.9's preserve-debt ones: a patch with no tag is debt (``MRS-STATUS-018``)
+    in every fixture below, which is orthogonal to the landed-history classification they pin."""
+    return [
+        f["code"]
+        for f in payload["findings"]
+        if f["code"] not in {"MRS-STATUS-016", "MRS-STATUS-017", "MRS-STATUS-018"}
+    ]
+
+
 class TestAHistoryThatShowsNothingIsSaidSo:
     """DW-FU-4-14-10: ``MRS-STATUS-014`` in place of one ``MRS-STATUS-010``
     per patch when a non-empty history has no conforming merge subject."""
@@ -6673,7 +6702,7 @@ class TestAHistoryThatShowsNothingIsSaidSo:
 
         exit_code, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
 
-        codes = [f["code"] for f in payload["findings"]]
+        codes = _codes_without_preserve_debt(payload)
         assert codes == ["MRS-STATUS-014"]
         assert "MRS-STATUS-010" not in codes
         message = payload["findings"][0]["message"]
@@ -6723,7 +6752,7 @@ class TestAHistoryThatShowsNothingIsSaidSo:
 
         _exit, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
 
-        codes = [f["code"] for f in payload["findings"]]
+        codes = _codes_without_preserve_debt(payload)
         assert codes == ["MRS-STATUS-010"]
         assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is False
 
@@ -6733,7 +6762,7 @@ class TestAHistoryThatShowsNothingIsSaidSo:
 
         _exit, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
 
-        codes = [f["code"] for f in payload["findings"]]
+        codes = _codes_without_preserve_debt(payload)
         assert codes == ["MRS-STATUS-010"]
         assert "MRS-STATUS-014" not in codes
         assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is False
@@ -6752,7 +6781,7 @@ class TestAHistoryThatShowsNothingIsSaidSo:
 
         exit_code, payload = _status_sweep(capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs)
 
-        assert [f["code"] for f in payload["findings"]] == ["MRS-STATUS-011"]
+        assert _codes_without_preserve_debt(payload) == ["MRS-STATUS-011"]
         assert payload["data"]["homes"][0]["failed_patches"][0]["done"] is None
         assert exit_code == 0
 
@@ -6942,3 +6971,325 @@ class TestEscalationsFiltersFindingsWithRows:
 
         warning = next(f for f in payload["findings"] if f["code"] == "MRS-STATUS-011")
         assert "3 patch(es)" in warning["message"]
+
+
+# ---------------------------------------------------------------------------
+# Story 87.9 -- preserve debt and unmatched unpushed refs
+# ---------------------------------------------------------------------------
+
+_SHA = "a" * 40
+_ACME_TAG = "refs/tags/preserve/acme/4.11/hand-deadbeef"
+_RUN_ID = "20260809-231524-abb9"
+_ACME_SCRATCH = f"refs/heads/attempt-preserve/{_RUN_ID}-deadbeef"
+
+
+def _git_ok(stdout: str = "") -> ProcessResult:
+    return ProcessResult(returncode=0, stdout=stdout, stderr="")
+
+
+def _git_failed() -> ProcessResult:
+    return ProcessResult(returncode=128, stdout="", stderr="fatal: unable to access")
+
+
+def _git_answers(
+    *,
+    tags: tuple[str, ...] = (),
+    on_origin: tuple[str, ...] = (),
+    scratch: tuple[str, ...] = (),
+    held_by_a_tag: bool = False,
+    landed: bool = False,
+    list_fails: bool = False,
+    remote_fails: bool = False,
+) -> Callable[[tuple[str, ...]], ProcessResult]:
+    """A routing ``git`` for ``_FakeProcess``: answers each read the preserve observation issues by argv."""
+
+    def handler(argv: tuple[str, ...]) -> ProcessResult:
+        sub = argv[1]
+        if sub == "for-each-ref":
+            if list_fails:
+                return _git_failed()
+            if "--contains" in argv:
+                return _git_ok("refs/tags/preserve/acme/4.11/hand-deadbeef\n" if held_by_a_tag else "")
+            fmt = next(a for a in argv if a.startswith("--format="))
+            if "%(*objectname)" in fmt:  # the local preserve-tag listing
+                return _git_ok("".join(f"{t}\x1f\x1f{_SHA}\x1fPreserve-Run: r\n\x1e" for t in tags))
+            return _git_ok("".join(f"{ref}\x1f{_SHA}\n" for ref in scratch))  # the scratch-ref listing
+        if sub == "ls-remote":
+            return _git_failed() if remote_fails else _git_ok("".join(f"{_SHA}\t{ref}\n" for ref in on_origin))
+        if sub == "merge-base":
+            return ProcessResult(returncode=0 if landed else 1, stdout="", stderr="")
+        return _git_ok()
+
+    return handler
+
+
+def _debt_sweep(capsys, monkeypatch, tmp_path, *, git, seed=None, detector=None, subjects=(), args=None):
+    home = tmp_path / "loop-homes" / "acme"
+    home.mkdir(parents=True)
+    if seed is not None:
+        seed(home)
+    vcs = _FakeVcs(worktrees=_worktrees(tmp_path, ["acme"]), commit_subjects_value=subjects)
+    process = _FakeProcess(run_result=detector or _unpushed_result(), git_handler=git)
+    exit_code, payload = _status_sweep(
+        capsys, monkeypatch, tmp_path, slugs=["acme"], vcs=vcs, process=process, args=args
+    )
+    return exit_code, payload, payload["data"]["homes"][0]
+
+
+def _debt_codes(payload) -> list[str]:
+    return [f["code"] for f in payload["findings"]]
+
+
+class TestPreserveDebt:
+    def test_a_local_only_preserve_tag_is_the_rows_debt_never_clean(self, tmp_path, capsys, monkeypatch):
+        """AD-48: the tag is in the repo's own ref store, but ``ls-remote`` does not list it."""
+        exit_code, payload, row = _debt_sweep(capsys, monkeypatch, tmp_path, git=_git_answers(tags=(_ACME_TAG,)))
+
+        assert _debt_codes(payload) == ["MRS-STATUS-016"]
+        assert row["preserve_debt"]["local_only_tags"] == [_ACME_TAG]
+        assert row["preserve_debt"]["could_not_observe"] is False
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_a_tag_origin_lists_is_no_debt_and_adds_no_row_key(self, tmp_path, capsys, monkeypatch):
+        _exit, payload, row = _debt_sweep(
+            capsys, monkeypatch, tmp_path, git=_git_answers(tags=(_ACME_TAG,), on_origin=(_ACME_TAG,))
+        )
+
+        assert _debt_codes(payload) == []
+        assert "preserve_debt" not in row
+
+    def test_a_scratch_ref_no_tag_holds_is_unpromoted_debt(self, tmp_path, capsys, monkeypatch):
+        def seed(home: Path) -> None:
+            (home / ".bmad-loop" / "runs" / _RUN_ID).mkdir(parents=True)
+
+        _exit, payload, row = _debt_sweep(
+            capsys, monkeypatch, tmp_path, git=_git_answers(scratch=(_ACME_SCRATCH,)), seed=seed
+        )
+
+        assert _debt_codes(payload) == ["MRS-STATUS-017"]
+        assert row["preserve_debt"]["unpromoted_scratch_refs"] == [_ACME_SCRATCH]
+
+    @pytest.mark.parametrize("answers", [{"held_by_a_tag": True}, {"landed": True}])
+    def test_a_scratch_ref_a_tag_holds_or_main_holds_is_not_debt(self, tmp_path, capsys, monkeypatch, answers):
+        def seed(home: Path) -> None:
+            (home / ".bmad-loop" / "runs" / _RUN_ID).mkdir(parents=True)
+
+        _exit, payload, row = _debt_sweep(
+            capsys, monkeypatch, tmp_path, git=_git_answers(scratch=(_ACME_SCRATCH,), **answers), seed=seed
+        )
+
+        assert _debt_codes(payload) == []
+        assert "preserve_debt" not in row
+
+    def test_a_scratch_ref_of_another_home_is_not_this_rows_debt(self, tmp_path, capsys, monkeypatch):
+        """No run of this home names it: it surfaces fleet-wide instead of on the wrong row."""
+        _exit, payload, row = _debt_sweep(capsys, monkeypatch, tmp_path, git=_git_answers(scratch=(_ACME_SCRATCH,)))
+
+        assert "preserve_debt" not in row
+        assert _debt_codes(payload) == ["MRS-STATUS-017"]
+        assert payload["data"]["preserve_debt_unattributed"]["unpromoted_scratch_refs"] == [_ACME_SCRATCH]
+
+    def test_a_failed_patch_with_no_tag_is_debt(self, tmp_path, capsys, monkeypatch):
+        patches: list[Path] = []
+
+        def seed(home: Path) -> None:
+            patches.append(_seed_failed_patch(home, run_id=_RUN_ID, story_dir=_REAL_STORY_DIR))
+
+        _exit, payload, row = _debt_sweep(capsys, monkeypatch, tmp_path, git=_git_answers(), seed=seed)
+
+        assert "MRS-STATUS-018" in _debt_codes(payload)
+        assert row["preserve_debt"]["patches_without_tag"] == [str(patches[0])]
+
+    def test_a_failed_patch_whose_story_has_a_tag_or_landed_owes_nothing(self, tmp_path, capsys, monkeypatch):
+        def seed(home: Path) -> None:
+            _seed_failed_patch(home, run_id=_RUN_ID, story_dir=_REAL_STORY_DIR)
+
+        _exit, payload, row = _debt_sweep(
+            capsys,
+            monkeypatch,
+            tmp_path / "tagged",
+            git=_git_answers(tags=(_ACME_TAG,), on_origin=(_ACME_TAG,)),
+            seed=seed,
+        )
+        assert "MRS-STATUS-018" not in _debt_codes(payload)
+        assert "preserve_debt" not in row
+
+        _exit, payload, row = _debt_sweep(
+            capsys,
+            monkeypatch,
+            tmp_path / "landed",
+            git=_git_answers(),
+            seed=seed,
+            subjects=(_merged_subject("4.11", project_slug="acme"),),
+        )
+        assert "MRS-STATUS-018" not in _debt_codes(payload)
+        assert "preserve_debt" not in row
+
+    def test_a_tag_of_another_station_is_not_this_rows_story_tag(self, tmp_path, capsys, monkeypatch):
+        """A tag for ``beta``'s 4.11 does not discharge ``acme``'s patch for 4.11."""
+        other = "refs/tags/preserve/beta/4.11/hand-deadbeef"
+
+        def seed(home: Path) -> None:
+            _seed_failed_patch(home, run_id=_RUN_ID, story_dir=_REAL_STORY_DIR)
+
+        _exit, payload, row = _debt_sweep(
+            capsys, monkeypatch, tmp_path, git=_git_answers(tags=(other,), on_origin=(other,)), seed=seed
+        )
+
+        assert "MRS-STATUS-018" in _debt_codes(payload)
+
+    def test_debt_with_no_row_to_own_it_is_reported_fleet_wide(self, tmp_path, capsys, monkeypatch):
+        stray = "refs/tags/preserve/beta/1.1/hand-deadbeef"
+
+        _exit, payload, row = _debt_sweep(capsys, monkeypatch, tmp_path, git=_git_answers(tags=(stray,)))
+
+        assert "preserve_debt" not in row
+        assert _debt_codes(payload) == ["MRS-STATUS-016"]
+        assert payload["data"]["preserve_debt_unattributed"]["local_only_tags"] == [stray]
+        assert payload["verdict"] == "warn"
+
+    def test_a_detector_that_could_not_run_leaves_every_row_could_not_observe(self, tmp_path, capsys, monkeypatch):
+        detector = ProcessResult(returncode=2, stdout="UNKNOWN: offline\n", stderr="")
+        calls: list[tuple[str, ...]] = []
+
+        def git(argv: tuple[str, ...]) -> ProcessResult:
+            calls.append(argv)
+            return _git_ok()
+
+        _exit, payload, row = _debt_sweep(capsys, monkeypatch, tmp_path, git=git, detector=detector)
+
+        assert _debt_codes(payload) == ["MRS-STATUS-009"]
+        assert row["unpushed_work"] is None
+        assert row["preserve_debt"]["could_not_observe"] is True
+        assert calls == []  # an unobservable fleet is not probed again for preserve debt
+
+    @pytest.mark.parametrize("answers", [{"list_fails": True}, {"tags": (_ACME_TAG,), "remote_fails": True}])
+    def test_an_unreadable_ref_store_or_origin_is_could_not_observe_not_clean(
+        self, tmp_path, capsys, monkeypatch, answers
+    ):
+        _exit, payload, row = _debt_sweep(capsys, monkeypatch, tmp_path, git=_git_answers(**answers))
+
+        assert "MRS-STATUS-009" in _debt_codes(payload)
+        assert row["preserve_debt"]["could_not_observe"] is True
+        assert not {"MRS-STATUS-016", "MRS-STATUS-017", "MRS-STATUS-018"} & set(_debt_codes(payload))
+        assert payload["verdict"] == "warn"
+
+    def test_a_project_scoped_status_does_not_report_other_stations_debt(self, tmp_path, capsys, monkeypatch):
+        stray = "refs/tags/preserve/beta/1.1/hand-deadbeef"
+
+        _exit, payload, _row = _debt_sweep(
+            capsys, monkeypatch, tmp_path, git=_git_answers(tags=(stray,)), args=_args(project="acme")
+        )
+
+        assert "MRS-STATUS-016" not in _debt_codes(payload)
+        assert "preserve_debt_unattributed" not in payload["data"]
+
+
+class TestUnmatchedUnpushedRefs:
+    def test_every_unpushed_branch_is_kept_and_only_unaccounted_ones_are_reported(self, tmp_path, capsys, monkeypatch):
+        accounted = (
+            _unpushed_finding("loop/acme"),
+            _unpushed_finding("dispatch/acme/4.11"),
+            _unpushed_finding("dispatch/pyforge-acme/4.12"),
+        )
+        stray = (_unpushed_finding("recover/old-work"), _unpushed_finding("dispatch/beta/1.1"))
+
+        _exit, payload, row = _debt_sweep(
+            capsys, monkeypatch, tmp_path, git=_git_answers(), detector=_unpushed_result(*accounted, *stray)
+        )
+
+        assert row["unpushed_work"] is not None
+        assert _debt_codes(payload).count("MRS-STATUS-015") == 1
+        message = next(f["message"] for f in payload["findings"] if f["code"] == "MRS-STATUS-015")
+        assert "recover/old-work" in message and "dispatch/beta/1.1" in message
+        assert "dispatch/acme/4.11" not in message
+        assert [e["ref"] for e in payload["data"]["unmatched_unpushed_refs"]] == [
+            "dispatch/beta/1.1",
+            "recover/old-work",
+        ]
+
+    def test_no_stray_ref_means_no_fleet_wide_key(self, tmp_path, capsys, monkeypatch):
+        _exit, payload, _row = _debt_sweep(
+            capsys, monkeypatch, tmp_path, git=_git_answers(), detector=_unpushed_result(_unpushed_finding("loop/acme"))
+        )
+
+        assert "MRS-STATUS-015" not in _debt_codes(payload)
+        assert "unmatched_unpushed_refs" not in payload["data"]
+
+
+class TestPreserveDebtPureCore:
+    @staticmethod
+    def _debt(**overrides):
+        kwargs = {
+            "slug": "acme",
+            "local_only_tags": [],
+            "unpromoted_scratch": [],
+            "run_ids": frozenset({_RUN_ID}),
+            "tagged_stories": [],
+            "failed_patches": [],
+        }
+        kwargs.update(overrides)
+        return status.derive_preserve_debt(**kwargs)
+
+    def test_nothing_owed_is_none_never_an_empty_dict(self):
+        assert self._debt() is None
+
+    def test_a_tag_belongs_to_the_short_or_the_prefixed_station_slug(self):
+        assert status.tag_belongs_to_station("acme", "acme")
+        assert status.tag_belongs_to_station("pyforge-acme", "acme")
+        assert status.tag_belongs_to_station("acme", "pyforge-acme")
+        assert not status.tag_belongs_to_station("beta", "acme")
+        assert not status.tag_belongs_to_station(None, "acme")
+
+    def test_a_scratch_ref_belongs_to_the_run_that_names_it_not_a_prefix_of_another(self):
+        assert status.scratch_ref_belongs_to_runs(_ACME_SCRATCH, {_RUN_ID})
+        assert status.scratch_ref_belongs_to_runs(f"refs/attempt-preserve-dirty/{_RUN_ID}-deadbeef", {_RUN_ID})
+        assert not status.scratch_ref_belongs_to_runs(_ACME_SCRATCH, {"20260809-231524-abb"})
+        assert not status.scratch_ref_belongs_to_runs(_ACME_SCRATCH, set())
+
+    def test_a_patch_is_debt_unless_landed_or_its_story_is_tagged(self):
+        patches = [
+            {"path": "p/landed", "story_key": "1.1", "done": True},
+            {"path": "p/tagged", "story_key": "1.2", "done": False},
+            {"path": "p/unknown", "story_key": "1.3", "done": None},
+            {"path": "p/untagged", "story_key": "1.4", "done": False},
+        ]
+
+        debt = self._debt(failed_patches=patches, tagged_stories=[("acme", "1.2"), ("beta", "1.3")])
+
+        assert debt["patches_without_tag"] == ["p/unknown", "p/untagged"]
+
+    def test_matched_refs_cover_loop_dispatch_legacy_and_stranded_branches(self):
+        facts = status.FleetHomeFacts(
+            slug="acme",
+            branch="loop/acme",
+            has_run=False,
+            dispatch_story="4.11",
+            dispatch_stranded_work={"ref": "stranded/acme"},
+        )
+        by_ref = {
+            ref: {}
+            for ref in (
+                "loop/acme",
+                "dispatch/acme/4.11",
+                "dispatch/pyforge-acme/4.12",
+                "marshal/4.11",
+                "stranded/acme",
+                "dispatch/beta/1.1",
+                "x/y",
+            )
+        }
+
+        matched = status.unpushed_refs_matched_to_row(facts, by_ref)
+
+        assert matched == {
+            "loop/acme",
+            "dispatch/acme/4.11",
+            "dispatch/pyforge-acme/4.12",
+            "marshal/4.11",
+            "stranded/acme",
+        }
+        assert [e["ref"] for e in status.unmatched_unpushed_refs(by_ref, matched)] == ["dispatch/beta/1.1", "x/y"]
+        assert status.unpushed_refs_matched_to_row(facts, None) == frozenset()
+        assert status.unmatched_unpushed_refs(None, set()) == []

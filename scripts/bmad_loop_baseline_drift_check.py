@@ -26,7 +26,7 @@ story's worktree. Hit five times in one session on 2026-08-14 (marshal
 8.1-9.5, 9.6; mason 3.6-3.9) before this containment existed; three more
 same-day (atlas 14-2, herald 14-2/14-3) confirmed the recurrence was not a
 one-off. Every occurrence's real, reviewed commits survive as an
-`attempt-preserve/<run>-<hash>` branch -- recoverable by hand (create
+`attempt-preserve/<run>-<hash>` branch (or its `preserve/…/bmad-loop-…` tag twin) -- recoverable by hand (create
 `land/<slug>-<story>` off `origin/loop/<slug>`, merge the preserve branch's
 commits in, land as a normal PR), but invisible until an operator notices,
 which is exactly what this containment (CAP-1/CAP-2) ends.
@@ -66,12 +66,20 @@ DETECTOR = {"scope": "runtime"}
 import argparse
 import json
 import re
-import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+
+# Story 87.9: the preserve grammar and the "is it on origin" read live in pyforge-core
+# (stdlib-only), imported by path like scripts/deferred_work_intake.py does.
+_CORE_SRC = REPO / "src" / "shared" / "packages" / "pyforge-core" / "src"
+if str(_CORE_SRC) not in sys.path:
+    sys.path.insert(0, str(_CORE_SRC))
+
+from pyforge.core import preserve_refs as _preserve_refs  # noqa: E402
+
 LOOP_ROOT = Path.home() / ".bmad-loops"
 
 DRIFT_RE = re.compile(
@@ -109,14 +117,10 @@ def tracked_status(slug: str) -> dict[str, str]:
 
 
 def preserve_refs(run_id: str) -> list[str]:
-    """attempt-preserve/<run_id>-* branches, visible from any worktree sharing
-    this repo's object database (confirmed empirically -- they need no fetch)."""
-    r = subprocess.run(
-        ["git", "for-each-ref", "--format=%(refname:short)",
-         f"refs/heads/attempt-preserve/{run_id}-*"],
-        cwd=REPO, capture_output=True, text=True, timeout=30,
-    )
-    return [line for line in r.stdout.splitlines() if line.strip()]
+    """Recovery sources for ``run_id``: a ``preserve/`` tag first (the durable twin), then
+    ``attempt-preserve/<run_id>-*`` branches -- local, or present only on ``origin``
+    (Story 87.9; ``pyforge.core.preserve_refs.recovery_refs_for_run`` is the one parser)."""
+    return _preserve_refs.recovery_refs_for_run(REPO, run_id)
 
 
 def find_defers(journal: Path) -> list[dict]:
@@ -306,7 +310,7 @@ def main(argv: list[str] | None = None) -> int:
             if f["refs"]:
                 print(f"      recover from: {', '.join(f['refs'])}")
             else:
-                print(f"      no attempt-preserve/{f['run']}-* branch found -- "
+                print(f"      no preserve tag or attempt-preserve/{f['run']}-* branch found -- "
                       f"check failed/{f['story']}/changes.patch in the run dir")
         print(f"\n{len(findings)} finding(s). Recover: create land/<slug>-<story> off "
               f"origin/loop/<slug>, merge the preserve branch's real commits in, land "

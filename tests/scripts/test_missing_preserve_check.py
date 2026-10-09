@@ -350,3 +350,85 @@ def test_placement_is_scripts_runtime_not_doctor():
     assert "PLACEMENT" in source
     assert "pyforge.doctor.sources" in source
     assert "loop-stall-check" in source
+
+
+# --- Story 87.9: every preserve reader sees preserve tags and origin ----------------------------
+
+PRESERVE_TAG = "preserve/pyforge-marshal/87.9/bmad-loop-deadbeef"
+
+
+def _gap_with_ref(tmp_path: Path, monkeypatch, ref: str):
+    """Intent-gap escalation naming ``ref`` as its preserve artifact; returns ``(mod, repo)``."""
+    mod = _load_detector()
+    loop_root = tmp_path / "loops"
+    repo = tmp_path / "repo"
+    _init_git_repo(repo)
+    _seed_marshal_journal(
+        loop_root,
+        lines=[
+            _journal_line(
+                "escalation-detected",
+                {
+                    "story_key": STORY_KEY,
+                    "reason": "intent_gap: contradictions in Boundaries",
+                    "spec_file": "spec-20-5.md",
+                    "preserve_ref": ref,
+                },
+            )
+        ],
+    )
+    monkeypatch.setattr(mod, "LOOP_ROOT", loop_root)
+    monkeypatch.setattr(mod, "REPO", repo)
+    return mod, repo
+
+
+def _bare_origin(tmp_path: Path, repo: Path) -> Path:
+    bare = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "--bare", str(bare)], check=True, capture_output=True, text=True)
+    _git(repo, "remote", "add", "origin", str(bare))
+    return bare
+
+
+def test_preserve_tag_is_a_present_artifact(tmp_path, monkeypatch, capsys):
+    """A ``preserve/`` tag the journal names counts as present -- not only an attempt-preserve branch."""
+    mod, repo = _gap_with_ref(tmp_path, monkeypatch, PRESERVE_TAG)
+    _git(repo, "tag", PRESERVE_TAG)
+    assert mod.main() == 0
+    assert "OK:" in capsys.readouterr().out
+
+
+def test_named_preserve_tag_that_exists_nowhere_still_fires(tmp_path, monkeypatch, capsys):
+    mod, _repo = _gap_with_ref(tmp_path, monkeypatch, PRESERVE_TAG)
+    assert mod.main() == 1
+    assert STORY_KEY in capsys.readouterr().out
+
+
+def test_origin_only_attempt_preserve_branch_is_a_present_artifact(tmp_path, monkeypatch, capsys):
+    """The branch was pushed and pruned locally: ``origin`` still holds the work, so nothing is missing."""
+    mod, repo = _gap_with_ref(tmp_path, monkeypatch, PRESERVE_REF)
+    _bare_origin(tmp_path, repo)
+    _seed_preserve_branch(repo)
+    _git(repo, "push", "origin", PRESERVE_REF)
+    _git(repo, "branch", "-D", PRESERVE_REF)
+    assert mod.main() == 0
+    assert "OK:" in capsys.readouterr().out
+
+
+def test_origin_read_is_what_clears_an_origin_only_branch(tmp_path, monkeypatch, capsys):
+    """Mutation guard: with the origin read blinded the same fixture fires, so the pass above is
+    earned by ``ls-remote`` and not by a local-ref inference."""
+    mod, repo = _gap_with_ref(tmp_path, monkeypatch, PRESERVE_REF)
+    _bare_origin(tmp_path, repo)
+    _seed_preserve_branch(repo)
+    _git(repo, "push", "origin", PRESERVE_REF)
+    _git(repo, "branch", "-D", PRESERVE_REF)
+    monkeypatch.setattr(mod.preserve_refs, "ref_on_origin", lambda *a, **k: False)
+    assert mod.main() == 1
+    assert STORY_KEY in capsys.readouterr().out
+
+
+def test_local_branch_alone_clears_without_any_remote(tmp_path, monkeypatch):
+    """Offline-durable (AD-29): a repo with no ``origin`` still reads its own branch as present."""
+    mod, repo = _gap_with_ref(tmp_path, monkeypatch, PRESERVE_REF)
+    _seed_preserve_branch(repo)
+    assert mod.main() == 0

@@ -1032,6 +1032,14 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-STATUS-014": Verdict.WARN,
     "MRS-STATUS-012": Verdict.WARN,
     "MRS-STATUS-013": Verdict.WARN,
+    # Story 87.9 (FR-62/AD-48 as amended 2026-10-04): unmatched unpushed ref (015), local-only
+    # preserve tags (016), unpromoted scratch refs (017), patches with no tag (018). WARN, the
+    # tier of MRS-STATUS-008: reported preserve debt never changes `marshal status`'s exit code
+    # (AD-29: unpushed is debt, not a refusal) but is never silent.
+    "MRS-STATUS-015": Verdict.WARN,
+    "MRS-STATUS-016": Verdict.WARN,
+    "MRS-STATUS-017": Verdict.WARN,
+    "MRS-STATUS-018": Verdict.WARN,
     "MRS-DEPLOY-024": Verdict.WARN,
     "MRS-DEPLOY-025": Verdict.ERROR,
     "MRS-DEPLOY-026": Verdict.WARN,
