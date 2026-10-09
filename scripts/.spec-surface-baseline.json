@@ -5985,7 +5985,7 @@
    ".claude/skills/pyforge-warden/0.1.0/pyforge-warden/provenance-map.json": "f579aabc79c22a03ba760a7ddcfc62e902a309e5",
    ".claude/skills/pyforge-warden/skill-brief.yaml": "367278bd236e5c114eeb19c4744411e69155b3a3",
    "environment.yaml": "8e3e5b2420aa0cab7eaba241f87827164fa4d4a8",
-   "pixi.toml": "7a6bef898c8a14cd18acbd7af7a2b5f63eb66769",
+   "pixi.toml": "d12d9cbf8911293266d6ab7d3781879b591f4b39",
    "recipes/liquibase/build.sh": "30c0bd688cabffd2b362cb67afaeeb9095e706be",
    "recipes/liquibase/conda-forge.yml": "7f3b86d5026062d0aa432ea9bd0a87747015c57d",
    "recipes/liquibase/liquibase": "525ed696037f8cd6cfdaf9df3bd465c9746ba916",
@@ -6952,7 +6952,7 @@
    "src/shared/packages/pyforge-core/src/pyforge/core/errors.py": "48775b2b8ef1a9ce9fd80f599aa099849eda6c75",
    "src/shared/packages/pyforge-core/src/pyforge/core/flags.py": "e58bc0d0f4907393f09789d9ea0191fd0df1cc0e",
    "src/shared/packages/pyforge-core/src/pyforge/core/hooks.py": "03294772e3802e8a37154c16d660e9827ec25385",
-   "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py": "fee98170c10c2a59d864a0dd354539693a3141a1",
+   "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py": "611ac33b3ed39782705f9b1e6b6b16e2129b472f",
    "src/shared/packages/pyforge-core/src/pyforge/core/league_measure.py": "ef915e9354af32eb0dfa3cdf0060dc0211ca7e97",
    "src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py": "99a815f821ed2390b6f32fcc3be9a96440adad4d",
    "src/shared/packages/pyforge-core/src/pyforge/core/process.py": "c046d7262783d7c24b83a721ea5310888a3f6ee3",
@@ -7040,7 +7040,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "36df5440bbc8082d3181217960d45f86527d07d4"
+  "memlog": "4d4582140d4a130ca6a19e923cee49e3ecc4a3b5"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
