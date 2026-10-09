@@ -1,20 +1,5 @@
 {
   "flags": {
-    "pyforge.three_surfaces": {
-      "state": "ENABLED",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "defaultVariant": "on",
-      "metadata": {
-        "owner": "steward",
-        "story": "26-4-one-flag-flips-three-surfaces-without-a-redeploy",
-        "created": "2026-08-25",
-        "on_everywhere": "2026-08-25",
-        "cleanup_by": "2026-11-23"
-      }
-    },
     "pyforge.cutover_root": {
       "state": "ENABLED",
       "variants": {
@@ -251,6 +236,96 @@
         "owner": "warden",
         "story": "16-4-non-python-lockfiles-scan-through-osv-scanner-s-own-parsers",
         "created": "2026-09-28",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.steward.ledger_query_postgres_sync": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill",
+        "created": "2026-09-19",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.steward.ledger_query_dossier_export": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill",
+        "created": "2026-09-19",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.steward.ledger_query_vizro_dataset": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill",
+        "created": "2026-09-19",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.steward.ledger_query_herald_facts": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill",
+        "created": "2026-09-19",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.steward.ledger_query_jira_github_matrix": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "65-1-reusable-pluggable-feature-flagged-estate-sprint-ledger-query-module-and-bmad-skill",
+        "created": "2026-09-19",
+        "on_everywhere": "",
+        "cleanup_by": ""
+      }
+    },
+    "pyforge.steward.glass_export": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off",
+      "metadata": {
+        "owner": "steward",
+        "story": "61-3-as-of-glass-and-mailed-query",
+        "created": "2026-09-17",
         "on_everywhere": "",
         "cleanup_by": ""
       }

@@ -5,7 +5,7 @@ created: '2026-10-01'
 status: 'done'
 baseline_revision: 'cc3a9c0b9d5c397986318518320f7d4eb1546ec5'
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-unifying-strategy/SPEC.md
@@ -306,6 +306,20 @@ Flag: none. This is a `fix` (`spec-feature-flag-governance` Q1).
   - VG3 `[medium]` `[patch]` The public-client refresh path (the bundled-profile default) is untested — the stub takes a configurable secret and a new test uses `secret=""`; always sending `client_secret` now fails it.
   - VG4 `[low]` `[defer]` The chart wiring test is helm-gated and skipped in the GitHub `test` job — the same gating covers every chart invariant (pre-existing) → DW-steward-78-1-3.
 
+### 2026-10-09 — Follow-up review pass (bmad-build-auto)
+- verdicts: 15 findings — high 0, medium 1, low 3, false 1, maybe-false 0, carried/reject 10
+- layers: blind-hunter (BH, 10), intent-alignment (IA, summary), verification-gap (VG, 1), edge-case-hunter (ECH, 5)
+- findings:
+  - VG1 `[medium]` `[patch]` Container CI proved auto-login 403 only, not credentialed `POST /langflow/api/v1/login` — added matching smoke steps in `.github/workflows/platform-ci.yml` and `scripts/platform-ci-local.sh` (`langflow_superuser_login`).
+  - BH9 `[low]` `[carried]` `[reject]` — carried: prior row; the new login smoke closes the CI half BH9 named; credentialed proof now mirrors `test_auto_login_hands_out_no_token_through_the_platform`.
+  - BH1, BH3, BH5b, BH8, ECH3, ECH8, ECH9, IA5 — carried `[defer]` from 2026-10-01 rows; code unchanged.
+  - ECH1 `[low]` `[reject]` `expires_in` only accepted as Python `int` — Keycloak and the refresh stub return int JSON; string form not shown reachable; tightening is optional hygiene only.
+  - ECH2 `[low]` `[reject]` Wired `IDP_USERINFO` raising would 500 — same uncaught-callable pattern as pre-story hooks; deny-on-failure is for structured `None`, not a substitute for every exception class.
+  - ECH3 `[low]` `[reject]` `langflow_integration/tests.py` uses `os.environ["LANGFLOW_SUPERUSER_PASSWORD"]` — only invoked under pytest after `conftest.py` sets the throwaway password; not a production path.
+  - ECH4 `[false]` `[reject]` Marshal `dispatch.py` JSON line whitespace — hunk is Story 79.1 / out of 78.1 intent; not re-triaged as 78.1 scope.
+  - ECH5 `[low]` `[reject]` Claim: literal next request with positive cache — carried IA2 rejection; bounded cache is contract (CAP-12 / Story 49.6).
+  - IA-cache `[low]` `[reject]` Positive userinfo cache delays revocation — same as IA2/ECH5; `test_claims_are_cached_for_the_bounded_window` pins production TTL.
+
 ## Auto Run Result
 
 ### Summary of implemented change
@@ -321,7 +335,7 @@ Flag: none. This is a `fix` (`spec-feature-flag-governance` Q1).
 - `src/platform/config/authorization/current_claims.py` — a wired hook is authoritative
 - `src/platform/conftest.py` — throwaway password for lanes that boot Langflow
 - `src/platform/compose/compose.yml`, `src/platform/deploy/charts/platform/{templates/_helpers.tpl,templates/NOTES.txt,values.yaml}`, `src/platform/deploy/overlays/eso/{README.md,externalsecret-platform-secrets.example.yaml}` — password by secret or env reference only
-- `.github/workflows/platform-ci.yml`, `scripts/platform-ci-local.sh` — password for the container job and the chart smokes; the auto-login 403 smoke
+- `.github/workflows/platform-ci.yml`, `scripts/platform-ci-local.sh` — password for the container job and the chart smokes; auto-login 403 smoke plus credentialed `POST /langflow/api/v1/login` smoke (2026-10-09 follow-up)
 - `src/platform/tests/test_idp_revoke_next_request.py` — mocked test replaced by real-token tests against a loopback IdP stub (revoke, refresh, every deny row, two users, public client, token-endpoint failures)
 - `src/platform/tests/test_langflow_auth_posture.py` (new), `src/platform/tests/test_langflow_mount.py`, `src/platform/langflow_integration/tests.py` — settings seams, the live `config.asgi` refusal, password login
 - `src/platform/tests/test_chart_invariants.py`, `test_startup_required_settings.py`, `test_agent_rate_limits_and_run_bounds.py`, `test_broker_tls_verified.py`, `test_isolation_and_statelessness.py` — chart/compose/fixture coverage and the compose env
@@ -338,10 +352,11 @@ Flag: none. This is a `fix` (`spec-feature-flag-governance` Q1).
 
 ### Follow-up review recommendation
 
-`followup_review_recommended: true` — three medium entries were patched (compose env, VG1, VG3) and four low. The specific unverified risk: the compose-env change to `test_login_pkce_live_keycloak.py` was verified only by a code read and `docker compose config` (exit 15 without the variable, 0 with it); the test skips in this environment (`jwt` is not installed), so the live Keycloak flow was not executed with the new env.
+`followup_review_recommended: false` — this invocation was the single allowed follow-up (step-01). One medium patch (container credentialed-login smoke). Residual unverified risk unchanged: live Keycloak PKCE with compose env (`jwt` not installed here).
 
 ### Verification performed
 
+- **2026-10-09 follow-up:** `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0, 2256 passed, 5 skipped. `python scripts/spec_surface_reconcile.py` — exit 0 after memlog naming `scripts/platform-ci-local.sh` and `.github/workflows/platform-ci.yml` on `spec-pyforge-steward/.memlog.md`. `pixi run -e pyforge-guild spec-surface-check` — exit 0 (no `--write-baseline`). Container login smoke not re-run locally (requires full platform-ci container stage).
 - `pixi run --frozen -e pyforge-steward pyforge-steward-test` — exit 0, 1896 passed, 2 skipped (before and after the patch round).
 - `pixi run -e pyforge-guild platform-ci-local -- --test` — exit 0, 1093 passed, 13 skipped after the patch round (1088 before it); ruff, mypy, policy suite and sqlmigrate extraction pass in it.
 - Live refusal through `config.asgi` (`test_auto_login_hands_out_no_token_through_the_platform`) under `platform-dev` against private Postgres 17 and Redis — passed (403, no token, wrong password 401, right password 200). No lane has both `langflow` and `pytest-django`, so `platform-ci-local` skips that module; the built-image smoke is the CI proof. In that run the pre-existing `test_unknown_non_api_path_falls_through_to_django` failed only because the lane has no pytest-django (Django rejects the `testserver` host); it is untouched by this story.

@@ -169,6 +169,7 @@ def _run_pytest_cov(
         return "skipped", 0
 
     cov_mod = f"pyforge.{station}"
+    task_argv, alone_runs = _station_test_task_argv(station)
     cmd = [
         sys.executable,
         "-m",
@@ -181,7 +182,7 @@ def _run_pytest_cov(
         "--cov-branch",
         f"--cov-report=json:{report}",
         "--cov-report=term-missing:skip-covered",
-        *_station_test_task_xdist_argv(station),
+        *task_argv,
     ]
     print("+", " ".join(cmd), flush=True)
     env = os.environ.copy()
@@ -189,7 +190,16 @@ def _run_pytest_cov(
     env["PYTHONPATH"] = os.pathsep.join(
         [str(station_src), str(_SCRIPTS_DIR), env.get("PYTHONPATH", "")]
     )
-    return "ran", subprocess.run(cmd, cwd=REPO, env=env, check=False).returncode
+    rc = subprocess.run(cmd, cwd=REPO, env=env, check=False).returncode
+    # The tests the station task sets aside run alone after the coverage run, as
+    # they do there: doctor's 5 s speed budget fails under xdist workers and --cov.
+    for argv in alone_runs:
+        if rc != 0 or not _under_any(argv, test_paths):
+            continue
+        alone = [sys.executable, "-m", "pytest", *argv, "-m", GATE_MARKER_EXPR]
+        print("+", " ".join(alone), flush=True)
+        rc = subprocess.run(alone, cwd=REPO, env=env, check=False).returncode
+    return "ran", rc
 
 
 def _existing_touched_modules(modules: list[str], station: str) -> list[str]:
@@ -293,36 +303,63 @@ def _pixi_task_cmd(task_name: str) -> str | None:
     return None
 
 
-def _pytest_xdist_argv_from_task_cmd(cmd: str) -> list[str]:
-    """Mirror Story 71.6: read ``-n`` / ``--dist`` from the station test task cmd."""
+_TASK_FLAGS = ("-n", "--dist", "--ignore")
+
+
+def _pytest_runs_from_task_cmd(cmd: str) -> list[list[str]]:
+    """The argv after ``pytest`` in each ``&&`` segment of a station test task cmd."""
+    runs: list[list[str]] = []
     for segment in cmd.split("&&"):
-        segment = segment.strip()
-        if not segment:
-            continue
         parts = shlex.split(segment)
-        try:
-            idx = parts.index("pytest")
-        except ValueError:
-            continue
-        rest = parts[idx + 1 :]
-        out: list[str] = []
-        i = 0
-        while i < len(rest):
-            tok = rest[i]
-            if tok in ("-n", "--dist") and i + 1 < len(rest):
-                out.extend([tok, rest[i + 1]])
-                i += 2
-                continue
+        if "pytest" in parts:
+            runs.append(parts[parts.index("pytest") + 1 :])
+    return runs
+
+
+def _pytest_first_run_flags(cmd: str) -> list[str]:
+    """Mirror Story 71.6: ``-n`` / ``--dist`` / ``--ignore`` of the task's first pytest run
+    (``--flag=value`` is split into two tokens)."""
+    runs = _pytest_runs_from_task_cmd(cmd)
+    rest = runs[0] if runs else []
+    out: list[str] = []
+    i = 0
+    while i < len(rest):
+        name, eq, value = rest[i].partition("=")
+        if eq and name in _TASK_FLAGS:
+            out.extend([name, value])
+        elif rest[i] in _TASK_FLAGS and i + 1 < len(rest):
+            out.extend([rest[i], rest[i + 1]])
             i += 1
-        return out
-    return []
+        i += 1
+    return out
 
 
-def _station_test_task_xdist_argv(station: str) -> list[str]:
+def _pytest_alone_runs_from_task_cmd(cmd: str) -> list[list[str]]:
+    """The task's later pytest runs whose every path its first run ``--ignore``s: the
+    tests it sets aside to run alone (doctor's speed budget). Other later runs (mason's
+    CFE parity test, atlas's packaging tests) test no station module and stay out."""
+    flags = _pytest_first_run_flags(cmd)
+    ignored = {flags[i + 1] for i in range(0, len(flags), 2) if flags[i] == "--ignore"}
+    alone: list[list[str]] = []
+    for argv in _pytest_runs_from_task_cmd(cmd)[1:]:
+        paths = {tok for tok in argv if not tok.startswith("-")}
+        if paths and paths <= ignored:
+            alone.append(argv)
+    return alone
+
+
+def _station_test_task_argv(station: str) -> tuple[list[str], list[list[str]]]:
     cmd = _pixi_task_cmd(f"pyforge-{station}-test")
     if not cmd:
-        return []
-    return _pytest_xdist_argv_from_task_cmd(cmd)
+        return [], []
+    return _pytest_first_run_flags(cmd), _pytest_alone_runs_from_task_cmd(cmd)
+
+
+def _under_any(argv: list[str], test_paths: list[Path]) -> bool:
+    """True when every path in ``argv`` lies under one of this suite's test directories."""
+    roots = [tp.resolve() for tp in test_paths]
+    paths = [(REPO / tok).resolve() for tok in argv if not tok.startswith("-")]
+    return bool(paths) and all(any(p == r or r in p.parents for r in roots) for p in paths)
 
 
 def _resolve_changed_paths(

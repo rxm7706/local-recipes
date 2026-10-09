@@ -55,17 +55,24 @@ evaluation through OpenFeature; neither changes what is stated here).
   tree (``read_boolean``, :func:`render`, ``read_cutover_root``) refuses a tree that breaks it.
   A tree with no ``flag-overlays.json`` beside it is not composed and is read as it is.
 
-Stdlib-only apart from its sibling ``cutover_root``; no OpenFeature dependency, no
-environment-variable provider and no station-specific logic belong here.
+Stdlib-only apart from its sibling ``cutover_root`` and a dynamic OpenFeature load via
+``importlib`` in :func:`read_boolean` (Story 76.3); no environment-variable provider and no
+station-specific logic belong here.
 """
 
 from __future__ import annotations
 
+import atexit
 import copy
+import hashlib
+import importlib
 import json
 import os
 import re
+import shutil
 import sys
+import tempfile
+import time
 from collections.abc import Mapping
 from datetime import date, timedelta
 from pathlib import Path
@@ -364,24 +371,91 @@ def render(environment: str, *, flags_path: Path | str | None = None) -> bytes:
     return (json.dumps(tree, indent=2) + "\n").encode("utf-8")
 
 
-def read_boolean(key: str, default: bool = False, *, flags_path: Path | str | None = None) -> bool:
-    """Return the boolean value of flag ``key`` from the flagd tree.
+_RENDER_DIR: Path | None = None
+_PROVIDER_SOURCE: str | None = None
 
-    ``state: DISABLED`` reads False whatever else is set. Otherwise the key's
-    ``defaultVariant`` value is returned when it is a bool; a missing tree, an
-    unreadable or malformed tree, a missing key or a non-bool value returns
-    ``default`` after one named WARN on stderr (never an exception).
 
-    The tree is read as ``PYFORGE_ENVIRONMENT`` renders it (Story 76.1): a
-    ``flag-overlays.json`` beside the resolved tree is composed for that
-    environment (see :func:`compose`). An unknown environment, or an overlay that
-    cannot be composed, raises a :class:`FlagConfigError` subclass -- never a
-    WARN plus ``default``, which could read ON.
-    """
-    environment = current_environment()  # before any read: a bad environment never reads ON
-    resolved = cutover_root.resolve_flags_path(flags_path)
-    if resolved is None:
-        return _warn(key, "no flag tree (set PYFORGE_FLAGS_PATH or pass flags_path)", default)
+def _render_dir() -> Path:
+    global _RENDER_DIR  # noqa: PLW0603 -- one scratch directory per process
+    if _RENDER_DIR is None:
+        _RENDER_DIR = Path(tempfile.mkdtemp(prefix="pyforge-core-flags-"))
+        atexit.register(shutil.rmtree, _RENDER_DIR, True)
+    return _RENDER_DIR
+
+
+def _materialise_rendered(resolved: Path, environment: str) -> Path:
+    """Write the rendered tree beside a checkout overlay for the FILE provider."""
+    from pyforge.core.atomic_write import atomic_write_bytes  # noqa: PLC0415
+
+    digest = hashlib.sha256(str(resolved.resolve()).encode()).hexdigest()[:12]
+    dest = _render_dir() / f"{digest}-{environment}" / "flags.json"
+    rendered = render(environment, flags_path=resolved)
+    if not dest.is_file() or dest.read_bytes() != rendered:
+        atomic_write_bytes(dest, rendered)
+    return dest
+
+
+def _evaluation_path(resolved: Path, environment: str) -> Path:
+    if overlays_path_for(resolved) is None:
+        return resolved
+    return _materialise_rendered(resolved, environment)
+
+
+def _wait_file_provider_ready(probe_key: str, *, timeout_s: float = 8.0) -> bool:
+    try:
+        api = importlib.import_module("openfeature.api")
+    except ImportError:
+        return False
+
+    deadline = time.monotonic() + timeout_s
+    while time.monotonic() < deadline:
+        details = api.get_client().get_boolean_details(probe_key, False)
+        if details.error_code is None:
+            return True
+        time.sleep(0.05)
+    return False
+
+
+def _read_boolean_openfeature(key: str, default: bool, evaluation_path: Path) -> bool | None:
+    """Evaluate through OpenFeature's in-process FILE provider; ``None`` when OpenFeature is absent."""
+    try:
+        api = importlib.import_module("openfeature.api")
+        flagd = importlib.import_module("openfeature.contrib.provider.flagd")
+        flagd_config = importlib.import_module("openfeature.contrib.provider.flagd.config")
+    except ImportError:
+        return None
+
+    FlagdProvider = flagd.FlagdProvider
+    ResolverType = flagd_config.ResolverType
+
+    global _PROVIDER_SOURCE  # noqa: PLW0603
+    source = str(evaluation_path.resolve())
+    if _PROVIDER_SOURCE != source:
+        api.set_provider(
+            FlagdProvider(
+                resolver_type=ResolverType.FILE,
+                offline_flag_source_path=source,
+            ),
+        )
+        _PROVIDER_SOURCE = source
+        if not _wait_file_provider_ready(key):
+            return _warn(key, "OpenFeature FILE provider not ready", default)
+
+    details = api.get_client().get_boolean_details(key, default)
+    if details.error_code is not None:
+        reason = details.error_message or str(details.error_code)
+        return _warn(key, reason, default)
+    return bool(details.value)
+
+
+def _read_boolean_from_tree_json(
+    key: str,
+    default: bool,
+    *,
+    resolved: Path,
+    environment: str,
+) -> bool:
+    """Direct JSON read when OpenFeature is not installed (tests and minimal envs)."""
     try:
         payload = json.loads(resolved.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:  # json.JSONDecodeError and UnicodeDecodeError are ValueErrors
@@ -392,6 +466,16 @@ def read_boolean(key: str, default: bool = False, *, flags_path: Path | str | No
     overlays = overlays_path_for(resolved)
     if overlays is not None:
         flags = compose(payload, load_overlays(overlays), environment)["flags"]
+    return _read_boolean_from_composed_flags(key, default, flags=flags, resolved=resolved)
+
+
+def _read_boolean_from_composed_flags(
+    key: str,
+    default: bool,
+    *,
+    flags: dict[str, Any],
+    resolved: Path,
+) -> bool:
     if key not in flags:
         return _warn(key, f"key missing from {resolved}", default)
     entry = flags[key]
@@ -407,6 +491,60 @@ def read_boolean(key: str, default: bool = False, *, flags_path: Path | str | No
     if not isinstance(value, bool):
         return _warn(key, f"variant {variant!r} in {resolved} is not a boolean", default)
     return value
+
+
+def read_boolean(key: str, default: bool = False, *, flags_path: Path | str | None = None) -> bool:
+    """Return the boolean value of flag ``key`` from the flagd tree.
+
+    ``state: DISABLED`` reads False whatever else is set. Otherwise the key's
+    ``defaultVariant`` value is returned when it is a bool; a missing tree, an
+    unreadable or malformed tree, a missing key or a non-bool value returns
+    ``default`` after one named WARN on stderr (never an exception).
+
+    The tree is read as ``PYFORGE_ENVIRONMENT`` renders it (Story 76.1): a
+    ``flag-overlays.json`` beside the resolved tree is composed for that
+    environment (see :func:`compose`). An unknown environment, or an overlay that
+    cannot be composed, raises a :class:`FlagConfigError` subclass -- never a
+    WARN plus ``default``, which could read ON.
+
+    When OpenFeature is installed (Story 76.3), the composed tree is evaluated
+    through the in-process FILE provider; otherwise the same semantics are read
+    directly from the composed JSON.
+    """
+    environment = current_environment()  # before any read: a bad environment never reads ON
+    resolved = cutover_root.resolve_flags_path(flags_path)
+    if resolved is None:
+        return _warn(key, "no flag tree (set PYFORGE_FLAGS_PATH or pass flags_path)", default)
+    try:
+        payload = json.loads(resolved.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return _warn(key, f"unreadable flag tree {resolved}: {exc}", default)
+    flags_obj = payload.get("flags") if isinstance(payload, dict) else None
+    if not isinstance(flags_obj, dict):
+        return _warn(key, f"malformed flag tree {resolved}: no 'flags' object", default)
+    overlays = overlays_path_for(resolved)
+    if overlays is not None:
+        flags_obj = compose(payload, load_overlays(overlays), environment)["flags"]
+    structural = _read_boolean_from_composed_flags(key, default, flags=flags_obj, resolved=resolved)
+    if structural is not True or key not in flags_obj:
+        return structural
+    entry = flags_obj[key]
+    if not isinstance(entry, dict) or _is_disabled(entry):
+        return structural
+    variants = entry.get("variants")
+    variant = entry.get("defaultVariant")
+    if (
+        not isinstance(variants, dict)
+        or not isinstance(variant, str)
+        or variant not in variants
+        or not isinstance(variants[variant], bool)
+    ):
+        return structural
+    evaluation_path = _evaluation_path(resolved, environment)
+    via_openfeature = _read_boolean_openfeature(key, default, evaluation_path)
+    if via_openfeature is not None:
+        return via_openfeature
+    return structural
 
 
 def require(key: str, default: bool = False, *, flags_path: Path | str | None = None) -> None:

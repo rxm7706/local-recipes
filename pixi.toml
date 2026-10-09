@@ -565,6 +565,15 @@ cmd = "python scripts/run_station_coverage_gate.py --station mason"
 description = "Run the slow, real-CFE-dependent tests (@pytest.mark.slow) -- not part of the default loop (mirrors pyforge-marshal-test-slow's split; collects zero tests until Story 5.3 lands FR-46's delegation-fidelity test)."
 cmd = "pytest src/shared/packages/pyforge-mason/tests -q -m slow"
 
+# Story 76.3: FILE-provider evaluation for pyforge.core.flags.read_boolean. Composed into
+# `-e pyforge-guild` and `-e pyforge-steward` only -- omitted from `pyforge-container`
+# (atlas/dagster protobuf <7 conflicts with openfeature-provider-flagd).
+[feature.openfeature-file-eval.dependencies]
+openfeature-sdk = ">=0.10.0"      #
+openfeature-flagd-api = ">=1.0.0"  #
+openfeature-flagd-core = ">=1.0.0"  #
+openfeature-provider-flagd = ">=0.5.2"  #
+
 # --- pyforge-steward (Steward): pixi build workspace member (warden mirror, Story 1.1) --
 # Task names mirror pyforge-warden's verbatim, per the story's acceptance criteria.
 # Story 1.1 delivers the package, the CLI dispatcher and the Duty contract (AD-7);
@@ -623,7 +632,7 @@ description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package nam
 cmd = "python scripts/run_station_coverage_gate.py --station steward"
 
 [feature.pyforge-steward.tasks.sprint-ledger-postgres-sync]
-description = "Mint Work Passport UUIDs and sync estate sprint ledger items to PostgreSQL / Django ORM (Story 65.1; WorkPassport model, migration 0002). Lives in the pyforge-steward feature -- the one env with both django ([dashboard] extra) and the steward CLI -- NOT in guild-tasks, where it could only ever refuse (no env carrying guild-tasks has django; found at PR #1507's review). Flag-gated: pass `-- --flag enable_postgres_sync=true` (or FLAGS_ENABLE_POSTGRES_SYNC=true), else it refuses with exit 1; needs DJANGO_SETTINGS_MODULE set, else `refused` on stderr, exit 1 -- never a silent exit-0 no-op."
+description = "Mint Work Passport UUIDs and sync estate sprint ledger items to PostgreSQL / Django ORM (Story 65.1; WorkPassport model, migration 0002). Lives in the pyforge-steward feature -- the one env with both django ([dashboard] extra) and the steward CLI -- NOT in guild-tasks, where it could only ever refuse (no env carrying guild-tasks has django; found at PR #1507's review). Flag-gated: pass `-- --flag enable_postgres_sync=true` or `-- --flag pyforge.steward.ledger_query_postgres_sync=true`, else it refuses with exit 1; needs DJANGO_SETTINGS_MODULE set, else `refused` on stderr, exit 1 -- never a silent exit-0 no-op."
 cmd = "steward ledger-query --sync-postgres --format summary"
 
 [feature.pyforge-steward.tasks.pyforge-steward-dogfood]
@@ -1012,7 +1021,7 @@ build = ["python", "build"]
 grayskull = ["python", "grayskull", "crm"]
 conda-smithy = ["python", "conda-smithy", "shellcheck"]
 local-recipes = ["python", "build", "grayskull", "conda-smithy", "local-recipes", "guild-tasks"]  # guild-tasks (tasks only, no deps) so every moved Guild task still resolves here (Story 63.1)
-pyforge-guild = { features = ["python", "pyforge-guild", "guild-tasks"], no-default-feature = true }
+pyforge-guild = { features = ["python", "pyforge-guild", "guild-tasks", "openfeature-file-eval"], no-default-feature = true }
 default = { features = ["python", "pyforge-guild", "guild-tasks"], no-default-feature = true }  # ALIAS of pyforge-guild (operator 2026-09-16, Story 63.1): pixi resolves a bare `pixi run <task>` that several envs provide to the env NAMED `default`, and bare `pixi shell` activates it -- so the Guild env is the default by the tool, not by a doc. Keep the two feature lists identical; `pyforge-guild` stays the name every surface uses.  # THE session default for agents/harnesses (steward Story 63.1, CAP-5); python feature = python, pixi, gh, gitpython, nodejs, pnpm, bmad-method, spec-kit, truststore
 vuln-db = ["python", "vuln-db"]
 gcloud = ["python", "gcloud-sdk"]
@@ -1081,7 +1090,7 @@ pyforge-herald = { features = ["pyforge-herald"], no-default-feature = true }
 # pyforge-mason package + pytest + the two build frontends.
 pyforge-mason = { features = ["pyforge-mason"], no-default-feature = true }
 # Lean steward env (Story 1.1, pyforge-warden mirror): same lean shape.
-pyforge-steward = { features = ["pyforge-steward"], no-default-feature = true }
+pyforge-steward = { features = ["pyforge-steward", "openfeature-file-eval"], no-default-feature = true }
 # Lean marshal env (Story 1.1, pyforge-warden mirror): no-default-feature,
 # so it carries only the built pyforge-marshal package + its conda
 # run-deps + pytest + import-linter.
@@ -1191,7 +1200,7 @@ description = "Verify local-recipes env, BMAD installation, and active project b
 cmd = "bash scripts/ensure-bmad-preflight.sh"
 
 [feature.guild-tasks.tasks.sprint-ledger-query]
-description = "Pluggable estate sprint ledger query CLI duty (Story 65.1, spec-pyforge-steward CAP-146..149). Reads each station's TRACKED planning-artifacts/sprint-status-ledger.yaml + epics.md; counts agree with fleet_scan.parse_sprint_status. --format: markdown (default), summary, json, table; flag-gated: sync-matrix/jira-csv/github-json (enable_jira_github_matrix), herald-facts (enable_herald_facts), atlas-dataset (enable_vizro_dataset), static-dossier (enable_dossier_export) -- open one with `-- --flag <name>=true`, FLAGS_<NAME>=true, or .steward/flags.json. stdout carries the payload only; `--output PATH` writes it to that file instead (stdout empty). Writes into no other station's tree by default."
+description = "Pluggable estate sprint ledger query CLI duty (Story 65.1, spec-pyforge-steward CAP-146..149). Reads each station's TRACKED planning-artifacts/sprint-status-ledger.yaml + epics.md; counts agree with fleet_scan.parse_sprint_status. --format: markdown (default), summary, json, table; flag-gated integrations read the one flagd tree (Story 76.3): sync-matrix/jira-csv/github-json (pyforge.steward.ledger_query_jira_github_matrix), herald-facts (pyforge.steward.ledger_query_herald_facts), atlas-dataset (pyforge.steward.ledger_query_vizro_dataset), static-dossier (pyforge.steward.ledger_query_dossier_export) -- open one with `-- --flag <short-or-tree-key>=true` or flag-overlays.json. stdout carries the payload only; `--output PATH` writes it to that file instead (stdout empty). Writes into no other station's tree by default."
 cmd = "steward ledger-query"
 
 [feature.local-recipes.tasks.tea-test-review]

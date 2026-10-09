@@ -144,7 +144,7 @@ def fixture_root(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def engine(fixture_root: Path) -> SprintLedgerQueryEngine:
-    return SprintLedgerQueryEngine(root_dir=fixture_root, flags_file_path=fixture_root / "no-flags.json")
+    return SprintLedgerQueryEngine(root_dir=fixture_root, flags_path=fixture_root / "no-flags.json")
 
 
 def _ns(**overrides):
@@ -175,8 +175,8 @@ def _duty_engine_with_process(fixture_root: Path, monkeypatch: pytest.MonkeyPatc
 
     real = mod.SprintLedgerQueryEngine
 
-    def _factory(root_dir=None, flags_file_path=None, process=process):
-        return real(root_dir=fixture_root, flags_file_path=fixture_root / "no-flags.json", process=process)
+    def _factory(root_dir=None, flags_path=None, process=process):
+        return real(root_dir=fixture_root, flags_path=fixture_root / "no-flags.json", process=process)
 
     monkeypatch.setattr(mod, "SprintLedgerQueryEngine", _factory)
 
@@ -371,52 +371,65 @@ def test_tracker_alias_regexes_are_word_bounded(tmp_path: Path) -> None:
 # --- A5: flags ---
 
 
-def test_eval_flag_hierarchical_resolution(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    missing = tmp_path / "absent-flags.json"
-    # 1. Override wins over everything (and string values are coerced).
-    monkeypatch.setenv("FLAGS_TEST_FLAG", "false")
-    assert eval_flag("test-flag", False, flag_overrides={"test-flag": True}, flags_file_path=missing) is True
-    assert eval_flag("test-flag", False, flag_overrides={"test-flag": "yes"}, flags_file_path=missing) is True
-    # 2. Env var.
-    monkeypatch.setenv("FLAGS_MY_FEATURE", "true")
-    assert eval_flag("my-feature", False, flags_file_path=missing) is True
-    monkeypatch.setenv("FLAGS_MY_FEATURE", "0")
-    assert eval_flag("my-feature", True, flags_file_path=missing) is False
-    # 3. File.
-    monkeypatch.delenv("FLAGS_FILE_FLAG", raising=False)
-    flags_file = tmp_path / "flags.json"
-    flags_file.write_text(
-        json.dumps({"file-flag": {"state": "ENABLED"}, "bare": "v", "valued": {"state": "ENABLED", "value": "x"}}),
+def _flagd_tree(tmp_path: Path, key: str, variant: str, *, name: str = "flags.json") -> Path:
+    path = tmp_path / name
+    path.write_text(
+        json.dumps(
+            {
+                "flags": {
+                    key: {
+                        "state": "ENABLED",
+                        "variants": {"on": True, "off": False},
+                        "defaultVariant": variant,
+                    }
+                }
+            }
+        ),
         encoding="utf-8",
     )
-    assert eval_flag("file-flag", False, flags_file_path=flags_file) is True
-    assert eval_flag("bare", None, flags_file_path=flags_file) == "v"
-    assert eval_flag("valued", None, flags_file_path=flags_file) == "x"
-    # 4. Default.
-    assert eval_flag("nonexistent-flag", "default_val", flags_file_path=flags_file) == "default_val"
+    return path
 
 
-def test_eval_flag_disabled_state_is_false_regardless_of_value(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("FLAGS_OFF_FLAG", raising=False)
-    flags_file = tmp_path / "flags.json"
-    flags_file.write_text(json.dumps({"off-flag": {"state": "DISABLED", "value": True}}), encoding="utf-8")
-    assert eval_flag("off-flag", True, flags_file_path=flags_file) is False
+def test_eval_flag_cli_override_outranks_the_tree(tmp_path: Path) -> None:
+    missing = tmp_path / "missing.json"
+    assert (
+        eval_flag(FLAG_DOSSIER_EXPORT, False, flag_overrides={"enable_dossier_export": True}, flags_path=missing)
+        is True
+    )
+    assert (
+        eval_flag(FLAG_DOSSIER_EXPORT, False, flag_overrides={FLAG_DOSSIER_EXPORT: "yes"}, flags_path=missing) is True
+    )
 
 
-def test_eval_flag_empty_env_means_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("FLAGS_EMPTY_FLAG", "")
-    assert eval_flag("empty-flag", "dflt", flags_file_path=tmp_path / "absent.json") == "dflt"
+def test_eval_flag_reads_the_one_tree(tmp_path: Path) -> None:
+    on_tree = _flagd_tree(tmp_path, FLAG_DOSSIER_EXPORT, "on", name="on.json")
+    off_tree = _flagd_tree(tmp_path, FLAG_DOSSIER_EXPORT, "off", name="off.json")
+    assert eval_flag(FLAG_DOSSIER_EXPORT, False, flags_path=on_tree) is True
+    assert eval_flag(FLAG_DOSSIER_EXPORT, True, flags_path=off_tree) is False
 
 
-def test_eval_flag_explicit_missing_file_never_falls_back_to_cwd(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_eval_flag_maps_legacy_short_names(tmp_path: Path) -> None:
+    tree = _flagd_tree(tmp_path, FLAG_POSTGRES_SYNC, "on")
+    assert eval_flag("enable_postgres_sync", False, flags_path=tree) is True
+
+
+def test_eval_flag_env_var_is_not_a_provider(duty_engine: Path, monkeypatch: pytest.MonkeyPatch, capsys) -> None:
+    monkeypatch.setenv("FLAGS_ENABLE_DOSSIER_EXPORT", "true")
+    result = LedgerQueryDuty().run(_ns(format="static-dossier"))
+    assert result.ok is False
+    assert FLAG_DOSSIER_EXPORT in result.summary
+    assert capsys.readouterr().out == ""
+
+
+def test_eval_flag_ignores_steward_flags_json(
+    duty_engine: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.delenv("FLAGS_CWD_FLAG", raising=False)
+    steward_flags = tmp_path / ".steward" / "flags.json"
+    steward_flags.parent.mkdir()
+    steward_flags.write_text(json.dumps({"enable_dossier_export": True}), encoding="utf-8")
     monkeypatch.chdir(tmp_path)
-    (tmp_path / "flags.json").write_text(json.dumps({"cwd-flag": True}), encoding="utf-8")
-    (tmp_path / ".steward").mkdir()
-    (tmp_path / ".steward" / "flags.json").write_text(json.dumps({"cwd-flag": True}), encoding="utf-8")
-    assert eval_flag("cwd-flag", "dflt", flags_file_path=tmp_path / "nope.json") == "dflt"
+    result = LedgerQueryDuty().run(_ns(format="static-dossier"))
+    assert result.ok is False
 
 
 def test_parse_flag_overrides() -> None:
@@ -430,13 +443,9 @@ def test_parse_flag_overrides() -> None:
 def test_gated_formatter_with_flag_off_refuses(
     duty_engine: Path, monkeypatch: pytest.MonkeyPatch, format_name: str, flag_name: str, capsys
 ) -> None:
-    monkeypatch.delenv(f"FLAGS_{flag_name.upper()}", raising=False)
     result = LedgerQueryDuty().run(_ns(format=format_name))
     assert result.ok is False
-    assert (
-        result.summary
-        == f"flag {flag_name} is off (set FLAGS_{flag_name.upper()}=true, flags.json, or --flag {flag_name}=true)"
-    )
+    assert result.summary.startswith(f"flag {flag_name} is off")
     assert capsys.readouterr().out == ""
 
 
@@ -456,7 +465,6 @@ def test_sync_postgres_with_flag_off_refuses_before_any_sync(
 ) -> None:
     import pyforge.steward.sprint_ledger_query as mod
 
-    monkeypatch.delenv("FLAGS_ENABLE_POSTGRES_SYNC", raising=False)
     monkeypatch.setattr(mod, "sync_to_postgres", lambda result: pytest.fail("sync must not run with the flag off"))
     result = LedgerQueryDuty().run(_ns(sync_postgres=True))
     assert result.ok is False
@@ -464,27 +472,38 @@ def test_sync_postgres_with_flag_off_refuses_before_any_sync(
 
 
 def test_flag_override_via_cli_flag_opens_a_gated_formatter(duty_engine: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("FLAGS_ENABLE_DOSSIER_EXPORT", raising=False)
     result = LedgerQueryDuty().run(_ns(format="static-dossier", flag=["enable_dossier_export=true"]))
     assert result.ok is True
     assert result.summary.startswith("<!DOCTYPE html>")
+    result = LedgerQueryDuty().run(_ns(format="static-dossier", flag=[f"{FLAG_DOSSIER_EXPORT}=true"]))
+    assert result.ok is True
     result = LedgerQueryDuty().run(_ns(format="static-dossier", flag=["enable_dossier_export=false"]))
     assert result.ok is False
 
 
-def test_flag_override_via_env_opens_a_gated_formatter(duty_engine: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("FLAGS_ENABLE_JIRA_GITHUB_MATRIX", "true")
-    assert LedgerQueryDuty().run(_ns(format="jira-csv")).ok is True
-
-
-def test_query_honours_flag_overrides_and_records_them(
-    engine: SprintLedgerQueryEngine, monkeypatch: pytest.MonkeyPatch
+def test_gated_formatter_with_tree_on_produces_payload(
+    fixture_root: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.delenv("FLAGS_X", raising=False)
-    res = engine.query(station="test-station", flag_overrides={"x": "on"})
-    assert res.query_flags["flag_overrides"] == {"x": "on"}
-    assert engine.flag("x", False, res.query_flags["flag_overrides"]) is True
-    assert engine.flag("x", False) is False
+    tree = _flagd_tree(tmp_path, FLAG_DOSSIER_EXPORT, "on")
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(tree))
+    import pyforge.steward.sprint_ledger_query as mod
+
+    real = mod.SprintLedgerQueryEngine
+
+    def _factory(root_dir=None, flags_path=None, process=None):
+        return real(root_dir=fixture_root, flags_path=tree, process=_FakeProcess())
+
+    monkeypatch.setattr(mod, "SprintLedgerQueryEngine", _factory)
+    result = LedgerQueryDuty().run(_ns(format="static-dossier"))
+    assert result.ok is True
+    assert result.summary.startswith("<!DOCTYPE html>")
+
+
+def test_query_honours_flag_overrides_and_records_them(engine: SprintLedgerQueryEngine) -> None:
+    res = engine.query(station="test-station", flag_overrides={"enable_dossier_export": "on"})
+    assert res.query_flags["flag_overrides"] == {"enable_dossier_export": "on"}
+    assert engine.flag(FLAG_DOSSIER_EXPORT, False, res.query_flags["flag_overrides"]) is True
+    assert engine.flag(FLAG_DOSSIER_EXPORT, False) is False
 
 
 def test_pre_query_hook_mutation_is_used_and_a_raising_hook_is_reported(
@@ -831,7 +850,7 @@ def test_module_docstring_makes_no_sdk_claim() -> None:
     import pyforge.steward.sprint_ledger_query as mod
 
     assert "OpenFeature SDK" not in mod.__doc__
-    assert "FLAGS_<NAME>" in mod.__doc__ and "--flag" in mod.__doc__ and "flags.json" in mod.__doc__
+    assert "read_boolean" in mod.__doc__ and "--flag" in mod.__doc__ and "pyforge.steward.ledger_query" in mod.__doc__
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "import openfeature" not in source and "from openfeature" not in source
 
