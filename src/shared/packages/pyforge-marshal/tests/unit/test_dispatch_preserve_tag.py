@@ -30,7 +30,7 @@ from pyforge.marshal.core.journal import Phase, build_entry, prepare_for_write
 from pyforge.marshal.core.status import FleetHomeFacts, _merge_dispatch_row_fields
 from pyforge.marshal.dispatch_supervisor import __main__ as supervisor_main
 
-_FLAG = PRESERVE_REFS_FLAG_KEY
+_FLAG = "pyforge.marshal.preserve_refs"
 _SLUG = "pyforge-marshal"
 _STORY = "87.5"
 _RUN_ID = "20261009-abc12345"
@@ -345,3 +345,7 @@ def test_untracked_file_in_preserve_tree(
         text=True,
     )
     assert "secret sauce" in show
+
+
+def test_flag_key_is_the_module_constant() -> None:
+    assert _FLAG == PRESERVE_REFS_FLAG_KEY
