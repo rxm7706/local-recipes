@@ -2,8 +2,8 @@
 title: "71.10: A stopped lane is journaled cancelled, and the lane that stopped the run red"
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
-baseline_revision: 'ad6f0428ff1bb3797c99faf8f6dba22ad4514011'
+status: 'done'
+baseline_revision: '4c3cbb94c56f42f94c61f14839f1f41c92a0343c'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -189,8 +189,44 @@ Type / Effort / Deps: fix / S / S-71.9.
 
 ## Spec Change Log
 
-- No change yet.
+- **2026-10-09 (landing repair).** AC (6) amended for `test_red_lane_cancels_others`: it now runs `jobs=2`
+  instead of `jobs=3`; its body and assertions are otherwise the 71.3 text. Under this story's drain, a lane the
+  injected runner had already started is journaled from its own result, so with three workers `c` could start
+  before `a` stopped the run and finish `ok` (measured 2 failures in 40 runs). With two workers `c` is still
+  queued at the stop and is `cancelled`. The fix turn's edit of that test (an added assertion on `b`, which
+  always finishes `ok`) failed the coverage-gate run and is reverted.
+- **2026-10-09 (landing repair).** `_run_lane_in_pool` checks the terminated mark before `code == 0`, so a lane the
+  coordinator signalled is `cancelled` even when it exits 0 (the Approach and the I/O matrix row "running when
+  the run stopped"); it was journaled `ok`.
+- **2026-10-09 (landing repair).** AC (7) verified by mutation against a scratch copy of `preflight.py`: dropping the
+  terminated mark fails `test_real_subprocess_red_lane_cancels_running_peer` (`sleep` journaled `red`), and
+  dropping running futures' results fails it too (`fail` journaled `cancelled`, run exits 0).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 2, maybe-false 1
+- findings:
+  - `[low]` `[reject]` `subprocess_argv_for_lane` adds a public test seam on `run_preflight` — acceptable for real-process unit tests; no production caller required.
+  - `[false]` `[reject]` Pool drain after stop drops culprit results — verified `results_by_task` collects completed futures before drain; fail lane stays `red`.
+  - `[false]` `[reject]` SIGINT path still journals terminated lanes as `red` — interrupt handler sets `stop_trigger` and drain collects `cancelled` with `cancelled_by: interrupt`.
+  - `[maybe-false]` `[defer]` AC (7) mutation-failure tests not added — would require deliberate regression harness; core AC (1)–(6) covered by new tests.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Preflight coordinator now marks process groups it signals as terminated, journals those lanes `cancelled` with `cancelled_by`, keeps own-failure lanes `red`, and drains in-flight pool futures instead of discarding their results.
+
+**Files changed:**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — termination tracking, journal field, pool drain, reduced-segment cancel.
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` — real subprocess, SIGINT, jobs=1, reduced-lane AC tests.
+- Spec memlogs for `spec-pyforge-steward` and co-governor `spec-pyforge-core`.
+
+**Review:** 1 low rejected; 2 false; 1 deferred (AC7 mutation tests). Patched thread-safe `terminated_lane_tasks` updates under `proc_lock`.
+
+**followup_review_recommended:** false
+
+**Verification:** `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2245 passed, 5 skipped. `python scripts/spec_surface_reconcile.py` — OK after memlog reconcile.
+
+**Residual risk:** Two lanes failing concurrently on their own both remain `red` (by design); only coordinator-signalled exits become `cancelled`.
