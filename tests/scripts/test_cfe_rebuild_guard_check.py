@@ -1160,7 +1160,9 @@ def test_int_loaded_commit_field_covers_retro(tmp_path: Path) -> None:
     brief_rel = "briefs/int-field.yaml"
     _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commit: {prefix}")
     brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
-    assert m._brief_covers_retro_sha(brief, retro)
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
 
 
 def test_int_loaded_commit_list_item_covers_retro(tmp_path: Path) -> None:
@@ -1169,7 +1171,9 @@ def test_int_loaded_commit_list_item_covers_retro(tmp_path: Path) -> None:
     brief_rel = "briefs/int-list.yaml"
     _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commits: [{prefix}]")
     brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
-    assert m._brief_covers_retro_sha(brief, retro)
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
 
 
 def test_octal_shaped_commit_reads_scalar_text(tmp_path: Path) -> None:
@@ -1178,7 +1182,9 @@ def test_octal_shaped_commit_reads_scalar_text(tmp_path: Path) -> None:
     brief_rel = "briefs/octal-field.yaml"
     _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commit: {prefix}")
     brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
-    assert m._brief_covers_retro_sha(brief, retro)
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
 
 
 def test_binary_shaped_commit_reads_scalar_text(tmp_path: Path) -> None:
@@ -1187,7 +1193,9 @@ def test_binary_shaped_commit_reads_scalar_text(tmp_path: Path) -> None:
     brief_rel = "briefs/binary-field.yaml"
     _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commit: {prefix}")
     brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
-    assert m._brief_covers_retro_sha(brief, retro)
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
 
 
 def test_leading_zero_string_commit_still_covers_retro(tmp_path: Path) -> None:
@@ -1196,7 +1204,9 @@ def test_leading_zero_string_commit_still_covers_retro(tmp_path: Path) -> None:
     brief_rel = "briefs/lead-zero-str.yaml"
     _write_brief_with_amendment_yaml(tmp_path, brief_rel, f"      commit: {prefix}")
     brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
-    assert m._brief_covers_retro_sha(brief, retro)
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
 
 
 @pytest.mark.parametrize(
@@ -1214,7 +1224,9 @@ def test_non_sha_amendment_values_name_no_retro(tmp_path: Path, commit_line: str
     brief_rel = "briefs/non-sha.yaml"
     _write_brief_with_amendment_yaml(tmp_path, brief_rel, commit_line)
     brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
-    assert not m._brief_covers_retro_sha(brief, retro)
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert not m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
 
 
 def test_free_text_reason_still_names_no_retro(tmp_path: Path) -> None:
@@ -1224,7 +1236,9 @@ def test_free_text_reason_still_names_no_retro(tmp_path: Path) -> None:
     with (tmp_path / brief_rel).open("a", encoding="utf-8") as handle:
         handle.write(f"      reason: mirrored {retro} into the brief\n")
     brief = m._yaml_load((tmp_path / brief_rel).read_text(encoding="utf-8"))
-    assert not m._brief_covers_retro_sha(brief, retro)
+    scalars = m._yaml_int_scalars(brief)
+    m._strip_yaml_loader_metadata(brief)
+    assert not m._brief_covers_retro_sha(brief, retro, int_scalars=scalars)
 
 
 def test_int_brief_mirrored_through_newest_retro_is_clean(tmp_path: Path) -> None:
@@ -1320,7 +1334,11 @@ def test_campaign_state_loads_int_brief_mirrored_through(tmp_path: Path) -> None
     path.write_text(yaml_text, encoding="utf-8")
     state = m.campaign_state(path)
     assert state is not None
-    mirrored = m._sha_candidate_from_yaml_value(state["slices"][0]["brief_mirrored_through"])
+    scalars = m._yaml_int_scalars(state)
+    mirrored = m._sha_candidate_from_yaml_value(
+        state["slices"][0]["brief_mirrored_through"],
+        int_scalars=scalars,
+    )
     assert mirrored == prefix
 
 

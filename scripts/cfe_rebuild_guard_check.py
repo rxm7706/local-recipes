@@ -272,7 +272,11 @@ def campaign_state(path: pathlib.Path) -> dict | None:
         data = _yaml_load(text)
     except yaml.YAMLError:
         return None
-    return data if isinstance(data, dict) else None
+    if not isinstance(data, dict):
+        return None
+    if not data.get("__yaml_int_scalars__"):
+        _strip_yaml_loader_metadata(data)
+    return data
 
 
 def _parse_name_status_lines(lines: list[str]) -> list[tuple[str, str]]:
@@ -324,7 +328,11 @@ def _is_hex_sha_token(value: str) -> bool:
             and all(ch in "0123456789abcdef" for ch in value))
 
 
-def _sha_candidate_from_yaml_value(value: object) -> str | None:
+def _sha_candidate_from_yaml_value(
+    value: object,
+    *,
+    int_scalars: dict[int, str] | None = None,
+) -> str | None:
     """A YAML field value read as a SHA candidate, or None if it is not one."""
     if isinstance(value, bool):
         return None
@@ -332,8 +340,8 @@ def _sha_candidate_from_yaml_value(value: object) -> str | None:
         stripped = value.strip()
         return stripped if stripped else None
     if isinstance(value, int):
-        if isinstance(value, _YamlInt):
-            return value.yaml_scalar.strip()
+        if int_scalars is not None and value in int_scalars:
+            return int_scalars[value].strip()
         return str(value)
     return None
 
@@ -348,7 +356,11 @@ def _sha_matches(token: str, sha: str) -> bool:
     return token.startswith(sha) or sha.startswith(token)
 
 
-def _amendment_sha_tokens(amend: dict) -> list[str]:
+def _amendment_sha_tokens(
+    amend: dict,
+    *,
+    int_scalars: dict[int, str] | None = None,
+) -> list[str]:
     """Every SHA candidate an amendment carries as a whole field value, or as
     one item of a list value -- the only places a SHA field can live. Free
     text (`reason: "mirrored 565ef7d194 into ..."`) is not a SHA candidate,
@@ -357,17 +369,22 @@ def _amendment_sha_tokens(amend: dict) -> list[str]:
     for value in amend.values():
         if isinstance(value, list):
             for item in value:
-                cand = _sha_candidate_from_yaml_value(item)
+                cand = _sha_candidate_from_yaml_value(item, int_scalars=int_scalars)
                 if cand is not None:
                     tokens.append(cand)
         else:
-            cand = _sha_candidate_from_yaml_value(value)
+            cand = _sha_candidate_from_yaml_value(value, int_scalars=int_scalars)
             if cand is not None:
                 tokens.append(cand)
     return tokens
 
 
-def _brief_covers_retro_sha(brief: dict, sha: str) -> bool:
+def _brief_covers_retro_sha(
+    brief: dict,
+    sha: str,
+    *,
+    int_scalars: dict[int, str] | None = None,
+) -> bool:
     scope = brief.get("scope")
     if not isinstance(scope, dict):
         return False
@@ -377,7 +394,10 @@ def _brief_covers_retro_sha(brief: dict, sha: str) -> bool:
     for amend in amendments:
         if not isinstance(amend, dict) or amend.get("action") != "retro-mirror":
             continue
-        if any(_sha_matches(token, sha) for token in _amendment_sha_tokens(amend)):
+        if any(
+            _sha_matches(token, sha)
+            for token in _amendment_sha_tokens(amend, int_scalars=int_scalars)
+        ):
             return True
     return False
 
@@ -413,11 +433,18 @@ def _brief_defect(slice_id: str, ref: str, detail: str, remedy: str) -> dict:
     }
 
 
-def _brief_defect_findings(root: pathlib.Path, slices: list, retros: list[str]) -> list[dict]:
+def _brief_defect_findings(
+    root: pathlib.Path,
+    slices: list,
+    retros: list[str],
+    *,
+    state_int_scalars: dict[int, str] | None = None,
+) -> list[dict]:
     """Clause (b'): open each brief a slice's `brief_path` names and check it
     is a real skill brief that mirrors every qualifying retro up to its
     `brief_mirrored_through` (module docstring)."""
     findings: list[dict] = []
+    state_scalars = state_int_scalars or {}
     for sl in slices:
         if not isinstance(sl, dict):
             continue
@@ -444,6 +471,8 @@ def _brief_defect_findings(root: pathlib.Path, slices: list, retros: list[str]) 
             continue
         try:
             brief = _yaml_load(abs_path.read_text(encoding="utf-8"))
+            brief_scalars = _yaml_int_scalars(brief)
+            _strip_yaml_loader_metadata(brief)
         except (OSError, UnicodeDecodeError, yaml.YAMLError):
             findings.append(_brief_defect(
                 slice_id, brief_path,
@@ -471,11 +500,16 @@ def _brief_defect_findings(root: pathlib.Path, slices: list, retros: list[str]) 
                 f"brief at {brief_path!r} has a hollow or missing scope",
                 "restore a complete skill-brief scope block or clear brief_path until one exists"))
             continue
-        mirrored = _sha_candidate_from_yaml_value(sl.get("brief_mirrored_through"))
+        mirrored = _sha_candidate_from_yaml_value(
+            sl.get("brief_mirrored_through"),
+            int_scalars=state_scalars,
+        )
         if mirrored is None:
             continue
-        missing = [sha for sha in _required_mirror_shas(mirrored, retros)
-                   if not _brief_covers_retro_sha(brief, sha)]
+        missing = [
+            sha for sha in _required_mirror_shas(mirrored, retros)
+            if not _brief_covers_retro_sha(brief, sha, int_scalars=brief_scalars)
+        ]
         if missing:
             short = [sha[:MIN_SHA_PREFIX] for sha in missing]
             findings.append({
@@ -532,11 +566,17 @@ def retro_commits_since(root: pathlib.Path, since: str) -> list[str] | None:
 
 def scan(state: dict, retros: list[str], *, root: pathlib.Path) -> list[dict]:
     findings: list[dict] = []
+    state_int_scalars = _yaml_int_scalars(state)
+    _strip_yaml_loader_metadata(state)
     slices = state.get("slices")
     slices = slices if isinstance(slices, list) else []
     newest_retro = retros[0] if retros else None
 
-    findings.extend(_brief_defect_findings(root, slices, retros))
+    findings.extend(
+        _brief_defect_findings(
+            root, slices, retros, state_int_scalars=state_int_scalars,
+        ),
+    )
 
     # Clause (a): stale-equivalence.
     for sl in slices:
@@ -574,7 +614,10 @@ def scan(state: dict, retros: list[str], *, root: pathlib.Path) -> list[dict]:
                 continue
             slice_id = _slice_ref(sl)
             mirrored_raw = sl.get("brief_mirrored_through")
-            mirrored_through = _sha_candidate_from_yaml_value(mirrored_raw)
+            mirrored_through = _sha_candidate_from_yaml_value(
+                mirrored_raw,
+                int_scalars=state_int_scalars,
+            )
             if (mirrored_through is not None
                     and _sha_matches(mirrored_through, newest_retro)):
                 continue
