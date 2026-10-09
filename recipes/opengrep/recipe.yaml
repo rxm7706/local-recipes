@@ -1,0 +1,187 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.30.2"
+
+package:
+  name: opengrep
+  version: ${{ version }}
+
+source:
+  - if: linux and x86_64
+    then:
+      url: https://github.com/opengrep/opengrep/releases/download/v${{ version }}/opengrep_manylinux_x86
+      sha256: a66aa3278457f02b287b985a45b6762aebcaba5000f2689245fd1ed86d1456c7
+      file_name: opengrep
+  - if: linux and aarch64
+    then:
+      url: https://github.com/opengrep/opengrep/releases/download/v${{ version }}/opengrep_manylinux_aarch64
+      sha256: 90acea5df4b733083f388d4feeb250ca802f671b33d1f222653d1e571dd2b0d8
+      file_name: opengrep
+  - if: osx and x86_64
+    then:
+      url: https://github.com/opengrep/opengrep/releases/download/v${{ version }}/opengrep_osx_x86
+      sha256: fcf47da30d5c3a11119f2ec4e0d1ee55e3c3822e8f90d909bf9f33dfce99044a
+      file_name: opengrep
+  - if: osx and arm64
+    then:
+      url: https://github.com/opengrep/opengrep/releases/download/v${{ version }}/opengrep_osx_arm64
+      sha256: f1aaa30b88959cb82522c4e1475816278a1f161f994509a518453c0455f9d24b
+      file_name: opengrep
+  - if: win
+    then:
+      url: https://github.com/opengrep/opengrep/releases/download/v${{ version }}/opengrep_windows_x86.exe
+      sha256: 523b1074a81006436fec457e2daccf7cf7cacc04000d4482f1072a1b19bc6372
+      file_name: opengrep.exe
+
+build:
+  number: 0
+  dynamic_linking:
+    # MUST stay false (G101). Upstream ships a single-file executable with an
+    # embedded Python CLI payload; rattler-build's default ELF relocation can
+    # rewrite the binary and break it. The test compares the packaged binary
+    # byte-for-byte against the release asset hash recorded in source.
+    binary_relocation: false
+  script:
+    - if: unix
+      then:
+        - mkdir -p "${PREFIX}/bin"
+        - cp opengrep "${PREFIX}/bin/opengrep"
+        - chmod +x "${PREFIX}/bin/opengrep"
+    - if: win
+      then:
+        - if not exist "%LIBRARY_BIN%" mkdir "%LIBRARY_BIN%"
+        - copy /Y opengrep.exe "%LIBRARY_BIN%\opengrep.exe"
+
+tests:
+  - if: linux and x86_64
+    then:
+      script:
+        content: |
+          set -euxo pipefail
+          opengrep --version | grep -F '${{ version }}'
+          export SEMGREP_SEND_METRICS=off
+          export OPENGREP_ENABLE_VERSION_CHECK=0
+          opengrep scan --disable-version-check --config "${SRC_DIR}/info/recipe/test-fixtures/rule.yaml" "${SRC_DIR}/info/recipe/test-fixtures/sample.py" | grep -F 'found planted match'
+          actual="$(sha256sum "${PREFIX}/bin/opengrep" | awk '{print $1}')"
+          test "${actual}" = "a66aa3278457f02b287b985a45b6762aebcaba5000f2689245fd1ed86d1456c7"
+  - if: linux and aarch64
+    then:
+      script:
+        content: |
+          set -euxo pipefail
+          opengrep --version | grep -F '${{ version }}'
+          export SEMGREP_SEND_METRICS=off
+          export OPENGREP_ENABLE_VERSION_CHECK=0
+          opengrep scan --disable-version-check --config "${SRC_DIR}/info/recipe/test-fixtures/rule.yaml" "${SRC_DIR}/info/recipe/test-fixtures/sample.py" | grep -F 'found planted match'
+          actual="$(sha256sum "${PREFIX}/bin/opengrep" | awk '{print $1}')"
+          test "${actual}" = "90acea5df4b733083f388d4feeb250ca802f671b33d1f222653d1e571dd2b0d8"
+  - if: osx and x86_64
+    then:
+      script:
+        content: |
+          set -euxo pipefail
+          opengrep --version | grep -F '${{ version }}'
+          export SEMGREP_SEND_METRICS=off
+          export OPENGREP_ENABLE_VERSION_CHECK=0
+          opengrep scan --disable-version-check --config "${SRC_DIR}/info/recipe/test-fixtures/rule.yaml" "${SRC_DIR}/info/recipe/test-fixtures/sample.py" | grep -F 'found planted match'
+          actual="$(shasum -a 256 "${PREFIX}/bin/opengrep" | awk '{print $1}')"
+          test "${actual}" = "fcf47da30d5c3a11119f2ec4e0d1ee55e3c3822e8f90d909bf9f33dfce99044a"
+  - if: osx and arm64
+    then:
+      script:
+        content: |
+          set -euxo pipefail
+          opengrep --version | grep -F '${{ version }}'
+          export SEMGREP_SEND_METRICS=off
+          export OPENGREP_ENABLE_VERSION_CHECK=0
+          opengrep scan --disable-version-check --config "${SRC_DIR}/info/recipe/test-fixtures/rule.yaml" "${SRC_DIR}/info/recipe/test-fixtures/sample.py" | grep -F 'found planted match'
+          actual="$(shasum -a 256 "${PREFIX}/bin/opengrep" | awk '{print $1}')"
+          test "${actual}" = "f1aaa30b88959cb82522c4e1475816278a1f161f994509a518453c0455f9d24b"
+  - if: win
+    then:
+      script:
+        content: |
+          opengrep --version | findstr /C:"${{ version }}"
+          if errorlevel 1 exit /b 1
+          set SEMGREP_SEND_METRICS=off
+          set OPENGREP_ENABLE_VERSION_CHECK=0
+          opengrep scan --disable-version-check --config "%SRC_DIR%\info\recipe\test-fixtures\rule.yaml" "%SRC_DIR%\info\recipe\test-fixtures\sample.py" | findstr /C:"found planted match"
+          if errorlevel 1 exit /b 1
+          certutil -hashfile "%LIBRARY_BIN%\opengrep.exe" SHA256 > hash.txt
+          findstr /C:"523b1074a81006436fec457e2daccf7cf7cacc04000d4482f1072a1b19bc6372" hash.txt
+          if errorlevel 1 exit /b 1
+
+about:
+  homepage: https://opengrep.dev/
+  repository: https://github.com/opengrep/opengrep
+  documentation: https://github.com/opengrep/opengrep/blob/develop/README.md
+  license: LGPL-2.1-only
+  license_file:
+    - LICENSE
+    - COPYRIGHT
+  summary: Opengrep static analysis CLI — open fork of the Semgrep engine, repackaged from release binaries
+  description: |
+    Opengrep is the open-source fork of the Semgrep static-analysis engine.
+    Upstream publishes self-contained, single-file executables per platform
+    (embedded Python CLI). A conda-forge source build is not feasible today
+    (OCaml/dune/opam/submodule gaps documented in the CFE block), so this
+    recipe repackages the GitHub release binaries for local use only (release
+    assets ship cosign `.sig`/`.cert` sidecars; cosign was not run on this host).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opengrep
+  cfe-upstream-registry: github
+  cfe-upstream-name: opengrep/opengrep
+  cfe-purls:
+    - pkg:conda/opengrep@${{ version }}?channel=local-recipes
+    - pkg:github/opengrep/opengrep@v${{ version }}
+  cfe-upstream-repo: https://github.com/opengrep/opengrep
+  cfe-upstream-homepage: https://opengrep.dev/
+  cfe-import-names: []
+  cfe-source-kind: github-release-binary
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: blocked-pending-prerequisites
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list:
+    - "ocaml-5.5-required: upstream Makefile requires OCaml 5.5.0; conda-forge ocaml tops out at 5.4.0 (checked 2026-10-08)"
+    - "dune-missing: dune is not packaged on conda-forge (checked 2026-10-08)"
+    - "opam-dependency-wall: opam/semgrep.opam lists 69 opam deps with no conda equivalents (checked 2026-10-08)"
+    - "memprof-limits-git-pin: dune-project pins memprof-limits to a gitlab fork branch — not reproducible for conda-forge (checked 2026-10-08)"
+    - "tree-sitter-submodules: 40 git submodules (tree-sitter grammars) missing from GitHub source archives (checked 2026-10-08)"
+    - "python-cli-wrapper: source build also needs the Python CLI wrapper layer bundled in release binaries (checked 2026-10-08)"
+    - "binary-repackage-policy-risk: OSI LGPL binary repack may face conda-forge reviewer scrutiny; operator ruled local-only until source path exists (2026-09-28)"
+  cfe-last-checked: 2026-10-08T22:30:00Z
+  cfe-generated-by-version: 8.90.1
+  cfe-generated-at-datetime: 2026-10-08T22:30:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-08T22:28:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # pyforge-mason story 21.4 — local-only binary repack for Warden intake.
+#    # Re-verified 2026-10-08: latest non-prerelease tag v1.30.2 (G109); cosign
+#    # signatures exist on release assets but cosign is not on this build host.
+# source:
+#    # Per-platform bare release executables (manylinux for linux-* subdirs,
+#    # not musllinux). sha256 from GitHub release API digests, cross-checked
+#    # by streaming downloads on 2026-10-08. LICENSE + COPYRIGHT fetched from
+#    # the tag (license pattern 2 — binaries ship no license text).
+# build:
+#    # No compiler/stdlib. binary_relocation: false (G101) — embedded payload.
+# tests:
+#    # Offline scan: local rule + fixture under test-fixtures/, metrics off,
+#    # version check disabled. Byte-compare packaged bin to release sha256.
+# build-coverage:
+#    # LOCAL BUILD COVERAGE: only linux-64 executed on this host. Other four
+#    # subdirs are hash-verified in recipe source but not built locally (G85).
