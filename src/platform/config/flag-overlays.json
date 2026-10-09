@@ -16,7 +16,13 @@
     "pyforge.warden.fix_draft_pr_estate": "on",
     "pyforge.warden.fleet_scan": "on",
     "pyforge.warden.fleet_fix_proposals": "on",
-    "pyforge.warden.non_python_ecosystems": "on"
+    "pyforge.warden.non_python_ecosystems": "on",
+    "pyforge.steward.ledger_query_postgres_sync": "off",
+    "pyforge.steward.ledger_query_dossier_export": "off",
+    "pyforge.steward.ledger_query_vizro_dataset": "off",
+    "pyforge.steward.ledger_query_herald_facts": "off",
+    "pyforge.steward.ledger_query_jira_github_matrix": "off",
+    "pyforge.steward.glass_export": "off"
   },
   "staging": {
     "pyforge.three_surfaces": "on",
@@ -35,7 +41,13 @@
     "pyforge.warden.fix_draft_pr_estate": "on",
     "pyforge.warden.fleet_scan": "on",
     "pyforge.warden.fleet_fix_proposals": "on",
-    "pyforge.warden.non_python_ecosystems": "on"
+    "pyforge.warden.non_python_ecosystems": "on",
+    "pyforge.steward.ledger_query_postgres_sync": "off",
+    "pyforge.steward.ledger_query_dossier_export": "off",
+    "pyforge.steward.ledger_query_vizro_dataset": "off",
+    "pyforge.steward.ledger_query_herald_facts": "off",
+    "pyforge.steward.ledger_query_jira_github_matrix": "off",
+    "pyforge.steward.glass_export": "off"
   },
   "production": {
     "pyforge.three_surfaces": "on",
@@ -54,6 +66,12 @@
     "pyforge.warden.fix_draft_pr_estate": "off",
     "pyforge.warden.fleet_scan": "off",
     "pyforge.warden.fleet_fix_proposals": "off",
-    "pyforge.warden.non_python_ecosystems": "off"
+    "pyforge.warden.non_python_ecosystems": "off",
+    "pyforge.steward.ledger_query_postgres_sync": "off",
+    "pyforge.steward.ledger_query_dossier_export": "off",
+    "pyforge.steward.ledger_query_vizro_dataset": "off",
+    "pyforge.steward.ledger_query_herald_facts": "off",
+    "pyforge.steward.ledger_query_jira_github_matrix": "off",
+    "pyforge.steward.glass_export": "off"
   }
 }

@@ -45,7 +45,7 @@ EMPTY_FILE_SHA256 = hashlib.sha256(b"").hexdigest()
 
 GLASS_STATES: tuple[str, ...] = ("unborn", "fresh", "stale", "failed")
 
-FLAG_GLASS_EXPORT = "enable_glass_export"
+FLAG_GLASS_EXPORT = "pyforge.steward.glass_export"
 GLASS_EXPORT_FORMATS: tuple[str, ...] = ("csv", "markdown")
 
 

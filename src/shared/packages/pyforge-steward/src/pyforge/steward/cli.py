@@ -555,7 +555,7 @@ def _add_ledger_query_subparsers(parser: argparse.ArgumentParser) -> None:
         action="append",
         default=None,
         metavar="NAME=VALUE",
-        help="feature-flag override, repeatable (e.g. --flag enable_dossier_export=true); outranks FLAGS_<NAME> and flags.json",
+        help="feature-flag override, repeatable (e.g. --flag enable_dossier_export=true or pyforge.steward.ledger_query_dossier_export=true); outranks the tree",
     )
 
 
