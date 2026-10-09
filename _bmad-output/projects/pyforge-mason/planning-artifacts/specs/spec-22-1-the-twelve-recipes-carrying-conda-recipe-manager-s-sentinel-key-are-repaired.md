@@ -2,7 +2,8 @@
 title: "22.1: The twelve recipes carrying conda-recipe-manager's sentinel key are repaired"
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'f0eeddddb3c9a05a95235c872be495801457c1ff'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
