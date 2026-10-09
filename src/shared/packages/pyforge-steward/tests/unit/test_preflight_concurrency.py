@@ -173,8 +173,7 @@ def test_red_lane_cancels_others(tmp_path: Path) -> None:
             return 1
         if ctx.lane.task == "b":
             started.set()
-            release.wait(timeout=5)
-        time.sleep(0.2)
+        release.wait(timeout=5)
         return 0
 
     code = preflight.run_preflight(
@@ -188,6 +187,7 @@ def test_red_lane_cancels_others(tmp_path: Path) -> None:
     record = _run_record(repo)
     statuses = {entry["task"]: entry["status"] for entry in record["lanes"]}
     assert statuses["a"] == "red"
+    assert statuses["b"] in {"cancelled", "not-run"}
     assert statuses["c"] in {"cancelled", "not-run"}
 
 
@@ -367,8 +367,6 @@ def test_sigint_cancels_real_subprocess_lanes(tmp_path: Path) -> None:
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("sleep-a", "sleep-b"))
     started = threading.Event()
-    started_count = {"n": 0}
-    lock = threading.Lock()
 
     def scripts(lane: preflight.Lane) -> list[str]:
         return [
