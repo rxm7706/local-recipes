@@ -9039,3 +9039,25 @@ status: open
   severity: low
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-87-14: Clone-based test for patch-equivalent branch reporting in delete_merged_local_branches.
+
+- source_spec: `planning-artifacts/specs/spec-87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories.md`
+  summary: Clone-based test for patch-equivalent branch reporting in delete_merged_local_branches.
+  evidence: branch_merged_by_patch_id is only exercised indirectly; a squash-merged fixture would pin reporting vs deletion.
+  location: tests/scripts/test_worktree_sweep.py
+  origin: spec-deferred 50978276f058 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-87-14-2: Integration test for merged STALE-LOCK unlock and worktree remove on --execute.
+
+- source_spec: `planning-artifacts/specs/spec-87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories.md`
+  summary: Integration test for merged STALE-LOCK unlock and worktree remove on --execute.
+  evidence: Unit tests cover classification and effective_execute_verdict; git worktree lock/unlock path untested end-to-end.
+  location: scripts/worktree_sweep.py:465
+  origin: spec-deferred 9fd4d0951324 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
