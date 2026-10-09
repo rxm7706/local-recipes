@@ -34,10 +34,6 @@ source:
       url: https://github.com/opengrep/opengrep/releases/download/v${{ version }}/opengrep_windows_x86.exe
       sha256: 523b1074a81006436fec457e2daccf7cf7cacc04000d4482f1072a1b19bc6372
       file_name: opengrep.exe
-  - url: https://raw.githubusercontent.com/opengrep/opengrep/v${{ version }}/LICENSE
-    sha256: 20c17d8b8c48a600800dfd14f95d5cb9ff47066a9641ddeab48dc54aec96e331
-  - url: https://raw.githubusercontent.com/opengrep/opengrep/v${{ version }}/COPYRIGHT
-    sha256: 0f90eaca8e598c6c67a6cda7beb4470518fb2dababc996b3898344d380769aca
 
 build:
   number: 0
@@ -67,7 +63,7 @@ tests:
           opengrep --version | grep -F '${{ version }}'
           export SEMGREP_SEND_METRICS=off
           export OPENGREP_ENABLE_VERSION_CHECK=0
-          opengrep scan --disable-version-check --config "${RECIPE_DIR}/test-fixtures/rule.yaml" "${RECIPE_DIR}/test-fixtures/sample.py" | grep -F 'found planted match'
+          opengrep scan --disable-version-check --config "${SRC_DIR}/info/recipe/test-fixtures/rule.yaml" "${SRC_DIR}/info/recipe/test-fixtures/sample.py" | grep -F 'found planted match'
           actual="$(sha256sum "${PREFIX}/bin/opengrep" | awk '{print $1}')"
           test "${actual}" = "a66aa3278457f02b287b985a45b6762aebcaba5000f2689245fd1ed86d1456c7"
   - if: linux and aarch64
@@ -78,7 +74,7 @@ tests:
           opengrep --version | grep -F '${{ version }}'
           export SEMGREP_SEND_METRICS=off
           export OPENGREP_ENABLE_VERSION_CHECK=0
-          opengrep scan --disable-version-check --config "${RECIPE_DIR}/test-fixtures/rule.yaml" "${RECIPE_DIR}/test-fixtures/sample.py" | grep -F 'found planted match'
+          opengrep scan --disable-version-check --config "${SRC_DIR}/info/recipe/test-fixtures/rule.yaml" "${SRC_DIR}/info/recipe/test-fixtures/sample.py" | grep -F 'found planted match'
           actual="$(sha256sum "${PREFIX}/bin/opengrep" | awk '{print $1}')"
           test "${actual}" = "90acea5df4b733083f388d4feeb250ca802f671b33d1f222653d1e571dd2b0d8"
   - if: osx and x86_64
@@ -89,7 +85,7 @@ tests:
           opengrep --version | grep -F '${{ version }}'
           export SEMGREP_SEND_METRICS=off
           export OPENGREP_ENABLE_VERSION_CHECK=0
-          opengrep scan --disable-version-check --config "${RECIPE_DIR}/test-fixtures/rule.yaml" "${RECIPE_DIR}/test-fixtures/sample.py" | grep -F 'found planted match'
+          opengrep scan --disable-version-check --config "${SRC_DIR}/info/recipe/test-fixtures/rule.yaml" "${SRC_DIR}/info/recipe/test-fixtures/sample.py" | grep -F 'found planted match'
           actual="$(shasum -a 256 "${PREFIX}/bin/opengrep" | awk '{print $1}')"
           test "${actual}" = "fcf47da30d5c3a11119f2ec4e0d1ee55e3c3822e8f90d909bf9f33dfce99044a"
   - if: osx and arm64
@@ -100,7 +96,7 @@ tests:
           opengrep --version | grep -F '${{ version }}'
           export SEMGREP_SEND_METRICS=off
           export OPENGREP_ENABLE_VERSION_CHECK=0
-          opengrep scan --disable-version-check --config "${RECIPE_DIR}/test-fixtures/rule.yaml" "${RECIPE_DIR}/test-fixtures/sample.py" | grep -F 'found planted match'
+          opengrep scan --disable-version-check --config "${SRC_DIR}/info/recipe/test-fixtures/rule.yaml" "${SRC_DIR}/info/recipe/test-fixtures/sample.py" | grep -F 'found planted match'
           actual="$(shasum -a 256 "${PREFIX}/bin/opengrep" | awk '{print $1}')"
           test "${actual}" = "f1aaa30b88959cb82522c4e1475816278a1f161f994509a518453c0455f9d24b"
   - if: win
@@ -111,7 +107,7 @@ tests:
           if errorlevel 1 exit /b 1
           set SEMGREP_SEND_METRICS=off
           set OPENGREP_ENABLE_VERSION_CHECK=0
-          opengrep scan --disable-version-check --config "%RECIPE_DIR%\test-fixtures\rule.yaml" "%RECIPE_DIR%\test-fixtures\sample.py" | findstr /C:"found planted match"
+          opengrep scan --disable-version-check --config "%SRC_DIR%\info\recipe\test-fixtures\rule.yaml" "%SRC_DIR%\info\recipe\test-fixtures\sample.py" | findstr /C:"found planted match"
           if errorlevel 1 exit /b 1
           certutil -hashfile "%LIBRARY_BIN%\opengrep.exe" SHA256 > hash.txt
           findstr /C:"523b1074a81006436fec457e2daccf7cf7cacc04000d4482f1072a1b19bc6372" hash.txt
@@ -165,9 +161,9 @@ extra:
   cfe-last-checked: 2026-10-08T22:30:00Z
   cfe-generated-by-version: 8.90.1
   cfe-generated-at-datetime: 2026-10-08T22:30:00Z
-  cfe-local-build-status: pending
-  cfe-local-build-datetime: none
-  cfe-local-build-platform: none
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-08T22:28:00Z
+  cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
 # CFE comments
