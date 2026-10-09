@@ -659,6 +659,13 @@ _SHIPPED_BOOLEANS = {
         "staging": True,
         "production": False,
     },
+    # Story 76.3: steward's ledger-query and glass flags, off everywhere.
+    "pyforge.steward.ledger_query_postgres_sync": False,
+    "pyforge.steward.ledger_query_dossier_export": False,
+    "pyforge.steward.ledger_query_vizro_dataset": False,
+    "pyforge.steward.ledger_query_herald_facts": False,
+    "pyforge.steward.ledger_query_jira_github_matrix": False,
+    "pyforge.steward.glass_export": False,
 }
 _METADATA_FIELDS = ("owner", "story", "created", "on_everywhere", "cleanup_by")
 

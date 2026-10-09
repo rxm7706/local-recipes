@@ -16,6 +16,7 @@ derivation and this file diverge.
 | `feature:linux` | feature | won't-do | Standalone pixi feature/environment; outside pyforge-foundry-full and its stack layer | steward |
 | `feature:local-recipes` | feature | won't-do | Recipe-factory closure at scale; never composed into the laptop SBOM | steward |
 | `feature:mcp-host` | feature | won't-do | Standalone pixi feature/environment; outside pyforge-foundry-full and its stack layer | steward |
+| `feature:openfeature-file-eval` | feature | promote | Steward's flag evaluation through OpenFeature (Story 76.3) runs in pyforge-guild and pyforge-steward; fold it into pyforge-foundry-full at the next lock re-solve | steward |
 | `feature:osx` | feature | won't-do | Standalone pixi feature/environment; outside pyforge-foundry-full and its stack layer | steward |
 | `feature:platform-ci-test` | feature | won't-do | Standalone pixi feature/environment; outside pyforge-foundry-full and its stack layer | steward |
 | `feature:pyforge-ci` | feature | won't-do | Standalone pixi feature/environment; outside pyforge-foundry-full and its stack layer | steward |
