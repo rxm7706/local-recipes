@@ -586,6 +586,10 @@ channels_redis = ">=4.3.0,<5.0"   # Story 9.5 (AD-5): the sanctioned cross-worke
 pyjwt = ">=2.15.0"                # Story 48.6: EventsStreamConsumer verifies RS256 assertions via django-pyforge (test-time + dashboard websocket face)
 redis-py = ">=8.1.0"              # Story 48.6: browser relay tail-read tests (imports as `redis`)
 bmad-eval-quality = ">=4.3.0"     # DW-OPS-2026-09-20-1 (2026-09-20): steward WIELDS eval-quality (suite.py's adoption-register live probe, Story 45.1) but the CLI was pinned only in local-recipes + pyforge-guild, so under `-e pyforge-steward` shutil.which never saw it and suite.py fell back to <repo>/.pixi/envs/local-recipes/bin -- present on the primary checkout, absent in every fresh worktree (test_wired_column_agrees_with_live_pipeline_truth failed there, 2026-09-20). Same floor as the Guild/local-recipes pins; keep the three in step.
+openfeature-sdk = ">=0.10.0"      # Story 76.3: pyforge.core.flags.read_boolean evaluates through the FILE provider
+openfeature-flagd-api = ">=1.0.0"  #
+openfeature-flagd-core = ">=1.0.0"  #
+openfeature-provider-flagd = ">=0.5.2"  #
 
 [feature.pyforge-steward.tasks.pyforge-steward-build-conda]
 description = "Build the pyforge-steward conda package via pixi-build-python."
@@ -623,7 +627,7 @@ description = "Story 32.7 (spec-pyforge-testing-charter CAP-4): full-package nam
 cmd = "python scripts/run_station_coverage_gate.py --station steward"
 
 [feature.pyforge-steward.tasks.sprint-ledger-postgres-sync]
-description = "Mint Work Passport UUIDs and sync estate sprint ledger items to PostgreSQL / Django ORM (Story 65.1; WorkPassport model, migration 0002). Lives in the pyforge-steward feature -- the one env with both django ([dashboard] extra) and the steward CLI -- NOT in guild-tasks, where it could only ever refuse (no env carrying guild-tasks has django; found at PR #1507's review). Flag-gated: pass `-- --flag enable_postgres_sync=true` (or FLAGS_ENABLE_POSTGRES_SYNC=true), else it refuses with exit 1; needs DJANGO_SETTINGS_MODULE set, else `refused` on stderr, exit 1 -- never a silent exit-0 no-op."
+description = "Mint Work Passport UUIDs and sync estate sprint ledger items to PostgreSQL / Django ORM (Story 65.1; WorkPassport model, migration 0002). Lives in the pyforge-steward feature -- the one env with both django ([dashboard] extra) and the steward CLI -- NOT in guild-tasks, where it could only ever refuse (no env carrying guild-tasks has django; found at PR #1507's review). Flag-gated: pass `-- --flag enable_postgres_sync=true` or `-- --flag pyforge.steward.ledger_query_postgres_sync=true`, else it refuses with exit 1; needs DJANGO_SETTINGS_MODULE set, else `refused` on stderr, exit 1 -- never a silent exit-0 no-op."
 cmd = "steward ledger-query --sync-postgres --format summary"
 
 [feature.pyforge-steward.tasks.pyforge-steward-dogfood]
@@ -862,6 +866,10 @@ pyforge-herald = { path = "src/shared/packages/pyforge-herald" }  # Story 63.6 (
 pyforge-scribe = { path = "src/shared/packages/pyforge-scribe" }      # scribe capture / recall from the session default (scribe Story 19.2, spec-pyforge-scribe CAP-28, 2026-09-19): the CORE package only (run-deps typer + pydantic + pyforge-core); the heavy compile extras (graphifyy, cocoindex, psycopg) stay in -e pyforge-scribe, so `scribe graph compile` with an extra still runs there
 pyforge-mason = { path = "src/shared/packages/pyforge-mason" }        # Story 72.1 (spec-pyforge-steward CAP-161): bmad-agent-mason's only grammar is `pyforge mason …`; the front door routes installed pyforge-* distributions
 pyforge-testing-kit = { path = "src/shared/packages/pyforge-testing-kit" }
+openfeature-sdk = ">=0.10.0"      # Story 76.3: pyforge.core.flags.read_boolean evaluates through the FILE provider
+openfeature-flagd-api = ">=1.0.0"  #
+openfeature-flagd-core = ">=1.0.0"  #
+openfeature-provider-flagd = ">=0.5.2"  #
 headroom-ai = ">=0.37.0"          # wire-compression layer (marshal-token-economy); absent -> silent MRS-DISP-033, so it is on the floor
 # headroom-ai's `[proxy]` extra (needed for `headroom wrap claude`'s actual wire-compression
 # proxy, not just the CLI) declares these at runtime; found missing live 2026-09-20 when
@@ -1191,7 +1199,7 @@ description = "Verify local-recipes env, BMAD installation, and active project b
 cmd = "bash scripts/ensure-bmad-preflight.sh"
 
 [feature.guild-tasks.tasks.sprint-ledger-query]
-description = "Pluggable estate sprint ledger query CLI duty (Story 65.1, spec-pyforge-steward CAP-146..149). Reads each station's TRACKED planning-artifacts/sprint-status-ledger.yaml + epics.md; counts agree with fleet_scan.parse_sprint_status. --format: markdown (default), summary, json, table; flag-gated: sync-matrix/jira-csv/github-json (enable_jira_github_matrix), herald-facts (enable_herald_facts), atlas-dataset (enable_vizro_dataset), static-dossier (enable_dossier_export) -- open one with `-- --flag <name>=true`, FLAGS_<NAME>=true, or .steward/flags.json. stdout carries the payload only; `--output PATH` writes it to that file instead (stdout empty). Writes into no other station's tree by default."
+description = "Pluggable estate sprint ledger query CLI duty (Story 65.1, spec-pyforge-steward CAP-146..149). Reads each station's TRACKED planning-artifacts/sprint-status-ledger.yaml + epics.md; counts agree with fleet_scan.parse_sprint_status. --format: markdown (default), summary, json, table; flag-gated integrations read the one flagd tree (Story 76.3): sync-matrix/jira-csv/github-json (pyforge.steward.ledger_query_jira_github_matrix), herald-facts (pyforge.steward.ledger_query_herald_facts), atlas-dataset (pyforge.steward.ledger_query_vizro_dataset), static-dossier (pyforge.steward.ledger_query_dossier_export) -- open one with `-- --flag <short-or-tree-key>=true` or flag-overlays.json. stdout carries the payload only; `--output PATH` writes it to that file instead (stdout empty). Writes into no other station's tree by default."
 cmd = "steward ledger-query"
 
 [feature.local-recipes.tasks.tea-test-review]
