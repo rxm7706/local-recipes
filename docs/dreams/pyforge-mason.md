@@ -515,6 +515,32 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   **Constraints:** local only, like every wave: no push, PR, fork, issue or comment outside `rxm7706/local-recipes`.
   Wave 0 is the one place Story 25.2 touches Track A's recipes. Owner: mason (no new CAP). → Story 25.3's repair mode
   and Story 25.2's Wave 0, specced 2026-10-09.
+- **2026-10-09 — Ruled: the CFE-rebuild guard reads a SHA field whatever type YAML gives it.** Operator ruling,
+  2026-10-09 ("yes mint both stories and keep going"). On PR #2031 the `scripts-suite` job failed
+  `test_brief_must_name_every_retro_at_or_older_than_the_pointer` (Detectors run 37990293221). The guard reported a
+  `brief-defect` for a brief that does name its retro: `has no retro-mirror amendment naming 4139357790`. PyYAML's
+  `safe_load` reads an unquoted all-digit token such as `commit: 4139357790` as an `int`, and
+  `scripts/cfe_rebuild_guard_check.py` keeps only `str` values as SHA candidates. The test makes real commits, so it
+  fails whenever the older retro's 10-character prefix is all digits and loads as an int. All-digit prefixes come up in
+  (10/16)^10 of runs, about 0.9%, and most of them load as an int. A brief written by hand hits the same false finding.
+  Checked the same day against PyYAML 6.0.3:
+  - `0123456789` stays a string. A leading `0` followed only by the digits 0 to 7 (`0123456701`) loads as an octal
+    `int`, and `0b` followed by 0s and 1s (`0b10110101`) loads as a binary one. The value's decimal string matches
+    neither.
+  - An `int` `brief_mirrored_through` is skipped by the brief check, and the history check reports it
+    `unmirrored-retro` even when it names the newest retro.
+  - The history check compares the pointer to the newest retro by full-SHA equality, but its own remedy says to set a
+    10-character prefix, so following the remedy keeps the finding.
+
+  **What it looks like when real:** every SHA the guard reads from YAML is read as the scalar was written, whether
+  YAML loaded it as a string or an int. That covers a `retro-mirror` amendment's fields and list items, and a slice's
+  `brief_mirrored_through`. A bool, float or null is never a SHA. Every SHA comparison uses one rule: two hex tokens
+  of at least ten characters name the same commit when one is a prefix of the other. Deterministic tests pin each form
+  without making commits. **Constraints:** a `fix` story under CAP-16, with no new CAP and no flag
+  (`spec-feature-flag-governance` Q1). It touches only the guard script and its test. That script is repo tooling, not
+  the CFE surface, so the story has no `retro(cfe):` commit. A new Epic 28 carries it, because Epics 6 and 12, the
+  guard's own epics, are done. Owner: mason. → `spec-pyforge-mason` CAP-16 / Epic 28 / Story 28.1, specced
+  2026-10-09.
 
 ## One-chain fold — 2026-09-17
 

@@ -18,7 +18,7 @@ frCount: 50
 status: complete
 revision: 2
 revisionNote: "r2 tracks PRD revision 2 (adversarial-review fixes). Added S-1.10 (config+logging), S-3.9 (ship verb + TestPyPI rehearsal), S-5.6 removed in favour of folding FR-47 into S-5.5; corrected S-3.6, S-5.1, S-5.2, S-2.2 for the D-10/D-12/FR-44/FR-45 resolutions."
-updated: "2026-10-09"   # RE-STAMPED 2026-10-09: Story 25.3 minted (feature under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves) and given a --repair mode; Story 25.2 Deps S-25.3 and a Wave 0 that repairs Story 25.1's landing; § Currency reconciliation — 2026-10-09 (later) appended. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Stories 22.3 and 22.4 minted blocked (fixes under spec-pyforge-mason CAP-32, FR-54), split from Story 22.1 by two operator rulings; § Currency reconciliation — 2026-10-09 appended. Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.2 minted from the operator's Phase 4+5 ruling (fix, no CAP; 61 open medium/low deferrals). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epic 26 / Story 26.1 minted (a fix under spec-pyforge-mason CAP-34, FR-56). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-mason CAP-35, FR-57); § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
+updated: "2026-10-09"   # RE-STAMPED 2026-10-09: Epic 28 / Story 28.1 minted (fix under spec-pyforge-mason CAP-16, no new CAP, no FR moves, no flag): the CFE-rebuild guard reads a SHA field whatever type YAML gives it. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Story 25.3 minted (feature under spec-pyforge-mason CAP-35 / FR-57, CAP-20, CAP-23; no new CAP, no FR moves) and given a --repair mode; Story 25.2 Deps S-25.3 and a Wave 0 that repairs Story 25.1's landing; § Currency reconciliation — 2026-10-09 (later) appended. Prior "2026-10-09"   # RE-STAMPED 2026-10-09: Stories 22.3 and 22.4 minted blocked (fixes under spec-pyforge-mason CAP-32, FR-54), split from Story 22.1 by two operator rulings; § Currency reconciliation — 2026-10-09 appended. Prior 2026-10-03   # RE-STAMPED 2026-10-03 (Phase 4+5): Epic 27 / Stories 27.1-27.2 minted from the operator's Phase 4+5 ruling (fix, no CAP; 61 open medium/low deferrals). Prior 2026-10-02   # RE-STAMPED 2026-10-02: Epic 26 / Story 26.1 minted (a fix under spec-pyforge-mason CAP-34, FR-56). Prior 2026-09-29 (evening)   # RE-STAMPED 2026-09-29 (evening): Epic 25 / Stories 25.1-25.2 minted (spec-pyforge-mason CAP-35, FR-57); § Currency reconciliation — 2026-09-29 (evening). Prior 2026-09-29 (later)   # RE-STAMPED 2026-09-29 (later): Epic 24 / Story 24.1 minted (spec-pyforge-mason CAP-34, FR-56); § Currency reconciliation — 2026-09-29 (later). Prior 2026-09-29   # RE-STAMPED 2026-09-29: Epic 23 / Stories 23.1-23.3 minted (spec-pyforge-mason CAP-33, FR-55); § Currency reconciliation — 2026-09-29. Prior 2026-09-28 (night, later)   # RE-STAMPED 2026-09-28 (night, later): Epic 22 / Stories 22.1-22.2 minted (spec-pyforge-mason CAP-32, FR-54); § Currency reconciliation — 2026-09-28 (night, later) appended. Prior 2026-09-28 (night): Epic 21 / Stories 21.1-21.5 minted (spec-pyforge-mason CAP-31, FR-53); § Currency reconciliation — 2026-09-28 (night) appended. Prior 2026-09-28 (later): Epic 20 / Story 20.1 minted (spec-pyforge-mason CAP-30, FR-52); § Currency reconciliation — 2026-09-28 (later) appended. Prior 2026-09-28: Epic 19 / Stories 19.1-19.5 minted (spec-pyforge-mason CAP-29, FR-51); § Currency reconciliation — 2026-09-28 appended. Prior 2026-09-27 (night): Epic 18 / Story 18.1 minted (spec-pyforge-mason CAP-28). Prior 2026-09-20   # RE-STAMPED 2026-09-20: fleet consistency pass (story-spec status ↔ ledger, reconstructed run results, epic roll-ups); § Currency reconciliation — 2026-09-20 (fleet consistency pass) appended. Prior 2026-09-20   # chain-currency cascade 2026-09-20 (engine version ranges become floors by operator ruling; pixi.toml run-dependency caps removed; surface reconcile for the pyforge-foundry-full union solve); no requirement/AD/story delta. Prior 2026-09-17
 currency_review: "Reviewed 2026-09-14 (chain-currency sweep cascade, arch->epics edge) — validation note appended at end of file (§ Validation note — 2026-09-14): ledger re-measured with the real parser at 70/70 stories done across 17/17 epics; Epic 16's two realization-gate stories confirmed landed against live evidence (the pyforge-mason-recipe-build-smoke pixi task is wired into pyforge-station-tests.yml:228); the PRD's new FR-14 as-built divergence is recorded as owing a Dream/Spec, NOT minted as a story here. No epic or story restructured. Reviewed 2026-09-06 (Epic 14 added: spec-bmad-suite-lifecycle mason relay — bmad-eval-quality __win variant, Story 14.1; CFE Rule 1 + Rule 2 apply). Reviewed 2026-08-26 — validated against the ARCHITECTURE-SPINE as truth-upped the same day and the as-built code: all 50 stories across 11 epics are done in the tracked ledger (station complete per fleet ledger 2026-08-21). Counts corrected 6/42 -> 11/50 (Epics 6-11 had grown past the r2 snapshot). No story headings or statuses changed; see the appended Validation note. Prior review 2026-08-02 (AD binding check)."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (marshal:AD-72).
@@ -2801,6 +2801,53 @@ So that each row closes on the line that fixed it and the ledger keeps only what
 **When** each CFE row is fixed with a test and the campaign records are corrected with dated notes
 **Then** the failure catalog's signatures diagnose, it carries `schema_version: 1`, its check resolves every spelling of a check code and tells drift from a broken generator by exit code, the cheatsheet names `test-ci`, and the campaign's resume header says the campaign is closed
 **And** every CFE-surface edit lands in one commit whose subject starts `retro(cfe):` with a CFE `CHANGELOG.md` semver entry; each row closes with a `resolution:` naming this story and a `verified:` line citing the line that fixed it (or, for a surface Story 15.1 retired, the line that records it); `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
+
+## Epic 28: The CFE-rebuild guard reads a SHA field whatever type YAML gives it (spec-pyforge-mason CAP-16)
+
+Minted 2026-10-09 from the station Dream's entry of the same name, on the operator's ruling of that day ("yes mint both
+stories and keep going"). `scripts/cfe_rebuild_guard_check.py` is CAP-16's detector. Its own epics are done: Epic 6
+(Story 6.2, clauses (a) to (c)) and Epic 12 (Story 12.4, clause (d)). Story 27.1 added clause (b') under CAP-16. A fix
+story on a done epic breaks the ledger detectors, so this new epic carries the fix.
+**HARD boundaries:**
+- 28.1 touches only `scripts/cfe_rebuild_guard_check.py` and `tests/scripts/test_cfe_rebuild_guard_check.py`.
+- The guard is repo tooling, not the CFE surface: no `retro(cfe):` commit and no CFE `CHANGELOG.md` entry.
+- No `src/shared/packages/pyforge-mason/`, `campaign-state.yaml`, `pixi.toml`, `pixi.lock` or `recipes/**` file
+  changes.
+- 28.1 is a fix and carries no flag (`spec-feature-flag-governance` CAP-1, Q1).
+
+### Story 28.1: The rebuild guard reads a SHA field whatever type YAML gives it
+
+As the maintainer whose PR runs the `scripts-suite` job,
+I want the CFE-rebuild guard to read a SHA the same way whether YAML loaded it as a string or a number,
+So that a brief that names its retro never gets a false `brief-defect`, and the guard's own test never flakes.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-mason CAP-16 (no new CAP; a fix carries no
+flag, `spec-feature-flag-governance` Q1); AD-1; AD-15
+**Surface:** `scripts/cfe_rebuild_guard_check.py` and `tests/scripts/test_cfe_rebuild_guard_check.py`. No CFE-surface
+path, and no Mason package path.
+**Spec:** `planning-artifacts/specs/spec-28-1-the-rebuild-guard-reads-a-sha-field-whatever-type-yaml-gives-it.md`
+**Given** PyYAML's `safe_load` reads an unquoted all-digit SHA prefix (`commit: 4139357790`) as an `int`, and
+`_amendment_sha_tokens` keeps only `str` values. PR #2031's `scripts-suite` job failed
+`test_brief_must_name_every_retro_at_or_older_than_the_pointer` that way (Detectors run 37990293221), and it fails
+whenever the older retro's 10-character prefix is all digits and loads as an int (all-digit prefixes come up in about
+0.9% of runs).
+**When** the guard reads every SHA from YAML through one reader, and compares every pair of SHAs with one rule.
+**Then:**
+- An int-loaded SHA field or list item (never a `bool`) matches exactly like a string one. A decimal int reads as its
+  decimal string. An octal- or binary-shaped token (`0123456701`, `0b10110101`), which PyYAML loads as `21913025` and
+  `181`, reads as written.
+- A bool, float or null is never a SHA.
+- `brief_mirrored_through` is read the same way in clauses (b) and (b').
+- Two hex tokens of at least ten characters name the same commit when one is a prefix of the other, so clause (b)'s
+  own remedy, a 10-character prefix, clears its finding.
+
+**And:**
+- Deterministic tests pin each form with fixed SHAs and no commits.
+- The existing test passes unchanged for any SHA, and each new test fails against `origin/main`'s script first.
+- `pixi run --frozen -e pyforge-ci pyforge-doctor-scripts-test` and `pixi run --frozen -e pyforge-mason
+  pyforge-mason-test` are green.
+
+**Status:** backlog
 
 ## Validation note — 2026-09-14 (chain-currency sweep cascade)
 
