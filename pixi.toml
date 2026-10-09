@@ -795,6 +795,7 @@ cmd = "marshal config"
 hatchling = ">=1.32.4"            # Python build backend (conda + wheel/sdist)
 python-build = ">=1.6.1"          # PyPA `python -m build` frontend
 pytest = ">=9.1.1"                # test runner
+pytest-xdist = ">=3.8.0"          # parallel test execution (Story 71.5; test-runner plugin only)
 "ruamel.yaml" = ">=0.19.1"        # failure_catalog_generator import in tests/scripts/test_failure_catalog_check.py
 pixi-build-python = ">=0.8.6"     # pixi build backend -> .conda from the hatchling wheel
 pixi-build-rattler-build = ">=0.4.6"  # pixi build backend -> recipe-driven .conda
@@ -824,7 +825,7 @@ cmd = "python -m pytest tests/packaging -q"
 # repo-root detector CLI, not the pyforge-doctor package itself.
 [feature.pyforge-ci.tasks.pyforge-doctor-scripts-test]
 description = "scripts/detectors.py's Doctor-registry integration (Story 6.2; pure stdlib, no runtime deps required)"
-cmd = "python -m pytest tests/scripts -q"
+cmd = "python -m pytest tests/scripts -q -n auto --dist loadgroup"
 
 # --- pyforge-guild: the Guild's session environment (steward Story 63.1, spec-pyforge-steward CAP-5) ---
 # The DEFAULT environment for every agent and harness doing planning-chain work -- Claude,
@@ -1527,7 +1528,7 @@ cmd = "python scripts/detectors.py"
 
 [feature.guild-tasks.tasks.detectors-ci]
 description = "The CI-safe detector subset: scope=repo only, i.e. those reading tracked files alone. retired-console-check (dashboard-drift reintroduction gate) is repo-scope. Remaining scope=runtime detectors (e.g. loop-stall-check) observe gitignored Tier-3 feeds, tmux and ~/.bmad-loops, which do not exist on a runner — that exclusion is the missing observation plane showing up as a deployment constraint, not a convenience."
-cmd = "python scripts/detectors.py --scope repo"
+cmd = "python scripts/detectors.py --scope repo --jobs auto"
 
 [feature.guild-tasks.tasks.pyforge-station-tests]
 description = "Run pyforge-core's suite, the testing kit's suite (Story 19.5) and every PyForge station's own pytest suite locally, mirroring .github/workflows/pyforge-station-tests.yml's core-test, testing-kit-test and per-station jobs — the exact set that ALL fire together whenever pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit changes (that workflow's shared-surface rule), which is easy to miss since most day-to-day PRs only touch one station and never see this combination locally. Added 2026-09-14 after a 5-day GitHub Actions billing outage let ~260 PRs merge with this workflow never actually running; a pixi.toml dep bump was the first push afterward to touch shared surface, and it surfaced 5 days of accumulated drift (doctor/marshal/mason) all at once. The pyforge-core leg (Story 52.2, spec-pyforge-core CAP-8) runs FIRST: it is the cheapest (~10 s) and fails fastest, and its sole-ownership meta-tests scan every station's tree, so a station-only change can red it. Fails fast (first red leg stops the run) and covers only pyforge-core's `pyforge-core-test`, the kit's `pyforge-testing-kit-test` and each station's own `pyforge-<station>-test` task — NOT atlas's Chromium/DuckDB/WASM setup, herald's browser check, scribe's Postgres+pgvector service (see `scribe-pg-up`), or the separate guild-container job; run those stations' own CI-mirroring steps first if you touched them. Run this before pushing any pixi.toml/pixi.lock/pyforge-core/pyforge-testing-kit change."

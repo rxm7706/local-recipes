@@ -64,10 +64,12 @@ from __future__ import annotations
 import argparse
 import ast
 import json
+import os
 import pathlib
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -396,6 +398,39 @@ def _structured_findings_from_output(name: str, out: str) -> list[dict]:
     return []
 
 
+def _logical_core_count() -> int:
+    try:
+        return len(os.sched_getaffinity(0))
+    except (AttributeError, NotImplementedError):
+        return os.cpu_count() or 1
+
+
+def _parse_jobs(value: str) -> int:
+    if value == "auto":
+        return max(1, _logical_core_count())
+    try:
+        n = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(
+            f"invalid jobs value {value!r} (use a positive integer or 'auto')"
+        ) from exc
+    if n < 1:
+        raise argparse.ArgumentTypeError("jobs must be at least 1")
+    return n
+
+
+def _run_script_detectors(selected: list[dict], timeout: int, jobs: int) -> list[dict]:
+    """Run AST-discovered script detectors; preserve selection order in results."""
+    if jobs <= 1 or len(selected) <= 1:
+        return [run_one(d, timeout) for d in selected]
+    results: list[dict | None] = [None] * len(selected)
+    with ThreadPoolExecutor(max_workers=min(jobs, len(selected))) as pool:
+        futures = {pool.submit(run_one, det, timeout): idx for idx, det in enumerate(selected)}
+        for fut in futures:
+            results[futures[fut]] = fut.result()
+    return results  # type: ignore[list-item]
+
+
 def run_one(det: dict, timeout: int) -> dict:
     started = time.monotonic()
     argv = [sys.executable, str(ROOT / det["path"])]
@@ -431,6 +466,13 @@ def main() -> int:
     ap.add_argument("--list", action="store_true", help="show the registry and exit")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--timeout", type=int, default=300)
+    ap.add_argument(
+        "--jobs",
+        type=_parse_jobs,
+        default=1,
+        metavar="N",
+        help="parallel script-detector subprocesses (default 1; 'auto' = logical CPU count)",
+    )
     args = ap.parse_args()
 
     detectors, registry_findings = discover()
@@ -465,7 +507,9 @@ def main() -> int:
     # origins are gone once retired; nothing left on disk to AST-scan), so
     # without this the registry would silently discover fewer detectors
     # rather than reporting the ten as unknown.
-    results = [run_one(d, args.timeout) for d in selected] + _run_doctor_sources(args.scope)
+    results = _run_script_detectors(selected, args.timeout, args.jobs) + _run_doctor_sources(
+        args.scope
+    )
 
     if args.json:
         for r in results:
