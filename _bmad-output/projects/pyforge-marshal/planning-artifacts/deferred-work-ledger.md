@@ -9005,3 +9005,36 @@ status: open
   severity: medium
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-marshal-87-6: Policy protected additions do not print with provenance (AD-10 / AD-16 / AD-27) on land or retire output.
+
+- source_spec: `planning-artifacts/specs/spec-87-6-land-retire-and-the-station-branch-never-fight-the-protected-list.md`
+  summary: Policy protected additions do not print with provenance (AD-10 / AD-16 / AD-27) on land or retire output.
+  evidence: Story approach names provenance printing; implementation unions floor, roster, and project additions silently.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py
+  origin: spec-deferred 9229af031ba1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-87-6-2: Real-git unit tests for new GitVcs ls-remote, merge-base, and for-each-ref helpers are not added.
+
+- source_spec: `planning-artifacts/specs/spec-87-6-land-retire-and-the-station-branch-never-fight-the-protected-list.md`
+  summary: Real-git unit tests for new GitVcs ls-remote, merge-base, and for-each-ref helpers are not added.
+  evidence: Consumers land.py and retire.py depend on remote_branch_exists, is_commit_ancestor, and commit_contained_in_tag_prefixes; test_vcs_git.py has no cases.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py
+  origin: spec-deferred a5e03ca856b0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-87-6-3: Mutation-style AC (each rule removal must fail a test) is not enforced by dedicated tests.
+
+- source_spec: `planning-artifacts/specs/spec-87-6-land-retire-and-the-station-branch-never-fight-the-protected-list.md`
+  summary: Mutation-style AC (each rule removal must fail a test) is not enforced by dedicated tests.
+  evidence: Behavioral tests updated but no tests fail when protected_refs or downgrade helpers are removed.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_protected_refs.py
+  origin: spec-deferred 23165304b5a6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
