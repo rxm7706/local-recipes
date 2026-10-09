@@ -333,3 +333,76 @@ def test_safe_segment_sanitizes_illegal_chars():
 
     assert "/" not in _safe_segment('a/b:c*?"')
     assert _safe_ref_segment("..weird@{ref}") != "..weird@{ref}"
+
+
+# --- Story 87.4: preserve tag vs attempt-preserve branch (flag) -----------------
+
+
+def _origin_repo(tmp_path: Path) -> Path:
+    bare = tmp_path / "origin.git"
+    repo = tmp_path / "repo"
+    subprocess.run(["git", "init", "--bare", str(bare)], cwd=tmp_path, check=True)
+    subprocess.run(["git", "init", str(repo)], cwd=tmp_path, check=True)
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    purge_dir = repo / "docs" / "governance"
+    purge_dir.mkdir(parents=True, exist_ok=True)
+    (purge_dir / "preserve-purge-list.json").write_text(
+        '{"schema_version": 1, "commit_shas": [], "paths": []}\n',
+        encoding="utf-8",
+    )
+    (repo / "README.md").write_text("baseline\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-m", "init")
+    _git(repo, "branch", "-M", "main")
+    _git(repo, "remote", "add", "origin", str(bare))
+    _git(repo, "push", "-u", "origin", "main")
+    _git(repo, "fetch", "origin")
+    return repo
+
+
+@pytest.mark.parametrize("flag_on", [False, True])
+def test_park_commits_respects_preserve_refs_flag(tmp_path, monkeypatch, flag_on: bool):
+    from pyforge.marshal.core.dispatch_preserve import PRESERVE_REFS_FLAG_KEY
+
+    monkeypatch.setattr(
+        "pyforge.marshal.supervisor.intent_gap_preserve.preserve_refs_flag_on",
+        lambda **k: flag_on,
+        raising=False,
+    )
+    monkeypatch.setattr(
+        "pyforge.core.flags.read_boolean",
+        lambda key, **k: flag_on if key == PRESERVE_REFS_FLAG_KEY else False,
+    )
+    repo = _origin_repo(tmp_path)
+    baseline = _baseline(repo)
+    (repo / "feature.txt").write_text("feat\n", encoding="utf-8")
+    _git(repo, "add", "feature.txt")
+    _git(repo, "commit", "-m", "attempt commit")
+    head = _git(repo, "rev-parse", "HEAD").stdout.strip()
+    snap = AttemptSnapshot(
+        story_key="87-4",
+        worktree_path=str(repo),
+        baseline_commit=baseline,
+        head_sha=head,
+        commits_above_baseline=(head,),
+    )
+    _git(repo, "reset", "--hard", baseline)
+    run_dir = tmp_path / "bmad-run"
+    ref = park_preserve_artifact(
+        snap,
+        harness_run_id="acme-run-1",
+        bmad_run_dir=run_dir,
+        preserve_refs_flag_on=flag_on,
+        repo_root=repo,
+        project_slug="pyforge-marshal",
+        marshal_journal_path=str(tmp_path / "journal.jsonl"),
+    )
+    branches = _git(repo, "branch", "--list", "attempt-preserve/*").stdout
+    if flag_on:
+        assert ref is not None
+        assert ref.startswith("preserve/pyforge-marshal/87.4/intent-gap-")
+        assert "attempt-preserve/" not in branches
+    else:
+        assert ref == f"attempt-preserve/acme-run-1-{head[:8]}"
+        assert ref in branches

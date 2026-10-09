@@ -473,6 +473,7 @@ from ..core.supervise import (
     rung_index,
     shows_fresh_output,
 )
+from ..core.dispatch_preserve import preserve_refs_flag_on
 from ..core.worktree_checkpoint import commit_worktree_checkpoint
 from ..ports.clock import ClockPort
 from ..ports.fs import AppendHandle, FsPort, HeldFileState
@@ -481,6 +482,15 @@ from ..ports.notify import NotifyPort
 from ..ports.observer import SessionObserverPort
 from ..ports.publisher import RunPublisherPort
 from .durability import PushTrigger, classify_push_triggers
+from .engine_preserve import (
+    EnginePreserveTarget,
+    bmad_loop_journal_path,
+    promote_engine_ref,
+    read_new_journal_objects,
+    reconcile_unpromoted_engine_refs,
+    targets_from_journal_events,
+    targets_from_run_snapshot,
+)
 from .intent_gap_preserve import (
     AttemptSnapshot,
     append_preserve_notice,
@@ -1615,6 +1625,76 @@ def run_supervisor(
         # bmad-loop's native ``story_key`` spelling (same as
         # ``paused_story_key`` at escalation time).
         attempt_snapshots: dict[str, AttemptSnapshot] = {}
+        bmad_journal_byte_offset = 0
+        pending_engine_preserves: dict[str, EnginePreserveTarget] = {}
+        promoted_engine_refs: set[str] = set()
+
+        def _queue_engine_target(target: EnginePreserveTarget) -> None:
+            key = target.engine_ref.strip()
+            if not key or key in promoted_engine_refs:
+                return
+            existing = pending_engine_preserves.get(key)
+            if existing is None or (existing.story_key is None and target.story_key):
+                pending_engine_preserves[key] = target
+
+        def _collect_engine_preserve_targets(status_snapshot: RunStatusSnapshot | None) -> None:
+            if not preserve_refs_flag_on() or status_snapshot is None or harness_run_id is None:
+                return
+            nonlocal bmad_journal_byte_offset
+            journal_path = bmad_loop_journal_path(home, harness_run_id)
+            events, bmad_journal_byte_offset = read_new_journal_objects(
+                journal_path,
+                byte_offset=bmad_journal_byte_offset,
+            )
+            for target in targets_from_journal_events(events):
+                _queue_engine_target(target)
+            for target in targets_from_run_snapshot(status_snapshot.tasks, status_snapshot.deferred):
+                _queue_engine_target(target)
+
+        def _flush_engine_preserves(boundary: str, story_key: str | None) -> None:
+            if not preserve_refs_flag_on() or harness_run_id is None:
+                return
+            nonlocal last_durability_push_monotonic
+            try:
+                repo_root = vcs.repo_common_root(home)
+            except (VcsCommandError, OSError, subprocess.SubprocessError):
+                return
+            bmad_journal = str(bmad_loop_journal_path(home, harness_run_id))
+            try:
+                for scratch in reconcile_unpromoted_engine_refs(repo_root):
+                    _queue_engine_target(EnginePreserveTarget(engine_ref=scratch))
+            except Exception:  # noqa: BLE001 -- reconcile is best-effort at the boundary
+                pass
+            for ref_key, target in list(pending_engine_preserves.items()):
+                if ref_key in promoted_engine_refs:
+                    continue
+                outcome = promote_engine_ref(
+                    repo_root,
+                    engine_ref=target.engine_ref,
+                    project_slug=slug,
+                    story_key=target.story_key,
+                    run_id=harness_run_id,
+                    journal_path=bmad_journal,
+                    reason=f"spin stage boundary {boundary}",
+                    push=True,
+                )
+                if outcome is None:
+                    continue
+                promoted_engine_refs.add(ref_key)
+                pending_engine_preserves.pop(ref_key, None)
+                push_outcome = "pushed" if outcome.pushed else "push-failed"
+                payload: dict[str, object] = {
+                    "boundary": boundary,
+                    "preserve_tag": outcome.preserve_tag,
+                    "preserve_refname": outcome.refname,
+                    "engine_ref": outcome.engine_ref or target.engine_ref,
+                    "outcome": push_outcome,
+                    "noop": outcome.noop,
+                }
+                if story_key is not None:
+                    payload["story_key"] = story_key
+                _append(_STAGE_PUSH_KIND, payload)
+                last_durability_push_monotonic = clock.monotonic()
 
         def _capture_attempt_snapshots(status_snapshot: RunStatusSnapshot | None) -> None:
             """Refresh ``attempt_snapshots`` from this tick's task population.
@@ -1811,6 +1891,7 @@ def run_supervisor(
                         continue  # retired: nothing to push, already journaled
                     _push_branch(task.branch, trigger.boundary, feed_key)
                     last_durability_push_monotonic = clock.monotonic()
+                _flush_engine_preserves(trigger.boundary, feed_key)
             previous_task_phases = current_task_phases
 
         samples: list[Sample] = []
@@ -2213,6 +2294,7 @@ def run_supervisor(
                 tick_status_snapshot = harness.run_status_snapshot(home, harness_run_id)
                 _capture_deferrals(tick_status_snapshot)
                 _capture_attempt_snapshots(tick_status_snapshot)
+                _collect_engine_preserve_targets(tick_status_snapshot)
                 _process_stage_pushes(tick_status_snapshot)
 
             # --- Story 3.8: interval-push watcher fallback (AD-46/FR-61) ----
@@ -3146,10 +3228,20 @@ def run_supervisor(
                         captured = attempt_snapshots.get(status_snapshot.paused_story_key)
                         if captured is not None:
                             bmad_run_dir = home / ".bmad-loop" / "runs" / harness_run_id
+                            repo_root_for_preserve: Path | None = None
+                            if preserve_refs_flag_on():
+                                try:
+                                    repo_root_for_preserve = vcs.repo_common_root(home)
+                                except (VcsCommandError, OSError, subprocess.SubprocessError):
+                                    repo_root_for_preserve = None
                             parked = park_preserve_artifact(
                                 captured,
                                 harness_run_id=harness_run_id,
                                 bmad_run_dir=bmad_run_dir,
+                                preserve_refs_flag_on=preserve_refs_flag_on(),
+                                repo_root=repo_root_for_preserve,
+                                project_slug=slug,
+                                marshal_journal_path=str(run_dir / _JOURNAL_FILENAME),
                             )
                             if parked is not None:
                                 preserve_ref = parked
