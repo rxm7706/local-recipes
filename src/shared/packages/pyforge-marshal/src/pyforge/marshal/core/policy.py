@@ -2,7 +2,7 @@
 architecture spine AD-10/AD-16/AD-26/AD-35).
 
 ``compose()`` is the pure fold ``defaults -> repo_defaults -> project -> flags,
-last wins`` (AD-16) over Marshal's own CLOSED 33-key policy vocabulary
+last wins`` (AD-16) over Marshal's own CLOSED 35-key policy vocabulary
 (FR-49/50/51/53/54, plus FR-12's ``idle_threshold_minutes`` (Story 3.5),
 FR-13's 4 budget ceilings (Story 3.6), AD-27's ``epic_surfaces`` (Story 2.3),
 AD-40's 4 landing keys (Story 4.7), FR-184's ``max_parallel`` (Story
@@ -25,7 +25,7 @@ like `_bmad-output/projects/pyforge-marshal/planning-artifacts/marshal-policy.to
 value for a key; if its value is malformed, that layer is skipped for that key
 and the previous (better) layer's value stands.
 
-**Static vs seed (AD-26).** 16 fields are STATIC -- public ``EffectivePolicy``
+**Static vs seed (AD-26).** 18 fields are STATIC -- public ``EffectivePolicy``
 attributes, each a ``PolicyField``: ``verify_commands``,
 ``worktree_seed_paths``, ``merge_subject_template``, ``model_tier_map``,
 (Story 2.3) ``epic_surfaces`` -- AD-27's per-epic writable-surface
@@ -89,7 +89,7 @@ entry, and (Story 28.10) ``model_cost_catalog`` -- SPEC-marshal-token-economy
 CAP-11's declared price table (seed snapshot in ``model-economics.md``),
 STATIC for the identical structural-declaration reason ``context`` is:
 declared policy data, never fetched live, never narrowed at runtime by a
-journal entry. 16
+journal entry. 17
 fields are SEED -- epics.md's own named examples ("frozen surfaces, gate
 mode, attempt counts"): ``gate_mode``, ``frozen_surfaces``,
 ``max_dev_attempts``, ``max_review_cycles``, ``max_followup_reviews``,
@@ -191,8 +191,20 @@ unattended one. ``worktree_seed_paths`` carries no ``DEFAULT_POLICY`` entry
 
 This module is pure data: no I/O, no subprocess, no clock, no
 ``pyforge.marshal.adapters`` (AD-4) -- only ``copy``, ``hashlib``, ``json``,
-``dataclasses``, ``enum``, ``types``, ``collections.abc``, ``.landing``, and
-``.model``.
+``dataclasses``, ``enum``, ``types``, ``collections.abc``, ``.landing``,
+``.model``, ``.refs`` and ``.protected_refs`` (pure protected-ref matching,
+Story 87.6).
+
+**``protected_ref_prefixes`` (Story 87.6, AD-47 / AD-27).** The one STATIC key
+whose layers UNION rather than last-wins: each layer may only ADD refname
+prefixes to the protected list that ``marshal retire`` excludes before
+evidence-gathering, on top of the code floor (``refs/heads/main``,
+``refs/heads/loop/``, ``refs/tags/``) that no layer can touch. A floor entry
+re-declared is a no-op. An entry spelled as a removal (a leading ``!`` or
+``^``) that would weaken the floor is refused for that layer as
+``MRS-POLICY-010``, naming the floor entry; any other malformed value is
+refused as ``MRS-POLICY-009``. Either refusal excludes that layer's whole
+value, and ``marshal retire`` refuses the project outright.
 """
 
 from __future__ import annotations
@@ -206,11 +218,12 @@ from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
 
+from . import protected_refs
 from .landing import LandingRule, landing_rule_to_dict
 from .model import Finding, Severity
 from .refs import ORIGIN
 
-# --- the closed 33-key vocabulary -------------------------------------------
+# --- the closed 35-key vocabulary -------------------------------------------
 
 _STATIC_KEYS: frozenset[str] = frozenset(
     {
@@ -300,6 +313,13 @@ _STATIC_KEYS: frozenset[str] = frozenset(
         # Story 80.1 (CAP-284) widens the closed key set with the landing's
         # three ``landing_check_*`` knobs (see ``_valid_dispatch_block``).
         "dispatch",
+        # Story 87.6's 18th STATIC key, the vocabulary's 35th (CAP-287,
+        # AD-47 as amended 2026-10-04): refname prefixes a policy layer ADDS
+        # to the protected list `marshal retire` excludes structurally.
+        # STATIC -- a declared list, never narrowed by a journal entry. The
+        # one key whose layers union instead of last-wins, so no layer can
+        # drop another's addition; see `_merge_protected_ref_prefixes`.
+        "protected_ref_prefixes",
     }
 )
 _SEED_KEYS: frozenset[str] = frozenset(
@@ -681,6 +701,11 @@ DEFAULT_POLICY: Mapping[str, object] = {
         "verify_fix_output_tail_bytes": DEFAULT_VERIFY_FIX_OUTPUT_TAIL_BYTES,
         "verify_fix_wall_clock_minutes": DEFAULT_VERIFY_FIX_WALL_CLOCK_MINUTES,
     },
+    # Story 87.6's `protected_ref_prefixes` (CAP-287): no addition until a
+    # layer declares one -- the code floor (`protected_refs.protected_floor()`)
+    # protects `main`, `loop/*` and every tag regardless, so the default adds
+    # nothing to it.
+    "protected_ref_prefixes": (),
 }
 
 # Secret redaction (Boundaries & Constraints): a case-insensitive suffix
@@ -1792,6 +1817,88 @@ def _merge_landing_rules(
     return PolicyField(value=value, layer=layer, raw_source=raw_source)
 
 
+#: Story 87.6 (CAP-287): a layer's ``protected_ref_prefixes`` is malformed --
+#: not a list of non-empty ``refs/`` prefixes. Its own code, not the generic
+#: MRS-POLICY-002: a refused protected list makes ``marshal retire`` refuse the
+#: whole project, so the code must be unambiguous.
+MRS_POLICY_PROTECTED_REFS_MALFORMED = "MRS-POLICY-009"
+#: Story 87.6 (CAP-287, AD-47): a layer's ``protected_ref_prefixes`` tries to
+#: remove a code-floor entry -- refused at policy load, naming the entry.
+MRS_POLICY_PROTECTED_FLOOR_REMOVAL = "MRS-POLICY-010"
+#: Every code that means "this composition's protected list was refused".
+PROTECTED_REFS_REFUSAL_CODES: frozenset[str] = frozenset(
+    {MRS_POLICY_PROTECTED_REFS_MALFORMED, MRS_POLICY_PROTECTED_FLOOR_REMOVAL}
+)
+
+
+def _protected_refs_malformed_finding(layer_name: str, raw_value: object) -> Finding:
+    return Finding(
+        code=MRS_POLICY_PROTECTED_REFS_MALFORMED,
+        severity=Severity.ERROR,
+        message=(
+            f"malformed protected_ref_prefixes in the {layer_name} layer: {raw_value!r} -- "
+            "it must be a list of non-empty refs/ prefixes that add to the protected floor; "
+            "this layer's value is refused"
+        ),
+        path=layer_name,
+    )
+
+
+def _protected_floor_removal_finding(layer_name: str, weakened: tuple[str, ...], raw_value: object) -> Finding:
+    named = ", ".join(repr(entry) for entry in weakened)
+    return Finding(
+        code=MRS_POLICY_PROTECTED_FLOOR_REMOVAL,
+        severity=Severity.ERROR,
+        message=(
+            f"protected_ref_prefixes in the {layer_name} layer tries to remove the protected floor "
+            f"entry {named} ({raw_value!r}) -- the floor is code-declared and a policy layer may only "
+            "add to it; this layer's value is refused"
+        ),
+        path=layer_name,
+    )
+
+
+def _merge_protected_ref_prefixes(
+    repo_defaults: Mapping[str, object],
+    project: Mapping[str, object],
+    flags: Mapping[str, object],
+    findings: list[Finding],
+) -> PolicyField:
+    """``protected_ref_prefixes`` (Story 87.6): the layers UNION, in
+    ``repo_defaults -> project -> flags`` order, so a later layer can only
+    extend an earlier one's additions, never drop them. A floor entry
+    re-declared is dropped as a no-op (the floor protects it regardless). A
+    layer that tries to remove a floor entry is refused with
+    ``MRS-POLICY-010``; any other malformed value with ``MRS-POLICY-009``.
+    A refused layer contributes nothing. The winning layer is the last one
+    that contributed a valid value."""
+    key = "protected_ref_prefixes"
+    merged: list[str] = []
+    layer = PolicyLayer.DEFAULT
+    raw_source: object = DEFAULT_POLICY[key]
+    for layer_name, mapping, layer_enum in (
+        ("repo_defaults", repo_defaults, PolicyLayer.REPO_DEFAULTS),
+        ("project", project, PolicyLayer.PROJECT),
+        ("flag", flags, PolicyLayer.FLAG),
+    ):
+        if key not in mapping:
+            continue
+        raw = mapping[key]
+        weakened = protected_refs.floor_entries_weakened_by(raw)
+        if weakened:
+            findings.append(_protected_floor_removal_finding(layer_name, weakened, raw))
+            continue
+        additions = None if raw is None else protected_refs.validate_policy_protected_additions(raw)
+        if additions is None:
+            findings.append(_protected_refs_malformed_finding(layer_name, raw))
+            continue
+        for prefix in additions:
+            if prefix not in merged:
+                merged.append(prefix)
+        layer, raw_source = layer_enum, raw
+    return PolicyField(value=tuple(merged), layer=layer, raw_source=raw_source)
+
+
 def _base_worktree_seed_paths(project_slug: str | None) -> tuple[str, ...]:
     """FR-50: the base paths every project gets, GENERATED from
     ``project_slug`` -- never a hardcoded project name. ``None`` means the
@@ -1848,7 +1955,7 @@ def _compose_worktree_seed_paths(
 
 @dataclass(frozen=True)
 class EffectivePolicy:
-    """The composed, immutable policy value (AD-10): 17 public STATIC
+    """The composed, immutable policy value (AD-10): 18 public STATIC
     ``PolicyField`` attributes plus a private ``_seed`` mapping holding the
     17 SEED fields (AD-26). ``seed_view()`` is the sole whitelisted accessor
     for ``_seed`` -- ``tests/meta/test_ad26_seed_field_access_guard.py``
@@ -1878,6 +1985,7 @@ class EffectivePolicy:
     scope_violation_mode: PolicyField
     model_cost_catalog: PolicyField
     dispatch: PolicyField
+    protected_ref_prefixes: PolicyField
     _seed: Mapping[str, PolicyField]
 
     def __post_init__(self) -> None:
@@ -1899,6 +2007,7 @@ class EffectivePolicy:
             "scope_violation_mode",
             "model_cost_catalog",
             "dispatch",
+            "protected_ref_prefixes",
         ):
             value = getattr(self, name)
             if not isinstance(value, PolicyField):
@@ -1951,13 +2060,14 @@ class EffectivePolicy:
                 "scope_violation_mode",
                 "model_cost_catalog",
                 "dispatch",
+                "protected_ref_prefixes",
             )
         )
         seed = ", ".join(f"{key!r}: {_field_repr(key, field)}" for key, field in sorted(self._seed.items()))
         return f"{type(self).__name__}({static}, _seed={{{seed}}})"
 
     def seed_view(self) -> Mapping[str, PolicyField]:
-        """The sole whitelisted accessor for the 16 seed-tagged fields
+        """The sole whitelisted accessor for the 17 seed-tagged fields
         (AD-26, closing F-8): a read-only mapping keyed by field name. This
         is what lets ``marshal config`` (FR-54) print every effective key
         and FR-53 validation range over every key without contradicting
@@ -1969,7 +2079,7 @@ class EffectivePolicy:
     def content_hash(self) -> str:
         """``sha256`` hex digest over a canonical sorted-key JSON
         serialization of every field's FULL ``{value, layer, raw_source}``
-        (16 static + 16 seed) -- AD-35's naming primitive. Hashing only
+        (18 static + 17 seed) -- AD-35's naming primitive. Hashing only
         ``value`` would let two compositions with identical values but
         DIFFERENT winning layers collide on the same hash, so
         ``materialize()``'s write-once check would silently keep stale
@@ -2006,6 +2116,7 @@ class EffectivePolicy:
             "scope_violation_mode": _field_payload(self.scope_violation_mode),
             "model_cost_catalog": _field_payload(self.model_cost_catalog),
             "dispatch": _field_payload(self.dispatch),
+            "protected_ref_prefixes": _field_payload(self.protected_ref_prefixes),
         }
         payload.update({key: _field_payload(field) for key, field in self._seed.items()})
         canonical = json.dumps(payload, sort_keys=True)
@@ -2148,7 +2259,7 @@ def compose(
     flags: Mapping[str, object],
 ) -> tuple[EffectivePolicy, tuple[Finding, ...]]:
     """The pure fold ``defaults -> repo_defaults -> project -> flags``, last
-    wins (AD-16), over Marshal's closed 33-key policy vocabulary. Never reads a
+    wins (AD-16), over Marshal's closed 35-key policy vocabulary. Never reads a
     file or an env var -- ``repo_defaults``/``project``/``flags`` arrive as
     already-parsed mappings; the CLI boundary (``cli/config.py``) does the
     file/env I/O and calls this. The ``repo_defaults`` parameter was added in
@@ -2352,6 +2463,7 @@ def compose(
         findings,
         "MRS-POLICY-002",
     )
+    protected_ref_prefixes = _merge_protected_ref_prefixes(repo_defaults, project, flags, findings)
     seed = {
         "gate_mode": _merge_field(
             "gate_mode",
@@ -2557,6 +2669,7 @@ def compose(
         scope_violation_mode=scope_violation_mode,
         model_cost_catalog=model_cost_catalog,
         dispatch=dispatch,
+        protected_ref_prefixes=protected_ref_prefixes,
         _seed=seed,
     )
     return effective, tuple(findings)

@@ -541,3 +541,16 @@ class VcsPort(Protocol):
         (``remove_worktree``). Raises ``VcsCommandError`` on any git
         failure."""
         ...
+
+    def remote_branch_exists(self, repo_root: Path, branch: str, *, remote: str = "origin") -> bool:
+        """Story 87.6: ``git ls-remote --heads <remote> refs/heads/<branch>`` --
+        whether the remote still lists the branch (read-only, network)."""
+        ...
+
+    def is_commit_ancestor(self, repo_root: Path, ancestor: str, descendant: str) -> bool:
+        """Story 87.6: ``git merge-base --is-ancestor`` (exit 0/1 only)."""
+        ...
+
+    def commit_contained_in_tag_prefixes(self, repo_root: Path, commit: str, tag_prefixes: tuple[str, ...]) -> bool:
+        """Story 87.6: ``git for-each-ref --contains <commit>`` under tag prefixes."""
+        ...

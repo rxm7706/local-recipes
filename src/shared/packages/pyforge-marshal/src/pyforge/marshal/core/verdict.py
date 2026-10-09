@@ -845,6 +845,10 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     # advisory -- the render stands on the template default, the operator is
     # told; MRS-POLICY-005's own non-blocking tier.
     "MRS-POLICY-008": Verdict.WARN,
+    # Story 87.6 (CAP-287): a refused `protected_ref_prefixes` layer --
+    # malformed (009) or removing a floor entry (010); MRS-POLICY-002's tier.
+    "MRS-POLICY-009": Verdict.UNEVALUABLE,
+    "MRS-POLICY-010": Verdict.UNEVALUABLE,
     "MRS-INIT-001": Verdict.UNEVALUABLE,
     "MRS-INIT-002": Verdict.UNEVALUABLE,
     "MRS-INIT-003": Verdict.ERROR,
@@ -941,6 +945,7 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-RETIRE-001": Verdict.UNEVALUABLE,
     "MRS-RETIRE-002": Verdict.WARN,
     "MRS-RETIRE-003": Verdict.WARN,
+    "MRS-RETIRE-004": Verdict.WARN,
     "MRS-STATUS-002": Verdict.WARN,
     "MRS-STATUS-003": Verdict.UNEVALUABLE,
     "MRS-STATUS-004": Verdict.WARN,
@@ -1020,6 +1025,8 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-LAND-009": Verdict.WARN,
     "MRS-LAND-010": Verdict.WARN,
     "MRS-LAND-011": Verdict.WARN,
+    "MRS-LAND-012": Verdict.WARN,
+    "MRS-LAND-013": Verdict.WARN,
     "MRS-STATUS-010": Verdict.WARN,
     "MRS-STATUS-011": Verdict.WARN,
     "MRS-STATUS-014": Verdict.WARN,

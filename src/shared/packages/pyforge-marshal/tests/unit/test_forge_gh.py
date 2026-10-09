@@ -573,7 +573,12 @@ def test_merge_pr_subject_and_delete_branch_both_present(forge, monkeypatch):
 
 
 def test_merge_pr_raises_on_gh_failure(forge, monkeypatch):
-    run = _ScriptedRun([_completed([], returncode=1, stderr="pull request is not mergeable")])
+    run = _ScriptedRun(
+        [
+            _completed([], returncode=1, stderr="pull request is not mergeable"),
+            _completed([], stdout='{"state":"OPEN"}'),
+        ]
+    )
     monkeypatch.setattr(forge_gh_module, "_run", run)
     with pytest.raises(ForgeCommandError, match="not mergeable"):
         forge.merge_pr(_REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True)
@@ -593,6 +598,18 @@ def test_merge_pr_failure_message_names_the_subject_when_provided(forge, monkeyp
             delete_branch=False,
             subject=ForgeRef("bad subject"),
         )
+
+
+def test_merge_pr_delete_failure_after_merged_does_not_raise(forge, monkeypatch):
+    """Story 87.6: branch delete can fail after the merge succeeded."""
+    run = _ScriptedRun(
+        [
+            _completed([], returncode=1, stderr="refusing to delete protected branch"),
+            _completed([], stdout='{"state":"MERGED"}'),
+        ]
+    )
+    monkeypatch.setattr(forge_gh_module, "_run", run)
+    forge.merge_pr(_REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True)
 
 
 # --- gh launch failures (never a real network call; a real gh is never invoked) --
