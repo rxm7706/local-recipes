@@ -266,7 +266,7 @@ def test_the_checked_in_tree_configures_with_only_cutover_root(
 
 def test_evaluate_boolean_refuses_without_a_key() -> None:
     with pytest.raises(TypeError):
-        evaluate_boolean()  # type: ignore[call-arg]
+        evaluate_boolean()
 
 
 def test_cli_refuses_without_a_key() -> None:
