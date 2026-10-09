@@ -2,7 +2,8 @@
 title: "25.2: Track B refreshes the co-maintained recipes and keeps every other maintainer's work"
 type: 'feature'
 created: '2026-09-29'
-status: 'ready-for-dev'
+status: 'blocked'
+baseline_revision: 'fe994a85d48d0cfe120c7e54699de3191dfe9ff7'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -12,7 +13,25 @@ context:
   - docs/specs/feedstock-refresh.md
   - .claude/skills/conda-forge-expert/SKILL.md
   - docs/how-to/feedstock-platform-expansion.md
-deferred: []
+deferred:
+  - summary: >-
+      Track B recipe batches (Waves B–F) need the same bulk refresh driver Story 25.1 used
+      (context.version-only recipes break autotick; feedstock-target bumps + enrich + gates).
+    evidence: |-
+      Wave A lists 96 v1-refresh co-maintained recipes; pilot autotick on recipes/billiard/recipe.yaml
+      failed with "Could not determine package name and version from recipe context." No
+      committed batch driver exists in-repo (.cursor/wave_h_rebaseline.py from 25.1 was not landed).
+    location: >-
+      .claude/scripts/conda-forge-expert/recipe_updater.py
+    severity: high
+  - summary: >-
+      Twenty genuinely-missing local mirrors (mostly dbgpt-* outputs) await Wave F after operator
+      confirms create_missing scope (feedstock-refresh Track B Q2 default yes).
+    evidence: |-
+      Wave A co_maint discovery: genuinely_missing_names in .cursor/track_b_baseline.json (20 packages).
+    location: >-
+      docs/specs/feedstock-refresh.md
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -158,9 +177,56 @@ Flag: `flag-exempt: recipe-build` (a recipe build ships no runtime capability be
 
 ## Run results
 
-Not started. Wave A writes the live counts here first.
+**Wave A (discovery) — 2026-10-09.** Script: `.cursor/track_b_wave_a.py`. Artifacts:
+`.cursor/track_b_baseline.json`, `.cursor/track_b_baseline.md`; atlas-side copies under
+`.claude/data/conda-forge-expert/feedstock-update/` (`co_maint.txt`, `co_behind_verified.json`,
+gitignored). Dispatch confirmation treated as scope approval for counts (same unattended rule as
+Story 25.1); recipe batches did not start — blocked on bulk driver (see `deferred`).
+
+| Metric | Live count |
+|--------|----------:|
+| Co-maintained feedstocks (atlas) | 288 |
+| With local recipe dir | 268 |
+| Genuinely missing local mirror | 20 |
+| **v1-refresh** (behind published) | **96** |
+| v1-current (version current) | 162 |
+| v1-ahead | 8 |
+| other-non-pep440 | 2 |
+| no-local-recipe (upper bound) | 20 |
+
+**Atlas:** `/home/rxm7706/UserLocal/Projects/Github/rxm7706/local-recipes/.claude/data/conda-forge-expert/cf_atlas.db`
+built ~0.09 days before Wave A (under the 3-day gate). Maintainer lists snapshotted per feedstock in
+`track_b_baseline.json` (`deployed_maintainers` on each detail row).
+
+**Note vs June 2026 intake (232 co-maintained):** the live atlas set is larger (288) after maintainer
+graph refresh; bucket math uses the current query, not the stale headline.
+
+**Maintainer-list audit:** not run — no recipe mutations in this pass.
+
+## Auto Run Result
+
+Status: blocked
+
+Blocking condition: Wave A complete; bulk recipe refresh driver missing for context.version-only recipes (96 v1-refresh queued).
+
+Summary: Ran Track B Wave A discovery against a fresh maintainer-profile atlas; recorded live bucket
+counts and maintainer snapshots. Did not mutate `recipes/` (autotick pilot on `billiard` failed on
+missing `context.name`).
+
+Verification: `pixi run --frozen -e pyforge-mason pyforge-mason-test` exit 0;
+`python scripts/spec_surface_reconcile.py` exit 0 after memlog on `spec-pyforge-mason`.
+
+Follow-up review recommended: false
+
+Residual risks: co-maintained count drift vs 2026-06 baseline; Wave F scope for 20 dbgpt/langflow
+mirrors; full G53 audit still required when batches land.
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate); the operator reviews the branch before
-  landing it as `Merge pyforge-mason/25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work into main`.
+### 2026-10-09 — Review pass (build-auto, Wave A only)
+- verdicts: 0 adversarial layer findings — no recipe diff to review yet
+- findings:
+  - `[false]` `[reject]` Skipping step-04 blind/edge layers — implementation halted at Wave A gate with no recipe commits.
+
+- Operator reviews the branch before landing as
+  `Merge pyforge-mason/25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work into main`.
