@@ -694,7 +694,7 @@ outputs:
         - if: osx
           then: _openmp_mutex
       run_constraints:
-        - ${{ pin_subpackage("libgomp", exact=True) }}
+        - ${{ pin_subpackage("libgomp", upper_bound=None) }}
         - if: win
           then: msys2-conda-epoch <0.0a0
         - libgcc-ng >=${{ version }}
