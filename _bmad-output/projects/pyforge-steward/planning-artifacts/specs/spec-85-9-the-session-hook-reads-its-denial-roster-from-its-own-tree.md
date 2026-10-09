@@ -2,8 +2,8 @@
 title: "85.9: The session hook reads its denial roster from its own tree"
 type: 'fix'
 created: '2026-10-09'
-status: 'ready-for-dev'
-baseline_revision: '20b7e853c38ea344441e911109f76ad7ee504d43'
+status: 'in-progress'
+baseline_revision: 'f7ce163b6991281695ea93a121b5c96fad299cf9'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:

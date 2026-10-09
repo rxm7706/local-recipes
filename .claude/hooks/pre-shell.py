@@ -23,7 +23,9 @@ reason it gives for each -- naming the sanctioned form. Adding a denial is a
 governance act on that file, never a bare code change here. `MATCHERS` below
 must carry exactly one callable per declared rule id, in both directions --
 `load_denial_rules()` asserts that at every run and raises (loud, not a
-silent skip) on any drift between the two.
+silent skip) on any drift between the two. The roster is read from the tree
+the hook script lives in, so the matchers and the roster always come from one
+revision whatever the tool call's cwd.
 
 Cursor's `afterFileEdit` has no permission/deny or message-injection output
 in its current schema (checked live against https://cursor.com/docs/agent/hooks,
@@ -951,7 +953,7 @@ def _collect_ref_deletions_from_tokens(tokens: list[str]) -> list[str]:
 
 def match_protected_ref_deletion(ctx: Context, rule: dict[str, Any]) -> Optional[str]:
     reason = str(rule["reason"])
-    prefixes = load_protected_deletion_prefixes(ctx.repo_root)
+    prefixes = load_protected_deletion_prefixes(_hook_install_repo_root())
     for tokens in ctx.subcommands:
         git_rest = _git_subcommand_tokens(tokens)
         if git_rest:
@@ -1000,7 +1002,7 @@ def match_unreachable_ref_deletion(ctx: Context, rule: dict[str, Any]) -> Option
     reasons = rule["reason"]
     unreachable = str(reasons["unreachable"])
     fetch_remedy = str(reasons["fetch_remedy"])
-    protected = load_protected_deletion_prefixes(ctx.repo_root)
+    protected = load_protected_deletion_prefixes(_hook_install_repo_root())
     origin_main = _git(["rev-parse", "--verify", _ORIGIN_MAIN], ctx.cwd)
     for tokens in ctx.subcommands:
         for ref in _collect_ref_deletions_from_tokens(tokens):
@@ -1649,7 +1651,7 @@ def main() -> int:
         return 0
 
     ctx = build_context(harness, kind, payload)
-    rules = load_denial_rules(ctx.repo_root)
+    rules = load_denial_rules(_hook_install_repo_root())
 
     for rule_id, matcher in MATCHERS.items():
         rule = rules[rule_id]
