@@ -1090,7 +1090,7 @@ pyforge-herald = { features = ["pyforge-herald"], no-default-feature = true }
 # pyforge-mason package + pytest + the two build frontends.
 pyforge-mason = { features = ["pyforge-mason"], no-default-feature = true }
 # Lean steward env (Story 1.1, pyforge-warden mirror): same lean shape.
-pyforge-steward = { features = ["pyforge-steward"], no-default-feature = true }
+pyforge-steward = { features = ["pyforge-steward", "openfeature-file-eval"], no-default-feature = true }
 # Lean marshal env (Story 1.1, pyforge-warden mirror): no-default-feature,
 # so it carries only the built pyforge-marshal package + its conda
 # run-deps + pytest + import-linter.
