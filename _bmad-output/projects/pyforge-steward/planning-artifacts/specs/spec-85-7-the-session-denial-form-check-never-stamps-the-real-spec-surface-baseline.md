@@ -2,9 +2,9 @@
 title: "85.7: The session-denial form check never stamps the real spec-surface baseline"
 type: 'fix'
 created: '2026-10-08'
-status: 'ready-for-dev'
+status: 'done'
 baseline_revision: '488837c504cb46ebf973c50e337af5623fafac13'
-review_loop_iteration: 0
+review_loop_iteration: 1
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
@@ -181,8 +181,37 @@ Type / Effort / Deps: fix / S / —.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-08 (implementation): the subparser AC's mutation claim needs a parent-level check. With the depth
+  counter removed, `["sub", "--known"]` and `["sub", "--known", "--bogus"]` still classify correctly, because the
+  subparser's own `parse_known_args` sees the same leftovers. The subparser test therefore adds a fixture whose
+  parent declares `--root` as required: `["sub", "--known"]` is rejected only when the outermost parse decides, and
+  `["--root", "r", "sub", "--known"]` is accepted. That half fails under the no-depth mutant.
+- 2026-10-08 (review, iteration 1): the probe tightened in five ways, each with a test where it changes an outcome.
+  - An exception other than `SystemExit` raised by the outermost parse (`exit_on_error=False`, an `error()`
+    override) ends the probe with exit 2 (rejects); before, the script could catch it and run its body.
+  - An outermost parse of an explicit list that is not the command line (`parse_args([])` for defaults) ends the
+    probe with exit 3 (unprobeable); it no longer decides acceptance for an argv it never read.
+  - The script is read with `ast.parse(script.read_bytes())`, so a byte-order mark or a coding cookie parses; a
+    file that is not Python, or a probe that runs past 120 s, is reported unprobeable instead of raising.
+  - The bootstrap replaces `-c`'s `''` entry with the script's directory, so `sys.path` matches `python
+    script.py`; the probe runs with `-B`, so a probed script writes no `__pycache__`.
+  - Unprobeable messages name the outcome (`returned without parsing`, `exited with … before parsing`, or the
+    traceback's last line), and a string `SystemExit` code is printed.
+- The baseline test also asserts the `.lock` sidecar was not created. In a checkout where steward's Spec has
+  drift its memlog does not narrate, a direct run refuses its stamp without writing the baseline; the marker tests
+  catch the direct-run mutant in every checkout state.
 
 ## Review Triage Log
 
-- No review has run yet.
+- 2026-10-08, iteration 1 (independent adversarial review of the diff against this spec): 9 findings.
+  - Fixed: 1 (outermost non-`SystemExit` exception let the body run), 2 (an explicit-list parse decided
+    acceptance), 4 (baseline test's mutation claim depends on checkout state: `.lock` assertion added and the note
+    above), 5 (`ast.parse` on text raised on a BOM or coding cookie; `TimeoutExpired` escaped), 6 (`sys.path`
+    differed from `python script.py`), 7 (unprobeable messages without the outcome), 8 (no `-B`).
+  - Not taken: 3 (an audit-hook sandbox refusing writes, exec and spawn before the parse). The contract scopes
+    pre-parse code out ("What runs before the parse still runs"); no script under `scripts/` or `_bmad/scripts/`
+    re-executes itself, uses `argparse.FileType`, or writes before it parses; a sandbox would be new scope.
+  - Not taken: 9 (a deliberate `parse_known_args` pass-through is now reported `rejects`). This is the spec's
+    rule and fails closed; no roster span uses that pattern.
+  - Verified: AC1 to AC7 (both mutants re-run after the fixes: direct run fails 8 of the new tests including the
+    baseline and marker tests; no depth counter fails the subparser test).
