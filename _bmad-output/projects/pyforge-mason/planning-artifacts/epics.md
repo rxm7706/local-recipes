@@ -2379,7 +2379,7 @@ object repr
 **And** `mason recipe validate` gains the check with no Mason change (it runs CFE's script by subprocess); the story's
 `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test`
 green
-**Status:** backlog
+**Status:** done
 
 ## Epic 23: CFE's generator asks instead of guessing, a mismatched copyleft licence is refused, and a negative corpus keeps each check honest (spec-pyforge-mason CAP-33)
 
