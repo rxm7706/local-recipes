@@ -2,7 +2,7 @@
 title: "71.9: A reduced suite lane never fails on a segment that selects no tests"
 type: 'fix'
 created: '2026-10-08'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '5525712c62b310d8f0a499e3ac08296234e762eb'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -239,4 +239,30 @@ each Spec `spec-surface-check` names, then one scoped stamp each (AGENTS.md § P
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Reduced suite lanes run each pytest segment as its own process; pytest exit 5 on a reduction segment counts as `no-tests-selected` (lane still ok). Equal task/gate markers omit the gate-directory segment. `collect_pytest_node_ids` strips duplicate `-q` and treats exit 5 as an empty set. Journal entries include `suite_reduction_segments` and optional `suite_reduction_task_collect_exit`.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_suite_reduction.py` — segment model, complement fix, collection helper
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — multi-segment runner and runtime journal merge
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` — AC coverage and partition non-empty asserts
+
+Review: no findings; no patches or deferrals.
+
+Verification:
+- `pixi run --frozen -e pyforge-steward pyforge-steward-test` — pass (2238 tests after fix)
+- `pixi run --frozen -e pyforge-steward python -m pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py -q` — 23 passed
+- `python scripts/spec_surface_reconcile.py` — OK
+
+Surface reconcile memlog paths (Story 71.9):
+- `spec-pyforge-steward/.memlog.md`: `preflight_suite_reduction.py`, `preflight.py`, `test_preflight_suite_reduction.py`
+- `spec-pyforge-core/.memlog.md` (co-governor): `preflight_suite_reduction.py`, `preflight.py`
+
+Residual risk: live herald/doctor/scribe/marshal branch preflight smoke checks listed under Manual checks were not run in this dispatch.
