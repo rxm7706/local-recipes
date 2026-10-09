@@ -2,7 +2,8 @@
 title: "72.1: The Guild environment answers pyforge mason"
 type: 'fix'
 created: '2026-09-28'
-status: 'backlog'
+status: 'in-progress'
+baseline_revision: 'd5a23fb37a857f657bb4d5338697891ec385509d'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
