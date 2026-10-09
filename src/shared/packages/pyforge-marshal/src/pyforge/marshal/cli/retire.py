@@ -168,10 +168,11 @@ def _roster_protected_prefixes(root: Path) -> frozenset[str]:
     return protected_refs.parse_roster_protected_prefixes(payload.get("protected_refs"))
 
 
-def _policy_protected_additions(project_data: Mapping[str, object]) -> tuple[str, ...]:
-    raw = project_data.get("protected_ref_prefixes", ())
-    validated = protected_refs.validate_policy_protected_additions(raw)
-    return validated if validated is not None else ()
+def _policy_protected_additions(project_data: Mapping[str, object]) -> tuple[str, ...] | None:
+    if "protected_ref_prefixes" not in project_data:
+        return ()
+    validated = protected_refs.validate_policy_protected_additions(project_data.get("protected_ref_prefixes"))
+    return validated
 
 
 def _branch_deletion_would_orphan(vcs: VcsPort, git_repo_root: Path, branch: str) -> bool:
@@ -336,6 +337,18 @@ def run_retire(
         effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
         findings.extend(policy_findings)
         policy_additions = _policy_protected_additions(project_data)
+        if policy_additions is None:
+            findings.append(
+                Finding(
+                    code="MRS-POLICY-004",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"project policy for {slug!r} has invalid protected_ref_prefixes -- "
+                        "entries must be non-empty refs/ prefixes that extend the protected floor"
+                    ),
+                )
+            )
+            continue
         base = effective.landing_base_branch.value
         template = effective.merge_subject_template.value
         main_subjects = _subjects_for_base(base)
