@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.0"
+
+package:
+  name: forge
+  version: ${{ version }}
+
+source:
+  url: https://github.com/git-pkgs/forge/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: fb221afbe54cbd8dcfbe5a476df0b6aa93bea83e23455ac8eaca3b7b0eedd33c
+
+build:
+  number: 0
+  script:
+    - if: win
+      then: call "%RECIPE_DIR%/build.bat"
+      else: bash "${RECIPE_DIR}/build.sh"
+
+requirements:
+  build:
+    - ${{ compiler("go-nocgo") }}
+    - go-licenses
+
+tests:
+  - script:
+      - forge version | grep -Fx "forge ${{ version }}"
+      - forge --help
+  - package_contents:
+      bin:
+        - if: unix
+          then: forge
+        - if: win
+          then: forge.exe
+
+about:
+  homepage: https://github.com/git-pkgs/forge
+  repository: https://github.com/git-pkgs/forge
+  documentation: https://github.com/git-pkgs/forge
+  summary: Unified CLI for GitHub, GitLab, Gitea/Forgejo, and Bitbucket Cloud
+  description: |
+    forge is a Go CLI and library that talks to GitHub, GitLab, Gitea/Forgejo,
+    and Bitbucket Cloud through one interface. Packaged here for local PyForge
+    consumption (Warden intake tooling); not yet on conda-forge.
+  license: MIT
+  license_file:
+    - LICENSE
+    - library_licenses/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: forge
+  cfe-upstream-registry: golang
+  cfe-upstream-name: github.com/git-pkgs/forge
+  cfe-purls:
+    - pkg:conda/forge@${{ version }}?channel=conda-forge
+    - pkg:golang/github.com/git-pkgs/forge@${{ version }}
+  cfe-upstream-repo: https://github.com/git-pkgs/forge
+  cfe-upstream-homepage: https://github.com/git-pkgs/forge
+  cfe-import-names: []
+  cfe-source-kind: github-tag
+  cfe-noarch: compiled
+  cfe-pip-check: "false:not-a-python-package"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-10-09T02:30:00Z
+  cfe-generated-by-version: 8.93.1
+  cfe-generated-at-datetime: 2026-10-09T02:30:00Z
+  cfe-local-build-status: pending
+  cfe-local-build-datetime: ""
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Story 21.2 — local recipe for git-pkgs/forge v0.10.0 (G109: v0.10.1
+#    # exists upstream; spec AC pins 0.10.0 — see retro note).
+#    # G58/G118: conda-forge channeldata had no `forge` package on 2026-10-09.
+# build:
+#    # Pure Go (CGO_ENABLED=0, GOTOOLCHAIN=local). Builds ./cmd/forge per
+#    # .goreleaser.yml. Version via -X github.com/git-pkgs/forge/internal/cli.Version.
+#    # Cross-platform: unix -> build.sh; win -> build.bat with call on go shims.
+#    # go-licenses save ./cmd/forge bundles dependency licenses into library_licenses/.
+####
