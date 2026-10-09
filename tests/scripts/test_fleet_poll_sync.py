@@ -41,8 +41,15 @@ def _init_clone_with_remote(tmp_path: Path) -> tuple[Path, Path, Path]:
     env = _git_env()
     remote = tmp_path / "remote.git"
     clone = tmp_path / "home"
-    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True, env=env)
-    subprocess.run(["git", "clone", "-q", str(remote), str(clone)], check=True, env=env, capture_output=True)
+    subprocess.run(
+        ["git", "init", "-q", "--bare", "-b", "main", str(remote)], check=True, env=env
+    )
+    subprocess.run(
+        ["git", "clone", "-q", str(remote), str(clone)],
+        check=True,
+        env=env,
+        capture_output=True,
+    )
     _git(clone, "config", "user.email", "t@example.com", env=env)
     _git(clone, "config", "user.name", "T", env=env)
     (clone / "README.md").write_text("base\n", encoding="utf-8")
@@ -77,13 +84,20 @@ def test_fleet_poll_scripts_never_rebase_or_push_main():
     assert "--ff-only" in sync
 
 
-def test_fleet_poll_sync_fast_forwards_loop_branch_when_behind_origin_main(tmp_path: Path):
+def test_fleet_poll_sync_fast_forwards_loop_branch_when_behind_origin_main(
+    tmp_path: Path,
+):
     remote, home, env = _init_clone_with_remote(tmp_path)
     tip_before = _git(home, "rev-parse", "HEAD", env=env)
 
     # Advance origin/main on the bare remote via a second clone.
     upstream = tmp_path / "upstream"
-    subprocess.run(["git", "clone", "-q", str(remote), str(upstream)], check=True, env=env, capture_output=True)
+    subprocess.run(
+        ["git", "clone", "-q", str(remote), str(upstream)],
+        check=True,
+        env=env,
+        capture_output=True,
+    )
     _git(upstream, "config", "user.email", "t@example.com", env=env)
     _git(upstream, "config", "user.name", "T", env=env)
     (upstream / "on-main.txt").write_text("new on main\n", encoding="utf-8")
@@ -101,13 +115,18 @@ def test_fleet_poll_sync_fast_forwards_loop_branch_when_behind_origin_main(tmp_p
 
 def test_fleet_poll_sync_logs_diverged_and_does_not_rewrite(tmp_path: Path):
     remote, home, env = _init_clone_with_remote(tmp_path)
-    tip_before = _git(home, "rev-parse", "HEAD", env=env)
     (home / "local-only.txt").write_text("diverge\n", encoding="utf-8")
     _git(home, "add", "local-only.txt", env=env)
     _git(home, "commit", "-qm", "local commit on loop/acme", env=env)
+    tip_before = _git(home, "rev-parse", "HEAD", env=env)
 
     upstream = tmp_path / "upstream"
-    subprocess.run(["git", "clone", "-q", str(remote), str(upstream)], check=True, env=env, capture_output=True)
+    subprocess.run(
+        ["git", "clone", "-q", str(remote), str(upstream)],
+        check=True,
+        env=env,
+        capture_output=True,
+    )
     _git(upstream, "config", "user.email", "t@example.com", env=env)
     _git(upstream, "config", "user.name", "T", env=env)
     (upstream / "on-main.txt").write_text("remote main moved\n", encoding="utf-8")
@@ -124,7 +143,9 @@ def test_fleet_poll_sync_logs_diverged_and_does_not_rewrite(tmp_path: Path):
 def test_fleet_poll_sync_skips_non_loop_branch(tmp_path: Path):
     env = _git_env()
     repo = tmp_path / "repo"
-    subprocess.run(["git", "init", "-q", "-b", "dispatch/acme", str(repo)], check=True, env=env)
+    subprocess.run(
+        ["git", "init", "-q", "-b", "dispatch/acme", str(repo)], check=True, env=env
+    )
     _git(repo, "config", "user.email", "t@example.com", env=env)
     _git(repo, "config", "user.name", "T", env=env)
     (repo / "f.txt").write_text("x\n", encoding="utf-8")

@@ -1022,12 +1022,14 @@ def test_preserve_keep_zero_means_never_prune_in_installed_bmad_loop(tmp_path):
         )
 
     assert verify.prune_preserve_refs(repo, 0) == []
-    assert subprocess.run(
+    listed = subprocess.run(
         ["git", "-C", str(repo), "branch", "--list", "attempt-preserve/*"],
         capture_output=True,
         text=True,
         env=env,
-    ).stdout.strip().count("\n") + 1 == 3
+        check=True,
+    ).stdout.strip()
+    assert len([line for line in listed.splitlines() if line.strip()]) == 3
 
     pruned = verify.prune_preserve_refs(repo, 1)
     assert len(pruned) == 2
