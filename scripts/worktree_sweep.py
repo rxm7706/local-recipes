@@ -885,8 +885,9 @@ def execute_remote_deletes(
     """Apply DELETE rows; mutates row archive_tag fields. Returns findings and updated rows."""
     findings: list[SweepFinding] = []
     delete_rows = [r for r in rows if r.verdict == "DELETE"]
+    manifest_path: Path | None = None
     if apply and delete_rows:
-        write_sweep_manifest(rows, preserve_dir)  # full table before the first delete
+        manifest_path = write_sweep_manifest(rows, preserve_dir)  # full table before the first delete
     for row in delete_rows:
         if not apply:
             continue
@@ -902,6 +903,10 @@ def execute_remote_deletes(
         ok, del_err = delete_remote_branch(row.branch)
         if not ok:
             findings.append(SweepFinding(row.branch, "github-delete-refused", del_err or "delete refused"))
+    if manifest_path is not None:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        payload["rows"] = [asdict(r) for r in rows]
+        manifest_path.write_text(json.dumps(payload, indent=1) + "\n", encoding="utf-8")
     return findings, rows
 
 
@@ -946,8 +951,9 @@ def run_retire_branches(
             rows.append(RemoteBranchRow(branch, sha, "REFUSE", "not a protected branch name"))
             continue
         rows.append(RemoteBranchRow(branch, sha, "RETIRE", "explicit --retire"))
+    manifest_path: Path | None = None
     if apply and rows:
-        write_sweep_manifest(rows, preserve_dir)
+        manifest_path = write_sweep_manifest(rows, preserve_dir)
     for row in rows:
         if row.verdict != "RETIRE" or not apply:
             continue
@@ -964,6 +970,10 @@ def run_retire_branches(
             row.verdict = "REFUSE"
             row.reason = del_err or "delete refused"
             findings.append(SweepFinding(row.branch, "github-delete-refused", row.reason))
+    if manifest_path is not None:
+        payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        payload["rows"] = [asdict(r) for r in rows]
+        manifest_path.write_text(json.dumps(payload, indent=1) + "\n", encoding="utf-8")
     return rows, findings
 
 

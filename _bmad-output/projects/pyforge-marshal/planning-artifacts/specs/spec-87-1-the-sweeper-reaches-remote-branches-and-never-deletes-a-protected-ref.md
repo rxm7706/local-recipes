@@ -2,7 +2,7 @@
 title: "87.1: The sweeper reaches remote branches and never deletes a protected ref"
 type: 'fix'
 created: '2026-10-04'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '20b7e853c38ea344441e911109f76ad7ee504d43'
 review_loop_iteration: 0
 followup_review_recommended: false
