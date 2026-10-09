@@ -3034,7 +3034,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_cutover_root.py": "101475d65160b49c9ef311d035b38af01e85b6b1",
    "src/shared/packages/pyforge-core/tests/unit/test_dispatch.py": "491f422edc51af21e0ea1b7dee1ee89daca95f61",
    "src/shared/packages/pyforge-core/tests/unit/test_errors.py": "cb0d234990797d401f15f4b59a247a96537648a9",
-   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "6f27f07a5fcf1bff470a1a9a28d149fe0ce05a32",
+   "src/shared/packages/pyforge-core/tests/unit/test_flags.py": "3685e04da7820995ceba021a20ec5633339813db",
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
    "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "115c10aa12674d205a1d76dc560c0fde5996d098",
    "src/shared/packages/pyforge-core/tests/unit/test_league_measure.py": "9bd6766e602674c54cb06dd67647707f0c442fdd",
@@ -3357,7 +3357,7 @@
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/__init__.py": "fc3704150fe1e2d8b7aa900833eb9dd510a3bb88",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/capture.py": "dd279855e2bdc7aeac6a8ead1abab451bebe326c",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/catalog.py": "7508602b83469871b8e35598b3f017ac2017d344",
-   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "a74581ee35c0c5cede96b4eb36cadb30d63f6776",
+   "src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py": "d8945603e3546a661903bc3605959995745980dd",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/compile.py": "127cda4a5d58056547545022cf04c2589b6cf596",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/embeddings.py": "0878474de9c8d1f829a79230744d3b0ad9252247",
    "src/shared/packages/pyforge-scribe/src/pyforge/scribe/extras/__init__.py": "6983f3dbeb5fbf0f9ffa9df7ec40bf77d35877e9",
@@ -3445,7 +3445,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/upgrade.py": "412e34d1ded77ef38aa411e384ca734550c3684f",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py": "40d89f33344c87a7f7070bbca32513c21082c84d",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/__init__.py": "82c91c1197d2778d72eadbe6dee2ac33bdd74626",
-   "src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py": "a164f357bb02baa9b273ea247bbd677ff0818c29",
+   "src/shared/packages/pyforge-warden/src/pyforge/warden/actuator.py": "d5f9c9d9870049dbf9f91252757a60c2211a21c8",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/cli.py": "a09bd7de0f7f89a57302bfb9bc921b8076b0b090",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/config.py": "2e0ccf3ee10edac3ea30b1c4b7b78cd3cc4a63aa",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/currency.py": "a09993bf25f257e718b771928a71bc0b0311157a",
@@ -3487,7 +3487,7 @@
    "src/shared/packages/pyforge-warden/src/pyforge/warden/vuln.py": "7b242ba3861963e8d6c0c17f5607818b3920e64a",
    "src/shared/packages/pyforge-warden/src/pyforge/warden/waiver.py": "f313e4418fd88542a491b7cd12f4a8d8b0af9026"
   },
-  "memlog": "8b41e7a08d0fa01be4026cba5563835ae09d9ef7"
+  "memlog": "258b56db24c91dd71a70a0ff95163fdf19eff7ca"
  },
  "pyforge-marshal/spec-pyforge-marshal": {
   "files": {
