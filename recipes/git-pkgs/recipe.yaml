@@ -91,5 +91,6 @@ extra:
 #    # Version via -X github.com/git-pkgs/git-pkgs/cmd.version (commit/date
 #    # ldflags omitted — tag tarball has no .git).
 #    # Cross-platform: unix -> build.sh; win -> build.bat with call on go shims.
-#    # go-licenses save bundles dependency licenses into library_licenses/.
+#    # go-licenses save bundles dependency licenses into library_licenses/;
+#    # linux-64 needs --ignore=github.com/oapi-codegen/nullable (unknown license).
 ####
