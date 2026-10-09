@@ -1085,6 +1085,46 @@ Drift — orphaned between stations.
   flag. Story 71.10's journal shape, stop-on-red unless `--keep-going`, and each lane's exit code as its verdict do
   not change. Owner `spec-pyforge-steward` CAP-159 (FR-32; Stories 71.3 and 71.9). → Epic 71 / Story 71.11, specced
   2026-10-09; it reopens Epic 71.
+- **2026-10-09 (external writes) — Ruled: outward writes from an agent session are the operator's, and the session hook
+  enforces it.** The operator ruled in chat: "everything mason does with these recipes is local — NO PRs to conda-forge
+  or feedstocks — external repos", and approved a guard. AGENTS.md § Policy already says it in prose (`:30`: never open
+  a feedstock, staged-recipes or upstream PR without an explicit ask; `:31`: never dispatch outward work without
+  operator confirmation). The session hook enforces only one outward form: `gh pr create` without `--repo
+  rxm7706/local-recipes` (`docs/governance/guild-roster.json:359`; `.claude/hooks/pre-shell.py:532`). Meanwhile
+  `.claude/settings.json` pre-allows `Bash(git push *)` and `Bash(gh *)` (`:13`, `:14`, `:22`), so for every other
+  form the hook is the only gate there is. Open today:
+  - a `git push` to any remote that is not `origin` or a local loop home (`marshal-home`, `mason-home`);
+  - `git remote add` / `set-url` of a foreign GitHub URL into this repository's shared config;
+  - `gh repo fork` and `gh repo create`;
+  - `gh pr` / `gh issue` / `gh release` write verbs aimed at another repository;
+  - `gh api` writes to another repository's endpoints;
+  - `pyforge mason recipe submit` and `package ship` with `--yes`;
+  - CFE's `submit-pr` / `prepare-pr` without `--dry-run`, and `scripts/submit_pr.sh`;
+  - `feedrattler`, which always forks, pushes and opens a PR;
+  - `conda-smithy register-github`, `register-ci`, `register-feedstock-token` and `update-anaconda-token` (with its
+    aliases);
+  - the `conda_forge_server` MCP tools `submit_pr` and `prepare_submission_branch` without `dry_run`, and
+    `migrate_to_v1`. MCP tools never pass through the Bash hook at all.
+
+  A 2026-10-09 audit found no agent-made external PR, push, fork, issue or comment since 2026-10-01 (the external PRs
+  were `regro-cf-autotick-bot`'s; two fork pushes were the operator's web-UI edits), so this closes the gaps before
+  they are used. Some skill text still instructs outward steps, and the hook will deny them:
+  - CFE `SKILL.md:2680` and `:3311`/`:3330`;
+  - `mason-feedstock-platform-expansion` `SKILL.md:406` and `:437`;
+  - `mason-feedstock-failure-remediation` `SKILL.md:277`.
+
+  Their owners reword them to hand the operator the command. **What it looks like when fixed:** each class above is a
+  `session_denials` entry whose reason names what stays open: the dry run, `origin`, or `--repo
+  rxm7706/local-recipes`. Outward work is handed to the operator as a command to run after explicit confirmation. Reads
+  stay open everywhere: `gh pr view` / `checks` on conda-forge, `gh api` GETs, fetches and clones. **Constraints:**
+  - the list stays closed, and every addition is a governance act; this ruling is that act;
+  - no false positive on `git push origin …`, `gh pr create --repo rxm7706/local-recipes`, `gh api` GETs, or the loop
+    homes;
+  - `gh api graphql` stays out, because a mutation names node ids rather than a repository, and denying every mutation
+    would block the review-thread replies `bmad-os-findings-triage` posts on this repository's own PRs.
+
+  Owner `spec-pyforge-steward` CAP-5 (Story 63.3's closed list; Story 85.1 added an entry under it by ruling). → Epic
+  85 / Story 85.8, specced 2026-10-09.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 
