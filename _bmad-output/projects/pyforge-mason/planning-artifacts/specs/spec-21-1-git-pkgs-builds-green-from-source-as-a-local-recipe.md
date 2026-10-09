@@ -2,8 +2,9 @@
 title: "21.1: git-pkgs builds green from source as a local recipe"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'in-review'
 baseline_revision: '4698aee11b33774892315bf5606ff560ec158af2'
+followup_review_recommended: false
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
