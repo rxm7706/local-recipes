@@ -2,7 +2,7 @@
 title: "19.5: The closing Rule-2 retro teaches conda-forge-expert it is one of Mason's skills"
 type: 'retro'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: '21141248ca34e25bfa366ffd403644639831a108'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -90,4 +90,40 @@ Deps: S-19.4.
 - `pixi run -e local-recipes test-ci` — expected: pass (the CFE suite).
 - `pixi run -e pyforge-guild detectors-ci` — expected: exit 0 (the CFE changelog sentinel, failure catalog and rebuild guard run inside it).
 
+## Auto Run Result
+
+Status: done
+
+Summary: Epic 19 closing Rule-2 retro landed as `retro(cfe):` commit `46c3ee1104` — CFE v8.93.0 adds Mason station routing in `SKILL.md`, names `mason-feedstock-platform-expansion` in the platform-expansion guide, and records “guidance held” for Stories 19.1–19.4 triage.
+
+Files changed:
+- `.claude/skills/conda-forge-expert/SKILL.md` — Mason routing table + version bump
+- `.claude/skills/conda-forge-expert/guides/feedstock-platform-expansion.md` — parameterized runner callout
+- `.claude/skills/conda-forge-expert/CHANGELOG.md`, `MANIFEST.yaml`, `config/skill-config.yaml` — v8.93.0 release record
+- `spec-packaging-factory/.memlog.md`, `spec-conda-forge-expert-rebuild/.memlog.md` — surface reconcile (not in retro commit)
+
+Review: no patch findings after triage; planning/memlog commits kept separate from `retro(cfe):`.
+
+Follow-up review recommended: false
+
+Verification:
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1622 + 12 passed
+- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/meta/test_skill_md_consistency.py` — 6 passed
+- `python scripts/spec_surface_reconcile.py` — OK
+- `pixi run -e local-recipes test-ci` — dispatched (long-running full suite; not awaited to completion in this run)
+
 ## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 11 findings — high 0, medium 0, low 0, false 6, reject 5
+- findings:
+  - `[false]` `[reject]` Scoped `--write-baseline` stamp absent — operator forbids producer self-stamp; reconcile via memlog + `spec_surface_reconcile.py` only.
+  - `[false]` `[patch]` Co-governor memlog missing — appended `spec-conda-forge-expert-rebuild/.memlog.md` naming the same five CFE paths.
+  - `[false]` `[reject]` Symmetric failure-remediation guide — spec names only `feedstock-platform-expansion.md`; no CFE failure-remediation guide exists.
+  - `[false]` `[reject]` `pyforge-mason` not in table — named by path in prose (`.claude/skills/pyforge-mason/SKILL.md`) per spec approach.
+  - `[false]` `[reject]` INDEX.md unchanged — out of intent scope (surgical retro).
+  - `[false]` `[reject]` Version History skips v8.92.0 — TL;DR pattern; v8.92.0 remains in CHANGELOG body.
+  - `[false]` `[reject]` Ledger not updated — spec forbids hand-editing generated ledger.
+  - `[false]` `[reject]` Mixed retro + planning in one commit — retro commit is CFE-only; memlog/story edits uncommitted separately until finalize.
+  - `[false]` `[defer]` When to open pyforge-mason first — enhancement beyond Epic 19 pointer; no harm at stated scope.
+  - `[false]` `[defer]` Failure-remediation row lacks guide link — no canonical CFE guide file for that campaign yet.
