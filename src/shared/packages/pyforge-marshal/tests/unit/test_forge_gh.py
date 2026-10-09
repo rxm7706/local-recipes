@@ -573,7 +573,12 @@ def test_merge_pr_subject_and_delete_branch_both_present(forge, monkeypatch):
 
 
 def test_merge_pr_raises_on_gh_failure(forge, monkeypatch):
-    run = _ScriptedRun([_completed([], returncode=1, stderr="pull request is not mergeable")])
+    run = _ScriptedRun(
+        [
+            _completed([], returncode=1, stderr="pull request is not mergeable"),
+            _completed([], stdout='{"state":"OPEN"}'),
+        ]
+    )
     monkeypatch.setattr(forge_gh_module, "_run", run)
     with pytest.raises(ForgeCommandError, match="not mergeable"):
         forge.merge_pr(_REPO, 42, ForgeRef("merge"), expected_head_sha=ForgeRef("deadbeef"), delete_branch=True)

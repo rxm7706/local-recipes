@@ -177,6 +177,15 @@ class _FakeVcs:
         if branch in self.delete_raises_for:
             raise VcsCommandError("git branch -d failed")
 
+    def resolve_ref(self, repo_root, branch):
+        return f"tip-{branch}"
+
+    def is_commit_ancestor(self, repo_root, ancestor, descendant):
+        return True
+
+    def commit_contained_in_tag_prefixes(self, repo_root, commit, tag_prefixes):
+        return False
+
 
 class _FakeHarness:
     """A minimal ``HarnessPort`` stand-in: ``run_status_snapshot`` keyed by

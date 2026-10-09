@@ -568,7 +568,7 @@ def run_land(
     landing_rules = effective.landing_rules.value
     merge_strategy = effective.landing_merge_strategy.value
     landing_branch_retirement = effective.landing_branch_retirement.value
-    delete_branch = _downgrade_loop_head_branch_delete(head_branch, landing_branch_retirement, findings)
+    delete_branch = landing_branch_retirement
     resync_enabled = effective.landing_resync.value
     data["base"] = base
 
@@ -1065,6 +1065,8 @@ def run_land(
                     ),
                 )
             )
+
+    delete_branch = _downgrade_loop_head_branch_delete(head_branch, delete_branch, findings)
 
     # --- merge + retire (one ForgePort call), journaled intent-before/ ---
     # outcome-after (AD-6). `expected_head_sha=head_sha` (code review,
