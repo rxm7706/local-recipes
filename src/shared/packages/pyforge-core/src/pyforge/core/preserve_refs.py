@@ -5,6 +5,14 @@ snapshots a dirty worktree without moving branch/HEAD/index, writes annotated
 preserve tags with seven ``Preserve-*`` trailers, deduplicates by name and by
 story tree, and lists preserves with derived ``open`` / ``landed`` state.
 
+Story 87.9 adds the READER side -- the helpers every preserve reader (the
+``scripts/`` detectors, ``fleet_picture``, ``marshal status``) imports instead of
+re-deriving a name or an "is it on origin" answer: ``normalize_ref``,
+``ref_on_origin`` (``git ls-remote``, never local tag presence -- a plain fetch
+never follows a tag that points off the fetched branches),
+``preserve_artifact_reachable``, ``recovery_refs_for_run`` and
+``observe_preserve_debt``.
+
 Stdlib-only (plus ``pyforge.core.process`` for git); imports no ``pyforge.<station>``.
 """
 
@@ -21,7 +29,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Literal
 
-from pyforge.core.process import PosixProcess, ProcessError
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 PRESERVE_REF_PREFIX = "refs/tags/preserve/"
 ARCHIVE_REF_PREFIX = "refs/tags/archive/"
@@ -698,3 +706,333 @@ def push_preserve_ref(
     if not _remote_has_ref(repo, refname, remote=remote):
         raise PreserveGitError(f"ls-remote did not list {refname} after push")
     return PushPreserveResult(refname, True, ())
+
+
+# ---------------------------------------------------------------------------
+# Story 87.9 -- the reader side: every preserve reader asks these, never git by hand.
+# ---------------------------------------------------------------------------
+
+ATTEMPT_PRESERVE_BRANCH_PREFIX = "attempt-preserve/"
+ATTEMPT_PRESERVE_DIRTY_PREFIX = "refs/attempt-preserve-dirty/"
+_ATTEMPT_PRESERVE_HEADS_PREFIX = "refs/heads/" + ATTEMPT_PRESERVE_BRANCH_PREFIX
+
+# A hung remote must never hang a reader: one bounded ``ls-remote`` per question.
+REMOTE_PROBE_TIMEOUT_S = 30.0
+
+_FIELD_SEP = "\x1f"
+_RECORD_SEP = "\x1e"
+
+
+def _git_via(
+    process: ProcessPort | None,
+    repo: Path,
+    args: tuple[str, ...],
+    *,
+    timeout_s: float | None = None,
+) -> tuple[int, str, str]:
+    """``git <args>`` through ``process`` (a station's injected port) or the module default."""
+    runner = process if process is not None else _PROCESS
+    try:
+        result = runner.run(["git", *args], cwd=repo, timeout_s=timeout_s)
+    except ProcessError as exc:
+        raise PreserveGitError(str(exc)) from exc
+    return result.returncode, result.stdout, result.stderr
+
+
+def normalize_ref(ref: str) -> str:
+    """The full refname a reader-supplied ``ref`` names.
+
+    ``refs/...`` is kept; a bare ``preserve/...`` / ``archive/...`` is a tag; any other bare
+    name is a branch (the shape a journal's ``preserve_ref`` takes: ``attempt-preserve/<run>-<sha8>``).
+    """
+    cleaned = ref.strip()
+    if cleaned.startswith("refs/"):
+        return cleaned
+    if cleaned.startswith(("preserve/", "archive/")):
+        return f"refs/tags/{cleaned}"
+    return f"refs/heads/{cleaned}"
+
+
+def short_ref_name(refname: str) -> str:
+    """``refs/heads/x`` -> ``x``, ``refs/tags/x`` -> ``x``; anything else unchanged."""
+    for prefix in ("refs/heads/", "refs/tags/"):
+        if refname.startswith(prefix):
+            return refname[len(prefix) :]
+    return refname
+
+
+def is_preserve_tag_ref(ref: str) -> bool:
+    """True when ``ref`` names a tag under the preserve namespace (any spelling ``normalize_ref`` takes)."""
+    return normalize_ref(ref).startswith(PRESERVE_REF_PREFIX)
+
+
+def ref_exists_local(repo: Path, ref: str, *, process: ProcessPort | None = None) -> bool:
+    """Whether ``ref`` resolves to a ref in ``repo``'s own ref store (never says anything about origin)."""
+    if not ref.strip() or not repo.is_dir():
+        return False
+    try:
+        rc, _, _ = _git_via(process, repo, ("show-ref", "--verify", "--quiet", normalize_ref(ref)), timeout_s=30.0)
+    except PreserveGitError:
+        return False
+    return rc == 0
+
+
+def remote_ref_names(
+    repo: Path,
+    patterns: tuple[str, ...] | list[str],
+    *,
+    remote: str = ORIGIN_REMOTE,
+    process: ProcessPort | None = None,
+) -> frozenset[str] | None:
+    """Full refnames ``git ls-remote`` lists for ``patterns``; ``None`` when the remote could not be read.
+
+    ``None`` is NOT "nothing there": an unreadable remote proves nothing either way, and a
+    caller that needs the difference (status's could-not-observe) reads it from here.
+    """
+    try:
+        rc, out, _ = _git_via(process, repo, ("ls-remote", remote, *patterns), timeout_s=REMOTE_PROBE_TIMEOUT_S)
+    except PreserveGitError:
+        return None
+    if rc != 0:
+        return None
+    names: set[str] = set()
+    for line in out.splitlines():
+        _sha, _, name = line.partition("\t")
+        name = name.strip()
+        if name.endswith("^{}"):
+            name = name[: -len("^{}")]
+        if name:
+            names.add(name)
+    return frozenset(names)
+
+
+def ref_on_origin(
+    repo: Path,
+    ref: str,
+    *,
+    remote: str = ORIGIN_REMOTE,
+    process: ProcessPort | None = None,
+) -> bool:
+    """Whether ``ref`` is listed on ``remote`` -- read from the remote, never from a local tag.
+
+    A local tag that ``ls-remote`` does not list is NOT on origin; an unreadable remote is
+    also ``False`` (not proven present).
+    """
+    if not ref.strip() or not repo.is_dir():
+        return False
+    full = normalize_ref(ref)
+    names = remote_ref_names(repo, [full], remote=remote, process=process)
+    return names is not None and full in names
+
+
+def preserve_artifact_reachable(
+    repo: Path,
+    ref: str,
+    *,
+    remote: str = ORIGIN_REMOTE,
+    process: ProcessPort | None = None,
+) -> bool:
+    """A preserve ref counts as present when it exists locally OR is listed on ``remote``.
+
+    Local first (a ``preserve/`` tag or an ``attempt-preserve/*`` branch, offline-durable per
+    AD-29); then ``ls-remote`` for a ref that lives only on origin.
+    """
+    if not ref.strip():
+        return False
+    return ref_exists_local(repo, ref, process=process) or ref_on_origin(repo, ref, remote=remote, process=process)
+
+
+@dataclass(frozen=True, slots=True)
+class LocalPreserveTag:
+    """One local preserve tag read leniently (a malformed tag is listed, never raised on)."""
+
+    refname: str
+    commit: str
+    run: str | None
+    producer: str | None
+    project_slug: str | None
+    story_key: str | None
+    sha8: str | None
+
+
+def list_local_preserve_tags(repo: Path, *, process: ProcessPort | None = None) -> list[LocalPreserveTag]:
+    """Every local tag under the preserve namespace with its peeled commit and ``Preserve-Run``.
+
+    Unlike ``list_preserves`` this never raises on a tag whose message lacks a trailer or
+    whose name does not parse: a reader that crashed on one bad tag would report nothing.
+    """
+    fmt = f"%(refname){_FIELD_SEP}%(*objectname){_FIELD_SEP}%(objectname){_FIELD_SEP}%(contents){_RECORD_SEP}"
+    rc, out, err = _git_via(
+        process, repo, ("for-each-ref", f"--format={fmt}", PRESERVE_REF_PREFIX), timeout_s=60.0
+    )
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git for-each-ref failed")
+    tags: list[LocalPreserveTag] = []
+    for record in out.split(_RECORD_SEP):
+        record = record.strip("\n")
+        if not record.strip():
+            continue
+        fields = record.split(_FIELD_SEP, 3)
+        if len(fields) != 4:
+            continue
+        refname, peeled, objectname, contents = (f.strip() for f in fields)
+        if not refname.startswith(PRESERVE_REF_PREFIX):
+            continue
+        run: str | None = None
+        for line in contents.splitlines():
+            key, _, value = line.partition(":")
+            if key.strip() == "Preserve-Run":
+                run = value.strip() or None
+        try:
+            parsed = parse_preserve_ref(refname)
+        except PreserveRefNameError:
+            parsed = None
+        tags.append(
+            LocalPreserveTag(
+                refname=refname,
+                commit=peeled or objectname,
+                run=run,
+                producer=parsed.producer if parsed else None,
+                project_slug=parsed.project_slug if parsed else None,
+                story_key=parsed.story_key if parsed else None,
+                sha8=parsed.sha8 if parsed else None,
+            )
+        )
+    tags.sort(key=lambda t: t.refname)
+    return tags
+
+
+def _branch_head8(branch_short: str, run_id: str) -> str | None:
+    """The ``<head8>`` of ``attempt-preserve/<run_id>-<head8>``, or ``None`` for another shape."""
+    prefix = f"{ATTEMPT_PRESERVE_BRANCH_PREFIX}{run_id}-"
+    if not branch_short.startswith(prefix):
+        return None
+    head = branch_short[len(prefix) :]
+    return head[:8] if head else None
+
+
+def recovery_refs_for_run(
+    repo: Path,
+    run_id: str,
+    *,
+    remote: str = ORIGIN_REMOTE,
+    process: ProcessPort | None = None,
+) -> list[str]:
+    """Where a baseline-drift defer's work survives for ``run_id``, a ``preserve/`` tag first.
+
+    * a local preserve tag whose ``Preserve-Run`` trailer is ``run_id``;
+    * ``attempt-preserve/<run_id>-*`` branches, local and on ``remote`` (an origin-only
+      branch is still a recovery source);
+    * a bmad-loop preserve tag (local, or listed on ``remote``) named for the same head the
+      branch is -- the tag is the durable twin of the engine's scratch branch.
+
+    Names come back short (``preserve/...``, ``attempt-preserve/...``); a tag precedes a branch.
+    """
+    if not run_id:
+        return []
+    tags: list[str] = []
+    branches: list[str] = []
+    try:
+        rc, out, _ = _git_via(
+            process,
+            repo,
+            ("for-each-ref", "--format=%(refname:short)", f"{_ATTEMPT_PRESERVE_HEADS_PREFIX}{run_id}-*"),
+            timeout_s=30.0,
+        )
+        if rc == 0:
+            branches = [line.strip() for line in out.splitlines() if line.strip()]
+        local_tags = list_local_preserve_tags(repo, process=process)
+    except PreserveGitError:
+        return []
+    remote_branches = remote_ref_names(
+        repo, [f"{_ATTEMPT_PRESERVE_HEADS_PREFIX}{run_id}-*"], remote=remote, process=process
+    )
+    for name in sorted(remote_branches or ()):
+        short = short_ref_name(name)
+        if short not in branches:
+            branches.append(short)
+    heads8 = {h for h in (_branch_head8(b, run_id) for b in branches) if h}
+    for tag in local_tags:
+        if tag.run == run_id or (tag.producer == "bmad-loop" and tag.sha8 in heads8):
+            tags.append(short_ref_name(tag.refname))
+    if heads8:
+        remote_tags = remote_ref_names(repo, [f"{PRESERVE_REF_PREFIX}*"], remote=remote, process=process)
+        for name in sorted(remote_tags or ()):
+            try:
+                parsed = parse_preserve_ref(name)
+            except PreserveRefNameError:
+                continue
+            short = short_ref_name(name)
+            if parsed.producer == "bmad-loop" and parsed.sha8 in heads8 and short not in tags:
+                tags.append(short)
+    return [*dict.fromkeys(tags), *branches]
+
+
+@dataclass(frozen=True, slots=True)
+class PreserveObservation:
+    """What ``marshal status`` reads of preserve debt for one repository."""
+
+    tags: tuple[LocalPreserveTag, ...]
+    local_only_tags: tuple[LocalPreserveTag, ...]
+    unpromoted_scratch: tuple[str, ...]
+
+
+def _scratch_refs(repo: Path, process: ProcessPort | None) -> list[tuple[str, str]]:
+    rc, out, err = _git_via(
+        process,
+        repo,
+        (
+            "for-each-ref",
+            "--format=%(refname)" + _FIELD_SEP + "%(objectname)",
+            _ATTEMPT_PRESERVE_HEADS_PREFIX,
+            ATTEMPT_PRESERVE_DIRTY_PREFIX,
+        ),
+        timeout_s=60.0,
+    )
+    if rc != 0:
+        raise PreserveGitError(err.strip() or "git for-each-ref failed")
+    refs: list[tuple[str, str]] = []
+    for line in out.splitlines():
+        refname, sep, commit = line.partition(_FIELD_SEP)
+        if sep and refname.strip() and commit.strip():
+            refs.append((refname.strip(), commit.strip()))
+    return sorted(refs)
+
+
+def _scratch_is_durable(repo: Path, commit: str, process: ProcessPort | None) -> bool:
+    """A scratch ref is promoted when a preserve tag holds its commit; landed work needs none."""
+    rc, out, _ = _git_via(
+        process, repo, ("for-each-ref", "--contains", commit, "--format=%(refname)", PRESERVE_REF_PREFIX)
+    )
+    if rc == 0 and out.strip():
+        return True
+    rc, _, _ = _git_via(process, repo, ("merge-base", "--is-ancestor", commit, ORIGIN_MAIN))
+    return rc == 0
+
+
+def observe_preserve_debt(
+    repo: Path,
+    *,
+    remote: str = ORIGIN_REMOTE,
+    process: ProcessPort | None = None,
+) -> PreserveObservation | None:
+    """Local-only preserve tags and unpromoted engine scratch refs; ``None`` when unobservable.
+
+    ``None`` -- never an empty observation -- when git cannot list refs, or local preserve tags
+    exist and ``remote`` cannot be read (whether they are on origin is then unknown).
+    """
+    try:
+        tags = list_local_preserve_tags(repo, process=process)
+        scratch = _scratch_refs(repo, process)
+        unpromoted = tuple(
+            refname for refname, commit in scratch if not _scratch_is_durable(repo, commit, process)
+        )
+    except PreserveGitError:
+        return None
+    local_only: tuple[LocalPreserveTag, ...] = ()
+    if tags:
+        listed = remote_ref_names(repo, [f"{PRESERVE_REF_PREFIX}*"], remote=remote, process=process)
+        if listed is None:
+            return None
+        local_only = tuple(t for t in tags if t.refname not in listed)
+    return PreserveObservation(tags=tuple(tags), local_only_tags=local_only, unpromoted_scratch=unpromoted)
