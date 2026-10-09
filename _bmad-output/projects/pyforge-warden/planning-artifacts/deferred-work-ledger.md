@@ -706,7 +706,8 @@ verified: 2026-07-30 — CONFIRMED STILL OPEN — same as its 6-3 twin, and by t
   origin: dispatch-followup-review
   severity: low
   promoted: 2026-10-03 — Story 66.2 backfill
-  status: open
+  resolved: 2026-10-09 (dispatch-land finalize: Merge pyforge-warden/10-2 into main)
+  status: closed
 
 ### DW-FRR-1-4: Follow-up review still recommended for story 1.4
 

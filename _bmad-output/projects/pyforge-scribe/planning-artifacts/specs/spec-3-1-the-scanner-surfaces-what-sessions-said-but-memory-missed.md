@@ -4,8 +4,8 @@ type: 'feature'
 created: '2026-08-22'
 status: 'done'
 baseline_revision: '214ce8fa897149d6b45a1b5bb51b7863b14fb395'
-review_loop_iteration: 1
-followup_review_recommended: true
+review_loop_iteration: 0
+followup_review_recommended: false
 context: []
 warnings: ['oversized']
 deferred: []
@@ -152,6 +152,33 @@ Notes for the next pass: the `patch`/`defer`/`reject` findings below are moot th
 
 Notes: `bad_spec`/`intent_gap` are both zero this pass -- Verification Gap review confirmed all four pass-1 fixes hold with real, passing tests and found no new gap. The 12 `defer` items (dedup threshold is syntactic not semantic and could suppress a genuine decision reversal; "fact" half of "decision/fact" unimplemented; declined candidates are re-proposed every run since nothing marks them rejected; subagent/sidechain transcript turns are not filtered out; only assistant-authored turns are mined, never user-stated decisions; `message.content` as a bare string would be silently skipped; skipped/unreadable files produce no diagnostic, so "0 candidates" is ambiguous; `default_transcript_root()`'s cwd heuristic is fragile inside a bmad-loop worktree; scan order is alphabetical-by-filename with `timestamp` never used to prefer the most recent statement; no cap on candidates surfaced in one run; importing private `capture.py` names couples internals) and 2 `reject` items (all-or-nothing confirm; hardcoded `capture_type`) are all either explicitly excluded by this spec's own `<intent-contract>` Never section, inherited unchanged from `promote.py`'s existing precedent, or reasonable follow-on enhancements outside this story's scope -- none block this story.
 
+### 2026-10-08 — Review pass 3 (allowed follow-up on `done`)
+- verdicts: 28 findings — high 0, medium 1, low 8, false 1, maybe-false 0, reject 6, defer 12
+- findings:
+  - `[low]` `[patch]` CLI cap/timeout warnings not asserted through Typer — added `test_capture_transcripts_forwards_cap_warnings_to_stderr`.
+  - `[low]` `[patch]` Dedup ratio 0.6 untested near threshold — added above/below threshold tests in `test_transcripts.py`.
+  - `[low]` `[patch]` Multi-candidate confirm loop CLI-untested — added `test_capture_transcripts_confirm_yes_writes_every_candidate_in_batch`.
+  - `[medium]` `[patch]` `capture_write` OSError could escape as traceback — `_run_transcripts` now catches `OSError` with exit 2.
+  - `[low]` `[defer]` Missing operator docs for `--transcripts` — same gap as pre-story `--promote` README coverage; out of story scope.
+  - `[low]` `[reject]` "Nothing to promote." copy on `--transcripts` — cosmetic; matches spec's promote-style empty message; not worth churn.
+  - `[medium]` `[defer]` Partial batch failure without rollback — mirrors `_run_promote()` exactly per spec; not introduced here.
+  - `[low]` `[reject]` Per-candidate type override — spec Never section excludes it.
+  - `[low]` `[defer]` Private `capture._truncate` import coupling — acceptable internal reuse within station package.
+  - `[low]` `[defer]` Non-atomic scan cache write — Story 3.3 compile path; interactive `--transcripts` passes `cache_path=None`.
+  - `[low]` `[defer]` Whole-file `read_text` before per-line timeout — bounded defaults (256 files / 1 GiB) make path rare; timeout still guards line loop.
+  - `[low]` `[defer]` No CLI test for default `default_transcript_root()` — encoding covered at module level in `test_transcripts.py`.
+  - `[false]` `[reject]` graph compile transcript test missing from four-file diff — compile wiring lives outside this story's scoped diff; test exists on full tree.
+  - `[low]` `[defer]` Empty transcript directory CLI behavior untested — benign exit 0; low everyday impact.
+  - `[low]` `[defer]` Quadratic dedup vs large memory trees — performance follow-up, not correctness.
+  - `[low]` `[defer]` `message.content` bare string skipped — live Claude Code shape uses list blocks; follow-up if format changes.
+  - `[low]` `[defer]` Intent "full sweep" vs Story 3.3 caps — later stories bound scan economics; CLI defaults remain high enough for typical estates.
+  - `[low]` `[defer]` Scan cache write without confirm — only when caller passes `cache_path` (compile), not `--transcripts`.
+  - `[low]` `[defer]` `recall --semantic` CLI success path untest — ride-along in `cli.py` diff, not Story 3.1 contract.
+  - `[low]` `[defer]` Index `atomic_write_text` OSError — unrelated index/catalog surfaces in same diff hunk context.
+  - `[carried]` `[defer]` Pass-2 defer items unchanged (assistant-only mining, declined re-proposal, dedup reversal risk, PII redaction gap, etc.) — still out of scope.
+
+Notes: pass 3 is the single allowed follow-up (`followup_review_recommended` cleared at entry). `followup_review_recommended` forced `false` at HALT. Patched counts: medium 1, low 3.
+
 ## Verification
 
 **Commands:**
@@ -186,3 +213,19 @@ Notes: `bad_spec`/`intent_gap` are both zero this pass -- Verification Gap revie
 - Declined candidates are not tracked and will be re-proposed identically on every future `--transcripts` run (no "seen and rejected" marker) -- by design (the transcript is never mutated), but worth a human's awareness.
 - Assistant-only mining (per the spec's own stated Approach) means a decision stated by the human and only acknowledged by the assistant will not surface -- a real, scoped-out coverage gap, not a defect.
 - No secret/PII redaction pass before transcript-derived text is written into the git-tracked `.claude/memory/` tree -- an existing, pre-dating-this-story gap shared with `--promote`, not introduced here, but worth a dedicated follow-up given this repo's own past secret-leak incident (noted in team memory).
+
+### Pass 3 follow-up (2026-10-08, bmad-build-auto)
+
+**Summary:** Verification-gap hardening only — CLI forwards cap warnings to stderr (tested), dedup ratio 0.6 boundary tests, multi-candidate batch confirm CLI test, and `OSError` handling in `_run_transcripts` capture loop.
+
+**Files changed this pass:**
+- `src/shared/packages/pyforge-scribe/src/pyforge/scribe/cli.py` — catch `OSError` during transcript capture writes.
+- `src/shared/packages/pyforge-scribe/tests/unit/test_cli.py` — warning forwarding + two-candidate batch tests.
+- `src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py` — dedup threshold above/below 0.6 tests.
+- Memlog reconciles on `pyforge-scribe/spec-pyforge-scribe` and co-governor `pyforge-steward/spec-pyforge-unifying-strategy`.
+
+**Follow-up review recommendation:** `false` (mandatory on allowed follow-up pass).
+
+**Verification performed:**
+- `pixi run --frozen -e pyforge-scribe pyforge-scribe-test` — 428 passed, 12 skipped.
+- `python scripts/spec_surface_reconcile.py` — OK after memlog entries naming all governed paths touched.
