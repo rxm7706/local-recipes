@@ -4898,7 +4898,7 @@ stays under CAP-5's bound as restated 2026-09-28, 2 GB (measured and recorded in
 Guild's resolved pixi does not move and `pixi-version-check` exits 0; virtualenv reads 20.x and filelock 3.x (recorded) and no
 other Guild package changes version; `pyforge-station-tests` and `detectors-ci` green;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 **Amended 2026-09-28 (later):** the banner rewrite also records **atlas's exclusion beside warden's** — a comment in
 `[feature.pyforge-guild.dependencies]` naming why `pyforge-atlas` is not there (the steward memlog's 2026-09-28 decision:
 it solves, but its closure adds 257 packages / ~841 MB installed and moves the Guild's libabseil, nodejs, protobuf and

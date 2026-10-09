@@ -2447,7 +2447,7 @@ non-zero and writes no recipe; a fully resolvable fixture lists no questions and
 default run keeps exit 0, so `mason recipe new` and `cfe.generate_recipe` need no change (AD-1); the story's
 `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry; `pixi run --frozen -e pyforge-mason pyforge-mason-test`
 green
-**Status:** backlog
+**Status:** done
 
 ### Story 23.3: A negative corpus proves each CFE check keeps rejecting its defect
 

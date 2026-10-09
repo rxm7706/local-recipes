@@ -943,3 +943,220 @@ class TestV8690GeneratorFixes:
     def test_github_tag_source_rejects_non_github(self, rg):
         assert rg._github_tag_source("https://gitlab.com/x/y", "1.0") is None
         assert rg._github_tag_source("", "1.0") is None
+
+
+def _write_sdist(tmp_path, dist_name: str, version: str, members: dict[str, str]) -> "Path":
+    import io
+    import tarfile
+    from pathlib import Path
+
+    root = f"{dist_name}-{version}"
+    tar_path = tmp_path / f"{dist_name}-{version}.tar.gz"
+    with tarfile.open(tar_path, "w:gz") as tar:
+        for relpath, text in members.items():
+            data = text.encode("utf-8")
+            ti = tarfile.TarInfo(f"{root}/{relpath}")
+            ti.size = len(data)
+            tar.addfile(ti, io.BytesIO(data))
+    return tar_path
+
+
+class TestRecipeGeneratorDecisions:
+    """Story 23.2 — Decided/Ambiguous generator questions (offline sdists)."""
+
+    def test_ambiguous_fixture_four_questions_and_cfe_header(self, load_module, tmp_path, capsys):
+        mod = load_module("recipe-generator.py")
+        sdist = _write_sdist(
+            tmp_path,
+            "ambig_pkg",
+            "1.0.0",
+            {
+                "pkg/__init__.py": "",
+                "pkg_extra/__init__.py": "",
+                "LICENSE": "MIT",
+            },
+        )
+        raw = {
+            "name": "ambig-pkg",
+            "requires_dist": [],
+            "requires_python": ">=3.1x",
+            "classifiers": [],
+        }
+        info = mod.PackageInfo(
+            name="ambig-pkg",
+            version="1.0.0",
+            summary="s",
+            python_requires=">=3.1x",
+            sha256="a" * 64,
+            source_url="https://example.invalid/ambig_pkg-1.0.0.tar.gz",
+        )
+        mod.apply_pypi_generator_decisions(info, raw, sdist, [])
+        assert len(info.questions) == 4
+        keys = {q.key for q in info.questions}
+        assert keys == {"build-backend", "import-name", "license", "python-min"}
+
+        mod._print_questions(info.questions)
+        captured = capsys.readouterr().out
+        assert "Questions (4):" in captured
+        for q in info.questions:
+            assert q.question in captured
+
+        recipe_path = mod.generate_recipe_yaml(info, tmp_path)
+        body = recipe_path.read_text()
+        assert "default taken:" in body
+        assert info.build_backend == "setuptools"
+        assert "REPLACE_LICENSE" in body
+
+    def test_strict_does_not_write_recipe(self, load_module, tmp_path):
+        mod = load_module("recipe-generator.py")
+        sdist = _write_sdist(
+            tmp_path,
+            "ambig_pkg",
+            "1.0.0",
+            {"pkg/__init__.py": "", "pkg_extra/__init__.py": "", "LICENSE": "x"},
+        )
+        raw = {"name": "ambig-pkg", "requires_dist": [], "requires_python": ">=3.1x"}
+        info = mod.PackageInfo(name="ambig-pkg", version="1.0.0", python_requires=">=3.1x")
+        mod.apply_pypi_generator_decisions(info, raw, sdist, [])
+        assert info.questions
+        # Strict path: questions present → caller must not generate (CLI exits 1).
+        assert not (tmp_path / "recipe.yaml").exists()
+
+    def test_fully_resolvable_no_questions(self, load_module, tmp_path):
+        mod = load_module("recipe-generator.py")
+        sdist = _write_sdist(
+            tmp_path,
+            "clean_pkg",
+            "2.0.0",
+            {
+                "pyproject.toml": (
+                    '[build-system]\nrequires = ["hatchling"]\n'
+                    'build-backend = "hatchling.build"\n'
+                ),
+                "clean_pkg/__init__.py": "",
+                "LICENSE": "MIT License\n",
+            },
+        )
+        raw = {
+            "name": "clean-pkg",
+            "license_expression": "MIT",
+            "requires_dist": [],
+            "requires_python": ">=3.11",
+            "classifiers": [],
+        }
+        info = mod.PackageInfo(
+            name="clean-pkg",
+            version="2.0.0",
+            summary="s",
+            python_requires=">=3.11",
+            sha256="b" * 64,
+            source_url="https://example.invalid/clean_pkg-2.0.0.tar.gz",
+        )
+        mod.apply_pypi_generator_decisions(info, raw, sdist, ["hatchling"])
+        assert info.questions == []
+        assert info.build_backend == "hatchling"
+        assert info.import_name == "clean_pkg"
+        assert info.license == "MIT"
+        recipe_path = mod.generate_recipe_yaml(info, tmp_path)
+        text = recipe_path.read_text()
+        assert "Questions" not in text
+        assert "hatchling" in text
+        assert "clean_pkg" in text
+
+    def test_license_file_question_license_and_copying(self, load_module, tmp_path):
+        mod = load_module("recipe-generator.py")
+        sdist = _write_sdist(
+            tmp_path,
+            "dual_lic",
+            "1.0.0",
+            {"pkg/__init__.py": "", "LICENSE": "a", "COPYING": "b"},
+        )
+        raw = {
+            "name": "dual-lic",
+            "license_expression": "MIT",
+            "requires_python": ">=3.11",
+        }
+        info = mod.PackageInfo(
+            name="dual-lic",
+            version="1.0.0",
+            python_requires=">=3.11",
+        )
+        mod.apply_pypi_generator_decisions(
+            info, raw, sdist, ["hatchling"],
+        )
+        file_q = [q for q in info.questions if q.key == "license-file"]
+        assert len(file_q) == 1
+        assert set(file_q[0].options) >= {"LICENSE", "COPYING"}
+
+    def test_gpl_only_vs_or_later_semantics_question(self, load_module, tmp_path):
+        mod = load_module("recipe-generator.py")
+        gpl_text = (
+            "GNU General Public License version 3.\n"
+            "You may choose any later version.\n"
+        )
+        sdist = _write_sdist(
+            tmp_path,
+            "gpl_pkg",
+            "1.0.0",
+            {"gpl_pkg/__init__.py": "", "LICENSE": gpl_text},
+        )
+        raw = {
+            "name": "gpl-pkg",
+            "classifiers": [
+                "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+            ],
+            "requires_python": ">=3.11",
+        }
+        info = mod.PackageInfo(name="gpl-pkg", version="1.0.0", python_requires=">=3.11")
+        mod.apply_pypi_generator_decisions(info, raw, sdist, ["setuptools"])
+        lic_q = [q for q in info.questions if q.key == "license"]
+        assert len(lic_q) == 1
+        assert "GPL-3.0-only" in lic_q[0].options
+        assert "GPL-3.0-or-later" in lic_q[0].options
+
+    def test_no_sdist_noarch_question(self, load_module):
+        mod = load_module("recipe-generator.py")
+        raw = {"name": "x", "requires_dist": [], "requires_python": ">=3.11"}
+        info = mod.PackageInfo(name="x", version="1.0.0", python_requires=">=3.11")
+        mod.apply_pypi_generator_decisions(info, raw, None, [])
+        noarch_q = [q for q in info.questions if q.key == "noarch"]
+        assert len(noarch_q) == 1
+
+    def test_maturin_cargo_lib_import_decided(self, load_module, tmp_path):
+        mod = load_module("recipe-generator.py")
+        sdist = _write_sdist(
+            tmp_path,
+            "rusty",
+            "0.1.0",
+            {
+                "Cargo.toml": '[lib]\nname = "rusty_lib"\n',
+                "src/lib.rs": '#[pymodule]\nfn rusty_lib() {}\n',
+                "pyproject.toml": '[build-system]\nrequires = ["maturin>=1.0"]\n',
+            },
+        )
+        raw = {"name": "rusty", "requires_dist": [], "requires_python": ">=3.11"}
+        info = mod.PackageInfo(name="rusty", version="0.1.0", python_requires=">=3.11")
+        mod.apply_pypi_generator_decisions(info, raw, sdist, ["maturin>=1.0"])
+        assert info.build_backend == "maturin"
+        import_q = [q for q in info.questions if q.key == "import-name"]
+        assert import_q == []
+        assert info.import_name == "rusty_lib"
+
+    def test_ambiguous_branch_required_for_fixture(self, load_module, tmp_path):
+        """Mutation guard: without Ambiguous, this fixture would silently pass."""
+        mod = load_module("recipe-generator.py")
+        sdist = _write_sdist(
+            tmp_path,
+            "ambig_pkg",
+            "1.0.0",
+            {"pkg/__init__.py": "", "pkg_extra/__init__.py": "", "LICENSE": "x"},
+        )
+        raw = {"name": "ambig-pkg", "requires_dist": [], "requires_python": ">=3.1x"}
+        info = mod.PackageInfo(name="ambig-pkg", version="1.0.0", python_requires=">=3.1x")
+        mod.apply_pypi_generator_decisions(info, raw, sdist, [])
+        assert any(isinstance(d, mod.Ambiguous) for d in [
+            mod._decide_build_backend([], []),
+            mod._decide_import_name(sdist, "ambig-pkg", "setuptools"),
+            mod._decide_license(raw, "", sdist),
+            mod._decide_python_min(">=3.1x"),
+        ])
