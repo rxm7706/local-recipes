@@ -5671,6 +5671,29 @@ check; AGENTS.md, the roster comment and the hook docstring say sixteen; the ski
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** done
 
+### Story 85.9: The session hook reads its denial roster from its own tree
+
+As the operator whose session in a worktree 153 commits behind `main` could not run one Bash, Edit or Write call because the hook found its `session_denials` drifted,
+I want the session hook to read `docs/governance/guild-roster.json` from the tree the hook script lives in, not from the tree of the tool call's cwd,
+So that the hook's matchers and its roster always come from one revision, and a stale, newer or foreign checkout never blocks the session.
+
+**Type:** fix • **Effort:** S • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (Story 63.3's closed `session_denials` list and its fail-loud parity check; Stories 85.1 and 85.4 read the roster's `protected_refs` through the same root) • Dream 2026-10-09 (hook roster)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `.claude/hooks/pre-shell.py` (the two roster reads: `load_denial_rules` from `main()`, about :1652, and `load_protected_deletion_prefixes` from the deletion matchers, about :954 and :1003), `tests/scripts/test_pre_shell_hook.py`
+**Spec:** `planning-artifacts/specs/spec-85-9-the-session-hook-reads-its-denial-roster-from-its-own-tree.md`
+**Given** `20b7e853c3`, where Claude Code runs the hook from `$CLAUDE_PROJECT_DIR` (`.claude/settings.json:51`) and `main()` reads the roster through `ctx.repo_root`, which is
+`find_repo_root(cwd)` (`pre-shell.py:130`, `:271`), so with the cwd in `.worktrees/dispatch-pyforge-mason-25.2` (the roster from before Story 85.8) every call exits 2 with
+"implemented-but-undeclared=['outward-git-push', …]", and with the cwd in another git repository every call exits 2 with `FileNotFoundError`
+**When** the hook runs with a cwd whose tree carries a different roster, or none
+**Then** both roster reads take the hook's own tree (`Path(__file__).resolve().parents[2]`, the root `_hook_install_repo_root()` at `:1126` names), so the hook decides from its own
+roster with no crash, and a drift between the script and its own roster still exits 2 naming the drift
+**And** branch and worktree state, primary-checkout detection, path checks, `get_guild_tasks` (`pixi.toml`), `_commit_msg_hook` and `is_tracked` keep the cwd's root;
+`.cursor/hooks.json` (a relative `python3 .claude/hooks/pre-shell.py`) needs no change, because the script and its roster then come from one tree however that path
+resolves; the fail-loud tests and the protected-refs floor test run a copy of the hook inside the fixture repository, so the fixture is its own tree; no roster entry,
+reason, matcher, hook registration or AGENTS.md rule changes; putting `ctx.repo_root` back into either read fails the new tests (mutation);
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,
