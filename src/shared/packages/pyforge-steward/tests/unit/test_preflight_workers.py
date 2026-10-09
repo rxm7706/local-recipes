@@ -50,10 +50,10 @@ def test_lane_without_n_auto_gets_no_worker_cap(tmp_path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
     (repo / "pixi.toml").write_text(
-        '[feature.guild-tasks.tasks.pr-preflight-lanes]\n'
+        "[feature.guild-tasks.tasks.pr-preflight-lanes]\n"
         'depends-on = ["a", "b"]\n'
         '[feature.guild-tasks.tasks.a]\ncmd = "true"\n'
-        '[feature.guild-tasks.tasks.b]\n'
+        "[feature.guild-tasks.tasks.b]\n"
         'cmd = "pytest pkg/tests -q -n auto --dist loadgroup"\n',
         encoding="utf-8",
     )
