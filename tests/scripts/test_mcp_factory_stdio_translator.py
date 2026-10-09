@@ -9,6 +9,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.xdist_group(name="mcp_factory_stdio_translator")
+
 REPO = Path(__file__).resolve().parents[2]
 TRANSLATOR = REPO / "scripts" / "mcp_factory_stdio_translator.py"
 FAKE_CHILD = REPO / "tests" / "scripts" / "fake_fastmcp3_stdio_child.py"

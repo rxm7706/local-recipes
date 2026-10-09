@@ -63,11 +63,14 @@ def _image_cached() -> bool:
     return result.returncode == 0
 
 
-pytestmark = pytest.mark.skipif(
-    not _image_cached(),
-    reason=f"docker not on PATH, or {IMAGE} not cached locally -- run via "
-    "`pixi run -e pyforge-steward pytest ...`",
-)
+pytestmark = [
+    pytest.mark.skipif(
+        not _image_cached(),
+        reason=f"docker not on PATH, or {IMAGE} not cached locally -- run via "
+        "`pixi run -e pyforge-steward pytest ...`",
+    ),
+    pytest.mark.xdist_group(name="container_volumes_roundtrip"),
+]
 
 
 def _run(*args: str, env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
