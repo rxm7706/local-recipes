@@ -1060,6 +1060,31 @@ Drift — orphaned between stations.
   each lane's exit code as the verdict, and stop-on-red unless `--keep-going` do not change. Owner
   `spec-pyforge-steward` CAP-159 (FR-32; Story 71.3's run-and-cancel contract). → Epic 71 / Story 71.10, specced
   2026-10-08.
+- **2026-10-09 (preflight races) — Found: a lane can start after the preflight stops, and a reduced lane cut short
+  reads `ok`.** Found by the Story 71.10 landing repair and read on `d377581be4`, where 71.8-71.10 have landed, in
+  `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py`.
+  - **A late start escapes the stop.** `_run_lane_in_pool` checks the stop flags last at `:474`, then builds the
+    lane and reaches `subprocess.Popen` (`_run_pixi_argv`, `:294`); only after that does `register_proc` (`:247`,
+    called at `:302`) add the process. `terminate_children()` (`:257`) signals only the processes already in
+    `active_procs` when it takes its snapshot (`:258`-`:259`). A lane past `:474` but not yet registered when another
+    lane goes red (`:514`-`:515`) or SIGINT arrives (`_on_sigint`, `:657`) starts a process nothing signals. That
+    process runs to completion and is journaled from its own result. The pool then waits for it (`:699`-`:709`), so
+    a stopped run lasts as long as that whole lane.
+  - **The same gap opens between segments.** Story 71.9's segment loop checks only `coord.cancel` before each
+    segment (`:321`), never `stop_on_red`. So after a stop on red, the next segment of a reduced lane starts, unseen
+    by the `terminate_children()` that already ran.
+  - **SIGINT between segments journals the lane `ok`.** When the loop finds `cancel` set, it records the remaining
+    segments `not-run` and breaks with `lane_exit` still 0 (`:317`, `:321`-`:331`). Nothing marked the lane
+    terminated, because no process of its was running when the signal came, so `_run_lane_in_pool` journals it `ok`
+    (`:508`-`:509`), and the interrupted record keeps `ok` (`:714`-`:721`).
+
+  **What it looks like when fixed:** no lane process outlives a stop or an interrupt. A process that registers after
+  the stop is terminated at registration and its lane is journaled `cancelled`, with `cancelled_by` set to what
+  triggered the stop. No segment starts after a stop on red. A lane whose segments did not all run is never `ok`: it
+  is `cancelled`, with the segments that did not run recorded `not-run`. **Constraints:** a fix story, no CAP, no
+  flag. Story 71.10's journal shape, stop-on-red unless `--keep-going`, and each lane's exit code as its verdict do
+  not change. Owner `spec-pyforge-steward` CAP-159 (FR-32; Stories 71.3 and 71.9). → Epic 71 / Story 71.11, specced
+  2026-10-09; it reopens Epic 71.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

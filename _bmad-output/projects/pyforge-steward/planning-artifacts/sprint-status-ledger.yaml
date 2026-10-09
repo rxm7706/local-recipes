@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 504
+# stories: 505
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -294,7 +294,8 @@ development_status:
   7-5-the-image-proves-itself-at-build-time: done
   70-1-steward-reads-the-workspace-source-and-branch-and-origin-main-by-their-full-refs: done
   71-1-every-preflight-run-journals-each-lane-s-wall-time-and-exit-code: done
-  71-10-a-stopped-lane-is-journaled-cancelled-and-the-lane-that-stopped-the-run-red: backlog
+  71-10-a-stopped-lane-is-journaled-cancelled-and-the-lane-that-stopped-the-run-red: done
+  71-11-no-lane-process-outlives-a-stop-and-a-reduced-lane-cut-short-is-never-ok: backlog
   71-2-the-preflight-runs-the-lanes-ci-would-run-for-the-diff-read-from-the-workflow-files: done
   71-3-selected-lanes-run-concurrently-and-share-no-mutable-state: done
   71-4-a-station-s-coverage-gate-reuses-its-own-suite-s-run: done

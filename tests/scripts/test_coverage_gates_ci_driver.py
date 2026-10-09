@@ -216,7 +216,6 @@ def test_run_pytest_cov_carries_station_test_task_xdist_flags(driver, monkeypatc
         return _Proc()
 
     monkeypatch.setattr("subprocess.run", fake_run)
-    root = REPO / "src" / "shared" / "packages" / "pyforge-marshal"
     report = REPO / ".coverage-report-marshal-unit.json"
     try:
         driver._run_pytest_cov(station="marshal", suite="unit", report=report)
@@ -226,6 +225,86 @@ def test_run_pytest_cov_carries_station_test_task_xdist_flags(driver, monkeypatc
     cmd = captured[0]
     assert "-n" in cmd and "auto" in cmd
     assert "--dist" in cmd and "loadgroup" in cmd
+
+
+_SPEED = "src/shared/packages/pyforge-doctor/tests/unit/test_check_speed_budget.py"
+
+
+@pytest.mark.parametrize(
+    ("cmd", "flags", "alone"),
+    [
+        (  # doctor: the speed budget is set aside, then runs alone
+            f"env X=4 pytest pkg/tests -q -n auto --dist loadgroup --ignore={_SPEED} && pytest {_SPEED} -q",
+            ["-n", "auto", "--dist", "loadgroup", "--ignore", _SPEED],
+            [[_SPEED, "-q"]],
+        ),
+        (  # atlas: a later run of other tests is not a set-aside run
+            "pytest pkg/tests -q -n auto --dist loadgroup && pytest tests/packaging scripts/tests -q -n auto",
+            ["-n", "auto", "--dist", "loadgroup"],
+            [],
+        ),
+        (  # mason: no xdist, a later CFE parity run
+            'pytest pkg/tests -q -m "not slow" && pytest .claude/skills/x/test_parity.py -q',
+            [],
+            [],
+        ),
+    ],
+)
+def test_station_task_cmd_flags_and_set_aside_runs(driver, cmd, flags, alone):
+    assert driver._pytest_first_run_flags(cmd) == flags
+    assert driver._pytest_alone_runs_from_task_cmd(cmd) == alone
+
+
+def _fake_runs(monkeypatch, rcs: list[int]) -> list[list[str]]:
+    captured: list[list[str]] = []
+
+    def fake_run(cmd, **kwargs):
+        captured.append(list(cmd))
+
+        class _Proc:
+            returncode = rcs[len(captured) - 1]
+
+        return _Proc()
+
+    monkeypatch.setattr("subprocess.run", fake_run)
+    return captured
+
+
+def _run_doctor_unit(driver) -> tuple[str, int]:
+    report = REPO / ".coverage-report-doctor-unit.json"
+    try:
+        return driver._run_pytest_cov(station="doctor", suite="unit", report=report)
+    finally:
+        report.unlink(missing_ok=True)
+
+
+def test_doctor_speed_budget_runs_alone_after_the_coverage_run(driver, monkeypatch):
+    captured = _fake_runs(monkeypatch, [0, 0])
+    assert _run_doctor_unit(driver) == ("ran", 0)
+    cov_run, alone_run = captured
+    assert "--cov=pyforge.doctor" in cov_run
+    assert cov_run[cov_run.index("--ignore") + 1] == _SPEED
+    assert _SPEED in alone_run
+    assert not any(tok.startswith("--cov") for tok in alone_run)
+    assert "-n" not in alone_run
+
+
+def test_a_slow_speed_budget_reds_the_gate(driver, monkeypatch):
+    captured = _fake_runs(monkeypatch, [0, 1])
+    assert _run_doctor_unit(driver) == ("ran", 1)
+    assert len(captured) == 2
+
+
+def test_a_red_coverage_run_skips_the_set_aside_run(driver, monkeypatch):
+    captured = _fake_runs(monkeypatch, [1])
+    assert _run_doctor_unit(driver) == ("ran", 1)
+    assert len(captured) == 1
+
+
+def test_a_set_aside_run_outside_the_suite_does_not_run(driver, tmp_path: Path):
+    assert driver._under_any([_SPEED, "-q"], [REPO / "src/shared/packages/pyforge-doctor/tests/unit"])
+    assert not driver._under_any([_SPEED, "-q"], [tmp_path])
+    assert not driver._under_any(["-q"], [tmp_path])
 
 
 def test_plan_empty_when_no_station_touched(driver, tmp_path: Path, capsys):
