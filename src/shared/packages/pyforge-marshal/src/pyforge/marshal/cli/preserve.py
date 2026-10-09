@@ -7,6 +7,7 @@ import json
 import sys
 from pathlib import Path
 
+from pyforge.core.cutover_root import resolve_flags_path
 from pyforge.core.flags import disabled_help, require
 from pyforge.core.preserve_refs import (
     PRESERVE_PRODUCERS,
@@ -29,14 +30,18 @@ from .config import _suppress_downstream_pipe_close, repo_root
 PRESERVE_FLAG_KEY = "pyforge.marshal.preserve_refs"
 
 _HELP = "Write and list local preserve tags (AD-81 preserve namespace)."
-_DISABLED_HELP = disabled_help(_HELP, PRESERVE_FLAG_KEY)
 
 
 def add_preserve_subparser(subparsers: argparse._SubParsersAction) -> None:
+    flags_path = resolve_flags_path()
+    if flags_path is None:
+        help_text = f"{_HELP} [disabled: flag {PRESERVE_FLAG_KEY} is off]"
+    else:
+        help_text = disabled_help(_HELP, PRESERVE_FLAG_KEY, flags_path=flags_path)
     parser = subparsers.add_parser(
         "preserve",
-        help=_DISABLED_HELP,
-        description=_DISABLED_HELP,
+        help=help_text,
+        description=help_text,
     )
     subs = parser.add_subparsers(dest="preserve_command", required=True)
     tag_p = subs.add_parser("tag", help="Snapshot a worktree and write one local annotated preserve tag.")
