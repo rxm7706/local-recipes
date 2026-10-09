@@ -749,9 +749,7 @@ def _patch_terminate_children_returned(monkeypatch: pytest.MonkeyPatch) -> threa
     return returned
 
 
-def _run_pixi_argv_after_dash(
-    coord: Any, ctx: preflight.LaneRunContext, argv: list[str], log_handle: Any
-) -> int:
+def _run_pixi_argv_after_dash(coord: Any, ctx: preflight.LaneRunContext, argv: list[str], log_handle: Any) -> int:
     """Run reduced-suite segment argv directly (no pixi in unit tests)."""
     seg = argv[argv.index("--") + 1 :] if "--" in argv else argv
     proc = subprocess.Popen(
@@ -769,9 +767,7 @@ def _run_pixi_argv_after_dash(
         coord.unregister_proc(proc)
 
 
-def test_late_lane_killed_at_registration_after_stop_on_red(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_late_lane_killed_at_registration_after_stop_on_red(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AC (1): a lane past the pool stop check is killed when it registers after ``terminate_children``."""
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -813,9 +809,7 @@ def test_late_lane_killed_at_registration_after_stop_on_red(
 
 
 @pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
-def test_late_lane_killed_at_registration_after_sigint(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_late_lane_killed_at_registration_after_sigint(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AC (2): SIGINT reaches a lane that registers after the interrupt handler ran."""
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -862,9 +856,7 @@ def _two_segment_reduced_plan(*, second_body: str = "print('seg-two')") -> dict[
     return {"reduced": override}
 
 
-def test_stop_on_red_prevents_next_reduced_segment(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_stop_on_red_prevents_next_reduced_segment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AC (3): after a red lane stops the run, the next reduced segment never starts."""
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -919,9 +911,7 @@ def test_stop_on_red_prevents_next_reduced_segment(
 
 
 @pytest.mark.skipif(not hasattr(signal, "SIGINT"), reason="SIGINT required")
-def test_sigint_between_reduced_segments_cancels_lane(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_sigint_between_reduced_segments_cancels_lane(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """AC (4): SIGINT between segments journals the reduced lane cancelled, never ok."""
     repo = tmp_path / "repo"
     repo.mkdir()

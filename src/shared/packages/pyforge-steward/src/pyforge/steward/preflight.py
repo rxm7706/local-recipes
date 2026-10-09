@@ -333,6 +333,7 @@ def _subprocess_reduced_suite_lane(
     task_collect_exit: int | None = None
     lane_exit = 0
     prefix = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, "--"]
+
     def _append_not_run(from_index: int) -> None:
         for pending in override.segments[from_index:]:
             segment_rows.append(
