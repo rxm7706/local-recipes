@@ -93,6 +93,8 @@ def test_preserve_refuses_when_flag_off(
     flags_path = flagd_tree(tmp_path, {_FLAG: "off"})
     monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flags_path))
     assert_flag_off_verb(main, "preserve", usage_code=2, args=["tag"])
+    assert_flag_off_verb(main, "preserve", usage_code=2, args=["push"])
+    assert_flag_off_verb(main, "preserve", usage_code=2, args=["retire", "refs/tags/preserve/x", "--evidence", "story s 1.1 done deadbeef"])
 
 
 def test_preserve_tag_dedup_mutation(git_repo: Path, monkeypatch: pytest.MonkeyPatch):
@@ -284,6 +286,51 @@ def test_preserve_list_surfaces_git_errors(git_repo: Path, monkeypatch: pytest.M
         assert payload["findings"][0]["code"] == "MRS-PRESERVE-001"
     else:
         assert "list failed" in captured.err
+
+
+def test_preserve_retire_and_list_retired(git_repo: Path, monkeypatch: pytest.MonkeyPatch, capsys):
+    _flag_on(monkeypatch, git_repo)
+    monkeypatch.setattr(preserve_module, "repo_root", lambda: git_repo)
+    monkeypatch.setattr(preserve_module, "retirements_path", lambda root: root / "preserve-retirements.yaml")
+    ref = "refs/tags/preserve/pyforge-marshal/87.15/hand-deadbeef"
+    evidence = "story pyforge-marshal 87.15 done deadbeef"
+    rc = main(["preserve", "retire", ref, "--evidence", evidence])
+    assert rc == 0
+    listed = invoke_cli(main, ["preserve", "list", "--state", "retired", "--format", "json"])
+    assert listed.exit_code == 0
+    payload = json.loads(listed.output)
+    rows = payload["data"]["preserves"]
+    assert len(rows) == 1
+    assert rows[0]["refname"] == ref
+    assert rows[0]["state"] == "retired"
+
+
+def test_preserve_push_refuses_secret(git_repo: Path, monkeypatch: pytest.MonkeyPatch, capsys):
+    _flag_on(monkeypatch, git_repo)
+    monkeypatch.setattr(preserve_module, "repo_root", lambda: git_repo)
+    purge = git_repo / "docs" / "governance" / "preserve-purge-list.json"
+    purge.parent.mkdir(parents=True, exist_ok=True)
+    purge.write_text('{"schema_version":1,"commit_shas":[],"paths":[]}', encoding="utf-8")
+    (git_repo / "tracked.txt").write_text("sk-ant-api03-SYNTHETICTEST0000000000000000\n", encoding="utf-8")
+    _git(git_repo, "add", "tracked.txt")
+    _git(git_repo, "commit", "-m", "secret")
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=git_repo, text=True).strip()
+    _git(
+        git_repo,
+        "tag",
+        "-a",
+        "-m",
+        "Preserve-Producer: hand\nPreserve-Provenance: human\nPreserve-Reason: hand\n"
+        "Preserve-Source: test\nPreserve-Run: r\nPreserve-Journal: j\n"
+        f"Preserve-Commit: {commit}\n",
+        "preserve/pyforge-marshal/87.15/hand-deadbeef",
+        commit,
+    )
+    ref = "refs/tags/preserve/pyforge-marshal/87.15/hand-deadbeef"
+    rc = main(["preserve", "push", ref])
+    assert rc != 0
+    remote = subprocess.run(["git", "ls-remote", "origin", ref], cwd=git_repo, capture_output=True, text=True)
+    assert remote.stdout.strip() == ""
 
 
 def test_preserve_list_json_pipe_close(monkeypatch: pytest.MonkeyPatch):

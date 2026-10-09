@@ -1325,6 +1325,9 @@ _CLASSIFY_TABLE: dict[str, Verdict] = {
     "MRS-CHK-003": Verdict.ERROR,
     # Story 87.3: `marshal preserve list` could not read local preserve tags.
     "MRS-PRESERVE-001": Verdict.ERROR,
+    # Story 87.15: content gate or push cap refused a preserve/archive push.
+    "MRS-PRESERVE-002": Verdict.GATE_FAILED,
+    "MRS-PRESERVE-003": Verdict.GATE_FAILED,
     # Story 82.4 (spec-pyforge-marshal CAP-2): 011 an attach whose ownership the
     # journal could not prove (a quarantined line, no launch/resume entry), 012
     # a tampered journal that made the supervisor stop the watched run, 013 the

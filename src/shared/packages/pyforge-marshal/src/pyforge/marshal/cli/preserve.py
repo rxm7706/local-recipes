@@ -1,4 +1,4 @@
-"""``marshal preserve tag|list`` (Story 87.3) over ``pyforge.core.preserve_refs``."""
+"""``marshal preserve tag|list|push|retire`` over ``pyforge.core.preserve_refs``."""
 
 from __future__ import annotations
 
@@ -11,12 +11,16 @@ from pyforge.core.cutover_root import resolve_flags_path
 from pyforge.core.flags import disabled_help, require
 from pyforge.core.preserve_refs import (
     PRESERVE_PRODUCERS,
+    ContentGateReason,
     PreserveGitError,
     PreserveRefConflictError,
     PreserveRefError,
     PreserveState,
     PreserveTrailers,
+    list_pending_preserve_refs,
     list_preserves,
+    parse_preserve_ref,
+    push_preserve_ref,
     render_preserve_ref,
     snapshot_worktree_commit,
     tag_preserve,
@@ -26,6 +30,7 @@ from pyforge.core.process import PosixProcess
 from ..core.model import Finding, Severity, Verdict, build_envelope
 from ..core.verdict import EXIT_USAGE, compute_verdict, exit_code_for
 from .config import _suppress_downstream_pipe_close, repo_root
+from .preserve_retirements import append_retirement, load_retirements, retirements_path
 
 PRESERVE_FLAG_KEY = "pyforge.marshal.preserve_refs"
 
@@ -70,8 +75,22 @@ def add_preserve_subparser(subparsers: argparse._SubParsersAction) -> None:
     list_p.add_argument("--station", help="Filter by project slug.")
     list_p.add_argument("--story", help="Filter by story key (N.M).")
     list_p.add_argument("--producer", choices=sorted(PRESERVE_PRODUCERS), help="Filter by producer.")
-    list_p.add_argument("--state", choices=("open", "landed"), help="Filter by derived state.")
+    list_p.add_argument("--state", choices=("open", "landed", "retired"), help="Filter by derived state.")
     list_p.set_defaults(handler=run_preserve_list, preserve_subcommand="list")
+
+    push_p = subs.add_parser("push", help="Push local preserve/archive tags through the content gate.")
+    push_p.add_argument("tags", nargs="*", help="Tag refnames (default: none unless --pending).")
+    push_p.add_argument(
+        "--pending",
+        action="store_true",
+        help="Push every local preserve/archive tag not yet on origin.",
+    )
+    push_p.set_defaults(handler=run_preserve_push, preserve_subcommand="push")
+
+    retire_p = subs.add_parser("retire", help="Record a preserve tag as retired (ledger only; no tag mutation).")
+    retire_p.add_argument("tag", help="Full refname (refs/tags/preserve/…).")
+    retire_p.add_argument("--evidence", required=True, help='Evidence line (e.g. story <slug> <N.M> done <sha>).')
+    retire_p.set_defaults(handler=run_preserve_retire, preserve_subcommand="retire")
 
 
 def _require_flag() -> None:
@@ -119,6 +138,8 @@ def run_preserve_tag(args: argparse.Namespace) -> int:
 def run_preserve_list(args: argparse.Namespace) -> int:
     _require_flag()
     root = repo_root()
+    if args.state == "retired":
+        return _run_preserve_list_retired(args, root)
     state = PreserveState(args.state) if args.state else None
     try:
         records = list_preserves(
@@ -199,3 +220,130 @@ def _head_sha(worktree: Path) -> str:
     if result.returncode != 0:
         raise PreserveGitError(result.stderr.strip() or "git rev-parse HEAD failed")
     return result.stdout.strip()
+
+
+def _normalize_tag_ref(tag: str) -> str:
+    if tag.startswith("refs/tags/"):
+        return tag
+    return f"refs/tags/{tag.removeprefix('refs/tags/')}"
+
+
+def _finding_for_gate(reason: ContentGateReason, message: str) -> Finding:
+    code = "MRS-PRESERVE-003" if reason in (
+        ContentGateReason.PUSH_CAP_RUN,
+        ContentGateReason.PUSH_CAP_STORY,
+    ) else "MRS-PRESERVE-002"
+    return Finding(code=code, severity=Severity.ERROR, message=message)
+
+
+def run_preserve_push(args: argparse.Namespace) -> int:
+    _require_flag()
+    root = repo_root()
+    tags = [_normalize_tag_ref(t) for t in args.tags]
+    if args.pending:
+        try:
+            tags = list_pending_preserve_refs(root)
+        except PreserveGitError as exc:
+            print(f"marshal preserve push: {exc}", file=sys.stderr)
+            return exit_code_for(Verdict.ERROR)
+    if not tags:
+        print("marshal preserve push: no tags to push", file=sys.stderr)
+        return EXIT_USAGE
+    findings: list[Finding] = []
+    pushed: list[str] = []
+    run_push_count = 0
+    story_push_counts: dict[str, int] = {}
+    for refname in tags:
+        try:
+            result = push_preserve_ref(
+                root,
+                refname,
+                run_push_count=run_push_count,
+                story_push_counts=story_push_counts,
+            )
+        except (PreserveRefError, PreserveGitError) as exc:
+            print(f"marshal preserve push: {exc}", file=sys.stderr)
+            return exit_code_for(Verdict.ERROR)
+        for gate in result.findings:
+            findings.append(_finding_for_gate(gate.reason, gate.message))
+            print(f"marshal preserve push: {gate.message}", file=sys.stderr)
+        if result.pushed:
+            pushed.append(refname)
+            run_push_count += 1
+            try:
+                parsed = parse_preserve_ref(refname)
+                if parsed.project_slug and parsed.story_key:
+                    key = f"{parsed.project_slug}/{parsed.story_key}"
+                    story_push_counts[key] = story_push_counts.get(key, 0) + 1
+            except PreserveRefError:
+                pass
+    payload = {"pushed": pushed, "refused": [t for t in tags if t not in pushed]}
+    print(json.dumps(payload, sort_keys=True))
+    if findings and not pushed:
+        return exit_code_for(Verdict.GATE_FAILED)
+    if findings:
+        return exit_code_for(Verdict.GATE_FAILED)
+    return 0
+
+
+def run_preserve_retire(args: argparse.Namespace) -> int:
+    _require_flag()
+    root = repo_root()
+    tag = _normalize_tag_ref(args.tag)
+    try:
+        parse_preserve_ref(tag)
+    except PreserveRefError as exc:
+        print(f"marshal preserve retire: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    path = retirements_path(root)
+    try:
+        row = append_retirement(path, tag=tag, evidence=args.evidence)
+    except ValueError as exc:
+        print(f"marshal preserve retire: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+    print(json.dumps({"tag": row.tag, "evidence": row.evidence, "retired_at": row.retired_at}, sort_keys=True))
+    return 0
+
+
+def _run_preserve_list_retired(args: argparse.Namespace, root: Path) -> int:
+    rows_out: list[dict[str, object]] = []
+    for row in load_retirements(retirements_path(root)):
+        station = story = producer = None
+        try:
+            parsed = parse_preserve_ref(row.tag)
+            station = parsed.project_slug
+            story = parsed.story_key
+            producer = parsed.producer
+        except PreserveRefError:
+            pass
+        if args.station is not None and station != args.station:
+            continue
+        if args.story is not None and story != args.story:
+            continue
+        if args.producer is not None and producer != args.producer:
+            continue
+        rows_out.append(
+            {
+                "refname": row.tag,
+                "commit": None,
+                "station": station,
+                "story": story,
+                "producer": producer,
+                "state": PreserveState.RETIRED.value,
+                "evidence": row.evidence,
+                "retired_at": row.retired_at,
+            }
+        )
+    if args.format == "json":
+        envelope = build_envelope(
+            command="preserve list",
+            verdict=compute_verdict(()),
+            data={"preserves": rows_out},
+            data_version=1,
+            findings=(),
+        )
+        print(json.dumps(envelope.to_json_dict(), indent=2, sort_keys=True))
+        return 0
+    for row in rows_out:
+        print(f"{row['refname']}\tretired\t{row.get('evidence', '')}")
+    return 0

@@ -66,6 +66,17 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
             "state": "--state",
         },
     },
+    "marshal_preserve_push": {
+        "description": "Push preserve/archive tags through the content gate (marshal preserve push).",
+        "cli": ["preserve", "push"],
+        "store_true_flags": {"pending": "--pending"},
+    },
+    "marshal_preserve_retire": {
+        "description": "Retire a preserve tag in the ledger (marshal preserve retire --evidence …).",
+        "cli": ["preserve", "retire", "{tag}"],
+        "required": ("tag", "evidence"),
+        "optional_flags": {"evidence": "--evidence"},
+    },
 }
 
 _ABS_PATH_RE = re.compile(r"^(/|[A-Za-z]:\\|\\\\)")
@@ -245,6 +256,23 @@ def marshal_preserve_list(
         ),
         main=main,
     )
+
+
+def marshal_preserve_push(
+    pending: bool = False,
+    *,
+    main: Callable[[list[str] | None], int] | None = None,
+) -> dict[str, Any]:
+    return run_marshal(_build_argv("marshal_preserve_push", pending=pending), main=main)
+
+
+def marshal_preserve_retire(
+    tag: str,
+    evidence: str,
+    *,
+    main: Callable[[list[str] | None], int] | None = None,
+) -> dict[str, Any]:
+    return run_marshal(_build_argv("marshal_preserve_retire", tag=tag, evidence=evidence), main=main)
 
 
 def mcp_server_registration_spec() -> Mapping[str, Mapping[str, object]]:

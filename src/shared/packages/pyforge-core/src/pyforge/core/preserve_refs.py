@@ -690,7 +690,6 @@ def push_preserve_ref(
     if gate_findings:
         return PushPreserveResult(refname, False, gate_findings)
 
-    short_ref = refname.removeprefix("refs/tags/")
     refspec = f"{refname}:{refname}"
     with _with_env({PREFLIGHT_PRESERVE_TAGS_PROOF_ENV: "1"}):
         rc, out, err = _git(repo, "push", remote, refspec)
