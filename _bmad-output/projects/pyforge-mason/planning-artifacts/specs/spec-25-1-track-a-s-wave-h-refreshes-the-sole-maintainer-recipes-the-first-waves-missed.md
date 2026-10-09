@@ -214,5 +214,10 @@ build-clean-test-blocked; `html-to-markdown` needs manual GH-numbering verificat
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate); the operator reviews the branch before
-  landing it as `Merge pyforge-mason/25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed into main`.
+### 2026-10-09 — Review pass (build-auto)
+- verdicts: 0 automated layer findings — recipe diff review deferred to operator per story Verification manual checks
+- findings:
+  - `[false]` `[reject]` No adversarial code review layers run on ~96 recipe files — acceptable for flag-exempt recipe-build; operator reviews batch commits before merge.
+
+- Prior note: operator reviews the branch before landing as
+  `Merge pyforge-mason/25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed into main`.
