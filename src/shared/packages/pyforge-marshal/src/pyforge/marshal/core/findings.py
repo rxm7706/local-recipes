@@ -1648,6 +1648,14 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 5.11 (FR-196): a harness-native terminal run Marshal never
         # launched -- WARN naming the gap, never a silent healthy state.
         "MRS-STATUS-013",
+        # Story 87.9 (FR-62/AD-48 as amended 2026-10-04): 015 an unpushed branch no home row
+        # accounts for (fleet-wide); 016 local-only preserve tags `ls-remote` does not list on
+        # origin; 017 engine scratch refs no preserve tag holds; 018 failed-story patches with
+        # no preserve tag. All WARN: a home with preserve debt is reported, never clean.
+        "MRS-STATUS-015",
+        "MRS-STATUS-016",
+        "MRS-STATUS-017",
+        "MRS-STATUS-018",
         "MRS-DEPLOY-024",
         "MRS-DEPLOY-025",
         "MRS-DEPLOY-026",

@@ -117,7 +117,7 @@ import argparse
 import json
 import re
 import sys
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 from pathlib import Path
@@ -1263,6 +1263,76 @@ def _gather_unpushed_work_findings(
     return by_ref, None
 
 
+def _home_run_ids(home: Path | None) -> frozenset[str]:
+    """Run ids under this home's own ``.bmad-loop/runs`` -- how an engine scratch ref is attributed
+    to a row (Story 87.9). A bare ``iterdir``, the precedent ``_gather_failed_patches`` documents;
+    an unreadable tree attributes nothing, so its refs surface fleet-wide instead."""
+    if home is None:
+        return frozenset()
+    try:
+        return frozenset(child.name for child in (home / ".bmad-loop" / "runs").iterdir() if child.is_dir())
+    except OSError:
+        return frozenset()
+
+
+def _debt_list(debt: Mapping[str, object], key: str) -> list[str]:
+    value = debt.get(key)
+    return [str(item) for item in value] if isinstance(value, (list, tuple)) else []
+
+
+def _name_refs(names: Sequence[str]) -> str:
+    shown = ", ".join(_one_line(name) for name in names[:_DEBT_NAMES_SHOWN])
+    extra = len(names) - _DEBT_NAMES_SHOWN
+    return f"{shown} (+{extra} more)" if extra > 0 else shown
+
+
+def _preserve_debt_findings(slug: str | None, debt: Mapping[str, object]) -> list[Finding]:
+    """One WARN per kind of preserve debt in ``debt`` (Story 87.9) -- per row with ``slug``, fleet-wide without."""
+    where = f"{slug}: " if slug is not None else "fleet-wide, matching no row: "
+    path = slug
+    findings: list[Finding] = []
+    tags = _debt_list(debt, "local_only_tags")
+    if tags:
+        findings.append(
+            Finding(
+                code=_MRS_STATUS_016,
+                severity=Severity.WARN,
+                message=(
+                    f"{where}{len(tags)} preserve tag(s) exist only locally -- `git ls-remote` does not list "
+                    f"them on origin: {_name_refs(tags)} -- push each with `marshal preserve push`"
+                ),
+                path=path,
+            )
+        )
+    scratch = _debt_list(debt, "unpromoted_scratch_refs")
+    if scratch:
+        findings.append(
+            Finding(
+                code=_MRS_STATUS_017,
+                severity=Severity.WARN,
+                message=(
+                    f"{where}{len(scratch)} engine scratch ref(s) no preserve tag holds: {_name_refs(scratch)} "
+                    "-- promote each with `marshal preserve tag` before the engine prunes it"
+                ),
+                path=path,
+            )
+        )
+    patches = _debt_list(debt, "patches_without_tag")
+    if patches:
+        findings.append(
+            Finding(
+                code=_MRS_STATUS_018,
+                severity=Severity.WARN,
+                message=(
+                    f"{where}{len(patches)} failed-story patch(es) with no preserve tag: {_name_refs(patches)} "
+                    "-- tag the work with `marshal preserve tag` before discarding the patch"
+                ),
+                path=path,
+            )
+        )
+    return findings
+
+
 # Story 4.14's own relative glob for bmad-loop's own on-disk shape (external
 # to this repo, defined by bmad-loop itself, never Marshal): a
 # session-timeout-killed story's preserved diff, one per failed attempt.
@@ -1783,6 +1853,29 @@ def run_status(
         if unpushed_unavailable_finding is not None:
             findings.append(unpushed_unavailable_finding)
 
+    # Story 87.9: the repository's preserve debt, read ONCE for the sweep and attributed to rows
+    # below. Skipped when the unpushed-work detector could not be consulted: every row then reads
+    # could-not-observe (the sweep already carries MRS-STATUS-009), never an empty "no debt".
+    preserve_observation: core_preserve_refs.PreserveObservation | None = None
+    if fleet and unpushed_by_ref is not None:
+        preserve_observation = core_preserve_refs.observe_preserve_debt(git_repo_root, process=process)
+        if preserve_observation is None:
+            findings.append(
+                Finding(
+                    code=_MRS_STATUS_009,
+                    severity=Severity.WARN,
+                    message=(
+                        "the preserve-debt read (local preserve tags against `git ls-remote` origin, engine "
+                        "scratch refs) could not be completed this run -- every home's preserve_debt reports "
+                        "could_not_observe, never fabricated as clean"
+                    ),
+                )
+            )
+    preserve_unobserved = bool(fleet) and preserve_observation is None
+    matched_unpushed_refs: set[str] = set()
+    claimed_debt_tags: set[str] = set()
+    claimed_debt_scratch: set[str] = set()
+
     from .dispatch import (
         gather_fleet_finalize_escalations,
         gather_fleet_missing_spec_escalations,
@@ -1886,6 +1979,7 @@ def run_status(
         stranded = status_core.derive_dispatch_stranded_work(facts, unpushed_by_ref=unpushed_by_ref)
         if stranded is not None:
             facts = replace(facts, dispatch_stranded_work=stranded)
+        matched_unpushed_refs |= status_core.unpushed_refs_matched_to_row(facts, unpushed_by_ref)
         # Story 56.1 (CAP-266): a refused landing whose story is on `main`
         # carries that git fact beside its unchanged findings -- never
         # deleted, never a gate.
@@ -2097,6 +2191,24 @@ def run_status(
             if main_read_error is not None:
                 main_unavailable.extend((slug, entry) for entry in failed_patches)
 
+        # Story 87.9: this home's preserve debt (failed patches are final by here).
+        if preserve_unobserved:
+            facts = replace(facts, preserve_debt=status_core.preserve_debt_could_not_observe())
+        elif preserve_observation is not None:
+            debt = status_core.derive_preserve_debt(
+                slug=slug,
+                local_only_tags=[(t.refname, t.project_slug) for t in preserve_observation.local_only_tags],
+                unpromoted_scratch=preserve_observation.unpromoted_scratch,
+                run_ids=_home_run_ids(home),
+                tagged_stories=[(t.project_slug, t.story_key) for t in preserve_observation.tags],
+                failed_patches=facts.failed_patches,
+            )
+            if debt is not None:
+                claimed_debt_tags.update(_debt_list(debt, "local_only_tags"))
+                claimed_debt_scratch.update(_debt_list(debt, "unpromoted_scratch_refs"))
+                home_findings.extend((slug, f) for f in _preserve_debt_findings(slug, debt))
+            facts = replace(facts, preserve_debt=debt)
+
         row, finding = status_core.build_fleet_row(facts)
         rows.append(row)
         if finding is not None:
@@ -2195,6 +2307,32 @@ def run_status(
     # an empty table beside alarms naming homes it filtered out. Without the
     # flag every home is kept, so the output is exactly what the loop raised.
     kept_slugs = {str(row["slug"]) for row in rows}
+    # Story 87.9: what no row accounts for is reported fleet-wide, never dropped -- but only when
+    # the sweep covered every row (`--project` leaves other stations' refs unmatched by design).
+    if args.project is None:
+        unmatched = status_core.unmatched_unpushed_refs(unpushed_by_ref, matched_unpushed_refs)
+        if unmatched:
+            data["unmatched_unpushed_refs"] = unmatched
+            names = [str(entry["ref"]) for entry in unmatched]
+            findings.append(
+                Finding(
+                    code=_MRS_STATUS_015,
+                    severity=Severity.WARN,
+                    message=(
+                        f"{len(unmatched)} unpushed branch(es) match no home row: {_name_refs(names)} "
+                        "-- push or preserve each before its worktree or branch is removed"
+                    ),
+                )
+            )
+        if preserve_observation is not None:
+            stray_tags = [
+                t.refname for t in preserve_observation.local_only_tags if t.refname not in claimed_debt_tags
+            ]
+            stray_scratch = [ref for ref in preserve_observation.unpromoted_scratch if ref not in claimed_debt_scratch]
+            if stray_tags or stray_scratch:
+                stray = {"local_only_tags": stray_tags, "unpromoted_scratch_refs": stray_scratch}
+                data["preserve_debt_unattributed"] = stray
+                findings.extend(_preserve_debt_findings(None, stray))
     findings.extend(finding for slug, finding in home_findings if not escalations_only or slug in kept_slugs)
     unavailable = [(slug, entry) for slug, entry in main_unavailable if not escalations_only or slug in kept_slugs]
 
