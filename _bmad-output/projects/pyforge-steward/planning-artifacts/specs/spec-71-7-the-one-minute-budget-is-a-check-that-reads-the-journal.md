@@ -2,13 +2,21 @@
 title: '71.7: The one-minute budget is a check that reads the journal'
 type: 'feature'
 created: '2026-09-27'
-status: 'ready'
+status: 'done'
+baseline_revision: '400a0d0f77d58d0c115fdd959796a1653162e13a'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-pyforge-steward/SPEC.md
   - docs/dreams/pyforge-steward.md
-deferred: []
+deferred:
+  - summary: >-
+      Operator manual CAP-159 proof on the 16-core reference laptop (pr-preflight then preflight-budget under 60s on a marshal-only branch) was not run in this harness session.
+    evidence: |-
+      Story AC requires measured wall time on reference hardware; this auto run verified journal semantics via unit tests and `python scripts/spec_surface_reconcile.py` only.
+    location: >-
+      _bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-71-7-the-one-minute-budget-is-a-check-that-reads-the-journal.md
+    severity: medium
 declared_low_risk: false
 ---
 
@@ -78,3 +86,30 @@ Ledger status at mint: `backlog`.
 
 **Manual checks:**
 - On a marshal-only branch on the 16-core reference laptop: `pixi run -e pyforge-guild pr-preflight`, then `pixi run -e pyforge-guild preflight-budget` — expected: exit 0, wall time under 60 s.
+
+## Review Triage Log
+
+### 2026-10-08 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — self-review of diff against matrix; unit tests cover every I/O row)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added `preflight_budget` journal reader and `preflight-budget` pixi task (`python -m pyforge.steward.preflight --budget`) with exit 0/1/2 semantics for single-station vs shared-surface runs (CAP-159 FR-32).
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight_budget.py` — budget judgement from `.steward/preflight-runs.jsonl`
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — `--budget` dispatch only in `main()`, not in `run_preflight`
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` — matrix coverage
+- `pixi.toml`, `environment.yaml`, `docs/how-to/pixi-tasks.md`, `docs/map.yaml` — task registration and docs regen
+- Spec memlogs: `spec-pyforge-steward`, `spec-pyforge-core`, `spec-pyforge-doctor` surface reconcile entries
+
+Verification:
+- `pytest tests/unit/test_preflight_budget.py` — 10 passed (pyforge-steward env)
+- `python scripts/spec_surface_reconcile.py` — exit 0
+
+Follow-up review recommended: false
+
+Residual risks: Reference-laptop under-60s measurement deferred (see frontmatter `deferred`).
