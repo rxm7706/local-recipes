@@ -2,7 +2,8 @@
 title: "87.14: The sweeper reports stale-locked agent worktrees and orphan directories"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'in-progress'
+baseline_revision: 'a0d4662b82abab4e75cb79e199bd87f7eef1e0e7'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
