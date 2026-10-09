@@ -10,7 +10,7 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://files.pythonhosted.org/packages/de/46/8446e6330bd5f246c1141680dcf7a9d845f7114b0775f0f1df5a142b54fa/jupyterlab_launchpad-1.2.0.tar.gz
+  url: https://pypi.org/packages/source/j/jupyterlab-launchpad/jupyterlab_launchpad-${{ version }}.tar.gz
   sha256: 545f30665b8dd985c2ca2cd3b293f7923f1090f553520e375097dd3ee5fcc1aa
 
 build:
@@ -20,20 +20,20 @@ build:
 
 requirements:
   host:
-  - python ${{ python_min }}.*
-  - hatchling >=1.5.0
-  - jupyterlab >=4.0.0,<5
-  - hatch-nodejs-version >=0.3.2
-  - hatch-jupyter-builder
-  - pip
+    - python ${{ python_min }}.*
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0.0,<5
+    - hatch-nodejs-version >=0.3.2
+    - hatch-jupyter-builder
+    - pip
   run:
-  - python >=${{ python_min }},<4.0
-  - jupyter_server >=2.0.1,<3
+    - python >=${{ python_min }},<4.0
+    - jupyter_server >=2.0.1,<3
 
 tests:
 - python:
     imports:
-    - jupyterlab_launchpad
+      - jupyterlab_launchpad
     pip_check: true
     python_version: ${{ python_min }}.*
 
@@ -42,12 +42,12 @@ about:
   homepage: https://github.com/nebari-dev/jupyterlab-launchpad
   license: Apache-2.0 AND BSD-3-Clause
   license_file:
-  - LICENSE
-  - style/icons/md/LICENSE
+    - LICENSE
+    - style/icons/md/LICENSE
 
 extra:
   recipe-maintainers:
-  - rxm7706
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -55,8 +55,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: jupyterlab-launchpad
   cfe-purls:
-  - pkg:conda/jupyterlab-launchpad@${{ version }}?channel=conda-forge
-  - pkg:pypi/jupyterlab-launchpad@${{ version }}
+    - pkg:conda/jupyterlab-launchpad@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyterlab-launchpad@${{ version }}
   cfe-upstream-repo: https://github.com/nebari-dev/jupyterlab-launchpad
   cfe-upstream-homepage: https://github.com/nebari-dev/jupyterlab-launchpad
   cfe-import-names: [jupyterlab_launchpad]
