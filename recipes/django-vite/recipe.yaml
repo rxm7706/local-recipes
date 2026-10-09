@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-vite
-  version: "3.1.0"
+  version: "3.2.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_vite-${{ version }}.tar.gz
-  sha256: 8b4ffe4a9fa81ff568bfb195e74dde8694aaf13fd4b656ae60bf59cce08b85e8
+  url: https://files.pythonhosted.org/packages/51/42/7c7a8b97f56468705bcd37cdd382b4d001c53890d04a9283ce2f151a01e6/django_vite-3.2.0.tar.gz
+  sha256: fdb96b3f4307466d1edd1c19a79cf7dbfabb1a7827c5cb2991d9a6aae528c9db
 
 build:
   number: 0
@@ -20,21 +20,21 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - pip
-    - setuptools
+  - python ${{ python_min }}.*
+  - pip
+  - setuptools
   run:
-    - python >=${{ python_min }}
-    - django >=3.2
+  - python >=${{ python_min }}
+  - django >=3.2
     # - black
     # - Django >=3.2
 
 tests:
-  - python:
-      imports:
-        - django_vite
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - django_vite
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: Integration of Vite in a Django project.
@@ -44,7 +44,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -52,8 +52,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-vite
   cfe-purls:
-    - pkg:conda/django-vite@${{ version }}?channel=conda-forge
-    - pkg:pypi/django-vite@${{ version }}
+  - pkg:conda/django-vite@${{ version }}?channel=conda-forge
+  - pkg:pypi/django-vite@${{ version }}
   cfe-upstream-repo: https://github.com/MrBin99/django-vite
   cfe-upstream-homepage: https://github.com/MrBin99/django-vite
   cfe-import-names: [django_vite]
@@ -63,13 +63,13 @@ extra:
   cfe-on-conda-forge-status: confirmed-on-conda-forge
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/django-vite-feedstock
   cfe-forge-recipe-updates-needed:
-    - meta-yaml-to-recipe-yaml
+  - meta-yaml-to-recipe-yaml
   cfe-forge-blocker-list: []
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-datetime: '2026-10-09T10:50:14Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####

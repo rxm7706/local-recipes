@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: django-todo
-  version: "2.6.2"
+  version: "2.7.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
-  sha256: 00807def8fc6552f35560b39d2b8499c764f2efe83e70302e94980cb2330c8db
+  url: https://files.pythonhosted.org/packages/8b/93/69cac605678ba6b1fa0e18b8911a409dc648747f8a911ddda3885c251684/django_todo-2.7.0.tar.gz
+  sha256: 7390915d2460e7298f1d33c217c64d675ffbd009cb4aea03e4404628bf8dda0c
 
 build:
   number: 0
@@ -20,26 +20,26 @@ build:
 
 requirements:
   host:
-    - python 3.11.*
-    - setuptools >=40.8.0
-    - wheel
-    - pip
+  - python 3.11.*
+  - setuptools >=40.8.0
+  - wheel
+  - pip
   run:
-    - faker
-    - python >=${{ python_min }}
-    - django >=5.2
-    - factory_boy
-    - titlecase
-    - bleach
-    - django-autocomplete-light
-    - html2text
+  - faker
+  - python >=${{ python_min }}
+  - django >=5.2
+  - factory_boy
+  - titlecase
+  - bleach
+  - django-autocomplete-light
+  - html2text
 
 tests:
-  - python:
-      imports:
-        - todo
-      pip_check: true
-      python_version: ${{ python_min }}
+- python:
+    imports:
+    - todo
+    pip_check: true
+    python_version: ${{ python_min }}
 
 about:
   summary: A multi-user, multi-group task management and assignment system for Django.
@@ -49,7 +49,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+  - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata
@@ -57,8 +57,8 @@ extra:
   cfe-upstream-registry: pypi
   cfe-upstream-name: django-todo
   cfe-purls:
-    - pkg:conda/django-todo@${{ version }}?channel=conda-forge
-    - pkg:pypi/django-todo@${{ version }}
+  - pkg:conda/django-todo@${{ version }}?channel=conda-forge
+  - pkg:pypi/django-todo@${{ version }}
   cfe-upstream-repo: https://github.com/shacker/django-todo
   cfe-upstream-homepage: http://django-todo.org
   cfe-import-names: [todo]
@@ -72,8 +72,8 @@ extra:
   cfe-last-checked: 2026-06-20T00:00:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
-  cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-06-20T00:00:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: '2026-10-09T10:31:57Z'
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
