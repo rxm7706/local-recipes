@@ -738,14 +738,35 @@ def test_reduced_lane_cancelled_mid_segment(tmp_path: Path) -> None:
 def _patch_terminate_children_returned(monkeypatch: pytest.MonkeyPatch) -> threading.Event:
     """Fire after ``terminate_children`` returns (Story 71.11 late-registration tests)."""
     returned = threading.Event()
-    real = preflight._RunCoordinator.terminate_children  # noqa: SLF001
+    coord_cls = preflight._RunCoordinator  # noqa: SLF001 — patch before ``_capture_coordinators`` replaces the class
+    real = coord_cls.terminate_children
 
     def wrapped(self: preflight._RunCoordinator) -> None:
         real(self)
         returned.set()
 
-    monkeypatch.setattr(preflight._RunCoordinator, "terminate_children", wrapped)
+    monkeypatch.setattr(coord_cls, "terminate_children", wrapped)
     return returned
+
+
+def _run_pixi_argv_after_dash(
+    coord: Any, ctx: preflight.LaneRunContext, argv: list[str], log_handle: Any
+) -> int:
+    """Run reduced-suite segment argv directly (no pixi in unit tests)."""
+    seg = argv[argv.index("--") + 1 :] if "--" in argv else argv
+    proc = subprocess.Popen(
+        seg,
+        cwd=coord.repo_root,
+        env=ctx.env,
+        stdout=log_handle,
+        stderr=subprocess.STDOUT,
+        start_new_session=True,
+    )
+    coord.register_proc(proc, ctx.lane.task)
+    try:
+        return int(proc.wait())
+    finally:
+        coord.unregister_proc(proc)
 
 
 def test_late_lane_killed_at_registration_after_stop_on_red(
@@ -755,8 +776,8 @@ def test_late_lane_killed_at_registration_after_stop_on_red(
     repo = tmp_path / "repo"
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("fail", "peer", "late"))
-    coords = _capture_coordinators(monkeypatch)
     terminate_returned = _patch_terminate_children_returned(monkeypatch)
+    coords = _capture_coordinators(monkeypatch)
     scripts = {
         "fail": _after_peer_started("peer", _FAIL_HALF_SECOND_LATER),
         "peer": _SLEEP_30,
@@ -798,6 +819,7 @@ def test_late_lane_killed_at_registration_after_sigint(
     repo.mkdir()
     _write(repo / "pixi.toml", _mini_pixi("fail", "peer", "late"))
     coords = _capture_coordinators(monkeypatch)
+    _patch_terminate_children_returned(monkeypatch)
     scripts = {
         "fail": _after_peer_started("peer", _FAIL_HALF_SECOND_LATER),
         "peer": _SLEEP_30,
@@ -852,7 +874,7 @@ def test_stop_on_red_prevents_next_reduced_segment(
         if index == 1:
             assert terminate_returned.wait(timeout=10)
 
-    real_run = preflight._run_pixi_argv  # noqa: SLF001
+    real_run = _run_pixi_argv_after_dash
 
     def run_argv(coord: Any, ctx: preflight.LaneRunContext, argv: list[str], log_handle: Any) -> int:
         if ctx.lane.task == "reduced" and "--" in argv:
@@ -905,6 +927,7 @@ def test_sigint_between_reduced_segments_cancels_lane(
             assert coord.cancel.wait(timeout=10)
             interrupt_sent.set()
 
+    monkeypatch.setattr(preflight, "_run_pixi_argv", _run_pixi_argv_after_dash)
     with patch.object(psr, "build_suite_lane_overrides", return_value=plan):
         code = preflight.run_preflight(
             repo,
@@ -937,14 +960,15 @@ def test_keep_going_reduced_lane_runs_every_segment(tmp_path: Path) -> None:
     _write(repo / "pixi.toml", _mini_pixi("fail", "reduced"))
     plan = _two_segment_reduced_plan()
     with patch.object(psr, "build_suite_lane_overrides", return_value=plan):
-        code = preflight.run_preflight(
-            repo,
-            jobs=2,
-            keep_going=True,
-            install_environment=_NOOP_INSTALL,
-            scratch_parent=tmp_path / "scratch",
-            subprocess_argv_for_lane=_argv_from({"fail": "raise SystemExit(1)", "reduced": "pass"}),
-        )
+        with patch.object(preflight, "_run_pixi_argv", side_effect=_run_pixi_argv_after_dash):
+            code = preflight.run_preflight(
+                repo,
+                jobs=2,
+                keep_going=True,
+                install_environment=_NOOP_INSTALL,
+                scratch_parent=tmp_path / "scratch",
+                subprocess_argv_for_lane=_argv_from({"fail": "raise SystemExit(1)", "reduced": "pass"}),
+            )
     assert code == preflight.EXIT_LANE_RED
     reduced = next(entry for entry in _run_record(repo)["lanes"] if entry["task"] == "reduced")
     assert reduced["status"] == "ok"
