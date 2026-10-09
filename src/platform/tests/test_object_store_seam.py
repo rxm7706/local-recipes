@@ -13,8 +13,7 @@ if anything asks it for a client, or against a small fake.
 
 The flag is exercised through two flagd trees (on and off), written the way
 `test_openfeature_file_flags.py` does, until the testing-kit fixture of
-`spec-feature-flag-governance` CAP-4 lands. Each tree also carries
-`pyforge.three_surfaces`, because `wait_until_ready` keys on it.
+`spec-feature-flag-governance` CAP-4 lands.
 """
 
 from __future__ import annotations
@@ -42,7 +41,6 @@ from botocore.exceptions import ClientError
 from botocore.exceptions import EndpointConnectionError
 from django.core.exceptions import ImproperlyConfigured
 from django_pyforge import object_store
-from django_pyforge.flags import FLAG_KEY as THREE_SURFACES_KEY
 from django_pyforge.flags import configure_file_provider
 from openfeature import api as openfeature_api
 
@@ -149,7 +147,6 @@ def _flag_tree(*, on: bool) -> bytes:
     return json.dumps(
         {
             "flags": {
-                THREE_SURFACES_KEY: flag("on"),
                 object_store.FLAG_KEY: flag("on" if on else "off"),
             },
         },

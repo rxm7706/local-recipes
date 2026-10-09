@@ -323,7 +323,7 @@ def _build_parser() -> tuple[
     kill_switch_parser.add_argument(
         "--flag",
         required=True,
-        help="OpenFeature flag key to disable (e.g. pyforge.three_surfaces)",
+        help="OpenFeature flag key to disable (e.g. pyforge.<station>.<capability>)",
     )
     kill_switch_parser.add_argument(
         "--reason",

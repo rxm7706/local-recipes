@@ -25,7 +25,6 @@ import pytest
 from django.contrib.auth.models import AnonymousUser
 from django.test import RequestFactory
 from django_pyforge.assertion.crypto import mint_assertion
-from django_pyforge.flags import FLAG_KEY
 from django_pyforge.flags import configure_file_provider
 from django_pyforge.flags import eval_view
 from django_pyforge.flags import evaluate_boolean
@@ -47,6 +46,9 @@ from tests.helm_gate import requires_helm
 
 pytest.importorskip("openfeature")
 pytest.importorskip("openfeature.contrib.provider.flagd")
+
+_FIXTURE_KEY = "pyforge.test.fixture"
+_ARGPARSE_USAGE_EXIT = 2
 
 _PLATFORM_DIR = Path(__file__).resolve().parents[1]
 _FLAGS_JSON = _PLATFORM_DIR / "config" / "flags.json"
@@ -124,7 +126,7 @@ def _flagd_tree(default_variant: str) -> bytes:
     return json.dumps(
         {
             "flags": {
-                FLAG_KEY: {
+                _FIXTURE_KEY: {
                     "state": "ENABLED",
                     "variants": {"on": True, "off": False},
                     "defaultVariant": default_variant,
@@ -244,6 +246,42 @@ def _mcp_value(key: str) -> bool:
     pytest.fail(f"unparseable MCP flag result: {body}")
 
 
+def test_the_checked_in_tree_configures_with_only_cutover_root(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    payload = json.loads(_FLAGS_JSON.read_text(encoding="utf-8"))
+    boolean_keys = [
+        key
+        for key, entry in payload["flags"].items()
+        if all(isinstance(value, bool) for value in entry["variants"].values())
+    ]
+    assert boolean_keys, "the shipped tree still defines boolean flags"
+    assert "pyforge.cutover_root" in payload["flags"]
+    _isolate_flag_environment(monkeypatch, _FLAGS_JSON, "dev")
+    path = resolve_flags_path(_FLAGS_JSON)
+    assert path is not None
+    configure_file_provider(path)
+    assert evaluate_cutover_root(_FLAGS_JSON) == "local-recipes"
+
+
+def test_evaluate_boolean_refuses_without_a_key() -> None:
+    with pytest.raises(TypeError):
+        evaluate_boolean()  # type: ignore[call-arg]
+
+
+def test_cli_refuses_without_a_key() -> None:
+    with pytest.raises(SystemExit) as exc:
+        flags_main([])
+    assert exc.value.code == _ARGPARSE_USAGE_EXIT
+
+
+def test_unreadable_tree_raises_after_timeout(tmp_path: Path) -> None:
+    path = tmp_path / "flags.json"
+    path.write_text("{not json", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="FILE provider not ready"):
+        configure_file_provider(path)
+
+
 def test_one_flag_tree_under_src_platform() -> None:
     trees = [
         path.resolve()
@@ -261,9 +299,9 @@ def test_django_mcp_cli_see_the_same_evaluation(tmp_path: Path) -> None:
     path = tmp_path / "flags.json"
     path.write_bytes(_flagd_tree("on"))
     configure_file_provider(path)
-    django_val = _django_value(FLAG_KEY)
-    mcp_val = _mcp_value(FLAG_KEY)
-    cli_val = evaluate_from_source(key=FLAG_KEY, source=path)
+    django_val = _django_value(_FIXTURE_KEY)
+    mcp_val = _mcp_value(_FIXTURE_KEY)
+    cli_val = evaluate_from_source(key=_FIXTURE_KEY, source=path)
     assert django_val is True
     assert django_val == mcp_val == cli_val
 
@@ -280,7 +318,7 @@ def test_cli_host_fetch_evaluates_the_same_bytes(tmp_path: Path) -> None:
         return fetched
 
     value = evaluate_from_source(
-        key=FLAG_KEY,
+        key=_FIXTURE_KEY,
         host="https://platform.internal/flags.json",
         token=host_token,
         fetch=_fetch,
@@ -302,19 +340,19 @@ def test_no_egress_during_evaluation(
 
     monkeypatch.setattr("urllib.request.urlopen", _blocked)
     monkeypatch.setattr("socket.create_connection", _blocked)
-    assert evaluate_boolean(FLAG_KEY) is True
+    assert evaluate_boolean(_FIXTURE_KEY) is True
 
 
 def test_file_change_observed_without_process_restart(tmp_path: Path) -> None:
     path = tmp_path / "flags.json"
     path.write_bytes(_flagd_tree("off"))
     configure_file_provider(path)
-    assert evaluate_boolean(FLAG_KEY) is False
+    assert evaluate_boolean(_FIXTURE_KEY) is False
     path.write_bytes(_flagd_tree("on"))
     deadline = time.monotonic() + 12
     observed = False
     while time.monotonic() < deadline:
-        if evaluate_boolean(FLAG_KEY) is True:
+        if evaluate_boolean(_FIXTURE_KEY) is True:
             observed = True
             break
         time.sleep(0.5)
@@ -325,10 +363,10 @@ def test_unauthenticated_flag_views_are_forbidden() -> None:
     factory = RequestFactory()
     tree_req = factory.get("/flags.json")
     tree_req.user = AnonymousUser()
-    eval_req = factory.get(f"/flags/{FLAG_KEY}/")
+    eval_req = factory.get(f"/flags/{_FIXTURE_KEY}/")
     eval_req.user = AnonymousUser()
     assert tree_view(tree_req).status_code == HTTPStatus.FORBIDDEN
-    assert eval_view(eval_req, FLAG_KEY).status_code == HTTPStatus.FORBIDDEN
+    assert eval_view(eval_req, _FIXTURE_KEY).status_code == HTTPStatus.FORBIDDEN
 
 
 def test_src_platform_does_not_import_pyforge() -> None:
@@ -383,9 +421,8 @@ def test_chart_configmap_is_the_one_tree_and_has_no_flag_sidecar() -> None:
 # --- Story 76.1: per-environment values ---------------------------------------
 
 _OFF_IN_PRODUCTION = "pyforge.test.off_in_production"
-# `configure_file_provider` waits on FLAG_KEY (FILE init is asynchronous), so every
-# tree the provider loads defines it: it is the fixture's flag no overlay changes.
-_ON_EVERYWHERE = FLAG_KEY
+# The fixture's boolean that stays on in every environment (no overlay turns it off).
+_ON_EVERYWHERE = _FIXTURE_KEY
 _KILLED = "pyforge.test.killed"
 _OFF_BY_TREE = "pyforge.test.off_by_tree"
 _BOOL_KEYS = (_OFF_IN_PRODUCTION, _ON_EVERYWHERE, _KILLED, _OFF_BY_TREE)
@@ -586,7 +623,6 @@ def test_the_shipped_tree_and_overlay_agree_across_the_three_readers(
 # Story 76.2: what every key in the shipped tree evaluates to, per environment -- the
 # values before the tree carried metadata. Metadata is inert to evaluation.
 _SHIPPED_BOOLEANS = {
-    "pyforge.three_surfaces": True,
     "pyforge.steward.ghe_fleet_credentials": False,
     "pyforge.steward.object_store_consumer": {
         "dev": True,
@@ -731,7 +767,7 @@ def test_the_non_boolean_key_follows_the_overlay_on_every_reader(
         json.dumps(
             {
                 "flags": {
-                    FLAG_KEY: _entry("on", on_everywhere="2026-09-01"),
+                    _FIXTURE_KEY: _entry("on", on_everywhere="2026-09-01"),
                     _CUTOVER_KEY: {
                         "state": "ENABLED",
                         "variants": {
@@ -795,7 +831,7 @@ def test_a_mounted_rendered_tree_has_no_sibling_and_is_used_as_it_is(
         _isolate_flag_environment(monkeypatch, path, environment)
         assert resolve_flags_path(path) == path
         assert read_flag_tree_bytes(path) == path.read_bytes()
-        assert _three_readings(path, FLAG_KEY) == (False, False, False)
+        assert _three_readings(path, _FIXTURE_KEY) == (False, False, False)
 
 
 def test_an_unknown_environment_refuses_on_every_host_surface(
