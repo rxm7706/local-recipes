@@ -441,6 +441,20 @@ def _read_boolean_openfeature(key: str, default: bool, evaluation_path: Path) ->
     return bool(details.value)
 
 
+def _composed_flags(resolved: Path, environment: str) -> dict[str, Any] | None:
+    try:
+        payload = json.loads(resolved.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    flags = payload.get("flags") if isinstance(payload, dict) else None
+    if not isinstance(flags, dict):
+        return None
+    overlays = overlays_path_for(resolved)
+    if overlays is not None:
+        return compose(payload, load_overlays(overlays), environment)["flags"]
+    return flags
+
+
 def _read_boolean_from_tree_json(
     key: str,
     default: bool,
@@ -459,6 +473,16 @@ def _read_boolean_from_tree_json(
     overlays = overlays_path_for(resolved)
     if overlays is not None:
         flags = compose(payload, load_overlays(overlays), environment)["flags"]
+    return _read_boolean_from_composed_flags(key, default, flags=flags, resolved=resolved)
+
+
+def _read_boolean_from_composed_flags(
+    key: str,
+    default: bool,
+    *,
+    flags: dict[str, Any],
+    resolved: Path,
+) -> bool:
     if key not in flags:
         return _warn(key, f"key missing from {resolved}", default)
     entry = flags[key]
@@ -498,11 +522,36 @@ def read_boolean(key: str, default: bool = False, *, flags_path: Path | str | No
     resolved = cutover_root.resolve_flags_path(flags_path)
     if resolved is None:
         return _warn(key, "no flag tree (set PYFORGE_FLAGS_PATH or pass flags_path)", default)
+    try:
+        payload = json.loads(resolved.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return _warn(key, f"unreadable flag tree {resolved}: {exc}", default)
+    flags_obj = payload.get("flags") if isinstance(payload, dict) else None
+    if not isinstance(flags_obj, dict):
+        return _warn(key, f"malformed flag tree {resolved}: no 'flags' object", default)
+    overlays = overlays_path_for(resolved)
+    if overlays is not None:
+        flags_obj = compose(payload, load_overlays(overlays), environment)["flags"]
+    structural = _read_boolean_from_composed_flags(key, default, flags=flags_obj, resolved=resolved)
+    if structural is not True or key not in flags_obj:
+        return structural
+    entry = flags_obj[key]
+    if not isinstance(entry, dict) or _is_disabled(entry):
+        return structural
+    variants = entry.get("variants")
+    variant = entry.get("defaultVariant")
+    if (
+        not isinstance(variants, dict)
+        or not isinstance(variant, str)
+        or variant not in variants
+        or not isinstance(variants[variant], bool)
+    ):
+        return structural
     evaluation_path = _evaluation_path(resolved, environment)
     via_openfeature = _read_boolean_openfeature(key, default, evaluation_path)
     if via_openfeature is not None:
         return via_openfeature
-    return _read_boolean_from_tree_json(key, default, resolved=resolved, environment=environment)
+    return structural
 
 
 def require(key: str, default: bool = False, *, flags_path: Path | str | None = None) -> None:

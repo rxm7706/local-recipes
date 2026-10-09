@@ -392,8 +392,11 @@ def _flagd_tree(tmp_path: Path, key: str, variant: str, *, name: str = "flags.js
 
 def test_eval_flag_cli_override_outranks_the_tree(tmp_path: Path) -> None:
     missing = tmp_path / "missing.json"
-    assert eval_flag(FLAG_DOSSIER_EXPORT, False, flag_overrides={"enable_dossier_export": True}, flags_path=missing)
-    assert eval_flag(FLAG_DOSSIER_EXPORT, False, flag_overrides={FLAG_DOSSIER_EXPORT: "yes"}, flags_path=missing)
+    assert (
+        eval_flag(FLAG_DOSSIER_EXPORT, False, flag_overrides={"enable_dossier_export": True}, flags_path=missing)
+        is True
+    )
+    assert eval_flag(FLAG_DOSSIER_EXPORT, False, flag_overrides={FLAG_DOSSIER_EXPORT: "yes"}, flags_path=missing) is True
 
 
 def test_eval_flag_reads_the_one_tree(tmp_path: Path) -> None:

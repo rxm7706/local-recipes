@@ -14,8 +14,9 @@ Supports:
   default and wraps the tracked-twin parser below).
 - Lifecycle hooks (`LedgerQueryHook`: `pre_query` / `post_query` / `on_export`); a hook
   that raises is reported on stderr and in `QueryResult.warnings`, never aborts the query.
-- Feature flags on the one flagd tree (`src/platform/config/flags.json`), read through
-  `pyforge.core.flags.read_boolean` (OpenFeature FILE provider when installed). Resolution:
+- Feature flags on the one flagd tree (`src/platform/config/flags.json`), keys such as
+  `pyforge.steward.ledger_query_dossier_export`, read through `pyforge.core.flags.read_boolean`
+  (OpenFeature FILE provider when installed). Resolution:
   (1) a caller's `flag_overrides` dict -- the CLI's repeatable `--flag name=value` (short
   legacy names map to tree keys); (2) the tree via `read_boolean`; (3) the caller's
   `default_value` when the tree cannot be read. Every optional integration sits behind one
@@ -167,10 +168,10 @@ def eval_flag(
 
     tree_key = resolve_flag_key(flag_name)
     if flag_overrides:
-        if flag_name in flag_overrides:
-            return _coerce_flag_value(flag_overrides[flag_name])
-        if tree_key in flag_overrides:
-            return _coerce_flag_value(flag_overrides[tree_key])
+        legacy = _TREE_TO_LEGACY.get(tree_key)
+        for candidate in (flag_name, tree_key, legacy):
+            if candidate and candidate in flag_overrides:
+                return _coerce_flag_value(flag_overrides[candidate])
 
     default_bool = bool(default_value) if isinstance(default_value, bool) else False
     return read_boolean(tree_key, default_bool, flags_path=flags_path)
