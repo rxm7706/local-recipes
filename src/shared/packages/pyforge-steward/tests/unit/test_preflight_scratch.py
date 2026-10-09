@@ -129,10 +129,9 @@ def test_pytest_sees_no_git_work_tree_outside_checkout(tmp_path: Path) -> None:
     )
 
 
-def test_scratch_inside_repo_fails_pytest_mutation(tmp_path: Path) -> None:
+def test_pytest_fails_when_scratch_lives_inside_checkout_mutation(tmp_path: Path) -> None:
     repo = tmp_path / "repo"
     repo.mkdir()
-    _write(repo / "pixi.toml", _mini_pixi("lane"))
     subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
     test_file = repo / "test_outside_tree.py"
     _write(
@@ -151,26 +150,14 @@ def test_scratch_inside_repo_fails_pytest_mutation(tmp_path: Path) -> None:
             """
         ),
     )
-
-    def run_ctx(ctx: preflight.LaneRunContext) -> int:
-        proc = subprocess.run(
-            [sys.executable, "-m", "pytest", str(test_file), "-q", "-p", "no:cacheprovider"],
-            env=ctx.env,
-            cwd=repo,
-        )
-        return int(proc.returncode)
-
-    inside = repo / ".steward" / "preflight" / "forced"
-    assert (
-        preflight.run_preflight(
-            repo,
-            jobs=1,
-            install_environment=_NOOP_INSTALL,
-            run_lane_ctx=run_ctx,
-            scratch_parent=inside,
-        )
-        == preflight.EXIT_CONFIG
+    inside_lane = repo / ".steward" / "preflight" / "old-run" / "lane"
+    env = preflight._lane_scratch_env(inside_lane)  # noqa: SLF001 — mutation of pre-71.8 layout
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", str(test_file), "-q", "-p", "no:cacheprovider"],
+        env=env,
+        cwd=repo,
     )
+    assert proc.returncode != 0
 
 
 def test_green_run_removes_scratch_root(tmp_path: Path) -> None:
@@ -268,8 +255,8 @@ def test_removal_failure_on_green_run_still_exits_0(tmp_path: Path, capsys) -> N
     assert "could not remove scratch" in capsys.readouterr().err
 
 
-def test_gitignore_covers_legacy_steward_preflight_tree(tmp_path: Path) -> None:
-    repo_root = Path(__file__).resolve().parents[5]
+def test_gitignore_covers_legacy_steward_preflight_tree() -> None:
+    repo_root = Path(__file__).resolve().parents[6]
     probe = repo_root / ".steward" / "preflight" / "x" / "lane" / "pytest-basetemp" / "t0" / "f.txt"
     proc = subprocess.run(
         ["git", "check-ignore", "-q", str(probe)],
