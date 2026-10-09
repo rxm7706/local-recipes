@@ -207,4 +207,23 @@ Type / Effort / Deps: fix / S / S-71.10.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — adversarial review found no actionable gaps beyond the implemented ACs)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Closed preflight races where late `register_proc` escaped stop flags, reduced lanes started segments after stop-on-red, and SIGINT between segments journaled `ok`. Added registration-time kill, segment/collection stop checks with terminated marking, and test-only `before_popen` / `between_segments` hooks.
+
+Files changed:
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — registration guard, segment stop checks, hooks
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` — AC (1)–(5) coverage
+- Planning ledger, epics row, spec memlogs (surface reconcile)
+
+Review: 0 patches applied; 0 deferred.
+
+Follow-up review recommendation: false
+
+Verification: `pytest src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` — 23 passed; `python scripts/spec_surface_reconcile.py` — OK.
