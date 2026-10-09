@@ -11,9 +11,11 @@ Two layers:
     governance/closed-list invariant against the REAL repo's
     `docs/governance/guild-roster.json`;
   * subprocess, feeding realistic Claude Code / Cursor hook JSON on stdin
-    against a synthetic throwaway git repo, for every rule's actual
-    match/no-match behavior (including git branch/worktree state, which the
-    real checkout's branch and worktree-ness must not leak into).
+    against a synthetic throwaway git repo (whose cwd-local roster is often
+    intentionally stale), for every rule's actual match/no-match behavior
+    (including git branch/worktree state, which the real checkout's branch
+    and worktree-ness must not leak into). Denial rules and protected-ref
+    prefixes come from the hook script's own tree (Story 85.9), not cwd.
 """
 from __future__ import annotations
 
@@ -31,6 +33,17 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 HOOK = REPO_ROOT / ".claude" / "hooks" / "pre-shell.py"
 REAL_ROSTER = REPO_ROOT / "docs" / "governance" / "guild-roster.json"
+
+# Cwd-local roster in fake_repo omits ids the real hook still enforces (85.9).
+_CWD_ROSTER_OMIT_IDS = frozenset(
+    {
+        "pixi-add-or-update",
+        "outward-git-push",
+        "outward-github-write",
+        "outward-mcp-submission",
+        "outward-package-submission",
+    }
+)
 
 
 # --------------------------------------------------------------------------
@@ -95,16 +108,38 @@ cmd = "echo resolve-name"
 """
 
 
-def _write_fixture_roster(dest: Path, *, roster_override: Optional[dict[str, Any]] = None) -> None:
+def _write_fixture_roster(
+    dest: Path,
+    *,
+    roster_override: Optional[dict[str, Any]] = None,
+    omit_session_denial_ids: frozenset[str] = frozenset(),
+) -> None:
     real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
     dest.parent.mkdir(parents=True, exist_ok=True)
+    denials = [rule for rule in real["session_denials"] if rule["id"] not in omit_session_denial_ids]
     payload: dict[str, Any] = {
-        "session_denials": real["session_denials"],
+        "session_denials": denials,
         "protected_refs": real.get("protected_refs", []),
     }
     if roster_override:
         payload.update(roster_override)
     dest.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _real_session_denial_reason(rule_id: str) -> str:
+    real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
+    for rule in real["session_denials"]:
+        if rule["id"] == rule_id:
+            return str(rule["reason"])
+    raise KeyError(rule_id)
+
+
+def _real_protected_ref_deletion_reason() -> str:
+    real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
+    for rule in real["session_denials"]:
+        if rule["id"] == "protected-ref-deletion":
+            return str(rule["reason"])
+    raise KeyError("protected-ref-deletion")
 
 
 def _git(args: list[str], cwd: Path) -> None:
@@ -120,7 +155,10 @@ def fake_repo(tmp_path: Path) -> Path:
     _git(["config", "user.email", "test@example.com"], repo)
     _git(["config", "user.name", "Test"], repo)
     (repo / "pixi.toml").write_text(_PIXI_TOML, encoding="utf-8")
-    _write_fixture_roster(repo / "docs" / "governance" / "guild-roster.json")
+    _write_fixture_roster(
+        repo / "docs" / "governance" / "guild-roster.json",
+        omit_session_denial_ids=_CWD_ROSTER_OMIT_IDS,
+    )
     scripts_dir = repo / "scripts"
     scripts_dir.mkdir()
     shutil.copy(REPO_ROOT / "scripts" / "commit_msg_hook.py", scripts_dir / "commit_msg_hook.py")
@@ -154,13 +192,19 @@ def _track_file(repo: Path, rel: str, content: str = "x: 1\n") -> Path:
 # --------------------------------------------------------------------------
 
 
-def _run(payload: dict[str, Any], cwd: Path, env_extra: Optional[dict[str, str]] = None) -> subprocess.CompletedProcess:
+def _run(
+    payload: dict[str, Any],
+    cwd: Path,
+    env_extra: Optional[dict[str, str]] = None,
+    *,
+    hook_path: Path = HOOK,
+) -> subprocess.CompletedProcess:
     env = dict(os.environ)
     env.pop("BMAD_ACTIVE_PROJECT", None)
     if env_extra:
         env.update(env_extra)
     return subprocess.run(
-        [sys.executable, str(HOOK)],
+        [sys.executable, str(hook_path)],
         input=json.dumps(payload),
         cwd=str(cwd),
         env=env,
@@ -168,6 +212,13 @@ def _run(payload: dict[str, Any], cwd: Path, env_extra: Optional[dict[str, str]]
         text=True,
         timeout=15,
     )
+
+
+def _install_hook_copy(repo: Path) -> Path:
+    dest = repo / ".claude" / "hooks" / "pre-shell.py"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(HOOK, dest)
+    return dest
 
 
 def _claude_bash(command: str, cwd: Path) -> dict[str, Any]:
@@ -291,7 +342,8 @@ def test_npx_skills_add_allowed(fake_repo: Path) -> None:
 @pytest.mark.parametrize("command", ["pixi add numpy", "pixi update"])
 def test_pixi_add_or_update_denied(fake_repo: Path, command: str) -> None:
     result = _run(_claude_bash(command, fake_repo), fake_repo)
-    assert _claude_deny_reason(result) is not None
+    reason = _claude_deny_reason(result)
+    assert reason == _real_session_denial_reason("pixi-add-or-update")
 
 
 def test_pixi_task_add_allowed(fake_repo: Path) -> None:
@@ -671,9 +723,11 @@ def test_protected_ref_deletion_floor_when_roster_omits_loop_prefix(
     ]
     roster_path = fake_repo / "docs" / "governance" / "guild-roster.json"
     _write_fixture_roster(roster_path, roster_override={"protected_refs": trimmed})
+    hook_copy = _install_hook_copy(fake_repo)
     result = _run(
         _claude_bash("git push origin --delete loop/pyforge-marshal", fake_repo),
         fake_repo,
+        hook_path=hook_copy,
     )
     assert _claude_deny_reason(result) is not None
 
@@ -918,8 +972,6 @@ def test_outward_git_remote_add_allowed_in_unrelated_clone(tmp_path: Path) -> No
     (other / "f").write_text("x\n", encoding="utf-8")
     _git(["add", "f"], other)
     _git(["commit", "-q", "-m", "i"], other)
-    _write_fixture_roster(other / "docs" / "governance" / "guild-roster.json")
-    (other / "pixi.toml").write_text(_PIXI_TOML, encoding="utf-8")
     result = _run(
         _claude_bash(
             "git remote add up https://github.com/conda-forge/staged-recipes.git",
@@ -1119,7 +1171,7 @@ def test_unrelated_claude_tool_is_a_no_op(fake_repo: Path) -> None:
 def test_cursor_before_shell_execution_deny_shape(fake_repo: Path) -> None:
     result = _run(_cursor_bash("pixi add numpy", fake_repo), fake_repo)
     reason = _cursor_deny_reason(result)
-    assert reason is not None
+    assert reason == _real_session_denial_reason("pixi-add-or-update")
     data = json.loads(result.stdout.strip())
     assert set(data) == {"permission", "user_message", "agent_message"}
 
@@ -1148,14 +1200,87 @@ def test_cursor_after_file_edit_ordinary_file_is_silent(fake_repo: Path) -> None
 
 
 # --------------------------------------------------------------------------
+# Story 85.9: roster reads from the hook's own tree, not cwd.
+# --------------------------------------------------------------------------
+
+
+def test_cwd_roster_extra_declared_id_does_not_block(fake_repo: Path) -> None:
+    real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
+    extra = {
+        "id": "not-yet-implemented",
+        "applies_to": "bash",
+        "trigger": "test only",
+        "reason": "fixture-only extra id",
+    }
+    denials = list(real["session_denials"]) + [extra]
+    roster = fake_repo / "docs" / "governance" / "guild-roster.json"
+    roster.write_text(
+        json.dumps({"session_denials": denials, "protected_refs": real.get("protected_refs", [])}),
+        encoding="utf-8",
+    )
+    result = _run(_claude_bash("ls -la", fake_repo), fake_repo)
+    assert result.returncode == 0
+    assert result.stdout.strip() == ""
+    assert result.stderr.strip() == ""
+
+
+def test_no_roster_cwd_allows_ls_and_denies_outward_github(tmp_path: Path) -> None:
+    bare = tmp_path / "bare"
+    bare.mkdir()
+    _git(["init", "-q"], bare)
+    _git(["symbolic-ref", "HEAD", "refs/heads/main"], bare)
+    result = _run(_claude_bash("ls -la", bare), bare)
+    assert result.returncode == 0
+    assert result.stdout.strip() == ""
+    assert result.stderr.strip() == ""
+    fork = _run(_claude_bash("gh repo fork conda-forge/staged-recipes", bare), bare)
+    reason = _claude_deny_reason(fork)
+    assert reason == _real_session_denial_reason("outward-github-write")
+
+
+def test_protected_ref_deletion_reads_hook_roster_when_cwd_roster_empty(fake_repo: Path) -> None:
+    roster = fake_repo / "docs" / "governance" / "guild-roster.json"
+    real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
+    _write_fixture_roster(
+        roster,
+        roster_override={"protected_refs": []},
+        omit_session_denial_ids=_CWD_ROSTER_OMIT_IDS,
+    )
+    result = _run(
+        _claude_bash("git push origin --delete attempt-preserve/run-1", fake_repo),
+        fake_repo,
+    )
+    reason = _claude_deny_reason(result)
+    assert reason == _real_protected_ref_deletion_reason()
+
+
+def _second_repo_with_real_roster(tmp_path: Path) -> Path:
+    other = tmp_path / "other-real-roster"
+    other.mkdir()
+    _git(["init", "-q"], other)
+    _git(["symbolic-ref", "HEAD", "refs/heads/main"], other)
+    _git(["config", "user.email", "t@example.com"], other)
+    _git(["config", "user.name", "T"], other)
+    (other / "f").write_text("x\n", encoding="utf-8")
+    _git(["add", "f"], other)
+    _git(["commit", "-q", "-m", "i"], other)
+    dest = other / "docs" / "governance" / "guild-roster.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy(REAL_ROSTER, dest)
+    return other
+
+
+# --------------------------------------------------------------------------
 # Fail loud, never a silent skip.
 # --------------------------------------------------------------------------
 
 
-def test_missing_session_denials_fails_loud(fake_repo: Path) -> None:
+def test_missing_session_denials_fails_loud(fake_repo: Path, tmp_path: Path) -> None:
+    hook_copy = _install_hook_copy(fake_repo)
     roster = fake_repo / "docs" / "governance" / "guild-roster.json"
     roster.write_text(json.dumps({"stations": ["marshal"]}), encoding="utf-8")
-    result = _run(_claude_bash("ls -la", fake_repo), fake_repo)
+    other = _second_repo_with_real_roster(tmp_path)
+    result = _run(_claude_bash("ls -la", other), other, hook_path=hook_copy)
     # Exit code 2 specifically -- Claude Code's PreToolUse contract only
     # blocks the tool call on exit 2; any other non-zero exit is non-blocking
     # and the command would proceed despite the governance-file integrity
@@ -1164,11 +1289,13 @@ def test_missing_session_denials_fails_loud(fake_repo: Path) -> None:
     assert "session_denials" in result.stderr
 
 
-def test_drifted_session_denials_fails_loud(fake_repo: Path) -> None:
+def test_drifted_session_denials_fails_loud(fake_repo: Path, tmp_path: Path) -> None:
+    hook_copy = _install_hook_copy(fake_repo)
     real = json.loads(REAL_ROSTER.read_text(encoding="utf-8"))
     denials = [rule for rule in real["session_denials"] if rule["id"] != "pixi-add-or-update"]
     roster = fake_repo / "docs" / "governance" / "guild-roster.json"
     roster.write_text(json.dumps({"session_denials": denials}), encoding="utf-8")
-    result = _run(_claude_bash("ls -la", fake_repo), fake_repo)
+    other = _second_repo_with_real_roster(tmp_path)
+    result = _run(_claude_bash("ls -la", other), other, hook_path=hook_copy)
     assert result.returncode == 2
     assert "drifted" in result.stderr
