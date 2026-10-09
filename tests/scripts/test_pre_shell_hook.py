@@ -722,11 +722,7 @@ def test_protected_ref_deletion_floor_when_roster_omits_loop_prefix(
         if entry["refname"] != "refs/heads/loop/"
     ]
     roster_path = fake_repo / "docs" / "governance" / "guild-roster.json"
-    _write_fixture_roster(
-        roster_path,
-        roster_override={"protected_refs": trimmed},
-        omit_session_denial_ids=_CWD_ROSTER_OMIT_IDS,
-    )
+    _write_fixture_roster(roster_path, roster_override={"protected_refs": trimmed})
     hook_copy = _install_hook_copy(fake_repo)
     result = _run(
         _claude_bash("git push origin --delete loop/pyforge-marshal", fake_repo),
