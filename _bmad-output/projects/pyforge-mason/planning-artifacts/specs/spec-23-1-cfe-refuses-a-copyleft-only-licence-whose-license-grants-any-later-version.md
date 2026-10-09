@@ -2,7 +2,9 @@
 title: "23.1: CFE refuses a copyleft -only licence whose LICENSE grants any later version"
 type: 'feature'
 created: '2026-09-29'
-status: 'backlog'
+status: 'done'
+baseline_revision: f7e9368e70338cca4dbfbfd2adc5d57270948aac
+implementation_revision: 41135583f7
 flag-exempt: detector-or-gate
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -140,4 +142,31 @@ Flag: `flag-exempt: detector-or-gate` (a licence gate; flagging it OFF would be 
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate).
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none — diff reviewed against acceptance criteria and I/O matrix; matrix rows covered by `tests/unit/test_license_semantics.py`)
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** CFE `license-checker.py` gains pure `check_license_semantics` (ported from auto-recipe@8b53eda), wired on `--check-source`; missing `license_file` in source now fails the run. CFE bumped to v8.95.0 (MINOR).
+
+**Files changed:**
+- `.claude/skills/conda-forge-expert/scripts/license-checker.py` — semantics gate + exit-code fix for missing file
+- `.claude/skills/conda-forge-expert/tests/unit/test_license_semantics.py` — CLI and direct oracle tests
+- `.claude/skills/conda-forge-expert/tests/fixtures/license-semantics/**` — matrix fixtures
+- `.claude/skills/conda-forge-expert/{CHANGELOG.md,SKILL.md,config/skill-config.yaml,MANIFEST.yaml}` — v8.95.0 retro carriers
+- `spec-conda-forge-expert-rebuild/.memlog.md`, `spec-packaging-factory/.memlog.md` — surface reconcile (S-13.7)
+
+**Review:** No patch/defer/intent_gap items.
+
+**Verification:**
+- `pixi run -e local-recipes pytest .claude/skills/conda-forge-expert/tests/unit -q -k license` — 76 passed
+- `pixi run --frozen -e pyforge-mason pyforge-mason-test` — 1622 + 12 passed
+- `python scripts/spec_surface_reconcile.py` — OK (no `--write-baseline`)
+- `git log origin/main..HEAD --format=%s -- .claude/skills/conda-forge-expert` — one `retro(cfe): v8.95.0 …` commit (`41135583f7`)
+
+**Residual risk:** Full offline `pixi run -e local-recipes test` not executed this run (long suite); license-focused unit slice is green.
+
+**Follow-up review recommended:** false
