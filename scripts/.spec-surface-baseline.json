@@ -6954,7 +6954,7 @@
    "src/shared/packages/pyforge-core/src/pyforge/core/hooks.py": "03294772e3802e8a37154c16d660e9827ec25385",
    "src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py": "fee98170c10c2a59d864a0dd354539693a3141a1",
    "src/shared/packages/pyforge-core/src/pyforge/core/league_measure.py": "ef915e9354af32eb0dfa3cdf0060dc0211ca7e97",
-   "src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py": "c3ba4816fb5127c3018b63ecf085f9b8a6bb7220",
+   "src/shared/packages/pyforge-core/src/pyforge/core/preserve_refs.py": "99a815f821ed2390b6f32fcc3be9a96440adad4d",
    "src/shared/packages/pyforge-core/src/pyforge/core/process.py": "c046d7262783d7c24b83a721ea5310888a3f6ee3",
    "src/shared/packages/pyforge-core/src/pyforge/core/published_loop.py": "0469d13dfe9a236fae8a748f5b27eecf672d9506",
    "src/shared/packages/pyforge-core/src/pyforge/core/py.typed": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -6983,7 +6983,7 @@
    "src/shared/packages/pyforge-core/tests/unit/test_hooks.py": "5ac71315e295d61831cd8b3794e2535cfcf11971",
    "src/shared/packages/pyforge-core/tests/unit/test_landing_evidence.py": "115c10aa12674d205a1d76dc560c0fde5996d098",
    "src/shared/packages/pyforge-core/tests/unit/test_league_measure.py": "9bd6766e602674c54cb06dd67647707f0c442fdd",
-   "src/shared/packages/pyforge-core/tests/unit/test_preserve_refs.py": "a21a7c9d38153eec62e1b6f304a7bde99335182a",
+   "src/shared/packages/pyforge-core/tests/unit/test_preserve_refs.py": "ebe423daa96bc5b86654132a5fe6ef8412ed5a0f",
    "src/shared/packages/pyforge-core/tests/unit/test_process.py": "a4bff2aafc3b0711ddc3980a5bd4677a4ca8efb6",
    "src/shared/packages/pyforge-core/tests/unit/test_report.py": "8fc7d80039bc741d9b5cc54a8452d7bcfda3a9fd",
    "src/shared/packages/pyforge-core/tests/unit/test_roster.py": "1b2280e6e7323e397d3e46a4a1a2593f8a516e08",
@@ -7040,7 +7040,7 @@
    "src/shared/packages/pyforge-scribe/tests/unit/test_supersession.py": "017933460d7d0d5c1c430a8ebd293e084a78720b",
    "src/shared/packages/pyforge-scribe/tests/unit/test_transcripts.py": "4691fd2c5f1290d0a80eca2d9c2a37ac349b86d2"
   },
-  "memlog": "50a763c87594b8526b555e3bbeb0321962fb8e25"
+  "memlog": "36df5440bbc8082d3181217960d45f86527d07d4"
  },
  "pyforge-steward/spec-python-agent-platform": {
   "files": {},
