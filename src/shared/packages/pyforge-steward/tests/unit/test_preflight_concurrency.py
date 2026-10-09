@@ -480,8 +480,7 @@ def test_reduced_lane_cancelled_mid_segment(tmp_path: Path) -> None:
     plan = {"slow": override}
 
     def run_seg(coord, ctx, argv, log_handle):
-        dash = argv.index("--")
-        seg = argv[dash + 1 :]
+        seg = argv[argv.index("--") + 1 :] if "--" in argv else argv
         proc = subprocess.Popen(
             seg,
             cwd=coord.repo_root,
