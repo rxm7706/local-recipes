@@ -432,7 +432,7 @@ development_status:
   86-8-path-form-spec-cites-count-as-missing-and-the-retired-chain-verb-leaves-no-trace: done
   87-1-the-sweeper-reaches-remote-branches-and-never-deletes-a-protected-ref: backlog
   87-10-merged-check-objects-never-enter-the-object-store: done
-  87-11-the-build-skills-and-recovery-recipes-preserve-before-they-revert-or-rebuild: backlog
+  87-11-the-build-skills-and-recovery-recipes-preserve-before-they-revert-or-rebuild: done
   87-12-legacy-refs-are-promoted-and-attempt-preserve-leaves-the-protected-list: backlog
   87-13-nothing-in-a-loop-home-prunes-a-preserve-or-rewrites-a-station-branch: done
   87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories: done
