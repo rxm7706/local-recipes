@@ -196,6 +196,10 @@ def test_content_gate_refuses_secret_and_oversize(git_pair: tuple[Path, Path]):
     sha_hits = run_content_gate(repo, commit=bad, purge_list=purge)
     assert any(f.reason is ContentGateReason.PURGE_SHA for f in sha_hits)
 
+    purge_path = PurgeList(frozenset(), frozenset({"tracked.txt"}))
+    path_hits = run_content_gate(repo, commit=bad, purge_list=purge_path)
+    assert any(f.reason is ContentGateReason.PURGE_PATH for f in path_hits)
+
 
 def test_push_one_refspec_and_verifies_remote(git_pair: tuple[Path, Path]):
     repo, bare = git_pair
@@ -223,6 +227,28 @@ def test_push_refused_tag_stays_local(git_pair: tuple[Path, Path]):
     assert any(f.reason is ContentGateReason.SECRET for f in result.findings)
     remote = subprocess.run(["git", "ls-remote", "origin", ref], cwd=repo, capture_output=True, text=True)
     assert remote.stdout.strip() == ""
+
+
+def test_push_cap_refuses_excess(git_pair: tuple[Path, Path]):
+    repo, _ = git_pair
+    commit = _run(repo, "rev-parse", "HEAD").stdout.strip()
+    purge_path = _write_purge_list(repo)
+    refs: list[str] = []
+    for i in range(3):
+        ref = render_preserve_ref(
+            commit_sha=commit, producer="hand", project_slug="pyforge-marshal", story_key=f"87.{i}"
+        )
+        tag_preserve(repo, refname=ref, commit=commit, trailers=_trailers(commit))
+        refs.append(ref)
+    result = push_preserve_ref(
+        repo,
+        refs[0],
+        purge_list_path=purge_path,
+        run_push_count=20,
+        max_per_run=20,
+    )
+    assert result.pushed is False
+    assert any(f.reason is ContentGateReason.PUSH_CAP_RUN for f in result.findings)
 
 
 def test_content_gate_mutation_secret_rule_required(git_pair: tuple[Path, Path]):
