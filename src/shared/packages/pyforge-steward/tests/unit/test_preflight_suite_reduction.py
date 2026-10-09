@@ -206,7 +206,7 @@ def test_scripts_scan_and_import_detection(tmp_path: Path) -> None:
     rel_hit = psr._imports_scripts_module(rel, set())
     assert rel_hit and "relative import" in rel_hit
 
-    station_pkg = _fixture_station(repo, "scan")
+    _fixture_station(repo, "scan")
     assert psr._scan_unit_meta_scripts_imports(repo, "scan") is None
 
 
@@ -383,7 +383,13 @@ def test_build_suite_lane_overrides_branches(tmp_path: Path) -> None:
             selected_task_names={"pyforge-lane-test", "pyforge-lane-coverage-gate"},
             pixi_data=pixi,
         )
+        non_pytest = psr.build_suite_lane_overrides(
+            repo,
+            selected_task_names={"pyforge-lane-test", "pyforge-lane-coverage-gate"},
+            pixi_data=no_overlap_pixi,
+        )
     assert "no reducible overlap" in no_unit["pyforge-lane-test"]["suite_reduction_reason"]
+    assert "not a single pytest invocation" in non_pytest["pyforge-lane-test"]["suite_reduction_reason"]
 
 
 def test_reduction_skip_journal_and_gate_collect_shell(tmp_path: Path) -> None:
