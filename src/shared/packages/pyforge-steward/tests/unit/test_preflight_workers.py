@@ -59,9 +59,12 @@ cmd = "pytest t -q"
 
 
 def test_pytest_xdist_argv_from_cmd_and_station_task() -> None:
-    assert preflight_xdist.pytest_xdist_argv_from_cmd(
-        "pytest pkg -n auto --dist loadgroup"
-    ) == ["-n", "auto", "--dist", "loadgroup"]
+    assert preflight_xdist.pytest_xdist_argv_from_cmd("pytest pkg -n auto --dist loadgroup") == [
+        "-n",
+        "auto",
+        "--dist",
+        "loadgroup",
+    ]
     assert preflight_xdist.pytest_xdist_argv_from_cmd("true && echo hi") == []
 
     pixi = tomllib.loads(
