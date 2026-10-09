@@ -47,6 +47,38 @@ def git_repo(tmp_path: Path) -> Path:
 
 
 @flag_states(_FLAG)
+def test_preserve_tag_build_producer_when_flag_on(
+    git_repo: Path, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
+):
+    if not flag_provider[_FLAG]:
+        pytest.skip("covered by flag-off test")
+    flags_path = flagd_tree(git_repo, {_FLAG: "on"})
+    monkeypatch.setenv("PYFORGE_FLAGS_PATH", str(flags_path))
+    monkeypatch.setattr("pyforge.marshal.cli.preserve.repo_root", lambda: git_repo)
+    (git_repo / "attempt.py").write_text("build attempt\n", encoding="utf-8")
+    rc = main(
+        [
+            "preserve",
+            "tag",
+            "--story",
+            "pyforge-marshal",
+            "87.11",
+            "--producer",
+            "build",
+            "--from",
+            str(git_repo),
+        ]
+    )
+    assert rc == 0
+    listed = invoke_cli(main, ["preserve", "list", "--format", "json", "--producer", "build"])
+    assert listed.exit_code == 0
+    payload = json.loads(listed.output)
+    rows = payload["data"]["preserves"]
+    assert len(rows) == 1
+    assert rows[0]["trailers"]["Preserve-Producer"] == "build"
+
+
+@flag_states(_FLAG)
 def test_preserve_tag_and_list_when_flag_on(
     git_repo: Path, flag_provider: dict[str, bool], monkeypatch: pytest.MonkeyPatch
 ):

@@ -2,7 +2,8 @@
 title: "87.11: The build skills and recovery recipes preserve before they revert or rebuild"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'db08e46a974ea2d59c84005242bfc7a545b69ba9'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -93,8 +94,37 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Review pass — aligned `bmad-build.toml` push wording with dispatch supervisor; moved `baseline-drift-check` preserve-first remedy to `pixi.toml` and regenerated `docs/how-to/pixi-tasks.md` (generated file).
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 3 findings — high 0, medium 1, low 0, false 2, maybe-false 0
+- findings:
+  - `[medium]` `[patch]` Hand-edited generated `docs/how-to/pixi-tasks.md` without updating `pixi.toml` task description — regenerated via `docs-pixi-tasks` after fixing `[feature.guild-tasks.tasks.baseline-drift-check].description`.
+  - `[false]` `[reject]` MEMORY.md index line treated as forbidden hand-edit — entry landed via `scribe capture` (reference promotion), not manual memory authoring.
+  - `[false]` `[reject]` Missing build-producer flag-off test — `test_preserve_refuses_when_flag_off` already pins disabled `preserve tag` for all producers when flag is OFF.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Build skills now carry installer-safe persistent facts to run `marshal preserve tag --producer build` before `intent_gap` / `bad_spec` reverts; recovery docs and baseline-drift remedies require a hand preserve before cutting `land/…`; troubleshooting doc documents worktree-isolation `--restore-patch` refusal; scribe capture added a team-memory reference superseding trap (2) for dispatch runs.
+
+**Files changed:**
+- `_bmad/custom/bmad-build.toml`, `_bmad/custom/bmad-build-auto.toml` — preserve-before-revert persistent facts
+- `src/shared/packages/pyforge-core/src/pyforge/core/landing_evidence.py` — recovery convention step 1
+- `scripts/bmad_loop_baseline_drift_check.py` — module doc + printed remedy
+- `pixi.toml`, `docs/how-to/pixi-tasks.md` — baseline-drift-check description
+- `docs/how-to/troubleshoot-bmad-agent-loops.md` — restore-patch refusal on worktree isolation
+- `src/shared/packages/pyforge-marshal/tests/unit/test_preserve_cli.py` — build producer tag test (flag on)
+- `.claude/memory/` — scribe capture reference for worktree-isolation restore-patch
+- Spec memlogs (pyforge-marshal, pyforge-core, pyforge-doctor)
+
+**Review:** One medium patch (pixi.toml source for generated pixi-tasks); two false rejects.
+
+**Follow-up review recommended:** false
+
+**Verification:** `pyforge-marshal-test` pass; `pyforge-deps-test` pass; `lint-types` exit 0; `governance-currency` exit 0; `python scripts/spec_surface_reconcile.py` exit 0; `resolve_customization.py` shows preserve facts for bmad-build and bmad-build-auto; no diff under `.claude/skills/bmad-build*`.
+
+**Residual risks:** Revert loopbacks still depend on rendered persistent facts (no runtime enforce hook); legacy `bmad-loop-escalation-and-landing-traps.md` trap (2) unchanged — superseded in memory/troubleshoot for isolation runs only.
