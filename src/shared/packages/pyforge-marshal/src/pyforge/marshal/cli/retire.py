@@ -58,10 +58,12 @@ from collections.abc import Mapping
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pyforge.core.preserve_refs import ARCHIVE_REF_PREFIX, PRESERVE_REF_PREFIX
+
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import resolve_loop_runner
 from ..adapters.vcs_git import GitVcs, VcsCommandError
-from ..core import identity, policy
+from ..core import identity, policy, protected_refs
 from ..core import promotion as promotion_core
 from ..core.identity import MalformedStoryKeyError
 from ..core.journal import JournalEntryId, Phase, build_entry, mint_run_id, prepare_for_write
@@ -89,6 +91,9 @@ from .config import (
 _MRS_RETIRE_001 = "MRS-RETIRE-001"
 _MRS_RETIRE_002 = "MRS-RETIRE-002"
 _MRS_RETIRE_003 = "MRS-RETIRE-003"
+_MRS_RETIRE_004 = "MRS-RETIRE-004"
+_ORIGIN_MAIN_REF = "refs/remotes/origin/main"
+_PRESERVE_ARCHIVE_TAG_PREFIXES = (PRESERVE_REF_PREFIX, ARCHIVE_REF_PREFIX)
 
 # The exact literal `supervisor/durability.py::_DONE_PHASE` already uses --
 # reused, not re-spelled, for the "the harness's own recorded terminus"
@@ -154,6 +159,24 @@ def _retire_format_utc_compact(moment: datetime) -> str:
 
 def _retire_format_entry_ts(moment: datetime) -> str:
     return moment.strftime("%Y-%m-%dT%H:%M:%S.") + f"{moment.microsecond // 1000:03d}Z"
+
+
+def _roster_protected_prefixes(root: Path) -> frozenset[str]:
+    roster_path = root / "docs" / "governance" / "guild-roster.json"
+    try:
+        payload = json.loads(roster_path.read_text(encoding="utf-8"))
+    except OSError, json.JSONDecodeError:
+        return frozenset()
+    return protected_refs.parse_roster_protected_prefixes(payload.get("protected_refs"))
+
+
+def _branch_deletion_would_orphan(vcs: VcsPort, git_repo_root: Path, branch: str) -> bool:
+    tip = vcs.resolve_ref(git_repo_root, branch)
+    if vcs.is_commit_ancestor(git_repo_root, tip, _ORIGIN_MAIN_REF):
+        return False
+    if vcs.commit_contained_in_tag_prefixes(git_repo_root, tip, _PRESERVE_ARCHIVE_TAG_PREFIXES):
+        return False
+    return True
 
 
 def _retire_writer_id() -> str:
@@ -283,6 +306,7 @@ def run_retire(
     insufficient: list[InsufficientEvidence] = []
     deleted: list[dict[str, object]] = []
     subjects_by_base: dict[str, tuple[str, ...]] = {}
+    roster_prefixes = _roster_protected_prefixes(root)
 
     def _subjects_for_base(base_branch: str) -> tuple[str, ...]:
         if base_branch not in subjects_by_base:
@@ -307,6 +331,18 @@ def run_retire(
                     findings.append(exc.finding)
         effective, policy_findings = policy.compose(project_slug=slug, project=project_data, flags={})
         findings.extend(policy_findings)
+        # Story 87.6: a refused protected list (MRS-POLICY-009 malformed,
+        # MRS-POLICY-010 removes a floor entry) refuses the whole project --
+        # retiring against a list the operator meant to be wider fails open.
+        # compose() already reported why; nothing is gathered for this slug.
+        if any(f.code in policy.PROTECTED_REFS_REFUSAL_CODES for f in policy_findings):
+            continue
+        composed_additions = effective.protected_ref_prefixes.value
+        policy_additions = (
+            tuple(prefix for prefix in composed_additions if isinstance(prefix, str))
+            if isinstance(composed_additions, tuple)
+            else ()
+        )
         base = effective.landing_base_branch.value
         template = effective.merge_subject_template.value
         main_subjects = _subjects_for_base(base)
@@ -346,7 +382,11 @@ def run_retire(
         seen_branches: set[str] = set()
         for task in snapshot.tasks:
             branch = task.branch
-            if not branch or is_structurally_excluded(branch):
+            if not branch or is_structurally_excluded(
+                branch,
+                roster_prefixes=roster_prefixes,
+                policy_additions=policy_additions,
+            ):
                 continue
             if branch in seen_branches:
                 continue
@@ -412,6 +452,39 @@ def run_retire(
             slug_deleted: list[dict[str, object]] = []
             for proposal in slug_proposals:
                 branch = proposal.candidate.branch
+                try:
+                    if _branch_deletion_would_orphan(vcs, git_repo_root, branch):
+                        findings.append(
+                            Finding(
+                                code=_MRS_RETIRE_004,
+                                severity=Severity.WARN,
+                                message=(
+                                    f"refusing to delete {branch!r} ({slug!r}): "
+                                    "would-orphan commits not held by origin/main "
+                                    "or a preserve/archive tag -- use the "
+                                    "sweeper's --retire archive-twin route "
+                                    "(Stories 87.1 / 87.8) instead"
+                                ),
+                                path=branch,
+                            )
+                        )
+                        insufficient.append(
+                            InsufficientEvidence(
+                                candidate=proposal.candidate,
+                                missing=("would_orphan",),
+                            )
+                        )
+                        continue
+                except VcsCommandError as exc:
+                    findings.append(
+                        Finding(
+                            code=_MRS_RETIRE_002,
+                            severity=Severity.WARN,
+                            message=(f"cannot assess orphan risk for {branch!r} ({slug!r}): {exc}"),
+                            path=branch,
+                        )
+                    )
+                    continue
                 try:
                     # Code review (2026-08-06, both reviewers independently,
                     # the single most severe finding against this story):

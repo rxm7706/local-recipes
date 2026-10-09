@@ -15,7 +15,9 @@ source:
 
 build:
   number: 0
-  skip: match(python, ">=2,<3")
+  skip:
+    - match(python, ">=2,<3")
+    - match(python, ">=3.13")
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
@@ -29,6 +31,7 @@ requirements:
   host:
     - python
     - pip
+    - setuptools
     - libpq
   run:
     - python
@@ -38,9 +41,10 @@ requirements:
 tests:
   - python:
       imports:
+        # https://github.com/yugabyte/yugabyte-db/issues/12283
+        # For now, psycopg2-yugabytedb has the same underlying library (psycopg2) as the upstream driver which when installed together override one another based on the sequence of installation.
+        - psycopg2
       pip_check: true
-  - <conda_recipe_manager.types.SentinelType object at 0x7c4a922fdbe0>:
-      - psycopg2
 
 about:
   summary: Yugabyte Psycopg2 driver is a distributed python driver for YugabyteDB built on the PostgreSQL psycopg2 driver.
@@ -72,11 +76,11 @@ extra:
     - meta-yaml-to-recipe-yaml
     - platform-expansion
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-06-21T00:00:00Z
+  cfe-last-checked: 2026-10-09T10:08:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-21T00:00:00Z
   cfe-local-build-status: success
-  cfe-local-build-datetime: 2026-06-21T00:00:00Z
+  cfe-local-build-datetime: 2026-10-09T10:07:32Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -87,6 +91,15 @@ extra:
 #    # authored this v1 recipe.yaml alongside it. Both coexist until the
 #    # feedstock completes its v0->v1 switch. updates-needed records the owed
 #    # migration + platform-expansion.
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion split `imports:` from its
+#    # `- psycopg2` item and left a SentinelType key (G121); imports rejoined, with meta.yaml's two upstream
+#    # comments (yugabyte #12283) kept above the item. The same regeneration had dropped the host setuptools
+#    # (G55) and the >=3.13 skip (G50) recorded below; both restored. LOCAL BUILD 2026-10-09 (linux-64):
+#    # py3.11 and py3.12 built, imports and pip check passed; py3.13/3.14 skipped.
+#    # Platform expansion: feedstock .ci_support ships linux_64 + osx_64 + win_64 only (py3.9-3.12).
+#    # Candidate to widen to osx-arm64 + linux-aarch64 at submission (libpq is
+#    # available on those subdirs). Recorded in updates-needed; conda-forge.yml
+#    # not edited here.
 # build:
 #    # C extension building psycopg2._psycopg via setup.py; links libpq.
 #    # skip match(python, ">=3.13"): psycopg/utils.c uses the private CPython
@@ -113,9 +126,4 @@ extra:
 #    # import name `psycopg2` (setup.py package_dir={'psycopg2': 'lib'}).
 #    # Compiled recipe -> import block + pip_check, no python_version matrix
 #    # (the build matrix supplies per-Python coverage).
-# platform-expansion:
-#    # feedstock .ci_support ships linux_64 + osx_64 + win_64 only (py3.9-3.12).
-#    # Candidate to widen to osx-arm64 + linux-aarch64 at submission (libpq is
-#    # available on those subdirs). Recorded in updates-needed; conda-forge.yml
-#    # not edited here.
 ####

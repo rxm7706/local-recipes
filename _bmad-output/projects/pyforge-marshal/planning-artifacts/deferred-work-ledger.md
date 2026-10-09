@@ -1515,7 +1515,8 @@ status: open
 - source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-3-13-the-parallel-fan-out-clamp-is-surfaced-not-silent.md`
   summary: `cli/config.py`'s `_UNSETTABLE_KEYS` comment block ("Naming any of these 9 keys on `--set` is a usage error") and two test function names, `tests/unit/test_cli.py::test_config_prints_all_twenty_keys` and `tests/unit/test_policy.py::test_schema_file_declares_the_twenty_keys`, hardcode a key-count in prose/identifiers that does not track `core/policy.py::_ALL_KEYS`'s actual size and was already wrong before this story -- the frozenset held far more than 9 members and the real count was already 22, not 20, prior to Story 3.13's `max_parallel` addition.
   evidence: Confirmed live in this checkout: `cli/config.py:103-104`'s comment reads "Naming any of these 9 keys..." immediately above a frozenset literal (`_UNSETTABLE_KEYS`) that already held well over 9 members before this story's edit. Both test names were touched by this story's own diff (their docstrings/assertions were bumped from "22"/"now 22" to "23"/"now 23") without renaming the functions themselves, unlike the sibling `test_seed_view_returns_all_ten_seed_fields` -> `test_seed_view_returns_all_eleven_seed_fields` rename landed in the same diff -- proving the renaming convention is known in this codebase, just not applied uniformly to every touched count-named test. Surfaced by the Blind Hunter review pass over Story 3.13's diff (independent, no shared context with the Edge Case Hunter reviewer). Not fixed here: correcting the `_UNSETTABLE_KEYS` comment's stale "9" and renaming two test functions is pre-existing drift this story's own diff sits adjacent to but did not cause, out of Story 3.13's `max_parallel`-only Surface.
-  status: open
+  status: closed
+  resolved: 2026-10-09 (marshal Story 87.6, spec-pyforge-marshal CAP-287) the two count-named tests are renamed to count-free names, `tests/unit/test_cli.py::test_config_prints_every_policy_key` and `tests/unit/test_policy.py::test_schema_file_declares_every_policy_key`, and the schema test now also asserts `schemas/policy.json`'s required set equals `core/policy.py::_ALL_KEYS`, so the vocabulary (35 keys with `protected_ref_prefixes`) can grow without a stale numeral in an identifier; the `_UNSETTABLE_KEYS` comment instance was already resolved (it no longer restates a size).
   severity: low
   verified: 2026-10-01 — STANDS — cli/config.py:133-137's _UNSETTABLE_KEYS comment now explicitly says 'the set below is the authority -- do NOT restate its size here' and records that DW-3-13-1 tracked the prior drift -- that specific instance is RESOLVED. But live count via `pixi run -e pyforge-marshal python -c "from pyforge.marshal.core import policy; print(len(policy._ALL_KEYS))"` returns 34, while test_cli.py:255's own docstring says 'every one of the 34 policy keys' yet the function is still named ...all_thirty_three_keys, and test_policy.py:2065 is named ...the_thirty_three_keys -- the exact recurring drift pattern DW-3-13-1 named has recurred with the newest key (Story 33.8's 'dispatch'). Severity assessed 2026-10-01 (none recorded). (2026-09-30 deferral burn-down triage)
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-3-13` there) during the pre-shutdown deferred-work audit.
@@ -9004,4 +9005,59 @@ status: open
   origin: spec-deferred 4dfe6b79d429 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
   severity: medium
   promoted: 2026-10-08 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-87-6: Policy protected additions do not print with provenance (AD-10 / AD-16 / AD-27) on land or retire output.
+
+- source_spec: `planning-artifacts/specs/spec-87-6-land-retire-and-the-station-branch-never-fight-the-protected-list.md`
+  summary: Policy protected additions do not print with provenance (AD-10 / AD-16 / AD-27) on land or retire output.
+  evidence: Story approach names provenance printing; implementation unions floor, roster, and project additions silently.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/retire.py
+  origin: spec-deferred 9229af031ba1 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-87-6-2: Real-git unit tests for new GitVcs ls-remote, merge-base, and for-each-ref helpers are not added.
+
+- source_spec: `planning-artifacts/specs/spec-87-6-land-retire-and-the-station-branch-never-fight-the-protected-list.md`
+  summary: Real-git unit tests for new GitVcs ls-remote, merge-base, and for-each-ref helpers are not added.
+  evidence: Consumers land.py and retire.py depend on remote_branch_exists, is_commit_ancestor, and commit_contained_in_tag_prefixes; test_vcs_git.py has no cases.
+  location: src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/vcs_git.py
+  origin: spec-deferred a5e03ca856b0 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-87-6-3: Mutation-style AC (each rule removal must fail a test) is not enforced by dedicated tests.
+
+- source_spec: `planning-artifacts/specs/spec-87-6-land-retire-and-the-station-branch-never-fight-the-protected-list.md`
+  summary: Mutation-style AC (each rule removal must fail a test) is not enforced by dedicated tests.
+  evidence: Behavioral tests updated but no tests fail when protected_refs or downgrade helpers are removed.
+  location: src/shared/packages/pyforge-marshal/tests/unit/test_protected_refs.py
+  origin: spec-deferred 23165304b5a6 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-87-14: Clone-based test for patch-equivalent branch reporting in delete_merged_local_branches.
+
+- source_spec: `planning-artifacts/specs/spec-87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories.md`
+  summary: Clone-based test for patch-equivalent branch reporting in delete_merged_local_branches.
+  evidence: branch_merged_by_patch_id is only exercised indirectly; a squash-merged fixture would pin reporting vs deletion.
+  location: tests/scripts/test_worktree_sweep.py
+  origin: spec-deferred 50978276f058 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-marshal-87-14-2: Integration test for merged STALE-LOCK unlock and worktree remove on --execute.
+
+- source_spec: `planning-artifacts/specs/spec-87-14-the-sweeper-reports-stale-locked-agent-worktrees-and-orphan-directories.md`
+  summary: Integration test for merged STALE-LOCK unlock and worktree remove on --execute.
+  evidence: Unit tests cover classification and effective_execute_verdict; git worktree lock/unlock path untested end-to-end.
+  location: scripts/worktree_sweep.py:465
+  origin: spec-deferred 9fd4d0951324 — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open

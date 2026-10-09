@@ -56,6 +56,27 @@ TOOL_SPECS: dict[str, dict[str, Any]] = {
         "optional_flags": {"project": "--project", "run": "--run"},
         "store_true_flags": {"fleet": "--fleet"},
     },
+    "marshal_preserve_list": {
+        "description": "List local preserve tags (marshal preserve list --format json).",
+        "cli": ["preserve", "list", "--format", "json"],
+        "optional_flags": {
+            "station": "--station",
+            "story": "--story",
+            "producer": "--producer",
+            "state": "--state",
+        },
+    },
+    "marshal_preserve_push": {
+        "description": "Push preserve/archive tags through the content gate (marshal preserve push).",
+        "cli": ["preserve", "push"],
+        "store_true_flags": {"pending": "--pending"},
+    },
+    "marshal_preserve_retire": {
+        "description": "Retire a preserve tag in the ledger (marshal preserve retire --evidence …).",
+        "cli": ["preserve", "retire", "{tag}"],
+        "required": ("tag", "evidence"),
+        "optional_flags": {"evidence": "--evidence"},
+    },
 }
 
 _ABS_PATH_RE = re.compile(r"^(/|[A-Za-z]:\\|\\\\)")
@@ -215,6 +236,43 @@ def marshal_watch(
         _build_argv("marshal_watch", project=project, run=run, fleet=fleet),
         main=main,
     )
+
+
+def marshal_preserve_list(
+    station: str | None = None,
+    story: str | None = None,
+    producer: str | None = None,
+    state: str | None = None,
+    *,
+    main: Callable[[list[str] | None], int] | None = None,
+) -> dict[str, Any]:
+    return run_marshal(
+        _build_argv(
+            "marshal_preserve_list",
+            station=station,
+            story=story,
+            producer=producer,
+            state=state,
+        ),
+        main=main,
+    )
+
+
+def marshal_preserve_push(
+    pending: bool = False,
+    *,
+    main: Callable[[list[str] | None], int] | None = None,
+) -> dict[str, Any]:
+    return run_marshal(_build_argv("marshal_preserve_push", pending=pending), main=main)
+
+
+def marshal_preserve_retire(
+    tag: str,
+    evidence: str,
+    *,
+    main: Callable[[list[str] | None], int] | None = None,
+) -> dict[str, Any]:
+    return run_marshal(_build_argv("marshal_preserve_retire", tag=tag, evidence=evidence), main=main)
 
 
 def mcp_server_registration_spec() -> Mapping[str, Mapping[str, object]]:

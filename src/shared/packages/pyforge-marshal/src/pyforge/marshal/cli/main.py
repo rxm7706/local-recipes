@@ -113,6 +113,8 @@ import argparse
 import inspect
 import sys
 
+from pyforge.core.flags import FlagOff
+
 from ..adapters.harness_bmadloop import (
     HARNESS_VERSION_RANGE_TEXT,
     BmadLoopHarness,
@@ -272,6 +274,9 @@ def _build_parser() -> argparse.ArgumentParser:
     from . import benchmark as benchmark_cli
 
     benchmark_cli.add_benchmark_subparser(subparsers)
+    from . import preserve as preserve_cli
+
+    preserve_cli.add_preserve_subparser(subparsers)
     return parser
 
 
@@ -380,6 +385,12 @@ def main(argv: list[str] | None = None) -> int:
         # script's sys.exit(None) would exit 0 -- masking the bug as
         # success. The docstring's frozen-domain claim is enforced, not
         # merely expected.
+        return EXIT_USAGE
+    except FlagOff as exc:
+        try:
+            print(f"marshal: {exc}", file=sys.stderr)
+        except OSError:
+            pass
         return EXIT_USAGE
     except config_cli.RepoRootUnresolvedError as exc:
         # Story 82.1 (DW-FU-2-1-7): `cli/config.py::repo_root()` -- the one

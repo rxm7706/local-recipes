@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -57,12 +57,14 @@ tests:
       imports:
         - databuilder
         - example
+        # Pip check disabled
+        # amundsen-databuilder 7.4.3 requires neo4j-driver, which is not installed.
+      #commands:
+        #- pip check
+      #requires:
+        #- pip
       pip_check: false
       python_version: ${{ python_min }}
-  - <conda_recipe_manager.types.SentinelType object at 0x707a26e51be0>:
-      requirements:
-        run:
-          - python ${{ python_min }}
 
 about:
   summary: Amundsen Data builder
@@ -93,12 +95,13 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/amundsen-databuilder-feedstock
   cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list:
+    - "test-env-unsolvable 2026-10-09: run dep pandas >=0.21.0,<1.5.0 (mirrored from the feedstock) has no build for python >=3.11, the conda-forge floor, so the test env cannot solve on python 3.11 (G95)."
     - "external-cf-skew: channel pyhocon 0.3.63 requires pyparsing>=3.0.0 while this recipe (mirroring the feedstock) caps pyparsing<3.0; databuilder->pyhocon import test false-fails on pyparsing 2.4.7 lacking replace_with. Resolution is upstream feedstock pin convergence, not a consumer edit."
-  cfe-last-checked: 2026-06-20T00:00:00Z
+  cfe-last-checked: 2026-10-09T09:52:00Z
   cfe-generated-by-version: 8.37.0
   cfe-generated-at-datetime: 2026-06-20T00:00:00Z
   cfe-local-build-status: build-clean-test-blocked
-  cfe-local-build-datetime: 2026-06-20T08:34:00Z
+  cfe-local-build-datetime: 2026-10-09T09:36:57Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -126,4 +129,8 @@ extra:
 #    # databuilder->pyhocon import fails. Same skew would hit the deployed feedstock's
 #    # import test on the current channel; fix is upstream feedstock pin convergence
 #    # (loosen pyparsing cap once pyhocon/pyparsing reconcile), NOT a consumer edit.
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 conversion left a SentinelType key on a second
+#    # test element that held only `requires: [python {{ python_min }}]` (G121). Removed; host python got
+#    # its `.*` back. LOCAL BUILD 2026-10-09 (linux-64): build CLEAN; the test env now fails earlier, at
+#    # the solve: pandas <1.5 has no python >=3.11 build (cf floor 3.11). build-clean-test-blocked (G95).
 ####

@@ -1475,6 +1475,13 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # composition stands, the operator is told their preference did not
         # reach the bmad-loop engine).
         "MRS-POLICY-008",
+        # Story 87.6 (CAP-287, AD-47): a layer's `protected_ref_prefixes` is
+        # refused at policy load -- MRS-POLICY-009 malformed, MRS-POLICY-010
+        # it tries to remove a code-floor entry (named). Either makes
+        # `marshal retire` refuse the project (UNEVALUABLE, MRS-POLICY-002's
+        # tier).
+        "MRS-POLICY-009",
+        "MRS-POLICY-010",
         "MRS-INIT-001",
         "MRS-INIT-002",
         "MRS-INIT-003",
@@ -1571,6 +1578,7 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-RETIRE-001",
         "MRS-RETIRE-002",
         "MRS-RETIRE-003",
+        "MRS-RETIRE-004",
         "MRS-STATUS-002",
         "MRS-STATUS-003",
         "MRS-STATUS-004",
@@ -1624,6 +1632,8 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-LAND-009",
         "MRS-LAND-010",
         "MRS-LAND-011",
+        "MRS-LAND-012",
+        "MRS-LAND-013",
         "MRS-STATUS-010",
         "MRS-STATUS-011",
         # Story 82.8 (DW-FU-4-14-10): a non-empty history in which nothing
@@ -1638,6 +1648,14 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         # Story 5.11 (FR-196): a harness-native terminal run Marshal never
         # launched -- WARN naming the gap, never a silent healthy state.
         "MRS-STATUS-013",
+        # Story 87.9 (FR-62/AD-48 as amended 2026-10-04): 015 an unpushed branch no home row
+        # accounts for (fleet-wide); 016 local-only preserve tags `ls-remote` does not list on
+        # origin; 017 engine scratch refs no preserve tag holds; 018 failed-story patches with
+        # no preserve tag. All WARN: a home with preserve debt is reported, never clean.
+        "MRS-STATUS-015",
+        "MRS-STATUS-016",
+        "MRS-STATUS-017",
+        "MRS-STATUS-018",
         "MRS-DEPLOY-024",
         "MRS-DEPLOY-025",
         "MRS-DEPLOY-026",
@@ -2068,6 +2086,11 @@ REGISTERED_CODES: frozenset[str] = frozenset(
         "MRS-CHK-001",
         "MRS-CHK-002",
         "MRS-CHK-003",
+        # Story 87.3: `marshal preserve list` could not read local preserve tags (git/ref error).
+        "MRS-PRESERVE-001",
+        # Story 87.15: content gate refused a preserve/archive push, or a push cap fired.
+        "MRS-PRESERVE-002",
+        "MRS-PRESERVE-003",
         # Story 82.4 (spec-pyforge-marshal CAP-2, DW-FU-3-4-3/6/7/8): the
         # supervisor stops being silenceable through its own journal, and the
         # run journal finally records the supervisor spawn. MRS-SUPV-011 --

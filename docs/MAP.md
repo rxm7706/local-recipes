@@ -209,6 +209,7 @@ Every documentation file relocated from `src/platform/` to align with the centra
 | [`how-to/one-chain-station-ops.md`](how-to/one-chain-station-ops.md) | doctor | authored |
 | [`how-to/pixi-tasks.md`](how-to/pixi-tasks.md) | steward | generated |
 | [`how-to/presentation-deck.md`](how-to/presentation-deck.md) | fleet | authored |
+| [`how-to/purge-preserved-refs.md`](how-to/purge-preserved-refs.md) | marshal | authored |
 | [`how-to/recipe-testing-and-builds.md`](how-to/recipe-testing-and-builds.md) | fleet | authored |
 | [`how-to/reconcile-spec-surface.md`](how-to/reconcile-spec-surface.md) | doctor | authored |
 | [`how-to/restore-operations.md`](how-to/restore-operations.md) | fleet | authored |

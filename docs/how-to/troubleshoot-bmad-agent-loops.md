@@ -35,7 +35,7 @@ Stop a live bmad-loop run (engine plus agent session) from its loop home:
 ```bash
 bmad-loop stop <run_id>
 ```
-For a paused-on-escalation run, do not re-arm blindly — the re-arm default re-implements the story from scratch. Preserve first, then restore-patch (`.claude/memory/reference/bmad-loop-escalation-and-landing-traps.md`).
+For a paused-on-escalation run, do not re-arm blindly — the re-arm default re-implements the story from scratch. Preserve first (`.claude/memory/reference/bmad-loop-escalation-and-landing-traps.md`). On worktree-isolation runs (`restore_supported: false` in the resolve context), `--restore-patch` is refused — read the saved patch as evidence only (`.claude/skills/bmad-loop-resolve/SKILL.md` § Special case: a review-stage `intent gap` with a saved patch).
 
 ## Step 3: Read what the agent recorded
 1. **The Spec's memlog:** `_bmad-output/projects/<slug>/planning-artifacts/specs/spec-<slug>/.memlog.md` is the Spec's append-only, chronological log. Did the dev or review session record a blocker, a deviation, or an escalation there?

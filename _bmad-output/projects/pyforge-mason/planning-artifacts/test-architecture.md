@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: d7b9d05ef0763e0a
-story_count: 93
-test_file_count: 41
+source_fingerprint: 957a7a00abd371f5
+story_count: 96
+test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 93
+- **Stories parsed:** 96
 - **Epics parsed:** 27
-- **Test files inventoried:** 41 under `src/shared/packages/pyforge-mason/tests/`
+- **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `d7b9d05ef0763e0a`
+- **Source fingerprint:** `957a7a00abd371f5`
 
 ## Risk Assessment
 
@@ -80,12 +80,14 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-mason/tests/meta/test_dependency_direction.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_engine_version_range_sync.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_exit_code_ownership.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_mason_skills.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_namespace_is_implicit.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_no_config_file.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_no_recipe_knowledge.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_persona_consults_cfe.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_portal_last_diagnose.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/meta/test_render_ownership.py` | meta | none observed |
+| `src/shared/packages/pyforge-mason/tests/meta/test_skf_mason_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_airgap_contract.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_boot_reconcile.py` | unit | none observed |
 | `src/shared/packages/pyforge-mason/tests/unit/test_build_hooks.py` | unit | none observed |
@@ -199,12 +201,15 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 21.5 | pptxgenjs-plus-jsx builds green beside its pptxgenjs-plus sibling | none observed |
 | 22.1 | The twelve recipes carrying conda-recipe-manager's sentinel key are repaired | none observed |
 | 22.2 | CFE's validation reds a recipe with a non-string key or a Python object repr | none observed |
+| 22.3 | ctng-compilers loses its sentinel key once rattler-build renders its output g... | none observed |
+| 22.4 | vc loses its sentinel key once rattler-build can emit its vc14 track feature | none observed |
 | 23.1 | CFE refuses a copyleft -only licence whose LICENSE grants any later version | none observed |
 | 23.2 | CFE's recipe generator asks instead of guessing | none observed |
 | 23.3 | A negative corpus proves each CFE check keeps rejecting its defect | none observed |
 | 24.1 | CFE's host-gate tests pass in any developer shell | none observed |
 | 25.1 | Track A's Wave H refreshes the sole-maintainer recipes the first waves missed | none observed |
 | 25.2 | Track B refreshes the co-maintained recipes and keeps every other maintainer'... | none observed |
+| 25.3 | CFE gains a tracked bulk recipe-refresh driver that the refresh waves run thr... | none observed |
 | 26.1 | CFE's tests never ask GitHub whether a recipe maintainer exists | none observed |
 | 27.1 | Mason's package and the repo tooling it owns close their open deferrals | none observed |
 | 27.2 | CFE, its failure catalog and the closed rebuild campaign's records close thei... | none observed |

@@ -60,6 +60,15 @@
             "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-shell.py"
           }
         ]
+      },
+      {
+        "matcher": "mcp__conda_forge_server__submit_pr|mcp__conda_forge_server__prepare_submission_branch|mcp__conda_forge_server__migrate_to_v1",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-shell.py"
+          }
+        ]
       }
     ],
     "SessionStart": [

@@ -5645,6 +5645,32 @@ So that running the tests, `pr-preflight` or a push never stamps a baseline that
 **And** probing `spec_surface_check.py --write-baseline --spec pyforge-steward/spec-pyforge-steward` leaves the baseline's bytes and mtime unchanged, and `pyforge-doctor-scripts-test` leaves the file byte-identical; a `tmp_path` fixture that writes a marker after `parse_args()` is accepted with the marker absent and rejected for an unknown flag; a subparser fixture is accepted for `sub --known` and rejected for `sub --known --bogus`; every existing test in the file still passes; the roster, the hook and the probed scripts do not change; putting the direct run back fails the new tests (mutation)
 **Status:** done
 
+### Story 85.8: An agent session never writes outside this repository
+
+As the operator who ruled on 2026-10-09 that "everything mason does with these recipes is local — NO PRs to conda-forge or feedstocks — external repos",
+I want the session hook to deny every push, PR, issue, fork, API write, submission or upload aimed outside `rxm7706/local-recipes`, naming what stays open,
+So that outward work happens only when I run it, after I have confirmed it, and never because an agent followed a skill's step.
+
+**Type:** feature • **Effort:** M • **Deps:** — • **FR/AD:** spec-pyforge-steward CAP-5 (Story 63.3's closed `session_denials` list; additions are governance acts, as Story 85.1's was) • operator ruling 2026-10-09 • Dream 2026-10-09 (external writes)
+**Flag:** exempt, `detector-or-gate` (a session guardrail; a gated guardrail allows silently)
+**Surface:** `docs/governance/guild-roster.json` (four `session_denials` entries, the count in its comment), `.claude/hooks/pre-shell.py` (four matchers, the `mcp` kind),
+`.claude/settings.json` (the MCP `PreToolUse` registration), `.cursor/hooks.json` (only with a Cursor before-MCP deny), `tests/scripts/test_pre_shell_hook.py`, AGENTS.md § Session guardrails
+**Spec:** `planning-artifacts/specs/spec-85-8-an-agent-session-never-writes-outside-this-repository.md`
+**Given** `fc68067136`, where `session_denials` enforces one outward form (`gh-pr-create-missing-repo`, roster `:359`), `.claude/settings.json` pre-allows
+`Bash(git push *)` and `Bash(gh *)` (`:14`, `:22`), MCP tools never reach the hook (`pre-shell.py:80`, `:1115`), and skill text instructs pushes and PRs to
+conda-forge feedstocks and staged-recipes
+**When** an agent session runs a `git push` to a non-local remote other than `rxm7706/local-recipes`, adds such a remote here, forks or creates a repository,
+runs a `gh pr`/`issue`/`release` write verb or a `gh api` write aimed at another repository, runs mason `recipe submit`/`package ship` with `--yes`, CFE
+`submit-pr`/`prepare-pr` without `--dry-run` or `scripts/submit_pr.sh`, `feedrattler`, a `conda-smithy` register or token subcommand, or calls the
+`conda_forge_server` MCP `submit_pr`/`prepare_submission_branch` without `dry_run` or `migrate_to_v1`
+**Then** the hook denies it with one of four new reasons (`outward-git-push`, `outward-github-write`, `outward-package-submission`, `outward-mcp-submission`)
+naming what stays open and that outward work is the operator's, after explicit confirmation
+**And** reads, dry runs, `git push origin …`, the loop homes, `gh pr create --repo rxm7706/local-recipes`, writes aimed at this repository and `gh api graphql`
+stay allowed (graphql named instruction-only); `MATCHERS` equals the sixteen declared ids; every backticked span in the new reasons passes Story 85.6's
+check; AGENTS.md, the roster comment and the hook docstring say sixteen; the skill text that instructs outward steps is mason's follow-up, not this story's;
+`pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** done
+
 ## Currency reconciliation — 2026-09-20 (fleet consistency pass)
 
 *Operator ruling 2026-09-20: every station's PRD, spine and epics are re-stamped in the same pass,

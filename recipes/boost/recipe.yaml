@@ -3,10 +3,43 @@ schema_version: 1
 
 context:
   version: "1.91.0"
+  boost_libs:
+    - atomic
+    - charconv
+    - chrono
+    - cobalt
+    - container
+    - context
+    - contract
+    - coroutine
+    - date_time
+    - filesystem
+    - graph
+    - iostreams
+    - locale
+    - log
+    - log_setup
+    - math_c99
+    - math_c99f
+    - math_tr1
+    - math_tr1f
+    - prg_exec_monitor
+    - program_options
+    - random
+    - regex
+    - serialization
+    - thread
+    - timer
+    - type_erasure
+    - unit_test_framework
+    - wave
+    - wserialization
+  boost_libs_long_double:
+    - math_c99l
+    - math_tr1l
   boost_libs_static_only:
     - exception
     - test_exec_monitor
-  boost_libs_py: '["python%s" % py, "numpy%s" % py]'
 
 recipe:
   name: boost-split
@@ -22,48 +55,58 @@ source:
 build:
   number: 0
 
-requirements:
-  build:
-    - ${{ compiler('cxx') }}
-    - ${{ stdlib('c') }}
-    - if: build_platform != target_platform
-      then: cross-python_${{ target_platform }}
-    - if: build_platform != target_platform
-      then: python ${{ python_min }}.* *_cpython
-    - if: build_platform != target_platform
-      then: numpy
-    - ruby *
-  host:
-    - if: unix
-      then: icu
-    - if: unix
-      then: liblzma-devel
-    - bzip2
-    - zlib
-    - zstd
-    - python ${{ python_min }}.* *_cpython
-    - numpy
-
 outputs:
+  - staging:
+      name: boost-build
+    build:
+      script:
+        file: ${{ 'bld.bat' if win else 'build.sh' }}
+    requirements:
+      build:
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: python ${{ python_min }}.* *_cpython
+        - if: build_platform != target_platform
+          then: numpy
+        - ruby *
+      host:
+        - if: unix
+          then: icu
+        - if: unix
+          then: liblzma-devel
+        - bzip2
+        - zlib
+        - zstd
+        - python ${{ python_min }}.* *_cpython
+        - numpy
   - package:
       name: libboost-headers
+    inherit:
+      from: boost-build
+      run_exports: false
     build:
       script:
         file: ${{ 'install-lib.bat' if win else 'install-lib.sh' if unix else '' }}
     requirements:
       # dummy build env to avoid EnvironmentLocationNotFound on win
-      build:  # [win]
+      build:
         - if: win
           then: cmake
       host:
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost-cpp <0.0a0
     tests:
       - script:
+          # presence of regular headers
           - if: unix
             then: test -d $PREFIX/include/boost
           - if: win
             then: if not exist %LIBRARY_INC%\boost exit 1
+          # presence of python headers (not dependent on python version)
           - if: unix
             then: test -f $PREFIX/include/boost/python.hpp
           - if: unix
@@ -72,29 +115,33 @@ outputs:
             then: if not exist %LIBRARY_INC%\boost\python.hpp exit 1
           - if: win
             then: if not exist %LIBRARY_INC%\boost\python\tuple.hpp exit 1
+          # absence of general CMake metadata
           - if: unix
             then: test ! -d $PREFIX/lib/cmake/Boost-${{ version }}
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
-          - if: linux
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.so
-          - if: osx
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.dylib
+          # absence of all libraries (shared & static) + CMake metadata
           - if: unix
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.a
+            then: |
+              for each_lib in ${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only + ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))]) | join(" ") }}; do
+                test ! -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
           - if: win
-            then: if exist %LIBRARY_BIN%\boost_${{ each_lib }}.dll exit 1
-          - if: win
-            then: if exist %LIBRARY_LIB%\boost_${{ each_lib }}.lib exit 1
-          - if: win
-            then: if exist %LIBRARY_LIB%\libboost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test ! -d $PREFIX/lib/cmake/boost_${{ each_lib }}-${{ version }}
-          - if: win
-            then: if exist %LIBRARY_LIB%\cmake\boost_${{ each_lib }}-${{ version }} exit 1
+            then: |
+              for %%L in (${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only + ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))]) | join(" ") }}) do (
+                if exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
   # libraries without the headers (for run-export)
   - package:
       name: libboost
+    inherit:
+      from: boost-build
+      run_exports: false
     build:
       script:
         file: ${{ 'install-lib.bat' if win else 'install-lib.sh' if unix else '' }}
@@ -113,51 +160,82 @@ outputs:
         - zlib
         - zstd
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost-cpp <0.0a0
+        # see https://www.boost.org/users/history/version_1_87_x.html
         - if: win
           then: __win >=10
     tests:
-      - <conda_recipe_manager.types.SentinelType object at 0x766cd2c2dbe0>:
-          - if: linux
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.so
-          - if: osx
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.dylib
-          - if: win
-            then: if not exist %LIBRARY_BIN%\boost_${{ each_lib }}.dll exit 1
-          - if: win
-            then: if not exist %LIBRARY_LIB%\boost_${{ each_lib }}.lib exit 1
-          - if: linux
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.so
-          - if: osx
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.dylib
-          - if: win
-            then: if exist %LIBRARY_BIN%\boost_${{ each_lib }}.dll exit 1
-          - if: win
-            then: if exist %LIBRARY_LIB%\boost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.a
-          - if: win
-            then: if not exist %LIBRARY_LIB%\libboost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.a
-          - if: win
-            then: if exist %LIBRARY_LIB%\libboost_${{ each_lib }}.lib exit 1
-          - if: unix
-            then: test ! -d $PREFIX/lib/cmake/boost_${{ each_lib }}-${{ version }}
-          - if: win
-            then: if exist %LIBRARY_LIB%\cmake\boost_${{ each_lib }}-${{ version }} exit 1
-        script:
+      - script:
+          # absence of headers
           - if: unix
             then: test ! -d $PREFIX/include/boost
           - if: win
             then: if exist %LIBRARY_INC%\boost exit 1
+          # absence of general CMake metadata
           - if: unix
             then: test ! -d $PREFIX/lib/cmake/Boost-${{ version }}
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
+          # library artefacts
+          - if: unix
+            then: |
+              for each_lib in ${{ (boost_libs + ([] if ppc64le else boost_libs_long_double)) | join(" ") }}; do
+                # shared libraries
+                # default case: present
+                test -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                # static libraries
+                # absent for default libs & the python ones
+                test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                # absence of CMake metadata
+                test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
+              for each_lib in ${{ boost_libs_static_only | join(" ") }}; do
+                # shared libraries
+                # absent for libs that are static-only & the python ones
+                test ! -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                # static libraries
+                # present for those that are marked static-only above
+                test -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                # absence of CMake metadata
+                test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
+              for each_lib in ${{ ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))] | join(" ") }}; do
+                # shared libraries
+                # absent for libs that are static-only & the python ones
+                test ! -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                # static libraries
+                # absent for default libs & the python ones
+                test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                # absence of CMake metadata
+                test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
+          - if: win
+            then: |
+              for %%L in (${{ (boost_libs + ([] if ppc64le else boost_libs_long_double)) | join(" ") }}) do (
+                if not exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if not exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
+              for %%L in (${{ boost_libs_static_only | join(" ") }}) do (
+                if exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if not exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
+              for %%L in (${{ ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))] | join(" ") }}) do (
+                if exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
   # libboost headers + libs + metadata
   - package:
       name: libboost-devel
+    inherit:
+      from: boost-build
+      run_exports: false
     build:
       script:
         file: ${{ 'install-lib.bat' if win else 'install-lib.sh' if unix else '' }}
@@ -169,8 +247,10 @@ outputs:
         - ${{ pin_subpackage("libboost", exact=True) }}
         - ${{ pin_subpackage("libboost-headers", exact=True) }}
       run_exports:
+        # run-export the output without the headers
         - ${{ pin_subpackage("libboost", upper_bound="x.x") }}
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost-cpp <0.0a0
     tests:
       - files:
@@ -183,14 +263,23 @@ outputs:
             - if: build_platform == target_platform
               then: ${{ compiler('cxx') }}
         script:
+          # presence of general CMake metadata
           - if: unix
             then: test -d $PREFIX/lib/cmake/Boost-${{ version }}
           - if: win
             then: if not exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
+          # presence of CMake metadata for regular libs
           - if: unix
-            then: test -d $PREFIX/lib/cmake/boost_${{ each_lib }}-${{ version }}
+            then: |
+              for each_lib in ${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only) | join(" ") }}; do
+                test -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
+              done
           - if: win
-            then: if not exist %LIBRARY_LIB%\cmake\boost_${{ each_lib }}-${{ version }} exit 1
+            then: |
+              for %%L in (${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only) | join(" ") }}) do (
+                if not exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
+              )
+          # absence of CMake metadata that belongs to libboost-python(-devel)
           - if: unix
             then: test ! -d $PREFIX/lib/cmake/boost_python-${{ version }}
           - if: unix
@@ -199,6 +288,7 @@ outputs:
             then: if exist %LIBRARY_LIB%\cmake\boost_python-${{ version }} exit 1
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\boost_numpy-${{ version }} exit 1
+          # test compilation
           - if: unix
             then: ./test_lib.sh
           - if: win
@@ -206,6 +296,9 @@ outputs:
   # the python libraries (no headers)
   - package:
       name: libboost-python
+    inherit:
+      from: boost-build
+      run_exports: false
     build:
       script:
         file: ${{ 'build-py.bat' if win else 'build-py.sh' if unix else '' }}
@@ -234,26 +327,34 @@ outputs:
         - ${{ pin_subpackage("libboost", exact=True) }}
         - python
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost <0.0a0
+        # avoid co-installation with Anaconda's naming of this output
         - py-boost <0.0a0
     tests:
       - script:
+          # absence of headers
           - if: unix
             then: test ! -d $PREFIX/include/boost
           - if: win
             then: if exist %LIBRARY_INC%\boost exit 1
-          - if: linux
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.so
-          - if: osx
-            then: test -f $PREFIX/lib/libboost_${{ each_lib }}.dylib
-          - if: win
-            then: if not exist %LIBRARY_BIN%\boost_${{ each_lib }}.dll exit 1
-          - if: win
-            then: if not exist %LIBRARY_LIB%\boost_${{ each_lib }}.lib exit 1
+          # Verify libraries.
           - if: unix
-            then: test ! -f $PREFIX/lib/libboost_${{ each_lib }}.a
+            then: |
+              for each_lib in ${{ ["python" ~ (python | version_to_buildstring), "numpy" ~ (python | version_to_buildstring)] | join(" ") }}; do
+                # presence of shared libs
+                test -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                # absence of static libs
+                test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+              done
           - if: win
-            then: if exist %LIBRARY_LIB%\libboost_${{ each_lib }}.lib exit 1
+            then: |
+              for %%L in (${{ ["python" ~ (python | version_to_buildstring), "numpy" ~ (python | version_to_buildstring)] | join(" ") }}) do (
+                if not exist %LIBRARY_BIN%\boost_%%L.dll exit 1
+                if not exist %LIBRARY_LIB%\boost_%%L.lib exit 1
+                if exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
+              )
+          # absence of CMake metadata
           - if: unix
             then: test ! -d $PREFIX/lib/cmake/boost_python-${{ version }}
           - if: unix
@@ -265,12 +366,15 @@ outputs:
   # python libs w/ headers
   - package:
       name: libboost-python-devel
+    inherit:
+      from: boost-build
+      run_exports: false
     build:
       script:
         file: ${{ 'install-py.bat' if win else 'install-py.sh' if unix else '' }}
     requirements:
       # dummy build env to avoid EnvironmentLocationNotFound on win
-      build:  # [win]
+      build:
         - if: win
           then: cmake
       host:
@@ -283,12 +387,16 @@ outputs:
         - ${{ pin_subpackage("libboost-python", exact=True) }}
         - ${{ pin_subpackage("libboost-devel", exact=True) }}
       run_exports:
+        # run-export the output without the headers
         - ${{ pin_subpackage("libboost-python", upper_bound="x.x") }}
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost <0.0a0
+        # avoid co-installation with Anaconda's naming of this output
         - py-boost <0.0a0
     tests:
       - script:
+          # presence of CMake metadata
           - if: unix
             then: test -d $PREFIX/lib/cmake/boost_python-${{ version }}
           - if: unix
@@ -320,3 +428,42 @@ extra:
     - matthiasdiener
     - h-vetinari
   feedstock-name: boost
+
+#### CFE metadata AND comments
+# CFE comments
+# Header:
+#    # mason Story 22.1 (2026-10-09): crm's 2026-08-16 v0->v1 conversion flattened meta.yaml's jinja
+#    # for-each_lib test loops, leaving an each_lib reference outside any loop and a SentinelType
+#    # key on the libboost test (G121). Rendered on linux-64 only; not built (heavyweight). The feedstock is
+#    # still v0 and has since moved to 1.92.0; meta.yaml (1.91.0) stays beside this file.
+# context:
+#    # boost_libs mirrors meta.yaml's list; boost_libs_long_double holds math_c99l/math_tr1l, which meta.yaml
+#    # adds only `# [not ppc64le]` (the loops add them `if not ppc64le`). meta.yaml's boost_libs_py
+#    # ("python" plus py) is built in each loop: python_min for libboost-headers and libboost (they do not
+#    # vary by python, so conda-build rendered them with the first python variant), and
+#    # the python variant through version_to_buildstring for libboost-python.
+# outputs:
+#    # A multi-output v1 recipe has no top-level `requirements`, so conda-build's top-level build (its
+#    # build.sh / bld.bat and requirements) is the `boost-build` staging output. Every package output
+#    # inherits it with `run_exports: false`, so the staging host's run_exports stay out of the outputs as in
+#    # meta.yaml. `# [win]` on the two dummy `build:` keys removed (v1 lint: comment selectors).
+#    # Build strings differ from conda-forge's: an inheriting output takes the staging output's variant keys
+#    # (numpy, python_min, icu, zlib, ...), so rattler-build 0.76.1 renders libboost-headers and libboost as
+#    # np2he8b8257_0 and libboost-devel as np2h4c93d4d_0 on linux-64, where the v0 feedstock publishes
+#    # ha770c72_N-style strings. `inherit:` takes only `from` and `run_exports`, so no inherit form drops
+#    # the keys; a hardcoded build.string would hide the variant instead. Left as is for a v1 port to decide.
+# files:
+#    # The feedstock's recipe/ files at its 1.91.0 commit 306f17e6d3e2 (whose meta.yaml matches this mirror
+#    # byte for byte) are copied verbatim, blob hashes checked (G94): build.sh, bld.bat, build-py.sh/.bat,
+#    # install-lib.sh/.bat, install-py.sh/.bat, test_lib.sh/.bat, test/, patches/0001-…, and
+#    # conda_build_config.yaml (MACOSX_SDK_VERSION 12.3 on osx). The feedstock has since moved to 1.92.0.
+#    # conda-smithy's v1 lint suggests renaming bld.bat to build.bat (a suggestion, not a lint): the staging
+#    # output names bld.bat explicitly, so the feedstock's file name stays.
+# tests:
+#    # Each flattened loop is one `if: unix` shell loop and one `if: win` `for %%L` block per element, with
+#    # the same checks as meta.yaml: shared libs present for boost_libs, absent for static-only and python
+#    # libs; static libs present only for static-only; no per-lib CMake metadata outside libboost-devel.
+#    # .so on linux, .dylib on osx. libboost-devel keeps meta.yaml's test files and ./test_lib.sh / .bat.
+#    # meta.yaml's own comments (tests, run_constraints, run_exports) sit where they map: above the matching
+#    # test element, or as shell comments inside the unix loop where the jinja loop body held them.
+####

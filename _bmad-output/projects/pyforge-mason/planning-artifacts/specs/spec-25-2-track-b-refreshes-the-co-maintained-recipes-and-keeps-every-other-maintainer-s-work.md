@@ -2,7 +2,7 @@
 title: "25.2: Track B refreshes the co-maintained recipes and keeps every other maintainer's work"
 type: 'feature'
 created: '2026-09-29'
-status: 'blocked'
+status: 'ready-for-dev'
 baseline_revision: 'fe994a85d48d0cfe120c7e54699de3191dfe9ff7'
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -14,16 +14,6 @@ context:
   - .claude/skills/conda-forge-expert/SKILL.md
   - docs/how-to/feedstock-platform-expansion.md
 deferred:
-  - summary: >-
-      Track B recipe batches (Waves B–F) need the same bulk refresh driver Story 25.1 used
-      (context.version-only recipes break autotick; feedstock-target bumps + enrich + gates).
-    evidence: |-
-      Wave A lists 96 v1-refresh co-maintained recipes; pilot autotick on recipes/billiard/recipe.yaml
-      failed with "Could not determine package name and version from recipe context." No
-      committed batch driver exists in-repo (.cursor/wave_h_rebaseline.py from 25.1 was not landed).
-    location: >-
-      .claude/scripts/conda-forge-expert/recipe_updater.py
-    severity: high
   - summary: >-
       Twenty genuinely-missing local mirrors (mostly dbgpt-* outputs) await Wave F after operator
       confirms create_missing scope (feedstock-refresh Track B Q2 default yes).
@@ -205,7 +195,13 @@ graph refresh; bucket math uses the current query, not the stale headline.
 
 ## Auto Run Result
 
-Status: blocked
+**Unblocked 2026-10-09.** The blocking condition (no committed bulk refresh driver) is closed: Story 25.3
+landed `refresh_wave.py` (refresh and `--repair`, CFE v8.99.0), and this branch merged `main` to take it. By
+operator ruling, the next run starts with Wave 0 (`epics.md` § Story 25.2): a `refresh-wave --repair` dry-run over
+the 79 recipes Story 25.1's landing damaged, then the repair, then the Track B waves through the same driver. All
+recipe work stays local.
+
+Previous run — Status: blocked
 
 Blocking condition: Wave A complete; bulk recipe refresh driver missing for context.version-only recipes (96 v1-refresh queued).
 

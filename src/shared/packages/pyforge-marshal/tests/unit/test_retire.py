@@ -133,6 +133,7 @@ class _FakeVcs:
         worktree_path_raises_for: frozenset[str] = frozenset(),
         delete_raises_for: frozenset[str] = frozenset(),
         subjects_raise: bool = False,
+        would_orphan: bool = False,
     ) -> None:
         self.subjects_raise = subjects_raise
         self.subject_refs: list[str] = []
@@ -144,6 +145,7 @@ class _FakeVcs:
         self.worktree_path_map = worktree_path_map or {}
         self.worktree_path_raises_for = worktree_path_raises_for
         self.delete_raises_for = delete_raises_for
+        self.would_orphan = would_orphan
         self.delete_calls: list[tuple[str, bool]] = []
         self.merged_calls: list[str] = []
 
@@ -176,6 +178,15 @@ class _FakeVcs:
         self.delete_calls.append((branch, force))
         if branch in self.delete_raises_for:
             raise VcsCommandError("git branch -d failed")
+
+    def resolve_ref(self, repo_root, branch):
+        return f"tip-{branch}"
+
+    def is_commit_ancestor(self, repo_root, ancestor, descendant):
+        return not self.would_orphan
+
+    def commit_contained_in_tag_prefixes(self, repo_root, commit, tag_prefixes):
+        return False
 
 
 class _FakeHarness:
@@ -804,6 +815,85 @@ def test_a_journal_that_cannot_be_written_is_reported_after_the_deletes(tmp_path
     assert vcs.delete_calls == [("acme-4-10", True)]
     assert [f["code"] for f in payload["findings"]] == ["MRS-RETIRE-003"]
     assert "could not be journaled" in payload["findings"][0]["message"]
+
+
+def test_would_orphan_refuses_execute_and_names_archive_twin_route(tmp_path, capsys, monkeypatch):
+    _patch_repo(monkeypatch, tmp_path)
+    home, harness = _one_task_setup(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        merged_map={"acme-4-10": True},
+        would_orphan=True,
+    )
+    retire_module.run_retire(_args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness)
+    payload = _payload(capsys)
+    assert vcs.delete_calls == []
+    assert "MRS-RETIRE-004" in [f["code"] for f in payload["findings"]]
+    assert payload["data"]["insufficient_evidence"][0]["missing"] == ["would_orphan"]
+
+
+def _project_policy(monkeypatch, tmp_path, body: str) -> None:
+    """A real `marshal-policy.toml` for slug `acme`, read through the real
+    `_read_project_policy` at the path `cli/retire.py` asks for."""
+    policy_path = tmp_path / "acme-marshal-policy.toml"
+    policy_path.write_text(body, encoding="utf-8")
+    monkeypatch.setattr(retire_module, "conventional_project_policy_path", lambda slug: policy_path)
+
+
+def test_a_policy_protected_prefix_excludes_a_candidate_before_any_evidence(tmp_path, capsys, monkeypatch):
+    """Story 87.6: a project layer's `protected_ref_prefixes` addition is
+    structural -- the branch is never evaluated, let alone deleted."""
+    _patch_repo(monkeypatch, tmp_path)
+    _project_policy(monkeypatch, tmp_path, 'protected_ref_prefixes = ["refs/heads/acme-4-10"]\n')
+    home, harness = _one_task_setup(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        merged_map={"acme-4-10": True},
+        worktree_path_map={"acme-4-10": None},
+    )
+
+    exit_code = retire_module.run_retire(_args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    payload = _payload(capsys)
+    assert payload["findings"] == []
+    assert payload["data"]["proposals"] == []
+    assert payload["data"]["insufficient_evidence"] == []
+    assert vcs.merged_calls == []
+    assert vcs.delete_calls == []
+    assert exit_code == 0
+
+
+@pytest.mark.parametrize(
+    ("policy_body", "code"),
+    [
+        ('protected_ref_prefixes = ["!refs/heads/loop/"]\n', "MRS-POLICY-010"),
+        ('protected_ref_prefixes = "refs/heads/acme-4-10"\n', "MRS-POLICY-009"),
+    ],
+)
+def test_a_refused_protected_list_refuses_the_project_before_any_evidence(
+    tmp_path, capsys, monkeypatch, policy_body, code
+):
+    """Story 87.6: a project layer whose protected list compose() refuses
+    (it removes a floor entry, or is malformed) gets nothing retired --
+    retiring against a list the operator meant to be wider fails open."""
+    _patch_repo(monkeypatch, tmp_path)
+    _project_policy(monkeypatch, tmp_path, policy_body)
+    home, harness = _one_task_setup(monkeypatch, tmp_path)
+    vcs = _FakeVcs(
+        worktrees=(WorktreeEntry(path=home, branch="loop/acme"),),
+        merged_map={"acme-4-10": True},
+        worktree_path_map={"acme-4-10": None},
+    )
+
+    retire_module.run_retire(_args(execute=True), vcs=vcs, fs=LocalFs(), harness=harness)
+
+    payload = _payload(capsys)
+    assert [finding["code"] for finding in payload["findings"]] == [code]
+    assert "MRS-POLICY-004" not in [finding["code"] for finding in payload["findings"]]
+    assert payload["data"]["proposals"] == []
+    assert vcs.merged_calls == []
+    assert vcs.delete_calls == []
+    assert payload["verdict"] == "unevaluable"
 
 
 # --- main.py wiring smoke test -------------------------------------------

@@ -177,6 +177,8 @@ _MRS_LAND_008 = "MRS-LAND-008"
 _MRS_LAND_009 = "MRS-LAND-009"
 _MRS_LAND_010 = "MRS-LAND-010"
 _MRS_LAND_011 = "MRS-LAND-011"
+_MRS_LAND_012 = "MRS-LAND-012"
+_MRS_LAND_013 = "MRS-LAND-013"
 
 # This module's own journal kinds (AD-28: distinct writer namespaces, never
 # conflated with `cli/deploy.py`'s `_LAND_MERGE_KIND`/`_BATCH_PR_WRITE_KIND`
@@ -367,6 +369,63 @@ def _evaluate_required_checks(
     return report, error_findings, warn_findings, tuple(fired_labels)
 
 
+def _downgrade_loop_head_branch_delete(head_branch: str, delete_branch: bool, findings: list[Finding]) -> bool:
+    if delete_branch and head_branch.startswith("loop/"):
+        findings.append(
+            Finding(
+                code=_MRS_LAND_012,
+                severity=Severity.WARN,
+                message=(
+                    f"landing never deletes protected station branch "
+                    f"{head_branch!r} (AD-47, amended 2026-10-04) -- the "
+                    "merge proceeds without --delete-branch"
+                ),
+            )
+        )
+        return False
+    return delete_branch
+
+
+def _branch_retired_from_remote(
+    vcs: VcsPort,
+    git_repo_root: Path,
+    head_branch: str,
+    *,
+    landing_branch_retirement: bool,
+    merge_requested_delete: bool,
+    findings: list[Finding],
+) -> bool | None:
+    if not landing_branch_retirement:
+        return False
+    try:
+        still_on_remote = vcs.remote_branch_exists(git_repo_root, head_branch)
+    except VcsCommandError as exc:
+        findings.append(
+            Finding(
+                code=_MRS_LAND_003,
+                severity=Severity.WARN,
+                message=(
+                    f"branch retirement for {head_branch!r} could not be confirmed from origin (git ls-remote): {exc}"
+                ),
+            )
+        )
+        return None
+    if still_on_remote:
+        if merge_requested_delete:
+            findings.append(
+                Finding(
+                    code=_MRS_LAND_013,
+                    severity=Severity.WARN,
+                    message=(
+                        f"{head_branch!r} is still listed on origin after "
+                        "merge -- branch_retired recorded as false (AD-40)"
+                    ),
+                )
+            )
+        return False
+    return True
+
+
 def run_land(
     args: argparse.Namespace,
     *,
@@ -505,7 +564,8 @@ def run_land(
     template = effective.merge_subject_template.value
     landing_rules = effective.landing_rules.value
     merge_strategy = effective.landing_merge_strategy.value
-    delete_branch = effective.landing_branch_retirement.value
+    landing_branch_retirement = effective.landing_branch_retirement.value
+    delete_branch = landing_branch_retirement
     resync_enabled = effective.landing_resync.value
     data["base"] = base
 
@@ -658,7 +718,14 @@ def run_land(
                 )
                 data["branch_retired"] = None
             else:
-                data["branch_retired"] = True
+                data["branch_retired"] = _branch_retired_from_remote(
+                    vcs,
+                    git_repo_root,
+                    head_branch,
+                    landing_branch_retirement=landing_branch_retirement,
+                    merge_requested_delete=False,
+                    findings=findings,
+                )
         data["resynced"] = _run_resync_if_enabled(
             reconcile_feed,
             args,
@@ -996,6 +1063,8 @@ def run_land(
                 )
             )
 
+    delete_branch = _downgrade_loop_head_branch_delete(head_branch, delete_branch, findings)
+
     # --- merge + retire (one ForgePort call), journaled intent-before/ ---
     # outcome-after (AD-6). `expected_head_sha=head_sha` (code review,
     # 2026-08-06, both reviewers independently, the single most severe
@@ -1048,7 +1117,15 @@ def run_land(
         return _emit(args, data, findings)
 
     data["merged"] = True
-    data["branch_retired"] = delete_branch
+    retired = _branch_retired_from_remote(
+        vcs,
+        git_repo_root,
+        head_branch,
+        landing_branch_retirement=landing_branch_retirement,
+        merge_requested_delete=delete_branch,
+        findings=findings,
+    )
+    data["branch_retired"] = retired
     if merge_intent_id is not None:
         deploy_run.write(
             findings,
@@ -1086,7 +1163,7 @@ def run_land(
             "checks_required": required_summary,
             "checks_passed": True,
             "merge_strategy": merge_strategy,
-            "branch_retired": delete_branch,
+            "branch_retired": retired,
             "authority": "marshal land (automated)",
         },
     )

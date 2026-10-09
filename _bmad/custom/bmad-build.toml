@@ -8,6 +8,7 @@
 
 persistent_facts = [
   "Feature-flag governance (Builder): on a flagged story read the declared flag key only through `pyforge.core` or `django_pyforge.flags` — never Waffle, an environment variable, or a second tree (`docs/governance/spec-feature-flag-governance/SPEC.md` CAP-6; canopy:AD-11). With the flag OFF the legacy behaviour in the story spec's `flag.fallback` must hold. A CLI verb whose flag is OFF stays listed in `--help`, marked disabled, and refuses with its station's usage exit code and a flag-off message (Q3 in the Guild Spec). The block shape lives in `docs/reference/story-spec-flag-block.md`.",
+  "Before any `intent_gap` or `bad_spec` revert, run `marshal preserve tag --producer build --story <slug> <N.M> --from .`, cite the returned tag in the Review Triage Log, and leave pushing the preserve to the dispatch supervisor or the operator — never auto-push from this skill (`.claude/skills/bmad-build/step-04-review.md` intent_gap / bad_spec loopbacks; spec-pyforge-marshal CAP-287 FR-234). When `pyforge.marshal.preserve_refs` is OFF the command refuses with the flag-off message and the session proceeds as today.",
 ]
 
 [[workflow.review_layers]]

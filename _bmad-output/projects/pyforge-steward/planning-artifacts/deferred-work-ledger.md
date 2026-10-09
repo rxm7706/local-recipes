@@ -6264,3 +6264,25 @@ Source: `sprint-change-proposal-2026-09-04-foundry-cutover.md`. Bound to Story 4
   severity: medium
   promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
   status: open
+
+### DW-steward-85-8: MCP dry_run gate accepts only JSON boolean true, not other truthy shapes.
+
+- source_spec: `planning-artifacts/specs/spec-85-8-an-agent-session-never-writes-outside-this-repository.md`
+  summary: MCP dry_run gate accepts only JSON boolean true, not other truthy shapes.
+  evidence: match_outward_mcp_submission uses `dry is True`; whether conda_forge_server ever sends string "true" is unverified in this run.
+  location: .claude/hooks/pre-shell.py
+  origin: spec-deferred 597c098694ba — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: low (unverified)
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open
+
+### DW-steward-85-8-2: AC (8) mutation tests (matcher returns None) exist only for id parity, not per-matcher null runs.
+
+- source_spec: `planning-artifacts/specs/spec-85-8-an-agent-session-never-writes-outside-this-repository.md`
+  summary: AC (8) mutation tests (matcher returns None) exist only for id parity, not per-matcher null runs.
+  evidence: Story spec asks scratch-copy mutation checks; this run added MATCHERS key tests only.
+  location: tests/scripts/test_pre_shell_hook.py
+  origin: spec-deferred fc5703e1e8fd — ingested from spec frontmatter `deferred:` (hand-driven build-auto; marshal Story 25.6)
+  severity: medium (unverified)
+  promoted: 2026-10-09 — ingested from spec frontmatter by scripts/deferred_work_intake.py
+  status: open

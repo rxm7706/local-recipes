@@ -2,7 +2,8 @@
 title: "87.15: A preserve reaches origin only through the content gate"
 type: 'feature'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: '1ea679cd82a2aa474fa5e2c6e6a25997a570c19b'
 review_loop_iteration: 0
 followup_review_recommended: false
 flag:
@@ -98,8 +99,20 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Story 87.15 implemented — content gate, push/retire verbs, retirement ledger, workflow tag filter, purge runbook.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 0 findings — high 0, medium 0, low 0, false 0, maybe-false 0
+- findings: (none)
+
+## Auto Run Result
+
+Status: done
+
+Summary: Shipped the preserve content gate in `pyforge.core.preserve_refs`, `marshal preserve push|retire`, `list --state retired`, MCP push/retire, governance purge/retirement files, tag-push workflow guard, and operator purge runbook.
+
+Verification: `pyforge-core-test`, `pyforge-marshal-test`, `pyforge-guild lint-types`, `tests/scripts/test_workflow_push_tag_filters.py`, and `python scripts/spec_surface_reconcile.py` (exit 0).
+
+Follow-up review recommended: false

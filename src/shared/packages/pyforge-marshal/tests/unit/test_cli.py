@@ -252,10 +252,11 @@ def test_config_defaults_only_exits_zero(capsys, monkeypatch):
     assert "content_hash" in captured.out
 
 
-def test_config_prints_all_thirty_three_keys(capsys, monkeypatch):
-    """AC: every one of the 34 policy keys (Story 33.8's `dispatch` joining
-    Story 31.3's `review_min_score`, Story 28.10's `model_cost_catalog`, …)
-    prints its effective value and winning layer — checked exhaustively."""
+def test_config_prints_every_policy_key(capsys, monkeypatch):
+    """AC: every one of the 35 policy keys (Story 87.6's
+    `protected_ref_prefixes` joining Story 33.8's `dispatch`, Story 31.3's
+    `review_min_score`, …) prints its effective value and winning layer —
+    checked exhaustively."""
     monkeypatch.delenv("BMAD_ACTIVE_PROJECT", raising=False)
     exit_code = main(["config"])
     assert exit_code == 0
@@ -295,9 +296,10 @@ def test_config_prints_all_thirty_three_keys(capsys, monkeypatch):
         "review_min_score",
         "model_cost_catalog",
         "dispatch",
+        "protected_ref_prefixes",
     ):
         assert f"{key}:" in captured.out, f"marshal config did not print {key!r}"
-    assert captured.out.count("(layer=") == 34
+    assert captured.out.count("(layer=") == 35
 
 
 def test_config_redacts_a_secret_shaped_field(capsys, monkeypatch):
@@ -1031,7 +1033,7 @@ def test_help_lists_gate_subcommand(capsys):
     exit_code = main(["--help"])
     assert exit_code == 0
     assert (
-        "{config,init,homes,preflight,teardown,gate,factory,deploy,land,retire,status,check,watch,adapters,upstream,seed,refresh,planning,context,login,benchmark}"
+        "{config,init,homes,preflight,teardown,gate,factory,deploy,land,retire,status,check,watch,adapters,upstream,seed,refresh,planning,context,login,benchmark,preserve}"
         in capsys.readouterr().out
     )
 

@@ -146,7 +146,7 @@ def test_worktree_sweep_never_reads_a_feature_as_merged_through_a_stray_tag_main
     wt = sweep.gather(sweep.Worktree(path=str(home), branch="feature", category="scratch"), [], {}, set())
     assert (wt.merged, wt.unmerged_commits) == (False, 1)
     _git(repo, "worktree", "remove", "--force", str(home))
-    deleted, _kept = sweep.delete_merged_local_branches()
+    deleted, _kept, _patch_eq = sweep.delete_merged_local_branches()
 
     assert deleted == 0
     assert _git(repo, "rev-parse", "refs/heads/feature") == feature
@@ -186,4 +186,5 @@ def test_unpushed_work_check_still_reports_unpushed_work_beside_a_same_named_tag
     findings = _unpushed(repo)["findings"]
     assert [f.get("ref") for f in findings if f.get("kind") == "unpushed-branch"] == ["work"]
     assert findings[0]["files"] == 1  # the bare name diffed the tag (the base): empty, so never reported
-    assert findings[0]["remedy"] == "git push origin refs/heads/work:refs/heads/work"  # review 2: runnable beside the tag
+    assert "report; do not tag" in findings[0]["remedy"]
+    assert "git push" not in findings[0]["remedy"]

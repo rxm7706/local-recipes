@@ -132,6 +132,10 @@ CLI_ONLY_VERBS: dict[str, str] = {
     "recipe-build-docker": (
         "Docker CI-parity build via build-locally.py — opt-in operator surface."
     ),
+    "refresh-wave": (
+        "Bulk recipe-refresh driver — attended operator wave run over a "
+        "manifest of local recipes, not an MCP tool."
+    ),
     "spdx-schema-gap": (
         "SPDX schema gap suggester — read-only maintenance surface."
     ),

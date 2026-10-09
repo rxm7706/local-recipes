@@ -1,0 +1,2 @@
+c_stdlib_version:          # [osx and arm64]
+  - "11.3"                 # [osx and arm64]

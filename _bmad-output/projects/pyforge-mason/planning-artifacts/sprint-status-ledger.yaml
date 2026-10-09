@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: mason
-# stories: 147
+# stories: 150
 development_status:
   1-1-workspace-member-scaffold-and-dual-artifact-build: done
   1-10-configuration-surface-logging-and-child-output-streaming: done
@@ -69,14 +69,17 @@ development_status:
   21-3-gitgres-builds-green-against-postgresql-17-from-a-pinned-commit: done
   21-4-opengrep-is-repackaged-from-its-release-binaries-as-a-local-only-recipe: done
   21-5-pptxgenjs-plus-jsx-builds-green-beside-its-pptxgenjs-plus-sibling: done
-  22-1-the-twelve-recipes-carrying-conda-recipe-manager-s-sentinel-key-are-repaired: backlog
+  22-1-the-twelve-recipes-carrying-conda-recipe-manager-s-sentinel-key-are-repaired: done
   22-2-cfe-s-validation-reds-a-recipe-with-a-non-string-key-or-a-python-object-repr: done
+  22-3-ctng-compilers-loses-its-sentinel-key-once-rattler-build-renders-its-output-graph: blocked
+  22-4-vc-loses-its-sentinel-key-once-rattler-build-can-emit-its-vc14-track-feature: blocked
   23-1-cfe-refuses-a-copyleft-only-licence-whose-license-grants-any-later-version: done
   23-2-cfe-s-recipe-generator-asks-instead-of-guessing: done
   23-3-a-negative-corpus-proves-each-cfe-check-keeps-rejecting-its-defect: done
   24-1-cfe-s-host-gate-tests-pass-in-any-developer-shell: done
   25-1-track-a-s-wave-h-refreshes-the-sole-maintainer-recipes-the-first-waves-missed: done
   25-2-track-b-refreshes-the-co-maintained-recipes-and-keeps-every-other-maintainer-s-work: backlog
+  25-3-cfe-gains-a-tracked-bulk-recipe-refresh-driver-that-the-refresh-waves-run-through: done
   26-1-cfe-s-tests-never-ask-github-whether-a-recipe-maintainer-exists: done
   27-1-mason-s-package-and-the-repo-tooling-it-owns-close-their-open-deferrals: done
   27-2-cfe-its-failure-catalog-and-the-closed-rebuild-campaign-s-records-close-their-open-deferrals: done

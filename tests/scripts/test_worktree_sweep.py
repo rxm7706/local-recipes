@@ -1,4 +1,4 @@
-"""Rule-engine tests for scripts/worktree_sweep.py (pure `verdict_for`, no git)."""
+"""Rule-engine tests for scripts/worktree_sweep.py (pure helpers, no live /proc)."""
 from __future__ import annotations
 
 import sys
@@ -8,6 +8,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import worktree_sweep as ws  # noqa: E402
+
+_AGENT_LOCK = "claude agent agent-abc (pid 4242 start 100000)"
+
+
+def _lookup(table: dict[int, int | None]):
+    def fn(pid: int) -> int | None:
+        return table.get(pid)
+
+    return fn
 
 
 def _wt(**kw) -> ws.Worktree:
@@ -75,3 +84,129 @@ def test_station_and_story_key_mapping():
     assert ws.story_key_of("attempt-preserve/20260821-082415-mason-6-3-github") == "6-3"
     assert ws.story_key_of("marshal/story-10-7-seed-init") == "10-7"
     assert ws.story_key_of("worktree-agent-a66f8ac40fb74af2c") is None
+
+
+def test_live_agent_lock_is_keep():
+    lookup = _lookup({4242: 100000})
+    wt = _wt(locked=True, lock_reason=_AGENT_LOCK, merged=True)
+    assert ws.verdict_for(wt, lookup=lookup)[0] == "KEEP"
+
+
+def test_stale_lock_dead_pid_is_stale_lock():
+    lookup = _lookup({4242: None})
+    wt = _wt(locked=True, lock_reason=_AGENT_LOCK, merged=True)
+    v, reason = ws.verdict_for(wt, lookup=lookup)
+    assert v == "STALE-LOCK"
+    assert "not running" in reason
+    assert "merged" in reason
+
+
+def test_stale_lock_pid_reuse_is_stale_lock():
+    lookup = _lookup({4242: 999999})
+    wt = _wt(locked=True, lock_reason=_AGENT_LOCK, merged=False, unmerged_commits=1)
+    v, reason = ws.verdict_for(wt, lookup=lookup)
+    assert v == "STALE-LOCK"
+    assert "start time" in reason
+    assert "unmerged" in reason
+
+
+def test_merged_stale_lock_is_executable_as_delete():
+    wt = _wt(locked=True, lock_reason=_AGENT_LOCK, merged=True, verdict="STALE-LOCK")
+    assert ws.effective_execute_verdict(wt) == "DELETE"
+
+
+def test_unmerged_stale_lock_is_not_executable():
+    wt = _wt(locked=True, lock_reason=_AGENT_LOCK, merged=False, verdict="STALE-LOCK")
+    assert ws.effective_execute_verdict(wt) == "STALE-LOCK"
+
+
+def test_non_agent_lock_stays_keep():
+    lookup = _lookup({})
+    wt = _wt(locked=True, lock_reason="manual lock", merged=True)
+    assert ws.verdict_for(wt, lookup=lookup)[0] == "KEEP"
+
+
+def test_orphan_empty_dir_verdict():
+    od = ws.OrphanDir(path="/tmp/orphan", empty=True)
+    assert ws.verdict_for_orphan(od) == ("ORPHAN-DIR", "empty unregistered worktree directory")
+
+
+def test_orphan_nonempty_dir_is_inspect():
+    od = ws.OrphanDir(path="/tmp/orphan", empty=False)
+    assert ws.verdict_for_orphan(od)[0] == "INSPECT"
+
+
+def test_orphan_scan_skips_registered(tmp_path, monkeypatch):
+    root = tmp_path / "claude" / "worktrees"
+    root.mkdir(parents=True)
+    registered = {str((root / "agent-1").resolve())}
+    (root / "agent-1").mkdir()
+    (root / "agent-orphan").mkdir()
+    monkeypatch.setattr(ws, "orphan_scan_roots", lambda: [root])
+    orphans = ws.list_orphan_dirs(registered)
+    assert len(orphans) == 1
+    assert orphans[0].path.endswith("agent-orphan")
+
+
+def test_bmad_loops_not_in_orphan_roots():
+    roots = [str(p) for p in ws.orphan_scan_roots()]
+    assert not any(str(ws.LOOP_HOMES_ROOT) in r for r in roots)
+
+
+def test_list_worktrees_parses_agent_lock_reason(monkeypatch):
+    porcelain = "\n".join(
+        [
+            "worktree /tmp/agent-wt",
+            "HEAD deadbeef",
+            "branch refs/heads/worktree-agent-abc",
+            "locked claude agent agent-abc (pid 4242 start 100000)",
+            "",
+        ]
+    )
+
+    def fake_git(*args, cwd=None):
+        if args[:2] == ("worktree", "list"):
+            return porcelain, 0
+        return "", 1
+
+    monkeypatch.setattr(ws, "_git", fake_git)
+    items = ws.list_worktrees()
+    assert len(items) == 1
+    assert items[0].locked
+    assert items[0].lock_reason == "claude agent agent-abc (pid 4242 start 100000)"
+
+
+def test_delete_merged_local_branches_dry_run_does_not_delete(monkeypatch):
+    calls: list[list[str]] = []
+
+    def fake_git(*args, cwd=None):
+        calls.append(list(args))
+        if args[:2] == ("branch", "--merged"):
+            return "feature-x \n", 0
+        if args[:2] == ("merge-base", "--is-ancestor"):
+            return "", 0
+        if args[:2] == ("branch", "-D"):
+            raise AssertionError("dry report must not delete branches")
+        return "", 0
+
+    monkeypatch.setattr(ws, "_git", fake_git)
+    deleted, _, _ = ws.delete_merged_local_branches(apply=False)
+    assert deleted == 0
+    assert not any(c[:2] == ["branch", "-D"] for c in calls)
+
+
+def test_remove_orphan_dir_empty(tmp_path):
+    d = tmp_path / "empty-orphan"
+    d.mkdir()
+    od = ws.OrphanDir(path=str(d), empty=True, verdict="ORPHAN-DIR")
+    assert ws.remove_orphan_dir(od)
+    assert not d.exists()
+
+
+def test_locked_worktree_mutation():
+    """Removing the stale-lock branch must change verdict (mutation guard)."""
+    lookup = _lookup({4242: 100000})
+    wt = _wt(locked=True, lock_reason=_AGENT_LOCK, merged=True)
+    assert ws.verdict_for(wt, lookup=lookup)[0] == "KEEP"
+    lookup_stale = _lookup({4242: None})
+    assert ws.verdict_for(wt, lookup=lookup_stale)[0] == "STALE-LOCK"

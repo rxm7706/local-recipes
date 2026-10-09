@@ -1041,6 +1041,11 @@ class FleetHomeFacts:
     # commit/push/verify in the named worktree.
     finalize_escalation_story: str | None = None
     finalize_escalation_worktree: str | None = None
+    # Story 87.9 (FR-62/AD-48 as amended 2026-10-04): this home's own preserve debt, as
+    # ``derive_preserve_debt`` builds it -- ``None`` when observed and there is none,
+    # ``{"could_not_observe": True, ...}`` when the read could not be made (never an empty
+    # "clean" answer), else the three debt lists. Additive; a row never reports debt as clean.
+    preserve_debt: dict[str, object] | None = None
 
 
 def _dispatch_tail_still_live(facts: FleetHomeFacts) -> bool:
@@ -1127,6 +1132,124 @@ def derive_dispatch_stranded_work(
             "remedy": finding.get("remedy") or f"git push origin refs/heads/{ref}:refs/heads/{ref}",
         }
     return None
+
+
+# Story 87.9: codes the fleet-wide unmatched-ref finding and the per-row preserve-debt
+# findings are registered under (AD-15) -- built in ``cli/status.py`` beside MRS-STATUS-008.
+UNMATCHED_UNPUSHED_REF_CODE = "MRS-STATUS-015"
+LOCAL_ONLY_PRESERVE_TAG_CODE = "MRS-STATUS-016"
+UNPROMOTED_SCRATCH_REF_CODE = "MRS-STATUS-017"
+PATCH_WITHOUT_TAG_CODE = "MRS-STATUS-018"
+
+_PRESERVE_DEBT_KEYS = ("local_only_tags", "unpromoted_scratch_refs", "patches_without_tag")
+
+
+def unpushed_refs_matched_to_row(
+    facts: FleetHomeFacts,
+    unpushed_by_ref: Mapping[str, object] | None,
+) -> frozenset[str]:
+    """Every ``unpushed-branch`` ref this row accounts for (Story 87.9).
+
+    The row's own ``loop/<slug>`` branch, any ``dispatch/<station>/...`` branch of this
+    station, the legacy ``marshal/<story>`` branch of the row's dispatch story, and the
+    stranded-work ref. A ref no row accounts for is reported fleet-wide, never dropped.
+    """
+    if not unpushed_by_ref:
+        return frozenset()
+    from . import dispatch as dispatch_core
+    from .dispatch_fleet import normalize_station_slug
+
+    matched: set[str] = set()
+    if facts.branch in unpushed_by_ref:
+        matched.add(facts.branch)
+    prefixes = {
+        dispatch_core.dispatch_worktree_branch(station, "x").rsplit("/", 1)[0] + "/"
+        for station in (facts.slug, normalize_station_slug(facts.slug))
+    }
+    for ref in unpushed_by_ref:
+        if any(ref.startswith(prefix) for prefix in prefixes):
+            matched.add(ref)
+    if facts.dispatch_story:
+        legacy = dispatch_core.legacy_dispatch_worktree_branch(facts.dispatch_story)
+        if legacy in unpushed_by_ref:
+            matched.add(legacy)
+    stranded_ref = (facts.dispatch_stranded_work or {}).get("ref")
+    if isinstance(stranded_ref, str) and stranded_ref in unpushed_by_ref:
+        matched.add(stranded_ref)
+    return frozenset(matched)
+
+
+def unmatched_unpushed_refs(
+    unpushed_by_ref: Mapping[str, Mapping[str, object]] | None,
+    matched: frozenset[str] | set[str],
+) -> list[dict[str, object]]:
+    """The detector's unpushed refs no row accounts for, sorted by ref (Story 87.9)."""
+    if not unpushed_by_ref:
+        return []
+    return [
+        {"ref": ref, **{key: entry.get(key) for key in ("files", "stat", "remedy")}}
+        for ref, entry in sorted(unpushed_by_ref.items())
+        if ref not in matched
+    ]
+
+
+def tag_belongs_to_station(project_slug: str | None, slug: str) -> bool:
+    """A preserve tag's ``<project_slug>`` segment names this row's station (short or ``pyforge-`` form)."""
+    if project_slug is None:
+        return False
+    return project_slug in {slug, f"pyforge-{slug}", slug.removeprefix("pyforge-")}
+
+
+def scratch_ref_belongs_to_runs(refname: str, run_ids: Sequence[str] | frozenset[str]) -> bool:
+    """An engine scratch ref (``attempt-preserve/<run_id>-<head8>`` or a dirty snapshot of one) names a run of this home."""
+    segments = refname.split("/")
+    return any(segment == run_id or segment.startswith(f"{run_id}-") for segment in segments for run_id in run_ids)
+
+
+def derive_preserve_debt(
+    *,
+    slug: str,
+    local_only_tags: Sequence[tuple[str, str | None]],
+    unpromoted_scratch: Sequence[str],
+    run_ids: Sequence[str] | frozenset[str],
+    tagged_stories: Sequence[tuple[str | None, str | None]],
+    failed_patches: Sequence[Mapping[str, object]],
+) -> dict[str, object] | None:
+    """This home's preserve debt (Story 87.9, FR-62/AD-48 as amended), ``None`` when there is none.
+
+    ``local_only_tags`` are ``(refname, project_slug)`` of preserve tags ``ls-remote`` does not
+    list; ``unpromoted_scratch`` the engine scratch refs no preserve tag holds; ``tagged_stories``
+    every local preserve tag's ``(project_slug, story_key)``. A failed-story patch whose story is
+    confirmed landed is durable on ``main`` and owes no tag; every other patch with no tag is debt.
+    """
+    tags = sorted(ref for ref, project in local_only_tags if tag_belongs_to_station(project, slug))
+    scratch = sorted(ref for ref in unpromoted_scratch if scratch_ref_belongs_to_runs(ref, run_ids))
+    patches: list[str] = []
+    for entry in failed_patches:
+        if entry.get("done") is True:
+            continue
+        story = entry.get("story_key")
+        if any(
+            tag_belongs_to_station(project, slug) and story is not None and key == str(story)
+            for project, key in tagged_stories
+        ):
+            continue
+        path = entry.get("path")
+        if path is not None:
+            patches.append(str(path))
+    if not (tags or scratch or patches):
+        return None
+    return {
+        "could_not_observe": False,
+        "local_only_tags": tags,
+        "unpromoted_scratch_refs": scratch,
+        "patches_without_tag": sorted(patches),
+    }
+
+
+def preserve_debt_could_not_observe() -> dict[str, object]:
+    """The row value when preserve debt could not be read -- never ``None`` (that reads as nothing owed)."""
+    return {"could_not_observe": True, **{key: [] for key in _PRESERVE_DEBT_KEYS}}
 
 
 def _dispatch_overlay_active(facts: FleetHomeFacts) -> bool:
@@ -1306,6 +1429,17 @@ def is_run_live(facts: FleetHomeFacts) -> bool:
 
 
 def build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding | None]:
+    """``_build_fleet_row`` plus the row's own ``preserve_debt`` (Story 87.9), never re-derived here.
+
+    The key is additive: present only when there is debt to report or the read could not be made
+    (``could_not_observe``) -- a row with nothing owed keeps the shape it always had."""
+    row, finding = _build_fleet_row(facts)
+    if facts.preserve_debt is None:
+        return row, finding
+    return {**row, "preserve_debt": facts.preserve_debt}, finding
+
+
+def _build_fleet_row(facts: FleetHomeFacts) -> tuple[dict[str, object], Finding | None]:
     """One ``data.homes`` row plus an optional ``Finding`` (Story 5.1) --
     mirrors this module's own ``_evaluate_home``/``_evaluate_main_checkout``
     convention (already-gathered facts in, a plain row dict out).
