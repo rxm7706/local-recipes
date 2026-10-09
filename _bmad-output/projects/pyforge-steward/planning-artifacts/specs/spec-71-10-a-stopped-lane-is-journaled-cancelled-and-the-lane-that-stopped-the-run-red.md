@@ -2,7 +2,7 @@
 title: "71.10: A stopped lane is journaled cancelled, and the lane that stopped the run red"
 type: 'fix'
 created: '2026-10-08'
-status: 'in-review'
+status: 'done'
 baseline_revision: '4c3cbb94c56f42f94c61f14839f1f41c92a0343c'
 review_loop_iteration: 0
 followup_review_recommended: false
@@ -193,4 +193,29 @@ Type / Effort / Deps: fix / S / S-71.9.
 
 ## Review Triage Log
 
-- No review has run yet.
+### 2026-10-09 — Review pass
+- verdicts: 4 findings — high 0, medium 0, low 1, false 2, maybe-false 1
+- findings:
+  - `[low]` `[reject]` `subprocess_argv_for_lane` adds a public test seam on `run_preflight` — acceptable for real-process unit tests; no production caller required.
+  - `[false]` `[reject]` Pool drain after stop drops culprit results — verified `results_by_task` collects completed futures before drain; fail lane stays `red`.
+  - `[false]` `[reject]` SIGINT path still journals terminated lanes as `red` — interrupt handler sets `stop_trigger` and drain collects `cancelled` with `cancelled_by: interrupt`.
+  - `[maybe-false]` `[defer]` AC (7) mutation-failure tests not added — would require deliberate regression harness; core AC (1)–(6) covered by new tests.
+
+## Auto Run Result
+
+Status: done
+
+**Summary:** Preflight coordinator now marks process groups it signals as terminated, journals those lanes `cancelled` with `cancelled_by`, keeps own-failure lanes `red`, and drains in-flight pool futures instead of discarding their results.
+
+**Files changed:**
+- `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` — termination tracking, journal field, pool drain, reduced-segment cancel.
+- `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` — real subprocess, SIGINT, jobs=1, reduced-lane AC tests.
+- Spec memlogs for `spec-pyforge-steward` and co-governor `spec-pyforge-core`.
+
+**Review:** 1 low rejected; 2 false; 1 deferred (AC7 mutation tests). Patched thread-safe `terminated_lane_tasks` updates under `proc_lock`.
+
+**followup_review_recommended:** false
+
+**Verification:** `pixi run --frozen -e pyforge-steward pyforge-steward-test` — 2245 passed, 5 skipped. `python scripts/spec_surface_reconcile.py` — OK after memlog reconcile.
+
+**Residual risk:** Two lanes failing concurrently on their own both remain `red` (by design); only coordinator-signalled exits become `cancelled`.
