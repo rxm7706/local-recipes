@@ -1,13 +1,13 @@
 {% set name = "cron-descriptor" %}
-{% set version = "2.1.0" %}
+{% set version = "2.1.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/cron_descriptor-{{ version }}.tar.gz
-  sha256: ecddb8b2f6c5286398949aaefe185364666af74f33b01877c61378e1fd4e38e6
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/cron_descriptor-{{ version }}.tar.gz
+  sha256: 0f55b469bb81f8c60602baebc08a78fc3b1eb234805793a08a4862f336760390
 
 build:
   noarch: python

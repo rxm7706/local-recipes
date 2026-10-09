@@ -2,8 +2,8 @@
 title: "25.2: Track B refreshes the co-maintained recipes and keeps every other maintainer's work"
 type: 'feature'
 created: '2026-09-29'
-status: 'ready-for-dev'
-baseline_revision: '3ca5abbe0e8b0190f4d4014f4696d79874c23564'
+status: 'in-progress'
+baseline_revision: '91d99bb44111cf03947dd5b911049873e92885a2'
 flag-exempt: recipe-build
 review_loop_iteration: 0
 followup_review_recommended: false
