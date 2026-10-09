@@ -454,14 +454,16 @@ def test_happy_path_opens_pr_polls_checks_and_merges(tmp_path, capsys, monkeypat
     assert payload["data"]["opened"] is True
     assert payload["data"]["merged"] is True
     assert payload["data"]["branch_retired"] is True
-    assert payload["verdict"] == "clean"
+    codes = [f["code"] for f in payload["findings"]]
+    assert "MRS-LAND-012" in codes
+    assert payload["verdict"] == "warn"
     assert exit_code == 0
     assert len(forge.merge_calls) == 1
     repo, number, strategy, expected_head_sha, delete_branch, subject = forge.merge_calls[0]
     assert number == 1
     assert strategy == "merge"
     assert expected_head_sha
-    assert delete_branch is True
+    assert delete_branch is False
     # Story 5.10: the single-key wave's rendered merge subject (AD-24),
     # threaded to `forge.merge_pr` and surfaced in `data["subject"]`.
     expected_subject = render_merge_subject(StoryKey(4, 4), _DEFAULT_MERGE_SUBJECT_TEMPLATE, "acme")
@@ -1315,6 +1317,7 @@ def test_live_run_with_override_flag_retires_normally_no_finding(tmp_path, capsy
         existing_branches=frozenset({"loop/acme"}),
         wave_subjects=(_BMADLOOP_WAVE_SUBJECT,),
         changed_paths=("docs/notes.md",),
+        remote_branch_on_origin=True,
     )
     forge = _FakeForge(existing=None)
     harness = _FakeHarness(
@@ -1340,11 +1343,12 @@ def test_live_run_with_override_flag_retires_normally_no_finding(tmp_path, capsy
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-008" not in codes
+    assert "MRS-LAND-012" in codes
     assert payload["data"]["merged"] is True
-    assert payload["data"]["branch_retired"] is True
+    assert payload["data"]["branch_retired"] is False
     assert exit_code == 0
     repo, number, strategy, expected_head_sha, delete_branch, subject = forge.merge_calls[0]
-    assert delete_branch is True
+    assert delete_branch is False
 
 
 def test_journal_unreadable_is_conservatively_treated_as_live(tmp_path, capsys, monkeypatch):
@@ -1659,9 +1663,10 @@ def test_dead_supervisor_with_dead_engine_still_retires_normally(tmp_path, capsy
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-008" not in codes
+    assert "MRS-LAND-012" in codes
     assert payload["data"]["branch_retired"] is True
     assert exit_code == 0
-    assert forge.merge_calls[0][4] is True
+    assert forge.merge_calls[0][4] is False
 
 
 # One scenario per `_resync_home_branch` exit of `run_land`: the `if not
@@ -1822,8 +1827,9 @@ def test_retire_live_branch_override_does_not_override_the_resync_skip(tmp_path,
     payload = _payload(capsys)
     codes = [f["code"] for f in payload["findings"]]
     assert "MRS-LAND-008" not in codes
+    assert "MRS-LAND-012" in codes
     assert codes.count("MRS-LAND-009") == 1
-    assert forge.merge_calls[0][4] is True  # retirement honoured by the override
+    assert forge.merge_calls[0][4] is False  # loop/* never deleted from land (AD-47)
     assert vcs.fetch_calls == []
     assert vcs.fast_forward_calls == []
 

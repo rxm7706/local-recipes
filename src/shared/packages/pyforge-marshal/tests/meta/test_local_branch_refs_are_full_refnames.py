@@ -65,10 +65,12 @@ _REVISION_ARGS: dict[str, tuple[tuple[int | None, str], ...]] = {
     "worktree_unified_patch": ((None, "baseline_sha"),),
     "spec_text_at_ref": ((None, "ref"),),
     "commit_worktree_checkpoint": ((None, "base"),),
+    "is_commit_ancestor": ((1, "ancestor"), (2, "descendant")),
 }
 #: method -> the parameters that take a branch NAME (qualified by the method, or read as a name).
 _NAME_ARGS: dict[str, tuple[tuple[int | None, str], ...]] = {
     "branch_exists": ((1, "branch"),),
+    "remote_branch_exists": ((1, "branch"),),
     "worktree_path_for_branch": ((1, "branch"),),
     "add_worktree": ((2, "branch"),),
     "is_branch_merged": ((1, "branch"), (None, "into")),
@@ -96,6 +98,9 @@ _NOT_A_REF = {
     ("merge_file_diff3", "base_text"),  # file contents (Story 22.19), never a revision
     ("merge_file_diff3", "main_text"),
     ("merge_file_diff3", "branch_text"),
+    ("remote_branch_exists", "remote"),
+    ("commit_contained_in_tag_prefixes", "commit"),
+    ("commit_contained_in_tag_prefixes", "tag_prefixes"),
 }
 #: The ports a method may be declared on: reads and ref operations on `VcsPort`, commit text on `CommitPort`.
 _PORTS = (VcsPort, CommitPort)
