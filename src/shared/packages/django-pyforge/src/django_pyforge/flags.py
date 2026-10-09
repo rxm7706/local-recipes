@@ -26,7 +26,6 @@ from pathlib import Path
 from typing import Any
 from typing import Callable
 
-FLAG_KEY = "pyforge.three_surfaces"
 IN_CLUSTER_FLAGS_PATH = Path("/etc/pyforge/flags.json")
 LOCAL_DEV_RELATIVE = Path("src/platform/config/flags.json")
 ENV_FLAGS_PATH = "PYFORGE_FLAGS_PATH"
@@ -160,18 +159,21 @@ def configure_file_provider(path: Path | str) -> None:
     wait_until_ready()
 
 
-def wait_until_ready(*, key: str = FLAG_KEY, timeout_s: float = 8.0) -> None:
+def wait_until_ready(*, timeout_s: float = 8.0) -> None:
     """FILE init is asynchronous; first reads can be PROVIDER_NOT_READY."""
     import time
 
     from openfeature import api
+    from openfeature.provider import ProviderStatus
 
     deadline = time.monotonic() + timeout_s
-    last = None
+    last: ProviderStatus | None = None
     while time.monotonic() < deadline:
-        last = api.get_client().get_boolean_details(key, False)
-        if last.error_code is None:
+        last = api.get_client().get_provider_status()
+        if last == ProviderStatus.READY:
             return
+        if last in (ProviderStatus.ERROR, ProviderStatus.FATAL):
+            break
         time.sleep(0.05)
     msg = f"FILE provider not ready after {timeout_s}s: {last}"
     raise RuntimeError(msg)
@@ -185,7 +187,7 @@ def configure_from_env() -> Path | None:
     return path
 
 
-def evaluate_boolean(key: str = FLAG_KEY, default: bool = False) -> bool:
+def evaluate_boolean(key: str, default: bool = False) -> bool:
     from openfeature import api
 
     return bool(api.get_client().get_boolean_value(key, default))
@@ -205,7 +207,7 @@ def evaluate_cutover_root(source: Path | str | None = None) -> str:
 
 
 
-def evaluate_cli_boolean(key: str = FLAG_KEY, default: bool = False, source: Path | str | None = None) -> bool:
+def evaluate_cli_boolean(key: str, default: bool = False, source: Path | str | None = None) -> bool:
     """The CLI reader's value for *key*: ``pyforge.core.flags.read_boolean`` over the tree itself.
 
     ``read_boolean`` composes the overlay beside the tree on its own, so this is the independent
@@ -232,7 +234,7 @@ def materialize_tree_bytes(data: bytes, dest: Path) -> Path:
 
 def evaluate_from_source(
     *,
-    key: str = FLAG_KEY,
+    key: str,
     source: Path | str | None = None,
     host: str | None = None,
     token: str | None = None,
@@ -271,7 +273,7 @@ def flags_asgi_app() -> Any:
     server = MCPServer("pyforge-flags")
 
     @server.tool()
-    def get_flag(key: str = FLAG_KEY) -> bool:
+    def get_flag(key: str) -> bool:
         return evaluate_boolean(key)
 
     return asgi_for_server(server)
@@ -354,7 +356,7 @@ def main(argv: list[str] | None = None) -> int:
     if args and args[0] == RENDER_VERB:
         return render_main(args[1:])
     parser = argparse.ArgumentParser(prog="python -m django_pyforge.flags")
-    parser.add_argument("key", nargs="?", default=FLAG_KEY)
+    parser.add_argument("key")
     parser.add_argument("--source", default=None)
     parser.add_argument("--host", default=None)
     parser.add_argument("--token", default=None)

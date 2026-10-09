@@ -4863,6 +4863,32 @@ a lane that exits non-zero on its own before the stop's signal stays `red`; a St
 with that segment `cancelled`; the 71.1-71.9 preflight tests pass unchanged; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 **Status:** done
 
+### Story 71.11: No lane process outlives a stop, and a reduced lane cut short is never ok
+
+As the operator whose push the preflight refused or who pressed Ctrl-C,
+I want no lane process to start or keep running after the preflight has stopped, and no lane that skipped a segment to read `ok`,
+So that a stopped run ends when it stops, and its journal never passes a lane that did not run.
+
+**Type:** fix • **Effort:** S • **Deps:** S-71.10 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32; Stories 71.3 and 71.9) • reopens Epic 71 (doctor Story 41.5) • Dream 2026-10-09 (preflight races)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (`register_proc` `:247`, `terminate_children` `:257`,
+`_run_pixi_argv` `:288`, `_subprocess_reduced_suite_lane` `:309`, `_run_lane_in_pool` `:457`), its unit tests under
+`src/shared/packages/pyforge-steward/tests/unit/`
+**Spec:** `planning-artifacts/specs/spec-71-11-no-lane-process-outlives-a-stop-and-a-reduced-lane-cut-short-is-never-ok.md`
+**Given** `d377581be4`, where a lane past its last stop check (`:474`) registers its process (`:302`) only after `Popen`, so a
+`terminate_children()` snapshot taken in between never signals it; the segment loop checks only `cancel` (`:321`), so a segment starts after
+a stop on red; and SIGINT between segments breaks with `lane_exit` 0 (`:317`), so the lane is journaled `ok`
+**When** another lane goes red without `--keep-going`, or SIGINT arrives, while a lane is starting or between segments
+**Then** `register_proc` checks the stop flags under `proc_lock` and terminates a late process, its lane journaled `cancelled` with
+`cancelled_by`; no segment or collection check starts after a stop; a reduced lane whose segments did not all run is `cancelled` with the rest
+`not-run`, never `ok`
+**And** tests with `before_popen` and `between_segments` hooks prove a lane released after `terminate_children()` is killed at registration
+(no process left), an interrupt reaches a late start, a stop on red keeps segment 2 from starting, and SIGINT between segments journals the
+lane `cancelled` (`interrupt`); `--keep-going` is unchanged; the 71.1-71.10 preflight tests pass unchanged; three mutations (drop the
+registration check, drop the segment stop check, restore `lane_exit = 0`) fail the new tests; `pixi run --frozen -e pyforge-steward
+pyforge-steward-test` green
+**Status:** done
+
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 
 Minted 2026-09-28 from the station Dream's entry of the same name — steward's two pieces of the operator's 2026-09-28
@@ -5210,7 +5236,7 @@ raises the named `RuntimeError`, and nothing in `src/platform`, `django-pyforge`
 before; `pyforge.cutover_root`, the chart's flags ConfigMap and the `flags` MCP face are unchanged; doctor's kill-switch
 `--flag` help example names no tree key, while its tests keep their arbitrary temp-tree key;
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
-**Status:** backlog
+**Status:** done
 
 ## Epic 77: The console's specs and archived pages follow the retired tier and the archive (spec-one-chain-per-station CAP-11)
 

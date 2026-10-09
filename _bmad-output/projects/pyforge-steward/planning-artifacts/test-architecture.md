@@ -5,9 +5,9 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: steward
-source_fingerprint: dda202dd9b89c096
-story_count: 334
-test_file_count: 104
+source_fingerprint: 5ba64671a78b727e
+story_count: 335
+test_file_count: 109
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
 ---
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-steward`
-- **Stories parsed:** 334
+- **Stories parsed:** 335
 - **Epics parsed:** 85
-- **Test files inventoried:** 104 under `src/shared/packages/pyforge-steward/tests/`
+- **Test files inventoried:** 109 under `src/shared/packages/pyforge-steward/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `dda202dd9b89c096`
+- **Source fingerprint:** `5ba64671a78b727e`
 
 ## Risk Assessment
 
@@ -129,6 +129,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_adoption_register.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_first_portal_slice_provision_list.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_five_tier_check.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_guild_environment_stations.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_invariants.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_no_station_assumes_local_recipes.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_object_store_seam_boundaries.py` | meta | none observed |
@@ -138,6 +139,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/meta/test_skf_steward_skill.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_station_persona.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_steward_persona.py` | meta | none observed |
+| `src/shared/packages/pyforge-steward/tests/meta/test_steward_single_flag_tree.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/meta/test_workflow_path_filters_match.py` | meta | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_bootstrap_remedies.py` | unit | none observed |
@@ -189,9 +191,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | `src/shared/packages/pyforge-steward/tests/unit/test_passport_mint.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_platform_ci_local_concurrency.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_budget.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_concurrency.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_scratch.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_selection.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_preflight_suite_reduction.py` | unit | none observed |
+| `src/shared/packages/pyforge-steward/tests/unit/test_preflight_workers.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_env.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_install_class_playbook.py` | unit | none observed |
 | `src/shared/packages/pyforge-steward/tests/unit/test_provision_list.py` | unit | none observed |
@@ -538,6 +543,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 71.8 | A preflight lane's scratch lives outside the checkout | none observed |
 | 71.9 | A reduced suite lane never fails on a segment that selects no tests | none observed |
 | 71.10 | A stopped lane is journaled cancelled, and the lane that stopped the run red | none observed |
+| 71.11 | No lane process outlives a stop, and a reduced lane cut short is never ok | none observed |
 | 72.1 | The Guild environment answers pyforge mason | none observed |
 | 72.2 | Mason's five-tier skill cell requires its station skill and conda-forge-expert | none observed |
 | 73.1 | `steward session check` reads `marshal seed check`'s envelope, whatever its e... | none observed |

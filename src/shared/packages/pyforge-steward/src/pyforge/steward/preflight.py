@@ -236,6 +236,8 @@ class _RunCoordinator:
     suite_reduction_runtime_journal: dict[str, dict[str, Any]] = field(default_factory=dict)
     xdist_workers: dict[str, int] = field(default_factory=dict)
     subprocess_argv_for_lane: Callable[[Lane], list[str]] | None = None
+    before_popen: Callable[[LaneRunContext], None] | None = None
+    between_segments: Callable[[LaneRunContext, int], None] | None = None
 
     def service_lock(self, key: str | None) -> threading.Lock | None:
         if key is None:
@@ -246,8 +248,15 @@ class _RunCoordinator:
 
     def register_proc(self, proc: subprocess.Popen[Any], lane_task: str) -> None:
         with self.proc_lock:
-            self.active_procs.append((proc, proc.pid))
-            self.proc_lane_task[proc.pid] = lane_task
+            if self.cancel.is_set() or (self.stop_on_red.is_set() and not self.keep_going):
+                self.terminated_lane_tasks.add(lane_task)
+                late_proc = proc
+            else:
+                self.active_procs.append((proc, proc.pid))
+                self.proc_lane_task[proc.pid] = lane_task
+                late_proc = None
+        if late_proc is not None:
+            _terminate_proc_group(late_proc)
 
     def unregister_proc(self, proc: subprocess.Popen[Any]) -> None:
         with self.proc_lock:
@@ -264,17 +273,23 @@ class _RunCoordinator:
                 lane_task = self.proc_lane_task.get(proc.pid)
                 if lane_task is not None:
                     self.terminated_lane_tasks.add(lane_task)
-            try:
-                os.killpg(proc.pid, signal.SIGTERM)
-            except ProcessLookupError, PermissionError:
-                proc.terminate()
-            try:
-                proc.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                try:
-                    os.killpg(proc.pid, signal.SIGKILL)
-                except ProcessLookupError, PermissionError:
-                    proc.kill()
+            _terminate_proc_group(proc)
+
+
+def _terminate_proc_group(proc: subprocess.Popen[Any]) -> None:
+    if proc.poll() is not None:
+        return
+    try:
+        os.killpg(proc.pid, signal.SIGTERM)
+    except ProcessLookupError, PermissionError:
+        proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        try:
+            os.killpg(proc.pid, signal.SIGKILL)
+        except ProcessLookupError, PermissionError:
+            proc.kill()
 
 
 def _segment_outcome(exit_code: int) -> str:
@@ -291,6 +306,8 @@ def _run_pixi_argv(
     argv: list[str],
     log_handle: Any,
 ) -> int:
+    if coord.before_popen is not None:
+        coord.before_popen(ctx)
     proc = subprocess.Popen(
         argv,
         cwd=coord.repo_root,
@@ -316,18 +333,30 @@ def _subprocess_reduced_suite_lane(
     task_collect_exit: int | None = None
     lane_exit = 0
     prefix = ["pixi", "run", "--frozen", "-e", ctx.lane.environment, "--"]
+
+    def _append_not_run(from_index: int) -> None:
+        for pending in override.segments[from_index:]:
+            segment_rows.append(
+                {
+                    "label": pending.label,
+                    "command": shlex.join(pending.argv),
+                    "exit_code": None,
+                    "outcome": "not-run",
+                }
+            )
+
+    def _run_stopped_before_segment(index: int) -> bool:
+        if coord.cancel.is_set() or (coord.stop_on_red.is_set() and not coord.keep_going):
+            _append_not_run(index)
+            coord.terminated_lane_tasks.add(ctx.lane.task)
+            return True
+        return False
+
     with ctx.log_path.open("wb") as log_handle:
         for index, segment in enumerate(override.segments):
-            if coord.cancel.is_set():
-                for pending in override.segments[index:]:
-                    segment_rows.append(
-                        {
-                            "label": pending.label,
-                            "command": shlex.join(pending.argv),
-                            "exit_code": None,
-                            "outcome": "not-run",
-                        }
-                    )
+            if index >= 1 and coord.between_segments is not None:
+                coord.between_segments(ctx, index)
+            if _run_stopped_before_segment(index):
                 break
             cmd = [*prefix, *segment.argv]
             code = _run_pixi_argv(coord, ctx, cmd, log_handle)
@@ -373,7 +402,9 @@ def _subprocess_reduced_suite_lane(
                     )
                 break
         else:
-            if segment_rows and all(row["outcome"] == "no-tests-selected" for row in segment_rows):
+            if _run_stopped_before_segment(len(override.segments)):
+                pass
+            elif segment_rows and all(row["outcome"] == "no-tests-selected" for row in segment_rows):
                 collect_argv = [
                     "pixi",
                     "run",
@@ -531,6 +562,8 @@ def run_preflight(
     install_environment: Callable[[str], int] | None = None,
     scratch_parent: Path | None = None,
     subprocess_argv_for_lane: Callable[[Lane], list[str]] | None = None,
+    before_popen: Callable[[LaneRunContext], None] | None = None,
+    between_segments: Callable[[LaneRunContext, int], None] | None = None,
 ) -> int:
     """Run CI-selected lanes; return exit code 0 / 1 / 2 / 130."""
     repo_root = repo_root.resolve()
@@ -644,6 +677,8 @@ def run_preflight(
         suite_lane_plan=suite_lane_plan,
         xdist_workers=xdist_workers,
         subprocess_argv_for_lane=subprocess_argv_for_lane,
+        before_popen=before_popen,
+        between_segments=between_segments,
     )
     if injected_runner is not None:
         runner = injected_runner

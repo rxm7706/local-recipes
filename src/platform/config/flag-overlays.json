@@ -1,6 +1,5 @@
 {
   "dev": {
-    "pyforge.three_surfaces": "on",
     "pyforge.cutover_root": "local-recipes",
     "pyforge.steward.ghe_fleet_credentials": "off",
     "pyforge.steward.object_store_consumer": "on",
@@ -25,7 +24,6 @@
     "pyforge.steward.glass_export": "off"
   },
   "staging": {
-    "pyforge.three_surfaces": "on",
     "pyforge.cutover_root": "local-recipes",
     "pyforge.steward.ghe_fleet_credentials": "off",
     "pyforge.steward.object_store_consumer": "on",
@@ -50,7 +48,6 @@
     "pyforge.steward.glass_export": "off"
   },
   "production": {
-    "pyforge.three_surfaces": "on",
     "pyforge.cutover_root": "local-recipes",
     "pyforge.steward.ghe_fleet_credentials": "off",
     "pyforge.steward.object_store_consumer": "off",

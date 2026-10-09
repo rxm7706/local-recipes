@@ -101,10 +101,13 @@ def test_cli_kill_switch_edits_the_tree_itself_not_a_rendered_copy(tmp_path: Pat
 _SHIPPED_CONFIG = Path(__file__).resolve().parents[6] / "src" / "platform" / "config"
 
 
-def test_killing_the_dated_shipped_flag_leaves_the_tree_composable_and_reads_off(tmp_path: Path, monkeypatch):
-    """Story 76.2: ``disable_flag`` sets only ``state``. ``pyforge.three_surfaces`` carries a dated clock
-    (``on_everywhere``), so a clock check that judged ``state`` would refuse every flag read of the
-    killed tree, the sibling flags' included. It judges the rendered variant, so the kill composes."""
+_DATED_KILL_FIXTURE = "pyforge.test.dated_kill_fixture"
+
+
+def test_killing_a_dated_on_everywhere_flag_on_a_shipped_copy_leaves_the_tree_composable(tmp_path: Path, monkeypatch):
+    """Story 76.2: ``disable_flag`` sets only ``state``. A flag with ``on_everywhere`` set
+    must still compose after kill (Story 76.4 removed ``pyforge.three_surfaces`` from the
+    shipped tree, so this copies the live tree and adds a dated fixture key)."""
     from pyforge.core import flags
 
     tree = tmp_path / "flags.json"
@@ -114,12 +117,27 @@ def test_killing_the_dated_shipped_flag_leaves_the_tree_composable_and_reads_off
             pytest.skip(f"{name} is not in this checkout")
         (tmp_path / name).write_bytes(source.read_bytes())
 
-    disable_flag(tree, "pyforge.three_surfaces")
+    payload = json.loads(tree.read_text(encoding="utf-8"))
+    payload["flags"][_DATED_KILL_FIXTURE] = {
+        "state": "ENABLED",
+        "variants": {"on": True, "off": False},
+        "defaultVariant": "on",
+        "metadata": {
+            "owner": "steward",
+            "story": "76-4-fixture",
+            "created": "2026-08-25",
+            "on_everywhere": "2026-08-25",
+            "cleanup_by": "2026-11-23",
+        },
+    }
+    tree.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
 
-    killed = json.loads(tree.read_text(encoding="utf-8"))["flags"]["pyforge.three_surfaces"]
+    disable_flag(tree, _DATED_KILL_FIXTURE)
+
+    killed = json.loads(tree.read_text(encoding="utf-8"))["flags"][_DATED_KILL_FIXTURE]
     assert killed["state"] == "DISABLED"
     assert killed["metadata"]["on_everywhere"] == "2026-08-25"  # the clock is left as it was
     for environment in flags.ENVIRONMENTS:
         monkeypatch.setenv(flags.ENV_ENVIRONMENT, environment)
-        assert flags.read_boolean("pyforge.three_surfaces", True, flags_path=tree) is False, environment
+        assert flags.read_boolean(_DATED_KILL_FIXTURE, True, flags_path=tree) is False, environment
         assert flags.read_boolean("pyforge.steward.ghe_fleet_credentials", flags_path=tree) is False, environment

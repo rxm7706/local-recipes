@@ -1,20 +1,5 @@
 {
   "flags": {
-    "pyforge.three_surfaces": {
-      "state": "ENABLED",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "defaultVariant": "on",
-      "metadata": {
-        "owner": "steward",
-        "story": "26-4-one-flag-flips-three-surfaces-without-a-redeploy",
-        "created": "2026-08-25",
-        "on_everywhere": "2026-08-25",
-        "cleanup_by": "2026-11-23"
-      }
-    },
     "pyforge.cutover_root": {
       "state": "ENABLED",
       "variants": {

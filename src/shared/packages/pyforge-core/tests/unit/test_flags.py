@@ -871,7 +871,6 @@ def test_a_rendered_tree_carries_the_metadata_through_unchanged(tmp_path):
 
 # The shipped tree: what every flag in src/platform/config/flags.json must say (Story 76.2).
 _SHIPPED_CLOCKS = {
-    "pyforge.three_surfaces": ("steward", "26-4-", "2026-08-25", "2026-08-25", "2026-11-23"),
     "pyforge.cutover_root": ("steward", "44-12-", "2026-09-13", "", ""),
     "pyforge.steward.ghe_fleet_credentials": ("steward", "75-1-", "2026-09-29", "", ""),
     "pyforge.steward.object_store_consumer": ("steward", "74-1-", "2026-09-29", "", ""),
@@ -995,10 +994,10 @@ def test_the_shipped_tree_records_each_flags_owner_story_and_dates():
         ), key
 
 
-def test_the_only_running_clock_in_the_shipped_tree_is_three_surfaces_owed_to_story_76_4():
+def test_no_running_cleanup_clock_in_the_shipped_tree_after_story_76_4():
     payload, _ = _shipped()
     running = {k: e["metadata"]["cleanup_by"] for k, e in payload["flags"].items() if e["metadata"]["cleanup_by"]}
-    assert running == {"pyforge.three_surfaces": "2026-11-23"}
+    assert running == {}
 
 
 def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_the_metadata(monkeypatch):
@@ -1006,7 +1005,6 @@ def test_the_shipped_tree_reads_the_same_values_in_every_environment_as_before_t
     payload, _ = _shipped()
     config = Path(__file__).resolve().parents[6] / "src" / "platform" / "config" / "flags.json"
     expected = {
-        "pyforge.three_surfaces": True,
         "pyforge.steward.ghe_fleet_credentials": False,
         "pyforge.steward.ledger_query_postgres_sync": False,
         "pyforge.steward.ledger_query_dossier_export": False,
