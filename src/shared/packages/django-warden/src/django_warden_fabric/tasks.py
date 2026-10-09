@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 import logging
+import os
 import tempfile
 from pathlib import Path
 
@@ -16,6 +18,7 @@ from .fleet import mkdtemp_clone_dir
 from .fleet import remove_clone_dir
 from .fleet import shallow_clone
 from .models import ComplianceJob
+from .models import FixProposal
 from .models import FleetRepo
 from .models import FleetRepoScan
 from .models import FleetRun
@@ -129,9 +132,13 @@ def _run_warden_engines(
 @shared_task(bind=True, name="warden_fabric.finalize_fleet_run")
 def finalize_fleet_run(self, scan_results: list[object], fleet_run_id: str) -> str:
     """Mark the fleet run complete after all repo sub-tasks finish."""
+    from .proposals import queue_proposals_from_scan  # noqa: PLC0415
+
     run = FleetRun.objects.get(pk=fleet_run_id)
     run.status = JobStatus.SUCCEEDED
     run.save(update_fields=["status", "updated_at"])
+    for scan in FleetRepoScan.objects.filter(fleet_run=run):
+        queue_proposals_from_scan(scan)
     return str(run.id)
 
 
@@ -217,6 +224,112 @@ def scan_fleet_repo(self, fleet_run_id: str, fleet_repo_id: str) -> str:
         row.error = f"{exc.__class__.__name__}: {exc}"
         row.save(update_fields=["status", "error", "updated_at"])
         return str(row.id)
+    finally:
+        remove_clone_dir(clone_dir)
+
+
+def _finding_from_report_dict(data: dict[str, object]):
+    from pyforge.warden.models import Finding  # noqa: PLC0415
+    from pyforge.warden.models import Severity  # noqa: PLC0415
+    from pyforge.warden.models import SeverityTier  # noqa: PLC0415
+
+    finding_id = data["id"]
+    axis = data["axis"]
+    message = data["message"]
+    if not isinstance(finding_id, str) or not isinstance(axis, str) or not isinstance(message, str):
+        msg = "invalid finding entry in report"
+        raise ValueError(msg)
+    subject = data.get("subject")
+    severity_raw = data.get("severity")
+    severity = None
+    if isinstance(severity_raw, dict) and isinstance(severity_raw.get("tier"), str):
+        severity = Severity(tier=SeverityTier(severity_raw["tier"]), raw=severity_raw.get("raw"))
+    return Finding(
+        id=finding_id,
+        axis=axis,
+        message=message,
+        subject=subject if isinstance(subject, str) else "",
+        severity=severity,
+    )
+
+
+def _findings_for_proposal(scan: FleetRepoScan, finding_id: str):
+    document = json.loads(scan.report_json or "{}")
+    findings_raw = document.get("findings")
+    if not isinstance(findings_raw, list):
+        msg = "report has no findings"
+        raise ValueError(msg)
+    for entry in findings_raw:
+        if isinstance(entry, dict) and entry.get("id") == finding_id:
+            return (_finding_from_report_dict(entry),)
+    msg = f"finding {finding_id!r} not in stored report"
+    raise ValueError(msg)
+
+
+def _run_fix_actuator(scan: FleetRepoScan, finding_id: str, *, clone_dir: Path):
+    """Call EXISTING warden actuator for one stored finding -- never reimplement it."""
+    # Lazy: platform host must import without pyforge installed (Story 10.1
+    # boundary), the same seam as _run_warden_engines.
+    from pyforge.warden.actuator import run_actuator  # noqa: PLC0415
+
+    repo_full_name = scan.fleet_repo.full_name
+    env = os.environ.copy()
+    env["GITHUB_REPOSITORY"] = repo_full_name
+    return run_actuator(
+        _findings_for_proposal(scan, finding_id),
+        dry_run=False,
+        env=env,
+        scan_target=clone_dir,
+        fix_draft_pr_estate_enabled=True,
+        authorized_fleet_repo=repo_full_name,
+    )
+
+
+@shared_task(bind=True, name="warden_fabric.open_fix_proposal")
+def open_fix_proposal(self, proposal_id: str) -> str:
+    """Clone, act on exactly one approved finding, record opened or failed."""
+    proposal = FixProposal.objects.select_related(
+        "fleet_repo_scan__fleet_repo",
+    ).get(pk=proposal_id)
+    if proposal.state != FixProposal.State.APPROVED:
+        return str(proposal.id)
+    scan = proposal.fleet_repo_scan
+    repo = scan.fleet_repo
+    clone_dir = mkdtemp_clone_dir(prefix="warden-fleet-open-")
+    try:
+        shallow_clone(
+            clone_url=repo.clone_url,
+            branch=repo.default_branch,
+            dest=clone_dir,
+        )
+        actuation = _run_fix_actuator(scan, proposal.finding_id, clone_dir=clone_dir)
+        matching = [
+            outcome
+            for outcome in actuation.outcomes
+            if outcome.finding_id == proposal.finding_id
+        ]
+        if not matching:
+            proposal.state = FixProposal.State.FAILED
+            proposal.error = "actuator produced no outcome for finding"
+            proposal.save(update_fields=["state", "error", "updated_at"])
+            return str(proposal.id)
+        (outcome,) = matching
+        if outcome.status == "opened" and outcome.pr_url:
+            proposal.state = FixProposal.State.OPENED
+            proposal.pr_url = outcome.pr_url
+            proposal.error = ""
+        else:
+            proposal.state = FixProposal.State.FAILED
+            proposal.error = outcome.detail or outcome.status
+            proposal.pr_url = ""
+        proposal.save(update_fields=["state", "pr_url", "error", "updated_at"])
+        return str(proposal.id)
+    except Exception as exc:
+        logger.exception("open fix proposal %s failed", proposal_id)
+        proposal.state = FixProposal.State.FAILED
+        proposal.error = f"{exc.__class__.__name__}: {exc}"
+        proposal.save(update_fields=["state", "error", "updated_at"])
+        return str(proposal.id)
     finally:
         remove_clone_dir(clone_dir)
 

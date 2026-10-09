@@ -591,6 +591,7 @@ def run_actuator(
     fix_draft_pr_estate_enabled: bool | None = None,
     manifest_locations: Mapping[str, Sequence[str]] | None = None,
     estate_repos: frozenset[str] | None = None,
+    authorized_fleet_repo: str | None = None,
 ) -> Actuation:
     """Build the closed-mapping plan and act on it. Dry-run records
     ``planned`` for every proposal and instantiates/calls NO client (no
@@ -713,7 +714,15 @@ def run_actuator(
                 continue
             manifest_fix = plan
         forge_repo: str | None = getattr(client, "repo_slug", None)
-        if draft_estate_flag_on and forge_repo is not None and forge_repo not in allowed_estate_repos:
+        fleet_authorized = (
+            authorized_fleet_repo is not None and forge_repo is not None and forge_repo == authorized_fleet_repo
+        )
+        if (
+            draft_estate_flag_on
+            and forge_repo is not None
+            and forge_repo not in allowed_estate_repos
+            and not fleet_authorized
+        ):
             outcomes.append(
                 PROutcome(
                     finding_id=proposal.finding_id,
@@ -745,7 +754,11 @@ def run_actuator(
             open_proposal = proposal
             open_manifest_fix: ManifestFixPlan | None = None
             open_draft = False
-            if draft_estate_flag_on and forge_repo is not None and forge_repo in allowed_estate_repos:
+            if (
+                draft_estate_flag_on
+                and forge_repo is not None
+                and (forge_repo in allowed_estate_repos or fleet_authorized)
+            ):
                 open_draft = True
                 open_manifest_fix = manifest_fix
                 open_proposal = _enrich_proposal_for_estate_pr(

@@ -1,0 +1,35 @@
+<section id="fleet-proposals">
+  <h2>Fleet fix proposals</h2>
+  {% if not approve_enabled %}
+  <p>Approve is disabled (flag off).</p>
+  {% endif %}
+  {% if proposals %}
+  <ul>
+    {% for p in proposals %}
+    <li>
+      <strong>{{ p.repo_full_name }}</strong> — {{ p.finding_id }} ({{ p.action }})
+      <form
+        hx-post="{% url 'warden-fleet-proposal-approve' p.pk %}"
+        hx-target="#fleet-proposals"
+        hx-swap="outerHTML"
+        style="display:inline"
+      >
+        {% csrf_token %}
+        <button type="submit" {% if not approve_enabled %}disabled{% endif %}>Approve</button>
+      </form>
+      <form
+        hx-post="{% url 'warden-fleet-proposal-dismiss' p.pk %}"
+        hx-target="#fleet-proposals"
+        hx-swap="outerHTML"
+        style="display:inline"
+      >
+        {% csrf_token %}
+        <button type="submit">Dismiss</button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p>No queued proposals.</p>
+  {% endif %}
+</section>
