@@ -2,7 +2,7 @@
 title: "21.4: opengrep is repackaged from its release binaries as a local-only recipe"
 type: 'feature'
 created: '2026-09-28'
-status: 'in-progress'
+status: 'done'
 baseline_revision: f69e5cb0f6d915ee6197544e742cf56623bc6b6e
 flag-exempt: recipe-build
 review_loop_iteration: 0
@@ -173,5 +173,42 @@ Flag: `flag-exempt: recipe-build`.
 
 ## Review Triage Log
 
-- No independent review has run yet (implementation and review stay separate); the operator reviews the branch before
-  landing it as `Merge pyforge-mason/21-4-opengrep-is-repackaged-from-its-release-binaries-as-a-local-only-recipe into main`.
+### 2026-10-08 — Review pass
+- verdicts: 9 findings — high 0, medium 0, low 1, false 6, maybe-false 2
+- findings:
+  - `[false]` `[reject]` COPYRIGHT names Semgrep upstream — tag-faithful LGPL attribution, not a packaging defect.
+  - `[low]` `[patch]` about.description claimed “signed” binaries without cosign verification — softened to note sidecars only.
+  - `[false]` `[reject]` Tests use SRC_DIR not RECIPE_DIR — `${SRC_DIR}/info/recipe/test-fixtures/` is correct in rattler-build test env (linux-64 build passed).
+  - `[maybe-false]` `[defer]` Windows certutil/findstr hash line — unverified on win-64 host; certutil emits contiguous hex on the hash line.
+  - `[false]` `[reject]` Duplicate sha256 in source and tests — intentional per-platform identity guard (same pattern as silo/cyclonedx).
+  - `[false]` `[reject]` Windows installs only LIBRARY_BIN — standard conda layout for `.exe` CLIs.
+  - `[maybe-false]` `[defer]` Non-linux subdir tests not executed locally — documented G85 in CFE comments; hashes recorded in recipe.
+  - `[false]` `[reject]` SEMGREP_SEND_METRICS env name — observed to disable metrics in local probe; scan test passed offline.
+  - `[false]` `[reject]` baseline_revision pinning — workflow baseline for this run; not a product defect.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Added local-only `recipes/opengrep` repackaging opengrep **v1.30.2** (G109 refresh from mint v1.30.0) from GitHub release binaries with `binary_relocation: false`, offline scan + byte-identity tests, LGPL license files, and CFE blocked-prerequisites metadata.
+
+Files changed:
+- `recipes/opengrep/recipe.yaml` — per-platform binary sources, build, tests, CFE block
+- `recipes/opengrep/LICENSE`, `recipes/opengrep/COPYRIGHT` — vendored from v1.30.2 tag
+- `recipes/opengrep/test-fixtures/*` — offline scan rule and sample
+- Story spec — status, review triage, auto run result
+- CFE skill — Rule-2 retro v8.93.4 (separate `retro(cfe):` commit)
+
+Review: 1 patch applied (description wording); 2 deferred (win hash unverified on host, cross-subdir build coverage); remainder rejected/false.
+
+Verification:
+- `validate recipes/opengrep` — exit 0
+- `lint-optimize recipes/opengrep` — exit 0 (after LICENSE pattern-2 fix)
+- `recipe-build recipes/opengrep` — exit 0 on linux-64 (version 1.30.2, planted match, matching sha256)
+- `conda-smithy recipe-lint --conda-forge recipes/opengrep` — exit 0
+- `pyforge-mason-test` — exit 0
+- `python scripts/spec_surface_reconcile.py` — exit 0 after memlog reconciliation
+
+Residual risks: cosign not verified on this host; win/osx/aarch64 legs not built locally (hash-only); AC text still cites v1.30.0 while recipe ships v1.30.2 per G109.
+
+Operator landing: `Merge pyforge-mason/21-4-opengrep-is-repackaged-from-its-release-binaries-as-a-local-only-recipe into main`.
