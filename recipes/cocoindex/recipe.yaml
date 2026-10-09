@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.0.20"
+  version: "1.0.25"
 
 package:
   name: cocoindex
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/cocoindex/cocoindex-${{ version }}.tar.gz
-  sha256: 822c6d728107af4893a495bee7c5d3fbe0a2a979acaffd64c3493c0dde52a560
+  sha256: faac790054b9404a12e08fe08b2d19478f2746a515b9cc8b897e0e57f374157a
 
 build:
   number: 0
@@ -134,4 +134,8 @@ extra:
   cfe-last-checked: 2026-06-19T13:36:19Z
   cfe-generated-by-version: 8.30.1
   cfe-generated-at-datetime: 2026-06-19T13:36:19Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T09:20:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
 ####
