@@ -55,17 +55,13 @@ def test_parse_roster_protected_prefixes():
         {"bad": "entry"},
         {"refname": 1, "rules": ["deletion"]},
     ]
-    assert protected_refs.parse_roster_protected_prefixes(entries) == frozenset(
-        {"refs/heads/attempt-preserve/"}
-    )
+    assert protected_refs.parse_roster_protected_prefixes(entries) == frozenset({"refs/heads/attempt-preserve/"})
 
 
 def test_validate_policy_protected_additions():
     assert protected_refs.validate_policy_protected_additions(None) == ()
     assert protected_refs.validate_policy_protected_additions(()) == ()
-    assert protected_refs.validate_policy_protected_additions(["refs/heads/extra/"]) == (
-        "refs/heads/extra/",
-    )
+    assert protected_refs.validate_policy_protected_additions(["refs/heads/extra/"]) == ("refs/heads/extra/",)
     # Floor entries are skipped (additions only).
     assert protected_refs.validate_policy_protected_additions(["refs/heads/main"]) == ()
     assert protected_refs.validate_policy_protected_additions("bad") is None
