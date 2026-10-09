@@ -73,3 +73,7 @@ about:
 extra:
   recipe-maintainers:
   - rxm7706
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: '2026-10-09T11:14:24Z'
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
