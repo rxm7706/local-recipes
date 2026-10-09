@@ -3,10 +3,10 @@ title: First portal slice — start/get one audit
 type: feature
 created: '2026-08-25'
 status: done
-updated: '2026-08-26'
+updated: '2026-10-08'
 baseline_revision: c3f75232a15bb3c28730c546e8f955cda59054df
 review_loop_iteration: 0
-followup_review_recommended: true
+followup_review_recommended: false
 context:
   - _bmad-output/projects/pyforge-warden/planning-artifacts/epics.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/change-history/sprint-change-proposal-2026-08-25-station-skill-portal.md
