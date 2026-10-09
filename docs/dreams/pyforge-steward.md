@@ -975,6 +975,38 @@ Drift — orphaned between stations.
   byte-identical. **Constraints:** a fix story, no CAP, no flag, test code only. The roster, the hook and
   `spec_surface_check.py` do not change, and no reason text moves. Owner `spec-pyforge-steward` CAP-165 with CAP-5
   (Story 85.6's check). → Epic 85 / Story 85.7, specced 2026-10-08.
+- **2026-10-08 (preflight scratch) — Found: every preflight lane's temp dir is inside the checkout.** Measured on
+  `21141248ca`; the preflight and the four tests below are unchanged at `09bdfcf17b`. Story 71.3 gave each lane its own
+  scratch, and put it in the repository: `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` sets
+  `RUN_SCRATCH_RELATIVE = Path(".steward") / "preflight"` (`:35`), `run_preflight` makes
+  `repo_root / RUN_SCRATCH_RELATIVE / run_id` (`:447`-`:448`), and `_run_lane_in_pool` (`:300`) gives each lane
+  `<run-id>/<lane>/` and `<run-id>/<lane>.log` (`:320`-`:321`). `_lane_scratch_env` (`:165`) exports that directory as
+  `TMPDIR` (`:171`) and `COVERAGE_FILE` (`:172`) and appends `--basetemp=<lane>/pytest-basetemp -o
+  cache_dir=<lane>/pytest-cache` to `PYTEST_ADDOPTS` (`:174`-`:175`). So every pytest `tmp_path` a lane creates sits
+  inside a git work tree. Four tests in `tests/scripts/` need a `tmp_path` that is not in one, because `git` run
+  there must fail: `test_cfe_rebuild_guard_check.py::test_main_exit_2_git_log_fails` (`:1087`),
+  `test_flag_inventory.py::test_a_git_checkout_whose_tracked_files_cannot_be_listed_exits_2` (`:876`),
+  `test_fleet_picture_baseline_drift_attention.py::test_primary_checkout_staleness_silent_on_missing_repo` (`:548`)
+  and `test_mason_cfe_surface_check.py::test_mason_commits_returns_none_when_git_log_cannot_run` (`:411`). Inside the
+  checkout, `git` finds the enclosing work tree and succeeds. `pixi run --frozen -e pyforge-ci
+  pyforge-doctor-scripts-test` passed (1246 passed, 20 skipped, 91.5 s); the same task with the lane's `TMPDIR`,
+  `PYTEST_ADDOPTS` and `COVERAGE_FILE` pointed under `.steward/preflight/repro/` failed those four (4 failed, 1242
+  passed, 20 skipped, 177.6 s). The fleet-picture test fails only when the enclosing branch is behind `origin/main`, and on the way it
+  runs a live `git fetch origin` in the pushing checkout (`scripts/fleet_picture.py:411`-`:444`). The `pre-push`
+  hook runs `pr-preflight` (`scripts/pre_push_preflight.sh:131`), so every hand push since 71.3 landed hits this;
+  `dispatch/*` branches skip the hook (`:57`-`:62`), and CI runs the task with the runner's own temp dir. Nothing
+  removes the scratch: no line in `preflight.py` deletes it, so every run, green or red, leaves
+  `.steward/preflight/<run-id>/` behind. `.gitignore` names `.steward/preflight-skips.log` and
+  `.steward/preflight-runs.jsonl` (`:952`-`:953`) but not `.steward/preflight/`; `*.log` (`:375`) and `*.coverage`
+  (`:434`) hide the logs and coverage files, while the `pytest-basetemp/` and `pytest-cache/` trees show up as
+  untracked, and a `git add -A` commits them. **What it looks like when fixed:** each run's lane scratch (temp dir,
+  pytest basetemp and cache, coverage file, lane logs) lives in one directory outside the checkout, still one per
+  lane. The journal stays at `.steward/preflight-runs.jsonl`. A green run removes its scratch; a red or interrupted
+  run keeps it and prints where. The four tests pass under `pr-preflight`, and `.gitignore` covers trees older runs
+  left. **Constraints:** a fix story, no CAP, no flag. Which lanes run and what a lane runs do not change; the four
+  tests are right and do not change. It lands after Stories 71.5-71.7, which edit the same runner and move no
+  scratch. Owner `spec-pyforge-steward` CAP-159 (FR-32; Story 71.3's per-lane scratch). → Epic 71 / Story 71.8,
+  specced 2026-10-08.
 
 ## 2026-09-17 — One-chain fold (steward, CAP-3)
 

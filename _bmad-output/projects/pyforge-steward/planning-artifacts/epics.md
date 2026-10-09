@@ -4780,6 +4780,33 @@ evaluate, never a silent 0), `pixi.toml` (a `preflight-budget` task in `[feature
 16-core reference laptop journals under 60 s and `preflight-budget` exits 0 (recorded in the story);
 `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
 
+### Story 71.8: A preflight lane's scratch lives outside the checkout
+
+As the operator whose every hand push runs `pr-preflight` through the `pre-push` hook,
+I want each lane's temp dir, pytest basetemp and cache, coverage file and log to live outside the checkout,
+So that tests that need a temp dir outside any git work tree pass locally as they do in CI, and a run leaves nothing for `git add -A` to commit.
+
+**Type:** fix • **Effort:** S • **Deps:** S-71.7 • **FR/AD:** spec-pyforge-steward CAP-159 (FR-32; Story 71.3's per-lane scratch) • Dream 2026-10-08 (preflight scratch)
+**Flag:** none (a fix, spec-feature-flag-governance Q1)
+**Surface:** `src/shared/packages/pyforge-steward/src/pyforge/steward/preflight.py` (`RUN_SCRATCH_RELATIVE` `:35`, `_lane_scratch_env` `:165`,
+`_run_lane_in_pool` `:300`, `run_preflight`'s scratch root `:447`), its tests under `src/shared/packages/pyforge-steward/tests/unit/`
+(`test_preflight_concurrency.py`'s `test_each_lane_gets_isolated_scratch_env` names the old place), `.gitignore`
+**Spec:** `planning-artifacts/specs/spec-71-8-a-preflight-lane-s-scratch-lives-outside-the-checkout.md`
+**Given** `09bdfcf17b`, where every lane's `TMPDIR`, `--basetemp`, `cache_dir`, `COVERAGE_FILE` and log sit under `.steward/preflight/<run-id>/`
+inside the checkout, nothing removes that tree, and `.gitignore` does not name it; with the lane's environment, `pyforge-doctor-scripts-test`
+fails four tests that need `git` in `tmp_path` to fail (measured on `21141248ca`: 4 failed, 1242 passed; 1246 passed with the default temp dir)
+**When** `pr-preflight` runs
+**Then** each run's lane scratch lives under one `tempfile.mkdtemp(prefix="pyforge-preflight-")` root outside the checkout, one directory per
+lane as before; a root inside `repo_root` (an invoking `TMPDIR` in the checkout) exits 2 before any lane runs; the journal stays at
+`.steward/preflight-runs.jsonl`; a green run removes its root, a red or interrupted run keeps it and prints it, each red lane naming its log
+there; `.gitignore` gains `.steward/preflight/` for trees older runs left
+**And** a unit test asserts every lane's `TMPDIR`, basetemp, `cache_dir`, `COVERAGE_FILE` and log resolve outside the repo, each distinct per
+lane; a lane whose pytest asserts `git -C <tmp_path> rev-parse` fails passes, and fails with the old root (mutation); no `.steward/preflight/`
+exists after a green run; the four `tests/scripts/` tests pass under `pixi run -e pyforge-guild pr-preflight` (manual); the 71.1-71.4 preflight
+tests pass, with only `test_each_lane_gets_isolated_scratch_env`'s location assertion moved; which lanes run, what each runs, the hook and the
+four tests do not change; `pixi run --frozen -e pyforge-steward pyforge-steward-test` green
+**Status:** backlog
+
 ## Epic 72: Mason's skill cell is two skills, and the Guild answers `pyforge mason` (spec-pyforge-steward CAP-160..161)
 
 Minted 2026-09-28 from the station Dream's entry of the same name — steward's two pieces of the operator's 2026-09-28
