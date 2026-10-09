@@ -190,8 +190,27 @@ after Waves B–F and later bumps leaves **no version-current meta-only sole rec
 genuine missing dirs** after mapping — remainder is mostly **re-behind** (33) since the stale
 atlas / upstream releases.
 
-**v1-refresh sample (first 10 by conda_name):** ag-ui-langgraph, ag-ui-protocol, copilotkit,
-customersatisfactionmetrics, ddgs, … (full list in JSON).
+**Recipe work (2026-10-09):** 21 commits `recipes: wave H batch 1` … `batch 21` on this branch.
+Post-work rebaseline: **1** v1-refresh remainder (`html-to-markdown`, GH-numbering false positive);
+**578** already v1-current. Build stamps: ~72 success, ~14 failed, ~6 legacy
+`build-clean-test-blocked` (honest G95). Skipped: `copilotkit` (gh_numbering_suspect),
+`vllm-nccl-cu12` (archived). CFE retro: `retro(cfe): v8.97.1`.
+
+## Auto Run Result
+
+Status: done
+
+Summary: Wave A re-baselined sole-maintainer Wave H after maintainer-profile atlas refresh;
+processed the v1-refresh queue in 21 recipe batch commits plus CFE PATCH retro v8.97.1.
+
+Verification: `pixi run --frozen -e pyforge-mason pyforge-mason-test` exit 0;
+`python scripts/spec_surface_reconcile.py` exit 0 (memlogs on spec-pyforge-mason and
+spec-packaging-factory for governed planning/CFE paths).
+
+Follow-up review recommended: false (bulk recipe refresh; operator reviews diffs before merge).
+
+Residual risks: stale-atlas false negatives resolved by Phase H refresh; six recipes remain
+build-clean-test-blocked; `html-to-markdown` needs manual GH-numbering verification before bump.
 
 ## Review Triage Log
 
