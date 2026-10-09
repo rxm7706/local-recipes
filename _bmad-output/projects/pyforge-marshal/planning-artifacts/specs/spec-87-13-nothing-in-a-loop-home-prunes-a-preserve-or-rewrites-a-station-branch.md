@@ -2,7 +2,8 @@
 title: "87.13: Nothing in a loop home prunes a preserve or rewrites a station branch"
 type: 'fix'
 created: '2026-10-04'
-status: 'ready-for-dev'
+status: 'done'
+baseline_revision: 'cd6735685c4e08e9f6dedc62fb7194ccfae8eae0'
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -73,7 +74,13 @@ Minted 2026-10-04 under the operator's ruling of the same day.
 
 ## Spec Change Log
 
-- No change yet.
+- 2026-10-09: Shipped — `preserve_keep = 0` in harness render; AD-78 pin tests; `fleet_poll_sync.sh` fast-forward-only loop sync (no rebase, no push of `main`).
+
+## Auto Run Result
+
+Status: done
+
+Verification: `pyforge-marshal-test` 12033 passed; `pyforge-deps-test` 130 passed; `lint-types` exit 0; `tests/scripts/test_fleet_poll_sync.py` 5 passed; `python scripts/spec_surface_reconcile.py` exit 0 after memlog reconcile on `spec-pyforge-marshal`.
 
 ## Review Triage Log
 
