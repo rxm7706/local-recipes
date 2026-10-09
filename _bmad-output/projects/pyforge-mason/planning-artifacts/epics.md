@@ -2286,7 +2286,7 @@ binary is byte-identical to the release asset
 `cfe-on-conda-forge-status: blocked-pending-prerequisites`, and the source-build blockers in `cfe-forge-blocker-list`, so
 the recipe stays local; the story's `retro(cfe):` commit lands a CFE `CHANGELOG.md` semver entry;
 `pixi run --frozen -e pyforge-mason pyforge-mason-test` green
-**Status:** backlog
+**Status:** done
 
 ### Story 21.5: pptxgenjs-plus-jsx builds green beside its pptxgenjs-plus sibling
 
