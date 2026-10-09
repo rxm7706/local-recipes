@@ -49,6 +49,8 @@ tests:
       imports:
         - semdep
         - semgrep
+      #commands:
+        #- pip check # semgrep 1.52.0 has requirement attrs>=21.3, but you have attrs 19.1.0.
       pip_check: false
 
 about:

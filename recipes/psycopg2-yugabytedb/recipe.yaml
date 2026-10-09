@@ -41,6 +41,8 @@ requirements:
 tests:
   - python:
       imports:
+        # https://github.com/yugabyte/yugabyte-db/issues/12283
+        # For now, psycopg2-yugabytedb has the same underlying library (psycopg2) as the upstream driver which when installed together override one another based on the sequence of installation.
         - psycopg2
       pip_check: true
 

@@ -5,8 +5,8 @@ generator: bmad_tea_playwright.py
 generator_version: 2.1.0
 status: generated
 station: mason
-source_fingerprint: 903ea49fbfe83996
-story_count: 94
+source_fingerprint: f644b272839d53e1
+story_count: 95
 test_file_count: 43
 coverage_target_unit: ">=80%"
 coverage_target_integration: ">=70%"
@@ -19,12 +19,12 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 ## Executive Summary
 
 - **Station:** `pyforge-mason`
-- **Stories parsed:** 94
+- **Stories parsed:** 95
 - **Epics parsed:** 27
 - **Test files inventoried:** 43 under `src/shared/packages/pyforge-mason/tests/`
 - **Frameworks:** pytest (unit/integration/meta) + Playwright where present
 - **Coverage targets:** unit ≥80%, integration ≥70% (gated by Story 19.3)
-- **Source fingerprint:** `903ea49fbfe83996`
+- **Source fingerprint:** `f644b272839d53e1`
 
 ## Risk Assessment
 
@@ -202,6 +202,7 @@ This document is **machine-generated** by `bmad_tea_playwright.py` (v2.1.0). Do 
 | 22.1 | The twelve recipes carrying conda-recipe-manager's sentinel key are repaired | none observed |
 | 22.2 | CFE's validation reds a recipe with a non-string key or a Python object repr | none observed |
 | 22.3 | ctng-compilers loses its sentinel key once rattler-build renders its output g... | none observed |
+| 22.4 | vc loses its sentinel key once rattler-build can emit its vc14 track feature | none observed |
 | 23.1 | CFE refuses a copyleft -only licence whose LICENSE grants any later version | none observed |
 | 23.2 | CFE's recipe generator asks instead of guessing | none observed |
 | 23.3 | A negative corpus proves each CFE check keeps rejecting its defect | none observed |

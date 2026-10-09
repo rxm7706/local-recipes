@@ -362,6 +362,13 @@ verify_commands = [
   "_bmad-output/projects/pyforge-mason/planning-artifacts/test-architecture.md",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/prds/prd-pyforge-mason-2026-07-25/prd.md",
   "_bmad-output/projects/pyforge-mason/planning-artifacts/architecture/architecture-pyforge-mason-2026-07-25/ARCHITECTURE-SPINE.md",
+  # 2026-10-09 review fixes and second ruling (22.1 lands for ten, 22.4 split out): pyautogui's feedstock
+  # yum_requirements.txt (G94), and the feedstock recipe files 22.4's vc port must carry.
+  "recipes/pyautogui/yum_requirements.txt",
+  "recipes/vc/vc_repack.py",
+  "recipes/vc/activate.bat",
+  "recipes/vc/LICENSE.TXT",
+  "recipes/vc/conda_build_config.yaml",
   # 22.1's retro (gotcha + corpus meta-test) and 22.2's check, each in its own retro(cfe): commit
   ".claude/skills/conda-forge-expert/**",
   # co-governor reconciles (spec-fleet-stewardship governs recipes/**, spec-packaging-factory the CFE surface)

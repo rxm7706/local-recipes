@@ -22,7 +22,19 @@ deferred:
       cycle detection (prefix-dev/rattler-build#2531 family) or feedstock-faithful variant matrix beyond
       generic linux64. Split out by operator ruling 2026-10-09: owned by mason Story 22.3
       (22-3-ctng-compilers-loses-its-sentinel-key-once-rattler-build-renders-its-output-graph, blocked);
-      this story restores the file to main's copy and allowlists it in the corpus check by name.
+      this story restores the file to main's copy and allowlists its leak (outputs[6].tests[0]) in the corpus check.
+  - deferred: vc's faithful v1 port needs a named track feature -> Story 22.4
+    location: recipes/vc/recipe.yaml
+    reason: >-
+      meta.yaml gives the vc, vs<year>_<platform> and vs_<platform> outputs track_features [vc14], one shared feature;
+      rattler-build 0.76.1 rejects build.track_features, and variant.down_prioritize_variant writes a per-package
+      <name>-p-0 instead. The independent review of the 22.1 landing also found the draft port hardcoded one of the
+      feedstock's five conda_build_config.yaml variant entries in context, left out vc_repack.py, activate.bat,
+      LICENSE.TXT and conda_build_config.yaml (G94), had inheriting outputs call python without declaring it, and
+      compared the string vsver with an integer (minijinja: "9" >= 17 is true). Split out by the second operator ruling
+      of 2026-10-09: owned by mason Story 22.4
+      (22-4-vc-loses-its-sentinel-key-once-rattler-build-can-emit-its-vc14-track-feature, blocked); this story restores
+      recipes/vc/ to main's copy and allowlists its leak (outputs[5].tests[0]) in the corpus check.
 declared_low_risk: false
 ---
 
@@ -30,11 +42,16 @@ declared_low_risk: false
 
 ## Intent
 
-**Scope (operator ruling 2026-10-09):** this story lands for eleven of the twelve recipes. `ctng-compilers` moved to
-Story 22.3: once its sentinel and output-level `run_exports` are repaired, rattler-build 0.76.1 reports `Cycle detected
-in recipe outputs`. `recipes/ctng-compilers/recipe.yaml` stays as `main` has it, and the corpus check allowlists that
-one file, naming Story 22.3. The twelve-recipe text below is the original contract; the table's `ctng-compilers` row
-belongs to 22.3.
+**Scope (two operator rulings, 2026-10-09):** this story lands for ten of the twelve recipes.
+- `ctng-compilers` moved to Story 22.3: once its sentinel and output-level `run_exports` are repaired, rattler-build
+  0.76.1 reports `Cycle detected in recipe outputs`.
+- `vc` moved to Story 22.4: its `meta.yaml` gives three outputs the shared track feature `vc14`, which rattler-build
+  0.76.1 cannot emit, and the independent review found the draft port unfaithful in four more ways (the `deferred:`
+  entry lists them).
+
+Both files stay as `main` has them, sentinel included. The corpus check allowlists each leak by file and parsed-tree
+location, naming its story. The twelve-recipe text below is the original contract; the table's `ctng-compilers` and
+`vc` rows belong to 22.3 and 22.4.
 
 **Problem:** 12 `recipes/*/recipe.yaml` files carry a YAML mapping key written as
 `<conda_recipe_manager.types.SentinelType object at 0x…>`. That is the repr of conda-recipe-manager's internal sentinel.
@@ -64,7 +81,7 @@ What the sentinel replaced, read against each `meta.yaml`, and the defects the r
 | shodan | top level, after `extra:` | `test.requires: [pip, pytest, python {{ python_min }}]` after a commented `pytest` line | remove the top-level key; `pip` and `python ${{ python_min }}.*` go in the script element's `requirements.run`; `pytest` served only the commented-out suite and goes, with that line kept in the `# CFE comments` block (G93) | bare `python ${{ python_min }}` in host → `.*` | build |
 | pyautogui | top level, after `extra:` | `test.requires: [pip]` after three commented `pytest` lines | remove the top-level key; nothing in the script test needs `pip`; the three `pytest` lines move to the `# CFE comments` block | none on linux-64 | build |
 | ctng-compilers (moved to Story 22.3) | `gxx_impl` output `tests[0]` | `{% if cross_target_cxx_stdlib == "libstdcxx" %}` around the tzdb checks, nesting `{% if target_platform == cross_target_platform %}` | append to the element's own `script:` as `- if: cross_target_cxx_stdlib == "libstdcxx"` / `then:` holding the two compile lines and a nested `- if: target_platform == cross_target_platform` / `then:` holding the rest, in `meta.yaml`'s order | an output-level `run_exports` (valid fields: package, inherit, source, requirements, build, about, tests) | render, validate, lint |
-| vc | the activation output's `tests[0]` | `{% if vsyear \| int >= 2022 %}` around three `# [win]` clang checks and `requires: clang {{ clang_test_version }}.*` | append the checks to the element's `script:` under `- if: win and vsyear \| int >= 2022`; the `clang` run requirement under the same condition | `run_exports: - strong:` read as a scalar list (the v1 shape is `run_exports: strong: [...]`) | render (win-64), validate, lint |
+| vc (moved to Story 22.4) | the activation output's `tests[0]` | `{% if vsyear \| int >= 2022 %}` around three `# [win]` clang checks and `requires: clang {{ clang_test_version }}.*` | append the checks to the element's `script:` under `- if: win and vsyear \| int >= 2022`; the `clang` run requirement under the same condition | `run_exports: - strong:` read as a scalar list (the v1 shape is `run_exports: strong: [...]`) | render (win-64), validate, lint |
 | boost | `libboost` output `tests[0]` | `{% for each_lib in boost_libs + boost_libs_static_only + boost_libs_py %}` with `{% if each_lib in … %}` / `{% else %}` blocks | one shell loop per platform in the element's `script:` (a single `if: unix` entry looping over the rendered lists, and an `if: win` `for %%L in (…) do (…)` entry) that reproduces `meta.yaml`'s present/absent checks exactly | `boost_libs` missing from `context`; `boost_libs_py` left as a v0 expression string; `${{ each_lib }}` used outside any loop in the headers, devel and python outputs; one output's `tests:` a mapping, not a list | render, validate, lint |
 
 Each repair follows CFE's own conventions:
@@ -87,9 +104,10 @@ Each repair follows CFE's own conventions:
 5. In the story's `retro(cfe):` commit:
    - add the gotcha (the next free G-number): crm's v0→v1 conversion leaks a `SentinelType` repr as a key for
      constructs it cannot translate, and exits 100, not an error;
-   - add a corpus check to `tests/meta/test_recipe_yaml_parse_audit.py` that reds any `recipes/*/recipe.yaml` whose
-     parsed tree has a non-string mapping key or a key or whole scalar matching an object repr, with one allowlist
-     entry, `recipes/ctng-compilers/recipe.yaml`, naming Story 22.3 (an entry whose file no longer offends fails);
+   - add a corpus check to `tests/meta/test_recipe_yaml_parse_audit.py` that reds any `recipe.yaml` under `recipes/`
+     (recursively) whose parsed tree has a non-string mapping key or a key or whole scalar matching an object repr,
+     with two allowlist entries, each a file and the location of its leak: `ctng-compilers` (Story 22.3) and `vc`
+     (Story 22.4). A second leak in an allowlisted file reds, and an entry whose leak is gone fails;
    - regenerate `config/failure-catalog.yaml`.
 
 Ledger key: `22-1-the-twelve-recipes-carrying-conda-recipe-manager-s-sentinel-key-are-repaired`.
@@ -106,13 +124,13 @@ Type / Effort / Deps: fix / L / —.
 
 ## Acceptance Criteria
 
-- Given `recipes/` When `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` runs Then it finds only `recipes/ctng-compilers/recipe.yaml`, which Story 22.3 owns
-- Given each of the 11 When `rattler-build build --render-only` runs on a platform it builds (linux-64; `--target-platform osx-64` for pyobjc-framework-systemconfiguration; `--target-platform win-64` for vc) Then it exits 0 with at least one output rendered, not skipped
-- Given each of the 11 When `validate_recipe` and `pixi exec --spec "conda-smithy>=2026.6.14" conda-smithy recipe-lint --conda-forge` (run on a copy without `meta.yaml`, so the lint reads `recipe.yaml`) run Then neither reports an error
+- Given `recipes/` When `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` runs Then it finds only `recipes/ctng-compilers/recipe.yaml` (Story 22.3) and `recipes/vc/recipe.yaml` (Story 22.4)
+- Given each of the 10 When `rattler-build build --render-only` runs on a platform it builds (linux-64; `--target-platform osx-64` for pyobjc-framework-systemconfiguration) Then it exits 0 with at least one output rendered, not skipped
+- Given each of the 10 When `validate_recipe` and `pixi exec --spec "conda-smithy>=2026.6.14" conda-smithy recipe-lint --conda-forge` (run on a copy without `meta.yaml`, so the lint reads `recipe.yaml`) run Then neither reports an error
 - Given shodan, django-pygwalker, amundsen-databuilder, lerc, StringZilla, psycopg2-yugabytedb and pyautogui When each builds on linux-64 with the recipe pointed at explicitly Then the build exits 0 and its CFE block records the real outcome (`success`, or `build-clean-test-blocked` naming the unsolvable dependency, or the missing system tool such as pyautogui's `xvfb-run`, which its feedstock takes from `yum_requirements.txt`; G95)
 - Given each repaired construct When it is compared with its `meta.yaml` Then it says the same thing: the same commands under the same conditions, the same test requirements, and the same comments kept
 - Given each recipe directory When it is listed Then `meta.yaml` is still there
-- Given the story's `retro(cfe):` commit When `pixi run -e local-recipes test` runs Then the new corpus check passes on the repaired tree (ctng-compilers allowlisted for Story 22.3) and fails when a sentinel key is planted in a copy
+- Given the story's `retro(cfe):` commit When `pixi run -e local-recipes test` runs Then the new corpus check passes on the repaired tree (the ctng-compilers and vc leaks allowlisted by location for Stories 22.3 and 22.4) and fails when a sentinel key is planted, at top level or one directory deeper, or when a second leak is planted in an allowlisted file
 - Given the story closes When the Rule-2 retro runs Then its `retro(cfe):` commit carries a CFE `CHANGELOG.md` semver entry, the new gotcha and its version carriers
 
 ## Tasks
@@ -184,19 +202,20 @@ Flag: `flag-exempt: recipe-build` (recipe repairs ship no runtime capability beh
   changes no Mason code, so the suite must stay green).
 
 **Manual checks:**
-- `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` — expected: `recipes/ctng-compilers/recipe.yaml` only (Story 22.3).
+- `grep -rl 'object at 0x' recipes/ --include=recipe.yaml` — expected: `recipes/ctng-compilers/recipe.yaml` (Story 22.3)
+  and `recipes/vc/recipe.yaml` (Story 22.4) only.
 - `pixi run -e local-recipes rattler-build build --render-only --recipe recipes/<name>/recipe.yaml --variant-config .ci_support/linux64.yaml --variant-config .pixi/envs/local-recipes/conda_build_config.yaml`
-  for each of the 11 (for pyobjc-framework-systemconfiguration use `osx64.yaml` with `--target-platform osx-64`, and for
-  vc `win64.yaml` with `--target-platform win-64`, so the render is not an all-variants-skipped pass) — expected:
-  exit 0 with at least one rendered output.
+  for each of the 10 (for pyobjc-framework-systemconfiguration use `osx64.yaml` with `--target-platform osx-64`, so the
+  render is not an all-variants-skipped pass) — expected: exit 0 with at least one rendered output.
 - `pixi run -e local-recipes validate recipes/<name>` and
   `pixi exec --spec "conda-smithy>=2026.6.14" conda-smithy recipe-lint --conda-forge <copy without meta.yaml>` for each
-  of the 11 — expected: no error.
+  of the 10 — expected: no error.
 - `pixi run -e local-recipes recipe-build recipes/<name>` for shodan, django-pygwalker, amundsen-databuilder, lerc,
   StringZilla, psycopg2-yugabytedb and pyautogui — expected: exit 0 on linux-64.
 - `pixi run -e local-recipes test` — expected: pass, including the new corpus check.
-- `git log origin/main..HEAD --format=%s -- .claude/skills/conda-forge-expert` — expected: exactly one `retro(cfe):`
-  subject, and that commit carries `CHANGELOG.md`.
+- `git log origin/main..HEAD --no-merges --format=%s -- .claude/skills/conda-forge-expert` — expected: every subject
+  starts `retro(cfe):`, each such commit carries `CHANGELOG.md`, and all of them carry one version, `8.98.0` (the
+  review fixes amend the unreleased entry).
 - `pixi run -e pyforge-guild spec-surface-check` — expected: exit 0 after the scoped stamps.
 
 ## Spec Change Log
@@ -213,7 +232,8 @@ Flag: `flag-exempt: recipe-build` (recipe repairs ship no runtime capability beh
     conda-build's top-level build is a `staging` output (`boost-build`); every output inherits it with
     `run_exports: false`. meta.yaml's `py` becomes `python_min` for the outputs that do not vary by python, and
     `python | version_to_buildstring` for libboost-python. `# [win]` on two `build:` keys is gone (v1 lint).
-  - `vc`: the top-level `--extract` build is a `staging` output (`vc-extract`), with its p7zip/python requirements
+  - `vc` (draft port, not landed; the second ruling moved vc to Story 22.4, and the port stays reachable at
+    `2ebf09ea75:recipes/vc/recipe.yaml`): the top-level `--extract` build is a `staging` output (`vc-extract`), with its p7zip/python requirements
     restored; the run had dropped them. Each `script_interpreter` is a `python ${{ RECIPE_DIR }}/vc_repack.py --<mode>`
     script. `track_features` (rejected by 0.76.1) is `variant.down_prioritize_variant: 1`. vc_runtime's flattened
     DLL loop is three `for %%D` blocks. A top-level `license_file: LICENSE.TXT` satisfies v1 lint R-013, and the
@@ -230,10 +250,23 @@ Flag: `flag-exempt: recipe-build` (recipe repairs ship no runtime capability beh
     `# CFE comments` block (crm had moved two of them to the file header).
   - The CI-parity lint is run on a copy without `meta.yaml`. With both files present it reports only the two-file lint.
 - 2026-10-09: The cheap builds' outcomes, per G95, are in the `## Run results` section below.
+- 2026-10-09: **Second operator ruling — land 22.1 for ten recipes; split `vc` into Story 22.4.** The independent review
+  of the landing found the vc port unfaithful (the `deferred:` entry lists how). `recipes/vc/` is restored to `main`'s
+  copy (`git diff origin/main -- recipes/vc` is empty). The corpus check allowlists its leak at `outputs[5].tests[0]`,
+  naming Story 22.4. The ACs, the `deferred:` entries and the Verification section now read ten, and both allowlist
+  entries are keyed by file and location.
+- 2026-10-09: **Review fixes** (the Review Triage Log has each finding): `pyautogui` gains the feedstock's
+  `yum_requirements.txt` (G94), its python test element sits under `if: not linux`, and it was rebuilt; the comments the
+  repair had dropped are back in `psycopg2-yugabytedb`, `semgrep`, `django-pygwalker`, `amundsen-databuilder` and
+  `boost`; `shodan`'s python test runs on `python_min` and the newest python. The corpus check scans `recipes/`
+  recursively. The CFE retro stays `8.98.0` (unreleased) and lands a second `retro(cfe):` commit, so the Verification
+  line on the CFE commits now reads "every subject starts `retro(cfe):`" instead of "exactly one".
 
 ## Run results
 
-Measured 2026-10-09 on the merged tree (origin/main d377581be4 + this branch), rattler-build 0.76.1:
+Measured 2026-10-09 on the merged tree (origin/main d377581be4 + this branch), rattler-build 0.76.1. After the review
+fixes, pyautogui, psycopg2-yugabytedb, semgrep, django-pygwalker, amundsen-databuilder, shodan and boost were re-run
+through render, validate and the CI-parity lint, and pyautogui and shodan were rebuilt:
 
 | Recipe | grep | render-only (platform: outputs) | validate_recipe | CI-parity lint (no meta.yaml) | Local build (linux-64) |
 |---|---|---|---|---|---|
@@ -243,19 +276,54 @@ Measured 2026-10-09 on the merged tree (origin/main d377581be4 + this branch), r
 | django-pygwalker | clean | linux-64: 1 | pass | suggestions only | success |
 | amundsen-databuilder | clean | linux-64: 1 | pass | suggestions only | build-clean-test-blocked: `pandas >=0.21.0,<1.5.0` has no python >=3.11 build |
 | psycopg2-yugabytedb | clean | linux-64: 2 (+2 skipped, >=3.13) | pass | in fine form | success (py3.11, py3.12) |
-| pyautogui | clean | linux-64: 4 | pass | in fine form | failed: build script's `xvfb-run` absent on the host (the feedstock takes it from yum_requirements.txt) |
-| shodan | clean | linux-64: 1 | pass | suggestions only | success |
+| pyautogui | clean | linux-64: 4 | pass | in fine form | success (py3.11-3.14) on a scratch copy with a pass-through `xvfb-run` shim on PATH: the host has no Xvfb, and `setup.py` never imports pyautogui (the feedstock gets xvfb-run from yum_requirements.txt, now copied here). The first run, without the shim, failed with `xvfb-run: command not found` |
+| shodan | clean | linux-64: 1 | pass | in fine form | success (imports and pip check on `python_min` and the newest python, then `shodan --help`) |
 | pyobjc-framework-systemconfiguration | clean | osx-64: 4 | pass | in fine form | not built (osx-only) |
 | boost | clean | linux-64: 11 | pass (G29 "no tests" warning) | in fine form | not built (heavyweight) |
-| vc | clean | win-64: 6 | pass (G29 "no tests" warning) | in fine form | not built (Windows-only) |
+| vc | sentinel (main's copy) | — | — | — | Story 22.4 |
 | ctng-compilers | sentinel (main's copy) | — | — | — | Story 22.3 |
 
-`lint-optimize` reports STD-002 (both files present, expected for a v0 mirror) on all eleven; TEST-001 on boost and vc
-is G29's multi-output false positive; the SEL-002 / TEST-002 / DEP-001 / PIN-001 suggestions on semgrep, shodan,
+`lint-optimize` reports STD-002 (both files present, expected for a v0 mirror) on all ten; TEST-001 on boost is G29's
+multi-output false positive; the SEL-002 / TEST-002 / DEP-001 / PIN-001 suggestions on semgrep, shodan,
 django-pygwalker and amundsen-databuilder mirror their feedstocks' `meta.yaml` and are left as is. `meta.yaml` is
 present in all twelve directories. Each built recipe's CFE block records its outcome (G95).
 
 ## Review Triage Log
+
+- 2026-10-09 independent review of the landing (`2ebf09ea75`, `56b56f62cd`, `348a7c9af1`): **failed**. Evidence in the
+  session scratchpad `review-221/`. Dispositions:
+  1. **pyautogui, AC 4 unmet** (the CFE block said `failed` while its comment called the failure "not a recipe defect";
+     `yum_requirements.txt` missing; the python test rendered `imports: []` on linux). **Fixed:** the feedstock's
+     `yum_requirements.txt` copied verbatim; the whole python test element now sits under `if: not linux`, as
+     `meta.yaml`'s `# [not linux]` import says; rebuilt on a scratch copy with a pass-through `xvfb-run` shim on PATH,
+     exit 0 for py3.11-3.14 with tests passing. The CFE block records `success` and the shim, and the contradiction is
+     gone. AC 4 is met.
+  2. **Comments dropped (AC 5; CFE's verbatim rule).** **Fixed:** psycopg2-yugabytedb's two upstream comments (yugabyte
+     #12283) above the import; semgrep's commented `pip check` and its reason; django-pygwalker's commented `pip check`
+     and its error list; boost's test, `run_constraints` and `run_exports` comments where they map, as shell comments
+     inside the unix loops that replaced meta.yaml's jinja loops. The same class was found in amundsen-databuilder (its
+     "Pip check disabled" note and commented `pip check` / `requires`) and fixed there too. The commented `pytest` lines
+     of shodan and pyautogui stay in their CFE comments blocks, as this spec's table says.
+  3. **shodan's python test ran on the newest python only** (meta.yaml pins `python {{ python_min }}` in its test).
+     **Fixed:** `python_version: [${{ python_min }}.*, "*"]`; the rebuild ran imports and `pip check` on both.
+  4. **Corpus check non-recursive; allowlist too wide.** `_recipe_files()` globbed `*/recipe.yaml`, missing the five
+     nested recipes under `recipes/pixi/*`, `recipes/teradata/*` and `recipes/tolaria-app/vendored`; the allowlist
+     exempted the whole ctng-compilers file. **Fixed:** every check scans recursively; the allowlist is keyed by file and
+     location (`outputs[6].tests[0]` for ctng-compilers; `outputs[5].tests[0]` for vc after the second ruling). Live
+     proofs: a sentinel planted at `recipes/zz-plant-221-group/nested/recipe.yaml` reds the check, and so does a second
+     leak planted in ctng-compilers (both reverted).
+  5. **CFE guidance wrong in three places.** **Fixed:** G121 says an inheriting output does not get the staging build
+     environment; G121 no longer says `track_features` maps to `down_prioritize_variant` (it writes `<name>-p-0`; a
+     0.76.1 v1-migration gap); the CHANGELOG no longer lists G1 as held (0.76.1 joins script entries into one
+     `conda_build.sh`, so env vars carry), and G1 gains a dated note. G121 also gains the minijinja string-vs-int trap
+     the review's `mj/` probe showed. The version stays `8.98.0`: the retro is unreleased.
+  6. **Failure catalog dropped `validate_recipe` from G4, G7, G20, G24, G26, G29, G93 and G94.** G121's symptom made it a
+     ninth row, over the generator's cross-row cap of eight. **Fixed:** G121's symptom names the check in words; the
+     regenerated catalog changes only G121's row and the source hash.
+  7. **vc port unfaithful** (`track_features` approximated by `down_prioritize_variant`; one of five variant entries
+     hardcoded in `context`; `vc_repack.py`, `activate.bat`, `LICENSE.TXT` and `conda_build_config.yaml` missing;
+     inheriting outputs calling `python` without declaring it; a string-vs-int `vsver` comparison). **Deferred** by the
+     second operator ruling: Story 22.4 owns it, blocked on a rattler-build that emits a named track feature.
 
 - 2026-10-09 landing preparation (operator ruling: land for eleven, split ctng-compilers into Story 22.3): boost's
   helper-script tests were replaced with inline per-platform loops (they had dropped the Windows and macOS checks and

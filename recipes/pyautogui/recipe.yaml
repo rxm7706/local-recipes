@@ -52,11 +52,12 @@ requirements:
       then: python-xlib
 
 tests:
-  - python:
-      imports:
-        - if: not linux
-          then: pyautogui
-      pip_check: false
+  - if: not linux
+    then:
+      python:
+        imports:
+          - pyautogui
+        pip_check: false
   - files:
       source:
         - tests
@@ -95,11 +96,11 @@ extra:
   cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyautogui-feedstock
   cfe-forge-recipe-updates-needed: [meta-yaml-to-recipe-yaml]
   cfe-forge-blocker-list: []
-  cfe-last-checked: 2026-10-09T09:52:00Z
+  cfe-last-checked: 2026-10-09T10:51:00Z
   cfe-generated-by-version: 8.98.0
-  cfe-generated-at-datetime: 2026-10-09T09:52:00Z
-  cfe-local-build-status: failed
-  cfe-local-build-datetime: 2026-10-09T09:36:58Z
+  cfe-generated-at-datetime: 2026-10-09T10:51:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-10-09T10:51:00Z
   cfe-local-build-platform: linux-64
   cfe-local-build-tool: rattler-build
 ####
@@ -110,10 +111,14 @@ extra:
 #    # needs pip. The feedstock is still v0; meta.yaml stays beside this file.
 # build:
 #    # Per-platform, not noarch: platform-conditional host/run deps; no compiler.
-#    # LOCAL BUILD 2026-10-09 (linux-64): the build script itself failed, status 127,
-#    # `xvfb-run: command not found`. The linux script runs `DISPLAY=localhost:1.0 xvfb-run pip install`,
-#    # and the feedstock gets xvfb-run from its yum_requirements.txt (the CI image); this host has none.
-#    # A host-tool gap, not a recipe defect (G95); not re-run.
+#    # The linux script runs `DISPLAY=localhost:1.0 xvfb-run pip install`. The feedstock gets xvfb-run from
+#    # yum_requirements.txt (xorg-x11-server-Xvfb on the CI image); that file is copied here verbatim (G94).
+#    # LOCAL BUILD 2026-10-09 (linux-64, rattler-build 0.76.1, py3.11-3.14): the first run failed, status
+#    # 127, `xvfb-run: command not found`, because this host has no Xvfb. The re-run, on a scratch copy with
+#    # a pass-through xvfb-run shim on PATH, exited 0 for all four variants and the tests passed. The shim
+#    # gives no display, which the install does not need: setup.py reads the version by regex and never
+#    # imports pyautogui. The linux test's backgrounded `xvfb-run python -c "import mouseinfo" &` raised
+#    # DisplayConnectionError under the shim and cannot fail the test either way.
 # tests:
 #    # Upstream's meta.yaml carries this comment and these commented-out lines; crm moved them, and
 #    # Story 22.1 parks them here:
@@ -123,4 +128,6 @@ extra:
 #    #     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not test_pause" tests  # [osx]
 #    # requires:
 #    #     - pytest
+#    # meta.yaml imports pyautogui only `# [not linux]`, so the whole python test element sits under
+#    # `if: not linux`: on linux there is nothing to import, and an empty imports list is not a test.
 ####

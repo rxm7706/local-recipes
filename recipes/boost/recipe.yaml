@@ -97,13 +97,16 @@ outputs:
           then: cmake
       host:
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost-cpp <0.0a0
     tests:
       - script:
+          # presence of regular headers
           - if: unix
             then: test -d $PREFIX/include/boost
           - if: win
             then: if not exist %LIBRARY_INC%\boost exit 1
+          # presence of python headers (not dependent on python version)
           - if: unix
             then: test -f $PREFIX/include/boost/python.hpp
           - if: unix
@@ -112,10 +115,12 @@ outputs:
             then: if not exist %LIBRARY_INC%\boost\python.hpp exit 1
           - if: win
             then: if not exist %LIBRARY_INC%\boost\python\tuple.hpp exit 1
+          # absence of general CMake metadata
           - if: unix
             then: test ! -d $PREFIX/lib/cmake/Boost-${{ version }}
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
+          # absence of all libraries (shared & static) + CMake metadata
           - if: unix
             then: |
               for each_lib in ${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only + ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))]) | join(" ") }}; do
@@ -155,34 +160,54 @@ outputs:
         - zlib
         - zstd
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost-cpp <0.0a0
+        # see https://www.boost.org/users/history/version_1_87_x.html
         - if: win
           then: __win >=10
     tests:
       - script:
+          # absence of headers
           - if: unix
             then: test ! -d $PREFIX/include/boost
           - if: win
             then: if exist %LIBRARY_INC%\boost exit 1
+          # absence of general CMake metadata
           - if: unix
             then: test ! -d $PREFIX/lib/cmake/Boost-${{ version }}
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
+          # library artefacts
           - if: unix
             then: |
               for each_lib in ${{ (boost_libs + ([] if ppc64le else boost_libs_long_double)) | join(" ") }}; do
+                # shared libraries
+                # default case: present
                 test -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                # static libraries
+                # absent for default libs & the python ones
                 test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                # absence of CMake metadata
                 test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
               done
               for each_lib in ${{ boost_libs_static_only | join(" ") }}; do
+                # shared libraries
+                # absent for libs that are static-only & the python ones
                 test ! -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                # static libraries
+                # present for those that are marked static-only above
                 test -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                # absence of CMake metadata
                 test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
               done
               for each_lib in ${{ ["python" ~ (python_min | replace(".", "")), "numpy" ~ (python_min | replace(".", ""))] | join(" ") }}; do
+                # shared libraries
+                # absent for libs that are static-only & the python ones
                 test ! -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                # static libraries
+                # absent for default libs & the python ones
                 test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
+                # absence of CMake metadata
                 test ! -d $PREFIX/lib/cmake/boost_${each_lib}-${{ version }} || exit 1
               done
           - if: win
@@ -222,8 +247,10 @@ outputs:
         - ${{ pin_subpackage("libboost", exact=True) }}
         - ${{ pin_subpackage("libboost-headers", exact=True) }}
       run_exports:
+        # run-export the output without the headers
         - ${{ pin_subpackage("libboost", upper_bound="x.x") }}
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost-cpp <0.0a0
     tests:
       - files:
@@ -236,10 +263,12 @@ outputs:
             - if: build_platform == target_platform
               then: ${{ compiler('cxx') }}
         script:
+          # presence of general CMake metadata
           - if: unix
             then: test -d $PREFIX/lib/cmake/Boost-${{ version }}
           - if: win
             then: if not exist %LIBRARY_LIB%\cmake\Boost-${{ version }} exit 1
+          # presence of CMake metadata for regular libs
           - if: unix
             then: |
               for each_lib in ${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only) | join(" ") }}; do
@@ -250,6 +279,7 @@ outputs:
               for %%L in (${{ (boost_libs + ([] if ppc64le else boost_libs_long_double) + boost_libs_static_only) | join(" ") }}) do (
                 if not exist %LIBRARY_LIB%\cmake\boost_%%L-${{ version }} exit 1
               )
+          # absence of CMake metadata that belongs to libboost-python(-devel)
           - if: unix
             then: test ! -d $PREFIX/lib/cmake/boost_python-${{ version }}
           - if: unix
@@ -258,6 +288,7 @@ outputs:
             then: if exist %LIBRARY_LIB%\cmake\boost_python-${{ version }} exit 1
           - if: win
             then: if exist %LIBRARY_LIB%\cmake\boost_numpy-${{ version }} exit 1
+          # test compilation
           - if: unix
             then: ./test_lib.sh
           - if: win
@@ -296,18 +327,24 @@ outputs:
         - ${{ pin_subpackage("libboost", exact=True) }}
         - python
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost <0.0a0
+        # avoid co-installation with Anaconda's naming of this output
         - py-boost <0.0a0
     tests:
       - script:
+          # absence of headers
           - if: unix
             then: test ! -d $PREFIX/include/boost
           - if: win
             then: if exist %LIBRARY_INC%\boost exit 1
+          # Verify libraries.
           - if: unix
             then: |
               for each_lib in ${{ ["python" ~ (python | version_to_buildstring), "numpy" ~ (python | version_to_buildstring)] | join(" ") }}; do
+                # presence of shared libs
                 test -f $PREFIX/lib/libboost_${each_lib}.${{ "dylib" if osx else "so" }} || exit 1
+                # absence of static libs
                 test ! -f $PREFIX/lib/libboost_${each_lib}.a || exit 1
               done
           - if: win
@@ -317,6 +354,7 @@ outputs:
                 if not exist %LIBRARY_LIB%\boost_%%L.lib exit 1
                 if exist %LIBRARY_LIB%\libboost_%%L.lib exit 1
               )
+          # absence of CMake metadata
           - if: unix
             then: test ! -d $PREFIX/lib/cmake/boost_python-${{ version }}
           - if: unix
@@ -349,12 +387,16 @@ outputs:
         - ${{ pin_subpackage("libboost-python", exact=True) }}
         - ${{ pin_subpackage("libboost-devel", exact=True) }}
       run_exports:
+        # run-export the output without the headers
         - ${{ pin_subpackage("libboost-python", upper_bound="x.x") }}
       run_constraints:
+        # avoid co-installation with old naming of package
         - boost <0.0a0
+        # avoid co-installation with Anaconda's naming of this output
         - py-boost <0.0a0
     tests:
       - script:
+          # presence of CMake metadata
           - if: unix
             then: test -d $PREFIX/lib/cmake/boost_python-${{ version }}
           - if: unix
@@ -410,4 +452,6 @@ extra:
 #    # the same checks as meta.yaml: shared libs present for boost_libs, absent for static-only and python
 #    # libs; static libs present only for static-only; no per-lib CMake metadata outside libboost-devel.
 #    # .so on linux, .dylib on osx. libboost-devel keeps meta.yaml's test files and ./test_lib.sh / .bat.
+#    # meta.yaml's own comments (tests, run_constraints, run_exports) sit where they map: above the matching
+#    # test element, or as shell comments inside the unix loop where the jinja loop body held them.
 ####

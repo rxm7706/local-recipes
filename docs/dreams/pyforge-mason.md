@@ -453,6 +453,20 @@ has no counterpart story for either; noted 2026-09-09, decision-batch D11).
   entry. **Constraints:** a `fix` story under CAP-32, no new CAP, no flag (`flag-exempt: recipe-build`). It stays
   `blocked` until the operator flips it. Reporting the cycle upstream is outward work and waits for the operator.
   Owner: mason. → `spec-pyforge-mason` CAP-32 / Epic 22 / Story 22.3 (FR-54), specced 2026-10-09.
+- **2026-10-09 (later) — Ruled: Story 22.1 lands for ten recipes, and vc waits for a named track feature.** Second
+  operator ruling, 2026-10-09, after the independent review of the 22.1 landing failed it. The run's v1 port of
+  `recipes/vc/recipe.yaml` renders, but it does not say what `meta.yaml` says. `meta.yaml` gives the `vc`,
+  `vs<year>_<platform>` and `vs_<platform>` packages `track_features: [vc14]`, a feature they share. rattler-build 0.76.1 rejects
+  `build.track_features`, and its `variant.down_prioritize_variant` writes a per-package `<name>-p-0` instead. The port
+  also hardcoded the VS 2026 win-64 values in `context` in place of the feedstock's five-entry variant matrix. It left
+  out `vc_repack.py`, `activate.bat`, `LICENSE.TXT` and `conda_build_config.yaml`. Its inheriting outputs called
+  `python` with no `python` build requirement. And it compared the string `vsver` with an integer; minijinja answers
+  `true` for `"9" >= 17` as well as for `"18" >= 17`. **What it looks like when real:** 22.1 lands its ten. `vc/recipe.yaml` stays as `main`
+  has it, sentinel included, and 22.1's corpus check allowlists that one leak by file and location. A new story ports vc
+  once a rattler-build release can emit a named track feature, and it removes the allowlist entry. **Constraints:** a
+  `fix` story under CAP-32, no new CAP, no flag (`flag-exempt: recipe-build`). It stays `blocked` until the operator
+  flips it. Asking rattler-build for the feature is outward work and waits for the operator. Owner: mason.
+  → `spec-pyforge-mason` CAP-32 / Epic 22 / Story 22.4 (FR-54), specced 2026-10-09.
 
 ## One-chain fold — 2026-09-17
 
