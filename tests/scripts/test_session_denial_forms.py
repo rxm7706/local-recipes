@@ -7,6 +7,8 @@ like ``tests/scripts/test_pre_shell_hook.py``.
 from __future__ import annotations
 
 import argparse
+import ast
+import hashlib
 import importlib
 import json
 import re
@@ -21,6 +23,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ROSTER = REPO_ROOT / "docs" / "governance" / "guild-roster.json"
+SPEC_SURFACE_BASELINE = REPO_ROOT / "scripts" / ".spec-surface-baseline.json"
 PIXII = REPO_ROOT / "pixi.toml"
 PACKAGES = REPO_ROOT / "src" / "shared" / "packages"
 
@@ -43,13 +46,17 @@ def _substitute_placeholders(span: str) -> str:
 def _pixi_task_names() -> frozenset[str]:
     text = PIXII.read_text(encoding="utf-8")
     return frozenset(
-        re.findall(r"^\[(?:feature\.[^.]+\.)?tasks\.([A-Za-z0-9._-]+)\]", text, re.M)
+        re.findall(
+            r"^\[(?:feature\.[^.]+\.)?tasks\.([A-Za-z0-9._-]+)\]", text, re.MULTILINE
+        )
     )
 
 
 def _pixi_environment_names() -> frozenset[str]:
     text = PIXII.read_text(encoding="utf-8")
-    return frozenset(re.findall(r"^([a-zA-Z][a-zA-Z0-9_-]*) = \{ features", text, re.M))
+    return frozenset(
+        re.findall(r"^([a-zA-Z][a-zA-Z0-9_-]*) = \{ features", text, re.MULTILINE)
+    )
 
 
 def _iter_reason_strings(reason: str | dict[str, str]) -> Iterator[str]:
@@ -106,20 +113,144 @@ def _repo_script_path(parts: list[str]) -> Path | None:
     return None
 
 
-def _script_accepts_argv(script: Path, argv: list[str]) -> str | None:
-    if not script.is_file():
-        return f"missing script path {script.relative_to(REPO_ROOT).as_posix()}"
-    trial = subprocess.run(
-        [sys.executable, str(script), *argv],
-        cwd=str(REPO_ROOT),
-        capture_output=True,
-        text=True,
+# Story 85.7: the probe runs a script only until its outermost argparse parse of the
+# command line returns, then ends the process. Running a sanctioned form for real
+# (`spec_surface_check.py --write-baseline --spec ...`) rewrote the tracked baseline
+# wherever this suite ran. Exit 0: the parse completed. Exit 2: the parse rejected the
+# argv (an argparse error, a leftover argument, or any exception it raised). Exit 3: the
+# script ended, or parsed an explicit list instead of the command line, before that.
+_PARSE_ONLY_BOOTSTRAP = """\
+import argparse
+import os
+import runpy
+import sys
+import traceback
+
+script, argv = sys.argv[1], sys.argv[2:]
+depth = 0
+
+
+def _finish(code):
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code)
+
+
+def _exit_code(exc):
+    if exc.code is None:
+        return 0
+    if isinstance(exc.code, int):
+        return exc.code
+    sys.stderr.write(f"{exc.code}\\n")
+    return 1
+
+
+def _stop_after(original, known):
+    def parse(self, args=None, namespace=None):
+        global depth
+        outermost = depth == 0
+        if outermost and args is not None and list(args) != sys.argv[1:]:
+            sys.stderr.write("parsed an explicit argument list, not the command line\\n")
+            _finish(3)
+        depth += 1
+        try:
+            result = original(self, args, namespace)
+        except SystemExit as exc:
+            if outermost:
+                _finish(_exit_code(exc))
+            raise
+        except BaseException:
+            if outermost:
+                traceback.print_exc()
+                _finish(2)
+            raise
+        finally:
+            depth -= 1
+        if outermost:
+            if known and result[1]:
+                sys.stderr.write(
+                    f"{self.prog}: error: unrecognized arguments: {' '.join(result[1])}\\n"
+                )
+                _finish(2)
+            _finish(0)
+        return result
+
+    return parse
+
+
+for name, known in (
+    ("parse_args", False),
+    ("parse_known_args", True),
+    ("parse_intermixed_args", False),
+    ("parse_known_intermixed_args", True),
+):
+    setattr(argparse.ArgumentParser, name, _stop_after(getattr(argparse.ArgumentParser, name), known))
+sys.argv = [script, *argv]
+if sys.path and sys.path[0] == "":
+    sys.path[0] = os.path.dirname(os.path.abspath(script))
+try:
+    runpy.run_path(script, run_name="__main__")
+    sys.stderr.write("returned without parsing\\n")
+except SystemExit as exc:
+    sys.stderr.write(f"exited with {exc.code!r} before parsing\\n")
+except BaseException:
+    traceback.print_exc()
+_finish(3)
+"""
+_NEVER_PARSED = 3
+
+
+def _display(script: Path) -> str:
+    try:
+        return script.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return script.as_posix()
+
+
+def _imports_argparse(script: Path) -> bool:
+    tree = ast.parse(script.read_bytes())
+    return any(
+        (
+            isinstance(node, ast.Import)
+            and any(alias.name == "argparse" for alias in node.names)
+        )
+        or (isinstance(node, ast.ImportFrom) and node.module == "argparse")
+        for node in ast.walk(tree)
     )
+
+
+def _script_accepts_argv(script: Path, argv: list[str]) -> str | None:
+    rel = _display(script)
+    if not script.is_file():
+        return f"missing script path {rel}"
+    try:
+        imports_argparse = _imports_argparse(script)
+    except (SyntaxError, ValueError) as exc:
+        return f"{rel} is unprobeable: it does not parse as Python ({exc})"
+    if not imports_argparse:
+        return f"{rel} is unprobeable: it does not import argparse, so it is never run"
+    try:
+        trial = subprocess.run(
+            [sys.executable, "-B", "-c", _PARSE_ONLY_BOOTSTRAP, str(script), *argv],
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        return f"{rel} is unprobeable: no parse within 120 s"
     combined = trial.stderr + trial.stdout
     if "unrecognized arguments" in combined or "invalid choice:" in combined:
-        rel = script.relative_to(REPO_ROOT).as_posix()
         return f"{rel} rejects {argv!r}"
-    return None
+    if trial.returncode == 0:
+        return None
+    last = (trial.stderr.strip().splitlines() or [""])[-1]
+    if trial.returncode == _NEVER_PARSED:
+        return (
+            f"{rel} is unprobeable: it never parsed the command line {argv!r} ({last})"
+        )
+    return f"{rel} rejects {argv!r} (exit {trial.returncode}: {last})"
 
 
 def _resolve_repo_script(span: str) -> str | None:
@@ -239,7 +370,8 @@ def test_broken_retire_form_in_reason_fails() -> None:
             )
             roster = dict(roster)
             roster["session_denials"] = [
-                rule if r["id"] == "protected-ref-deletion" else r for r in roster["session_denials"]
+                rule if r["id"] == "protected-ref-deletion" else r
+                for r in roster["session_denials"]
             ]
             break
     errors = verify_session_denials(roster)
@@ -342,3 +474,188 @@ def test_historical_roster_with_retire_and_marshal_preserve_fails() -> None:
     joined = "\n".join(errors)
     assert "worktree_sweep.py" in joined and "--retire" in joined
     assert "preserve tag" in joined or "marshal preserve" in joined
+
+
+def _fixture(tmp_path: Path, body: str) -> tuple[Path, Path]:
+    marker = tmp_path / "marker"
+    script = tmp_path / "fixture_script.py"
+    script.write_text(body.replace("MARKER", repr(str(marker))), encoding="utf-8")
+    return script, marker
+
+
+_PARSE_THEN_WRITE = """\
+import argparse
+import pathlib
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--known", action="store_true")
+ap.parse_args()
+pathlib.Path(MARKER).write_text("ran")
+"""
+
+_SUBCOMMAND_THEN_WRITE = """\
+import argparse
+import pathlib
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    REQUIRED_ROOT
+    sub = ap.add_subparsers(dest="verb", required=True)
+    sub.add_parser("sub").add_argument("--known", action="store_true")
+    ap.parse_args()
+    pathlib.Path(MARKER).write_text("ran")
+
+
+if __name__ == "__main__":
+    main()
+"""
+
+_PARSE_KNOWN_THEN_WRITE = """\
+import argparse
+import pathlib
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--known", action="store_true")
+ap.parse_known_args()
+pathlib.Path(MARKER).write_text("ran")
+"""
+
+_NO_ARGPARSE = """\
+import pathlib
+
+pathlib.Path(MARKER).write_text("ran")
+"""
+
+_EXITS_BEFORE_PARSING = """\
+import argparse
+import sys
+
+sys.exit(1)
+argparse.ArgumentParser().parse_args()
+"""
+
+
+def test_probe_accepts_without_running_the_body(tmp_path: Path) -> None:
+    script, marker = _fixture(tmp_path, _PARSE_THEN_WRITE)
+    assert _script_accepts_argv(script, ["--known"]) is None
+    assert not marker.exists()
+
+
+def test_probe_rejects_an_unknown_flag_without_running_the_body(tmp_path: Path) -> None:
+    script, marker = _fixture(tmp_path, _PARSE_THEN_WRITE)
+    err = _script_accepts_argv(script, ["--known", "--no-such-flag"])
+    assert err is not None and "rejects" in err and "--no-such-flag" in err
+    assert not marker.exists()
+
+
+def test_probe_decides_on_the_outermost_parse_of_a_subcommand(tmp_path: Path) -> None:
+    script, marker = _fixture(
+        tmp_path, _SUBCOMMAND_THEN_WRITE.replace("REQUIRED_ROOT", "pass")
+    )
+    assert _script_accepts_argv(script, ["sub", "--known"]) is None
+    err = _script_accepts_argv(script, ["sub", "--known", "--bogus"])
+    assert err is not None and "rejects" in err and "--bogus" in err
+    assert not marker.exists()
+    # The subparser's own parse succeeds here; only the outermost parse sees the
+    # parent's missing required option.
+    script, marker = _fixture(
+        tmp_path,
+        _SUBCOMMAND_THEN_WRITE.replace(
+            "REQUIRED_ROOT", 'ap.add_argument("--root", required=True)'
+        ),
+    )
+    err = _script_accepts_argv(script, ["sub", "--known"])
+    assert err is not None and "rejects" in err
+    assert _script_accepts_argv(script, ["--root", "r", "sub", "--known"]) is None
+    assert not marker.exists()
+
+
+def test_probe_rejects_leftovers_of_an_outermost_parse_known_args(
+    tmp_path: Path,
+) -> None:
+    script, marker = _fixture(tmp_path, _PARSE_KNOWN_THEN_WRITE)
+    assert _script_accepts_argv(script, ["--known"]) is None
+    err = _script_accepts_argv(script, ["--known", "--no-such-flag"])
+    assert err is not None and "rejects" in err and "--no-such-flag" in err
+    assert not marker.exists()
+
+
+def test_probe_never_runs_a_script_without_argparse(tmp_path: Path) -> None:
+    script, marker = _fixture(tmp_path, _NO_ARGPARSE)
+    err = _script_accepts_argv(script, ["--known"])
+    assert err is not None and "unprobeable" in err and _display(script) in err
+    assert not marker.exists()
+
+
+def test_probe_never_accepts_a_script_that_exits_before_parsing(tmp_path: Path) -> None:
+    script, _marker = _fixture(tmp_path, _EXITS_BEFORE_PARSING)
+    err = _script_accepts_argv(script, ["--known"])
+    assert err is not None and "unprobeable" in err
+
+
+_CATCHES_ITS_OWN_PARSE_ERROR = """\
+import argparse
+import pathlib
+
+ap = argparse.ArgumentParser(exit_on_error=False)
+ap.add_argument("--known", action="store_true")
+try:
+    ap.parse_args()
+except argparse.ArgumentError:
+    pass
+pathlib.Path(MARKER).write_text("ran")
+"""
+
+_PARSES_A_LIST_FIRST = """\
+import argparse
+import pathlib
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--known", action="store_true")
+DEFAULTS = vars(ap.parse_args([]))
+ap.parse_args()
+pathlib.Path(MARKER).write_text("ran")
+"""
+
+
+def test_probe_stops_when_the_outermost_parse_raises(tmp_path: Path) -> None:
+    script, marker = _fixture(tmp_path, _CATCHES_ITS_OWN_PARSE_ERROR)
+    err = _script_accepts_argv(script, ["--bogus"])
+    assert err is not None and "rejects" in err and "--bogus" in err
+    assert not marker.exists()
+
+
+def test_probe_never_decides_on_an_explicit_list(tmp_path: Path) -> None:
+    script, marker = _fixture(tmp_path, _PARSES_A_LIST_FIRST)
+    err = _script_accepts_argv(script, ["--no-such-flag"])
+    assert err is not None and "unprobeable" in err
+    assert not marker.exists()
+
+
+def test_probe_reads_a_script_with_a_byte_order_mark(tmp_path: Path) -> None:
+    script, marker = _fixture(tmp_path, _PARSE_THEN_WRITE)
+    script.write_bytes(b"\xef\xbb\xbf" + script.read_bytes())
+    assert _script_accepts_argv(script, ["--known"]) is None
+    assert not marker.exists()
+
+
+def test_probing_the_write_baseline_form_leaves_the_baseline_untouched() -> None:
+    before = SPEC_SURFACE_BASELINE.read_bytes()
+    before_mtime = SPEC_SURFACE_BASELINE.stat().st_mtime_ns
+    lock = SPEC_SURFACE_BASELINE.with_name(SPEC_SURFACE_BASELINE.name + ".lock")
+    lock_existed = lock.exists()
+    try:
+        err = _script_accepts_argv(
+            REPO_ROOT / "scripts" / "spec_surface_check.py",
+            ["--write-baseline", "--spec", _PLACEHOLDERS["<project>/<spec>"]],
+        )
+        after = SPEC_SURFACE_BASELINE.read_bytes()
+        after_mtime = SPEC_SURFACE_BASELINE.stat().st_mtime_ns
+    finally:
+        if SPEC_SURFACE_BASELINE.read_bytes() != before:
+            SPEC_SURFACE_BASELINE.write_bytes(before)
+    assert err is None
+    assert lock_existed or not lock.exists()
+    assert hashlib.sha256(after).hexdigest() == hashlib.sha256(before).hexdigest()
+    assert after_mtime == before_mtime
