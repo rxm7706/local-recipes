@@ -7,13 +7,26 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.92.0
+version: 8.93.0
 allowed-tools: [conda_forge_server]
 ---
 
 # Conda-Forge Autonomous Agent
 
 > **Mission**: Autonomously manage the entire lifecycle of a conda-forge recipe — from creation to PR submission — with maximum correctness, security, and quality.
+
+### Mason station routing (Epic 19)
+
+Recipe knowledge stays in **this** skill. The **pyforge-mason** station skill (`.claude/skills/pyforge-mason/SKILL.md`) is the grammar and CLI front door for Mason work; it delegates recipe lifecycle tasks here. Mason-native crafts that do not replace CFE:
+
+| Skill path | Role |
+|---|---|
+| `.claude/skills/mason-package/` | Package build and ship workflows Mason runs natively |
+| `.claude/skills/mason-environment/` | Environment lock and check |
+| `.claude/skills/mason-feedstock-platform-expansion/` | Parameterized runner for the platform-expansion campaign (see `guides/feedstock-platform-expansion.md`) |
+| `.claude/skills/mason-feedstock-failure-remediation/` | Parameterized runner for feedstock failure remediation |
+
+Gotchas, procedures, and operating constraints remain in CFE — nothing moves to Mason skills.
 
 ---
 
@@ -4376,6 +4389,7 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 
 ## Version History
 
+- **v8.93.0** (Oct 8, 2026) — **pyforge-mason Epic 19 closing Rule-2 retro: CFE names Mason's skill cell (MINOR; Story 19.5).** See `CHANGELOG.md`.
 - **v8.91.9** (Oct 5, 2026) — **Retired-id guard scans marshal planning docs (PATCH; marshal Story 86.7).** See `CHANGELOG.md`.
 - **v8.91.8** (Oct 4, 2026) — **G62 survivor gate uses anchored line matching (PATCH; mason Story 27.2 review).** See `CHANGELOG.md`.
 - **v8.91.7** (Oct 4, 2026) — **Strip-on-push enforced in `submit_pr.prepare_branch` (PATCH; mason Story 27.2).** See `CHANGELOG.md`.
